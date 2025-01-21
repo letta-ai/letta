@@ -18,7 +18,7 @@ def list_llm_backends(
 ):
 
     models = server.list_llm_models()
-    print(models)
+    # print(models)
     return models
 
 
@@ -28,5 +28,5 @@ def list_embedding_backends(
 ):
 
     models = server.list_embedding_models()
-    print(models)
+    # print(models)
     return models

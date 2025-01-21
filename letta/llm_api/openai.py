@@ -9,28 +9,15 @@ from httpx_sse._exceptions import SSEError
 
 from letta.constants import OPENAI_CONTEXT_WINDOW_ERROR_SUBSTRING
 from letta.errors import LLMError
-from letta.llm_api.helpers import (
-    add_inner_thoughts_to_functions,
-    convert_to_structured_output,
-    make_post_request,
-)
-from letta.local_llm.constants import (
-    INNER_THOUGHTS_KWARG,
-    INNER_THOUGHTS_KWARG_DESCRIPTION,
-)
+from letta.llm_api.helpers import add_inner_thoughts_to_functions, convert_to_structured_output, make_post_request
+from letta.local_llm.constants import INNER_THOUGHTS_KWARG, INNER_THOUGHTS_KWARG_DESCRIPTION
 from letta.local_llm.utils import num_tokens_from_functions, num_tokens_from_messages
 from letta.schemas.llm_config import LLMConfig
 from letta.schemas.message import Message as _Message
 from letta.schemas.message import MessageRole as _MessageRole
 from letta.schemas.openai.chat_completion_request import ChatCompletionRequest
-from letta.schemas.openai.chat_completion_request import (
-    FunctionCall as ToolFunctionChoiceFunctionCall,
-)
-from letta.schemas.openai.chat_completion_request import (
-    Tool,
-    ToolFunctionChoice,
-    cast_message_to_subtype,
-)
+from letta.schemas.openai.chat_completion_request import FunctionCall as ToolFunctionChoiceFunctionCall
+from letta.schemas.openai.chat_completion_request import Tool, ToolFunctionChoice, cast_message_to_subtype
 from letta.schemas.openai.chat_completion_response import (
     ChatCompletionChunkResponse,
     ChatCompletionResponse,
@@ -41,10 +28,7 @@ from letta.schemas.openai.chat_completion_response import (
     UsageStatistics,
 )
 from letta.schemas.openai.embedding_response import EmbeddingResponse
-from letta.streaming_interface import (
-    AgentChunkStreamingInterface,
-    AgentRefreshStreamingInterface,
-)
+from letta.streaming_interface import AgentChunkStreamingInterface, AgentRefreshStreamingInterface
 from letta.utils import get_tool_call_id, smart_urljoin
 
 OPENAI_SSE_DONE = "[DONE]"
@@ -217,7 +201,6 @@ def openai_chat_completions_process_stream(
     dummy_message = _Message(
         role=_MessageRole.assistant,
         text="",
-        user_id="",
         agent_id="",
         model="",
         name=None,
@@ -324,15 +307,31 @@ def openai_chat_completions_process_stream(
                                 warnings.warn(
                                     f"Tool call index out of range ({tool_call_delta.index})\ncurrent tool calls: {accum_message.tool_calls}\ncurrent delta: {tool_call_delta}"
                                 )
+                                # force index 0
+                                # accum_message.tool_calls[0].id = tool_call_delta.id
                             else:
                                 accum_message.tool_calls[tool_call_delta.index].id = tool_call_delta.id
                         if tool_call_delta.function is not None:
                             if tool_call_delta.function.name is not None:
                                 # TODO assert that we're not overwriting?
                                 # TODO += instead of =?
-                                accum_message.tool_calls[tool_call_delta.index].function.name = tool_call_delta.function.name
+                                if tool_call_delta.index not in range(len(accum_message.tool_calls)):
+                                    warnings.warn(
+                                        f"Tool call index out of range ({tool_call_delta.index})\ncurrent tool calls: {accum_message.tool_calls}\ncurrent delta: {tool_call_delta}"
+                                    )
+                                    # force index 0
+                                    # accum_message.tool_calls[0].function.name = tool_call_delta.function.name
+                                else:
+                                    accum_message.tool_calls[tool_call_delta.index].function.name = tool_call_delta.function.name
                             if tool_call_delta.function.arguments is not None:
-                                accum_message.tool_calls[tool_call_delta.index].function.arguments += tool_call_delta.function.arguments
+                                if tool_call_delta.index not in range(len(accum_message.tool_calls)):
+                                    warnings.warn(
+                                        f"Tool call index out of range ({tool_call_delta.index})\ncurrent tool calls: {accum_message.tool_calls}\ncurrent delta: {tool_call_delta}"
+                                    )
+                                    # force index 0
+                                    # accum_message.tool_calls[0].function.arguments += tool_call_delta.function.arguments
+                                else:
+                                    accum_message.tool_calls[tool_call_delta.index].function.arguments += tool_call_delta.function.arguments
 
                 if message_delta.function_call is not None:
                     raise NotImplementedError(f"Old function_call style not support with stream=True")

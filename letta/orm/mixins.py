@@ -1,3 +1,4 @@
+from typing import Optional
 from uuid import UUID
 
 from sqlalchemy import ForeignKey, String
@@ -31,12 +32,28 @@ class UserMixin(Base):
     user_id: Mapped[str] = mapped_column(String, ForeignKey("users.id"))
 
 
+class AgentMixin(Base):
+    """Mixin for models that belong to an agent."""
+
+    __abstract__ = True
+
+    agent_id: Mapped[str] = mapped_column(String, ForeignKey("agents.id", ondelete="CASCADE"))
+
+
+class FileMixin(Base):
+    """Mixin for models that belong to a file."""
+
+    __abstract__ = True
+
+    file_id: Mapped[Optional[str]] = mapped_column(String, ForeignKey("files.id", ondelete="CASCADE"))
+
+
 class SourceMixin(Base):
     """Mixin for models (e.g. file) that belong to a source."""
 
     __abstract__ = True
 
-    source_id: Mapped[str] = mapped_column(String, ForeignKey("sources.id"))
+    source_id: Mapped[str] = mapped_column(String, ForeignKey("sources.id", ondelete="CASCADE"), nullable=False)
 
 
 class SandboxConfigMixin(Base):

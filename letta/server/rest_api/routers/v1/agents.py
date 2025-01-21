@@ -1,39 +1,27 @@
-import asyncio
-import warnings
 from datetime import datetime
-from typing import List, Optional, Union
+from typing import Annotated, List, Optional, Union
 
-from fastapi import APIRouter, Body, Depends, Header, HTTPException, Query, status
-from fastapi.responses import JSONResponse, StreamingResponse
+from fastapi import APIRouter, BackgroundTasks, Body, Depends, Header, HTTPException, Query, status
+from fastapi.responses import JSONResponse
+from pydantic import Field
 
 from letta.constants import DEFAULT_MESSAGE_TOOL, DEFAULT_MESSAGE_TOOL_KWARG
-from letta.schemas.agent import AgentState, CreateAgent, UpdateAgentState
-from letta.schemas.block import (  # , BlockLabelUpdate, BlockLimitUpdate
-    Block,
-    BlockUpdate,
-    CreateBlock,
-)
-from letta.schemas.enums import MessageStreamStatus
-from letta.schemas.letta_message import (
-    LegacyLettaMessage,
-    LettaMessage,
-    LettaMessageUnion,
-)
+from letta.log import get_logger
+from letta.orm.errors import NoResultFound
+from letta.schemas.agent import AgentState, CreateAgent, UpdateAgent
+from letta.schemas.block import Block, BlockUpdate, CreateBlock  # , BlockLabelUpdate, BlockLimitUpdate
+from letta.schemas.job import JobStatus, JobUpdate
+from letta.schemas.letta_message import LettaMessageUnion
 from letta.schemas.letta_request import LettaRequest, LettaStreamingRequest
 from letta.schemas.letta_response import LettaResponse
-from letta.schemas.memory import (
-    ArchivalMemorySummary,
-    ContextWindowOverview,
-    CreateArchivalMemory,
-    Memory,
-    RecallMemorySummary,
-)
-from letta.schemas.message import Message, MessageCreate, UpdateMessage
+from letta.schemas.memory import ArchivalMemorySummary, ContextWindowOverview, CreateArchivalMemory, Memory, RecallMemorySummary
+from letta.schemas.message import Message, MessageUpdate
 from letta.schemas.passage import Passage
+from letta.schemas.run import Run
 from letta.schemas.source import Source
 from letta.schemas.tool import Tool
-from letta.server.rest_api.interface import StreamingServerInterface
-from letta.server.rest_api.utils import get_letta_server, sse_async_generator
+from letta.schemas.user import User
+from letta.server.rest_api.utils import get_letta_server
 from letta.server.server import SyncServer
 
 # These can be forward refs, but because Fastapi needs them at runtime the must be imported normally
@@ -41,24 +29,44 @@ from letta.server.server import SyncServer
 
 router = APIRouter(prefix="/agents", tags=["agents"])
 
+logger = get_logger(__name__)
 
+
+# TODO: This should be paginated
 @router.get("/", response_model=List[AgentState], operation_id="list_agents")
 def list_agents(
     name: Optional[str] = Query(None, description="Name of the agent"),
     tags: Optional[List[str]] = Query(None, description="List of tags to filter agents by"),
+    match_all_tags: bool = Query(
+        False,
+        description="If True, only returns agents that match ALL given tags. Otherwise, return agents that have ANY of the passed in tags.",
+    ),
     server: "SyncServer" = Depends(get_letta_server),
-    user_id: Optional[str] = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
+    user_id: Optional[str] = Header(None, alias="user_id"),
+    cursor: Optional[str] = Query(None, description="Cursor for pagination"),
+    limit: Optional[int] = Query(None, description="Limit for pagination"),
+    query_text: Optional[str] = Query(None, description="Search agents by name"),
 ):
     """
     List all agents associated with a given user.
     This endpoint retrieves a list of all agents and their configurations associated with the specified user ID.
     """
-    actor = server.get_user_or_default(user_id=user_id)
+    actor = server.user_manager.get_user_or_default(user_id=user_id)
 
-    agents = server.list_agents(user_id=actor.id, tags=tags)
-    # TODO: move this logic to the ORM
-    if name:
-        agents = [a for a in agents if a.name == name]
+    # Use dictionary comprehension to build kwargs dynamically
+    kwargs = {
+        key: value
+        for key, value in {
+            "tags": tags,
+            "match_all_tags": match_all_tags,
+            "name": name,
+            "query_text": query_text,
+        }.items()
+        if value is not None
+    }
+
+    # Call list_agents with the dynamic kwargs
+    agents = server.agent_manager.list_agents(actor=actor, cursor=cursor, limit=limit, **kwargs)
     return agents
 
 
@@ -71,34 +79,43 @@ def get_agent_context_window(
     """
     Retrieve the context window of a specific agent.
     """
-    actor = server.get_user_or_default(user_id=user_id)
+    actor = server.user_manager.get_user_or_default(user_id=user_id)
 
-    return server.get_agent_context_window(user_id=actor.id, agent_id=agent_id)
+    return server.get_agent_context_window(agent_id=agent_id, actor=actor)
+
+
+class CreateAgentRequest(CreateAgent):
+    """
+    CreateAgent model specifically for POST request body, excluding user_id which comes from headers
+    """
+
+    # Override the user_id field to exclude it from the request body validation
+    user_id: Optional[str] = Field(None, exclude=True)
 
 
 @router.post("/", response_model=AgentState, operation_id="create_agent")
 def create_agent(
-    agent: CreateAgent = Body(...),
+    agent: CreateAgentRequest = Body(...),
     server: "SyncServer" = Depends(get_letta_server),
     user_id: Optional[str] = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
 ):
     """
     Create a new agent with the specified configuration.
     """
-    actor = server.get_user_or_default(user_id=user_id)
+    actor = server.user_manager.get_user_or_default(user_id=user_id)
     return server.create_agent(agent, actor=actor)
 
 
 @router.patch("/{agent_id}", response_model=AgentState, operation_id="update_agent")
 def update_agent(
     agent_id: str,
-    update_agent: UpdateAgentState = Body(...),
+    update_agent: UpdateAgent = Body(...),
     server: "SyncServer" = Depends(get_letta_server),
     user_id: Optional[str] = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
 ):
     """Update an exsiting agent"""
-    actor = server.get_user_or_default(user_id=user_id)
-    return server.update_agent(update_agent, actor=actor)
+    actor = server.user_manager.get_user_or_default(user_id=user_id)
+    return server.agent_manager.update_agent(agent_id=agent_id, agent_update=update_agent, actor=actor)
 
 
 @router.get("/{agent_id}/tools", response_model=List[Tool], operation_id="get_tools_from_agent")
@@ -108,8 +125,8 @@ def get_tools_from_agent(
     user_id: Optional[str] = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
 ):
     """Get tools from an existing agent"""
-    actor = server.get_user_or_default(user_id=user_id)
-    return server.get_tools_from_agent(agent_id=agent_id, user_id=actor.id)
+    actor = server.user_manager.get_user_or_default(user_id=user_id)
+    return server.agent_manager.get_agent_by_id(agent_id=agent_id, actor=actor).tools
 
 
 @router.patch("/{agent_id}/add-tool/{tool_id}", response_model=AgentState, operation_id="add_tool_to_agent")
@@ -120,8 +137,8 @@ def add_tool_to_agent(
     user_id: Optional[str] = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
 ):
     """Add tools to an existing agent"""
-    actor = server.get_user_or_default(user_id=user_id)
-    return server.add_tool_to_agent(agent_id=agent_id, tool_id=tool_id, user_id=actor.id)
+    actor = server.user_manager.get_user_or_default(user_id=user_id)
+    return server.agent_manager.attach_tool(agent_id=agent_id, tool_id=tool_id, actor=actor)
 
 
 @router.patch("/{agent_id}/remove-tool/{tool_id}", response_model=AgentState, operation_id="remove_tool_from_agent")
@@ -132,8 +149,20 @@ def remove_tool_from_agent(
     user_id: Optional[str] = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
 ):
     """Add tools to an existing agent"""
-    actor = server.get_user_or_default(user_id=user_id)
-    return server.remove_tool_from_agent(agent_id=agent_id, tool_id=tool_id, user_id=actor.id)
+    actor = server.user_manager.get_user_or_default(user_id=user_id)
+    return server.agent_manager.detach_tool(agent_id=agent_id, tool_id=tool_id, actor=actor)
+
+
+@router.patch("/{agent_id}/reset-messages", response_model=AgentState, operation_id="reset_messages")
+def reset_messages(
+    agent_id: str,
+    add_default_initial_messages: bool = Query(default=False, description="If true, adds the default initial messages after resetting."),
+    server: "SyncServer" = Depends(get_letta_server),
+    user_id: Optional[str] = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
+):
+    """Resets the messages for an agent"""
+    actor = server.user_manager.get_user_or_default(user_id=user_id)
+    return server.agent_manager.reset_messages(agent_id=agent_id, actor=actor, add_default_initial_messages=add_default_initial_messages)
 
 
 @router.get("/{agent_id}", response_model=AgentState, operation_id="get_agent")
@@ -145,13 +174,12 @@ def get_agent_state(
     """
     Get the state of the agent.
     """
-    actor = server.get_user_or_default(user_id=user_id)
+    actor = server.user_manager.get_user_or_default(user_id=user_id)
 
-    if not server.ms.get_agent(user_id=actor.id, agent_id=agent_id):
-        # agent does not exist
-        raise HTTPException(status_code=404, detail=f"Agent agent_id={agent_id} not found.")
-
-    return server.get_agent_state(user_id=actor.id, agent_id=agent_id)
+    try:
+        return server.agent_manager.get_agent_by_id(agent_id=agent_id, actor=actor)
+    except NoResultFound as e:
+        raise HTTPException(status_code=404, detail=str(e))
 
 
 @router.delete("/{agent_id}", response_model=None, operation_id="delete_agent")
@@ -163,33 +191,38 @@ def delete_agent(
     """
     Delete an agent.
     """
-    actor = server.get_user_or_default(user_id=user_id)
-
-    return server.delete_agent(user_id=actor.id, agent_id=agent_id)
+    actor = server.user_manager.get_user_or_default(user_id=user_id)
+    try:
+        server.agent_manager.delete_agent(agent_id=agent_id, actor=actor)
+        return JSONResponse(status_code=status.HTTP_200_OK, content={"message": f"Agent id={agent_id} successfully deleted"})
+    except NoResultFound:
+        raise HTTPException(status_code=404, detail=f"Agent agent_id={agent_id} not found for user_id={actor.id}.")
 
 
 @router.get("/{agent_id}/sources", response_model=List[Source], operation_id="get_agent_sources")
 def get_agent_sources(
     agent_id: str,
     server: "SyncServer" = Depends(get_letta_server),
+    user_id: Optional[str] = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
 ):
     """
     Get the sources associated with an agent.
     """
-
-    return server.list_attached_sources(agent_id)
+    actor = server.user_manager.get_user_or_default(user_id=user_id)
+    return server.agent_manager.list_attached_sources(agent_id=agent_id, actor=actor)
 
 
 @router.get("/{agent_id}/memory/messages", response_model=List[Message], operation_id="list_agent_in_context_messages")
 def get_agent_in_context_messages(
     agent_id: str,
     server: "SyncServer" = Depends(get_letta_server),
+    user_id: Optional[str] = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
 ):
     """
     Retrieve the messages in the context of a specific agent.
     """
-
-    return server.get_in_context_messages(agent_id=agent_id)
+    actor = server.user_manager.get_user_or_default(user_id=user_id)
+    return server.agent_manager.get_in_context_messages(agent_id=agent_id, actor=actor)
 
 
 # TODO: remove? can also get with agent blocks
@@ -197,13 +230,15 @@ def get_agent_in_context_messages(
 def get_agent_memory(
     agent_id: str,
     server: "SyncServer" = Depends(get_letta_server),
+    user_id: Optional[str] = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
 ):
     """
     Retrieve the memory state of a specific agent.
     This endpoint fetches the current memory state of the agent identified by the user ID and agent ID.
     """
+    actor = server.user_manager.get_user_or_default(user_id=user_id)
 
-    return server.get_agent_memory(agent_id=agent_id)
+    return server.get_agent_memory(agent_id=agent_id, actor=actor)
 
 
 @router.get("/{agent_id}/memory/block/{block_label}", response_model=Block, operation_id="get_agent_memory_block")
@@ -216,10 +251,12 @@ def get_agent_memory_block(
     """
     Retrieve a memory block from an agent.
     """
-    actor = server.get_user_or_default(user_id=user_id)
+    actor = server.user_manager.get_user_or_default(user_id=user_id)
 
-    block_id = server.blocks_agents_manager.get_block_id_for_label(agent_id=agent_id, block_label=block_label)
-    return server.block_manager.get_block_by_id(block_id, actor=actor)
+    try:
+        return server.agent_manager.get_block_with_label(agent_id=agent_id, block_label=block_label, actor=actor)
+    except NoResultFound as e:
+        raise HTTPException(status_code=404, detail=str(e))
 
 
 @router.get("/{agent_id}/memory/block", response_model=List[Block], operation_id="get_agent_memory_blocks")
@@ -231,9 +268,12 @@ def get_agent_memory_blocks(
     """
     Retrieve the memory blocks of a specific agent.
     """
-    actor = server.get_user_or_default(user_id=user_id)
-    block_ids = server.blocks_agents_manager.list_block_ids_for_agent(agent_id=agent_id)
-    return [server.block_manager.get_block_by_id(block_id, actor=actor) for block_id in block_ids]
+    actor = server.user_manager.get_user_or_default(user_id=user_id)
+    try:
+        agent = server.agent_manager.get_agent_by_id(agent_id, actor=actor)
+        return agent.memory.blocks
+    except NoResultFound as e:
+        raise HTTPException(status_code=404, detail=str(e))
 
 
 @router.post("/{agent_id}/memory/block", response_model=Memory, operation_id="add_agent_memory_block")
@@ -246,16 +286,17 @@ def add_agent_memory_block(
     """
     Creates a memory block and links it to the agent.
     """
-    actor = server.get_user_or_default(user_id=user_id)
+    actor = server.user_manager.get_user_or_default(user_id=user_id)
 
     # Copied from POST /blocks
+    # TODO: Should have block_manager accept only CreateBlock
+    # TODO: This will be possible once we move ID creation to the ORM
     block_req = Block(**create_block.model_dump())
     block = server.block_manager.create_or_update_block(actor=actor, block=block_req)
 
     # Link the block to the agent
-    updated_memory = server.link_block_to_agent_memory(user_id=actor.id, agent_id=agent_id, block_id=block.id)
-
-    return updated_memory
+    agent = server.agent_manager.attach_block(agent_id=agent_id, block_id=block.id, actor=actor)
+    return agent.memory
 
 
 @router.delete("/{agent_id}/memory/block/{block_label}", response_model=Memory, operation_id="remove_agent_memory_block_by_label")
@@ -270,56 +311,61 @@ def remove_agent_memory_block(
     """
     Removes a memory block from an agent by unlnking it. If the block is not linked to any other agent, it is deleted.
     """
-    actor = server.get_user_or_default(user_id=user_id)
+    actor = server.user_manager.get_user_or_default(user_id=user_id)
 
     # Unlink the block from the agent
-    updated_memory = server.unlink_block_from_agent_memory(user_id=actor.id, agent_id=agent_id, block_label=block_label)
+    agent = server.agent_manager.detach_block_with_label(agent_id=agent_id, block_label=block_label, actor=actor)
 
-    return updated_memory
+    return agent.memory
 
 
 @router.patch("/{agent_id}/memory/block/{block_label}", response_model=Block, operation_id="update_agent_memory_block_by_label")
 def update_agent_memory_block(
     agent_id: str,
     block_label: str,
-    update_block: BlockUpdate = Body(...),
+    block_update: BlockUpdate = Body(...),
     server: "SyncServer" = Depends(get_letta_server),
     user_id: Optional[str] = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
 ):
     """
     Removes a memory block from an agent by unlnking it. If the block is not linked to any other agent, it is deleted.
     """
-    actor = server.get_user_or_default(user_id=user_id)
+    actor = server.user_manager.get_user_or_default(user_id=user_id)
 
-    # get the block_id from the label
-    block_id = server.blocks_agents_manager.get_block_id_for_label(agent_id=agent_id, block_label=block_label)
+    block = server.agent_manager.get_block_with_label(agent_id=agent_id, block_label=block_label, actor=actor)
+    block = server.block_manager.update_block(block.id, block_update=block_update, actor=actor)
 
-    # update the block
-    return server.block_manager.update_block(block_id=block_id, block_update=update_block, actor=actor)
+    # This should also trigger a system prompt change in the agent
+    server.agent_manager.rebuild_system_prompt(agent_id=agent_id, actor=actor, force=True, update_timestamp=False)
+
+    return block
 
 
 @router.get("/{agent_id}/memory/recall", response_model=RecallMemorySummary, operation_id="get_agent_recall_memory_summary")
 def get_agent_recall_memory_summary(
     agent_id: str,
     server: "SyncServer" = Depends(get_letta_server),
+    user_id: Optional[str] = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
 ):
     """
     Retrieve the summary of the recall memory of a specific agent.
     """
+    actor = server.user_manager.get_user_or_default(user_id=user_id)
 
-    return server.get_recall_memory_summary(agent_id=agent_id)
+    return server.get_recall_memory_summary(agent_id=agent_id, actor=actor)
 
 
 @router.get("/{agent_id}/memory/archival", response_model=ArchivalMemorySummary, operation_id="get_agent_archival_memory_summary")
 def get_agent_archival_memory_summary(
     agent_id: str,
     server: "SyncServer" = Depends(get_letta_server),
+    user_id: Optional[str] = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
 ):
     """
     Retrieve the summary of the archival memory of a specific agent.
     """
-
-    return server.get_archival_memory_summary(agent_id=agent_id)
+    actor = server.user_manager.get_user_or_default(user_id=user_id)
+    return server.get_archival_memory_summary(agent_id=agent_id, actor=actor)
 
 
 @router.get("/{agent_id}/archival", response_model=List[Passage], operation_id="list_agent_archival_memory")
@@ -334,7 +380,7 @@ def get_agent_archival_memory(
     """
     Retrieve the memories in an agent's archival memory store (paginated query).
     """
-    actor = server.get_user_or_default(user_id=user_id)
+    actor = server.user_manager.get_user_or_default(user_id=user_id)
 
     # TODO need to add support for non-postgres here
     # chroma will throw:
@@ -343,8 +389,7 @@ def get_agent_archival_memory(
     return server.get_agent_archival_cursor(
         user_id=actor.id,
         agent_id=agent_id,
-        after=after,
-        before=before,
+        cursor=after,  # TODO: deleting before, after. is this expected?
         limit=limit,
     )
 
@@ -359,9 +404,9 @@ def insert_agent_archival_memory(
     """
     Insert a memory into an agent's archival memory store.
     """
-    actor = server.get_user_or_default(user_id=user_id)
+    actor = server.user_manager.get_user_or_default(user_id=user_id)
 
-    return server.insert_archival_memory(user_id=actor.id, agent_id=agent_id, memory_contents=request.text)
+    return server.insert_archival_memory(agent_id=agent_id, memory_contents=request.text, actor=actor)
 
 
 # TODO(ethan): query or path parameter for memory_id?
@@ -377,13 +422,26 @@ def delete_agent_archival_memory(
     """
     Delete a memory from an agent's archival memory store.
     """
-    actor = server.get_user_or_default(user_id=user_id)
+    actor = server.user_manager.get_user_or_default(user_id=user_id)
 
-    server.delete_archival_memory(user_id=actor.id, agent_id=agent_id, memory_id=memory_id)
+    server.delete_archival_memory(memory_id=memory_id, actor=actor)
     return JSONResponse(status_code=status.HTTP_200_OK, content={"message": f"Memory id={memory_id} successfully deleted"})
 
 
-@router.get("/{agent_id}/messages", response_model=Union[List[Message], List[LettaMessageUnion]], operation_id="list_agent_messages")
+AgentMessagesResponse = Annotated[
+    Union[List[Message], List[LettaMessageUnion]],
+    Field(
+        json_schema_extra={
+            "anyOf": [
+                {"type": "array", "items": {"$ref": "#/components/schemas/letta__schemas__message__Message"}},
+                {"type": "array", "items": {"$ref": "#/components/schemas/LettaMessageUnion"}},
+            ]
+        }
+    ),
+]
+
+
+@router.get("/{agent_id}/messages", response_model=AgentMessagesResponse, operation_id="list_agent_messages")
 def get_agent_messages(
     agent_id: str,
     server: "SyncServer" = Depends(get_letta_server),
@@ -404,7 +462,7 @@ def get_agent_messages(
     """
     Retrieve message history for an agent.
     """
-    actor = server.get_user_or_default(user_id=user_id)
+    actor = server.user_manager.get_user_or_default(user_id=user_id)
 
     return server.get_agent_recall_cursor(
         user_id=actor.id,
@@ -422,14 +480,16 @@ def get_agent_messages(
 def update_message(
     agent_id: str,
     message_id: str,
-    request: UpdateMessage = Body(...),
+    request: MessageUpdate = Body(...),
     server: "SyncServer" = Depends(get_letta_server),
+    user_id: Optional[str] = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
 ):
     """
     Update the details of a message associated with an agent.
     """
-    assert request.id == message_id, f"Message ID mismatch: {request.id} != {message_id}"
-    return server.update_agent_message(agent_id=agent_id, request=request)
+    # TODO: Get rid of agent_id here, it's not really relevant
+    actor = server.user_manager.get_user_or_default(user_id=user_id)
+    return server.message_manager.update_message_by_id(message_id=message_id, message_update=request, actor=actor)
 
 
 @router.post(
@@ -447,28 +507,25 @@ async def send_message(
     Process a user message and return the agent's response.
     This endpoint accepts a message from a user and processes it through the agent.
     """
-    actor = server.get_user_or_default(user_id=user_id)
-
-    agent_lock = server.per_agent_lock_manager.get_lock(agent_id)
-    async with agent_lock:
-        result = await send_message_to_agent(
-            server=server,
-            agent_id=agent_id,
-            user_id=actor.id,
-            messages=request.messages,
-            stream_steps=False,
-            stream_tokens=False,
-            # Support for AssistantMessage
-            assistant_message_tool_name=request.assistant_message_tool_name,
-            assistant_message_tool_kwarg=request.assistant_message_tool_kwarg,
-        )
-        return result
+    actor = server.user_manager.get_user_or_default(user_id=user_id)
+    result = await server.send_message_to_agent(
+        agent_id=agent_id,
+        actor=actor,
+        messages=request.messages,
+        stream_steps=False,
+        stream_tokens=False,
+        # Support for AssistantMessage
+        use_assistant_message=request.config.use_assistant_message,
+        assistant_message_tool_name=request.config.assistant_message_tool_name,
+        assistant_message_tool_kwarg=request.config.assistant_message_tool_kwarg,
+    )
+    return result
 
 
 @router.post(
     "/{agent_id}/messages/stream",
     response_model=None,
-    operation_id="create_agent_message",
+    operation_id="create_agent_message_stream",
     responses={
         200: {
             "description": "Successful response",
@@ -489,138 +546,110 @@ async def send_message_streaming(
     This endpoint accepts a message from a user and processes it through the agent.
     It will stream the steps of the response always, and stream the tokens if 'stream_tokens' is set to True.
     """
-    actor = server.get_user_or_default(user_id=user_id)
 
-    agent_lock = server.per_agent_lock_manager.get_lock(agent_id)
-    async with agent_lock:
-        result = await send_message_to_agent(
-            server=server,
-            agent_id=agent_id,
-            user_id=actor.id,
-            messages=request.messages,
-            stream_steps=True,
-            stream_tokens=request.stream_tokens,
-            # Support for AssistantMessage
-            assistant_message_tool_name=request.assistant_message_tool_name,
-            assistant_message_tool_kwarg=request.assistant_message_tool_kwarg,
-        )
-        return result
+    actor = server.user_manager.get_user_or_default(user_id=user_id)
+    result = await server.send_message_to_agent(
+        agent_id=agent_id,
+        actor=actor,
+        messages=request.messages,
+        stream_steps=True,
+        stream_tokens=request.stream_tokens,
+        # Support for AssistantMessage
+        use_assistant_message=request.config.use_assistant_message,
+        assistant_message_tool_name=request.config.assistant_message_tool_name,
+        assistant_message_tool_kwarg=request.config.assistant_message_tool_kwarg,
+    )
+    return result
 
 
-# TODO: move this into server.py?
-async def send_message_to_agent(
+async def process_message_background(
+    job_id: str,
     server: SyncServer,
+    actor: User,
     agent_id: str,
-    user_id: str,
-    # role: MessageRole,
-    messages: Union[List[Message], List[MessageCreate]],
-    stream_steps: bool,
-    stream_tokens: bool,
-    # related to whether or not we return `LettaMessage`s or `Message`s
-    chat_completion_mode: bool = False,
-    timestamp: Optional[datetime] = None,
-    # Support for AssistantMessage
-    assistant_message_tool_name: str = DEFAULT_MESSAGE_TOOL,
-    assistant_message_tool_kwarg: str = DEFAULT_MESSAGE_TOOL_KWARG,
-) -> Union[StreamingResponse, LettaResponse]:
-    """Split off into a separate function so that it can be imported in the /chat/completion proxy."""
-
-    # TODO: @charles is this the correct way to handle?
-    include_final_message = True
-
-    if not stream_steps and stream_tokens:
-        raise HTTPException(status_code=400, detail="stream_steps must be 'true' if stream_tokens is 'true'")
-
-    # For streaming response
+    messages: list,
+    use_assistant_message: bool,
+    assistant_message_tool_name: str,
+    assistant_message_tool_kwarg: str,
+) -> None:
+    """Background task to process the message and update job status."""
     try:
-
-        # TODO: move this logic into server.py
-
-        # Get the generator object off of the agent's streaming interface
-        # This will be attached to the POST SSE request used under-the-hood
-        letta_agent = server.load_agent(agent_id=agent_id)
-
-        # Disable token streaming if not OpenAI
-        # TODO: cleanup this logic
-        llm_config = letta_agent.agent_state.llm_config
-        if stream_tokens and (llm_config.model_endpoint_type != "openai" or "inference.memgpt.ai" in llm_config.model_endpoint):
-            warnings.warn(
-                "Token streaming is only supported for models with type 'openai' or `inference.memgpt.ai` in the model_endpoint: agent has endpoint type {llm_config.model_endpoint_type} and {llm_config.model_endpoint}. Setting stream_tokens to False."
-            )
-            stream_tokens = False
-
-        # Create a new interface per request
-        letta_agent.interface = StreamingServerInterface()
-        streaming_interface = letta_agent.interface
-        if not isinstance(streaming_interface, StreamingServerInterface):
-            raise ValueError(f"Agent has wrong type of interface: {type(streaming_interface)}")
-
-        # Enable token-streaming within the request if desired
-        streaming_interface.streaming_mode = stream_tokens
-        # "chatcompletion mode" does some remapping and ignores inner thoughts
-        streaming_interface.streaming_chat_completion_mode = chat_completion_mode
-
-        # streaming_interface.allow_assistant_message = stream
-        # streaming_interface.function_call_legacy_mode = stream
-
-        # Allow AssistantMessage is desired by client
-        streaming_interface.assistant_message_tool_name = assistant_message_tool_name
-        streaming_interface.assistant_message_tool_kwarg = assistant_message_tool_kwarg
-
-        # Related to JSON buffer reader
-        streaming_interface.inner_thoughts_in_kwargs = (
-            llm_config.put_inner_thoughts_in_kwargs if llm_config.put_inner_thoughts_in_kwargs is not None else False
+        # TODO(matt) we should probably make this stream_steps and log each step as it progresses, so the job update GET can see the total steps so far + partial usage?
+        result = await server.send_message_to_agent(
+            agent_id=agent_id,
+            actor=actor,
+            messages=messages,
+            stream_steps=False,  # NOTE(matt)
+            stream_tokens=False,
+            use_assistant_message=use_assistant_message,
+            assistant_message_tool_name=assistant_message_tool_name,
+            assistant_message_tool_kwarg=assistant_message_tool_kwarg,
+            metadata={"job_id": job_id},  # Pass job_id through metadata
         )
 
-        # Offload the synchronous message_func to a separate thread
-        streaming_interface.stream_start()
-        task = asyncio.create_task(
-            asyncio.to_thread(
-                server.send_messages,
-                user_id=user_id,
-                agent_id=agent_id,
-                messages=messages,
-                interface=streaming_interface,
-            )
+        # Update job status to completed
+        job_update = JobUpdate(
+            status=JobStatus.completed,
+            completed_at=datetime.utcnow(),
+            metadata_={"result": result.model_dump()},  # Store the result in metadata
         )
+        server.job_manager.update_job_by_id(job_id=job_id, job_update=job_update, actor=actor)
 
-        if stream_steps:
-            # return a stream
-            return StreamingResponse(
-                sse_async_generator(
-                    streaming_interface.get_generator(),
-                    usage_task=task,
-                    finish_message=include_final_message,
-                ),
-                media_type="text/event-stream",
-            )
+        # Add job usage statistics
+        server.job_manager.add_job_usage(job_id=job_id, usage=result.usage, actor=actor)
 
-        else:
-            # buffer the stream, then return the list
-            generated_stream = []
-            async for message in streaming_interface.get_generator():
-                assert (
-                    isinstance(message, LettaMessage) or isinstance(message, LegacyLettaMessage) or isinstance(message, MessageStreamStatus)
-                ), type(message)
-                generated_stream.append(message)
-                if message == MessageStreamStatus.done:
-                    break
-
-            # Get rid of the stream status messages
-            filtered_stream = [d for d in generated_stream if not isinstance(d, MessageStreamStatus)]
-            usage = await task
-
-            # By default the stream will be messages of type LettaMessage or LettaLegacyMessage
-            # If we want to convert these to Message, we can use the attached IDs
-            # NOTE: we will need to de-duplicate the Messsage IDs though (since Assistant->Inner+Func_Call)
-            # TODO: eventually update the interface to use `Message` and `MessageChunk` (new) inside the deque instead
-            return LettaResponse(messages=filtered_stream, usage=usage)
-
-    except HTTPException:
-        raise
     except Exception as e:
-        print(e)
-        import traceback
+        # Update job status to failed
+        job_update = JobUpdate(
+            status=JobStatus.failed,
+            completed_at=datetime.utcnow(),
+            metadata_={"error": str(e)},
+        )
+        server.job_manager.update_job_by_id(job_id=job_id, job_update=job_update, actor=actor)
+        raise
 
-        traceback.print_exc()
-        raise HTTPException(status_code=500, detail=f"{e}")
+
+@router.post(
+    "/{agent_id}/messages/async",
+    response_model=Run,
+    operation_id="create_agent_message_async",
+)
+async def send_message_async(
+    agent_id: str,
+    background_tasks: BackgroundTasks,
+    server: SyncServer = Depends(get_letta_server),
+    request: LettaRequest = Body(...),
+    user_id: Optional[str] = Header(None, alias="user_id"),
+):
+    """
+    Asynchronously process a user message and return a run object.
+    The actual processing happens in the background, and the status can be checked using the run ID.
+    """
+    actor = server.user_manager.get_user_or_default(user_id=user_id)
+
+    # Create a new job
+    run = Run(
+        user_id=actor.id,
+        status=JobStatus.created,
+        metadata_={
+            "job_type": "send_message_async",
+            "agent_id": agent_id,
+        },
+        request_config=request.config,
+    )
+    run = server.job_manager.create_job(pydantic_job=run, actor=actor)
+
+    # Add the background task
+    background_tasks.add_task(
+        process_message_background,
+        job_id=run.id,
+        server=server,
+        actor=actor,
+        agent_id=agent_id,
+        messages=request.messages,
+        use_assistant_message=request.config.use_assistant_message,
+        assistant_message_tool_name=request.config.assistant_message_tool_name,
+        assistant_message_tool_kwarg=request.config.assistant_message_tool_kwarg,
+    )
+
+    return run

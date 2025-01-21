@@ -33,17 +33,18 @@ class LettaBase(BaseModel):
     def generate_id_field(cls, prefix: Optional[str] = None) -> "Field":
         prefix = prefix or cls.__id_prefix__
 
-        # TODO: generate ID from regex pattern?
-        def _generate_id() -> str:
-            return f"{prefix}-{uuid.uuid4()}"
-
         return Field(
             ...,
             description=cls._id_description(prefix),
             pattern=cls._id_regex_pattern(prefix),
             examples=[cls._id_example(prefix)],
-            default_factory=_generate_id,
+            default_factory=cls._generate_id,
         )
+
+    @classmethod
+    def _generate_id(cls, prefix: Optional[str] = None) -> str:
+        prefix = prefix or cls.__id_prefix__
+        return f"{prefix}-{uuid.uuid4()}"
 
     # def _generate_id(self) -> str:
     #    return f"{self.__id_prefix__}-{uuid.uuid4()}"
@@ -51,8 +52,13 @@ class LettaBase(BaseModel):
     @classmethod
     def _id_regex_pattern(cls, prefix: str):
         """generates the regex pattern for a given id"""
+        if cls.__name__ in ("JobBase", "Job", "Run", "RunBase"):
+            prefix_pattern = "(job|run)"
+        else:
+            prefix_pattern = prefix
+
         return (
-            r"^" + prefix + r"-"  # prefix string
+            r"^" + prefix_pattern + r"-"  # prefix string
             r"[a-fA-F0-9]{8}"  # 8 hexadecimal characters
             # r"[a-fA-F0-9]{4}-"  # 4 hexadecimal characters
             # r"[a-fA-F0-9]{4}-"  # 4 hexadecimal characters
@@ -78,7 +84,7 @@ class LettaBase(BaseModel):
         """
         _ = values  # for SCA
         if isinstance(v, UUID):
-            logger.warning(f"Bare UUIDs are deprecated, please use the full prefixed id ({cls.__id_prefix__})!")
+            logger.debug(f"Bare UUIDs are deprecated, please use the full prefixed id ({cls.__id_prefix__})!")
             return f"{cls.__id_prefix__}-{v}"
         return v
 

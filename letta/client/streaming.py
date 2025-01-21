@@ -7,11 +7,7 @@ from httpx_sse import SSEError, connect_sse
 from letta.constants import OPENAI_CONTEXT_WINDOW_ERROR_SUBSTRING
 from letta.errors import LLMError
 from letta.schemas.enums import MessageStreamStatus
-from letta.schemas.letta_message import (
-    FunctionCallMessage,
-    FunctionReturn,
-    InternalMonologue,
-)
+from letta.schemas.letta_message import AssistantMessage, ReasoningMessage, ToolCallMessage, ToolReturnMessage
 from letta.schemas.letta_response import LettaStreamingResponse
 from letta.schemas.usage import LettaUsageStatistics
 
@@ -49,18 +45,19 @@ def _sse_post(url: str, data: dict, headers: dict) -> Generator[LettaStreamingRe
                     # break
                     if sse.data in [status.value for status in MessageStreamStatus]:
                         # break
-                        # print("sse.data::", sse.data)
                         yield MessageStreamStatus(sse.data)
                     else:
                         chunk_data = json.loads(sse.data)
-                        if "internal_monologue" in chunk_data:
-                            yield InternalMonologue(**chunk_data)
-                        elif "function_call" in chunk_data:
-                            yield FunctionCallMessage(**chunk_data)
-                        elif "function_return" in chunk_data:
-                            yield FunctionReturn(**chunk_data)
-                        elif "usage" in chunk_data:
-                            yield LettaUsageStatistics(**chunk_data["usage"])
+                        if "reasoning" in chunk_data:
+                            yield ReasoningMessage(**chunk_data)
+                        elif "assistant_message" in chunk_data:
+                            yield AssistantMessage(**chunk_data)
+                        elif "tool_call" in chunk_data:
+                            yield ToolCallMessage(**chunk_data)
+                        elif "tool_return" in chunk_data:
+                            yield ToolReturnMessage(**chunk_data)
+                        elif "step_count" in chunk_data:
+                            yield LettaUsageStatistics(**chunk_data)
                         else:
                             yield chunk_data
                             # raise ValueError(f"Unknown message type in chunk_data: {chunk_data}")
