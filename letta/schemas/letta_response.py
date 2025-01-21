@@ -23,8 +23,19 @@ class LettaResponse(BaseModel):
         usage (LettaUsageStatistics): The usage statistics
     """
 
-    messages: List[LettaMessageUnion] = Field(..., description="The messages returned by the agent.")
-    usage: LettaUsageStatistics = Field(..., description="The usage statistics of the agent.")
+    messages: List[LettaMessageUnion] = Field(
+        ...,
+        description="The messages returned by the agent.",
+        json_schema_extra={
+            "items": {
+                "$ref": "#/components/schemas/LettaMessageUnion",
+            }
+        },
+    )
+    usage: LettaUsageStatistics = Field(
+        ...,
+        description="The usage statistics of the agent.",
+    )
 
     def __str__(self):
         return json_dumps(
@@ -40,12 +51,20 @@ class LettaResponse(BaseModel):
         def get_formatted_content(msg):
             if msg.message_type == "internal_monologue":
                 return f'<div class="content"><span class="internal-monologue">{html.escape(msg.internal_monologue)}</span></div>'
+            if msg.message_type == "reasoning_message":
+                return f'<div class="content"><span class="internal-monologue">{html.escape(msg.reasoning)}</span></div>'
             elif msg.message_type == "function_call":
                 args = format_json(msg.function_call.arguments)
                 return f'<div class="content"><span class="function-name">{html.escape(msg.function_call.name)}</span>({args})</div>'
+            elif msg.message_type == "tool_call_message":
+                args = format_json(msg.tool_call.arguments)
+                return f'<div class="content"><span class="function-name">{html.escape(msg.tool_call.name)}</span>({args})</div>'
             elif msg.message_type == "function_return":
-
                 return_value = format_json(msg.function_return)
+                # return f'<div class="status-line">Status: {html.escape(msg.status)}</div><div class="content">{return_value}</div>'
+                return f'<div class="content">{return_value}</div>'
+            elif msg.message_type == "tool_return_message":
+                return_value = format_json(msg.tool_return)
                 # return f'<div class="status-line">Status: {html.escape(msg.status)}</div><div class="content">{return_value}</div>'
                 return f'<div class="content">{return_value}</div>'
             elif msg.message_type == "user_message":

@@ -5,52 +5,39 @@ from typing import Callable, Dict, Generator, List, Optional, Union
 import requests
 
 import letta.utils
-from letta.constants import (
-    ADMIN_PREFIX,
-    BASE_MEMORY_TOOLS,
-    BASE_TOOLS,
-    DEFAULT_HUMAN,
-    DEFAULT_PERSONA,
-)
+from letta.constants import ADMIN_PREFIX, BASE_MEMORY_TOOLS, BASE_TOOLS, DEFAULT_HUMAN, DEFAULT_PERSONA, FUNCTION_RETURN_CHAR_LIMIT
 from letta.data_sources.connectors import DataConnector
 from letta.functions.functions import parse_source_code
-from letta.schemas.agent import AgentState, AgentType, CreateAgent, UpdateAgentState
+from letta.orm.errors import NoResultFound
+from letta.schemas.agent import AgentState, AgentType, CreateAgent, UpdateAgent
 from letta.schemas.block import Block, BlockUpdate, CreateBlock, Human, Persona
 from letta.schemas.embedding_config import EmbeddingConfig
 
 # new schemas
 from letta.schemas.enums import JobStatus, MessageRole
-from letta.schemas.file import FileMetadata
-from letta.schemas.job import Job
-from letta.schemas.letta_request import LettaRequest
-from letta.schemas.letta_response import LettaResponse, LettaStreamingResponse
-from letta.schemas.llm_config import LLMConfig
-from letta.schemas.memory import (
-    ArchivalMemorySummary,
-    ChatMemory,
-    CreateArchivalMemory,
-    Memory,
-    RecallMemorySummary,
-)
-from letta.schemas.message import Message, MessageCreate, UpdateMessage
-from letta.schemas.openai.chat_completions import ToolCall
-from letta.schemas.organization import Organization
-from letta.schemas.passage import Passage
-from letta.schemas.sandbox_config import (
-    E2BSandboxConfig,
-    LocalSandboxConfig,
-    SandboxConfig,
-    SandboxConfigCreate,
-    SandboxConfigUpdate,
+from letta.schemas.environment_variables import (
     SandboxEnvironmentVariable,
     SandboxEnvironmentVariableCreate,
     SandboxEnvironmentVariableUpdate,
 )
+from letta.schemas.file import FileMetadata
+from letta.schemas.job import Job
+from letta.schemas.letta_message import LettaMessage, LettaMessageUnion
+from letta.schemas.letta_request import LettaRequest, LettaStreamingRequest
+from letta.schemas.letta_response import LettaResponse, LettaStreamingResponse
+from letta.schemas.llm_config import LLMConfig
+from letta.schemas.memory import ArchivalMemorySummary, ChatMemory, CreateArchivalMemory, Memory, RecallMemorySummary
+from letta.schemas.message import Message, MessageCreate, MessageUpdate
+from letta.schemas.openai.chat_completion_response import UsageStatistics
+from letta.schemas.openai.chat_completions import ToolCall
+from letta.schemas.organization import Organization
+from letta.schemas.passage import Passage
+from letta.schemas.run import Run
+from letta.schemas.sandbox_config import E2BSandboxConfig, LocalSandboxConfig, SandboxConfig, SandboxConfigCreate, SandboxConfigUpdate
 from letta.schemas.source import Source, SourceCreate, SourceUpdate
 from letta.schemas.tool import Tool, ToolCreate, ToolUpdate
 from letta.schemas.tool_rule import BaseToolRule
 from letta.server.rest_api.interface import QueuingInterface
-from letta.server.server import SyncServer
 from letta.utils import get_human_text, get_persona_text
 
 
@@ -64,10 +51,8 @@ def create_client(base_url: Optional[str] = None, token: Optional[str] = None):
 class AbstractClient(object):
     def __init__(
         self,
-        auto_save: bool = False,
         debug: bool = False,
     ):
-        self.auto_save = auto_save
         self.debug = debug
 
     def agent_exists(self, agent_id: Optional[str] = None, agent_name: Optional[str] = None) -> bool:
@@ -80,8 +65,9 @@ class AbstractClient(object):
         embedding_config: Optional[EmbeddingConfig] = None,
         llm_config: Optional[LLMConfig] = None,
         memory=None,
+        block_ids: Optional[List[str]] = None,
         system: Optional[str] = None,
-        tools: Optional[List[str]] = None,
+        tool_ids: Optional[List[str]] = None,
         tool_rules: Optional[List[BaseToolRule]] = None,
         include_base_tools: Optional[bool] = True,
         metadata: Optional[Dict] = {"human:": DEFAULT_HUMAN, "persona": DEFAULT_PERSONA},
@@ -96,7 +82,7 @@ class AbstractClient(object):
         name: Optional[str] = None,
         description: Optional[str] = None,
         system: Optional[str] = None,
-        tools: Optional[List[str]] = None,
+        tool_ids: Optional[List[str]] = None,
         metadata: Optional[Dict] = None,
         llm_config: Optional[LLMConfig] = None,
         embedding_config: Optional[EmbeddingConfig] = None,
@@ -200,18 +186,12 @@ class AbstractClient(object):
         raise NotImplementedError
 
     def create_tool(
-        self,
-        func,
-        name: Optional[str] = None,
-        tags: Optional[List[str]] = None,
+        self, func, name: Optional[str] = None, tags: Optional[List[str]] = None, return_char_limit: int = FUNCTION_RETURN_CHAR_LIMIT
     ) -> Tool:
         raise NotImplementedError
 
     def create_or_update_tool(
-        self,
-        func,
-        name: Optional[str] = None,
-        tags: Optional[List[str]] = None,
+        self, func, name: Optional[str] = None, tags: Optional[List[str]] = None, return_char_limit: int = FUNCTION_RETURN_CHAR_LIMIT
     ) -> Tool:
         raise NotImplementedError
 
@@ -222,6 +202,7 @@ class AbstractClient(object):
         description: Optional[str] = None,
         func: Optional[Callable] = None,
         tags: Optional[List[str]] = None,
+        return_char_limit: int = FUNCTION_RETURN_CHAR_LIMIT,
     ) -> Tool:
         raise NotImplementedError
 
@@ -237,7 +218,7 @@ class AbstractClient(object):
     def get_tool_id(self, name: str) -> Optional[str]:
         raise NotImplementedError
 
-    def add_base_tools(self) -> List[Tool]:
+    def upsert_base_tools(self) -> List[Tool]:
         raise NotImplementedError
 
     def load_data(self, connector: DataConnector, source_name: str):
@@ -429,34 +410,56 @@ class RESTClient(AbstractClient):
     def __init__(
         self,
         base_url: str,
-        token: str,
+        token: Optional[str] = None,
+        password: Optional[str] = None,
         api_prefix: str = "v1",
         debug: bool = False,
         default_llm_config: Optional[LLMConfig] = None,
         default_embedding_config: Optional[EmbeddingConfig] = None,
+        headers: Optional[Dict] = None,
     ):
         """
         Initializes a new instance of Client class.
 
         Args:
-            auto_save (bool): Whether to automatically save changes.
             user_id (str): The user ID.
             debug (bool): Whether to print debug information.
-            default
+            default_llm_config (Optional[LLMConfig]): The default LLM configuration.
+            default_embedding_config (Optional[EmbeddingConfig]): The default embedding configuration.
+            headers (Optional[Dict]): The additional headers for the REST API.
+            token (Optional[str]): The token for the REST API when using managed letta service.
+            password (Optional[str]): The password for the REST API when using self hosted letta service.
         """
         super().__init__(debug=debug)
         self.base_url = base_url
         self.api_prefix = api_prefix
-        self.headers = {"accept": "application/json", "authorization": f"Bearer {token}"}
+        if token:
+            self.headers = {"accept": "application/json", "Authorization": f"Bearer {token}"}
+        elif password:
+            self.headers = {"accept": "application/json", "X-BARE-PASSWORD": f"password {password}"}
+        else:
+            self.headers = {"accept": "application/json"}
+        if headers:
+            self.headers.update(headers)
         self._default_llm_config = default_llm_config
         self._default_embedding_config = default_embedding_config
 
-    def list_agents(self, tags: Optional[List[str]] = None) -> List[AgentState]:
-        params = {}
+    def list_agents(
+        self, tags: Optional[List[str]] = None, query_text: Optional[str] = None, limit: int = 50, cursor: Optional[str] = None
+    ) -> List[AgentState]:
+        params = {"limit": limit}
         if tags:
             params["tags"] = tags
+            params["match_all_tags"] = False
+
+        if query_text:
+            params["query_text"] = query_text
+
+        if cursor:
+            params["cursor"] = cursor
 
         response = requests.get(f"{self.base_url}/{self.api_prefix}/agents", headers=self.headers, params=params)
+        print(f"\nLIST RESPONSE\n{response.json()}\n")
         return [AgentState(**agent) for agent in response.json()]
 
     def agent_exists(self, agent_id: str) -> bool:
@@ -490,10 +493,12 @@ class RESTClient(AbstractClient):
         llm_config: LLMConfig = None,
         # memory
         memory: Memory = ChatMemory(human=get_human_text(DEFAULT_HUMAN), persona=get_persona_text(DEFAULT_PERSONA)),
+        # Existing blocks
+        block_ids: Optional[List[str]] = None,
         # system
         system: Optional[str] = None,
         # tools
-        tools: Optional[List[str]] = None,
+        tool_ids: Optional[List[str]] = None,
         tool_rules: Optional[List[BaseToolRule]] = None,
         include_base_tools: Optional[bool] = True,
         # metadata
@@ -510,7 +515,7 @@ class RESTClient(AbstractClient):
             llm_config (LLMConfig): LLM configuration
             memory (Memory): Memory configuration
             system (str): System configuration
-            tools (List[str]): List of tools
+            tool_ids (List[str]): List of tool ids
             include_base_tools (bool): Include base tools
             metadata (Dict): Metadata
             description (str): Description
@@ -519,31 +524,55 @@ class RESTClient(AbstractClient):
         Returns:
             agent_state (AgentState): State of the created agent
         """
+        tool_ids = tool_ids or []
         tool_names = []
-        if tools:
-            tool_names += tools
         if include_base_tools:
             tool_names += BASE_TOOLS
             tool_names += BASE_MEMORY_TOOLS
+        tool_ids += [self.get_tool_id(tool_name=name) for name in tool_names]
 
         assert embedding_config or self._default_embedding_config, f"Embedding config must be provided"
         assert llm_config or self._default_llm_config, f"LLM config must be provided"
 
+        # TODO: This should not happen here, we need to have clear separation between create/add blocks
+        # TODO: This is insanely hacky and a result of allowing free-floating blocks
+        # TODO: When we create the block, it gets it's own block ID
+        blocks = []
+        for block in memory.get_blocks():
+            blocks.append(
+                self.create_block(
+                    label=block.label,
+                    value=block.value,
+                    limit=block.limit,
+                    template_name=block.template_name,
+                    is_template=block.is_template,
+                )
+            )
+        memory.blocks = blocks
+        block_ids = block_ids or []
+
         # create agent
-        request = CreateAgent(
-            name=name,
-            description=description,
-            metadata_=metadata,
-            memory_blocks=[],
-            tools=tool_names,
-            tool_rules=tool_rules,
-            system=system,
-            agent_type=agent_type,
-            llm_config=llm_config if llm_config else self._default_llm_config,
-            embedding_config=embedding_config if embedding_config else self._default_embedding_config,
-            initial_message_sequence=initial_message_sequence,
-            tags=tags,
-        )
+        create_params = {
+            "description": description,
+            "metadata_": metadata,
+            "memory_blocks": [],
+            "block_ids": [b.id for b in memory.get_blocks()] + block_ids,
+            "tool_ids": tool_ids,
+            "tool_rules": tool_rules,
+            "system": system,
+            "agent_type": agent_type,
+            "llm_config": llm_config if llm_config else self._default_llm_config,
+            "embedding_config": embedding_config if embedding_config else self._default_embedding_config,
+            "initial_message_sequence": initial_message_sequence,
+            "tags": tags,
+            "include_base_tools": include_base_tools,
+        }
+
+        # Only add name if it's not None
+        if name is not None:
+            create_params["name"] = name
+
+        request = CreateAgent(**create_params)
 
         # Use model_dump_json() instead of model_dump()
         # If we use model_dump(), the datetime objects will not be serialized correctly
@@ -560,14 +589,6 @@ class RESTClient(AbstractClient):
         # gather agent state
         agent_state = AgentState(**response.json())
 
-        # create and link blocks
-        for block in memory.get_blocks():
-            if not self.get_block(block.id):
-                # note: this does not update existing blocks
-                # WARNING: this resets the block ID - this method is a hack for backwards compat, should eventually use CreateBlock not Memory
-                block = self.create_block(label=block.label, value=block.value, limit=block.limit)
-            self.link_agent_memory_block(agent_id=agent_state.id, block_id=block.id)
-
         # refresh and return agent
         return self.get_agent(agent_state.id)
 
@@ -581,8 +602,7 @@ class RESTClient(AbstractClient):
         tool_calls: Optional[List[ToolCall]] = None,
         tool_call_id: Optional[str] = None,
     ) -> Message:
-        request = UpdateMessage(
-            id=message_id,
+        request = MessageUpdate(
             role=role,
             text=text,
             name=name,
@@ -602,7 +622,7 @@ class RESTClient(AbstractClient):
         name: Optional[str] = None,
         description: Optional[str] = None,
         system: Optional[str] = None,
-        tool_names: Optional[List[str]] = None,
+        tool_ids: Optional[List[str]] = None,
         metadata: Optional[Dict] = None,
         llm_config: Optional[LLMConfig] = None,
         embedding_config: Optional[EmbeddingConfig] = None,
@@ -617,7 +637,7 @@ class RESTClient(AbstractClient):
             name (str): Name of the agent
             description (str): Description of the agent
             system (str): System configuration
-            tool_names (List[str]): List of tools
+            tool_ids (List[str]): List of tools
             metadata (Dict): Metadata
             llm_config (LLMConfig): LLM configuration
             embedding_config (EmbeddingConfig): Embedding configuration
@@ -627,11 +647,10 @@ class RESTClient(AbstractClient):
         Returns:
             agent_state (AgentState): State of the updated agent
         """
-        request = UpdateAgentState(
-            id=agent_id,
+        request = UpdateAgent(
             name=name,
             system=system,
-            tool_names=tool_names,
+            tool_ids=tool_ids,
             tags=tags,
             description=description,
             metadata_=metadata,
@@ -742,7 +761,8 @@ class RESTClient(AbstractClient):
         agents = [AgentState(**agent) for agent in response.json()]
         if len(agents) == 0:
             return None
-        assert len(agents) == 1, f"Multiple agents with the same name: {agents}"
+        agents = [agents[0]]  # TODO: @matt monkeypatched
+        assert len(agents) == 1, f"Multiple agents with the same name: {[(agents.name, agents.id) for agents in agents]}"
         return agents[0].id
 
     # memory
@@ -956,12 +976,13 @@ class RESTClient(AbstractClient):
         # TODO: figure out how to handle stream_steps and stream_tokens
 
         # When streaming steps is True, stream_tokens must be False
-        request = LettaRequest(messages=messages)
         if stream_tokens or stream_steps:
             from letta.client.streaming import _sse_post
 
+            request = LettaStreamingRequest(messages=messages, stream_tokens=stream_tokens)
             return _sse_post(f"{self.base_url}/{self.api_prefix}/agents/{agent_id}/messages/stream", request.model_dump(), self.headers)
         else:
+            request = LettaRequest(messages=messages)
             response = requests.post(
                 f"{self.base_url}/{self.api_prefix}/agents/{agent_id}/messages", json=request.model_dump(), headers=self.headers
             )
@@ -978,6 +999,39 @@ class RESTClient(AbstractClient):
             #     response.messages = messages
 
             return response
+
+    def send_message_async(
+        self,
+        message: str,
+        role: str,
+        agent_id: Optional[str] = None,
+        name: Optional[str] = None,
+    ) -> Run:
+        """
+        Send a message to an agent (async, returns a job)
+
+        Args:
+            message (str): Message to send
+            role (str): Role of the message
+            agent_id (str): ID of the agent
+            name(str): Name of the sender
+
+        Returns:
+            job (Job): Information about the async job
+        """
+        messages = [MessageCreate(role=MessageRole(role), text=message, name=name)]
+
+        request = LettaRequest(messages=messages)
+        response = requests.post(
+            f"{self.base_url}/{self.api_prefix}/agents/{agent_id}/messages/async",
+            json=request.model_dump(),
+            headers=self.headers,
+        )
+        if response.status_code != 200:
+            raise ValueError(f"Failed to send message: {response.text}")
+        response = Run(**response.json())
+
+        return response
 
     # humans / personas
 
@@ -997,9 +1051,10 @@ class RESTClient(AbstractClient):
     def create_block(
         self, label: str, value: str, limit: Optional[int] = None, template_name: Optional[str] = None, is_template: bool = False
     ) -> Block:  #
-        request = CreateBlock(label=label, value=value, template=is_template, template_name=template_name)
+        request_kwargs = dict(label=label, value=value, template=is_template, template_name=template_name)
         if limit:
-            request.limit = limit
+            request_kwargs["limit"] = limit
+        request = CreateBlock(**request_kwargs)
         response = requests.post(f"{self.base_url}/{self.api_prefix}/blocks", json=request.model_dump(), headers=self.headers)
         if response.status_code != 200:
             raise ValueError(f"Failed to create block: {response.text}")
@@ -1017,7 +1072,7 @@ class RESTClient(AbstractClient):
             raise ValueError(f"Failed to update block: {response.text}")
         return Block(**response.json())
 
-    def get_block(self, block_id: str) -> Block:
+    def get_block(self, block_id: str) -> Optional[Block]:
         response = requests.get(f"{self.base_url}/{self.api_prefix}/blocks/{block_id}", headers=self.headers)
         if response.status_code == 404:
             return None
@@ -1313,6 +1368,7 @@ class RESTClient(AbstractClient):
         Returns:
             source (Source): Created source
         """
+        assert embedding_config or self._default_embedding_config, f"Must specify embedding_config for source"
         source_create = SourceCreate(name=name, embedding_config=embedding_config or self._default_embedding_config)
         payload = source_create.model_dump()
         response = requests.post(f"{self.base_url}/{self.api_prefix}/sources", json=payload, headers=self.headers)
@@ -1414,7 +1470,7 @@ class RESTClient(AbstractClient):
             raise ValueError(f"Failed to get tool: {response.text}")
         return response.json()
 
-    def add_base_tools(self) -> List[Tool]:
+    def upsert_base_tools(self) -> List[Tool]:
         response = requests.post(f"{self.base_url}/{self.api_prefix}/tools/add-base-tools/", headers=self.headers)
         if response.status_code != 200:
             raise ValueError(f"Failed to add base tools: {response.text}")
@@ -1426,6 +1482,7 @@ class RESTClient(AbstractClient):
         func: Callable,
         name: Optional[str] = None,
         tags: Optional[List[str]] = None,
+        return_char_limit: int = FUNCTION_RETURN_CHAR_LIMIT,
     ) -> Tool:
         """
         Create a tool. This stores the source code of function on the server, so that the server can execute the function and generate an OpenAI JSON schemas for it when using with an agent.
@@ -1434,6 +1491,7 @@ class RESTClient(AbstractClient):
             func (callable): The function to create a tool for.
             name: (str): Name of the tool (must be unique per-user.)
             tags (Optional[List[str]], optional): Tags for the tool. Defaults to None.
+            return_char_limit (int): The character limit for the tool's return value. Defaults to FUNCTION_RETURN_CHAR_LIMIT.
 
         Returns:
             tool (Tool): The created tool.
@@ -1442,7 +1500,9 @@ class RESTClient(AbstractClient):
         source_type = "python"
 
         # call server function
-        request = ToolCreate(source_type=source_type, source_code=source_code, name=name, tags=tags)
+        request = ToolCreate(source_type=source_type, source_code=source_code, name=name, return_char_limit=return_char_limit)
+        if tags:
+            request.tags = tags
         response = requests.post(f"{self.base_url}/{self.api_prefix}/tools", json=request.model_dump(), headers=self.headers)
         if response.status_code != 200:
             raise ValueError(f"Failed to create tool: {response.text}")
@@ -1453,6 +1513,7 @@ class RESTClient(AbstractClient):
         func: Callable,
         name: Optional[str] = None,
         tags: Optional[List[str]] = None,
+        return_char_limit: int = FUNCTION_RETURN_CHAR_LIMIT,
     ) -> Tool:
         """
         Creates or updates a tool. This stores the source code of function on the server, so that the server can execute the function and generate an OpenAI JSON schemas for it when using with an agent.
@@ -1461,6 +1522,7 @@ class RESTClient(AbstractClient):
             func (callable): The function to create a tool for.
             name: (str): Name of the tool (must be unique per-user.)
             tags (Optional[List[str]], optional): Tags for the tool. Defaults to None.
+            return_char_limit (int): The character limit for the tool's return value. Defaults to FUNCTION_RETURN_CHAR_LIMIT.
 
         Returns:
             tool (Tool): The created tool.
@@ -1469,7 +1531,9 @@ class RESTClient(AbstractClient):
         source_type = "python"
 
         # call server function
-        request = ToolCreate(source_type=source_type, source_code=source_code, name=name, tags=tags)
+        request = ToolCreate(source_type=source_type, source_code=source_code, name=name, return_char_limit=return_char_limit)
+        if tags:
+            request.tags = tags
         response = requests.put(f"{self.base_url}/{self.api_prefix}/tools", json=request.model_dump(), headers=self.headers)
         if response.status_code != 200:
             raise ValueError(f"Failed to create tool: {response.text}")
@@ -1482,6 +1546,7 @@ class RESTClient(AbstractClient):
         description: Optional[str] = None,
         func: Optional[Callable] = None,
         tags: Optional[List[str]] = None,
+        return_char_limit: int = FUNCTION_RETURN_CHAR_LIMIT,
     ) -> Tool:
         """
         Update a tool with provided parameters (name, func, tags)
@@ -1491,6 +1556,7 @@ class RESTClient(AbstractClient):
             name (str): Name of the tool
             func (callable): Function to wrap in a tool
             tags (List[str]): Tags for the tool
+            return_char_limit (int): The character limit for the tool's return value. Defaults to FUNCTION_RETURN_CHAR_LIMIT.
 
         Returns:
             tool (Tool): Updated tool
@@ -1502,7 +1568,14 @@ class RESTClient(AbstractClient):
 
         source_type = "python"
 
-        request = ToolUpdate(description=description, source_type=source_type, source_code=source_code, tags=tags, name=name)
+        request = ToolUpdate(
+            description=description,
+            source_type=source_type,
+            source_code=source_code,
+            tags=tags,
+            name=name,
+            return_char_limit=return_char_limit,
+        )
         response = requests.patch(f"{self.base_url}/{self.api_prefix}/tools/{id}", json=request.model_dump(), headers=self.headers)
         if response.status_code != 200:
             raise ValueError(f"Failed to update tool: {response.text}")
@@ -1553,23 +1626,6 @@ class RESTClient(AbstractClient):
         elif response.status_code != 200:
             raise ValueError(f"Failed to get tool: {response.text}")
         return Tool(**response.json())
-
-    def get_tool_id(self, name: str) -> Optional[str]:
-        """
-        Get a tool ID by its name.
-
-        Args:
-            id (str): ID of the tool
-
-        Returns:
-            tool (Tool): Tool
-        """
-        response = requests.get(f"{self.base_url}/{self.api_prefix}/tools/name/{name}", headers=self.headers)
-        if response.status_code == 404:
-            return None
-        elif response.status_code != 200:
-            raise ValueError(f"Failed to get tool: {response.text}")
-        return response.json()
 
     def set_default_llm_config(self, llm_config: LLMConfig):
         """
@@ -1947,13 +2003,159 @@ class RESTClient(AbstractClient):
             raise ValueError(f"Failed to update block: {response.text}")
         return Block(**response.json())
 
+    def get_run_messages(
+        self,
+        run_id: str,
+        cursor: Optional[str] = None,
+        limit: Optional[int] = 100,
+        ascending: bool = True,
+        role: Optional[MessageRole] = None,
+    ) -> List[LettaMessageUnion]:
+        """
+        Get messages associated with a job with filtering options.
+
+        Args:
+            job_id: ID of the job
+            cursor: Cursor for pagination
+            limit: Maximum number of messages to return
+            ascending: Sort order by creation time
+            role: Filter by message role (user/assistant/system/tool)
+        Returns:
+            List of messages matching the filter criteria
+        """
+        params = {
+            "cursor": cursor,
+            "limit": limit,
+            "ascending": ascending,
+            "role": role,
+        }
+        # Remove None values
+        params = {k: v for k, v in params.items() if v is not None}
+
+        response = requests.get(f"{self.base_url}/{self.api_prefix}/runs/{run_id}/messages", params=params)
+        if response.status_code != 200:
+            raise ValueError(f"Failed to get run messages: {response.text}")
+        return [LettaMessage(**message) for message in response.json()]
+
+    def get_run_usage(
+        self,
+        run_id: str,
+    ) -> List[UsageStatistics]:
+        """
+        Get usage statistics associated with a job.
+
+        Args:
+            job_id (str): ID of the job
+
+        Returns:
+            List[UsageStatistics]: List of usage statistics associated with the job
+        """
+        response = requests.get(
+            f"{self.base_url}/{self.api_prefix}/runs/{run_id}/usage",
+            headers=self.headers,
+        )
+        if response.status_code != 200:
+            raise ValueError(f"Failed to get run usage statistics: {response.text}")
+        return [UsageStatistics(**stat) for stat in [response.json()]]
+
+    def get_run(self, run_id: str) -> Run:
+        """
+        Get a run by ID.
+
+        Args:
+            run_id (str): ID of the run
+
+        Returns:
+            run (Run): Run
+        """
+        response = requests.get(
+            f"{self.base_url}/{self.api_prefix}/runs/{run_id}",
+            headers=self.headers,
+        )
+        if response.status_code != 200:
+            raise ValueError(f"Failed to get run: {response.text}")
+        return Run(**response.json())
+
+    def delete_run(self, run_id: str) -> None:
+        """
+        Delete a run by ID.
+
+        Args:
+            run_id (str): ID of the run
+        """
+        response = requests.delete(
+            f"{self.base_url}/{self.api_prefix}/runs/{run_id}",
+            headers=self.headers,
+        )
+        if response.status_code != 200:
+            raise ValueError(f"Failed to delete run: {response.text}")
+
+    def list_runs(self) -> List[Run]:
+        """
+        List all runs.
+
+        Returns:
+            runs (List[Run]): List of runs
+        """
+        response = requests.get(
+            f"{self.base_url}/{self.api_prefix}/runs",
+            headers=self.headers,
+        )
+        if response.status_code != 200:
+            raise ValueError(f"Failed to list runs: {response.text}")
+        return [Run(**run) for run in response.json()]
+
+    def list_active_runs(self) -> List[Run]:
+        """
+        List all active runs.
+
+        Returns:
+            runs (List[Run]): List of active runs
+        """
+        response = requests.get(
+            f"{self.base_url}/{self.api_prefix}/runs/active",
+            headers=self.headers,
+        )
+        if response.status_code != 200:
+            raise ValueError(f"Failed to list active runs: {response.text}")
+        return [Run(**run) for run in response.json()]
+
+    def get_tags(
+        self,
+        cursor: Optional[str] = None,
+        limit: Optional[int] = None,
+        query_text: Optional[str] = None,
+    ) -> List[str]:
+        """
+        Get a list of all unique tags.
+
+        Args:
+            cursor: Optional cursor for pagination (last tag seen)
+            limit: Optional maximum number of tags to return
+            query_text: Optional text to filter tags
+
+        Returns:
+            List[str]: List of unique tags
+        """
+        params = {}
+        if cursor:
+            params["cursor"] = cursor
+        if limit:
+            params["limit"] = limit
+        if query_text:
+            params["query_text"] = query_text
+
+        response = requests.get(f"{self.base_url}/{self.api_prefix}/tags", headers=self.headers, params=params)
+        if response.status_code != 200:
+            raise ValueError(f"Failed to get tags: {response.text}")
+        return response.json()
+
 
 class LocalClient(AbstractClient):
     """
     A local client for Letta, which corresponds to a single user.
 
     Attributes:
-        auto_save (bool): Whether to automatically save changes.
         user_id (str): The user ID.
         debug (bool): Whether to print debug information.
         interface (QueuingInterface): The interface for the client.
@@ -1962,7 +2164,6 @@ class LocalClient(AbstractClient):
 
     def __init__(
         self,
-        auto_save: bool = False,
         user_id: Optional[str] = None,
         org_id: Optional[str] = None,
         debug: bool = False,
@@ -1973,11 +2174,11 @@ class LocalClient(AbstractClient):
         Initializes a new instance of Client class.
 
         Args:
-            auto_save (bool): Whether to automatically save changes.
             user_id (str): The user ID.
             debug (bool): Whether to print debug information.
         """
-        self.auto_save = auto_save
+
+        from letta.server.server import SyncServer
 
         # set logging levels
         letta.utils.DEBUG = debug
@@ -2003,14 +2204,16 @@ class LocalClient(AbstractClient):
             # get default user
             self.user_id = self.server.user_manager.DEFAULT_USER_ID
 
-        self.user = self.server.get_user_or_default(self.user_id)
+        self.user = self.server.user_manager.get_user_or_default(self.user_id)
         self.organization = self.server.get_organization_or_default(self.org_id)
 
     # agents
-    def list_agents(self, tags: Optional[List[str]] = None) -> List[AgentState]:
+    def list_agents(
+        self, query_text: Optional[str] = None, tags: Optional[List[str]] = None, limit: int = 100, cursor: Optional[str] = None
+    ) -> List[AgentState]:
         self.interface.clear()
 
-        return self.server.list_agents(user_id=self.user_id, tags=tags)
+        return self.server.agent_manager.list_agents(actor=self.user, tags=tags, query_text=query_text, limit=limit, cursor=cursor)
 
     def agent_exists(self, agent_id: Optional[str] = None, agent_name: Optional[str] = None) -> bool:
         """
@@ -2044,6 +2247,7 @@ class LocalClient(AbstractClient):
         llm_config: LLMConfig = None,
         # memory
         memory: Memory = ChatMemory(human=get_human_text(DEFAULT_HUMAN), persona=get_persona_text(DEFAULT_PERSONA)),
+        block_ids: Optional[List[str]] = None,
         # TODO: change to this when we are ready to migrate all the tests/examples (matches the REST API)
         # memory_blocks=[
         #    {"label": "human", "value": get_human_text(DEFAULT_HUMAN), "limit": 5000},
@@ -2052,9 +2256,10 @@ class LocalClient(AbstractClient):
         # system
         system: Optional[str] = None,
         # tools
-        tools: Optional[List[str]] = None,
+        tool_ids: Optional[List[str]] = None,
         tool_rules: Optional[List[BaseToolRule]] = None,
         include_base_tools: Optional[bool] = True,
+        include_multi_agent_tools: bool = False,
         # metadata
         metadata: Optional[Dict] = {"human:": DEFAULT_HUMAN, "persona": DEFAULT_PERSONA},
         description: Optional[str] = None,
@@ -2072,6 +2277,7 @@ class LocalClient(AbstractClient):
             tools (List[str]): List of tools
             tool_rules (Optional[List[BaseToolRule]]): List of tool rules
             include_base_tools (bool): Include base tools
+            include_multi_agent_tools (bool): Include multi agent tools
             metadata (Dict): Metadata
             description (str): Description
             tags (List[str]): Tags for filtering agents
@@ -2079,55 +2285,50 @@ class LocalClient(AbstractClient):
         Returns:
             agent_state (AgentState): State of the created agent
         """
-
-        if name and self.agent_exists(agent_name=name):
-            raise ValueError(f"Agent with name {name} already exists (user_id={self.user_id})")
-
         # construct list of tools
-        tool_names = []
-        if tools:
-            tool_names += tools
-        if include_base_tools:
-            tool_names += BASE_TOOLS
-            tool_names += BASE_MEMORY_TOOLS
+        tool_ids = tool_ids or []
 
         # check if default configs are provided
         assert embedding_config or self._default_embedding_config, f"Embedding config must be provided"
         assert llm_config or self._default_llm_config, f"LLM config must be provided"
 
+        # TODO: This should not happen here, we need to have clear separation between create/add blocks
+        for block in memory.get_blocks():
+            self.server.block_manager.create_or_update_block(block, actor=self.user)
+
+        # Also get any existing block_ids passed in
+        block_ids = block_ids or []
+
         # create agent
+        # Create the base parameters
+        create_params = {
+            "description": description,
+            "metadata_": metadata,
+            "memory_blocks": [],
+            "block_ids": [b.id for b in memory.get_blocks()] + block_ids,
+            "tool_ids": tool_ids,
+            "tool_rules": tool_rules,
+            "include_base_tools": include_base_tools,
+            "include_multi_agent_tools": include_multi_agent_tools,
+            "system": system,
+            "agent_type": agent_type,
+            "llm_config": llm_config if llm_config else self._default_llm_config,
+            "embedding_config": embedding_config if embedding_config else self._default_embedding_config,
+            "initial_message_sequence": initial_message_sequence,
+            "tags": tags,
+        }
+
+        # Only add name if it's not None
+        if name is not None:
+            create_params["name"] = name
+
         agent_state = self.server.create_agent(
-            CreateAgent(
-                name=name,
-                description=description,
-                metadata_=metadata,
-                # memory=memory,
-                memory_blocks=[],
-                # memory_blocks = memory.get_blocks(),
-                # memory_tools=memory_tools,
-                tools=tool_names,
-                tool_rules=tool_rules,
-                system=system,
-                agent_type=agent_type,
-                llm_config=llm_config if llm_config else self._default_llm_config,
-                embedding_config=embedding_config if embedding_config else self._default_embedding_config,
-                initial_message_sequence=initial_message_sequence,
-                tags=tags,
-            ),
+            CreateAgent(**create_params),
             actor=self.user,
         )
 
-        # TODO: remove when we fully migrate to block creation CreateAgent model
-        # Link additional blocks to the agent (block ids created on the client)
-        # This needs to happen since the create agent does not allow passing in blocks which have already been persisted and have an ID
-        # So we create the agent and then link the blocks afterwards
-        user = self.server.get_user_or_default(self.user_id)
-        for block in memory.get_blocks():
-            self.server.block_manager.create_or_update_block(block, actor=user)
-            self.server.link_block_to_agent_memory(user_id=self.user_id, agent_id=agent_state.id, block_id=block.id)
-
         # TODO: get full agent state
-        return self.server.get_agent(agent_state.id)
+        return self.server.agent_manager.get_agent_by_id(agent_state.id, actor=self.user)
 
     def update_message(
         self,
@@ -2141,14 +2342,15 @@ class LocalClient(AbstractClient):
     ) -> Message:
         message = self.server.update_agent_message(
             agent_id=agent_id,
-            request=UpdateMessage(
-                id=message_id,
+            message_id=message_id,
+            request=MessageUpdate(
                 role=role,
                 text=text,
                 name=name,
                 tool_calls=tool_calls,
                 tool_call_id=tool_call_id,
             ),
+            actor=self.user,
         )
         return message
 
@@ -2158,7 +2360,7 @@ class LocalClient(AbstractClient):
         name: Optional[str] = None,
         description: Optional[str] = None,
         system: Optional[str] = None,
-        tools: Optional[List[str]] = None,
+        tool_ids: Optional[List[str]] = None,
         tags: Optional[List[str]] = None,
         metadata: Optional[Dict] = None,
         llm_config: Optional[LLMConfig] = None,
@@ -2185,12 +2387,12 @@ class LocalClient(AbstractClient):
         """
         # TODO: add the abilitty to reset linked block_ids
         self.interface.clear()
-        agent_state = self.server.update_agent(
-            UpdateAgentState(
-                id=agent_id,
+        agent_state = self.server.agent_manager.update_agent(
+            agent_id,
+            UpdateAgent(
                 name=name,
                 system=system,
-                tool_names=tools,
+                tool_ids=tool_ids,
                 tags=tags,
                 description=description,
                 metadata_=metadata,
@@ -2213,7 +2415,7 @@ class LocalClient(AbstractClient):
             List[Tool]: A list of Tool objs
         """
         self.interface.clear()
-        return self.server.get_tools_from_agent(agent_id=agent_id, user_id=self.user_id)
+        return self.server.agent_manager.get_agent_by_id(agent_id=agent_id, actor=self.user).tools
 
     def add_tool_to_agent(self, agent_id: str, tool_id: str):
         """
@@ -2227,7 +2429,7 @@ class LocalClient(AbstractClient):
             agent_state (AgentState): State of the updated agent
         """
         self.interface.clear()
-        agent_state = self.server.add_tool_to_agent(agent_id=agent_id, tool_id=tool_id, user_id=self.user_id)
+        agent_state = self.server.agent_manager.attach_tool(agent_id=agent_id, tool_id=tool_id, actor=self.user)
         return agent_state
 
     def remove_tool_from_agent(self, agent_id: str, tool_id: str):
@@ -2242,7 +2444,7 @@ class LocalClient(AbstractClient):
             agent_state (AgentState): State of the updated agent
         """
         self.interface.clear()
-        agent_state = self.server.remove_tool_from_agent(agent_id=agent_id, tool_id=tool_id, user_id=self.user_id)
+        agent_state = self.server.agent_manager.detach_tool(agent_id=agent_id, tool_id=tool_id, actor=self.user)
         return agent_state
 
     def rename_agent(self, agent_id: str, new_name: str):
@@ -2262,7 +2464,7 @@ class LocalClient(AbstractClient):
         Args:
             agent_id (str): ID of the agent to delete
         """
-        self.server.delete_agent(user_id=self.user_id, agent_id=agent_id)
+        self.server.agent_manager.delete_agent(agent_id=agent_id, actor=self.user)
 
     def get_agent_by_name(self, agent_name: str) -> AgentState:
         """
@@ -2275,7 +2477,7 @@ class LocalClient(AbstractClient):
             agent_state (AgentState): State of the agent
         """
         self.interface.clear()
-        return self.server.get_agent_state(agent_name=agent_name, user_id=self.user_id, agent_id=None)
+        return self.server.agent_manager.get_agent_by_name(agent_name=agent_name, actor=self.user)
 
     def get_agent(self, agent_id: str) -> AgentState:
         """
@@ -2287,9 +2489,8 @@ class LocalClient(AbstractClient):
         Returns:
             agent_state (AgentState): State representation of the agent
         """
-        # TODO: include agent_name
         self.interface.clear()
-        return self.server.get_agent_state(user_id=self.user_id, agent_id=agent_id)
+        return self.server.agent_manager.get_agent_by_id(agent_id=agent_id, actor=self.user)
 
     def get_agent_id(self, agent_name: str) -> Optional[str]:
         """
@@ -2304,7 +2505,12 @@ class LocalClient(AbstractClient):
 
         self.interface.clear()
         assert agent_name, f"Agent name must be provided"
-        return self.server.get_agent_id(name=agent_name, user_id=self.user_id)
+
+        # TODO: Refactor this futher to not have downstream users expect Optionals - this should just error
+        try:
+            return self.server.agent_manager.get_agent_by_name(agent_name=agent_name, actor=self.user).id
+        except NoResultFound:
+            return None
 
     # memory
     def get_in_context_memory(self, agent_id: str) -> Memory:
@@ -2317,7 +2523,7 @@ class LocalClient(AbstractClient):
         Returns:
             memory (Memory): In-context memory of the agent
         """
-        memory = self.server.get_agent_memory(agent_id=agent_id)
+        memory = self.server.get_agent_memory(agent_id=agent_id, actor=self.user)
         return memory
 
     def get_core_memory(self, agent_id: str) -> Memory:
@@ -2335,7 +2541,7 @@ class LocalClient(AbstractClient):
 
         """
         # TODO: implement this (not sure what it should look like)
-        memory = self.server.update_agent_core_memory(user_id=self.user_id, agent_id=agent_id, label=section, value=value)
+        memory = self.server.update_agent_core_memory(agent_id=agent_id, label=section, value=value, actor=self.user)
         return memory
 
     def get_archival_memory_summary(self, agent_id: str) -> ArchivalMemorySummary:
@@ -2349,7 +2555,7 @@ class LocalClient(AbstractClient):
             summary (ArchivalMemorySummary): Summary of the archival memory
 
         """
-        return self.server.get_archival_memory_summary(agent_id=agent_id)
+        return self.server.get_archival_memory_summary(agent_id=agent_id, actor=self.user)
 
     def get_recall_memory_summary(self, agent_id: str) -> RecallMemorySummary:
         """
@@ -2361,7 +2567,7 @@ class LocalClient(AbstractClient):
         Returns:
             summary (RecallMemorySummary): Summary of the recall memory
         """
-        return self.server.get_recall_memory_summary(agent_id=agent_id)
+        return self.server.get_recall_memory_summary(agent_id=agent_id, actor=self.user)
 
     def get_in_context_messages(self, agent_id: str) -> List[Message]:
         """
@@ -2373,7 +2579,7 @@ class LocalClient(AbstractClient):
         Returns:
             messages (List[Message]): List of in-context messages
         """
-        return self.server.get_in_context_messages(agent_id=agent_id)
+        return self.server.agent_manager.get_in_context_messages(agent_id=agent_id, actor=self.user)
 
     # agent interactions
 
@@ -2393,11 +2599,7 @@ class LocalClient(AbstractClient):
             response (LettaResponse): Response from the agent
         """
         self.interface.clear()
-        usage = self.server.send_messages(user_id=self.user_id, agent_id=agent_id, messages=messages)
-
-        # auto-save
-        if self.auto_save:
-            self.save()
+        usage = self.server.send_messages(actor=self.user, agent_id=agent_id, messages=messages)
 
         # format messages
         return LettaResponse(messages=messages, usage=usage)
@@ -2437,14 +2639,10 @@ class LocalClient(AbstractClient):
         self.interface.clear()
 
         usage = self.server.send_messages(
-            user_id=self.user_id,
+            actor=self.user,
             agent_id=agent_id,
             messages=[MessageCreate(role=MessageRole(role), text=message, name=name)],
         )
-
-        # auto-save
-        if self.auto_save:
-            self.save()
 
         ## TODO: need to make sure date/timestamp is propely passed
         ## TODO: update self.interface.to_list() to return actual Message objects
@@ -2494,15 +2692,8 @@ class LocalClient(AbstractClient):
         self.interface.clear()
         usage = self.server.run_command(user_id=self.user_id, agent_id=agent_id, command=command)
 
-        # auto-save
-        if self.auto_save:
-            self.save()
-
         # NOTE: messages/usage may be empty, depending on the command
         return LettaResponse(messages=self.interface.to_list(), usage=usage)
-
-    def save(self):
-        self.server.save_agents()
 
     # archival memory
 
@@ -2678,7 +2869,7 @@ class LocalClient(AbstractClient):
         return self.server.tool_manager.create_or_update_tool(pydantic_tool=Tool(**tool_create.model_dump()), actor=self.user)
 
     def load_composio_tool(self, action: "ActionType") -> Tool:
-        tool_create = ToolCreate.from_composio(action=action)
+        tool_create = ToolCreate.from_composio(action_name=action.name)
         return self.server.tool_manager.create_or_update_tool(pydantic_tool=Tool(**tool_create.model_dump()), actor=self.user)
 
     def create_tool(
@@ -2687,6 +2878,7 @@ class LocalClient(AbstractClient):
         name: Optional[str] = None,
         tags: Optional[List[str]] = None,
         description: Optional[str] = None,
+        return_char_limit: int = FUNCTION_RETURN_CHAR_LIMIT,
     ) -> Tool:
         """
         Create a tool. This stores the source code of function on the server, so that the server can execute the function and generate an OpenAI JSON schemas for it when using with an agent.
@@ -2696,6 +2888,7 @@ class LocalClient(AbstractClient):
             name: (str): Name of the tool (must be unique per-user.)
             tags (Optional[List[str]], optional): Tags for the tool. Defaults to None.
             description (str, optional): The description.
+            return_char_limit (int): The character limit for the tool's return value. Defaults to FUNCTION_RETURN_CHAR_LIMIT.
 
         Returns:
             tool (Tool): The created tool.
@@ -2716,6 +2909,7 @@ class LocalClient(AbstractClient):
                 name=name,
                 tags=tags,
                 description=description,
+                return_char_limit=return_char_limit,
             ),
             actor=self.user,
         )
@@ -2726,6 +2920,7 @@ class LocalClient(AbstractClient):
         name: Optional[str] = None,
         tags: Optional[List[str]] = None,
         description: Optional[str] = None,
+        return_char_limit: int = FUNCTION_RETURN_CHAR_LIMIT,
     ) -> Tool:
         """
         Creates or updates a tool. This stores the source code of function on the server, so that the server can execute the function and generate an OpenAI JSON schemas for it when using with an agent.
@@ -2735,6 +2930,7 @@ class LocalClient(AbstractClient):
             name: (str): Name of the tool (must be unique per-user.)
             tags (Optional[List[str]], optional): Tags for the tool. Defaults to None.
             description (str, optional): The description.
+            return_char_limit (int): The character limit for the tool's return value. Defaults to FUNCTION_RETURN_CHAR_LIMIT.
 
         Returns:
             tool (Tool): The created tool.
@@ -2752,6 +2948,7 @@ class LocalClient(AbstractClient):
                 name=name,
                 tags=tags,
                 description=description,
+                return_char_limit=return_char_limit,
             ),
             actor=self.user,
         )
@@ -2763,6 +2960,7 @@ class LocalClient(AbstractClient):
         description: Optional[str] = None,
         func: Optional[callable] = None,
         tags: Optional[List[str]] = None,
+        return_char_limit: int = FUNCTION_RETURN_CHAR_LIMIT,
     ) -> Tool:
         """
         Update a tool with provided parameters (name, func, tags)
@@ -2772,6 +2970,7 @@ class LocalClient(AbstractClient):
             name (str): Name of the tool
             func (callable): Function to wrap in a tool
             tags (List[str]): Tags for the tool
+            return_char_limit (int): The character limit for the tool's return value. Defaults to FUNCTION_RETURN_CHAR_LIMIT.
 
         Returns:
             tool (Tool): Updated tool
@@ -2782,6 +2981,7 @@ class LocalClient(AbstractClient):
             "tags": tags,
             "name": name,
             "description": description,
+            "return_char_limit": return_char_limit,
         }
 
         # Filter out any None values from the dictionary
@@ -2830,7 +3030,7 @@ class LocalClient(AbstractClient):
             id (str): ID of the tool (`None` if not found)
         """
         tool = self.server.tool_manager.get_tool_by_name(tool_name=name, actor=self.user)
-        return tool.id
+        return tool.id if tool else None
 
     def load_data(self, connector: DataConnector, source_name: str):
         """
@@ -2854,27 +3054,31 @@ class LocalClient(AbstractClient):
         Returns:
             job (Job): Data loading job including job status and metadata
         """
-        metadata_ = {"type": "embedding", "filename": filename, "source_id": source_id}
-        job = self.server.create_job(user_id=self.user_id, metadata=metadata_)
+        job = Job(
+            user_id=self.user_id,
+            status=JobStatus.created,
+            metadata_={"type": "embedding", "filename": filename, "source_id": source_id},
+        )
+        job = self.server.job_manager.create_job(pydantic_job=job, actor=self.user)
 
         # TODO: implement blocking vs. non-blocking
-        self.server.load_file_to_source(source_id=source_id, file_path=filename, job_id=job.id)
+        self.server.load_file_to_source(source_id=source_id, file_path=filename, job_id=job.id, actor=self.user)
         return job
 
     def delete_file_from_source(self, source_id: str, file_id: str):
         self.server.source_manager.delete_file(file_id, actor=self.user)
 
     def get_job(self, job_id: str):
-        return self.server.get_job(job_id=job_id)
+        return self.server.job_manager.get_job_by_id(job_id=job_id, actor=self.user)
 
     def delete_job(self, job_id: str):
-        return self.server.delete_job(job_id)
+        return self.server.job_manager.delete_job(job_id=job_id, actor=self.user)
 
     def list_jobs(self):
-        return self.server.list_jobs(user_id=self.user_id)
+        return self.server.job_manager.list_jobs(actor=self.user)
 
     def list_active_jobs(self):
-        return self.server.list_active_jobs(user_id=self.user_id)
+        return self.server.job_manager.list_jobs(actor=self.user, statuses=[JobStatus.created, JobStatus.running])
 
     def create_source(self, name: str, embedding_config: Optional[EmbeddingConfig] = None) -> Source:
         """
@@ -2886,6 +3090,7 @@ class LocalClient(AbstractClient):
         Returns:
             source (Source): Created source
         """
+        assert embedding_config or self._default_embedding_config, f"Must specify embedding_config for source"
         source = Source(
             name=name, embedding_config=embedding_config or self._default_embedding_config, organization_id=self.user.organization_id
         )
@@ -2935,7 +3140,11 @@ class LocalClient(AbstractClient):
             source_id (str): ID of the source
             source_name (str): Name of the source
         """
-        self.server.attach_source_to_agent(source_id=source_id, source_name=source_name, agent_id=agent_id, user_id=self.user_id)
+        if source_name:
+            source = self.server.source_manager.get_source_by_id(source_id=source_id, actor=self.user)
+            source_id = source.id
+
+        self.server.agent_manager.attach_source(source_id=source_id, agent_id=agent_id, actor=self.user)
 
     def detach_source_from_agent(self, agent_id: str, source_id: Optional[str] = None, source_name: Optional[str] = None):
         """
@@ -2947,7 +3156,10 @@ class LocalClient(AbstractClient):
         Returns:
             source (Source): Detached source
         """
-        return self.server.detach_source_from_agent(source_id=source_id, source_name=source_name, agent_id=agent_id, user_id=self.user_id)
+        if source_name:
+            source = self.server.source_manager.get_source_by_id(source_id=source_id, actor=self.user)
+            source_id = source.id
+        return self.server.agent_manager.detach_source(agent_id=agent_id, source_id=source_id, actor=self.user)
 
     def list_sources(self) -> List[Source]:
         """
@@ -2969,7 +3181,7 @@ class LocalClient(AbstractClient):
         Returns:
             sources (List[Source]): List of sources
         """
-        return self.server.list_attached_sources(agent_id=agent_id)
+        return self.server.agent_manager.list_attached_sources(agent_id=agent_id, actor=self.user)
 
     def list_files_from_source(self, source_id: str, limit: int = 1000, cursor: Optional[str] = None) -> List[FileMetadata]:
         """
@@ -3013,7 +3225,7 @@ class LocalClient(AbstractClient):
         Returns:
             passages (List[Passage]): List of inserted passages
         """
-        return self.server.insert_archival_memory(user_id=self.user_id, agent_id=agent_id, memory_contents=memory)
+        return self.server.insert_archival_memory(agent_id=agent_id, memory_contents=memory, actor=self.user)
 
     def delete_archival_memory(self, agent_id: str, memory_id: str):
         """
@@ -3023,7 +3235,7 @@ class LocalClient(AbstractClient):
             agent_id (str): ID of the agent
             memory_id (str): ID of the memory
         """
-        self.server.delete_archival_memory(user_id=self.user_id, agent_id=agent_id, memory_id=memory_id)
+        self.server.delete_archival_memory(memory_id=memory_id, actor=self.user)
 
     def get_archival_memory(
         self, agent_id: str, before: Optional[str] = None, after: Optional[str] = None, limit: Optional[int] = 1000
@@ -3041,20 +3253,17 @@ class LocalClient(AbstractClient):
             passages (List[Passage]): List of passages
         """
 
-        return self.server.get_agent_archival_cursor(user_id=self.user_id, agent_id=agent_id, before=before, after=after, limit=limit)
+        return self.server.get_agent_archival_cursor(user_id=self.user_id, agent_id=agent_id, limit=limit)
 
     # recall memory
 
-    def get_messages(
-        self, agent_id: str, before: Optional[str] = None, after: Optional[str] = None, limit: Optional[int] = 1000
-    ) -> List[Message]:
+    def get_messages(self, agent_id: str, cursor: Optional[str] = None, limit: Optional[int] = 1000) -> List[Message]:
         """
         Get messages from an agent with pagination.
 
         Args:
             agent_id (str): ID of the agent
-            before (str): Get messages before a certain time
-            after (str): Get messages after a certain time
+            cursor (str): Get messages after a certain time
             limit (int): Limit number of messages
 
         Returns:
@@ -3065,8 +3274,7 @@ class LocalClient(AbstractClient):
         return self.server.get_agent_recall_cursor(
             user_id=self.user_id,
             agent_id=agent_id,
-            before=before,
-            after=after,
+            before=cursor,
             limit=limit,
             reverse=True,
         )
@@ -3286,8 +3494,8 @@ class LocalClient(AbstractClient):
         block_req = Block(**create_block.model_dump())
         block = self.server.block_manager.create_or_update_block(actor=self.user, block=block_req)
         # Link the block to the agent
-        updated_memory = self.server.link_block_to_agent_memory(user_id=self.user_id, agent_id=agent_id, block_id=block.id)
-        return updated_memory
+        agent = self.server.agent_manager.attach_block(agent_id=agent_id, block_id=block.id, actor=self.user)
+        return agent.memory
 
     def link_agent_memory_block(self, agent_id: str, block_id: str) -> Memory:
         """
@@ -3300,7 +3508,7 @@ class LocalClient(AbstractClient):
         Returns:
             memory (Memory): The updated memory
         """
-        return self.server.link_block_to_agent_memory(user_id=self.user_id, agent_id=agent_id, block_id=block_id)
+        return self.server.agent_manager.attach_block(agent_id=agent_id, block_id=block_id, actor=self.user)
 
     def remove_agent_memory_block(self, agent_id: str, block_label: str) -> Memory:
         """
@@ -3313,7 +3521,7 @@ class LocalClient(AbstractClient):
         Returns:
             memory (Memory): The updated memory
         """
-        return self.server.unlink_block_from_agent_memory(user_id=self.user_id, agent_id=agent_id, block_label=block_label)
+        return self.server.agent_manager.detach_block_with_label(agent_id=agent_id, block_label=block_label, actor=self.user)
 
     def get_agent_memory_blocks(self, agent_id: str) -> List[Block]:
         """
@@ -3325,8 +3533,8 @@ class LocalClient(AbstractClient):
         Returns:
             blocks (List[Block]): The blocks in the agent's core memory
         """
-        block_ids = self.server.blocks_agents_manager.list_block_ids_for_agent(agent_id=agent_id)
-        return [self.server.block_manager.get_block_by_id(block_id, actor=self.user) for block_id in block_ids]
+        agent = self.server.agent_manager.get_agent_by_id(agent_id=agent_id, actor=self.user)
+        return agent.memory.blocks
 
     def get_agent_memory_block(self, agent_id: str, label: str) -> Block:
         """
@@ -3339,8 +3547,7 @@ class LocalClient(AbstractClient):
         Returns:
             block (Block): The block corresponding to the label
         """
-        block_id = self.server.blocks_agents_manager.get_block_id_for_label(agent_id=agent_id, block_label=label)
-        return self.server.block_manager.get_block_by_id(block_id, actor=self.user)
+        return self.server.agent_manager.get_block_with_label(agent_id=agent_id, block_label=label, actor=self.user)
 
     def update_agent_memory_block(
         self,
@@ -3396,3 +3603,104 @@ class LocalClient(AbstractClient):
         if label:
             data["label"] = label
         return self.server.block_manager.update_block(block_id, actor=self.user, block_update=BlockUpdate(**data))
+
+    def get_run_messages(
+        self,
+        run_id: str,
+        cursor: Optional[str] = None,
+        limit: Optional[int] = 100,
+        ascending: bool = True,
+        role: Optional[MessageRole] = None,
+    ) -> List[LettaMessageUnion]:
+        """
+        Get messages associated with a job with filtering options.
+
+        Args:
+            run_id: ID of the run
+            cursor: Cursor for pagination
+            limit: Maximum number of messages to return
+            ascending: Sort order by creation time
+            role: Filter by message role (user/assistant/system/tool)
+
+        Returns:
+            List of messages matching the filter criteria
+        """
+        params = {
+            "cursor": cursor,
+            "limit": limit,
+            "ascending": ascending,
+            "role": role,
+        }
+        return self.server.job_manager.get_run_messages_cursor(run_id=run_id, actor=self.user, **params)
+
+    def get_run_usage(
+        self,
+        run_id: str,
+    ) -> List[UsageStatistics]:
+        """
+        Get usage statistics associated with a job.
+
+        Args:
+            run_id (str): ID of the run
+
+        Returns:
+            List[UsageStatistics]: List of usage statistics associated with the run
+        """
+        usage = self.server.job_manager.get_job_usage(job_id=run_id, actor=self.user)
+        return [
+            UsageStatistics(completion_tokens=stat.completion_tokens, prompt_tokens=stat.prompt_tokens, total_tokens=stat.total_tokens)
+            for stat in usage
+        ]
+
+    def get_run(self, run_id: str) -> Run:
+        """
+        Get a run by ID.
+
+        Args:
+            run_id (str): ID of the run
+
+        Returns:
+            run (Run): Run
+        """
+        return self.server.job_manager.get_job_by_id(job_id=run_id, actor=self.user)
+
+    def delete_run(self, run_id: str) -> None:
+        """
+        Delete a run by ID.
+
+        Args:
+            run_id (str): ID of the run
+        """
+        return self.server.job_manager.delete_job_by_id(job_id=run_id, actor=self.user)
+
+    def list_runs(self) -> List[Run]:
+        """
+        List all runs.
+
+        Returns:
+            runs (List[Run]): List of runs
+        """
+        return self.server.job_manager.list_jobs(actor=self.user, job_type=JobType.RUN)
+
+    def list_active_runs(self) -> List[Run]:
+        """
+        List all active runs.
+
+        Returns:
+            runs (List[Run]): List of active runs
+        """
+        return self.server.job_manager.list_jobs(actor=self.user, job_type=JobType.RUN, statuses=[JobStatus.created, JobStatus.running])
+
+    def get_tags(
+        self,
+        cursor: str = None,
+        limit: int = 100,
+        query_text: str = None,
+    ) -> List[str]:
+        """
+        Get all tags.
+
+        Returns:
+            tags (List[str]): List of tags
+        """
+        return self.server.agent_manager.list_tags(actor=self.user, cursor=cursor, limit=limit, query_text=query_text)

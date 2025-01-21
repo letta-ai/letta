@@ -1,24 +1,36 @@
+import json
 from typing import Any, Optional, Union
 
 import humps
+from composio.constants import DEFAULT_ENTITY_ID
 from pydantic import BaseModel
 
+from letta.constants import COMPOSIO_ENTITY_ENV_VAR_KEY, DEFAULT_MESSAGE_TOOL, DEFAULT_MESSAGE_TOOL_KWARG
+from letta.schemas.enums import MessageRole
+from letta.schemas.letta_message import AssistantMessage, ReasoningMessage, ToolCallMessage
+from letta.schemas.letta_response import LettaResponse
+from letta.schemas.message import MessageCreate
 
-def generate_composio_tool_wrapper(action: "ActionType") -> tuple[str, str]:
+
+def generate_composio_tool_wrapper(action_name: str) -> tuple[str, str]:
     # Instantiate the object
-    tool_instantiation_str = f"composio_toolset.get_tools(actions=[Action.{str(action)}])[0]"
+    tool_instantiation_str = f"composio_toolset.get_tools(actions=['{action_name}'])[0]"
 
     # Generate func name
-    func_name = action.name.lower()
+    func_name = action_name.lower()
 
     wrapper_function_str = f"""
 def {func_name}(**kwargs):
-    from composio import Action, App, Tag
     from composio_langchain import ComposioToolSet
+    import os
 
-    composio_toolset = ComposioToolSet()
-    tool = {tool_instantiation_str}
-    return tool.func(**kwargs)['data']
+    entity_id = os.getenv('{COMPOSIO_ENTITY_ENV_VAR_KEY}', '{DEFAULT_ENTITY_ID}')
+    composio_toolset = ComposioToolSet(entity_id=entity_id)
+    response = composio_toolset.execute_action(action='{action_name}', params=kwargs)
+
+    if response["error"]:
+        raise RuntimeError(response["error"])
+    return response["data"]
     """
 
     # Compile safety check
@@ -199,3 +211,102 @@ def generate_import_code(module_attr_map: Optional[dict]):
         code_lines.append(f"    # Access the {attr} from the module")
         code_lines.append(f"    {attr} = getattr({module_name}, '{attr}')")
     return "\n".join(code_lines)
+
+
+def parse_letta_response_for_assistant_message(
+    letta_response: LettaResponse,
+    assistant_message_tool_name: str = DEFAULT_MESSAGE_TOOL,
+    assistant_message_tool_kwarg: str = DEFAULT_MESSAGE_TOOL_KWARG,
+) -> Optional[str]:
+    reasoning_message = ""
+    for m in letta_response.messages:
+        if isinstance(m, AssistantMessage):
+            return m.assistant_message
+        elif isinstance(m, ToolCallMessage) and m.tool_call.name == assistant_message_tool_name:
+            try:
+                return json.loads(m.tool_call.arguments)[assistant_message_tool_kwarg]
+            except Exception:  # TODO: Make this more specific
+                continue
+        elif isinstance(m, ReasoningMessage):
+            # This is not ideal, but we would like to return something rather than nothing
+            reasoning_message += f"{m.reasoning}\n"
+
+    return None
+
+
+import asyncio
+from random import uniform
+from typing import Optional
+
+
+async def async_send_message_with_retries(
+    server,
+    sender_agent: "Agent",
+    target_agent_id: str,
+    message_text: str,
+    max_retries: int,
+    timeout: int,
+    logging_prefix: Optional[str] = None,
+) -> str:
+    """
+    Shared helper coroutine to send a message to an agent with retries and a timeout.
+
+    Args:
+        server: The Letta server instance (from get_letta_server()).
+        sender_agent (Agent): The agent initiating the send action.
+        target_agent_id (str): The ID of the agent to send the message to.
+        message_text (str): The text to send as the user message.
+        max_retries (int): Maximum number of retries for the request.
+        timeout (int): Maximum time to wait for a response (in seconds).
+        logging_prefix (str): A prefix to append to logging
+    Returns:
+        str: The response or an error message.
+    """
+    logging_prefix = logging_prefix or "[async_send_message_with_retries]"
+    for attempt in range(1, max_retries + 1):
+        try:
+            messages = [MessageCreate(role=MessageRole.user, text=message_text, name=sender_agent.agent_state.name)]
+            # Wrap in a timeout
+            response = await asyncio.wait_for(
+                server.send_message_to_agent(
+                    agent_id=target_agent_id,
+                    actor=sender_agent.user,
+                    messages=messages,
+                    stream_steps=False,
+                    stream_tokens=False,
+                    use_assistant_message=True,
+                    assistant_message_tool_name=DEFAULT_MESSAGE_TOOL,
+                    assistant_message_tool_kwarg=DEFAULT_MESSAGE_TOOL_KWARG,
+                ),
+                timeout=timeout,
+            )
+
+            # Extract assistant message
+            assistant_message = parse_letta_response_for_assistant_message(
+                response,
+                assistant_message_tool_name=DEFAULT_MESSAGE_TOOL,
+                assistant_message_tool_kwarg=DEFAULT_MESSAGE_TOOL_KWARG,
+            )
+            if assistant_message:
+                msg = f"Agent {target_agent_id} said '{assistant_message}'"
+                sender_agent.logger.info(f"{logging_prefix} - {msg}")
+                return msg
+            else:
+                msg = f"(No response from agent {target_agent_id})"
+                sender_agent.logger.info(f"{logging_prefix} - {msg}")
+                return msg
+        except asyncio.TimeoutError:
+            error_msg = f"(Timeout on attempt {attempt}/{max_retries} for agent {target_agent_id})"
+            sender_agent.logger.warning(f"{logging_prefix} - {error_msg}")
+        except Exception as e:
+            error_msg = f"(Error on attempt {attempt}/{max_retries} for agent {target_agent_id}: {e})"
+            sender_agent.logger.warning(f"{logging_prefix} - {error_msg}")
+
+        # Exponential backoff before retrying
+        if attempt < max_retries:
+            backoff = uniform(0.5, 2) * (2**attempt)
+            sender_agent.logger.warning(f"{logging_prefix} - Retrying the agent to agent send_message...sleeping for {backoff}")
+            await asyncio.sleep(backoff)
+        else:
+            sender_agent.logger.error(f"{logging_prefix} - Fatal error during agent to agent send_message: {error_msg}")
+            return error_msg

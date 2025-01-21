@@ -1,8 +1,7 @@
 from letta.errors import LLMJSONParsingError
 from letta.local_llm.json_parser import clean_json
-from letta.local_llm.llm_chat_completion_wrappers.wrapper_base import (
-    LLMChatCompletionWrapper,
-)
+from letta.local_llm.llm_chat_completion_wrappers.wrapper_base import LLMChatCompletionWrapper
+from letta.schemas.enums import MessageRole
 from letta.utils import json_dumps, json_loads
 
 PREFIX_HINT = """# Reminders:
@@ -74,10 +73,7 @@ class ChatMLInnerMonologueWrapper(LLMChatCompletionWrapper):
         func_str += f"\n  description: {schema['description']}"
         func_str += f"\n  params:"
         if add_inner_thoughts:
-            from letta.local_llm.constants import (
-                INNER_THOUGHTS_KWARG,
-                INNER_THOUGHTS_KWARG_DESCRIPTION,
-            )
+            from letta.local_llm.constants import INNER_THOUGHTS_KWARG, INNER_THOUGHTS_KWARG_DESCRIPTION
 
             func_str += f"\n    {INNER_THOUGHTS_KWARG}: {INNER_THOUGHTS_KWARG_DESCRIPTION}"
         for param_k, param_v in schema["parameters"]["properties"].items():
@@ -208,7 +204,9 @@ class ChatMLInnerMonologueWrapper(LLMChatCompletionWrapper):
 
         # Last are the user/assistant messages
         for message in messages[1:]:
-            assert message["role"] in ["user", "assistant", "function", "tool"], message
+            # check that message["role"] is a valid option for MessageRole
+            # TODO: this shouldn't be necessary if we use pydantic in the future
+            assert message["role"] in [role.value for role in MessageRole]
 
             if message["role"] == "user":
                 # Support for AutoGen naming of agents
@@ -228,6 +226,15 @@ class ChatMLInnerMonologueWrapper(LLMChatCompletionWrapper):
                 # Support for AutoGen naming of agents
                 role_str = message["name"].strip().lower() if (self.allow_custom_roles and "name" in message) else message["role"]
                 msg_str = self._compile_assistant_message(message)
+
+                prompt += f"\n<|im_start|>{role_str}\n{msg_str.strip()}<|im_end|>"
+
+            elif message["role"] == "system":
+
+                role_str = "system"
+                msg_str = self._compile_system_message(
+                    system_message=message["content"], functions=functions, function_documentation=function_documentation
+                )
 
                 prompt += f"\n<|im_start|>{role_str}\n{msg_str.strip()}<|im_end|>"
 

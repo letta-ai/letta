@@ -3,14 +3,17 @@ from typing import Optional
 
 from pydantic import Field
 
+from letta.orm.enums import JobType
 from letta.schemas.enums import JobStatus
-from letta.schemas.letta_base import LettaBase
-from letta.utils import get_utc_time
+from letta.schemas.letta_base import OrmMetadataBase
 
 
-class JobBase(LettaBase):
+class JobBase(OrmMetadataBase):
     __id_prefix__ = "job"
+    status: JobStatus = Field(default=JobStatus.created, description="The status of the job.")
+    completed_at: Optional[datetime] = Field(None, description="The unix timestamp of when the job was completed.")
     metadata_: Optional[dict] = Field(None, description="The metadata of the job.")
+    job_type: JobType = Field(default=JobType.JOB, description="The type of the job.")
 
 
 class Job(JobBase):
@@ -27,12 +30,11 @@ class Job(JobBase):
     """
 
     id: str = JobBase.generate_id_field()
-    status: JobStatus = Field(default=JobStatus.created, description="The status of the job.")
-    created_at: datetime = Field(default_factory=get_utc_time, description="The unix timestamp of when the job was created.")
-    completed_at: Optional[datetime] = Field(None, description="The unix timestamp of when the job was completed.")
-    user_id: str = Field(..., description="The unique identifier of the user associated with the job.")
+    user_id: Optional[str] = Field(None, description="The unique identifier of the user associated with the job.")
 
 
 class JobUpdate(JobBase):
-    id: str = Field(..., description="The unique identifier of the job.")
-    status: Optional[JobStatus] = Field(..., description="The status of the job.")
+    status: Optional[JobStatus] = Field(None, description="The status of the job.")
+
+    class Config:
+        extra = "ignore"  # Ignores extra fields

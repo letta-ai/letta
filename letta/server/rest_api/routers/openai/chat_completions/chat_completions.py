@@ -7,21 +7,13 @@ from fastapi import APIRouter, Body, Depends, Header, HTTPException
 from fastapi.responses import StreamingResponse
 
 from letta.constants import DEFAULT_MESSAGE_TOOL, DEFAULT_MESSAGE_TOOL_KWARG
-from letta.schemas.enums import MessageRole
-from letta.schemas.letta_message import FunctionCall, LettaMessage
+from letta.schemas.letta_message import LettaMessage, ToolCall
 from letta.schemas.message import MessageCreate
 from letta.schemas.openai.chat_completion_request import ChatCompletionRequest
-from letta.schemas.openai.chat_completion_response import (
-    ChatCompletionResponse,
-    Choice,
-    Message,
-    UsageStatistics,
-)
+from letta.schemas.openai.chat_completion_response import ChatCompletionResponse, Choice, Message, UsageStatistics
 
 # TODO this belongs in a controller!
-from letta.server.rest_api.routers.v1.agents import send_message_to_agent
-from letta.server.rest_api.utils import get_letta_server, sse_async_generator
-from letta.server.rest_api.voice_interface import VoiceStreamingServerInterface
+from letta.server.rest_api.utils import get_letta_server
 
 if TYPE_CHECKING:
     pass
@@ -42,7 +34,7 @@ async def create_chat_completion(
     The bearer token will be used to identify the user.
     The 'user' field in the completion_request should be set to the agent ID.
     """
-    actor = server.get_user_or_default(user_id=user_id)
+    actor = server.user_manager.get_user_or_default(user_id=user_id)
 
     agent_id = completion_request.user
     if agent_id is None:
@@ -63,11 +55,10 @@ async def create_chat_completion(
         # TODO(charles) support multimodal parts
         assert isinstance(input_message.content, str)
 
-        return await send_message_to_agent(
-            server=server,
+        return await server.send_message_to_agent(
             agent_id=agent_id,
-            user_id=actor.id,
-            messages=[MessageCreate(role=input_message.role, text=input_message.content)],
+            actor=actor,
+            message=input_message.content,  # TODO: This is broken
             # Turn streaming ON
             stream_steps=True,
             stream_tokens=True,
@@ -81,12 +72,10 @@ async def create_chat_completion(
         # TODO(charles) support multimodal parts
         assert isinstance(input_message.content, str)
 
-        response_messages = await send_message_to_agent(
-            server=server,
+        response_messages = await server.send_message_to_agent(
             agent_id=agent_id,
-            user_id=actor.id,
-            role=MessageRole(input_message.role),
-            message=input_message.content,
+            actor=actor,
+            message=input_message.content,  # TODO: This is broken
             # Turn streaming OFF
             stream_steps=False,
             stream_tokens=False,
@@ -99,7 +88,7 @@ async def create_chat_completion(
         created_at = None
         for letta_msg in response_messages.messages:
             assert isinstance(letta_msg, LettaMessage)
-            if isinstance(letta_msg, FunctionCall):
+            if isinstance(letta_msg, ToolCall):
                 if letta_msg.name and letta_msg.name == "send_message":
                     try:
                         letta_function_call_args = json.loads(letta_msg.arguments)

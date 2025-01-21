@@ -1,12 +1,13 @@
 import hashlib
 import json
 from enum import Enum
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Literal, Optional, Union
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 
 from letta.schemas.agent import AgentState
 from letta.schemas.letta_base import LettaBase, OrmMetadataBase
+from letta.settings import tool_settings
 
 
 # Sandbox Config
@@ -19,11 +20,18 @@ class SandboxRunResult(BaseModel):
     func_return: Optional[Any] = Field(None, description="The function return object")
     agent_state: Optional[AgentState] = Field(None, description="The agent state")
     stdout: Optional[List[str]] = Field(None, description="Captured stdout (e.g. prints, logs) from the function invocation")
+    stderr: Optional[List[str]] = Field(None, description="Captured stderr from the function invocation")
+    status: Literal["success", "error"] = Field(..., description="The status of the tool execution and return object")
     sandbox_config_fingerprint: str = Field(None, description="The fingerprint of the config for the sandbox")
 
 
 class LocalSandboxConfig(BaseModel):
     sandbox_dir: str = Field(..., description="Directory for the sandbox environment.")
+    use_venv: bool = Field(False, description="Whether or not to use the venv, or run directly in the same run loop.")
+    venv_name: str = Field(
+        "venv",
+        description="The name for the venv in the sandbox directory. We first search for an existing venv with this name, otherwise, we make it from the requirements.txt.",
+    )
 
     @property
     def type(self) -> "SandboxType":
@@ -38,6 +46,16 @@ class E2BSandboxConfig(BaseModel):
     @property
     def type(self) -> "SandboxType":
         return SandboxType.E2B
+
+    @model_validator(mode="before")
+    @classmethod
+    def set_default_template(cls, data: dict):
+        """
+        Assign a default template value if the template field is not provided.
+        """
+        if data.get("template") is None:
+            data["template"] = tool_settings.e2b_sandbox_template_id
+        return data
 
 
 class SandboxConfigBase(OrmMetadataBase):
@@ -84,31 +102,3 @@ class SandboxConfigUpdate(LettaBase):
     """Pydantic model for updating SandboxConfig fields."""
 
     config: Union[LocalSandboxConfig, E2BSandboxConfig] = Field(None, description="The JSON configuration data for the sandbox.")
-
-
-# Environment Variable
-class SandboxEnvironmentVariableBase(OrmMetadataBase):
-    __id_prefix__ = "sandbox-env"
-
-
-class SandboxEnvironmentVariable(SandboxEnvironmentVariableBase):
-    id: str = SandboxEnvironmentVariableBase.generate_id_field()
-    key: str = Field(..., description="The name of the environment variable.")
-    value: str = Field(..., description="The value of the environment variable.")
-    description: Optional[str] = Field(None, description="An optional description of the environment variable.")
-    sandbox_config_id: str = Field(..., description="The ID of the sandbox config this environment variable belongs to.")
-    organization_id: Optional[str] = Field(None, description="The ID of the organization this environment variable belongs to.")
-
-
-class SandboxEnvironmentVariableCreate(LettaBase):
-    key: str = Field(..., description="The name of the environment variable.")
-    value: str = Field(..., description="The value of the environment variable.")
-    description: Optional[str] = Field(None, description="An optional description of the environment variable.")
-
-
-class SandboxEnvironmentVariableUpdate(LettaBase):
-    """Pydantic model for updating SandboxEnvironmentVariable fields."""
-
-    key: Optional[str] = Field(None, description="The name of the environment variable.")
-    value: Optional[str] = Field(None, description="The value of the environment variable.")
-    description: Optional[str] = Field(None, description="An optional description of the environment variable.")

@@ -1,11 +1,14 @@
-from letta import EmbeddingConfig, LLMConfig, create_client
-from letta.schemas.tool_rule import TerminalToolRule
+from letta_client import CreateBlock, Letta, MessageCreate
+from letta_client.types import TerminalToolRule
 
-client = create_client()
-# set automatic defaults for LLM/embedding config
-client.set_default_llm_config(LLMConfig.default_config(model_name="gpt-4"))
-client.set_default_embedding_config(EmbeddingConfig.default_config(model_name="text-embedding-ada-002"))
+"""
+Make sure you run the Letta server before running this example.
+```
+letta server
+```
+"""
 
+client = Letta(base_url="http://localhost:8283")
 
 # define a function with a docstring
 def roll_d20() -> str:
@@ -30,42 +33,78 @@ def roll_d20() -> str:
 
 
 # create a tool from the function
-tool = client.create_or_update_tool(roll_d20)
+tool = client.tools.upsert_from_function(func=roll_d20, name="roll_d20")
 print(f"Created tool with name {tool.name}")
 
 # create a new agent
-agent_state = client.create_agent(
+agent_state = client.agents.create(
+    memory_blocks=[
+        CreateBlock(
+            label="human",
+            value="Name: Sarah",
+        ),
+    ],
+    # set automatic defaults for LLM/embedding config
+    llm="openai/gpt-4",
+    embedding="openai/text-embedding-ada-002",
     # create the agent with an additional tool
-    tools=[tool.name],
-    # add tool rules that terminate execution after specific tools
+    tool_ids=[tool.id],
     tool_rules=[
         # exit after roll_d20 is called
         TerminalToolRule(tool_name=tool.name),
         # exit after send_message is called (default behavior)
         TerminalToolRule(tool_name="send_message"),
-    ],
+    ]
 )
-print(f"Created agent with name {agent_state.name} with tools {agent_state.tool_names}")
+print(f"Created agent with name {agent_state.name} with tools {[t.name for t in agent_state.tools]}")
 
 # Message an agent
-response = client.send_message(agent_id=agent_state.id, role="user", message="roll a dice")
+response = client.agents.messages.send(
+    agent_id=agent_state.id, 
+    messages=[
+        MessageCreate(
+            role="user",
+            text="roll a dice",
+        )
+    ],
+)
 print("Usage", response.usage)
 print("Agent messages", response.messages)
 
 # remove a tool from the agent
-client.remove_tool_from_agent(agent_id=agent_state.id, tool_id=tool.id)
+client.agents.tools.remove(agent_id=agent_state.id, tool_id=tool.id)
 
 # add a tool to the agent
-client.add_tool_to_agent(agent_id=agent_state.id, tool_id=tool.id)
+client.agents.tools.add(agent_id=agent_state.id, tool_id=tool.id)
 
-client.delete_agent(agent_id=agent_state.id)
+client.agents.delete(agent_id=agent_state.id)
 
 # create an agent with only a subset of default tools
-agent_state = client.create_agent(include_base_tools=False, tools=[tool.name, "send_message"])
+send_message_tool = client.tools.get_by_name(tool_name="send_message")
+agent_state = client.agents.create(
+    memory_blocks=[
+        CreateBlock(
+            label="human",
+            value="username: sarah",
+        ),
+    ],
+    llm="openai/gpt-4",
+    embedding="openai/text-embedding-ada-002",
+    include_base_tools=False, 
+    tool_ids=[tool.id, send_message_tool],
+)
 
 # message the agent to search archival memory (will be unable to do so)
-response = client.send_message(agent_id=agent_state.id, role="user", message="search your archival memory")
+client.agents.messages.send(
+    agent_id=agent_state.id,
+    messages=[
+        MessageCreate(
+            role="user",
+            text="search your archival memory",
+        )
+    ],
+)
 print("Usage", response.usage)
 print("Agent messages", response.messages)
 
-client.delete_agent(agent_id=agent_state.id)
+client.agents.delete(agent_id=agent_state.id)

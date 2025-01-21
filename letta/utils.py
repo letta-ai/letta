@@ -15,7 +15,7 @@ import uuid
 from contextlib import contextmanager
 from datetime import datetime, timedelta, timezone
 from functools import wraps
-from typing import List, Union, _GenericAlias, get_type_hints
+from typing import List, Union, _GenericAlias, get_args, get_origin, get_type_hints
 from urllib.parse import urljoin, urlparse
 
 import demjson3 as demjson
@@ -28,7 +28,7 @@ from letta.constants import (
     CLI_WARNING_PREFIX,
     CORE_MEMORY_HUMAN_CHAR_LIMIT,
     CORE_MEMORY_PERSONA_CHAR_LIMIT,
-    FUNCTION_RETURN_CHAR_LIMIT,
+    ERROR_MESSAGE_PREFIX,
     LETTA_DIR,
     MAX_FILENAME_LENGTH,
     TOOL_CALL_ID_MAX_LEN,
@@ -529,17 +529,32 @@ def enforce_types(func):
         # Pair each argument with its corresponding type hint
         args_with_hints = dict(zip(arg_names[1:], args[1:]))  # Skipping 'self'
 
+        # Function to check if a value matches a given type hint
+        def matches_type(value, hint):
+            origin = get_origin(hint)
+            args = get_args(hint)
+
+            if origin is Union:  # Handle Union types (including Optional)
+                return any(matches_type(value, arg) for arg in args)
+            elif origin is list and isinstance(value, list):  # Handle List[T]
+                element_type = args[0] if args else None
+                return all(isinstance(v, element_type) for v in value) if element_type else True
+            elif origin:  # Handle other generics like Dict, Tuple, etc.
+                return isinstance(value, origin)
+            else:  # Handle non-generic types
+                return isinstance(value, hint)
+
         # Check types of arguments
         for arg_name, arg_value in args_with_hints.items():
             hint = hints.get(arg_name)
-            if hint and not isinstance(arg_value, hint) and not (is_optional_type(hint) and arg_value is None):
-                raise ValueError(f"Argument {arg_name} does not match type {hint}")
+            if hint and not matches_type(arg_value, hint):
+                raise ValueError(f"Argument {arg_name} does not match type {hint}; is {arg_value}")
 
         # Check types of keyword arguments
         for arg_name, arg_value in kwargs.items():
             hint = hints.get(arg_name)
-            if hint and not isinstance(arg_value, hint) and not (is_optional_type(hint) and arg_value is None):
-                raise ValueError(f"Argument {arg_name} does not match type {hint}")
+            if hint and not matches_type(arg_value, hint):
+                raise ValueError(f"Argument {arg_name} does not match type {hint}; is {arg_value}")
 
         return func(*args, **kwargs)
 
@@ -890,8 +905,8 @@ def parse_json(string) -> dict:
         raise e
 
 
-def validate_function_response(function_response_string: any, strict: bool = False, truncate: bool = True) -> str:
-    """Check to make sure that a function used by Letta returned a valid response
+def validate_function_response(function_response_string: any, return_char_limit: int, strict: bool = False, truncate: bool = True) -> str:
+    """Check to make sure that a function used by Letta returned a valid response. Truncates to return_char_limit if necessary.
 
     Responses need to be strings (or None) that fall under a certain text count limit.
     """
@@ -927,11 +942,11 @@ def validate_function_response(function_response_string: any, strict: bool = Fal
 
     # Now check the length and make sure it doesn't go over the limit
     # TODO we should change this to a max token limit that's variable based on tokens remaining (or context-window)
-    if truncate and len(function_response_string) > FUNCTION_RETURN_CHAR_LIMIT:
+    if truncate and len(function_response_string) > return_char_limit:
         print(
-            f"{CLI_WARNING_PREFIX}function return was over limit ({len(function_response_string)} > {FUNCTION_RETURN_CHAR_LIMIT}) and was truncated"
+            f"{CLI_WARNING_PREFIX}function return was over limit ({len(function_response_string)} > {return_char_limit}) and was truncated"
         )
-        function_response_string = f"{function_response_string[:FUNCTION_RETURN_CHAR_LIMIT]}... [NOTE: function output was truncated since it exceeded the character limit ({len(function_response_string)} > {FUNCTION_RETURN_CHAR_LIMIT})]"
+        function_response_string = f"{function_response_string[:return_char_limit]}... [NOTE: function output was truncated since it exceeded the character limit ({len(function_response_string)} > {return_char_limit})]"
 
     return function_response_string
 
@@ -1013,13 +1028,6 @@ def get_persona_text(name: str, enforce_limit=True):
             return persona_text
 
     raise ValueError(f"Persona {name}.txt not found")
-
-
-def get_human_text(name: str):
-    for file_path in list_human_files():
-        file = os.path.basename(file_path)
-        if f"{name}.txt" == file or name == file:
-            return open(file_path, "r", encoding="utf-8").read().strip()
 
 
 def get_schema_diff(schema_a, schema_b):
@@ -1110,3 +1118,12 @@ def sanitize_filename(filename: str) -> str:
 
     # Return the sanitized filename
     return sanitized_filename
+
+
+def get_friendly_error_msg(function_name: str, exception_name: str, exception_message: str):
+    from letta.constants import MAX_ERROR_MESSAGE_CHAR_LIMIT
+
+    error_msg = f"{ERROR_MESSAGE_PREFIX} executing function {function_name}: {exception_name}: {exception_message}"
+    if len(error_msg) > MAX_ERROR_MESSAGE_CHAR_LIMIT:
+        error_msg = error_msg[:MAX_ERROR_MESSAGE_CHAR_LIMIT]
+    return error_msg
