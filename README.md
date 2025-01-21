@@ -9,7 +9,7 @@
 <div align="center">
 <h1>Letta (previously MemGPT)</h1>
 
-**☄️ New release: Letta Agent Development Environment (_read more [here](#-access-the-letta-ade-agent-development-environment)_) ☄️**
+**☄️ New release: Letta Agent Development Environment (_read more [here](#-access-the-ade-agent-development-environment)_) ☄️**
 
 <p align="center">
   <picture>
@@ -23,7 +23,7 @@
 
 <h3>
 
-[Homepage](https://letta.com) // [Documentation](https://docs.letta.com) // [ADE](https://app.letta.com) // [Letta Cloud](https://forms.letta.com/early-access)
+[Homepage](https://letta.com) // [Documentation](https://docs.letta.com) // [ADE](https://docs.letta.com/agent-development-environment) // [Letta Cloud](https://forms.letta.com/early-access)
 
 </h3>
 
@@ -80,12 +80,12 @@ docker run \
 
 Once the Letta server is running, you can access it via port `8283` (e.g. sending REST API requests to `http://localhost:8283/v1`). You can also connect your server to the Letta ADE to access and manage your agents in a web interface.
 
-### 👾 Access the [Letta ADE (Agent Development Environment)](https://app.letta.com)
+### 👾 Access the ADE (Agent Development Environment)
 
 > [!NOTE]
-> The Letta ADE is a graphical user interface for creating, deploying, interacting and observing with your Letta agents.
->
-> For example, if you're running a Letta server to power an end-user application (such as a customer support chatbot), you can use the ADE to test, debug, and observe the agents in your server. You can also use the ADE as a general chat interface to interact with your Letta agents.
+> For a guided tour of the ADE, watch our [ADE walkthrough on YouTube](https://www.youtube.com/watch?v=OzSCFR0Lp5s), or read our [blog post](https://www.letta.com/blog/introducing-the-agent-development-environment) and [developer docs](https://docs.letta.com/agent-development-environment).
+
+The Letta ADE is a graphical user interface for creating, deploying, interacting and observing with your Letta agents. For example, if you're running a Letta server to power an end-user application (such as a customer support chatbot), you can use the ADE to test, debug, and observe the agents in your server. You can also use the ADE as a general chat interface to interact with your Letta agents.
 
 <p align="center">
   <picture>
