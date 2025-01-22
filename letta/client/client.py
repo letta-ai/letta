@@ -806,10 +806,10 @@ class RESTClient(AbstractClient):
             summary (ArchivalMemorySummary): Summary of the archival memory
 
         """
-        response = requests.get(f"{self.base_url}/{self.api_prefix}/agents/{agent_id}/memory/archival", headers=self.headers)
+        response = requests.get(f"{self.base_url}/{self.api_prefix}/agents/{agent_id}/context", headers=self.headers)
         if response.status_code != 200:
             raise ValueError(f"Failed to get archival memory summary: {response.text}")
-        return ArchivalMemorySummary(**response.json())
+        return ArchivalMemorySummary(size=response.json().get("num_archival_memory", 0))
 
     def get_recall_memory_summary(self, agent_id: str) -> RecallMemorySummary:
         """
@@ -821,10 +821,10 @@ class RESTClient(AbstractClient):
         Returns:
             summary (RecallMemorySummary): Summary of the recall memory
         """
-        response = requests.get(f"{self.base_url}/{self.api_prefix}/agents/{agent_id}/memory/recall", headers=self.headers)
+        response = requests.get(f"{self.base_url}/{self.api_prefix}/agents/{agent_id}/context", headers=self.headers)
         if response.status_code != 200:
             raise ValueError(f"Failed to get recall memory summary: {response.text}")
-        return RecallMemorySummary(**response.json())
+        return RecallMemorySummary(size=response.json().get("num_recall_memory", 0))
 
     def get_in_context_messages(self, agent_id: str) -> List[Message]:
         """
@@ -836,10 +836,10 @@ class RESTClient(AbstractClient):
         Returns:
             messages (List[Message]): List of in-context messages
         """
-        response = requests.get(f"{self.base_url}/{self.api_prefix}/agents/{agent_id}/memory/messages", headers=self.headers)
+        response = requests.get(f"{self.base_url}/{self.api_prefix}/agents/{agent_id}/context", headers=self.headers)
         if response.status_code != 200:
-            raise ValueError(f"Failed to get in-context messages: {response.text}")
-        return [Message(**message) for message in response.json()]
+            raise ValueError(f"Failed to get recall memory summary: {response.text}")
+        return [Message(**message) for message in response.json().get("messages", "")]
 
     # agent interactions
 

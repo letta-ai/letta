@@ -14,7 +14,7 @@ from letta.schemas.job import JobStatus, JobUpdate
 from letta.schemas.letta_message import LettaMessageUnion
 from letta.schemas.letta_request import LettaRequest, LettaStreamingRequest
 from letta.schemas.letta_response import LettaResponse
-from letta.schemas.memory import ArchivalMemorySummary, ContextWindowOverview, CreateArchivalMemory, Memory, RecallMemorySummary
+from letta.schemas.memory import ContextWindowOverview, CreateArchivalMemory, Memory
 from letta.schemas.message import Message, MessageUpdate
 from letta.schemas.passage import Passage
 from letta.schemas.run import Run
@@ -212,19 +212,6 @@ def get_agent_sources(
     return server.agent_manager.list_attached_sources(agent_id=agent_id, actor=actor)
 
 
-@router.get("/{agent_id}/memory/messages", response_model=List[Message], operation_id="list_agent_in_context_messages")
-def get_agent_in_context_messages(
-    agent_id: str,
-    server: "SyncServer" = Depends(get_letta_server),
-    user_id: Optional[str] = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
-):
-    """
-    Retrieve the messages in the context of a specific agent.
-    """
-    actor = server.user_manager.get_user_or_default(user_id=user_id)
-    return server.agent_manager.get_in_context_messages(agent_id=agent_id, actor=actor)
-
-
 # TODO: remove? can also get with agent blocks
 @router.get("/{agent_id}/memory", response_model=Memory, operation_id="get_agent_memory")
 def get_agent_memory(
@@ -339,33 +326,6 @@ def update_agent_memory_block(
     server.agent_manager.rebuild_system_prompt(agent_id=agent_id, actor=actor, force=True, update_timestamp=False)
 
     return block
-
-
-@router.get("/{agent_id}/memory/recall", response_model=RecallMemorySummary, operation_id="get_agent_recall_memory_summary")
-def get_agent_recall_memory_summary(
-    agent_id: str,
-    server: "SyncServer" = Depends(get_letta_server),
-    user_id: Optional[str] = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
-):
-    """
-    Retrieve the summary of the recall memory of a specific agent.
-    """
-    actor = server.user_manager.get_user_or_default(user_id=user_id)
-
-    return server.get_recall_memory_summary(agent_id=agent_id, actor=actor)
-
-
-@router.get("/{agent_id}/memory/archival", response_model=ArchivalMemorySummary, operation_id="get_agent_archival_memory_summary")
-def get_agent_archival_memory_summary(
-    agent_id: str,
-    server: "SyncServer" = Depends(get_letta_server),
-    user_id: Optional[str] = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
-):
-    """
-    Retrieve the summary of the archival memory of a specific agent.
-    """
-    actor = server.user_manager.get_user_or_default(user_id=user_id)
-    return server.get_archival_memory_summary(agent_id=agent_id, actor=actor)
 
 
 @router.get("/{agent_id}/archival", response_model=List[Passage], operation_id="list_agent_archival_memory")
