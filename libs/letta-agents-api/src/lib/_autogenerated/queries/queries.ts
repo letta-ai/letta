@@ -2646,45 +2646,6 @@ export const useToolsServiceUpsertTool = <
     ...options,
   });
 /**
- * Update Provider
- * Update an existing custom provider
- * @param data The data for the request.
- * @param data.requestBody
- * @returns Provider Successful Response
- * @throws ApiError
- */
-export const useProvidersServiceUpdateProvider = <
-  TData = Common.ProvidersServiceUpdateProviderMutationResult,
-  TError = unknown,
-  TContext = unknown,
->(
-  options?: Omit<
-    UseMutationOptions<
-      TData,
-      TError,
-      {
-        requestBody: ProviderUpdate;
-      },
-      TContext
-    >,
-    'mutationFn'
-  >,
-) =>
-  useMutation<
-    TData,
-    TError,
-    {
-      requestBody: ProviderUpdate;
-    },
-    TContext
-  >({
-    mutationFn: ({ requestBody }) =>
-      ProvidersService.updateProvider({
-        requestBody,
-      }) as unknown as Promise<TData>,
-    ...options,
-  });
-/**
  * Update User
  * Update a user in the database
  * @param data The data for the request.
@@ -3372,6 +3333,45 @@ export const useSandboxConfigServiceUpdateSandboxEnvVarV1SandboxConfigEnvironmen
         ) as unknown as Promise<TData>,
       ...options,
     });
+/**
+ * Update Provider
+ * Update an existing custom provider
+ * @param data The data for the request.
+ * @param data.requestBody
+ * @returns Provider Successful Response
+ * @throws ApiError
+ */
+export const useProvidersServiceUpdateProvider = <
+  TData = Common.ProvidersServiceUpdateProviderMutationResult,
+  TError = unknown,
+  TContext = unknown,
+>(
+  options?: Omit<
+    UseMutationOptions<
+      TData,
+      TError,
+      {
+        requestBody: ProviderUpdate;
+      },
+      TContext
+    >,
+    'mutationFn'
+  >,
+) =>
+  useMutation<
+    TData,
+    TError,
+    {
+      requestBody: ProviderUpdate;
+    },
+    TContext
+  >({
+    mutationFn: ({ requestBody }) =>
+      ProvidersService.updateProvider({
+        requestBody,
+      }) as unknown as Promise<TData>,
+    ...options,
+  });
 /**
  * Delete Tool
  * Delete a tool by name

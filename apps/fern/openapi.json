@@ -3187,7 +3187,7 @@
           }
         }
       },
-      "put": {
+      "patch": {
         "tags": ["providers", "providers"],
         "summary": "Update Provider",
         "description": "Update an existing custom provider",

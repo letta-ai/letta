@@ -1027,9 +1027,6 @@ export type AuthServiceAuthenticateUserV1AuthPostMutationResult = Awaited<
 export type ToolsServiceUpsertToolMutationResult = Awaited<
   ReturnType<typeof ToolsService.upsertTool>
 >;
-export type ProvidersServiceUpdateProviderMutationResult = Awaited<
-  ReturnType<typeof ProvidersService.updateProvider>
->;
 export type AdminServiceUpdateUserMutationResult = Awaited<
   ReturnType<typeof AdminService.updateUser>
 >;
@@ -1081,6 +1078,9 @@ export type SandboxConfigServiceUpdateSandboxEnvVarV1SandboxConfigEnvironmentVar
       typeof SandboxConfigService.updateSandboxEnvVarV1SandboxConfigEnvironmentVariableEnvVarIdPatch
     >
   >;
+export type ProvidersServiceUpdateProviderMutationResult = Awaited<
+  ReturnType<typeof ProvidersService.updateProvider>
+>;
 export type ToolsServiceDeleteToolMutationResult = Awaited<
   ReturnType<typeof ToolsService.deleteTool>
 >;

@@ -2259,7 +2259,7 @@ export class ProvidersService {
     headers?: { user_id: string },
   ): CancelablePromise<UpdateProviderResponse> {
     return __request(OpenAPI, {
-      method: 'PUT',
+      method: 'PATCH',
       url: '/v1/providers/',
       body: data.requestBody,
       mediaType: 'application/json',
