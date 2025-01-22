@@ -15,7 +15,7 @@ groups:
   python-sdk:
     generators:
       - name: fernapi/fern-python-sdk
-        version: 4.3.9
+        version: 4.3.11
         output:
           location: pypi
           package-name: letta-client

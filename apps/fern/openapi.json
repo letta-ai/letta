@@ -734,110 +734,6 @@
         }
       }
     },
-    "/v1/sources/{source_id}/attach": {
-      "post": {
-        "tags": ["sources"],
-        "summary": "Attach Source To Agent",
-        "description": "Attach a data source to an existing agent.",
-        "operationId": "attach_agent_to_source",
-        "parameters": [
-          {
-            "name": "source_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "Source Id"
-            }
-          },
-          {
-            "name": "agent_id",
-            "in": "query",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "description": "The unique identifier of the agent to attach the source to.",
-              "title": "Agent Id"
-            },
-            "description": "The unique identifier of the agent to attach the source to."
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Source"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/v1/sources/{source_id}/detach": {
-      "post": {
-        "tags": ["sources"],
-        "summary": "Detach Source From Agent",
-        "description": "Detach a data source from an existing agent.",
-        "operationId": "detach_agent_from_source",
-        "parameters": [
-          {
-            "name": "source_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "Source Id"
-            }
-          },
-          {
-            "name": "agent_id",
-            "in": "query",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "description": "The unique identifier of the agent to detach the source from.",
-              "title": "Agent Id"
-            },
-            "description": "The unique identifier of the agent to detach the source from."
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Source"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
     "/v1/sources/{source_id}/upload": {
       "post": {
         "tags": ["sources"],
@@ -1445,12 +1341,12 @@
         }
       }
     },
-    "/v1/agents/{agent_id}/add-tool/{tool_id}": {
+    "/v1/agents/{agent_id}/tools/attach/{tool_id}": {
       "patch": {
         "tags": ["agents"],
-        "summary": "Add Tool To Agent",
-        "description": "Add tools to an existing agent",
-        "operationId": "add_tool_to_agent",
+        "summary": "Attach Tool",
+        "description": "Attach a tool to an agent.",
+        "operationId": "attach_tool_to_agent",
         "parameters": [
           {
             "name": "agent_id",
@@ -1495,12 +1391,12 @@
         }
       }
     },
-    "/v1/agents/{agent_id}/remove-tool/{tool_id}": {
+    "/v1/agents/{agent_id}/tools/detach/{tool_id}": {
       "patch": {
         "tags": ["agents"],
-        "summary": "Remove Tool From Agent",
-        "description": "Add tools to an existing agent",
-        "operationId": "remove_tool_from_agent",
+        "summary": "Detach Tool",
+        "description": "Detach a tool from an agent.",
+        "operationId": "detach_tool_from_agent",
         "parameters": [
           {
             "name": "agent_id",
@@ -1545,12 +1441,12 @@
         }
       }
     },
-    "/v1/agents/{agent_id}/reset-messages": {
+    "/v1/agents/{agent_id}/sources/attach/{source_id}": {
       "patch": {
         "tags": ["agents"],
-        "summary": "Reset Messages",
-        "description": "Resets the messages for an agent",
-        "operationId": "reset_messages",
+        "summary": "Attach Source",
+        "description": "Attach a source to an agent.",
+        "operationId": "attach_source_to_agent",
         "parameters": [
           {
             "name": "agent_id",
@@ -1562,16 +1458,63 @@
             }
           },
           {
-            "name": "add_default_initial_messages",
-            "in": "query",
-            "required": false,
+            "name": "source_id",
+            "in": "path",
+            "required": true,
             "schema": {
-              "type": "boolean",
-              "description": "If true, adds the default initial messages after resetting.",
-              "default": false,
-              "title": "Add Default Initial Messages"
-            },
-            "description": "If true, adds the default initial messages after resetting."
+              "type": "string",
+              "title": "Source Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentState"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/agents/{agent_id}/sources/detach/{source_id}": {
+      "patch": {
+        "tags": ["agents"],
+        "summary": "Detach Source",
+        "description": "Detach a source from an agent.",
+        "operationId": "detach_source_from_agent",
+        "parameters": [
+          {
+            "name": "agent_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Agent Id"
+            }
+          },
+          {
+            "name": "source_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Source Id"
+            }
           }
         ],
         "responses": {
@@ -1733,58 +1676,10 @@
           }
         }
       },
-      "delete": {
-        "tags": ["agents"],
-        "summary": "Remove Agent Memory Block",
-        "description": "Removes a memory block from an agent by unlnking it. If the block is not linked to any other agent, it is deleted.",
-        "operationId": "remove_agent_memory_block_by_label",
-        "parameters": [
-          {
-            "name": "agent_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "Agent Id"
-            }
-          },
-          {
-            "name": "block_label",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "Block Label"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Memory"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      },
       "patch": {
         "tags": ["agents"],
         "summary": "Update Agent Memory Block",
-        "description": "Removes a memory block from an agent by unlnking it. If the block is not linked to any other agent, it is deleted.",
+        "description": "Updates a memory block of an agent.",
         "operationId": "update_agent_memory_block_by_label",
         "parameters": [
           {
@@ -1883,12 +1778,14 @@
             }
           }
         }
-      },
-      "post": {
+      }
+    },
+    "/v1/agents/{agent_id}/core_memory/blocks/attach/{block_id}": {
+      "patch": {
         "tags": ["agents"],
-        "summary": "Add Agent Memory Block",
-        "description": "Creates a memory block and links it to the agent.",
-        "operationId": "add_agent_memory_block",
+        "summary": "Attach Block",
+        "description": "Attach a block to an agent.",
+        "operationId": "attach_block_to_agent",
         "parameters": [
           {
             "name": "agent_id",
@@ -1898,25 +1795,74 @@
               "type": "string",
               "title": "Agent Id"
             }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/CreateBlock"
-              }
+          },
+          {
+            "name": "block_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Block Id"
             }
           }
-        },
+        ],
         "responses": {
           "200": {
             "description": "Successful Response",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Memory"
+                  "$ref": "#/components/schemas/AgentState"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/agents/{agent_id}/core_memory/blocks/detach/{block_id}": {
+      "patch": {
+        "tags": ["agents"],
+        "summary": "Detach Block",
+        "description": "Detach a block from an agent.",
+        "operationId": "detach_block_from_agent",
+        "parameters": [
+          {
+            "name": "agent_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Agent Id"
+            }
+          },
+          {
+            "name": "block_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Block Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentState"
                 }
               }
             }
@@ -2467,6 +2413,59 @@
         }
       }
     },
+    "/v1/agents/{agent_id}/reset-messages": {
+      "patch": {
+        "tags": ["agents"],
+        "summary": "Reset Messages",
+        "description": "Resets the messages for an agent",
+        "operationId": "reset_messages",
+        "parameters": [
+          {
+            "name": "agent_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Agent Id"
+            }
+          },
+          {
+            "name": "add_default_initial_messages",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "description": "If true, adds the default initial messages after resetting.",
+              "default": false,
+              "title": "Add Default Initial Messages"
+            },
+            "description": "If true, adds the default initial messages after resetting."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentState"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/models/": {
       "get": {
         "tags": ["models", "llms"],
@@ -2746,96 +2745,6 @@
                 }
               }
             }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/v1/blocks/{block_id}/attach": {
-      "patch": {
-        "tags": ["blocks"],
-        "summary": "Link Agent Memory Block",
-        "description": "Link a memory block to an agent.",
-        "operationId": "link_agent_memory_block",
-        "parameters": [
-          {
-            "name": "block_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "Block Id"
-            }
-          },
-          {
-            "name": "agent_id",
-            "in": "query",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "description": "The unique identifier of the agent to attach the source to.",
-              "title": "Agent Id"
-            },
-            "description": "The unique identifier of the agent to attach the source to."
-          }
-        ],
-        "responses": {
-          "204": {
-            "description": "Successful Response"
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/v1/blocks/{block_id}/detach": {
-      "patch": {
-        "tags": ["blocks"],
-        "summary": "Unlink Agent Memory Block",
-        "description": "Unlink a memory block from an agent",
-        "operationId": "unlink_agent_memory_block",
-        "parameters": [
-          {
-            "name": "block_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "Block Id"
-            }
-          },
-          {
-            "name": "agent_id",
-            "in": "query",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "description": "The unique identifier of the agent to attach the source to.",
-              "title": "Agent Id"
-            },
-            "description": "The unique identifier of the agent to attach the source to."
-          }
-        ],
-        "responses": {
-          "204": {
-            "description": "Successful Response"
           },
           "422": {
             "description": "Validation Error",

@@ -65,16 +65,6 @@ paths:
       x-fern-sdk-group-name:
         - sources
       x-fern-sdk-method-name: create
-  /v1/sources/{source_id}/attach:
-    post:
-      x-fern-sdk-group-name:
-        - sources
-      x-fern-sdk-method-name: attach
-  /v1/sources/{source_id}/detach:
-    post:
-      x-fern-sdk-group-name:
-        - sources
-      x-fern-sdk-method-name: detach
   /v1/sources/{source_id}/upload:
     post:
       x-fern-sdk-group-name:
@@ -142,18 +132,40 @@ paths:
         - agents
         - tools
       x-fern-sdk-method-name: list
-  /v1/agents/{agent_id}/add-tool/{tool_id}:
+  /v1/agents/{agent_id}/tools/attach/{tool_id}:
     patch:
       x-fern-sdk-group-name:
         - agents
         - tools
-      x-fern-sdk-method-name: add
-  /v1/agents/{agent_id}/remove-tool/{tool_id}:
+      x-fern-sdk-method-name: attach_tool
+      parameters:
+        - name: agent_id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: tool_id
+          in: path
+          required: true
+          schema:
+            type: string
+  /v1/agents/{agent_id}/tools/detach/{tool_id}:
     patch:
       x-fern-sdk-group-name:
         - agents
         - tools
-      x-fern-sdk-method-name: remove
+      x-fern-sdk-method-name: detach_tool
+      parameters:
+        - name: agent_id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: tool_id
+          in: path
+          required: true
+          schema:
+            type: string
   /v1/agents/{agent_id}/sources:
     get:
       x-fern-sdk-group-name:
@@ -172,11 +184,40 @@ paths:
         - agents
         - core_memory
       x-fern-sdk-method-name: list
-    post:
+  /v1/agents/{agent_id}/core_memory/blocks/attach/{block_id}:
+    patch:
       x-fern-sdk-group-name:
         - agents
         - core_memory
-      x-fern-sdk-method-name: add_block
+      x-fern-sdk-method-name: attach_block
+      parameters:
+        - name: agent_id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: block_id
+          in: path
+          required: true
+          schema:
+            type: string
+  /v1/agents/{agent_id}/core_memory/blocks/detach/{block_id}:
+    patch:
+      x-fern-sdk-group-name:
+        - agents
+        - core_memory
+      x-fern-sdk-method-name: detach_block
+      parameters:
+        - name: agent_id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: block_id
+          in: path
+          required: true
+          schema:
+            type: string
   /v1/agents/{agent_id}/core_memory/blocks/{block_label}:
     get:
       x-fern-sdk-group-name:
@@ -188,11 +229,6 @@ paths:
         - agents
         - core_memory
       x-fern-sdk-method-name: update_block
-    delete:
-      x-fern-sdk-group-name:
-        - agents
-        - core_memory
-      x-fern-sdk-method-name: remove_block
   /v1/agents/{agent_id}/archival_memory:
     get:
       x-fern-sdk-group-name:
@@ -295,6 +331,40 @@ paths:
         <Note>This endpoint is only available on Letta Cloud.</Note>
 
         Returns the memory variables associated with an agent.
+  /v1/agents/{agent_id}/sources/attach/{source_id}:
+    patch:
+      x-fern-sdk-group-name:
+        - agents
+        - sources
+      x-fern-sdk-method-name: attach_source
+      parameters:
+        - name: agent_id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: source_id
+          in: path
+          required: true
+          schema:
+            type: string
+  /v1/agents/{agent_id}/sources/detach/{source_id}:
+    patch:
+      x-fern-sdk-group-name:
+        - agents
+        - sources
+      x-fern-sdk-method-name: detach_source
+      parameters:
+        - name: agent_id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: source_id
+          in: path
+          required: true
+          schema:
+            type: string
   /v1/models/:
     get:
       x-fern-sdk-group-name:

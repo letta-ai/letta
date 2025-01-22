@@ -2556,28 +2556,6 @@ export type CreateSourceData = {
 
 export type CreateSourceResponse = Source;
 
-export type AttachAgentToSourceData = {
-  /**
-   * The unique identifier of the agent to attach the source to.
-   */
-  agentId: string;
-  sourceId: string;
-  userId?: string | null;
-};
-
-export type AttachAgentToSourceResponse = Source;
-
-export type DetachAgentFromSourceData = {
-  /**
-   * The unique identifier of the agent to detach the source from.
-   */
-  agentId: string;
-  sourceId: string;
-  userId?: string | null;
-};
-
-export type DetachAgentFromSourceResponse = Source;
-
 export type UploadFileToSourceData = {
   formData: Body_upload_file_to_source;
   sourceId: string;
@@ -2689,32 +2667,37 @@ export type GetToolsFromAgentData = {
 
 export type GetToolsFromAgentResponse = Array<letta__schemas__tool__Tool>;
 
-export type AddToolToAgentData = {
+export type AttachToolToAgentData = {
   agentId: string;
   toolId: string;
   userId?: string | null;
 };
 
-export type AddToolToAgentResponse = AgentState;
+export type AttachToolToAgentResponse = AgentState;
 
-export type RemoveToolFromAgentData = {
+export type DetachToolFromAgentData = {
   agentId: string;
   toolId: string;
   userId?: string | null;
 };
 
-export type RemoveToolFromAgentResponse = AgentState;
+export type DetachToolFromAgentResponse = AgentState;
 
-export type ResetMessagesData = {
-  /**
-   * If true, adds the default initial messages after resetting.
-   */
-  addDefaultInitialMessages?: boolean;
+export type AttachSourceToAgentData = {
   agentId: string;
+  sourceId: string;
   userId?: string | null;
 };
 
-export type ResetMessagesResponse = AgentState;
+export type AttachSourceToAgentResponse = AgentState;
+
+export type DetachSourceFromAgentData = {
+  agentId: string;
+  sourceId: string;
+  userId?: string | null;
+};
+
+export type DetachSourceFromAgentResponse = AgentState;
 
 export type GetAgentSourcesData = {
   agentId: string;
@@ -2738,14 +2721,6 @@ export type GetAgentMemoryBlockData = {
 
 export type GetAgentMemoryBlockResponse = Block;
 
-export type RemoveAgentMemoryBlockByLabelData = {
-  agentId: string;
-  blockLabel: string;
-  userId?: string | null;
-};
-
-export type RemoveAgentMemoryBlockByLabelResponse = Memory;
-
 export type UpdateAgentMemoryBlockByLabelData = {
   agentId: string;
   blockLabel: string;
@@ -2762,13 +2737,21 @@ export type ListAgentMemoryBlocksData = {
 
 export type ListAgentMemoryBlocksResponse = Array<Block>;
 
-export type AddAgentMemoryBlockData = {
+export type AttachBlockToAgentData = {
   agentId: string;
-  requestBody: CreateBlock;
+  blockId: string;
   userId?: string | null;
 };
 
-export type AddAgentMemoryBlockResponse = Memory;
+export type AttachBlockToAgentResponse = AgentState;
+
+export type DetachBlockFromAgentData = {
+  agentId: string;
+  blockId: string;
+  userId?: string | null;
+};
+
+export type DetachBlockFromAgentResponse = AgentState;
 
 export type ListAgentArchivalMemoryData = {
   /**
@@ -2867,6 +2850,17 @@ export type CreateAgentMessageAsyncData = {
 
 export type CreateAgentMessageAsyncResponse = Run;
 
+export type ResetMessagesData = {
+  /**
+   * If true, adds the default initial messages after resetting.
+   */
+  addDefaultInitialMessages?: boolean;
+  agentId: string;
+  userId?: string | null;
+};
+
+export type ResetMessagesResponse = AgentState;
+
 export type ListModelsResponse = Array<LLMConfig>;
 
 export type ListEmbeddingModelsResponse = Array<EmbeddingConfig>;
@@ -2917,28 +2911,6 @@ export type GetMemoryBlockData = {
 };
 
 export type GetMemoryBlockResponse = Block;
-
-export type LinkAgentMemoryBlockData = {
-  /**
-   * The unique identifier of the agent to attach the source to.
-   */
-  agentId: string;
-  blockId: string;
-  userId?: string | null;
-};
-
-export type LinkAgentMemoryBlockResponse = void;
-
-export type UnlinkAgentMemoryBlockData = {
-  /**
-   * The unique identifier of the agent to attach the source to.
-   */
-  agentId: string;
-  blockId: string;
-  userId?: string | null;
-};
-
-export type UnlinkAgentMemoryBlockResponse = void;
 
 export type ListJobsData = {
   /**
@@ -3467,36 +3439,6 @@ export type $OpenApiTs = {
       };
     };
   };
-  '/v1/sources/{source_id}/attach': {
-    post: {
-      req: AttachAgentToSourceData;
-      res: {
-        /**
-         * Successful Response
-         */
-        200: Source;
-        /**
-         * Validation Error
-         */
-        422: HTTPValidationError;
-      };
-    };
-  };
-  '/v1/sources/{source_id}/detach': {
-    post: {
-      req: DetachAgentFromSourceData;
-      res: {
-        /**
-         * Successful Response
-         */
-        200: Source;
-        /**
-         * Validation Error
-         */
-        422: HTTPValidationError;
-      };
-    };
-  };
   '/v1/sources/{source_id}/upload': {
     post: {
       req: UploadFileToSourceData;
@@ -3656,9 +3598,9 @@ export type $OpenApiTs = {
       };
     };
   };
-  '/v1/agents/{agent_id}/add-tool/{tool_id}': {
+  '/v1/agents/{agent_id}/tools/attach/{tool_id}': {
     patch: {
-      req: AddToolToAgentData;
+      req: AttachToolToAgentData;
       res: {
         /**
          * Successful Response
@@ -3671,9 +3613,9 @@ export type $OpenApiTs = {
       };
     };
   };
-  '/v1/agents/{agent_id}/remove-tool/{tool_id}': {
+  '/v1/agents/{agent_id}/tools/detach/{tool_id}': {
     patch: {
-      req: RemoveToolFromAgentData;
+      req: DetachToolFromAgentData;
       res: {
         /**
          * Successful Response
@@ -3686,9 +3628,24 @@ export type $OpenApiTs = {
       };
     };
   };
-  '/v1/agents/{agent_id}/reset-messages': {
+  '/v1/agents/{agent_id}/sources/attach/{source_id}': {
     patch: {
-      req: ResetMessagesData;
+      req: AttachSourceToAgentData;
+      res: {
+        /**
+         * Successful Response
+         */
+        200: AgentState;
+        /**
+         * Validation Error
+         */
+        422: HTTPValidationError;
+      };
+    };
+  };
+  '/v1/agents/{agent_id}/sources/detach/{source_id}': {
+    patch: {
+      req: DetachSourceFromAgentData;
       res: {
         /**
          * Successful Response
@@ -3745,19 +3702,6 @@ export type $OpenApiTs = {
         422: HTTPValidationError;
       };
     };
-    delete: {
-      req: RemoveAgentMemoryBlockByLabelData;
-      res: {
-        /**
-         * Successful Response
-         */
-        200: Memory;
-        /**
-         * Validation Error
-         */
-        422: HTTPValidationError;
-      };
-    };
     patch: {
       req: UpdateAgentMemoryBlockByLabelData;
       res: {
@@ -3786,13 +3730,30 @@ export type $OpenApiTs = {
         422: HTTPValidationError;
       };
     };
-    post: {
-      req: AddAgentMemoryBlockData;
+  };
+  '/v1/agents/{agent_id}/core_memory/blocks/attach/{block_id}': {
+    patch: {
+      req: AttachBlockToAgentData;
       res: {
         /**
          * Successful Response
          */
-        200: Memory;
+        200: AgentState;
+        /**
+         * Validation Error
+         */
+        422: HTTPValidationError;
+      };
+    };
+  };
+  '/v1/agents/{agent_id}/core_memory/blocks/detach/{block_id}': {
+    patch: {
+      req: DetachBlockFromAgentData;
+      res: {
+        /**
+         * Successful Response
+         */
+        200: AgentState;
         /**
          * Validation Error
          */
@@ -3916,6 +3877,21 @@ export type $OpenApiTs = {
       };
     };
   };
+  '/v1/agents/{agent_id}/reset-messages': {
+    patch: {
+      req: ResetMessagesData;
+      res: {
+        /**
+         * Successful Response
+         */
+        200: AgentState;
+        /**
+         * Validation Error
+         */
+        422: HTTPValidationError;
+      };
+    };
+  };
   '/v1/models/': {
     get: {
       res: {
@@ -3998,36 +3974,6 @@ export type $OpenApiTs = {
          * Successful Response
          */
         200: Block;
-        /**
-         * Validation Error
-         */
-        422: HTTPValidationError;
-      };
-    };
-  };
-  '/v1/blocks/{block_id}/attach': {
-    patch: {
-      req: LinkAgentMemoryBlockData;
-      res: {
-        /**
-         * Successful Response
-         */
-        204: void;
-        /**
-         * Validation Error
-         */
-        422: HTTPValidationError;
-      };
-    };
-  };
-  '/v1/blocks/{block_id}/detach': {
-    patch: {
-      req: UnlinkAgentMemoryBlockData;
-      res: {
-        /**
-         * Successful Response
-         */
-        204: void;
         /**
          * Validation Error
          */

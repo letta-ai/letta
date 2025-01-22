@@ -18,8 +18,8 @@ import {
 } from '@letta-cloud/component-library';
 import { useCurrentAgent } from '../../hooks';
 import type { AgentState } from '@letta-cloud/letta-agents-api';
+import { useAgentsServiceDetachToolFromAgent } from '@letta-cloud/letta-agents-api';
 import { isLettaTool } from '@letta-cloud/letta-agents-api';
-import { useAgentsServiceRemoveToolFromAgent } from '@letta-cloud/letta-agents-api';
 import { UseAgentsServiceGetAgentKeyFn } from '@letta-cloud/letta-agents-api';
 
 import { useQueryClient } from '@tanstack/react-query';
@@ -49,7 +49,7 @@ function RemoveToolDialog(props: RemoveToolFromAgentDialogProps) {
     mutate,
     isError,
     isPending: isUpdatingTools,
-  } = useAgentsServiceRemoveToolFromAgent({
+  } = useAgentsServiceDetachToolFromAgent({
     onSuccess: (nextAgentState) => {
       queryClient.setQueriesData<AgentState | undefined>(
         {

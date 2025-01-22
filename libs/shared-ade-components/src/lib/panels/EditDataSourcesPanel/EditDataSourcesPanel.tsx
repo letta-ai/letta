@@ -32,10 +32,10 @@ import {
   type ListFilesFromSourceResponse,
   useJobsServiceListActiveJobs,
   UseJobsServiceListActiveJobsKeyFn,
-  useSourcesServiceAttachAgentToSource,
+  useAgentsServiceAttachSourceToAgent,
   useSourcesServiceCreateSource,
   useSourcesServiceDeleteFileFromSource,
-  useSourcesServiceDetachAgentFromSource,
+  useAgentsServiceDetachSourceFromAgent,
   useSourcesServiceListFilesFromSource,
   UseSourcesServiceListFilesFromSourceKeyFn,
   useSourcesServiceListSources,
@@ -73,7 +73,7 @@ function AttachDataSourceAction(props: AttachDataSourceActionProps) {
 
   const t = useTranslations('ADE/EditDataSourcesPanel');
 
-  const { mutate, isPending } = useSourcesServiceAttachAgentToSource({
+  const { mutate, isPending } = useAgentsServiceAttachSourceToAgent({
     onSuccess: (response) => {
       queryClient.setQueriesData<AgentState | undefined>(
         {
@@ -256,7 +256,7 @@ function CreateDataSourceDialogInner(props: CreateDataSourceDialogInnerProps) {
     isError,
   } = useSourcesServiceCreateSource();
   const { mutate: attachDataSource, isPending: isAttachingDataSource } =
-    useSourcesServiceAttachAgentToSource();
+    useAgentsServiceAttachSourceToAgent();
   const queryClient = useQueryClient();
   const isPending = useMemo(() => {
     return isCreatingDataSource || isAttachingDataSource;
@@ -545,8 +545,8 @@ function DetachDataSourceConfirmDialog(
     mutate: detachSource,
     isError,
     isPending,
-  } = useSourcesServiceDetachAgentFromSource({
-    onSuccess: (_, variables) => {
+  } = useAgentsServiceDetachSourceFromAgent({
+    onSuccess: (_, variables: { agentId: string; sourceId: string }) => {
       if (isLocal) {
         trackClientSideEvent(AnalyticsEvent.LOCAL_AGENT_DATA_SOURCE_ATTACHED, {
           userId: '',
@@ -702,31 +702,29 @@ function DeleteDataSourceDialog(props: DeleteDataSourceDialogProps) {
     },
   });
 
-  const { mutate, isPending, isError } = useSourcesServiceDetachAgentFromSource(
-    {
-      onSuccess: () => {
-        queryClient.setQueriesData<AgentState | undefined>(
-          {
-            queryKey: UseAgentsServiceGetAgentKeyFn({
-              agentId,
-            }),
-          },
-          (oldData) => {
-            if (!oldData) {
-              return oldData;
-            }
-            return {
-              ...oldData,
-              sources: oldData.sources.filter(
-                (currentSource) => currentSource.id !== source.id,
-              ),
-            };
-          },
-        );
-        onClose();
-      },
+  const { mutate, isPending, isError } = useAgentsServiceDetachSourceFromAgent({
+    onSuccess: () => {
+      queryClient.setQueriesData<AgentState | undefined>(
+        {
+          queryKey: UseAgentsServiceGetAgentKeyFn({
+            agentId,
+          }),
+        },
+        (oldData) => {
+          if (!oldData) {
+            return oldData;
+          }
+          return {
+            ...oldData,
+            sources: oldData.sources.filter(
+              (currentSource) => currentSource.id !== source.id,
+            ),
+          };
+        },
+      );
+      onClose();
     },
-  );
+  });
 
   const onSubmit = useCallback(() => {
     mutate({

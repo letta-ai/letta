@@ -126,43 +126,63 @@ def get_tools_from_agent(
 ):
     """Get tools from an existing agent"""
     actor = server.user_manager.get_user_or_default(user_id=user_id)
-    return server.agent_manager.get_agent_by_id(agent_id=agent_id, actor=actor).tools
+    return server.agent_manager.list_attached_tools(agent_id=agent_id, actor=actor)
 
 
-@router.patch("/{agent_id}/add-tool/{tool_id}", response_model=AgentState, operation_id="add_tool_to_agent")
-def add_tool_to_agent(
+@router.patch("/{agent_id}/tools/attach/{tool_id}", response_model=AgentState, operation_id="attach_tool_to_agent")
+def attach_tool(
     agent_id: str,
     tool_id: str,
     server: "SyncServer" = Depends(get_letta_server),
-    user_id: Optional[str] = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
+    user_id: Optional[str] = Header(None, alias="user_id"),
 ):
-    """Add tools to an existing agent"""
+    """
+    Attach a tool to an agent.
+    """
     actor = server.user_manager.get_user_or_default(user_id=user_id)
     return server.agent_manager.attach_tool(agent_id=agent_id, tool_id=tool_id, actor=actor)
 
 
-@router.patch("/{agent_id}/remove-tool/{tool_id}", response_model=AgentState, operation_id="remove_tool_from_agent")
-def remove_tool_from_agent(
+@router.patch("/{agent_id}/tools/detach/{tool_id}", response_model=AgentState, operation_id="detach_tool_from_agent")
+def detach_tool(
     agent_id: str,
     tool_id: str,
     server: "SyncServer" = Depends(get_letta_server),
-    user_id: Optional[str] = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
+    user_id: Optional[str] = Header(None, alias="user_id"),
 ):
-    """Add tools to an existing agent"""
+    """
+    Detach a tool from an agent.
+    """
     actor = server.user_manager.get_user_or_default(user_id=user_id)
     return server.agent_manager.detach_tool(agent_id=agent_id, tool_id=tool_id, actor=actor)
 
 
-@router.patch("/{agent_id}/reset-messages", response_model=AgentState, operation_id="reset_messages")
-def reset_messages(
+@router.patch("/{agent_id}/sources/attach/{source_id}", response_model=AgentState, operation_id="attach_source_to_agent")
+def attach_source(
     agent_id: str,
-    add_default_initial_messages: bool = Query(default=False, description="If true, adds the default initial messages after resetting."),
+    source_id: str,
     server: "SyncServer" = Depends(get_letta_server),
-    user_id: Optional[str] = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
+    user_id: Optional[str] = Header(None, alias="user_id"),
 ):
-    """Resets the messages for an agent"""
+    """
+    Attach a source to an agent.
+    """
     actor = server.user_manager.get_user_or_default(user_id=user_id)
-    return server.agent_manager.reset_messages(agent_id=agent_id, actor=actor, add_default_initial_messages=add_default_initial_messages)
+    return server.agent_manager.attach_source(agent_id=agent_id, source_id=source_id, actor=actor)
+
+
+@router.patch("/{agent_id}/sources/detach/{source_id}", response_model=AgentState, operation_id="detach_source_from_agent")
+def detach_source(
+    agent_id: str,
+    source_id: str,
+    server: "SyncServer" = Depends(get_letta_server),
+    user_id: Optional[str] = Header(None, alias="user_id"),
+):
+    """
+    Detach a source from an agent.
+    """
+    actor = server.user_manager.get_user_or_default(user_id=user_id)
+    return server.agent_manager.detach_source(agent_id=agent_id, source_id=source_id, actor=actor)
 
 
 @router.get("/{agent_id}", response_model=AgentState, operation_id="get_agent")
@@ -263,49 +283,6 @@ def list_agent_memory_blocks(
         raise HTTPException(status_code=404, detail=str(e))
 
 
-@router.post("/{agent_id}/core_memory/blocks", response_model=Memory, operation_id="add_agent_memory_block")
-def add_agent_memory_block(
-    agent_id: str,
-    create_block: CreateBlock = Body(...),
-    server: "SyncServer" = Depends(get_letta_server),
-    user_id: Optional[str] = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
-):
-    """
-    Creates a memory block and links it to the agent.
-    """
-    actor = server.user_manager.get_user_or_default(user_id=user_id)
-
-    # Copied from POST /blocks
-    # TODO: Should have block_manager accept only CreateBlock
-    # TODO: This will be possible once we move ID creation to the ORM
-    block_req = Block(**create_block.model_dump())
-    block = server.block_manager.create_or_update_block(actor=actor, block=block_req)
-
-    # Link the block to the agent
-    agent = server.agent_manager.attach_block(agent_id=agent_id, block_id=block.id, actor=actor)
-    return agent.memory
-
-
-@router.delete("/{agent_id}/core_memory/blocks/{block_label}", response_model=Memory, operation_id="remove_agent_memory_block_by_label")
-def remove_agent_memory_block(
-    agent_id: str,
-    # TODO should this be block_id, or the label?
-    # I think label is OK since it's user-friendly + guaranteed to be unique within a Memory object
-    block_label: str,
-    server: "SyncServer" = Depends(get_letta_server),
-    user_id: Optional[str] = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
-):
-    """
-    Removes a memory block from an agent by unlnking it. If the block is not linked to any other agent, it is deleted.
-    """
-    actor = server.user_manager.get_user_or_default(user_id=user_id)
-
-    # Unlink the block from the agent
-    agent = server.agent_manager.detach_block_with_label(agent_id=agent_id, block_label=block_label, actor=actor)
-
-    return agent.memory
-
-
 @router.patch("/{agent_id}/core_memory/blocks/{block_label}", response_model=Block, operation_id="update_agent_memory_block_by_label")
 def update_agent_memory_block(
     agent_id: str,
@@ -315,7 +292,7 @@ def update_agent_memory_block(
     user_id: Optional[str] = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
 ):
     """
-    Removes a memory block from an agent by unlnking it. If the block is not linked to any other agent, it is deleted.
+    Updates a memory block of an agent.
     """
     actor = server.user_manager.get_user_or_default(user_id=user_id)
 
@@ -326,6 +303,34 @@ def update_agent_memory_block(
     server.agent_manager.rebuild_system_prompt(agent_id=agent_id, actor=actor, force=True, update_timestamp=False)
 
     return block
+
+
+@router.patch("/{agent_id}/core_memory/blocks/attach/{block_id}", response_model=AgentState, operation_id="attach_block_to_agent")
+def attach_block(
+    agent_id: str,
+    block_id: str,
+    server: "SyncServer" = Depends(get_letta_server),
+    user_id: Optional[str] = Header(None, alias="user_id"),
+):
+    """
+    Attach a block to an agent.
+    """
+    actor = server.user_manager.get_user_or_default(user_id=user_id)
+    return server.agent_manager.attach_block(agent_id=agent_id, block_id=block_id, actor=actor)
+
+
+@router.patch("/{agent_id}/core_memory/blocks/detach/{block_id}", response_model=AgentState, operation_id="detach_block_from_agent")
+def detach_block(
+    agent_id: str,
+    block_id: str,
+    server: "SyncServer" = Depends(get_letta_server),
+    user_id: Optional[str] = Header(None, alias="user_id"),
+):
+    """
+    Detach a block from an agent.
+    """
+    actor = server.user_manager.get_user_or_default(user_id=user_id)
+    return server.agent_manager.detach_block(agent_id=agent_id, block_id=block_id, actor=actor)
 
 
 @router.get("/{agent_id}/archival_memory", response_model=List[Passage], operation_id="list_agent_archival_memory")
@@ -610,3 +615,15 @@ async def send_message_async(
     )
 
     return run
+
+
+@router.patch("/{agent_id}/reset-messages", response_model=AgentState, operation_id="reset_messages")
+def reset_messages(
+    agent_id: str,
+    add_default_initial_messages: bool = Query(default=False, description="If true, adds the default initial messages after resetting."),
+    server: "SyncServer" = Depends(get_letta_server),
+    user_id: Optional[str] = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
+):
+    """Resets the messages for an agent"""
+    actor = server.user_manager.get_user_or_default(user_id=user_id)
+    return server.agent_manager.reset_messages(agent_id=agent_id, actor=actor, add_default_initial_messages=add_default_initial_messages)

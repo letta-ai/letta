@@ -20,7 +20,7 @@ import {
   useToolsServiceUpdateTool,
 } from '@letta-cloud/letta-agents-api';
 import {
-  useAgentsServiceAddToolToAgent,
+  useAgentsServiceAttachToolToAgent,
   UseAgentsServiceGetAgentKeyFn,
   useToolsServiceGetTool,
   useToolsServiceListComposioApps,
@@ -318,7 +318,7 @@ function AddToolToAgentButton(props: AddToolToAgentButtonProps) {
 
   const [isPending, setIsPending] = useState(false);
 
-  const { mutateAsync: attachToolToAgent } = useAgentsServiceAddToolToAgent({
+  const { mutateAsync: attachToolToAgent } = useAgentsServiceAttachToolToAgent({
     onError: () => {
       toast.error(t('AddToolToAgentButton.error'));
     },

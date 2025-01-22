@@ -8,11 +8,7 @@ import type {
   OrderByValuesEnumType,
 } from '@letta-cloud/letta-agents-api';
 import { ToolsService } from '@letta-cloud/letta-agents-api';
-import {
-  AgentsService,
-  SourcesService,
-  type UpdateAgent,
-} from '@letta-cloud/letta-agents-api';
+import { AgentsService, type UpdateAgent } from '@letta-cloud/letta-agents-api';
 import {
   agentTemplates,
   db,
@@ -132,7 +128,7 @@ export async function copyAgentById(
         return;
       }
 
-      await SourcesService.attachAgentToSource(
+      await AgentsService.attachSourceToAgent(
         {
           agentId: nextAgent.id || '',
           sourceId: source.id,

@@ -1705,100 +1705,6 @@ export const useSourcesServiceCreateSource = <
     ...options,
   });
 /**
- * Attach Source To Agent
- * Attach a data source to an existing agent.
- * @param data The data for the request.
- * @param data.sourceId
- * @param data.agentId The unique identifier of the agent to attach the source to.
- * @param data.userId
- * @returns Source Successful Response
- * @throws ApiError
- */
-export const useSourcesServiceAttachAgentToSource = <
-  TData = Common.SourcesServiceAttachAgentToSourceMutationResult,
-  TError = unknown,
-  TContext = unknown,
->(
-  options?: Omit<
-    UseMutationOptions<
-      TData,
-      TError,
-      {
-        agentId: string;
-        sourceId: string;
-        userId?: string;
-      },
-      TContext
-    >,
-    'mutationFn'
-  >,
-) =>
-  useMutation<
-    TData,
-    TError,
-    {
-      agentId: string;
-      sourceId: string;
-      userId?: string;
-    },
-    TContext
-  >({
-    mutationFn: ({ agentId, sourceId, userId }) =>
-      SourcesService.attachAgentToSource({
-        agentId,
-        sourceId,
-        userId,
-      }) as unknown as Promise<TData>,
-    ...options,
-  });
-/**
- * Detach Source From Agent
- * Detach a data source from an existing agent.
- * @param data The data for the request.
- * @param data.sourceId
- * @param data.agentId The unique identifier of the agent to detach the source from.
- * @param data.userId
- * @returns Source Successful Response
- * @throws ApiError
- */
-export const useSourcesServiceDetachAgentFromSource = <
-  TData = Common.SourcesServiceDetachAgentFromSourceMutationResult,
-  TError = unknown,
-  TContext = unknown,
->(
-  options?: Omit<
-    UseMutationOptions<
-      TData,
-      TError,
-      {
-        agentId: string;
-        sourceId: string;
-        userId?: string;
-      },
-      TContext
-    >,
-    'mutationFn'
-  >,
-) =>
-  useMutation<
-    TData,
-    TError,
-    {
-      agentId: string;
-      sourceId: string;
-      userId?: string;
-    },
-    TContext
-  >({
-    mutationFn: ({ agentId, sourceId, userId }) =>
-      SourcesService.detachAgentFromSource({
-        agentId,
-        sourceId,
-        userId,
-      }) as unknown as Promise<TData>,
-    ...options,
-  });
-/**
  * Upload File To Source
  * Upload a file to a data source.
  * @param data The data for the request.
@@ -1883,53 +1789,6 @@ export const useAgentsServiceCreateAgent = <
   >({
     mutationFn: ({ requestBody, userId }) =>
       AgentsService.createAgent({
-        requestBody,
-        userId,
-      }) as unknown as Promise<TData>,
-    ...options,
-  });
-/**
- * Add Agent Memory Block
- * Creates a memory block and links it to the agent.
- * @param data The data for the request.
- * @param data.agentId
- * @param data.requestBody
- * @param data.userId
- * @returns Memory Successful Response
- * @throws ApiError
- */
-export const useAgentsServiceAddAgentMemoryBlock = <
-  TData = Common.AgentsServiceAddAgentMemoryBlockMutationResult,
-  TError = unknown,
-  TContext = unknown,
->(
-  options?: Omit<
-    UseMutationOptions<
-      TData,
-      TError,
-      {
-        agentId: string;
-        requestBody: CreateBlock;
-        userId?: string;
-      },
-      TContext
-    >,
-    'mutationFn'
-  >,
-) =>
-  useMutation<
-    TData,
-    TError,
-    {
-      agentId: string;
-      requestBody: CreateBlock;
-      userId?: string;
-    },
-    TContext
-  >({
-    mutationFn: ({ agentId, requestBody, userId }) =>
-      AgentsService.addAgentMemoryBlock({
-        agentId,
         requestBody,
         userId,
       }) as unknown as Promise<TData>,
@@ -2829,8 +2688,8 @@ export const useAgentsServiceUpdateAgent = <
     ...options,
   });
 /**
- * Add Tool To Agent
- * Add tools to an existing agent
+ * Attach Tool
+ * Attach a tool to an agent.
  * @param data The data for the request.
  * @param data.agentId
  * @param data.toolId
@@ -2838,8 +2697,8 @@ export const useAgentsServiceUpdateAgent = <
  * @returns AgentState Successful Response
  * @throws ApiError
  */
-export const useAgentsServiceAddToolToAgent = <
-  TData = Common.AgentsServiceAddToolToAgentMutationResult,
+export const useAgentsServiceAttachToolToAgent = <
+  TData = Common.AgentsServiceAttachToolToAgentMutationResult,
   TError = unknown,
   TContext = unknown,
 >(
@@ -2868,7 +2727,7 @@ export const useAgentsServiceAddToolToAgent = <
     TContext
   >({
     mutationFn: ({ agentId, toolId, userId }) =>
-      AgentsService.addToolToAgent({
+      AgentsService.attachToolToAgent({
         agentId,
         toolId,
         userId,
@@ -2876,8 +2735,8 @@ export const useAgentsServiceAddToolToAgent = <
     ...options,
   });
 /**
- * Remove Tool From Agent
- * Add tools to an existing agent
+ * Detach Tool
+ * Detach a tool from an agent.
  * @param data The data for the request.
  * @param data.agentId
  * @param data.toolId
@@ -2885,8 +2744,8 @@ export const useAgentsServiceAddToolToAgent = <
  * @returns AgentState Successful Response
  * @throws ApiError
  */
-export const useAgentsServiceRemoveToolFromAgent = <
-  TData = Common.AgentsServiceRemoveToolFromAgentMutationResult,
+export const useAgentsServiceDetachToolFromAgent = <
+  TData = Common.AgentsServiceDetachToolFromAgentMutationResult,
   TError = unknown,
   TContext = unknown,
 >(
@@ -2915,7 +2774,7 @@ export const useAgentsServiceRemoveToolFromAgent = <
     TContext
   >({
     mutationFn: ({ agentId, toolId, userId }) =>
-      AgentsService.removeToolFromAgent({
+      AgentsService.detachToolFromAgent({
         agentId,
         toolId,
         userId,
@@ -2923,17 +2782,17 @@ export const useAgentsServiceRemoveToolFromAgent = <
     ...options,
   });
 /**
- * Reset Messages
- * Resets the messages for an agent
+ * Attach Source
+ * Attach a source to an agent.
  * @param data The data for the request.
  * @param data.agentId
- * @param data.addDefaultInitialMessages If true, adds the default initial messages after resetting.
+ * @param data.sourceId
  * @param data.userId
  * @returns AgentState Successful Response
  * @throws ApiError
  */
-export const useAgentsServiceResetMessages = <
-  TData = Common.AgentsServiceResetMessagesMutationResult,
+export const useAgentsServiceAttachSourceToAgent = <
+  TData = Common.AgentsServiceAttachSourceToAgentMutationResult,
   TError = unknown,
   TContext = unknown,
 >(
@@ -2942,8 +2801,8 @@ export const useAgentsServiceResetMessages = <
       TData,
       TError,
       {
-        addDefaultInitialMessages?: boolean;
         agentId: string;
+        sourceId: string;
         userId?: string;
       },
       TContext
@@ -2955,23 +2814,70 @@ export const useAgentsServiceResetMessages = <
     TData,
     TError,
     {
-      addDefaultInitialMessages?: boolean;
       agentId: string;
+      sourceId: string;
       userId?: string;
     },
     TContext
   >({
-    mutationFn: ({ addDefaultInitialMessages, agentId, userId }) =>
-      AgentsService.resetMessages({
-        addDefaultInitialMessages,
+    mutationFn: ({ agentId, sourceId, userId }) =>
+      AgentsService.attachSourceToAgent({
         agentId,
+        sourceId,
+        userId,
+      }) as unknown as Promise<TData>,
+    ...options,
+  });
+/**
+ * Detach Source
+ * Detach a source from an agent.
+ * @param data The data for the request.
+ * @param data.agentId
+ * @param data.sourceId
+ * @param data.userId
+ * @returns AgentState Successful Response
+ * @throws ApiError
+ */
+export const useAgentsServiceDetachSourceFromAgent = <
+  TData = Common.AgentsServiceDetachSourceFromAgentMutationResult,
+  TError = unknown,
+  TContext = unknown,
+>(
+  options?: Omit<
+    UseMutationOptions<
+      TData,
+      TError,
+      {
+        agentId: string;
+        sourceId: string;
+        userId?: string;
+      },
+      TContext
+    >,
+    'mutationFn'
+  >,
+) =>
+  useMutation<
+    TData,
+    TError,
+    {
+      agentId: string;
+      sourceId: string;
+      userId?: string;
+    },
+    TContext
+  >({
+    mutationFn: ({ agentId, sourceId, userId }) =>
+      AgentsService.detachSourceFromAgent({
+        agentId,
+        sourceId,
         userId,
       }) as unknown as Promise<TData>,
     ...options,
   });
 /**
  * Update Agent Memory Block
- * Removes a memory block from an agent by unlnking it. If the block is not linked to any other agent, it is deleted.
+ * Updates a memory block of an agent.
  * @param data The data for the request.
  * @param data.agentId
  * @param data.blockLabel
@@ -3016,6 +2922,100 @@ export const useAgentsServiceUpdateAgentMemoryBlockByLabel = <
         agentId,
         blockLabel,
         requestBody,
+        userId,
+      }) as unknown as Promise<TData>,
+    ...options,
+  });
+/**
+ * Attach Block
+ * Attach a block to an agent.
+ * @param data The data for the request.
+ * @param data.agentId
+ * @param data.blockId
+ * @param data.userId
+ * @returns AgentState Successful Response
+ * @throws ApiError
+ */
+export const useAgentsServiceAttachBlockToAgent = <
+  TData = Common.AgentsServiceAttachBlockToAgentMutationResult,
+  TError = unknown,
+  TContext = unknown,
+>(
+  options?: Omit<
+    UseMutationOptions<
+      TData,
+      TError,
+      {
+        agentId: string;
+        blockId: string;
+        userId?: string;
+      },
+      TContext
+    >,
+    'mutationFn'
+  >,
+) =>
+  useMutation<
+    TData,
+    TError,
+    {
+      agentId: string;
+      blockId: string;
+      userId?: string;
+    },
+    TContext
+  >({
+    mutationFn: ({ agentId, blockId, userId }) =>
+      AgentsService.attachBlockToAgent({
+        agentId,
+        blockId,
+        userId,
+      }) as unknown as Promise<TData>,
+    ...options,
+  });
+/**
+ * Detach Block
+ * Detach a block from an agent.
+ * @param data The data for the request.
+ * @param data.agentId
+ * @param data.blockId
+ * @param data.userId
+ * @returns AgentState Successful Response
+ * @throws ApiError
+ */
+export const useAgentsServiceDetachBlockFromAgent = <
+  TData = Common.AgentsServiceDetachBlockFromAgentMutationResult,
+  TError = unknown,
+  TContext = unknown,
+>(
+  options?: Omit<
+    UseMutationOptions<
+      TData,
+      TError,
+      {
+        agentId: string;
+        blockId: string;
+        userId?: string;
+      },
+      TContext
+    >,
+    'mutationFn'
+  >,
+) =>
+  useMutation<
+    TData,
+    TError,
+    {
+      agentId: string;
+      blockId: string;
+      userId?: string;
+    },
+    TContext
+  >({
+    mutationFn: ({ agentId, blockId, userId }) =>
+      AgentsService.detachBlockFromAgent({
+        agentId,
+        blockId,
         userId,
       }) as unknown as Promise<TData>,
     ...options,
@@ -3072,6 +3072,53 @@ export const useAgentsServiceUpdateAgentMessage = <
     ...options,
   });
 /**
+ * Reset Messages
+ * Resets the messages for an agent
+ * @param data The data for the request.
+ * @param data.agentId
+ * @param data.addDefaultInitialMessages If true, adds the default initial messages after resetting.
+ * @param data.userId
+ * @returns AgentState Successful Response
+ * @throws ApiError
+ */
+export const useAgentsServiceResetMessages = <
+  TData = Common.AgentsServiceResetMessagesMutationResult,
+  TError = unknown,
+  TContext = unknown,
+>(
+  options?: Omit<
+    UseMutationOptions<
+      TData,
+      TError,
+      {
+        addDefaultInitialMessages?: boolean;
+        agentId: string;
+        userId?: string;
+      },
+      TContext
+    >,
+    'mutationFn'
+  >,
+) =>
+  useMutation<
+    TData,
+    TError,
+    {
+      addDefaultInitialMessages?: boolean;
+      agentId: string;
+      userId?: string;
+    },
+    TContext
+  >({
+    mutationFn: ({ addDefaultInitialMessages, agentId, userId }) =>
+      AgentsService.resetMessages({
+        addDefaultInitialMessages,
+        agentId,
+        userId,
+      }) as unknown as Promise<TData>,
+    ...options,
+  });
+/**
  * Update Block
  * @param data The data for the request.
  * @param data.blockId
@@ -3113,100 +3160,6 @@ export const useBlocksServiceUpdateMemoryBlock = <
       BlocksService.updateMemoryBlock({
         blockId,
         requestBody,
-        userId,
-      }) as unknown as Promise<TData>,
-    ...options,
-  });
-/**
- * Link Agent Memory Block
- * Link a memory block to an agent.
- * @param data The data for the request.
- * @param data.blockId
- * @param data.agentId The unique identifier of the agent to attach the source to.
- * @param data.userId
- * @returns void Successful Response
- * @throws ApiError
- */
-export const useBlocksServiceLinkAgentMemoryBlock = <
-  TData = Common.BlocksServiceLinkAgentMemoryBlockMutationResult,
-  TError = unknown,
-  TContext = unknown,
->(
-  options?: Omit<
-    UseMutationOptions<
-      TData,
-      TError,
-      {
-        agentId: string;
-        blockId: string;
-        userId?: string;
-      },
-      TContext
-    >,
-    'mutationFn'
-  >,
-) =>
-  useMutation<
-    TData,
-    TError,
-    {
-      agentId: string;
-      blockId: string;
-      userId?: string;
-    },
-    TContext
-  >({
-    mutationFn: ({ agentId, blockId, userId }) =>
-      BlocksService.linkAgentMemoryBlock({
-        agentId,
-        blockId,
-        userId,
-      }) as unknown as Promise<TData>,
-    ...options,
-  });
-/**
- * Unlink Agent Memory Block
- * Unlink a memory block from an agent
- * @param data The data for the request.
- * @param data.blockId
- * @param data.agentId The unique identifier of the agent to attach the source to.
- * @param data.userId
- * @returns void Successful Response
- * @throws ApiError
- */
-export const useBlocksServiceUnlinkAgentMemoryBlock = <
-  TData = Common.BlocksServiceUnlinkAgentMemoryBlockMutationResult,
-  TError = unknown,
-  TContext = unknown,
->(
-  options?: Omit<
-    UseMutationOptions<
-      TData,
-      TError,
-      {
-        agentId: string;
-        blockId: string;
-        userId?: string;
-      },
-      TContext
-    >,
-    'mutationFn'
-  >,
-) =>
-  useMutation<
-    TData,
-    TError,
-    {
-      agentId: string;
-      blockId: string;
-      userId?: string;
-    },
-    TContext
-  >({
-    mutationFn: ({ agentId, blockId, userId }) =>
-      BlocksService.unlinkAgentMemoryBlock({
-        agentId,
-        blockId,
         userId,
       }) as unknown as Promise<TData>,
     ...options,
@@ -3509,53 +3462,6 @@ export const useAgentsServiceDeleteAgent = <
     mutationFn: ({ agentId, userId }) =>
       AgentsService.deleteAgent({
         agentId,
-        userId,
-      }) as unknown as Promise<TData>,
-    ...options,
-  });
-/**
- * Remove Agent Memory Block
- * Removes a memory block from an agent by unlnking it. If the block is not linked to any other agent, it is deleted.
- * @param data The data for the request.
- * @param data.agentId
- * @param data.blockLabel
- * @param data.userId
- * @returns Memory Successful Response
- * @throws ApiError
- */
-export const useAgentsServiceRemoveAgentMemoryBlockByLabel = <
-  TData = Common.AgentsServiceRemoveAgentMemoryBlockByLabelMutationResult,
-  TError = unknown,
-  TContext = unknown,
->(
-  options?: Omit<
-    UseMutationOptions<
-      TData,
-      TError,
-      {
-        agentId: string;
-        blockLabel: string;
-        userId?: string;
-      },
-      TContext
-    >,
-    'mutationFn'
-  >,
-) =>
-  useMutation<
-    TData,
-    TError,
-    {
-      agentId: string;
-      blockLabel: string;
-      userId?: string;
-    },
-    TContext
-  >({
-    mutationFn: ({ agentId, blockLabel, userId }) =>
-      AgentsService.removeAgentMemoryBlockByLabel({
-        agentId,
-        blockLabel,
         userId,
       }) as unknown as Promise<TData>,
     ...options,

@@ -38,10 +38,6 @@ import type {
   ListSourcesResponse,
   CreateSourceData,
   CreateSourceResponse,
-  AttachAgentToSourceData,
-  AttachAgentToSourceResponse,
-  DetachAgentFromSourceData,
-  DetachAgentFromSourceResponse,
   UploadFileToSourceData,
   UploadFileToSourceResponse,
   ListSourcePassagesData,
@@ -64,26 +60,28 @@ import type {
   DeleteAgentResponse,
   GetToolsFromAgentData,
   GetToolsFromAgentResponse,
-  AddToolToAgentData,
-  AddToolToAgentResponse,
-  RemoveToolFromAgentData,
-  RemoveToolFromAgentResponse,
-  ResetMessagesData,
-  ResetMessagesResponse,
+  AttachToolToAgentData,
+  AttachToolToAgentResponse,
+  DetachToolFromAgentData,
+  DetachToolFromAgentResponse,
+  AttachSourceToAgentData,
+  AttachSourceToAgentResponse,
+  DetachSourceFromAgentData,
+  DetachSourceFromAgentResponse,
   GetAgentSourcesData,
   GetAgentSourcesResponse,
   GetAgentMemoryData,
   GetAgentMemoryResponse,
   GetAgentMemoryBlockData,
   GetAgentMemoryBlockResponse,
-  RemoveAgentMemoryBlockByLabelData,
-  RemoveAgentMemoryBlockByLabelResponse,
   UpdateAgentMemoryBlockByLabelData,
   UpdateAgentMemoryBlockByLabelResponse,
   ListAgentMemoryBlocksData,
   ListAgentMemoryBlocksResponse,
-  AddAgentMemoryBlockData,
-  AddAgentMemoryBlockResponse,
+  AttachBlockToAgentData,
+  AttachBlockToAgentResponse,
+  DetachBlockFromAgentData,
+  DetachBlockFromAgentResponse,
   ListAgentArchivalMemoryData,
   ListAgentArchivalMemoryResponse,
   CreateAgentArchivalMemoryData,
@@ -100,6 +98,8 @@ import type {
   CreateAgentMessageStreamResponse,
   CreateAgentMessageAsyncData,
   CreateAgentMessageAsyncResponse,
+  ResetMessagesData,
+  ResetMessagesResponse,
   ListModelsResponse,
   ListEmbeddingModelsResponse,
   ListMemoryBlocksData,
@@ -112,10 +112,6 @@ import type {
   DeleteMemoryBlockResponse,
   GetMemoryBlockData,
   GetMemoryBlockResponse,
-  LinkAgentMemoryBlockData,
-  LinkAgentMemoryBlockResponse,
-  UnlinkAgentMemoryBlockData,
-  UnlinkAgentMemoryBlockResponse,
   ListJobsData,
   ListJobsResponse,
   ListActiveJobsData,
@@ -623,66 +619,6 @@ export class SourcesService {
   }
 
   /**
-   * Attach Source To Agent
-   * Attach a data source to an existing agent.
-   * @param data The data for the request.
-   * @param data.sourceId
-   * @param data.agentId The unique identifier of the agent to attach the source to.
-   * @param data.userId
-   * @returns Source Successful Response
-   * @throws ApiError
-   */
-  public static attachAgentToSource(
-    data: AttachAgentToSourceData,
-    headers?: { user_id: string },
-  ): CancelablePromise<AttachAgentToSourceResponse> {
-    return __request(OpenAPI, {
-      method: 'POST',
-      url: '/v1/sources/{source_id}/attach',
-      path: {
-        source_id: data.sourceId,
-      },
-      query: {
-        agent_id: data.agentId,
-      },
-      errors: {
-        422: 'Validation Error',
-      },
-      headers,
-    });
-  }
-
-  /**
-   * Detach Source From Agent
-   * Detach a data source from an existing agent.
-   * @param data The data for the request.
-   * @param data.sourceId
-   * @param data.agentId The unique identifier of the agent to detach the source from.
-   * @param data.userId
-   * @returns Source Successful Response
-   * @throws ApiError
-   */
-  public static detachAgentFromSource(
-    data: DetachAgentFromSourceData,
-    headers?: { user_id: string },
-  ): CancelablePromise<DetachAgentFromSourceResponse> {
-    return __request(OpenAPI, {
-      method: 'POST',
-      url: '/v1/sources/{source_id}/detach',
-      path: {
-        source_id: data.sourceId,
-      },
-      query: {
-        agent_id: data.agentId,
-      },
-      errors: {
-        422: 'Validation Error',
-      },
-      headers,
-    });
-  }
-
-  /**
    * Upload File To Source
    * Upload a file to a data source.
    * @param data The data for the request.
@@ -995,8 +931,8 @@ export class AgentsService {
   }
 
   /**
-   * Add Tool To Agent
-   * Add tools to an existing agent
+   * Attach Tool
+   * Attach a tool to an agent.
    * @param data The data for the request.
    * @param data.agentId
    * @param data.toolId
@@ -1004,13 +940,13 @@ export class AgentsService {
    * @returns AgentState Successful Response
    * @throws ApiError
    */
-  public static addToolToAgent(
-    data: AddToolToAgentData,
+  public static attachToolToAgent(
+    data: AttachToolToAgentData,
     headers?: { user_id: string },
-  ): CancelablePromise<AddToolToAgentResponse> {
+  ): CancelablePromise<AttachToolToAgentResponse> {
     return __request(OpenAPI, {
       method: 'PATCH',
-      url: '/v1/agents/{agent_id}/add-tool/{tool_id}',
+      url: '/v1/agents/{agent_id}/tools/attach/{tool_id}',
       path: {
         agent_id: data.agentId,
         tool_id: data.toolId,
@@ -1023,8 +959,8 @@ export class AgentsService {
   }
 
   /**
-   * Remove Tool From Agent
-   * Add tools to an existing agent
+   * Detach Tool
+   * Detach a tool from an agent.
    * @param data The data for the request.
    * @param data.agentId
    * @param data.toolId
@@ -1032,13 +968,13 @@ export class AgentsService {
    * @returns AgentState Successful Response
    * @throws ApiError
    */
-  public static removeToolFromAgent(
-    data: RemoveToolFromAgentData,
+  public static detachToolFromAgent(
+    data: DetachToolFromAgentData,
     headers?: { user_id: string },
-  ): CancelablePromise<RemoveToolFromAgentResponse> {
+  ): CancelablePromise<DetachToolFromAgentResponse> {
     return __request(OpenAPI, {
       method: 'PATCH',
-      url: '/v1/agents/{agent_id}/remove-tool/{tool_id}',
+      url: '/v1/agents/{agent_id}/tools/detach/{tool_id}',
       path: {
         agent_id: data.agentId,
         tool_id: data.toolId,
@@ -1051,27 +987,53 @@ export class AgentsService {
   }
 
   /**
-   * Reset Messages
-   * Resets the messages for an agent
+   * Attach Source
+   * Attach a source to an agent.
    * @param data The data for the request.
    * @param data.agentId
-   * @param data.addDefaultInitialMessages If true, adds the default initial messages after resetting.
+   * @param data.sourceId
    * @param data.userId
    * @returns AgentState Successful Response
    * @throws ApiError
    */
-  public static resetMessages(
-    data: ResetMessagesData,
+  public static attachSourceToAgent(
+    data: AttachSourceToAgentData,
     headers?: { user_id: string },
-  ): CancelablePromise<ResetMessagesResponse> {
+  ): CancelablePromise<AttachSourceToAgentResponse> {
     return __request(OpenAPI, {
       method: 'PATCH',
-      url: '/v1/agents/{agent_id}/reset-messages',
+      url: '/v1/agents/{agent_id}/sources/attach/{source_id}',
       path: {
         agent_id: data.agentId,
+        source_id: data.sourceId,
       },
-      query: {
-        add_default_initial_messages: data.addDefaultInitialMessages,
+      errors: {
+        422: 'Validation Error',
+      },
+      headers,
+    });
+  }
+
+  /**
+   * Detach Source
+   * Detach a source from an agent.
+   * @param data The data for the request.
+   * @param data.agentId
+   * @param data.sourceId
+   * @param data.userId
+   * @returns AgentState Successful Response
+   * @throws ApiError
+   */
+  public static detachSourceFromAgent(
+    data: DetachSourceFromAgentData,
+    headers?: { user_id: string },
+  ): CancelablePromise<DetachSourceFromAgentResponse> {
+    return __request(OpenAPI, {
+      method: 'PATCH',
+      url: '/v1/agents/{agent_id}/sources/detach/{source_id}',
+      path: {
+        agent_id: data.agentId,
+        source_id: data.sourceId,
       },
       errors: {
         422: 'Validation Error',
@@ -1162,36 +1124,8 @@ export class AgentsService {
   }
 
   /**
-   * Remove Agent Memory Block
-   * Removes a memory block from an agent by unlnking it. If the block is not linked to any other agent, it is deleted.
-   * @param data The data for the request.
-   * @param data.agentId
-   * @param data.blockLabel
-   * @param data.userId
-   * @returns Memory Successful Response
-   * @throws ApiError
-   */
-  public static removeAgentMemoryBlockByLabel(
-    data: RemoveAgentMemoryBlockByLabelData,
-    headers?: { user_id: string },
-  ): CancelablePromise<RemoveAgentMemoryBlockByLabelResponse> {
-    return __request(OpenAPI, {
-      method: 'DELETE',
-      url: '/v1/agents/{agent_id}/core_memory/blocks/{block_label}',
-      path: {
-        agent_id: data.agentId,
-        block_label: data.blockLabel,
-      },
-      errors: {
-        422: 'Validation Error',
-      },
-      headers,
-    });
-  }
-
-  /**
    * Update Agent Memory Block
-   * Removes a memory block from an agent by unlnking it. If the block is not linked to any other agent, it is deleted.
+   * Updates a memory block of an agent.
    * @param data The data for the request.
    * @param data.agentId
    * @param data.blockLabel
@@ -1247,27 +1181,54 @@ export class AgentsService {
   }
 
   /**
-   * Add Agent Memory Block
-   * Creates a memory block and links it to the agent.
+   * Attach Block
+   * Attach a block to an agent.
    * @param data The data for the request.
    * @param data.agentId
-   * @param data.requestBody
+   * @param data.blockId
    * @param data.userId
-   * @returns Memory Successful Response
+   * @returns AgentState Successful Response
    * @throws ApiError
    */
-  public static addAgentMemoryBlock(
-    data: AddAgentMemoryBlockData,
+  public static attachBlockToAgent(
+    data: AttachBlockToAgentData,
     headers?: { user_id: string },
-  ): CancelablePromise<AddAgentMemoryBlockResponse> {
+  ): CancelablePromise<AttachBlockToAgentResponse> {
     return __request(OpenAPI, {
-      method: 'POST',
-      url: '/v1/agents/{agent_id}/core_memory/blocks',
+      method: 'PATCH',
+      url: '/v1/agents/{agent_id}/core_memory/blocks/attach/{block_id}',
       path: {
         agent_id: data.agentId,
+        block_id: data.blockId,
       },
-      body: data.requestBody,
-      mediaType: 'application/json',
+      errors: {
+        422: 'Validation Error',
+      },
+      headers,
+    });
+  }
+
+  /**
+   * Detach Block
+   * Detach a block from an agent.
+   * @param data The data for the request.
+   * @param data.agentId
+   * @param data.blockId
+   * @param data.userId
+   * @returns AgentState Successful Response
+   * @throws ApiError
+   */
+  public static detachBlockFromAgent(
+    data: DetachBlockFromAgentData,
+    headers?: { user_id: string },
+  ): CancelablePromise<DetachBlockFromAgentResponse> {
+    return __request(OpenAPI, {
+      method: 'PATCH',
+      url: '/v1/agents/{agent_id}/core_memory/blocks/detach/{block_id}',
+      path: {
+        agent_id: data.agentId,
+        block_id: data.blockId,
+      },
       errors: {
         422: 'Validation Error',
       },
@@ -1525,6 +1486,36 @@ export class AgentsService {
       headers,
     });
   }
+
+  /**
+   * Reset Messages
+   * Resets the messages for an agent
+   * @param data The data for the request.
+   * @param data.agentId
+   * @param data.addDefaultInitialMessages If true, adds the default initial messages after resetting.
+   * @param data.userId
+   * @returns AgentState Successful Response
+   * @throws ApiError
+   */
+  public static resetMessages(
+    data: ResetMessagesData,
+    headers?: { user_id: string },
+  ): CancelablePromise<ResetMessagesResponse> {
+    return __request(OpenAPI, {
+      method: 'PATCH',
+      url: '/v1/agents/{agent_id}/reset-messages',
+      path: {
+        agent_id: data.agentId,
+      },
+      query: {
+        add_default_initial_messages: data.addDefaultInitialMessages,
+      },
+      errors: {
+        422: 'Validation Error',
+      },
+      headers,
+    });
+  }
 }
 
 export class ModelsService {
@@ -1715,66 +1706,6 @@ export class BlocksService {
       url: '/v1/blocks/{block_id}',
       path: {
         block_id: data.blockId,
-      },
-      errors: {
-        422: 'Validation Error',
-      },
-      headers,
-    });
-  }
-
-  /**
-   * Link Agent Memory Block
-   * Link a memory block to an agent.
-   * @param data The data for the request.
-   * @param data.blockId
-   * @param data.agentId The unique identifier of the agent to attach the source to.
-   * @param data.userId
-   * @returns void Successful Response
-   * @throws ApiError
-   */
-  public static linkAgentMemoryBlock(
-    data: LinkAgentMemoryBlockData,
-    headers?: { user_id: string },
-  ): CancelablePromise<LinkAgentMemoryBlockResponse> {
-    return __request(OpenAPI, {
-      method: 'PATCH',
-      url: '/v1/blocks/{block_id}/attach',
-      path: {
-        block_id: data.blockId,
-      },
-      query: {
-        agent_id: data.agentId,
-      },
-      errors: {
-        422: 'Validation Error',
-      },
-      headers,
-    });
-  }
-
-  /**
-   * Unlink Agent Memory Block
-   * Unlink a memory block from an agent
-   * @param data The data for the request.
-   * @param data.blockId
-   * @param data.agentId The unique identifier of the agent to attach the source to.
-   * @param data.userId
-   * @returns void Successful Response
-   * @throws ApiError
-   */
-  public static unlinkAgentMemoryBlock(
-    data: UnlinkAgentMemoryBlockData,
-    headers?: { user_id: string },
-  ): CancelablePromise<UnlinkAgentMemoryBlockResponse> {
-    return __request(OpenAPI, {
-      method: 'PATCH',
-      url: '/v1/blocks/{block_id}/detach',
-      path: {
-        block_id: data.blockId,
-      },
-      query: {
-        agent_id: data.agentId,
       },
       errors: {
         422: 'Validation Error',

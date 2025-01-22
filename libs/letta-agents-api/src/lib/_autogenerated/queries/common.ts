@@ -931,20 +931,11 @@ export type ToolsServiceAddComposioToolMutationResult = Awaited<
 export type SourcesServiceCreateSourceMutationResult = Awaited<
   ReturnType<typeof SourcesService.createSource>
 >;
-export type SourcesServiceAttachAgentToSourceMutationResult = Awaited<
-  ReturnType<typeof SourcesService.attachAgentToSource>
->;
-export type SourcesServiceDetachAgentFromSourceMutationResult = Awaited<
-  ReturnType<typeof SourcesService.detachAgentFromSource>
->;
 export type SourcesServiceUploadFileToSourceMutationResult = Awaited<
   ReturnType<typeof SourcesService.uploadFileToSource>
 >;
 export type AgentsServiceCreateAgentMutationResult = Awaited<
   ReturnType<typeof AgentsService.createAgent>
->;
-export type AgentsServiceAddAgentMemoryBlockMutationResult = Awaited<
-  ReturnType<typeof AgentsService.addAgentMemoryBlock>
 >;
 export type AgentsServiceCreateAgentArchivalMemoryMutationResult = Awaited<
   ReturnType<typeof AgentsService.createAgentArchivalMemory>
@@ -1021,29 +1012,35 @@ export type SourcesServiceUpdateSourceMutationResult = Awaited<
 export type AgentsServiceUpdateAgentMutationResult = Awaited<
   ReturnType<typeof AgentsService.updateAgent>
 >;
-export type AgentsServiceAddToolToAgentMutationResult = Awaited<
-  ReturnType<typeof AgentsService.addToolToAgent>
+export type AgentsServiceAttachToolToAgentMutationResult = Awaited<
+  ReturnType<typeof AgentsService.attachToolToAgent>
 >;
-export type AgentsServiceRemoveToolFromAgentMutationResult = Awaited<
-  ReturnType<typeof AgentsService.removeToolFromAgent>
+export type AgentsServiceDetachToolFromAgentMutationResult = Awaited<
+  ReturnType<typeof AgentsService.detachToolFromAgent>
 >;
-export type AgentsServiceResetMessagesMutationResult = Awaited<
-  ReturnType<typeof AgentsService.resetMessages>
+export type AgentsServiceAttachSourceToAgentMutationResult = Awaited<
+  ReturnType<typeof AgentsService.attachSourceToAgent>
+>;
+export type AgentsServiceDetachSourceFromAgentMutationResult = Awaited<
+  ReturnType<typeof AgentsService.detachSourceFromAgent>
 >;
 export type AgentsServiceUpdateAgentMemoryBlockByLabelMutationResult = Awaited<
   ReturnType<typeof AgentsService.updateAgentMemoryBlockByLabel>
 >;
+export type AgentsServiceAttachBlockToAgentMutationResult = Awaited<
+  ReturnType<typeof AgentsService.attachBlockToAgent>
+>;
+export type AgentsServiceDetachBlockFromAgentMutationResult = Awaited<
+  ReturnType<typeof AgentsService.detachBlockFromAgent>
+>;
 export type AgentsServiceUpdateAgentMessageMutationResult = Awaited<
   ReturnType<typeof AgentsService.updateAgentMessage>
 >;
+export type AgentsServiceResetMessagesMutationResult = Awaited<
+  ReturnType<typeof AgentsService.resetMessages>
+>;
 export type BlocksServiceUpdateMemoryBlockMutationResult = Awaited<
   ReturnType<typeof BlocksService.updateMemoryBlock>
->;
-export type BlocksServiceLinkAgentMemoryBlockMutationResult = Awaited<
-  ReturnType<typeof BlocksService.linkAgentMemoryBlock>
->;
-export type BlocksServiceUnlinkAgentMemoryBlockMutationResult = Awaited<
-  ReturnType<typeof BlocksService.unlinkAgentMemoryBlock>
 >;
 export type SandboxConfigServiceUpdateSandboxConfigV1SandboxConfigSandboxConfigIdPatchMutationResult =
   Awaited<
@@ -1071,9 +1068,6 @@ export type SourcesServiceDeleteFileFromSourceMutationResult = Awaited<
 >;
 export type AgentsServiceDeleteAgentMutationResult = Awaited<
   ReturnType<typeof AgentsService.deleteAgent>
->;
-export type AgentsServiceRemoveAgentMemoryBlockByLabelMutationResult = Awaited<
-  ReturnType<typeof AgentsService.removeAgentMemoryBlockByLabel>
 >;
 export type AgentsServiceDeleteAgentArchivalMemoryMutationResult = Awaited<
   ReturnType<typeof AgentsService.deleteAgentArchivalMemory>
