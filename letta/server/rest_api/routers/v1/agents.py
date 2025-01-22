@@ -328,7 +328,7 @@ def update_agent_memory_block(
     return block
 
 
-@router.get("/{agent_id}/archival", response_model=List[Passage], operation_id="list_agent_archival_memory")
+@router.get("/{agent_id}/archival_memory", response_model=List[Passage], operation_id="list_agent_archival_memory")
 def get_agent_archival_memory(
     agent_id: str,
     server: "SyncServer" = Depends(get_letta_server),
@@ -354,7 +354,7 @@ def get_agent_archival_memory(
     )
 
 
-@router.post("/{agent_id}/archival", response_model=List[Passage], operation_id="create_agent_archival_memory")
+@router.post("/{agent_id}/archival_memory", response_model=List[Passage], operation_id="create_agent_archival_memory")
 def insert_agent_archival_memory(
     agent_id: str,
     request: CreateArchivalMemory = Body(...),
@@ -371,7 +371,7 @@ def insert_agent_archival_memory(
 
 # TODO(ethan): query or path parameter for memory_id?
 # @router.delete("/{agent_id}/archival")
-@router.delete("/{agent_id}/archival/{memory_id}", response_model=None, operation_id="delete_agent_archival_memory")
+@router.delete("/{agent_id}/archival_memory/{memory_id}", response_model=None, operation_id="delete_agent_archival_memory")
 def delete_agent_archival_memory(
     agent_id: str,
     memory_id: str,
