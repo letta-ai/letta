@@ -663,7 +663,7 @@ def test_agent_creation(client: Union[LocalClient, RESTClient]):
     assert agent.id is not None
 
     # Verify the blocks are properly attached
-    agent_blocks = client.get_agent_memory_blocks(agent.id)
+    agent_blocks = client.list_agent_memory_blocks(agent.id)
     agent_block_ids = {block.id for block in agent_blocks}
 
     # Check that all memory blocks are present

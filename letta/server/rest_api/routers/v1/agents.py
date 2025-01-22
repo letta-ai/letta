@@ -213,7 +213,7 @@ def get_agent_sources(
 
 
 # TODO: remove? can also get with agent blocks
-@router.get("/{agent_id}/memory", response_model=Memory, operation_id="get_agent_memory")
+@router.get("/{agent_id}/core_memory", response_model=Memory, operation_id="get_agent_memory")
 def get_agent_memory(
     agent_id: str,
     server: "SyncServer" = Depends(get_letta_server),
@@ -228,7 +228,7 @@ def get_agent_memory(
     return server.get_agent_memory(agent_id=agent_id, actor=actor)
 
 
-@router.get("/{agent_id}/memory/block/{block_label}", response_model=Block, operation_id="get_agent_memory_block")
+@router.get("/{agent_id}/core_memory/blocks/{block_label}", response_model=Block, operation_id="get_agent_memory_block")
 def get_agent_memory_block(
     agent_id: str,
     block_label: str,
@@ -246,8 +246,8 @@ def get_agent_memory_block(
         raise HTTPException(status_code=404, detail=str(e))
 
 
-@router.get("/{agent_id}/memory/block", response_model=List[Block], operation_id="get_agent_memory_blocks")
-def get_agent_memory_blocks(
+@router.get("/{agent_id}/core_memory/blocks", response_model=List[Block], operation_id="list_agent_memory_blocks")
+def list_agent_memory_blocks(
     agent_id: str,
     server: "SyncServer" = Depends(get_letta_server),
     user_id: Optional[str] = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
@@ -263,7 +263,7 @@ def get_agent_memory_blocks(
         raise HTTPException(status_code=404, detail=str(e))
 
 
-@router.post("/{agent_id}/memory/block", response_model=Memory, operation_id="add_agent_memory_block")
+@router.post("/{agent_id}/core_memory/blocks", response_model=Memory, operation_id="add_agent_memory_block")
 def add_agent_memory_block(
     agent_id: str,
     create_block: CreateBlock = Body(...),
@@ -286,7 +286,7 @@ def add_agent_memory_block(
     return agent.memory
 
 
-@router.delete("/{agent_id}/memory/block/{block_label}", response_model=Memory, operation_id="remove_agent_memory_block_by_label")
+@router.delete("/{agent_id}/core_memory/blocks/{block_label}", response_model=Memory, operation_id="remove_agent_memory_block_by_label")
 def remove_agent_memory_block(
     agent_id: str,
     # TODO should this be block_id, or the label?
@@ -306,7 +306,7 @@ def remove_agent_memory_block(
     return agent.memory
 
 
-@router.patch("/{agent_id}/memory/block/{block_label}", response_model=Block, operation_id="update_agent_memory_block_by_label")
+@router.patch("/{agent_id}/core_memory/blocks/{block_label}", response_model=Block, operation_id="update_agent_memory_block_by_label")
 def update_agent_memory_block(
     agent_id: str,
     block_label: str,
