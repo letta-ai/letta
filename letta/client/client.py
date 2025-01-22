@@ -776,7 +776,7 @@ class RESTClient(AbstractClient):
         Returns:
             memory (Memory): In-context memory of the agent
         """
-        response = requests.get(f"{self.base_url}/{self.api_prefix}/agents/{agent_id}/memory", headers=self.headers)
+        response = requests.get(f"{self.base_url}/{self.api_prefix}/agents/{agent_id}/core_memory", headers=self.headers)
         if response.status_code != 200:
             raise ValueError(f"Failed to get in-context memory: {response.text}")
         return Memory(**response.json())
@@ -797,7 +797,7 @@ class RESTClient(AbstractClient):
         """
         memory_update_dict = {section: value}
         response = requests.patch(
-            f"{self.base_url}/{self.api_prefix}/agents/{agent_id}/memory", json=memory_update_dict, headers=self.headers
+            f"{self.base_url}/{self.api_prefix}/agents/{agent_id}/core_memory", json=memory_update_dict, headers=self.headers
         )
         if response.status_code != 200:
             raise ValueError(f"Failed to update in-context memory: {response.text}")
@@ -814,10 +814,10 @@ class RESTClient(AbstractClient):
             summary (ArchivalMemorySummary): Summary of the archival memory
 
         """
-        response = requests.get(f"{self.base_url}/{self.api_prefix}/agents/{agent_id}/memory/archival", headers=self.headers)
+        response = requests.get(f"{self.base_url}/{self.api_prefix}/agents/{agent_id}/context", headers=self.headers)
         if response.status_code != 200:
             raise ValueError(f"Failed to get archival memory summary: {response.text}")
-        return ArchivalMemorySummary(**response.json())
+        return ArchivalMemorySummary(size=response.json().get("num_archival_memory", 0))
 
     def get_recall_memory_summary(self, agent_id: str) -> RecallMemorySummary:
         """
@@ -829,10 +829,10 @@ class RESTClient(AbstractClient):
         Returns:
             summary (RecallMemorySummary): Summary of the recall memory
         """
-        response = requests.get(f"{self.base_url}/{self.api_prefix}/agents/{agent_id}/memory/recall", headers=self.headers)
+        response = requests.get(f"{self.base_url}/{self.api_prefix}/agents/{agent_id}/context", headers=self.headers)
         if response.status_code != 200:
             raise ValueError(f"Failed to get recall memory summary: {response.text}")
-        return RecallMemorySummary(**response.json())
+        return RecallMemorySummary(size=response.json().get("num_recall_memory", 0))
 
     def get_in_context_messages(self, agent_id: str) -> List[Message]:
         """
@@ -844,10 +844,10 @@ class RESTClient(AbstractClient):
         Returns:
             messages (List[Message]): List of in-context messages
         """
-        response = requests.get(f"{self.base_url}/{self.api_prefix}/agents/{agent_id}/memory/messages", headers=self.headers)
+        response = requests.get(f"{self.base_url}/{self.api_prefix}/agents/{agent_id}/context", headers=self.headers)
         if response.status_code != 200:
-            raise ValueError(f"Failed to get in-context messages: {response.text}")
-        return [Message(**message) for message in response.json()]
+            raise ValueError(f"Failed to get recall memory summary: {response.text}")
+        return [Message(**message) for message in response.json().get("messages", "")]
 
     # agent interactions
 
@@ -889,7 +889,9 @@ class RESTClient(AbstractClient):
             params["before"] = str(before)
         if after:
             params["after"] = str(after)
-        response = requests.get(f"{self.base_url}/{self.api_prefix}/agents/{str(agent_id)}/archival", params=params, headers=self.headers)
+        response = requests.get(
+            f"{self.base_url}/{self.api_prefix}/agents/{str(agent_id)}/archival_memory", params=params, headers=self.headers
+        )
         assert response.status_code == 200, f"Failed to get archival memory: {response.text}"
         return [Passage(**passage) for passage in response.json()]
 
@@ -906,7 +908,7 @@ class RESTClient(AbstractClient):
         """
         request = CreateArchivalMemory(text=memory)
         response = requests.post(
-            f"{self.base_url}/{self.api_prefix}/agents/{agent_id}/archival", headers=self.headers, json=request.model_dump()
+            f"{self.base_url}/{self.api_prefix}/agents/{agent_id}/archival_memory", headers=self.headers, json=request.model_dump()
         )
         if response.status_code != 200:
             raise ValueError(f"Failed to insert archival memory: {response.text}")
@@ -920,7 +922,7 @@ class RESTClient(AbstractClient):
             agent_id (str): ID of the agent
             memory_id (str): ID of the memory
         """
-        response = requests.delete(f"{self.base_url}/{self.api_prefix}/agents/{agent_id}/archival/{memory_id}", headers=self.headers)
+        response = requests.delete(f"{self.base_url}/{self.api_prefix}/agents/{agent_id}/archival_memory/{memory_id}", headers=self.headers)
         assert response.status_code == 200, f"Failed to delete archival memory: {response.text}"
 
     # messages (recall memory)
@@ -1463,12 +1465,14 @@ class RESTClient(AbstractClient):
         Returns:
             id (str): ID of the tool (`None` if not found)
         """
-        response = requests.get(f"{self.base_url}/{self.api_prefix}/tools/name/{tool_name}", headers=self.headers)
-        if response.status_code == 404:
-            return None
-        elif response.status_code != 200:
+        response = requests.get(f"{self.base_url}/{self.api_prefix}/tools", headers=self.headers)
+        if response.status_code != 200:
             raise ValueError(f"Failed to get tool: {response.text}")
-        return response.json()
+
+        tools = [tool for tool in [Tool(**tool) for tool in response.json()] if tool.name == tool_name]
+        if not tools:
+            return None
+        return tools[0].id
 
     def upsert_base_tools(self) -> List[Tool]:
         response = requests.post(f"{self.base_url}/{self.api_prefix}/tools/add-base-tools/", headers=self.headers)
@@ -1852,7 +1856,7 @@ class RESTClient(AbstractClient):
             memory (Memory): The updated memory
         """
         response = requests.post(
-            f"{self.base_url}/{self.api_prefix}/agents/{agent_id}/memory/block",
+            f"{self.base_url}/{self.api_prefix}/agents/{agent_id}/core_memory/blocks",
             headers=self.headers,
             json=create_block.model_dump(),
         )
@@ -1893,14 +1897,14 @@ class RESTClient(AbstractClient):
             memory (Memory): The updated memory
         """
         response = requests.delete(
-            f"{self.base_url}/{self.api_prefix}/agents/{agent_id}/memory/block/{block_label}",
+            f"{self.base_url}/{self.api_prefix}/agents/{agent_id}/core_memory/blocks/{block_label}",
             headers=self.headers,
         )
         if response.status_code != 200:
             raise ValueError(f"Failed to remove agent memory block: {response.text}")
         return Memory(**response.json())
 
-    def get_agent_memory_blocks(self, agent_id: str) -> List[Block]:
+    def list_agent_memory_blocks(self, agent_id: str) -> List[Block]:
         """
         Get all the blocks in the agent's core memory
 
@@ -1910,7 +1914,7 @@ class RESTClient(AbstractClient):
         Returns:
             blocks (List[Block]): The blocks in the agent's core memory
         """
-        response = requests.get(f"{self.base_url}/{self.api_prefix}/agents/{agent_id}/memory/block", headers=self.headers)
+        response = requests.get(f"{self.base_url}/{self.api_prefix}/agents/{agent_id}/core_memory/blocks", headers=self.headers)
         if response.status_code != 200:
             raise ValueError(f"Failed to get agent memory blocks: {response.text}")
         return [Block(**block) for block in response.json()]
@@ -1927,7 +1931,7 @@ class RESTClient(AbstractClient):
             block (Block): The block corresponding to the label
         """
         response = requests.get(
-            f"{self.base_url}/{self.api_prefix}/agents/{agent_id}/memory/block/{label}",
+            f"{self.base_url}/{self.api_prefix}/agents/{agent_id}/core_memory/blocks/{label}",
             headers=self.headers,
         )
         if response.status_code != 200:
@@ -1960,7 +1964,7 @@ class RESTClient(AbstractClient):
         if limit:
             data["limit"] = limit
         response = requests.patch(
-            f"{self.base_url}/{self.api_prefix}/agents/{agent_id}/memory/block/{label}",
+            f"{self.base_url}/{self.api_prefix}/agents/{agent_id}/core_memory/blocks/{label}",
             headers=self.headers,
             json=data,
         )
@@ -3523,7 +3527,7 @@ class LocalClient(AbstractClient):
         """
         return self.server.agent_manager.detach_block_with_label(agent_id=agent_id, block_label=block_label, actor=self.user)
 
-    def get_agent_memory_blocks(self, agent_id: str) -> List[Block]:
+    def list_agent_memory_blocks(self, agent_id: str) -> List[Block]:
         """
         Get all the blocks in the agent's core memory
 

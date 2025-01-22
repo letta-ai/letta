@@ -48,23 +48,6 @@ def get_tool(
     return tool
 
 
-@router.get("/name/{tool_name}", response_model=str, operation_id="get_tool_id_by_name")
-def get_tool_id(
-    tool_name: str,
-    server: SyncServer = Depends(get_letta_server),
-    user_id: Optional[str] = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
-):
-    """
-    Get a tool ID by name
-    """
-    actor = server.user_manager.get_user_or_default(user_id=user_id)
-    tool = server.tool_manager.get_tool_by_name(tool_name=tool_name, actor=actor)
-    if tool:
-        return tool.id
-    else:
-        raise HTTPException(status_code=404, detail=f"Tool with name {tool_name} and organization id {actor.organization_id} not found.")
-
-
 @router.get("/", response_model=List[Tool], operation_id="list_tools")
 def list_tools(
     cursor: Optional[str] = None,

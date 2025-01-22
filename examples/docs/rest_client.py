@@ -31,7 +31,7 @@ def main():
                 value="I am a friendly AI",
             ),
         ],
-        llm=llm_configs[0].handle,
+        model=llm_configs[0].handle,
         embedding=embedding_configs[0].handle,
     )
     print(f"Created agent: {agent_state.name} with ID {str(agent_state.id)}")
