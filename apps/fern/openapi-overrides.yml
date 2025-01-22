@@ -243,7 +243,7 @@ paths:
       x-fern-sdk-group-name:
         - agents
         - messages
-      x-fern-sdk-method-name: send
+      x-fern-sdk-method-name: create
   /v1/agents/{agent_id}/messages/{message_id}:
     patch:
       x-fern-sdk-group-name:
@@ -255,7 +255,7 @@ paths:
       x-fern-sdk-group-name:
         - agents
         - messages
-      x-fern-sdk-method-name: send_async
+      x-fern-sdk-method-name: create_async
   /v1/agents/{agent_id}/messages/stream:
     post:
       x-fern-streaming:
@@ -263,7 +263,7 @@ paths:
       x-fern-sdk-group-name:
         - agents
         - messages
-      x-fern-sdk-method-name: stream
+      x-fern-sdk-method-name: create_stream
       responses:
           "200":
             "content":
