@@ -14,3 +14,4 @@ export function getIsAgentState(data: unknown): data is AgentState {
 export * from './lib/utils/isAPIError/isAPIError';
 export * from './lib/utils/isAgentState/isAgentState';
 export * from './lib/contracts';
+export * from './lib/utils/isLettaTool/isLettaTool';

@@ -6,6 +6,8 @@ import type {
   AgentState,
   letta__schemas__tool__Tool,
 } from '@letta-cloud/letta-agents-api';
+import { isLettaTool } from '@letta-cloud/letta-agents-api';
+
 import { useToolsServiceDeleteTool } from '@letta-cloud/letta-agents-api';
 import {
   type GetToolResponse,
@@ -1114,11 +1116,7 @@ export function findProviderFromTags(tool: letta__schemas__tool__Tool) {
     return 'composio';
   }
 
-  if (tagsToMap.has('letta-base')) {
-    return 'letta';
-  }
-
-  if (tagsToMap.has('memgpt-base')) {
+  if (isLettaTool(tool)) {
     return 'letta';
   }
 

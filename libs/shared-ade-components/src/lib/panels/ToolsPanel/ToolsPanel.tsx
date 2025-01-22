@@ -18,6 +18,7 @@ import {
 } from '@letta-cloud/component-library';
 import { useCurrentAgent } from '../../hooks';
 import type { AgentState } from '@letta-cloud/letta-agents-api';
+import { isLettaTool } from '@letta-cloud/letta-agents-api';
 import { useAgentsServiceRemoveToolFromAgent } from '@letta-cloud/letta-agents-api';
 import { UseAgentsServiceGetAgentKeyFn } from '@letta-cloud/letta-agents-api';
 
@@ -139,10 +140,7 @@ function ToolsList(props: ToolsProps) {
         return;
       }
 
-      if (
-        tool.tags?.includes('letta-base') ||
-        tool.tags?.includes('memgpt-base')
-      ) {
+      if (isLettaTool(tool)) {
         lettaCoreToolCount += 1;
         if (getIsGenericFolder(fileTreeTools[0])) {
           fileTreeTools[0].contents.push({
