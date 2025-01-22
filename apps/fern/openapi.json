@@ -1934,7 +1934,7 @@
         }
       }
     },
-    "/v1/agents/{agent_id}/archival": {
+    "/v1/agents/{agent_id}/archival_memory": {
       "get": {
         "tags": ["agents"],
         "summary": "Get Agent Archival Memory",
@@ -2086,7 +2086,7 @@
         }
       }
     },
-    "/v1/agents/{agent_id}/archival/{memory_id}": {
+    "/v1/agents/{agent_id}/archival_memory/{memory_id}": {
       "delete": {
         "tags": ["agents"],
         "summary": "Delete Agent Archival Memory",

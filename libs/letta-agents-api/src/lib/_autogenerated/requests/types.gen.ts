@@ -3800,7 +3800,7 @@ export type $OpenApiTs = {
       };
     };
   };
-  '/v1/agents/{agent_id}/archival': {
+  '/v1/agents/{agent_id}/archival_memory': {
     get: {
       req: ListAgentArchivalMemoryData;
       res: {
@@ -3828,7 +3828,7 @@ export type $OpenApiTs = {
       };
     };
   };
-  '/v1/agents/{agent_id}/archival/{memory_id}': {
+  '/v1/agents/{agent_id}/archival_memory/{memory_id}': {
     delete: {
       req: DeleteAgentArchivalMemoryData;
       res: {

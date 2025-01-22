@@ -1293,7 +1293,7 @@ export class AgentsService {
   ): CancelablePromise<ListAgentArchivalMemoryResponse> {
     return __request(OpenAPI, {
       method: 'GET',
-      url: '/v1/agents/{agent_id}/archival',
+      url: '/v1/agents/{agent_id}/archival_memory',
       path: {
         agent_id: data.agentId,
       },
@@ -1325,7 +1325,7 @@ export class AgentsService {
   ): CancelablePromise<CreateAgentArchivalMemoryResponse> {
     return __request(OpenAPI, {
       method: 'POST',
-      url: '/v1/agents/{agent_id}/archival',
+      url: '/v1/agents/{agent_id}/archival_memory',
       path: {
         agent_id: data.agentId,
       },
@@ -1354,7 +1354,7 @@ export class AgentsService {
   ): CancelablePromise<DeleteAgentArchivalMemoryResponse> {
     return __request(OpenAPI, {
       method: 'DELETE',
-      url: '/v1/agents/{agent_id}/archival/{memory_id}',
+      url: '/v1/agents/{agent_id}/archival_memory/{memory_id}',
       path: {
         agent_id: data.agentId,
         memory_id: data.memoryId,
