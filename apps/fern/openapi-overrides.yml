@@ -171,12 +171,6 @@ paths:
         - agents
         - core_memory
       x-fern-sdk-method-name: get
-  /v1/agents/{agent_id}/memory/messages:
-    get:
-      x-fern-sdk-group-name:
-        - agents
-        - core_memory
-      x-fern-sdk-method-name: listInContext
   /v1/agents/{agent_id}/memory/block:
     get:
       x-fern-sdk-group-name:
@@ -204,18 +198,6 @@ paths:
         - agents
         - core_memory
       x-fern-sdk-method-name: remove_block
-  /v1/agents/{agent_id}/memory/recall:
-    get:
-      x-fern-sdk-group-name:
-        - agents
-        - recall_memory
-      x-fern-sdk-method-name: getSummary
-  /v1/agents/{agent_id}/memory/archival:
-    get:
-      x-fern-sdk-group-name:
-        - agents
-        - archival_memory
-      x-fern-sdk-method-name: getSummary
   /v1/agents/{agent_id}/archival:
     get:
       x-fern-sdk-group-name:

@@ -1685,51 +1685,6 @@
         }
       }
     },
-    "/v1/agents/{agent_id}/memory/messages": {
-      "get": {
-        "tags": ["agents"],
-        "summary": "Get Agent In Context Messages",
-        "description": "Retrieve the messages in the context of a specific agent.",
-        "operationId": "list_agent_in_context_messages",
-        "parameters": [
-          {
-            "name": "agent_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "Agent Id"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/letta__schemas__message__Message"
-                  },
-                  "title": "Response List Agent In Context Messages"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
     "/v1/agents/{agent_id}/memory": {
       "get": {
         "tags": ["agents"],
@@ -2004,88 +1959,6 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Memory"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/v1/agents/{agent_id}/memory/recall": {
-      "get": {
-        "tags": ["agents"],
-        "summary": "Get Agent Recall Memory Summary",
-        "description": "Retrieve the summary of the recall memory of a specific agent.",
-        "operationId": "get_agent_recall_memory_summary",
-        "parameters": [
-          {
-            "name": "agent_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "Agent Id"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/RecallMemorySummary"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/v1/agents/{agent_id}/memory/archival": {
-      "get": {
-        "tags": ["agents"],
-        "summary": "Get Agent Archival Memory Summary",
-        "description": "Retrieve the summary of the archival memory of a specific agent.",
-        "operationId": "get_agent_archival_memory_summary",
-        "parameters": [
-          {
-            "name": "agent_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "Agent Id"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ArchivalMemorySummary"
                 }
               }
             }
@@ -4929,18 +4802,6 @@
         "title": "AppModel",
         "description": "App data model."
       },
-      "ArchivalMemorySummary": {
-        "properties": {
-          "size": {
-            "type": "integer",
-            "title": "Size",
-            "description": "Number of rows in archival memory"
-          }
-        },
-        "type": "object",
-        "required": ["size"],
-        "title": "ArchivalMemorySummary"
-      },
       "AssistantFile": {
         "properties": {
           "id": {
@@ -7782,18 +7643,6 @@
         "required": ["id", "date", "reasoning"],
         "title": "ReasoningMessage",
         "description": "Representation of an agent's internal reasoning.\n\nAttributes:\n    reasoning (str): The internal reasoning of the agent\n    id (str): The ID of the message\n    date (datetime): The date the message was created in ISO format"
-      },
-      "RecallMemorySummary": {
-        "properties": {
-          "size": {
-            "type": "integer",
-            "title": "Size",
-            "description": "Number of rows in recall memory"
-          }
-        },
-        "type": "object",
-        "required": ["size"],
-        "title": "RecallMemorySummary"
       },
       "ResponseFormat": {
         "properties": {

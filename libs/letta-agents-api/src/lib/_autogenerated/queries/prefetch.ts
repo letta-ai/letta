@@ -424,33 +424,6 @@ export const prefetchUseAgentsServiceGetAgentSources = (
     queryFn: () => AgentsService.getAgentSources({ agentId, userId }),
   });
 /**
- * Get Agent In Context Messages
- * Retrieve the messages in the context of a specific agent.
- * @param data The data for the request.
- * @param data.agentId
- * @param data.userId
- * @returns letta__schemas__message__Message Successful Response
- * @throws ApiError
- */
-export const prefetchUseAgentsServiceListAgentInContextMessages = (
-  queryClient: QueryClient,
-  {
-    agentId,
-    userId,
-  }: {
-    agentId: string;
-    userId?: string;
-  },
-) =>
-  queryClient.prefetchQuery({
-    queryKey: Common.UseAgentsServiceListAgentInContextMessagesKeyFn({
-      agentId,
-      userId,
-    }),
-    queryFn: () =>
-      AgentsService.listAgentInContextMessages({ agentId, userId }),
-  });
-/**
  * Get Agent Memory
  * Retrieve the memory state of a specific agent.
  * This endpoint fetches the current memory state of the agent identified by the user ID and agent ID.
@@ -530,60 +503,6 @@ export const prefetchUseAgentsServiceGetAgentMemoryBlocks = (
       userId,
     }),
     queryFn: () => AgentsService.getAgentMemoryBlocks({ agentId, userId }),
-  });
-/**
- * Get Agent Recall Memory Summary
- * Retrieve the summary of the recall memory of a specific agent.
- * @param data The data for the request.
- * @param data.agentId
- * @param data.userId
- * @returns RecallMemorySummary Successful Response
- * @throws ApiError
- */
-export const prefetchUseAgentsServiceGetAgentRecallMemorySummary = (
-  queryClient: QueryClient,
-  {
-    agentId,
-    userId,
-  }: {
-    agentId: string;
-    userId?: string;
-  },
-) =>
-  queryClient.prefetchQuery({
-    queryKey: Common.UseAgentsServiceGetAgentRecallMemorySummaryKeyFn({
-      agentId,
-      userId,
-    }),
-    queryFn: () =>
-      AgentsService.getAgentRecallMemorySummary({ agentId, userId }),
-  });
-/**
- * Get Agent Archival Memory Summary
- * Retrieve the summary of the archival memory of a specific agent.
- * @param data The data for the request.
- * @param data.agentId
- * @param data.userId
- * @returns ArchivalMemorySummary Successful Response
- * @throws ApiError
- */
-export const prefetchUseAgentsServiceGetAgentArchivalMemorySummary = (
-  queryClient: QueryClient,
-  {
-    agentId,
-    userId,
-  }: {
-    agentId: string;
-    userId?: string;
-  },
-) =>
-  queryClient.prefetchQuery({
-    queryKey: Common.UseAgentsServiceGetAgentArchivalMemorySummaryKeyFn({
-      agentId,
-      userId,
-    }),
-    queryFn: () =>
-      AgentsService.getAgentArchivalMemorySummary({ agentId, userId }),
   });
 /**
  * Get Agent Archival Memory

@@ -342,28 +342,6 @@ export const UseAgentsServiceGetAgentSourcesKeyFn = (
   useAgentsServiceGetAgentSourcesKey,
   ...(queryKey ?? [{ agentId, userId }]),
 ];
-export type AgentsServiceListAgentInContextMessagesDefaultResponse = Awaited<
-  ReturnType<typeof AgentsService.listAgentInContextMessages>
->;
-export type AgentsServiceListAgentInContextMessagesQueryResult<
-  TData = AgentsServiceListAgentInContextMessagesDefaultResponse,
-  TError = unknown,
-> = UseQueryResult<TData, TError>;
-export const useAgentsServiceListAgentInContextMessagesKey =
-  'AgentsServiceListAgentInContextMessages';
-export const UseAgentsServiceListAgentInContextMessagesKeyFn = (
-  {
-    agentId,
-    userId,
-  }: {
-    agentId: string;
-    userId?: string;
-  },
-  queryKey?: Array<unknown>,
-) => [
-  useAgentsServiceListAgentInContextMessagesKey,
-  ...(queryKey ?? [{ agentId, userId }]),
-];
 export type AgentsServiceGetAgentMemoryDefaultResponse = Awaited<
   ReturnType<typeof AgentsService.getAgentMemory>
 >;
@@ -429,50 +407,6 @@ export const UseAgentsServiceGetAgentMemoryBlocksKeyFn = (
   queryKey?: Array<unknown>,
 ) => [
   useAgentsServiceGetAgentMemoryBlocksKey,
-  ...(queryKey ?? [{ agentId, userId }]),
-];
-export type AgentsServiceGetAgentRecallMemorySummaryDefaultResponse = Awaited<
-  ReturnType<typeof AgentsService.getAgentRecallMemorySummary>
->;
-export type AgentsServiceGetAgentRecallMemorySummaryQueryResult<
-  TData = AgentsServiceGetAgentRecallMemorySummaryDefaultResponse,
-  TError = unknown,
-> = UseQueryResult<TData, TError>;
-export const useAgentsServiceGetAgentRecallMemorySummaryKey =
-  'AgentsServiceGetAgentRecallMemorySummary';
-export const UseAgentsServiceGetAgentRecallMemorySummaryKeyFn = (
-  {
-    agentId,
-    userId,
-  }: {
-    agentId: string;
-    userId?: string;
-  },
-  queryKey?: Array<unknown>,
-) => [
-  useAgentsServiceGetAgentRecallMemorySummaryKey,
-  ...(queryKey ?? [{ agentId, userId }]),
-];
-export type AgentsServiceGetAgentArchivalMemorySummaryDefaultResponse = Awaited<
-  ReturnType<typeof AgentsService.getAgentArchivalMemorySummary>
->;
-export type AgentsServiceGetAgentArchivalMemorySummaryQueryResult<
-  TData = AgentsServiceGetAgentArchivalMemorySummaryDefaultResponse,
-  TError = unknown,
-> = UseQueryResult<TData, TError>;
-export const useAgentsServiceGetAgentArchivalMemorySummaryKey =
-  'AgentsServiceGetAgentArchivalMemorySummary';
-export const UseAgentsServiceGetAgentArchivalMemorySummaryKeyFn = (
-  {
-    agentId,
-    userId,
-  }: {
-    agentId: string;
-    userId?: string;
-  },
-  queryKey?: Array<unknown>,
-) => [
-  useAgentsServiceGetAgentArchivalMemorySummaryKey,
   ...(queryKey ?? [{ agentId, userId }]),
 ];
 export type AgentsServiceListAgentArchivalMemoryDefaultResponse = Awaited<

@@ -737,19 +737,6 @@ export const $AppModel = {
   description: 'App data model.',
 } as const;
 
-export const $ArchivalMemorySummary = {
-  properties: {
-    size: {
-      type: 'integer',
-      title: 'Size',
-      description: 'Number of rows in archival memory',
-    },
-  },
-  type: 'object',
-  required: ['size'],
-  title: 'ArchivalMemorySummary',
-} as const;
-
 export const $AssistantFile = {
   properties: {
     id: {
@@ -3814,19 +3801,6 @@ Attributes:
     reasoning (str): The internal reasoning of the agent
     id (str): The ID of the message
     date (datetime): The date the message was created in ISO format`,
-} as const;
-
-export const $RecallMemorySummary = {
-  properties: {
-    size: {
-      type: 'integer',
-      title: 'Size',
-      description: 'Number of rows in recall memory',
-    },
-  },
-  type: 'object',
-  required: ['size'],
-  title: 'RecallMemorySummary',
 } as const;
 
 export const $ResponseFormat = {

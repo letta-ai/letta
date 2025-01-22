@@ -74,8 +74,6 @@ import type {
   ResetMessagesResponse,
   GetAgentSourcesData,
   GetAgentSourcesResponse,
-  ListAgentInContextMessagesData,
-  ListAgentInContextMessagesResponse,
   GetAgentMemoryData,
   GetAgentMemoryResponse,
   GetAgentMemoryBlockData,
@@ -88,10 +86,6 @@ import type {
   GetAgentMemoryBlocksResponse,
   AddAgentMemoryBlockData,
   AddAgentMemoryBlockResponse,
-  GetAgentRecallMemorySummaryData,
-  GetAgentRecallMemorySummaryResponse,
-  GetAgentArchivalMemorySummaryData,
-  GetAgentArchivalMemorySummaryResponse,
   ListAgentArchivalMemoryData,
   ListAgentArchivalMemoryResponse,
   CreateAgentArchivalMemoryData,
@@ -1141,32 +1135,6 @@ export class AgentsService {
   }
 
   /**
-   * Get Agent In Context Messages
-   * Retrieve the messages in the context of a specific agent.
-   * @param data The data for the request.
-   * @param data.agentId
-   * @param data.userId
-   * @returns letta__schemas__message__Message Successful Response
-   * @throws ApiError
-   */
-  public static listAgentInContextMessages(
-    data: ListAgentInContextMessagesData,
-    headers?: { user_id: string },
-  ): CancelablePromise<ListAgentInContextMessagesResponse> {
-    return __request(OpenAPI, {
-      method: 'GET',
-      url: '/v1/agents/{agent_id}/memory/messages',
-      path: {
-        agent_id: data.agentId,
-      },
-      errors: {
-        422: 'Validation Error',
-      },
-      headers,
-    });
-  }
-
-  /**
    * Get Agent Memory
    * Retrieve the memory state of a specific agent.
    * This endpoint fetches the current memory state of the agent identified by the user ID and agent ID.
@@ -1328,58 +1296,6 @@ export class AgentsService {
       },
       body: data.requestBody,
       mediaType: 'application/json',
-      errors: {
-        422: 'Validation Error',
-      },
-      headers,
-    });
-  }
-
-  /**
-   * Get Agent Recall Memory Summary
-   * Retrieve the summary of the recall memory of a specific agent.
-   * @param data The data for the request.
-   * @param data.agentId
-   * @param data.userId
-   * @returns RecallMemorySummary Successful Response
-   * @throws ApiError
-   */
-  public static getAgentRecallMemorySummary(
-    data: GetAgentRecallMemorySummaryData,
-    headers?: { user_id: string },
-  ): CancelablePromise<GetAgentRecallMemorySummaryResponse> {
-    return __request(OpenAPI, {
-      method: 'GET',
-      url: '/v1/agents/{agent_id}/memory/recall',
-      path: {
-        agent_id: data.agentId,
-      },
-      errors: {
-        422: 'Validation Error',
-      },
-      headers,
-    });
-  }
-
-  /**
-   * Get Agent Archival Memory Summary
-   * Retrieve the summary of the archival memory of a specific agent.
-   * @param data The data for the request.
-   * @param data.agentId
-   * @param data.userId
-   * @returns ArchivalMemorySummary Successful Response
-   * @throws ApiError
-   */
-  public static getAgentArchivalMemorySummary(
-    data: GetAgentArchivalMemorySummaryData,
-    headers?: { user_id: string },
-  ): CancelablePromise<GetAgentArchivalMemorySummaryResponse> {
-    return __request(OpenAPI, {
-      method: 'GET',
-      url: '/v1/agents/{agent_id}/memory/archival',
-      path: {
-        agent_id: data.agentId,
-      },
       errors: {
         422: 'Validation Error',
       },

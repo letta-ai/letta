@@ -567,39 +567,6 @@ export const useAgentsServiceGetAgentSources = <
     ...options,
   });
 /**
- * Get Agent In Context Messages
- * Retrieve the messages in the context of a specific agent.
- * @param data The data for the request.
- * @param data.agentId
- * @param data.userId
- * @returns letta__schemas__message__Message Successful Response
- * @throws ApiError
- */
-export const useAgentsServiceListAgentInContextMessages = <
-  TData = Common.AgentsServiceListAgentInContextMessagesDefaultResponse,
-  TError = unknown,
-  TQueryKey extends Array<unknown> = unknown[],
->(
-  {
-    agentId,
-    userId,
-  }: {
-    agentId: string;
-    userId?: string;
-  },
-  queryKey?: TQueryKey,
-  options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>,
-) =>
-  useQuery<TData, TError>({
-    queryKey: Common.UseAgentsServiceListAgentInContextMessagesKeyFn(
-      { agentId, userId },
-      queryKey,
-    ),
-    queryFn: () =>
-      AgentsService.listAgentInContextMessages({ agentId, userId }) as TData,
-    ...options,
-  });
-/**
  * Get Agent Memory
  * Retrieve the memory state of a specific agent.
  * This endpoint fetches the current memory state of the agent identified by the user ID and agent ID.
@@ -703,72 +670,6 @@ export const useAgentsServiceGetAgentMemoryBlocks = <
     ),
     queryFn: () =>
       AgentsService.getAgentMemoryBlocks({ agentId, userId }) as TData,
-    ...options,
-  });
-/**
- * Get Agent Recall Memory Summary
- * Retrieve the summary of the recall memory of a specific agent.
- * @param data The data for the request.
- * @param data.agentId
- * @param data.userId
- * @returns RecallMemorySummary Successful Response
- * @throws ApiError
- */
-export const useAgentsServiceGetAgentRecallMemorySummary = <
-  TData = Common.AgentsServiceGetAgentRecallMemorySummaryDefaultResponse,
-  TError = unknown,
-  TQueryKey extends Array<unknown> = unknown[],
->(
-  {
-    agentId,
-    userId,
-  }: {
-    agentId: string;
-    userId?: string;
-  },
-  queryKey?: TQueryKey,
-  options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>,
-) =>
-  useQuery<TData, TError>({
-    queryKey: Common.UseAgentsServiceGetAgentRecallMemorySummaryKeyFn(
-      { agentId, userId },
-      queryKey,
-    ),
-    queryFn: () =>
-      AgentsService.getAgentRecallMemorySummary({ agentId, userId }) as TData,
-    ...options,
-  });
-/**
- * Get Agent Archival Memory Summary
- * Retrieve the summary of the archival memory of a specific agent.
- * @param data The data for the request.
- * @param data.agentId
- * @param data.userId
- * @returns ArchivalMemorySummary Successful Response
- * @throws ApiError
- */
-export const useAgentsServiceGetAgentArchivalMemorySummary = <
-  TData = Common.AgentsServiceGetAgentArchivalMemorySummaryDefaultResponse,
-  TError = unknown,
-  TQueryKey extends Array<unknown> = unknown[],
->(
-  {
-    agentId,
-    userId,
-  }: {
-    agentId: string;
-    userId?: string;
-  },
-  queryKey?: TQueryKey,
-  options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>,
-) =>
-  useQuery<TData, TError>({
-    queryKey: Common.UseAgentsServiceGetAgentArchivalMemorySummaryKeyFn(
-      { agentId, userId },
-      queryKey,
-    ),
-    queryFn: () =>
-      AgentsService.getAgentArchivalMemorySummary({ agentId, userId }) as TData,
     ...options,
   });
 /**

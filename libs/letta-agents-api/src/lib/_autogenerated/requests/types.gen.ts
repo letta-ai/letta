@@ -251,13 +251,6 @@ export type AppModel = {
   configuration_docs_text?: string | null;
 };
 
-export type ArchivalMemorySummary = {
-  /**
-   * Number of rows in archival memory
-   */
-  size: number;
-};
-
 export type AssistantFile = {
   /**
    * The unique identifier of the file.
@@ -1558,13 +1551,6 @@ export type ReasoningMessage = {
   reasoning: string;
 };
 
-export type RecallMemorySummary = {
-  /**
-   * Number of rows in recall memory
-   */
-  size: number;
-};
-
 export type ResponseFormat = {
   type?: string;
 };
@@ -2744,14 +2730,6 @@ export type GetAgentSourcesData = {
 
 export type GetAgentSourcesResponse = Array<Source>;
 
-export type ListAgentInContextMessagesData = {
-  agentId: string;
-  userId?: string | null;
-};
-
-export type ListAgentInContextMessagesResponse =
-  Array<letta__schemas__message__Message>;
-
 export type GetAgentMemoryData = {
   agentId: string;
   userId?: string | null;
@@ -2798,20 +2776,6 @@ export type AddAgentMemoryBlockData = {
 };
 
 export type AddAgentMemoryBlockResponse = Memory;
-
-export type GetAgentRecallMemorySummaryData = {
-  agentId: string;
-  userId?: string | null;
-};
-
-export type GetAgentRecallMemorySummaryResponse = RecallMemorySummary;
-
-export type GetAgentArchivalMemorySummaryData = {
-  agentId: string;
-  userId?: string | null;
-};
-
-export type GetAgentArchivalMemorySummaryResponse = ArchivalMemorySummary;
 
 export type ListAgentArchivalMemoryData = {
   /**
@@ -3774,21 +3738,6 @@ export type $OpenApiTs = {
       };
     };
   };
-  '/v1/agents/{agent_id}/memory/messages': {
-    get: {
-      req: ListAgentInContextMessagesData;
-      res: {
-        /**
-         * Successful Response
-         */
-        200: Array<letta__schemas__message__Message>;
-        /**
-         * Validation Error
-         */
-        422: HTTPValidationError;
-      };
-    };
-  };
   '/v1/agents/{agent_id}/memory': {
     get: {
       req: GetAgentMemoryData;
@@ -3866,36 +3815,6 @@ export type $OpenApiTs = {
          * Successful Response
          */
         200: Memory;
-        /**
-         * Validation Error
-         */
-        422: HTTPValidationError;
-      };
-    };
-  };
-  '/v1/agents/{agent_id}/memory/recall': {
-    get: {
-      req: GetAgentRecallMemorySummaryData;
-      res: {
-        /**
-         * Successful Response
-         */
-        200: RecallMemorySummary;
-        /**
-         * Validation Error
-         */
-        422: HTTPValidationError;
-      };
-    };
-  };
-  '/v1/agents/{agent_id}/memory/archival': {
-    get: {
-      req: GetAgentArchivalMemorySummaryData;
-      res: {
-        /**
-         * Successful Response
-         */
-        200: ArchivalMemorySummary;
         /**
          * Validation Error
          */
