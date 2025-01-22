@@ -30,7 +30,7 @@ curl -X POST https://app.letta.com/v1/agents/ \
 # assumes that you already instantiated a client
 agent = client.agents.create(
     memory_blocks=[],
-    llm="anthropic/claude-3-5-sonnet-20241022",
+    model="anthropic/claude-3-5-sonnet-20241022",
     context_window_limit=200000,
     embedding="openai/text-embedding-ada-002",
     tags=["user_1"]
@@ -85,7 +85,7 @@ user_id = "my_uuid"
 # create an agent with the user_id tag
 agent = client.agents.create(
     memory_blocks=[],
-    llm="anthropic/claude-3-5-sonnet-20241022",
+    model="anthropic/claude-3-5-sonnet-20241022",
     context_window_limit=200000,
     embedding="openai/text-embedding-ada-002",
     tags=[user_id]

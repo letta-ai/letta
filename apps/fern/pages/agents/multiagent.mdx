@@ -5,15 +5,15 @@ slug: guides/agents/multi-agent
 
 
 Letta provides built-in tools for supporting cross-agent communication to built multi-agent workflows. To enable multi-agent collaboration, you should create agents that have access to the built-in cross-agent communication tools:
-* `send_message_to_specific_agent(message: str, agent_id: str)`: Allows the agent to send a message to a single agent specified by ID. 
-* `send_message_to_agents_matching_all_tags(message: str, tags: List[str])`: Allows the agent to send a message to all agents in the same organization that match ALL of the given tags. 
+* `send_message_to_specific_agent(message: str, agent_id: str)`: Allows the agent to send a message to a single agent specified by ID.
+* `send_message_to_agents_matching_all_tags(message: str, tags: List[str])`: Allows the agent to send a message to all agents in the same organization that match ALL of the given tags.
 
-Letta agents can also share state via shared memory blocks. Shared memory blocks allow agents to have shared memory (e.g. memory about an organization they are both a part of or a task they are both working on). 
+Letta agents can also share state via shared memory blocks. Shared memory blocks allow agents to have shared memory (e.g. memory about an organization they are both a part of or a task they are both working on).
 
 ## Cross-agent communication
 To enable cross-agent communication, you can add a built-in tool or implement your own tool to send messages to other agents.
 
-### Messaging a single agent 
+### Messaging a single agent
 ```python
 def send_message_to_specific_agent(message: str, other_agent_id: str) -> Optional[str]:
     """
@@ -72,7 +72,7 @@ def trigger_worker_agents() -> Optional[str]:
 
 
 ## Shared memory
-Agents can share state via shared memory blocks. This allows agents to have a "shared memory". You can shared blocks between agents by attaching the same block ID to multiple agents. 
+Agents can share state via shared memory blocks. This allows agents to have a "shared memory". You can shared blocks between agents by attaching the same block ID to multiple agents.
 ```python
 from letta_client import Letta
 
@@ -83,7 +83,7 @@ shared_block = client.blocks.create(label="organization", value="Organization: L
 
 # create a supervisor agent
 supervisor_agent = client.agents.create(
-    llm="anthropic/claude-3-5-sonnet-20241022",
+    model="anthropic/claude-3-5-sonnet-20241022",
     embedding="openai/text-embedding-ada-002",
     # blocks created for this agentj
     memory_blocks=[{"persona": "I am a supervisor"}],
@@ -93,7 +93,7 @@ supervisor_agent = client.agents.create(
 
 # create a worker agent
 worker_agent = client.agents.create(
-    llm="anthropic/claude-3-5-sonnet-20241022",
+    model="anthropic/claude-3-5-sonnet-20241022",
     embedding="openai/text-embedding-ada-002",
     # blocks created for this agent
     memory_blocks=[{"persona": "I am a worker"}],
@@ -101,4 +101,4 @@ worker_agent = client.agents.create(
     block_ids=[shared_block.id],
 )
 ```
-Memory blocks can also be accessed by other agents, even if not shared. For example, worker agents can write the output of their task to a memory block, which is then read by a supervisor agent. 
+Memory blocks can also be accessed by other agents, even if not shared. For example, worker agents can write the output of their task to a memory block, which is then read by a supervisor agent.

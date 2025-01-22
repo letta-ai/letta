@@ -330,7 +330,7 @@ def agent_id(server, user_id, base_tools):
             name="test_agent",
             tool_ids=[t.id for t in base_tools],
             memory_blocks=[],
-            llm="openai/gpt-4",
+            model="openai/gpt-4",
             embedding="openai/text-embedding-ada-002",
         ),
         actor=actor,
@@ -351,7 +351,7 @@ def other_agent_id(server, user_id, base_tools):
             name="test_agent_other",
             tool_ids=[t.id for t in base_tools],
             memory_blocks=[],
-            llm="openai/gpt-4",
+            model="openai/gpt-4",
             embedding="openai/text-embedding-ada-002",
         ),
         actor=actor,
@@ -550,7 +550,7 @@ def test_delete_agent_same_org(server: SyncServer, org_id: str, user: User):
         request=CreateAgent(
             name="nonexistent_tools_agent",
             memory_blocks=[],
-            llm="openai/gpt-4",
+            model="openai/gpt-4",
             embedding="openai/text-embedding-ada-002",
         ),
         actor=user,
@@ -861,7 +861,7 @@ def test_memory_rebuild_count(server, user, mock_e2b_api_key_none, base_tools, b
                 CreateBlock(label="human", value="The human's name is Bob."),
                 CreateBlock(label="persona", value="My name is Alice."),
             ],
-            llm="openai/gpt-4",
+            model="openai/gpt-4",
             embedding="openai/text-embedding-ada-002",
         ),
         actor=actor,
@@ -1048,7 +1048,7 @@ def test_add_remove_tools_update_agent(server: SyncServer, user_id: str, base_to
                 CreateBlock(label="human", value="The human's name is Bob."),
                 CreateBlock(label="persona", value="My name is Alice."),
             ],
-            llm="openai/gpt-4",
+            model="openai/gpt-4",
             embedding="openai/text-embedding-ada-002",
             include_base_tools=False,
         ),
@@ -1119,7 +1119,10 @@ def test_messages_with_provider_override(server: SyncServer, user_id: str):
     )
     agent = server.create_agent(
         request=CreateAgent(
-            memory_blocks=[], llm="anthropic/claude-3-opus-20240229", context_window_limit=200000, embedding="openai/text-embedding-ada-002"
+            memory_blocks=[],
+            model="anthropic/claude-3-opus-20240229",
+            context_window_limit=200000,
+            embedding="openai/text-embedding-ada-002",
         ),
         actor=actor,
     )

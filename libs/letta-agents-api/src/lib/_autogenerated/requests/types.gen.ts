@@ -666,7 +666,7 @@ export type CreateAgentRequest = {
   /**
    * The LLM configuration handle used by the agent, specified in the format provider/model-name, as an alternative to specifying llm_config.
    */
-  llm?: string | null;
+  model?: string | null;
   /**
    * The embedding configuration handle used by the agent, specified in the format provider/model-name.
    */

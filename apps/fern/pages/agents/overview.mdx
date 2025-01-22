@@ -13,10 +13,10 @@ slug: guides/agents/overview
   allowfullscreen
 ></iframe>
 
-Letta agents can automatically manage long-term memory, load data from external sources, and call custom tools. 
+Letta agents can automatically manage long-term memory, load data from external sources, and call custom tools.
 Unlike in other frameworks, Letta agents are stateful, so they keep track of historical interactions and reserve part of their context to read and write memories which evolve over time.
 
-Key features: 
+Key features:
 * Python/TypeScript SDKs & REST API
 * Persistence
 * Tool calling (support for custom tools & Composio tools)
@@ -27,7 +27,7 @@ Key features:
 Letta manages a reasoning loop for agents. At each agent step (i.e. iteration of the loop), the state of the agent is checkpointed and persisted to the database.
 
 You can interact with agents from a REST API, the ADE, and TypeScript / Python SDKs.
-As long as they are connected to the same service, all of these interfaces can be used to interact with the same agents. 
+As long as they are connected to the same service, all of these interfaces can be used to interact with the same agents.
 
 ## Agents vs Threads
 
@@ -76,7 +76,7 @@ If you would like to create common starting points for new conversation "threads
 
 For multi-users applications, we recommend creating an agent per-user, though you can also have multiple users message a single agent (but it will be a single shared message history).
 
-## Create an agent 
+## Create an agent
 
 <CodeGroup>
 ```python Python
@@ -90,13 +90,13 @@ agent_state = client.agents.create(
         {"label": "human", "limit": 2000, "value": "Name: Bob"},
         {"label": "persona", "limit": 2000, "value": "You are a friendly agent"}
     ],
-    llm="openai/gpt-4",
+    model="openai/gpt-4",
     embedding="openai/text-embedding-ada-002"
 )
 ```
 </CodeGroup>
 
-Once an agent is created, you can message it: 
+Once an agent is created, you can message it:
 ```python Python
 # Message an agent
 response = client.agents.messages.create(
@@ -109,14 +109,14 @@ print("Usage", response.usage)
 print("Agent messages", response.messages)
 ```
 
-## Retrieving an agent's state 
-The agent's state is always persisted, so you can retrieve an agent's state by either its ID or name. 
+## Retrieving an agent's state
+The agent's state is always persisted, so you can retrieve an agent's state by either its ID or name.
 ```python Python
 # get the agent by ID
 agent_state = client.agents.get(agent_id="agent-42c61916-1fb3-4195-85l7-b865f7e452dd")
 ```
 
-## List agents 
+## List agents
 
 <CodeGroup>
 ```python Python
@@ -126,10 +126,10 @@ agents = client.agents.list()
 </CodeGroup>
 
 
-## Delete an agent 
+## Delete an agent
 <CodeGroup>
 ```python Python
 # delete an agent
-client.agents.delete(agent_id="agent-42c61916-1fb3-4195-85l7-b865f7e452dd") 
+client.agents.delete(agent_id="agent-42c61916-1fb3-4195-85l7-b865f7e452dd")
 ```
 </CodeGroup>

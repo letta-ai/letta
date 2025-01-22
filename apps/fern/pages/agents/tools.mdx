@@ -60,7 +60,7 @@ agent = client.agents.create(
         {"label": "human", "limit": 2000, "value": "Name: Bob"},
         {"label": "persona", "limit": 2000, "value": "You are a friendly agent"}
     ],
-    llm="openai/gpt-4",
+    model="openai/gpt-4",
     embedding="openai/text-embedding-ada-002",
     tool_ids=[tool.id]
 )

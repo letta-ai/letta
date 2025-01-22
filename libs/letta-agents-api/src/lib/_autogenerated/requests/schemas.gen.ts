@@ -1977,7 +1977,7 @@ export const $CreateAgentRequest = {
       title: 'Metadata ',
       description: 'The metadata of the agent.',
     },
-    llm: {
+    model: {
       anyOf: [
         {
           type: 'string',
@@ -1986,7 +1986,7 @@ export const $CreateAgentRequest = {
           type: 'null',
         },
       ],
-      title: 'Llm',
+      title: 'Model',
       description:
         'The LLM configuration handle used by the agent, specified in the format provider/model-name, as an alternative to specifying llm_config.',
     },
