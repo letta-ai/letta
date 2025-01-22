@@ -2459,13 +2459,6 @@ export type UpdateToolData = {
 
 export type UpdateToolResponse = letta__schemas__tool__Tool;
 
-export type GetToolIdByNameData = {
-  toolName: string;
-  userId?: string | null;
-};
-
-export type GetToolIdByNameResponse = string;
-
 export type ListToolsData = {
   cursor?: string | null;
   limit?: number | null;
@@ -3267,21 +3260,6 @@ export type $OpenApiTs = {
          * Successful Response
          */
         200: letta__schemas__tool__Tool;
-        /**
-         * Validation Error
-         */
-        422: HTTPValidationError;
-      };
-    };
-  };
-  '/v1/tools/name/{tool_name}': {
-    get: {
-      req: GetToolIdByNameData;
-      res: {
-        /**
-         * Successful Response
-         */
-        200: string;
         /**
          * Validation Error
          */

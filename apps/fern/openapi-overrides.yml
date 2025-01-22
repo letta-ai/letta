@@ -20,11 +20,6 @@ paths:
       x-fern-sdk-group-name:
         - tools
       x-fern-sdk-method-name: update
-  /v1/tools/name/{tool_name}:
-    get:
-      x-fern-sdk-group-name:
-        - tools
-      x-fern-sdk-method-name: getByName
   /v1/tools/:
     get:
       x-fern-sdk-group-name:

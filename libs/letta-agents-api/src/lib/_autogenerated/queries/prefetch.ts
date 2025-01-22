@@ -44,29 +44,6 @@ export const prefetchUseToolsServiceGetTool = (
     queryFn: () => ToolsService.getTool({ toolId, userId }),
   });
 /**
- * Get Tool Id
- * Get a tool ID by name
- * @param data The data for the request.
- * @param data.toolName
- * @param data.userId
- * @returns string Successful Response
- * @throws ApiError
- */
-export const prefetchUseToolsServiceGetToolIdByName = (
-  queryClient: QueryClient,
-  {
-    toolName,
-    userId,
-  }: {
-    toolName: string;
-    userId?: string;
-  },
-) =>
-  queryClient.prefetchQuery({
-    queryKey: Common.UseToolsServiceGetToolIdByNameKeyFn({ toolName, userId }),
-    queryFn: () => ToolsService.getToolIdByName({ toolName, userId }),
-  });
-/**
  * List Tools
  * Get a list of all tools available to agents belonging to the org of the user
  * @param data The data for the request.

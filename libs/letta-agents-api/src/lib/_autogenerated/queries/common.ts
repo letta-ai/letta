@@ -38,27 +38,6 @@ export const UseToolsServiceGetToolKeyFn = (
   },
   queryKey?: Array<unknown>,
 ) => [useToolsServiceGetToolKey, ...(queryKey ?? [{ toolId, userId }])];
-export type ToolsServiceGetToolIdByNameDefaultResponse = Awaited<
-  ReturnType<typeof ToolsService.getToolIdByName>
->;
-export type ToolsServiceGetToolIdByNameQueryResult<
-  TData = ToolsServiceGetToolIdByNameDefaultResponse,
-  TError = unknown,
-> = UseQueryResult<TData, TError>;
-export const useToolsServiceGetToolIdByNameKey = 'ToolsServiceGetToolIdByName';
-export const UseToolsServiceGetToolIdByNameKeyFn = (
-  {
-    toolName,
-    userId,
-  }: {
-    toolName: string;
-    userId?: string;
-  },
-  queryKey?: Array<unknown>,
-) => [
-  useToolsServiceGetToolIdByNameKey,
-  ...(queryKey ?? [{ toolName, userId }]),
-];
 export type ToolsServiceListToolsDefaultResponse = Awaited<
   ReturnType<typeof ToolsService.listTools>
 >;

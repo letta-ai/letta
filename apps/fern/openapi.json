@@ -147,48 +147,6 @@
         }
       }
     },
-    "/v1/tools/name/{tool_name}": {
-      "get": {
-        "tags": ["tools"],
-        "summary": "Get Tool Id",
-        "description": "Get a tool ID by name",
-        "operationId": "get_tool_id_by_name",
-        "parameters": [
-          {
-            "name": "tool_name",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "Tool Name"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "string",
-                  "title": "Response Get Tool Id By Name"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
     "/v1/tools/": {
       "get": {
         "tags": ["tools"],

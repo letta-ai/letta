@@ -10,8 +10,6 @@ import type {
   GetToolResponse,
   UpdateToolData,
   UpdateToolResponse,
-  GetToolIdByNameData,
-  GetToolIdByNameResponse,
   ListToolsData,
   ListToolsResponse,
   CreateToolData,
@@ -262,32 +260,6 @@ export class ToolsService {
       },
       body: data.requestBody,
       mediaType: 'application/json',
-      errors: {
-        422: 'Validation Error',
-      },
-      headers,
-    });
-  }
-
-  /**
-   * Get Tool Id
-   * Get a tool ID by name
-   * @param data The data for the request.
-   * @param data.toolName
-   * @param data.userId
-   * @returns string Successful Response
-   * @throws ApiError
-   */
-  public static getToolIdByName(
-    data: GetToolIdByNameData,
-    headers?: { user_id: string },
-  ): CancelablePromise<GetToolIdByNameResponse> {
-    return __request(OpenAPI, {
-      method: 'GET',
-      url: '/v1/tools/name/{tool_name}',
-      path: {
-        tool_name: data.toolName,
-      },
       errors: {
         422: 'Validation Error',
       },

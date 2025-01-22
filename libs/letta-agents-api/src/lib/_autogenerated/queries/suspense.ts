@@ -50,38 +50,6 @@ export const useToolsServiceGetToolSuspense = <
     ...options,
   });
 /**
- * Get Tool Id
- * Get a tool ID by name
- * @param data The data for the request.
- * @param data.toolName
- * @param data.userId
- * @returns string Successful Response
- * @throws ApiError
- */
-export const useToolsServiceGetToolIdByNameSuspense = <
-  TData = Common.ToolsServiceGetToolIdByNameDefaultResponse,
-  TError = unknown,
-  TQueryKey extends Array<unknown> = unknown[],
->(
-  {
-    toolName,
-    userId,
-  }: {
-    toolName: string;
-    userId?: string;
-  },
-  queryKey?: TQueryKey,
-  options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>,
-) =>
-  useSuspenseQuery<TData, TError>({
-    queryKey: Common.UseToolsServiceGetToolIdByNameKeyFn(
-      { toolName, userId },
-      queryKey,
-    ),
-    queryFn: () => ToolsService.getToolIdByName({ toolName, userId }) as TData,
-    ...options,
-  });
-/**
  * List Tools
  * Get a list of all tools available to agents belonging to the org of the user
  * @param data The data for the request.
