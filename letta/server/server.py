@@ -773,9 +773,9 @@ class SyncServer(Server):
         interface: Union[AgentInterface, None] = None,
     ) -> AgentState:
         if request.llm_config is None:
-            if request.llm is None:
-                raise ValueError("Must specify either llm or llm_config in request")
-            request.llm_config = self.get_llm_config_from_handle(handle=request.llm, context_window_limit=request.context_window_limit)
+            if request.model is None:
+                raise ValueError("Must specify either model or llm_config in request")
+            request.llm_config = self.get_llm_config_from_handle(handle=request.model, context_window_limit=request.context_window_limit)
 
         if request.embedding_config is None:
             if request.embedding is None:

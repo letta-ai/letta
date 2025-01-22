@@ -123,7 +123,7 @@ class CreateAgent(BaseModel, validate_assignment=True):  #
     )
     description: Optional[str] = Field(None, description="The description of the agent.")
     metadata_: Optional[Dict] = Field(None, description="The metadata of the agent.", alias="metadata_")
-    llm: Optional[str] = Field(
+    model: Optional[str] = Field(
         None,
         description="The LLM configuration handle used by the agent, specified in the format "
         "provider/model-name, as an alternative to specifying llm_config.",
@@ -166,17 +166,17 @@ class CreateAgent(BaseModel, validate_assignment=True):  #
 
         return name
 
-    @field_validator("llm")
+    @field_validator("model")
     @classmethod
-    def validate_llm(cls, llm: Optional[str]) -> Optional[str]:
-        if not llm:
-            return llm
+    def validate_model(cls, model: Optional[str]) -> Optional[str]:
+        if not model:
+            return model
 
-        provider_name, model_name = llm.split("/", 1)
+        provider_name, model_name = model.split("/", 1)
         if not provider_name or not model_name:
             raise ValueError("The llm config handle should be in the format provider/model-name")
 
-        return llm
+        return model
 
     @field_validator("embedding")
     @classmethod
@@ -184,8 +184,8 @@ class CreateAgent(BaseModel, validate_assignment=True):  #
         if not embedding:
             return embedding
 
-        provider_name, model_name = embedding.split("/", 1)
-        if not provider_name or not model_name:
+        provider_name, embedding_name = embedding.split("/", 1)
+        if not provider_name or not embedding_name:
             raise ValueError("The embedding config handle should be in the format provider/model-name")
 
         return embedding
