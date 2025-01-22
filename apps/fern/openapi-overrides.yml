@@ -285,7 +285,7 @@ paths:
         <Note>This endpoint is only available on Letta Cloud.</Note>
 
         Creates a new version of the template version of the agent.
-  /v1/agents/{agent_id}/variables:
+  /v1/agents/{agent_id}/core_memory/variables:
     get:
       x-fern-sdk-group-name:
         - agents

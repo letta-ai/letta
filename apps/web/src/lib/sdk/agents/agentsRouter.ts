@@ -35,7 +35,7 @@ import { migrateAgent } from '$web/sdk/agents/lib/migrateAgent/migrateAgent';
 
 export function attachVariablesToTemplates(
   agentTemplate: AgentState,
-  variables?: CreateAgentRequest['body']['variables'],
+  variables?: CreateAgentRequest['body']['memory_variables'],
 ) {
   const memoryBlockValues = agentTemplate.memory.blocks.map((block) => {
     if (variables && typeof block.value === 'string') {
@@ -249,7 +249,7 @@ export async function createAgent(
     project,
     from_template,
     template,
-    variables,
+    memory_variables,
     name: preName,
     tool_exec_environment_variables,
     ...agent
@@ -467,7 +467,7 @@ export async function createAgent(
 
         await db.insert(deployedAgentVariables).values({
           deployedAgentId: createdAgent.deployedAgentId,
-          value: variables || {},
+          value: memory_variables || {},
           organizationId,
         });
 
@@ -571,7 +571,7 @@ export async function createAgent(
       lettaAgentsUserId,
       {
         tags: [],
-        memoryVariables: variables || {},
+        memoryVariables: memory_variables || {},
         toolVariables: tool_exec_environment_variables || {},
       },
     );
@@ -657,7 +657,7 @@ export async function createAgent(
 
     await db.insert(deployedAgentVariables).values({
       deployedAgentId: deployedAgent.deployedAgentId,
-      value: variables || {},
+      value: memory_variables || {},
       organizationId,
     });
 
@@ -748,7 +748,7 @@ export async function createAgent(
 
     await db.insert(deployedAgentVariables).values({
       deployedAgentId: createdAgent.deployedAgentId,
-      value: variables || {},
+      value: memory_variables || {},
       organizationId,
     });
   }

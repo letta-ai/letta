@@ -3996,7 +3996,7 @@
         }
       }
     },
-    "/v1/agents/{agent_id}/variables": {
+    "/v1/agents/{agent_id}/core_memory/variables": {
       "get": {
         "description": "Get the variables associated with an agent",
         "summary": "Get Agent Variables",
@@ -6040,7 +6040,7 @@
             "title": "Tool Exec Environment Variables",
             "description": "The environment variables for tool execution specific to this agent."
           },
-          "variables": {
+          "memory_variables": {
             "anyOf": [
               {
                 "additionalProperties": {
@@ -6052,7 +6052,7 @@
                 "type": "null"
               }
             ],
-            "title": "Variables",
+            "title": "Memory Variables",
             "description": "The variables that should be set for the agent."
           }
         },

@@ -686,7 +686,7 @@ describe('agentsRouter', () => {
             template: false,
             from_template: 'test-template:23',
             project: 'test-project-slug',
-            variables: {
+            memory_variables: {
               name: 'Timber',
             },
           },
@@ -852,7 +852,7 @@ describe('agentsRouter', () => {
             template: true,
             from_template: 'test-template:23',
             project: 'test-project-slug',
-            variables: {
+            memory_variables: {
               name: 'Timber',
             },
           },
@@ -999,7 +999,7 @@ describe('agentsRouter', () => {
             template: true,
             from_template: 'test-template',
             project: 'test-project-slug',
-            variables: {
+            memory_variables: {
               name: 'Timber',
             },
           },

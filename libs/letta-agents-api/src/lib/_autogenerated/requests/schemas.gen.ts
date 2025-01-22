@@ -2074,7 +2074,7 @@ export const $CreateAgentRequest = {
       description:
         'The environment variables for tool execution specific to this agent.',
     },
-    variables: {
+    memory_variables: {
       anyOf: [
         {
           additionalProperties: {
@@ -2086,7 +2086,7 @@ export const $CreateAgentRequest = {
           type: 'null',
         },
       ],
-      title: 'Variables',
+      title: 'Memory Variables',
       description: 'The variables that should be set for the agent.',
     },
     user_id: {

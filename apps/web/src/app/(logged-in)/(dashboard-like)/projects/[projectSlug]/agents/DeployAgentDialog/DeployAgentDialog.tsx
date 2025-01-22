@@ -320,7 +320,7 @@ function SelectedTemplateState(props: SelectedTemplateStateProps) {
 
     createAgent({
       body: {
-        variables: Object.fromEntries(
+        memory_variables: Object.fromEntries(
           memoryVariables.map(({ key, value }) => [key, value]),
         ),
         from_template: selectedTemplate.version,

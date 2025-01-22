@@ -774,7 +774,7 @@
         }
       }
     },
-    "/v1/agents/{agent_id}/variables": {
+    "/v1/agents/{agent_id}/core_memory/variables": {
       "get": {
         "description": "Get the variables associated with an agent",
         "summary": "Get Agent Variables",

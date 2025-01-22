@@ -700,7 +700,7 @@ export type CreateAgentRequest = {
   /**
    * The variables that should be set for the agent.
    */
-  variables?: {
+  memory_variables?: {
     [key: string]: string;
   } | null;
   user_id?: string | null;

@@ -351,7 +351,7 @@ const GetAgentVariablesNotFoundResponseSchema = z.object({
 const getAgentVariablesContract = c.query({
   method: 'GET',
   summary: 'Get Agent Variables',
-  path: '/v1/agents/:agent_id/variables',
+  path: '/v1/agents/:agent_id/core_memory/variables',
   description: 'Get the variables associated with an agent',
   pathParams: z.object({
     agent_id: z.string(),
