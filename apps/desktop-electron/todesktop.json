@@ -1,0 +1,12 @@
+{
+  "id": "250121l7z0c6n",
+  "icon": "dist/assets/icon.png",
+  "appFiles": ["dist/**/*", "scripts/before-build.js"],
+  "appPath": ".",
+  "uploadSizeLimit": 150,
+  "schemaVersion": 1,
+  "nodeVersion": "22.11.0",
+  "windows": {
+    "publisherName": ["Letta AI"]
+  }
+}

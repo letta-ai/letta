@@ -265,36 +265,16 @@ desktop:
 
 prepare-desktop:
     @echo "🚧 Preparing the desktop app..."
-    @echo "Removing existing files..."
-    rm -rf apps/desktop-core/dist/
-    rm -rf apps/desktop-core/letta_desktop/alembic
-    rm -f apps/desktop-core/letta_desktop/alembic.ini
-    rm -f apps/desktop-electron/src/assets/letta
-    rm -rf dist/apps/desktop-electron
-    rm -rf dist/apps/desktop-ui
-    rm -rf apps/desktop-electron/src/assets/alembic
-    rm -f apps/desktop-electron/src/assets/alembic.ini
-    rm -rf apps/desktop-core/.venv
-    @echo "Moving the alembic migration files to the desktop app..."
-    cp -R apps/core/alembic apps/desktop-core/letta_desktop
-    cp apps/core/alembic.ini apps/desktop-core/letta_desktop/alembic.ini
-    @echo "Creating a embedded letta-core package..."
-    npm run desktop:setup-core
-    npm run desktop:package-core
-    @echo "Moving the core package to the desktop app..."
-    cp apps/desktop-core/dist/letta apps/desktop-electron/src/assets/letta
-    cp -R apps/desktop-core/letta_desktop/alembic apps/desktop-electron/src/assets
-    cp apps/desktop-core/letta_desktop/alembic.ini apps/desktop-electron/src/assets/alembic.ini
-    chmod +x apps/desktop-electron/src/assets/letta
+    npx nx generate @letta-cloud/desktop-builders:build-python-app  --rebuildDependencies true
+
+build-desktop:
+    @echo "Packaging the desktop app..."
+    npx nx generate @letta-cloud/desktop-builders:build-desktop-app
 
 package-desktop:
     @echo "Packaging the desktop app..."
-    NODE_ENV=production npx nx build desktop-ui
-    rm -rf dist/apps/desktop-electron
-    rm -rf dist/apps/desktop-ui
-    npx nx build desktop-ui
-    npx nx build desktop-electron --production
     npx nx package desktop-electron
+
 
 setup-pg-vector:
     @echo "Setting up pg-vector..."

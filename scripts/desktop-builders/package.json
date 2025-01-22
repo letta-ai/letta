@@ -1,0 +1,15 @@
+{
+  "name": "@letta-cloud/configure",
+  "version": "0.0.1",
+  "dependencies": {
+    "@nx/devkit": "20.3.0",
+    "@nx/workspace": "20.3.0",
+    "tslib": "^2.3.0",
+    "lodash": "^4.17.21"
+  },
+  "type": "commonjs",
+  "main": "./src/index.js",
+  "typings": "./src/index.d.ts",
+  "private": true,
+  "generators": "./generators.json"
+}

@@ -8,6 +8,9 @@ import * as fs from 'fs';
 import { execFile } from 'child_process';
 import * as path from 'path';
 import type { ServerLogType } from '@letta-cloud/types';
+import * as todesktop from '@todesktop/runtime';
+
+todesktop.init();
 
 let lettaServer: ReturnType<typeof execFile> | null = null;
 
@@ -34,36 +37,14 @@ class ServerLogs {
 const lettaServerLogs = new ServerLogs();
 
 function copyAlembicToLettaDir() {
-  let alembicFolderPath = path.join(
-    __dirname,
-    '..',
-    'desktop-electron',
-    'assets',
-    'alembic',
-  );
-  let alembicInitPath = path.join(
-    __dirname,
-    '..',
-    'desktop-electron',
-    'assets',
-    'alembic.ini',
-  );
+  console.log('a', path.join(__dirname, '..', '..'));
+
+  let alembicFolderPath = path.join(__dirname, '..', '..', 'core', 'alembic');
+  let alembicInitPath = path.join(__dirname, '..', '..', 'core', 'alembic.ini');
 
   if (App.application.isPackaged) {
-    alembicFolderPath = path.join(
-      __dirname,
-      '..',
-      'desktop-electron',
-      'assets',
-      'alembic',
-    );
-    alembicInitPath = path.join(
-      __dirname,
-      '..',
-      'desktop-electron',
-      'assets',
-      'alembic.ini',
-    );
+    alembicFolderPath = path.join(__dirname, '..', 'dist', 'alembic');
+    alembicInitPath = path.join(__dirname, '..', 'dist', 'alembic.ini');
   }
 
   const migrationsPath = path.join(
@@ -114,19 +95,14 @@ function copyLettaServerToLettaDir() {
   let lettaServerPath = path.join(
     __dirname,
     '..',
-    'desktop-electron',
-    'assets',
+    '..',
+    'desktop-core',
+    'dist',
     'letta',
   );
 
   if (App.application.isPackaged) {
-    lettaServerPath = path.join(
-      __dirname,
-      '..',
-      'desktop-electron',
-      'assets',
-      'letta',
-    );
+    lettaServerPath = path.join(__dirname, '..', 'dist', 'letta');
   }
 
   const lettaPath = path.join(process.env.HOME || '/', '.letta', 'bin');
@@ -322,7 +298,12 @@ export default class App {
     const image = electron.nativeImage.createFromPath(
       app.getAppPath() + '/assets/icon.png',
     );
-    app.dock.setIcon(image);
+
+    // check if app is macOS
+    if (process.platform === 'darwin') {
+      // set the icon of the app
+      app.dock.setIcon(image);
+    }
 
     App.mainWindow.setMenu(null);
     App.mainWindow.center();
@@ -359,11 +340,17 @@ export default class App {
     } else {
       App.mainWindow.loadURL(
         format({
-          pathname: join(__dirname, '..', rendererAppName, 'index.html'),
+          pathname: join(__dirname, '..', 'dist', 'index.html'),
           protocol: 'file:',
           slashes: true,
         }),
       );
+
+      App.mainWindow.webContents.openDevTools();
+
+      if (process.argv.includes('--debug')) {
+        console.log('debugging');
+      }
     }
   }
 

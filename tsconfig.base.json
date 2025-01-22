@@ -35,6 +35,9 @@
       "@letta-cloud/crm": ["libs/crm/src/index.ts"],
       "@letta-cloud/database": ["libs/database/src/index.ts"],
       "@letta-cloud/database-testing": ["libs/database-testing/src/index.ts"],
+      "@letta-cloud/desktop-builders": [
+        "scripts/desktop-builders/src/index.ts"
+      ],
       "@letta-cloud/environmental-variables": [
         "libs/environmental-variables/src/index.ts"
       ],

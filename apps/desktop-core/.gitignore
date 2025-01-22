@@ -6,3 +6,5 @@ alembic/version
 alembic.ini
 
 letta_desktop/alembic
+
+app.spec

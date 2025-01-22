@@ -8,13 +8,13 @@ a = Analysis(
     ['letta_desktop/__init__.py'],
     pathex=[],
     binaries=[
-        ('.venv/lib/python3.12/site-packages/pgserver/pginstall', 'pgserver/pginstall')
+        ('<%= depPath %>/pgserver/pginstall', 'pgserver/pginstall')
     ],
     datas=[
-        ('.venv/lib/python3.12/site-packages/letta/humans/examples', 'letta/humans/examples'),
-        ('.venv/lib/python3.12/site-packages/letta/personas/examples', 'letta/personas/examples'),
-        ('.venv/lib/python3.12/site-packages/letta/prompts/system', 'letta/prompts/system'),
-        ('.venv/lib/python3.12/site-packages/letta/functions/function_sets', 'letta/functions/function_sets'),
+        ('<%= depPath %>/letta/humans/examples', 'letta/humans/examples'),
+        ('<%= depPath %>/letta/personas/examples', 'letta/personas/examples'),
+        ('<%= depPath %>/letta/prompts/system', 'letta/prompts/system'),
+        ('<%= depPath %>/letta/functions/function_sets', 'letta/functions/function_sets'),
         ('letta_desktop', 'letta_desktop'),
     ],
     hiddenimports=[
@@ -50,4 +50,3 @@ exe = EXE(
     codesign_identity=None,
     entitlements_file=None,
 )
-

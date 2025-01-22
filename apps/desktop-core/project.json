@@ -36,7 +36,6 @@
       "options": {
         "silent": false,
         "args": "",
-        "cacheDir": ".cache/pypoetry",
         "verbose": false,
         "debug": false
       }
