@@ -160,24 +160,24 @@ paths:
         - agents
         - sources
       x-fern-sdk-method-name: get
-  /v1/agents/{agent_id}/memory:
+  /v1/agents/{agent_id}/core_memory:
     get:
       x-fern-sdk-group-name:
         - agents
         - core_memory
       x-fern-sdk-method-name: get
-  /v1/agents/{agent_id}/memory/block:
+  /v1/agents/{agent_id}/core_memory/blocks:
     get:
       x-fern-sdk-group-name:
         - agents
         - core_memory
-      x-fern-sdk-method-name: get_blocks
+      x-fern-sdk-method-name: list
     post:
       x-fern-sdk-group-name:
         - agents
         - core_memory
       x-fern-sdk-method-name: add_block
-  /v1/agents/{agent_id}/memory/block/{block_label}:
+  /v1/agents/{agent_id}/core_memory/blocks/{block_label}:
     get:
       x-fern-sdk-group-name:
         - agents

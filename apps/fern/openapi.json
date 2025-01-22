@@ -1643,7 +1643,7 @@
         }
       }
     },
-    "/v1/agents/{agent_id}/memory": {
+    "/v1/agents/{agent_id}/core_memory": {
       "get": {
         "tags": ["agents"],
         "summary": "Get Agent Memory",
@@ -1684,7 +1684,7 @@
         }
       }
     },
-    "/v1/agents/{agent_id}/memory/block/{block_label}": {
+    "/v1/agents/{agent_id}/core_memory/blocks/{block_label}": {
       "get": {
         "tags": ["agents"],
         "summary": "Get Agent Memory Block",
@@ -1840,12 +1840,12 @@
         }
       }
     },
-    "/v1/agents/{agent_id}/memory/block": {
+    "/v1/agents/{agent_id}/core_memory/blocks": {
       "get": {
         "tags": ["agents"],
-        "summary": "Get Agent Memory Blocks",
+        "summary": "List Agent Memory Blocks",
         "description": "Retrieve the memory blocks of a specific agent.",
-        "operationId": "get_agent_memory_blocks",
+        "operationId": "list_agent_memory_blocks",
         "parameters": [
           {
             "name": "agent_id",
@@ -1867,7 +1867,7 @@
                   "items": {
                     "$ref": "#/components/schemas/Block"
                   },
-                  "title": "Response Get Agent Memory Blocks"
+                  "title": "Response List Agent Memory Blocks"
                 }
               }
             }

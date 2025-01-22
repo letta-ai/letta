@@ -2755,12 +2755,12 @@ export type UpdateAgentMemoryBlockByLabelData = {
 
 export type UpdateAgentMemoryBlockByLabelResponse = Block;
 
-export type GetAgentMemoryBlocksData = {
+export type ListAgentMemoryBlocksData = {
   agentId: string;
   userId?: string | null;
 };
 
-export type GetAgentMemoryBlocksResponse = Array<Block>;
+export type ListAgentMemoryBlocksResponse = Array<Block>;
 
 export type AddAgentMemoryBlockData = {
   agentId: string;
@@ -3716,7 +3716,7 @@ export type $OpenApiTs = {
       };
     };
   };
-  '/v1/agents/{agent_id}/memory': {
+  '/v1/agents/{agent_id}/core_memory': {
     get: {
       req: GetAgentMemoryData;
       res: {
@@ -3731,7 +3731,7 @@ export type $OpenApiTs = {
       };
     };
   };
-  '/v1/agents/{agent_id}/memory/block/{block_label}': {
+  '/v1/agents/{agent_id}/core_memory/blocks/{block_label}': {
     get: {
       req: GetAgentMemoryBlockData;
       res: {
@@ -3772,9 +3772,9 @@ export type $OpenApiTs = {
       };
     };
   };
-  '/v1/agents/{agent_id}/memory/block': {
+  '/v1/agents/{agent_id}/core_memory/blocks': {
     get: {
-      req: GetAgentMemoryBlocksData;
+      req: ListAgentMemoryBlocksData;
       res: {
         /**
          * Successful Response

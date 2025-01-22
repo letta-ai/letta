@@ -456,7 +456,7 @@ export const prefetchUseAgentsServiceGetAgentMemoryBlock = (
       AgentsService.getAgentMemoryBlock({ agentId, blockLabel, userId }),
   });
 /**
- * Get Agent Memory Blocks
+ * List Agent Memory Blocks
  * Retrieve the memory blocks of a specific agent.
  * @param data The data for the request.
  * @param data.agentId
@@ -464,7 +464,7 @@ export const prefetchUseAgentsServiceGetAgentMemoryBlock = (
  * @returns Block Successful Response
  * @throws ApiError
  */
-export const prefetchUseAgentsServiceGetAgentMemoryBlocks = (
+export const prefetchUseAgentsServiceListAgentMemoryBlocks = (
   queryClient: QueryClient,
   {
     agentId,
@@ -475,11 +475,11 @@ export const prefetchUseAgentsServiceGetAgentMemoryBlocks = (
   },
 ) =>
   queryClient.prefetchQuery({
-    queryKey: Common.UseAgentsServiceGetAgentMemoryBlocksKeyFn({
+    queryKey: Common.UseAgentsServiceListAgentMemoryBlocksKeyFn({
       agentId,
       userId,
     }),
-    queryFn: () => AgentsService.getAgentMemoryBlocks({ agentId, userId }),
+    queryFn: () => AgentsService.listAgentMemoryBlocks({ agentId, userId }),
   });
 /**
  * Get Agent Archival Memory

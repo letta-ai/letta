@@ -80,8 +80,8 @@ import type {
   RemoveAgentMemoryBlockByLabelResponse,
   UpdateAgentMemoryBlockByLabelData,
   UpdateAgentMemoryBlockByLabelResponse,
-  GetAgentMemoryBlocksData,
-  GetAgentMemoryBlocksResponse,
+  ListAgentMemoryBlocksData,
+  ListAgentMemoryBlocksResponse,
   AddAgentMemoryBlockData,
   AddAgentMemoryBlockResponse,
   ListAgentArchivalMemoryData,
@@ -1122,7 +1122,7 @@ export class AgentsService {
   ): CancelablePromise<GetAgentMemoryResponse> {
     return __request(OpenAPI, {
       method: 'GET',
-      url: '/v1/agents/{agent_id}/memory',
+      url: '/v1/agents/{agent_id}/core_memory',
       path: {
         agent_id: data.agentId,
       },
@@ -1149,7 +1149,7 @@ export class AgentsService {
   ): CancelablePromise<GetAgentMemoryBlockResponse> {
     return __request(OpenAPI, {
       method: 'GET',
-      url: '/v1/agents/{agent_id}/memory/block/{block_label}',
+      url: '/v1/agents/{agent_id}/core_memory/blocks/{block_label}',
       path: {
         agent_id: data.agentId,
         block_label: data.blockLabel,
@@ -1177,7 +1177,7 @@ export class AgentsService {
   ): CancelablePromise<RemoveAgentMemoryBlockByLabelResponse> {
     return __request(OpenAPI, {
       method: 'DELETE',
-      url: '/v1/agents/{agent_id}/memory/block/{block_label}',
+      url: '/v1/agents/{agent_id}/core_memory/blocks/{block_label}',
       path: {
         agent_id: data.agentId,
         block_label: data.blockLabel,
@@ -1206,7 +1206,7 @@ export class AgentsService {
   ): CancelablePromise<UpdateAgentMemoryBlockByLabelResponse> {
     return __request(OpenAPI, {
       method: 'PATCH',
-      url: '/v1/agents/{agent_id}/memory/block/{block_label}',
+      url: '/v1/agents/{agent_id}/core_memory/blocks/{block_label}',
       path: {
         agent_id: data.agentId,
         block_label: data.blockLabel,
@@ -1221,7 +1221,7 @@ export class AgentsService {
   }
 
   /**
-   * Get Agent Memory Blocks
+   * List Agent Memory Blocks
    * Retrieve the memory blocks of a specific agent.
    * @param data The data for the request.
    * @param data.agentId
@@ -1229,13 +1229,13 @@ export class AgentsService {
    * @returns Block Successful Response
    * @throws ApiError
    */
-  public static getAgentMemoryBlocks(
-    data: GetAgentMemoryBlocksData,
+  public static listAgentMemoryBlocks(
+    data: ListAgentMemoryBlocksData,
     headers?: { user_id: string },
-  ): CancelablePromise<GetAgentMemoryBlocksResponse> {
+  ): CancelablePromise<ListAgentMemoryBlocksResponse> {
     return __request(OpenAPI, {
       method: 'GET',
-      url: '/v1/agents/{agent_id}/memory/block',
+      url: '/v1/agents/{agent_id}/core_memory/blocks',
       path: {
         agent_id: data.agentId,
       },
@@ -1262,7 +1262,7 @@ export class AgentsService {
   ): CancelablePromise<AddAgentMemoryBlockResponse> {
     return __request(OpenAPI, {
       method: 'POST',
-      url: '/v1/agents/{agent_id}/memory/block',
+      url: '/v1/agents/{agent_id}/core_memory/blocks',
       path: {
         agent_id: data.agentId,
       },

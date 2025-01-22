@@ -768,7 +768,7 @@ class RESTClient(AbstractClient):
         Returns:
             memory (Memory): In-context memory of the agent
         """
-        response = requests.get(f"{self.base_url}/{self.api_prefix}/agents/{agent_id}/memory", headers=self.headers)
+        response = requests.get(f"{self.base_url}/{self.api_prefix}/agents/{agent_id}/core_memory", headers=self.headers)
         if response.status_code != 200:
             raise ValueError(f"Failed to get in-context memory: {response.text}")
         return Memory(**response.json())
@@ -789,7 +789,7 @@ class RESTClient(AbstractClient):
         """
         memory_update_dict = {section: value}
         response = requests.patch(
-            f"{self.base_url}/{self.api_prefix}/agents/{agent_id}/memory", json=memory_update_dict, headers=self.headers
+            f"{self.base_url}/{self.api_prefix}/agents/{agent_id}/core_memory", json=memory_update_dict, headers=self.headers
         )
         if response.status_code != 200:
             raise ValueError(f"Failed to update in-context memory: {response.text}")
@@ -1846,7 +1846,7 @@ class RESTClient(AbstractClient):
             memory (Memory): The updated memory
         """
         response = requests.post(
-            f"{self.base_url}/{self.api_prefix}/agents/{agent_id}/memory/block",
+            f"{self.base_url}/{self.api_prefix}/agents/{agent_id}/core_memory/block",
             headers=self.headers,
             json=create_block.model_dump(),
         )
@@ -1887,14 +1887,14 @@ class RESTClient(AbstractClient):
             memory (Memory): The updated memory
         """
         response = requests.delete(
-            f"{self.base_url}/{self.api_prefix}/agents/{agent_id}/memory/block/{block_label}",
+            f"{self.base_url}/{self.api_prefix}/agents/{agent_id}/core_memory/blocks/{block_label}",
             headers=self.headers,
         )
         if response.status_code != 200:
             raise ValueError(f"Failed to remove agent memory block: {response.text}")
         return Memory(**response.json())
 
-    def get_agent_memory_blocks(self, agent_id: str) -> List[Block]:
+    def list_agent_memory_blocks(self, agent_id: str) -> List[Block]:
         """
         Get all the blocks in the agent's core memory
 
@@ -1904,7 +1904,7 @@ class RESTClient(AbstractClient):
         Returns:
             blocks (List[Block]): The blocks in the agent's core memory
         """
-        response = requests.get(f"{self.base_url}/{self.api_prefix}/agents/{agent_id}/memory/block", headers=self.headers)
+        response = requests.get(f"{self.base_url}/{self.api_prefix}/agents/{agent_id}/core_memory/block", headers=self.headers)
         if response.status_code != 200:
             raise ValueError(f"Failed to get agent memory blocks: {response.text}")
         return [Block(**block) for block in response.json()]
@@ -1921,7 +1921,7 @@ class RESTClient(AbstractClient):
             block (Block): The block corresponding to the label
         """
         response = requests.get(
-            f"{self.base_url}/{self.api_prefix}/agents/{agent_id}/memory/block/{label}",
+            f"{self.base_url}/{self.api_prefix}/agents/{agent_id}/core_memory/blocks/{label}",
             headers=self.headers,
         )
         if response.status_code != 200:
@@ -1954,7 +1954,7 @@ class RESTClient(AbstractClient):
         if limit:
             data["limit"] = limit
         response = requests.patch(
-            f"{self.base_url}/{self.api_prefix}/agents/{agent_id}/memory/block/{label}",
+            f"{self.base_url}/{self.api_prefix}/agents/{agent_id}/core_memory/blocks/{label}",
             headers=self.headers,
             json=data,
         )
@@ -3517,7 +3517,7 @@ class LocalClient(AbstractClient):
         """
         return self.server.agent_manager.detach_block_with_label(agent_id=agent_id, block_label=block_label, actor=self.user)
 
-    def get_agent_memory_blocks(self, agent_id: str) -> List[Block]:
+    def list_agent_memory_blocks(self, agent_id: str) -> List[Block]:
         """
         Get all the blocks in the agent's core memory
 

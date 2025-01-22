@@ -366,16 +366,16 @@ export const UseAgentsServiceGetAgentMemoryBlockKeyFn = (
   useAgentsServiceGetAgentMemoryBlockKey,
   ...(queryKey ?? [{ agentId, blockLabel, userId }]),
 ];
-export type AgentsServiceGetAgentMemoryBlocksDefaultResponse = Awaited<
-  ReturnType<typeof AgentsService.getAgentMemoryBlocks>
+export type AgentsServiceListAgentMemoryBlocksDefaultResponse = Awaited<
+  ReturnType<typeof AgentsService.listAgentMemoryBlocks>
 >;
-export type AgentsServiceGetAgentMemoryBlocksQueryResult<
-  TData = AgentsServiceGetAgentMemoryBlocksDefaultResponse,
+export type AgentsServiceListAgentMemoryBlocksQueryResult<
+  TData = AgentsServiceListAgentMemoryBlocksDefaultResponse,
   TError = unknown,
 > = UseQueryResult<TData, TError>;
-export const useAgentsServiceGetAgentMemoryBlocksKey =
-  'AgentsServiceGetAgentMemoryBlocks';
-export const UseAgentsServiceGetAgentMemoryBlocksKeyFn = (
+export const useAgentsServiceListAgentMemoryBlocksKey =
+  'AgentsServiceListAgentMemoryBlocks';
+export const UseAgentsServiceListAgentMemoryBlocksKeyFn = (
   {
     agentId,
     userId,
@@ -385,7 +385,7 @@ export const UseAgentsServiceGetAgentMemoryBlocksKeyFn = (
   },
   queryKey?: Array<unknown>,
 ) => [
-  useAgentsServiceGetAgentMemoryBlocksKey,
+  useAgentsServiceListAgentMemoryBlocksKey,
   ...(queryKey ?? [{ agentId, userId }]),
 ];
 export type AgentsServiceListAgentArchivalMemoryDefaultResponse = Awaited<

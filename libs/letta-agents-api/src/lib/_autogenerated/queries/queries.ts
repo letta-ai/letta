@@ -608,7 +608,7 @@ export const useAgentsServiceGetAgentMemoryBlock = <
     ...options,
   });
 /**
- * Get Agent Memory Blocks
+ * List Agent Memory Blocks
  * Retrieve the memory blocks of a specific agent.
  * @param data The data for the request.
  * @param data.agentId
@@ -616,8 +616,8 @@ export const useAgentsServiceGetAgentMemoryBlock = <
  * @returns Block Successful Response
  * @throws ApiError
  */
-export const useAgentsServiceGetAgentMemoryBlocks = <
-  TData = Common.AgentsServiceGetAgentMemoryBlocksDefaultResponse,
+export const useAgentsServiceListAgentMemoryBlocks = <
+  TData = Common.AgentsServiceListAgentMemoryBlocksDefaultResponse,
   TError = unknown,
   TQueryKey extends Array<unknown> = unknown[],
 >(
@@ -632,12 +632,12 @@ export const useAgentsServiceGetAgentMemoryBlocks = <
   options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>,
 ) =>
   useQuery<TData, TError>({
-    queryKey: Common.UseAgentsServiceGetAgentMemoryBlocksKeyFn(
+    queryKey: Common.UseAgentsServiceListAgentMemoryBlocksKeyFn(
       { agentId, userId },
       queryKey,
     ),
     queryFn: () =>
-      AgentsService.getAgentMemoryBlocks({ agentId, userId }) as TData,
+      AgentsService.listAgentMemoryBlocks({ agentId, userId }) as TData,
     ...options,
   });
 /**
