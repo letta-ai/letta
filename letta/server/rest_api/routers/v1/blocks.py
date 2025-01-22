@@ -1,6 +1,6 @@
 from typing import TYPE_CHECKING, List, Optional
 
-from fastapi import APIRouter, Body, Depends, Header, HTTPException, Query, Response
+from fastapi import APIRouter, Body, Depends, Header, HTTPException, Query
 
 from letta.orm.errors import NoResultFound
 from letta.schemas.block import Block, BlockUpdate, CreateBlock
@@ -73,41 +73,3 @@ def get_block(
         return block
     except NoResultFound:
         raise HTTPException(status_code=404, detail="Block not found")
-
-
-@router.patch("/{block_id}/attach", response_model=None, status_code=204, operation_id="link_agent_memory_block")
-def link_agent_memory_block(
-    block_id: str,
-    agent_id: str = Query(..., description="The unique identifier of the agent to attach the source to."),
-    server: "SyncServer" = Depends(get_letta_server),
-    user_id: Optional[str] = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
-):
-    """
-    Link a memory block to an agent.
-    """
-    actor = server.user_manager.get_user_or_default(user_id=user_id)
-
-    try:
-        server.agent_manager.attach_block(agent_id=agent_id, block_id=block_id, actor=actor)
-        return Response(status_code=204)
-    except NoResultFound as e:
-        raise HTTPException(status_code=404, detail=str(e))
-
-
-@router.patch("/{block_id}/detach", response_model=None, status_code=204, operation_id="unlink_agent_memory_block")
-def unlink_agent_memory_block(
-    block_id: str,
-    agent_id: str = Query(..., description="The unique identifier of the agent to attach the source to."),
-    server: "SyncServer" = Depends(get_letta_server),
-    user_id: Optional[str] = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
-):
-    """
-    Unlink a memory block from an agent
-    """
-    actor = server.user_manager.get_user_or_default(user_id=user_id)
-
-    try:
-        server.agent_manager.detach_block(agent_id=agent_id, block_id=block_id, actor=actor)
-        return Response(status_code=204)
-    except NoResultFound as e:
-        raise HTTPException(status_code=404, detail=str(e))

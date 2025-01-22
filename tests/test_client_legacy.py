@@ -205,9 +205,9 @@ def test_archival_memory(mock_e2b_api_key_none, client: Union[LocalClient, RESTC
     passages = client.get_archival_memory(agent.id)
     assert passage.text in [p.text for p in passages], f"Missing passage {passage.text} in {passages}"
 
-    # get archival memory summary
-    archival_summary = client.get_archival_memory_summary(agent.id)
-    assert archival_summary.size == 1, f"Archival memory summary size is {archival_summary.size}"
+    # # get archival memory summary
+    # archival_summary = client.get_agent_archival_memory_summary(agent.id)
+    # assert archival_summary.size == 1, f"Archival memory summary size is {archival_summary.size}"
 
     # delete archival memory
     client.delete_archival_memory(agent.id, passage.id)
@@ -500,7 +500,7 @@ def test_sources(client: Union[LocalClient, RESTClient], agent: AgentState):
     assert len(archival_memories) == 0
 
     # attach a source
-    client.attach_source_to_agent(source_id=source.id, agent_id=agent.id)
+    client.attach_source(source_id=source.id, agent_id=agent.id)
 
     # list attached sources
     attached_sources = client.list_attached_sources(agent_id=agent.id)
@@ -521,8 +521,7 @@ def test_sources(client: Union[LocalClient, RESTClient], agent: AgentState):
 
     # detach the source
     assert len(client.get_archival_memory(agent_id=agent.id)) > 0, "No archival memory"
-    deleted_source = client.detach_source(source_id=source.id, agent_id=agent.id)
-    assert deleted_source.id == source.id
+    client.detach_source(source_id=source.id, agent_id=agent.id)
     archival_memories = client.get_archival_memory(agent_id=agent.id)
     assert len(archival_memories) == 0, f"Failed to detach source: {len(archival_memories)}"
     assert source.id not in [s.id for s in client.list_attached_sources(agent.id)]

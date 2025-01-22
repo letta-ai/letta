@@ -111,36 +111,6 @@ def delete_source(
     server.delete_source(source_id=source_id, actor=actor)
 
 
-@router.post("/{source_id}/attach", response_model=Source, operation_id="attach_agent_to_source")
-def attach_source_to_agent(
-    source_id: str,
-    agent_id: str = Query(..., description="The unique identifier of the agent to attach the source to."),
-    server: "SyncServer" = Depends(get_letta_server),
-    user_id: Optional[str] = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
-):
-    """
-    Attach a data source to an existing agent.
-    """
-    actor = server.user_manager.get_user_or_default(user_id=user_id)
-    server.agent_manager.attach_source(source_id=source_id, agent_id=agent_id, actor=actor)
-    return server.source_manager.get_source_by_id(source_id=source_id, actor=actor)
-
-
-@router.post("/{source_id}/detach", response_model=Source, operation_id="detach_agent_from_source")
-def detach_source_from_agent(
-    source_id: str,
-    agent_id: str = Query(..., description="The unique identifier of the agent to detach the source from."),
-    server: "SyncServer" = Depends(get_letta_server),
-    user_id: Optional[str] = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
-) -> None:
-    """
-    Detach a data source from an existing agent.
-    """
-    actor = server.user_manager.get_user_or_default(user_id=user_id)
-    server.agent_manager.detach_source(agent_id=agent_id, source_id=source_id, actor=actor)
-    return server.source_manager.get_source_by_id(source_id=source_id, actor=actor)
-
-
 @router.post("/{source_id}/upload", response_model=Job, operation_id="upload_file_to_source")
 def upload_file_to_source(
     file: UploadFile,
