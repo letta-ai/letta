@@ -94,6 +94,7 @@ bedrock = ["boto3"]
 black = "^24.4.2"
 ipykernel = "^6.29.5"
 ipdb = "^0.13.13"
+pytest-mock = "^3.14.0"
 
 [tool.black]
 line-length = 140
