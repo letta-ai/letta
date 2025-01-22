@@ -1455,12 +1455,14 @@ class RESTClient(AbstractClient):
         Returns:
             id (str): ID of the tool (`None` if not found)
         """
-        response = requests.get(f"{self.base_url}/{self.api_prefix}/tools/name/{tool_name}", headers=self.headers)
-        if response.status_code == 404:
-            return None
-        elif response.status_code != 200:
+        response = requests.get(f"{self.base_url}/{self.api_prefix}/tools", headers=self.headers)
+        if response.status_code != 200:
             raise ValueError(f"Failed to get tool: {response.text}")
-        return response.json()
+
+        tools = [tool for tool in [Tool(**tool) for tool in response.json()] if tool.name == tool_name]
+        if not tools:
+            return None
+        return tools[0].id
 
     def upsert_base_tools(self) -> List[Tool]:
         response = requests.post(f"{self.base_url}/{self.api_prefix}/tools/add-base-tools/", headers=self.headers)

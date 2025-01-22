@@ -204,27 +204,6 @@ def test_get_tool_404(client, mock_sync_server, add_integers_tool):
     assert response.json()["detail"] == f"Tool with id {add_integers_tool.id} not found."
 
 
-def test_get_tool_id(client, mock_sync_server, add_integers_tool):
-    mock_sync_server.tool_manager.get_tool_by_name.return_value = add_integers_tool
-
-    response = client.get(f"/v1/tools/name/{add_integers_tool.name}", headers={"user_id": "test_user"})
-
-    assert response.status_code == 200
-    assert response.json() == add_integers_tool.id
-    mock_sync_server.tool_manager.get_tool_by_name.assert_called_once_with(
-        tool_name=add_integers_tool.name, actor=mock_sync_server.user_manager.get_user_or_default.return_value
-    )
-
-
-def test_get_tool_id_404(client, mock_sync_server):
-    mock_sync_server.tool_manager.get_tool_by_name.return_value = None
-
-    response = client.get("/v1/tools/name/UnknownTool", headers={"user_id": "test_user"})
-
-    assert response.status_code == 404
-    assert "Tool with name UnknownTool" in response.json()["detail"]
-
-
 def test_list_tools(client, mock_sync_server, add_integers_tool):
     mock_sync_server.tool_manager.list_tools.return_value = [add_integers_tool]
 
