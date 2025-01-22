@@ -18,6 +18,34 @@ class ToolSettings(BaseSettings):
     local_sandbox_dir: Optional[str] = None
 
 
+class SummarizerSettings(BaseSettings):
+    model_config = SettingsConfigDict(env_prefix="letta_summarizer_", extra="ignore")
+
+    # Controls if we should evict all messages
+    # TODO: Can refactor this into an enum if we have a bunch of different kinds of summarizers
+    evict_all_messages: bool = False
+
+    # The maximum number of retries for the summarizer
+    # If we reach this cutoff, it probably means that the summarizer is not compressing down the in-context messages any further
+    # And we throw a fatal error
+    max_summarizer_retries: int = 3
+
+    # When to warn the model that a summarize command will happen soon
+    # The amount of tokens before a system warning about upcoming truncation is sent to Letta
+    memory_warning_threshold: float = 0.75
+
+    # Whether to send the system memory warning message
+    send_memory_warning_message: bool = False
+
+    # The desired memory pressure to summarize down to
+    desired_memory_token_pressure: float = 0.3
+
+    # The number of messages at the end to keep
+    # Even when summarizing, we may want to keep a handful of recent messages
+    # These serve as in-context examples of how to use functions / what user messages look like
+    keep_last_n_messages: int = 0
+
+
 class ModelSettings(BaseSettings):
 
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
@@ -147,3 +175,4 @@ settings = Settings(_env_parse_none_str="None")
 test_settings = TestSettings()
 model_settings = ModelSettings()
 tool_settings = ToolSettings()
+summarizer_settings = SummarizerSettings()

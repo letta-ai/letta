@@ -465,6 +465,12 @@ class AgentManager:
         return self.set_in_context_messages(agent_id=agent_id, message_ids=new_messages, actor=actor)
 
     @enforce_types
+    def trim_all_in_context_messages_except_system(self, agent_id: str, actor: PydanticUser) -> PydanticAgentState:
+        message_ids = self.get_agent_by_id(agent_id=agent_id, actor=actor).message_ids
+        new_messages = [message_ids[0]]  # 0 is system message
+        return self.set_in_context_messages(agent_id=agent_id, message_ids=new_messages, actor=actor)
+
+    @enforce_types
     def prepend_to_in_context_messages(self, messages: List[PydanticMessage], agent_id: str, actor: PydanticUser) -> PydanticAgentState:
         message_ids = self.get_agent_by_id(agent_id=agent_id, actor=actor).message_ids
         new_messages = self.message_manager.create_many_messages(messages, actor=actor)

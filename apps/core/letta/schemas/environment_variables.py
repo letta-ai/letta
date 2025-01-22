@@ -26,7 +26,7 @@ class EnvironmentVariableUpdateBase(LettaBase):
     description: Optional[str] = Field(None, description="An optional description of the environment variable.")
 
 
-# Sandbox-Specific Environment Variable
+# Environment Variable
 class SandboxEnvironmentVariableBase(EnvironmentVariableBase):
     __id_prefix__ = "sandbox-env"
     sandbox_config_id: str = Field(..., description="The ID of the sandbox config this environment variable belongs to.")

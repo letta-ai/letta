@@ -125,8 +125,6 @@ LLM_MAX_TOKENS = {
     "gpt-3.5-turbo-16k-0613": 16385,  # legacy
     "gpt-3.5-turbo-0301": 4096,  # legacy
 }
-# The amount of tokens before a sytem warning about upcoming truncation is sent to Letta
-MESSAGE_SUMMARY_WARNING_FRAC = 0.75
 # The error message that Letta will receive
 # MESSAGE_SUMMARY_WARNING_STR = f"Warning: the conversation history will soon reach its maximum length and be trimmed. Make sure to save any important information from the conversation to your memory before it is removed."
 # Much longer and more specific variant of the prompt
@@ -138,14 +136,9 @@ MESSAGE_SUMMARY_WARNING_STR = " ".join(
         # "Remember to pass request_heartbeat = true if you would like to send a message immediately after.",
     ]
 )
-# The fraction of tokens we truncate down to
-MESSAGE_SUMMARY_TRUNC_TOKEN_FRAC = 0.75
+
 # The ackknowledgement message used in the summarize sequence
 MESSAGE_SUMMARY_REQUEST_ACK = "Understood, I will respond with a summary of the message (and only the summary, nothing else) once I receive the conversation history. I'm ready."
-
-# Even when summarizing, we want to keep a handful of recent messages
-# These serve as in-context examples of how to use functions / what user messages look like
-MESSAGE_SUMMARY_TRUNC_KEEP_N_LAST = 3
 
 # Maximum length of an error message
 MAX_ERROR_MESSAGE_CHAR_LIMIT = 500
