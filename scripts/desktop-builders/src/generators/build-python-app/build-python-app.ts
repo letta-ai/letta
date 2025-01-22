@@ -1,5 +1,7 @@
 import {
   generateFiles,
+} from '@nx/devkit';
+import type {
   Tree,
 } from '@nx/devkit';
 import * as path from 'path';

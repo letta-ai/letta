@@ -1,4 +1,4 @@
-import {
+import type {
   Tree,
 } from '@nx/devkit';
 import { execSync } from 'child_process';
