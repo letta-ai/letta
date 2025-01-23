@@ -10,12 +10,13 @@ import { AppHeader } from './AppHeader/AppHeader';
 import { Agents } from './pages/Agents/Agents';
 import {
   Button,
-  CogIcon, CommunicationsIcon,
+  CogIcon,
+  CommunicationsIcon,
   Frame,
   HStack,
   LettaInvaderIcon,
   TerminalIcon,
-  VStack
+  VStack,
 } from '@letta-cloud/component-library';
 import { useTranslations } from '@letta-cloud/translations';
 import { ADE } from './pages/ADE/ADE';
