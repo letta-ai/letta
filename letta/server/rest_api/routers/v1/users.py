@@ -23,7 +23,7 @@ def list_users(
     Get a list of all users in the database
     """
     try:
-        next_cursor, users = server.user_manager.list_users(cursor=cursor, limit=limit)
+        users = server.user_manager.list_users(cursor=cursor, limit=limit)
     except HTTPException:
         raise
     except Exception as e:
