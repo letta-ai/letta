@@ -9,13 +9,9 @@ import { execFile } from 'child_process';
 import * as path from 'path';
 import type { ServerLogType } from '@letta-cloud/types';
 import * as todesktop from '@todesktop/runtime';
-
+import * as os from 'os';
 todesktop.init();
 
-
-
-
-let isInitialized = false;
 let lettaServer: ReturnType<typeof execFile> | null = null;
 
 class ServerLogs {
@@ -39,6 +35,7 @@ class ServerLogs {
 }
 
 const lettaServerLogs = new ServerLogs();
+const homeDir = os.homedir();
 
 function copyAlembicToLettaDir() {
   let alembicFolderPath = path.join(__dirname, '..', '..', 'core', 'alembic');
@@ -49,11 +46,7 @@ function copyAlembicToLettaDir() {
     alembicInitPath = path.join(__dirname, '..', 'dist', 'alembic.ini');
   }
 
-  const migrationsPath = path.join(
-    process.env.HOME || '/',
-    '.letta',
-    'migrations',
-  );
+  const migrationsPath = path.join(homeDir || '/', '.letta', 'migrations');
 
   if (!fs.existsSync(migrationsPath)) {
     fs.mkdirSync(migrationsPath, { recursive: true });
@@ -105,12 +98,11 @@ function copyLettaServerToLettaDir() {
     fileName,
   );
 
-
   if (App.application.isPackaged) {
     lettaServerPath = path.join(__dirname, '..', 'dist', fileName);
   }
 
-  const lettaPath = path.join(process.env.HOME || '/', '.letta', 'bin');
+  const lettaPath = path.join(homeDir || '/', '.letta', 'bin');
 
   if (!fs.existsSync(lettaPath)) {
     fs.mkdirSync(lettaPath, { recursive: true });
@@ -164,7 +156,7 @@ export default class App {
   }
 
   static loadLettaConfig() {
-    const configPath = path.join(process.env.HOME || '/', '.letta', 'env');
+    const configPath = path.join(homeDir || '/', '.letta', 'env');
 
     if (!fs.existsSync(configPath)) {
       // create the file
@@ -175,7 +167,7 @@ export default class App {
   }
 
   static saveLettaConfig(config: string) {
-    const configPath = path.join(process.env.HOME || '/', '.letta', 'env');
+    const configPath = path.join(homeDir || '/', '.letta', 'env');
 
     fs.writeFileSync(configPath, config);
 
@@ -198,12 +190,7 @@ export default class App {
     copyAlembicToLettaDir();
     copyLettaServerToLettaDir();
 
-    let lettaServerPath = path.join(
-      process.env.HOME || '/',
-      '.letta',
-      'bin',
-      'letta',
-    );
+    let lettaServerPath = path.join(homeDir || '/', '.letta', 'bin', 'letta');
     lettaServer = execFile(lettaServerPath, ['--use-file-pg-uri']);
 
     if (lettaServer.stdout) {
@@ -272,22 +259,22 @@ export default class App {
     const workAreaSize = screen.getPrimaryDisplay().workAreaSize;
     const width = Math.min(350, workAreaSize.width || 350);
     const height = Math.min(475, workAreaSize.height || 475);
-    const app = electron.app
+    const app = electron.app;
 
-    const lock = app.requestSingleInstanceLock()
+    const lock = app.requestSingleInstanceLock();
 
     if (!lock) {
-      app.quit()
+      app.quit();
       return;
     }
 
     app.on('second-instance', () => {
       // Someone tried to run a second instance, we should focus our window.
       if (App.mainWindow) {
-        if (App.mainWindow.isMinimized()) App.mainWindow.restore()
-        App.mainWindow.focus()
+        if (App.mainWindow.isMinimized()) App.mainWindow.restore();
+        App.mainWindow.focus();
       }
-    })
+    });
 
     // Create the browser window.
     App.mainWindow = new BrowserWindow({
