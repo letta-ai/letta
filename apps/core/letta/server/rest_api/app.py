@@ -49,8 +49,11 @@ password = None
 #    #typer.secho(f"Generated admin server password for this session: {password}", fg=typer.colors.GREEN)
 
 import logging
+import platform
 
 from fastapi import FastAPI
+
+is_windows = platform.system() == "Windows"
 
 log = logging.getLogger("uvicorn")
 
@@ -285,8 +288,14 @@ def start_server(
             ssl_certfile="certs/localhost.pem",
         )
     else:
-        print(f"▶ Server running at: http://{host or 'localhost'}:{port or REST_DEFAULT_PORT}")
-        print(f"▶ View using ADE at: https://app.letta.com/development-servers/local/dashboard\n")
+        if is_windows:
+            # Windows doesn't those the fancy unicode characters
+            print(f"Server running at: http://{host or 'localhost'}:{port or REST_DEFAULT_PORT}")
+            print(f"View using ADE at: https://app.letta.com/development-servers/local/dashboard\n")
+        else:
+            print(f"▶ Server running at: http://{host or 'localhost'}:{port or REST_DEFAULT_PORT}")
+            print(f"▶ View using ADE at: https://app.letta.com/development-servers/local/dashboard\n")
+
         uvicorn.run(
             app,
             host=host or "localhost",
