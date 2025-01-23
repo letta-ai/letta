@@ -4945,7 +4945,13 @@ export const $ToolRunFromSource = {
 
 export const $ToolType = {
   type: 'string',
-  enum: ['custom', 'letta_core', 'letta_memory_core', 'letta_multi_agent_core'],
+  enum: [
+    'custom',
+    'letta_core',
+    'letta_memory_core',
+    'letta_multi_agent_core',
+    'external_composio',
+  ],
   title: 'ToolType',
 } as const;
 

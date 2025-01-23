@@ -220,11 +220,10 @@ def add_composio_tool(
     Add a new Composio tool by action name (Composio refers to each tool as an `Action`)
     """
     actor = server.user_manager.get_user_or_default(user_id=user_id)
-    composio_api_key = get_composio_key(server, actor=actor)
 
     try:
-        tool_create = ToolCreate.from_composio(action_name=composio_action_name, api_key=composio_api_key)
-        return server.tool_manager.create_or_update_tool(pydantic_tool=Tool(**tool_create.model_dump()), actor=actor)
+        tool_create = ToolCreate.from_composio(action_name=composio_action_name)
+        return server.tool_manager.create_or_update_composio_tool(pydantic_tool=Tool(**tool_create.model_dump()), actor=actor)
     except EnumStringNotFound as e:
         raise HTTPException(
             status_code=400,  # Bad Request

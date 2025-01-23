@@ -12,12 +12,37 @@ from letta.schemas.letta_response import LettaResponse
 from letta.schemas.message import MessageCreate
 
 
-def generate_composio_tool_wrapper(action_name: str) -> tuple[str, str]:
-    # Instantiate the object
-    tool_instantiation_str = f"composio_toolset.get_tools(actions=['{action_name}'])[0]"
+# TODO: This is kind of hacky, as this is used to search up the action later on composio's side
+# TODO: So be very careful changing/removing these pair of functions
+def generate_func_name_from_composio_action(action_name: str) -> str:
+    """
+    Generates the composio function name from the composio action.
 
+    Args:
+        action_name: The composio action name
+
+    Returns:
+        function name
+    """
+    return action_name.lower()
+
+
+def generate_composio_action_from_func_name(func_name: str) -> str:
+    """
+    Generates the composio action from the composio function name.
+
+    Args:
+        func_name: The composio function name
+
+    Returns:
+        composio action name
+    """
+    return func_name.upper()
+
+
+def generate_composio_tool_wrapper(action_name: str) -> tuple[str, str]:
     # Generate func name
-    func_name = action_name.lower()
+    func_name = generate_func_name_from_composio_action(action_name)
 
     wrapper_function_str = f"""
 def {func_name}(**kwargs):
