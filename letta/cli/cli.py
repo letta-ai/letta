@@ -361,4 +361,4 @@ def delete_agent(
 def version() -> str:
     import letta
 
-    return letta.__version__
+    print(letta.__version__)
