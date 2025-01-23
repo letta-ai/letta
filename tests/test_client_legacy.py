@@ -369,7 +369,7 @@ def test_list_files_pagination(client: Union[LocalClient, RESTClient], agent: Ag
     assert files_a[0].source_id == source.id
 
     # Use the cursor from response_a to get the remaining file
-    files_b = client.list_files_from_source(source.id, limit=1, cursor=files_a[-1].id)
+    files_b = client.list_files_from_source(source.id, limit=1, after=files_a[-1].id)
     assert len(files_b) == 1
     assert files_b[0].source_id == source.id
 
@@ -377,7 +377,7 @@ def test_list_files_pagination(client: Union[LocalClient, RESTClient], agent: Ag
     assert files_a[0].file_name != files_b[0].file_name
 
     # Use the cursor from response_b to list files, should be empty
-    files = client.list_files_from_source(source.id, limit=1, cursor=files_b[-1].id)
+    files = client.list_files_from_source(source.id, limit=1, after=files_b[-1].id)
     assert len(files) == 0  # Should be empty
 
 

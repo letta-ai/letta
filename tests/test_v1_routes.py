@@ -330,7 +330,7 @@ def test_get_run_messages(client, mock_sync_server):
 
     # Configure mock server responses
     mock_sync_server.user_manager.get_user_or_default.return_value = Mock(id="user-123")
-    mock_sync_server.job_manager.get_run_messages_cursor.return_value = mock_messages
+    mock_sync_server.job_manager.get_run_messages.return_value = mock_messages
 
     # Test successful retrieval
     response = client.get(
@@ -338,9 +338,10 @@ def test_get_run_messages(client, mock_sync_server):
         headers={"user_id": "user-123"},
         params={
             "limit": 10,
-            "cursor": mock_messages[0].id,
+            "before": "message-1234",
+            "after": "message-6789",
             "role": "user",
-            "ascending": True,
+            "order": "desc",
         },
     )
     assert response.status_code == 200
@@ -350,12 +351,13 @@ def test_get_run_messages(client, mock_sync_server):
 
     # Verify mock calls
     mock_sync_server.user_manager.get_user_or_default.assert_called_once_with(user_id="user-123")
-    mock_sync_server.job_manager.get_run_messages_cursor.assert_called_once_with(
+    mock_sync_server.job_manager.get_run_messages.assert_called_once_with(
         run_id="run-12345678",
         actor=mock_sync_server.user_manager.get_user_or_default.return_value,
         limit=10,
-        cursor=mock_messages[0].id,
-        ascending=True,
+        before="message-1234",
+        after="message-6789",
+        ascending=False,
         role="user",
     )
 
@@ -365,7 +367,7 @@ def test_get_run_messages_not_found(client, mock_sync_server):
     # Configure mock responses
     error_message = "Run 'run-nonexistent' not found"
     mock_sync_server.user_manager.get_user_or_default.return_value = Mock(id="user-123")
-    mock_sync_server.job_manager.get_run_messages_cursor.side_effect = NoResultFound(error_message)
+    mock_sync_server.job_manager.get_run_messages.side_effect = NoResultFound(error_message)
 
     response = client.get("/v1/runs/run-nonexistent/messages", headers={"user_id": "user-123"})
 
@@ -431,7 +433,7 @@ def test_get_tags(client, mock_sync_server):
     assert response.status_code == 200
     assert response.json() == ["tag1", "tag2"]
     mock_sync_server.agent_manager.list_tags.assert_called_once_with(
-        actor=mock_sync_server.user_manager.get_user_or_default.return_value, cursor=None, limit=50, query_text=None
+        actor=mock_sync_server.user_manager.get_user_or_default.return_value, after=None, limit=50, query_text=None
     )
 
 
@@ -439,12 +441,12 @@ def test_get_tags_with_pagination(client, mock_sync_server):
     """Test tag listing with pagination parameters"""
     mock_sync_server.agent_manager.list_tags.return_value = ["tag3", "tag4"]
 
-    response = client.get("/v1/tags", params={"cursor": "tag2", "limit": 2}, headers={"user_id": "test_user"})
+    response = client.get("/v1/tags", params={"after": "tag2", "limit": 2}, headers={"user_id": "test_user"})
 
     assert response.status_code == 200
     assert response.json() == ["tag3", "tag4"]
     mock_sync_server.agent_manager.list_tags.assert_called_once_with(
-        actor=mock_sync_server.user_manager.get_user_or_default.return_value, cursor="tag2", limit=2, query_text=None
+        actor=mock_sync_server.user_manager.get_user_or_default.return_value, after="tag2", limit=2, query_text=None
     )
 
 
@@ -457,5 +459,5 @@ def test_get_tags_with_search(client, mock_sync_server):
     assert response.status_code == 200
     assert response.json() == ["user_tag1", "user_tag2"]
     mock_sync_server.agent_manager.list_tags.assert_called_once_with(
-        actor=mock_sync_server.user_manager.get_user_or_default.return_value, cursor=None, limit=50, query_text="user"
+        actor=mock_sync_server.user_manager.get_user_or_default.return_value, after=None, limit=50, query_text="user"
     )

@@ -3,7 +3,7 @@ from enum import Enum
 from functools import wraps
 from typing import TYPE_CHECKING, List, Literal, Optional, Tuple, Union
 
-from sqlalchemy import String, and_, desc, func, or_, select
+from sqlalchemy import String, and_, func, or_, select
 from sqlalchemy.exc import DBAPIError, IntegrityError, TimeoutError
 from sqlalchemy.orm import Mapped, Session, mapped_column
 
@@ -52,7 +52,8 @@ class SqlalchemyBase(CommonSqlalchemyMetaMixins, Base):
         cls,
         *,
         db_session: "Session",
-        cursor: Optional[str] = None,
+        before: Optional[str] = None,
+        after: Optional[str] = None,
         start_date: Optional[datetime] = None,
         end_date: Optional[datetime] = None,
         limit: Optional[int] = 50,
@@ -69,12 +70,13 @@ class SqlalchemyBase(CommonSqlalchemyMetaMixins, Base):
         **kwargs,
     ) -> List["SqlalchemyBase"]:
         """
-        List records with cursor-based pagination, ordering by created_at.
-        Cursor is an ID, but pagination is based on the cursor object's created_at value.
+        List records with before/after pagination, ordering by created_at.
+        Can use both before and after to fetch a window of records.
 
         Args:
             db_session: SQLAlchemy session
-            cursor: ID of the last item seen (for pagination)
+            before: ID of item to paginate before (upper bound)
+            after: ID of item to paginate after (lower bound)
             start_date: Filter items after this date
             end_date: Filter items before this date
             limit: Maximum number of items to return
@@ -89,13 +91,25 @@ class SqlalchemyBase(CommonSqlalchemyMetaMixins, Base):
             raise ValueError("start_date must be earlier than or equal to end_date")
 
         logger.debug(f"Listing {cls.__name__} with kwarg filters {kwargs}")
+
         with db_session as session:
-            # If cursor provided, get the reference object
-            cursor_obj = None
-            if cursor:
-                cursor_obj = session.get(cls, cursor)
-                if not cursor_obj:
-                    raise NoResultFound(f"No {cls.__name__} found with id {cursor}")
+            # Get the reference objects for pagination
+            before_obj = None
+            after_obj = None
+
+            if before:
+                before_obj = session.get(cls, before)
+                if not before_obj:
+                    raise NoResultFound(f"No {cls.__name__} found with id {before}")
+
+            if after:
+                after_obj = session.get(cls, after)
+                if not after_obj:
+                    raise NoResultFound(f"No {cls.__name__} found with id {after}")
+
+            # Validate that before comes after the after object if both are provided
+            if before_obj and after_obj and before_obj.created_at < after_obj.created_at:
+                raise ValueError("'before' reference must be later than 'after' reference")
 
             query = select(cls)
 
@@ -122,8 +136,8 @@ class SqlalchemyBase(CommonSqlalchemyMetaMixins, Base):
                 else:
                     # Match ANY tag - use join and filter
                     query = (
-                        query.join(cls.tags).filter(cls.tags.property.mapper.class_.tag.in_(tags)).group_by(cls.id)  # Deduplicate results
-                    )
+                        query.join(cls.tags).filter(cls.tags.property.mapper.class_.tag.in_(tags)).group_by(cls.id)
+                    )  # Deduplicate results
 
                 # Group by primary key and all necessary columns to avoid JSON comparison
                 query = query.group_by(cls.id)
@@ -150,16 +164,35 @@ class SqlalchemyBase(CommonSqlalchemyMetaMixins, Base):
             if end_date:
                 query = query.filter(cls.created_at < end_date)
 
-            # Cursor-based pagination
-            if cursor_obj:
-                if ascending:
-                    query = query.where(cls.created_at >= cursor_obj.created_at).where(
-                        or_(cls.created_at > cursor_obj.created_at, cls.id > cursor_obj.id)
-                    )
+            # Handle pagination based on before/after
+            if before or after:
+                conditions = []
+
+                if before and after:
+                    # Window-based query - get records between before and after
+                    conditions = [
+                        or_(cls.created_at < before_obj.created_at, and_(cls.created_at == before_obj.created_at, cls.id < before_obj.id)),
+                        or_(cls.created_at > after_obj.created_at, and_(cls.created_at == after_obj.created_at, cls.id > after_obj.id)),
+                    ]
                 else:
-                    query = query.where(cls.created_at <= cursor_obj.created_at).where(
-                        or_(cls.created_at < cursor_obj.created_at, cls.id < cursor_obj.id)
-                    )
+                    # Pure pagination query
+                    if before:
+                        conditions.append(
+                            or_(
+                                cls.created_at < before_obj.created_at,
+                                and_(cls.created_at == before_obj.created_at, cls.id < before_obj.id),
+                            )
+                        )
+                    if after:
+                        conditions.append(
+                            or_(
+                                cls.created_at > after_obj.created_at,
+                                and_(cls.created_at == after_obj.created_at, cls.id > after_obj.id),
+                            )
+                        )
+
+                if conditions:
+                    query = query.where(and_(*conditions))
 
             # Text search
             if query_text:
@@ -184,7 +217,9 @@ class SqlalchemyBase(CommonSqlalchemyMetaMixins, Base):
                     # SQLite with custom vector type
                     query_embedding_binary = adapt_array(query_embedding)
                     query = query.order_by(
-                        func.cosine_distance(cls.embedding, query_embedding_binary).asc(), cls.created_at.asc(), cls.id.asc()
+                        func.cosine_distance(cls.embedding, query_embedding_binary).asc(),
+                        cls.created_at.asc() if ascending else cls.created_at.desc(),
+                        cls.id.asc(),
                     )
                     is_ordered = True
 
@@ -195,13 +230,28 @@ class SqlalchemyBase(CommonSqlalchemyMetaMixins, Base):
             # Apply ordering
             if not is_ordered:
                 if ascending:
-                    query = query.order_by(cls.created_at, cls.id)
+                    query = query.order_by(cls.created_at.asc(), cls.id.asc())
                 else:
-                    query = query.order_by(desc(cls.created_at), desc(cls.id))
+                    query = query.order_by(cls.created_at.desc(), cls.id.desc())
 
-            query = query.limit(limit)
+            # Apply limit, adjusting for both bounds if necessary
+            if before and after:
+                # When both bounds are provided, we need to fetch enough records to satisfy
+                # the limit while respecting both bounds. We'll fetch more and then trim.
+                query = query.limit(limit * 2)
+            else:
+                query = query.limit(limit)
 
-            return list(session.execute(query).scalars())
+            results = list(session.execute(query).scalars())
+
+            # If we have both bounds, take the middle portion
+            if before and after and len(results) > limit:
+                middle = len(results) // 2
+                start = max(0, middle - limit // 2)
+                end = min(len(results), start + limit)
+                results = results[start:end]
+
+            return results
 
     @classmethod
     @handle_db_timeout
@@ -449,12 +499,10 @@ class SqlalchemyBase(CommonSqlalchemyMetaMixins, Base):
 
     def to_pydantic(self) -> "BaseModel":
         """converts to the basic pydantic model counterpart"""
+        model = self.__pydantic_model__.model_validate(self)
         if hasattr(self, "metadata_"):
-            model_dict = {k: v for k, v in self.__dict__.items() if k in self.__pydantic_model__.model_fields}
-            model_dict["metadata"] = self.metadata_
-            return self.__pydantic_model__.model_validate(model_dict)
-
-        return self.__pydantic_model__.model_validate(self)
+            model.metadata = self.metadata_
+        return model
 
     def to_record(self) -> "BaseModel":
         """Deprecated accessor for to_pydantic"""

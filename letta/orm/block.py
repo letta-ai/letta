@@ -1,6 +1,6 @@
 from typing import TYPE_CHECKING, Optional, Type
 
-from sqlalchemy import JSON, BigInteger, Integer, UniqueConstraint, event
+from sqlalchemy import JSON, BigInteger, Index, Integer, UniqueConstraint, event
 from sqlalchemy.orm import Mapped, attributes, mapped_column, relationship
 
 from letta.constants import CORE_MEMORY_BLOCK_CHAR_LIMIT
@@ -20,7 +20,10 @@ class Block(OrganizationMixin, SqlalchemyBase):
     __tablename__ = "block"
     __pydantic_model__ = PydanticBlock
     # This may seem redundant, but is necessary for the BlocksAgents composite FK relationship
-    __table_args__ = (UniqueConstraint("id", "label", name="unique_block_id_label"),)
+    __table_args__ = (
+        UniqueConstraint("id", "label", name="unique_block_id_label"),
+        Index("created_at_label_idx", "created_at", "label"),
+    )
 
     template_name: Mapped[Optional[str]] = mapped_column(
         nullable=True, doc="the unique name that identifies a block in a human-readable way"

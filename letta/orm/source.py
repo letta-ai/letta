@@ -1,6 +1,6 @@
 from typing import TYPE_CHECKING, List, Optional
 
-from sqlalchemy import JSON
+from sqlalchemy import JSON, Index
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from letta.orm import FileMetadata
@@ -22,6 +22,11 @@ class Source(SqlalchemyBase, OrganizationMixin):
 
     __tablename__ = "sources"
     __pydantic_model__ = PydanticSource
+
+    __table_args__ = (
+        Index(f"source_created_at_id_idx", "created_at", "id"),
+        {"extend_existing": True},
+    )
 
     name: Mapped[str] = mapped_column(doc="the name of the source, must be unique within the org", nullable=False)
     description: Mapped[str] = mapped_column(nullable=True, doc="a human-readable description of the source")

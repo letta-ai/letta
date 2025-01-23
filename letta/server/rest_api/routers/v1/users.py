@@ -15,7 +15,7 @@ router = APIRouter(prefix="/users", tags=["users", "admin"])
 
 @router.get("/", tags=["admin"], response_model=List[User], operation_id="list_users")
 def list_users(
-    cursor: Optional[str] = Query(None),
+    after: Optional[str] = Query(None),
     limit: Optional[int] = Query(50),
     server: "SyncServer" = Depends(get_letta_server),
 ):
@@ -23,7 +23,7 @@ def list_users(
     Get a list of all users in the database
     """
     try:
-        next_cursor, users = server.user_manager.list_users(cursor=cursor, limit=limit)
+        users = server.user_manager.list_users(after=after, limit=limit)
     except HTTPException:
         raise
     except Exception as e:

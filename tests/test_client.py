@@ -249,7 +249,7 @@ def test_agent_tags(client: Union[LocalClient, RESTClient]):
     assert paginated_tags[1] == "agent2"
 
     # Test pagination with cursor
-    next_page_tags = client.get_tags(cursor="agent2", limit=2)
+    next_page_tags = client.get_tags(after="agent2", limit=2)
     assert len(next_page_tags) == 2
     assert next_page_tags[0] == "agent3"
     assert next_page_tags[1] == "development"
@@ -654,7 +654,7 @@ def test_agent_listing(client: Union[LocalClient, RESTClient], agent, search_age
     assert len(first_page) == 1
     first_agent = first_page[0]
 
-    second_page = client.list_agents(query_text="search agent", cursor=first_agent.id, limit=1)  # Use agent ID as cursor
+    second_page = client.list_agents(query_text="search agent", after=first_agent.id, limit=1)  # Use agent ID as cursor
     assert len(second_page) == 1
     assert second_page[0].id != first_agent.id
 

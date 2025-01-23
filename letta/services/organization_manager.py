@@ -71,8 +71,12 @@ class OrganizationManager:
             organization.hard_delete(session)
 
     @enforce_types
-    def list_organizations(self, cursor: Optional[str] = None, limit: Optional[int] = 50) -> List[PydanticOrganization]:
-        """List organizations with pagination based on cursor (org_id) and limit."""
+    def list_organizations(self, after: Optional[str] = None, limit: Optional[int] = 50) -> List[PydanticOrganization]:
+        """List all organizations with optional pagination."""
         with self.session_maker() as session:
-            results = OrganizationModel.list(db_session=session, cursor=cursor, limit=limit)
-            return [org.to_pydantic() for org in results]
+            organizations = OrganizationModel.list(
+                db_session=session,
+                after=after,
+                limit=limit,
+            )
+            return [org.to_pydantic() for org in organizations]

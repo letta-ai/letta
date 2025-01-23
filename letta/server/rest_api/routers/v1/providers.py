@@ -13,7 +13,7 @@ router = APIRouter(prefix="/providers", tags=["providers"])
 
 @router.get("/", tags=["providers"], response_model=List[Provider], operation_id="list_providers")
 def list_providers(
-    cursor: Optional[str] = Query(None),
+    after: Optional[str] = Query(None),
     limit: Optional[int] = Query(50),
     server: "SyncServer" = Depends(get_letta_server),
 ):
@@ -21,7 +21,7 @@ def list_providers(
     Get a list of all custom providers in the database
     """
     try:
-        providers = server.provider_manager.list_providers(cursor=cursor, limit=limit)
+        providers = server.provider_manager.list_providers(after=after, limit=limit)
     except HTTPException:
         raise
     except Exception as e:
