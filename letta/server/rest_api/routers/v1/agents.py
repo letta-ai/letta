@@ -398,7 +398,7 @@ AgentMessagesResponse = Annotated[
     Field(
         json_schema_extra={
             "anyOf": [
-                {"type": "array", "items": {"$ref": "#/components/schemas/letta__schemas__message__Message"}},
+                {"type": "array", "items": {"$ref": "#/components/schemas/Message"}},
                 {"type": "array", "items": {"$ref": "#/components/schemas/LettaMessageUnion"}},
             ]
         }

@@ -222,22 +222,22 @@ LettaMessageUnion = Annotated[
 def create_letta_message_union_schema():
     return {
         "oneOf": [
-            {"$ref": "#/components/schemas/SystemMessage-Output"},
-            {"$ref": "#/components/schemas/UserMessage-Output"},
+            {"$ref": "#/components/schemas/SystemMessage"},
+            {"$ref": "#/components/schemas/UserMessage"},
             {"$ref": "#/components/schemas/ReasoningMessage"},
             {"$ref": "#/components/schemas/ToolCallMessage"},
             {"$ref": "#/components/schemas/ToolReturnMessage"},
-            {"$ref": "#/components/schemas/AssistantMessage-Output"},
+            {"$ref": "#/components/schemas/AssistantMessage"},
         ],
         "discriminator": {
             "propertyName": "message_type",
             "mapping": {
-                "system_message": "#/components/schemas/SystemMessage-Output",
-                "user_message": "#/components/schemas/UserMessage-Output",
+                "system_message": "#/components/schemas/SystemMessage",
+                "user_message": "#/components/schemas/UserMessage",
                 "reasoning_message": "#/components/schemas/ReasoningMessage",
                 "tool_call_message": "#/components/schemas/ToolCallMessage",
                 "tool_return_message": "#/components/schemas/ToolReturnMessage",
-                "assistant_message": "#/components/schemas/AssistantMessage-Output",
+                "assistant_message": "#/components/schemas/AssistantMessage",
             },
         },
     }
