@@ -31,8 +31,8 @@ def delete_tool(
     server.tool_manager.delete_tool_by_id(tool_id=tool_id, actor=actor)
 
 
-@router.get("/{tool_id}", response_model=Tool, operation_id="get_tool")
-def get_tool(
+@router.get("/{tool_id}", response_model=Tool, operation_id="retrieve_tool")
+def retrieve_tool(
     tool_id: str,
     server: SyncServer = Depends(get_letta_server),
     user_id: Optional[str] = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
@@ -122,8 +122,8 @@ def upsert_tool(
         raise HTTPException(status_code=500, detail=f"An unexpected error occurred: {str(e)}")
 
 
-@router.patch("/{tool_id}", response_model=Tool, operation_id="update_tool")
-def update_tool(
+@router.patch("/{tool_id}", response_model=Tool, operation_id="modify_tool")
+def modify_tool(
     tool_id: str,
     request: ToolUpdate = Body(...),
     server: SyncServer = Depends(get_letta_server),

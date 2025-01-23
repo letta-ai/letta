@@ -3,6 +3,7 @@ import time
 from typing import Callable, Dict, Generator, List, Optional, Union
 
 import requests
+from openai.types.chat.chat_completion_message_tool_call import ChatCompletionMessageToolCall as OpenAIToolCall
 
 import letta.utils
 from letta.constants import ADMIN_PREFIX, BASE_MEMORY_TOOLS, BASE_TOOLS, DEFAULT_HUMAN, DEFAULT_PERSONA, FUNCTION_RETURN_CHAR_LIMIT
@@ -29,7 +30,6 @@ from letta.schemas.llm_config import LLMConfig
 from letta.schemas.memory import ArchivalMemorySummary, ChatMemory, CreateArchivalMemory, Memory, RecallMemorySummary
 from letta.schemas.message import Message, MessageCreate, MessageUpdate
 from letta.schemas.openai.chat_completion_response import UsageStatistics
-from letta.schemas.openai.chat_completions import ToolCall
 from letta.schemas.organization import Organization
 from letta.schemas.passage import Passage
 from letta.schemas.run import Run
@@ -586,7 +586,7 @@ class RESTClient(AbstractClient):
         # create agent
         create_params = {
             "description": description,
-            "metadata_": metadata,
+            "metadata": metadata,
             "memory_blocks": [],
             "block_ids": [b.id for b in memory.get_blocks()] + block_ids,
             "tool_ids": tool_ids,
@@ -631,7 +631,7 @@ class RESTClient(AbstractClient):
         role: Optional[MessageRole] = None,
         text: Optional[str] = None,
         name: Optional[str] = None,
-        tool_calls: Optional[List[ToolCall]] = None,
+        tool_calls: Optional[List[OpenAIToolCall]] = None,
         tool_call_id: Optional[str] = None,
     ) -> Message:
         request = MessageUpdate(
@@ -685,7 +685,7 @@ class RESTClient(AbstractClient):
             tool_ids=tool_ids,
             tags=tags,
             description=description,
-            metadata_=metadata,
+            metadata=metadata,
             llm_config=llm_config,
             embedding_config=embedding_config,
             message_ids=message_ids,
@@ -810,7 +810,8 @@ class RESTClient(AbstractClient):
         Returns:
             memory (Memory): In-context memory of the agent
         """
-        response = requests.get(f"{self.base_url}/{self.api_prefix}/agents/{agent_id}/core_memory", headers=self.headers)
+
+        response = requests.get(f"{self.base_url}/{self.api_prefix}/agents/{agent_id}/core-memory", headers=self.headers)
         if response.status_code != 200:
             raise ValueError(f"Failed to get in-context memory: {response.text}")
         return Memory(**response.json())
@@ -831,7 +832,7 @@ class RESTClient(AbstractClient):
         """
         memory_update_dict = {section: value}
         response = requests.patch(
-            f"{self.base_url}/{self.api_prefix}/agents/{agent_id}/core_memory", json=memory_update_dict, headers=self.headers
+            f"{self.base_url}/{self.api_prefix}/agents/{agent_id}/core-memory", json=memory_update_dict, headers=self.headers
         )
         if response.status_code != 200:
             raise ValueError(f"Failed to update in-context memory: {response.text}")
@@ -924,7 +925,7 @@ class RESTClient(AbstractClient):
         if after:
             params["after"] = str(after)
         response = requests.get(
-            f"{self.base_url}/{self.api_prefix}/agents/{str(agent_id)}/archival_memory", params=params, headers=self.headers
+            f"{self.base_url}/{self.api_prefix}/agents/{str(agent_id)}/archival-memory", params=params, headers=self.headers
         )
         assert response.status_code == 200, f"Failed to get archival memory: {response.text}"
         return [Passage(**passage) for passage in response.json()]
@@ -942,7 +943,7 @@ class RESTClient(AbstractClient):
         """
         request = CreateArchivalMemory(text=memory)
         response = requests.post(
-            f"{self.base_url}/{self.api_prefix}/agents/{agent_id}/archival_memory", headers=self.headers, json=request.model_dump()
+            f"{self.base_url}/{self.api_prefix}/agents/{agent_id}/archival-memory", headers=self.headers, json=request.model_dump()
         )
         if response.status_code != 200:
             raise ValueError(f"Failed to insert archival memory: {response.text}")
@@ -956,7 +957,7 @@ class RESTClient(AbstractClient):
             agent_id (str): ID of the agent
             memory_id (str): ID of the memory
         """
-        response = requests.delete(f"{self.base_url}/{self.api_prefix}/agents/{agent_id}/archival_memory/{memory_id}", headers=self.headers)
+        response = requests.delete(f"{self.base_url}/{self.api_prefix}/agents/{agent_id}/archival-memory/{memory_id}", headers=self.headers)
         assert response.status_code == 200, f"Failed to delete archival memory: {response.text}"
 
     # messages (recall memory)
@@ -1906,7 +1907,7 @@ class RESTClient(AbstractClient):
             block_id (str): ID of the block to attach
         """
         response = requests.patch(
-            f"{self.base_url}/{self.api_prefix}/agents/{agent_id}/core_memory/blocks/attach/{block_id}",
+            f"{self.base_url}/{self.api_prefix}/agents/{agent_id}/core-memory/blocks/attach/{block_id}",
             headers=self.headers,
         )
         if response.status_code != 200:
@@ -1922,7 +1923,7 @@ class RESTClient(AbstractClient):
             block_id (str): ID of the block to detach
         """
         response = requests.patch(
-            f"{self.base_url}/{self.api_prefix}/agents/{agent_id}/core_memory/blocks/detach/{block_id}", headers=self.headers
+            f"{self.base_url}/{self.api_prefix}/agents/{agent_id}/core-memory/blocks/detach/{block_id}", headers=self.headers
         )
         if response.status_code != 200:
             raise ValueError(f"Failed to detach block from agent: {response.text}")
@@ -1938,7 +1939,7 @@ class RESTClient(AbstractClient):
         Returns:
             blocks (List[Block]): The blocks in the agent's core memory
         """
-        response = requests.get(f"{self.base_url}/{self.api_prefix}/agents/{agent_id}/core_memory/blocks", headers=self.headers)
+        response = requests.get(f"{self.base_url}/{self.api_prefix}/agents/{agent_id}/core-memory/blocks", headers=self.headers)
         if response.status_code != 200:
             raise ValueError(f"Failed to get agent memory blocks: {response.text}")
         return [Block(**block) for block in response.json()]
@@ -1955,7 +1956,7 @@ class RESTClient(AbstractClient):
             block (Block): The block corresponding to the label
         """
         response = requests.get(
-            f"{self.base_url}/{self.api_prefix}/agents/{agent_id}/core_memory/blocks/{label}",
+            f"{self.base_url}/{self.api_prefix}/agents/{agent_id}/core-memory/blocks/{label}",
             headers=self.headers,
         )
         if response.status_code != 200:
@@ -1988,7 +1989,7 @@ class RESTClient(AbstractClient):
         if limit:
             data["limit"] = limit
         response = requests.patch(
-            f"{self.base_url}/{self.api_prefix}/agents/{agent_id}/core_memory/blocks/{label}",
+            f"{self.base_url}/{self.api_prefix}/agents/{agent_id}/core-memory/blocks/{label}",
             headers=self.headers,
             json=data,
         )
@@ -2331,7 +2332,7 @@ class LocalClient(AbstractClient):
         # Create the base parameters
         create_params = {
             "description": description,
-            "metadata_": metadata,
+            "metadata": metadata,
             "memory_blocks": [],
             "block_ids": [b.id for b in memory.get_blocks()] + block_ids,
             "tool_ids": tool_ids,
@@ -2365,7 +2366,7 @@ class LocalClient(AbstractClient):
         role: Optional[MessageRole] = None,
         text: Optional[str] = None,
         name: Optional[str] = None,
-        tool_calls: Optional[List[ToolCall]] = None,
+        tool_calls: Optional[List[OpenAIToolCall]] = None,
         tool_call_id: Optional[str] = None,
     ) -> Message:
         message = self.server.update_agent_message(
@@ -2423,7 +2424,7 @@ class LocalClient(AbstractClient):
                 tool_ids=tool_ids,
                 tags=tags,
                 description=description,
-                metadata_=metadata,
+                metadata=metadata,
                 llm_config=llm_config,
                 embedding_config=embedding_config,
                 message_ids=message_ids,
@@ -3100,7 +3101,7 @@ class LocalClient(AbstractClient):
         job = Job(
             user_id=self.user_id,
             status=JobStatus.created,
-            metadata_={"type": "embedding", "filename": filename, "source_id": source_id},
+            metadata={"type": "embedding", "filename": filename, "source_id": source_id},
         )
         job = self.server.job_manager.create_job(pydantic_job=job, actor=self.user)
 

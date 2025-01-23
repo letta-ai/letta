@@ -12,7 +12,7 @@ router = APIRouter(prefix="/tags", tags=["tag", "admin"])
 
 
 @router.get("/", tags=["admin"], response_model=List[str], operation_id="list_tags")
-def get_tags(
+def list_tags(
     cursor: Optional[str] = Query(None),
     limit: Optional[int] = Query(50),
     server: "SyncServer" = Depends(get_letta_server),

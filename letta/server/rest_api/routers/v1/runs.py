@@ -43,8 +43,8 @@ def list_active_runs(
     return [Run.from_job(job) for job in active_runs]
 
 
-@router.get("/{run_id}", response_model=Run, operation_id="get_run")
-def get_run(
+@router.get("/{run_id}", response_model=Run, operation_id="retrieve_run")
+def retrieve_run(
     run_id: str,
     user_id: Optional[str] = Header(None, alias="user_id"),
     server: "SyncServer" = Depends(get_letta_server),
@@ -69,9 +69,9 @@ RunMessagesResponse = Annotated[
 @router.get(
     "/{run_id}/messages",
     response_model=RunMessagesResponse,
-    operation_id="get_run_messages",
+    operation_id="list_run_messages",
 )
-async def get_run_messages(
+async def list_run_messages(
     run_id: str,
     server: "SyncServer" = Depends(get_letta_server),
     user_id: Optional[str] = Header(None, alias="user_id"),
@@ -111,8 +111,8 @@ async def get_run_messages(
         raise HTTPException(status_code=404, detail=str(e))
 
 
-@router.get("/{run_id}/usage", response_model=UsageStatistics, operation_id="get_run_usage")
-def get_run_usage(
+@router.get("/{run_id}/usage", response_model=UsageStatistics, operation_id="retrieve_run_usage")
+def retrieve_run_usage(
     run_id: str,
     user_id: Optional[str] = Header(None, alias="user_id"),
     server: "SyncServer" = Depends(get_letta_server),

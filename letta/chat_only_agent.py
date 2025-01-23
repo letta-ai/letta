@@ -87,7 +87,7 @@ class ChatOnlyAgent(Agent):
                     memory=offline_memory,
                     llm_config=LLMConfig.default_config("gpt-4"),
                     embedding_config=EmbeddingConfig.default_config("text-embedding-ada-002"),
-                    tool_ids=self.agent_state.metadata_.get("offline_memory_tools", []),
+                    tool_ids=self.agent_state.metadata.get("offline_memory_tools", []),
                     include_base_tools=False,
                 )
                 self.offline_memory_agent.memory.update_block_value(label="conversation_block", value=recent_convo)

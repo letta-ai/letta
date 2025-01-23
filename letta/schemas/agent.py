@@ -72,7 +72,7 @@ class AgentState(OrmMetadataBase, validate_assignment=True):
     organization_id: Optional[str] = Field(None, description="The unique identifier of the organization associated with the agent.")
 
     description: Optional[str] = Field(None, description="The description of the agent.")
-    metadata_: Optional[Dict] = Field(None, description="The metadata of the agent.", alias="metadata_")
+    metadata: Optional[Dict] = Field(None, description="The metadata of the agent.")
 
     memory: Memory = Field(..., description="The in-context memory of the agent.")
     tools: List[Tool] = Field(..., description="The tools used by the agent.")
@@ -122,7 +122,7 @@ class CreateAgent(BaseModel, validate_assignment=True):  #
         False, description="If true, attaches the Letta multi-agent tools (e.g. sending a message to another agent)."
     )
     description: Optional[str] = Field(None, description="The description of the agent.")
-    metadata_: Optional[Dict] = Field(None, description="The metadata of the agent.", alias="metadata_")
+    metadata: Optional[Dict] = Field(None, description="The metadata of the agent.")
     model: Optional[str] = Field(
         None,
         description="The LLM configuration handle used by the agent, specified in the format "
@@ -203,7 +203,7 @@ class UpdateAgent(BaseModel):
     embedding_config: Optional[EmbeddingConfig] = Field(None, description="The embedding configuration used by the agent.")
     message_ids: Optional[List[str]] = Field(None, description="The ids of the messages in the agent's in-context memory.")
     description: Optional[str] = Field(None, description="The description of the agent.")
-    metadata_: Optional[Dict] = Field(None, description="The metadata of the agent.", alias="metadata_")
+    metadata: Optional[Dict] = Field(None, description="The metadata of the agent.")
     tool_exec_environment_variables: Optional[Dict[str, str]] = Field(
         None, description="The environment variables for tool execution specific to this agent."
     )

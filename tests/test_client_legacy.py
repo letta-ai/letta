@@ -466,8 +466,8 @@ def test_sources(client: Union[LocalClient, RESTClient], agent: AgentState):
     assert len(sources) == 1
 
     # TODO: add back?
-    assert sources[0].metadata_["num_passages"] == 0
-    assert sources[0].metadata_["num_documents"] == 0
+    assert sources[0].metadata["num_passages"] == 0
+    assert sources[0].metadata["num_documents"] == 0
 
     # update the source
     original_id = source.id
@@ -491,7 +491,7 @@ def test_sources(client: Union[LocalClient, RESTClient], agent: AgentState):
     filename = "tests/data/memgpt_paper.pdf"
     upload_job = upload_file_using_client(client, source, filename)
     job = client.get_job(upload_job.id)
-    created_passages = job.metadata_["num_passages"]
+    created_passages = job.metadata["num_passages"]
 
     # TODO: add test for blocking job
 
@@ -515,8 +515,8 @@ def test_sources(client: Union[LocalClient, RESTClient], agent: AgentState):
     # check number of passages
     sources = client.list_sources()
     # TODO: add back?
-    # assert sources.sources[0].metadata_["num_passages"] > 0
-    # assert sources.sources[0].metadata_["num_documents"] == 0  # TODO: fix this once document store added
+    # assert sources.sources[0].metadata["num_passages"] > 0
+    # assert sources.sources[0].metadata["num_documents"] == 0  # TODO: fix this once document store added
     print(sources)
 
     # detach the source

@@ -82,6 +82,7 @@ letta_client = "^0.1.16"
 colorama = "^0.4.6"
 
 
+
 [tool.poetry.extras]
 postgres = ["pgvector", "pg8000", "psycopg2-binary", "psycopg2"]
 dev = ["pytest", "pytest-asyncio", "pexpect", "black", "pre-commit", "datasets", "pyright", "pytest-order", "autoflake", "isort", "locust"]

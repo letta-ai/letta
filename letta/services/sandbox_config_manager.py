@@ -172,7 +172,7 @@ class SandboxConfigManager:
             return db_env_var
         else:
             with self.session_maker() as session:
-                env_var = SandboxEnvVarModel(**env_var.model_dump(exclude_none=True))
+                env_var = SandboxEnvVarModel(**env_var.model_dump(to_orm=True, exclude_none=True))
                 env_var.create(session, actor=actor)
             return env_var.to_pydantic()
 
@@ -183,7 +183,7 @@ class SandboxConfigManager:
         """Update an existing sandbox environment variable."""
         with self.session_maker() as session:
             env_var = SandboxEnvVarModel.read(db_session=session, identifier=env_var_id, actor=actor)
-            update_data = env_var_update.model_dump(exclude_unset=True, exclude_none=True)
+            update_data = env_var_update.model_dump(to_orm=True, exclude_unset=True, exclude_none=True)
             update_data = {key: value for key, value in update_data.items() if getattr(env_var, key) != value}
 
             if update_data:
