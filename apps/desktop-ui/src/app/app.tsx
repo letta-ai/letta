@@ -69,6 +69,7 @@ function Dashboard() {
 
   return (
     <HStack
+      border={window.electron.platform === 'win32'}
       color="background"
       gap={false}
       className="dark flex flex-col w-[100dvw] h-[100dvh]"

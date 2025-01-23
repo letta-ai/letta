@@ -96,31 +96,35 @@ function AgentNavigation() {
 }
 
 export function AppHeader() {
+  const isWindows = window.electron.platform === 'win32';
   return (
     <div className="app-header">
       <HStack
         color="background"
-        paddingLeft="xlarge"
-        paddingRight="small"
+        paddingLeft={isWindows ? 'medium' : 'xlarge'}
+        paddingRight={isWindows ? 'small' : false}
         justify="spaceBetween"
         borderBottom
         align="center"
       >
         <HStack gap="large">
-          <div className="w-[60px] h-[42px] border-r" />
+
+          {!isWindows && <div className="w-[60px] h-[42px] border-r" />}
           <HStack className="disable-app-header" align="center">
             <Link className="contents " to="/">
               <Logo size="small" />
               <Typography variant="body2" bold>
                 Letta Desktop
               </Typography>
+              {isWindows && <ServerStatus />}
             </Link>
             <AgentNavigation />
           </HStack>
         </HStack>
         <HStack align="center">
           <Navigation />
-          <ServerStatus />
+          {!isWindows && <ServerStatus />}
+          {isWindows && <div className="w-[125px] h-[42px]" />}
         </HStack>
       </HStack>
     </div>

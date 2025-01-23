@@ -92,17 +92,20 @@ function copyAlembicToLettaDir() {
 }
 
 function copyLettaServerToLettaDir() {
+  let fileName = process.platform === 'win32' ? 'letta.exe' : 'letta';
+
   let lettaServerPath = path.join(
     __dirname,
     '..',
     '..',
     'desktop-core',
     'dist',
-    'letta',
+    fileName,
   );
 
+
   if (App.application.isPackaged) {
-    lettaServerPath = path.join(__dirname, '..', 'dist', 'letta');
+    lettaServerPath = path.join(__dirname, '..', 'dist', fileName);
   }
 
   const lettaPath = path.join(process.env.HOME || '/', '.letta', 'bin');
@@ -111,10 +114,10 @@ function copyLettaServerToLettaDir() {
     fs.mkdirSync(lettaPath, { recursive: true });
   }
 
-  fs.copyFileSync(lettaServerPath, path.join(lettaPath, 'letta'));
+  fs.copyFileSync(lettaServerPath, path.join(lettaPath, fileName));
 
   // chmod +x
-  fs.chmodSync(path.join(lettaPath, 'letta'), parseInt('755', 8));
+  fs.chmodSync(path.join(lettaPath, fileName), parseInt('755', 8));
 }
 
 export default class App {

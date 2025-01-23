@@ -1,4 +1,5 @@
 set dotenv-load
+set windows-shell := ["powershell.exe", "-NoLogo", "-Command"]
 
 PROJECT_NAME := "memgpt-428419"
 REGION := "us-central1"
