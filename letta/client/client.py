@@ -586,7 +586,7 @@ class RESTClient(AbstractClient):
         # create agent
         create_params = {
             "description": description,
-            "metadata_": metadata,
+            "metadata": metadata,
             "memory_blocks": [],
             "block_ids": [b.id for b in memory.get_blocks()] + block_ids,
             "tool_ids": tool_ids,
@@ -685,7 +685,7 @@ class RESTClient(AbstractClient):
             tool_ids=tool_ids,
             tags=tags,
             description=description,
-            metadata_=metadata,
+            metadata=metadata,
             llm_config=llm_config,
             embedding_config=embedding_config,
             message_ids=message_ids,
@@ -2331,7 +2331,7 @@ class LocalClient(AbstractClient):
         # Create the base parameters
         create_params = {
             "description": description,
-            "metadata_": metadata,
+            "metadata": metadata,
             "memory_blocks": [],
             "block_ids": [b.id for b in memory.get_blocks()] + block_ids,
             "tool_ids": tool_ids,
@@ -2423,7 +2423,7 @@ class LocalClient(AbstractClient):
                 tool_ids=tool_ids,
                 tags=tags,
                 description=description,
-                metadata_=metadata,
+                metadata=metadata,
                 llm_config=llm_config,
                 embedding_config=embedding_config,
                 message_ids=message_ids,
@@ -3100,7 +3100,7 @@ class LocalClient(AbstractClient):
         job = Job(
             user_id=self.user_id,
             status=JobStatus.created,
-            metadata_={"type": "embedding", "filename": filename, "source_id": source_id},
+            metadata={"type": "embedding", "filename": filename, "source_id": source_id},
         )
         job = self.server.job_manager.create_job(pydantic_job=job, actor=self.user)
 

@@ -96,7 +96,7 @@ def comprehensive_agent_checks(agent: AgentState, request: Union[CreateAgent, Up
     # Assert scalar fields
     assert agent.system == request.system, f"System prompt mismatch: {agent.system} != {request.system}"
     assert agent.description == request.description, f"Description mismatch: {agent.description} != {request.description}"
-    assert agent.metadata_ == request.metadata_, f"Metadata mismatch: {agent.metadata_} != {request.metadata_}"
+    assert agent.metadata == request.metadata, f"Metadata mismatch: {agent.metadata} != {request.metadata}"
 
     # Assert agent env vars
     if hasattr(request, "tool_exec_environment_variables"):

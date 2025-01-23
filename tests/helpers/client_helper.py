@@ -10,14 +10,14 @@ from letta.schemas.source import Source
 def upload_file_using_client(client: Union[LocalClient, RESTClient], source: Source, filename: str) -> Job:
     # load a file into a source (non-blocking job)
     upload_job = client.load_file_to_source(filename=filename, source_id=source.id, blocking=False)
-    print("Upload job", upload_job, upload_job.status, upload_job.metadata_)
+    print("Upload job", upload_job, upload_job.status, upload_job.metadata)
 
     # view active jobs
     active_jobs = client.list_active_jobs()
     jobs = client.list_jobs()
     assert upload_job.id in [j.id for j in jobs]
     assert len(active_jobs) == 1
-    assert active_jobs[0].metadata_["source_id"] == source.id
+    assert active_jobs[0].metadata["source_id"] == source.id
 
     # wait for job to finish (with timeout)
     timeout = 240

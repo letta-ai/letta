@@ -38,14 +38,14 @@ class PassageManager:
     def create_passage(self, pydantic_passage: PydanticPassage, actor: PydanticUser) -> PydanticPassage:
         """Create a new passage in the appropriate table based on whether it has agent_id or source_id."""
         # Common fields for both passage types
-        data = pydantic_passage.model_dump()
+        data = pydantic_passage.model_dump(to_orm=True)
         common_fields = {
             "id": data.get("id"),
             "text": data["text"],
             "embedding": data["embedding"],
             "embedding_config": data["embedding_config"],
             "organization_id": data["organization_id"],
-            "metadata_": data.get("metadata_", {}),
+            "metadata_": data.get("metadata", {}),
             "is_deleted": data.get("is_deleted", False),
             "created_at": data.get("created_at", datetime.utcnow()),
         }
@@ -145,7 +145,7 @@ class PassageManager:
                     raise ValueError(f"Passage with id {passage_id} does not exist.")
 
             # Update the database record with values from the provided record
-            update_data = passage.model_dump(exclude_unset=True, exclude_none=True)
+            update_data = passage.model_dump(to_orm=True, exclude_unset=True, exclude_none=True)
             for key, value in update_data.items():
                 setattr(curr_passage, key, value)
 

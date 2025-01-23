@@ -930,6 +930,7 @@ def test_load_file_to_source(server: SyncServer, user_id: str, agent_id: str, ot
         ),
         actor=actor,
     )
+    assert source.created_by_id == user_id
 
     # Create a test file with some content
     test_file = tmp_path / "test.txt"
@@ -943,7 +944,7 @@ def test_load_file_to_source(server: SyncServer, user_id: str, agent_id: str, ot
     job = server.job_manager.create_job(
         PydanticJob(
             user_id=user_id,
-            metadata_={"type": "embedding", "filename": test_file.name, "source_id": source.id},
+            metadata={"type": "embedding", "filename": test_file.name, "source_id": source.id},
         ),
         actor=actor,
     )
@@ -959,8 +960,8 @@ def test_load_file_to_source(server: SyncServer, user_id: str, agent_id: str, ot
     # Verify job completed successfully
     job = server.job_manager.get_job_by_id(job_id=job.id, actor=actor)
     assert job.status == "completed"
-    assert job.metadata_["num_passages"] == 1
-    assert job.metadata_["num_documents"] == 1
+    assert job.metadata["num_passages"] == 1
+    assert job.metadata["num_documents"] == 1
 
     # Verify passages were added
     first_file_passage_count = server.agent_manager.passage_size(agent_id=agent_id, actor=actor)
@@ -974,7 +975,7 @@ def test_load_file_to_source(server: SyncServer, user_id: str, agent_id: str, ot
     job2 = server.job_manager.create_job(
         PydanticJob(
             user_id=user_id,
-            metadata_={"type": "embedding", "filename": test_file2.name, "source_id": source.id},
+            metadata={"type": "embedding", "filename": test_file2.name, "source_id": source.id},
         ),
         actor=actor,
     )
@@ -990,8 +991,8 @@ def test_load_file_to_source(server: SyncServer, user_id: str, agent_id: str, ot
     # Verify second job completed successfully
     job2 = server.job_manager.get_job_by_id(job_id=job2.id, actor=actor)
     assert job2.status == "completed"
-    assert job2.metadata_["num_passages"] >= 10
-    assert job2.metadata_["num_documents"] == 1
+    assert job2.metadata["num_passages"] >= 10
+    assert job2.metadata["num_documents"] == 1
 
     # Verify passages were appended (not replaced)
     final_passage_count = server.agent_manager.passage_size(agent_id=agent_id, actor=actor)

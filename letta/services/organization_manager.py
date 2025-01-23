@@ -44,7 +44,7 @@ class OrganizationManager:
     @enforce_types
     def _create_organization(self, pydantic_org: PydanticOrganization) -> PydanticOrganization:
         with self.session_maker() as session:
-            org = OrganizationModel(**pydantic_org.model_dump())
+            org = OrganizationModel(**pydantic_org.model_dump(to_orm=True))
             org.create(session)
             return org.to_pydantic()
 

@@ -364,7 +364,9 @@ class ToolExecutionSandbox:
             sbx = Sandbox(sandbox_config.get_e2b_config().template, metadata={self.METADATA_CONFIG_STATE_KEY: state_hash})
         else:
             # no template
-            sbx = Sandbox(metadata={self.METADATA_CONFIG_STATE_KEY: state_hash}, **e2b_config.model_dump(exclude={"pip_requirements"}))
+            sbx = Sandbox(
+                metadata={self.METADATA_CONFIG_STATE_KEY: state_hash}, **e2b_config.model_dump(to_orm=True, exclude={"pip_requirements"})
+            )
 
         # install pip requirements
         if e2b_config.pip_requirements:
