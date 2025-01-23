@@ -56,7 +56,7 @@ from letta.schemas.sandbox_config import E2BSandboxConfig, LocalSandboxConfig, S
 from letta.schemas.source import Source as PydanticSource
 from letta.schemas.source import SourceUpdate
 from letta.schemas.tool import Tool as PydanticTool
-from letta.schemas.tool import ToolUpdate
+from letta.schemas.tool import ToolCreate, ToolUpdate
 from letta.schemas.tool_rule import InitToolRule
 from letta.schemas.user import User as PydanticUser
 from letta.schemas.user import UserUpdate
@@ -192,6 +192,13 @@ def print_tool(server: SyncServer, default_user, default_organization):
     tool = server.tool_manager.create_tool(tool, actor=default_user)
 
     # Yield the created tool
+    yield tool
+
+
+@pytest.fixture
+def composio_github_star_tool(server, default_user):
+    tool_create = ToolCreate.from_composio(action_name="GITHUB_STAR_A_REPOSITORY_FOR_THE_AUTHENTICATED_USER")
+    tool = server.tool_manager.create_or_update_composio_tool(pydantic_tool=PydanticTool(**tool_create.model_dump()), actor=default_user)
     yield tool
 
 
@@ -1548,6 +1555,14 @@ def test_create_tool(server: SyncServer, print_tool, default_user, default_organ
     # Assertions to ensure the created tool matches the expected values
     assert print_tool.created_by_id == default_user.id
     assert print_tool.organization_id == default_organization.id
+    assert print_tool.tool_type == ToolType.CUSTOM
+
+
+def test_create_composio_tool(server: SyncServer, composio_github_star_tool, default_user, default_organization):
+    # Assertions to ensure the created tool matches the expected values
+    assert composio_github_star_tool.created_by_id == default_user.id
+    assert composio_github_star_tool.organization_id == default_organization.id
+    assert composio_github_star_tool.tool_type == ToolType.EXTERNAL_COMPOSIO
 
 
 @pytest.mark.skipif(USING_SQLITE, reason="Test not applicable when using SQLite.")

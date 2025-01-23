@@ -54,6 +54,11 @@ class ToolManager:
         return tool
 
     @enforce_types
+    def create_or_update_composio_tool(self, pydantic_tool: PydanticTool, actor: PydanticUser) -> PydanticTool:
+        pydantic_tool.tool_type = ToolType.EXTERNAL_COMPOSIO
+        return self.create_or_update_tool(pydantic_tool, actor)
+
+    @enforce_types
     def create_tool(self, pydantic_tool: PydanticTool, actor: PydanticUser) -> PydanticTool:
         """Create a new tool based on the ToolCreate schema."""
         with self.session_maker() as session:

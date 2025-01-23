@@ -296,7 +296,7 @@ def test_add_composio_tool(client, mock_sync_server, add_integers_tool):
         )
 
         # Mock server behavior
-        mock_sync_server.tool_manager.create_or_update_tool.return_value = add_integers_tool
+        mock_sync_server.tool_manager.create_or_update_composio_tool.return_value = add_integers_tool
 
         # Perform the request
         response = client.post(f"/v1/tools/composio/{add_integers_tool.name}", headers={"user_id": "test_user"})
@@ -304,10 +304,10 @@ def test_add_composio_tool(client, mock_sync_server, add_integers_tool):
         # Assertions
         assert response.status_code == 200
         assert response.json()["id"] == add_integers_tool.id
-        mock_sync_server.tool_manager.create_or_update_tool.assert_called_once()
+        mock_sync_server.tool_manager.create_or_update_composio_tool.assert_called_once()
 
         # Verify the mocked from_composio method was called
-        mock_from_composio.assert_called_once_with(action_name=add_integers_tool.name, api_key="mock_composio_api_key")
+        mock_from_composio.assert_called_once_with(action_name=add_integers_tool.name)
 
 
 # ======================================================================================================================
