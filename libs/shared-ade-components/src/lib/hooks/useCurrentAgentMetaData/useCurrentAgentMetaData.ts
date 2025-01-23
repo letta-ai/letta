@@ -91,7 +91,7 @@ export function useCurrentAgentMetaData(): UseCurrentAgentMetaDataResponse {
 
     agentId = deployedAgent?.body.id || '';
     agentName = deployedAgent?.body.name || '';
-    isFromTemplate = !!get(deployedAgent?.body.metadata_, 'parentTemplate');
+    isFromTemplate = !!get(deployedAgent?.body.metadata, 'parentTemplate');
   }
 
   return {

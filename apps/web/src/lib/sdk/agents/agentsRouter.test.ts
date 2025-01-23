@@ -88,7 +88,7 @@ const premadeTemplate = {
       limit: 2000,
       label: 'human',
       description: null,
-      metadata_: {},
+      metadata: {},
     },
     {
       value:
@@ -96,7 +96,7 @@ const premadeTemplate = {
       limit: 2000,
       label: 'persona',
       description: null,
-      metadata_: {},
+      metadata: {},
     },
   ],
   tools: [
@@ -153,7 +153,7 @@ describe('agentsRouter', () => {
 
       const createdAgent = {
         id: 'test-agent-id',
-        metadata_: {
+        metadata: {
           project: 'test-project-slug',
         },
         name: 'test-agent',
@@ -337,7 +337,7 @@ describe('agentsRouter', () => {
           description:
             'Act as a personal assistant to help users with tasks and answer questions.',
           name: 'test-agent',
-          metadata_: {
+          metadata: {
             project: 'test-project-slug',
           },
           agent_type: 'memgpt_agent',
@@ -422,7 +422,7 @@ describe('agentsRouter', () => {
         const createdAgent = {
           id: 'test-agent-id',
           name: 'test-agent',
-          metadata_: {
+          metadata: {
             project: 'test-project-slug',
           },
           agent_type: 'memgpt_agent',
@@ -758,7 +758,7 @@ describe('agentsRouter', () => {
         status: 201,
         body: {
           ...premadeTemplate,
-          metadata_: {
+          metadata: {
             project: 'test-project-slug',
           },
           system: 'test',
@@ -829,7 +829,7 @@ describe('agentsRouter', () => {
       const createdAgent: AgentState = {
         id: 'test-agent-id',
         name: 'test',
-        metadata_: {
+        metadata: {
           project: 'test-project-slug',
         },
         created_at: new Date().toISOString(),
@@ -1080,7 +1080,7 @@ describe('agentsRouter', () => {
         status: 201,
         body: {
           ...premadeTemplate,
-          metadata_: {
+          metadata: {
             project: 'test-project-slug',
           },
           name: valuesFn.mock.calls[0][0].name,
@@ -1095,7 +1095,7 @@ describe('agentsRouter', () => {
       const createdAgent = {
         id: 'test-agent-id',
         name: 'test-agent',
-        metadata_: {
+        metadata: {
           project: 'test-project-slug',
         },
         created_at: new Date().toISOString(),
@@ -1160,7 +1160,7 @@ describe('agentsRouter', () => {
       const createdAgent = {
         id: 'test-agent-id',
         name: 'test-agent',
-        metadata_: {
+        metadata: {
           project: 'test-project-slug',
         },
         created_at: new Date().toISOString(),
@@ -1240,7 +1240,7 @@ describe('agentsRouter', () => {
       const createdAgent = {
         id: 'test-agent-id',
         name: 'test-agent',
-        metadata_: {
+        metadata: {
           project: 'test-project-slug',
         },
         created_at: new Date().toISOString(),
@@ -1328,7 +1328,7 @@ describe('agentsRouter', () => {
     const createdAgent = {
       id: 'test-agent-id',
       name: 'test-agent',
-      metadata_: {
+      metadata: {
         project: 'test-project-slug',
       },
       created_at: new Date().toISOString(),

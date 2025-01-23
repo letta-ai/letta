@@ -107,7 +107,7 @@ curl --request POST \
       "value": "My name is Sam, the all-knowing sentient AI."
     }
   ],
-  "llm": "anthropic/claude-3-5-sonnet-20241022", 
+  "llm": "anthropic/claude-3-5-sonnet-20241022",
   "context_window_limit": 16000,
   "embedding": "openai/text-embedding-ada-002",
 }'
@@ -116,7 +116,7 @@ curl --request POST \
 The response will include information about the agent:
 <CodeGroup>
 ```sh REST API (response)
-{"description":null,"metadata_":null,"id":"agent-...
+{"description":null,"metadata":null,"id":"agent-...
 ```
 </CodeGroup>
 
@@ -199,7 +199,7 @@ Now that you've succesfully created a basic agent with Letta, you're ready to st
 
 <CardGroup cols={3}>
   <Card title="Agents" icon="alien-8bit" href="/agents">
-    Learn how to create advanced agents with Letta 
+    Learn how to create advanced agents with Letta
   </Card>
   <Card title="Deployment" icon="rocket" href="/deployment">
     Learn how to deploy agents as microservices
@@ -208,4 +208,3 @@ Now that you've succesfully created a basic agent with Letta, you're ready to st
     Learn how to create custom memory modules
   </Card>
 </CardGroup>
-

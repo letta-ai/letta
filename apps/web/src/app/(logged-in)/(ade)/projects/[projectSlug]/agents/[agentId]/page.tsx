@@ -73,7 +73,7 @@ async function AgentsAgentPage(context: AgentsAgentPageProps) {
     return;
   }
 
-  if (project.body.id !== deployedAgent.body.metadata_?.projectId) {
+  if (project.body.id !== deployedAgent.body.metadata?.projectId) {
     redirect(`/projects/${projectSlug}/agents`);
     return;
   }

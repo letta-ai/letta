@@ -1091,7 +1091,7 @@ def save_agent(agent: Agent):
         embedding_config=agent_state.embedding_config,
         message_ids=agent_state.message_ids,
         description=agent_state.description,
-        metadata_=agent_state.metadata_,
+        metadata=agent_state.metadata,
         # TODO: Add this back in later
         # tool_exec_environment_variables=agent_state.get_agent_env_vars_as_dict(),
     )

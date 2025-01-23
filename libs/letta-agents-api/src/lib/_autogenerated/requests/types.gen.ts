@@ -159,7 +159,7 @@ export type AgentState = {
   /**
    * The metadata of the agent.
    */
-  metadata_?: {
+  metadata?: {
     [key: string]: unknown;
   } | null;
   /**
@@ -301,7 +301,7 @@ export type AuthSchemeField = {
  * label (str): The label of the block (e.g. 'human', 'persona'). This defines a category for the block.
  * template_name (str): The name of the block template (if it is a template).
  * description (str): Description of the block.
- * metadata_ (Dict): Metadata of the block.
+ * metadata (Dict): Metadata of the block.
  * user_id (str): The unique identifier of the user associated with the block.
  */
 export type Block = {
@@ -332,7 +332,7 @@ export type Block = {
   /**
    * Metadata of the block.
    */
-  metadata_?: {
+  metadata?: {
     [key: string]: unknown;
   } | null;
   /**
@@ -384,7 +384,7 @@ export type BlockUpdate = {
   /**
    * Metadata of the block.
    */
-  metadata_?: {
+  metadata?: {
     [key: string]: unknown;
   } | null;
 };
@@ -589,7 +589,7 @@ export type CreateAgentRequest = {
   /**
    * The metadata of the agent.
    */
-  metadata_?: {
+  metadata?: {
     [key: string]: unknown;
   } | null;
   /**
@@ -670,7 +670,7 @@ export type CreateBlock = {
   /**
    * Metadata of the block.
    */
-  metadata_?: {
+  metadata?: {
     [key: string]: unknown;
   } | null;
 };
@@ -920,7 +920,7 @@ export type Job = {
   /**
    * The metadata of the job.
    */
-  metadata_?: {
+  metadata?: {
     [key: string]: unknown;
   } | null;
   /**
@@ -1352,7 +1352,7 @@ export type Passage = {
   /**
    * The metadata of the passage.
    */
-  metadata_?: {
+  metadata?: {
     [key: string]: unknown;
   } | null;
   /**
@@ -1472,7 +1472,7 @@ export type Run = {
   /**
    * The metadata of the job.
    */
-  metadata_?: {
+  metadata?: {
     [key: string]: unknown;
   } | null;
   job_type?: JobType;
@@ -1627,7 +1627,7 @@ export type SandboxType = 'e2b' | 'local';
  * name (str): The name of the source.
  * embedding_config (EmbeddingConfig): The embedding configuration used by the source.
  * user_id (str): The ID of the user that created the source.
- * metadata_ (dict): Metadata associated with the source.
+ * metadata (dict): Metadata associated with the source.
  * description (str): The description of the source.
  */
 export type Source = {
@@ -1654,7 +1654,7 @@ export type Source = {
   /**
    * Metadata associated with the source.
    */
-  metadata_?: {
+  metadata?: {
     [key: string]: unknown;
   } | null;
   /**
@@ -1694,7 +1694,7 @@ export type SourceCreate = {
   /**
    * Metadata associated with the source.
    */
-  metadata_?: {
+  metadata?: {
     [key: string]: unknown;
   } | null;
 };
@@ -1714,7 +1714,7 @@ export type SourceUpdate = {
   /**
    * Metadata associated with the source.
    */
-  metadata_?: {
+  metadata?: {
     [key: string]: unknown;
   } | null;
   /**
@@ -2025,7 +2025,7 @@ export type UpdateAgent = {
   /**
    * The metadata of the agent.
    */
-  metadata_?: {
+  metadata?: {
     [key: string]: unknown;
   } | null;
   /**

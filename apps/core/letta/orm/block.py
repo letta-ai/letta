@@ -45,7 +45,9 @@ class Block(OrganizationMixin, SqlalchemyBase):
                 Schema = Persona
             case _:
                 Schema = PydanticBlock
-        return Schema.model_validate(self)
+        model_dict = {k: v for k, v in self.__dict__.items() if k in self.__pydantic_model__.model_fields}
+        model_dict["metadata"] = self.metadata_
+        return Schema.model_validate(model_dict)
 
 
 @event.listens_for(Block, "after_update")  # Changed from 'before_update'

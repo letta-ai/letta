@@ -45,7 +45,7 @@ class UserManager:
     def create_user(self, pydantic_user: PydanticUser) -> PydanticUser:
         """Create a new user if it doesn't already exist."""
         with self.session_maker() as session:
-            new_user = UserModel(**pydantic_user.model_dump())
+            new_user = UserModel(**pydantic_user.model_dump(to_orm=True))
             new_user.create(session)
             return new_user.to_pydantic()
 
@@ -57,7 +57,7 @@ class UserManager:
             existing_user = UserModel.read(db_session=session, identifier=user_update.id)
 
             # Update only the fields that are provided in UserUpdate
-            update_data = user_update.model_dump(exclude_unset=True, exclude_none=True)
+            update_data = user_update.model_dump(to_orm=True, exclude_unset=True, exclude_none=True)
             for key, value in update_data.items():
                 setattr(existing_user, key, value)
 

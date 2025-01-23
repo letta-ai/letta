@@ -88,6 +88,12 @@ class LettaBase(BaseModel):
             return f"{cls.__id_prefix__}-{v}"
         return v
 
+    def model_dump(self, to_orm: bool = False, **kwargs):
+        data = super().model_dump(**kwargs)
+        if to_orm and "metadata" in data:
+            data["metadata_"] = data.pop("metadata")
+        return data
+
 
 class OrmMetadataBase(LettaBase):
     # metadata fields

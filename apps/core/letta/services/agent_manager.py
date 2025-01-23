@@ -82,7 +82,7 @@ class AgentManager:
         block_ids = list(agent_create.block_ids or [])  # Create a local copy to avoid modifying the original
         if agent_create.memory_blocks:
             for create_block in agent_create.memory_blocks:
-                block = self.block_manager.create_or_update_block(PydanticBlock(**create_block.model_dump()), actor=actor)
+                block = self.block_manager.create_or_update_block(PydanticBlock(**create_block.model_dump(to_orm=True)), actor=actor)
                 block_ids.append(block.id)
 
         # TODO: Remove this block once we deprecate the legacy `tools` field
@@ -117,7 +117,7 @@ class AgentManager:
             source_ids=agent_create.source_ids or [],
             tags=agent_create.tags or [],
             description=agent_create.description,
-            metadata_=agent_create.metadata_,
+            metadata=agent_create.metadata,
             tool_rules=agent_create.tool_rules,
             actor=actor,
         )
@@ -177,7 +177,7 @@ class AgentManager:
         source_ids: List[str],
         tags: List[str],
         description: Optional[str] = None,
-        metadata_: Optional[Dict] = None,
+        metadata: Optional[Dict] = None,
         tool_rules: Optional[List[PydanticToolRule]] = None,
     ) -> PydanticAgentState:
         """Create a new agent."""
@@ -191,7 +191,7 @@ class AgentManager:
                 "embedding_config": embedding_config,
                 "organization_id": actor.organization_id,
                 "description": description,
-                "metadata_": metadata_,
+                "metadata_": metadata,
                 "tool_rules": tool_rules,
             }
 
@@ -242,11 +242,14 @@ class AgentManager:
             agent = AgentModel.read(db_session=session, identifier=agent_id, actor=actor)
 
             # Update scalar fields directly
-            scalar_fields = {"name", "system", "llm_config", "embedding_config", "message_ids", "tool_rules", "description", "metadata_"}
+            scalar_fields = {"name", "system", "llm_config", "embedding_config", "message_ids", "tool_rules", "description", "metadata"}
             for field in scalar_fields:
                 value = getattr(agent_update, field, None)
                 if value is not None:
-                    setattr(agent, field, value)
+                    if field == "metadata":
+                        setattr(agent, "metadata_", value)
+                    else:
+                        setattr(agent, field, value)
 
             # Update relationships using _process_relationship and _process_tags
             if agent_update.tool_ids is not None:

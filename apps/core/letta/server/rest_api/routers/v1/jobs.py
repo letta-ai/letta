@@ -26,9 +26,9 @@ def list_jobs(
     jobs = server.job_manager.list_jobs(actor=actor)
 
     if source_id:
-        # can't be in the ORM since we have source_id stored in the metadata_
+        # can't be in the ORM since we have source_id stored in the metadata
         # TODO: Probably change this
-        jobs = [job for job in jobs if job.metadata_.get("source_id") == source_id]
+        jobs = [job for job in jobs if job.metadata.get("source_id") == source_id]
     return jobs
 
 

@@ -899,7 +899,7 @@ function EditDataSourcesContent(props: EditDataSourcesContentProps) {
     }
 
     return new Set(
-      data.map((job) => get(job.metadata_, 'source_id')).filter(Boolean),
+      data.map((job) => get(job.metadata, 'source_id')).filter(Boolean),
     );
   }, [data]);
 
@@ -909,7 +909,7 @@ function EditDataSourcesContent(props: EditDataSourcesContentProps) {
     }
 
     return new Set(
-      data.map((job) => get(job.metadata_, 'file_id')).filter(Boolean),
+      data.map((job) => get(job.metadata, 'file_id')).filter(Boolean),
     );
   }, [data]);
 

@@ -395,7 +395,7 @@ export const $AgentState = {
       title: 'Description',
       description: 'The description of the agent.',
     },
-    metadata_: {
+    metadata: {
       anyOf: [
         {
           type: 'object',
@@ -404,7 +404,7 @@ export const $AgentState = {
           type: 'null',
         },
       ],
-      title: 'Metadata ',
+      title: 'Metadata',
       description: 'The metadata of the agent.',
     },
     memory: {
@@ -924,7 +924,7 @@ export const $Block = {
       title: 'Description',
       description: 'Description of the block.',
     },
-    metadata_: {
+    metadata: {
       anyOf: [
         {
           type: 'object',
@@ -933,7 +933,7 @@ export const $Block = {
           type: 'null',
         },
       ],
-      title: 'Metadata ',
+      title: 'Metadata',
       description: 'Metadata of the block.',
       default: {},
     },
@@ -995,7 +995,7 @@ Parameters:
     label (str): The label of the block (e.g. 'human', 'persona'). This defines a category for the block.
     template_name (str): The name of the block template (if it is a template).
     description (str): Description of the block.
-    metadata_ (Dict): Metadata of the block.
+    metadata (Dict): Metadata of the block.
     user_id (str): The unique identifier of the user associated with the block.`,
 } as const;
 
@@ -1070,7 +1070,7 @@ export const $BlockUpdate = {
       title: 'Description',
       description: 'Description of the block.',
     },
-    metadata_: {
+    metadata: {
       anyOf: [
         {
           type: 'object',
@@ -1079,7 +1079,7 @@ export const $BlockUpdate = {
           type: 'null',
         },
       ],
-      title: 'Metadata ',
+      title: 'Metadata',
       description: 'Metadata of the block.',
       default: {},
     },
@@ -1540,7 +1540,7 @@ export const $CreateAgentRequest = {
       title: 'Description',
       description: 'The description of the agent.',
     },
-    metadata_: {
+    metadata: {
       anyOf: [
         {
           type: 'object',
@@ -1549,7 +1549,7 @@ export const $CreateAgentRequest = {
           type: 'null',
         },
       ],
-      title: 'Metadata ',
+      title: 'Metadata',
       description: 'The metadata of the agent.',
     },
     model: {
@@ -1742,7 +1742,7 @@ export const $CreateBlock = {
       title: 'Description',
       description: 'Description of the block.',
     },
-    metadata_: {
+    metadata: {
       anyOf: [
         {
           type: 'object',
@@ -1751,7 +1751,7 @@ export const $CreateBlock = {
           type: 'null',
         },
       ],
-      title: 'Metadata ',
+      title: 'Metadata',
       description: 'Metadata of the block.',
       default: {},
     },
@@ -2272,7 +2272,7 @@ export const $Job = {
       title: 'Completed At',
       description: 'The unix timestamp of when the job was completed.',
     },
-    metadata_: {
+    metadata: {
       anyOf: [
         {
           type: 'object',
@@ -2281,7 +2281,7 @@ export const $Job = {
           type: 'null',
         },
       ],
-      title: 'Metadata ',
+      title: 'Metadata',
       description: 'The metadata of the job.',
     },
     job_type: {
@@ -3087,7 +3087,7 @@ export const $Passage = {
       description:
         'The unique identifier of the file associated with the passage.',
     },
-    metadata_: {
+    metadata: {
       anyOf: [
         {
           type: 'object',
@@ -3096,7 +3096,7 @@ export const $Passage = {
           type: 'null',
         },
       ],
-      title: 'Metadata ',
+      title: 'Metadata',
       description: 'The metadata of the passage.',
       default: {},
     },
@@ -3362,7 +3362,7 @@ export const $Run = {
       title: 'Completed At',
       description: 'The unix timestamp of when the job was completed.',
     },
-    metadata_: {
+    metadata: {
       anyOf: [
         {
           type: 'object',
@@ -3371,7 +3371,7 @@ export const $Run = {
           type: 'null',
         },
       ],
-      title: 'Metadata ',
+      title: 'Metadata',
       description: 'The metadata of the job.',
     },
     job_type: {
@@ -3782,7 +3782,7 @@ export const $Source = {
       title: 'Organization Id',
       description: 'The ID of the organization that created the source.',
     },
-    metadata_: {
+    metadata: {
       anyOf: [
         {
           type: 'object',
@@ -3791,7 +3791,7 @@ export const $Source = {
           type: 'null',
         },
       ],
-      title: 'Metadata ',
+      title: 'Metadata',
       description: 'Metadata associated with the source.',
     },
     created_by_id: {
@@ -3856,7 +3856,7 @@ Parameters:
     name (str): The name of the source.
     embedding_config (EmbeddingConfig): The embedding configuration used by the source.
     user_id (str): The ID of the user that created the source.
-    metadata_ (dict): Metadata associated with the source.
+    metadata (dict): Metadata associated with the source.
     description (str): The description of the source.`,
 } as const;
 
@@ -3890,7 +3890,7 @@ export const $SourceCreate = {
       title: 'Description',
       description: 'The description of the source.',
     },
-    metadata_: {
+    metadata: {
       anyOf: [
         {
           type: 'object',
@@ -3899,7 +3899,7 @@ export const $SourceCreate = {
           type: 'null',
         },
       ],
-      title: 'Metadata ',
+      title: 'Metadata',
       description: 'Metadata associated with the source.',
     },
   },
@@ -3936,7 +3936,7 @@ export const $SourceUpdate = {
       title: 'Description',
       description: 'The description of the source.',
     },
-    metadata_: {
+    metadata: {
       anyOf: [
         {
           type: 'object',
@@ -3945,7 +3945,7 @@ export const $SourceUpdate = {
           type: 'null',
         },
       ],
-      title: 'Metadata ',
+      title: 'Metadata',
       description: 'Metadata associated with the source.',
     },
     embedding_config: {
@@ -4746,7 +4746,7 @@ export const $UpdateAgent = {
       title: 'Description',
       description: 'The description of the agent.',
     },
-    metadata_: {
+    metadata: {
       anyOf: [
         {
           type: 'object',
@@ -4755,7 +4755,7 @@ export const $UpdateAgent = {
           type: 'null',
         },
       ],
-      title: 'Metadata ',
+      title: 'Metadata',
       description: 'The metadata of the agent.',
     },
     tool_exec_environment_variables: {

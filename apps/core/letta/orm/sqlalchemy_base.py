@@ -449,6 +449,11 @@ class SqlalchemyBase(CommonSqlalchemyMetaMixins, Base):
 
     def to_pydantic(self) -> "BaseModel":
         """converts to the basic pydantic model counterpart"""
+        if hasattr(self, "metadata_"):
+            model_dict = {k: v for k, v in self.__dict__.items() if k in self.__pydantic_model__.model_fields}
+            model_dict["metadata"] = self.metadata_
+            return self.__pydantic_model__.model_validate(model_dict)
+
         return self.__pydantic_model__.model_validate(self)
 
     def to_record(self) -> "BaseModel":

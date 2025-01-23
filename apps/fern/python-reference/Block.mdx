@@ -20,6 +20,5 @@ A Block represents a reserved section of the LLM's context window which is edita
 - `template` _bool_ - Whether the block is a template (e.g. saved human/persona options). Non-template blocks are not stored in the database and are ephemeral, while templated blocks are stored in the database.
 - `label` _str_ - The label of the block (e.g. 'human', 'persona'). This defines a category for the block.
 - `description` _str_ - Description of the block.
-- `metadata_` _Dict_ - Metadata of the block.
+- `metadata` _Dict_ - Metadata of the block.
 - `user_id` _str_ - The unique identifier of the user associated with the block.
-

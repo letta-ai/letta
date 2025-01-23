@@ -21,7 +21,7 @@ import { useCurrentUser } from '$web/client/hooks';
 // const dataSourceColumns: Array<ColumnDef<Document>> = [
 //   {
 //     header: 'File Name',
-//     accessorFn: (row) => get(row.metadata_, 'filename', ''),
+//     accessorFn: (row) => get(row.metadata, 'filename', ''),
 //   },
 //   {
 //     header: 'Size',
@@ -63,7 +63,7 @@ function DataSourceInfo() {
 
     return Object.entries({
       ...data.embedding_config,
-      ...data.metadata_,
+      ...data.metadata,
     })
       .map(([key, value]) => ({
         name: key,
@@ -97,17 +97,17 @@ interface JobItemProps {
 
 function JobItem(props: JobItemProps) {
   const { job } = props;
-  const { metadata_ } = job;
+  const { metadata } = job;
 
   const contentName = useMemo(() => {
-    const filename = metadata_?.filename;
+    const filename = metadata?.filename;
 
     if (typeof filename === 'string') {
       return `Processing ${filename}`;
     }
 
     return 'Processing unknown file';
-  }, [metadata_?.filename]);
+  }, [metadata?.filename]);
 
   return (
     <HStack fullWidth>

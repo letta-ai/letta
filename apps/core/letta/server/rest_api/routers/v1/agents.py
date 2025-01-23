@@ -556,7 +556,7 @@ async def process_message_background(
         job_update = JobUpdate(
             status=JobStatus.completed,
             completed_at=datetime.utcnow(),
-            metadata_={"result": result.model_dump()},  # Store the result in metadata
+            metadata={"result": result.model_dump()},  # Store the result in metadata
         )
         server.job_manager.update_job_by_id(job_id=job_id, job_update=job_update, actor=actor)
 
@@ -568,7 +568,7 @@ async def process_message_background(
         job_update = JobUpdate(
             status=JobStatus.failed,
             completed_at=datetime.utcnow(),
-            metadata_={"error": str(e)},
+            metadata={"error": str(e)},
         )
         server.job_manager.update_job_by_id(job_id=job_id, job_update=job_update, actor=actor)
         raise
@@ -596,7 +596,7 @@ async def send_message_async(
     run = Run(
         user_id=actor.id,
         status=JobStatus.created,
-        metadata_={
+        metadata={
             "job_type": "send_message_async",
             "agent_id": agent_id,
         },

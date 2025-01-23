@@ -169,8 +169,8 @@ export function prepareAgentForUser(
     ...agent,
     name: options.agentName,
     ...(options.version ? { version: options.version } : {}),
-    metadata_: {
-      ...agent.metadata_,
+    metadata: {
+      ...agent.metadata,
       ...(options.projectId ? { projectId: options.projectId } : {}),
       ...(options.parentTemplateId
         ? { parentTemplateId: options.parentTemplateId }
@@ -178,7 +178,7 @@ export function prepareAgentForUser(
       ...(options.parentTemplateName
         ? { parentTemplateName: options.parentTemplateName }
         : {}),
-      ...(options.project && !agent.metadata_?.project
+      ...(options.project && !agent.metadata?.project
         ? { project: options.project }
         : {}),
     },
@@ -776,7 +776,7 @@ export const omittedFieldsOnCopy: Array<Partial<keyof AgentState>> = [
   'description',
   'organization_id',
   'last_updated_by_id',
-  'metadata_',
+  'metadata',
   'memory',
 ];
 
@@ -1231,8 +1231,8 @@ async function getAgentById(
     ?.name
     ? `${deployedAgent?.deployedAgentTemplate?.agentTemplate?.name}:${deployedAgent?.deployedAgentTemplate?.version}`
     : '';
-  const projectSlug = agent?.metadata_?.project
-    ? (agent.metadata_.project as string)
+  const projectSlug = agent?.metadata?.project
+    ? (agent.metadata.project as string)
     : await getProjectSlugById({
         organizationId: context.request.organizationId,
         projectId: deployedAgent?.projectId || agentTemplate?.projectId,
@@ -1462,8 +1462,8 @@ export async function updateAgent(
     );
   }
 
-  const projectSlug = response?.metadata_?.project
-    ? (response.metadata_.project as string)
+  const projectSlug = response?.metadata?.project
+    ? (response.metadata.project as string)
     : await getProjectSlugById({
         organizationId: context.request.organizationId,
         projectId: deployedAgent?.projectId || agentTemplate?.projectId,

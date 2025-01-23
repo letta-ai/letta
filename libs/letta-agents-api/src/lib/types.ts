@@ -162,13 +162,13 @@ export const EmbeddingConfigSchema = z.object({
 
 const BlockMetadataSchema = z.record(z.unknown());
 
-export const BlockSchema: ToZod<Omit<Block, 'metadata_'>> = z.object({
+export const BlockSchema: ToZod<Omit<Block, 'metadata'>> = z.object({
   value: z.string(),
   limit: z.number().optional(),
   name: z.string().nullable().optional(),
   label: z.string().nullable().optional(),
   description: z.string().nullable().optional(),
-  metadata_: BlockMetadataSchema.optional(),
+  metadata: BlockMetadataSchema.optional(),
   id: z.string().optional(),
   organization_id: z.string().nullable().optional(),
   created_by_id: z.string().nullable().optional(),
@@ -181,16 +181,17 @@ export const MemorySchema = z.object({
   prompt_template: z.string().optional(),
 });
 
-export const CreateBlockSchema: ToZod<Omit<CreateBlock, 'metadata_'>> =
-  z.object({
+export const CreateBlockSchema: ToZod<Omit<CreateBlock, 'metadata'>> = z.object(
+  {
     value: z.string(),
     limit: z.number().optional(),
     name: z.string().nullable().optional(),
     label: z.string(),
     description: z.string().nullable().optional(),
-    metadata_: BlockMetadataSchema.optional(),
+    metadata: BlockMetadataSchema.optional(),
     is_template: z.boolean().optional(),
-  });
+  },
+);
 
 export const MemoryBlocksSchema = z.array(CreateBlockSchema);
 

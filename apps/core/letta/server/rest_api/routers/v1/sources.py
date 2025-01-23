@@ -131,7 +131,7 @@ def upload_file_to_source(
     # create job
     job = Job(
         user_id=actor.id,
-        metadata_={"type": "embedding", "filename": file.filename, "source_id": source_id},
+        metadata={"type": "embedding", "filename": file.filename, "source_id": source_id},
         completed_at=None,
     )
     job_id = job.id

@@ -4336,7 +4336,7 @@
             "title": "Description",
             "description": "The description of the agent."
           },
-          "metadata_": {
+          "metadata": {
             "anyOf": [
               {
                 "type": "object"
@@ -4345,7 +4345,7 @@
                 "type": "null"
               }
             ],
-            "title": "Metadata ",
+            "title": "Metadata",
             "description": "The metadata of the agent."
           },
           "memory": {
@@ -4850,7 +4850,7 @@
             "title": "Description",
             "description": "Description of the block."
           },
-          "metadata_": {
+          "metadata": {
             "anyOf": [
               {
                 "type": "object"
@@ -4859,7 +4859,7 @@
                 "type": "null"
               }
             ],
-            "title": "Metadata ",
+            "title": "Metadata",
             "description": "Metadata of the block.",
             "default": {}
           },
@@ -4898,7 +4898,7 @@
         "type": "object",
         "required": ["value"],
         "title": "Block",
-        "description": "A Block represents a reserved section of the LLM's context window which is editable. `Block` objects contained in the `Memory` object, which is able to edit the Block values.\n\nParameters:\n    label (str): The label of the block (e.g. 'human', 'persona'). This defines a category for the block.\n    value (str): The value of the block. This is the string that is represented in the context window.\n    limit (int): The character limit of the block.\n    is_template (bool): Whether the block is a template (e.g. saved human/persona options). Non-template blocks are not stored in the database and are ephemeral, while templated blocks are stored in the database.\n    label (str): The label of the block (e.g. 'human', 'persona'). This defines a category for the block.\n    template_name (str): The name of the block template (if it is a template).\n    description (str): Description of the block.\n    metadata_ (Dict): Metadata of the block.\n    user_id (str): The unique identifier of the user associated with the block."
+        "description": "A Block represents a reserved section of the LLM's context window which is editable. `Block` objects contained in the `Memory` object, which is able to edit the Block values.\n\nParameters:\n    label (str): The label of the block (e.g. 'human', 'persona'). This defines a category for the block.\n    value (str): The value of the block. This is the string that is represented in the context window.\n    limit (int): The character limit of the block.\n    is_template (bool): Whether the block is a template (e.g. saved human/persona options). Non-template blocks are not stored in the database and are ephemeral, while templated blocks are stored in the database.\n    label (str): The label of the block (e.g. 'human', 'persona'). This defines a category for the block.\n    template_name (str): The name of the block template (if it is a template).\n    description (str): Description of the block.\n    metadata (Dict): Metadata of the block.\n    user_id (str): The unique identifier of the user associated with the block."
       },
       "BlockUpdate": {
         "properties": {
@@ -4969,7 +4969,7 @@
             "title": "Description",
             "description": "Description of the block."
           },
-          "metadata_": {
+          "metadata": {
             "anyOf": [
               {
                 "type": "object"
@@ -4978,7 +4978,7 @@
                 "type": "null"
               }
             ],
-            "title": "Metadata ",
+            "title": "Metadata",
             "description": "Metadata of the block.",
             "default": {}
           }
@@ -5422,7 +5422,7 @@
             "title": "Description",
             "description": "The description of the agent."
           },
-          "metadata_": {
+          "metadata": {
             "anyOf": [
               {
                 "type": "object"
@@ -5431,7 +5431,7 @@
                 "type": "null"
               }
             ],
-            "title": "Metadata ",
+            "title": "Metadata",
             "description": "The metadata of the agent."
           },
           "model": {
@@ -5607,7 +5607,7 @@
             "title": "Description",
             "description": "Description of the block."
           },
-          "metadata_": {
+          "metadata": {
             "anyOf": [
               {
                 "type": "object"
@@ -5616,7 +5616,7 @@
                 "type": "null"
               }
             ],
-            "title": "Metadata ",
+            "title": "Metadata",
             "description": "Metadata of the block.",
             "default": {}
           }
@@ -6105,7 +6105,7 @@
             "title": "Completed At",
             "description": "The unix timestamp of when the job was completed."
           },
-          "metadata_": {
+          "metadata": {
             "anyOf": [
               {
                 "type": "object"
@@ -6114,7 +6114,7 @@
                 "type": "null"
               }
             ],
-            "title": "Metadata ",
+            "title": "Metadata",
             "description": "The metadata of the job."
           },
           "job_type": {
@@ -6814,7 +6814,7 @@
             "title": "File Id",
             "description": "The unique identifier of the file associated with the passage."
           },
-          "metadata_": {
+          "metadata": {
             "anyOf": [
               {
                 "type": "object"
@@ -6823,7 +6823,7 @@
                 "type": "null"
               }
             ],
-            "title": "Metadata ",
+            "title": "Metadata",
             "description": "The metadata of the passage.",
             "default": {}
           },
@@ -7056,7 +7056,7 @@
             "title": "Completed At",
             "description": "The unix timestamp of when the job was completed."
           },
-          "metadata_": {
+          "metadata": {
             "anyOf": [
               {
                 "type": "object"
@@ -7065,7 +7065,7 @@
                 "type": "null"
               }
             ],
-            "title": "Metadata ",
+            "title": "Metadata",
             "description": "The metadata of the job."
           },
           "job_type": {
@@ -7409,7 +7409,7 @@
             "$ref": "#/components/schemas/EmbeddingConfig",
             "description": "The embedding configuration used by the source."
           },
-          "metadata_": {
+          "metadata": {
             "anyOf": [
               {
                 "type": "object"
@@ -7418,7 +7418,7 @@
                 "type": "null"
               }
             ],
-            "title": "Metadata ",
+            "title": "Metadata",
             "description": "Metadata associated with the source."
           },
           "created_by_id": {
@@ -7476,7 +7476,7 @@
         "type": "object",
         "required": ["name", "embedding_config"],
         "title": "Source",
-        "description": "Representation of a source, which is a collection of files and passages.\n\nParameters:\n    id (str): The ID of the source\n    name (str): The name of the source.\n    embedding_config (EmbeddingConfig): The embedding configuration used by the source.\n    user_id (str): The ID of the user that created the source.\n    metadata_ (dict): Metadata associated with the source.\n    description (str): The description of the source."
+        "description": "Representation of a source, which is a collection of files and passages.\n\nParameters:\n    id (str): The ID of the source\n    name (str): The name of the source.\n    embedding_config (EmbeddingConfig): The embedding configuration used by the source.\n    user_id (str): The ID of the user that created the source.\n    metadata (dict): Metadata associated with the source.\n    description (str): The description of the source."
       },
       "SourceCreate": {
         "properties": {
@@ -7508,7 +7508,7 @@
             "title": "Description",
             "description": "The description of the source."
           },
-          "metadata_": {
+          "metadata": {
             "anyOf": [
               {
                 "type": "object"
@@ -7517,7 +7517,7 @@
                 "type": "null"
               }
             ],
-            "title": "Metadata ",
+            "title": "Metadata",
             "description": "Metadata associated with the source."
           }
         },
@@ -7553,7 +7553,7 @@
             "title": "Description",
             "description": "The description of the source."
           },
-          "metadata_": {
+          "metadata": {
             "anyOf": [
               {
                 "type": "object"
@@ -7562,7 +7562,7 @@
                 "type": "null"
               }
             ],
-            "title": "Metadata ",
+            "title": "Metadata",
             "description": "Metadata associated with the source."
           },
           "embedding_config": {
@@ -8306,7 +8306,7 @@
             "title": "Description",
             "description": "The description of the agent."
           },
-          "metadata_": {
+          "metadata": {
             "anyOf": [
               {
                 "type": "object"
@@ -8315,7 +8315,7 @@
                 "type": "null"
               }
             ],
-            "title": "Metadata ",
+            "title": "Metadata",
             "description": "The metadata of the agent."
           },
           "tool_exec_environment_variables": {
