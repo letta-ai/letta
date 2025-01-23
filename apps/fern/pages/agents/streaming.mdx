@@ -31,7 +31,7 @@ curl --request POST \
 ```
 ```python title="python" maxLines=50
 # send a message to the agent (streaming steps)
-stream = client.agents.messages.stream(
+stream = client.agents.messages.create_stream(
     agent_id=agent_state.id,
     messages=[
       {
@@ -47,7 +47,7 @@ for chunk in stream:
 ```
 ```typescript maxLines=50 title="node.js"
 // send a message to the agent (streaming steps)
-const stream = await client.agents.messages.stream(
+const stream = await client.agents.messages.create_stream(
     agentState.id, {
         messages: [
             {
@@ -95,7 +95,7 @@ curl --request POST \
 ```
 ```python title="python" maxLines=50
 # send a message to the agent (streaming steps)
-stream = client.agents.messages.stream(
+stream = client.agents.messages.create_stream(
     agent_id=agent_state.id,
     messages=[
       {
@@ -112,7 +112,7 @@ for chunk in stream:
 ```
 ```typescript maxLines=50 title="node.js"
 // send a message to the agent (streaming steps)
-const stream = await client.agents.messages.stream(
+const stream = await client.agents.messages.create_stream(
     agentState.id, {
         messages: [
             {

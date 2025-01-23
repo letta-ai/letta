@@ -180,7 +180,7 @@ curl --request POST \
 ```
 ```python title="python" maxLines=50
 # send a message to the agent
-response = client.agents.messages.send(
+response = client.agents.messages.create(
     agent_id=agent_state.id,
     messages=[
         {
@@ -202,7 +202,7 @@ for message in response.messages:
 ```
 ```typescript maxLines=50 title="node.js"
 // send a message to the agent
-const response = await client.agents.messages.send(
+const response = await client.agents.messages.create(
     agentState.id, {
         messages: [
             {
