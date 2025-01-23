@@ -203,4 +203,5 @@ def test_composio_tool_schema_generation(openai_model: str, structured_output: b
             print(f"Successfully called OpenAI using schema {schema} generated from {action_name}\n\n")
         except:
             print(f"Failed to call OpenAI using schema {schema} generated from {action_name}\n\n")
+
             raise

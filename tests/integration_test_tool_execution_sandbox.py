@@ -196,6 +196,14 @@ def composio_gmail_get_profile_tool(test_user):
 
 
 @pytest.fixture
+def composio_gmail_get_profile_tool(test_user):
+    tool_manager = ToolManager()
+    tool_create = ToolCreate.from_composio(action_name="GMAIL_GET_PROFILE")
+    tool = tool_manager.create_or_update_tool(pydantic_tool=Tool(**tool_create.model_dump()), actor=test_user)
+    yield tool
+
+
+@pytest.fixture
 def clear_core_memory_tool(test_user):
     def clear_memory(agent_state: "AgentState"):
         """Clear the core memory"""
@@ -408,6 +416,14 @@ def test_local_sandbox_multiple_composio_entities(
     ]
     result = ToolExecutionSandbox(composio_gmail_get_profile_tool.name, {}, user=test_user).run(agent_state=agent_state)
     assert result.func_return["response_data"]["emailAddress"] == "sarah@letta.com"
+
+
+@pytest.mark.local_sandbox
+def test_local_sandbox_e2e_composio_star_github_without_setting_db_env_vars(
+    mock_e2b_api_key_none, check_composio_key_set, composio_github_star_tool, test_user
+):
+    result = ToolExecutionSandbox(composio_github_star_tool.name, {"owner": "letta-ai", "repo": "letta"}, user=test_user).run()
+    assert result.func_return["details"] == "Action executed successfully"
 
 
 @pytest.mark.local_sandbox
