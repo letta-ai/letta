@@ -560,9 +560,6 @@ async def process_message_background(
         )
         server.job_manager.update_job_by_id(job_id=job_id, job_update=job_update, actor=actor)
 
-        # Add job usage statistics
-        server.job_manager.add_job_usage(job_id=job_id, usage=result.usage, actor=actor)
-
     except Exception as e:
         # Update job status to failed
         job_update = JobUpdate(

@@ -215,46 +215,6 @@ class JobManager:
             )
 
     @enforce_types
-    def add_job_usage(
-        self,
-        job_id: str,
-        usage: LettaUsageStatistics,
-        step_id: Optional[str] = None,
-        actor: PydanticUser = None,
-    ) -> None:
-        """
-        Add usage statistics for a job.
-
-        Args:
-            job_id: The ID of the job
-            usage: Usage statistics for the job
-            step_id: Optional ID of the specific step within the job
-            actor: The user making the request
-
-        Raises:
-            NoResultFound: If the job does not exist or user does not have access
-        """
-        with self.session_maker() as session:
-            # First verify job exists and user has access
-            self._verify_job_access(session, job_id, actor, access=["write"])
-
-            # Manually log step with usage data
-            # TODO(@caren): log step under the hood and remove this
-            usage_stats = Step(
-                job_id=job_id,
-                completion_tokens=usage.completion_tokens,
-                prompt_tokens=usage.prompt_tokens,
-                total_tokens=usage.total_tokens,
-                step_count=usage.step_count,
-                step_id=step_id,
-            )
-            if actor:
-                usage_stats._set_created_and_updated_by_fields(actor.id)
-
-            session.add(usage_stats)
-            session.commit()
-
-    @enforce_types
     def get_run_messages_cursor(
         self,
         run_id: str,
