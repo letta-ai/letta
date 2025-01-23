@@ -1,5 +1,6 @@
 import json
 import os
+import shutil
 import uuid
 import warnings
 from typing import List, Tuple
@@ -13,6 +14,7 @@ from letta.orm import Provider, Step
 from letta.schemas.block import CreateBlock
 from letta.schemas.enums import MessageRole
 from letta.schemas.letta_message import LettaMessage, ReasoningMessage, SystemMessage, ToolCallMessage, ToolReturnMessage, UserMessage
+from letta.schemas.llm_config import LLMConfig
 from letta.schemas.providers import Provider as PydanticProvider
 from letta.schemas.user import User
 
@@ -561,6 +563,63 @@ def test_delete_agent_same_org(server: SyncServer, org_id: str, user: User):
 
     # test that another user in the same org can delete the agent
     server.agent_manager.delete_agent(agent_state.id, actor=another_user)
+
+
+def test_read_local_llm_configs(server: SyncServer, user: User):
+    configs_base_dir = os.path.join(os.path.expanduser("~"), ".letta", "llm_configs")
+    clean_up_dir = False
+    if not os.path.exists(configs_base_dir):
+        os.makedirs(configs_base_dir)
+        clean_up_dir = True
+
+    try:
+        sample_config = LLMConfig(
+            model="my-custom-model",
+            model_endpoint_type="openai",
+            model_endpoint="https://api.openai.com/v1",
+            context_window=8192,
+            handle="caren/my-custom-model",
+        )
+
+        config_filename = f"custom_llm_config_{uuid.uuid4().hex}.json"
+        config_filepath = os.path.join(configs_base_dir, config_filename)
+        with open(config_filepath, "w") as f:
+            json.dump(sample_config.model_dump(), f)
+
+        # Call list_llm_models
+        assert os.path.exists(configs_base_dir)
+        llm_models = server.list_llm_models()
+
+        # Assert that the config is in the returned models
+        assert any(
+            model.model == "my-custom-model"
+            and model.model_endpoint_type == "openai"
+            and model.model_endpoint == "https://api.openai.com/v1"
+            and model.context_window == 8192
+            and model.handle == "caren/my-custom-model"
+            for model in llm_models
+        ), "Custom LLM config not found in list_llm_models result"
+
+        # Try to use in agent creation
+        context_window_override = 4000
+        agent = server.create_agent(
+            request=CreateAgent(
+                model="caren/my-custom-model",
+                context_window_limit=context_window_override,
+                embedding="openai/text-embedding-ada-002",
+            ),
+            actor=user,
+        )
+        assert agent.llm_config.model == sample_config.model
+        assert agent.llm_config.model_endpoint == sample_config.model_endpoint
+        assert agent.llm_config.model_endpoint_type == sample_config.model_endpoint_type
+        assert agent.llm_config.context_window == context_window_override
+        assert agent.llm_config.handle == sample_config.handle
+
+    finally:
+        os.remove(config_filepath)
+        if clean_up_dir:
+            shutil.rmtree(configs_base_dir)
 
 
 def _test_get_messages_letta_format(
