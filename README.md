@@ -19,6 +19,8 @@ This is the monorepo for all internal Letta web projects. It uses [Nx](https://n
 
 ### Prerequisites
 
+For windows setup: [Windows Setup](docs/windows-setup.md)
+
 - Docker - [linky](https://docs.docker.com/get-docker/)
 ```sh
 # Install Docker on mac

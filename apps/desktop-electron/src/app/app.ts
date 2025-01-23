@@ -12,6 +12,10 @@ import * as todesktop from '@todesktop/runtime';
 
 todesktop.init();
 
+
+
+
+let isInitialized = false;
 let lettaServer: ReturnType<typeof execFile> | null = null;
 
 class ServerLogs {
@@ -37,8 +41,6 @@ class ServerLogs {
 const lettaServerLogs = new ServerLogs();
 
 function copyAlembicToLettaDir() {
-  console.log('a', path.join(__dirname, '..', '..'));
-
   let alembicFolderPath = path.join(__dirname, '..', '..', 'core', 'alembic');
   let alembicInitPath = path.join(__dirname, '..', '..', 'core', 'alembic.ini');
 
@@ -270,7 +272,22 @@ export default class App {
     const workAreaSize = screen.getPrimaryDisplay().workAreaSize;
     const width = Math.min(350, workAreaSize.width || 350);
     const height = Math.min(475, workAreaSize.height || 475);
-    const app = electron.app;
+    const app = electron.app
+
+    const lock = app.requestSingleInstanceLock()
+
+    if (!lock) {
+      app.quit()
+      return;
+    }
+
+    app.on('second-instance', () => {
+      // Someone tried to run a second instance, we should focus our window.
+      if (App.mainWindow) {
+        if (App.mainWindow.isMinimized()) App.mainWindow.restore()
+        App.mainWindow.focus()
+      }
+    })
 
     // Create the browser window.
     App.mainWindow = new BrowserWindow({
