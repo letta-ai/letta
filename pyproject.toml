@@ -79,6 +79,7 @@ llama-index-embeddings-openai = "^0.3.1"
 e2b-code-interpreter = {version = "^1.0.3", optional = true}
 anthropic = "^0.43.0"
 letta_client = "^0.1.16"
+openai = "^1.60.0"
 
 
 [tool.poetry.extras]
