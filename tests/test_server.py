@@ -332,7 +332,7 @@ def agent_id(server, user_id, base_tools):
             name="test_agent",
             tool_ids=[t.id for t in base_tools],
             memory_blocks=[],
-            model="openai/gpt-4",
+            model="openai/gpt-4o",
             embedding="openai/text-embedding-ada-002",
         ),
         actor=actor,
@@ -353,7 +353,7 @@ def other_agent_id(server, user_id, base_tools):
             name="test_agent_other",
             tool_ids=[t.id for t in base_tools],
             memory_blocks=[],
-            model="openai/gpt-4",
+            model="openai/gpt-4o",
             embedding="openai/text-embedding-ada-002",
         ),
         actor=actor,
@@ -428,11 +428,11 @@ def test_save_archival_memory(server, user_id, agent_id):
 @pytest.mark.order(4)
 def test_user_message(server, user, agent_id):
     # add data into recall memory
-    server.user_message(user_id=user.id, agent_id=agent_id, message="Hello?")
-    # server.user_message(user_id=user_id, agent_id=agent_id, message="Hello?")
-    # server.user_message(user_id=user_id, agent_id=agent_id, message="Hello?")
-    # server.user_message(user_id=user_id, agent_id=agent_id, message="Hello?")
-    # server.user_message(user_id=user_id, agent_id=agent_id, message="Hello?")
+    response = server.user_message(user_id=user.id, agent_id=agent_id, message="What's up?")
+    assert response.step_count == 1
+    assert response.completion_tokens > 0
+    assert response.prompt_tokens > 0
+    assert response.total_tokens > 0
 
 
 @pytest.mark.order(5)
@@ -552,7 +552,7 @@ def test_delete_agent_same_org(server: SyncServer, org_id: str, user: User):
         request=CreateAgent(
             name="nonexistent_tools_agent",
             memory_blocks=[],
-            model="openai/gpt-4",
+            model="openai/gpt-4o",
             embedding="openai/text-embedding-ada-002",
         ),
         actor=user,
@@ -920,7 +920,7 @@ def test_memory_rebuild_count(server, user, mock_e2b_api_key_none, base_tools, b
                 CreateBlock(label="human", value="The human's name is Bob."),
                 CreateBlock(label="persona", value="My name is Alice."),
             ],
-            model="openai/gpt-4",
+            model="openai/gpt-4o",
             embedding="openai/text-embedding-ada-002",
         ),
         actor=actor,
@@ -1108,7 +1108,7 @@ def test_add_remove_tools_update_agent(server: SyncServer, user_id: str, base_to
                 CreateBlock(label="human", value="The human's name is Bob."),
                 CreateBlock(label="persona", value="My name is Alice."),
             ],
-            model="openai/gpt-4",
+            model="openai/gpt-4o",
             embedding="openai/text-embedding-ada-002",
             include_base_tools=False,
         ),

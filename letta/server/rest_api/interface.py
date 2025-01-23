@@ -1018,8 +1018,6 @@ class StreamingServerInterface(AgentChunkStreamingInterface):
             # new_message = {"function_return": msg, "status": "success"}
             assert msg_obj.tool_call_id is not None
 
-            print(f"YYY printing the function call - {msg_obj.tool_call_id} == {self.prev_assistant_message_id} ???")
-
             # Skip this is use_assistant_message is on
             if self.use_assistant_message and msg_obj.tool_call_id == self.prev_assistant_message_id:
                 # Wipe the cache
