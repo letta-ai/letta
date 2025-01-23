@@ -31,8 +31,8 @@ def delete_tool(
     server.tool_manager.delete_tool_by_id(tool_id=tool_id, actor=actor)
 
 
-@router.get("/{tool_id}", response_model=Tool, operation_id="get_tool")
-def get_tool(
+@router.get("/{tool_id}", response_model=Tool, operation_id="retrieve_tool")
+def retrieve_tool(
     tool_id: str,
     server: SyncServer = Depends(get_letta_server),
     user_id: Optional[str] = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
@@ -46,23 +46,6 @@ def get_tool(
         # return 404 error
         raise HTTPException(status_code=404, detail=f"Tool with id {tool_id} not found.")
     return tool
-
-
-@router.get("/name/{tool_name}", response_model=str, operation_id="get_tool_id_by_name")
-def get_tool_id(
-    tool_name: str,
-    server: SyncServer = Depends(get_letta_server),
-    user_id: Optional[str] = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
-):
-    """
-    Get a tool ID by name
-    """
-    actor = server.user_manager.get_user_or_default(user_id=user_id)
-    tool = server.tool_manager.get_tool_by_name(tool_name=tool_name, actor=actor)
-    if tool:
-        return tool.id
-    else:
-        raise HTTPException(status_code=404, detail=f"Tool with name {tool_name} and organization id {actor.organization_id} not found.")
 
 
 @router.get("/", response_model=List[Tool], operation_id="list_tools")
@@ -139,8 +122,8 @@ def upsert_tool(
         raise HTTPException(status_code=500, detail=f"An unexpected error occurred: {str(e)}")
 
 
-@router.patch("/{tool_id}", response_model=Tool, operation_id="update_tool")
-def update_tool(
+@router.patch("/{tool_id}", response_model=Tool, operation_id="modify_tool")
+def modify_tool(
     tool_id: str,
     request: ToolUpdate = Body(...),
     server: SyncServer = Depends(get_letta_server),
@@ -237,11 +220,10 @@ def add_composio_tool(
     Add a new Composio tool by action name (Composio refers to each tool as an `Action`)
     """
     actor = server.user_manager.get_user_or_default(user_id=user_id)
-    composio_api_key = get_composio_key(server, actor=actor)
 
     try:
-        tool_create = ToolCreate.from_composio(action_name=composio_action_name, api_key=composio_api_key)
-        return server.tool_manager.create_or_update_tool(pydantic_tool=Tool(**tool_create.model_dump()), actor=actor)
+        tool_create = ToolCreate.from_composio(action_name=composio_action_name)
+        return server.tool_manager.create_or_update_composio_tool(pydantic_tool=Tool(**tool_create.model_dump()), actor=actor)
     except EnumStringNotFound as e:
         raise HTTPException(
             status_code=400,  # Bad Request

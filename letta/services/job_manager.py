@@ -39,7 +39,7 @@ class JobManager:
         with self.session_maker() as session:
             # Associate the job with the user
             pydantic_job.user_id = actor.id
-            job_data = pydantic_job.model_dump()
+            job_data = pydantic_job.model_dump(to_orm=True)
             job = JobModel(**job_data)
             job.create(session, actor=actor)  # Save job in the database
         return job.to_pydantic()
@@ -52,7 +52,7 @@ class JobManager:
             job = self._verify_job_access(session=session, job_id=job_id, actor=actor, access=["write"])
 
             # Update job attributes with only the fields that were explicitly set
-            update_data = job_update.model_dump(exclude_unset=True, exclude_none=True)
+            update_data = job_update.model_dump(to_orm=True, exclude_unset=True, exclude_none=True)
 
             # Automatically update the completion timestamp if status is set to 'completed'
             if update_data.get("status") == JobStatus.completed and not job.completed_at:
@@ -62,7 +62,9 @@ class JobManager:
                 setattr(job, key, value)
 
             # Save the updated job to the database
-            return job.update(db_session=session)  # TODO: Add this later , actor=actor)
+            job.update(db_session=session)  # TODO: Add this later , actor=actor)
+
+            return job.to_pydantic()
 
     @enforce_types
     def get_job_by_id(self, job_id: str, actor: PydanticUser) -> PydanticJob:

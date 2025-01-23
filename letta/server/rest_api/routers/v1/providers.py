@@ -45,8 +45,8 @@ def create_provider(
     return provider
 
 
-@router.put("/", tags=["providers"], response_model=Provider, operation_id="update_provider")
-def update_provider(
+@router.patch("/", tags=["providers"], response_model=Provider, operation_id="modify_provider")
+def modify_provider(
     request: ProviderUpdate = Body(...),
     server: "SyncServer" = Depends(get_letta_server),
 ):

@@ -80,6 +80,8 @@ anthropic = "^0.43.0"
 letta_client = "^0.1.16"
 colorama = "^0.4.6"
 
+
+
 [tool.poetry.extras]
 postgres = ["pgvector", "pg8000", "psycopg2-binary", "psycopg2"]
 dev = ["pytest", "pytest-asyncio", "pexpect", "black", "pre-commit", "datasets", "pyright", "pytest-order", "autoflake", "isort", "locust"]
@@ -95,6 +97,7 @@ bedrock = ["boto3"]
 black = "^24.4.2"
 ipykernel = "^6.29.5"
 ipdb = "^0.13.13"
+pytest-mock = "^3.14.0"
 
 [tool.black]
 line-length = 140

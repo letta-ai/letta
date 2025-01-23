@@ -3,6 +3,7 @@ import time
 from typing import Callable, Dict, Generator, List, Optional, Union
 
 import requests
+from openai.types.chat.chat_completion_message_tool_call import ChatCompletionMessageToolCall as OpenAIToolCall
 
 import letta.utils
 from letta.constants import ADMIN_PREFIX, BASE_MEMORY_TOOLS, BASE_TOOLS, DEFAULT_HUMAN, DEFAULT_PERSONA, FUNCTION_RETURN_CHAR_LIMIT
@@ -29,7 +30,6 @@ from letta.schemas.llm_config import LLMConfig
 from letta.schemas.memory import ArchivalMemorySummary, ChatMemory, CreateArchivalMemory, Memory, RecallMemorySummary
 from letta.schemas.message import Message, MessageCreate, MessageUpdate
 from letta.schemas.openai.chat_completion_response import UsageStatistics
-from letta.schemas.openai.chat_completions import ToolCall
 from letta.schemas.organization import Organization
 from letta.schemas.passage import Passage
 from letta.schemas.run import Run
@@ -92,19 +92,19 @@ class AbstractClient(object):
     ):
         raise NotImplementedError
 
-    def get_tools_from_agent(self, agent_id: str):
+    def get_tools_from_agent(self, agent_id: str) -> List[Tool]:
         raise NotImplementedError
 
-    def add_tool_to_agent(self, agent_id: str, tool_id: str):
+    def attach_tool(self, agent_id: str, tool_id: str) -> AgentState:
         raise NotImplementedError
 
-    def remove_tool_from_agent(self, agent_id: str, tool_id: str):
+    def detach_tool(self, agent_id: str, tool_id: str) -> AgentState:
         raise NotImplementedError
 
-    def rename_agent(self, agent_id: str, new_name: str):
+    def rename_agent(self, agent_id: str, new_name: str) -> AgentState:
         raise NotImplementedError
 
-    def delete_agent(self, agent_id: str):
+    def delete_agent(self, agent_id: str) -> None:
         raise NotImplementedError
 
     def get_agent(self, agent_id: str) -> AgentState:
@@ -218,6 +218,18 @@ class AbstractClient(object):
     def get_tool_id(self, name: str) -> Optional[str]:
         raise NotImplementedError
 
+    def list_attached_tools(self, agent_id: str) -> List[Tool]:
+        """
+        List all tools attached to an agent.
+
+        Args:
+            agent_id (str): ID of the agent
+
+        Returns:
+            List[Tool]: A list of attached tools
+        """
+        raise NotImplementedError
+
     def upsert_base_tools(self) -> List[Tool]:
         raise NotImplementedError
 
@@ -242,10 +254,10 @@ class AbstractClient(object):
     def get_source_id(self, source_name: str) -> str:
         raise NotImplementedError
 
-    def attach_source_to_agent(self, agent_id: str, source_id: Optional[str] = None, source_name: Optional[str] = None):
+    def attach_source(self, agent_id: str, source_id: Optional[str] = None, source_name: Optional[str] = None) -> AgentState:
         raise NotImplementedError
 
-    def detach_source_from_agent(self, agent_id: str, source_id: Optional[str] = None, source_name: Optional[str] = None):
+    def detach_source(self, agent_id: str, source_id: Optional[str] = None, source_name: Optional[str] = None) -> AgentState:
         raise NotImplementedError
 
     def list_sources(self) -> List[Source]:
@@ -394,6 +406,26 @@ class AbstractClient(object):
 
         Returns:
             List[SandboxEnvironmentVariable]: A list of environment variables.
+        """
+        raise NotImplementedError
+
+    def attach_block(self, agent_id: str, block_id: str) -> AgentState:
+        """
+        Attach a block to an agent.
+
+        Args:
+            agent_id (str): ID of the agent
+            block_id (str): ID of the block to attach
+        """
+        raise NotImplementedError
+
+    def detach_block(self, agent_id: str, block_id: str) -> AgentState:
+        """
+        Detach a block from an agent.
+
+        Args:
+            agent_id (str): ID of the agent
+            block_id (str): ID of the block to detach
         """
         raise NotImplementedError
 
@@ -554,7 +586,7 @@ class RESTClient(AbstractClient):
         # create agent
         create_params = {
             "description": description,
-            "metadata_": metadata,
+            "metadata": metadata,
             "memory_blocks": [],
             "block_ids": [b.id for b in memory.get_blocks()] + block_ids,
             "tool_ids": tool_ids,
@@ -599,7 +631,7 @@ class RESTClient(AbstractClient):
         role: Optional[MessageRole] = None,
         text: Optional[str] = None,
         name: Optional[str] = None,
-        tool_calls: Optional[List[ToolCall]] = None,
+        tool_calls: Optional[List[OpenAIToolCall]] = None,
         tool_call_id: Optional[str] = None,
     ) -> Message:
         request = MessageUpdate(
@@ -628,7 +660,7 @@ class RESTClient(AbstractClient):
         embedding_config: Optional[EmbeddingConfig] = None,
         message_ids: Optional[List[str]] = None,
         tags: Optional[List[str]] = None,
-    ):
+    ) -> AgentState:
         """
         Update an existing agent
 
@@ -653,7 +685,7 @@ class RESTClient(AbstractClient):
             tool_ids=tool_ids,
             tags=tags,
             description=description,
-            metadata_=metadata,
+            metadata=metadata,
             llm_config=llm_config,
             embedding_config=embedding_config,
             message_ids=message_ids,
@@ -678,7 +710,7 @@ class RESTClient(AbstractClient):
             raise ValueError(f"Failed to get tools from agents: {response.text}")
         return [Tool(**tool) for tool in response.json()]
 
-    def add_tool_to_agent(self, agent_id: str, tool_id: str):
+    def attach_tool(self, agent_id: str, tool_id: str) -> AgentState:
         """
         Add tool to an existing agent
 
@@ -689,12 +721,12 @@ class RESTClient(AbstractClient):
         Returns:
             agent_state (AgentState): State of the updated agent
         """
-        response = requests.patch(f"{self.base_url}/{self.api_prefix}/agents/{agent_id}/add-tool/{tool_id}", headers=self.headers)
+        response = requests.patch(f"{self.base_url}/{self.api_prefix}/agents/{agent_id}/tools/attach/{tool_id}", headers=self.headers)
         if response.status_code != 200:
             raise ValueError(f"Failed to update agent: {response.text}")
         return AgentState(**response.json())
 
-    def remove_tool_from_agent(self, agent_id: str, tool_id: str):
+    def detach_tool(self, agent_id: str, tool_id: str) -> AgentState:
         """
         Removes tools from an existing agent
 
@@ -706,12 +738,12 @@ class RESTClient(AbstractClient):
             agent_state (AgentState): State of the updated agent
         """
 
-        response = requests.patch(f"{self.base_url}/{self.api_prefix}/agents/{agent_id}/remove-tool/{tool_id}", headers=self.headers)
+        response = requests.patch(f"{self.base_url}/{self.api_prefix}/agents/{agent_id}/tools/detach/{tool_id}", headers=self.headers)
         if response.status_code != 200:
             raise ValueError(f"Failed to update agent: {response.text}")
         return AgentState(**response.json())
 
-    def rename_agent(self, agent_id: str, new_name: str):
+    def rename_agent(self, agent_id: str, new_name: str) -> AgentState:
         """
         Rename an agent
 
@@ -719,10 +751,12 @@ class RESTClient(AbstractClient):
             agent_id (str): ID of the agent
             new_name (str): New name for the agent
 
+        Returns:
+            agent_state (AgentState): State of the updated agent
         """
         return self.update_agent(agent_id, name=new_name)
 
-    def delete_agent(self, agent_id: str):
+    def delete_agent(self, agent_id: str) -> None:
         """
         Delete an agent
 
@@ -776,7 +810,8 @@ class RESTClient(AbstractClient):
         Returns:
             memory (Memory): In-context memory of the agent
         """
-        response = requests.get(f"{self.base_url}/{self.api_prefix}/agents/{agent_id}/memory", headers=self.headers)
+
+        response = requests.get(f"{self.base_url}/{self.api_prefix}/agents/{agent_id}/core-memory", headers=self.headers)
         if response.status_code != 200:
             raise ValueError(f"Failed to get in-context memory: {response.text}")
         return Memory(**response.json())
@@ -797,7 +832,7 @@ class RESTClient(AbstractClient):
         """
         memory_update_dict = {section: value}
         response = requests.patch(
-            f"{self.base_url}/{self.api_prefix}/agents/{agent_id}/memory", json=memory_update_dict, headers=self.headers
+            f"{self.base_url}/{self.api_prefix}/agents/{agent_id}/core-memory", json=memory_update_dict, headers=self.headers
         )
         if response.status_code != 200:
             raise ValueError(f"Failed to update in-context memory: {response.text}")
@@ -814,10 +849,10 @@ class RESTClient(AbstractClient):
             summary (ArchivalMemorySummary): Summary of the archival memory
 
         """
-        response = requests.get(f"{self.base_url}/{self.api_prefix}/agents/{agent_id}/memory/archival", headers=self.headers)
+        response = requests.get(f"{self.base_url}/{self.api_prefix}/agents/{agent_id}/context", headers=self.headers)
         if response.status_code != 200:
             raise ValueError(f"Failed to get archival memory summary: {response.text}")
-        return ArchivalMemorySummary(**response.json())
+        return ArchivalMemorySummary(size=response.json().get("num_archival_memory", 0))
 
     def get_recall_memory_summary(self, agent_id: str) -> RecallMemorySummary:
         """
@@ -829,10 +864,10 @@ class RESTClient(AbstractClient):
         Returns:
             summary (RecallMemorySummary): Summary of the recall memory
         """
-        response = requests.get(f"{self.base_url}/{self.api_prefix}/agents/{agent_id}/memory/recall", headers=self.headers)
+        response = requests.get(f"{self.base_url}/{self.api_prefix}/agents/{agent_id}/context", headers=self.headers)
         if response.status_code != 200:
             raise ValueError(f"Failed to get recall memory summary: {response.text}")
-        return RecallMemorySummary(**response.json())
+        return RecallMemorySummary(size=response.json().get("num_recall_memory", 0))
 
     def get_in_context_messages(self, agent_id: str) -> List[Message]:
         """
@@ -844,10 +879,10 @@ class RESTClient(AbstractClient):
         Returns:
             messages (List[Message]): List of in-context messages
         """
-        response = requests.get(f"{self.base_url}/{self.api_prefix}/agents/{agent_id}/memory/messages", headers=self.headers)
+        response = requests.get(f"{self.base_url}/{self.api_prefix}/agents/{agent_id}/context", headers=self.headers)
         if response.status_code != 200:
-            raise ValueError(f"Failed to get in-context messages: {response.text}")
-        return [Message(**message) for message in response.json()]
+            raise ValueError(f"Failed to get recall memory summary: {response.text}")
+        return [Message(**message) for message in response.json().get("messages", "")]
 
     # agent interactions
 
@@ -889,7 +924,9 @@ class RESTClient(AbstractClient):
             params["before"] = str(before)
         if after:
             params["after"] = str(after)
-        response = requests.get(f"{self.base_url}/{self.api_prefix}/agents/{str(agent_id)}/archival", params=params, headers=self.headers)
+        response = requests.get(
+            f"{self.base_url}/{self.api_prefix}/agents/{str(agent_id)}/archival-memory", params=params, headers=self.headers
+        )
         assert response.status_code == 200, f"Failed to get archival memory: {response.text}"
         return [Passage(**passage) for passage in response.json()]
 
@@ -906,7 +943,7 @@ class RESTClient(AbstractClient):
         """
         request = CreateArchivalMemory(text=memory)
         response = requests.post(
-            f"{self.base_url}/{self.api_prefix}/agents/{agent_id}/archival", headers=self.headers, json=request.model_dump()
+            f"{self.base_url}/{self.api_prefix}/agents/{agent_id}/archival-memory", headers=self.headers, json=request.model_dump()
         )
         if response.status_code != 200:
             raise ValueError(f"Failed to insert archival memory: {response.text}")
@@ -920,7 +957,7 @@ class RESTClient(AbstractClient):
             agent_id (str): ID of the agent
             memory_id (str): ID of the memory
         """
-        response = requests.delete(f"{self.base_url}/{self.api_prefix}/agents/{agent_id}/archival/{memory_id}", headers=self.headers)
+        response = requests.delete(f"{self.base_url}/{self.api_prefix}/agents/{agent_id}/archival-memory/{memory_id}", headers=self.headers)
         assert response.status_code == 200, f"Failed to delete archival memory: {response.text}"
 
     # messages (recall memory)
@@ -1431,7 +1468,7 @@ class RESTClient(AbstractClient):
             raise ValueError(f"Failed to update source: {response.text}")
         return Source(**response.json())
 
-    def attach_source_to_agent(self, source_id: str, agent_id: str):
+    def attach_source(self, source_id: str, agent_id: str) -> AgentState:
         """
         Attach a source to an agent
 
@@ -1441,15 +1478,20 @@ class RESTClient(AbstractClient):
             source_name (str): Name of the source
         """
         params = {"agent_id": agent_id}
-        response = requests.post(f"{self.base_url}/{self.api_prefix}/sources/{source_id}/attach", params=params, headers=self.headers)
+        response = requests.patch(
+            f"{self.base_url}/{self.api_prefix}/agents/{agent_id}/sources/attach/{source_id}", params=params, headers=self.headers
+        )
         assert response.status_code == 200, f"Failed to attach source to agent: {response.text}"
+        return AgentState(**response.json())
 
-    def detach_source(self, source_id: str, agent_id: str):
+    def detach_source(self, source_id: str, agent_id: str) -> AgentState:
         """Detach a source from an agent"""
         params = {"agent_id": str(agent_id)}
-        response = requests.post(f"{self.base_url}/{self.api_prefix}/sources/{source_id}/detach", params=params, headers=self.headers)
+        response = requests.patch(
+            f"{self.base_url}/{self.api_prefix}/agents/{agent_id}/sources/detach/{source_id}", params=params, headers=self.headers
+        )
         assert response.status_code == 200, f"Failed to detach source from agent: {response.text}"
-        return Source(**response.json())
+        return AgentState(**response.json())
 
     # tools
 
@@ -1463,12 +1505,29 @@ class RESTClient(AbstractClient):
         Returns:
             id (str): ID of the tool (`None` if not found)
         """
-        response = requests.get(f"{self.base_url}/{self.api_prefix}/tools/name/{tool_name}", headers=self.headers)
-        if response.status_code == 404:
-            return None
-        elif response.status_code != 200:
+        response = requests.get(f"{self.base_url}/{self.api_prefix}/tools", headers=self.headers)
+        if response.status_code != 200:
             raise ValueError(f"Failed to get tool: {response.text}")
-        return response.json()
+
+        tools = [tool for tool in [Tool(**tool) for tool in response.json()] if tool.name == tool_name]
+        if not tools:
+            return None
+        return tools[0].id
+
+    def list_attached_tools(self, agent_id: str) -> List[Tool]:
+        """
+        List all tools attached to an agent.
+
+        Args:
+            agent_id (str): ID of the agent
+
+        Returns:
+            List[Tool]: A list of attached tools
+        """
+        response = requests.get(f"{self.base_url}/{self.api_prefix}/agents/{agent_id}/tools", headers=self.headers)
+        if response.status_code != 200:
+            raise ValueError(f"Failed to list attached tools: {response.text}")
+        return [Tool(**tool) for tool in response.json()]
 
     def upsert_base_tools(self) -> List[Tool]:
         response = requests.post(f"{self.base_url}/{self.api_prefix}/tools/add-base-tools/", headers=self.headers)
@@ -1839,68 +1898,38 @@ class RESTClient(AbstractClient):
         block = self.get_agent_memory_block(agent_id, current_label)
         return self.update_block(block.id, label=new_label)
 
-    # TODO: remove this
-    def add_agent_memory_block(self, agent_id: str, create_block: CreateBlock) -> Memory:
+    def attach_block(self, agent_id: str, block_id: str) -> AgentState:
         """
-        Create and link a memory block to an agent's core memory
+        Attach a block to an agent.
 
         Args:
-            agent_id (str): The agent ID
-            create_block (CreateBlock): The block to create
-
-        Returns:
-            memory (Memory): The updated memory
+            agent_id (str): ID of the agent
+            block_id (str): ID of the block to attach
         """
-        response = requests.post(
-            f"{self.base_url}/{self.api_prefix}/agents/{agent_id}/memory/block",
-            headers=self.headers,
-            json=create_block.model_dump(),
-        )
-        if response.status_code != 200:
-            raise ValueError(f"Failed to add agent memory block: {response.text}")
-        return Memory(**response.json())
-
-    def link_agent_memory_block(self, agent_id: str, block_id: str) -> Memory:
-        """
-        Link a block to an agent's core memory
-
-        Args:
-            agent_id (str): The agent ID
-            block_id (str): The block ID
-
-        Returns:
-            memory (Memory): The updated memory
-        """
-        params = {"agent_id": agent_id}
         response = requests.patch(
-            f"{self.base_url}/{self.api_prefix}/blocks/{block_id}/attach",
-            params=params,
+            f"{self.base_url}/{self.api_prefix}/agents/{agent_id}/core-memory/blocks/attach/{block_id}",
             headers=self.headers,
         )
         if response.status_code != 200:
-            raise ValueError(f"Failed to link agent memory block: {response.text}")
-        return Block(**response.json())
+            raise ValueError(f"Failed to attach block to agent: {response.text}")
+        return AgentState(**response.json())
 
-    def remove_agent_memory_block(self, agent_id: str, block_label: str) -> Memory:
+    def detach_block(self, agent_id: str, block_id: str) -> AgentState:
         """
-        Unlike a block from the agent's core memory
+        Detach a block from an agent.
 
         Args:
-            agent_id (str): The agent ID
-            block_label (str): The block label
-
-        Returns:
-            memory (Memory): The updated memory
+            agent_id (str): ID of the agent
+            block_id (str): ID of the block to detach
         """
-        response = requests.delete(
-            f"{self.base_url}/{self.api_prefix}/agents/{agent_id}/memory/block/{block_label}",
-            headers=self.headers,
+        response = requests.patch(
+            f"{self.base_url}/{self.api_prefix}/agents/{agent_id}/core-memory/blocks/detach/{block_id}", headers=self.headers
         )
         if response.status_code != 200:
-            raise ValueError(f"Failed to remove agent memory block: {response.text}")
-        return Memory(**response.json())
+            raise ValueError(f"Failed to detach block from agent: {response.text}")
+        return AgentState(**response.json())
 
-    def get_agent_memory_blocks(self, agent_id: str) -> List[Block]:
+    def list_agent_memory_blocks(self, agent_id: str) -> List[Block]:
         """
         Get all the blocks in the agent's core memory
 
@@ -1910,7 +1939,7 @@ class RESTClient(AbstractClient):
         Returns:
             blocks (List[Block]): The blocks in the agent's core memory
         """
-        response = requests.get(f"{self.base_url}/{self.api_prefix}/agents/{agent_id}/memory/block", headers=self.headers)
+        response = requests.get(f"{self.base_url}/{self.api_prefix}/agents/{agent_id}/core-memory/blocks", headers=self.headers)
         if response.status_code != 200:
             raise ValueError(f"Failed to get agent memory blocks: {response.text}")
         return [Block(**block) for block in response.json()]
@@ -1927,7 +1956,7 @@ class RESTClient(AbstractClient):
             block (Block): The block corresponding to the label
         """
         response = requests.get(
-            f"{self.base_url}/{self.api_prefix}/agents/{agent_id}/memory/block/{label}",
+            f"{self.base_url}/{self.api_prefix}/agents/{agent_id}/core-memory/blocks/{label}",
             headers=self.headers,
         )
         if response.status_code != 200:
@@ -1960,7 +1989,7 @@ class RESTClient(AbstractClient):
         if limit:
             data["limit"] = limit
         response = requests.patch(
-            f"{self.base_url}/{self.api_prefix}/agents/{agent_id}/memory/block/{label}",
+            f"{self.base_url}/{self.api_prefix}/agents/{agent_id}/core-memory/blocks/{label}",
             headers=self.headers,
             json=data,
         )
@@ -2303,7 +2332,7 @@ class LocalClient(AbstractClient):
         # Create the base parameters
         create_params = {
             "description": description,
-            "metadata_": metadata,
+            "metadata": metadata,
             "memory_blocks": [],
             "block_ids": [b.id for b in memory.get_blocks()] + block_ids,
             "tool_ids": tool_ids,
@@ -2337,7 +2366,7 @@ class LocalClient(AbstractClient):
         role: Optional[MessageRole] = None,
         text: Optional[str] = None,
         name: Optional[str] = None,
-        tool_calls: Optional[List[ToolCall]] = None,
+        tool_calls: Optional[List[OpenAIToolCall]] = None,
         tool_call_id: Optional[str] = None,
     ) -> Message:
         message = self.server.update_agent_message(
@@ -2385,7 +2414,7 @@ class LocalClient(AbstractClient):
         Returns:
             agent_state (AgentState): State of the updated agent
         """
-        # TODO: add the abilitty to reset linked block_ids
+        # TODO: add the ability to reset linked block_ids
         self.interface.clear()
         agent_state = self.server.agent_manager.update_agent(
             agent_id,
@@ -2395,7 +2424,7 @@ class LocalClient(AbstractClient):
                 tool_ids=tool_ids,
                 tags=tags,
                 description=description,
-                metadata_=metadata,
+                metadata=metadata,
                 llm_config=llm_config,
                 embedding_config=embedding_config,
                 message_ids=message_ids,
@@ -2417,7 +2446,7 @@ class LocalClient(AbstractClient):
         self.interface.clear()
         return self.server.agent_manager.get_agent_by_id(agent_id=agent_id, actor=self.user).tools
 
-    def add_tool_to_agent(self, agent_id: str, tool_id: str):
+    def attach_tool(self, agent_id: str, tool_id: str) -> AgentState:
         """
         Add tool to an existing agent
 
@@ -2432,7 +2461,7 @@ class LocalClient(AbstractClient):
         agent_state = self.server.agent_manager.attach_tool(agent_id=agent_id, tool_id=tool_id, actor=self.user)
         return agent_state
 
-    def remove_tool_from_agent(self, agent_id: str, tool_id: str):
+    def detach_tool(self, agent_id: str, tool_id: str) -> AgentState:
         """
         Removes tools from an existing agent
 
@@ -2447,17 +2476,20 @@ class LocalClient(AbstractClient):
         agent_state = self.server.agent_manager.detach_tool(agent_id=agent_id, tool_id=tool_id, actor=self.user)
         return agent_state
 
-    def rename_agent(self, agent_id: str, new_name: str):
+    def rename_agent(self, agent_id: str, new_name: str) -> AgentState:
         """
         Rename an agent
 
         Args:
             agent_id (str): ID of the agent
             new_name (str): New name for the agent
-        """
-        self.update_agent(agent_id, name=new_name)
 
-    def delete_agent(self, agent_id: str):
+        Returns:
+            agent_state (AgentState): State of the updated agent
+        """
+        return self.update_agent(agent_id, name=new_name)
+
+    def delete_agent(self, agent_id: str) -> None:
         """
         Delete an agent
 
@@ -2870,7 +2902,7 @@ class LocalClient(AbstractClient):
 
     def load_composio_tool(self, action: "ActionType") -> Tool:
         tool_create = ToolCreate.from_composio(action_name=action.name)
-        return self.server.tool_manager.create_or_update_tool(pydantic_tool=Tool(**tool_create.model_dump()), actor=self.user)
+        return self.server.tool_manager.create_or_update_composio_tool(pydantic_tool=Tool(**tool_create.model_dump()), actor=self.user)
 
     def create_tool(
         self,
@@ -3032,6 +3064,18 @@ class LocalClient(AbstractClient):
         tool = self.server.tool_manager.get_tool_by_name(tool_name=name, actor=self.user)
         return tool.id if tool else None
 
+    def list_attached_tools(self, agent_id: str) -> List[Tool]:
+        """
+        List all tools attached to an agent.
+
+        Args:
+            agent_id (str): ID of the agent
+
+        Returns:
+            List[Tool]: List of tools attached to the agent
+        """
+        return self.server.agent_manager.list_attached_tools(agent_id=agent_id, actor=self.user)
+
     def load_data(self, connector: DataConnector, source_name: str):
         """
         Load data into a source
@@ -3057,7 +3101,7 @@ class LocalClient(AbstractClient):
         job = Job(
             user_id=self.user_id,
             status=JobStatus.created,
-            metadata_={"type": "embedding", "filename": filename, "source_id": source_id},
+            metadata={"type": "embedding", "filename": filename, "source_id": source_id},
         )
         job = self.server.job_manager.create_job(pydantic_job=job, actor=self.user)
 
@@ -3065,14 +3109,14 @@ class LocalClient(AbstractClient):
         self.server.load_file_to_source(source_id=source_id, file_path=filename, job_id=job.id, actor=self.user)
         return job
 
-    def delete_file_from_source(self, source_id: str, file_id: str):
+    def delete_file_from_source(self, source_id: str, file_id: str) -> None:
         self.server.source_manager.delete_file(file_id, actor=self.user)
 
     def get_job(self, job_id: str):
         return self.server.job_manager.get_job_by_id(job_id=job_id, actor=self.user)
 
     def delete_job(self, job_id: str):
-        return self.server.job_manager.delete_job(job_id=job_id, actor=self.user)
+        return self.server.job_manager.delete_job_by_id(job_id=job_id, actor=self.user)
 
     def list_jobs(self):
         return self.server.job_manager.list_jobs(actor=self.user)
@@ -3131,7 +3175,7 @@ class LocalClient(AbstractClient):
         """
         return self.server.source_manager.get_source_by_name(source_name=source_name, actor=self.user).id
 
-    def attach_source_to_agent(self, agent_id: str, source_id: Optional[str] = None, source_name: Optional[str] = None):
+    def attach_source(self, agent_id: str, source_id: Optional[str] = None, source_name: Optional[str] = None) -> AgentState:
         """
         Attach a source to an agent
 
@@ -3144,9 +3188,9 @@ class LocalClient(AbstractClient):
             source = self.server.source_manager.get_source_by_id(source_id=source_id, actor=self.user)
             source_id = source.id
 
-        self.server.agent_manager.attach_source(source_id=source_id, agent_id=agent_id, actor=self.user)
+        return self.server.agent_manager.attach_source(source_id=source_id, agent_id=agent_id, actor=self.user)
 
-    def detach_source_from_agent(self, agent_id: str, source_id: Optional[str] = None, source_name: Optional[str] = None):
+    def detach_source(self, agent_id: str, source_id: Optional[str] = None, source_name: Optional[str] = None) -> AgentState:
         """
         Detach a source from an agent by removing all `Passage` objects that were loaded from the source from archival memory.
         Args:
@@ -3479,50 +3523,6 @@ class LocalClient(AbstractClient):
         block = self.get_agent_memory_block(agent_id, current_label)
         return self.update_block(block.id, label=new_label)
 
-    # TODO: remove this
-    def add_agent_memory_block(self, agent_id: str, create_block: CreateBlock) -> Memory:
-        """
-        Create and link a memory block to an agent's core memory
-
-        Args:
-            agent_id (str): The agent ID
-            create_block (CreateBlock): The block to create
-
-        Returns:
-            memory (Memory): The updated memory
-        """
-        block_req = Block(**create_block.model_dump())
-        block = self.server.block_manager.create_or_update_block(actor=self.user, block=block_req)
-        # Link the block to the agent
-        agent = self.server.agent_manager.attach_block(agent_id=agent_id, block_id=block.id, actor=self.user)
-        return agent.memory
-
-    def link_agent_memory_block(self, agent_id: str, block_id: str) -> Memory:
-        """
-        Link a block to an agent's core memory
-
-        Args:
-            agent_id (str): The agent ID
-            block_id (str): The block ID
-
-        Returns:
-            memory (Memory): The updated memory
-        """
-        return self.server.agent_manager.attach_block(agent_id=agent_id, block_id=block_id, actor=self.user)
-
-    def remove_agent_memory_block(self, agent_id: str, block_label: str) -> Memory:
-        """
-        Unlike a block from the agent's core memory
-
-        Args:
-            agent_id (str): The agent ID
-            block_label (str): The block label
-
-        Returns:
-            memory (Memory): The updated memory
-        """
-        return self.server.agent_manager.detach_block_with_label(agent_id=agent_id, block_label=block_label, actor=self.user)
-
     def get_agent_memory_blocks(self, agent_id: str) -> List[Block]:
         """
         Get all the blocks in the agent's core memory
@@ -3603,6 +3603,26 @@ class LocalClient(AbstractClient):
         if label:
             data["label"] = label
         return self.server.block_manager.update_block(block_id, actor=self.user, block_update=BlockUpdate(**data))
+
+    def attach_block(self, agent_id: str, block_id: str) -> AgentState:
+        """
+        Attach a block to an agent.
+
+        Args:
+            agent_id (str): ID of the agent
+            block_id (str): ID of the block to attach
+        """
+        return self.server.agent_manager.attach_block(agent_id=agent_id, block_id=block_id, actor=self.user)
+
+    def detach_block(self, agent_id: str, block_id: str) -> AgentState:
+        """
+        Detach a block from an agent.
+
+        Args:
+            agent_id (str): ID of the agent
+            block_id (str): ID of the block to detach
+        """
+        return self.server.agent_manager.detach_block(agent_id=agent_id, block_id=block_id, actor=self.user)
 
     def get_run_messages(
         self,

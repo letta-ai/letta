@@ -24,11 +24,11 @@ class BlockManager:
         """Create a new block based on the Block schema."""
         db_block = self.get_block_by_id(block.id, actor)
         if db_block:
-            update_data = BlockUpdate(**block.model_dump(exclude_none=True))
+            update_data = BlockUpdate(**block.model_dump(to_orm=True, exclude_none=True))
             self.update_block(block.id, update_data, actor)
         else:
             with self.session_maker() as session:
-                data = block.model_dump(exclude_none=True)
+                data = block.model_dump(to_orm=True, exclude_none=True)
                 block = BlockModel(**data, organization_id=actor.organization_id)
                 block.create(session, actor=actor)
             return block.to_pydantic()
@@ -40,7 +40,7 @@ class BlockManager:
 
         with self.session_maker() as session:
             block = BlockModel.read(db_session=session, identifier=block_id, actor=actor)
-            update_data = block_update.model_dump(exclude_unset=True, exclude_none=True)
+            update_data = block_update.model_dump(to_orm=True, exclude_unset=True, exclude_none=True)
 
             for key, value in update_data.items():
                 setattr(block, key, value)

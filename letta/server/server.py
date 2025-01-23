@@ -773,9 +773,9 @@ class SyncServer(Server):
         interface: Union[AgentInterface, None] = None,
     ) -> AgentState:
         if request.llm_config is None:
-            if request.llm is None:
-                raise ValueError("Must specify either llm or llm_config in request")
-            request.llm_config = self.get_llm_config_from_handle(handle=request.llm, context_window_limit=request.context_window_limit)
+            if request.model is None:
+                raise ValueError("Must specify either model or llm_config in request")
+            request.llm_config = self.get_llm_config_from_handle(handle=request.model, context_window_limit=request.context_window_limit)
 
         if request.embedding_config is None:
             if request.embedding is None:
@@ -956,8 +956,8 @@ class SyncServer(Server):
 
         # update job status
         job.status = JobStatus.completed
-        job.metadata_["num_passages"] = num_passages
-        job.metadata_["num_documents"] = num_documents
+        job.metadata["num_passages"] = num_passages
+        job.metadata["num_documents"] = num_documents
         self.job_manager.update_job_by_id(job_id=job_id, job_update=JobUpdate(**job.model_dump()), actor=actor)
 
         # update all agents who have this source attached
@@ -1019,7 +1019,7 @@ class SyncServer(Server):
             attached_agents = [{"id": agent.id, "name": agent.name} for agent in agents]
 
             # Overwrite metadata field, should be empty anyways
-            source.metadata_ = dict(
+            source.metadata = dict(
                 num_documents=num_documents,
                 num_passages=num_passages,
                 attached_agents=attached_agents,

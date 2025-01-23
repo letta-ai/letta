@@ -6,6 +6,7 @@ class ToolType(str, Enum):
     LETTA_CORE = "letta_core"
     LETTA_MEMORY_CORE = "letta_memory_core"
     LETTA_MULTI_AGENT_CORE = "letta_multi_agent_core"
+    EXTERNAL_COMPOSIO = "external_composio"
 
 
 class JobType(str, Enum):

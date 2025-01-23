@@ -25,6 +25,7 @@ from letta.schemas.message import Message as PydanticMessage
 from letta.schemas.message import MessageCreate
 from letta.schemas.passage import Passage as PydanticPassage
 from letta.schemas.source import Source as PydanticSource
+from letta.schemas.tool import Tool as PydanticTool
 from letta.schemas.tool_rule import ToolRule as PydanticToolRule
 from letta.schemas.user import User as PydanticUser
 from letta.services.block_manager import BlockManager
@@ -81,7 +82,7 @@ class AgentManager:
         block_ids = list(agent_create.block_ids or [])  # Create a local copy to avoid modifying the original
         if agent_create.memory_blocks:
             for create_block in agent_create.memory_blocks:
-                block = self.block_manager.create_or_update_block(PydanticBlock(**create_block.model_dump()), actor=actor)
+                block = self.block_manager.create_or_update_block(PydanticBlock(**create_block.model_dump(to_orm=True)), actor=actor)
                 block_ids.append(block.id)
 
         # TODO: Remove this block once we deprecate the legacy `tools` field
@@ -116,7 +117,7 @@ class AgentManager:
             source_ids=agent_create.source_ids or [],
             tags=agent_create.tags or [],
             description=agent_create.description,
-            metadata_=agent_create.metadata_,
+            metadata=agent_create.metadata,
             tool_rules=agent_create.tool_rules,
             actor=actor,
         )
@@ -176,7 +177,7 @@ class AgentManager:
         source_ids: List[str],
         tags: List[str],
         description: Optional[str] = None,
-        metadata_: Optional[Dict] = None,
+        metadata: Optional[Dict] = None,
         tool_rules: Optional[List[PydanticToolRule]] = None,
     ) -> PydanticAgentState:
         """Create a new agent."""
@@ -190,7 +191,7 @@ class AgentManager:
                 "embedding_config": embedding_config,
                 "organization_id": actor.organization_id,
                 "description": description,
-                "metadata_": metadata_,
+                "metadata_": metadata,
                 "tool_rules": tool_rules,
             }
 
@@ -241,11 +242,14 @@ class AgentManager:
             agent = AgentModel.read(db_session=session, identifier=agent_id, actor=actor)
 
             # Update scalar fields directly
-            scalar_fields = {"name", "system", "llm_config", "embedding_config", "message_ids", "tool_rules", "description", "metadata_"}
+            scalar_fields = {"name", "system", "llm_config", "embedding_config", "message_ids", "tool_rules", "description", "metadata"}
             for field in scalar_fields:
                 value = getattr(agent_update, field, None)
                 if value is not None:
-                    setattr(agent, field, value)
+                    if field == "metadata":
+                        setattr(agent, "metadata_", value)
+                    else:
+                        setattr(agent, field, value)
 
             # Update relationships using _process_relationship and _process_tags
             if agent_update.tool_ids is not None:
@@ -465,6 +469,12 @@ class AgentManager:
         return self.set_in_context_messages(agent_id=agent_id, message_ids=new_messages, actor=actor)
 
     @enforce_types
+    def trim_all_in_context_messages_except_system(self, agent_id: str, actor: PydanticUser) -> PydanticAgentState:
+        message_ids = self.get_agent_by_id(agent_id=agent_id, actor=actor).message_ids
+        new_messages = [message_ids[0]]  # 0 is system message
+        return self.set_in_context_messages(agent_id=agent_id, message_ids=new_messages, actor=actor)
+
+    @enforce_types
     def prepend_to_in_context_messages(self, messages: List[PydanticMessage], agent_id: str, actor: PydanticUser) -> PydanticAgentState:
         message_ids = self.get_agent_by_id(agent_id=agent_id, actor=actor).message_ids
         new_messages = self.message_manager.create_many_messages(messages, actor=actor)
@@ -531,7 +541,7 @@ class AgentManager:
     # Source Management
     # ======================================================================================================================
     @enforce_types
-    def attach_source(self, agent_id: str, source_id: str, actor: PydanticUser) -> None:
+    def attach_source(self, agent_id: str, source_id: str, actor: PydanticUser) -> PydanticAgentState:
         """
         Attaches a source to an agent.
 
@@ -561,6 +571,7 @@ class AgentManager:
 
             # Commit the changes
             agent.update(session, actor=actor)
+            return agent.to_pydantic()
 
     @enforce_types
     def list_attached_sources(self, agent_id: str, actor: PydanticUser) -> List[PydanticSource]:
@@ -582,7 +593,7 @@ class AgentManager:
             return [source.to_pydantic() for source in agent.sources]
 
     @enforce_types
-    def detach_source(self, agent_id: str, source_id: str, actor: PydanticUser) -> None:
+    def detach_source(self, agent_id: str, source_id: str, actor: PydanticUser) -> PydanticAgentState:
         """
         Detaches a source from an agent.
 
@@ -596,10 +607,17 @@ class AgentManager:
             agent = AgentModel.read(db_session=session, identifier=agent_id, actor=actor)
 
             # Remove the source from the relationship
-            agent.sources = [s for s in agent.sources if s.id != source_id]
+            remaining_sources = [s for s in agent.sources if s.id != source_id]
+
+            if len(remaining_sources) == len(agent.sources):  # Source ID was not in the relationship
+                logger.warning(f"Attempted to remove unattached source id={source_id} from agent id={agent_id} by actor={actor}")
+
+            # Update the sources relationship
+            agent.sources = remaining_sources
 
             # Commit the changes
             agent.update(session, actor=actor)
+            return agent.to_pydantic()
 
     # ======================================================================================================================
     # Block management
@@ -1004,6 +1022,22 @@ class AgentManager:
             # Commit and refresh the agent
             agent.update(session, actor=actor)
             return agent.to_pydantic()
+
+    @enforce_types
+    def list_attached_tools(self, agent_id: str, actor: PydanticUser) -> List[PydanticTool]:
+        """
+        List all tools attached to an agent.
+
+        Args:
+            agent_id: ID of the agent to list tools for.
+            actor: User performing the action.
+
+        Returns:
+            List[PydanticTool]: List of tools attached to the agent.
+        """
+        with self.session_maker() as session:
+            agent = AgentModel.read(db_session=session, identifier=agent_id, actor=actor)
+            return [tool.to_pydantic() for tool in agent.tools]
 
     # ======================================================================================================================
     # Tag Management

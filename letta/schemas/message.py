@@ -4,24 +4,32 @@ import warnings
 from datetime import datetime, timezone
 from typing import List, Literal, Optional
 
+from openai.types.chat.chat_completion_message_tool_call import ChatCompletionMessageToolCall as OpenAIToolCall
+from openai.types.chat.chat_completion_message_tool_call import Function as OpenAIFunction
 from pydantic import BaseModel, Field, field_validator
 
 from letta.constants import DEFAULT_MESSAGE_TOOL, DEFAULT_MESSAGE_TOOL_KWARG, TOOL_CALL_ID_MAX_LEN
 from letta.local_llm.constants import INNER_THOUGHTS_KWARG
 from letta.schemas.enums import MessageRole
 from letta.schemas.letta_base import OrmMetadataBase
-from letta.schemas.letta_message import AssistantMessage, LettaMessage, ReasoningMessage, SystemMessage
-from letta.schemas.letta_message import ToolCall as LettaToolCall
-from letta.schemas.letta_message import ToolCallMessage, ToolReturnMessage, UserMessage
-from letta.schemas.openai.chat_completions import ToolCall, ToolCallFunction
+from letta.schemas.letta_message import (
+    AssistantMessage,
+    LettaMessage,
+    ReasoningMessage,
+    SystemMessage,
+    ToolCall,
+    ToolCallMessage,
+    ToolReturnMessage,
+    UserMessage,
+)
 from letta.utils import get_utc_time, is_utc_datetime, json_dumps
 
 
 def add_inner_thoughts_to_tool_call(
-    tool_call: ToolCall,
+    tool_call: OpenAIToolCall,
     inner_thoughts: str,
     inner_thoughts_key: str,
-) -> ToolCall:
+) -> OpenAIToolCall:
     """Add inner thoughts (arg + value) to a tool call"""
     # because the kwargs are stored as strings, we need to load then write the JSON dicts
     try:
@@ -68,7 +76,7 @@ class MessageUpdate(BaseModel):
     name: Optional[str] = Field(None, description="The name of the participant.")
     # NOTE: we probably shouldn't allow updating the created_at field, right?
     # created_at: Optional[datetime] = Field(None, description="The time the message was created.")
-    tool_calls: Optional[List[ToolCall]] = Field(None, description="The list of tool calls requested.")
+    tool_calls: Optional[List[OpenAIToolCall,]] = Field(None, description="The list of tool calls requested.")
     tool_call_id: Optional[str] = Field(None, description="The id of the tool call.")
 
 
@@ -85,7 +93,7 @@ class Message(BaseMessage):
         model (str): The model used to make the function call.
         name (str): The name of the participant.
         created_at (datetime): The time the message was created.
-        tool_calls (List[ToolCall]): The list of tool calls requested.
+        tool_calls (List[OpenAIToolCall,]): The list of tool calls requested.
         tool_call_id (str): The id of the tool call.
 
     """
@@ -97,7 +105,7 @@ class Message(BaseMessage):
     agent_id: Optional[str] = Field(None, description="The unique identifier of the agent.")
     model: Optional[str] = Field(None, description="The model used to make the function call.")
     name: Optional[str] = Field(None, description="The name of the participant.")
-    tool_calls: Optional[List[ToolCall]] = Field(None, description="The list of tool calls requested.")
+    tool_calls: Optional[List[OpenAIToolCall,]] = Field(None, description="The list of tool calls requested.")
     tool_call_id: Optional[str] = Field(None, description="The id of the tool call.")
     step_id: Optional[str] = Field(None, description="The id of the step that this message was created in.")
     # This overrides the optional base orm schema, created_at MUST exist on all messages objects
@@ -165,7 +173,7 @@ class Message(BaseMessage):
                             ToolCallMessage(
                                 id=self.id,
                                 date=self.created_at,
-                                tool_call=LettaToolCall(
+                                tool_call=ToolCall(
                                     name=tool_call.function.name,
                                     arguments=tool_call.function.arguments,
                                     tool_call_id=tool_call.id,
@@ -304,10 +312,10 @@ class Message(BaseMessage):
             # Convert a function_call (from an assistant message) into a tool_call
             # NOTE: this does not conventionally include a tool_call_id (ToolCall.id), it's on the caster to provide it
             tool_calls = [
-                ToolCall(
+                OpenAIToolCall(
                     id=openai_message_dict["tool_call_id"],  # NOTE: unconventional source, not to spec
                     type="function",
-                    function=ToolCallFunction(
+                    function=OpenAIFunction(
                         name=openai_message_dict["function_call"]["name"],
                         arguments=openai_message_dict["function_call"]["arguments"],
                     ),
@@ -352,7 +360,7 @@ class Message(BaseMessage):
                 assert openai_message_dict["role"] == "assistant", openai_message_dict
 
                 tool_calls = [
-                    ToolCall(id=tool_call["id"], type=tool_call["type"], function=tool_call["function"])
+                    OpenAIToolCall(id=tool_call["id"], type=tool_call["type"], function=tool_call["function"])
                     for tool_call in openai_message_dict["tool_calls"]
                 ]
             else:

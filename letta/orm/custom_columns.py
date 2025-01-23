@@ -2,13 +2,14 @@ import base64
 from typing import List, Union
 
 import numpy as np
+from openai.types.chat.chat_completion_message_tool_call import ChatCompletionMessageToolCall as OpenAIToolCall
+from openai.types.chat.chat_completion_message_tool_call import Function as OpenAIFunction
 from sqlalchemy import JSON
 from sqlalchemy.types import BINARY, TypeDecorator
 
 from letta.schemas.embedding_config import EmbeddingConfig
 from letta.schemas.enums import ToolRuleType
 from letta.schemas.llm_config import LLMConfig
-from letta.schemas.openai.chat_completions import ToolCall, ToolCallFunction
 from letta.schemas.tool_rule import ChildToolRule, ConditionalToolRule, InitToolRule, TerminalToolRule
 
 
@@ -109,7 +110,7 @@ class ToolCallColumn(TypeDecorator):
         if value:
             values = []
             for v in value:
-                if isinstance(v, ToolCall):
+                if isinstance(v, OpenAIToolCall):
                     values.append(v.model_dump())
                 else:
                     values.append(v)
@@ -122,11 +123,11 @@ class ToolCallColumn(TypeDecorator):
             tools = []
             for tool_value in value:
                 if "function" in tool_value:
-                    tool_call_function = ToolCallFunction(**tool_value["function"])
+                    tool_call_function = OpenAIFunction(**tool_value["function"])
                     del tool_value["function"]
                 else:
                     tool_call_function = None
-                tools.append(ToolCall(function=tool_call_function, **tool_value))
+                tools.append(OpenAIToolCall(function=tool_call_function, **tool_value))
             return tools
         return value
 

@@ -330,7 +330,7 @@ def agent_id(server, user_id, base_tools):
             name="test_agent",
             tool_ids=[t.id for t in base_tools],
             memory_blocks=[],
-            llm="openai/gpt-4",
+            model="openai/gpt-4",
             embedding="openai/text-embedding-ada-002",
         ),
         actor=actor,
@@ -351,7 +351,7 @@ def other_agent_id(server, user_id, base_tools):
             name="test_agent_other",
             tool_ids=[t.id for t in base_tools],
             memory_blocks=[],
-            llm="openai/gpt-4",
+            model="openai/gpt-4",
             embedding="openai/text-embedding-ada-002",
         ),
         actor=actor,
@@ -550,7 +550,7 @@ def test_delete_agent_same_org(server: SyncServer, org_id: str, user: User):
         request=CreateAgent(
             name="nonexistent_tools_agent",
             memory_blocks=[],
-            llm="openai/gpt-4",
+            model="openai/gpt-4",
             embedding="openai/text-embedding-ada-002",
         ),
         actor=user,
@@ -861,7 +861,7 @@ def test_memory_rebuild_count(server, user, mock_e2b_api_key_none, base_tools, b
                 CreateBlock(label="human", value="The human's name is Bob."),
                 CreateBlock(label="persona", value="My name is Alice."),
             ],
-            llm="openai/gpt-4",
+            model="openai/gpt-4",
             embedding="openai/text-embedding-ada-002",
         ),
         actor=actor,
@@ -930,6 +930,7 @@ def test_load_file_to_source(server: SyncServer, user_id: str, agent_id: str, ot
         ),
         actor=actor,
     )
+    assert source.created_by_id == user_id
 
     # Create a test file with some content
     test_file = tmp_path / "test.txt"
@@ -943,7 +944,7 @@ def test_load_file_to_source(server: SyncServer, user_id: str, agent_id: str, ot
     job = server.job_manager.create_job(
         PydanticJob(
             user_id=user_id,
-            metadata_={"type": "embedding", "filename": test_file.name, "source_id": source.id},
+            metadata={"type": "embedding", "filename": test_file.name, "source_id": source.id},
         ),
         actor=actor,
     )
@@ -959,8 +960,8 @@ def test_load_file_to_source(server: SyncServer, user_id: str, agent_id: str, ot
     # Verify job completed successfully
     job = server.job_manager.get_job_by_id(job_id=job.id, actor=actor)
     assert job.status == "completed"
-    assert job.metadata_["num_passages"] == 1
-    assert job.metadata_["num_documents"] == 1
+    assert job.metadata["num_passages"] == 1
+    assert job.metadata["num_documents"] == 1
 
     # Verify passages were added
     first_file_passage_count = server.agent_manager.passage_size(agent_id=agent_id, actor=actor)
@@ -974,7 +975,7 @@ def test_load_file_to_source(server: SyncServer, user_id: str, agent_id: str, ot
     job2 = server.job_manager.create_job(
         PydanticJob(
             user_id=user_id,
-            metadata_={"type": "embedding", "filename": test_file2.name, "source_id": source.id},
+            metadata={"type": "embedding", "filename": test_file2.name, "source_id": source.id},
         ),
         actor=actor,
     )
@@ -990,8 +991,8 @@ def test_load_file_to_source(server: SyncServer, user_id: str, agent_id: str, ot
     # Verify second job completed successfully
     job2 = server.job_manager.get_job_by_id(job_id=job2.id, actor=actor)
     assert job2.status == "completed"
-    assert job2.metadata_["num_passages"] >= 10
-    assert job2.metadata_["num_documents"] == 1
+    assert job2.metadata["num_passages"] >= 10
+    assert job2.metadata["num_documents"] == 1
 
     # Verify passages were appended (not replaced)
     final_passage_count = server.agent_manager.passage_size(agent_id=agent_id, actor=actor)
@@ -1048,7 +1049,7 @@ def test_add_remove_tools_update_agent(server: SyncServer, user_id: str, base_to
                 CreateBlock(label="human", value="The human's name is Bob."),
                 CreateBlock(label="persona", value="My name is Alice."),
             ],
-            llm="openai/gpt-4",
+            model="openai/gpt-4",
             embedding="openai/text-embedding-ada-002",
             include_base_tools=False,
         ),
@@ -1119,7 +1120,10 @@ def test_messages_with_provider_override(server: SyncServer, user_id: str):
     )
     agent = server.create_agent(
         request=CreateAgent(
-            memory_blocks=[], llm="anthropic/claude-3-opus-20240229", context_window_limit=200000, embedding="openai/text-embedding-ada-002"
+            memory_blocks=[],
+            model="anthropic/claude-3-opus-20240229",
+            context_window_limit=200000,
+            embedding="openai/text-embedding-ada-002",
         ),
         actor=actor,
     )

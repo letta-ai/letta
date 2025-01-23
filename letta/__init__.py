@@ -1,3 +1,4 @@
+
 __version__ = "0.6.14"
 
 
@@ -15,7 +16,6 @@ from letta.schemas.letta_message import LettaMessage
 from letta.schemas.llm_config import LLMConfig
 from letta.schemas.memory import ArchivalMemorySummary, BasicBlockMemory, ChatMemory, Memory, RecallMemorySummary
 from letta.schemas.message import Message
-from letta.schemas.openai.chat_completion_response import UsageStatistics
 from letta.schemas.organization import Organization
 from letta.schemas.passage import Passage
 from letta.schemas.source import Source

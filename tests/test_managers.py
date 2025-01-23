@@ -3,6 +3,8 @@ import time
 from datetime import datetime, timedelta
 
 import pytest
+from openai.types.chat.chat_completion_message_tool_call import ChatCompletionMessageToolCall as OpenAIToolCall
+from openai.types.chat.chat_completion_message_tool_call import Function as OpenAIFunction
 from sqlalchemy import delete
 from sqlalchemy.exc import IntegrityError
 
@@ -48,7 +50,6 @@ from letta.schemas.llm_config import LLMConfig
 from letta.schemas.message import Message as PydanticMessage
 from letta.schemas.message import MessageCreate, MessageUpdate
 from letta.schemas.openai.chat_completion_response import UsageStatistics
-from letta.schemas.openai.chat_completions import ToolCall, ToolCallFunction
 from letta.schemas.organization import Organization as PydanticOrganization
 from letta.schemas.passage import Passage as PydanticPassage
 from letta.schemas.run import Run as PydanticRun
@@ -56,7 +57,7 @@ from letta.schemas.sandbox_config import E2BSandboxConfig, LocalSandboxConfig, S
 from letta.schemas.source import Source as PydanticSource
 from letta.schemas.source import SourceUpdate
 from letta.schemas.tool import Tool as PydanticTool
-from letta.schemas.tool import ToolUpdate
+from letta.schemas.tool import ToolCreate, ToolUpdate
 from letta.schemas.tool_rule import InitToolRule
 from letta.schemas.usage import LettaUsageStatistics
 from letta.schemas.user import User as PydanticUser
@@ -134,7 +135,7 @@ def default_source(server: SyncServer, default_user):
     source_pydantic = PydanticSource(
         name="Test Source",
         description="This is a test source.",
-        metadata_={"type": "test"},
+        metadata={"type": "test"},
         embedding_config=DEFAULT_EMBEDDING_CONFIG,
     )
     source = server.source_manager.create_source(source=source_pydantic, actor=default_user)
@@ -146,7 +147,7 @@ def other_source(server: SyncServer, default_user):
     source_pydantic = PydanticSource(
         name="Another Test Source",
         description="This is yet another test source.",
-        metadata_={"type": "another_test"},
+        metadata={"type": "another_test"},
         embedding_config=DEFAULT_EMBEDDING_CONFIG,
     )
     source = server.source_manager.create_source(source=source_pydantic, actor=default_user)
@@ -197,6 +198,13 @@ def print_tool(server: SyncServer, default_user, default_organization):
 
 
 @pytest.fixture
+def composio_github_star_tool(server, default_user):
+    tool_create = ToolCreate.from_composio(action_name="GITHUB_STAR_A_REPOSITORY_FOR_THE_AUTHENTICATED_USER")
+    tool = server.tool_manager.create_or_update_composio_tool(pydantic_tool=PydanticTool(**tool_create.model_dump()), actor=default_user)
+    yield tool
+
+
+@pytest.fixture
 def default_job(server: SyncServer, default_user):
     """Fixture to create and return a default job."""
     job_pydantic = PydanticJob(
@@ -228,7 +236,7 @@ def agent_passage_fixture(server: SyncServer, default_user, sarah_agent):
             organization_id=default_user.organization_id,
             embedding=[0.1],
             embedding_config=DEFAULT_EMBEDDING_CONFIG,
-            metadata_={"type": "test"},
+            metadata={"type": "test"},
         ),
         actor=default_user,
     )
@@ -246,7 +254,7 @@ def source_passage_fixture(server: SyncServer, default_user, default_file, defau
             organization_id=default_user.organization_id,
             embedding=[0.1],
             embedding_config=DEFAULT_EMBEDDING_CONFIG,
-            metadata_={"type": "test"},
+            metadata={"type": "test"},
         ),
         actor=default_user,
     )
@@ -266,7 +274,7 @@ def create_test_passages(server: SyncServer, default_file, default_user, sarah_a
                 organization_id=default_user.organization_id,
                 embedding=[0.1],
                 embedding_config=DEFAULT_EMBEDDING_CONFIG,
-                metadata_={"type": "test"},
+                metadata={"type": "test"},
             ),
             actor=default_user,
         )
@@ -284,7 +292,7 @@ def create_test_passages(server: SyncServer, default_file, default_user, sarah_a
                 organization_id=default_user.organization_id,
                 embedding=[0.1],
                 embedding_config=DEFAULT_EMBEDDING_CONFIG,
-                metadata_={"type": "test"},
+                metadata={"type": "test"},
             ),
             actor=default_user,
         )
@@ -341,7 +349,7 @@ def default_block(server: SyncServer, default_user):
         value="Default Block Content",
         description="A default test block",
         limit=1000,
-        metadata_={"type": "test"},
+        metadata={"type": "test"},
     )
     block = block_manager.create_or_update_block(block_data, actor=default_user)
     yield block
@@ -356,7 +364,7 @@ def other_block(server: SyncServer, default_user):
         value="Other Block Content",
         description="Another test block",
         limit=500,
-        metadata_={"type": "test"},
+        metadata={"type": "test"},
     )
     block = block_manager.create_or_update_block(block_data, actor=default_user)
     yield block
@@ -437,7 +445,7 @@ def comprehensive_test_agent_fixture(server: SyncServer, default_user, print_too
         source_ids=[default_source.id],
         tags=["a", "b"],
         description="test_description",
-        metadata_={"test_key": "test_value"},
+        metadata={"test_key": "test_value"},
         tool_rules=[InitToolRule(tool_name=print_tool.name)],
         initial_message_sequence=[MessageCreate(role=MessageRole.user, text="hello world")],
         tool_exec_environment_variables={"test_env_var_key_a": "test_env_var_value_a", "test_env_var_key_b": "test_env_var_value_b"},
@@ -593,7 +601,7 @@ def test_update_agent(server: SyncServer, comprehensive_test_agent_fixture, othe
         llm_config=LLMConfig.default_config("gpt-4o-mini"),
         embedding_config=EmbeddingConfig.default_config(model_name="letta"),
         message_ids=["10", "20"],
-        metadata_={"train_key": "train_value"},
+        metadata={"train_key": "train_value"},
         tool_exec_environment_variables={"test_env_var_key_a": "a", "new_tool_exec_key": "n"},
     )
 
@@ -1549,6 +1557,14 @@ def test_create_tool(server: SyncServer, print_tool, default_user, default_organ
     # Assertions to ensure the created tool matches the expected values
     assert print_tool.created_by_id == default_user.id
     assert print_tool.organization_id == default_organization.id
+    assert print_tool.tool_type == ToolType.CUSTOM
+
+
+def test_create_composio_tool(server: SyncServer, composio_github_star_tool, default_user, default_organization):
+    # Assertions to ensure the created tool matches the expected values
+    assert composio_github_star_tool.created_by_id == default_user.id
+    assert composio_github_star_tool.organization_id == default_organization.id
+    assert composio_github_star_tool.tool_type == ToolType.EXTERNAL_COMPOSIO
 
 
 @pytest.mark.skipif(USING_SQLITE, reason="Test not applicable when using SQLite.")
@@ -1923,7 +1939,7 @@ def test_create_block(server: SyncServer, default_user):
         template_name="sample_template",
         description="A test block",
         limit=1000,
-        metadata_={"example": "data"},
+        metadata={"example": "data"},
     )
 
     block = block_manager.create_or_update_block(block_create, actor=default_user)
@@ -1935,7 +1951,7 @@ def test_create_block(server: SyncServer, default_user):
     assert block.template_name == block_create.template_name
     assert block.description == block_create.description
     assert block.limit == block_create.limit
-    assert block.metadata_ == block_create.metadata_
+    assert block.metadata == block_create.metadata
     assert block.organization_id == default_user.organization_id
 
 
@@ -2018,7 +2034,7 @@ def test_create_source(server: SyncServer, default_user):
     source_pydantic = PydanticSource(
         name="Test Source",
         description="This is a test source.",
-        metadata_={"type": "test"},
+        metadata={"type": "test"},
         embedding_config=DEFAULT_EMBEDDING_CONFIG,
     )
     source = server.source_manager.create_source(source=source_pydantic, actor=default_user)
@@ -2026,7 +2042,7 @@ def test_create_source(server: SyncServer, default_user):
     # Assertions to check the created source
     assert source.name == source_pydantic.name
     assert source.description == source_pydantic.description
-    assert source.metadata_ == source_pydantic.metadata_
+    assert source.metadata == source_pydantic.metadata
     assert source.organization_id == default_user.organization_id
 
 
@@ -2036,14 +2052,14 @@ def test_create_sources_with_same_name_does_not_error(server: SyncServer, defaul
     source_pydantic = PydanticSource(
         name=name,
         description="This is a test source.",
-        metadata_={"type": "medical"},
+        metadata={"type": "medical"},
         embedding_config=DEFAULT_EMBEDDING_CONFIG,
     )
     source = server.source_manager.create_source(source=source_pydantic, actor=default_user)
     source_pydantic = PydanticSource(
         name=name,
         description="This is a different test source.",
-        metadata_={"type": "legal"},
+        metadata={"type": "legal"},
         embedding_config=DEFAULT_EMBEDDING_CONFIG,
     )
     same_source = server.source_manager.create_source(source=source_pydantic, actor=default_user)
@@ -2058,13 +2074,13 @@ def test_update_source(server: SyncServer, default_user):
     source = server.source_manager.create_source(source=source_pydantic, actor=default_user)
 
     # Update the source
-    update_data = SourceUpdate(name="Updated Source", description="Updated description", metadata_={"type": "updated"})
+    update_data = SourceUpdate(name="Updated Source", description="Updated description", metadata={"type": "updated"})
     updated_source = server.source_manager.update_source(source_id=source.id, source_update=update_data, actor=default_user)
 
     # Assertions to verify update
     assert updated_source.name == update_data.name
     assert updated_source.description == update_data.description
-    assert updated_source.metadata_ == update_data.metadata_
+    assert updated_source.metadata == update_data.metadata
 
 
 def test_delete_source(server: SyncServer, default_user):
@@ -2396,7 +2412,7 @@ def test_create_job(server: SyncServer, default_user):
     """Test creating a job."""
     job_data = PydanticJob(
         status=JobStatus.created,
-        metadata_={"type": "test"},
+        metadata={"type": "test"},
     )
 
     created_job = server.job_manager.create_job(job_data, actor=default_user)
@@ -2404,7 +2420,7 @@ def test_create_job(server: SyncServer, default_user):
     # Assertions to ensure the created job matches the expected values
     assert created_job.user_id == default_user.id
     assert created_job.status == JobStatus.created
-    assert created_job.metadata_ == {"type": "test"}
+    assert created_job.metadata == {"type": "test"}
 
 
 def test_get_job_by_id(server: SyncServer, default_user):
@@ -2412,7 +2428,7 @@ def test_get_job_by_id(server: SyncServer, default_user):
     # Create a job
     job_data = PydanticJob(
         status=JobStatus.created,
-        metadata_={"type": "test"},
+        metadata={"type": "test"},
     )
     created_job = server.job_manager.create_job(job_data, actor=default_user)
 
@@ -2422,7 +2438,7 @@ def test_get_job_by_id(server: SyncServer, default_user):
     # Assertions to ensure the fetched job matches the created job
     assert fetched_job.id == created_job.id
     assert fetched_job.status == JobStatus.created
-    assert fetched_job.metadata_ == {"type": "test"}
+    assert fetched_job.metadata == {"type": "test"}
 
 
 def test_list_jobs(server: SyncServer, default_user):
@@ -2431,7 +2447,7 @@ def test_list_jobs(server: SyncServer, default_user):
     for i in range(3):
         job_data = PydanticJob(
             status=JobStatus.created,
-            metadata_={"type": f"test-{i}"},
+            metadata={"type": f"test-{i}"},
         )
         server.job_manager.create_job(job_data, actor=default_user)
 
@@ -2441,7 +2457,7 @@ def test_list_jobs(server: SyncServer, default_user):
     # Assertions to check that the created jobs are listed
     assert len(jobs) == 3
     assert all(job.user_id == default_user.id for job in jobs)
-    assert all(job.metadata_["type"].startswith("test") for job in jobs)
+    assert all(job.metadata["type"].startswith("test") for job in jobs)
 
 
 def test_update_job_by_id(server: SyncServer, default_user):
@@ -2449,17 +2465,18 @@ def test_update_job_by_id(server: SyncServer, default_user):
     # Create a job
     job_data = PydanticJob(
         status=JobStatus.created,
-        metadata_={"type": "test"},
+        metadata={"type": "test"},
     )
     created_job = server.job_manager.create_job(job_data, actor=default_user)
+    assert created_job.metadata == {"type": "test"}
 
     # Update the job
-    update_data = JobUpdate(status=JobStatus.completed, metadata_={"type": "updated"})
+    update_data = JobUpdate(status=JobStatus.completed, metadata={"type": "updated"})
     updated_job = server.job_manager.update_job_by_id(created_job.id, update_data, actor=default_user)
 
     # Assertions to ensure the job was updated
     assert updated_job.status == JobStatus.completed
-    assert updated_job.metadata_ == {"type": "updated"}
+    assert updated_job.metadata == {"type": "updated"}
     assert updated_job.completed_at is not None
 
 
@@ -2468,7 +2485,7 @@ def test_delete_job_by_id(server: SyncServer, default_user):
     # Create a job
     job_data = PydanticJob(
         status=JobStatus.created,
-        metadata_={"type": "test"},
+        metadata={"type": "test"},
     )
     created_job = server.job_manager.create_job(job_data, actor=default_user)
 
@@ -2485,7 +2502,7 @@ def test_update_job_auto_complete(server: SyncServer, default_user):
     # Create a job
     job_data = PydanticJob(
         status=JobStatus.created,
-        metadata_={"type": "test"},
+        metadata={"type": "test"},
     )
     created_job = server.job_manager.create_job(job_data, actor=default_user)
 
@@ -2518,7 +2535,7 @@ def test_list_jobs_pagination(server: SyncServer, default_user):
     for i in range(10):
         job_data = PydanticJob(
             status=JobStatus.created,
-            metadata_={"type": f"test-{i}"},
+            metadata={"type": f"test-{i}"},
         )
         server.job_manager.create_job(job_data, actor=default_user)
 
@@ -2535,15 +2552,15 @@ def test_list_jobs_by_status(server: SyncServer, default_user):
     # Create multiple jobs with different statuses
     job_data_created = PydanticJob(
         status=JobStatus.created,
-        metadata_={"type": "test-created"},
+        metadata={"type": "test-created"},
     )
     job_data_in_progress = PydanticJob(
         status=JobStatus.running,
-        metadata_={"type": "test-running"},
+        metadata={"type": "test-running"},
     )
     job_data_completed = PydanticJob(
         status=JobStatus.completed,
-        metadata_={"type": "test-completed"},
+        metadata={"type": "test-completed"},
     )
 
     server.job_manager.create_job(job_data_created, actor=default_user)
@@ -2557,13 +2574,13 @@ def test_list_jobs_by_status(server: SyncServer, default_user):
 
     # Assertions
     assert len(created_jobs) == 1
-    assert created_jobs[0].metadata_["type"] == job_data_created.metadata_["type"]
+    assert created_jobs[0].metadata["type"] == job_data_created.metadata["type"]
 
     assert len(in_progress_jobs) == 1
-    assert in_progress_jobs[0].metadata_["type"] == job_data_in_progress.metadata_["type"]
+    assert in_progress_jobs[0].metadata["type"] == job_data_in_progress.metadata["type"]
 
     assert len(completed_jobs) == 1
-    assert completed_jobs[0].metadata_["type"] == job_data_completed.metadata_["type"]
+    assert completed_jobs[0].metadata["type"] == job_data_completed.metadata["type"]
 
 
 def test_list_jobs_filter_by_type(server: SyncServer, default_user, default_job):
@@ -2752,9 +2769,10 @@ def test_job_messages_filter(server: SyncServer, default_run, default_user, sara
             organization_id=default_user.organization_id,
             agent_id=sarah_agent.id,
             tool_calls=[
-                ToolCall(
+                OpenAIToolCall(
                     id="call_1",
-                    function=ToolCallFunction(
+                    type="function",
+                    function=OpenAIFunction(
                         name="test_tool",
                         arguments='{"arg1": "value1"}',
                     ),
@@ -2804,7 +2822,9 @@ def test_get_run_messages_cursor(server: SyncServer, default_user: PydanticUser,
             role=MessageRole.user if i % 2 == 0 else MessageRole.assistant,
             text=f"Test message {i}",
             tool_calls=(
-                [{"id": f"call_{i}", "function": {"name": "custom_tool", "arguments": '{"custom_arg": "test"}'}}] if i % 2 == 1 else None
+                [{"type": "function", "id": f"call_{i}", "function": {"name": "custom_tool", "arguments": '{"custom_arg": "test"}'}}]
+                if i % 2 == 1
+                else None
             ),
         )
         for i in range(4)

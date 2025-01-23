@@ -39,7 +39,7 @@ class ToolManager:
         tool = self.get_tool_by_name(tool_name=pydantic_tool.name, actor=actor)
         if tool:
             # Put to dict and remove fields that should not be reset
-            update_data = pydantic_tool.model_dump(exclude_unset=True, exclude_none=True)
+            update_data = pydantic_tool.model_dump(to_orm=True, exclude_unset=True, exclude_none=True)
 
             # If there's anything to update
             if update_data:
@@ -54,6 +54,11 @@ class ToolManager:
         return tool
 
     @enforce_types
+    def create_or_update_composio_tool(self, pydantic_tool: PydanticTool, actor: PydanticUser) -> PydanticTool:
+        pydantic_tool.tool_type = ToolType.EXTERNAL_COMPOSIO
+        return self.create_or_update_tool(pydantic_tool, actor)
+
+    @enforce_types
     def create_tool(self, pydantic_tool: PydanticTool, actor: PydanticUser) -> PydanticTool:
         """Create a new tool based on the ToolCreate schema."""
         with self.session_maker() as session:
@@ -62,7 +67,7 @@ class ToolManager:
             # Auto-generate description if not provided
             if pydantic_tool.description is None:
                 pydantic_tool.description = pydantic_tool.json_schema.get("description", None)
-            tool_data = pydantic_tool.model_dump()
+            tool_data = pydantic_tool.model_dump(to_orm=True)
 
             tool = ToolModel(**tool_data)
             tool.create(session, actor=actor)  # Re-raise other database-related errors
@@ -107,7 +112,7 @@ class ToolManager:
             tool = ToolModel.read(db_session=session, identifier=tool_id, actor=actor)
 
             # Update tool attributes with only the fields that were explicitly set
-            update_data = tool_update.model_dump(exclude_none=True)
+            update_data = tool_update.model_dump(to_orm=True, exclude_none=True)
             for key, value in update_data.items():
                 setattr(tool, key, value)
 

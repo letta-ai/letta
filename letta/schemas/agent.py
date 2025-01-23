@@ -72,7 +72,7 @@ class AgentState(OrmMetadataBase, validate_assignment=True):
     organization_id: Optional[str] = Field(None, description="The unique identifier of the organization associated with the agent.")
 
     description: Optional[str] = Field(None, description="The description of the agent.")
-    metadata_: Optional[Dict] = Field(None, description="The metadata of the agent.", alias="metadata_")
+    metadata: Optional[Dict] = Field(None, description="The metadata of the agent.")
 
     memory: Memory = Field(..., description="The in-context memory of the agent.")
     tools: List[Tool] = Field(..., description="The tools used by the agent.")
@@ -122,8 +122,8 @@ class CreateAgent(BaseModel, validate_assignment=True):  #
         False, description="If true, attaches the Letta multi-agent tools (e.g. sending a message to another agent)."
     )
     description: Optional[str] = Field(None, description="The description of the agent.")
-    metadata_: Optional[Dict] = Field(None, description="The metadata of the agent.", alias="metadata_")
-    llm: Optional[str] = Field(
+    metadata: Optional[Dict] = Field(None, description="The metadata of the agent.")
+    model: Optional[str] = Field(
         None,
         description="The LLM configuration handle used by the agent, specified in the format "
         "provider/model-name, as an alternative to specifying llm_config.",
@@ -139,7 +139,7 @@ class CreateAgent(BaseModel, validate_assignment=True):  #
     tool_exec_environment_variables: Optional[Dict[str, str]] = Field(
         None, description="The environment variables for tool execution specific to this agent."
     )
-    variables: Optional[Dict[str, str]] = Field(None, description="The variables that should be set for the agent.")
+    memory_variables: Optional[Dict[str, str]] = Field(None, description="The variables that should be set for the agent.")
 
     @field_validator("name")
     @classmethod
@@ -166,17 +166,17 @@ class CreateAgent(BaseModel, validate_assignment=True):  #
 
         return name
 
-    @field_validator("llm")
+    @field_validator("model")
     @classmethod
-    def validate_llm(cls, llm: Optional[str]) -> Optional[str]:
-        if not llm:
-            return llm
+    def validate_model(cls, model: Optional[str]) -> Optional[str]:
+        if not model:
+            return model
 
-        provider_name, model_name = llm.split("/", 1)
+        provider_name, model_name = model.split("/", 1)
         if not provider_name or not model_name:
             raise ValueError("The llm config handle should be in the format provider/model-name")
 
-        return llm
+        return model
 
     @field_validator("embedding")
     @classmethod
@@ -184,8 +184,8 @@ class CreateAgent(BaseModel, validate_assignment=True):  #
         if not embedding:
             return embedding
 
-        provider_name, model_name = embedding.split("/", 1)
-        if not provider_name or not model_name:
+        provider_name, embedding_name = embedding.split("/", 1)
+        if not provider_name or not embedding_name:
             raise ValueError("The embedding config handle should be in the format provider/model-name")
 
         return embedding
@@ -203,7 +203,7 @@ class UpdateAgent(BaseModel):
     embedding_config: Optional[EmbeddingConfig] = Field(None, description="The embedding configuration used by the agent.")
     message_ids: Optional[List[str]] = Field(None, description="The ids of the messages in the agent's in-context memory.")
     description: Optional[str] = Field(None, description="The description of the agent.")
-    metadata_: Optional[Dict] = Field(None, description="The metadata of the agent.", alias="metadata_")
+    metadata: Optional[Dict] = Field(None, description="The metadata of the agent.")
     tool_exec_environment_variables: Optional[Dict[str, str]] = Field(
         None, description="The environment variables for tool execution specific to this agent."
     )

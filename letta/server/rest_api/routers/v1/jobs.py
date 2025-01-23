@@ -26,9 +26,9 @@ def list_jobs(
     jobs = server.job_manager.list_jobs(actor=actor)
 
     if source_id:
-        # can't be in the ORM since we have source_id stored in the metadata_
+        # can't be in the ORM since we have source_id stored in the metadata
         # TODO: Probably change this
-        jobs = [job for job in jobs if job.metadata_.get("source_id") == source_id]
+        jobs = [job for job in jobs if job.metadata.get("source_id") == source_id]
     return jobs
 
 
@@ -45,8 +45,8 @@ def list_active_jobs(
     return server.job_manager.list_jobs(actor=actor, statuses=[JobStatus.created, JobStatus.running])
 
 
-@router.get("/{job_id}", response_model=Job, operation_id="get_job")
-def get_job(
+@router.get("/{job_id}", response_model=Job, operation_id="retrieve_job")
+def retrieve_job(
     job_id: str,
     user_id: Optional[str] = Header(None, alias="user_id"),
     server: "SyncServer" = Depends(get_letta_server),

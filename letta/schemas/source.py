@@ -24,7 +24,7 @@ class Source(BaseSource):
         name (str): The name of the source.
         embedding_config (EmbeddingConfig): The embedding configuration used by the source.
         user_id (str): The ID of the user that created the source.
-        metadata_ (dict): Metadata associated with the source.
+        metadata (dict): Metadata associated with the source.
         description (str): The description of the source.
     """
 
@@ -33,7 +33,7 @@ class Source(BaseSource):
     description: Optional[str] = Field(None, description="The description of the source.")
     embedding_config: EmbeddingConfig = Field(..., description="The embedding configuration used by the source.")
     organization_id: Optional[str] = Field(None, description="The ID of the organization that created the source.")
-    metadata_: Optional[dict] = Field(None, description="Metadata associated with the source.")
+    metadata: Optional[dict] = Field(None, description="Metadata associated with the source.")
 
     # metadata fields
     created_by_id: Optional[str] = Field(None, description="The id of the user that made this Tool.")
@@ -54,7 +54,7 @@ class SourceCreate(BaseSource):
 
     # optional
     description: Optional[str] = Field(None, description="The description of the source.")
-    metadata_: Optional[dict] = Field(None, description="Metadata associated with the source.")
+    metadata: Optional[dict] = Field(None, description="Metadata associated with the source.")
 
 
 class SourceUpdate(BaseSource):
@@ -64,5 +64,5 @@ class SourceUpdate(BaseSource):
 
     name: Optional[str] = Field(None, description="The name of the source.")
     description: Optional[str] = Field(None, description="The description of the source.")
-    metadata_: Optional[dict] = Field(None, description="Metadata associated with the source.")
+    metadata: Optional[dict] = Field(None, description="Metadata associated with the source.")
     embedding_config: Optional[EmbeddingConfig] = Field(None, description="The embedding configuration used by the source.")
