@@ -19,8 +19,8 @@ from letta.utils import sanitize_filename
 router = APIRouter(prefix="/sources", tags=["sources"])
 
 
-@router.get("/{source_id}", response_model=Source, operation_id="get_source")
-def get_source(
+@router.get("/{source_id}", response_model=Source, operation_id="retrieve_source")
+def retrieve_source(
     source_id: str,
     server: "SyncServer" = Depends(get_letta_server),
     user_id: Optional[str] = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
@@ -81,8 +81,8 @@ def create_source(
     return server.source_manager.create_source(source=source, actor=actor)
 
 
-@router.patch("/{source_id}", response_model=Source, operation_id="update_source")
-def update_source(
+@router.patch("/{source_id}", response_model=Source, operation_id="modify_source")
+def modify_source(
     source_id: str,
     source: SourceUpdate,
     server: "SyncServer" = Depends(get_letta_server),
@@ -148,7 +148,7 @@ def upload_file_to_source(
 
 
 @router.get("/{source_id}/passages", response_model=List[Passage], operation_id="list_source_passages")
-def list_passages(
+def list_source_passages(
     source_id: str,
     server: SyncServer = Depends(get_letta_server),
     user_id: Optional[str] = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
@@ -161,8 +161,8 @@ def list_passages(
     return passages
 
 
-@router.get("/{source_id}/files", response_model=List[FileMetadata], operation_id="list_files_from_source")
-def list_files_from_source(
+@router.get("/{source_id}/files", response_model=List[FileMetadata], operation_id="list_source_files")
+def list_source_files(
     source_id: str,
     limit: int = Query(1000, description="Number of files to return"),
     cursor: Optional[str] = Query(None, description="Pagination cursor to fetch the next set of results"),

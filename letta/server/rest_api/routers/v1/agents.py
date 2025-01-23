@@ -70,8 +70,8 @@ def list_agents(
     return agents
 
 
-@router.get("/{agent_id}/context", response_model=ContextWindowOverview, operation_id="get_agent_context_window")
-def get_agent_context_window(
+@router.get("/{agent_id}/context", response_model=ContextWindowOverview, operation_id="retrieve_agent_context_window")
+def retrieve_agent_context_window(
     agent_id: str,
     server: "SyncServer" = Depends(get_letta_server),
     user_id: Optional[str] = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
@@ -106,8 +106,8 @@ def create_agent(
     return server.create_agent(agent, actor=actor)
 
 
-@router.patch("/{agent_id}", response_model=AgentState, operation_id="update_agent")
-def update_agent(
+@router.patch("/{agent_id}", response_model=AgentState, operation_id="modify_agent")
+def modify_agent(
     agent_id: str,
     update_agent: UpdateAgent = Body(...),
     server: "SyncServer" = Depends(get_letta_server),
@@ -118,8 +118,8 @@ def update_agent(
     return server.agent_manager.update_agent(agent_id=agent_id, agent_update=update_agent, actor=actor)
 
 
-@router.get("/{agent_id}/tools", response_model=List[Tool], operation_id="get_tools_from_agent")
-def get_tools_from_agent(
+@router.get("/{agent_id}/tools", response_model=List[Tool], operation_id="list_agent_tools")
+def list_agent_tools(
     agent_id: str,
     server: "SyncServer" = Depends(get_letta_server),
     user_id: Optional[str] = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
@@ -129,7 +129,7 @@ def get_tools_from_agent(
     return server.agent_manager.list_attached_tools(agent_id=agent_id, actor=actor)
 
 
-@router.patch("/{agent_id}/tools/attach/{tool_id}", response_model=AgentState, operation_id="attach_tool_to_agent")
+@router.patch("/{agent_id}/tools/attach/{tool_id}", response_model=AgentState, operation_id="attach_tool")
 def attach_tool(
     agent_id: str,
     tool_id: str,
@@ -143,7 +143,7 @@ def attach_tool(
     return server.agent_manager.attach_tool(agent_id=agent_id, tool_id=tool_id, actor=actor)
 
 
-@router.patch("/{agent_id}/tools/detach/{tool_id}", response_model=AgentState, operation_id="detach_tool_from_agent")
+@router.patch("/{agent_id}/tools/detach/{tool_id}", response_model=AgentState, operation_id="detach_tool")
 def detach_tool(
     agent_id: str,
     tool_id: str,
@@ -185,8 +185,8 @@ def detach_source(
     return server.agent_manager.detach_source(agent_id=agent_id, source_id=source_id, actor=actor)
 
 
-@router.get("/{agent_id}", response_model=AgentState, operation_id="get_agent")
-def get_agent_state(
+@router.get("/{agent_id}", response_model=AgentState, operation_id="retrieve_agent")
+def retrieve_agent(
     agent_id: str,
     server: "SyncServer" = Depends(get_letta_server),
     user_id: Optional[str] = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
@@ -219,8 +219,8 @@ def delete_agent(
         raise HTTPException(status_code=404, detail=f"Agent agent_id={agent_id} not found for user_id={actor.id}.")
 
 
-@router.get("/{agent_id}/sources", response_model=List[Source], operation_id="get_agent_sources")
-def get_agent_sources(
+@router.get("/{agent_id}/sources", response_model=List[Source], operation_id="list_agent_sources")
+def list_agent_sources(
     agent_id: str,
     server: "SyncServer" = Depends(get_letta_server),
     user_id: Optional[str] = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
@@ -233,8 +233,8 @@ def get_agent_sources(
 
 
 # TODO: remove? can also get with agent blocks
-@router.get("/{agent_id}/core_memory", response_model=Memory, operation_id="get_agent_memory")
-def get_agent_memory(
+@router.get("/{agent_id}/core-memory", response_model=Memory, operation_id="retrieve_agent_memory")
+def retrieve_agent_memory(
     agent_id: str,
     server: "SyncServer" = Depends(get_letta_server),
     user_id: Optional[str] = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
@@ -248,8 +248,8 @@ def get_agent_memory(
     return server.get_agent_memory(agent_id=agent_id, actor=actor)
 
 
-@router.get("/{agent_id}/core_memory/blocks/{block_label}", response_model=Block, operation_id="get_agent_memory_block")
-def get_agent_memory_block(
+@router.get("/{agent_id}/core-memory/blocks/{block_label}", response_model=Block, operation_id="retrieve_core_memory_block")
+def retrieve_core_memory_block(
     agent_id: str,
     block_label: str,
     server: "SyncServer" = Depends(get_letta_server),
@@ -266,8 +266,8 @@ def get_agent_memory_block(
         raise HTTPException(status_code=404, detail=str(e))
 
 
-@router.get("/{agent_id}/core_memory/blocks", response_model=List[Block], operation_id="list_agent_memory_blocks")
-def list_agent_memory_blocks(
+@router.get("/{agent_id}/core-memory/blocks", response_model=List[Block], operation_id="list_core_memory_blocks")
+def list_core_memory_blocks(
     agent_id: str,
     server: "SyncServer" = Depends(get_letta_server),
     user_id: Optional[str] = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
@@ -283,8 +283,8 @@ def list_agent_memory_blocks(
         raise HTTPException(status_code=404, detail=str(e))
 
 
-@router.patch("/{agent_id}/core_memory/blocks/{block_label}", response_model=Block, operation_id="update_agent_memory_block_by_label")
-def update_agent_memory_block(
+@router.patch("/{agent_id}/core-memory/blocks/{block_label}", response_model=Block, operation_id="modify_core_memory_block")
+def modify_core_memory_block(
     agent_id: str,
     block_label: str,
     block_update: BlockUpdate = Body(...),
@@ -305,8 +305,8 @@ def update_agent_memory_block(
     return block
 
 
-@router.patch("/{agent_id}/core_memory/blocks/attach/{block_id}", response_model=AgentState, operation_id="attach_block_to_agent")
-def attach_block(
+@router.patch("/{agent_id}/core-memory/blocks/attach/{block_id}", response_model=AgentState, operation_id="attach_core_memory_block")
+def attach_core_memory_block(
     agent_id: str,
     block_id: str,
     server: "SyncServer" = Depends(get_letta_server),
@@ -319,8 +319,8 @@ def attach_block(
     return server.agent_manager.attach_block(agent_id=agent_id, block_id=block_id, actor=actor)
 
 
-@router.patch("/{agent_id}/core_memory/blocks/detach/{block_id}", response_model=AgentState, operation_id="detach_block_from_agent")
-def detach_block(
+@router.patch("/{agent_id}/core-memory/blocks/detach/{block_id}", response_model=AgentState, operation_id="detach_core_memory_block")
+def detach_core_memory_block(
     agent_id: str,
     block_id: str,
     server: "SyncServer" = Depends(get_letta_server),
@@ -333,8 +333,8 @@ def detach_block(
     return server.agent_manager.detach_block(agent_id=agent_id, block_id=block_id, actor=actor)
 
 
-@router.get("/{agent_id}/archival_memory", response_model=List[Passage], operation_id="list_agent_archival_memory")
-def get_agent_archival_memory(
+@router.get("/{agent_id}/archival-memory", response_model=List[Passage], operation_id="list_archival_memory")
+def list_archival_memory(
     agent_id: str,
     server: "SyncServer" = Depends(get_letta_server),
     after: Optional[int] = Query(None, description="Unique ID of the memory to start the query range at."),
@@ -359,8 +359,8 @@ def get_agent_archival_memory(
     )
 
 
-@router.post("/{agent_id}/archival_memory", response_model=List[Passage], operation_id="create_agent_archival_memory")
-def insert_agent_archival_memory(
+@router.post("/{agent_id}/archival-memory", response_model=List[Passage], operation_id="create_archival_memory")
+def create_archival_memory(
     agent_id: str,
     request: CreateArchivalMemory = Body(...),
     server: "SyncServer" = Depends(get_letta_server),
@@ -376,8 +376,8 @@ def insert_agent_archival_memory(
 
 # TODO(ethan): query or path parameter for memory_id?
 # @router.delete("/{agent_id}/archival")
-@router.delete("/{agent_id}/archival_memory/{memory_id}", response_model=None, operation_id="delete_agent_archival_memory")
-def delete_agent_archival_memory(
+@router.delete("/{agent_id}/archival-memory/{memory_id}", response_model=None, operation_id="delete_archival_memory")
+def delete_archival_memory(
     agent_id: str,
     memory_id: str,
     # memory_id: str = Query(..., description="Unique ID of the memory to be deleted."),
@@ -406,8 +406,8 @@ AgentMessagesResponse = Annotated[
 ]
 
 
-@router.get("/{agent_id}/messages", response_model=AgentMessagesResponse, operation_id="list_agent_messages")
-def get_agent_messages(
+@router.get("/{agent_id}/messages", response_model=AgentMessagesResponse, operation_id="list_messages")
+def list_messages(
     agent_id: str,
     server: "SyncServer" = Depends(get_letta_server),
     before: Optional[str] = Query(None, description="Message before which to retrieve the returned messages."),
@@ -441,8 +441,8 @@ def get_agent_messages(
     )
 
 
-@router.patch("/{agent_id}/messages/{message_id}", response_model=Message, operation_id="update_agent_message")
-def update_message(
+@router.patch("/{agent_id}/messages/{message_id}", response_model=Message, operation_id="modify_message")
+def modify_message(
     agent_id: str,
     message_id: str,
     request: MessageUpdate = Body(...),
@@ -460,7 +460,7 @@ def update_message(
 @router.post(
     "/{agent_id}/messages",
     response_model=LettaResponse,
-    operation_id="create_agent_message",
+    operation_id="send_message",
 )
 async def send_message(
     agent_id: str,
