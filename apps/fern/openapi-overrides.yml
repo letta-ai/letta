@@ -341,12 +341,12 @@ paths:
                 schema:
                   x-fern-type-name: LettaStreamingResponse
                   oneOf:
-                    - "$ref": "#/components/schemas/SystemMessage-Output"
-                    - "$ref": "#/components/schemas/UserMessage-Output"
+                    - "$ref": "#/components/schemas/SystemMessage"
+                    - "$ref": "#/components/schemas/UserMessage"
                     - "$ref": "#/components/schemas/ReasoningMessage"
                     - "$ref": "#/components/schemas/ToolCallMessage"
                     - "$ref": "#/components/schemas/ToolReturnMessage"
-                    - "$ref": "#/components/schemas/AssistantMessage-Output"
+                    - "$ref": "#/components/schemas/AssistantMessage"
                     - "$ref": "#/components/schemas/LettaUsageStatistics"
   /v1/agents/{agent_id}/template:
     post:

@@ -3,6 +3,8 @@ import time
 from datetime import datetime, timedelta
 
 import pytest
+from openai.types.chat.chat_completion_message_tool_call import ChatCompletionMessageToolCall as OpenAIToolCall
+from openai.types.chat.chat_completion_message_tool_call import Function as OpenAIFunction
 from sqlalchemy import delete
 from sqlalchemy.exc import IntegrityError
 
@@ -48,7 +50,6 @@ from letta.schemas.llm_config import LLMConfig
 from letta.schemas.message import Message as PydanticMessage
 from letta.schemas.message import MessageCreate, MessageUpdate
 from letta.schemas.openai.chat_completion_response import UsageStatistics
-from letta.schemas.openai.chat_completions import ToolCall, ToolCallFunction
 from letta.schemas.organization import Organization as PydanticOrganization
 from letta.schemas.passage import Passage as PydanticPassage
 from letta.schemas.run import Run as PydanticRun
@@ -2766,9 +2767,10 @@ def test_job_messages_filter(server: SyncServer, default_run, default_user, sara
             organization_id=default_user.organization_id,
             agent_id=sarah_agent.id,
             tool_calls=[
-                ToolCall(
+                OpenAIToolCall(
                     id="call_1",
-                    function=ToolCallFunction(
+                    type="function",
+                    function=OpenAIFunction(
                         name="test_tool",
                         arguments='{"arg1": "value1"}',
                     ),
@@ -2818,7 +2820,9 @@ def test_get_run_messages_cursor(server: SyncServer, default_user: PydanticUser,
             role=MessageRole.user if i % 2 == 0 else MessageRole.assistant,
             text=f"Test message {i}",
             tool_calls=(
-                [{"id": f"call_{i}", "function": {"name": "custom_tool", "arguments": '{"custom_arg": "test"}'}}] if i % 2 == 1 else None
+                [{"type": "function", "id": f"call_{i}", "function": {"name": "custom_tool", "arguments": '{"custom_arg": "test"}'}}]
+                if i % 2 == 1
+                else None
             ),
         )
         for i in range(4)

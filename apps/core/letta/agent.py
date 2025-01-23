@@ -5,6 +5,8 @@ import warnings
 from abc import ABC, abstractmethod
 from typing import List, Optional, Tuple, Union
 
+from openai.types.beta.function_tool import FunctionTool as OpenAITool
+
 from letta.constants import (
     CLI_WARNING_PREFIX,
     ERROR_MESSAGE_PREFIX,
@@ -33,7 +35,6 @@ from letta.schemas.embedding_config import EmbeddingConfig
 from letta.schemas.enums import MessageRole
 from letta.schemas.memory import ContextWindowOverview, Memory
 from letta.schemas.message import Message
-from letta.schemas.openai.chat_completion_request import Tool as ChatCompletionRequestTool
 from letta.schemas.openai.chat_completion_response import ChatCompletionResponse
 from letta.schemas.openai.chat_completion_response import Message as ChatCompletionMessage
 from letta.schemas.openai.chat_completion_response import UsageStatistics
@@ -1023,7 +1024,7 @@ class Agent(BaseAgent):
         # tokens taken up by function definitions
         agent_state_tool_jsons = [t.json_schema for t in self.agent_state.tools]
         if agent_state_tool_jsons:
-            available_functions_definitions = [ChatCompletionRequestTool(type="function", function=f) for f in agent_state_tool_jsons]
+            available_functions_definitions = [OpenAITool(type="function", function=f) for f in agent_state_tool_jsons]
             num_tokens_available_functions_definitions = num_tokens_from_functions(functions=agent_state_tool_jsons, model=self.model)
         else:
             available_functions_definitions = []

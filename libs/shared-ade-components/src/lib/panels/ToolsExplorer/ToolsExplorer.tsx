@@ -4,7 +4,7 @@ import { useTranslations } from '@letta-cloud/translations';
 import { useCurrentAgent } from '../../hooks';
 import type {
   AgentState,
-  letta__schemas__tool__Tool,
+  Tool,
 } from '@letta-cloud/letta-agents-api';
 import { isLettaTool } from '@letta-cloud/letta-agents-api';
 
@@ -911,7 +911,7 @@ function ToolAppHeader(props: ToolAppHeaderProps) {
   );
 }
 
-function getCustomTools(tools: letta__schemas__tool__Tool[]) {
+function getCustomTools(tools: Tool[]) {
   return tools.filter((tool) => {
     const provider = findProviderFromTags(tool);
 
@@ -1109,7 +1109,7 @@ function AllToolsView() {
   );
 }
 
-export function findProviderFromTags(tool: letta__schemas__tool__Tool) {
+export function findProviderFromTags(tool: Tool) {
   const tagsToMap = new Set(tool.tags || []);
 
   if (tagsToMap.has('composio')) {
@@ -1567,7 +1567,7 @@ function ToolCreator() {
         'view',
       );
 
-      void queryClient.setQueriesData<letta__schemas__tool__Tool[] | undefined>(
+      void queryClient.setQueriesData<Tool[] | undefined>(
         {
           queryKey: UseToolsServiceListToolsKeyFn({ limit: 1000 }),
         },
@@ -1691,7 +1691,7 @@ function ToolCreator() {
 }
 
 interface EditToolProps {
-  tool: letta__schemas__tool__Tool;
+  tool: Tool;
 }
 
 function EditTool(props: EditToolProps) {

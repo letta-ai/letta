@@ -59,7 +59,7 @@ import * as Common from './common';
  * @param data The data for the request.
  * @param data.toolId
  * @param data.userId
- * @returns letta__schemas__tool__Tool Successful Response
+ * @returns Tool Successful Response
  * @throws ApiError
  */
 export const useToolsServiceRetrieveTool = <
@@ -92,7 +92,7 @@ export const useToolsServiceRetrieveTool = <
  * @param data.cursor
  * @param data.limit
  * @param data.userId
- * @returns letta__schemas__tool__Tool Successful Response
+ * @returns Tool Successful Response
  * @throws ApiError
  */
 export const useToolsServiceListTools = <
@@ -478,7 +478,7 @@ export const useAgentsServiceRetrieveAgent = <
  * @param data The data for the request.
  * @param data.agentId
  * @param data.userId
- * @returns letta__schemas__tool__Tool Successful Response
+ * @returns Tool Successful Response
  * @throws ApiError
  */
 export const useAgentsServiceListAgentTools = <
@@ -1505,7 +1505,7 @@ export const useOrganizationServiceListOrgs = <
  * @param data The data for the request.
  * @param data.requestBody
  * @param data.userId
- * @returns letta__schemas__tool__Tool Successful Response
+ * @returns Tool Successful Response
  * @throws ApiError
  */
 export const useToolsServiceCreateTool = <
@@ -1547,7 +1547,7 @@ export const useToolsServiceCreateTool = <
  * Upsert base tools
  * @param data The data for the request.
  * @param data.userId
- * @returns letta__schemas__tool__Tool Successful Response
+ * @returns Tool Successful Response
  * @throws ApiError
  */
 export const useToolsServiceAddBaseTools = <
@@ -1628,7 +1628,7 @@ export const useToolsServiceRunToolFromSource = <
  * @param data The data for the request.
  * @param data.composioActionName
  * @param data.userId
- * @returns letta__schemas__tool__Tool Successful Response
+ * @returns Tool Successful Response
  * @throws ApiError
  */
 export const useToolsServiceAddComposioTool = <
@@ -2439,7 +2439,7 @@ export const useAuthServiceAuthenticateUserV1AuthPost = <
  * @param data The data for the request.
  * @param data.requestBody
  * @param data.userId
- * @returns letta__schemas__tool__Tool Successful Response
+ * @returns Tool Successful Response
  * @throws ApiError
  */
 export const useToolsServiceUpsertTool = <
@@ -2557,7 +2557,7 @@ export const useUsersServiceUpdateUser = <
  * @param data.toolId
  * @param data.requestBody
  * @param data.userId
- * @returns letta__schemas__tool__Tool Successful Response
+ * @returns Tool Successful Response
  * @throws ApiError
  */
 export const useToolsServiceModifyTool = <
@@ -3032,7 +3032,7 @@ export const useAgentsServiceDetachCoreMemoryBlock = <
  * @param data.messageId
  * @param data.requestBody
  * @param data.userId
- * @returns letta__schemas__message__Message Successful Response
+ * @returns Message Successful Response
  * @throws ApiError
  */
 export const useAgentsServiceModifyMessage = <

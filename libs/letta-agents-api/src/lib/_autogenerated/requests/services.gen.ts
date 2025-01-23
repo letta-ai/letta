@@ -214,7 +214,7 @@ export class ToolsService {
    * @param data The data for the request.
    * @param data.toolId
    * @param data.userId
-   * @returns letta__schemas__tool__Tool Successful Response
+   * @returns Tool Successful Response
    * @throws ApiError
    */
   public static retrieveTool(
@@ -241,7 +241,7 @@ export class ToolsService {
    * @param data.toolId
    * @param data.requestBody
    * @param data.userId
-   * @returns letta__schemas__tool__Tool Successful Response
+   * @returns Tool Successful Response
    * @throws ApiError
    */
   public static modifyTool(
@@ -270,7 +270,7 @@ export class ToolsService {
    * @param data.cursor
    * @param data.limit
    * @param data.userId
-   * @returns letta__schemas__tool__Tool Successful Response
+   * @returns Tool Successful Response
    * @throws ApiError
    */
   public static listTools(
@@ -297,7 +297,7 @@ export class ToolsService {
    * @param data The data for the request.
    * @param data.requestBody
    * @param data.userId
-   * @returns letta__schemas__tool__Tool Successful Response
+   * @returns Tool Successful Response
    * @throws ApiError
    */
   public static createTool(
@@ -322,7 +322,7 @@ export class ToolsService {
    * @param data The data for the request.
    * @param data.requestBody
    * @param data.userId
-   * @returns letta__schemas__tool__Tool Successful Response
+   * @returns Tool Successful Response
    * @throws ApiError
    */
   public static upsertTool(
@@ -346,7 +346,7 @@ export class ToolsService {
    * Upsert base tools
    * @param data The data for the request.
    * @param data.userId
-   * @returns letta__schemas__tool__Tool Successful Response
+   * @returns Tool Successful Response
    * @throws ApiError
    */
   public static addBaseTools(
@@ -442,7 +442,7 @@ export class ToolsService {
    * @param data The data for the request.
    * @param data.composioActionName
    * @param data.userId
-   * @returns letta__schemas__tool__Tool Successful Response
+   * @returns Tool Successful Response
    * @throws ApiError
    */
   public static addComposioTool(
@@ -910,7 +910,7 @@ export class AgentsService {
    * @param data The data for the request.
    * @param data.agentId
    * @param data.userId
-   * @returns letta__schemas__tool__Tool Successful Response
+   * @returns Tool Successful Response
    * @throws ApiError
    */
   public static listAgentTools(
@@ -1403,7 +1403,7 @@ export class AgentsService {
    * @param data.messageId
    * @param data.requestBody
    * @param data.userId
-   * @returns letta__schemas__message__Message Successful Response
+   * @returns Message Successful Response
    * @throws ApiError
    */
   public static modifyMessage(

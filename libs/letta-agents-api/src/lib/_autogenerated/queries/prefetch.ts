@@ -26,7 +26,7 @@ import * as Common from './common';
  * @param data The data for the request.
  * @param data.toolId
  * @param data.userId
- * @returns letta__schemas__tool__Tool Successful Response
+ * @returns Tool Successful Response
  * @throws ApiError
  */
 export const prefetchUseToolsServiceRetrieveTool = (
@@ -50,7 +50,7 @@ export const prefetchUseToolsServiceRetrieveTool = (
  * @param data.cursor
  * @param data.limit
  * @param data.userId
- * @returns letta__schemas__tool__Tool Successful Response
+ * @returns Tool Successful Response
  * @throws ApiError
  */
 export const prefetchUseToolsServiceListTools = (
@@ -358,7 +358,7 @@ export const prefetchUseAgentsServiceRetrieveAgent = (
  * @param data The data for the request.
  * @param data.agentId
  * @param data.userId
- * @returns letta__schemas__tool__Tool Successful Response
+ * @returns Tool Successful Response
  * @throws ApiError
  */
 export const prefetchUseAgentsServiceListAgentTools = (
