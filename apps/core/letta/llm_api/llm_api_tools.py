@@ -290,7 +290,6 @@ def create(
     #             # max_tokens=1024,  # TODO make dynamic
     #         ),
     #     )
-
     elif llm_config.model_endpoint_type == "groq":
         if stream:
             raise NotImplementedError(f"Streaming not yet implemented for Groq.")
@@ -329,7 +328,6 @@ def create(
         try:
             # groq uses the openai chat completions API, so this component should be reusable
             response = openai_chat_completions_request(
-                url=llm_config.model_endpoint,
                 api_key=model_settings.groq_api_key,
                 chat_completion_request=data,
             )
