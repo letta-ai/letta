@@ -7,8 +7,10 @@ from typing import Any, List, Union
 import requests
 
 from letta.constants import OPENAI_CONTEXT_WINDOW_ERROR_SUBSTRING
+from letta.schemas.message import Message
 from letta.schemas.openai.chat_completion_response import ChatCompletionResponse, Choice
-from letta.utils import json_dumps, printd
+from letta.settings import summarizer_settings
+from letta.utils import count_tokens, json_dumps, printd
 
 
 def _convert_to_structured_output_helper(property: dict) -> dict:
@@ -285,6 +287,54 @@ def unpack_inner_thoughts_from_kwargs(choice: Choice, inner_thoughts_key: str) -
         warnings.warn(f"Did not find tool call in message: {str(message)}")
 
     return rewritten_choice
+
+
+def calculate_summarizer_cutoff(in_context_messages: List[Message], token_counts: List[int], logger: "logging.Logger") -> int:
+    if len(in_context_messages) != len(token_counts):
+        raise ValueError(
+            f"Given in_context_messages has different length from given token_counts: {len(in_context_messages)} != {len(token_counts)}"
+        )
+
+    in_context_messages_openai = [m.to_openai_dict() for m in in_context_messages]
+
+    if summarizer_settings.evict_all_messages:
+        logger.info("Evicting all messages...")
+        return len(in_context_messages)
+    else:
+        # Start at index 1 (past the system message),
+        # and collect messages for summarization until we reach the desired truncation token fraction (eg 50%)
+        # We do the inverse of `desired_memory_token_pressure` to get what we need to remove
+        desired_token_count_to_summarize = int(sum(token_counts) * (1 - summarizer_settings.desired_memory_token_pressure))
+        logger.info(f"desired_token_count_to_summarize={desired_token_count_to_summarize}")
+
+        tokens_so_far = 0
+        cutoff = 0
+        for i, msg in enumerate(in_context_messages_openai):
+            # Skip system
+            if i == 0:
+                continue
+            cutoff = i
+            tokens_so_far += token_counts[i]
+
+            if msg["role"] not in ["user", "tool", "function"] and tokens_so_far >= desired_token_count_to_summarize:
+                # Break if the role is NOT a user or tool/function and tokens_so_far is enough
+                break
+            elif len(in_context_messages) - cutoff - 1 <= summarizer_settings.keep_last_n_messages:
+                # Also break if we reached the `keep_last_n_messages` threshold
+                # NOTE: This may be on a user, tool, or function in theory
+                logger.warning(
+                    f"Breaking summary cutoff early on role={msg['role']} because we hit the `keep_last_n_messages`={summarizer_settings.keep_last_n_messages}"
+                )
+                break
+
+        logger.info(f"Evicting {cutoff}/{len(in_context_messages)} messages...")
+        return cutoff + 1
+
+
+def get_token_counts_for_messages(in_context_messages: List[Message]) -> List[int]:
+    in_context_messages_openai = [m.to_openai_dict() for m in in_context_messages]
+    token_counts = [count_tokens(str(msg)) for msg in in_context_messages_openai]
+    return token_counts
 
 
 def is_context_overflow_error(exception: Union[requests.exceptions.RequestException, Exception]) -> bool:

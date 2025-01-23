@@ -9,10 +9,13 @@ from letta.constants import (
     LETTA_MULTI_AGENT_TOOL_MODULE_NAME,
 )
 from letta.functions.functions import derive_openai_json_schema, get_json_schema_from_module
-from letta.functions.helpers import generate_composio_tool_wrapper, generate_langchain_tool_wrapper
-from letta.functions.schema_generator import generate_schema_from_args_schema_v2
+from letta.functions.helpers import generate_composio_action_from_func_name, generate_composio_tool_wrapper, generate_langchain_tool_wrapper
+from letta.functions.schema_generator import generate_schema_from_args_schema_v2, generate_tool_schema_for_composio
+from letta.log import get_logger
 from letta.orm.enums import ToolType
 from letta.schemas.letta_base import LettaBase
+
+logger = get_logger(__name__)
 
 
 class BaseTool(LettaBase):
@@ -52,14 +55,16 @@ class Tool(BaseTool):
     last_updated_by_id: Optional[str] = Field(None, description="The id of the user that made this Tool.")
 
     @model_validator(mode="after")
-    def populate_missing_fields(self):
+    def refresh_source_code_and_json_schema(self):
         """
-        Populate missing fields: name, description, and json_schema.
+        Refresh name, description, source_code, and json_schema.
         """
         if self.tool_type == ToolType.CUSTOM:
             # If it's a custom tool, we need to ensure source_code is present
             if not self.source_code:
-                raise ValueError(f"Custom tool with id={self.id} is missing source_code field.")
+                error_msg = f"Custom tool with id={self.id} is missing source_code field."
+                logger.error(error_msg)
+                raise ValueError(error_msg)
 
             # Always derive json_schema for freshest possible json_schema
             # TODO: Instead of checking the tag, we should having `COMPOSIO` as a specific ToolType
@@ -72,6 +77,24 @@ class Tool(BaseTool):
         elif self.tool_type in {ToolType.LETTA_MULTI_AGENT_CORE}:
             # If it's letta multi-agent tool, we also generate the json_schema on the fly here
             self.json_schema = get_json_schema_from_module(module_name=LETTA_MULTI_AGENT_TOOL_MODULE_NAME, function_name=self.name)
+        elif self.tool_type == ToolType.EXTERNAL_COMPOSIO:
+            # If it is a composio tool, we generate both the source code and json schema on the fly here
+            # TODO: This is brittle, need to think long term about how to improve this
+            try:
+                composio_action = generate_composio_action_from_func_name(self.name)
+                tool_create = ToolCreate.from_composio(composio_action)
+                self.source_code = tool_create.source_code
+                self.json_schema = tool_create.json_schema
+                self.description = tool_create.description
+                self.tags = tool_create.tags
+            except Exception as e:
+                logger.error(f"Encountered exception while attempting to refresh source_code and json_schema for composio_tool: {e}")
+
+        # At this point, we need to validate that at least json_schema is populated
+        if not self.json_schema:
+            error_msg = f"Tool with id={self.id} name={self.name} tool_type={self.tool_type} is missing a json_schema."
+            logger.error(error_msg)
+            raise ValueError(error_msg)
 
         # Derive name from the JSON schema if not provided
         if not self.name:
@@ -100,7 +123,7 @@ class ToolCreate(LettaBase):
     return_char_limit: int = Field(FUNCTION_RETURN_CHAR_LIMIT, description="The maximum number of characters in the response.")
 
     @classmethod
-    def from_composio(cls, action_name: str, api_key: Optional[str] = None) -> "ToolCreate":
+    def from_composio(cls, action_name: str) -> "ToolCreate":
         """
         Class method to create an instance of Letta-compatible Composio Tool.
         Check https://docs.composio.dev/introduction/intro/overview to look at options for from_composio
@@ -115,24 +138,21 @@ class ToolCreate(LettaBase):
         from composio import LogLevel
         from composio_langchain import ComposioToolSet
 
-        if api_key:
-            # Pass in an external API key
-            composio_toolset = ComposioToolSet(logging_level=LogLevel.ERROR, api_key=api_key)
-        else:
-            # Use environmental variable
-            composio_toolset = ComposioToolSet(logging_level=LogLevel.ERROR)
-        composio_tools = composio_toolset.get_tools(actions=[action_name])
+        composio_toolset = ComposioToolSet(logging_level=LogLevel.ERROR)
+        composio_action_schemas = composio_toolset.get_action_schemas(actions=[action_name], check_connected_accounts=False)
 
-        assert len(composio_tools) > 0, "User supplied parameters do not match any Composio tools"
-        assert len(composio_tools) == 1, f"User supplied parameters match too many Composio tools; {len(composio_tools)} > 1"
+        assert len(composio_action_schemas) > 0, "User supplied parameters do not match any Composio tools"
+        assert (
+            len(composio_action_schemas) == 1
+        ), f"User supplied parameters match too many Composio tools; {len(composio_action_schemas)} > 1"
 
-        composio_tool = composio_tools[0]
+        composio_action_schema = composio_action_schemas[0]
 
-        description = composio_tool.description
+        description = composio_action_schema.description
         source_type = "python"
         tags = [COMPOSIO_TOOL_TAG_NAME]
         wrapper_func_name, wrapper_function_str = generate_composio_tool_wrapper(action_name)
-        json_schema = generate_schema_from_args_schema_v2(composio_tool.args_schema, name=wrapper_func_name, description=description)
+        json_schema = generate_tool_schema_for_composio(composio_action_schema.parameters, name=wrapper_func_name, description=description)
 
         return cls(
             name=wrapper_func_name,
@@ -174,31 +194,6 @@ class ToolCreate(LettaBase):
             source_code=wrapper_function_str,
             json_schema=json_schema,
         )
-
-    @classmethod
-    def load_default_langchain_tools(cls) -> List["ToolCreate"]:
-        # For now, we only support wikipedia tool
-        from langchain_community.tools import WikipediaQueryRun
-        from langchain_community.utilities import WikipediaAPIWrapper
-
-        wikipedia_tool = ToolCreate.from_langchain(
-            WikipediaQueryRun(api_wrapper=WikipediaAPIWrapper()), {"langchain_community.utilities": "WikipediaAPIWrapper"}
-        )
-
-        return [wikipedia_tool]
-
-    @classmethod
-    def load_default_composio_tools(cls) -> List["ToolCreate"]:
-        pass
-
-        # TODO: Disable composio tools for now
-        # TODO: Naming is causing issues
-        # calculator = ToolCreate.from_composio(action_name=Action.MATHEMATICAL_CALCULATOR.name)
-        # serp_news = ToolCreate.from_composio(action_name=Action.SERPAPI_NEWS_SEARCH.name)
-        # serp_google_search = ToolCreate.from_composio(action_name=Action.SERPAPI_SEARCH.name)
-        # serp_google_maps = ToolCreate.from_composio(action_name=Action.SERPAPI_GOOGLE_MAPS_SEARCH.name)
-
-        return []
 
 
 class ToolUpdate(LettaBase):

@@ -136,7 +136,7 @@ def _openai_payload(model: str, schema: dict, structured_output: bool):
         "parallel_tool_calls": False,
     }
 
-    print("Request:\n", json.dumps(data, indent=2))
+    print("Request:\n", json.dumps(data, indent=2), "\n\n")
 
     try:
         make_post_request(url, headers, data)
@@ -187,28 +187,21 @@ def test_composio_tool_schema_generation(openai_model: str, structured_output: b
     if not os.getenv("COMPOSIO_API_KEY"):
         pytest.skip("COMPOSIO_API_KEY not set")
 
-    try:
-        import composio
-    except ImportError:
-        pytest.skip("Composio not installed")
-
     for action_name in [
+        "GITHUB_STAR_A_REPOSITORY_FOR_THE_AUTHENTICATED_USER",  # Simple
         "CAL_GET_AVAILABLE_SLOTS_INFO",  # has an array arg, needs to be converted properly
+        "SALESFORCE_RETRIEVE_LEAD_DETAILS_BY_ID_WITH_CONDITIONAL_SUPPORT",  # has an array arg, needs to be converted properly
     ]:
-        try:
-            tool_create = ToolCreate.from_composio(action_name=action_name)
-        except composio.exceptions.ComposioSDKError:
-            # e.g. "composio.exceptions.ComposioSDKError: No connected account found for app `CAL`; Run `composio add cal` to fix this"
-            pytest.skip(f"Composio account not configured to use action_name {action_name}")
-
-        print(tool_create)
+        tool_create = ToolCreate.from_composio(action_name=action_name)
 
         assert tool_create.json_schema
         schema = tool_create.json_schema
+        print(f"The schema for {action_name}: {json.dumps(schema, indent=4)}\n\n")
 
         try:
             _openai_payload(openai_model, schema, structured_output)
-            print(f"Successfully called OpenAI using schema {schema} generated from {action_name}")
+            print(f"Successfully called OpenAI using schema {schema} generated from {action_name}\n\n")
         except:
-            print(f"Failed to call OpenAI using schema {schema} generated from {action_name}")
+            print(f"Failed to call OpenAI using schema {schema} generated from {action_name}\n\n")
+
             raise

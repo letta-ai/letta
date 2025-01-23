@@ -2,6 +2,7 @@ import inspect
 import warnings
 from typing import Any, Dict, List, Optional, Type, Union, get_args, get_origin
 
+from composio.client.collections import ActionParametersModel
 from docstring_parser import parse
 from pydantic import BaseModel
 
@@ -429,3 +430,57 @@ def generate_schema_from_args_schema_v2(
         function_call_json["parameters"]["required"].append("request_heartbeat")
 
     return function_call_json
+
+
+def generate_tool_schema_for_composio(
+    parameters_model: ActionParametersModel,
+    name: str,
+    description: str,
+    append_heartbeat: bool = True,
+) -> Dict[str, Any]:
+    properties_json = {}
+    required_fields = parameters_model.required or []
+
+    # Extract properties from the ActionParametersModel
+    for field_name, field_props in parameters_model.properties.items():
+        # Initialize the property structure
+        property_schema = {
+            "type": field_props["type"],
+            "description": field_props.get("description", ""),
+        }
+
+        # Handle optional default values
+        if "default" in field_props:
+            property_schema["default"] = field_props["default"]
+
+        # Handle enumerations
+        if "enum" in field_props:
+            property_schema["enum"] = field_props["enum"]
+
+        # Handle array item types
+        if field_props["type"] == "array" and "items" in field_props:
+            property_schema["items"] = field_props["items"]
+
+        # Add the property to the schema
+        properties_json[field_name] = property_schema
+
+    # Add the optional heartbeat parameter
+    if append_heartbeat:
+        properties_json["request_heartbeat"] = {
+            "type": "boolean",
+            "description": "Request an immediate heartbeat after function execution. Set to `True` if you want to send a follow-up message or run a follow-up function.",
+        }
+        required_fields.append("request_heartbeat")
+
+    # Return the final schema
+    return {
+        "name": name,
+        "description": description,
+        "strict": True,
+        "parameters": {
+            "type": "object",
+            "properties": properties_json,
+            "additionalProperties": False,
+            "required": required_fields,
+        },
+    }
