@@ -1,5 +1,6 @@
 # inspecting tools
 import asyncio
+import json
 import os
 import traceback
 import warnings
@@ -1053,6 +1054,8 @@ class SyncServer(Server):
                 llm_models.extend(provider.list_llm_models())
             except Exception as e:
                 warnings.warn(f"An error occurred while listing LLM models for provider {provider}: {e}")
+
+        llm_models.extend(self.get_local_llm_configs())
         return llm_models
 
     def list_embedding_models(self) -> List[EmbeddingConfig]:
@@ -1072,20 +1075,26 @@ class SyncServer(Server):
         return {**providers_from_env, **providers_from_db}.values()
 
     def get_llm_config_from_handle(self, handle: str, context_window_limit: Optional[int] = None) -> LLMConfig:
-        provider_name, model_name = handle.split("/", 1)
-        provider = self.get_provider_from_name(provider_name)
+        try:
+            provider_name, model_name = handle.split("/", 1)
+            provider = self.get_provider_from_name(provider_name)
 
-        llm_configs = [config for config in provider.list_llm_models() if config.handle == handle]
-        if len(llm_configs) == 1:
-            llm_config = llm_configs[0]
-        else:
-            llm_configs = [config for config in provider.list_llm_models() if config.model == model_name]
+            llm_configs = [config for config in provider.list_llm_models() if config.handle == handle]
+            if not llm_configs:
+                llm_configs = [config for config in provider.list_llm_models() if config.model == model_name]
             if not llm_configs:
                 raise ValueError(f"LLM model {model_name} is not supported by {provider_name}")
-            elif len(llm_configs) > 1:
-                raise ValueError(f"Multiple LLM models with name {model_name} supported by {provider_name}")
-            else:
-                llm_config = llm_configs[0]
+        except ValueError as e:
+            llm_configs = [config for config in self.get_local_llm_configs() if config.handle == handle]
+            if not llm_configs:
+                raise e
+
+        if len(llm_configs) == 1:
+            llm_config = llm_configs[0]
+        elif len(llm_configs) > 1:
+            raise ValueError(f"Multiple LLM models with name {model_name} supported by {provider_name}")
+        else:
+            llm_config = llm_configs[0]
 
         if context_window_limit:
             if context_window_limit > llm_config.context_window:
@@ -1127,6 +1136,25 @@ class SyncServer(Server):
             provider = providers[0]
 
         return provider
+
+    def get_local_llm_configs(self):
+        llm_models = []
+        try:
+            llm_configs_dir = os.path.expanduser("~/.letta/llm_configs")
+            if os.path.exists(llm_configs_dir):
+                for filename in os.listdir(llm_configs_dir):
+                    if filename.endswith(".json"):
+                        filepath = os.path.join(llm_configs_dir, filename)
+                        try:
+                            with open(filepath, "r") as f:
+                                config_data = json.load(f)
+                                llm_config = LLMConfig(**config_data)
+                                llm_models.append(llm_config)
+                        except (json.JSONDecodeError, ValueError) as e:
+                            warnings.warn(f"Error parsing LLM config file {filename}: {e}")
+        except Exception as e:
+            warnings.warn(f"Error reading LLM configs directory: {e}")
+        return llm_models
 
     def add_llm_model(self, request: LLMConfig) -> LLMConfig:
         """Add a new LLM model"""
