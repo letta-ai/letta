@@ -179,7 +179,6 @@ def test_agent_tags(client):
     all_agents = client.agents.list()
     for agent in all_agents:
         client.agents.delete(agent.id)
-
     # Create multiple agents with different tags
     agent1 = client.agents.create(
         memory_blocks=[

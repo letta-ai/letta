@@ -17,7 +17,7 @@ letta = "letta.main:app"
 
 [tool.poetry.dependencies]
 python = "<3.14,>=3.10"
-typer = {extras = ["all"], version = "^0.9.0"}
+typer = ">=0.12,<1.0"
 questionary = "^2.0.1"
 pytz = "^2023.3.post1"
 tqdm = "^4.66.1"
@@ -79,6 +79,8 @@ llama-index-embeddings-openai = "^0.3.1"
 e2b-code-interpreter = {version = "^1.0.3", optional = true}
 anthropic = "^0.43.0"
 letta_client = "^0.1.16"
+colorama = "^0.4.6"
+
 
 
 [tool.poetry.extras]
