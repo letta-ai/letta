@@ -1047,7 +1047,6 @@ class SyncServer(Server):
 
     def list_llm_models(self) -> List[LLMConfig]:
         """List available models"""
-
         llm_models = []
         for provider in self.get_enabled_providers():
             try:
@@ -1076,13 +1075,17 @@ class SyncServer(Server):
         provider_name, model_name = handle.split("/", 1)
         provider = self.get_provider_from_name(provider_name)
 
-        llm_configs = [config for config in provider.list_llm_models() if config.model == model_name]
-        if not llm_configs:
-            raise ValueError(f"LLM model {model_name} is not supported by {provider_name}")
-        elif len(llm_configs) > 1:
-            raise ValueError(f"Multiple LLM models with name {model_name} supported by {provider_name}")
-        else:
+        llm_configs = [config for config in provider.list_llm_models() if config.handle == handle]
+        if len(llm_configs) == 1:
             llm_config = llm_configs[0]
+        else:
+            llm_configs = [config for config in provider.list_llm_models() if config.model == model_name]
+            if not llm_configs:
+                raise ValueError(f"LLM model {model_name} is not supported by {provider_name}")
+            elif len(llm_configs) > 1:
+                raise ValueError(f"Multiple LLM models with name {model_name} supported by {provider_name}")
+            else:
+                llm_config = llm_configs[0]
 
         if context_window_limit:
             if context_window_limit > llm_config.context_window:
@@ -1097,13 +1100,17 @@ class SyncServer(Server):
         provider_name, model_name = handle.split("/", 1)
         provider = self.get_provider_from_name(provider_name)
 
-        embedding_configs = [config for config in provider.list_embedding_models() if config.embedding_model == model_name]
-        if not embedding_configs:
-            raise ValueError(f"Embedding model {model_name} is not supported by {provider_name}")
-        elif len(embedding_configs) > 1:
-            raise ValueError(f"Multiple embedding models with name {model_name} supported by {provider_name}")
-        else:
+        embedding_configs = [config for config in provider.list_embedding_models() if config.handle == handle]
+        if len(embedding_configs) == 1:
             embedding_config = embedding_configs[0]
+        else:
+            embedding_configs = [config for config in provider.list_embedding_models() if config.embedding_model == model_name]
+            if not embedding_configs:
+                raise ValueError(f"Embedding model {model_name} is not supported by {provider_name}")
+            elif len(embedding_configs) > 1:
+                raise ValueError(f"Multiple embedding models with name {model_name} supported by {provider_name}")
+            else:
+                embedding_config = embedding_configs[0]
 
         if embedding_chunk_size:
             embedding_config.embedding_chunk_size = embedding_chunk_size
