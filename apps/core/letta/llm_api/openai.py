@@ -125,7 +125,8 @@ def build_openai_chat_completions_request(
             tools=[Tool(type="function", function=f) for f in functions] if functions else None,
             tool_choice=tool_choice,
             user=str(user_id),
-            max_tokens=max_tokens,
+            max_completion_tokens=max_tokens,
+            temperature=llm_config.temperature,
         )
     else:
         data = ChatCompletionRequest(
@@ -134,7 +135,8 @@ def build_openai_chat_completions_request(
             functions=functions,
             function_call=function_call,
             user=str(user_id),
-            max_tokens=max_tokens,
+            max_completion_tokens=max_tokens,
+            temperature=llm_config.temperature,
         )
         # https://platform.openai.com/docs/guides/text-generation/json-mode
         # only supported by gpt-4o, gpt-4-turbo, or gpt-3.5-turbo

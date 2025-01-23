@@ -6267,12 +6267,18 @@
             ],
             "title": "Handle",
             "description": "The handle for this config, in the format provider/model-name."
+          },
+          "temperature": {
+            "type": "number",
+            "title": "Temperature",
+            "description": "The temperature to use when generating text with the model. A higher temperature will result in more random text.",
+            "default": 0.7
           }
         },
         "type": "object",
         "required": ["model", "model_endpoint_type", "context_window"],
         "title": "LLMConfig",
-        "description": "Configuration for a Language Model (LLM) model. This object specifies all the information necessary to access an LLM model to usage with Letta, except for secret keys.\n\nAttributes:\n    model (str): The name of the LLM model.\n    model_endpoint_type (str): The endpoint type for the model.\n    model_endpoint (str): The endpoint for the model.\n    model_wrapper (str): The wrapper for the model. This is used to wrap additional text around the input/output of the model. This is useful for text-to-text completions, such as the Completions API in OpenAI.\n    context_window (int): The context window size for the model.\n    put_inner_thoughts_in_kwargs (bool): Puts `inner_thoughts` as a kwarg in the function call if this is set to True. This helps with function calling performance and also the generation of inner thoughts."
+        "description": "Configuration for a Language Model (LLM) model. This object specifies all the information necessary to access an LLM model to usage with Letta, except for secret keys.\n\nAttributes:\n    model (str): The name of the LLM model.\n    model_endpoint_type (str): The endpoint type for the model.\n    model_endpoint (str): The endpoint for the model.\n    model_wrapper (str): The wrapper for the model. This is used to wrap additional text around the input/output of the model. This is useful for text-to-text completions, such as the Completions API in OpenAI.\n    context_window (int): The context window size for the model.\n    put_inner_thoughts_in_kwargs (bool): Puts `inner_thoughts` as a kwarg in the function call if this is set to True. This helps with function calling performance and also the generation of inner thoughts.\n    temperature (float): The temperature to use when generating text with the model. A higher temperature will result in more random text."
       },
       "LettaRequest": {
         "properties": {

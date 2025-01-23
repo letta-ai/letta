@@ -237,6 +237,7 @@ def create(
             data=dict(
                 contents=[m.to_google_ai_dict() for m in messages],
                 tools=tools,
+                generation_config={"temperature": llm_config.temperature},
             ),
             inner_thoughts_in_kwargs=llm_config.put_inner_thoughts_in_kwargs,
         )
@@ -261,6 +262,7 @@ def create(
                 # user=str(user_id),
                 # NOTE: max_tokens is required for Anthropic API
                 max_tokens=1024,  # TODO make dynamic
+                temperature=llm_config.temperature,
             ),
         )
 
