@@ -456,6 +456,15 @@
       "success": "Simulation has been flushed",
       "error": "There was an error flushing the simulation, please try again or contact support."
     },
+    "AgentResetMessagesDialog": {
+      "title": "Reset Message History",
+      "addDefaultInitialMessages": "Add default initial messages to starting state?",
+      "trigger": "Reset Message History",
+      "description": "Are you sure you want to reset the messages? This will clear all messages for your current agent. It will not affect the agent's memory or state.",
+      "confirm": "Reset",
+      "success": "Messages have been reset",
+      "error": "There was an error resetting the messages, please try again or contact support."
+    },
     "AgentSimulatorOptionsMenu": {
       "trigger": "Options",
       "options": {

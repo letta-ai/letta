@@ -17,6 +17,10 @@ import {
   VariableIcon,
   WarningIcon,
   FlushIcon,
+  useForm,
+  FormProvider,
+  FormField,
+  Checkbox,
 } from '@letta-cloud/component-library';
 import type { ChatInputRef } from '@letta-cloud/component-library';
 import { PanelBar } from '@letta-cloud/component-library';
@@ -26,6 +30,8 @@ import type { Dispatch, SetStateAction } from 'react';
 import { useMemo } from 'react';
 import React, { useCallback, useRef, useState } from 'react';
 import type { AgentMessage, AgentState } from '@letta-cloud/letta-agents-api';
+
+import { useAgentsServiceResetMessages } from '@letta-cloud/letta-agents-api';
 import { isAgentState } from '@letta-cloud/letta-agents-api';
 import { ErrorMessageSchema } from '@letta-cloud/letta-agents-api';
 import { useLettaAgentsAPI } from '@letta-cloud/letta-agents-api';
@@ -40,7 +46,7 @@ import { useCurrentAgent } from '../../hooks';
 import { EventSource } from 'extended-eventsource';
 import { useQueryClient } from '@tanstack/react-query';
 import { get } from 'lodash-es';
-import type { z } from 'zod';
+import { z } from 'zod';
 import { useTranslations } from '@letta-cloud/translations';
 import { useDebouncedCallback, useLocalStorage } from '@mantine/hooks';
 import { webApi, webApiQueryKeys } from '@letta-cloud/web-api-client';
@@ -61,6 +67,7 @@ import { Messages } from '../Messages/Messages';
 import type { MessagesDisplayMode } from '../Messages/Messages';
 import { useCurrentAPIHostConfig } from '@letta-cloud/helpful-client-utils';
 import { AgentVariablesModal } from './AgentVariablesModal/AgentVariablesModal';
+import { zodResolver } from '@hookform/resolvers/zod';
 
 const isSendingMessageAtom = atom(false);
 
@@ -429,6 +436,101 @@ function FlushSimulationSessionDialog() {
   );
 }
 
+const AgentResetMessagesSchema = z.object({
+  addDefaultInitialMessages: z.boolean(),
+});
+
+type AgentResetMessagesPayload = z.infer<typeof AgentResetMessagesSchema>;
+
+function AgentResetMessagesDialog() {
+  const [isOpen, setIsOpen] = useState(false);
+  const t = useTranslations('ADE/AgentSimulator');
+
+  const form = useForm<AgentResetMessagesPayload>({
+    resolver: zodResolver(AgentResetMessagesSchema),
+    defaultValues: {
+      addDefaultInitialMessages: true,
+    },
+  });
+
+  const { id: agentId } = useCurrentSimulatedAgent();
+
+  const queryClient = useQueryClient();
+  const {
+    mutate: resetMessages,
+    isPending,
+    reset,
+  } = useAgentsServiceResetMessages({
+    onSuccess: () => {
+      toast.success(t('AgentResetMessagesDialog.success'));
+      setIsOpen(false);
+      form.reset();
+      reset();
+    },
+    onError: () => {
+      toast.error(t('AgentResetMessagesDialog.error'));
+    },
+  });
+
+  const setMessagesInFlightCache = useSetAtom(messagesInFlightCacheAtom);
+
+  const handleResetMessages = useCallback(
+    (values: AgentResetMessagesPayload) => {
+      resetMessages(
+        {
+          agentId,
+          addDefaultInitialMessages: values.addDefaultInitialMessages,
+        },
+        {
+          onSuccess: () => {
+            setIsOpen(false);
+
+            setMessagesInFlightCache({});
+            void queryClient.refetchQueries({
+              queryKey: UseAgentsServiceListMessagesKeyFn({ agentId }),
+            });
+          },
+        },
+      );
+    },
+    [agentId, resetMessages, queryClient, setMessagesInFlightCache],
+  );
+
+  return (
+    <FormProvider {...form}>
+      <Dialog
+        isConfirmBusy={isPending}
+        isOpen={isOpen}
+        trigger={
+          <DropdownMenuItem
+            doNotCloseOnSelect
+            label={t('AgentResetMessagesDialog.trigger')}
+          />
+        }
+        title={t('AgentResetMessagesDialog.title')}
+        confirmText={t('AgentResetMessagesDialog.confirm')}
+        onSubmit={form.handleSubmit(handleResetMessages)}
+        onOpenChange={setIsOpen}
+      >
+        <Typography>{t('AgentResetMessagesDialog.description')}</Typography>
+        <HStack padding="small" paddingBottom="xxsmall" border fullWidth>
+          <FormField
+            name="addDefaultInitialMessages"
+            render={({ field }) => (
+              <Checkbox
+                labelVariant="simple"
+                label={t('AgentResetMessagesDialog.addDefaultInitialMessages')}
+                onCheckedChange={field.onChange}
+                checked={field.value}
+              />
+            )}
+          />
+        </HStack>
+      </Dialog>
+    </FormProvider>
+  );
+}
+
 function AgentFlushButton() {
   const { isTemplate } = useCurrentAgentMetaData();
   const { agentSession } = useCurrentSimulatedAgent();
@@ -493,6 +595,7 @@ function AgentSimulatorOptionsMenu() {
           onClick={handlePrintDebug}
           label={t('AgentSimulatorOptionsMenu.options.printDebug.title')}
         />
+        <AgentResetMessagesDialog />
       </DropdownMenu>
     </>
   );
