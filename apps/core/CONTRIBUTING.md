@@ -19,18 +19,46 @@ Now, let's bring your new playground to your local machine.
 git clone https://github.com/your-username/letta.git
 ```
 
-### 🧩 Install Dependencies
+### 🧩 Install dependencies & configure environment
+
+#### Install poetry and dependencies
 
 First, install Poetry using [the official instructions here](https://python-poetry.org/docs/#installation).
 
-Once Poetry is installed, navigate to the Letta directory and install the Letta project with Poetry:
+Once Poetry is installed, navigate to the letta directory and install the Letta project with Poetry:
 ```shell
-cd Letta
+cd letta
 poetry shell
 poetry install --all-extras
 ```
+#### Setup PostgreSQL environment (optional)
+
+If you are planning to develop letta connected to PostgreSQL database, you need to take the following actions.
+If you are not planning to use PostgreSQL database, you can skip to the step which talks about [running letta](#running-letta-with-poetry).
+
+Assuming you have a running PostgreSQL instance, first you need to create the user, database and ensure the pgvector
+extension is ready. Here are sample steps for a case where user and database name is letta and assumes no password is set:
+
+```shell
+createuser letta
+createdb letta --owner=letta
+psql -d letta -c 'CREATE EXTENSION IF NOT EXISTS vector'
+```
+Setup the environment variable to tell letta code to contact PostgreSQL database:
+```shell
+export LETTA_PG_URI="postgresql://${POSTGRES_USER:-letta}:${POSTGRES_PASSWORD:-letta}@localhost:5432/${POSTGRES_DB:-letta}"
+```
+
+After this you need to prep the database with initial content. You can use alembic upgrade to populate the initial
+contents from template test data. Please ensure to activate poetry environment using `poetry shell`.
+```shell
+alembic upgrade head
+```
+
+#### Running letta with poetry
 
 Now when you want to use `letta`, make sure you first activate the `poetry` environment using poetry shell:
+
 ```shell
 $ poetry shell
 (pyletta-py3.12) $ letta run
