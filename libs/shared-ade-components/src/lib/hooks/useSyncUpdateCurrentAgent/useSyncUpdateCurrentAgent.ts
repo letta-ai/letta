@@ -2,8 +2,8 @@ import { useQueryClient } from '@tanstack/react-query';
 import { useCurrentAgent } from '../useCurrentAgent/useCurrentAgent';
 import type { AgentState } from '@letta-cloud/letta-agents-api';
 import {
-  UseAgentsServiceGetAgentKeyFn,
-  useAgentsServiceUpdateAgent,
+  UseAgentsServiceRetrieveAgentKeyFn,
+  useAgentsServiceModifyAgent,
 } from '@letta-cloud/letta-agents-api';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
@@ -16,13 +16,13 @@ export function useSyncUpdateCurrentAgent() {
   const [isUpdating, setIsUpdating] = useState<boolean>(false);
   const [isDebouncing, setIsDebouncing] = useState<boolean>(false);
 
-  const { mutate: updateAgent } = useAgentsServiceUpdateAgent();
+  const { mutate: updateAgent } = useAgentsServiceModifyAgent();
 
   const syncUpdateCurrentAgent = useCallback(
     (updater: (oldData: AgentState) => Partial<AgentState>) => {
       queryClient.setQueriesData<AgentState | undefined>(
         {
-          queryKey: UseAgentsServiceGetAgentKeyFn({
+          queryKey: UseAgentsServiceRetrieveAgentKeyFn({
             agentId: currentAgent.id,
           }),
         },

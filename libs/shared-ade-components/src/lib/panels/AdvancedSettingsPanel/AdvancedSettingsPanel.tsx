@@ -26,8 +26,8 @@ import {
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   type AgentState,
-  UseAgentsServiceGetAgentKeyFn,
-  useAgentsServiceUpdateAgent,
+  UseAgentsServiceRetrieveAgentKeyFn,
+  useAgentsServiceModifyAgent,
   useModelsServiceListEmbeddingModels,
   useModelsServiceListModels,
 } from '@letta-cloud/letta-agents-api';
@@ -144,7 +144,7 @@ function AgentTags() {
     }));
   }, [currentTags]);
 
-  const { mutate, isPending } = useAgentsServiceUpdateAgent();
+  const { mutate, isPending } = useAgentsServiceModifyAgent();
 
   const debouncedMutation = useDebouncedCallback(mutate, 500);
 
@@ -159,7 +159,7 @@ function AgentTags() {
 
       queryClient.setQueriesData<AgentState | undefined>(
         {
-          queryKey: UseAgentsServiceGetAgentKeyFn({
+          queryKey: UseAgentsServiceRetrieveAgentKeyFn({
             agentId,
           }),
         },

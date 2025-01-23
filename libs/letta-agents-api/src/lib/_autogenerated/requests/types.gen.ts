@@ -2445,20 +2445,20 @@ export type DeleteToolData = {
 
 export type DeleteToolResponse = unknown;
 
-export type GetToolData = {
+export type RetrieveToolData = {
   toolId: string;
   userId?: string | null;
 };
 
-export type GetToolResponse = letta__schemas__tool__Tool;
+export type RetrieveToolResponse = letta__schemas__tool__Tool;
 
-export type UpdateToolData = {
+export type ModifyToolData = {
   requestBody: ToolUpdate;
   toolId: string;
   userId?: string | null;
 };
 
-export type UpdateToolResponse = letta__schemas__tool__Tool;
+export type ModifyToolResponse = letta__schemas__tool__Tool;
 
 export type ListToolsData = {
   cursor?: string | null;
@@ -2515,20 +2515,20 @@ export type AddComposioToolData = {
 
 export type AddComposioToolResponse = letta__schemas__tool__Tool;
 
-export type GetSourceData = {
+export type RetrieveSourceData = {
   sourceId: string;
   userId?: string | null;
 };
 
-export type GetSourceResponse = Source;
+export type RetrieveSourceResponse = Source;
 
-export type UpdateSourceData = {
+export type ModifySourceData = {
   requestBody: SourceUpdate;
   sourceId: string;
   userId?: string | null;
 };
 
-export type UpdateSourceResponse = Source;
+export type ModifySourceResponse = Source;
 
 export type DeleteSourceData = {
   sourceId: string;
@@ -2572,7 +2572,7 @@ export type ListSourcePassagesData = {
 
 export type ListSourcePassagesResponse = Array<Passage>;
 
-export type ListFilesFromSourceData = {
+export type ListSourceFilesData = {
   /**
    * Pagination cursor to fetch the next set of results
    */
@@ -2585,7 +2585,7 @@ export type ListFilesFromSourceData = {
   userId?: string | null;
 };
 
-export type ListFilesFromSourceResponse = Array<FileMetadata>;
+export type ListSourceFilesResponse = Array<FileMetadata>;
 
 export type DeleteFileFromSourceData = {
   fileId: string;
@@ -2632,27 +2632,27 @@ export type CreateAgentData = {
 
 export type CreateAgentResponse = AgentState;
 
-export type GetAgentContextWindowData = {
+export type RetrieveAgentContextWindowData = {
   agentId: string;
   userId?: string | null;
 };
 
-export type GetAgentContextWindowResponse = ContextWindowOverview;
+export type RetrieveAgentContextWindowResponse = ContextWindowOverview;
 
-export type UpdateAgentData = {
+export type ModifyAgentData = {
   agentId: string;
   requestBody: UpdateAgent;
   userId?: string | null;
 };
 
-export type UpdateAgentResponse = AgentState;
+export type ModifyAgentResponse = AgentState;
 
-export type GetAgentData = {
+export type RetrieveAgentData = {
   agentId: string;
   userId?: string | null;
 };
 
-export type GetAgentResponse = AgentState;
+export type RetrieveAgentResponse = AgentState;
 
 export type DeleteAgentData = {
   agentId: string;
@@ -2661,28 +2661,28 @@ export type DeleteAgentData = {
 
 export type DeleteAgentResponse = unknown;
 
-export type GetToolsFromAgentData = {
+export type ListAgentToolsData = {
   agentId: string;
   userId?: string | null;
 };
 
-export type GetToolsFromAgentResponse = Array<letta__schemas__tool__Tool>;
+export type ListAgentToolsResponse = Array<letta__schemas__tool__Tool>;
 
-export type AttachToolToAgentData = {
-  agentId: string;
-  toolId: string;
-  userId?: string | null;
-};
-
-export type AttachToolToAgentResponse = AgentState;
-
-export type DetachToolFromAgentData = {
+export type AttachToolData = {
   agentId: string;
   toolId: string;
   userId?: string | null;
 };
 
-export type DetachToolFromAgentResponse = AgentState;
+export type AttachToolResponse = AgentState;
+
+export type DetachToolData = {
+  agentId: string;
+  toolId: string;
+  userId?: string | null;
+};
+
+export type DetachToolResponse = AgentState;
 
 export type AttachSourceToAgentData = {
   agentId: string;
@@ -2700,61 +2700,61 @@ export type DetachSourceFromAgentData = {
 
 export type DetachSourceFromAgentResponse = AgentState;
 
-export type GetAgentSourcesData = {
+export type ListAgentSourcesData = {
   agentId: string;
   userId?: string | null;
 };
 
-export type GetAgentSourcesResponse = Array<Source>;
+export type ListAgentSourcesResponse = Array<Source>;
 
-export type GetAgentMemoryData = {
+export type RetrieveAgentMemoryData = {
   agentId: string;
   userId?: string | null;
 };
 
-export type GetAgentMemoryResponse = Memory;
+export type RetrieveAgentMemoryResponse = Memory;
 
-export type GetAgentMemoryBlockData = {
+export type RetrieveCoreMemoryBlockData = {
   agentId: string;
   blockLabel: string;
   userId?: string | null;
 };
 
-export type GetAgentMemoryBlockResponse = Block;
+export type RetrieveCoreMemoryBlockResponse = Block;
 
-export type UpdateAgentMemoryBlockByLabelData = {
+export type ModifyCoreMemoryBlockData = {
   agentId: string;
   blockLabel: string;
   requestBody: BlockUpdate;
   userId?: string | null;
 };
 
-export type UpdateAgentMemoryBlockByLabelResponse = Block;
+export type ModifyCoreMemoryBlockResponse = Block;
 
-export type ListAgentMemoryBlocksData = {
+export type ListCoreMemoryBlocksData = {
   agentId: string;
   userId?: string | null;
 };
 
-export type ListAgentMemoryBlocksResponse = Array<Block>;
+export type ListCoreMemoryBlocksResponse = Array<Block>;
 
-export type AttachBlockToAgentData = {
-  agentId: string;
-  blockId: string;
-  userId?: string | null;
-};
-
-export type AttachBlockToAgentResponse = AgentState;
-
-export type DetachBlockFromAgentData = {
+export type AttachCoreMemoryBlockData = {
   agentId: string;
   blockId: string;
   userId?: string | null;
 };
 
-export type DetachBlockFromAgentResponse = AgentState;
+export type AttachCoreMemoryBlockResponse = AgentState;
 
-export type ListAgentArchivalMemoryData = {
+export type DetachCoreMemoryBlockData = {
+  agentId: string;
+  blockId: string;
+  userId?: string | null;
+};
+
+export type DetachCoreMemoryBlockResponse = AgentState;
+
+export type ListArchivalMemoryData = {
   /**
    * Unique ID of the memory to start the query range at.
    */
@@ -2771,25 +2771,25 @@ export type ListAgentArchivalMemoryData = {
   userId?: string | null;
 };
 
-export type ListAgentArchivalMemoryResponse = Array<Passage>;
+export type ListArchivalMemoryResponse = Array<Passage>;
 
-export type CreateAgentArchivalMemoryData = {
+export type CreateArchivalMemoryData = {
   agentId: string;
   requestBody: CreateArchivalMemory;
   userId?: string | null;
 };
 
-export type CreateAgentArchivalMemoryResponse = Array<Passage>;
+export type CreateArchivalMemoryResponse = Array<Passage>;
 
-export type DeleteAgentArchivalMemoryData = {
+export type DeleteArchivalMemoryData = {
   agentId: string;
   memoryId: string;
   userId?: string | null;
 };
 
-export type DeleteAgentArchivalMemoryResponse = unknown;
+export type DeleteArchivalMemoryResponse = unknown;
 
-export type ListAgentMessagesData = {
+export type ListMessagesData = {
   agentId: string;
   /**
    * The name of the message argument in the designated message tool.
@@ -2814,26 +2814,26 @@ export type ListAgentMessagesData = {
   userId?: string | null;
 };
 
-export type ListAgentMessagesResponse =
+export type ListMessagesResponse =
   | Array<letta__schemas__message__Message>
   | Array<LettaMessageUnion>;
 
-export type CreateAgentMessageData = {
+export type SendMessageData = {
   agentId: string;
   requestBody: LettaRequest;
   userId?: string | null;
 };
 
-export type CreateAgentMessageResponse = LettaResponse;
+export type SendMessageResponse = LettaResponse;
 
-export type UpdateAgentMessageData = {
+export type ModifyMessageData = {
   agentId: string;
   messageId: string;
   requestBody: MessageUpdate;
   userId?: string | null;
 };
 
-export type UpdateAgentMessageResponse = letta__schemas__message__Message;
+export type ModifyMessageResponse = letta__schemas__message__Message;
 
 export type CreateAgentMessageStreamData = {
   agentId: string;
@@ -2866,7 +2866,7 @@ export type ListModelsResponse = Array<LLMConfig>;
 
 export type ListEmbeddingModelsResponse = Array<EmbeddingConfig>;
 
-export type ListMemoryBlocksData = {
+export type ListBlocksData = {
   /**
    * Labels to include (e.g. human, persona)
    */
@@ -2882,36 +2882,36 @@ export type ListMemoryBlocksData = {
   userId?: string | null;
 };
 
-export type ListMemoryBlocksResponse = Array<Block>;
+export type ListBlocksResponse = Array<Block>;
 
-export type CreateMemoryBlockData = {
+export type CreateBlockData = {
   requestBody: CreateBlock;
   userId?: string | null;
 };
 
-export type CreateMemoryBlockResponse = Block;
+export type CreateBlockResponse = Block;
 
-export type UpdateMemoryBlockData = {
+export type ModifyBlockData = {
   blockId: string;
   requestBody: BlockUpdate;
   userId?: string | null;
 };
 
-export type UpdateMemoryBlockResponse = Block;
+export type ModifyBlockResponse = Block;
 
-export type DeleteMemoryBlockData = {
+export type DeleteBlockData = {
   blockId: string;
   userId?: string | null;
 };
 
-export type DeleteMemoryBlockResponse = Block;
+export type DeleteBlockResponse = Block;
 
-export type GetMemoryBlockData = {
+export type RetrieveBlockData = {
   blockId: string;
   userId?: string | null;
 };
 
-export type GetMemoryBlockResponse = Block;
+export type RetrieveBlockResponse = Block;
 
 export type ListJobsData = {
   /**
@@ -2929,12 +2929,12 @@ export type ListActiveJobsData = {
 
 export type ListActiveJobsResponse = Array<Job>;
 
-export type GetJobData = {
+export type RetrieveJobData = {
   jobId: string;
   userId?: string | null;
 };
 
-export type GetJobResponse = Job;
+export type RetrieveJobResponse = Job;
 
 export type DeleteJobData = {
   jobId: string;
@@ -3062,11 +3062,11 @@ export type CreateProviderData = {
 
 export type CreateProviderResponse = Provider;
 
-export type UpdateProviderData = {
+export type ModifyProviderData = {
   requestBody: ProviderUpdate;
 };
 
-export type UpdateProviderResponse = Provider;
+export type ModifyProviderResponse = Provider;
 
 export type DeleteProviderData = {
   /**
@@ -3089,12 +3089,12 @@ export type ListActiveRunsData = {
 
 export type ListActiveRunsResponse = Array<Run>;
 
-export type GetRunData = {
+export type RetrieveRunData = {
   runId: string;
   userId?: string | null;
 };
 
-export type GetRunResponse = Run;
+export type RetrieveRunResponse = Run;
 
 export type DeleteRunData = {
   runId: string;
@@ -3103,7 +3103,7 @@ export type DeleteRunData = {
 
 export type DeleteRunResponse = Run;
 
-export type GetRunMessagesData = {
+export type ListRunMessagesData = {
   /**
    * Sort order by creation time
    */
@@ -3124,14 +3124,14 @@ export type GetRunMessagesData = {
   userId?: string | null;
 };
 
-export type GetRunMessagesResponse = Array<LettaMessageUnion>;
+export type ListRunMessagesResponse = Array<LettaMessageUnion>;
 
-export type GetRunUsageData = {
+export type RetrieveRunUsageData = {
   runId: string;
   userId?: string | null;
 };
 
-export type GetRunUsageResponse = UsageStatistics;
+export type RetrieveRunUsageResponse = UsageStatistics;
 
 export type ListTagsData = {
   cursor?: string | null;
@@ -3214,7 +3214,7 @@ export type $OpenApiTs = {
       };
     };
     get: {
-      req: GetToolData;
+      req: RetrieveToolData;
       res: {
         /**
          * Successful Response
@@ -3227,7 +3227,7 @@ export type $OpenApiTs = {
       };
     };
     patch: {
-      req: UpdateToolData;
+      req: ModifyToolData;
       res: {
         /**
          * Successful Response
@@ -3358,7 +3358,7 @@ export type $OpenApiTs = {
   };
   '/v1/sources/{source_id}': {
     get: {
-      req: GetSourceData;
+      req: RetrieveSourceData;
       res: {
         /**
          * Successful Response
@@ -3371,7 +3371,7 @@ export type $OpenApiTs = {
       };
     };
     patch: {
-      req: UpdateSourceData;
+      req: ModifySourceData;
       res: {
         /**
          * Successful Response
@@ -3472,7 +3472,7 @@ export type $OpenApiTs = {
   };
   '/v1/sources/{source_id}/files': {
     get: {
-      req: ListFilesFromSourceData;
+      req: ListSourceFilesData;
       res: {
         /**
          * Successful Response
@@ -3530,7 +3530,7 @@ export type $OpenApiTs = {
   };
   '/v1/agents/{agent_id}/context': {
     get: {
-      req: GetAgentContextWindowData;
+      req: RetrieveAgentContextWindowData;
       res: {
         /**
          * Successful Response
@@ -3545,7 +3545,7 @@ export type $OpenApiTs = {
   };
   '/v1/agents/{agent_id}': {
     patch: {
-      req: UpdateAgentData;
+      req: ModifyAgentData;
       res: {
         /**
          * Successful Response
@@ -3558,7 +3558,7 @@ export type $OpenApiTs = {
       };
     };
     get: {
-      req: GetAgentData;
+      req: RetrieveAgentData;
       res: {
         /**
          * Successful Response
@@ -3586,7 +3586,7 @@ export type $OpenApiTs = {
   };
   '/v1/agents/{agent_id}/tools': {
     get: {
-      req: GetToolsFromAgentData;
+      req: ListAgentToolsData;
       res: {
         /**
          * Successful Response
@@ -3601,7 +3601,7 @@ export type $OpenApiTs = {
   };
   '/v1/agents/{agent_id}/tools/attach/{tool_id}': {
     patch: {
-      req: AttachToolToAgentData;
+      req: AttachToolData;
       res: {
         /**
          * Successful Response
@@ -3616,7 +3616,7 @@ export type $OpenApiTs = {
   };
   '/v1/agents/{agent_id}/tools/detach/{tool_id}': {
     patch: {
-      req: DetachToolFromAgentData;
+      req: DetachToolData;
       res: {
         /**
          * Successful Response
@@ -3661,7 +3661,7 @@ export type $OpenApiTs = {
   };
   '/v1/agents/{agent_id}/sources': {
     get: {
-      req: GetAgentSourcesData;
+      req: ListAgentSourcesData;
       res: {
         /**
          * Successful Response
@@ -3674,9 +3674,9 @@ export type $OpenApiTs = {
       };
     };
   };
-  '/v1/agents/{agent_id}/core_memory': {
+  '/v1/agents/{agent_id}/core-memory': {
     get: {
-      req: GetAgentMemoryData;
+      req: RetrieveAgentMemoryData;
       res: {
         /**
          * Successful Response
@@ -3689,9 +3689,9 @@ export type $OpenApiTs = {
       };
     };
   };
-  '/v1/agents/{agent_id}/core_memory/blocks/{block_label}': {
+  '/v1/agents/{agent_id}/core-memory/blocks/{block_label}': {
     get: {
-      req: GetAgentMemoryBlockData;
+      req: RetrieveCoreMemoryBlockData;
       res: {
         /**
          * Successful Response
@@ -3704,7 +3704,7 @@ export type $OpenApiTs = {
       };
     };
     patch: {
-      req: UpdateAgentMemoryBlockByLabelData;
+      req: ModifyCoreMemoryBlockData;
       res: {
         /**
          * Successful Response
@@ -3717,9 +3717,9 @@ export type $OpenApiTs = {
       };
     };
   };
-  '/v1/agents/{agent_id}/core_memory/blocks': {
+  '/v1/agents/{agent_id}/core-memory/blocks': {
     get: {
-      req: ListAgentMemoryBlocksData;
+      req: ListCoreMemoryBlocksData;
       res: {
         /**
          * Successful Response
@@ -3732,9 +3732,9 @@ export type $OpenApiTs = {
       };
     };
   };
-  '/v1/agents/{agent_id}/core_memory/blocks/attach/{block_id}': {
+  '/v1/agents/{agent_id}/core-memory/blocks/attach/{block_id}': {
     patch: {
-      req: AttachBlockToAgentData;
+      req: AttachCoreMemoryBlockData;
       res: {
         /**
          * Successful Response
@@ -3747,9 +3747,9 @@ export type $OpenApiTs = {
       };
     };
   };
-  '/v1/agents/{agent_id}/core_memory/blocks/detach/{block_id}': {
+  '/v1/agents/{agent_id}/core-memory/blocks/detach/{block_id}': {
     patch: {
-      req: DetachBlockFromAgentData;
+      req: DetachCoreMemoryBlockData;
       res: {
         /**
          * Successful Response
@@ -3762,9 +3762,9 @@ export type $OpenApiTs = {
       };
     };
   };
-  '/v1/agents/{agent_id}/archival_memory': {
+  '/v1/agents/{agent_id}/archival-memory': {
     get: {
-      req: ListAgentArchivalMemoryData;
+      req: ListArchivalMemoryData;
       res: {
         /**
          * Successful Response
@@ -3777,7 +3777,7 @@ export type $OpenApiTs = {
       };
     };
     post: {
-      req: CreateAgentArchivalMemoryData;
+      req: CreateArchivalMemoryData;
       res: {
         /**
          * Successful Response
@@ -3790,9 +3790,9 @@ export type $OpenApiTs = {
       };
     };
   };
-  '/v1/agents/{agent_id}/archival_memory/{memory_id}': {
+  '/v1/agents/{agent_id}/archival-memory/{memory_id}': {
     delete: {
-      req: DeleteAgentArchivalMemoryData;
+      req: DeleteArchivalMemoryData;
       res: {
         /**
          * Successful Response
@@ -3807,7 +3807,7 @@ export type $OpenApiTs = {
   };
   '/v1/agents/{agent_id}/messages': {
     get: {
-      req: ListAgentMessagesData;
+      req: ListMessagesData;
       res: {
         /**
          * Successful Response
@@ -3820,7 +3820,7 @@ export type $OpenApiTs = {
       };
     };
     post: {
-      req: CreateAgentMessageData;
+      req: SendMessageData;
       res: {
         /**
          * Successful Response
@@ -3835,7 +3835,7 @@ export type $OpenApiTs = {
   };
   '/v1/agents/{agent_id}/messages/{message_id}': {
     patch: {
-      req: UpdateAgentMessageData;
+      req: ModifyMessageData;
       res: {
         /**
          * Successful Response
@@ -3915,7 +3915,7 @@ export type $OpenApiTs = {
   };
   '/v1/blocks/': {
     get: {
-      req: ListMemoryBlocksData;
+      req: ListBlocksData;
       res: {
         /**
          * Successful Response
@@ -3928,7 +3928,7 @@ export type $OpenApiTs = {
       };
     };
     post: {
-      req: CreateMemoryBlockData;
+      req: CreateBlockData;
       res: {
         /**
          * Successful Response
@@ -3943,7 +3943,7 @@ export type $OpenApiTs = {
   };
   '/v1/blocks/{block_id}': {
     patch: {
-      req: UpdateMemoryBlockData;
+      req: ModifyBlockData;
       res: {
         /**
          * Successful Response
@@ -3956,7 +3956,7 @@ export type $OpenApiTs = {
       };
     };
     delete: {
-      req: DeleteMemoryBlockData;
+      req: DeleteBlockData;
       res: {
         /**
          * Successful Response
@@ -3969,7 +3969,7 @@ export type $OpenApiTs = {
       };
     };
     get: {
-      req: GetMemoryBlockData;
+      req: RetrieveBlockData;
       res: {
         /**
          * Successful Response
@@ -4014,7 +4014,7 @@ export type $OpenApiTs = {
   };
   '/v1/jobs/{job_id}': {
     get: {
-      req: GetJobData;
+      req: RetrieveJobData;
       res: {
         /**
          * Successful Response
@@ -4220,7 +4220,7 @@ export type $OpenApiTs = {
       };
     };
     patch: {
-      req: UpdateProviderData;
+      req: ModifyProviderData;
       res: {
         /**
          * Successful Response
@@ -4278,7 +4278,7 @@ export type $OpenApiTs = {
   };
   '/v1/runs/{run_id}': {
     get: {
-      req: GetRunData;
+      req: RetrieveRunData;
       res: {
         /**
          * Successful Response
@@ -4306,7 +4306,7 @@ export type $OpenApiTs = {
   };
   '/v1/runs/{run_id}/messages': {
     get: {
-      req: GetRunMessagesData;
+      req: ListRunMessagesData;
       res: {
         /**
          * Successful Response
@@ -4321,7 +4321,7 @@ export type $OpenApiTs = {
   };
   '/v1/runs/{run_id}/usage': {
     get: {
-      req: GetRunUsageData;
+      req: RetrieveRunUsageData;
       res: {
         /**
          * Successful Response

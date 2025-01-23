@@ -2,8 +2,8 @@ import { useCurrentAgent } from '../useCurrentAgent/useCurrentAgent';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   type AgentState,
-  UseAgentsServiceGetAgentKeyFn,
-  useAgentsServiceUpdateAgentMemoryBlockByLabel,
+  UseAgentsServiceRetrieveAgentKeyFn,
+  useAgentsServiceModifyCoreMemoryBlock,
 } from '@letta-cloud/letta-agents-api';
 import { useQueryClient } from '@tanstack/react-query';
 import { useDebouncedCallback } from '@mantine/hooks';
@@ -31,7 +31,7 @@ export function useUpdateMemory(payload: UseUpdateMemoryPayload) {
     mutate,
     error,
     isPending: isUpdating,
-  } = useAgentsServiceUpdateAgentMemoryBlockByLabel();
+  } = useAgentsServiceModifyCoreMemoryBlock();
 
   const debouncedMutation = useDebouncedCallback(mutate, 500);
 
@@ -43,7 +43,7 @@ export function useUpdateMemory(payload: UseUpdateMemoryPayload) {
 
       queryClient.setQueriesData<AgentState | undefined>(
         {
-          queryKey: UseAgentsServiceGetAgentKeyFn({
+          queryKey: UseAgentsServiceRetrieveAgentKeyFn({
             agentId: id,
           }),
         },

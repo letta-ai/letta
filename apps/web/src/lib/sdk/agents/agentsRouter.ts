@@ -68,7 +68,7 @@ export async function copyAgentById(
   const { memoryVariables, tags, toolVariables } = options;
 
   const [baseAgent, agentSources] = await Promise.all([
-    AgentsService.getAgent(
+    AgentsService.retrieveAgent(
       {
         agentId: baseAgentId,
       },
@@ -76,7 +76,7 @@ export async function copyAgentById(
         user_id: lettaAgentsUserId,
       },
     ),
-    AgentsService.getAgentSources(
+    AgentsService.listAgentSources(
       {
         agentId: baseAgentId,
       },
@@ -790,7 +790,7 @@ export async function updateAgentFromAgentId(options: UpdateAgentFromAgentId) {
     lettaAgentsUserId,
   } = options;
 
-  const agentTemplateData = await AgentsService.getAgent(
+  const agentTemplateData = await AgentsService.retrieveAgent(
     {
       agentId: baseAgentId,
     },
@@ -833,7 +833,7 @@ export async function updateAgentFromAgentId(options: UpdateAgentFromAgentId) {
             return;
           }
 
-          return AgentsService.updateAgentMemoryBlockByLabel(
+          return AgentsService.modifyCoreMemoryBlock(
             {
               agentId: agentToUpdateId,
               blockLabel: block.label,
@@ -863,7 +863,7 @@ export async function updateAgentFromAgentId(options: UpdateAgentFromAgentId) {
     source_ids: agentTemplateData.sources.map((source) => source.id || ''),
   };
 
-  const agent = await AgentsService.updateAgent(
+  const agent = await AgentsService.modifyAgent(
     {
       agentId: agentToUpdateId,
       requestBody,
@@ -921,7 +921,7 @@ async function queryAgents(options: QueryAgentsOptions) {
   return Promise.all(
     query.map((agent) =>
       Promise.all([
-        AgentsService.getAgent(
+        AgentsService.retrieveAgent(
           {
             agentId: agent.id,
           },
@@ -1043,7 +1043,7 @@ export async function listAgents(
     const allTemplateDetails = await Promise.all(
       query.map((template) =>
         Promise.all([
-          AgentsService.getAgent(
+          AgentsService.retrieveAgent(
             {
               agentId: template.id,
             },
@@ -1165,7 +1165,7 @@ async function getAgentById(
   const onlyLoadAgentTemplate = template === true;
 
   const [agent, deployedAgent, agentTemplate] = await Promise.all([
-    AgentsService.getAgent(
+    AgentsService.retrieveAgent(
       {
         agentId,
       },
@@ -1433,7 +1433,7 @@ export async function updateAgent(
   let response: AgentState | undefined;
 
   if (Object.keys(rest).length > 0) {
-    response = await AgentsService.updateAgent(
+    response = await AgentsService.modifyAgent(
       {
         agentId,
         requestBody: rest,
@@ -1452,7 +1452,7 @@ export async function updateAgent(
       };
     }
   } else {
-    response = await AgentsService.getAgent(
+    response = await AgentsService.retrieveAgent(
       {
         agentId,
       },
@@ -1660,7 +1660,7 @@ async function searchDeployedAgents(
   const allAgentsDetails = await Promise.all(
     result.slice(0, limit).map((agent) =>
       Promise.all([
-        AgentsService.getAgent(
+        AgentsService.retrieveAgent(
           {
             agentId: agent.id,
           },
@@ -1712,7 +1712,7 @@ async function createTemplateFromAgent(
   const { lettaAgentsUserId } = context.request;
   const { project } = request.body;
 
-  const agent = await AgentsService.getAgent(
+  const agent = await AgentsService.retrieveAgent(
     {
       agentId,
     },
@@ -1782,7 +1782,7 @@ async function getAgentVariables(
 
   // find agent
 
-  const agent = await AgentsService.getAgent(
+  const agent = await AgentsService.retrieveAgent(
     {
       agentId,
     },

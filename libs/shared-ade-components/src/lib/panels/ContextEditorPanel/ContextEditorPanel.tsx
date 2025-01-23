@@ -1,4 +1,4 @@
-import { useAgentsServiceGetAgentContextWindow } from '@letta-cloud/letta-agents-api';
+import { useAgentsServiceRetrieveAgentContextWindow } from '@letta-cloud/letta-agents-api';
 import React, { useEffect, useMemo } from 'react';
 import { useCoreMemorySummaryWorker } from './hooks/useCoreMemorySummaryWorker/useCoreMemorySummaryWorker';
 import type { WorkerResponse } from './types';
@@ -97,7 +97,7 @@ function useContextWindowDetails() {
     computedMemoryStringAtom,
   );
 
-  const { data: contextWindow } = useAgentsServiceGetAgentContextWindow(
+  const { data: contextWindow } = useAgentsServiceRetrieveAgentContextWindow(
     {
       agentId: id,
     },

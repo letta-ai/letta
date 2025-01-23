@@ -53,7 +53,7 @@ export async function createInferenceTransaction(
   }
 
   const [agent, maybeDeployedAgent] = await Promise.all([
-    AgentsService.getAgent(
+    AgentsService.retrieveAgent(
       {
         agentId,
       },

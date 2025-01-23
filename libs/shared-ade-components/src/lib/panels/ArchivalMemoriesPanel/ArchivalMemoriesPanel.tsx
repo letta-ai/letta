@@ -23,14 +23,14 @@ import {
 } from '@letta-cloud/component-library';
 import { z } from 'zod';
 import type {
-  ListAgentArchivalMemoryResponse,
+  ListArchivalMemoryResponse,
   Passage,
 } from '@letta-cloud/letta-agents-api';
 import {
-  useAgentsServiceCreateAgentArchivalMemory,
-  useAgentsServiceDeleteAgentArchivalMemory,
-  useAgentsServiceListAgentArchivalMemory,
-  UseAgentsServiceListAgentArchivalMemoryKeyFn,
+  useAgentsServiceCreateArchivalMemory,
+  useAgentsServiceDeleteArchivalMemory,
+  useAgentsServiceListArchivalMemory,
+  UseAgentsServiceListArchivalMemoryKeyFn,
 } from '@letta-cloud/letta-agents-api';
 import { useQueryClient } from '@tanstack/react-query';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -99,12 +99,12 @@ function MemoryItem(props: MemoryItemProps) {
   const { formatDateAndTime } = useDateFormatter();
 
   const { mutate: deleteMemory, isPending: isDeletingMemory } =
-    useAgentsServiceDeleteAgentArchivalMemory({
+    useAgentsServiceDeleteArchivalMemory({
       onSuccess: async () => {
         setOpen(false);
-        queryClient.setQueriesData<ListAgentArchivalMemoryResponse | undefined>(
+        queryClient.setQueriesData<ListArchivalMemoryResponse | undefined>(
           {
-            queryKey: UseAgentsServiceListAgentArchivalMemoryKeyFn({
+            queryKey: UseAgentsServiceListArchivalMemoryKeyFn({
               agentId: currentAgentId,
             }),
           },
@@ -189,7 +189,7 @@ function MemoriesList(props: MemoriesListProps) {
   const { search } = props;
   const { id: currentAgentId } = useCurrentSimulatedAgent();
 
-  const { data, isLoading } = useAgentsServiceListAgentArchivalMemory(
+  const { data, isLoading } = useAgentsServiceListArchivalMemory(
     {
       agentId: currentAgentId,
     },
@@ -260,11 +260,11 @@ function CreateMemoryDialog() {
   const [open, setOpen] = useState(false);
   const { isTemplate } = useCurrentAgentMetaData();
 
-  const { mutate, isPending } = useAgentsServiceCreateAgentArchivalMemory({
+  const { mutate, isPending } = useAgentsServiceCreateArchivalMemory({
     onSuccess: async () => {
       setOpen(false);
       await queryClient.invalidateQueries({
-        queryKey: UseAgentsServiceListAgentArchivalMemoryKeyFn({
+        queryKey: UseAgentsServiceListArchivalMemoryKeyFn({
           agentId: currentAgentId,
         }),
       });
@@ -332,7 +332,7 @@ export function useArchivalMemoriesTitle() {
   const t = useTranslations('ADE/ArchivalMemories');
   const { id: currentAgentId } = useCurrentSimulatedAgent();
 
-  const { data, isLoading } = useAgentsServiceListAgentArchivalMemory(
+  const { data, isLoading } = useAgentsServiceListArchivalMemory(
     {
       agentId: currentAgentId,
     },

@@ -11,7 +11,7 @@ paths:
     get:
       x-fern-sdk-group-name:
         - tools
-      x-fern-sdk-method-name: get
+      x-fern-sdk-method-name: retrieve
     delete:
       x-fern-sdk-group-name:
         - tools
@@ -19,7 +19,7 @@ paths:
     patch:
       x-fern-sdk-group-name:
         - tools
-      x-fern-sdk-method-name: update
+      x-fern-sdk-method-name: modify
   /v1/tools/:
     get:
       x-fern-sdk-group-name:
@@ -42,7 +42,7 @@ paths:
     get:
       x-fern-sdk-group-name:
         - sources
-      x-fern-sdk-method-name: get
+      x-fern-sdk-method-name: retrieve
     delete:
       x-fern-sdk-group-name:
         - sources
@@ -50,7 +50,7 @@ paths:
     patch:
       x-fern-sdk-group-name:
         - sources
-      x-fern-sdk-method-name: update
+      x-fern-sdk-method-name: modify
   /v1/sources/name/{source_name}:
     get:
       x-fern-sdk-group-name:
@@ -102,7 +102,7 @@ paths:
     get:
       x-fern-sdk-group-name:
         - agents
-      x-fern-sdk-method-name: get
+      x-fern-sdk-method-name: retrieve
     delete:
       x-fern-sdk-group-name:
         - agents
@@ -110,7 +110,7 @@ paths:
     patch:
       x-fern-sdk-group-name:
         - agents
-      x-fern-sdk-method-name: update
+      x-fern-sdk-method-name: modify
   /v1/agents/search:
     post:
       x-fern-sdk-group-name:
@@ -125,7 +125,7 @@ paths:
       x-fern-sdk-group-name:
         - agents
         - context
-      x-fern-sdk-method-name: get
+      x-fern-sdk-method-name: retrieve
   /v1/agents/{agent_id}/tools:
     get:
       x-fern-sdk-group-name:
@@ -137,7 +137,7 @@ paths:
       x-fern-sdk-group-name:
         - agents
         - tools
-      x-fern-sdk-method-name: attach_tool
+      x-fern-sdk-method-name: attach
       parameters:
         - name: agent_id
           in: path
@@ -154,7 +154,7 @@ paths:
       x-fern-sdk-group-name:
         - agents
         - tools
-      x-fern-sdk-method-name: detach_tool
+      x-fern-sdk-method-name: detach
       parameters:
         - name: agent_id
           in: path
@@ -171,19 +171,31 @@ paths:
       x-fern-sdk-group-name:
         - agents
         - sources
-      x-fern-sdk-method-name: get
+      x-fern-sdk-method-name: list
   /v1/agents/{agent_id}/core_memory:
     get:
       x-fern-sdk-group-name:
         - agents
         - core_memory
-      x-fern-sdk-method-name: get
+      x-fern-sdk-method-name: retrieve
+      parameters:
+        - name: agent_id
+          in: path
+          required: true
+          schema:
+            type: string
   /v1/agents/{agent_id}/core_memory/blocks:
     get:
       x-fern-sdk-group-name:
         - agents
         - core_memory
-      x-fern-sdk-method-name: list
+      x-fern-sdk-method-name: list_blocks
+      parameters:
+        - name: agent_id
+          in: path
+          required: true
+          schema:
+            type: string
   /v1/agents/{agent_id}/core_memory/blocks/attach/{block_id}:
     patch:
       x-fern-sdk-group-name:
@@ -223,29 +235,74 @@ paths:
       x-fern-sdk-group-name:
         - agents
         - core_memory
-      x-fern-sdk-method-name: get_block
+      x-fern-sdk-method-name: retrieve_block
+      parameters:
+        - name: agent_id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: block_label
+          in: path
+          required: true
+          schema:
+            type: string
     patch:
       x-fern-sdk-group-name:
         - agents
         - core_memory
-      x-fern-sdk-method-name: update_block
+      x-fern-sdk-method-name: modify_block
+      parameters:
+        - name: agent_id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: block_label
+          in: path
+          required: true
+          schema:
+            type: string
   /v1/agents/{agent_id}/archival_memory:
     get:
       x-fern-sdk-group-name:
         - agents
         - archival_memory
       x-fern-sdk-method-name: list
+      parameters:
+        - name: agent_id
+          in: path
+          required: true
+          schema:
+            type: string
     post:
       x-fern-sdk-group-name:
         - agents
         - archival_memory
       x-fern-sdk-method-name: create
+      parameters:
+        - name: agent_id
+          in: path
+          required: true
+          schema:
+            type: string
   /v1/agents/{agent_id}/archival_memory/{memory_id}:
     delete:
       x-fern-sdk-group-name:
         - agents
         - archival_memory
       x-fern-sdk-method-name: delete
+      parameters:
+        - name: agent_id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: memory_id
+          in: path
+          required: true
+          schema:
+            type: string
   /v1/agents/{agent_id}/messages:
     get:
       x-fern-sdk-group-name:
@@ -262,7 +319,7 @@ paths:
       x-fern-sdk-group-name:
         - agents
         - messages
-      x-fern-sdk-method-name: update
+      x-fern-sdk-method-name: modify
   /v1/agents/{agent_id}/messages/async:
     post:
       x-fern-sdk-group-name:
@@ -326,7 +383,7 @@ paths:
       x-fern-sdk-group-name:
         - agents
         - memory_variables
-      x-fern-sdk-method-name: get
+      x-fern-sdk-method-name: list
       description: |
         <Note>This endpoint is only available on Letta Cloud.</Note>
 
@@ -336,7 +393,7 @@ paths:
       x-fern-sdk-group-name:
         - agents
         - sources
-      x-fern-sdk-method-name: attach_source
+      x-fern-sdk-method-name: attach
       parameters:
         - name: agent_id
           in: path
@@ -353,7 +410,7 @@ paths:
       x-fern-sdk-group-name:
         - agents
         - sources
-      x-fern-sdk-method-name: detach_source
+      x-fern-sdk-method-name: detach
       parameters:
         - name: agent_id
           in: path
@@ -388,7 +445,7 @@ paths:
     get:
       x-fern-sdk-group-name:
         - blocks
-      x-fern-sdk-method-name: get
+      x-fern-sdk-method-name: retrieve
     delete:
       x-fern-sdk-group-name:
         - blocks
@@ -396,7 +453,7 @@ paths:
     patch:
       x-fern-sdk-group-name:
         - blocks
-      x-fern-sdk-method-name: update
+      x-fern-sdk-method-name: modify
   /v1/jobs/:
     get:
       x-fern-sdk-group-name:
@@ -411,7 +468,7 @@ paths:
     get:
       x-fern-sdk-group-name:
         - jobs
-      x-fern-sdk-method-name: get
+      x-fern-sdk-method-name: retrieve
     delete:
       x-fern-sdk-group-name:
         - jobs

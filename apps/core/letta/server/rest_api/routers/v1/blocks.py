@@ -13,7 +13,7 @@ if TYPE_CHECKING:
 router = APIRouter(prefix="/blocks", tags=["blocks"])
 
 
-@router.get("/", response_model=List[Block], operation_id="list_memory_blocks")
+@router.get("/", response_model=List[Block], operation_id="list_blocks")
 def list_blocks(
     # query parameters
     label: Optional[str] = Query(None, description="Labels to include (e.g. human, persona)"),
@@ -26,7 +26,7 @@ def list_blocks(
     return server.block_manager.get_blocks(actor=actor, label=label, is_template=templates_only, template_name=name)
 
 
-@router.post("/", response_model=Block, operation_id="create_memory_block")
+@router.post("/", response_model=Block, operation_id="create_block")
 def create_block(
     create_block: CreateBlock = Body(...),
     server: SyncServer = Depends(get_letta_server),
@@ -37,8 +37,8 @@ def create_block(
     return server.block_manager.create_or_update_block(actor=actor, block=block)
 
 
-@router.patch("/{block_id}", response_model=Block, operation_id="update_memory_block")
-def update_block(
+@router.patch("/{block_id}", response_model=Block, operation_id="modify_block")
+def modify_block(
     block_id: str,
     block_update: BlockUpdate = Body(...),
     server: SyncServer = Depends(get_letta_server),
@@ -48,7 +48,7 @@ def update_block(
     return server.block_manager.update_block(block_id=block_id, block_update=block_update, actor=actor)
 
 
-@router.delete("/{block_id}", response_model=Block, operation_id="delete_memory_block")
+@router.delete("/{block_id}", response_model=Block, operation_id="delete_block")
 def delete_block(
     block_id: str,
     server: SyncServer = Depends(get_letta_server),
@@ -58,8 +58,8 @@ def delete_block(
     return server.block_manager.delete_block(block_id=block_id, actor=actor)
 
 
-@router.get("/{block_id}", response_model=Block, operation_id="get_memory_block")
-def get_block(
+@router.get("/{block_id}", response_model=Block, operation_id="retrieve_block")
+def retrieve_block(
     block_id: str,
     server: SyncServer = Depends(get_letta_server),
     user_id: Optional[str] = Header(None, alias="user_id"),

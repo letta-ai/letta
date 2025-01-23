@@ -19,10 +19,10 @@ import { useTranslations } from '@letta-cloud/translations';
 import type { FileMetadata } from '@letta-cloud/letta-agents-api';
 import {
   UseJobsServiceListActiveJobsKeyFn,
-  UseSourcesServiceListFilesFromSourceKeyFn,
+  UseSourcesServiceListSourceFilesKeyFn,
   useSourcesServiceUploadFileToSource,
 } from '@letta-cloud/letta-agents-api';
-import { useSourcesServiceListFilesFromSource } from '@letta-cloud/letta-agents-api';
+import { useSourcesServiceListSourceFiles } from '@letta-cloud/letta-agents-api';
 import { useCurrentDataSourceId } from '../hooks';
 import type { ColumnDef } from '@tanstack/react-table';
 import { z } from 'zod';
@@ -49,7 +49,7 @@ function UploadFileDialog({ limit }: UploadFileDialogProps) {
   const { mutate, isPending } = useSourcesServiceUploadFileToSource({
     onSuccess: () => {
       void queryClient.invalidateQueries({
-        queryKey: UseSourcesServiceListFilesFromSourceKeyFn({
+        queryKey: UseSourcesServiceListSourceFilesKeyFn({
           sourceId: dataSourceId,
           cursor: undefined,
           limit,
@@ -113,7 +113,7 @@ function DataSourceFilesPage() {
   const [limit, setLimit] = useState<number>(0);
   const [cursor, setCursor] = useState<FileMetadata | undefined>(undefined);
 
-  const { data: files, isError } = useSourcesServiceListFilesFromSource(
+  const { data: files, isError } = useSourcesServiceListSourceFiles(
     {
       sourceId,
       limit,

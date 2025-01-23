@@ -94,7 +94,7 @@ export async function listAgentTemplates(
   if (includeAgentState) {
     const agentStates = await Promise.all(
       agentTemplatesResponse.map((agentTemplate) =>
-        AgentsService.getAgent(
+        AgentsService.retrieveAgent(
           {
             agentId: agentTemplate.id,
           },
@@ -177,7 +177,7 @@ export async function forkAgentTemplate(
     };
   }
 
-  const agentDetails = await AgentsService.getAgent(
+  const agentDetails = await AgentsService.retrieveAgent(
     {
       agentId: testingAgent.id,
     },
@@ -327,7 +327,7 @@ async function getAgentTemplateSimulatorSession(
     id = simulatorSession.id;
   }
 
-  const agent = await AgentsService.getAgent(
+  const agent = await AgentsService.retrieveAgent(
     {
       agentId,
     },
@@ -395,7 +395,7 @@ async function createAgentTemplateSimulatorSession(
     const { memoryVariables } = req.body;
 
     // update existing simulator session
-    const existingTemplate = await AgentsService.getAgent(
+    const existingTemplate = await AgentsService.retrieveAgent(
       {
         agentId: agentTemplate.id,
       },
@@ -631,7 +631,7 @@ async function getAgentTemplateByVersion(
     };
   }
 
-  const agent = await AgentsService.getAgent(
+  const agent = await AgentsService.retrieveAgent(
     {
       agentId: deployedAgentTemplate.id,
     },

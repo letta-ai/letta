@@ -21,7 +21,7 @@ import {
 import { MessageRole, SandboxType } from '../requests/types.gen';
 import * as Common from './common';
 /**
- * Get Tool
+ * Retrieve Tool
  * Get a tool by ID
  * @param data The data for the request.
  * @param data.toolId
@@ -29,8 +29,8 @@ import * as Common from './common';
  * @returns letta__schemas__tool__Tool Successful Response
  * @throws ApiError
  */
-export const useToolsServiceGetToolSuspense = <
-  TData = Common.ToolsServiceGetToolDefaultResponse,
+export const useToolsServiceRetrieveToolSuspense = <
+  TData = Common.ToolsServiceRetrieveToolDefaultResponse,
   TError = unknown,
   TQueryKey extends Array<unknown> = unknown[],
 >(
@@ -45,8 +45,11 @@ export const useToolsServiceGetToolSuspense = <
   options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>,
 ) =>
   useSuspenseQuery<TData, TError>({
-    queryKey: Common.UseToolsServiceGetToolKeyFn({ toolId, userId }, queryKey),
-    queryFn: () => ToolsService.getTool({ toolId, userId }) as TData,
+    queryKey: Common.UseToolsServiceRetrieveToolKeyFn(
+      { toolId, userId },
+      queryKey,
+    ),
+    queryFn: () => ToolsService.retrieveTool({ toolId, userId }) as TData,
     ...options,
   });
 /**
@@ -147,7 +150,7 @@ export const useToolsServiceListComposioActionsByAppSuspense = <
     ...options,
   });
 /**
- * Get Source
+ * Retrieve Source
  * Get all sources
  * @param data The data for the request.
  * @param data.sourceId
@@ -155,8 +158,8 @@ export const useToolsServiceListComposioActionsByAppSuspense = <
  * @returns Source Successful Response
  * @throws ApiError
  */
-export const useSourcesServiceGetSourceSuspense = <
-  TData = Common.SourcesServiceGetSourceDefaultResponse,
+export const useSourcesServiceRetrieveSourceSuspense = <
+  TData = Common.SourcesServiceRetrieveSourceDefaultResponse,
   TError = unknown,
   TQueryKey extends Array<unknown> = unknown[],
 >(
@@ -171,11 +174,11 @@ export const useSourcesServiceGetSourceSuspense = <
   options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>,
 ) =>
   useSuspenseQuery<TData, TError>({
-    queryKey: Common.UseSourcesServiceGetSourceKeyFn(
+    queryKey: Common.UseSourcesServiceRetrieveSourceKeyFn(
       { sourceId, userId },
       queryKey,
     ),
-    queryFn: () => SourcesService.getSource({ sourceId, userId }) as TData,
+    queryFn: () => SourcesService.retrieveSource({ sourceId, userId }) as TData,
     ...options,
   });
 /**
@@ -238,7 +241,7 @@ export const useSourcesServiceListSourcesSuspense = <
     ...options,
   });
 /**
- * List Passages
+ * List Source Passages
  * List all passages associated with a data source.
  * @param data The data for the request.
  * @param data.sourceId
@@ -271,7 +274,7 @@ export const useSourcesServiceListSourcePassagesSuspense = <
     ...options,
   });
 /**
- * List Files From Source
+ * List Source Files
  * List paginated files associated with a data source.
  * @param data The data for the request.
  * @param data.sourceId
@@ -281,8 +284,8 @@ export const useSourcesServiceListSourcePassagesSuspense = <
  * @returns FileMetadata Successful Response
  * @throws ApiError
  */
-export const useSourcesServiceListFilesFromSourceSuspense = <
-  TData = Common.SourcesServiceListFilesFromSourceDefaultResponse,
+export const useSourcesServiceListSourceFilesSuspense = <
+  TData = Common.SourcesServiceListSourceFilesDefaultResponse,
   TError = unknown,
   TQueryKey extends Array<unknown> = unknown[],
 >(
@@ -301,12 +304,12 @@ export const useSourcesServiceListFilesFromSourceSuspense = <
   options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>,
 ) =>
   useSuspenseQuery<TData, TError>({
-    queryKey: Common.UseSourcesServiceListFilesFromSourceKeyFn(
+    queryKey: Common.UseSourcesServiceListSourceFilesKeyFn(
       { cursor, limit, sourceId, userId },
       queryKey,
     ),
     queryFn: () =>
-      SourcesService.listFilesFromSource({
+      SourcesService.listSourceFiles({
         cursor,
         limit,
         sourceId,
@@ -372,7 +375,7 @@ export const useAgentsServiceListAgentsSuspense = <
     ...options,
   });
 /**
- * Get Agent Context Window
+ * Retrieve Agent Context Window
  * Retrieve the context window of a specific agent.
  * @param data The data for the request.
  * @param data.agentId
@@ -380,8 +383,8 @@ export const useAgentsServiceListAgentsSuspense = <
  * @returns ContextWindowOverview Successful Response
  * @throws ApiError
  */
-export const useAgentsServiceGetAgentContextWindowSuspense = <
-  TData = Common.AgentsServiceGetAgentContextWindowDefaultResponse,
+export const useAgentsServiceRetrieveAgentContextWindowSuspense = <
+  TData = Common.AgentsServiceRetrieveAgentContextWindowDefaultResponse,
   TError = unknown,
   TQueryKey extends Array<unknown> = unknown[],
 >(
@@ -396,16 +399,16 @@ export const useAgentsServiceGetAgentContextWindowSuspense = <
   options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>,
 ) =>
   useSuspenseQuery<TData, TError>({
-    queryKey: Common.UseAgentsServiceGetAgentContextWindowKeyFn(
+    queryKey: Common.UseAgentsServiceRetrieveAgentContextWindowKeyFn(
       { agentId, userId },
       queryKey,
     ),
     queryFn: () =>
-      AgentsService.getAgentContextWindow({ agentId, userId }) as TData,
+      AgentsService.retrieveAgentContextWindow({ agentId, userId }) as TData,
     ...options,
   });
 /**
- * Get Agent State
+ * Retrieve Agent
  * Get the state of the agent.
  * @param data The data for the request.
  * @param data.agentId
@@ -413,8 +416,8 @@ export const useAgentsServiceGetAgentContextWindowSuspense = <
  * @returns AgentState Successful Response
  * @throws ApiError
  */
-export const useAgentsServiceGetAgentSuspense = <
-  TData = Common.AgentsServiceGetAgentDefaultResponse,
+export const useAgentsServiceRetrieveAgentSuspense = <
+  TData = Common.AgentsServiceRetrieveAgentDefaultResponse,
   TError = unknown,
   TQueryKey extends Array<unknown> = unknown[],
 >(
@@ -429,15 +432,15 @@ export const useAgentsServiceGetAgentSuspense = <
   options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>,
 ) =>
   useSuspenseQuery<TData, TError>({
-    queryKey: Common.UseAgentsServiceGetAgentKeyFn(
+    queryKey: Common.UseAgentsServiceRetrieveAgentKeyFn(
       { agentId, userId },
       queryKey,
     ),
-    queryFn: () => AgentsService.getAgent({ agentId, userId }) as TData,
+    queryFn: () => AgentsService.retrieveAgent({ agentId, userId }) as TData,
     ...options,
   });
 /**
- * Get Tools From Agent
+ * List Agent Tools
  * Get tools from an existing agent
  * @param data The data for the request.
  * @param data.agentId
@@ -445,8 +448,8 @@ export const useAgentsServiceGetAgentSuspense = <
  * @returns letta__schemas__tool__Tool Successful Response
  * @throws ApiError
  */
-export const useAgentsServiceGetToolsFromAgentSuspense = <
-  TData = Common.AgentsServiceGetToolsFromAgentDefaultResponse,
+export const useAgentsServiceListAgentToolsSuspense = <
+  TData = Common.AgentsServiceListAgentToolsDefaultResponse,
   TError = unknown,
   TQueryKey extends Array<unknown> = unknown[],
 >(
@@ -461,16 +464,15 @@ export const useAgentsServiceGetToolsFromAgentSuspense = <
   options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>,
 ) =>
   useSuspenseQuery<TData, TError>({
-    queryKey: Common.UseAgentsServiceGetToolsFromAgentKeyFn(
+    queryKey: Common.UseAgentsServiceListAgentToolsKeyFn(
       { agentId, userId },
       queryKey,
     ),
-    queryFn: () =>
-      AgentsService.getToolsFromAgent({ agentId, userId }) as TData,
+    queryFn: () => AgentsService.listAgentTools({ agentId, userId }) as TData,
     ...options,
   });
 /**
- * Get Agent Sources
+ * List Agent Sources
  * Get the sources associated with an agent.
  * @param data The data for the request.
  * @param data.agentId
@@ -478,8 +480,8 @@ export const useAgentsServiceGetToolsFromAgentSuspense = <
  * @returns Source Successful Response
  * @throws ApiError
  */
-export const useAgentsServiceGetAgentSourcesSuspense = <
-  TData = Common.AgentsServiceGetAgentSourcesDefaultResponse,
+export const useAgentsServiceListAgentSourcesSuspense = <
+  TData = Common.AgentsServiceListAgentSourcesDefaultResponse,
   TError = unknown,
   TQueryKey extends Array<unknown> = unknown[],
 >(
@@ -494,15 +496,15 @@ export const useAgentsServiceGetAgentSourcesSuspense = <
   options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>,
 ) =>
   useSuspenseQuery<TData, TError>({
-    queryKey: Common.UseAgentsServiceGetAgentSourcesKeyFn(
+    queryKey: Common.UseAgentsServiceListAgentSourcesKeyFn(
       { agentId, userId },
       queryKey,
     ),
-    queryFn: () => AgentsService.getAgentSources({ agentId, userId }) as TData,
+    queryFn: () => AgentsService.listAgentSources({ agentId, userId }) as TData,
     ...options,
   });
 /**
- * Get Agent Memory
+ * Retrieve Agent Memory
  * Retrieve the memory state of a specific agent.
  * This endpoint fetches the current memory state of the agent identified by the user ID and agent ID.
  * @param data The data for the request.
@@ -511,8 +513,8 @@ export const useAgentsServiceGetAgentSourcesSuspense = <
  * @returns Memory Successful Response
  * @throws ApiError
  */
-export const useAgentsServiceGetAgentMemorySuspense = <
-  TData = Common.AgentsServiceGetAgentMemoryDefaultResponse,
+export const useAgentsServiceRetrieveAgentMemorySuspense = <
+  TData = Common.AgentsServiceRetrieveAgentMemoryDefaultResponse,
   TError = unknown,
   TQueryKey extends Array<unknown> = unknown[],
 >(
@@ -527,15 +529,16 @@ export const useAgentsServiceGetAgentMemorySuspense = <
   options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>,
 ) =>
   useSuspenseQuery<TData, TError>({
-    queryKey: Common.UseAgentsServiceGetAgentMemoryKeyFn(
+    queryKey: Common.UseAgentsServiceRetrieveAgentMemoryKeyFn(
       { agentId, userId },
       queryKey,
     ),
-    queryFn: () => AgentsService.getAgentMemory({ agentId, userId }) as TData,
+    queryFn: () =>
+      AgentsService.retrieveAgentMemory({ agentId, userId }) as TData,
     ...options,
   });
 /**
- * Get Agent Memory Block
+ * Retrieve Core Memory Block
  * Retrieve a memory block from an agent.
  * @param data The data for the request.
  * @param data.agentId
@@ -544,8 +547,8 @@ export const useAgentsServiceGetAgentMemorySuspense = <
  * @returns Block Successful Response
  * @throws ApiError
  */
-export const useAgentsServiceGetAgentMemoryBlockSuspense = <
-  TData = Common.AgentsServiceGetAgentMemoryBlockDefaultResponse,
+export const useAgentsServiceRetrieveCoreMemoryBlockSuspense = <
+  TData = Common.AgentsServiceRetrieveCoreMemoryBlockDefaultResponse,
   TError = unknown,
   TQueryKey extends Array<unknown> = unknown[],
 >(
@@ -562,12 +565,12 @@ export const useAgentsServiceGetAgentMemoryBlockSuspense = <
   options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>,
 ) =>
   useSuspenseQuery<TData, TError>({
-    queryKey: Common.UseAgentsServiceGetAgentMemoryBlockKeyFn(
+    queryKey: Common.UseAgentsServiceRetrieveCoreMemoryBlockKeyFn(
       { agentId, blockLabel, userId },
       queryKey,
     ),
     queryFn: () =>
-      AgentsService.getAgentMemoryBlock({
+      AgentsService.retrieveCoreMemoryBlock({
         agentId,
         blockLabel,
         userId,
@@ -575,7 +578,7 @@ export const useAgentsServiceGetAgentMemoryBlockSuspense = <
     ...options,
   });
 /**
- * List Agent Memory Blocks
+ * List Core Memory Blocks
  * Retrieve the memory blocks of a specific agent.
  * @param data The data for the request.
  * @param data.agentId
@@ -583,8 +586,8 @@ export const useAgentsServiceGetAgentMemoryBlockSuspense = <
  * @returns Block Successful Response
  * @throws ApiError
  */
-export const useAgentsServiceListAgentMemoryBlocksSuspense = <
-  TData = Common.AgentsServiceListAgentMemoryBlocksDefaultResponse,
+export const useAgentsServiceListCoreMemoryBlocksSuspense = <
+  TData = Common.AgentsServiceListCoreMemoryBlocksDefaultResponse,
   TError = unknown,
   TQueryKey extends Array<unknown> = unknown[],
 >(
@@ -599,16 +602,16 @@ export const useAgentsServiceListAgentMemoryBlocksSuspense = <
   options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>,
 ) =>
   useSuspenseQuery<TData, TError>({
-    queryKey: Common.UseAgentsServiceListAgentMemoryBlocksKeyFn(
+    queryKey: Common.UseAgentsServiceListCoreMemoryBlocksKeyFn(
       { agentId, userId },
       queryKey,
     ),
     queryFn: () =>
-      AgentsService.listAgentMemoryBlocks({ agentId, userId }) as TData,
+      AgentsService.listCoreMemoryBlocks({ agentId, userId }) as TData,
     ...options,
   });
 /**
- * Get Agent Archival Memory
+ * List Archival Memory
  * Retrieve the memories in an agent's archival memory store (paginated query).
  * @param data The data for the request.
  * @param data.agentId
@@ -619,8 +622,8 @@ export const useAgentsServiceListAgentMemoryBlocksSuspense = <
  * @returns Passage Successful Response
  * @throws ApiError
  */
-export const useAgentsServiceListAgentArchivalMemorySuspense = <
-  TData = Common.AgentsServiceListAgentArchivalMemoryDefaultResponse,
+export const useAgentsServiceListArchivalMemorySuspense = <
+  TData = Common.AgentsServiceListArchivalMemoryDefaultResponse,
   TError = unknown,
   TQueryKey extends Array<unknown> = unknown[],
 >(
@@ -641,12 +644,12 @@ export const useAgentsServiceListAgentArchivalMemorySuspense = <
   options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>,
 ) =>
   useSuspenseQuery<TData, TError>({
-    queryKey: Common.UseAgentsServiceListAgentArchivalMemoryKeyFn(
+    queryKey: Common.UseAgentsServiceListArchivalMemoryKeyFn(
       { after, agentId, before, limit, userId },
       queryKey,
     ),
     queryFn: () =>
-      AgentsService.listAgentArchivalMemory({
+      AgentsService.listArchivalMemory({
         after,
         agentId,
         before,
@@ -656,7 +659,7 @@ export const useAgentsServiceListAgentArchivalMemorySuspense = <
     ...options,
   });
 /**
- * Get Agent Messages
+ * List Messages
  * Retrieve message history for an agent.
  * @param data The data for the request.
  * @param data.agentId
@@ -669,8 +672,8 @@ export const useAgentsServiceListAgentArchivalMemorySuspense = <
  * @returns unknown Successful Response
  * @throws ApiError
  */
-export const useAgentsServiceListAgentMessagesSuspense = <
-  TData = Common.AgentsServiceListAgentMessagesDefaultResponse,
+export const useAgentsServiceListMessagesSuspense = <
+  TData = Common.AgentsServiceListMessagesDefaultResponse,
   TError = unknown,
   TQueryKey extends Array<unknown> = unknown[],
 >(
@@ -695,7 +698,7 @@ export const useAgentsServiceListAgentMessagesSuspense = <
   options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>,
 ) =>
   useSuspenseQuery<TData, TError>({
-    queryKey: Common.UseAgentsServiceListAgentMessagesKeyFn(
+    queryKey: Common.UseAgentsServiceListMessagesKeyFn(
       {
         agentId,
         assistantMessageToolKwarg,
@@ -708,7 +711,7 @@ export const useAgentsServiceListAgentMessagesSuspense = <
       queryKey,
     ),
     queryFn: () =>
-      AgentsService.listAgentMessages({
+      AgentsService.listMessages({
         agentId,
         assistantMessageToolKwarg,
         assistantMessageToolName,
@@ -801,8 +804,8 @@ export const useLlmsServiceListEmbeddingModelsSuspense = <
  * @returns Block Successful Response
  * @throws ApiError
  */
-export const useBlocksServiceListMemoryBlocksSuspense = <
-  TData = Common.BlocksServiceListMemoryBlocksDefaultResponse,
+export const useBlocksServiceListBlocksSuspense = <
+  TData = Common.BlocksServiceListBlocksDefaultResponse,
   TError = unknown,
   TQueryKey extends Array<unknown> = unknown[],
 >(
@@ -821,29 +824,24 @@ export const useBlocksServiceListMemoryBlocksSuspense = <
   options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>,
 ) =>
   useSuspenseQuery<TData, TError>({
-    queryKey: Common.UseBlocksServiceListMemoryBlocksKeyFn(
+    queryKey: Common.UseBlocksServiceListBlocksKeyFn(
       { label, name, templatesOnly, userId },
       queryKey,
     ),
     queryFn: () =>
-      BlocksService.listMemoryBlocks({
-        label,
-        name,
-        templatesOnly,
-        userId,
-      }) as TData,
+      BlocksService.listBlocks({ label, name, templatesOnly, userId }) as TData,
     ...options,
   });
 /**
- * Get Block
+ * Retrieve Block
  * @param data The data for the request.
  * @param data.blockId
  * @param data.userId
  * @returns Block Successful Response
  * @throws ApiError
  */
-export const useBlocksServiceGetMemoryBlockSuspense = <
-  TData = Common.BlocksServiceGetMemoryBlockDefaultResponse,
+export const useBlocksServiceRetrieveBlockSuspense = <
+  TData = Common.BlocksServiceRetrieveBlockDefaultResponse,
   TError = unknown,
   TQueryKey extends Array<unknown> = unknown[],
 >(
@@ -858,11 +856,11 @@ export const useBlocksServiceGetMemoryBlockSuspense = <
   options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>,
 ) =>
   useSuspenseQuery<TData, TError>({
-    queryKey: Common.UseBlocksServiceGetMemoryBlockKeyFn(
+    queryKey: Common.UseBlocksServiceRetrieveBlockKeyFn(
       { blockId, userId },
       queryKey,
     ),
-    queryFn: () => BlocksService.getMemoryBlock({ blockId, userId }) as TData,
+    queryFn: () => BlocksService.retrieveBlock({ blockId, userId }) as TData,
     ...options,
   });
 /**
@@ -924,7 +922,7 @@ export const useJobsServiceListActiveJobsSuspense = <
     ...options,
   });
 /**
- * Get Job
+ * Retrieve Job
  * Get the status of a job.
  * @param data The data for the request.
  * @param data.jobId
@@ -932,8 +930,8 @@ export const useJobsServiceListActiveJobsSuspense = <
  * @returns Job Successful Response
  * @throws ApiError
  */
-export const useJobsServiceGetJobSuspense = <
-  TData = Common.JobsServiceGetJobDefaultResponse,
+export const useJobsServiceRetrieveJobSuspense = <
+  TData = Common.JobsServiceRetrieveJobDefaultResponse,
   TError = unknown,
   TQueryKey extends Array<unknown> = unknown[],
 >(
@@ -948,8 +946,11 @@ export const useJobsServiceGetJobSuspense = <
   options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>,
 ) =>
   useSuspenseQuery<TData, TError>({
-    queryKey: Common.UseJobsServiceGetJobKeyFn({ jobId, userId }, queryKey),
-    queryFn: () => JobsService.getJob({ jobId, userId }) as TData,
+    queryKey: Common.UseJobsServiceRetrieveJobKeyFn(
+      { jobId, userId },
+      queryKey,
+    ),
+    queryFn: () => JobsService.retrieveJob({ jobId, userId }) as TData,
     ...options,
   });
 /**
@@ -1142,7 +1143,7 @@ export const useRunsServiceListActiveRunsSuspense = <
     ...options,
   });
 /**
- * Get Run
+ * Retrieve Run
  * Get the status of a run.
  * @param data The data for the request.
  * @param data.runId
@@ -1150,8 +1151,8 @@ export const useRunsServiceListActiveRunsSuspense = <
  * @returns Run Successful Response
  * @throws ApiError
  */
-export const useRunsServiceGetRunSuspense = <
-  TData = Common.RunsServiceGetRunDefaultResponse,
+export const useRunsServiceRetrieveRunSuspense = <
+  TData = Common.RunsServiceRetrieveRunDefaultResponse,
   TError = unknown,
   TQueryKey extends Array<unknown> = unknown[],
 >(
@@ -1166,12 +1167,15 @@ export const useRunsServiceGetRunSuspense = <
   options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>,
 ) =>
   useSuspenseQuery<TData, TError>({
-    queryKey: Common.UseRunsServiceGetRunKeyFn({ runId, userId }, queryKey),
-    queryFn: () => RunsService.getRun({ runId, userId }) as TData,
+    queryKey: Common.UseRunsServiceRetrieveRunKeyFn(
+      { runId, userId },
+      queryKey,
+    ),
+    queryFn: () => RunsService.retrieveRun({ runId, userId }) as TData,
     ...options,
   });
 /**
- * Get Run Messages
+ * List Run Messages
  * Get messages associated with a run with filtering options.
  *
  * Args:
@@ -1195,8 +1199,8 @@ export const useRunsServiceGetRunSuspense = <
  * @returns LettaMessageUnion Successful Response
  * @throws ApiError
  */
-export const useRunsServiceGetRunMessagesSuspense = <
-  TData = Common.RunsServiceGetRunMessagesDefaultResponse,
+export const useRunsServiceListRunMessagesSuspense = <
+  TData = Common.RunsServiceListRunMessagesDefaultResponse,
   TError = unknown,
   TQueryKey extends Array<unknown> = unknown[],
 >(
@@ -1219,12 +1223,12 @@ export const useRunsServiceGetRunMessagesSuspense = <
   options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>,
 ) =>
   useSuspenseQuery<TData, TError>({
-    queryKey: Common.UseRunsServiceGetRunMessagesKeyFn(
+    queryKey: Common.UseRunsServiceListRunMessagesKeyFn(
       { ascending, cursor, limit, role, runId, userId },
       queryKey,
     ),
     queryFn: () =>
-      RunsService.getRunMessages({
+      RunsService.listRunMessages({
         ascending,
         cursor,
         limit,
@@ -1235,7 +1239,7 @@ export const useRunsServiceGetRunMessagesSuspense = <
     ...options,
   });
 /**
- * Get Run Usage
+ * Retrieve Run Usage
  * Get usage statistics for a run.
  * @param data The data for the request.
  * @param data.runId
@@ -1243,8 +1247,8 @@ export const useRunsServiceGetRunMessagesSuspense = <
  * @returns UsageStatistics Successful Response
  * @throws ApiError
  */
-export const useRunsServiceGetRunUsageSuspense = <
-  TData = Common.RunsServiceGetRunUsageDefaultResponse,
+export const useRunsServiceRetrieveRunUsageSuspense = <
+  TData = Common.RunsServiceRetrieveRunUsageDefaultResponse,
   TError = unknown,
   TQueryKey extends Array<unknown> = unknown[],
 >(
@@ -1259,15 +1263,15 @@ export const useRunsServiceGetRunUsageSuspense = <
   options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>,
 ) =>
   useSuspenseQuery<TData, TError>({
-    queryKey: Common.UseRunsServiceGetRunUsageKeyFn(
+    queryKey: Common.UseRunsServiceRetrieveRunUsageKeyFn(
       { runId, userId },
       queryKey,
     ),
-    queryFn: () => RunsService.getRunUsage({ runId, userId }) as TData,
+    queryFn: () => RunsService.retrieveRunUsage({ runId, userId }) as TData,
     ...options,
   });
 /**
- * Get Tags
+ * List Tags
  * Get a list of all tags in the database
  * @param data The data for the request.
  * @param data.cursor
@@ -1306,7 +1310,7 @@ export const useTagServiceListTagsSuspense = <
     ...options,
   });
 /**
- * Get Tags
+ * List Tags
  * Get a list of all tags in the database
  * @param data The data for the request.
  * @param data.cursor

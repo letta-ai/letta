@@ -12,7 +12,7 @@ import {
 import type { Job } from '@letta-cloud/letta-agents-api';
 import {
   useJobsServiceListActiveJobs,
-  useSourcesServiceGetSource,
+  useSourcesServiceRetrieveSource,
 } from '@letta-cloud/letta-agents-api';
 import { useCurrentDataSourceId } from './hooks';
 import type { ColumnDef } from '@tanstack/react-table';
@@ -52,7 +52,7 @@ const columns: Array<
 
 function DataSourceInfo() {
   const dataSourceId = useCurrentDataSourceId();
-  const { data } = useSourcesServiceGetSource({
+  const { data } = useSourcesServiceRetrieveSource({
     sourceId: dataSourceId,
   });
 

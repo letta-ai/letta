@@ -1,5 +1,5 @@
 import {
-  UseAgentsServiceGetAgentKeyFn,
+  UseAgentsServiceRetrieveAgentKeyFn,
   webOriginSDKQueryKeys,
 } from '@letta-cloud/letta-agents-api';
 import {
@@ -80,7 +80,7 @@ async function AgentsAgentPage(context: AgentsAgentPageProps) {
 
   const queries = [
     queryClient.prefetchQuery({
-      queryKey: UseAgentsServiceGetAgentKeyFn({
+      queryKey: UseAgentsServiceRetrieveAgentKeyFn({
         agentId,
       }),
       queryFn: () => deployedAgent.body,

@@ -633,7 +633,7 @@ describe('agentsRouter', () => {
         updatedAt: new Date(),
       });
 
-      lettaAgentAPIMock.AgentsService.getAgent.mockResolvedValue({
+      lettaAgentAPIMock.AgentsService.retrieveAgent.mockResolvedValue({
         tools: premadeTemplate.tools || [],
         embedding_config: premadeTemplate.embedding_config,
         llm_config: premadeTemplate.llm_config,
@@ -662,7 +662,7 @@ describe('agentsRouter', () => {
         name: 'test',
       });
 
-      lettaAgentAPIMock.AgentsService.getAgentSources.mockResolvedValue([]);
+      lettaAgentAPIMock.AgentsService.listAgentSources.mockResolvedValue([]);
 
       lettaAgentAPIMock.AgentsService.createAgent.mockResolvedValue({
         ...premadeTemplate,
@@ -700,7 +700,9 @@ describe('agentsRouter', () => {
         },
       );
 
-      expect(lettaAgentAPIMock.AgentsService.getAgent).toHaveBeenCalledWith(
+      expect(
+        lettaAgentAPIMock.AgentsService.retrieveAgent,
+      ).toHaveBeenCalledWith(
         {
           agentId: 'deployed-test-template-id',
         },
@@ -818,11 +820,11 @@ describe('agentsRouter', () => {
         name: 'test',
       };
 
-      lettaAgentAPIMock.AgentsService.getAgent.mockResolvedValue(
+      lettaAgentAPIMock.AgentsService.retrieveAgent.mockResolvedValue(
         GetAgentResolvedValue,
       );
 
-      lettaAgentAPIMock.AgentsService.getAgentSources.mockResolvedValue([]);
+      lettaAgentAPIMock.AgentsService.listAgentSources.mockResolvedValue([]);
 
       const createdAgent: AgentState = {
         id: 'test-agent-id',
@@ -866,7 +868,9 @@ describe('agentsRouter', () => {
         },
       );
 
-      expect(lettaAgentAPIMock.AgentsService.getAgent).toHaveBeenCalledWith(
+      expect(
+        lettaAgentAPIMock.AgentsService.retrieveAgent,
+      ).toHaveBeenCalledWith(
         {
           agentId: 'test-template-id',
         },
@@ -948,7 +952,7 @@ describe('agentsRouter', () => {
         updatedAt: new Date(),
       });
 
-      lettaAgentAPIMock.AgentsService.getAgent.mockResolvedValue({
+      lettaAgentAPIMock.AgentsService.retrieveAgent.mockResolvedValue({
         tools: premadeTemplate.tools || [],
         embedding_config: premadeTemplate.embedding_config,
         llm_config: premadeTemplate.llm_config,
@@ -977,7 +981,7 @@ describe('agentsRouter', () => {
         name: 'test',
       });
 
-      lettaAgentAPIMock.AgentsService.getAgentSources.mockResolvedValue([]);
+      lettaAgentAPIMock.AgentsService.listAgentSources.mockResolvedValue([]);
 
       lettaAgentAPIMock.AgentsService.createAgent.mockResolvedValue({
         ...premadeTemplate,
@@ -1013,7 +1017,9 @@ describe('agentsRouter', () => {
         },
       );
 
-      expect(lettaAgentAPIMock.AgentsService.getAgent).toHaveBeenCalledWith(
+      expect(
+        lettaAgentAPIMock.AgentsService.retrieveAgent,
+      ).toHaveBeenCalledWith(
         {
           agentId: 'test-template-id',
         },

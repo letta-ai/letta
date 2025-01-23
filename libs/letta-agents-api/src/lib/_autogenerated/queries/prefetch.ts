@@ -21,7 +21,7 @@ import {
 import { MessageRole, SandboxType } from '../requests/types.gen';
 import * as Common from './common';
 /**
- * Get Tool
+ * Retrieve Tool
  * Get a tool by ID
  * @param data The data for the request.
  * @param data.toolId
@@ -29,7 +29,7 @@ import * as Common from './common';
  * @returns letta__schemas__tool__Tool Successful Response
  * @throws ApiError
  */
-export const prefetchUseToolsServiceGetTool = (
+export const prefetchUseToolsServiceRetrieveTool = (
   queryClient: QueryClient,
   {
     toolId,
@@ -40,8 +40,8 @@ export const prefetchUseToolsServiceGetTool = (
   },
 ) =>
   queryClient.prefetchQuery({
-    queryKey: Common.UseToolsServiceGetToolKeyFn({ toolId, userId }),
-    queryFn: () => ToolsService.getTool({ toolId, userId }),
+    queryKey: Common.UseToolsServiceRetrieveToolKeyFn({ toolId, userId }),
+    queryFn: () => ToolsService.retrieveTool({ toolId, userId }),
   });
 /**
  * List Tools
@@ -117,7 +117,7 @@ export const prefetchUseToolsServiceListComposioActionsByApp = (
       ToolsService.listComposioActionsByApp({ composioAppName, userId }),
   });
 /**
- * Get Source
+ * Retrieve Source
  * Get all sources
  * @param data The data for the request.
  * @param data.sourceId
@@ -125,7 +125,7 @@ export const prefetchUseToolsServiceListComposioActionsByApp = (
  * @returns Source Successful Response
  * @throws ApiError
  */
-export const prefetchUseSourcesServiceGetSource = (
+export const prefetchUseSourcesServiceRetrieveSource = (
   queryClient: QueryClient,
   {
     sourceId,
@@ -136,8 +136,8 @@ export const prefetchUseSourcesServiceGetSource = (
   },
 ) =>
   queryClient.prefetchQuery({
-    queryKey: Common.UseSourcesServiceGetSourceKeyFn({ sourceId, userId }),
-    queryFn: () => SourcesService.getSource({ sourceId, userId }),
+    queryKey: Common.UseSourcesServiceRetrieveSourceKeyFn({ sourceId, userId }),
+    queryFn: () => SourcesService.retrieveSource({ sourceId, userId }),
   });
 /**
  * Get Source Id By Name
@@ -186,7 +186,7 @@ export const prefetchUseSourcesServiceListSources = (
     queryFn: () => SourcesService.listSources({ userId }),
   });
 /**
- * List Passages
+ * List Source Passages
  * List all passages associated with a data source.
  * @param data The data for the request.
  * @param data.sourceId
@@ -212,7 +212,7 @@ export const prefetchUseSourcesServiceListSourcePassages = (
     queryFn: () => SourcesService.listSourcePassages({ sourceId, userId }),
   });
 /**
- * List Files From Source
+ * List Source Files
  * List paginated files associated with a data source.
  * @param data The data for the request.
  * @param data.sourceId
@@ -222,7 +222,7 @@ export const prefetchUseSourcesServiceListSourcePassages = (
  * @returns FileMetadata Successful Response
  * @throws ApiError
  */
-export const prefetchUseSourcesServiceListFilesFromSource = (
+export const prefetchUseSourcesServiceListSourceFiles = (
   queryClient: QueryClient,
   {
     cursor,
@@ -237,14 +237,14 @@ export const prefetchUseSourcesServiceListFilesFromSource = (
   },
 ) =>
   queryClient.prefetchQuery({
-    queryKey: Common.UseSourcesServiceListFilesFromSourceKeyFn({
+    queryKey: Common.UseSourcesServiceListSourceFilesKeyFn({
       cursor,
       limit,
       sourceId,
       userId,
     }),
     queryFn: () =>
-      SourcesService.listFilesFromSource({ cursor, limit, sourceId, userId }),
+      SourcesService.listSourceFiles({ cursor, limit, sourceId, userId }),
   });
 /**
  * List Agents
@@ -303,7 +303,7 @@ export const prefetchUseAgentsServiceListAgents = (
       }),
   });
 /**
- * Get Agent Context Window
+ * Retrieve Agent Context Window
  * Retrieve the context window of a specific agent.
  * @param data The data for the request.
  * @param data.agentId
@@ -311,7 +311,7 @@ export const prefetchUseAgentsServiceListAgents = (
  * @returns ContextWindowOverview Successful Response
  * @throws ApiError
  */
-export const prefetchUseAgentsServiceGetAgentContextWindow = (
+export const prefetchUseAgentsServiceRetrieveAgentContextWindow = (
   queryClient: QueryClient,
   {
     agentId,
@@ -322,14 +322,15 @@ export const prefetchUseAgentsServiceGetAgentContextWindow = (
   },
 ) =>
   queryClient.prefetchQuery({
-    queryKey: Common.UseAgentsServiceGetAgentContextWindowKeyFn({
+    queryKey: Common.UseAgentsServiceRetrieveAgentContextWindowKeyFn({
       agentId,
       userId,
     }),
-    queryFn: () => AgentsService.getAgentContextWindow({ agentId, userId }),
+    queryFn: () =>
+      AgentsService.retrieveAgentContextWindow({ agentId, userId }),
   });
 /**
- * Get Agent State
+ * Retrieve Agent
  * Get the state of the agent.
  * @param data The data for the request.
  * @param data.agentId
@@ -337,7 +338,7 @@ export const prefetchUseAgentsServiceGetAgentContextWindow = (
  * @returns AgentState Successful Response
  * @throws ApiError
  */
-export const prefetchUseAgentsServiceGetAgent = (
+export const prefetchUseAgentsServiceRetrieveAgent = (
   queryClient: QueryClient,
   {
     agentId,
@@ -348,11 +349,11 @@ export const prefetchUseAgentsServiceGetAgent = (
   },
 ) =>
   queryClient.prefetchQuery({
-    queryKey: Common.UseAgentsServiceGetAgentKeyFn({ agentId, userId }),
-    queryFn: () => AgentsService.getAgent({ agentId, userId }),
+    queryKey: Common.UseAgentsServiceRetrieveAgentKeyFn({ agentId, userId }),
+    queryFn: () => AgentsService.retrieveAgent({ agentId, userId }),
   });
 /**
- * Get Tools From Agent
+ * List Agent Tools
  * Get tools from an existing agent
  * @param data The data for the request.
  * @param data.agentId
@@ -360,7 +361,7 @@ export const prefetchUseAgentsServiceGetAgent = (
  * @returns letta__schemas__tool__Tool Successful Response
  * @throws ApiError
  */
-export const prefetchUseAgentsServiceGetToolsFromAgent = (
+export const prefetchUseAgentsServiceListAgentTools = (
   queryClient: QueryClient,
   {
     agentId,
@@ -371,14 +372,11 @@ export const prefetchUseAgentsServiceGetToolsFromAgent = (
   },
 ) =>
   queryClient.prefetchQuery({
-    queryKey: Common.UseAgentsServiceGetToolsFromAgentKeyFn({
-      agentId,
-      userId,
-    }),
-    queryFn: () => AgentsService.getToolsFromAgent({ agentId, userId }),
+    queryKey: Common.UseAgentsServiceListAgentToolsKeyFn({ agentId, userId }),
+    queryFn: () => AgentsService.listAgentTools({ agentId, userId }),
   });
 /**
- * Get Agent Sources
+ * List Agent Sources
  * Get the sources associated with an agent.
  * @param data The data for the request.
  * @param data.agentId
@@ -386,7 +384,7 @@ export const prefetchUseAgentsServiceGetToolsFromAgent = (
  * @returns Source Successful Response
  * @throws ApiError
  */
-export const prefetchUseAgentsServiceGetAgentSources = (
+export const prefetchUseAgentsServiceListAgentSources = (
   queryClient: QueryClient,
   {
     agentId,
@@ -397,11 +395,11 @@ export const prefetchUseAgentsServiceGetAgentSources = (
   },
 ) =>
   queryClient.prefetchQuery({
-    queryKey: Common.UseAgentsServiceGetAgentSourcesKeyFn({ agentId, userId }),
-    queryFn: () => AgentsService.getAgentSources({ agentId, userId }),
+    queryKey: Common.UseAgentsServiceListAgentSourcesKeyFn({ agentId, userId }),
+    queryFn: () => AgentsService.listAgentSources({ agentId, userId }),
   });
 /**
- * Get Agent Memory
+ * Retrieve Agent Memory
  * Retrieve the memory state of a specific agent.
  * This endpoint fetches the current memory state of the agent identified by the user ID and agent ID.
  * @param data The data for the request.
@@ -410,7 +408,7 @@ export const prefetchUseAgentsServiceGetAgentSources = (
  * @returns Memory Successful Response
  * @throws ApiError
  */
-export const prefetchUseAgentsServiceGetAgentMemory = (
+export const prefetchUseAgentsServiceRetrieveAgentMemory = (
   queryClient: QueryClient,
   {
     agentId,
@@ -421,11 +419,14 @@ export const prefetchUseAgentsServiceGetAgentMemory = (
   },
 ) =>
   queryClient.prefetchQuery({
-    queryKey: Common.UseAgentsServiceGetAgentMemoryKeyFn({ agentId, userId }),
-    queryFn: () => AgentsService.getAgentMemory({ agentId, userId }),
+    queryKey: Common.UseAgentsServiceRetrieveAgentMemoryKeyFn({
+      agentId,
+      userId,
+    }),
+    queryFn: () => AgentsService.retrieveAgentMemory({ agentId, userId }),
   });
 /**
- * Get Agent Memory Block
+ * Retrieve Core Memory Block
  * Retrieve a memory block from an agent.
  * @param data The data for the request.
  * @param data.agentId
@@ -434,7 +435,7 @@ export const prefetchUseAgentsServiceGetAgentMemory = (
  * @returns Block Successful Response
  * @throws ApiError
  */
-export const prefetchUseAgentsServiceGetAgentMemoryBlock = (
+export const prefetchUseAgentsServiceRetrieveCoreMemoryBlock = (
   queryClient: QueryClient,
   {
     agentId,
@@ -447,16 +448,16 @@ export const prefetchUseAgentsServiceGetAgentMemoryBlock = (
   },
 ) =>
   queryClient.prefetchQuery({
-    queryKey: Common.UseAgentsServiceGetAgentMemoryBlockKeyFn({
+    queryKey: Common.UseAgentsServiceRetrieveCoreMemoryBlockKeyFn({
       agentId,
       blockLabel,
       userId,
     }),
     queryFn: () =>
-      AgentsService.getAgentMemoryBlock({ agentId, blockLabel, userId }),
+      AgentsService.retrieveCoreMemoryBlock({ agentId, blockLabel, userId }),
   });
 /**
- * List Agent Memory Blocks
+ * List Core Memory Blocks
  * Retrieve the memory blocks of a specific agent.
  * @param data The data for the request.
  * @param data.agentId
@@ -464,7 +465,7 @@ export const prefetchUseAgentsServiceGetAgentMemoryBlock = (
  * @returns Block Successful Response
  * @throws ApiError
  */
-export const prefetchUseAgentsServiceListAgentMemoryBlocks = (
+export const prefetchUseAgentsServiceListCoreMemoryBlocks = (
   queryClient: QueryClient,
   {
     agentId,
@@ -475,14 +476,14 @@ export const prefetchUseAgentsServiceListAgentMemoryBlocks = (
   },
 ) =>
   queryClient.prefetchQuery({
-    queryKey: Common.UseAgentsServiceListAgentMemoryBlocksKeyFn({
+    queryKey: Common.UseAgentsServiceListCoreMemoryBlocksKeyFn({
       agentId,
       userId,
     }),
-    queryFn: () => AgentsService.listAgentMemoryBlocks({ agentId, userId }),
+    queryFn: () => AgentsService.listCoreMemoryBlocks({ agentId, userId }),
   });
 /**
- * Get Agent Archival Memory
+ * List Archival Memory
  * Retrieve the memories in an agent's archival memory store (paginated query).
  * @param data The data for the request.
  * @param data.agentId
@@ -493,7 +494,7 @@ export const prefetchUseAgentsServiceListAgentMemoryBlocks = (
  * @returns Passage Successful Response
  * @throws ApiError
  */
-export const prefetchUseAgentsServiceListAgentArchivalMemory = (
+export const prefetchUseAgentsServiceListArchivalMemory = (
   queryClient: QueryClient,
   {
     after,
@@ -510,7 +511,7 @@ export const prefetchUseAgentsServiceListAgentArchivalMemory = (
   },
 ) =>
   queryClient.prefetchQuery({
-    queryKey: Common.UseAgentsServiceListAgentArchivalMemoryKeyFn({
+    queryKey: Common.UseAgentsServiceListArchivalMemoryKeyFn({
       after,
       agentId,
       before,
@@ -518,7 +519,7 @@ export const prefetchUseAgentsServiceListAgentArchivalMemory = (
       userId,
     }),
     queryFn: () =>
-      AgentsService.listAgentArchivalMemory({
+      AgentsService.listArchivalMemory({
         after,
         agentId,
         before,
@@ -527,7 +528,7 @@ export const prefetchUseAgentsServiceListAgentArchivalMemory = (
       }),
   });
 /**
- * Get Agent Messages
+ * List Messages
  * Retrieve message history for an agent.
  * @param data The data for the request.
  * @param data.agentId
@@ -540,7 +541,7 @@ export const prefetchUseAgentsServiceListAgentArchivalMemory = (
  * @returns unknown Successful Response
  * @throws ApiError
  */
-export const prefetchUseAgentsServiceListAgentMessages = (
+export const prefetchUseAgentsServiceListMessages = (
   queryClient: QueryClient,
   {
     agentId,
@@ -561,7 +562,7 @@ export const prefetchUseAgentsServiceListAgentMessages = (
   },
 ) =>
   queryClient.prefetchQuery({
-    queryKey: Common.UseAgentsServiceListAgentMessagesKeyFn({
+    queryKey: Common.UseAgentsServiceListMessagesKeyFn({
       agentId,
       assistantMessageToolKwarg,
       assistantMessageToolName,
@@ -571,7 +572,7 @@ export const prefetchUseAgentsServiceListAgentMessages = (
       userId,
     }),
     queryFn: () =>
-      AgentsService.listAgentMessages({
+      AgentsService.listMessages({
         agentId,
         assistantMessageToolKwarg,
         assistantMessageToolName,
@@ -635,7 +636,7 @@ export const prefetchUseLlmsServiceListEmbeddingModels = (
  * @returns Block Successful Response
  * @throws ApiError
  */
-export const prefetchUseBlocksServiceListMemoryBlocks = (
+export const prefetchUseBlocksServiceListBlocks = (
   queryClient: QueryClient,
   {
     label,
@@ -650,24 +651,24 @@ export const prefetchUseBlocksServiceListMemoryBlocks = (
   } = {},
 ) =>
   queryClient.prefetchQuery({
-    queryKey: Common.UseBlocksServiceListMemoryBlocksKeyFn({
+    queryKey: Common.UseBlocksServiceListBlocksKeyFn({
       label,
       name,
       templatesOnly,
       userId,
     }),
     queryFn: () =>
-      BlocksService.listMemoryBlocks({ label, name, templatesOnly, userId }),
+      BlocksService.listBlocks({ label, name, templatesOnly, userId }),
   });
 /**
- * Get Block
+ * Retrieve Block
  * @param data The data for the request.
  * @param data.blockId
  * @param data.userId
  * @returns Block Successful Response
  * @throws ApiError
  */
-export const prefetchUseBlocksServiceGetMemoryBlock = (
+export const prefetchUseBlocksServiceRetrieveBlock = (
   queryClient: QueryClient,
   {
     blockId,
@@ -678,8 +679,8 @@ export const prefetchUseBlocksServiceGetMemoryBlock = (
   },
 ) =>
   queryClient.prefetchQuery({
-    queryKey: Common.UseBlocksServiceGetMemoryBlockKeyFn({ blockId, userId }),
-    queryFn: () => BlocksService.getMemoryBlock({ blockId, userId }),
+    queryKey: Common.UseBlocksServiceRetrieveBlockKeyFn({ blockId, userId }),
+    queryFn: () => BlocksService.retrieveBlock({ blockId, userId }),
   });
 /**
  * List Jobs
@@ -725,7 +726,7 @@ export const prefetchUseJobsServiceListActiveJobs = (
     queryFn: () => JobsService.listActiveJobs({ userId }),
   });
 /**
- * Get Job
+ * Retrieve Job
  * Get the status of a job.
  * @param data The data for the request.
  * @param data.jobId
@@ -733,7 +734,7 @@ export const prefetchUseJobsServiceListActiveJobs = (
  * @returns Job Successful Response
  * @throws ApiError
  */
-export const prefetchUseJobsServiceGetJob = (
+export const prefetchUseJobsServiceRetrieveJob = (
   queryClient: QueryClient,
   {
     jobId,
@@ -744,8 +745,8 @@ export const prefetchUseJobsServiceGetJob = (
   },
 ) =>
   queryClient.prefetchQuery({
-    queryKey: Common.UseJobsServiceGetJobKeyFn({ jobId, userId }),
-    queryFn: () => JobsService.getJob({ jobId, userId }),
+    queryKey: Common.UseJobsServiceRetrieveJobKeyFn({ jobId, userId }),
+    queryFn: () => JobsService.retrieveJob({ jobId, userId }),
   });
 /**
  * Health Check
@@ -894,7 +895,7 @@ export const prefetchUseRunsServiceListActiveRuns = (
     queryFn: () => RunsService.listActiveRuns({ userId }),
   });
 /**
- * Get Run
+ * Retrieve Run
  * Get the status of a run.
  * @param data The data for the request.
  * @param data.runId
@@ -902,7 +903,7 @@ export const prefetchUseRunsServiceListActiveRuns = (
  * @returns Run Successful Response
  * @throws ApiError
  */
-export const prefetchUseRunsServiceGetRun = (
+export const prefetchUseRunsServiceRetrieveRun = (
   queryClient: QueryClient,
   {
     runId,
@@ -913,11 +914,11 @@ export const prefetchUseRunsServiceGetRun = (
   },
 ) =>
   queryClient.prefetchQuery({
-    queryKey: Common.UseRunsServiceGetRunKeyFn({ runId, userId }),
-    queryFn: () => RunsService.getRun({ runId, userId }),
+    queryKey: Common.UseRunsServiceRetrieveRunKeyFn({ runId, userId }),
+    queryFn: () => RunsService.retrieveRun({ runId, userId }),
   });
 /**
- * Get Run Messages
+ * List Run Messages
  * Get messages associated with a run with filtering options.
  *
  * Args:
@@ -941,7 +942,7 @@ export const prefetchUseRunsServiceGetRun = (
  * @returns LettaMessageUnion Successful Response
  * @throws ApiError
  */
-export const prefetchUseRunsServiceGetRunMessages = (
+export const prefetchUseRunsServiceListRunMessages = (
   queryClient: QueryClient,
   {
     ascending,
@@ -960,7 +961,7 @@ export const prefetchUseRunsServiceGetRunMessages = (
   },
 ) =>
   queryClient.prefetchQuery({
-    queryKey: Common.UseRunsServiceGetRunMessagesKeyFn({
+    queryKey: Common.UseRunsServiceListRunMessagesKeyFn({
       ascending,
       cursor,
       limit,
@@ -969,7 +970,7 @@ export const prefetchUseRunsServiceGetRunMessages = (
       userId,
     }),
     queryFn: () =>
-      RunsService.getRunMessages({
+      RunsService.listRunMessages({
         ascending,
         cursor,
         limit,
@@ -979,7 +980,7 @@ export const prefetchUseRunsServiceGetRunMessages = (
       }),
   });
 /**
- * Get Run Usage
+ * Retrieve Run Usage
  * Get usage statistics for a run.
  * @param data The data for the request.
  * @param data.runId
@@ -987,7 +988,7 @@ export const prefetchUseRunsServiceGetRunMessages = (
  * @returns UsageStatistics Successful Response
  * @throws ApiError
  */
-export const prefetchUseRunsServiceGetRunUsage = (
+export const prefetchUseRunsServiceRetrieveRunUsage = (
   queryClient: QueryClient,
   {
     runId,
@@ -998,11 +999,11 @@ export const prefetchUseRunsServiceGetRunUsage = (
   },
 ) =>
   queryClient.prefetchQuery({
-    queryKey: Common.UseRunsServiceGetRunUsageKeyFn({ runId, userId }),
-    queryFn: () => RunsService.getRunUsage({ runId, userId }),
+    queryKey: Common.UseRunsServiceRetrieveRunUsageKeyFn({ runId, userId }),
+    queryFn: () => RunsService.retrieveRunUsage({ runId, userId }),
   });
 /**
- * Get Tags
+ * List Tags
  * Get a list of all tags in the database
  * @param data The data for the request.
  * @param data.cursor
@@ -1036,7 +1037,7 @@ export const prefetchUseTagServiceListTags = (
     queryFn: () => TagService.listTags({ cursor, limit, queryText, userId }),
   });
 /**
- * Get Tags
+ * List Tags
  * Get a list of all tags in the database
  * @param data The data for the request.
  * @param data.cursor

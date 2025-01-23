@@ -32,8 +32,8 @@ import {
 import { z } from 'zod';
 import type { AgentState } from '@letta-cloud/letta-agents-api';
 import {
-  UseAgentsServiceGetAgentKeyFn,
-  useAgentsServiceUpdateAgent,
+  UseAgentsServiceRetrieveAgentKeyFn,
+  useAgentsServiceModifyAgent,
 } from '@letta-cloud/letta-agents-api';
 import { useModelsServiceListModels } from '@letta-cloud/letta-agents-api';
 import { useTranslations } from '@letta-cloud/translations';
@@ -246,7 +246,7 @@ interface SystemPromptEditorDialogProps {
 
 function SystemPromptEditorDialog(props: SystemPromptEditorDialogProps) {
   const { isExpanded, setIsExpanded, system } = props;
-  const { mutate, isPending, isError } = useAgentsServiceUpdateAgent();
+  const { mutate, isPending, isError } = useAgentsServiceModifyAgent();
   const queryClient = useQueryClient();
   const currentAgent = useCurrentAgent();
   const t = useTranslations('ADE/AgentSettingsPanel');
@@ -270,7 +270,7 @@ function SystemPromptEditorDialog(props: SystemPromptEditorDialogProps) {
           onSuccess: (_r) => {
             queryClient.setQueriesData<AgentState | undefined>(
               {
-                queryKey: UseAgentsServiceGetAgentKeyFn({
+                queryKey: UseAgentsServiceRetrieveAgentKeyFn({
                   agentId: currentAgent.id,
                 }),
               },
@@ -357,7 +357,7 @@ function SystemPromptEditor() {
 
   const currentAgent = useCurrentAgent();
 
-  const { mutate } = useAgentsServiceUpdateAgent();
+  const { mutate } = useAgentsServiceModifyAgent();
   const queryClient = useQueryClient();
 
   const debouncedMutation = useDebouncedCallback(mutate, 500);
@@ -369,7 +369,7 @@ function SystemPromptEditor() {
 
       queryClient.setQueriesData<AgentState | undefined>(
         {
-          queryKey: UseAgentsServiceGetAgentKeyFn({
+          queryKey: UseAgentsServiceRetrieveAgentKeyFn({
             agentId: currentAgent.id,
           }),
         },
@@ -491,7 +491,7 @@ function TemplateDescription() {
 
   const t = useTranslations('ADE/AgentSettingsPanel');
 
-  const { mutate, isPending } = useAgentsServiceUpdateAgent();
+  const { mutate, isPending } = useAgentsServiceModifyAgent();
 
   const debouncedMutation = useDebouncedCallback(mutate, 500);
 
@@ -506,7 +506,7 @@ function TemplateDescription() {
 
       queryClient.setQueriesData<AgentState | undefined>(
         {
-          queryKey: UseAgentsServiceGetAgentKeyFn({
+          queryKey: UseAgentsServiceRetrieveAgentKeyFn({
             agentId,
           }),
         },

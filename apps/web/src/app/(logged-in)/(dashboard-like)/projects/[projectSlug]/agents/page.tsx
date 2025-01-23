@@ -51,7 +51,7 @@ import {
   TagService,
   useTagServiceListTags,
 } from '@letta-cloud/letta-agents-api';
-import { useAgentsServiceGetAgent } from '@letta-cloud/letta-agents-api';
+import { useAgentsServiceRetrieveAgent } from '@letta-cloud/letta-agents-api';
 import { useTranslations } from '@letta-cloud/translations';
 import { DeployAgentDialog } from './DeployAgentDialog/DeployAgentDialog';
 import { useDateFormatter } from '@letta-cloud/helpful-client-utils';
@@ -92,7 +92,7 @@ function DeployedAgentView(props: DeployedAgentViewProps) {
   const { slug: currentProjectSlug } = useCurrentProject();
   const t = useTranslations('projects/(projectSlug)/agents/page');
 
-  const { data } = useAgentsServiceGetAgent({
+  const { data } = useAgentsServiceRetrieveAgent({
     agentId: agent.id || '',
   });
 

@@ -30,8 +30,8 @@ import type { AgentMessage } from '@letta-cloud/letta-agents-api';
 import { SystemAlertSchema } from '@letta-cloud/letta-agents-api';
 import { SendMessageFunctionCallSchema } from '@letta-cloud/letta-agents-api';
 import {
-  type ListAgentMessagesResponse,
-  UseAgentsServiceListAgentMessagesKeyFn,
+  type ListMessagesResponse,
+  UseAgentsServiceListMessagesKeyFn,
   UserMessageMessageSchema,
 } from '@letta-cloud/letta-agents-api';
 import type {
@@ -192,12 +192,12 @@ export function Messages(props: MessagesProps) {
   const { data, hasNextPage, fetchNextPage, isFetching } = useInfiniteQuery<
     AgentMessage[],
     Error,
-    InfiniteData<ListAgentMessagesResponse>,
+    InfiniteData<ListMessagesResponse>,
     unknown[],
     { before?: string }
   >({
     refetchInterval,
-    queryKey: UseAgentsServiceListAgentMessagesKeyFn({ agentId }),
+    queryKey: UseAgentsServiceListMessagesKeyFn({ agentId }),
     queryFn: async (query) => {
       const res = (await getMessages({
         url: developmentServerConfig?.url,

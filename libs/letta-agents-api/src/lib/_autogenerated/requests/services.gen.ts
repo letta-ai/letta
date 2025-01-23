@@ -6,10 +6,10 @@ import { request as __request } from './core/request';
 import type {
   DeleteToolData,
   DeleteToolResponse,
-  GetToolData,
-  GetToolResponse,
-  UpdateToolData,
-  UpdateToolResponse,
+  RetrieveToolData,
+  RetrieveToolResponse,
+  ModifyToolData,
+  ModifyToolResponse,
   ListToolsData,
   ListToolsResponse,
   CreateToolData,
@@ -26,10 +26,10 @@ import type {
   ListComposioActionsByAppResponse,
   AddComposioToolData,
   AddComposioToolResponse,
-  GetSourceData,
-  GetSourceResponse,
-  UpdateSourceData,
-  UpdateSourceResponse,
+  RetrieveSourceData,
+  RetrieveSourceResponse,
+  ModifySourceData,
+  ModifySourceResponse,
   DeleteSourceData,
   DeleteSourceResponse,
   GetSourceIdByNameData,
@@ -42,58 +42,58 @@ import type {
   UploadFileToSourceResponse,
   ListSourcePassagesData,
   ListSourcePassagesResponse,
-  ListFilesFromSourceData,
-  ListFilesFromSourceResponse,
+  ListSourceFilesData,
+  ListSourceFilesResponse,
   DeleteFileFromSourceData,
   DeleteFileFromSourceResponse,
   ListAgentsData,
   ListAgentsResponse,
   CreateAgentData,
   CreateAgentResponse,
-  GetAgentContextWindowData,
-  GetAgentContextWindowResponse,
-  UpdateAgentData,
-  UpdateAgentResponse,
-  GetAgentData,
-  GetAgentResponse,
+  RetrieveAgentContextWindowData,
+  RetrieveAgentContextWindowResponse,
+  ModifyAgentData,
+  ModifyAgentResponse,
+  RetrieveAgentData,
+  RetrieveAgentResponse,
   DeleteAgentData,
   DeleteAgentResponse,
-  GetToolsFromAgentData,
-  GetToolsFromAgentResponse,
-  AttachToolToAgentData,
-  AttachToolToAgentResponse,
-  DetachToolFromAgentData,
-  DetachToolFromAgentResponse,
+  ListAgentToolsData,
+  ListAgentToolsResponse,
+  AttachToolData,
+  AttachToolResponse,
+  DetachToolData,
+  DetachToolResponse,
   AttachSourceToAgentData,
   AttachSourceToAgentResponse,
   DetachSourceFromAgentData,
   DetachSourceFromAgentResponse,
-  GetAgentSourcesData,
-  GetAgentSourcesResponse,
-  GetAgentMemoryData,
-  GetAgentMemoryResponse,
-  GetAgentMemoryBlockData,
-  GetAgentMemoryBlockResponse,
-  UpdateAgentMemoryBlockByLabelData,
-  UpdateAgentMemoryBlockByLabelResponse,
-  ListAgentMemoryBlocksData,
-  ListAgentMemoryBlocksResponse,
-  AttachBlockToAgentData,
-  AttachBlockToAgentResponse,
-  DetachBlockFromAgentData,
-  DetachBlockFromAgentResponse,
-  ListAgentArchivalMemoryData,
-  ListAgentArchivalMemoryResponse,
-  CreateAgentArchivalMemoryData,
-  CreateAgentArchivalMemoryResponse,
-  DeleteAgentArchivalMemoryData,
-  DeleteAgentArchivalMemoryResponse,
-  ListAgentMessagesData,
-  ListAgentMessagesResponse,
-  CreateAgentMessageData,
-  CreateAgentMessageResponse,
-  UpdateAgentMessageData,
-  UpdateAgentMessageResponse,
+  ListAgentSourcesData,
+  ListAgentSourcesResponse,
+  RetrieveAgentMemoryData,
+  RetrieveAgentMemoryResponse,
+  RetrieveCoreMemoryBlockData,
+  RetrieveCoreMemoryBlockResponse,
+  ModifyCoreMemoryBlockData,
+  ModifyCoreMemoryBlockResponse,
+  ListCoreMemoryBlocksData,
+  ListCoreMemoryBlocksResponse,
+  AttachCoreMemoryBlockData,
+  AttachCoreMemoryBlockResponse,
+  DetachCoreMemoryBlockData,
+  DetachCoreMemoryBlockResponse,
+  ListArchivalMemoryData,
+  ListArchivalMemoryResponse,
+  CreateArchivalMemoryData,
+  CreateArchivalMemoryResponse,
+  DeleteArchivalMemoryData,
+  DeleteArchivalMemoryResponse,
+  ListMessagesData,
+  ListMessagesResponse,
+  SendMessageData,
+  SendMessageResponse,
+  ModifyMessageData,
+  ModifyMessageResponse,
   CreateAgentMessageStreamData,
   CreateAgentMessageStreamResponse,
   CreateAgentMessageAsyncData,
@@ -102,22 +102,22 @@ import type {
   ResetMessagesResponse,
   ListModelsResponse,
   ListEmbeddingModelsResponse,
-  ListMemoryBlocksData,
-  ListMemoryBlocksResponse,
-  CreateMemoryBlockData,
-  CreateMemoryBlockResponse,
-  UpdateMemoryBlockData,
-  UpdateMemoryBlockResponse,
-  DeleteMemoryBlockData,
-  DeleteMemoryBlockResponse,
-  GetMemoryBlockData,
-  GetMemoryBlockResponse,
+  ListBlocksData,
+  ListBlocksResponse,
+  CreateBlockData,
+  CreateBlockResponse,
+  ModifyBlockData,
+  ModifyBlockResponse,
+  DeleteBlockData,
+  DeleteBlockResponse,
+  RetrieveBlockData,
+  RetrieveBlockResponse,
   ListJobsData,
   ListJobsResponse,
   ListActiveJobsData,
   ListActiveJobsResponse,
-  GetJobData,
-  GetJobResponse,
+  RetrieveJobData,
+  RetrieveJobResponse,
   DeleteJobData,
   DeleteJobResponse,
   HealthCheckResponse,
@@ -145,22 +145,22 @@ import type {
   ListProvidersResponse,
   CreateProviderData,
   CreateProviderResponse,
-  UpdateProviderData,
-  UpdateProviderResponse,
+  ModifyProviderData,
+  ModifyProviderResponse,
   DeleteProviderData,
   DeleteProviderResponse,
   ListRunsData,
   ListRunsResponse,
   ListActiveRunsData,
   ListActiveRunsResponse,
-  GetRunData,
-  GetRunResponse,
+  RetrieveRunData,
+  RetrieveRunResponse,
   DeleteRunData,
   DeleteRunResponse,
-  GetRunMessagesData,
-  GetRunMessagesResponse,
-  GetRunUsageData,
-  GetRunUsageResponse,
+  ListRunMessagesData,
+  ListRunMessagesResponse,
+  RetrieveRunUsageData,
+  RetrieveRunUsageResponse,
   ListTagsData,
   ListTagsResponse,
   ListUsersData,
@@ -209,7 +209,7 @@ export class ToolsService {
   }
 
   /**
-   * Get Tool
+   * Retrieve Tool
    * Get a tool by ID
    * @param data The data for the request.
    * @param data.toolId
@@ -217,10 +217,10 @@ export class ToolsService {
    * @returns letta__schemas__tool__Tool Successful Response
    * @throws ApiError
    */
-  public static getTool(
-    data: GetToolData,
+  public static retrieveTool(
+    data: RetrieveToolData,
     headers?: { user_id: string },
-  ): CancelablePromise<GetToolResponse> {
+  ): CancelablePromise<RetrieveToolResponse> {
     return __request(OpenAPI, {
       method: 'GET',
       url: '/v1/tools/{tool_id}',
@@ -235,7 +235,7 @@ export class ToolsService {
   }
 
   /**
-   * Update Tool
+   * Modify Tool
    * Update an existing tool
    * @param data The data for the request.
    * @param data.toolId
@@ -244,10 +244,10 @@ export class ToolsService {
    * @returns letta__schemas__tool__Tool Successful Response
    * @throws ApiError
    */
-  public static updateTool(
-    data: UpdateToolData,
+  public static modifyTool(
+    data: ModifyToolData,
     headers?: { user_id: string },
-  ): CancelablePromise<UpdateToolResponse> {
+  ): CancelablePromise<ModifyToolResponse> {
     return __request(OpenAPI, {
       method: 'PATCH',
       url: '/v1/tools/{tool_id}',
@@ -465,7 +465,7 @@ export class ToolsService {
 
 export class SourcesService {
   /**
-   * Get Source
+   * Retrieve Source
    * Get all sources
    * @param data The data for the request.
    * @param data.sourceId
@@ -473,10 +473,10 @@ export class SourcesService {
    * @returns Source Successful Response
    * @throws ApiError
    */
-  public static getSource(
-    data: GetSourceData,
+  public static retrieveSource(
+    data: RetrieveSourceData,
     headers?: { user_id: string },
-  ): CancelablePromise<GetSourceResponse> {
+  ): CancelablePromise<RetrieveSourceResponse> {
     return __request(OpenAPI, {
       method: 'GET',
       url: '/v1/sources/{source_id}',
@@ -491,7 +491,7 @@ export class SourcesService {
   }
 
   /**
-   * Update Source
+   * Modify Source
    * Update the name or documentation of an existing data source.
    * @param data The data for the request.
    * @param data.sourceId
@@ -500,10 +500,10 @@ export class SourcesService {
    * @returns Source Successful Response
    * @throws ApiError
    */
-  public static updateSource(
-    data: UpdateSourceData,
+  public static modifySource(
+    data: ModifySourceData,
     headers?: { user_id: string },
-  ): CancelablePromise<UpdateSourceResponse> {
+  ): CancelablePromise<ModifySourceResponse> {
     return __request(OpenAPI, {
       method: 'PATCH',
       url: '/v1/sources/{source_id}',
@@ -648,7 +648,7 @@ export class SourcesService {
   }
 
   /**
-   * List Passages
+   * List Source Passages
    * List all passages associated with a data source.
    * @param data The data for the request.
    * @param data.sourceId
@@ -674,7 +674,7 @@ export class SourcesService {
   }
 
   /**
-   * List Files From Source
+   * List Source Files
    * List paginated files associated with a data source.
    * @param data The data for the request.
    * @param data.sourceId
@@ -684,10 +684,10 @@ export class SourcesService {
    * @returns FileMetadata Successful Response
    * @throws ApiError
    */
-  public static listFilesFromSource(
-    data: ListFilesFromSourceData,
+  public static listSourceFiles(
+    data: ListSourceFilesData,
     headers?: { user_id: string },
-  ): CancelablePromise<ListFilesFromSourceResponse> {
+  ): CancelablePromise<ListSourceFilesResponse> {
     return __request(OpenAPI, {
       method: 'GET',
       url: '/v1/sources/{source_id}/files',
@@ -798,7 +798,7 @@ export class AgentsService {
   }
 
   /**
-   * Get Agent Context Window
+   * Retrieve Agent Context Window
    * Retrieve the context window of a specific agent.
    * @param data The data for the request.
    * @param data.agentId
@@ -806,10 +806,10 @@ export class AgentsService {
    * @returns ContextWindowOverview Successful Response
    * @throws ApiError
    */
-  public static getAgentContextWindow(
-    data: GetAgentContextWindowData,
+  public static retrieveAgentContextWindow(
+    data: RetrieveAgentContextWindowData,
     headers?: { user_id: string },
-  ): CancelablePromise<GetAgentContextWindowResponse> {
+  ): CancelablePromise<RetrieveAgentContextWindowResponse> {
     return __request(OpenAPI, {
       method: 'GET',
       url: '/v1/agents/{agent_id}/context',
@@ -824,7 +824,7 @@ export class AgentsService {
   }
 
   /**
-   * Update Agent
+   * Modify Agent
    * Update an existing agent
    * @param data The data for the request.
    * @param data.agentId
@@ -833,10 +833,10 @@ export class AgentsService {
    * @returns AgentState Successful Response
    * @throws ApiError
    */
-  public static updateAgent(
-    data: UpdateAgentData,
+  public static modifyAgent(
+    data: ModifyAgentData,
     headers?: { user_id: string },
-  ): CancelablePromise<UpdateAgentResponse> {
+  ): CancelablePromise<ModifyAgentResponse> {
     return __request(OpenAPI, {
       method: 'PATCH',
       url: '/v1/agents/{agent_id}',
@@ -853,7 +853,7 @@ export class AgentsService {
   }
 
   /**
-   * Get Agent State
+   * Retrieve Agent
    * Get the state of the agent.
    * @param data The data for the request.
    * @param data.agentId
@@ -861,10 +861,10 @@ export class AgentsService {
    * @returns AgentState Successful Response
    * @throws ApiError
    */
-  public static getAgent(
-    data: GetAgentData,
+  public static retrieveAgent(
+    data: RetrieveAgentData,
     headers?: { user_id: string },
-  ): CancelablePromise<GetAgentResponse> {
+  ): CancelablePromise<RetrieveAgentResponse> {
     return __request(OpenAPI, {
       method: 'GET',
       url: '/v1/agents/{agent_id}',
@@ -905,7 +905,7 @@ export class AgentsService {
   }
 
   /**
-   * Get Tools From Agent
+   * List Agent Tools
    * Get tools from an existing agent
    * @param data The data for the request.
    * @param data.agentId
@@ -913,10 +913,10 @@ export class AgentsService {
    * @returns letta__schemas__tool__Tool Successful Response
    * @throws ApiError
    */
-  public static getToolsFromAgent(
-    data: GetToolsFromAgentData,
+  public static listAgentTools(
+    data: ListAgentToolsData,
     headers?: { user_id: string },
-  ): CancelablePromise<GetToolsFromAgentResponse> {
+  ): CancelablePromise<ListAgentToolsResponse> {
     return __request(OpenAPI, {
       method: 'GET',
       url: '/v1/agents/{agent_id}/tools',
@@ -940,10 +940,10 @@ export class AgentsService {
    * @returns AgentState Successful Response
    * @throws ApiError
    */
-  public static attachToolToAgent(
-    data: AttachToolToAgentData,
+  public static attachTool(
+    data: AttachToolData,
     headers?: { user_id: string },
-  ): CancelablePromise<AttachToolToAgentResponse> {
+  ): CancelablePromise<AttachToolResponse> {
     return __request(OpenAPI, {
       method: 'PATCH',
       url: '/v1/agents/{agent_id}/tools/attach/{tool_id}',
@@ -968,10 +968,10 @@ export class AgentsService {
    * @returns AgentState Successful Response
    * @throws ApiError
    */
-  public static detachToolFromAgent(
-    data: DetachToolFromAgentData,
+  public static detachTool(
+    data: DetachToolData,
     headers?: { user_id: string },
-  ): CancelablePromise<DetachToolFromAgentResponse> {
+  ): CancelablePromise<DetachToolResponse> {
     return __request(OpenAPI, {
       method: 'PATCH',
       url: '/v1/agents/{agent_id}/tools/detach/{tool_id}',
@@ -1043,7 +1043,7 @@ export class AgentsService {
   }
 
   /**
-   * Get Agent Sources
+   * List Agent Sources
    * Get the sources associated with an agent.
    * @param data The data for the request.
    * @param data.agentId
@@ -1051,10 +1051,10 @@ export class AgentsService {
    * @returns Source Successful Response
    * @throws ApiError
    */
-  public static getAgentSources(
-    data: GetAgentSourcesData,
+  public static listAgentSources(
+    data: ListAgentSourcesData,
     headers?: { user_id: string },
-  ): CancelablePromise<GetAgentSourcesResponse> {
+  ): CancelablePromise<ListAgentSourcesResponse> {
     return __request(OpenAPI, {
       method: 'GET',
       url: '/v1/agents/{agent_id}/sources',
@@ -1069,7 +1069,7 @@ export class AgentsService {
   }
 
   /**
-   * Get Agent Memory
+   * Retrieve Agent Memory
    * Retrieve the memory state of a specific agent.
    * This endpoint fetches the current memory state of the agent identified by the user ID and agent ID.
    * @param data The data for the request.
@@ -1078,13 +1078,13 @@ export class AgentsService {
    * @returns Memory Successful Response
    * @throws ApiError
    */
-  public static getAgentMemory(
-    data: GetAgentMemoryData,
+  public static retrieveAgentMemory(
+    data: RetrieveAgentMemoryData,
     headers?: { user_id: string },
-  ): CancelablePromise<GetAgentMemoryResponse> {
+  ): CancelablePromise<RetrieveAgentMemoryResponse> {
     return __request(OpenAPI, {
       method: 'GET',
-      url: '/v1/agents/{agent_id}/core_memory',
+      url: '/v1/agents/{agent_id}/core-memory',
       path: {
         agent_id: data.agentId,
       },
@@ -1096,7 +1096,7 @@ export class AgentsService {
   }
 
   /**
-   * Get Agent Memory Block
+   * Retrieve Core Memory Block
    * Retrieve a memory block from an agent.
    * @param data The data for the request.
    * @param data.agentId
@@ -1105,13 +1105,13 @@ export class AgentsService {
    * @returns Block Successful Response
    * @throws ApiError
    */
-  public static getAgentMemoryBlock(
-    data: GetAgentMemoryBlockData,
+  public static retrieveCoreMemoryBlock(
+    data: RetrieveCoreMemoryBlockData,
     headers?: { user_id: string },
-  ): CancelablePromise<GetAgentMemoryBlockResponse> {
+  ): CancelablePromise<RetrieveCoreMemoryBlockResponse> {
     return __request(OpenAPI, {
       method: 'GET',
-      url: '/v1/agents/{agent_id}/core_memory/blocks/{block_label}',
+      url: '/v1/agents/{agent_id}/core-memory/blocks/{block_label}',
       path: {
         agent_id: data.agentId,
         block_label: data.blockLabel,
@@ -1124,7 +1124,7 @@ export class AgentsService {
   }
 
   /**
-   * Update Agent Memory Block
+   * Modify Core Memory Block
    * Updates a memory block of an agent.
    * @param data The data for the request.
    * @param data.agentId
@@ -1134,13 +1134,13 @@ export class AgentsService {
    * @returns Block Successful Response
    * @throws ApiError
    */
-  public static updateAgentMemoryBlockByLabel(
-    data: UpdateAgentMemoryBlockByLabelData,
+  public static modifyCoreMemoryBlock(
+    data: ModifyCoreMemoryBlockData,
     headers?: { user_id: string },
-  ): CancelablePromise<UpdateAgentMemoryBlockByLabelResponse> {
+  ): CancelablePromise<ModifyCoreMemoryBlockResponse> {
     return __request(OpenAPI, {
       method: 'PATCH',
-      url: '/v1/agents/{agent_id}/core_memory/blocks/{block_label}',
+      url: '/v1/agents/{agent_id}/core-memory/blocks/{block_label}',
       path: {
         agent_id: data.agentId,
         block_label: data.blockLabel,
@@ -1155,7 +1155,7 @@ export class AgentsService {
   }
 
   /**
-   * List Agent Memory Blocks
+   * List Core Memory Blocks
    * Retrieve the memory blocks of a specific agent.
    * @param data The data for the request.
    * @param data.agentId
@@ -1163,13 +1163,13 @@ export class AgentsService {
    * @returns Block Successful Response
    * @throws ApiError
    */
-  public static listAgentMemoryBlocks(
-    data: ListAgentMemoryBlocksData,
+  public static listCoreMemoryBlocks(
+    data: ListCoreMemoryBlocksData,
     headers?: { user_id: string },
-  ): CancelablePromise<ListAgentMemoryBlocksResponse> {
+  ): CancelablePromise<ListCoreMemoryBlocksResponse> {
     return __request(OpenAPI, {
       method: 'GET',
-      url: '/v1/agents/{agent_id}/core_memory/blocks',
+      url: '/v1/agents/{agent_id}/core-memory/blocks',
       path: {
         agent_id: data.agentId,
       },
@@ -1181,7 +1181,7 @@ export class AgentsService {
   }
 
   /**
-   * Attach Block
+   * Attach Core Memory Block
    * Attach a block to an agent.
    * @param data The data for the request.
    * @param data.agentId
@@ -1190,13 +1190,13 @@ export class AgentsService {
    * @returns AgentState Successful Response
    * @throws ApiError
    */
-  public static attachBlockToAgent(
-    data: AttachBlockToAgentData,
+  public static attachCoreMemoryBlock(
+    data: AttachCoreMemoryBlockData,
     headers?: { user_id: string },
-  ): CancelablePromise<AttachBlockToAgentResponse> {
+  ): CancelablePromise<AttachCoreMemoryBlockResponse> {
     return __request(OpenAPI, {
       method: 'PATCH',
-      url: '/v1/agents/{agent_id}/core_memory/blocks/attach/{block_id}',
+      url: '/v1/agents/{agent_id}/core-memory/blocks/attach/{block_id}',
       path: {
         agent_id: data.agentId,
         block_id: data.blockId,
@@ -1209,7 +1209,7 @@ export class AgentsService {
   }
 
   /**
-   * Detach Block
+   * Detach Core Memory Block
    * Detach a block from an agent.
    * @param data The data for the request.
    * @param data.agentId
@@ -1218,13 +1218,13 @@ export class AgentsService {
    * @returns AgentState Successful Response
    * @throws ApiError
    */
-  public static detachBlockFromAgent(
-    data: DetachBlockFromAgentData,
+  public static detachCoreMemoryBlock(
+    data: DetachCoreMemoryBlockData,
     headers?: { user_id: string },
-  ): CancelablePromise<DetachBlockFromAgentResponse> {
+  ): CancelablePromise<DetachCoreMemoryBlockResponse> {
     return __request(OpenAPI, {
       method: 'PATCH',
-      url: '/v1/agents/{agent_id}/core_memory/blocks/detach/{block_id}',
+      url: '/v1/agents/{agent_id}/core-memory/blocks/detach/{block_id}',
       path: {
         agent_id: data.agentId,
         block_id: data.blockId,
@@ -1237,7 +1237,7 @@ export class AgentsService {
   }
 
   /**
-   * Get Agent Archival Memory
+   * List Archival Memory
    * Retrieve the memories in an agent's archival memory store (paginated query).
    * @param data The data for the request.
    * @param data.agentId
@@ -1248,13 +1248,13 @@ export class AgentsService {
    * @returns Passage Successful Response
    * @throws ApiError
    */
-  public static listAgentArchivalMemory(
-    data: ListAgentArchivalMemoryData,
+  public static listArchivalMemory(
+    data: ListArchivalMemoryData,
     headers?: { user_id: string },
-  ): CancelablePromise<ListAgentArchivalMemoryResponse> {
+  ): CancelablePromise<ListArchivalMemoryResponse> {
     return __request(OpenAPI, {
       method: 'GET',
-      url: '/v1/agents/{agent_id}/archival_memory',
+      url: '/v1/agents/{agent_id}/archival-memory',
       path: {
         agent_id: data.agentId,
       },
@@ -1271,7 +1271,7 @@ export class AgentsService {
   }
 
   /**
-   * Insert Agent Archival Memory
+   * Create Archival Memory
    * Insert a memory into an agent's archival memory store.
    * @param data The data for the request.
    * @param data.agentId
@@ -1280,13 +1280,13 @@ export class AgentsService {
    * @returns Passage Successful Response
    * @throws ApiError
    */
-  public static createAgentArchivalMemory(
-    data: CreateAgentArchivalMemoryData,
+  public static createArchivalMemory(
+    data: CreateArchivalMemoryData,
     headers?: { user_id: string },
-  ): CancelablePromise<CreateAgentArchivalMemoryResponse> {
+  ): CancelablePromise<CreateArchivalMemoryResponse> {
     return __request(OpenAPI, {
       method: 'POST',
-      url: '/v1/agents/{agent_id}/archival_memory',
+      url: '/v1/agents/{agent_id}/archival-memory',
       path: {
         agent_id: data.agentId,
       },
@@ -1300,7 +1300,7 @@ export class AgentsService {
   }
 
   /**
-   * Delete Agent Archival Memory
+   * Delete Archival Memory
    * Delete a memory from an agent's archival memory store.
    * @param data The data for the request.
    * @param data.agentId
@@ -1309,13 +1309,13 @@ export class AgentsService {
    * @returns unknown Successful Response
    * @throws ApiError
    */
-  public static deleteAgentArchivalMemory(
-    data: DeleteAgentArchivalMemoryData,
+  public static deleteArchivalMemory(
+    data: DeleteArchivalMemoryData,
     headers?: { user_id: string },
-  ): CancelablePromise<DeleteAgentArchivalMemoryResponse> {
+  ): CancelablePromise<DeleteArchivalMemoryResponse> {
     return __request(OpenAPI, {
       method: 'DELETE',
-      url: '/v1/agents/{agent_id}/archival_memory/{memory_id}',
+      url: '/v1/agents/{agent_id}/archival-memory/{memory_id}',
       path: {
         agent_id: data.agentId,
         memory_id: data.memoryId,
@@ -1328,7 +1328,7 @@ export class AgentsService {
   }
 
   /**
-   * Get Agent Messages
+   * List Messages
    * Retrieve message history for an agent.
    * @param data The data for the request.
    * @param data.agentId
@@ -1341,10 +1341,10 @@ export class AgentsService {
    * @returns unknown Successful Response
    * @throws ApiError
    */
-  public static listAgentMessages(
-    data: ListAgentMessagesData,
+  public static listMessages(
+    data: ListMessagesData,
     headers?: { user_id: string },
-  ): CancelablePromise<ListAgentMessagesResponse> {
+  ): CancelablePromise<ListMessagesResponse> {
     return __request(OpenAPI, {
       method: 'GET',
       url: '/v1/agents/{agent_id}/messages',
@@ -1376,10 +1376,10 @@ export class AgentsService {
    * @returns LettaResponse Successful Response
    * @throws ApiError
    */
-  public static createAgentMessage(
-    data: CreateAgentMessageData,
+  public static sendMessage(
+    data: SendMessageData,
     headers?: { user_id: string },
-  ): CancelablePromise<CreateAgentMessageResponse> {
+  ): CancelablePromise<SendMessageResponse> {
     return __request(OpenAPI, {
       method: 'POST',
       url: '/v1/agents/{agent_id}/messages',
@@ -1396,7 +1396,7 @@ export class AgentsService {
   }
 
   /**
-   * Update Message
+   * Modify Message
    * Update the details of a message associated with an agent.
    * @param data The data for the request.
    * @param data.agentId
@@ -1406,10 +1406,10 @@ export class AgentsService {
    * @returns letta__schemas__message__Message Successful Response
    * @throws ApiError
    */
-  public static updateAgentMessage(
-    data: UpdateAgentMessageData,
+  public static modifyMessage(
+    data: ModifyMessageData,
     headers?: { user_id: string },
-  ): CancelablePromise<UpdateAgentMessageResponse> {
+  ): CancelablePromise<ModifyMessageResponse> {
     return __request(OpenAPI, {
       method: 'PATCH',
       url: '/v1/agents/{agent_id}/messages/{message_id}',
@@ -1593,10 +1593,10 @@ export class BlocksService {
    * @returns Block Successful Response
    * @throws ApiError
    */
-  public static listMemoryBlocks(
-    data: ListMemoryBlocksData = {},
+  public static listBlocks(
+    data: ListBlocksData = {},
     headers?: { user_id: string },
-  ): CancelablePromise<ListMemoryBlocksResponse> {
+  ): CancelablePromise<ListBlocksResponse> {
     return __request(OpenAPI, {
       method: 'GET',
       url: '/v1/blocks/',
@@ -1620,10 +1620,10 @@ export class BlocksService {
    * @returns Block Successful Response
    * @throws ApiError
    */
-  public static createMemoryBlock(
-    data: CreateMemoryBlockData,
+  public static createBlock(
+    data: CreateBlockData,
     headers?: { user_id: string },
-  ): CancelablePromise<CreateMemoryBlockResponse> {
+  ): CancelablePromise<CreateBlockResponse> {
     return __request(OpenAPI, {
       method: 'POST',
       url: '/v1/blocks/',
@@ -1637,7 +1637,7 @@ export class BlocksService {
   }
 
   /**
-   * Update Block
+   * Modify Block
    * @param data The data for the request.
    * @param data.blockId
    * @param data.requestBody
@@ -1645,10 +1645,10 @@ export class BlocksService {
    * @returns Block Successful Response
    * @throws ApiError
    */
-  public static updateMemoryBlock(
-    data: UpdateMemoryBlockData,
+  public static modifyBlock(
+    data: ModifyBlockData,
     headers?: { user_id: string },
-  ): CancelablePromise<UpdateMemoryBlockResponse> {
+  ): CancelablePromise<ModifyBlockResponse> {
     return __request(OpenAPI, {
       method: 'PATCH',
       url: '/v1/blocks/{block_id}',
@@ -1672,10 +1672,10 @@ export class BlocksService {
    * @returns Block Successful Response
    * @throws ApiError
    */
-  public static deleteMemoryBlock(
-    data: DeleteMemoryBlockData,
+  public static deleteBlock(
+    data: DeleteBlockData,
     headers?: { user_id: string },
-  ): CancelablePromise<DeleteMemoryBlockResponse> {
+  ): CancelablePromise<DeleteBlockResponse> {
     return __request(OpenAPI, {
       method: 'DELETE',
       url: '/v1/blocks/{block_id}',
@@ -1690,17 +1690,17 @@ export class BlocksService {
   }
 
   /**
-   * Get Block
+   * Retrieve Block
    * @param data The data for the request.
    * @param data.blockId
    * @param data.userId
    * @returns Block Successful Response
    * @throws ApiError
    */
-  public static getMemoryBlock(
-    data: GetMemoryBlockData,
+  public static retrieveBlock(
+    data: RetrieveBlockData,
     headers?: { user_id: string },
-  ): CancelablePromise<GetMemoryBlockResponse> {
+  ): CancelablePromise<RetrieveBlockResponse> {
     return __request(OpenAPI, {
       method: 'GET',
       url: '/v1/blocks/{block_id}',
@@ -1765,7 +1765,7 @@ export class JobsService {
   }
 
   /**
-   * Get Job
+   * Retrieve Job
    * Get the status of a job.
    * @param data The data for the request.
    * @param data.jobId
@@ -1773,10 +1773,10 @@ export class JobsService {
    * @returns Job Successful Response
    * @throws ApiError
    */
-  public static getJob(
-    data: GetJobData,
+  public static retrieveJob(
+    data: RetrieveJobData,
     headers?: { user_id: string },
-  ): CancelablePromise<GetJobResponse> {
+  ): CancelablePromise<RetrieveJobResponse> {
     return __request(OpenAPI, {
       method: 'GET',
       url: '/v1/jobs/{job_id}',
@@ -2150,17 +2150,17 @@ export class ProvidersService {
   }
 
   /**
-   * Update Provider
+   * Modify Provider
    * Update an existing custom provider
    * @param data The data for the request.
    * @param data.requestBody
    * @returns Provider Successful Response
    * @throws ApiError
    */
-  public static updateProvider(
-    data: UpdateProviderData,
+  public static modifyProvider(
+    data: ModifyProviderData,
     headers?: { user_id: string },
-  ): CancelablePromise<UpdateProviderResponse> {
+  ): CancelablePromise<ModifyProviderResponse> {
     return __request(OpenAPI, {
       method: 'PATCH',
       url: '/v1/providers/',
@@ -2245,7 +2245,7 @@ export class RunsService {
   }
 
   /**
-   * Get Run
+   * Retrieve Run
    * Get the status of a run.
    * @param data The data for the request.
    * @param data.runId
@@ -2253,10 +2253,10 @@ export class RunsService {
    * @returns Run Successful Response
    * @throws ApiError
    */
-  public static getRun(
-    data: GetRunData,
+  public static retrieveRun(
+    data: RetrieveRunData,
     headers?: { user_id: string },
-  ): CancelablePromise<GetRunResponse> {
+  ): CancelablePromise<RetrieveRunResponse> {
     return __request(OpenAPI, {
       method: 'GET',
       url: '/v1/runs/{run_id}',
@@ -2297,7 +2297,7 @@ export class RunsService {
   }
 
   /**
-   * Get Run Messages
+   * List Run Messages
    * Get messages associated with a run with filtering options.
    *
    * Args:
@@ -2321,10 +2321,10 @@ export class RunsService {
    * @returns LettaMessageUnion Successful Response
    * @throws ApiError
    */
-  public static getRunMessages(
-    data: GetRunMessagesData,
+  public static listRunMessages(
+    data: ListRunMessagesData,
     headers?: { user_id: string },
-  ): CancelablePromise<GetRunMessagesResponse> {
+  ): CancelablePromise<ListRunMessagesResponse> {
     return __request(OpenAPI, {
       method: 'GET',
       url: '/v1/runs/{run_id}/messages',
@@ -2345,7 +2345,7 @@ export class RunsService {
   }
 
   /**
-   * Get Run Usage
+   * Retrieve Run Usage
    * Get usage statistics for a run.
    * @param data The data for the request.
    * @param data.runId
@@ -2353,10 +2353,10 @@ export class RunsService {
    * @returns UsageStatistics Successful Response
    * @throws ApiError
    */
-  public static getRunUsage(
-    data: GetRunUsageData,
+  public static retrieveRunUsage(
+    data: RetrieveRunUsageData,
     headers?: { user_id: string },
-  ): CancelablePromise<GetRunUsageResponse> {
+  ): CancelablePromise<RetrieveRunUsageResponse> {
     return __request(OpenAPI, {
       method: 'GET',
       url: '/v1/runs/{run_id}/usage',
@@ -2373,7 +2373,7 @@ export class RunsService {
 
 export class TagService {
   /**
-   * Get Tags
+   * List Tags
    * Get a list of all tags in the database
    * @param data The data for the request.
    * @param data.cursor
@@ -2405,7 +2405,7 @@ export class TagService {
 
 export class AdminService {
   /**
-   * Get Tags
+   * List Tags
    * Get a list of all tags in the database
    * @param data The data for the request.
    * @param data.cursor

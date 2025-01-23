@@ -8,7 +8,7 @@ import {
 import { redirect } from 'next/navigation';
 import {
   SourcesService,
-  UseSourcesServiceGetSourceKeyFn,
+  UseSourcesServiceRetrieveSourceKeyFn,
 } from '@letta-cloud/letta-agents-api';
 import { DataSourceClientLayout } from './_components/DataSourceClientLayout/DataSourceClientLayout';
 
@@ -23,7 +23,7 @@ async function DataSourcePageLayout(props: ProjectPageWrapperProps) {
   const { dataSourceId } = await props.params;
   const queryClient = new QueryClient();
 
-  const dataSource = await SourcesService.getSource({
+  const dataSource = await SourcesService.retrieveSource({
     sourceId: dataSourceId,
   });
 
@@ -33,7 +33,7 @@ async function DataSourcePageLayout(props: ProjectPageWrapperProps) {
   }
 
   await queryClient.prefetchQuery({
-    queryKey: UseSourcesServiceGetSourceKeyFn({
+    queryKey: UseSourcesServiceRetrieveSourceKeyFn({
       sourceId: dataSourceId,
     }),
     queryFn: () => dataSource,

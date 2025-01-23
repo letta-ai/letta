@@ -60,9 +60,9 @@
       },
       "get": {
         "tags": ["tools"],
-        "summary": "Get Tool",
+        "summary": "Retrieve Tool",
         "description": "Get a tool by ID",
-        "operationId": "get_tool",
+        "operationId": "retrieve_tool",
         "parameters": [
           {
             "name": "tool_id",
@@ -99,9 +99,9 @@
       },
       "patch": {
         "tags": ["tools"],
-        "summary": "Update Tool",
+        "summary": "Modify Tool",
         "description": "Update an existing tool",
-        "operationId": "update_tool",
+        "operationId": "modify_tool",
         "parameters": [
           {
             "name": "tool_id",
@@ -494,9 +494,9 @@
     "/v1/sources/{source_id}": {
       "get": {
         "tags": ["sources"],
-        "summary": "Get Source",
+        "summary": "Retrieve Source",
         "description": "Get all sources",
-        "operationId": "get_source",
+        "operationId": "retrieve_source",
         "parameters": [
           {
             "name": "source_id",
@@ -533,9 +533,9 @@
       },
       "patch": {
         "tags": ["sources"],
-        "summary": "Update Source",
+        "summary": "Modify Source",
         "description": "Update the name or documentation of an existing data source.",
-        "operationId": "update_source",
+        "operationId": "modify_source",
         "parameters": [
           {
             "name": "source_id",
@@ -788,7 +788,7 @@
     "/v1/sources/{source_id}/passages": {
       "get": {
         "tags": ["sources"],
-        "summary": "List Passages",
+        "summary": "List Source Passages",
         "description": "List all passages associated with a data source.",
         "operationId": "list_source_passages",
         "parameters": [
@@ -833,9 +833,9 @@
     "/v1/sources/{source_id}/files": {
       "get": {
         "tags": ["sources"],
-        "summary": "List Files From Source",
+        "summary": "List Source Files",
         "description": "List paginated files associated with a data source.",
-        "operationId": "list_files_from_source",
+        "operationId": "list_source_files",
         "parameters": [
           {
             "name": "source_id",
@@ -887,7 +887,7 @@
                   "items": {
                     "$ref": "#/components/schemas/FileMetadata"
                   },
-                  "title": "Response List Files From Source"
+                  "title": "Response List Source Files"
                 }
               }
             }
@@ -1131,9 +1131,9 @@
     "/v1/agents/{agent_id}/context": {
       "get": {
         "tags": ["agents"],
-        "summary": "Get Agent Context Window",
+        "summary": "Retrieve Agent Context Window",
         "description": "Retrieve the context window of a specific agent.",
-        "operationId": "get_agent_context_window",
+        "operationId": "retrieve_agent_context_window",
         "parameters": [
           {
             "name": "agent_id",
@@ -1172,9 +1172,9 @@
     "/v1/agents/{agent_id}": {
       "patch": {
         "tags": ["agents"],
-        "summary": "Update Agent",
+        "summary": "Modify Agent",
         "description": "Update an existing agent",
-        "operationId": "update_agent",
+        "operationId": "modify_agent",
         "parameters": [
           {
             "name": "agent_id",
@@ -1221,9 +1221,9 @@
       },
       "get": {
         "tags": ["agents"],
-        "summary": "Get Agent State",
+        "summary": "Retrieve Agent",
         "description": "Get the state of the agent.",
-        "operationId": "get_agent",
+        "operationId": "retrieve_agent",
         "parameters": [
           {
             "name": "agent_id",
@@ -1299,9 +1299,9 @@
     "/v1/agents/{agent_id}/tools": {
       "get": {
         "tags": ["agents"],
-        "summary": "Get Tools From Agent",
+        "summary": "List Agent Tools",
         "description": "Get tools from an existing agent",
-        "operationId": "get_tools_from_agent",
+        "operationId": "list_agent_tools",
         "parameters": [
           {
             "name": "agent_id",
@@ -1323,7 +1323,7 @@
                   "items": {
                     "$ref": "#/components/schemas/letta__schemas__tool__Tool"
                   },
-                  "title": "Response Get Tools From Agent"
+                  "title": "Response List Agent Tools"
                 }
               }
             }
@@ -1346,7 +1346,7 @@
         "tags": ["agents"],
         "summary": "Attach Tool",
         "description": "Attach a tool to an agent.",
-        "operationId": "attach_tool_to_agent",
+        "operationId": "attach_tool",
         "parameters": [
           {
             "name": "agent_id",
@@ -1396,7 +1396,7 @@
         "tags": ["agents"],
         "summary": "Detach Tool",
         "description": "Detach a tool from an agent.",
-        "operationId": "detach_tool_from_agent",
+        "operationId": "detach_tool",
         "parameters": [
           {
             "name": "agent_id",
@@ -1544,9 +1544,9 @@
     "/v1/agents/{agent_id}/sources": {
       "get": {
         "tags": ["agents"],
-        "summary": "Get Agent Sources",
+        "summary": "List Agent Sources",
         "description": "Get the sources associated with an agent.",
-        "operationId": "get_agent_sources",
+        "operationId": "list_agent_sources",
         "parameters": [
           {
             "name": "agent_id",
@@ -1568,7 +1568,7 @@
                   "items": {
                     "$ref": "#/components/schemas/Source"
                   },
-                  "title": "Response Get Agent Sources"
+                  "title": "Response List Agent Sources"
                 }
               }
             }
@@ -1586,12 +1586,12 @@
         }
       }
     },
-    "/v1/agents/{agent_id}/core_memory": {
+    "/v1/agents/{agent_id}/core-memory": {
       "get": {
         "tags": ["agents"],
-        "summary": "Get Agent Memory",
+        "summary": "Retrieve Agent Memory",
         "description": "Retrieve the memory state of a specific agent.\nThis endpoint fetches the current memory state of the agent identified by the user ID and agent ID.",
-        "operationId": "get_agent_memory",
+        "operationId": "retrieve_agent_memory",
         "parameters": [
           {
             "name": "agent_id",
@@ -1627,12 +1627,12 @@
         }
       }
     },
-    "/v1/agents/{agent_id}/core_memory/blocks/{block_label}": {
+    "/v1/agents/{agent_id}/core-memory/blocks/{block_label}": {
       "get": {
         "tags": ["agents"],
-        "summary": "Get Agent Memory Block",
+        "summary": "Retrieve Core Memory Block",
         "description": "Retrieve a memory block from an agent.",
-        "operationId": "get_agent_memory_block",
+        "operationId": "retrieve_core_memory_block",
         "parameters": [
           {
             "name": "agent_id",
@@ -1678,9 +1678,9 @@
       },
       "patch": {
         "tags": ["agents"],
-        "summary": "Update Agent Memory Block",
+        "summary": "Modify Core Memory Block",
         "description": "Updates a memory block of an agent.",
-        "operationId": "update_agent_memory_block_by_label",
+        "operationId": "modify_core_memory_block",
         "parameters": [
           {
             "name": "agent_id",
@@ -1735,12 +1735,12 @@
         }
       }
     },
-    "/v1/agents/{agent_id}/core_memory/blocks": {
+    "/v1/agents/{agent_id}/core-memory/blocks": {
       "get": {
         "tags": ["agents"],
-        "summary": "List Agent Memory Blocks",
+        "summary": "List Core Memory Blocks",
         "description": "Retrieve the memory blocks of a specific agent.",
-        "operationId": "list_agent_memory_blocks",
+        "operationId": "list_core_memory_blocks",
         "parameters": [
           {
             "name": "agent_id",
@@ -1762,7 +1762,7 @@
                   "items": {
                     "$ref": "#/components/schemas/Block"
                   },
-                  "title": "Response List Agent Memory Blocks"
+                  "title": "Response List Core Memory Blocks"
                 }
               }
             }
@@ -1780,12 +1780,12 @@
         }
       }
     },
-    "/v1/agents/{agent_id}/core_memory/blocks/attach/{block_id}": {
+    "/v1/agents/{agent_id}/core-memory/blocks/attach/{block_id}": {
       "patch": {
         "tags": ["agents"],
-        "summary": "Attach Block",
+        "summary": "Attach Core Memory Block",
         "description": "Attach a block to an agent.",
-        "operationId": "attach_block_to_agent",
+        "operationId": "attach_core_memory_block",
         "parameters": [
           {
             "name": "agent_id",
@@ -1830,12 +1830,12 @@
         }
       }
     },
-    "/v1/agents/{agent_id}/core_memory/blocks/detach/{block_id}": {
+    "/v1/agents/{agent_id}/core-memory/blocks/detach/{block_id}": {
       "patch": {
         "tags": ["agents"],
-        "summary": "Detach Block",
+        "summary": "Detach Core Memory Block",
         "description": "Detach a block from an agent.",
-        "operationId": "detach_block_from_agent",
+        "operationId": "detach_core_memory_block",
         "parameters": [
           {
             "name": "agent_id",
@@ -1880,12 +1880,12 @@
         }
       }
     },
-    "/v1/agents/{agent_id}/archival_memory": {
+    "/v1/agents/{agent_id}/archival-memory": {
       "get": {
         "tags": ["agents"],
-        "summary": "Get Agent Archival Memory",
+        "summary": "List Archival Memory",
         "description": "Retrieve the memories in an agent's archival memory store (paginated query).",
-        "operationId": "list_agent_archival_memory",
+        "operationId": "list_archival_memory",
         "parameters": [
           {
             "name": "agent_id",
@@ -1961,7 +1961,7 @@
                   "items": {
                     "$ref": "#/components/schemas/Passage"
                   },
-                  "title": "Response List Agent Archival Memory"
+                  "title": "Response List Archival Memory"
                 }
               }
             }
@@ -1980,9 +1980,9 @@
       },
       "post": {
         "tags": ["agents"],
-        "summary": "Insert Agent Archival Memory",
+        "summary": "Create Archival Memory",
         "description": "Insert a memory into an agent's archival memory store.",
-        "operationId": "create_agent_archival_memory",
+        "operationId": "create_archival_memory",
         "parameters": [
           {
             "name": "agent_id",
@@ -2014,7 +2014,7 @@
                   "items": {
                     "$ref": "#/components/schemas/Passage"
                   },
-                  "title": "Response Create Agent Archival Memory"
+                  "title": "Response Create Archival Memory"
                 }
               }
             }
@@ -2032,12 +2032,12 @@
         }
       }
     },
-    "/v1/agents/{agent_id}/archival_memory/{memory_id}": {
+    "/v1/agents/{agent_id}/archival-memory/{memory_id}": {
       "delete": {
         "tags": ["agents"],
-        "summary": "Delete Agent Archival Memory",
+        "summary": "Delete Archival Memory",
         "description": "Delete a memory from an agent's archival memory store.",
-        "operationId": "delete_agent_archival_memory",
+        "operationId": "delete_archival_memory",
         "parameters": [
           {
             "name": "agent_id",
@@ -2083,9 +2083,9 @@
     "/v1/agents/{agent_id}/messages": {
       "get": {
         "tags": ["agents"],
-        "summary": "Get Agent Messages",
+        "summary": "List Messages",
         "description": "Retrieve message history for an agent.",
-        "operationId": "list_agent_messages",
+        "operationId": "list_messages",
         "parameters": [
           {
             "name": "agent_id",
@@ -2183,7 +2183,7 @@
                       }
                     }
                   ],
-                  "title": "Response List Agent Messages"
+                  "title": "Response List Messages"
                 }
               }
             }
@@ -2204,7 +2204,7 @@
         "tags": ["agents"],
         "summary": "Send Message",
         "description": "Process a user message and return the agent's response.\nThis endpoint accepts a message from a user and processes it through the agent.",
-        "operationId": "create_agent_message",
+        "operationId": "send_message",
         "parameters": [
           {
             "name": "agent_id",
@@ -2253,9 +2253,9 @@
     "/v1/agents/{agent_id}/messages/{message_id}": {
       "patch": {
         "tags": ["agents"],
-        "summary": "Update Message",
+        "summary": "Modify Message",
         "description": "Update the details of a message associated with an agent.",
-        "operationId": "update_agent_message",
+        "operationId": "modify_message",
         "parameters": [
           {
             "name": "agent_id",
@@ -2516,7 +2516,7 @@
       "get": {
         "tags": ["blocks"],
         "summary": "List Blocks",
-        "operationId": "list_memory_blocks",
+        "operationId": "list_blocks",
         "parameters": [
           {
             "name": "label",
@@ -2577,7 +2577,7 @@
                   "items": {
                     "$ref": "#/components/schemas/Block"
                   },
-                  "title": "Response List Memory Blocks"
+                  "title": "Response List Blocks"
                 }
               }
             }
@@ -2597,7 +2597,7 @@
       "post": {
         "tags": ["blocks"],
         "summary": "Create Block",
-        "operationId": "create_memory_block",
+        "operationId": "create_block",
         "parameters": [],
         "requestBody": {
           "required": true,
@@ -2636,8 +2636,8 @@
     "/v1/blocks/{block_id}": {
       "patch": {
         "tags": ["blocks"],
-        "summary": "Update Block",
-        "operationId": "update_memory_block",
+        "summary": "Modify Block",
+        "operationId": "modify_block",
         "parameters": [
           {
             "name": "block_id",
@@ -2685,7 +2685,7 @@
       "delete": {
         "tags": ["blocks"],
         "summary": "Delete Block",
-        "operationId": "delete_memory_block",
+        "operationId": "delete_block",
         "parameters": [
           {
             "name": "block_id",
@@ -2722,8 +2722,8 @@
       },
       "get": {
         "tags": ["blocks"],
-        "summary": "Get Block",
-        "operationId": "get_memory_block",
+        "summary": "Retrieve Block",
+        "operationId": "retrieve_block",
         "parameters": [
           {
             "name": "block_id",
@@ -2851,9 +2851,9 @@
     "/v1/jobs/{job_id}": {
       "get": {
         "tags": ["jobs"],
-        "summary": "Get Job",
+        "summary": "Retrieve Job",
         "description": "Get the status of a job.",
-        "operationId": "get_job",
+        "operationId": "retrieve_job",
         "parameters": [
           {
             "name": "job_id",
@@ -3056,9 +3056,9 @@
       },
       "patch": {
         "tags": ["providers", "providers"],
-        "summary": "Update Provider",
+        "summary": "Modify Provider",
         "description": "Update an existing custom provider",
-        "operationId": "update_provider",
+        "operationId": "modify_provider",
         "requestBody": {
           "required": true,
           "content": {
@@ -3205,9 +3205,9 @@
     "/v1/runs/{run_id}": {
       "get": {
         "tags": ["runs"],
-        "summary": "Get Run",
+        "summary": "Retrieve Run",
         "description": "Get the status of a run.",
-        "operationId": "get_run",
+        "operationId": "retrieve_run",
         "parameters": [
           {
             "name": "run_id",
@@ -3285,9 +3285,9 @@
     "/v1/runs/{run_id}/messages": {
       "get": {
         "tags": ["runs"],
-        "summary": "Get Run Messages",
+        "summary": "List Run Messages",
         "description": "Get messages associated with a run with filtering options.\n\nArgs:\n    run_id: ID of the run\n    cursor: Cursor for pagination\n    limit: Maximum number of messages to return\n    ascending: Sort order by creation time\n    role: Filter by role (user/assistant/system/tool)\n    return_message_object: Whether to return Message objects or LettaMessage objects\n    user_id: ID of the user making the request\n\nReturns:\n    A list of messages associated with the run. Default is List[LettaMessage].",
-        "operationId": "get_run_messages",
+        "operationId": "list_run_messages",
         "parameters": [
           {
             "name": "run_id",
@@ -3376,7 +3376,7 @@
                   "items": {
                     "$ref": "#/components/schemas/LettaMessageUnion"
                   },
-                  "title": "Response Get Run Messages"
+                  "title": "Response List Run Messages"
                 }
               }
             }
@@ -3397,9 +3397,9 @@
     "/v1/runs/{run_id}/usage": {
       "get": {
         "tags": ["runs"],
-        "summary": "Get Run Usage",
+        "summary": "Retrieve Run Usage",
         "description": "Get usage statistics for a run.",
-        "operationId": "get_run_usage",
+        "operationId": "retrieve_run_usage",
         "parameters": [
           {
             "name": "run_id",
@@ -3438,7 +3438,7 @@
     "/v1/tags/": {
       "get": {
         "tags": ["tag", "admin", "admin"],
-        "summary": "Get Tags",
+        "summary": "List Tags",
         "description": "Get a list of all tags in the database",
         "operationId": "list_tags",
         "parameters": [

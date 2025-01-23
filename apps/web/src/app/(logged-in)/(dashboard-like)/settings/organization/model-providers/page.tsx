@@ -34,7 +34,7 @@ import {
   useProvidersServiceDeleteProvider,
   useProvidersServiceListProviders,
   UseProvidersServiceListProvidersKeyFn,
-  useProvidersServiceUpdateProvider,
+  useProvidersServiceModifyProvider,
 } from '@letta-cloud/letta-agents-api';
 import { useQueryClient } from '@tanstack/react-query';
 import { useDateFormatter } from '@letta-cloud/helpful-client-utils';
@@ -54,7 +54,7 @@ function UpdateModelProviderDialog(props: UpdateModelProviderDialogProps) {
   const { modelProviderId, modelProviderName } = props;
   const [open, setOpen] = useState(false);
 
-  const { mutate, isPending, error, reset } = useProvidersServiceUpdateProvider(
+  const { mutate, isPending, error, reset } = useProvidersServiceModifyProvider(
     {
       onSuccess: () => {
         queryClient.setQueriesData<ListProvidersResponse | undefined>(

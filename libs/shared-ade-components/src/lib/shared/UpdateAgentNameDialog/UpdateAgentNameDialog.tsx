@@ -8,7 +8,7 @@ import {
   useForm,
 } from '@letta-cloud/component-library';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useAgentsServiceUpdateAgent } from '@letta-cloud/letta-agents-api';
+import { useAgentsServiceModifyAgent } from '@letta-cloud/letta-agents-api';
 import { webOriginSDKApi } from '@letta-cloud/letta-agents-api';
 import React, { useCallback, useEffect } from 'react';
 import { isFetchError } from '@ts-rest/react-query/v5';
@@ -52,7 +52,7 @@ export function UpdateNameDialog(props: UpdateNameDialogProps) {
     mutate: localMutate,
     isPending: localIsPending,
     error: localError,
-  } = useAgentsServiceUpdateAgent();
+  } = useAgentsServiceModifyAgent();
 
   const agentBaseType = useAgentBaseTypeName();
 

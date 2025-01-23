@@ -31,10 +31,10 @@ import { ErrorMessageSchema } from '@letta-cloud/letta-agents-api';
 import { useLettaAgentsAPI } from '@letta-cloud/letta-agents-api';
 import { getIsAgentState } from '@letta-cloud/letta-agents-api';
 import { AgentsService } from '@letta-cloud/letta-agents-api';
-import { useAgentsServiceGetAgentSources } from '@letta-cloud/letta-agents-api';
+import { useAgentsServiceListAgentSources } from '@letta-cloud/letta-agents-api';
 import {
   AgentMessageSchema,
-  UseAgentsServiceListAgentMessagesKeyFn,
+  UseAgentsServiceListMessagesKeyFn,
 } from '@letta-cloud/letta-agents-api';
 import { useCurrentAgent } from '../../hooks';
 import { EventSource } from 'extended-eventsource';
@@ -266,7 +266,7 @@ function useSendMessage(agentId: string, options: UseSendMessageOptions = {}) {
 
         if (e.eventPhase === eventsource.CLOSED) {
           void queryClient.invalidateQueries({
-            queryKey: UseAgentsServiceListAgentMessagesKeyFn({ agentId }),
+            queryKey: UseAgentsServiceListMessagesKeyFn({ agentId }),
           });
 
           setIsPending(false);
@@ -461,7 +461,7 @@ function AgentSimulatorOptionsMenu() {
           all: true,
         },
       }),
-      AgentsService.getAgentSources({
+      AgentsService.listAgentSources({
         agentId: agentId,
       }),
     ]);
@@ -537,7 +537,7 @@ export function AgentSimulator() {
       },
     });
 
-  const { data: sourceList } = useAgentsServiceGetAgentSources({
+  const { data: sourceList } = useAgentsServiceListAgentSources({
     agentId: agentState.id || '',
   });
 

@@ -43,7 +43,7 @@ import { useCurrentAgentMetaData } from './hooks/useCurrentAgentMetaData/useCurr
 import { useCurrentAgent } from './hooks';
 import {
   useAgentsServiceDeleteAgent,
-  useAgentsServiceGetAgent,
+  useAgentsServiceRetrieveAgent,
 } from '@letta-cloud/letta-agents-api';
 import { useTranslations } from '@letta-cloud/translations';
 import { z } from 'zod';
@@ -531,7 +531,7 @@ export function AgentPage() {
     'projects/(projectSlug)/agents/(agentId)/AgentPage',
   );
 
-  useAgentsServiceGetAgent({
+  useAgentsServiceRetrieveAgent({
     agentId,
   });
 

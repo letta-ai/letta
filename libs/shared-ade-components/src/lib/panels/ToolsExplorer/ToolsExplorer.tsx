@@ -10,19 +10,19 @@ import { isLettaTool } from '@letta-cloud/letta-agents-api';
 
 import { useToolsServiceDeleteTool } from '@letta-cloud/letta-agents-api';
 import {
-  type GetToolResponse,
+  type RetrieveToolResponse,
   isAPIError,
   useToolsServiceAddComposioTool,
   useToolsServiceCreateTool,
-  UseToolsServiceGetToolKeyFn,
+  UseToolsServiceRetrieveToolKeyFn,
   UseToolsServiceListToolsKeyFn,
   useToolsServiceRunToolFromSource,
-  useToolsServiceUpdateTool,
+  useToolsServiceModifyTool,
 } from '@letta-cloud/letta-agents-api';
 import {
-  useAgentsServiceAttachToolToAgent,
-  UseAgentsServiceGetAgentKeyFn,
-  useToolsServiceGetTool,
+  useAgentsServiceAttachTool,
+  UseAgentsServiceRetrieveAgentKeyFn,
+  useToolsServiceRetrieveTool,
   useToolsServiceListComposioApps,
   useToolsServiceListTools,
 } from '@letta-cloud/letta-agents-api';
@@ -157,7 +157,7 @@ function ViewToolCodePreview(props: ViewToolCodePreviewProps) {
     return ['letta', 'custom'].includes(provider);
   }, [provider]);
 
-  const { data: tool } = useToolsServiceGetTool(
+  const { data: tool } = useToolsServiceRetrieveTool(
     {
       toolId,
     },
@@ -318,7 +318,7 @@ function AddToolToAgentButton(props: AddToolToAgentButtonProps) {
 
   const [isPending, setIsPending] = useState(false);
 
-  const { mutateAsync: attachToolToAgent } = useAgentsServiceAttachToolToAgent({
+  const { mutateAsync: attachToolToAgent } = useAgentsServiceAttachTool({
     onError: () => {
       toast.error(t('AddToolToAgentButton.error'));
     },
@@ -355,7 +355,7 @@ function AddToolToAgentButton(props: AddToolToAgentButtonProps) {
 
       queryClient.setQueriesData<AgentState | undefined>(
         {
-          queryKey: UseAgentsServiceGetAgentKeyFn({
+          queryKey: UseAgentsServiceRetrieveAgentKeyFn({
             agentId: agentId,
           }),
         },
@@ -478,7 +478,7 @@ function ViewTool(props: ViewToolProps) {
     return ['letta', 'custom'].includes(baseTool.provider);
   }, [baseTool.provider]);
 
-  const { data: localTool } = useToolsServiceGetTool(
+  const { data: localTool } = useToolsServiceRetrieveTool(
     {
       toolId: baseTool.id,
     },
@@ -1709,7 +1709,7 @@ function EditTool(props: EditToolProps) {
   const [sourceCode, setSourceCode] = useState(tool.source_code || '');
 
   const [localError, setLocalError] = useState<string | null>(null);
-  const { mutate, isPending, error } = useToolsServiceUpdateTool();
+  const { mutate, isPending, error } = useToolsServiceModifyTool();
 
   const t = useTranslations('ADE/Tools');
 
@@ -1731,9 +1731,9 @@ function EditTool(props: EditToolProps) {
       },
       {
         onSuccess: () => {
-          queryClient.setQueriesData<GetToolResponse | undefined>(
+          queryClient.setQueriesData<RetrieveToolResponse | undefined>(
             {
-              queryKey: UseToolsServiceGetToolKeyFn({
+              queryKey: UseToolsServiceRetrieveToolKeyFn({
                 toolId: tool.id || '',
               }),
             },
@@ -1845,7 +1845,7 @@ function EditToolWrapper() {
     return currentTool?.data.name || '';
   }, [currentTool]);
 
-  const { data: tool } = useToolsServiceGetTool(
+  const { data: tool } = useToolsServiceRetrieveTool(
     {
       toolId,
     },

@@ -38,7 +38,7 @@ describe('agentTemplateRoutes', () => {
         projectId: '123',
       });
 
-      lettaAgentAPIMock.AgentsService.getAgent.mockResolvedValue({
+      lettaAgentAPIMock.AgentsService.retrieveAgent.mockResolvedValue({
         id: 'new-testing-agent-id',
         tools: [],
         memory: {
@@ -50,7 +50,7 @@ describe('agentTemplateRoutes', () => {
         id: 'new-testing-agent-id',
       });
 
-      lettaAgentAPIMock.AgentsService.getAgentSources.mockResolvedValue([]);
+      lettaAgentAPIMock.AgentsService.listAgentSources.mockResolvedValue([]);
 
       const { returningFn, valuesFn } = mockDatabaseInsert();
 

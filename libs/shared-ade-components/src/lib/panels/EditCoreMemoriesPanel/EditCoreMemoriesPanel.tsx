@@ -31,8 +31,8 @@ import { useDateFormatter } from '@letta-cloud/helpful-client-utils';
 import { useUpdateMemory } from '../../hooks';
 import { useCurrentAgentMetaData } from '../../hooks';
 import type { Block, AgentState } from '@letta-cloud/letta-agents-api';
-import { useAgentsServiceUpdateAgentMemoryBlockByLabel } from '@letta-cloud/letta-agents-api';
-import { UseAgentsServiceGetAgentKeyFn } from '@letta-cloud/letta-agents-api';
+import { useAgentsServiceModifyCoreMemoryBlock } from '@letta-cloud/letta-agents-api';
+import { UseAgentsServiceRetrieveAgentKeyFn } from '@letta-cloud/letta-agents-api';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useFormContext } from 'react-hook-form';
 import { useQueryClient } from '@tanstack/react-query';
@@ -122,7 +122,7 @@ function AdvancedMemoryEditorForm(props: AdvancedMemoryEditorProps) {
   const queryClient = useQueryClient();
 
   const { mutateAsync: updateAgentMemoryByLabel } =
-    useAgentsServiceUpdateAgentMemoryBlockByLabel();
+    useAgentsServiceModifyCoreMemoryBlock();
   const [isPending, setIsPending] = useState(false);
   const [isError, setIsError] = useState(false);
 
@@ -151,7 +151,7 @@ function AdvancedMemoryEditorForm(props: AdvancedMemoryEditorProps) {
 
         queryClient.setQueriesData<AgentState | undefined>(
           {
-            queryKey: UseAgentsServiceGetAgentKeyFn({
+            queryKey: UseAgentsServiceRetrieveAgentKeyFn({
               agentId: agent.id,
             }),
           },

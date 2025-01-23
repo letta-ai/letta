@@ -24,7 +24,7 @@ import { useTranslations } from '@letta-cloud/translations';
 import { useCurrentProject } from '../../hooks';
 import { webApi, webApiQueryKeys, webOriginSDKApi } from '$web/client';
 import { useRouter } from 'next/navigation';
-import { useAgentsServiceGetAgent } from '@letta-cloud/letta-agents-api';
+import { useAgentsServiceRetrieveAgent } from '@letta-cloud/letta-agents-api';
 import { findMemoryBlockVariables } from '@letta-cloud/generic-utils';
 import { STARTER_KITS } from '@letta-cloud/agent-starter-kits';
 
@@ -220,7 +220,7 @@ function SelectedTemplateStateWrapper(
   props: SelectedTemplateStateWrapperProps,
 ) {
   const { selectedTemplate, onReset, onCreating, onErrored } = props;
-  const { data: agent } = useAgentsServiceGetAgent({
+  const { data: agent } = useAgentsServiceRetrieveAgent({
     agentId: selectedTemplate.id,
   });
 

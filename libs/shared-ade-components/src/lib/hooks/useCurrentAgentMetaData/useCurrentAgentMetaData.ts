@@ -4,7 +4,7 @@ import {
   webOriginSDKQueryKeys,
 } from '@letta-cloud/letta-agents-api';
 import { useParams, usePathname } from 'next/navigation';
-import { useAgentsServiceGetAgent } from '@letta-cloud/letta-agents-api';
+import { useAgentsServiceRetrieveAgent } from '@letta-cloud/letta-agents-api';
 import { get } from 'lodash-es';
 import { CURRENT_RUNTIME } from '@letta-cloud/runtime';
 
@@ -30,7 +30,7 @@ export function useCurrentAgentMetaData(): UseCurrentAgentMetaDataResponse {
     pathname.startsWith('/development-servers') ||
     CURRENT_RUNTIME === 'letta-desktop';
 
-  const localAgent = useAgentsServiceGetAgent(
+  const localAgent = useAgentsServiceRetrieveAgent(
     {
       agentId,
     },

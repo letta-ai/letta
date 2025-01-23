@@ -26,18 +26,18 @@ import { VStack } from '@letta-cloud/component-library';
 import { useTranslations } from '@letta-cloud/translations';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import type { AgentState, Source } from '@letta-cloud/letta-agents-api';
-import { UseAgentsServiceGetAgentKeyFn } from '@letta-cloud/letta-agents-api';
-import { useSourcesServiceUpdateSource } from '@letta-cloud/letta-agents-api';
+import { UseAgentsServiceRetrieveAgentKeyFn } from '@letta-cloud/letta-agents-api';
+import { useSourcesServiceModifySource } from '@letta-cloud/letta-agents-api';
 import {
-  type ListFilesFromSourceResponse,
+  type ListSourceFilesResponse,
   useJobsServiceListActiveJobs,
   UseJobsServiceListActiveJobsKeyFn,
   useAgentsServiceAttachSourceToAgent,
   useSourcesServiceCreateSource,
   useSourcesServiceDeleteFileFromSource,
   useAgentsServiceDetachSourceFromAgent,
-  useSourcesServiceListFilesFromSource,
-  UseSourcesServiceListFilesFromSourceKeyFn,
+  useSourcesServiceListSourceFiles,
+  UseSourcesServiceListSourceFilesKeyFn,
   useSourcesServiceListSources,
   useSourcesServiceUploadFileToSource,
 } from '@letta-cloud/letta-agents-api';
@@ -77,7 +77,7 @@ function AttachDataSourceAction(props: AttachDataSourceActionProps) {
     onSuccess: (response) => {
       queryClient.setQueriesData<AgentState | undefined>(
         {
-          queryKey: UseAgentsServiceGetAgentKeyFn({
+          queryKey: UseAgentsServiceRetrieveAgentKeyFn({
             agentId: id,
           }),
         },
@@ -292,7 +292,7 @@ function CreateDataSourceDialogInner(props: CreateDataSourceDialogInnerProps) {
               onSuccess: () => {
                 queryClient.setQueriesData<AgentState | undefined>(
                   {
-                    queryKey: UseAgentsServiceGetAgentKeyFn({
+                    queryKey: UseAgentsServiceRetrieveAgentKeyFn({
                       agentId: id,
                     }),
                   },
@@ -453,9 +453,9 @@ function FileUploadDialog(props: FileUploadDialogProps) {
   const queryClient = useQueryClient();
   const { mutate, isPending } = useSourcesServiceUploadFileToSource({
     onSuccess: (_, variables) => {
-      void queryClient.setQueriesData<ListFilesFromSourceResponse | undefined>(
+      void queryClient.setQueriesData<ListSourceFilesResponse | undefined>(
         {
-          queryKey: UseSourcesServiceListFilesFromSourceKeyFn({
+          queryKey: UseSourcesServiceListSourceFilesKeyFn({
             sourceId,
             limit: 1000,
           }),
@@ -560,7 +560,7 @@ function DetachDataSourceConfirmDialog(
       onClose();
       queryClient.setQueriesData<AgentState | undefined>(
         {
-          queryKey: UseAgentsServiceGetAgentKeyFn({
+          queryKey: UseAgentsServiceRetrieveAgentKeyFn({
             agentId,
           }),
         },
@@ -630,9 +630,9 @@ export function DeleteFileDialog(props: DeleteFileDialogProps) {
   const { mutate, isPending, isError } = useSourcesServiceDeleteFileFromSource({
     onSuccess: () => {
       onClose();
-      queryClient.setQueriesData<ListFilesFromSourceResponse | undefined>(
+      queryClient.setQueriesData<ListSourceFilesResponse | undefined>(
         {
-          queryKey: UseSourcesServiceListFilesFromSourceKeyFn({
+          queryKey: UseSourcesServiceListSourceFilesKeyFn({
             sourceId,
             limit,
           }),
@@ -706,7 +706,7 @@ function DeleteDataSourceDialog(props: DeleteDataSourceDialogProps) {
     onSuccess: () => {
       queryClient.setQueriesData<AgentState | undefined>(
         {
-          queryKey: UseAgentsServiceGetAgentKeyFn({
+          queryKey: UseAgentsServiceRetrieveAgentKeyFn({
             agentId,
           }),
         },
@@ -794,11 +794,11 @@ function RenameDataSourceDialog(props: RenameDataSourceDialogProps) {
     },
   });
 
-  const { mutate, isPending, isError } = useSourcesServiceUpdateSource({
+  const { mutate, isPending, isError } = useSourcesServiceModifySource({
     onSuccess: (response) => {
       queryClient.setQueriesData<AgentState | undefined>(
         {
-          queryKey: UseAgentsServiceGetAgentKeyFn({
+          queryKey: UseAgentsServiceRetrieveAgentKeyFn({
             agentId,
           }),
         },
@@ -984,7 +984,7 @@ function EditDataSourcesContent(props: EditDataSourcesContentProps) {
             },
           ],
           useContents: () => {
-            const { data, isLoading } = useSourcesServiceListFilesFromSource({
+            const { data, isLoading } = useSourcesServiceListSourceFiles({
               limit: 1000,
               sourceId: source.id || '',
             });

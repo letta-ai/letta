@@ -21,8 +21,8 @@ import { useTranslations } from '@letta-cloud/translations';
 import { Link } from '@letta-cloud/component-library';
 import {
   getIsAgentState,
-  UseAgentsServiceGetAgentKeyFn,
-  useAgentsServiceUpdateAgent,
+  UseAgentsServiceRetrieveAgentKeyFn,
+  useAgentsServiceModifyAgent,
   webOriginSDKApi,
   webOriginSDKQueryKeys,
 } from '@letta-cloud/letta-agents-api';
@@ -123,11 +123,11 @@ function ToolVariables() {
 
   const queryClient = useQueryClient();
 
-  const { mutate, isPending } = useAgentsServiceUpdateAgent({
+  const { mutate, isPending } = useAgentsServiceModifyAgent({
     onSuccess: (data) => {
       queryClient.setQueriesData<AgentState | undefined>(
         {
-          queryKey: UseAgentsServiceGetAgentKeyFn({ agentId }),
+          queryKey: UseAgentsServiceRetrieveAgentKeyFn({ agentId }),
         },
         (oldData) => {
           if (!oldData) {
