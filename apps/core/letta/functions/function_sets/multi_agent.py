@@ -74,7 +74,7 @@ def send_message_to_agents_matching_all_tags(self: "Agent", message: str, tags: 
     server = get_letta_server()
 
     # Retrieve agents that match ALL specified tags
-    matching_agents = server.agent_manager.list_agents(actor=self.user, tags=tags, match_all_tags=True, cursor=None, limit=100)
+    matching_agents = server.agent_manager.list_agents(actor=self.user, tags=tags, match_all_tags=True, limit=100)
 
     async def send_messages_to_all_agents():
         tasks = [

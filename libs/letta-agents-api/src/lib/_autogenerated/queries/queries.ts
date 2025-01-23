@@ -89,7 +89,7 @@ export const useToolsServiceRetrieveTool = <
  * List Tools
  * Get a list of all tools available to agents belonging to the org of the user
  * @param data The data for the request.
- * @param data.cursor
+ * @param data.after
  * @param data.limit
  * @param data.userId
  * @returns Tool Successful Response
@@ -101,11 +101,11 @@ export const useToolsServiceListTools = <
   TQueryKey extends Array<unknown> = unknown[],
 >(
   {
-    cursor,
+    after,
     limit,
     userId,
   }: {
-    cursor?: string;
+    after?: string;
     limit?: number;
     userId?: string;
   } = {},
@@ -114,10 +114,10 @@ export const useToolsServiceListTools = <
 ) =>
   useQuery<TData, TError>({
     queryKey: Common.UseToolsServiceListToolsKeyFn(
-      { cursor, limit, userId },
+      { after, limit, userId },
       queryKey,
     ),
-    queryFn: () => ToolsService.listTools({ cursor, limit, userId }) as TData,
+    queryFn: () => ToolsService.listTools({ after, limit, userId }) as TData,
     ...options,
   });
 /**
@@ -312,7 +312,7 @@ export const useSourcesServiceListSourcePassages = <
  * @param data The data for the request.
  * @param data.sourceId
  * @param data.limit Number of files to return
- * @param data.cursor Pagination cursor to fetch the next set of results
+ * @param data.after Pagination cursor to fetch the next set of results
  * @param data.userId
  * @returns FileMetadata Successful Response
  * @throws ApiError
@@ -323,12 +323,12 @@ export const useSourcesServiceListSourceFiles = <
   TQueryKey extends Array<unknown> = unknown[],
 >(
   {
-    cursor,
+    after,
     limit,
     sourceId,
     userId,
   }: {
-    cursor?: string;
+    after?: string;
     limit?: number;
     sourceId: string;
     userId?: string;
@@ -338,12 +338,12 @@ export const useSourcesServiceListSourceFiles = <
 ) =>
   useQuery<TData, TError>({
     queryKey: Common.UseSourcesServiceListSourceFilesKeyFn(
-      { cursor, limit, sourceId, userId },
+      { after, limit, sourceId, userId },
       queryKey,
     ),
     queryFn: () =>
       SourcesService.listSourceFiles({
-        cursor,
+        after,
         limit,
         sourceId,
         userId,
@@ -358,7 +358,8 @@ export const useSourcesServiceListSourceFiles = <
  * @param data.name Name of the agent
  * @param data.tags List of tags to filter agents by
  * @param data.matchAllTags If True, only returns agents that match ALL given tags. Otherwise, return agents that have ANY of the passed in tags.
- * @param data.cursor Cursor for pagination
+ * @param data.before Cursor for pagination
+ * @param data.after Cursor for pagination
  * @param data.limit Limit for pagination
  * @param data.queryText Search agents by name
  * @param data.userId
@@ -371,7 +372,8 @@ export const useAgentsServiceListAgents = <
   TQueryKey extends Array<unknown> = unknown[],
 >(
   {
-    cursor,
+    after,
+    before,
     limit,
     matchAllTags,
     name,
@@ -379,7 +381,8 @@ export const useAgentsServiceListAgents = <
     tags,
     userId,
   }: {
-    cursor?: string;
+    after?: string;
+    before?: string;
     limit?: number;
     matchAllTags?: boolean;
     name?: string;
@@ -392,12 +395,13 @@ export const useAgentsServiceListAgents = <
 ) =>
   useQuery<TData, TError>({
     queryKey: Common.UseAgentsServiceListAgentsKeyFn(
-      { cursor, limit, matchAllTags, name, queryText, tags, userId },
+      { after, before, limit, matchAllTags, name, queryText, tags, userId },
       queryKey,
     ),
     queryFn: () =>
       AgentsService.listAgents({
-        cursor,
+        after,
+        before,
         limit,
         matchAllTags,
         name,
@@ -1008,7 +1012,7 @@ export const useHealthServiceHealthCheck = <
  * List Sandbox Configs
  * @param data The data for the request.
  * @param data.limit Number of results to return
- * @param data.cursor Pagination cursor to fetch the next set of results
+ * @param data.after Pagination cursor to fetch the next set of results
  * @param data.sandboxType Filter for this specific sandbox type
  * @param data.userId
  * @returns SandboxConfig Successful Response
@@ -1020,12 +1024,12 @@ export const useSandboxConfigServiceListSandboxConfigsV1SandboxConfigGet = <
   TQueryKey extends Array<unknown> = unknown[],
 >(
   {
-    cursor,
+    after,
     limit,
     sandboxType,
     userId,
   }: {
-    cursor?: string;
+    after?: string;
     limit?: number;
     sandboxType?: SandboxType;
     userId?: string;
@@ -1036,12 +1040,12 @@ export const useSandboxConfigServiceListSandboxConfigsV1SandboxConfigGet = <
   useQuery<TData, TError>({
     queryKey:
       Common.UseSandboxConfigServiceListSandboxConfigsV1SandboxConfigGetKeyFn(
-        { cursor, limit, sandboxType, userId },
+        { after, limit, sandboxType, userId },
         queryKey,
       ),
     queryFn: () =>
       SandboxConfigService.listSandboxConfigsV1SandboxConfigGet({
-        cursor,
+        after,
         limit,
         sandboxType,
         userId,
@@ -1053,7 +1057,7 @@ export const useSandboxConfigServiceListSandboxConfigsV1SandboxConfigGet = <
  * @param data The data for the request.
  * @param data.sandboxConfigId
  * @param data.limit Number of results to return
- * @param data.cursor Pagination cursor to fetch the next set of results
+ * @param data.after Pagination cursor to fetch the next set of results
  * @param data.userId
  * @returns SandboxEnvironmentVariable Successful Response
  * @throws ApiError
@@ -1065,12 +1069,12 @@ export const useSandboxConfigServiceListSandboxEnvVarsV1SandboxConfigSandboxConf
     TQueryKey extends Array<unknown> = unknown[],
   >(
     {
-      cursor,
+      after,
       limit,
       sandboxConfigId,
       userId,
     }: {
-      cursor?: string;
+      after?: string;
       limit?: number;
       sandboxConfigId: string;
       userId?: string;
@@ -1081,12 +1085,12 @@ export const useSandboxConfigServiceListSandboxEnvVarsV1SandboxConfigSandboxConf
     useQuery<TData, TError>({
       queryKey:
         Common.UseSandboxConfigServiceListSandboxEnvVarsV1SandboxConfigSandboxConfigIdEnvironmentVariableGetKeyFn(
-          { cursor, limit, sandboxConfigId, userId },
+          { after, limit, sandboxConfigId, userId },
           queryKey,
         ),
       queryFn: () =>
         SandboxConfigService.listSandboxEnvVarsV1SandboxConfigSandboxConfigIdEnvironmentVariableGet(
-          { cursor, limit, sandboxConfigId, userId },
+          { after, limit, sandboxConfigId, userId },
         ) as TData,
       ...options,
     });
@@ -1094,7 +1098,7 @@ export const useSandboxConfigServiceListSandboxEnvVarsV1SandboxConfigSandboxConf
  * List Providers
  * Get a list of all custom providers in the database
  * @param data The data for the request.
- * @param data.cursor
+ * @param data.after
  * @param data.limit
  * @returns Provider Successful Response
  * @throws ApiError
@@ -1105,10 +1109,10 @@ export const useProvidersServiceListProviders = <
   TQueryKey extends Array<unknown> = unknown[],
 >(
   {
-    cursor,
+    after,
     limit,
   }: {
-    cursor?: string;
+    after?: string;
     limit?: number;
   } = {},
   queryKey?: TQueryKey,
@@ -1116,10 +1120,10 @@ export const useProvidersServiceListProviders = <
 ) =>
   useQuery<TData, TError>({
     queryKey: Common.UseProvidersServiceListProvidersKeyFn(
-      { cursor, limit },
+      { after, limit },
       queryKey,
     ),
-    queryFn: () => ProvidersService.listProviders({ cursor, limit }) as TData,
+    queryFn: () => ProvidersService.listProviders({ after, limit }) as TData,
     ...options,
   });
 /**
@@ -1212,9 +1216,10 @@ export const useRunsServiceRetrieveRun = <
  *
  * Args:
  * run_id: ID of the run
- * cursor: Cursor for pagination
+ * before: A cursor for use in pagination. `before` is an object ID that defines your place in the list. For instance, if you make a list request and receive 100 objects, starting with obj_foo, your subsequent call can include before=obj_foo in order to fetch the previous page of the list.
+ * after: A cursor for use in pagination. `after` is an object ID that defines your place in the list. For instance, if you make a list request and receive 100 objects, ending with obj_foo, your subsequent call can include after=obj_foo in order to fetch the next page of the list.
  * limit: Maximum number of messages to return
- * ascending: Sort order by creation time
+ * order: Sort order by the created_at timestamp of the objects. asc for ascending order and desc for descending order.
  * role: Filter by role (user/assistant/system/tool)
  * return_message_object: Whether to return Message objects or LettaMessage objects
  * user_id: ID of the user making the request
@@ -1223,9 +1228,10 @@ export const useRunsServiceRetrieveRun = <
  * A list of messages associated with the run. Default is List[LettaMessage].
  * @param data The data for the request.
  * @param data.runId
- * @param data.cursor Cursor for pagination
+ * @param data.before Cursor for pagination
+ * @param data.after Cursor for pagination
  * @param data.limit Maximum number of messages to return
- * @param data.ascending Sort order by creation time
+ * @param data.order Sort order by the created_at timestamp of the objects. asc for ascending order and desc for descending order.
  * @param data.role Filter by role
  * @param data.userId
  * @returns LettaMessageUnion Successful Response
@@ -1237,16 +1243,18 @@ export const useRunsServiceListRunMessages = <
   TQueryKey extends Array<unknown> = unknown[],
 >(
   {
-    ascending,
-    cursor,
+    after,
+    before,
     limit,
+    order,
     role,
     runId,
     userId,
   }: {
-    ascending?: boolean;
-    cursor?: string;
+    after?: string;
+    before?: string;
     limit?: number;
+    order?: string;
     role?: MessageRole;
     runId: string;
     userId?: string;
@@ -1256,14 +1264,15 @@ export const useRunsServiceListRunMessages = <
 ) =>
   useQuery<TData, TError>({
     queryKey: Common.UseRunsServiceListRunMessagesKeyFn(
-      { ascending, cursor, limit, role, runId, userId },
+      { after, before, limit, order, role, runId, userId },
       queryKey,
     ),
     queryFn: () =>
       RunsService.listRunMessages({
-        ascending,
-        cursor,
+        after,
+        before,
         limit,
+        order,
         role,
         runId,
         userId,
@@ -1306,7 +1315,7 @@ export const useRunsServiceRetrieveRunUsage = <
  * List Tags
  * Get a list of all tags in the database
  * @param data The data for the request.
- * @param data.cursor
+ * @param data.after
  * @param data.limit
  * @param data.queryText
  * @param data.userId
@@ -1319,12 +1328,12 @@ export const useTagServiceListTags = <
   TQueryKey extends Array<unknown> = unknown[],
 >(
   {
-    cursor,
+    after,
     limit,
     queryText,
     userId,
   }: {
-    cursor?: string;
+    after?: string;
     limit?: number;
     queryText?: string;
     userId?: string;
@@ -1334,18 +1343,18 @@ export const useTagServiceListTags = <
 ) =>
   useQuery<TData, TError>({
     queryKey: Common.UseTagServiceListTagsKeyFn(
-      { cursor, limit, queryText, userId },
+      { after, limit, queryText, userId },
       queryKey,
     ),
     queryFn: () =>
-      TagService.listTags({ cursor, limit, queryText, userId }) as TData,
+      TagService.listTags({ after, limit, queryText, userId }) as TData,
     ...options,
   });
 /**
  * List Tags
  * Get a list of all tags in the database
  * @param data The data for the request.
- * @param data.cursor
+ * @param data.after
  * @param data.limit
  * @param data.queryText
  * @param data.userId
@@ -1358,12 +1367,12 @@ export const useAdminServiceListTags = <
   TQueryKey extends Array<unknown> = unknown[],
 >(
   {
-    cursor,
+    after,
     limit,
     queryText,
     userId,
   }: {
-    cursor?: string;
+    after?: string;
     limit?: number;
     queryText?: string;
     userId?: string;
@@ -1373,18 +1382,18 @@ export const useAdminServiceListTags = <
 ) =>
   useQuery<TData, TError>({
     queryKey: Common.UseAdminServiceListTagsKeyFn(
-      { cursor, limit, queryText, userId },
+      { after, limit, queryText, userId },
       queryKey,
     ),
     queryFn: () =>
-      AdminService.listTags({ cursor, limit, queryText, userId }) as TData,
+      AdminService.listTags({ after, limit, queryText, userId }) as TData,
     ...options,
   });
 /**
  * List Users
  * Get a list of all users in the database
  * @param data The data for the request.
- * @param data.cursor
+ * @param data.after
  * @param data.limit
  * @returns User Successful Response
  * @throws ApiError
@@ -1395,25 +1404,25 @@ export const useAdminServiceListUsers = <
   TQueryKey extends Array<unknown> = unknown[],
 >(
   {
-    cursor,
+    after,
     limit,
   }: {
-    cursor?: string;
+    after?: string;
     limit?: number;
   } = {},
   queryKey?: TQueryKey,
   options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>,
 ) =>
   useQuery<TData, TError>({
-    queryKey: Common.UseAdminServiceListUsersKeyFn({ cursor, limit }, queryKey),
-    queryFn: () => AdminService.listUsers({ cursor, limit }) as TData,
+    queryKey: Common.UseAdminServiceListUsersKeyFn({ after, limit }, queryKey),
+    queryFn: () => AdminService.listUsers({ after, limit }) as TData,
     ...options,
   });
 /**
  * Get All Orgs
  * Get a list of all orgs in the database
  * @param data The data for the request.
- * @param data.cursor
+ * @param data.after
  * @param data.limit
  * @returns Organization Successful Response
  * @throws ApiError
@@ -1424,25 +1433,25 @@ export const useAdminServiceListOrgs = <
   TQueryKey extends Array<unknown> = unknown[],
 >(
   {
-    cursor,
+    after,
     limit,
   }: {
-    cursor?: string;
+    after?: string;
     limit?: number;
   } = {},
   queryKey?: TQueryKey,
   options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>,
 ) =>
   useQuery<TData, TError>({
-    queryKey: Common.UseAdminServiceListOrgsKeyFn({ cursor, limit }, queryKey),
-    queryFn: () => AdminService.listOrgs({ cursor, limit }) as TData,
+    queryKey: Common.UseAdminServiceListOrgsKeyFn({ after, limit }, queryKey),
+    queryFn: () => AdminService.listOrgs({ after, limit }) as TData,
     ...options,
   });
 /**
  * List Users
  * Get a list of all users in the database
  * @param data The data for the request.
- * @param data.cursor
+ * @param data.after
  * @param data.limit
  * @returns User Successful Response
  * @throws ApiError
@@ -1453,25 +1462,25 @@ export const useUsersServiceListUsers = <
   TQueryKey extends Array<unknown> = unknown[],
 >(
   {
-    cursor,
+    after,
     limit,
   }: {
-    cursor?: string;
+    after?: string;
     limit?: number;
   } = {},
   queryKey?: TQueryKey,
   options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>,
 ) =>
   useQuery<TData, TError>({
-    queryKey: Common.UseUsersServiceListUsersKeyFn({ cursor, limit }, queryKey),
-    queryFn: () => UsersService.listUsers({ cursor, limit }) as TData,
+    queryKey: Common.UseUsersServiceListUsersKeyFn({ after, limit }, queryKey),
+    queryFn: () => UsersService.listUsers({ after, limit }) as TData,
     ...options,
   });
 /**
  * Get All Orgs
  * Get a list of all orgs in the database
  * @param data The data for the request.
- * @param data.cursor
+ * @param data.after
  * @param data.limit
  * @returns Organization Successful Response
  * @throws ApiError
@@ -1482,10 +1491,10 @@ export const useOrganizationServiceListOrgs = <
   TQueryKey extends Array<unknown> = unknown[],
 >(
   {
-    cursor,
+    after,
     limit,
   }: {
-    cursor?: string;
+    after?: string;
     limit?: number;
   } = {},
   queryKey?: TQueryKey,
@@ -1493,10 +1502,10 @@ export const useOrganizationServiceListOrgs = <
 ) =>
   useQuery<TData, TError>({
     queryKey: Common.UseOrganizationServiceListOrgsKeyFn(
-      { cursor, limit },
+      { after, limit },
       queryKey,
     ),
-    queryFn: () => OrganizationService.listOrgs({ cursor, limit }) as TData,
+    queryFn: () => OrganizationService.listOrgs({ after, limit }) as TData,
     ...options,
   });
 /**

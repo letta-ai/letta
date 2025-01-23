@@ -155,7 +155,7 @@
         "operationId": "list_tools",
         "parameters": [
           {
-            "name": "cursor",
+            "name": "after",
             "in": "query",
             "required": false,
             "schema": {
@@ -167,7 +167,7 @@
                   "type": "null"
                 }
               ],
-              "title": "Cursor"
+              "title": "After"
             }
           },
           {
@@ -859,7 +859,7 @@
             "description": "Number of files to return"
           },
           {
-            "name": "cursor",
+            "name": "after",
             "in": "query",
             "required": false,
             "schema": {
@@ -872,7 +872,7 @@
                 }
               ],
               "description": "Pagination cursor to fetch the next set of results",
-              "title": "Cursor"
+              "title": "After"
             },
             "description": "Pagination cursor to fetch the next set of results"
           }
@@ -1007,7 +1007,7 @@
             "description": "If True, only returns agents that match ALL given tags. Otherwise, return agents that have ANY of the passed in tags."
           },
           {
-            "name": "cursor",
+            "name": "before",
             "in": "query",
             "required": false,
             "schema": {
@@ -1020,7 +1020,25 @@
                 }
               ],
               "description": "Cursor for pagination",
-              "title": "Cursor"
+              "title": "Before"
+            },
+            "description": "Cursor for pagination"
+          },
+          {
+            "name": "after",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Cursor for pagination",
+              "title": "After"
             },
             "description": "Cursor for pagination"
           },
@@ -2955,7 +2973,7 @@
         "operationId": "list_providers",
         "parameters": [
           {
-            "name": "cursor",
+            "name": "after",
             "in": "query",
             "required": false,
             "schema": {
@@ -2967,7 +2985,7 @@
                   "type": "null"
                 }
               ],
-              "title": "Cursor"
+              "title": "After"
             }
           },
           {
@@ -3286,7 +3304,7 @@
       "get": {
         "tags": ["runs"],
         "summary": "List Run Messages",
-        "description": "Get messages associated with a run with filtering options.\n\nArgs:\n    run_id: ID of the run\n    cursor: Cursor for pagination\n    limit: Maximum number of messages to return\n    ascending: Sort order by creation time\n    role: Filter by role (user/assistant/system/tool)\n    return_message_object: Whether to return Message objects or LettaMessage objects\n    user_id: ID of the user making the request\n\nReturns:\n    A list of messages associated with the run. Default is List[LettaMessage].",
+        "description": "Get messages associated with a run with filtering options.\n\nArgs:\n    run_id: ID of the run\n    before: A cursor for use in pagination. `before` is an object ID that defines your place in the list. For instance, if you make a list request and receive 100 objects, starting with obj_foo, your subsequent call can include before=obj_foo in order to fetch the previous page of the list.\n    after: A cursor for use in pagination. `after` is an object ID that defines your place in the list. For instance, if you make a list request and receive 100 objects, ending with obj_foo, your subsequent call can include after=obj_foo in order to fetch the next page of the list.\n    limit: Maximum number of messages to return\n    order: Sort order by the created_at timestamp of the objects. asc for ascending order and desc for descending order.\n    role: Filter by role (user/assistant/system/tool)\n    return_message_object: Whether to return Message objects or LettaMessage objects\n    user_id: ID of the user making the request\n\nReturns:\n    A list of messages associated with the run. Default is List[LettaMessage].",
         "operationId": "list_run_messages",
         "parameters": [
           {
@@ -3299,7 +3317,7 @@
             }
           },
           {
-            "name": "cursor",
+            "name": "before",
             "in": "query",
             "required": false,
             "schema": {
@@ -3312,7 +3330,25 @@
                 }
               ],
               "description": "Cursor for pagination",
-              "title": "Cursor"
+              "title": "Before"
+            },
+            "description": "Cursor for pagination"
+          },
+          {
+            "name": "after",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Cursor for pagination",
+              "title": "After"
             },
             "description": "Cursor for pagination"
           },
@@ -3336,16 +3372,16 @@
             "description": "Maximum number of messages to return"
           },
           {
-            "name": "ascending",
+            "name": "order",
             "in": "query",
             "required": false,
             "schema": {
-              "type": "boolean",
-              "description": "Sort order by creation time",
-              "default": true,
-              "title": "Ascending"
+              "type": "string",
+              "description": "Sort order by the created_at timestamp of the objects. asc for ascending order and desc for descending order.",
+              "default": "desc",
+              "title": "Order"
             },
-            "description": "Sort order by creation time"
+            "description": "Sort order by the created_at timestamp of the objects. asc for ascending order and desc for descending order."
           },
           {
             "name": "role",
@@ -3443,7 +3479,7 @@
         "operationId": "list_tags",
         "parameters": [
           {
-            "name": "cursor",
+            "name": "after",
             "in": "query",
             "required": false,
             "schema": {
@@ -3455,7 +3491,7 @@
                   "type": "null"
                 }
               ],
-              "title": "Cursor"
+              "title": "After"
             }
           },
           {

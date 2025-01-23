@@ -108,7 +108,6 @@ export function AppHeader() {
         align="center"
       >
         <HStack gap="large">
-
           {!isWindows && <div className="w-[60px] h-[42px] border-r" />}
           <HStack className="disable-app-header" align="center">
             <Link className="contents " to="/">

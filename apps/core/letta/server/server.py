@@ -805,20 +805,12 @@ class SyncServer(Server):
     def get_recall_memory_summary(self, agent_id: str, actor: User) -> RecallMemorySummary:
         return RecallMemorySummary(size=self.message_manager.size(actor=actor, agent_id=agent_id))
 
-    def get_agent_archival(self, user_id: str, agent_id: str, cursor: Optional[str] = None, limit: int = 50) -> List[Passage]:
-        """Paginated query of all messages in agent archival memory"""
-        # TODO: Thread actor directly through this function, since the top level caller most likely already retrieved the user
-        actor = self.user_manager.get_user_or_default(user_id=user_id)
-
-        passages = self.agent_manager.list_passages(agent_id=agent_id, actor=actor)
-
-        return passages
-
-    def get_agent_archival_cursor(
+    def get_agent_archival(
         self,
         user_id: str,
         agent_id: str,
-        cursor: Optional[str] = None,
+        after: Optional[str] = None,
+        before: Optional[str] = None,
         limit: Optional[int] = 100,
         order_by: Optional[str] = "created_at",
         reverse: Optional[bool] = False,
@@ -830,7 +822,8 @@ class SyncServer(Server):
         records = self.agent_manager.list_passages(
             actor=actor,
             agent_id=agent_id,
-            cursor=cursor,
+            after=after,
+            before=before,
             limit=limit,
             ascending=not reverse,
         )
@@ -852,7 +845,7 @@ class SyncServer(Server):
 
         # TODO: return archival memory
 
-    def get_agent_recall_cursor(
+    def get_agent_recall(
         self,
         user_id: str,
         agent_id: str,

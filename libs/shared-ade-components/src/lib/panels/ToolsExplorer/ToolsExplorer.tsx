@@ -2,10 +2,7 @@ import type { ToolMetadataPreviewType } from '@letta-cloud/web-api-client';
 import React, { useCallback, useMemo, useState } from 'react';
 import { useTranslations } from '@letta-cloud/translations';
 import { useCurrentAgent } from '../../hooks';
-import type {
-  AgentState,
-  Tool,
-} from '@letta-cloud/letta-agents-api';
+import type { AgentState, Tool } from '@letta-cloud/letta-agents-api';
 import { isLettaTool } from '@letta-cloud/letta-agents-api';
 
 import { useToolsServiceDeleteTool } from '@letta-cloud/letta-agents-api';

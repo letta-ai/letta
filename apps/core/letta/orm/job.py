@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import TYPE_CHECKING, List, Optional
 
-from sqlalchemy import JSON, String
+from sqlalchemy import JSON, Index, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from letta.orm.enums import JobType
@@ -25,6 +25,7 @@ class Job(SqlalchemyBase, UserMixin):
 
     __tablename__ = "jobs"
     __pydantic_model__ = PydanticJob
+    __table_args__ = (Index("ix_jobs_created_at", "created_at", "id"),)
 
     status: Mapped[JobStatus] = mapped_column(String, default=JobStatus.created, doc="The current status of the job.")
     completed_at: Mapped[Optional[datetime]] = mapped_column(nullable=True, doc="The unix timestamp of when the job was completed.")

@@ -2155,7 +2155,7 @@ export type ModifyToolData = {
 export type ModifyToolResponse = Tool;
 
 export type ListToolsData = {
-  cursor?: string | null;
+  after?: string | null;
   limit?: number | null;
   userId?: string | null;
 };
@@ -2270,7 +2270,7 @@ export type ListSourceFilesData = {
   /**
    * Pagination cursor to fetch the next set of results
    */
-  cursor?: string | null;
+  after?: string | null;
   /**
    * Number of files to return
    */
@@ -2293,7 +2293,11 @@ export type ListAgentsData = {
   /**
    * Cursor for pagination
    */
-  cursor?: string | null;
+  after?: string | null;
+  /**
+   * Cursor for pagination
+   */
+  before?: string | null;
   /**
    * Limit for pagination
    */
@@ -2648,7 +2652,7 @@ export type ListSandboxConfigsV1SandboxConfigGetData = {
   /**
    * Pagination cursor to fetch the next set of results
    */
-  cursor?: string | null;
+  after?: string | null;
   /**
    * Number of results to return
    */
@@ -2709,7 +2713,7 @@ export type ListSandboxEnvVarsV1SandboxConfigSandboxConfigIdEnvironmentVariableG
     /**
      * Pagination cursor to fetch the next set of results
      */
-    cursor?: string | null;
+    after?: string | null;
     /**
      * Number of results to return
      */
@@ -2741,7 +2745,7 @@ export type DeleteSandboxEnvVarV1SandboxConfigEnvironmentVariableEnvVarIdDeleteR
   void;
 
 export type ListProvidersData = {
-  cursor?: string | null;
+  after?: string | null;
   limit?: number | null;
 };
 
@@ -2797,17 +2801,21 @@ export type DeleteRunResponse = Run;
 
 export type ListRunMessagesData = {
   /**
-   * Sort order by creation time
+   * Cursor for pagination
    */
-  ascending?: boolean;
+  after?: string | null;
   /**
    * Cursor for pagination
    */
-  cursor?: string | null;
+  before?: string | null;
   /**
    * Maximum number of messages to return
    */
   limit?: number | null;
+  /**
+   * Sort order by the created_at timestamp of the objects. asc for ascending order and desc for descending order.
+   */
+  order?: string;
   /**
    * Filter by role
    */
@@ -2826,7 +2834,7 @@ export type RetrieveRunUsageData = {
 export type RetrieveRunUsageResponse = UsageStatistics;
 
 export type ListTagsData = {
-  cursor?: string | null;
+  after?: string | null;
   limit?: number | null;
   queryText?: string | null;
   userId?: string | null;
@@ -2835,7 +2843,7 @@ export type ListTagsData = {
 export type ListTagsResponse = Array<string>;
 
 export type ListUsersData = {
-  cursor?: string | null;
+  after?: string | null;
   limit?: number | null;
 };
 
@@ -2863,7 +2871,7 @@ export type DeleteUserData = {
 export type DeleteUserResponse = User;
 
 export type ListOrgsData = {
-  cursor?: string | null;
+  after?: string | null;
   limit?: number | null;
 };
 

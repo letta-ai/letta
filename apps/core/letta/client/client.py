@@ -206,7 +206,7 @@ class AbstractClient(object):
     ) -> Tool:
         raise NotImplementedError
 
-    def list_tools(self, cursor: Optional[str] = None, limit: Optional[int] = 50) -> List[Tool]:
+    def list_tools(self, after: Optional[str] = None, limit: Optional[int] = 50) -> List[Tool]:
         raise NotImplementedError
 
     def get_tool(self, id: str) -> Tool:
@@ -266,7 +266,7 @@ class AbstractClient(object):
     def list_attached_sources(self, agent_id: str) -> List[Source]:
         raise NotImplementedError
 
-    def list_files_from_source(self, source_id: str, limit: int = 1000, cursor: Optional[str] = None) -> List[FileMetadata]:
+    def list_files_from_source(self, source_id: str, limit: int = 1000, after: Optional[str] = None) -> List[FileMetadata]:
         raise NotImplementedError
 
     def update_source(self, source_id: str, name: Optional[str] = None) -> Source:
@@ -279,12 +279,12 @@ class AbstractClient(object):
         raise NotImplementedError
 
     def get_archival_memory(
-        self, agent_id: str, before: Optional[str] = None, after: Optional[str] = None, limit: Optional[int] = 1000
+        self, agent_id: str, after: Optional[str] = None, before: Optional[str] = None, limit: Optional[int] = 1000
     ) -> List[Passage]:
         raise NotImplementedError
 
     def get_messages(
-        self, agent_id: str, before: Optional[str] = None, after: Optional[str] = None, limit: Optional[int] = 1000
+        self, agent_id: str, after: Optional[str] = None, before: Optional[str] = None, limit: Optional[int] = 1000
     ) -> List[Message]:
         raise NotImplementedError
 
@@ -297,7 +297,7 @@ class AbstractClient(object):
     def create_org(self, name: Optional[str] = None) -> Organization:
         raise NotImplementedError
 
-    def list_orgs(self, cursor: Optional[str] = None, limit: Optional[int] = 50) -> List[Organization]:
+    def list_orgs(self, after: Optional[str] = None, limit: Optional[int] = 50) -> List[Organization]:
         raise NotImplementedError
 
     def delete_org(self, org_id: str) -> Organization:
@@ -337,13 +337,13 @@ class AbstractClient(object):
         """
         raise NotImplementedError
 
-    def list_sandbox_configs(self, limit: int = 50, cursor: Optional[str] = None) -> List[SandboxConfig]:
+    def list_sandbox_configs(self, limit: int = 50, after: Optional[str] = None) -> List[SandboxConfig]:
         """
         List all sandbox configurations.
 
         Args:
             limit (int, optional): The maximum number of sandbox configurations to return. Defaults to 50.
-            cursor (Optional[str], optional): The pagination cursor for retrieving the next set of results.
+            after (Optional[str], optional): The pagination cursor for retrieving the next set of results.
 
         Returns:
             List[SandboxConfig]: A list of sandbox configurations.
@@ -394,7 +394,7 @@ class AbstractClient(object):
         raise NotImplementedError
 
     def list_sandbox_env_vars(
-        self, sandbox_config_id: str, limit: int = 50, cursor: Optional[str] = None
+        self, sandbox_config_id: str, limit: int = 50, after: Optional[str] = None
     ) -> List[SandboxEnvironmentVariable]:
         """
         List all environment variables associated with a sandbox configuration.
@@ -402,7 +402,7 @@ class AbstractClient(object):
         Args:
             sandbox_config_id (str): The ID of the sandbox configuration to retrieve environment variables for.
             limit (int, optional): The maximum number of environment variables to return. Defaults to 50.
-            cursor (Optional[str], optional): The pagination cursor for retrieving the next set of results.
+            after (Optional[str], optional): The pagination cursor for retrieving the next set of results.
 
         Returns:
             List[SandboxEnvironmentVariable]: A list of environment variables.
@@ -477,7 +477,12 @@ class RESTClient(AbstractClient):
         self._default_embedding_config = default_embedding_config
 
     def list_agents(
-        self, tags: Optional[List[str]] = None, query_text: Optional[str] = None, limit: int = 50, cursor: Optional[str] = None
+        self,
+        tags: Optional[List[str]] = None,
+        query_text: Optional[str] = None,
+        limit: int = 50,
+        before: Optional[str] = None,
+        after: Optional[str] = None,
     ) -> List[AgentState]:
         params = {"limit": limit}
         if tags:
@@ -487,11 +492,13 @@ class RESTClient(AbstractClient):
         if query_text:
             params["query_text"] = query_text
 
-        if cursor:
-            params["cursor"] = cursor
+        if before:
+            params["before"] = before
+
+        if after:
+            params["after"] = after
 
         response = requests.get(f"{self.base_url}/{self.api_prefix}/agents", headers=self.headers, params=params)
-        print(f"\nLIST RESPONSE\n{response.json()}\n")
         return [AgentState(**agent) for agent in response.json()]
 
     def agent_exists(self, agent_id: str) -> bool:
@@ -1358,7 +1365,7 @@ class RESTClient(AbstractClient):
     def load_data(self, connector: DataConnector, source_name: str):
         raise NotImplementedError
 
-    def load_file_to_source(self, filename: str, source_id: str, blocking=True):
+    def load_file_to_source(self, filename: str, source_id: str, blocking=True) -> Job:
         """
         Load a file into a source
 
@@ -1426,20 +1433,20 @@ class RESTClient(AbstractClient):
             raise ValueError(f"Failed to list attached sources: {response.text}")
         return [Source(**source) for source in response.json()]
 
-    def list_files_from_source(self, source_id: str, limit: int = 1000, cursor: Optional[str] = None) -> List[FileMetadata]:
+    def list_files_from_source(self, source_id: str, limit: int = 1000, after: Optional[str] = None) -> List[FileMetadata]:
         """
         List files from source with pagination support.
 
         Args:
             source_id (str): ID of the source
             limit (int): Number of files to return
-            cursor (Optional[str]): Pagination cursor for fetching the next page
+            after (str): Get files after a certain time
 
         Returns:
             List[FileMetadata]: List of files
         """
         # Prepare query parameters for pagination
-        params = {"limit": limit, "cursor": cursor}
+        params = {"limit": limit, "after": after}
 
         # Make the request to the FastAPI endpoint
         response = requests.get(f"{self.base_url}/{self.api_prefix}/sources/{source_id}/files", headers=self.headers, params=params)
@@ -1639,7 +1646,7 @@ class RESTClient(AbstractClient):
             raise ValueError(f"Failed to update tool: {response.text}")
         return Tool(**response.json())
 
-    def list_tools(self, cursor: Optional[str] = None, limit: Optional[int] = 50) -> List[Tool]:
+    def list_tools(self, after: Optional[str] = None, limit: Optional[int] = 50) -> List[Tool]:
         """
         List available tools for the user.
 
@@ -1647,8 +1654,8 @@ class RESTClient(AbstractClient):
             tools (List[Tool]): List of tools
         """
         params = {}
-        if cursor:
-            params["cursor"] = str(cursor)
+        if after:
+            params["after"] = after
         if limit:
             params["limit"] = limit
 
@@ -1727,15 +1734,15 @@ class RESTClient(AbstractClient):
             raise ValueError(f"Failed to list embedding configs: {response.text}")
         return [EmbeddingConfig(**config) for config in response.json()]
 
-    def list_orgs(self, cursor: Optional[str] = None, limit: Optional[int] = 50) -> List[Organization]:
+    def list_orgs(self, after: Optional[str] = None, limit: Optional[int] = 50) -> List[Organization]:
         """
         Retrieves a list of all organizations in the database, with optional pagination.
 
-        @param cursor: the pagination cursor, if any
+        @param after: the pagination cursor, if any
         @param limit: the maximum number of organizations to retrieve
         @return: a list of Organization objects
         """
-        params = {"cursor": cursor, "limit": limit}
+        params = {"after": after, "limit": limit}
         response = requests.get(f"{self.base_url}/{ADMIN_PREFIX}/orgs", headers=self.headers, params=params)
         if response.status_code != 200:
             raise ValueError(f"Failed to retrieve organizations: {response.text}")
@@ -1778,6 +1785,12 @@ class RESTClient(AbstractClient):
     def create_sandbox_config(self, config: Union[LocalSandboxConfig, E2BSandboxConfig]) -> SandboxConfig:
         """
         Create a new sandbox configuration.
+
+        Args:
+            config (Union[LocalSandboxConfig, E2BSandboxConfig]): The sandbox settings.
+
+        Returns:
+            SandboxConfig: The created sandbox configuration.
         """
         payload = {
             "config": config.model_dump(),
@@ -1790,6 +1803,13 @@ class RESTClient(AbstractClient):
     def update_sandbox_config(self, sandbox_config_id: str, config: Union[LocalSandboxConfig, E2BSandboxConfig]) -> SandboxConfig:
         """
         Update an existing sandbox configuration.
+
+        Args:
+            sandbox_config_id (str): The ID of the sandbox configuration to update.
+            config (Union[LocalSandboxConfig, E2BSandboxConfig]): The updated sandbox settings.
+
+        Returns:
+            SandboxConfig: The updated sandbox configuration.
         """
         payload = {
             "config": config.model_dump(),
@@ -1806,6 +1826,9 @@ class RESTClient(AbstractClient):
     def delete_sandbox_config(self, sandbox_config_id: str) -> None:
         """
         Delete a sandbox configuration.
+
+        Args:
+            sandbox_config_id (str): The ID of the sandbox configuration to delete.
         """
         response = requests.delete(f"{self.base_url}/{self.api_prefix}/sandbox-config/{sandbox_config_id}", headers=self.headers)
         if response.status_code == 404:
@@ -1813,11 +1836,18 @@ class RESTClient(AbstractClient):
         elif response.status_code != 204:
             raise ValueError(f"Failed to delete sandbox config with ID '{sandbox_config_id}': {response.text}")
 
-    def list_sandbox_configs(self, limit: int = 50, cursor: Optional[str] = None) -> List[SandboxConfig]:
+    def list_sandbox_configs(self, limit: int = 50, after: Optional[str] = None) -> List[SandboxConfig]:
         """
         List all sandbox configurations.
+
+        Args:
+            limit (int, optional): The maximum number of sandbox configurations to return. Defaults to 50.
+            after (Optional[str], optional): The pagination cursor for retrieving the next set of results.
+
+        Returns:
+            List[SandboxConfig]: A list of sandbox configurations.
         """
-        params = {"limit": limit, "cursor": cursor}
+        params = {"limit": limit, "after": after}
         response = requests.get(f"{self.base_url}/{self.api_prefix}/sandbox-config", headers=self.headers, params=params)
         if response.status_code != 200:
             raise ValueError(f"Failed to list sandbox configs: {response.text}")
@@ -1828,6 +1858,15 @@ class RESTClient(AbstractClient):
     ) -> SandboxEnvironmentVariable:
         """
         Create a new environment variable for a sandbox configuration.
+
+        Args:
+            sandbox_config_id (str): The ID of the sandbox configuration to associate the environment variable with.
+            key (str): The name of the environment variable.
+            value (str): The value of the environment variable.
+            description (Optional[str], optional): A description of the environment variable. Defaults to None.
+
+        Returns:
+            SandboxEnvironmentVariable: The created environment variable.
         """
         payload = {"key": key, "value": value, "description": description}
         response = requests.post(
@@ -1844,6 +1883,15 @@ class RESTClient(AbstractClient):
     ) -> SandboxEnvironmentVariable:
         """
         Update an existing environment variable.
+
+        Args:
+            env_var_id (str): The ID of the environment variable to update.
+            key (Optional[str], optional): The updated name of the environment variable. Defaults to None.
+            value (Optional[str], optional): The updated value of the environment variable. Defaults to None.
+            description (Optional[str], optional): The updated description of the environment variable. Defaults to None.
+
+        Returns:
+            SandboxEnvironmentVariable: The updated environment variable.
         """
         payload = {k: v for k, v in {"key": key, "value": value, "description": description}.items() if v is not None}
         response = requests.patch(
@@ -1858,6 +1906,9 @@ class RESTClient(AbstractClient):
     def delete_sandbox_env_var(self, env_var_id: str) -> None:
         """
         Delete an environment variable by its ID.
+
+        Args:
+            env_var_id (str): The ID of the environment variable to delete.
         """
         response = requests.delete(
             f"{self.base_url}/{self.api_prefix}/sandbox-config/environment-variable/{env_var_id}", headers=self.headers
@@ -1868,12 +1919,20 @@ class RESTClient(AbstractClient):
             raise ValueError(f"Failed to delete environment variable with ID '{env_var_id}': {response.text}")
 
     def list_sandbox_env_vars(
-        self, sandbox_config_id: str, limit: int = 50, cursor: Optional[str] = None
+        self, sandbox_config_id: str, limit: int = 50, after: Optional[str] = None
     ) -> List[SandboxEnvironmentVariable]:
         """
         List all environment variables associated with a sandbox configuration.
+
+        Args:
+            sandbox_config_id (str): The ID of the sandbox configuration to retrieve environment variables for.
+            limit (int, optional): The maximum number of environment variables to return. Defaults to 50.
+            after (Optional[str], optional): The pagination cursor for retrieving the next set of results.
+
+        Returns:
+            List[SandboxEnvironmentVariable]: A list of environment variables.
         """
-        params = {"limit": limit, "cursor": cursor}
+        params = {"limit": limit, "after": after}
         response = requests.get(
             f"{self.base_url}/{self.api_prefix}/sandbox-config/{sandbox_config_id}/environment-variable",
             headers=self.headers,
@@ -2034,7 +2093,8 @@ class RESTClient(AbstractClient):
     def get_run_messages(
         self,
         run_id: str,
-        cursor: Optional[str] = None,
+        before: Optional[str] = None,
+        after: Optional[str] = None,
         limit: Optional[int] = 100,
         ascending: bool = True,
         role: Optional[MessageRole] = None,
@@ -2044,7 +2104,8 @@ class RESTClient(AbstractClient):
 
         Args:
             job_id: ID of the job
-            cursor: Cursor for pagination
+            before: Cursor for pagination
+            after: Cursor for pagination
             limit: Maximum number of messages to return
             ascending: Sort order by creation time
             role: Filter by message role (user/assistant/system/tool)
@@ -2052,7 +2113,8 @@ class RESTClient(AbstractClient):
             List of messages matching the filter criteria
         """
         params = {
-            "cursor": cursor,
+            "before": before,
+            "after": after,
             "limit": limit,
             "ascending": ascending,
             "role": role,
@@ -2150,15 +2212,15 @@ class RESTClient(AbstractClient):
 
     def get_tags(
         self,
-        cursor: Optional[str] = None,
-        limit: Optional[int] = None,
+        after: Optional[str] = None,
+        limit: int = 100,
         query_text: Optional[str] = None,
     ) -> List[str]:
         """
         Get a list of all unique tags.
 
         Args:
-            cursor: Optional cursor for pagination (last tag seen)
+            after: Optional cursor for pagination (first tag seen)
             limit: Optional maximum number of tags to return
             query_text: Optional text to filter tags
 
@@ -2166,8 +2228,8 @@ class RESTClient(AbstractClient):
             List[str]: List of unique tags
         """
         params = {}
-        if cursor:
-            params["cursor"] = cursor
+        if after:
+            params["after"] = after
         if limit:
             params["limit"] = limit
         if query_text:
@@ -2237,11 +2299,18 @@ class LocalClient(AbstractClient):
 
     # agents
     def list_agents(
-        self, query_text: Optional[str] = None, tags: Optional[List[str]] = None, limit: int = 100, cursor: Optional[str] = None
+        self,
+        query_text: Optional[str] = None,
+        tags: Optional[List[str]] = None,
+        limit: int = 100,
+        before: Optional[str] = None,
+        after: Optional[str] = None,
     ) -> List[AgentState]:
         self.interface.clear()
 
-        return self.server.agent_manager.list_agents(actor=self.user, tags=tags, query_text=query_text, limit=limit, cursor=cursor)
+        return self.server.agent_manager.list_agents(
+            actor=self.user, tags=tags, query_text=query_text, limit=limit, before=before, after=after
+        )
 
     def agent_exists(self, agent_id: Optional[str] = None, agent_name: Optional[str] = None) -> bool:
         """
@@ -2989,7 +3058,7 @@ class LocalClient(AbstractClient):
         id: str,
         name: Optional[str] = None,
         description: Optional[str] = None,
-        func: Optional[callable] = None,
+        func: Optional[Callable] = None,
         tags: Optional[List[str]] = None,
         return_char_limit: int = FUNCTION_RETURN_CHAR_LIMIT,
     ) -> Tool:
@@ -3020,14 +3089,14 @@ class LocalClient(AbstractClient):
 
         return self.server.tool_manager.update_tool_by_id(tool_id=id, tool_update=ToolUpdate(**update_data), actor=self.user)
 
-    def list_tools(self, cursor: Optional[str] = None, limit: Optional[int] = 50) -> List[Tool]:
+    def list_tools(self, after: Optional[str] = None, limit: Optional[int] = 50) -> List[Tool]:
         """
         List available tools for the user.
 
         Returns:
             tools (List[Tool]): List of tools
         """
-        return self.server.tool_manager.list_tools(cursor=cursor, limit=limit, actor=self.user)
+        return self.server.tool_manager.list_tools(after=after, limit=limit, actor=self.user)
 
     def get_tool(self, id: str) -> Optional[Tool]:
         """
@@ -3226,19 +3295,19 @@ class LocalClient(AbstractClient):
         """
         return self.server.agent_manager.list_attached_sources(agent_id=agent_id, actor=self.user)
 
-    def list_files_from_source(self, source_id: str, limit: int = 1000, cursor: Optional[str] = None) -> List[FileMetadata]:
+    def list_files_from_source(self, source_id: str, limit: int = 1000, after: Optional[str] = None) -> List[FileMetadata]:
         """
         List files from source.
 
         Args:
             source_id (str): ID of the source
             limit (int): The # of items to return
-            cursor (str): The cursor for fetching the next page
+            after (str): The cursor for fetching the next page
 
         Returns:
             files (List[FileMetadata]): List of files
         """
-        return self.server.source_manager.list_files(source_id=source_id, limit=limit, cursor=cursor, actor=self.user)
+        return self.server.source_manager.list_files(source_id=source_id, limit=limit, after=after, actor=self.user)
 
     def update_source(self, source_id: str, name: Optional[str] = None) -> Source:
         """
@@ -3296,17 +3365,20 @@ class LocalClient(AbstractClient):
             passages (List[Passage]): List of passages
         """
 
-        return self.server.get_agent_archival_cursor(user_id=self.user_id, agent_id=agent_id, limit=limit)
+        return self.server.get_agent_archival(user_id=self.user_id, agent_id=agent_id, limit=limit)
 
     # recall memory
 
-    def get_messages(self, agent_id: str, cursor: Optional[str] = None, limit: Optional[int] = 1000) -> List[Message]:
+    def get_messages(
+        self, agent_id: str, before: Optional[str] = None, after: Optional[str] = None, limit: Optional[int] = 1000
+    ) -> List[Message]:
         """
         Get messages from an agent with pagination.
 
         Args:
             agent_id (str): ID of the agent
-            cursor (str): Get messages after a certain time
+            before (str): Get messages before a certain time
+            after (str): Get messages after a certain time
             limit (int): Limit number of messages
 
         Returns:
@@ -3314,10 +3386,11 @@ class LocalClient(AbstractClient):
         """
 
         self.interface.clear()
-        return self.server.get_agent_recall_cursor(
+        return self.server.get_agent_recall(
             user_id=self.user_id,
             agent_id=agent_id,
-            before=cursor,
+            before=before,
+            after=after,
             limit=limit,
             reverse=True,
         )
@@ -3436,8 +3509,8 @@ class LocalClient(AbstractClient):
     def create_org(self, name: Optional[str] = None) -> Organization:
         return self.server.organization_manager.create_organization(pydantic_org=Organization(name=name))
 
-    def list_orgs(self, cursor: Optional[str] = None, limit: Optional[int] = 50) -> List[Organization]:
-        return self.server.organization_manager.list_organizations(cursor=cursor, limit=limit)
+    def list_orgs(self, after: Optional[str] = None, limit: Optional[int] = 50) -> List[Organization]:
+        return self.server.organization_manager.list_organizations(limit=limit, after=after)
 
     def delete_org(self, org_id: str) -> Organization:
         return self.server.organization_manager.delete_organization_by_id(org_id=org_id)
@@ -3464,11 +3537,11 @@ class LocalClient(AbstractClient):
         """
         return self.server.sandbox_config_manager.delete_sandbox_config(sandbox_config_id=sandbox_config_id, actor=self.user)
 
-    def list_sandbox_configs(self, limit: int = 50, cursor: Optional[str] = None) -> List[SandboxConfig]:
+    def list_sandbox_configs(self, limit: int = 50, after: Optional[str] = None) -> List[SandboxConfig]:
         """
         List all sandbox configurations.
         """
-        return self.server.sandbox_config_manager.list_sandbox_configs(actor=self.user, limit=limit, cursor=cursor)
+        return self.server.sandbox_config_manager.list_sandbox_configs(actor=self.user, limit=limit, after=after)
 
     def create_sandbox_env_var(
         self, sandbox_config_id: str, key: str, value: str, description: Optional[str] = None
@@ -3499,13 +3572,13 @@ class LocalClient(AbstractClient):
         return self.server.sandbox_config_manager.delete_sandbox_env_var(env_var_id=env_var_id, actor=self.user)
 
     def list_sandbox_env_vars(
-        self, sandbox_config_id: str, limit: int = 50, cursor: Optional[str] = None
+        self, sandbox_config_id: str, limit: int = 50, after: Optional[str] = None
     ) -> List[SandboxEnvironmentVariable]:
         """
         List all environment variables associated with a sandbox configuration.
         """
         return self.server.sandbox_config_manager.list_sandbox_env_vars(
-            sandbox_config_id=sandbox_config_id, actor=self.user, limit=limit, cursor=cursor
+            sandbox_config_id=sandbox_config_id, actor=self.user, limit=limit, after=after
         )
 
     def update_agent_memory_block_label(self, agent_id: str, current_label: str, new_label: str) -> Memory:
@@ -3626,7 +3699,8 @@ class LocalClient(AbstractClient):
     def get_run_messages(
         self,
         run_id: str,
-        cursor: Optional[str] = None,
+        before: Optional[str] = None,
+        after: Optional[str] = None,
         limit: Optional[int] = 100,
         ascending: bool = True,
         role: Optional[MessageRole] = None,
@@ -3636,21 +3710,23 @@ class LocalClient(AbstractClient):
 
         Args:
             run_id: ID of the run
-            cursor: Cursor for pagination
+            before: Cursor for pagination
+            after: Cursor for pagination
             limit: Maximum number of messages to return
             ascending: Sort order by creation time
             role: Filter by message role (user/assistant/system/tool)
-
         Returns:
             List of messages matching the filter criteria
         """
         params = {
-            "cursor": cursor,
+            "before": before,
+            "after": after,
             "limit": limit,
             "ascending": ascending,
             "role": role,
         }
-        return self.server.job_manager.get_run_messages_cursor(run_id=run_id, actor=self.user, **params)
+
+        return self.server.job_manager.get_run_messages(run_id=run_id, actor=self.user, **params)
 
     def get_run_usage(
         self,
@@ -3712,9 +3788,9 @@ class LocalClient(AbstractClient):
 
     def get_tags(
         self,
-        cursor: str = None,
-        limit: int = 100,
-        query_text: str = None,
+        after: Optional[str] = None,
+        limit: Optional[int] = None,
+        query_text: Optional[str] = None,
     ) -> List[str]:
         """
         Get all tags.
@@ -3722,4 +3798,4 @@ class LocalClient(AbstractClient):
         Returns:
             tags (List[str]): List of tags
         """
-        return self.server.agent_manager.list_tags(actor=self.user, cursor=cursor, limit=limit, query_text=query_text)
+        return self.server.agent_manager.list_tags(actor=self.user, after=after, limit=limit, query_text=query_text)

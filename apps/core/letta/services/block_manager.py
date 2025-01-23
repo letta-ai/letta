@@ -64,7 +64,7 @@ class BlockManager:
         is_template: Optional[bool] = None,
         template_name: Optional[str] = None,
         id: Optional[str] = None,
-        cursor: Optional[str] = None,
+        after: Optional[str] = None,
         limit: Optional[int] = 50,
     ) -> List[PydanticBlock]:
         """Retrieve blocks based on various optional filters."""
@@ -80,7 +80,7 @@ class BlockManager:
             if id:
                 filters["id"] = id
 
-            blocks = BlockModel.list(db_session=session, cursor=cursor, limit=limit, **filters)
+            blocks = BlockModel.list(db_session=session, after=after, limit=limit, **filters)
 
             return [block.to_pydantic() for block in blocks]
 

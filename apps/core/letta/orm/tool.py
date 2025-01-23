@@ -1,6 +1,6 @@
 from typing import TYPE_CHECKING, List, Optional
 
-from sqlalchemy import JSON, String, UniqueConstraint
+from sqlalchemy import JSON, Index, String, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 # TODO everything in functions should live in this model
@@ -26,7 +26,10 @@ class Tool(SqlalchemyBase, OrganizationMixin):
 
     # Add unique constraint on (name, _organization_id)
     # An organization should not have multiple tools with the same name
-    __table_args__ = (UniqueConstraint("name", "organization_id", name="uix_name_organization"),)
+    __table_args__ = (
+        UniqueConstraint("name", "organization_id", name="uix_name_organization"),
+        Index("ix_tools_created_at_name", "created_at", "name"),
+    )
 
     name: Mapped[str] = mapped_column(doc="The display name of the tool.")
     tool_type: Mapped[ToolType] = mapped_column(

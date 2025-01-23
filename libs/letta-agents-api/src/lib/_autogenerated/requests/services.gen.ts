@@ -267,7 +267,7 @@ export class ToolsService {
    * List Tools
    * Get a list of all tools available to agents belonging to the org of the user
    * @param data The data for the request.
-   * @param data.cursor
+   * @param data.after
    * @param data.limit
    * @param data.userId
    * @returns Tool Successful Response
@@ -281,7 +281,7 @@ export class ToolsService {
       method: 'GET',
       url: '/v1/tools/',
       query: {
-        cursor: data.cursor,
+        after: data.after,
         limit: data.limit,
       },
       errors: {
@@ -679,7 +679,7 @@ export class SourcesService {
    * @param data The data for the request.
    * @param data.sourceId
    * @param data.limit Number of files to return
-   * @param data.cursor Pagination cursor to fetch the next set of results
+   * @param data.after Pagination cursor to fetch the next set of results
    * @param data.userId
    * @returns FileMetadata Successful Response
    * @throws ApiError
@@ -696,7 +696,7 @@ export class SourcesService {
       },
       query: {
         limit: data.limit,
-        cursor: data.cursor,
+        after: data.after,
       },
       errors: {
         422: 'Validation Error',
@@ -743,7 +743,8 @@ export class AgentsService {
    * @param data.name Name of the agent
    * @param data.tags List of tags to filter agents by
    * @param data.matchAllTags If True, only returns agents that match ALL given tags. Otherwise, return agents that have ANY of the passed in tags.
-   * @param data.cursor Cursor for pagination
+   * @param data.before Cursor for pagination
+   * @param data.after Cursor for pagination
    * @param data.limit Limit for pagination
    * @param data.queryText Search agents by name
    * @param data.userId
@@ -761,7 +762,8 @@ export class AgentsService {
         name: data.name,
         tags: data.tags,
         match_all_tags: data.matchAllTags,
-        cursor: data.cursor,
+        before: data.before,
+        after: data.after,
         limit: data.limit,
         query_text: data.queryText,
       },
@@ -1863,7 +1865,7 @@ export class SandboxConfigService {
    * List Sandbox Configs
    * @param data The data for the request.
    * @param data.limit Number of results to return
-   * @param data.cursor Pagination cursor to fetch the next set of results
+   * @param data.after Pagination cursor to fetch the next set of results
    * @param data.sandboxType Filter for this specific sandbox type
    * @param data.userId
    * @returns SandboxConfig Successful Response
@@ -1878,7 +1880,7 @@ export class SandboxConfigService {
       url: '/v1/sandbox-config/',
       query: {
         limit: data.limit,
-        cursor: data.cursor,
+        after: data.after,
         sandbox_type: data.sandboxType,
       },
       errors: {
@@ -2016,7 +2018,7 @@ export class SandboxConfigService {
    * @param data The data for the request.
    * @param data.sandboxConfigId
    * @param data.limit Number of results to return
-   * @param data.cursor Pagination cursor to fetch the next set of results
+   * @param data.after Pagination cursor to fetch the next set of results
    * @param data.userId
    * @returns SandboxEnvironmentVariable Successful Response
    * @throws ApiError
@@ -2033,7 +2035,7 @@ export class SandboxConfigService {
       },
       query: {
         limit: data.limit,
-        cursor: data.cursor,
+        after: data.after,
       },
       errors: {
         422: 'Validation Error',
@@ -2101,7 +2103,7 @@ export class ProvidersService {
    * List Providers
    * Get a list of all custom providers in the database
    * @param data The data for the request.
-   * @param data.cursor
+   * @param data.after
    * @param data.limit
    * @returns Provider Successful Response
    * @throws ApiError
@@ -2114,7 +2116,7 @@ export class ProvidersService {
       method: 'GET',
       url: '/v1/providers/',
       query: {
-        cursor: data.cursor,
+        after: data.after,
         limit: data.limit,
       },
       errors: {
@@ -2302,9 +2304,10 @@ export class RunsService {
    *
    * Args:
    * run_id: ID of the run
-   * cursor: Cursor for pagination
+   * before: A cursor for use in pagination. `before` is an object ID that defines your place in the list. For instance, if you make a list request and receive 100 objects, starting with obj_foo, your subsequent call can include before=obj_foo in order to fetch the previous page of the list.
+   * after: A cursor for use in pagination. `after` is an object ID that defines your place in the list. For instance, if you make a list request and receive 100 objects, ending with obj_foo, your subsequent call can include after=obj_foo in order to fetch the next page of the list.
    * limit: Maximum number of messages to return
-   * ascending: Sort order by creation time
+   * order: Sort order by the created_at timestamp of the objects. asc for ascending order and desc for descending order.
    * role: Filter by role (user/assistant/system/tool)
    * return_message_object: Whether to return Message objects or LettaMessage objects
    * user_id: ID of the user making the request
@@ -2313,9 +2316,10 @@ export class RunsService {
    * A list of messages associated with the run. Default is List[LettaMessage].
    * @param data The data for the request.
    * @param data.runId
-   * @param data.cursor Cursor for pagination
+   * @param data.before Cursor for pagination
+   * @param data.after Cursor for pagination
    * @param data.limit Maximum number of messages to return
-   * @param data.ascending Sort order by creation time
+   * @param data.order Sort order by the created_at timestamp of the objects. asc for ascending order and desc for descending order.
    * @param data.role Filter by role
    * @param data.userId
    * @returns LettaMessageUnion Successful Response
@@ -2332,9 +2336,10 @@ export class RunsService {
         run_id: data.runId,
       },
       query: {
-        cursor: data.cursor,
+        before: data.before,
+        after: data.after,
         limit: data.limit,
-        ascending: data.ascending,
+        order: data.order,
         role: data.role,
       },
       errors: {
@@ -2376,7 +2381,7 @@ export class TagService {
    * List Tags
    * Get a list of all tags in the database
    * @param data The data for the request.
-   * @param data.cursor
+   * @param data.after
    * @param data.limit
    * @param data.queryText
    * @param data.userId
@@ -2391,7 +2396,7 @@ export class TagService {
       method: 'GET',
       url: '/v1/tags/',
       query: {
-        cursor: data.cursor,
+        after: data.after,
         limit: data.limit,
         query_text: data.queryText,
       },
@@ -2408,7 +2413,7 @@ export class AdminService {
    * List Tags
    * Get a list of all tags in the database
    * @param data The data for the request.
-   * @param data.cursor
+   * @param data.after
    * @param data.limit
    * @param data.queryText
    * @param data.userId
@@ -2423,7 +2428,7 @@ export class AdminService {
       method: 'GET',
       url: '/v1/tags/',
       query: {
-        cursor: data.cursor,
+        after: data.after,
         limit: data.limit,
         query_text: data.queryText,
       },
@@ -2438,7 +2443,7 @@ export class AdminService {
    * List Users
    * Get a list of all users in the database
    * @param data The data for the request.
-   * @param data.cursor
+   * @param data.after
    * @param data.limit
    * @returns User Successful Response
    * @throws ApiError
@@ -2451,7 +2456,7 @@ export class AdminService {
       method: 'GET',
       url: '/v1/admin/users/',
       query: {
-        cursor: data.cursor,
+        after: data.after,
         limit: data.limit,
       },
       errors: {
@@ -2537,7 +2542,7 @@ export class AdminService {
    * Get All Orgs
    * Get a list of all orgs in the database
    * @param data The data for the request.
-   * @param data.cursor
+   * @param data.after
    * @param data.limit
    * @returns Organization Successful Response
    * @throws ApiError
@@ -2550,7 +2555,7 @@ export class AdminService {
       method: 'GET',
       url: '/v1/admin/orgs/',
       query: {
-        cursor: data.cursor,
+        after: data.after,
         limit: data.limit,
       },
       errors: {
@@ -2614,7 +2619,7 @@ export class UsersService {
    * List Users
    * Get a list of all users in the database
    * @param data The data for the request.
-   * @param data.cursor
+   * @param data.after
    * @param data.limit
    * @returns User Successful Response
    * @throws ApiError
@@ -2627,7 +2632,7 @@ export class UsersService {
       method: 'GET',
       url: '/v1/admin/users/',
       query: {
-        cursor: data.cursor,
+        after: data.after,
         limit: data.limit,
       },
       errors: {
@@ -2715,7 +2720,7 @@ export class OrganizationService {
    * Get All Orgs
    * Get a list of all orgs in the database
    * @param data The data for the request.
-   * @param data.cursor
+   * @param data.after
    * @param data.limit
    * @returns Organization Successful Response
    * @throws ApiError
@@ -2728,7 +2733,7 @@ export class OrganizationService {
       method: 'GET',
       url: '/v1/admin/orgs/',
       query: {
-        cursor: data.cursor,
+        after: data.after,
         limit: data.limit,
       },
       errors: {

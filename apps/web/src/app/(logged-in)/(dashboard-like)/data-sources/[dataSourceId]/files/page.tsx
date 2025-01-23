@@ -51,7 +51,7 @@ function UploadFileDialog({ limit }: UploadFileDialogProps) {
       void queryClient.invalidateQueries({
         queryKey: UseSourcesServiceListSourceFilesKeyFn({
           sourceId: dataSourceId,
-          cursor: undefined,
+          after: undefined,
           limit,
         }),
       });
@@ -117,7 +117,7 @@ function DataSourceFilesPage() {
     {
       sourceId,
       limit,
-      cursor: cursor?.id,
+      after: cursor?.id,
     },
     undefined,
     {

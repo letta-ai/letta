@@ -1,4 +1,4 @@
-from typing import List, Optional, Tuple
+from typing import List, Optional
 
 from letta.orm.errors import NoResultFound
 from letta.orm.organization import Organization as OrganizationModel
@@ -99,8 +99,12 @@ class UserManager:
             return self.get_default_user()
 
     @enforce_types
-    def list_users(self, cursor: Optional[str] = None, limit: Optional[int] = 50) -> Tuple[Optional[str], List[PydanticUser]]:
-        """List users with pagination using cursor (id) and limit."""
+    def list_users(self, after: Optional[str] = None, limit: Optional[int] = 50) -> List[PydanticUser]:
+        """List all users with optional pagination."""
         with self.session_maker() as session:
-            results = UserModel.list(db_session=session, cursor=cursor, limit=limit)
-            return [user.to_pydantic() for user in results]
+            users = UserModel.list(
+                db_session=session,
+                after=after,
+                limit=limit,
+            )
+            return [user.to_pydantic() for user in users]

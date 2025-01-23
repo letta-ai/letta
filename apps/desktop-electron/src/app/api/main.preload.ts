@@ -11,8 +11,6 @@ contextBridge.exposeInMainWorld('darkMode', {
   system: () => ipcRenderer.invoke('dark-mode:system'),
 });
 
-
-
 contextBridge.exposeInMainWorld('router', {
   onUpdateRoute: (callback) => {
     return ipcRenderer.on('set-path', (_event, value) => {

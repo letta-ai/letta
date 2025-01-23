@@ -47,7 +47,7 @@ export const prefetchUseToolsServiceRetrieveTool = (
  * List Tools
  * Get a list of all tools available to agents belonging to the org of the user
  * @param data The data for the request.
- * @param data.cursor
+ * @param data.after
  * @param data.limit
  * @param data.userId
  * @returns Tool Successful Response
@@ -56,18 +56,18 @@ export const prefetchUseToolsServiceRetrieveTool = (
 export const prefetchUseToolsServiceListTools = (
   queryClient: QueryClient,
   {
-    cursor,
+    after,
     limit,
     userId,
   }: {
-    cursor?: string;
+    after?: string;
     limit?: number;
     userId?: string;
   } = {},
 ) =>
   queryClient.prefetchQuery({
-    queryKey: Common.UseToolsServiceListToolsKeyFn({ cursor, limit, userId }),
-    queryFn: () => ToolsService.listTools({ cursor, limit, userId }),
+    queryKey: Common.UseToolsServiceListToolsKeyFn({ after, limit, userId }),
+    queryFn: () => ToolsService.listTools({ after, limit, userId }),
   });
 /**
  * List Composio Apps
@@ -217,7 +217,7 @@ export const prefetchUseSourcesServiceListSourcePassages = (
  * @param data The data for the request.
  * @param data.sourceId
  * @param data.limit Number of files to return
- * @param data.cursor Pagination cursor to fetch the next set of results
+ * @param data.after Pagination cursor to fetch the next set of results
  * @param data.userId
  * @returns FileMetadata Successful Response
  * @throws ApiError
@@ -225,12 +225,12 @@ export const prefetchUseSourcesServiceListSourcePassages = (
 export const prefetchUseSourcesServiceListSourceFiles = (
   queryClient: QueryClient,
   {
-    cursor,
+    after,
     limit,
     sourceId,
     userId,
   }: {
-    cursor?: string;
+    after?: string;
     limit?: number;
     sourceId: string;
     userId?: string;
@@ -238,13 +238,13 @@ export const prefetchUseSourcesServiceListSourceFiles = (
 ) =>
   queryClient.prefetchQuery({
     queryKey: Common.UseSourcesServiceListSourceFilesKeyFn({
-      cursor,
+      after,
       limit,
       sourceId,
       userId,
     }),
     queryFn: () =>
-      SourcesService.listSourceFiles({ cursor, limit, sourceId, userId }),
+      SourcesService.listSourceFiles({ after, limit, sourceId, userId }),
   });
 /**
  * List Agents
@@ -254,7 +254,8 @@ export const prefetchUseSourcesServiceListSourceFiles = (
  * @param data.name Name of the agent
  * @param data.tags List of tags to filter agents by
  * @param data.matchAllTags If True, only returns agents that match ALL given tags. Otherwise, return agents that have ANY of the passed in tags.
- * @param data.cursor Cursor for pagination
+ * @param data.before Cursor for pagination
+ * @param data.after Cursor for pagination
  * @param data.limit Limit for pagination
  * @param data.queryText Search agents by name
  * @param data.userId
@@ -264,7 +265,8 @@ export const prefetchUseSourcesServiceListSourceFiles = (
 export const prefetchUseAgentsServiceListAgents = (
   queryClient: QueryClient,
   {
-    cursor,
+    after,
+    before,
     limit,
     matchAllTags,
     name,
@@ -272,7 +274,8 @@ export const prefetchUseAgentsServiceListAgents = (
     tags,
     userId,
   }: {
-    cursor?: string;
+    after?: string;
+    before?: string;
     limit?: number;
     matchAllTags?: boolean;
     name?: string;
@@ -283,7 +286,8 @@ export const prefetchUseAgentsServiceListAgents = (
 ) =>
   queryClient.prefetchQuery({
     queryKey: Common.UseAgentsServiceListAgentsKeyFn({
-      cursor,
+      after,
+      before,
       limit,
       matchAllTags,
       name,
@@ -293,7 +297,8 @@ export const prefetchUseAgentsServiceListAgents = (
     }),
     queryFn: () =>
       AgentsService.listAgents({
-        cursor,
+        after,
+        before,
         limit,
         matchAllTags,
         name,
@@ -762,7 +767,7 @@ export const prefetchUseHealthServiceHealthCheck = (queryClient: QueryClient) =>
  * List Sandbox Configs
  * @param data The data for the request.
  * @param data.limit Number of results to return
- * @param data.cursor Pagination cursor to fetch the next set of results
+ * @param data.after Pagination cursor to fetch the next set of results
  * @param data.sandboxType Filter for this specific sandbox type
  * @param data.userId
  * @returns SandboxConfig Successful Response
@@ -772,12 +777,12 @@ export const prefetchUseSandboxConfigServiceListSandboxConfigsV1SandboxConfigGet
   (
     queryClient: QueryClient,
     {
-      cursor,
+      after,
       limit,
       sandboxType,
       userId,
     }: {
-      cursor?: string;
+      after?: string;
       limit?: number;
       sandboxType?: SandboxType;
       userId?: string;
@@ -786,11 +791,11 @@ export const prefetchUseSandboxConfigServiceListSandboxConfigsV1SandboxConfigGet
     queryClient.prefetchQuery({
       queryKey:
         Common.UseSandboxConfigServiceListSandboxConfigsV1SandboxConfigGetKeyFn(
-          { cursor, limit, sandboxType, userId },
+          { after, limit, sandboxType, userId },
         ),
       queryFn: () =>
         SandboxConfigService.listSandboxConfigsV1SandboxConfigGet({
-          cursor,
+          after,
           limit,
           sandboxType,
           userId,
@@ -801,7 +806,7 @@ export const prefetchUseSandboxConfigServiceListSandboxConfigsV1SandboxConfigGet
  * @param data The data for the request.
  * @param data.sandboxConfigId
  * @param data.limit Number of results to return
- * @param data.cursor Pagination cursor to fetch the next set of results
+ * @param data.after Pagination cursor to fetch the next set of results
  * @param data.userId
  * @returns SandboxEnvironmentVariable Successful Response
  * @throws ApiError
@@ -810,12 +815,12 @@ export const prefetchUseSandboxConfigServiceListSandboxEnvVarsV1SandboxConfigSan
   (
     queryClient: QueryClient,
     {
-      cursor,
+      after,
       limit,
       sandboxConfigId,
       userId,
     }: {
-      cursor?: string;
+      after?: string;
       limit?: number;
       sandboxConfigId: string;
       userId?: string;
@@ -824,18 +829,18 @@ export const prefetchUseSandboxConfigServiceListSandboxEnvVarsV1SandboxConfigSan
     queryClient.prefetchQuery({
       queryKey:
         Common.UseSandboxConfigServiceListSandboxEnvVarsV1SandboxConfigSandboxConfigIdEnvironmentVariableGetKeyFn(
-          { cursor, limit, sandboxConfigId, userId },
+          { after, limit, sandboxConfigId, userId },
         ),
       queryFn: () =>
         SandboxConfigService.listSandboxEnvVarsV1SandboxConfigSandboxConfigIdEnvironmentVariableGet(
-          { cursor, limit, sandboxConfigId, userId },
+          { after, limit, sandboxConfigId, userId },
         ),
     });
 /**
  * List Providers
  * Get a list of all custom providers in the database
  * @param data The data for the request.
- * @param data.cursor
+ * @param data.after
  * @param data.limit
  * @returns Provider Successful Response
  * @throws ApiError
@@ -843,16 +848,16 @@ export const prefetchUseSandboxConfigServiceListSandboxEnvVarsV1SandboxConfigSan
 export const prefetchUseProvidersServiceListProviders = (
   queryClient: QueryClient,
   {
-    cursor,
+    after,
     limit,
   }: {
-    cursor?: string;
+    after?: string;
     limit?: number;
   } = {},
 ) =>
   queryClient.prefetchQuery({
-    queryKey: Common.UseProvidersServiceListProvidersKeyFn({ cursor, limit }),
-    queryFn: () => ProvidersService.listProviders({ cursor, limit }),
+    queryKey: Common.UseProvidersServiceListProvidersKeyFn({ after, limit }),
+    queryFn: () => ProvidersService.listProviders({ after, limit }),
   });
 /**
  * List Runs
@@ -923,9 +928,10 @@ export const prefetchUseRunsServiceRetrieveRun = (
  *
  * Args:
  * run_id: ID of the run
- * cursor: Cursor for pagination
+ * before: A cursor for use in pagination. `before` is an object ID that defines your place in the list. For instance, if you make a list request and receive 100 objects, starting with obj_foo, your subsequent call can include before=obj_foo in order to fetch the previous page of the list.
+ * after: A cursor for use in pagination. `after` is an object ID that defines your place in the list. For instance, if you make a list request and receive 100 objects, ending with obj_foo, your subsequent call can include after=obj_foo in order to fetch the next page of the list.
  * limit: Maximum number of messages to return
- * ascending: Sort order by creation time
+ * order: Sort order by the created_at timestamp of the objects. asc for ascending order and desc for descending order.
  * role: Filter by role (user/assistant/system/tool)
  * return_message_object: Whether to return Message objects or LettaMessage objects
  * user_id: ID of the user making the request
@@ -934,9 +940,10 @@ export const prefetchUseRunsServiceRetrieveRun = (
  * A list of messages associated with the run. Default is List[LettaMessage].
  * @param data The data for the request.
  * @param data.runId
- * @param data.cursor Cursor for pagination
+ * @param data.before Cursor for pagination
+ * @param data.after Cursor for pagination
  * @param data.limit Maximum number of messages to return
- * @param data.ascending Sort order by creation time
+ * @param data.order Sort order by the created_at timestamp of the objects. asc for ascending order and desc for descending order.
  * @param data.role Filter by role
  * @param data.userId
  * @returns LettaMessageUnion Successful Response
@@ -945,16 +952,18 @@ export const prefetchUseRunsServiceRetrieveRun = (
 export const prefetchUseRunsServiceListRunMessages = (
   queryClient: QueryClient,
   {
-    ascending,
-    cursor,
+    after,
+    before,
     limit,
+    order,
     role,
     runId,
     userId,
   }: {
-    ascending?: boolean;
-    cursor?: string;
+    after?: string;
+    before?: string;
     limit?: number;
+    order?: string;
     role?: MessageRole;
     runId: string;
     userId?: string;
@@ -962,18 +971,20 @@ export const prefetchUseRunsServiceListRunMessages = (
 ) =>
   queryClient.prefetchQuery({
     queryKey: Common.UseRunsServiceListRunMessagesKeyFn({
-      ascending,
-      cursor,
+      after,
+      before,
       limit,
+      order,
       role,
       runId,
       userId,
     }),
     queryFn: () =>
       RunsService.listRunMessages({
-        ascending,
-        cursor,
+        after,
+        before,
         limit,
+        order,
         role,
         runId,
         userId,
@@ -1006,7 +1017,7 @@ export const prefetchUseRunsServiceRetrieveRunUsage = (
  * List Tags
  * Get a list of all tags in the database
  * @param data The data for the request.
- * @param data.cursor
+ * @param data.after
  * @param data.limit
  * @param data.queryText
  * @param data.userId
@@ -1016,12 +1027,12 @@ export const prefetchUseRunsServiceRetrieveRunUsage = (
 export const prefetchUseTagServiceListTags = (
   queryClient: QueryClient,
   {
-    cursor,
+    after,
     limit,
     queryText,
     userId,
   }: {
-    cursor?: string;
+    after?: string;
     limit?: number;
     queryText?: string;
     userId?: string;
@@ -1029,18 +1040,18 @@ export const prefetchUseTagServiceListTags = (
 ) =>
   queryClient.prefetchQuery({
     queryKey: Common.UseTagServiceListTagsKeyFn({
-      cursor,
+      after,
       limit,
       queryText,
       userId,
     }),
-    queryFn: () => TagService.listTags({ cursor, limit, queryText, userId }),
+    queryFn: () => TagService.listTags({ after, limit, queryText, userId }),
   });
 /**
  * List Tags
  * Get a list of all tags in the database
  * @param data The data for the request.
- * @param data.cursor
+ * @param data.after
  * @param data.limit
  * @param data.queryText
  * @param data.userId
@@ -1050,12 +1061,12 @@ export const prefetchUseTagServiceListTags = (
 export const prefetchUseAdminServiceListTags = (
   queryClient: QueryClient,
   {
-    cursor,
+    after,
     limit,
     queryText,
     userId,
   }: {
-    cursor?: string;
+    after?: string;
     limit?: number;
     queryText?: string;
     userId?: string;
@@ -1063,18 +1074,18 @@ export const prefetchUseAdminServiceListTags = (
 ) =>
   queryClient.prefetchQuery({
     queryKey: Common.UseAdminServiceListTagsKeyFn({
-      cursor,
+      after,
       limit,
       queryText,
       userId,
     }),
-    queryFn: () => AdminService.listTags({ cursor, limit, queryText, userId }),
+    queryFn: () => AdminService.listTags({ after, limit, queryText, userId }),
   });
 /**
  * List Users
  * Get a list of all users in the database
  * @param data The data for the request.
- * @param data.cursor
+ * @param data.after
  * @param data.limit
  * @returns User Successful Response
  * @throws ApiError
@@ -1082,22 +1093,22 @@ export const prefetchUseAdminServiceListTags = (
 export const prefetchUseAdminServiceListUsers = (
   queryClient: QueryClient,
   {
-    cursor,
+    after,
     limit,
   }: {
-    cursor?: string;
+    after?: string;
     limit?: number;
   } = {},
 ) =>
   queryClient.prefetchQuery({
-    queryKey: Common.UseAdminServiceListUsersKeyFn({ cursor, limit }),
-    queryFn: () => AdminService.listUsers({ cursor, limit }),
+    queryKey: Common.UseAdminServiceListUsersKeyFn({ after, limit }),
+    queryFn: () => AdminService.listUsers({ after, limit }),
   });
 /**
  * Get All Orgs
  * Get a list of all orgs in the database
  * @param data The data for the request.
- * @param data.cursor
+ * @param data.after
  * @param data.limit
  * @returns Organization Successful Response
  * @throws ApiError
@@ -1105,22 +1116,22 @@ export const prefetchUseAdminServiceListUsers = (
 export const prefetchUseAdminServiceListOrgs = (
   queryClient: QueryClient,
   {
-    cursor,
+    after,
     limit,
   }: {
-    cursor?: string;
+    after?: string;
     limit?: number;
   } = {},
 ) =>
   queryClient.prefetchQuery({
-    queryKey: Common.UseAdminServiceListOrgsKeyFn({ cursor, limit }),
-    queryFn: () => AdminService.listOrgs({ cursor, limit }),
+    queryKey: Common.UseAdminServiceListOrgsKeyFn({ after, limit }),
+    queryFn: () => AdminService.listOrgs({ after, limit }),
   });
 /**
  * List Users
  * Get a list of all users in the database
  * @param data The data for the request.
- * @param data.cursor
+ * @param data.after
  * @param data.limit
  * @returns User Successful Response
  * @throws ApiError
@@ -1128,22 +1139,22 @@ export const prefetchUseAdminServiceListOrgs = (
 export const prefetchUseUsersServiceListUsers = (
   queryClient: QueryClient,
   {
-    cursor,
+    after,
     limit,
   }: {
-    cursor?: string;
+    after?: string;
     limit?: number;
   } = {},
 ) =>
   queryClient.prefetchQuery({
-    queryKey: Common.UseUsersServiceListUsersKeyFn({ cursor, limit }),
-    queryFn: () => UsersService.listUsers({ cursor, limit }),
+    queryKey: Common.UseUsersServiceListUsersKeyFn({ after, limit }),
+    queryFn: () => UsersService.listUsers({ after, limit }),
   });
 /**
  * Get All Orgs
  * Get a list of all orgs in the database
  * @param data The data for the request.
- * @param data.cursor
+ * @param data.after
  * @param data.limit
  * @returns Organization Successful Response
  * @throws ApiError
@@ -1151,14 +1162,14 @@ export const prefetchUseUsersServiceListUsers = (
 export const prefetchUseOrganizationServiceListOrgs = (
   queryClient: QueryClient,
   {
-    cursor,
+    after,
     limit,
   }: {
-    cursor?: string;
+    after?: string;
     limit?: number;
   } = {},
 ) =>
   queryClient.prefetchQuery({
-    queryKey: Common.UseOrganizationServiceListOrgsKeyFn({ cursor, limit }),
-    queryFn: () => OrganizationService.listOrgs({ cursor, limit }),
+    queryKey: Common.UseOrganizationServiceListOrgsKeyFn({ after, limit }),
+    queryFn: () => OrganizationService.listOrgs({ after, limit }),
   });

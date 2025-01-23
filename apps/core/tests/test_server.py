@@ -394,7 +394,7 @@ def test_user_message_memory(server, user, agent_id):
 @pytest.mark.order(3)
 def test_load_data(server, user, agent_id):
     # create source
-    passages_before = server.agent_manager.list_passages(actor=user, agent_id=agent_id, cursor=None, limit=10000)
+    passages_before = server.agent_manager.list_passages(actor=user, agent_id=agent_id, after=None, limit=10000)
     assert len(passages_before) == 0
 
     source = server.source_manager.create_source(
@@ -416,7 +416,7 @@ def test_load_data(server, user, agent_id):
     server.agent_manager.attach_source(agent_id=agent_id, source_id=source.id, actor=user)
 
     # check archival memory size
-    passages_after = server.agent_manager.list_passages(actor=user, agent_id=agent_id, cursor=None, limit=10000)
+    passages_after = server.agent_manager.list_passages(actor=user, agent_id=agent_id, after=None, limit=10000)
     assert len(passages_after) == 5
 
 
@@ -439,14 +439,14 @@ def test_user_message(server, user, agent_id):
 def test_get_recall_memory(server, org_id, user, agent_id):
     # test recall memory cursor pagination
     actor = user
-    messages_1 = server.get_agent_recall_cursor(user_id=user.id, agent_id=agent_id, limit=2)
+    messages_1 = server.get_agent_recall(user_id=user.id, agent_id=agent_id, limit=2)
     cursor1 = messages_1[-1].id
-    messages_2 = server.get_agent_recall_cursor(user_id=user.id, agent_id=agent_id, after=cursor1, limit=1000)
-    messages_3 = server.get_agent_recall_cursor(user_id=user.id, agent_id=agent_id, limit=1000)
+    messages_2 = server.get_agent_recall(user_id=user.id, agent_id=agent_id, after=cursor1, limit=1000)
+    messages_3 = server.get_agent_recall(user_id=user.id, agent_id=agent_id, limit=1000)
     messages_3[-1].id
     assert messages_3[-1].created_at >= messages_3[0].created_at
     assert len(messages_3) == len(messages_1) + len(messages_2)
-    messages_4 = server.get_agent_recall_cursor(user_id=user.id, agent_id=agent_id, reverse=True, before=cursor1)
+    messages_4 = server.get_agent_recall(user_id=user.id, agent_id=agent_id, reverse=True, before=cursor1)
     assert len(messages_4) == 1
 
     # test in-context message ids
@@ -477,7 +477,7 @@ def test_get_archival_memory(server, user, agent_id):
         actor=actor,
         agent_id=agent_id,
         ascending=False,
-        cursor=cursor1,
+        before=cursor1,
     )
 
     # List all 5
@@ -499,11 +499,11 @@ def test_get_archival_memory(server, user, agent_id):
     passage_1 = server.agent_manager.list_passages(actor=actor, agent_id=agent_id, limit=1, ascending=True)
     assert len(passage_1) == 1
     assert passage_1[0].text == "alpha"
-    passage_2 = server.agent_manager.list_passages(actor=actor, agent_id=agent_id, cursor=earliest.id, limit=1000, ascending=True)
+    passage_2 = server.agent_manager.list_passages(actor=actor, agent_id=agent_id, after=earliest.id, limit=1000, ascending=True)
     assert len(passage_2) in [4, 5]  # NOTE: exact size seems non-deterministic, so loosen test
     assert all("alpha" not in passage.text for passage in passage_2)
     # test safe empty return
-    passage_none = server.agent_manager.list_passages(actor=actor, agent_id=agent_id, cursor=latest.id, limit=1000, ascending=True)
+    passage_none = server.agent_manager.list_passages(actor=actor, agent_id=agent_id, after=latest.id, limit=1000, ascending=True)
     assert len(passage_none) == 0
 
 
@@ -630,7 +630,7 @@ def _test_get_messages_letta_format(
 ):
     """Test mapping between messages and letta_messages with reverse=False."""
 
-    messages = server.get_agent_recall_cursor(
+    messages = server.get_agent_recall(
         user_id=user.id,
         agent_id=agent_id,
         limit=1000,
@@ -639,7 +639,7 @@ def _test_get_messages_letta_format(
     )
     assert all(isinstance(m, Message) for m in messages)
 
-    letta_messages = server.get_agent_recall_cursor(
+    letta_messages = server.get_agent_recall(
         user_id=user.id,
         agent_id=agent_id,
         limit=1000,
@@ -930,7 +930,7 @@ def test_memory_rebuild_count(server, user, mock_e2b_api_key_none, base_tools, b
     def count_system_messages_in_recall() -> Tuple[int, List[LettaMessage]]:
 
         # At this stage, there should only be 1 system message inside of recall storage
-        letta_messages = server.get_agent_recall_cursor(
+        letta_messages = server.get_agent_recall(
             user_id=user.id,
             agent_id=agent_state.id,
             limit=1000,
@@ -1192,7 +1192,7 @@ def test_messages_with_provider_override(server: SyncServer, user_id: str):
     usage = server.user_message(user_id=actor.id, agent_id=agent.id, message="Test message")
     assert usage, "Sending message failed"
 
-    get_messages_response = server.message_manager.list_messages_for_agent(agent_id=agent.id, actor=actor, cursor=existing_messages[-1].id)
+    get_messages_response = server.message_manager.list_messages_for_agent(agent_id=agent.id, actor=actor, after=existing_messages[-1].id)
     assert len(get_messages_response) > 0, "Retrieving messages failed"
 
     step_ids = set([msg.step_id for msg in get_messages_response])
@@ -1219,7 +1219,7 @@ def test_messages_with_provider_override(server: SyncServer, user_id: str):
     usage = server.user_message(user_id=actor.id, agent_id=agent.id, message="Test message")
     assert usage, "Sending message failed"
 
-    get_messages_response = server.message_manager.list_messages_for_agent(agent_id=agent.id, actor=actor, cursor=existing_messages[-1].id)
+    get_messages_response = server.message_manager.list_messages_for_agent(agent_id=agent.id, actor=actor, after=existing_messages[-1].id)
     assert len(get_messages_response) > 0, "Retrieving messages failed"
 
     step_ids = set([msg.step_id for msg in get_messages_response])

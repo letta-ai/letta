@@ -128,7 +128,8 @@ class MessageManager:
         self,
         agent_id: str,
         actor: Optional[PydanticUser] = None,
-        cursor: Optional[str] = None,
+        before: Optional[str] = None,
+        after: Optional[str] = None,
         start_date: Optional[datetime] = None,
         end_date: Optional[datetime] = None,
         limit: Optional[int] = 50,
@@ -139,7 +140,8 @@ class MessageManager:
         """List user messages with flexible filtering and pagination options.
 
         Args:
-            cursor: Cursor-based pagination - return records after this ID (exclusive)
+            before: Cursor-based pagination - return records before this ID (exclusive)
+            after: Cursor-based pagination - return records after this ID (exclusive)
             start_date: Filter records created after this date
             end_date: Filter records created before this date
             limit: Maximum number of records to return
@@ -156,7 +158,8 @@ class MessageManager:
         return self.list_messages_for_agent(
             agent_id=agent_id,
             actor=actor,
-            cursor=cursor,
+            before=before,
+            after=after,
             start_date=start_date,
             end_date=end_date,
             limit=limit,
@@ -170,7 +173,8 @@ class MessageManager:
         self,
         agent_id: str,
         actor: Optional[PydanticUser] = None,
-        cursor: Optional[str] = None,
+        before: Optional[str] = None,
+        after: Optional[str] = None,
         start_date: Optional[datetime] = None,
         end_date: Optional[datetime] = None,
         limit: Optional[int] = 50,
@@ -181,7 +185,8 @@ class MessageManager:
         """List messages with flexible filtering and pagination options.
 
         Args:
-            cursor: Cursor-based pagination - return records after this ID (exclusive)
+            before: Cursor-based pagination - return records before this ID (exclusive)
+            after: Cursor-based pagination - return records after this ID (exclusive)
             start_date: Filter records created after this date
             end_date: Filter records created before this date
             limit: Maximum number of records to return
@@ -201,7 +206,8 @@ class MessageManager:
 
             results = MessageModel.list(
                 db_session=session,
-                cursor=cursor,
+                before=before,
+                after=after,
                 start_date=start_date,
                 end_date=end_date,
                 limit=limit,

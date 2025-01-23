@@ -93,12 +93,12 @@ class ToolManager:
             return None
 
     @enforce_types
-    def list_tools(self, actor: PydanticUser, cursor: Optional[str] = None, limit: Optional[int] = 50) -> List[PydanticTool]:
-        """List all tools with optional pagination using cursor and limit."""
+    def list_tools(self, actor: PydanticUser, after: Optional[str] = None, limit: Optional[int] = 50) -> List[PydanticTool]:
+        """List all tools with optional pagination."""
         with self.session_maker() as session:
             tools = ToolModel.list(
                 db_session=session,
-                cursor=cursor,
+                after=after,
                 limit=limit,
                 organization_id=actor.organization_id,
             )

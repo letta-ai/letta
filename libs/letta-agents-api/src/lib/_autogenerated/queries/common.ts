@@ -48,19 +48,16 @@ export type ToolsServiceListToolsQueryResult<
 export const useToolsServiceListToolsKey = 'ToolsServiceListTools';
 export const UseToolsServiceListToolsKeyFn = (
   {
-    cursor,
+    after,
     limit,
     userId,
   }: {
-    cursor?: string;
+    after?: string;
     limit?: number;
     userId?: string;
   } = {},
   queryKey?: Array<unknown>,
-) => [
-  useToolsServiceListToolsKey,
-  ...(queryKey ?? [{ cursor, limit, userId }]),
-];
+) => [useToolsServiceListToolsKey, ...(queryKey ?? [{ after, limit, userId }])];
 export type ToolsServiceListComposioAppsDefaultResponse = Awaited<
   ReturnType<typeof ToolsService.listComposioApps>
 >;
@@ -193,12 +190,12 @@ export const useSourcesServiceListSourceFilesKey =
   'SourcesServiceListSourceFiles';
 export const UseSourcesServiceListSourceFilesKeyFn = (
   {
-    cursor,
+    after,
     limit,
     sourceId,
     userId,
   }: {
-    cursor?: string;
+    after?: string;
     limit?: number;
     sourceId: string;
     userId?: string;
@@ -206,7 +203,7 @@ export const UseSourcesServiceListSourceFilesKeyFn = (
   queryKey?: Array<unknown>,
 ) => [
   useSourcesServiceListSourceFilesKey,
-  ...(queryKey ?? [{ cursor, limit, sourceId, userId }]),
+  ...(queryKey ?? [{ after, limit, sourceId, userId }]),
 ];
 export type AgentsServiceListAgentsDefaultResponse = Awaited<
   ReturnType<typeof AgentsService.listAgents>
@@ -218,7 +215,8 @@ export type AgentsServiceListAgentsQueryResult<
 export const useAgentsServiceListAgentsKey = 'AgentsServiceListAgents';
 export const UseAgentsServiceListAgentsKeyFn = (
   {
-    cursor,
+    after,
+    before,
     limit,
     matchAllTags,
     name,
@@ -226,7 +224,8 @@ export const UseAgentsServiceListAgentsKeyFn = (
     tags,
     userId,
   }: {
-    cursor?: string;
+    after?: string;
+    before?: string;
     limit?: number;
     matchAllTags?: boolean;
     name?: string;
@@ -238,7 +237,7 @@ export const UseAgentsServiceListAgentsKeyFn = (
 ) => [
   useAgentsServiceListAgentsKey,
   ...(queryKey ?? [
-    { cursor, limit, matchAllTags, name, queryText, tags, userId },
+    { after, before, limit, matchAllTags, name, queryText, tags, userId },
   ]),
 ];
 export type AgentsServiceRetrieveAgentContextWindowDefaultResponse = Awaited<
@@ -629,12 +628,12 @@ export const useSandboxConfigServiceListSandboxConfigsV1SandboxConfigGetKey =
 export const UseSandboxConfigServiceListSandboxConfigsV1SandboxConfigGetKeyFn =
   (
     {
-      cursor,
+      after,
       limit,
       sandboxType,
       userId,
     }: {
-      cursor?: string;
+      after?: string;
       limit?: number;
       sandboxType?: SandboxType;
       userId?: string;
@@ -642,7 +641,7 @@ export const UseSandboxConfigServiceListSandboxConfigsV1SandboxConfigGetKeyFn =
     queryKey?: Array<unknown>,
   ) => [
     useSandboxConfigServiceListSandboxConfigsV1SandboxConfigGetKey,
-    ...(queryKey ?? [{ cursor, limit, sandboxType, userId }]),
+    ...(queryKey ?? [{ after, limit, sandboxType, userId }]),
   ];
 export type SandboxConfigServiceListSandboxEnvVarsV1SandboxConfigSandboxConfigIdEnvironmentVariableGetDefaultResponse =
   Awaited<
@@ -659,12 +658,12 @@ export const useSandboxConfigServiceListSandboxEnvVarsV1SandboxConfigSandboxConf
 export const UseSandboxConfigServiceListSandboxEnvVarsV1SandboxConfigSandboxConfigIdEnvironmentVariableGetKeyFn =
   (
     {
-      cursor,
+      after,
       limit,
       sandboxConfigId,
       userId,
     }: {
-      cursor?: string;
+      after?: string;
       limit?: number;
       sandboxConfigId: string;
       userId?: string;
@@ -672,7 +671,7 @@ export const UseSandboxConfigServiceListSandboxEnvVarsV1SandboxConfigSandboxConf
     queryKey?: Array<unknown>,
   ) => [
     useSandboxConfigServiceListSandboxEnvVarsV1SandboxConfigSandboxConfigIdEnvironmentVariableGetKey,
-    ...(queryKey ?? [{ cursor, limit, sandboxConfigId, userId }]),
+    ...(queryKey ?? [{ after, limit, sandboxConfigId, userId }]),
   ];
 export type ProvidersServiceListProvidersDefaultResponse = Awaited<
   ReturnType<typeof ProvidersService.listProviders>
@@ -685,17 +684,14 @@ export const useProvidersServiceListProvidersKey =
   'ProvidersServiceListProviders';
 export const UseProvidersServiceListProvidersKeyFn = (
   {
-    cursor,
+    after,
     limit,
   }: {
-    cursor?: string;
+    after?: string;
     limit?: number;
   } = {},
   queryKey?: Array<unknown>,
-) => [
-  useProvidersServiceListProvidersKey,
-  ...(queryKey ?? [{ cursor, limit }]),
-];
+) => [useProvidersServiceListProvidersKey, ...(queryKey ?? [{ after, limit }])];
 export type RunsServiceListRunsDefaultResponse = Awaited<
   ReturnType<typeof RunsService.listRuns>
 >;
@@ -756,16 +752,18 @@ export type RunsServiceListRunMessagesQueryResult<
 export const useRunsServiceListRunMessagesKey = 'RunsServiceListRunMessages';
 export const UseRunsServiceListRunMessagesKeyFn = (
   {
-    ascending,
-    cursor,
+    after,
+    before,
     limit,
+    order,
     role,
     runId,
     userId,
   }: {
-    ascending?: boolean;
-    cursor?: string;
+    after?: string;
+    before?: string;
     limit?: number;
+    order?: string;
     role?: MessageRole;
     runId: string;
     userId?: string;
@@ -773,7 +771,7 @@ export const UseRunsServiceListRunMessagesKeyFn = (
   queryKey?: Array<unknown>,
 ) => [
   useRunsServiceListRunMessagesKey,
-  ...(queryKey ?? [{ ascending, cursor, limit, role, runId, userId }]),
+  ...(queryKey ?? [{ after, before, limit, order, role, runId, userId }]),
 ];
 export type RunsServiceRetrieveRunUsageDefaultResponse = Awaited<
   ReturnType<typeof RunsService.retrieveRunUsage>
@@ -803,12 +801,12 @@ export type TagServiceListTagsQueryResult<
 export const useTagServiceListTagsKey = 'TagServiceListTags';
 export const UseTagServiceListTagsKeyFn = (
   {
-    cursor,
+    after,
     limit,
     queryText,
     userId,
   }: {
-    cursor?: string;
+    after?: string;
     limit?: number;
     queryText?: string;
     userId?: string;
@@ -816,7 +814,7 @@ export const UseTagServiceListTagsKeyFn = (
   queryKey?: Array<unknown>,
 ) => [
   useTagServiceListTagsKey,
-  ...(queryKey ?? [{ cursor, limit, queryText, userId }]),
+  ...(queryKey ?? [{ after, limit, queryText, userId }]),
 ];
 export type AdminServiceListTagsDefaultResponse = Awaited<
   ReturnType<typeof AdminService.listTags>
@@ -828,12 +826,12 @@ export type AdminServiceListTagsQueryResult<
 export const useAdminServiceListTagsKey = 'AdminServiceListTags';
 export const UseAdminServiceListTagsKeyFn = (
   {
-    cursor,
+    after,
     limit,
     queryText,
     userId,
   }: {
-    cursor?: string;
+    after?: string;
     limit?: number;
     queryText?: string;
     userId?: string;
@@ -841,7 +839,7 @@ export const UseAdminServiceListTagsKeyFn = (
   queryKey?: Array<unknown>,
 ) => [
   useAdminServiceListTagsKey,
-  ...(queryKey ?? [{ cursor, limit, queryText, userId }]),
+  ...(queryKey ?? [{ after, limit, queryText, userId }]),
 ];
 export type AdminServiceListUsersDefaultResponse = Awaited<
   ReturnType<typeof AdminService.listUsers>
@@ -853,14 +851,14 @@ export type AdminServiceListUsersQueryResult<
 export const useAdminServiceListUsersKey = 'AdminServiceListUsers';
 export const UseAdminServiceListUsersKeyFn = (
   {
-    cursor,
+    after,
     limit,
   }: {
-    cursor?: string;
+    after?: string;
     limit?: number;
   } = {},
   queryKey?: Array<unknown>,
-) => [useAdminServiceListUsersKey, ...(queryKey ?? [{ cursor, limit }])];
+) => [useAdminServiceListUsersKey, ...(queryKey ?? [{ after, limit }])];
 export type AdminServiceListOrgsDefaultResponse = Awaited<
   ReturnType<typeof AdminService.listOrgs>
 >;
@@ -871,14 +869,14 @@ export type AdminServiceListOrgsQueryResult<
 export const useAdminServiceListOrgsKey = 'AdminServiceListOrgs';
 export const UseAdminServiceListOrgsKeyFn = (
   {
-    cursor,
+    after,
     limit,
   }: {
-    cursor?: string;
+    after?: string;
     limit?: number;
   } = {},
   queryKey?: Array<unknown>,
-) => [useAdminServiceListOrgsKey, ...(queryKey ?? [{ cursor, limit }])];
+) => [useAdminServiceListOrgsKey, ...(queryKey ?? [{ after, limit }])];
 export type UsersServiceListUsersDefaultResponse = Awaited<
   ReturnType<typeof UsersService.listUsers>
 >;
@@ -889,14 +887,14 @@ export type UsersServiceListUsersQueryResult<
 export const useUsersServiceListUsersKey = 'UsersServiceListUsers';
 export const UseUsersServiceListUsersKeyFn = (
   {
-    cursor,
+    after,
     limit,
   }: {
-    cursor?: string;
+    after?: string;
     limit?: number;
   } = {},
   queryKey?: Array<unknown>,
-) => [useUsersServiceListUsersKey, ...(queryKey ?? [{ cursor, limit }])];
+) => [useUsersServiceListUsersKey, ...(queryKey ?? [{ after, limit }])];
 export type OrganizationServiceListOrgsDefaultResponse = Awaited<
   ReturnType<typeof OrganizationService.listOrgs>
 >;
@@ -907,14 +905,14 @@ export type OrganizationServiceListOrgsQueryResult<
 export const useOrganizationServiceListOrgsKey = 'OrganizationServiceListOrgs';
 export const UseOrganizationServiceListOrgsKeyFn = (
   {
-    cursor,
+    after,
     limit,
   }: {
-    cursor?: string;
+    after?: string;
     limit?: number;
   } = {},
   queryKey?: Array<unknown>,
-) => [useOrganizationServiceListOrgsKey, ...(queryKey ?? [{ cursor, limit }])];
+) => [useOrganizationServiceListOrgsKey, ...(queryKey ?? [{ after, limit }])];
 export type ToolsServiceCreateToolMutationResult = Awaited<
   ReturnType<typeof ToolsService.createTool>
 >;

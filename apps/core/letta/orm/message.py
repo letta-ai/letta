@@ -14,7 +14,10 @@ class Message(SqlalchemyBase, OrganizationMixin, AgentMixin):
     """Defines data model for storing Message objects"""
 
     __tablename__ = "messages"
-    __table_args__ = (Index("ix_messages_agent_created_at", "agent_id", "created_at"),)
+    __table_args__ = (
+        Index("ix_messages_agent_created_at", "agent_id", "created_at"),
+        Index("ix_messages_created_at", "created_at", "id"),
+    )
     __pydantic_model__ = PydanticMessage
 
     id: Mapped[str] = mapped_column(primary_key=True, doc="Unique message identifier")

@@ -133,7 +133,7 @@ function LocalProjectPage() {
       unknown,
       InfiniteData<ListAgentsResponse>,
       unknown[],
-      { cursor?: string | null }
+      { after?: string | null }
     >({
       queryKey: [
         'infinite',
@@ -146,14 +146,14 @@ function LocalProjectPage() {
         return AgentsService.listAgents({
           queryText: debouncedSearch,
           limit: limit + 1,
-          cursor: pageParam?.cursor,
+          after: pageParam?.after,
         });
       },
-      initialPageParam: { cursor: null },
+      initialPageParam: { after: null },
       getNextPageParam: (lastPage) => {
         if (lastPage.length > limit) {
           return {
-            cursor: lastPage[lastPage.length - 2].id,
+            after: lastPage[lastPage.length - 2].id,
           };
         }
 
