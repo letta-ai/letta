@@ -3,7 +3,7 @@
   "icon": "dist/assets/icon.png",
   "appFiles": ["dist/**/*", "scripts/before-build.js"],
   "appPath": ".",
-  "uploadSizeLimit": 150,
+  "uploadSizeLimit": 360,
   "schemaVersion": 1,
   "nodeVersion": "22.11.0",
   "windows": {

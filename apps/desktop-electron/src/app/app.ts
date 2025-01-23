@@ -346,9 +346,8 @@ export default class App {
         }),
       );
 
-      App.mainWindow.webContents.openDevTools();
-
       if (process.argv.includes('--debug')) {
+        App.mainWindow.webContents.openDevTools();
         console.log('debugging');
       }
     }

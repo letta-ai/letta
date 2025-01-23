@@ -10,7 +10,7 @@
     "@todesktop/runtime": "^2.0.0"
   },
   "scripts": {
-    "todesktop:beforeBuild": "node ./scripts/before-build.js"
+    "todesktop:beforeBuild": "./scripts/before-build.js"
   },
   "devDependencies": {
     "electron": "33.3.0"

@@ -36,7 +36,7 @@
     "package": {
       "executor": "nx:run-commands",
       "options": {
-        "command": "todesktop build --code-sign=false",
+        "command": "todesktop build --async ",
         "cwd": "apps/desktop-electron"
       }
     },

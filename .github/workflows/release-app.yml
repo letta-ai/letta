@@ -2,17 +2,17 @@ name: Release App
 
 on:
   pull_request:
+    paths:
+      - .github/workflows/release-app.yml
   workflow_dispatch:
 
 jobs:
   build-exe:
+    defaults:
+      run:
+        shell: bash
     runs-on: windows-latest
     steps:
-      - uses: actions/checkout@v4
-      - name: Install just
-        run: curl --proto '=https' --tlsv1.2 -sSf https://just.systems/install.sh | bash -s -- --to /usr/local/bin
-      - name: Checkout
-        uses: actions/checkout@v4
       - name: Checkout
         uses: actions/checkout@v4
       - name: Set up python 3.12
@@ -32,40 +32,28 @@ jobs:
           version: ${{ inputs.poetry-version }}
           virtualenvs-create: true
           virtualenvs-in-project: true
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 'lts/*'
-      - name: Restore node_modules cache if exist
-        id: cache-nodemodules
-        uses: actions/cache@v4
-        env:
-          cache-name: cache-node-modules-${{ env.node-version }}
-        with:
-          path: node_modules
-          key: ${{ runner.os }}-${{ env.cache-name }}-${{ hashFiles('package-lock.json') }}
-
-      - name: Restore NPM cache if exist
-        id: cache-npm
-        uses: actions/cache@v4
-        env:
-          cache-name: cache-npm-${{ env.node-version }}
-        with:
-          path: ~/.npm
-          key: ${{ runner.os }}-${{ env.cache-name }}
-      - name: Install dependencies
-        run: npm ci
+      # test poetry
+      - name: Test poetry
+        run: poetry --version
       - name: Build exe
-        run: just prepare-desktop
+        run: node scripts/desktop-builders/src/generators/build-python-app/build-python-app.js
       - uses: actions/upload-artifact@v4
         with:
           name: letta.exe
-          path: apps/desktop-core/letta.exe
+          path: apps/desktop-core/dist/letta.exe
           overwrite: true
   build-electron:
+    # wait for the exe to be built
+    needs: build-exe
+    runs-on: macos-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+      - name: Setup PostgreSQL
+        uses: tj-actions/install-postgresql@v3
+        with:
+          postgresql-version: 17
+      - uses: taiki-e/install-action@just
       - name: Set up python 3.12
         id: setup-python
         uses: actions/setup-python@v5
@@ -106,14 +94,22 @@ jobs:
           key: ${{ runner.os }}-${{ env.cache-name }}
       - name: Install dependencies
         run: npm ci
+      - name: Install toDesktop
+        run: npm install --location=global @todesktop/cli
       - name: Prepare desktop
         run: just prepare-desktop
       - name: Build electron
-        run: just build-electron
-      # pull in the artifact from the previous job
-      - uses: actions/download-artifact@v2
+        run: just build-desktop
+      - uses: actions/download-artifact@v4
         with:
           name: letta.exe
-          path: apps/desktop-electron/dist/letta.exe
+          path: apps/desktop-electron/dist/
+      - name: Verify exe
+        run: |
+          echo "Verifying exe"
+          file apps/desktop-electron/dist/letta.exe
       - name: Release
-          run just package-electron
+        env:
+          TODESKTOP_ACCESS_TOKEN: ${{ secrets.TODESKTOP_ACCESS_TOKEN }}
+          TODESKTOP_EMAIL: ${{ secrets.TODESKTOP_EMAIL }}
+        run: just package-desktop

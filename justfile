@@ -265,7 +265,7 @@ desktop:
 
 prepare-desktop:
     @echo "🚧 Preparing the desktop app..."
-    npx nx generate @letta-cloud/desktop-builders:build-python-app  --rebuildDependencies true
+    node scripts/desktop-builders/src/generators/build-python-app/build-python-app.js  --rebuildDependencies
 
 build-desktop:
     @echo "Packaging the desktop app..."

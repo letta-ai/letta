@@ -11,11 +11,11 @@ export async function buildDesktopAppGenerator(
 ) {
   // remove old dist folders
   if (tree.exists('dist/apps/desktop-ui')) {
-    fs.rmdirSync(`${tree.root}/dist/apps/desktop-ui`, { recursive: true });
+    fs.rmSync(`${tree.root}/dist/apps/desktop-ui`, { recursive: true });
   }
 
   if (tree.exists('apps/desktop-electron/dist')) {
-    fs.rmdirSync(`${tree.root}/apps/desktop-electron/dist`, { recursive: true });
+    fs.rmSync(`${tree.root}/apps/desktop-electron/dist`, { recursive: true });
   }
 
   console.log('Building Desktop UI App');
