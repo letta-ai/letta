@@ -19,7 +19,7 @@ LLM_HANDLE_OVERRIDES: Dict[str, Dict[str, str]] = {
         "gpt-4-turbo-2024-04-09": "gpt-4-turbo-apr",
         "gpt-4o-2024-05-13": "gpt-4o-may",
         "gpt-4o-2024-08-06": "gpt-4o-aug",
-        "gpt-4o-mini-2024-07-18": "gpt-4o-mini",
+        "gpt-4o-mini-2024-07-18": "gpt-4o-mini-jul",
     },
     "together": {
         "Qwen/Qwen2.5-72B-Instruct-Turbo": "qwen-2.5-72b-instruct",
