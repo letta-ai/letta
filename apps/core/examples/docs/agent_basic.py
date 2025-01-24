@@ -29,7 +29,7 @@ response = client.agents.messages.send(
     messages=[
         MessageCreate(
             role="user",
-            text="hello",
+            content="hello",
         )
     ],
 )

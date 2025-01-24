@@ -24,7 +24,7 @@ function createAgent(): string {
         ...DEFAULT_HEADERS,
         'Content-Type': 'application/json',
       },
-    }
+    },
   );
 
   check(res, {
@@ -40,14 +40,14 @@ function sendMessageToAgent(agentId: string) {
   const res = http.post(
     `${DEFAULT_SERVER}/v1/agents/${agentId}/messages`,
     JSON.stringify({
-      messages: [{ role: 'user', text: 'Hello' }],
+      messages: [{ role: 'user', content: 'Hello' }],
     }),
     {
       headers: {
         ...DEFAULT_HEADERS,
         'Content-Type': 'application/json',
       },
-    }
+    },
   );
 
   check(res, {

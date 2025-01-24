@@ -468,7 +468,7 @@ export function Messages(props: MessagesProps) {
           };
         case 'user_message': {
           const out = UserMessageMessageSchema.safeParse(
-            JSON.parse(agentMessage.message),
+            JSON.parse(agentMessage.content),
           );
 
           if (mode === 'simple' || mode === 'interactive') {
@@ -489,7 +489,7 @@ export function Messages(props: MessagesProps) {
           }
 
           if (!out.success) {
-            const tryParseResp = tryFallbackParseJson(agentMessage.message);
+            const tryParseResp = tryFallbackParseJson(agentMessage.content);
 
             if (tryParseResp) {
               return {
@@ -517,7 +517,7 @@ export function Messages(props: MessagesProps) {
 
             return {
               id: `${agentMessage.id}-${agentMessage.message_type}`,
-              content: <Typography>{agentMessage.message}</Typography>,
+              content: <Typography>{agentMessage.content}</Typography>,
               timestamp: new Date(agentMessage.date).toISOString(),
               name: 'User',
             };
@@ -538,7 +538,7 @@ export function Messages(props: MessagesProps) {
 
           try {
             const tryParseResp = SystemAlertSchema.safeParse(
-              JSON.parse(agentMessage.message),
+              JSON.parse(agentMessage.content),
             );
 
             if (tryParseResp.success) {

@@ -711,12 +711,12 @@ def _test_get_messages_letta_format(
 
             elif message.role == MessageRole.user:
                 assert isinstance(letta_message, UserMessage)
-                assert message.text == letta_message.message
+                assert message.text == letta_message.content
                 letta_message_index += 1
 
             elif message.role == MessageRole.system:
                 assert isinstance(letta_message, SystemMessage)
-                assert message.text == letta_message.message
+                assert message.text == letta_message.content
                 letta_message_index += 1
 
             elif message.role == MessageRole.tool:

@@ -64,7 +64,7 @@ response = client.agents.messages.send(
     messages=[
         MessageCreate(
             role="user",
-            text="roll a dice",
+            content="roll a dice",
         )
     ],
 )
@@ -100,7 +100,7 @@ client.agents.messages.send(
     messages=[
         MessageCreate(
             role="user",
-            text="search your archival memory",
+            content="search your archival memory",
         )
     ],
 )

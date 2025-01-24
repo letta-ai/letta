@@ -55,7 +55,7 @@ class LettaUser(HttpUser):
 
     @task(1)
     def send_message(self):
-        messages = [MessageCreate(role=MessageRole("user"), text="hello")]
+        messages = [MessageCreate(role=MessageRole("user"), content="hello")]
         request = LettaRequest(messages=messages)
 
         with self.client.post(
@@ -70,7 +70,7 @@ class LettaUser(HttpUser):
     # @task(1)
     # def send_message_stream(self):
 
-    #    messages = [MessageCreate(role=MessageRole("user"), text="hello")]
+    #    messages = [MessageCreate(role=MessageRole("user"), content="hello")]
     #    request = LettaRequest(messages=messages, stream_steps=True, stream_tokens=True, return_message_object=True)
     #    if stream_tokens or stream_steps:
     #        from letta.client.streaming import _sse_post

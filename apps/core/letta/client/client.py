@@ -643,7 +643,7 @@ class RESTClient(AbstractClient):
     ) -> Message:
         request = MessageUpdate(
             role=role,
-            text=text,
+            content=text,
             name=name,
             tool_calls=tool_calls,
             tool_call_id=tool_call_id,
@@ -1015,7 +1015,7 @@ class RESTClient(AbstractClient):
             response (LettaResponse): Response from the agent
         """
         # TODO: implement include_full_message
-        messages = [MessageCreate(role=MessageRole(role), text=message, name=name)]
+        messages = [MessageCreate(role=MessageRole(role), content=message, name=name)]
         # TODO: figure out how to handle stream_steps and stream_tokens
 
         # When streaming steps is True, stream_tokens must be False
@@ -1062,7 +1062,7 @@ class RESTClient(AbstractClient):
         Returns:
             job (Job): Information about the async job
         """
-        messages = [MessageCreate(role=MessageRole(role), text=message, name=name)]
+        messages = [MessageCreate(role=MessageRole(role), content=message, name=name)]
 
         request = LettaRequest(messages=messages)
         response = requests.post(
@@ -2442,7 +2442,7 @@ class LocalClient(AbstractClient):
             message_id=message_id,
             request=MessageUpdate(
                 role=role,
-                text=text,
+                content=text,
                 name=name,
                 tool_calls=tool_calls,
                 tool_call_id=tool_call_id,
@@ -2741,7 +2741,7 @@ class LocalClient(AbstractClient):
         usage = self.server.send_messages(
             actor=self.user,
             agent_id=agent_id,
-            messages=[MessageCreate(role=MessageRole(role), text=message, name=name)],
+            messages=[MessageCreate(role=MessageRole(role), content=message, name=name)],
         )
 
         ## TODO: need to make sure date/timestamp is propely passed

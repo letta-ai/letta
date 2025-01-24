@@ -324,7 +324,7 @@ def test_get_run_messages(client, mock_sync_server):
         UserMessage(
             id=f"message-{i:08x}",
             date=current_time,
-            message=f"Test message {i}",
+            content=f"Test message {i}",
         )
         for i in range(2)
     ]

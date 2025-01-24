@@ -246,7 +246,7 @@ def parse_letta_response_for_assistant_message(
     reasoning_message = ""
     for m in letta_response.messages:
         if isinstance(m, AssistantMessage):
-            return m.assistant_message
+            return m.content
         elif isinstance(m, ToolCallMessage) and m.tool_call.name == assistant_message_tool_name:
             try:
                 return json.loads(m.tool_call.arguments)[assistant_message_tool_kwarg]
@@ -290,7 +290,7 @@ async def async_send_message_with_retries(
     logging_prefix = logging_prefix or "[async_send_message_with_retries]"
     for attempt in range(1, max_retries + 1):
         try:
-            messages = [MessageCreate(role=MessageRole.user, text=message_text, name=sender_agent.agent_state.name)]
+            messages = [MessageCreate(role=MessageRole.user, content=message_text, name=sender_agent.agent_state.name)]
             # Wrap in a timeout
             response = await asyncio.wait_for(
                 server.send_message_to_agent(

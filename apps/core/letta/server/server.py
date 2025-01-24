@@ -721,9 +721,9 @@ class SyncServer(Server):
 
                 # If wrapping is eanbled, wrap with metadata before placing content inside the Message object
                 if message.role == MessageRole.user and wrap_user_message:
-                    message.text = system.package_user_message(user_message=message.text)
+                    message.content = system.package_user_message(user_message=message.content)
                 elif message.role == MessageRole.system and wrap_system_message:
-                    message.text = system.package_system_message(system_message=message.text)
+                    message.content = system.package_system_message(system_message=message.content)
                 else:
                     raise ValueError(f"Invalid message role: {message.role}")
 
@@ -732,7 +732,7 @@ class SyncServer(Server):
                     Message(
                         agent_id=agent_id,
                         role=message.role,
-                        content=[TextContent(text=message.text)],
+                        content=[TextContent(text=message.content)],
                         name=message.name,
                         # assigned later?
                         model=None,

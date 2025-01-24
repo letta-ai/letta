@@ -75,7 +75,7 @@ type ErrorCode = z.infer<typeof ErrorMessageSchema>['code'];
 
 interface SendMessagePayload {
   role: string;
-  text: string;
+  content: string;
 }
 
 export type SendMessageType = (payload: SendMessagePayload) => void;
@@ -106,14 +106,14 @@ function useSendMessage(agentId: string, options: UseSendMessageOptions = {}) {
 
   const sendMessage: SendMessageType = useCallback(
     (payload: SendMessagePayload) => {
-      const { text: message, role } = payload;
+      const { content: message, role } = payload;
       setIsPending(true);
       setFailedToSendMessage(false);
       setErrorCode(undefined);
 
       const newMessage: AgentMessage = {
         message_type: role === 'user' ? 'user_message' : 'system_message',
-        message: JSON.stringify({
+        content: JSON.stringify({
           type: role === 'user' ? 'user_message' : 'system_alert',
           message: message,
           time: new Date().toISOString(),
@@ -161,7 +161,7 @@ function useSendMessage(agentId: string, options: UseSendMessageOptions = {}) {
             messages: [
               {
                 role,
-                text: message,
+                content: message,
               },
             ],
           }),
@@ -825,8 +825,8 @@ export function AgentSimulator() {
               getSendSnippet={getSendSnippet}
               hasFailedToSendMessageText={hasFailedToSendMessageText}
               sendingMessageText={t('sendingMessage')}
-              onSendMessage={(role: string, text: string) => {
-                sendMessage({ role, text });
+              onSendMessage={(role: string, content: string) => {
+                sendMessage({ role, content });
               }}
               isSendingMessage={isPending}
             />

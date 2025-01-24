@@ -234,11 +234,11 @@ def package_initial_message_sequence(
 
         if message_create.role == MessageRole.user:
             packed_message = system.package_user_message(
-                user_message=message_create.text,
+                user_message=message_create.content,
             )
         elif message_create.role == MessageRole.system:
             packed_message = system.package_system_message(
-                system_message=message_create.text,
+                system_message=message_create.content,
             )
         else:
             raise ValueError(f"Invalid message role: {message_create.role}")

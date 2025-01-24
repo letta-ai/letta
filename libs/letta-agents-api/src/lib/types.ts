@@ -22,7 +22,7 @@ export interface SourceMetadata {
 
 export const SystemMessageSchema = z.object({
   message_type: z.literal('system_message'),
-  message: z.string(),
+  content: z.string(),
   date: z.string(),
   id: z.string(),
 });
@@ -43,7 +43,7 @@ export const UserMessageMessageSchema = z.object({
 export const UserMessageSchema = z.object({
   message_type: z.literal('user_message'),
   formattedMessage: z.record(z.unknown()).optional(),
-  message: z.string(),
+  content: z.string(),
   date: z.string(),
   id: z.string(),
 });
