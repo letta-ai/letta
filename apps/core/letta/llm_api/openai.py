@@ -30,7 +30,7 @@ OPENAI_SSE_DONE = "[DONE]"
 
 
 def openai_get_model_list(
-    url: str, api_key: Union[str, None], fix_url: Optional[bool] = False, extra_params: Optional[dict] = None
+    url: str, api_key: Optional[str] = None, fix_url: Optional[bool] = False, extra_params: Optional[dict] = None
 ) -> dict:
     """https://platform.openai.com/docs/api-reference/models/list"""
     from letta.utils import printd

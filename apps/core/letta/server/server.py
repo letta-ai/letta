@@ -49,6 +49,7 @@ from letta.schemas.providers import (
     GoogleAIProvider,
     GroqProvider,
     LettaProvider,
+    LMStudioOpenAIProvider,
     OllamaProvider,
     OpenAIProvider,
     Provider,
@@ -389,6 +390,13 @@ class SyncServer(Server):
             self._enabled_providers.append(
                 AnthropicBedrockProvider(
                     aws_region=model_settings.aws_region,
+                )
+            )
+        # Attempt to enable LM Studio by default
+        if model_settings.lmstudio_base_url:
+            self._enabled_providers.append(
+                LMStudioOpenAIProvider(
+                    base_url=model_settings.lmstudio_base_url,
                 )
             )
 
