@@ -446,7 +446,7 @@ def comprehensive_test_agent_fixture(server: SyncServer, default_user, print_too
         description="test_description",
         metadata={"test_key": "test_value"},
         tool_rules=[InitToolRule(tool_name=print_tool.name)],
-        initial_message_sequence=[MessageCreate(role=MessageRole.user, text="hello world")],
+        initial_message_sequence=[MessageCreate(role=MessageRole.user, content="hello world")],
         tool_exec_environment_variables={"test_env_var_key_a": "test_env_var_value_a", "test_env_var_key_b": "test_env_var_value_b"},
     )
     created_agent = server.agent_manager.create_agent(
@@ -548,7 +548,7 @@ def test_create_agent_passed_in_initial_messages(server: SyncServer, default_use
         block_ids=[default_block.id],
         tags=["a", "b"],
         description="test_description",
-        initial_message_sequence=[MessageCreate(role=MessageRole.user, text="hello world")],
+        initial_message_sequence=[MessageCreate(role=MessageRole.user, content="hello world")],
     )
     agent_state = server.agent_manager.create_agent(
         create_agent_request,
@@ -561,7 +561,7 @@ def test_create_agent_passed_in_initial_messages(server: SyncServer, default_use
     assert create_agent_request.memory_blocks[0].value in init_messages[0].text
     # Check that the second message is the passed in initial message seq
     assert create_agent_request.initial_message_sequence[0].role == init_messages[1].role
-    assert create_agent_request.initial_message_sequence[0].text in init_messages[1].text
+    assert create_agent_request.initial_message_sequence[0].content in init_messages[1].text
 
 
 def test_create_agent_default_initial_message(server: SyncServer, default_user, default_block):
@@ -1830,7 +1830,7 @@ def test_message_get_by_id(server: SyncServer, hello_world_message_fixture, defa
 def test_message_update(server: SyncServer, hello_world_message_fixture, default_user, other_user):
     """Test updating a message"""
     new_text = "Updated text"
-    updated = server.message_manager.update_message_by_id(hello_world_message_fixture.id, MessageUpdate(text=new_text), actor=other_user)
+    updated = server.message_manager.update_message_by_id(hello_world_message_fixture.id, MessageUpdate(content=new_text), actor=other_user)
     assert updated is not None
     assert updated.text == new_text
     retrieved = server.message_manager.get_message_by_id(hello_world_message_fixture.id, actor=default_user)

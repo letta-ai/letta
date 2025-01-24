@@ -83,7 +83,7 @@ class MessageManager:
                 )
 
             # get update dictionary
-            update_data = message_update.model_dump(exclude_unset=True, exclude_none=True)
+            update_data = message_update.model_dump(to_orm=True, exclude_unset=True, exclude_none=True)
             # Remove redundant update fields
             update_data = {key: value for key, value in update_data.items() if getattr(message, key) != value}
 
