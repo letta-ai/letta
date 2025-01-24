@@ -75,8 +75,10 @@ def test_ripple_edit(client, mock_e2b_api_key_none):
     #    limit=2000,
     # )
     # new_memory = Block(name="rethink_memory_block", label="rethink_memory_block", value="[empty]", limit=2000)
-    conversation_memory = BasicBlockMemory(blocks=[conversation_persona_block, conversation_human_block, fact_block, new_memory])
-    offline_memory = BasicBlockMemory(blocks=[offline_persona_block, offline_human_block, fact_block, new_memory])
+    # conversation_memory = BasicBlockMemory(blocks=[conversation_persona_block, conversation_human_block, fact_block, new_memory])
+    conversation_memory = BasicBlockMemory(blocks=[conversation_persona_block, conversation_human_block, fact_block])
+    # offline_memory = BasicBlockMemory(blocks=[offline_persona_block, offline_human_block, fact_block, new_memory])
+    offline_memory = BasicBlockMemory(blocks=[offline_persona_block, offline_human_block, fact_block])
 
     conversation_agent = client.create_agent(
         name="conversation_agent",
@@ -86,6 +88,7 @@ def test_ripple_edit(client, mock_e2b_api_key_none):
         embedding_config=EmbeddingConfig.default_config("text-embedding-ada-002"),
         tool_ids=[send_message.id, trigger_rethink_memory_tool.id],
         memory=conversation_memory,
+        block_ids=[new_memory.id],
         include_base_tools=False,
     )
     assert conversation_agent is not None
@@ -103,6 +106,7 @@ def test_ripple_edit(client, mock_e2b_api_key_none):
         embedding_config=EmbeddingConfig.default_config("text-embedding-ada-002"),
         tool_ids=[rethink_memory_tool.id, finish_rethinking_memory_tool.id],
         tool_rules=[TerminalToolRule(tool_name=finish_rethinking_memory_tool.name)],
+        block_ids=[new_memory.id],
         include_base_tools=False,
     )
     assert offline_memory_agent is not None
