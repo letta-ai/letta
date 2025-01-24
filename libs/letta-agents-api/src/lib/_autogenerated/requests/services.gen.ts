@@ -112,6 +112,8 @@ import type {
   DeleteBlockResponse,
   RetrieveBlockData,
   RetrieveBlockResponse,
+  ListAgentsForBlockData,
+  ListAgentsForBlockResponse,
   ListJobsData,
   ListJobsResponse,
   ListActiveJobsData,
@@ -1706,6 +1708,33 @@ export class BlocksService {
     return __request(OpenAPI, {
       method: 'GET',
       url: '/v1/blocks/{block_id}',
+      path: {
+        block_id: data.blockId,
+      },
+      errors: {
+        422: 'Validation Error',
+      },
+      headers,
+    });
+  }
+
+  /**
+   * List Agents For Block
+   * Retrieves all agents associated with the specified block.
+   * Raises a 404 if the block does not exist.
+   * @param data The data for the request.
+   * @param data.blockId
+   * @param data.userId
+   * @returns AgentState Successful Response
+   * @throws ApiError
+   */
+  public static listAgentsForBlock(
+    data: ListAgentsForBlockData,
+    headers?: { user_id: string },
+  ): CancelablePromise<ListAgentsForBlockResponse> {
+    return __request(OpenAPI, {
+      method: 'GET',
+      url: '/v1/blocks/{block_id}/agents',
       path: {
         block_id: data.blockId,
       },

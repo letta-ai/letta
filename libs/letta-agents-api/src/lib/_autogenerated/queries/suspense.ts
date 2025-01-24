@@ -868,6 +868,40 @@ export const useBlocksServiceRetrieveBlockSuspense = <
     ...options,
   });
 /**
+ * List Agents For Block
+ * Retrieves all agents associated with the specified block.
+ * Raises a 404 if the block does not exist.
+ * @param data The data for the request.
+ * @param data.blockId
+ * @param data.userId
+ * @returns AgentState Successful Response
+ * @throws ApiError
+ */
+export const useBlocksServiceListAgentsForBlockSuspense = <
+  TData = Common.BlocksServiceListAgentsForBlockDefaultResponse,
+  TError = unknown,
+  TQueryKey extends Array<unknown> = unknown[],
+>(
+  {
+    blockId,
+    userId,
+  }: {
+    blockId: string;
+    userId?: string;
+  },
+  queryKey?: TQueryKey,
+  options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>,
+) =>
+  useSuspenseQuery<TData, TError>({
+    queryKey: Common.UseBlocksServiceListAgentsForBlockKeyFn(
+      { blockId, userId },
+      queryKey,
+    ),
+    queryFn: () =>
+      BlocksService.listAgentsForBlock({ blockId, userId }) as TData,
+    ...options,
+  });
+/**
  * List Jobs
  * List all jobs.
  * @param data The data for the request.

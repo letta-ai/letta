@@ -6,6 +6,7 @@ from composio.client.collections import ActionModel, ActionParametersModel, Acti
 from fastapi.testclient import TestClient
 
 from letta.orm.errors import NoResultFound
+from letta.schemas.block import Block, BlockUpdate, CreateBlock
 from letta.schemas.message import UserMessage
 from letta.schemas.tool import ToolCreate, ToolUpdate
 from letta.server.rest_api.app import app
@@ -460,4 +461,133 @@ def test_get_tags_with_search(client, mock_sync_server):
     assert response.json() == ["user_tag1", "user_tag2"]
     mock_sync_server.agent_manager.list_tags.assert_called_once_with(
         actor=mock_sync_server.user_manager.get_user_or_default.return_value, after=None, limit=50, query_text="user"
+    )
+
+
+# ======================================================================================================================
+# Blocks Routes Tests
+# ======================================================================================================================
+
+
+def test_list_blocks(client, mock_sync_server):
+    """
+    Test the GET /v1/blocks endpoint to list blocks.
+    """
+    # Arrange: mock return from block_manager
+    mock_block = Block(label="human", value="Hi", is_template=True)
+    mock_sync_server.block_manager.get_blocks.return_value = [mock_block]
+
+    # Act
+    response = client.get("/v1/blocks", headers={"user_id": "test_user"})
+
+    # Assert
+    assert response.status_code == 200
+    data = response.json()
+    assert len(data) == 1
+    assert data[0]["id"] == mock_block.id
+    mock_sync_server.block_manager.get_blocks.assert_called_once_with(
+        actor=mock_sync_server.user_manager.get_user_or_default.return_value,
+        label=None,
+        is_template=True,
+        template_name=None,
+    )
+
+
+def test_create_block(client, mock_sync_server):
+    """
+    Test the POST /v1/blocks endpoint to create a block.
+    """
+    new_block = CreateBlock(label="system", value="Some system text")
+    returned_block = Block(**new_block.model_dump())
+
+    mock_sync_server.block_manager.create_or_update_block.return_value = returned_block
+
+    response = client.post("/v1/blocks", json=new_block.model_dump(), headers={"user_id": "test_user"})
+    assert response.status_code == 200
+    data = response.json()
+    assert data["id"] == returned_block.id
+
+    mock_sync_server.block_manager.create_or_update_block.assert_called_once()
+
+
+def test_modify_block(client, mock_sync_server):
+    """
+    Test the PATCH /v1/blocks/{block_id} endpoint to update a block.
+    """
+    block_update = BlockUpdate(value="Updated text", description="New description")
+    updated_block = Block(label="human", value="Updated text", description="New description")
+    mock_sync_server.block_manager.update_block.return_value = updated_block
+
+    response = client.patch(f"/v1/blocks/{updated_block.id}", json=block_update.model_dump(), headers={"user_id": "test_user"})
+    assert response.status_code == 200
+    data = response.json()
+    assert data["value"] == "Updated text"
+    assert data["description"] == "New description"
+
+    mock_sync_server.block_manager.update_block.assert_called_once_with(
+        block_id=updated_block.id,
+        block_update=block_update,
+        actor=mock_sync_server.user_manager.get_user_or_default.return_value,
+    )
+
+
+def test_delete_block(client, mock_sync_server):
+    """
+    Test the DELETE /v1/blocks/{block_id} endpoint.
+    """
+    deleted_block = Block(label="persona", value="Deleted text")
+    mock_sync_server.block_manager.delete_block.return_value = deleted_block
+
+    response = client.delete(f"/v1/blocks/{deleted_block.id}", headers={"user_id": "test_user"})
+    assert response.status_code == 200
+    data = response.json()
+    assert data["id"] == deleted_block.id
+
+    mock_sync_server.block_manager.delete_block.assert_called_once_with(
+        block_id=deleted_block.id, actor=mock_sync_server.user_manager.get_user_or_default.return_value
+    )
+
+
+def test_retrieve_block(client, mock_sync_server):
+    """
+    Test the GET /v1/blocks/{block_id} endpoint.
+    """
+    existing_block = Block(label="human", value="Hello")
+    mock_sync_server.block_manager.get_block_by_id.return_value = existing_block
+
+    response = client.get(f"/v1/blocks/{existing_block.id}", headers={"user_id": "test_user"})
+    assert response.status_code == 200
+    data = response.json()
+    assert data["id"] == existing_block.id
+
+    mock_sync_server.block_manager.get_block_by_id.assert_called_once_with(
+        block_id=existing_block.id, actor=mock_sync_server.user_manager.get_user_or_default.return_value
+    )
+
+
+def test_retrieve_block_404(client, mock_sync_server):
+    """
+    Test that retrieving a non-existent block returns 404.
+    """
+    mock_sync_server.block_manager.get_block_by_id.return_value = None
+
+    response = client.get("/v1/blocks/block-999", headers={"user_id": "test_user"})
+    assert response.status_code == 404
+    assert "Block not found" in response.json()["detail"]
+
+
+def test_list_agents_for_block(client, mock_sync_server):
+    """
+    Test the GET /v1/blocks/{block_id}/agents endpoint.
+    """
+    mock_sync_server.block_manager.get_agents_for_block.return_value = []
+
+    response = client.get("/v1/blocks/block-abc/agents", headers={"user_id": "test_user"})
+    assert response.status_code == 200
+    data = response.json()
+    assert len(data) == 0
+
+    mock_sync_server.block_manager.get_agents_for_block.assert_called_once_with(
+        block_id="block-abc",
+        actor=mock_sync_server.user_manager.get_user_or_default.return_value,
     )

@@ -3,6 +3,7 @@ from typing import List, Optional
 
 from letta.orm.block import Block as BlockModel
 from letta.orm.errors import NoResultFound
+from letta.schemas.agent import AgentState as PydanticAgentState
 from letta.schemas.block import Block
 from letta.schemas.block import Block as PydanticBlock
 from letta.schemas.block import BlockUpdate, Human, Persona
@@ -114,3 +115,15 @@ class BlockManager:
             text = open(human_file, "r", encoding="utf-8").read()
             name = os.path.basename(human_file).replace(".txt", "")
             self.create_or_update_block(Human(template_name=name, value=text, is_template=True), actor=actor)
+
+    @enforce_types
+    def get_agents_for_block(self, block_id: str, actor: PydanticUser) -> List[PydanticAgentState]:
+        """
+        Retrieve all agents associated with a given block.
+        """
+        with self.session_maker() as session:
+            block = BlockModel.read(db_session=session, identifier=block_id, actor=actor)
+            agents_orm = block.agents
+            agents_pydantic = [agent.to_pydantic() for agent in agents_orm]
+
+            return agents_pydantic

@@ -688,6 +688,33 @@ export const prefetchUseBlocksServiceRetrieveBlock = (
     queryFn: () => BlocksService.retrieveBlock({ blockId, userId }),
   });
 /**
+ * List Agents For Block
+ * Retrieves all agents associated with the specified block.
+ * Raises a 404 if the block does not exist.
+ * @param data The data for the request.
+ * @param data.blockId
+ * @param data.userId
+ * @returns AgentState Successful Response
+ * @throws ApiError
+ */
+export const prefetchUseBlocksServiceListAgentsForBlock = (
+  queryClient: QueryClient,
+  {
+    blockId,
+    userId,
+  }: {
+    blockId: string;
+    userId?: string;
+  },
+) =>
+  queryClient.prefetchQuery({
+    queryKey: Common.UseBlocksServiceListAgentsForBlockKeyFn({
+      blockId,
+      userId,
+    }),
+    queryFn: () => BlocksService.listAgentsForBlock({ blockId, userId }),
+  });
+/**
  * List Jobs
  * List all jobs.
  * @param data The data for the request.

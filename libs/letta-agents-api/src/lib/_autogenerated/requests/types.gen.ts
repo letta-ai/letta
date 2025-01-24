@@ -2630,6 +2630,13 @@ export type RetrieveBlockData = {
 
 export type RetrieveBlockResponse = Block;
 
+export type ListAgentsForBlockData = {
+  blockId: string;
+  userId?: string | null;
+};
+
+export type ListAgentsForBlockResponse = Array<AgentState>;
+
 export type ListJobsData = {
   /**
    * Only list jobs associated with the source.
@@ -3696,6 +3703,21 @@ export type $OpenApiTs = {
          * Successful Response
          */
         200: Block;
+        /**
+         * Validation Error
+         */
+        422: HTTPValidationError;
+      };
+    };
+  };
+  '/v1/blocks/{block_id}/agents': {
+    get: {
+      req: ListAgentsForBlockData;
+      res: {
+        /**
+         * Successful Response
+         */
+        200: Array<AgentState>;
         /**
          * Validation Error
          */

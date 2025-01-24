@@ -551,6 +551,28 @@ export const UseBlocksServiceRetrieveBlockKeyFn = (
   },
   queryKey?: Array<unknown>,
 ) => [useBlocksServiceRetrieveBlockKey, ...(queryKey ?? [{ blockId, userId }])];
+export type BlocksServiceListAgentsForBlockDefaultResponse = Awaited<
+  ReturnType<typeof BlocksService.listAgentsForBlock>
+>;
+export type BlocksServiceListAgentsForBlockQueryResult<
+  TData = BlocksServiceListAgentsForBlockDefaultResponse,
+  TError = unknown,
+> = UseQueryResult<TData, TError>;
+export const useBlocksServiceListAgentsForBlockKey =
+  'BlocksServiceListAgentsForBlock';
+export const UseBlocksServiceListAgentsForBlockKeyFn = (
+  {
+    blockId,
+    userId,
+  }: {
+    blockId: string;
+    userId?: string;
+  },
+  queryKey?: Array<unknown>,
+) => [
+  useBlocksServiceListAgentsForBlockKey,
+  ...(queryKey ?? [{ blockId, userId }]),
+];
 export type JobsServiceListJobsDefaultResponse = Awaited<
   ReturnType<typeof JobsService.listJobs>
 >;

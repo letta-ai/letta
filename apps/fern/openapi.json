@@ -2777,6 +2777,51 @@
         }
       }
     },
+    "/v1/blocks/{block_id}/agents": {
+      "get": {
+        "tags": ["blocks"],
+        "summary": "List Agents For Block",
+        "description": "Retrieves all agents associated with the specified block.\nRaises a 404 if the block does not exist.",
+        "operationId": "list_agents_for_block",
+        "parameters": [
+          {
+            "name": "block_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Block Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/AgentState"
+                  },
+                  "title": "Response List Agents For Block"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/jobs/": {
       "get": {
         "tags": ["jobs"],
