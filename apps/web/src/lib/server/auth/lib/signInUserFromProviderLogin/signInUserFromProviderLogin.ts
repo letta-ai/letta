@@ -144,6 +144,7 @@ async function createUserAndOrganization(
         lettaAgentsId: lettaAgentsUser.id,
         imageUrl: userData.imageUrl,
         email: userData.email,
+        submittedOnboardingAt: userData.skipOnboarding ? new Date() : null,
         providerId: userData.uniqueId,
         signupMethod: userData.provider,
       })

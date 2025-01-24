@@ -11,6 +11,7 @@ export interface ProviderUserPayload {
   uniqueId: string;
   imageUrl: string;
   provider: SupportedProviders;
+  skipOnboarding?: boolean;
   name: string;
 }
 
