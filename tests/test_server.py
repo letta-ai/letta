@@ -1238,3 +1238,12 @@ def test_messages_with_provider_override(server: SyncServer, user_id: str):
     assert completion_tokens == usage.completion_tokens
     assert prompt_tokens == usage.prompt_tokens
     assert total_tokens == usage.total_tokens
+
+
+def test_unique_handles_for_provider_configs(server: SyncServer):
+    models = server.list_llm_models()
+    model_handles = [model.handle for model in models]
+    assert sorted(model_handles) == sorted(list(set(model_handles))), "All models should have unique handles"
+    embeddings = server.list_embedding_models()
+    embedding_handles = [embedding.handle for embedding in embeddings]
+    assert sorted(embedding_handles) == sorted(list(set(embedding_handles))), "All embeddings should have unique handles"
