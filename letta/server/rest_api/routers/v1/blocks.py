@@ -3,6 +3,7 @@ from typing import TYPE_CHECKING, List, Optional
 from fastapi import APIRouter, Body, Depends, Header, HTTPException, Query
 
 from letta.orm.errors import NoResultFound
+from letta.schemas.agent import AgentState
 from letta.schemas.block import Block, BlockUpdate, CreateBlock
 from letta.server.rest_api.utils import get_letta_server
 from letta.server.server import SyncServer
@@ -73,3 +74,21 @@ def retrieve_block(
         return block
     except NoResultFound:
         raise HTTPException(status_code=404, detail="Block not found")
+
+
+@router.get("/{block_id}/agents", response_model=List[AgentState], operation_id="list_agents_for_block")
+def list_agents_for_block(
+    block_id: str,
+    server: SyncServer = Depends(get_letta_server),
+    user_id: Optional[str] = Header(None, alias="user_id"),
+):
+    """
+    Retrieves all agents associated with the specified block.
+    Raises a 404 if the block does not exist.
+    """
+    actor = server.user_manager.get_user_or_default(user_id=user_id)
+    try:
+        agents = server.block_manager.get_agents_for_block(block_id=block_id, actor=actor)
+        return agents
+    except NoResultFound:
+        raise HTTPException(status_code=404, detail=f"Block with id={block_id} not found")

@@ -2104,6 +2104,26 @@ def test_delete_block_detaches_from_agent(server: SyncServer, sarah_agent, defau
     assert not (block.id in [b.id for b in agent_state.memory.blocks])
 
 
+def test_get_agents_for_block(server: SyncServer, sarah_agent, charles_agent, default_user):
+    # Create and delete a block
+    block = server.block_manager.create_or_update_block(PydanticBlock(label="alien", value="Sample content"), actor=default_user)
+    sarah_agent = server.agent_manager.attach_block(agent_id=sarah_agent.id, block_id=block.id, actor=default_user)
+    charles_agent = server.agent_manager.attach_block(agent_id=charles_agent.id, block_id=block.id, actor=default_user)
+
+    # Check that block has been attached to both
+    assert block.id in [b.id for b in sarah_agent.memory.blocks]
+    assert block.id in [b.id for b in charles_agent.memory.blocks]
+
+    # Get the agents for that block
+    agent_states = server.block_manager.get_agents_for_block(block_id=block.id, actor=default_user)
+    assert len(agent_states) == 2
+
+    # Check both agents are in the list
+    agent_state_ids = [a.id for a in agent_states]
+    assert sarah_agent.id in agent_state_ids
+    assert charles_agent.id in agent_state_ids
+
+
 # ======================================================================================================================
 # SourceManager Tests - Sources
 # ======================================================================================================================
