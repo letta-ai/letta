@@ -311,7 +311,7 @@ def test_tools(client: LocalClient):
     assert client.get_tool(tool.id).tags == extras2
 
     # update tool: source code
-    client.update_tool(tool.id, name="print_tool2", func=print_tool2)
+    client.update_tool(tool.id, func=print_tool2)
     assert client.get_tool(tool.id).name == "print_tool2"
 
 
