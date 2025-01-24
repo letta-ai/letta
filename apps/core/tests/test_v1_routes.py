@@ -48,7 +48,6 @@ def add_integers_tool():
 @pytest.fixture
 def create_integers_tool(add_integers_tool):
     tool_create = ToolCreate(
-        name=add_integers_tool.name,
         description=add_integers_tool.description,
         tags=add_integers_tool.tags,
         source_code=add_integers_tool.source_code,
@@ -61,7 +60,6 @@ def create_integers_tool(add_integers_tool):
 @pytest.fixture
 def update_integers_tool(add_integers_tool):
     tool_update = ToolUpdate(
-        name=add_integers_tool.name,
         description=add_integers_tool.description,
         tags=add_integers_tool.tags,
         source_code=add_integers_tool.source_code,
@@ -291,7 +289,6 @@ def test_add_composio_tool(client, mock_sync_server, add_integers_tool):
     # Mock ToolCreate.from_composio to return the expected ToolCreate object
     with patch("letta.schemas.tool.ToolCreate.from_composio") as mock_from_composio:
         mock_from_composio.return_value = ToolCreate(
-            name=add_integers_tool.name,
             source_code=add_integers_tool.source_code,
             json_schema=add_integers_tool.json_schema,
         )

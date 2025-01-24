@@ -1862,10 +1862,6 @@ export type ToolCallMessage = {
 
 export type ToolCreate = {
   /**
-   * The name of the function (auto-generated from source_code if not provided).
-   */
-  name?: string | null;
-  /**
    * The description of the tool.
    */
   description?: string | null;
@@ -1968,10 +1964,6 @@ export type ToolUpdate = {
    * The description of the tool.
    */
   description?: string | null;
-  /**
-   * The name of the function.
-   */
-  name?: string | null;
   /**
    * Metadata tags.
    */

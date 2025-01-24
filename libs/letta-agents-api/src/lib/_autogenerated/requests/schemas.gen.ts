@@ -4384,19 +4384,6 @@ Attributes:
 
 export const $ToolCreate = {
   properties: {
-    name: {
-      anyOf: [
-        {
-          type: 'string',
-        },
-        {
-          type: 'null',
-        },
-      ],
-      title: 'Name',
-      description:
-        'The name of the function (auto-generated from source_code if not provided).',
-    },
     description: {
       anyOf: [
         {
@@ -4620,18 +4607,6 @@ export const $ToolUpdate = {
       ],
       title: 'Description',
       description: 'The description of the tool.',
-    },
-    name: {
-      anyOf: [
-        {
-          type: 'string',
-        },
-        {
-          type: 'null',
-        },
-      ],
-      title: 'Name',
-      description: 'The name of the function.',
     },
     tags: {
       anyOf: [

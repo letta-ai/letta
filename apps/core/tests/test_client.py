@@ -506,7 +506,7 @@ def test_attach_detach_agent_tool(client: Union[LocalClient, RESTClient], agent:
             """
             return x * 2
 
-        tool = client.create_or_update_tool(func=example_tool, name="test_tool")
+        tool = client.create_or_update_tool(func=example_tool)
 
         # Initially tool should not be attached
         initial_tools = client.list_attached_tools(agent_id=agent.id)
@@ -688,8 +688,8 @@ def test_agent_creation(client: Union[LocalClient, RESTClient]):
         """Another test tool."""
         return "Hello from another test tool!"
 
-    tool1 = client.create_or_update_tool(func=test_tool, name="test_tool", tags=["test"])
-    tool2 = client.create_or_update_tool(func=another_test_tool, name="another_test_tool", tags=["test"])
+    tool1 = client.create_or_update_tool(func=test_tool, tags=["test"])
+    tool2 = client.create_or_update_tool(func=another_test_tool, tags=["test"])
 
     # Create test blocks
     offline_persona_block = client.create_block(label="persona", value="persona description", limit=5000)

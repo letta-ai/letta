@@ -122,6 +122,7 @@ class ToolManager:
                 new_schema = derive_openai_json_schema(source_code=pydantic_tool.source_code)
 
                 tool.json_schema = new_schema
+                tool.name = new_schema["name"]
 
             # Save the updated tool to the database
             return tool.update(db_session=session, actor=actor).to_pydantic()

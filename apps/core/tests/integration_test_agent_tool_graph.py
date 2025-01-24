@@ -194,8 +194,8 @@ def test_check_tool_rules_with_different_models(mock_e2b_api_key_none):
     # Create two test tools
     t1_name = "first_secret_word"
     t2_name = "second_secret_word"
-    t1 = client.create_or_update_tool(first_secret_word, name=t1_name)
-    t2 = client.create_or_update_tool(second_secret_word, name=t2_name)
+    t1 = client.create_or_update_tool(first_secret_word)
+    t2 = client.create_or_update_tool(second_secret_word)
     tool_rules = [InitToolRule(tool_name=t1_name), InitToolRule(tool_name=t2_name)]
     tools = [t1, t2]
 
@@ -217,7 +217,7 @@ def test_check_tool_rules_with_different_models(mock_e2b_api_key_none):
 
     # Create tool rule with single initial tool
     t3_name = "third_secret_word"
-    t3 = client.create_or_update_tool(third_secret_word, name=t3_name)
+    t3 = client.create_or_update_tool(third_secret_word)
     tool_rules = [InitToolRule(tool_name=t3_name)]
     tools = [t3]
     for config_file in config_files:
@@ -237,8 +237,8 @@ def test_claude_initial_tool_rule_enforced(mock_e2b_api_key_none):
     # Create tool rules that require tool_a to be called first
     t1_name = "first_secret_word"
     t2_name = "second_secret_word"
-    t1 = client.create_or_update_tool(first_secret_word, name=t1_name)
-    t2 = client.create_or_update_tool(second_secret_word, name=t2_name)
+    t1 = client.create_or_update_tool(first_secret_word)
+    t2 = client.create_or_update_tool(second_secret_word)
     tool_rules = [
         InitToolRule(tool_name=t1_name),
         ChildToolRule(tool_name=t1_name, children=[t2_name]),
@@ -366,8 +366,8 @@ def test_agent_conditional_tool_easy(mock_e2b_api_key_none):
 
     coin_flip_name = "flip_coin"
     secret_word_tool = "fourth_secret_word"
-    flip_coin_tool = client.create_or_update_tool(flip_coin, name=coin_flip_name)
-    reveal_secret = client.create_or_update_tool(fourth_secret_word, name=secret_word_tool)
+    flip_coin_tool = client.create_or_update_tool(flip_coin)
+    reveal_secret = client.create_or_update_tool(fourth_secret_word)
 
     # Make tool rules
     tool_rules = [
@@ -435,9 +435,9 @@ def test_agent_conditional_tool_hard(mock_e2b_api_key_none):
     play_game = "can_play_game"
     coin_flip_name = "flip_coin_hard"
     final_tool = "fourth_secret_word"
-    play_game_tool = client.create_or_update_tool(can_play_game, name=play_game)
-    flip_coin_tool = client.create_or_update_tool(flip_coin_hard, name=coin_flip_name)
-    reveal_secret = client.create_or_update_tool(fourth_secret_word, name=final_tool)
+    play_game_tool = client.create_or_update_tool(can_play_game)
+    flip_coin_tool = client.create_or_update_tool(flip_coin_hard)
+    reveal_secret = client.create_or_update_tool(fourth_secret_word)
 
     # Make tool rules - chain them together with conditional rules
     tool_rules = [
@@ -507,8 +507,8 @@ def test_agent_conditional_tool_without_default_child(mock_e2b_api_key_none):
     # Create tools - we'll make several available to the agent
     tool_name = "return_none"
 
-    tool = client.create_or_update_tool(return_none, name=tool_name)
-    secret_word = client.create_or_update_tool(first_secret_word, name="first_secret_word")
+    tool = client.create_or_update_tool(return_none)
+    secret_word = client.create_or_update_tool(first_secret_word)
 
     # Make tool rules - only map one output, let others be free choice
     tool_rules = [
@@ -568,8 +568,8 @@ def test_agent_reload_remembers_function_response(mock_e2b_api_key_none):
     # Create tools
     flip_coin_name = "flip_coin"
     secret_word = "fourth_secret_word"
-    flip_coin_tool = client.create_or_update_tool(flip_coin, name=flip_coin_name)
-    secret_word_tool = client.create_or_update_tool(fourth_secret_word, name=secret_word)
+    flip_coin_tool = client.create_or_update_tool(flip_coin)
+    secret_word_tool = client.create_or_update_tool(fourth_secret_word)
 
     # Make tool rules - map coin flip to fourth_secret_word
     tool_rules = [
@@ -622,13 +622,12 @@ def test_simple_tool_rule(mock_e2b_api_key_none):
 
     # Create tools
     flip_coin_name = "flip_coin"
-    another_secret_word = "first_secret_word"
     secret_word = "fourth_secret_word"
     random_tool = "can_play_game"
-    flip_coin_tool = client.create_or_update_tool(flip_coin, name=flip_coin_name)
-    secret_word_tool = client.create_or_update_tool(fourth_secret_word, name=secret_word)
-    another_secret_word_tool = client.create_or_update_tool(first_secret_word, name=another_secret_word)
-    random_tool = client.create_or_update_tool(can_play_game, name=random_tool)
+    flip_coin_tool = client.create_or_update_tool(flip_coin)
+    secret_word_tool = client.create_or_update_tool(fourth_secret_word)
+    another_secret_word_tool = client.create_or_update_tool(first_secret_word)
+    random_tool = client.create_or_update_tool(can_play_game)
     tools = [flip_coin_tool, secret_word_tool, another_secret_word_tool, random_tool]
 
     # Create tool rule: after flip_coin, must call fourth_secret_word

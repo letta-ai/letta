@@ -369,7 +369,6 @@ export async function createAgent(
                 requestBody: {
                   source_code: tool.code,
                   description: 'A custom tool',
-                  name: tool.name,
                 },
               },
               {

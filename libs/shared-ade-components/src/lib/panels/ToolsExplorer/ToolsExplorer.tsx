@@ -1508,13 +1508,6 @@ function ErrorMessageAlert(props: ErrorMessageAlertProps) {
   );
 }
 
-function inferNameFromPythonCode(code: string) {
-  const nameRegex = /def\s+(\w+)\s*\(/;
-  const match = nameRegex.exec(code);
-
-  return match ? match[1] : '';
-}
-
 const DEFAULT_SOURCE_CODE = `def roll_d20():
     """
     Simulate the roll of a 20-sided die (d20).
@@ -1598,7 +1591,6 @@ function ToolCreator() {
           source_type: 'python',
           return_char_limit: settings.returnCharLimit,
           description: '',
-          name: inferNameFromPythonCode(values.sourceCode),
           source_code: values.sourceCode,
         },
       });
