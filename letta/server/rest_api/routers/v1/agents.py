@@ -43,7 +43,8 @@ def list_agents(
     ),
     server: "SyncServer" = Depends(get_letta_server),
     user_id: Optional[str] = Header(None, alias="user_id"),
-    cursor: Optional[str] = Query(None, description="Cursor for pagination"),
+    before: Optional[str] = Query(None, description="Cursor for pagination"),
+    after: Optional[str] = Query(None, description="Cursor for pagination"),
     limit: Optional[int] = Query(None, description="Limit for pagination"),
     query_text: Optional[str] = Query(None, description="Search agents by name"),
 ):
@@ -66,7 +67,7 @@ def list_agents(
     }
 
     # Call list_agents with the dynamic kwargs
-    agents = server.agent_manager.list_agents(actor=actor, cursor=cursor, limit=limit, **kwargs)
+    agents = server.agent_manager.list_agents(actor=actor, before=before, after=after, limit=limit, **kwargs)
     return agents
 
 
@@ -347,14 +348,11 @@ def list_archival_memory(
     """
     actor = server.user_manager.get_user_or_default(user_id=user_id)
 
-    # TODO need to add support for non-postgres here
-    # chroma will throw:
-    #     raise ValueError("Cannot run get_all_cursor with chroma")
-
-    return server.get_agent_archival_cursor(
+    return server.get_agent_archival(
         user_id=actor.id,
         agent_id=agent_id,
-        cursor=after,  # TODO: deleting before, after. is this expected?
+        after=after,
+        before=before,
         limit=limit,
     )
 
@@ -429,7 +427,7 @@ def list_messages(
     """
     actor = server.user_manager.get_user_or_default(user_id=user_id)
 
-    return server.get_agent_recall_cursor(
+    return server.get_agent_recall(
         user_id=actor.id,
         agent_id=agent_id,
         before=before,
@@ -559,9 +557,6 @@ async def process_message_background(
             metadata={"result": result.model_dump()},  # Store the result in metadata
         )
         server.job_manager.update_job_by_id(job_id=job_id, job_update=job_update, actor=actor)
-
-        # Add job usage statistics
-        server.job_manager.add_job_usage(job_id=job_id, usage=result.usage, actor=actor)
 
     except Exception as e:
         # Update job status to failed

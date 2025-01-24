@@ -9,6 +9,10 @@ class MessageRole(str, Enum):
     system = "system"
 
 
+class MessageContentType(str, Enum):
+    text = "text"
+
+
 class OptionState(str, Enum):
     """Useful for kwargs that are bool + default option"""
 

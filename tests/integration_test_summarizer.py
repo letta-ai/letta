@@ -14,7 +14,7 @@ from letta.llm_api.helpers import calculate_summarizer_cutoff
 from letta.schemas.embedding_config import EmbeddingConfig
 from letta.schemas.enums import MessageRole
 from letta.schemas.llm_config import LLMConfig
-from letta.schemas.message import Message
+from letta.schemas.message import Message, TextContent
 from letta.settings import summarizer_settings
 from letta.streaming_interface import StreamingRefreshCLIInterface
 from tests.helpers.endpoints_helper import EMBEDDING_CONFIG_PATH
@@ -55,7 +55,7 @@ def generate_message(role: str, text: str = None, tool_calls: List = None) -> Me
     return Message(
         id="message-" + str(uuid.uuid4()),
         role=MessageRole(role),
-        text=text or f"{role} message text",
+        content=[TextContent(text=text or f"{role} message text")],
         created_at=datetime.utcnow(),
         tool_calls=tool_calls or [],
     )

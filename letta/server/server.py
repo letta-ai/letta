@@ -1,5 +1,6 @@
 # inspecting tools
 import asyncio
+import json
 import os
 import traceback
 import warnings
@@ -38,7 +39,7 @@ from letta.schemas.letta_message import LegacyLettaMessage, LettaMessage, ToolRe
 from letta.schemas.letta_response import LettaResponse
 from letta.schemas.llm_config import LLMConfig
 from letta.schemas.memory import ArchivalMemorySummary, ContextWindowOverview, Memory, RecallMemorySummary
-from letta.schemas.message import Message, MessageCreate, MessageRole, MessageUpdate
+from letta.schemas.message import Message, MessageCreate, MessageRole, MessageUpdate, TextContent
 from letta.schemas.organization import Organization
 from letta.schemas.passage import Passage
 from letta.schemas.providers import (
@@ -616,14 +617,14 @@ class SyncServer(Server):
                 message = Message(
                     agent_id=agent_id,
                     role="user",
-                    text=packaged_user_message,
+                    content=[TextContent(text=packaged_user_message)],
                     created_at=timestamp,
                 )
             else:
                 message = Message(
                     agent_id=agent_id,
                     role="user",
-                    text=packaged_user_message,
+                    content=[TextContent(text=packaged_user_message)],
                 )
 
         # Run the agent state forward
@@ -666,14 +667,14 @@ class SyncServer(Server):
                 message = Message(
                     agent_id=agent_id,
                     role="system",
-                    text=packaged_system_message,
+                    content=[TextContent(text=packaged_system_message)],
                     created_at=timestamp,
                 )
             else:
                 message = Message(
                     agent_id=agent_id,
                     role="system",
-                    text=packaged_system_message,
+                    content=[TextContent(text=packaged_system_message)],
                 )
 
         if isinstance(message, Message):
@@ -720,9 +721,9 @@ class SyncServer(Server):
 
                 # If wrapping is eanbled, wrap with metadata before placing content inside the Message object
                 if message.role == MessageRole.user and wrap_user_message:
-                    message.text = system.package_user_message(user_message=message.text)
+                    message.content = system.package_user_message(user_message=message.content)
                 elif message.role == MessageRole.system and wrap_system_message:
-                    message.text = system.package_system_message(system_message=message.text)
+                    message.content = system.package_system_message(system_message=message.content)
                 else:
                     raise ValueError(f"Invalid message role: {message.role}")
 
@@ -731,7 +732,7 @@ class SyncServer(Server):
                     Message(
                         agent_id=agent_id,
                         role=message.role,
-                        text=message.text,
+                        content=[TextContent(text=message.content)],
                         name=message.name,
                         # assigned later?
                         model=None,
@@ -804,20 +805,12 @@ class SyncServer(Server):
     def get_recall_memory_summary(self, agent_id: str, actor: User) -> RecallMemorySummary:
         return RecallMemorySummary(size=self.message_manager.size(actor=actor, agent_id=agent_id))
 
-    def get_agent_archival(self, user_id: str, agent_id: str, cursor: Optional[str] = None, limit: int = 50) -> List[Passage]:
-        """Paginated query of all messages in agent archival memory"""
-        # TODO: Thread actor directly through this function, since the top level caller most likely already retrieved the user
-        actor = self.user_manager.get_user_or_default(user_id=user_id)
-
-        passages = self.agent_manager.list_passages(agent_id=agent_id, actor=actor)
-
-        return passages
-
-    def get_agent_archival_cursor(
+    def get_agent_archival(
         self,
         user_id: str,
         agent_id: str,
-        cursor: Optional[str] = None,
+        after: Optional[str] = None,
+        before: Optional[str] = None,
         limit: Optional[int] = 100,
         order_by: Optional[str] = "created_at",
         reverse: Optional[bool] = False,
@@ -829,7 +822,8 @@ class SyncServer(Server):
         records = self.agent_manager.list_passages(
             actor=actor,
             agent_id=agent_id,
-            cursor=cursor,
+            after=after,
+            before=before,
             limit=limit,
             ascending=not reverse,
         )
@@ -851,7 +845,7 @@ class SyncServer(Server):
 
         # TODO: return archival memory
 
-    def get_agent_recall_cursor(
+    def get_agent_recall(
         self,
         user_id: str,
         agent_id: str,
@@ -1047,13 +1041,14 @@ class SyncServer(Server):
 
     def list_llm_models(self) -> List[LLMConfig]:
         """List available models"""
-
         llm_models = []
         for provider in self.get_enabled_providers():
             try:
                 llm_models.extend(provider.list_llm_models())
             except Exception as e:
                 warnings.warn(f"An error occurred while listing LLM models for provider {provider}: {e}")
+
+        llm_models.extend(self.get_local_llm_configs())
         return llm_models
 
     def list_embedding_models(self) -> List[EmbeddingConfig]:
@@ -1073,12 +1068,22 @@ class SyncServer(Server):
         return {**providers_from_env, **providers_from_db}.values()
 
     def get_llm_config_from_handle(self, handle: str, context_window_limit: Optional[int] = None) -> LLMConfig:
-        provider_name, model_name = handle.split("/", 1)
-        provider = self.get_provider_from_name(provider_name)
+        try:
+            provider_name, model_name = handle.split("/", 1)
+            provider = self.get_provider_from_name(provider_name)
 
-        llm_configs = [config for config in provider.list_llm_models() if config.model == model_name]
-        if not llm_configs:
-            raise ValueError(f"LLM model {model_name} is not supported by {provider_name}")
+            llm_configs = [config for config in provider.list_llm_models() if config.handle == handle]
+            if not llm_configs:
+                llm_configs = [config for config in provider.list_llm_models() if config.model == model_name]
+            if not llm_configs:
+                raise ValueError(f"LLM model {model_name} is not supported by {provider_name}")
+        except ValueError as e:
+            llm_configs = [config for config in self.get_local_llm_configs() if config.handle == handle]
+            if not llm_configs:
+                raise e
+
+        if len(llm_configs) == 1:
+            llm_config = llm_configs[0]
         elif len(llm_configs) > 1:
             raise ValueError(f"Multiple LLM models with name {model_name} supported by {provider_name}")
         else:
@@ -1097,13 +1102,17 @@ class SyncServer(Server):
         provider_name, model_name = handle.split("/", 1)
         provider = self.get_provider_from_name(provider_name)
 
-        embedding_configs = [config for config in provider.list_embedding_models() if config.embedding_model == model_name]
-        if not embedding_configs:
-            raise ValueError(f"Embedding model {model_name} is not supported by {provider_name}")
-        elif len(embedding_configs) > 1:
-            raise ValueError(f"Multiple embedding models with name {model_name} supported by {provider_name}")
-        else:
+        embedding_configs = [config for config in provider.list_embedding_models() if config.handle == handle]
+        if len(embedding_configs) == 1:
             embedding_config = embedding_configs[0]
+        else:
+            embedding_configs = [config for config in provider.list_embedding_models() if config.embedding_model == model_name]
+            if not embedding_configs:
+                raise ValueError(f"Embedding model {model_name} is not supported by {provider_name}")
+            elif len(embedding_configs) > 1:
+                raise ValueError(f"Multiple embedding models with name {model_name} supported by {provider_name}")
+            else:
+                embedding_config = embedding_configs[0]
 
         if embedding_chunk_size:
             embedding_config.embedding_chunk_size = embedding_chunk_size
@@ -1120,6 +1129,25 @@ class SyncServer(Server):
             provider = providers[0]
 
         return provider
+
+    def get_local_llm_configs(self):
+        llm_models = []
+        try:
+            llm_configs_dir = os.path.expanduser("~/.letta/llm_configs")
+            if os.path.exists(llm_configs_dir):
+                for filename in os.listdir(llm_configs_dir):
+                    if filename.endswith(".json"):
+                        filepath = os.path.join(llm_configs_dir, filename)
+                        try:
+                            with open(filepath, "r") as f:
+                                config_data = json.load(f)
+                                llm_config = LLMConfig(**config_data)
+                                llm_models.append(llm_config)
+                        except (json.JSONDecodeError, ValueError) as e:
+                            warnings.warn(f"Error parsing LLM config file {filename}: {e}")
+        except Exception as e:
+            warnings.warn(f"Error reading LLM configs directory: {e}")
+        return llm_models
 
     def add_llm_model(self, request: LLMConfig) -> LLMConfig:
         """Add a new LLM model"""

@@ -14,7 +14,7 @@ router = APIRouter(prefix="/orgs", tags=["organization", "admin"])
 
 @router.get("/", tags=["admin"], response_model=List[Organization], operation_id="list_orgs")
 def get_all_orgs(
-    cursor: Optional[str] = Query(None),
+    after: Optional[str] = Query(None),
     limit: Optional[int] = Query(50),
     server: "SyncServer" = Depends(get_letta_server),
 ):
@@ -22,7 +22,7 @@ def get_all_orgs(
     Get a list of all orgs in the database
     """
     try:
-        orgs = server.organization_manager.list_organizations(cursor=cursor, limit=limit)
+        orgs = server.organization_manager.list_organizations(after=after, limit=limit)
     except HTTPException:
         raise
     except Exception as e:

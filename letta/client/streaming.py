@@ -50,7 +50,7 @@ def _sse_post(url: str, data: dict, headers: dict) -> Generator[LettaStreamingRe
                         chunk_data = json.loads(sse.data)
                         if "reasoning" in chunk_data:
                             yield ReasoningMessage(**chunk_data)
-                        elif "assistant_message" in chunk_data:
+                        elif "message_type" in chunk_data and chunk_data["message_type"] == "assistant_message":
                             yield AssistantMessage(**chunk_data)
                         elif "tool_call" in chunk_data:
                             yield ToolCallMessage(**chunk_data)

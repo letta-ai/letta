@@ -8,13 +8,17 @@ from letta.orm.custom_columns import ToolCallColumn
 from letta.orm.mixins import AgentMixin, OrganizationMixin
 from letta.orm.sqlalchemy_base import SqlalchemyBase
 from letta.schemas.message import Message as PydanticMessage
+from letta.schemas.message import TextContent as PydanticTextContent
 
 
 class Message(SqlalchemyBase, OrganizationMixin, AgentMixin):
     """Defines data model for storing Message objects"""
 
     __tablename__ = "messages"
-    __table_args__ = (Index("ix_messages_agent_created_at", "agent_id", "created_at"),)
+    __table_args__ = (
+        Index("ix_messages_agent_created_at", "agent_id", "created_at"),
+        Index("ix_messages_created_at", "created_at", "id"),
+    )
     __pydantic_model__ = PydanticMessage
 
     id: Mapped[str] = mapped_column(primary_key=True, doc="Unique message identifier")
@@ -42,3 +46,10 @@ class Message(SqlalchemyBase, OrganizationMixin, AgentMixin):
     def job(self) -> Optional["Job"]:
         """Get the job associated with this message, if any."""
         return self.job_message.job if self.job_message else None
+
+    def to_pydantic(self) -> PydanticMessage:
+        """custom pydantic conversion for message content mapping"""
+        model = self.__pydantic_model__.model_validate(self)
+        if self.text:
+            model.content = [PydanticTextContent(text=self.text)]
+        return model

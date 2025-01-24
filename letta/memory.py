@@ -6,7 +6,7 @@ from letta.prompts.gpt_summarize import SYSTEM as SUMMARY_PROMPT_SYSTEM
 from letta.schemas.agent import AgentState
 from letta.schemas.enums import MessageRole
 from letta.schemas.memory import Memory
-from letta.schemas.message import Message
+from letta.schemas.message import Message, TextContent
 from letta.settings import summarizer_settings
 from letta.utils import count_tokens, printd
 
@@ -60,9 +60,9 @@ def summarize_messages(
 
     dummy_agent_id = agent_state.id
     message_sequence = [
-        Message(agent_id=dummy_agent_id, role=MessageRole.system, text=summary_prompt),
-        Message(agent_id=dummy_agent_id, role=MessageRole.assistant, text=MESSAGE_SUMMARY_REQUEST_ACK),
-        Message(agent_id=dummy_agent_id, role=MessageRole.user, text=summary_input),
+        Message(agent_id=dummy_agent_id, role=MessageRole.system, content=[TextContent(text=summary_prompt)]),
+        Message(agent_id=dummy_agent_id, role=MessageRole.assistant, content=[TextContent(text=MESSAGE_SUMMARY_REQUEST_ACK)]),
+        Message(agent_id=dummy_agent_id, role=MessageRole.user, content=[TextContent(text=summary_input)]),
     ]
 
     # TODO: We need to eventually have a separate LLM config for the summarizer LLM

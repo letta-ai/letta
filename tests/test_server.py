@@ -1,5 +1,6 @@
 import json
 import os
+import shutil
 import uuid
 import warnings
 from typing import List, Tuple
@@ -13,6 +14,7 @@ from letta.orm import Provider, Step
 from letta.schemas.block import CreateBlock
 from letta.schemas.enums import MessageRole
 from letta.schemas.letta_message import LettaMessage, ReasoningMessage, SystemMessage, ToolCallMessage, ToolReturnMessage, UserMessage
+from letta.schemas.llm_config import LLMConfig
 from letta.schemas.providers import Provider as PydanticProvider
 from letta.schemas.user import User
 
@@ -330,7 +332,7 @@ def agent_id(server, user_id, base_tools):
             name="test_agent",
             tool_ids=[t.id for t in base_tools],
             memory_blocks=[],
-            model="openai/gpt-4",
+            model="openai/gpt-4o",
             embedding="openai/text-embedding-ada-002",
         ),
         actor=actor,
@@ -351,7 +353,7 @@ def other_agent_id(server, user_id, base_tools):
             name="test_agent_other",
             tool_ids=[t.id for t in base_tools],
             memory_blocks=[],
-            model="openai/gpt-4",
+            model="openai/gpt-4o",
             embedding="openai/text-embedding-ada-002",
         ),
         actor=actor,
@@ -392,7 +394,7 @@ def test_user_message_memory(server, user, agent_id):
 @pytest.mark.order(3)
 def test_load_data(server, user, agent_id):
     # create source
-    passages_before = server.agent_manager.list_passages(actor=user, agent_id=agent_id, cursor=None, limit=10000)
+    passages_before = server.agent_manager.list_passages(actor=user, agent_id=agent_id, after=None, limit=10000)
     assert len(passages_before) == 0
 
     source = server.source_manager.create_source(
@@ -414,7 +416,7 @@ def test_load_data(server, user, agent_id):
     server.agent_manager.attach_source(agent_id=agent_id, source_id=source.id, actor=user)
 
     # check archival memory size
-    passages_after = server.agent_manager.list_passages(actor=user, agent_id=agent_id, cursor=None, limit=10000)
+    passages_after = server.agent_manager.list_passages(actor=user, agent_id=agent_id, after=None, limit=10000)
     assert len(passages_after) == 5
 
 
@@ -426,25 +428,25 @@ def test_save_archival_memory(server, user_id, agent_id):
 @pytest.mark.order(4)
 def test_user_message(server, user, agent_id):
     # add data into recall memory
-    server.user_message(user_id=user.id, agent_id=agent_id, message="Hello?")
-    # server.user_message(user_id=user_id, agent_id=agent_id, message="Hello?")
-    # server.user_message(user_id=user_id, agent_id=agent_id, message="Hello?")
-    # server.user_message(user_id=user_id, agent_id=agent_id, message="Hello?")
-    # server.user_message(user_id=user_id, agent_id=agent_id, message="Hello?")
+    response = server.user_message(user_id=user.id, agent_id=agent_id, message="What's up?")
+    assert response.step_count == 1
+    assert response.completion_tokens > 0
+    assert response.prompt_tokens > 0
+    assert response.total_tokens > 0
 
 
 @pytest.mark.order(5)
 def test_get_recall_memory(server, org_id, user, agent_id):
     # test recall memory cursor pagination
     actor = user
-    messages_1 = server.get_agent_recall_cursor(user_id=user.id, agent_id=agent_id, limit=2)
+    messages_1 = server.get_agent_recall(user_id=user.id, agent_id=agent_id, limit=2)
     cursor1 = messages_1[-1].id
-    messages_2 = server.get_agent_recall_cursor(user_id=user.id, agent_id=agent_id, after=cursor1, limit=1000)
-    messages_3 = server.get_agent_recall_cursor(user_id=user.id, agent_id=agent_id, limit=1000)
+    messages_2 = server.get_agent_recall(user_id=user.id, agent_id=agent_id, after=cursor1, limit=1000)
+    messages_3 = server.get_agent_recall(user_id=user.id, agent_id=agent_id, limit=1000)
     messages_3[-1].id
     assert messages_3[-1].created_at >= messages_3[0].created_at
     assert len(messages_3) == len(messages_1) + len(messages_2)
-    messages_4 = server.get_agent_recall_cursor(user_id=user.id, agent_id=agent_id, reverse=True, before=cursor1)
+    messages_4 = server.get_agent_recall(user_id=user.id, agent_id=agent_id, reverse=True, before=cursor1)
     assert len(messages_4) == 1
 
     # test in-context message ids
@@ -475,7 +477,7 @@ def test_get_archival_memory(server, user, agent_id):
         actor=actor,
         agent_id=agent_id,
         ascending=False,
-        cursor=cursor1,
+        before=cursor1,
     )
 
     # List all 5
@@ -497,11 +499,11 @@ def test_get_archival_memory(server, user, agent_id):
     passage_1 = server.agent_manager.list_passages(actor=actor, agent_id=agent_id, limit=1, ascending=True)
     assert len(passage_1) == 1
     assert passage_1[0].text == "alpha"
-    passage_2 = server.agent_manager.list_passages(actor=actor, agent_id=agent_id, cursor=earliest.id, limit=1000, ascending=True)
+    passage_2 = server.agent_manager.list_passages(actor=actor, agent_id=agent_id, after=earliest.id, limit=1000, ascending=True)
     assert len(passage_2) in [4, 5]  # NOTE: exact size seems non-deterministic, so loosen test
     assert all("alpha" not in passage.text for passage in passage_2)
     # test safe empty return
-    passage_none = server.agent_manager.list_passages(actor=actor, agent_id=agent_id, cursor=latest.id, limit=1000, ascending=True)
+    passage_none = server.agent_manager.list_passages(actor=actor, agent_id=agent_id, after=latest.id, limit=1000, ascending=True)
     assert len(passage_none) == 0
 
 
@@ -550,7 +552,7 @@ def test_delete_agent_same_org(server: SyncServer, org_id: str, user: User):
         request=CreateAgent(
             name="nonexistent_tools_agent",
             memory_blocks=[],
-            model="openai/gpt-4",
+            model="openai/gpt-4o",
             embedding="openai/text-embedding-ada-002",
         ),
         actor=user,
@@ -563,6 +565,63 @@ def test_delete_agent_same_org(server: SyncServer, org_id: str, user: User):
     server.agent_manager.delete_agent(agent_state.id, actor=another_user)
 
 
+def test_read_local_llm_configs(server: SyncServer, user: User):
+    configs_base_dir = os.path.join(os.path.expanduser("~"), ".letta", "llm_configs")
+    clean_up_dir = False
+    if not os.path.exists(configs_base_dir):
+        os.makedirs(configs_base_dir)
+        clean_up_dir = True
+
+    try:
+        sample_config = LLMConfig(
+            model="my-custom-model",
+            model_endpoint_type="openai",
+            model_endpoint="https://api.openai.com/v1",
+            context_window=8192,
+            handle="caren/my-custom-model",
+        )
+
+        config_filename = f"custom_llm_config_{uuid.uuid4().hex}.json"
+        config_filepath = os.path.join(configs_base_dir, config_filename)
+        with open(config_filepath, "w") as f:
+            json.dump(sample_config.model_dump(), f)
+
+        # Call list_llm_models
+        assert os.path.exists(configs_base_dir)
+        llm_models = server.list_llm_models()
+
+        # Assert that the config is in the returned models
+        assert any(
+            model.model == "my-custom-model"
+            and model.model_endpoint_type == "openai"
+            and model.model_endpoint == "https://api.openai.com/v1"
+            and model.context_window == 8192
+            and model.handle == "caren/my-custom-model"
+            for model in llm_models
+        ), "Custom LLM config not found in list_llm_models result"
+
+        # Try to use in agent creation
+        context_window_override = 4000
+        agent = server.create_agent(
+            request=CreateAgent(
+                model="caren/my-custom-model",
+                context_window_limit=context_window_override,
+                embedding="openai/text-embedding-ada-002",
+            ),
+            actor=user,
+        )
+        assert agent.llm_config.model == sample_config.model
+        assert agent.llm_config.model_endpoint == sample_config.model_endpoint
+        assert agent.llm_config.model_endpoint_type == sample_config.model_endpoint_type
+        assert agent.llm_config.context_window == context_window_override
+        assert agent.llm_config.handle == sample_config.handle
+
+    finally:
+        os.remove(config_filepath)
+        if clean_up_dir:
+            shutil.rmtree(configs_base_dir)
+
+
 def _test_get_messages_letta_format(
     server,
     user,
@@ -571,7 +630,7 @@ def _test_get_messages_letta_format(
 ):
     """Test mapping between messages and letta_messages with reverse=False."""
 
-    messages = server.get_agent_recall_cursor(
+    messages = server.get_agent_recall(
         user_id=user.id,
         agent_id=agent_id,
         limit=1000,
@@ -580,7 +639,7 @@ def _test_get_messages_letta_format(
     )
     assert all(isinstance(m, Message) for m in messages)
 
-    letta_messages = server.get_agent_recall_cursor(
+    letta_messages = server.get_agent_recall(
         user_id=user.id,
         agent_id=agent_id,
         limit=1000,
@@ -652,12 +711,12 @@ def _test_get_messages_letta_format(
 
             elif message.role == MessageRole.user:
                 assert isinstance(letta_message, UserMessage)
-                assert message.text == letta_message.message
+                assert message.text == letta_message.content
                 letta_message_index += 1
 
             elif message.role == MessageRole.system:
                 assert isinstance(letta_message, SystemMessage)
-                assert message.text == letta_message.message
+                assert message.text == letta_message.content
                 letta_message_index += 1
 
             elif message.role == MessageRole.tool:
@@ -861,7 +920,7 @@ def test_memory_rebuild_count(server, user, mock_e2b_api_key_none, base_tools, b
                 CreateBlock(label="human", value="The human's name is Bob."),
                 CreateBlock(label="persona", value="My name is Alice."),
             ],
-            model="openai/gpt-4",
+            model="openai/gpt-4o",
             embedding="openai/text-embedding-ada-002",
         ),
         actor=actor,
@@ -871,7 +930,7 @@ def test_memory_rebuild_count(server, user, mock_e2b_api_key_none, base_tools, b
     def count_system_messages_in_recall() -> Tuple[int, List[LettaMessage]]:
 
         # At this stage, there should only be 1 system message inside of recall storage
-        letta_messages = server.get_agent_recall_cursor(
+        letta_messages = server.get_agent_recall(
             user_id=user.id,
             agent_id=agent_state.id,
             limit=1000,
@@ -1049,7 +1108,7 @@ def test_add_remove_tools_update_agent(server: SyncServer, user_id: str, base_to
                 CreateBlock(label="human", value="The human's name is Bob."),
                 CreateBlock(label="persona", value="My name is Alice."),
             ],
-            model="openai/gpt-4",
+            model="openai/gpt-4o",
             embedding="openai/text-embedding-ada-002",
             include_base_tools=False,
         ),
@@ -1133,7 +1192,7 @@ def test_messages_with_provider_override(server: SyncServer, user_id: str):
     usage = server.user_message(user_id=actor.id, agent_id=agent.id, message="Test message")
     assert usage, "Sending message failed"
 
-    get_messages_response = server.message_manager.list_messages_for_agent(agent_id=agent.id, actor=actor, cursor=existing_messages[-1].id)
+    get_messages_response = server.message_manager.list_messages_for_agent(agent_id=agent.id, actor=actor, after=existing_messages[-1].id)
     assert len(get_messages_response) > 0, "Retrieving messages failed"
 
     step_ids = set([msg.step_id for msg in get_messages_response])
@@ -1160,7 +1219,7 @@ def test_messages_with_provider_override(server: SyncServer, user_id: str):
     usage = server.user_message(user_id=actor.id, agent_id=agent.id, message="Test message")
     assert usage, "Sending message failed"
 
-    get_messages_response = server.message_manager.list_messages_for_agent(agent_id=agent.id, actor=actor, cursor=existing_messages[-1].id)
+    get_messages_response = server.message_manager.list_messages_for_agent(agent_id=agent.id, actor=actor, after=existing_messages[-1].id)
     assert len(get_messages_response) > 0, "Retrieving messages failed"
 
     step_ids = set([msg.step_id for msg in get_messages_response])
@@ -1179,3 +1238,12 @@ def test_messages_with_provider_override(server: SyncServer, user_id: str):
     assert completion_tokens == usage.completion_tokens
     assert prompt_tokens == usage.prompt_tokens
     assert total_tokens == usage.total_tokens
+
+
+def test_unique_handles_for_provider_configs(server: SyncServer):
+    models = server.list_llm_models()
+    model_handles = [model.handle for model in models]
+    assert sorted(model_handles) == sorted(list(set(model_handles))), "All models should have unique handles"
+    embeddings = server.list_embedding_models()
+    embedding_handles = [embedding.handle for embedding in embeddings]
+    assert sorted(embedding_handles) == sorted(list(set(embedding_handles))), "All embeddings should have unique handles"

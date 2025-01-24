@@ -1,14 +1,9 @@
-import json
 import warnings
 from typing import Generator, List, Optional, Union
 
-import httpx
 import requests
-from httpx_sse import connect_sse
-from httpx_sse._exceptions import SSEError
+from openai import OpenAI
 
-from letta.constants import OPENAI_CONTEXT_WINDOW_ERROR_SUBSTRING
-from letta.errors import LLMError
 from letta.llm_api.helpers import add_inner_thoughts_to_functions, convert_to_structured_output, make_post_request
 from letta.local_llm.constants import INNER_THOUGHTS_KWARG, INNER_THOUGHTS_KWARG_DESCRIPTION
 from letta.local_llm.utils import num_tokens_from_functions, num_tokens_from_messages
@@ -130,7 +125,8 @@ def build_openai_chat_completions_request(
             tools=[Tool(type="function", function=f) for f in functions] if functions else None,
             tool_choice=tool_choice,
             user=str(user_id),
-            max_tokens=max_tokens,
+            max_completion_tokens=max_tokens,
+            temperature=llm_config.temperature,
         )
     else:
         data = ChatCompletionRequest(
@@ -139,7 +135,8 @@ def build_openai_chat_completions_request(
             functions=functions,
             function_call=function_call,
             user=str(user_id),
-            max_tokens=max_tokens,
+            max_completion_tokens=max_tokens,
+            temperature=llm_config.temperature,
         )
         # https://platform.openai.com/docs/guides/text-generation/json-mode
         # only supported by gpt-4o, gpt-4-turbo, or gpt-3.5-turbo
@@ -378,126 +375,21 @@ def openai_chat_completions_process_stream(
     return chat_completion_response
 
 
-def _sse_post(url: str, data: dict, headers: dict) -> Generator[ChatCompletionChunkResponse, None, None]:
-
-    with httpx.Client() as client:
-        with connect_sse(client, method="POST", url=url, json=data, headers=headers) as event_source:
-
-            # Inspect for errors before iterating (see https://github.com/florimondmanca/httpx-sse/pull/12)
-            if not event_source.response.is_success:
-                # handle errors
-                from letta.utils import printd
-
-                printd("Caught error before iterating SSE request:", vars(event_source.response))
-                printd(event_source.response.read())
-
-                try:
-                    response_bytes = event_source.response.read()
-                    response_dict = json.loads(response_bytes.decode("utf-8"))
-                    error_message = response_dict["error"]["message"]
-                    # e.g.: This model's maximum context length is 8192 tokens. However, your messages resulted in 8198 tokens (7450 in the messages, 748 in the functions). Please reduce the length of the messages or functions.
-                    if OPENAI_CONTEXT_WINDOW_ERROR_SUBSTRING in error_message:
-                        raise LLMError(error_message)
-                except LLMError:
-                    raise
-                except:
-                    print(f"Failed to parse SSE message, throwing SSE HTTP error up the stack")
-                    event_source.response.raise_for_status()
-
-            try:
-                for sse in event_source.iter_sse():
-                    # printd(sse.event, sse.data, sse.id, sse.retry)
-                    if sse.data == OPENAI_SSE_DONE:
-                        # print("finished")
-                        break
-                    else:
-                        chunk_data = json.loads(sse.data)
-                        # print("chunk_data::", chunk_data)
-                        chunk_object = ChatCompletionChunkResponse(**chunk_data)
-                        # print("chunk_object::", chunk_object)
-                        # id=chunk_data["id"],
-                        # choices=[ChunkChoice],
-                        # model=chunk_data["model"],
-                        # system_fingerprint=chunk_data["system_fingerprint"]
-                        # )
-                        yield chunk_object
-
-            except SSEError as e:
-                print("Caught an error while iterating the SSE stream:", str(e))
-                if "application/json" in str(e):  # Check if the error is because of JSON response
-                    # TODO figure out a better way to catch the error other than re-trying with a POST
-                    response = client.post(url=url, json=data, headers=headers)  # Make the request again to get the JSON response
-                    if response.headers["Content-Type"].startswith("application/json"):
-                        error_details = response.json()  # Parse the JSON to get the error message
-                        print("Request:", vars(response.request))
-                        print("POST Error:", error_details)
-                        print("Original SSE Error:", str(e))
-                    else:
-                        print("Failed to retrieve JSON error message via retry.")
-                else:
-                    print("SSEError not related to 'application/json' content type.")
-
-                # Optionally re-raise the exception if you need to propagate it
-                raise e
-
-            except Exception as e:
-                if event_source.response.request is not None:
-                    print("HTTP Request:", vars(event_source.response.request))
-                if event_source.response is not None:
-                    print("HTTP Status:", event_source.response.status_code)
-                    print("HTTP Headers:", event_source.response.headers)
-                    # print("HTTP Body:", event_source.response.text)
-                print("Exception message:", str(e))
-                raise e
-
-
 def openai_chat_completions_request_stream(
     url: str,
     api_key: str,
     chat_completion_request: ChatCompletionRequest,
 ) -> Generator[ChatCompletionChunkResponse, None, None]:
-    from letta.utils import printd
-
-    url = smart_urljoin(url, "chat/completions")
-    headers = {"Content-Type": "application/json", "Authorization": f"Bearer {api_key}"}
-    data = chat_completion_request.model_dump(exclude_none=True)
-
-    printd("Request:\n", json.dumps(data, indent=2))
-
-    # If functions == None, strip from the payload
-    if "functions" in data and data["functions"] is None:
-        data.pop("functions")
-        data.pop("function_call", None)  # extra safe,  should exist always (default="auto")
-
-    if "tools" in data and data["tools"] is None:
-        data.pop("tools")
-        data.pop("tool_choice", None)  # extra safe,  should exist always (default="auto")
-
-    if "tools" in data:
-        for tool in data["tools"]:
-            # tool["strict"] = True
-            try:
-                tool["function"] = convert_to_structured_output(tool["function"])
-            except ValueError as e:
-                warnings.warn(f"Failed to convert tool function to structured output, tool={tool}, error={e}")
-
-    # print(f"\n\n\n\nData[tools]: {json.dumps(data['tools'], indent=2)}")
-
-    printd(f"Sending request to {url}")
-    try:
-        return _sse_post(url=url, data=data, headers=headers)
-    except requests.exceptions.HTTPError as http_err:
-        # Handle HTTP errors (e.g., response 4XX, 5XX)
-        printd(f"Got HTTPError, exception={http_err}, payload={data}")
-        raise http_err
-    except requests.exceptions.RequestException as req_err:
-        # Handle other requests-related errors (e.g., connection error)
-        printd(f"Got RequestException, exception={req_err}")
-        raise req_err
-    except Exception as e:
-        # Handle other potential errors
-        printd(f"Got unknown Exception, exception={e}")
-        raise e
+    data = prepare_openai_payload(chat_completion_request)
+    data["stream"] = True
+    client = OpenAI(
+        api_key=api_key,
+        base_url=url,
+    )
+    stream = client.chat.completions.create(**data)
+    for chunk in stream:
+        # TODO: Use the native OpenAI objects here?
+        yield ChatCompletionChunkResponse(**chunk.model_dump(exclude_none=True))
 
 
 def openai_chat_completions_request(
@@ -512,17 +404,27 @@ def openai_chat_completions_request(
 
     https://platform.openai.com/docs/guides/text-generation?lang=curl
     """
-    from letta.utils import printd
+    data = prepare_openai_payload(chat_completion_request)
+    client = OpenAI(api_key=api_key, base_url=url)
+    chat_completion = client.chat.completions.create(**data)
+    return ChatCompletionResponse(**chat_completion.model_dump())
 
-    url = smart_urljoin(url, "chat/completions")
+
+def openai_embeddings_request(url: str, api_key: str, data: dict) -> EmbeddingResponse:
+    """https://platform.openai.com/docs/api-reference/embeddings/create"""
+
+    url = smart_urljoin(url, "embeddings")
     headers = {"Content-Type": "application/json", "Authorization": f"Bearer {api_key}"}
+    response_json = make_post_request(url, headers, data)
+    return EmbeddingResponse(**response_json)
+
+
+def prepare_openai_payload(chat_completion_request: ChatCompletionRequest):
     data = chat_completion_request.model_dump(exclude_none=True)
 
     # add check otherwise will cause error: "Invalid value for 'parallel_tool_calls': 'parallel_tool_calls' is only allowed when 'tools' are specified."
     if chat_completion_request.tools is not None:
         data["parallel_tool_calls"] = False
-
-    printd("Request:\n", json.dumps(data, indent=2))
 
     # If functions == None, strip from the payload
     if "functions" in data and data["functions"] is None:
@@ -540,14 +442,4 @@ def openai_chat_completions_request(
             except ValueError as e:
                 warnings.warn(f"Failed to convert tool function to structured output, tool={tool}, error={e}")
 
-    response_json = make_post_request(url, headers, data)
-    return ChatCompletionResponse(**response_json)
-
-
-def openai_embeddings_request(url: str, api_key: str, data: dict) -> EmbeddingResponse:
-    """https://platform.openai.com/docs/api-reference/embeddings/create"""
-
-    url = smart_urljoin(url, "embeddings")
-    headers = {"Content-Type": "application/json", "Authorization": f"Bearer {api_key}"}
-    response_json = make_post_request(url, headers, data)
-    return EmbeddingResponse(**response_json)
+    return data

@@ -46,7 +46,7 @@ response = client.agents.messages.send(
     messages=[
         MessageCreate(
             role="user",
-            text="hello",
+            content="hello",
         )
     ],
 )
@@ -59,7 +59,7 @@ response = client.agents.messages.send(
     messages=[
         MessageCreate(
             role="system",
-            text="[system] user has logged in. send a friendly message.",
+            content="[system] user has logged in. send a friendly message.",
         )
     ],
 )

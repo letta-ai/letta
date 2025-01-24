@@ -472,7 +472,7 @@ class StreamingServerInterface(AgentChunkStreamingInterface):
                         processed_chunk = AssistantMessage(
                             id=message_id,
                             date=message_date,
-                            assistant_message=cleaned_func_args,
+                            content=cleaned_func_args,
                         )
 
                 # otherwise we just do a regular passthrough of a ToolCallDelta via a ToolCallMessage
@@ -613,7 +613,7 @@ class StreamingServerInterface(AgentChunkStreamingInterface):
                                     processed_chunk = AssistantMessage(
                                         id=message_id,
                                         date=message_date,
-                                        assistant_message=combined_chunk,
+                                        content=combined_chunk,
                                     )
                                     # Store the ID of the tool call so allow skipping the corresponding response
                                     if self.function_id_buffer:
@@ -627,7 +627,7 @@ class StreamingServerInterface(AgentChunkStreamingInterface):
                                     processed_chunk = AssistantMessage(
                                         id=message_id,
                                         date=message_date,
-                                        assistant_message=updates_main_json,
+                                        content=updates_main_json,
                                     )
                                     # Store the ID of the tool call so allow skipping the corresponding response
                                     if self.function_id_buffer:
@@ -959,7 +959,7 @@ class StreamingServerInterface(AgentChunkStreamingInterface):
                             processed_chunk = AssistantMessage(
                                 id=msg_obj.id,
                                 date=msg_obj.created_at,
-                                assistant_message=func_args["message"],
+                                content=func_args["message"],
                             )
                             self._push_to_buffer(processed_chunk)
                         except Exception as e:
@@ -981,7 +981,7 @@ class StreamingServerInterface(AgentChunkStreamingInterface):
                         processed_chunk = AssistantMessage(
                             id=msg_obj.id,
                             date=msg_obj.created_at,
-                            assistant_message=func_args[self.assistant_message_tool_kwarg],
+                            content=func_args[self.assistant_message_tool_kwarg],
                         )
                         # Store the ID of the tool call so allow skipping the corresponding response
                         self.prev_assistant_message_id = function_call.id
@@ -1017,8 +1017,6 @@ class StreamingServerInterface(AgentChunkStreamingInterface):
             msg = msg.replace("Success: ", "")
             # new_message = {"function_return": msg, "status": "success"}
             assert msg_obj.tool_call_id is not None
-
-            print(f"YYY printing the function call - {msg_obj.tool_call_id} == {self.prev_assistant_message_id} ???")
 
             # Skip this is use_assistant_message is on
             if self.use_assistant_message and msg_obj.tool_call_id == self.prev_assistant_message_id:
