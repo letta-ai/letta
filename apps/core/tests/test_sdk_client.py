@@ -48,7 +48,7 @@ def agent(client):
                 value="username: sarah",
             ),
         ],
-        llm="openai/gpt-4",
+        model="openai/gpt-4",
         embedding="openai/text-embedding-ada-002",
     )
     yield agent_state
@@ -74,7 +74,7 @@ def test_shared_blocks(client):
             ),
         ],
         block_ids=[block.id],
-        llm="openai/gpt-4",
+        model="openai/gpt-4",
         embedding="openai/text-embedding-ada-002",
     )
     agent_state2 = client.agents.create(
@@ -86,7 +86,7 @@ def test_shared_blocks(client):
             ),
         ],
         block_ids=[block.id],
-        llm="openai/gpt-4",
+        model="openai/gpt-4",
         embedding="openai/text-embedding-ada-002",
     )
 
@@ -136,7 +136,7 @@ def test_add_and_manage_tags_for_agent(client):
                 value="username: sarah",
             ),
         ],
-        llm="openai/gpt-4",
+        model="openai/gpt-4",
         embedding="openai/text-embedding-ada-002",
     )
     assert len(agent.tags) == 0
@@ -188,7 +188,7 @@ def test_agent_tags(client):
                 value="username: sarah",
             ),
         ],
-        llm="openai/gpt-4",
+        model="openai/gpt-4",
         embedding="openai/text-embedding-ada-002",
         tags=["test", "agent1", "production"],
     )
@@ -200,7 +200,7 @@ def test_agent_tags(client):
                 value="username: sarah",
             ),
         ],
-        llm="openai/gpt-4",
+        model="openai/gpt-4",
         embedding="openai/text-embedding-ada-002",
         tags=["test", "agent2", "development"],
     )
@@ -212,7 +212,7 @@ def test_agent_tags(client):
                 value="username: sarah",
             ),
         ],
-        llm="openai/gpt-4",
+        model="openai/gpt-4",
         embedding="openai/text-embedding-ada-002",
         tags=["test", "agent3", "production"],
     )
@@ -569,7 +569,7 @@ def test_agent_creation(client):
     agent = client.agents.create(
         name=f"test_agent_{str(uuid.uuid4())}",
         memory_blocks=[offline_persona_block, mindy_block],
-        llm="openai/gpt-4",
+        model="openai/gpt-4",
         embedding="openai/text-embedding-ada-002",
         tool_ids=[tool1.id, tool2.id],
         include_base_tools=False,
