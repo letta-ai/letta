@@ -3989,7 +3989,7 @@
     "/v1/agents/{agent_id}/core-memory/variables": {
       "get": {
         "description": "Get the variables associated with an agent",
-        "summary": "Get Agent Variables",
+        "summary": "Retrieve Memory Variables",
         "tags": ["agents"],
         "parameters": [
           {

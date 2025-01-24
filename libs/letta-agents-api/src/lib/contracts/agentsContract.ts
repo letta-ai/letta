@@ -171,7 +171,7 @@ const GetAgentByIdNotFoundResponseSchema = z.object({
 
 const getAgentByIdContract = c.query({
   method: 'GET',
-  summary: 'Get Agent By Id',
+  summary: 'Retrieve Agent',
   path: '/v1/agents/:agent_id',
   query: z.object({
     all: z.boolean().optional(),
@@ -239,7 +239,7 @@ const UpdateAgentFailedResponseSchema = z.object({
 
 const updateAgentContract = c.mutation({
   method: 'PATCH',
-  summary: 'Update Agent',
+  summary: 'Modify Agent',
   path: '/v1/agents/:agent_id',
   description: 'Update an agent by its ID',
   body: UpdateAgentBodySchema,
@@ -350,7 +350,7 @@ const GetAgentVariablesNotFoundResponseSchema = z.object({
 
 const getAgentVariablesContract = c.query({
   method: 'GET',
-  summary: 'Get Agent Variables',
+  summary: 'Retrieve Memory Variables',
   path: '/v1/agents/:agent_id/core-memory/variables',
   description: 'Get the variables associated with an agent',
   pathParams: z.object({

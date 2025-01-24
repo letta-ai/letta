@@ -483,7 +483,7 @@
     "/v1/agents/{agent_id}": {
       "get": {
         "description": "Get an agent by its ID",
-        "summary": "Get Agent By Id",
+        "summary": "Retrieve Agent",
         "tags": ["agents"],
         "parameters": [
           {
@@ -612,7 +612,7 @@
       },
       "patch": {
         "description": "Update an agent by its ID",
-        "summary": "Update Agent",
+        "summary": "Modify Agent",
         "tags": ["agents"],
         "parameters": [
           {
@@ -777,7 +777,7 @@
     "/v1/agents/{agent_id}/core-memory/variables": {
       "get": {
         "description": "Get the variables associated with an agent",
-        "summary": "Get Agent Variables",
+        "summary": "Retrieve Memory Variables",
         "tags": ["agents"],
         "parameters": [
           {
