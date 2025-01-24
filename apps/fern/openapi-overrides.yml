@@ -348,6 +348,27 @@ paths:
                     - "$ref": "#/components/schemas/ToolReturnMessage"
                     - "$ref": "#/components/schemas/AssistantMessage"
                     - "$ref": "#/components/schemas/LettaUsageStatistics"
+      x-fern-examples: 
+        - code-samples: 
+          - sdk: typescript
+            code: | 
+              import { Letta } from "letta";
+              
+              const client = new LettaClient({
+                  token: "YOUR_TOKEN",
+              });
+              const response = await client.agents.messages.stream({
+                  agentId: "agent_id",
+                  messages: [
+                      {
+                          role: "user",
+                          text: "text",
+                      }
+                  ],
+              });
+              for await (const chunk of response) {
+                  yield chunk;
+              }
   /v1/agents/{agent_id}/template:
     post:
       x-fern-sdk-group-name:
