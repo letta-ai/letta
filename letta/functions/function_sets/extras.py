@@ -6,7 +6,7 @@ import requests
 
 from letta.constants import MESSAGE_CHATGPT_FUNCTION_MODEL, MESSAGE_CHATGPT_FUNCTION_SYSTEM_MESSAGE
 from letta.llm_api.llm_api_tools import create
-from letta.schemas.message import Message
+from letta.schemas.message import Message, TextContent
 from letta.utils import json_dumps, json_loads
 
 
@@ -23,8 +23,13 @@ def message_chatgpt(self, message: str):
     dummy_user_id = uuid.uuid4()
     dummy_agent_id = uuid.uuid4()
     message_sequence = [
-        Message(user_id=dummy_user_id, agent_id=dummy_agent_id, role="system", text=MESSAGE_CHATGPT_FUNCTION_SYSTEM_MESSAGE),
-        Message(user_id=dummy_user_id, agent_id=dummy_agent_id, role="user", text=str(message)),
+        Message(
+            user_id=dummy_user_id,
+            agent_id=dummy_agent_id,
+            role="system",
+            content=[TextContent(text=MESSAGE_CHATGPT_FUNCTION_SYSTEM_MESSAGE)],
+        ),
+        Message(user_id=dummy_user_id, agent_id=dummy_agent_id, role="user", content=[TextContent(text=str(message))]),
     ]
     # TODO: this will error without an LLMConfig
     response = create(

@@ -45,8 +45,12 @@ class BasePassage(SqlalchemyBase, OrganizationMixin):
     @declared_attr
     def __table_args__(cls):
         if settings.letta_pg_uri_no_default:
-            return (Index(f"{cls.__tablename__}_org_idx", "organization_id"), {"extend_existing": True})
-        return ({"extend_existing": True},)
+            return (
+                Index(f"{cls.__tablename__}_org_idx", "organization_id"),
+                Index(f"{cls.__tablename__}_created_at_id_idx", "created_at", "id"),
+                {"extend_existing": True},
+            )
+        return (Index(f"{cls.__tablename__}_created_at_id_idx", "created_at", "id"), {"extend_existing": True})
 
 
 class SourcePassage(BasePassage, FileMixin, SourceMixin):

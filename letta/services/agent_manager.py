@@ -2,7 +2,7 @@ from datetime import datetime
 from typing import Dict, List, Optional
 
 import numpy as np
-from sqlalchemy import Select, func, literal, select, union_all
+from sqlalchemy import Select, and_, func, literal, or_, select, union_all
 
 from letta.constants import BASE_MEMORY_TOOLS, BASE_TOOLS, MAX_EMBEDDING_DIM, MULTI_AGENT_TOOLS
 from letta.embeddings import embedding_model
@@ -271,10 +271,11 @@ class AgentManager:
     def list_agents(
         self,
         actor: PydanticUser,
+        before: Optional[str] = None,
+        after: Optional[str] = None,
+        limit: Optional[int] = 50,
         tags: Optional[List[str]] = None,
         match_all_tags: bool = False,
-        cursor: Optional[str] = None,
-        limit: Optional[int] = 50,
         query_text: Optional[str] = None,
         **kwargs,
     ) -> List[PydanticAgentState]:
@@ -284,10 +285,11 @@ class AgentManager:
         with self.session_maker() as session:
             agents = AgentModel.list(
                 db_session=session,
+                before=before,
+                after=after,
+                limit=limit,
                 tags=tags,
                 match_all_tags=match_all_tags,
-                cursor=cursor,
-                limit=limit,
                 organization_id=actor.organization_id if actor else None,
                 query_text=query_text,
                 **kwargs,
@@ -723,7 +725,8 @@ class AgentManager:
         query_text: Optional[str] = None,
         start_date: Optional[datetime] = None,
         end_date: Optional[datetime] = None,
-        cursor: Optional[str] = None,
+        before: Optional[str] = None,
+        after: Optional[str] = None,
         source_id: Optional[str] = None,
         embed_query: bool = False,
         ascending: bool = True,
@@ -731,6 +734,7 @@ class AgentManager:
         agent_only: bool = False,
     ) -> Select:
         """Helper function to build the base passage query with all filters applied.
+        Supports both before and after pagination across merged source and agent passages.
 
         Returns the query before any limit or count operations are applied.
         """
@@ -818,30 +822,69 @@ class AgentManager:
                 else:
                     # SQLite with custom vector type
                     query_embedding_binary = adapt_array(embedded_text)
-                    if ascending:
-                        main_query = main_query.order_by(
-                            func.cosine_distance(combined_query.c.embedding, query_embedding_binary).asc(),
-                            combined_query.c.created_at.asc(),
-                            combined_query.c.id.asc(),
-                        )
-                    else:
-                        main_query = main_query.order_by(
-                            func.cosine_distance(combined_query.c.embedding, query_embedding_binary).asc(),
-                            combined_query.c.created_at.desc(),
-                            combined_query.c.id.asc(),
-                        )
+                    main_query = main_query.order_by(
+                        func.cosine_distance(combined_query.c.embedding, query_embedding_binary).asc(),
+                        combined_query.c.created_at.asc() if ascending else combined_query.c.created_at.desc(),
+                        combined_query.c.id.asc(),
+                    )
             else:
                 if query_text:
                     main_query = main_query.where(func.lower(combined_query.c.text).contains(func.lower(query_text)))
 
-            # Handle cursor-based pagination
-            if cursor:
-                cursor_query = select(combined_query.c.created_at).where(combined_query.c.id == cursor).scalar_subquery()
+            # Handle pagination
+            if before or after:
+                # Create reference CTEs
+                if before:
+                    before_ref = (
+                        select(combined_query.c.created_at, combined_query.c.id).where(combined_query.c.id == before).cte("before_ref")
+                    )
+                if after:
+                    after_ref = (
+                        select(combined_query.c.created_at, combined_query.c.id).where(combined_query.c.id == after).cte("after_ref")
+                    )
 
-                if ascending:
-                    main_query = main_query.where(combined_query.c.created_at > cursor_query)
+                if before and after:
+                    # Window-based query (get records between before and after)
+                    main_query = main_query.where(
+                        or_(
+                            combined_query.c.created_at < select(before_ref.c.created_at).scalar_subquery(),
+                            and_(
+                                combined_query.c.created_at == select(before_ref.c.created_at).scalar_subquery(),
+                                combined_query.c.id < select(before_ref.c.id).scalar_subquery(),
+                            ),
+                        )
+                    )
+                    main_query = main_query.where(
+                        or_(
+                            combined_query.c.created_at > select(after_ref.c.created_at).scalar_subquery(),
+                            and_(
+                                combined_query.c.created_at == select(after_ref.c.created_at).scalar_subquery(),
+                                combined_query.c.id > select(after_ref.c.id).scalar_subquery(),
+                            ),
+                        )
+                    )
                 else:
-                    main_query = main_query.where(combined_query.c.created_at < cursor_query)
+                    # Pure pagination (only before or only after)
+                    if before:
+                        main_query = main_query.where(
+                            or_(
+                                combined_query.c.created_at < select(before_ref.c.created_at).scalar_subquery(),
+                                and_(
+                                    combined_query.c.created_at == select(before_ref.c.created_at).scalar_subquery(),
+                                    combined_query.c.id < select(before_ref.c.id).scalar_subquery(),
+                                ),
+                            )
+                        )
+                    if after:
+                        main_query = main_query.where(
+                            or_(
+                                combined_query.c.created_at > select(after_ref.c.created_at).scalar_subquery(),
+                                and_(
+                                    combined_query.c.created_at == select(after_ref.c.created_at).scalar_subquery(),
+                                    combined_query.c.id > select(after_ref.c.id).scalar_subquery(),
+                                ),
+                            )
+                        )
 
             # Add ordering if not already ordered by similarity
             if not embed_query:
@@ -856,7 +899,7 @@ class AgentManager:
                         combined_query.c.id.asc(),
                     )
 
-            return main_query
+        return main_query
 
     @enforce_types
     def list_passages(
@@ -868,7 +911,8 @@ class AgentManager:
         query_text: Optional[str] = None,
         start_date: Optional[datetime] = None,
         end_date: Optional[datetime] = None,
-        cursor: Optional[str] = None,
+        before: Optional[str] = None,
+        after: Optional[str] = None,
         source_id: Optional[str] = None,
         embed_query: bool = False,
         ascending: bool = True,
@@ -884,7 +928,8 @@ class AgentManager:
                 query_text=query_text,
                 start_date=start_date,
                 end_date=end_date,
-                cursor=cursor,
+                before=before,
+                after=after,
                 source_id=source_id,
                 embed_query=embed_query,
                 ascending=ascending,
@@ -924,7 +969,8 @@ class AgentManager:
         query_text: Optional[str] = None,
         start_date: Optional[datetime] = None,
         end_date: Optional[datetime] = None,
-        cursor: Optional[str] = None,
+        before: Optional[str] = None,
+        after: Optional[str] = None,
         source_id: Optional[str] = None,
         embed_query: bool = False,
         ascending: bool = True,
@@ -940,7 +986,8 @@ class AgentManager:
                 query_text=query_text,
                 start_date=start_date,
                 end_date=end_date,
-                cursor=cursor,
+                before=before,
+                after=after,
                 source_id=source_id,
                 embed_query=embed_query,
                 ascending=ascending,
@@ -1044,14 +1091,14 @@ class AgentManager:
     # ======================================================================================================================
     @enforce_types
     def list_tags(
-        self, actor: PydanticUser, cursor: Optional[str] = None, limit: Optional[int] = 50, query_text: Optional[str] = None
+        self, actor: PydanticUser, after: Optional[str] = None, limit: Optional[int] = 50, query_text: Optional[str] = None
     ) -> List[str]:
         """
         Get all tags a user has created, ordered alphabetically.
 
         Args:
             actor: User performing the action.
-            cursor: Cursor for pagination.
+            after: Cursor for forward pagination.
             limit: Maximum number of tags to return.
             query_text: Query text to filter tags by.
 
@@ -1069,8 +1116,8 @@ class AgentManager:
             if query_text:
                 query = query.filter(AgentsTags.tag.ilike(f"%{query_text}%"))
 
-            if cursor:
-                query = query.filter(AgentsTags.tag > cursor)
+            if after:
+                query = query.filter(AgentsTags.tag > after)
 
             query = query.order_by(AgentsTags.tag).limit(limit)
             results = [tag[0] for tag in query.all()]

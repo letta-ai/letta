@@ -165,7 +165,7 @@ def list_source_passages(
 def list_source_files(
     source_id: str,
     limit: int = Query(1000, description="Number of files to return"),
-    cursor: Optional[str] = Query(None, description="Pagination cursor to fetch the next set of results"),
+    after: Optional[str] = Query(None, description="Pagination cursor to fetch the next set of results"),
     server: "SyncServer" = Depends(get_letta_server),
     user_id: Optional[str] = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
 ):
@@ -173,7 +173,7 @@ def list_source_files(
     List paginated files associated with a data source.
     """
     actor = server.user_manager.get_user_or_default(user_id=user_id)
-    return server.source_manager.list_files(source_id=source_id, limit=limit, cursor=cursor, actor=actor)
+    return server.source_manager.list_files(source_id=source_id, limit=limit, after=after, actor=actor)
 
 
 # it's redundant to include /delete in the URL path. The HTTP verb DELETE already implies that action.

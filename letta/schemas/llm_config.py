@@ -14,6 +14,7 @@ class LLMConfig(BaseModel):
         model_wrapper (str): The wrapper for the model. This is used to wrap additional text around the input/output of the model. This is useful for text-to-text completions, such as the Completions API in OpenAI.
         context_window (int): The context window size for the model.
         put_inner_thoughts_in_kwargs (bool): Puts `inner_thoughts` as a kwarg in the function call if this is set to True. This helps with function calling performance and also the generation of inner thoughts.
+        temperature (float): The temperature to use when generating text with the model. A higher temperature will result in more random text.
     """
 
     # TODO: 🤮 don't default to a vendor! bug city!
@@ -46,6 +47,10 @@ class LLMConfig(BaseModel):
         description="Puts 'inner_thoughts' as a kwarg in the function call if this is set to True. This helps with function calling performance and also the generation of inner thoughts.",
     )
     handle: Optional[str] = Field(None, description="The handle for this config, in the format provider/model-name.")
+    temperature: float = Field(
+        0.7,
+        description="The temperature to use when generating text with the model. A higher temperature will result in more random text.",
+    )
 
     # FIXME hack to silence pydantic protected namespace warning
     model_config = ConfigDict(protected_namespaces=())

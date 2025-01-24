@@ -49,7 +49,7 @@ class MessageManager:
         with self.session_maker() as session:
             # Set the organization id of the Pydantic message
             pydantic_msg.organization_id = actor.organization_id
-            msg_data = pydantic_msg.model_dump()
+            msg_data = pydantic_msg.model_dump(to_orm=True)
             msg = MessageModel(**msg_data)
             msg.create(session, actor=actor)  # Persist to database
             return msg.to_pydantic()
@@ -83,7 +83,7 @@ class MessageManager:
                 )
 
             # get update dictionary
-            update_data = message_update.model_dump(exclude_unset=True, exclude_none=True)
+            update_data = message_update.model_dump(to_orm=True, exclude_unset=True, exclude_none=True)
             # Remove redundant update fields
             update_data = {key: value for key, value in update_data.items() if getattr(message, key) != value}
 
@@ -128,7 +128,8 @@ class MessageManager:
         self,
         agent_id: str,
         actor: Optional[PydanticUser] = None,
-        cursor: Optional[str] = None,
+        before: Optional[str] = None,
+        after: Optional[str] = None,
         start_date: Optional[datetime] = None,
         end_date: Optional[datetime] = None,
         limit: Optional[int] = 50,
@@ -139,7 +140,8 @@ class MessageManager:
         """List user messages with flexible filtering and pagination options.
 
         Args:
-            cursor: Cursor-based pagination - return records after this ID (exclusive)
+            before: Cursor-based pagination - return records before this ID (exclusive)
+            after: Cursor-based pagination - return records after this ID (exclusive)
             start_date: Filter records created after this date
             end_date: Filter records created before this date
             limit: Maximum number of records to return
@@ -156,7 +158,8 @@ class MessageManager:
         return self.list_messages_for_agent(
             agent_id=agent_id,
             actor=actor,
-            cursor=cursor,
+            before=before,
+            after=after,
             start_date=start_date,
             end_date=end_date,
             limit=limit,
@@ -170,7 +173,8 @@ class MessageManager:
         self,
         agent_id: str,
         actor: Optional[PydanticUser] = None,
-        cursor: Optional[str] = None,
+        before: Optional[str] = None,
+        after: Optional[str] = None,
         start_date: Optional[datetime] = None,
         end_date: Optional[datetime] = None,
         limit: Optional[int] = 50,
@@ -181,7 +185,8 @@ class MessageManager:
         """List messages with flexible filtering and pagination options.
 
         Args:
-            cursor: Cursor-based pagination - return records after this ID (exclusive)
+            before: Cursor-based pagination - return records before this ID (exclusive)
+            after: Cursor-based pagination - return records after this ID (exclusive)
             start_date: Filter records created after this date
             end_date: Filter records created before this date
             limit: Maximum number of records to return
@@ -201,7 +206,8 @@ class MessageManager:
 
             results = MessageModel.list(
                 db_session=session,
-                cursor=cursor,
+                before=before,
+                after=after,
                 start_date=start_date,
                 end_date=end_date,
                 limit=limit,

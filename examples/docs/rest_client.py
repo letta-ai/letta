@@ -43,7 +43,7 @@ def main():
         messages=[
             MessageCreate(
                 role="user",
-                text="Whats my name?",
+                content="Whats my name?",
             )
         ],
     )

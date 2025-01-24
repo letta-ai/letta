@@ -7,8 +7,10 @@ from letta.constants import LLM_MAX_TOKENS, MIN_CONTEXT_WINDOW
 from letta.llm_api.azure_openai import get_azure_chat_completions_endpoint, get_azure_embeddings_endpoint
 from letta.llm_api.azure_openai_constants import AZURE_MODEL_TO_CONTEXT_LENGTH
 from letta.schemas.embedding_config import EmbeddingConfig
+from letta.schemas.embedding_config_overrides import EMBEDDING_HANDLE_OVERRIDES
 from letta.schemas.letta_base import LettaBase
 from letta.schemas.llm_config import LLMConfig
+from letta.schemas.llm_config_overrides import LLM_HANDLE_OVERRIDES
 
 
 class ProviderBase(LettaBase):
@@ -39,7 +41,21 @@ class Provider(ProviderBase):
         """String representation of the provider for display purposes"""
         raise NotImplementedError
 
-    def get_handle(self, model_name: str) -> str:
+    def get_handle(self, model_name: str, is_embedding: bool = False) -> str:
+        """
+        Get the handle for a model, with support for custom overrides.
+
+        Args:
+            model_name (str): The name of the model.
+            is_embedding (bool, optional): Whether the handle is for an embedding model. Defaults to False.
+
+        Returns:
+            str: The handle for the model.
+        """
+        overrides = EMBEDDING_HANDLE_OVERRIDES if is_embedding else LLM_HANDLE_OVERRIDES
+        if self.name in overrides and model_name in overrides[self.name]:
+            model_name = overrides[self.name][model_name]
+
         return f"{self.name}/{model_name}"
 
 
@@ -76,7 +92,7 @@ class LettaProvider(Provider):
                 embedding_endpoint="https://embeddings.memgpt.ai",
                 embedding_dim=1024,
                 embedding_chunk_size=300,
-                handle=self.get_handle("letta-free"),
+                handle=self.get_handle("letta-free", is_embedding=True),
             )
         ]
 
@@ -167,7 +183,7 @@ class OpenAIProvider(Provider):
                 embedding_endpoint="https://api.openai.com/v1",
                 embedding_dim=1536,
                 embedding_chunk_size=300,
-                handle=self.get_handle("text-embedding-ada-002"),
+                handle=self.get_handle("text-embedding-ada-002", is_embedding=True),
             ),
             EmbeddingConfig(
                 embedding_model="text-embedding-3-small",
@@ -175,7 +191,7 @@ class OpenAIProvider(Provider):
                 embedding_endpoint="https://api.openai.com/v1",
                 embedding_dim=2000,
                 embedding_chunk_size=300,
-                handle=self.get_handle("text-embedding-3-small"),
+                handle=self.get_handle("text-embedding-3-small", is_embedding=True),
             ),
             EmbeddingConfig(
                 embedding_model="text-embedding-3-large",
@@ -183,7 +199,7 @@ class OpenAIProvider(Provider):
                 embedding_endpoint="https://api.openai.com/v1",
                 embedding_dim=2000,
                 embedding_chunk_size=300,
-                handle=self.get_handle("text-embedding-3-large"),
+                handle=self.get_handle("text-embedding-3-large", is_embedding=True),
             ),
         ]
 
@@ -377,7 +393,7 @@ class OllamaProvider(OpenAIProvider):
                     embedding_endpoint=self.base_url,
                     embedding_dim=embedding_dim,
                     embedding_chunk_size=300,
-                    handle=self.get_handle(model["name"]),
+                    handle=self.get_handle(model["name"], is_embedding=True),
                 )
             )
         return configs
@@ -575,7 +591,7 @@ class GoogleAIProvider(Provider):
                     embedding_endpoint=self.base_url,
                     embedding_dim=768,
                     embedding_chunk_size=300,  # NOTE: max is 2048
-                    handle=self.get_handle(model),
+                    handle=self.get_handle(model, is_embedding=True),
                 )
             )
         return configs
@@ -641,7 +657,7 @@ class AzureProvider(Provider):
                     embedding_endpoint=model_endpoint,
                     embedding_dim=768,
                     embedding_chunk_size=300,  # NOTE: max is 2048
-                    handle=self.get_handle(model_name),
+                    handle=self.get_handle(model_name, is_embedding=True),
                 )
             )
         return configs

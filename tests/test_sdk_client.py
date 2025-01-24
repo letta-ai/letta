@@ -96,7 +96,7 @@ def test_shared_blocks(client):
         messages=[
             MessageCreate(
                 role="user",
-                text="my name is actually charles",
+                content="my name is actually charles",
             )
         ],
     )
@@ -109,7 +109,7 @@ def test_shared_blocks(client):
         messages=[
             MessageCreate(
                 role="user",
-                text="whats my name?",
+                content="whats my name?",
             )
         ],
     )
@@ -338,7 +338,7 @@ def test_messages(client, agent):
         messages=[
             MessageCreate(
                 role="user",
-                text="Test message",
+                content="Test message",
             ),
         ],
     )
@@ -358,7 +358,7 @@ def test_send_system_message(client, agent):
         messages=[
             MessageCreate(
                 role="system",
-                text="Event occurred: The user just logged off.",
+                content="Event occurred: The user just logged off.",
             ),
         ],
     )
@@ -387,7 +387,7 @@ def test_function_return_limit(client, agent):
         messages=[
             MessageCreate(
                 role="user",
-                text="call the big_return function",
+                content="call the big_return function",
             ),
         ],
         config=LettaRequestConfig(use_assistant_message=False),
@@ -423,7 +423,7 @@ def test_function_always_error(client, agent):
         messages=[
             MessageCreate(
                 role="user",
-                text="call the always_error function",
+                content="call the always_error function",
             ),
         ],
         config=LettaRequestConfig(use_assistant_message=False),
@@ -454,7 +454,7 @@ async def test_send_message_parallel(client, agent):
             messages=[
                 MessageCreate(
                     role="user",
-                    text=message,
+                    content=message,
                 ),
             ],
         )
@@ -489,7 +489,7 @@ def test_send_message_async(client, agent):
         messages=[
             MessageCreate(
                 role="user",
-                text=test_message,
+                content=test_message,
             ),
         ],
         config=LettaRequestConfig(use_assistant_message=False),

@@ -447,7 +447,7 @@ def comprehensive_test_agent_fixture(server: SyncServer, default_user, print_too
         description="test_description",
         metadata={"test_key": "test_value"},
         tool_rules=[InitToolRule(tool_name=print_tool.name)],
-        initial_message_sequence=[MessageCreate(role=MessageRole.user, text="hello world")],
+        initial_message_sequence=[MessageCreate(role=MessageRole.user, content="hello world")],
         tool_exec_environment_variables={"test_env_var_key_a": "test_env_var_value_a", "test_env_var_key_b": "test_env_var_value_b"},
     )
     created_agent = server.agent_manager.create_agent(
@@ -549,7 +549,7 @@ def test_create_agent_passed_in_initial_messages(server: SyncServer, default_use
         block_ids=[default_block.id],
         tags=["a", "b"],
         description="test_description",
-        initial_message_sequence=[MessageCreate(role=MessageRole.user, text="hello world")],
+        initial_message_sequence=[MessageCreate(role=MessageRole.user, content="hello world")],
     )
     agent_state = server.agent_manager.create_agent(
         create_agent_request,
@@ -562,7 +562,7 @@ def test_create_agent_passed_in_initial_messages(server: SyncServer, default_use
     assert create_agent_request.memory_blocks[0].value in init_messages[0].text
     # Check that the second message is the passed in initial message seq
     assert create_agent_request.initial_message_sequence[0].role == init_messages[1].role
-    assert create_agent_request.initial_message_sequence[0].text in init_messages[1].text
+    assert create_agent_request.initial_message_sequence[0].content in init_messages[1].text
 
 
 def test_create_agent_default_initial_message(server: SyncServer, default_user, default_block):
@@ -914,10 +914,17 @@ def test_list_agents_by_tags_pagination(server: SyncServer, default_user, defaul
 
     # Get second page using cursor
     second_page = server.agent_manager.list_agents(
-        tags=["pagination_test"], match_all_tags=True, actor=default_user, cursor=first_agent_id, limit=1
+        tags=["pagination_test"], match_all_tags=True, actor=default_user, after=first_agent_id, limit=1
     )
     assert len(second_page) == 1
     assert second_page[0].id != first_agent_id
+
+    # Get previous page using before
+    prev_page = server.agent_manager.list_agents(
+        tags=["pagination_test"], match_all_tags=True, actor=default_user, before=second_page[0].id, limit=1
+    )
+    assert len(prev_page) == 1
+    assert prev_page[0].id == first_agent_id
 
     # Verify we got both agents with no duplicates
     all_ids = {first_page[0].id, second_page[0].id}
@@ -980,9 +987,19 @@ def test_list_agents_query_text_pagination(server: SyncServer, default_user, def
     first_agent_id = first_page[0].id
 
     # Get second page using cursor
-    second_page = server.agent_manager.list_agents(actor=default_user, query_text="search agent", cursor=first_agent_id, limit=1)
+    second_page = server.agent_manager.list_agents(actor=default_user, query_text="search agent", after=first_agent_id, limit=1)
     assert len(second_page) == 1
     assert second_page[0].id != first_agent_id
+
+    # Test before and after
+    all_agents = server.agent_manager.list_agents(actor=default_user, query_text="agent")
+    assert len(all_agents) == 3
+    first_agent, second_agent, third_agent = all_agents
+    middle_agent = server.agent_manager.list_agents(
+        actor=default_user, query_text="search agent", before=third_agent.id, after=first_agent.id
+    )
+    assert len(middle_agent) == 1
+    assert middle_agent[0].id == second_agent.id
 
     # Verify we got both search agents with no duplicates
     all_ids = {first_page[0].id, second_page[0].id}
@@ -1139,6 +1156,10 @@ def test_detach_block(server: SyncServer, sarah_agent, default_block, default_us
     agent = server.agent_manager.get_agent_by_id(sarah_agent.id, actor=default_user)
     assert len(agent.memory.blocks) == 0
 
+    # Check that block still exists
+    block = server.block_manager.get_block_by_id(block_id=default_block.id, actor=default_user)
+    assert block
+
 
 def test_detach_nonexistent_block(server: SyncServer, sarah_agent, default_user):
     """Test detaching a block that isn't attached."""
@@ -1232,11 +1253,32 @@ def test_agent_list_passages_pagination(server, default_user, sarah_agent, agent
     assert len(first_page) == 2
 
     second_page = server.agent_manager.list_passages(
-        actor=default_user, agent_id=sarah_agent.id, cursor=first_page[-1].id, limit=2, ascending=True
+        actor=default_user, agent_id=sarah_agent.id, after=first_page[-1].id, limit=2, ascending=True
     )
     assert len(second_page) == 2
     assert first_page[-1].id != second_page[0].id
     assert first_page[-1].created_at <= second_page[0].created_at
+
+    """
+    [1]   [2]
+    * * | * *
+
+       [mid]
+    * | * * | *
+    """
+    middle_page = server.agent_manager.list_passages(
+        actor=default_user, agent_id=sarah_agent.id, before=second_page[-1].id, after=first_page[0].id, ascending=True
+    )
+    assert len(middle_page) == 2
+    assert middle_page[0].id == first_page[-1].id
+    assert middle_page[1].id == second_page[0].id
+
+    middle_page_desc = server.agent_manager.list_passages(
+        actor=default_user, agent_id=sarah_agent.id, before=second_page[-1].id, after=first_page[0].id, ascending=False
+    )
+    assert len(middle_page_desc) == 2
+    assert middle_page_desc[0].id == second_page[0].id
+    assert middle_page_desc[1].id == first_page[-1].id
 
 
 def test_agent_list_passages_text_search(server, default_user, sarah_agent, agent_passages_setup):
@@ -1402,11 +1444,11 @@ def test_list_organizations_pagination(server: SyncServer):
     orgs_x = server.organization_manager.list_organizations(limit=1)
     assert len(orgs_x) == 1
 
-    orgs_y = server.organization_manager.list_organizations(cursor=orgs_x[0].id, limit=1)
+    orgs_y = server.organization_manager.list_organizations(after=orgs_x[0].id, limit=1)
     assert len(orgs_y) == 1
     assert orgs_y[0].name != orgs_x[0].name
 
-    orgs = server.organization_manager.list_organizations(cursor=orgs_y[0].id, limit=1)
+    orgs = server.organization_manager.list_organizations(after=orgs_y[0].id, limit=1)
     assert len(orgs) == 0
 
 
@@ -1789,7 +1831,7 @@ def test_message_get_by_id(server: SyncServer, hello_world_message_fixture, defa
 def test_message_update(server: SyncServer, hello_world_message_fixture, default_user, other_user):
     """Test updating a message"""
     new_text = "Updated text"
-    updated = server.message_manager.update_message_by_id(hello_world_message_fixture.id, MessageUpdate(text=new_text), actor=other_user)
+    updated = server.message_manager.update_message_by_id(hello_world_message_fixture.id, MessageUpdate(content=new_text), actor=other_user)
     assert updated is not None
     assert updated.text == new_text
     retrieved = server.message_manager.get_message_by_id(hello_world_message_fixture.id, actor=default_user)
@@ -1871,7 +1913,7 @@ def test_message_listing_cursor(server: SyncServer, hello_world_message_fixture,
     """Test cursor-based pagination functionality"""
     create_test_messages(server, hello_world_message_fixture, default_user)
 
-    # Make sure there are 5 messages
+    # Make sure there are 6 messages
     assert server.message_manager.size(actor=default_user, role=MessageRole.user) == 6
 
     # Get first page
@@ -1882,10 +1924,27 @@ def test_message_listing_cursor(server: SyncServer, hello_world_message_fixture,
 
     # Get second page
     second_page = server.message_manager.list_user_messages_for_agent(
-        agent_id=sarah_agent.id, actor=default_user, cursor=last_id_on_first_page, limit=3
+        agent_id=sarah_agent.id, actor=default_user, after=last_id_on_first_page, limit=3
     )
-    assert len(second_page) == 3  # Should have 2 remaining messages
+    assert len(second_page) == 3  # Should have 3 remaining messages
     assert all(r1.id != r2.id for r1 in first_page for r2 in second_page)
+
+    # Get the middle
+    middle_page = server.message_manager.list_user_messages_for_agent(
+        agent_id=sarah_agent.id, actor=default_user, before=second_page[1].id, after=first_page[0].id
+    )
+    assert len(middle_page) == 3
+    assert middle_page[0].id == first_page[1].id
+    assert middle_page[1].id == first_page[-1].id
+    assert middle_page[-1].id == second_page[0].id
+
+    middle_page_desc = server.message_manager.list_user_messages_for_agent(
+        agent_id=sarah_agent.id, actor=default_user, before=second_page[1].id, after=first_page[0].id, ascending=False
+    )
+    assert len(middle_page_desc) == 3
+    assert middle_page_desc[0].id == second_page[0].id
+    assert middle_page_desc[1].id == first_page[-1].id
+    assert middle_page_desc[-1].id == first_page[1].id
 
 
 def test_message_listing_filtering(server: SyncServer, hello_world_message_fixture, default_user, sarah_agent):
@@ -2026,6 +2085,46 @@ def test_delete_block(server: SyncServer, default_user):
     assert len(blocks) == 0
 
 
+def test_delete_block_detaches_from_agent(server: SyncServer, sarah_agent, default_user):
+    # Create and delete a block
+    block = server.block_manager.create_or_update_block(PydanticBlock(label="human", value="Sample content"), actor=default_user)
+    agent_state = server.agent_manager.attach_block(agent_id=sarah_agent.id, block_id=block.id, actor=default_user)
+
+    # Check that block has been attached
+    assert block.id in [b.id for b in agent_state.memory.blocks]
+
+    # Now attempt to delete the block
+    server.block_manager.delete_block(block_id=block.id, actor=default_user)
+
+    # Verify that the block was deleted
+    blocks = server.block_manager.get_blocks(actor=default_user)
+    assert len(blocks) == 0
+
+    # Check that block has been detached too
+    agent_state = server.agent_manager.get_agent_by_id(agent_id=sarah_agent.id, actor=default_user)
+    assert not (block.id in [b.id for b in agent_state.memory.blocks])
+
+
+def test_get_agents_for_block(server: SyncServer, sarah_agent, charles_agent, default_user):
+    # Create and delete a block
+    block = server.block_manager.create_or_update_block(PydanticBlock(label="alien", value="Sample content"), actor=default_user)
+    sarah_agent = server.agent_manager.attach_block(agent_id=sarah_agent.id, block_id=block.id, actor=default_user)
+    charles_agent = server.agent_manager.attach_block(agent_id=charles_agent.id, block_id=block.id, actor=default_user)
+
+    # Check that block has been attached to both
+    assert block.id in [b.id for b in sarah_agent.memory.blocks]
+    assert block.id in [b.id for b in charles_agent.memory.blocks]
+
+    # Get the agents for that block
+    agent_states = server.block_manager.get_agents_for_block(block_id=block.id, actor=default_user)
+    assert len(agent_states) == 2
+
+    # Check both agents are in the list
+    agent_state_ids = [a.id for a in agent_states]
+    assert sarah_agent.id in agent_state_ids
+    assert charles_agent.id in agent_state_ids
+
+
 # ======================================================================================================================
 # SourceManager Tests - Sources
 # ======================================================================================================================
@@ -2118,7 +2217,7 @@ def test_list_sources(server: SyncServer, default_user):
     assert len(paginated_sources) == 1
 
     # Ensure cursor-based pagination works
-    next_page = server.source_manager.list_sources(actor=default_user, cursor=paginated_sources[-1].id, limit=1)
+    next_page = server.source_manager.list_sources(actor=default_user, after=paginated_sources[-1].id, limit=1)
     assert len(next_page) == 1
     assert next_page[0].name != paginated_sources[0].name
 
@@ -2218,7 +2317,7 @@ def test_list_files(server: SyncServer, default_user, default_source):
     assert len(paginated_files) == 1
 
     # Ensure cursor-based pagination works
-    next_page = server.source_manager.list_files(source_id=default_source.id, actor=default_user, cursor=paginated_files[-1].id, limit=1)
+    next_page = server.source_manager.list_files(source_id=default_source.id, actor=default_user, after=paginated_files[-1].id, limit=1)
     assert len(next_page) == 1
     assert next_page[0].file_name != paginated_files[0].file_name
 
@@ -2316,7 +2415,7 @@ def test_list_sandbox_configs(server: SyncServer, default_user):
     paginated_configs = server.sandbox_config_manager.list_sandbox_configs(actor=default_user, limit=1)
     assert len(paginated_configs) == 1
 
-    next_page = server.sandbox_config_manager.list_sandbox_configs(actor=default_user, cursor=paginated_configs[-1].id, limit=1)
+    next_page = server.sandbox_config_manager.list_sandbox_configs(actor=default_user, after=paginated_configs[-1].id, limit=1)
     assert len(next_page) == 1
     assert next_page[0].id != paginated_configs[0].id
 
@@ -2387,7 +2486,7 @@ def test_list_sandbox_env_vars(server: SyncServer, sandbox_config_fixture, defau
     assert len(paginated_env_vars) == 1
 
     next_page = server.sandbox_config_manager.list_sandbox_env_vars(
-        sandbox_config_id=sandbox_config_fixture.id, actor=default_user, cursor=paginated_env_vars[-1].id, limit=1
+        sandbox_config_id=sandbox_config_fixture.id, actor=default_user, after=paginated_env_vars[-1].id, limit=1
     )
     assert len(next_page) == 1
     assert next_page[0].id != paginated_env_vars[0].id
@@ -2541,10 +2640,45 @@ def test_list_jobs_pagination(server: SyncServer, default_user):
 
     # List jobs with a limit
     jobs = server.job_manager.list_jobs(actor=default_user, limit=5)
-
-    # Assertions to check pagination
     assert len(jobs) == 5
     assert all(job.user_id == default_user.id for job in jobs)
+
+    # Test cursor-based pagination
+    first_page = server.job_manager.list_jobs(actor=default_user, limit=3, ascending=True)  # [J0, J1, J2]
+    assert len(first_page) == 3
+    assert first_page[0].created_at <= first_page[1].created_at <= first_page[2].created_at
+
+    last_page = server.job_manager.list_jobs(actor=default_user, limit=3, ascending=False)  # [J9, J8, J7]
+    assert len(last_page) == 3
+    assert last_page[0].created_at >= last_page[1].created_at >= last_page[2].created_at
+    first_page_ids = set(job.id for job in first_page)
+    last_page_ids = set(job.id for job in last_page)
+    assert first_page_ids.isdisjoint(last_page_ids)
+
+    # Test middle page using both before and after
+    middle_page = server.job_manager.list_jobs(
+        actor=default_user, before=last_page[-1].id, after=first_page[-1].id, ascending=True
+    )  # [J3, J4, J5, J6]
+    assert len(middle_page) == 4  # Should include jobs between first and second page
+    head_tail_jobs = first_page_ids.union(last_page_ids)
+    assert all(job.id not in head_tail_jobs for job in middle_page)
+
+    # Test descending order
+    middle_page_desc = server.job_manager.list_jobs(
+        actor=default_user, before=last_page[-1].id, after=first_page[-1].id, ascending=False
+    )  # [J6, J5, J4, J3]
+    assert len(middle_page_desc) == 4
+    assert middle_page_desc[0].id == middle_page[-1].id
+    assert middle_page_desc[1].id == middle_page[-2].id
+    assert middle_page_desc[2].id == middle_page[-3].id
+    assert middle_page_desc[3].id == middle_page[-4].id
+
+    # BONUS
+    job_7 = last_page[-1].id
+    earliest_jobs = server.job_manager.list_jobs(actor=default_user, ascending=False, before=job_7)
+    assert len(earliest_jobs) == 7
+    assert all(j.id not in last_page_ids for j in earliest_jobs)
+    assert all(earliest_jobs[i].created_at >= earliest_jobs[i + 1].created_at for i in range(len(earliest_jobs) - 1))
 
 
 def test_list_jobs_by_status(server: SyncServer, default_user):
@@ -2660,15 +2794,81 @@ def test_job_messages_pagination(server: SyncServer, default_run, default_user, 
     assert messages[1].id == message_ids[1]
 
     # Test pagination with cursor
-    messages = server.job_manager.get_job_messages(
+    first_page = server.job_manager.get_job_messages(
         job_id=default_run.id,
         actor=default_user,
-        cursor=message_ids[1],
         limit=2,
+        ascending=True,  # [M0, M1]
     )
-    assert len(messages) == 2
-    assert messages[0].id == message_ids[2]
-    assert messages[1].id == message_ids[3]
+    assert len(first_page) == 2
+    assert first_page[0].id == message_ids[0]
+    assert first_page[1].id == message_ids[1]
+    assert first_page[0].created_at <= first_page[1].created_at
+
+    last_page = server.job_manager.get_job_messages(
+        job_id=default_run.id,
+        actor=default_user,
+        limit=2,
+        ascending=False,  # [M4, M3]
+    )
+    assert len(last_page) == 2
+    assert last_page[0].id == message_ids[4]
+    assert last_page[1].id == message_ids[3]
+    assert last_page[0].created_at >= last_page[1].created_at
+
+    first_page_ids = set(msg.id for msg in first_page)
+    last_page_ids = set(msg.id for msg in last_page)
+    assert first_page_ids.isdisjoint(last_page_ids)
+
+    # Test middle page using both before and after
+    middle_page = server.job_manager.get_job_messages(
+        job_id=default_run.id,
+        actor=default_user,
+        before=last_page[-1].id,  # M3
+        after=first_page[0].id,  # M0
+        ascending=True,  # [M1, M2]
+    )
+    assert len(middle_page) == 2  # Should include message between first and last pages
+    assert middle_page[0].id == message_ids[1]
+    assert middle_page[1].id == message_ids[2]
+    head_tail_msgs = first_page_ids.union(last_page_ids)
+    assert middle_page[1].id not in head_tail_msgs
+    assert middle_page[0].id in first_page_ids
+
+    # Test descending order for middle page
+    middle_page = server.job_manager.get_job_messages(
+        job_id=default_run.id,
+        actor=default_user,
+        before=last_page[-1].id,  # M3
+        after=first_page[0].id,  # M0
+        ascending=False,  # [M2, M1]
+    )
+    assert len(middle_page) == 2  # Should include message between first and last pages
+    assert middle_page[0].id == message_ids[2]
+    assert middle_page[1].id == message_ids[1]
+
+    # Test getting earliest messages
+    msg_3 = last_page[-1].id
+    earliest_msgs = server.job_manager.get_job_messages(
+        job_id=default_run.id,
+        actor=default_user,
+        ascending=False,
+        before=msg_3,  # Get messages after M3 in descending order
+    )
+    assert len(earliest_msgs) == 3  # Should get M2, M1, M0
+    assert all(m.id not in last_page_ids for m in earliest_msgs)
+    assert earliest_msgs[0].created_at > earliest_msgs[1].created_at > earliest_msgs[2].created_at
+
+    # Test getting earliest messages with ascending order
+    earliest_msgs_ascending = server.job_manager.get_job_messages(
+        job_id=default_run.id,
+        actor=default_user,
+        ascending=True,
+        before=msg_3,  # Get messages before M3 in ascending order
+    )
+    assert len(earliest_msgs_ascending) == 3  # Should get M0, M1, M2
+    assert all(m.id not in last_page_ids for m in earliest_msgs_ascending)
+    assert earliest_msgs_ascending[0].created_at < earliest_msgs_ascending[1].created_at < earliest_msgs_ascending[2].created_at
 
 
 def test_job_messages_ordering(server: SyncServer, default_run, default_user, sarah_agent):
@@ -2800,7 +3000,7 @@ def test_job_messages_filter(server: SyncServer, default_run, default_user, sara
     assert len(limited_messages) == 2
 
 
-def test_get_run_messages_cursor(server: SyncServer, default_user: PydanticUser, sarah_agent):
+def test_get_run_messages(server: SyncServer, default_user: PydanticUser, sarah_agent):
     """Test getting messages for a run with request config."""
     # Create a run with custom request config
     run = server.job_manager.create_job(
@@ -2835,7 +3035,7 @@ def test_get_run_messages_cursor(server: SyncServer, default_user: PydanticUser,
         server.job_manager.add_message_to_job(job_id=run.id, message_id=created_msg.id, actor=default_user)
 
     # Get messages and verify they're converted correctly
-    result = server.job_manager.get_run_messages_cursor(run_id=run.id, actor=default_user)
+    result = server.job_manager.get_run_messages(run_id=run.id, actor=default_user)
 
     # Verify correct number of messages. Assistant messages should be parsed
     assert len(result) == 6
@@ -2995,7 +3195,7 @@ def test_list_tags(server: SyncServer, default_user, default_organization):
     assert limited_tags == tags[:2]  # Should return first 2 tags
 
     # Test pagination with cursor
-    cursor_tags = server.agent_manager.list_tags(actor=default_user, cursor="beta")
+    cursor_tags = server.agent_manager.list_tags(actor=default_user, after="beta")
     assert cursor_tags == ["delta", "epsilon", "gamma"]  # Tags after "beta"
 
     # Test text search

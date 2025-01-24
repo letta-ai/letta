@@ -59,11 +59,15 @@ class ProviderManager:
             session.commit()
 
     @enforce_types
-    def list_providers(self, cursor: Optional[str] = None, limit: Optional[int] = 50) -> List[PydanticProvider]:
-        """List providers with pagination using cursor (id) and limit."""
+    def list_providers(self, after: Optional[str] = None, limit: Optional[int] = 50) -> List[PydanticProvider]:
+        """List all providers with optional pagination."""
         with self.session_maker() as session:
-            results = ProviderModel.list(db_session=session, cursor=cursor, limit=limit)
-            return [provider.to_pydantic() for provider in results]
+            providers = ProviderModel.list(
+                db_session=session,
+                after=after,
+                limit=limit,
+            )
+            return [provider.to_pydantic() for provider in providers]
 
     @enforce_types
     def get_anthropic_override_provider_id(self) -> Optional[str]:

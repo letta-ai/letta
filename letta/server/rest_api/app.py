@@ -12,7 +12,7 @@ from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.middleware.cors import CORSMiddleware
 
 from letta.__init__ import __version__
-from letta.constants import ADMIN_PREFIX, API_PREFIX, OPENAI_API_PREFIX
+from letta.constants import ADMIN_PREFIX, API_PREFIX
 from letta.errors import BedrockPermissionError, LettaAgentNotFoundError, LettaUserNotFoundError
 from letta.log import get_logger
 from letta.orm.errors import DatabaseTimeoutError, ForeignKeyConstraintViolationError, NoResultFound, UniqueConstraintViolationError
@@ -49,8 +49,11 @@ password = None
 #    #typer.secho(f"Generated admin server password for this session: {password}", fg=typer.colors.GREEN)
 
 import logging
+import platform
 
 from fastapi import FastAPI
+
+is_windows = platform.system() == "Windows"
 
 log = logging.getLogger("uvicorn")
 
@@ -285,8 +288,14 @@ def start_server(
             ssl_certfile="certs/localhost.pem",
         )
     else:
-        print(f"▶ Server running at: http://{host or 'localhost'}:{port or REST_DEFAULT_PORT}")
-        print(f"▶ View using ADE at: https://app.letta.com/development-servers/local/dashboard\n")
+        if is_windows:
+            # Windows doesn't those the fancy unicode characters
+            print(f"Server running at: http://{host or 'localhost'}:{port or REST_DEFAULT_PORT}")
+            print(f"View using ADE at: https://app.letta.com/development-servers/local/dashboard\n")
+        else:
+            print(f"▶ Server running at: http://{host or 'localhost'}:{port or REST_DEFAULT_PORT}")
+            print(f"▶ View using ADE at: https://app.letta.com/development-servers/local/dashboard\n")
+
         uvicorn.run(
             app,
             host=host or "localhost",
