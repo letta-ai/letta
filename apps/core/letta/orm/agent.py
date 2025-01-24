@@ -70,7 +70,14 @@ class Agent(SqlalchemyBase, OrganizationMixin):
     )
     tools: Mapped[List["Tool"]] = relationship("Tool", secondary="tools_agents", lazy="selectin", passive_deletes=True)
     sources: Mapped[List["Source"]] = relationship("Source", secondary="sources_agents", lazy="selectin")
-    core_memory: Mapped[List["Block"]] = relationship("Block", secondary="blocks_agents", lazy="selectin")
+    core_memory: Mapped[List["Block"]] = relationship(
+        "Block",
+        secondary="blocks_agents",
+        lazy="selectin",
+        passive_deletes=True,  # Ensures SQLAlchemy doesn't fetch blocks_agents rows before deleting
+        back_populates="agents",
+        doc="Blocks forming the core memory of the agent.",
+    )
     messages: Mapped[List["Message"]] = relationship(
         "Message",
         back_populates="agent",
