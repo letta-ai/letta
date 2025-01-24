@@ -2501,6 +2501,10 @@ export type DeleteArchivalMemoryData = {
 export type DeleteArchivalMemoryResponse = unknown;
 
 export type ListMessagesData = {
+  /**
+   * Message after which to retrieve the returned messages.
+   */
+  after?: string | null;
   agentId: string;
   /**
    * The name of the message argument in the designated message tool.

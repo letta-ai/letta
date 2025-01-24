@@ -667,6 +667,7 @@ export const useAgentsServiceListArchivalMemorySuspense = <
  * Retrieve message history for an agent.
  * @param data The data for the request.
  * @param data.agentId
+ * @param data.after Message after which to retrieve the returned messages.
  * @param data.before Message before which to retrieve the returned messages.
  * @param data.limit Maximum number of messages to retrieve.
  * @param data.msgObject If true, returns Message objects. If false, return LettaMessage objects.
@@ -682,6 +683,7 @@ export const useAgentsServiceListMessagesSuspense = <
   TQueryKey extends Array<unknown> = unknown[],
 >(
   {
+    after,
     agentId,
     assistantMessageToolKwarg,
     assistantMessageToolName,
@@ -690,6 +692,7 @@ export const useAgentsServiceListMessagesSuspense = <
     msgObject,
     userId,
   }: {
+    after?: string;
     agentId: string;
     assistantMessageToolKwarg?: string;
     assistantMessageToolName?: string;
@@ -704,6 +707,7 @@ export const useAgentsServiceListMessagesSuspense = <
   useSuspenseQuery<TData, TError>({
     queryKey: Common.UseAgentsServiceListMessagesKeyFn(
       {
+        after,
         agentId,
         assistantMessageToolKwarg,
         assistantMessageToolName,
@@ -716,6 +720,7 @@ export const useAgentsServiceListMessagesSuspense = <
     ),
     queryFn: () =>
       AgentsService.listMessages({
+        after,
         agentId,
         assistantMessageToolKwarg,
         assistantMessageToolName,

@@ -2115,6 +2115,24 @@
             }
           },
           {
+            "name": "after",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Message after which to retrieve the returned messages.",
+              "title": "After"
+            },
+            "description": "Message after which to retrieve the returned messages."
+          },
+          {
             "name": "before",
             "in": "query",
             "required": false,

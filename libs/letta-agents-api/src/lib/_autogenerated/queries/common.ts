@@ -429,6 +429,7 @@ export type AgentsServiceListMessagesQueryResult<
 export const useAgentsServiceListMessagesKey = 'AgentsServiceListMessages';
 export const UseAgentsServiceListMessagesKeyFn = (
   {
+    after,
     agentId,
     assistantMessageToolKwarg,
     assistantMessageToolName,
@@ -437,6 +438,7 @@ export const UseAgentsServiceListMessagesKeyFn = (
     msgObject,
     userId,
   }: {
+    after?: string;
     agentId: string;
     assistantMessageToolKwarg?: string;
     assistantMessageToolName?: string;
@@ -450,6 +452,7 @@ export const UseAgentsServiceListMessagesKeyFn = (
   useAgentsServiceListMessagesKey,
   ...(queryKey ?? [
     {
+      after,
       agentId,
       assistantMessageToolKwarg,
       assistantMessageToolName,

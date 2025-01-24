@@ -1336,6 +1336,7 @@ export class AgentsService {
    * Retrieve message history for an agent.
    * @param data The data for the request.
    * @param data.agentId
+   * @param data.after Message after which to retrieve the returned messages.
    * @param data.before Message before which to retrieve the returned messages.
    * @param data.limit Maximum number of messages to retrieve.
    * @param data.msgObject If true, returns Message objects. If false, return LettaMessage objects.
@@ -1356,6 +1357,7 @@ export class AgentsService {
         agent_id: data.agentId,
       },
       query: {
+        after: data.after,
         before: data.before,
         limit: data.limit,
         msg_object: data.msgObject,
