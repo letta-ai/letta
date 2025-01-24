@@ -11,7 +11,7 @@ from letta.prompts import gpt_system
 from letta.schemas.agent import AgentState, AgentType
 from letta.schemas.enums import MessageRole
 from letta.schemas.memory import Memory
-from letta.schemas.message import Message, MessageCreate
+from letta.schemas.message import Message, MessageCreate, TextContent
 from letta.schemas.tool_rule import ToolRule
 from letta.schemas.user import User
 from letta.system import get_initial_boot_messages, get_login_event
@@ -244,7 +244,14 @@ def package_initial_message_sequence(
             raise ValueError(f"Invalid message role: {message_create.role}")
 
         init_messages.append(
-            Message(role=message_create.role, text=packed_message, organization_id=actor.organization_id, agent_id=agent_id, model=model)
+            Message(
+                role=message_create.role,
+                content=[TextContent(text=packed_message)],
+                name=message_create.name,
+                organization_id=actor.organization_id,
+                agent_id=agent_id,
+                model=model,
+            )
         )
     return init_messages
 

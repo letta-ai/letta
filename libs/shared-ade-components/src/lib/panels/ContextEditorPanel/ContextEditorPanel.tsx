@@ -556,7 +556,11 @@ export function ContextWindowSimulator() {
         id: 'messages',
         label: t('ContextWindowPreview.messagesTokens'),
         text: (messagesTokensSummary || [])
-          .map((message) => message.text)
+          .flatMap((message) =>
+            message.content
+              ?.filter((c) => c.type === 'text')
+              .map((c) => c.text),
+          )
           .join(''),
         size: messagesTokensLength,
         color: 'orange',

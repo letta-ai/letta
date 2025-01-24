@@ -6518,17 +6518,30 @@
             "$ref": "#/components/schemas/MessageRole",
             "description": "The role of the participant."
           },
-          "text": {
+          "content": {
             "anyOf": [
               {
-                "type": "string"
+                "items": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/TextContent"
+                    }
+                  ],
+                  "discriminator": {
+                    "propertyName": "type",
+                    "mapping": {
+                      "text": "#/components/schemas/TextContent"
+                    }
+                  }
+                },
+                "type": "array"
               },
               {
                 "type": "null"
               }
             ],
-            "title": "Text",
-            "description": "The text of the message."
+            "title": "Content",
+            "description": "The content of the message."
           },
           "agent_id": {
             "anyOf": [
@@ -7669,6 +7682,26 @@
         "required": ["tool_name"],
         "title": "TerminalToolRule",
         "description": "Represents a terminal tool rule configuration where if this tool gets called, it must end the agent loop."
+      },
+      "TextContent": {
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": ["text"],
+            "const": "text",
+            "title": "Type",
+            "description": "The type of the message.",
+            "default": "text"
+          },
+          "text": {
+            "type": "string",
+            "title": "Text",
+            "description": "The text content of the message."
+          }
+        },
+        "type": "object",
+        "required": ["text"],
+        "title": "TextContent"
       },
       "Tool": {
         "properties": {

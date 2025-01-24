@@ -16,7 +16,7 @@ Letta's internal representation of a message. Includes methods to convert to/fro
 
 - `id` _str_ - The unique identifier of the message.
 - `role` _MessageRole_ - The role of the participant.
-- `text` _str_ - The text of the message.
+- `content` _List[MessageContent]_ - The content of the message.
 - `user_id` _str_ - The unique identifier of the user.
 - `agent_id` _str_ - The unique identifier of the agent.
 - `model` _str_ - The model used to make the function call.
@@ -102,4 +102,3 @@ def to_cohere_dict(
 ```
 
 Cohere chat_history dicts only have 'role' and 'message' fields
-

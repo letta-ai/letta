@@ -39,7 +39,7 @@ from letta.schemas.letta_message import LegacyLettaMessage, LettaMessage, ToolRe
 from letta.schemas.letta_response import LettaResponse
 from letta.schemas.llm_config import LLMConfig
 from letta.schemas.memory import ArchivalMemorySummary, ContextWindowOverview, Memory, RecallMemorySummary
-from letta.schemas.message import Message, MessageCreate, MessageRole, MessageUpdate
+from letta.schemas.message import Message, MessageCreate, MessageRole, MessageUpdate, TextContent
 from letta.schemas.organization import Organization
 from letta.schemas.passage import Passage
 from letta.schemas.providers import (
@@ -617,14 +617,14 @@ class SyncServer(Server):
                 message = Message(
                     agent_id=agent_id,
                     role="user",
-                    text=packaged_user_message,
+                    content=[TextContent(text=packaged_user_message)],
                     created_at=timestamp,
                 )
             else:
                 message = Message(
                     agent_id=agent_id,
                     role="user",
-                    text=packaged_user_message,
+                    content=[TextContent(text=packaged_user_message)],
                 )
 
         # Run the agent state forward
@@ -667,14 +667,14 @@ class SyncServer(Server):
                 message = Message(
                     agent_id=agent_id,
                     role="system",
-                    text=packaged_system_message,
+                    content=[TextContent(text=packaged_system_message)],
                     created_at=timestamp,
                 )
             else:
                 message = Message(
                     agent_id=agent_id,
                     role="system",
-                    text=packaged_system_message,
+                    content=[TextContent(text=packaged_system_message)],
                 )
 
         if isinstance(message, Message):
@@ -732,7 +732,7 @@ class SyncServer(Server):
                     Message(
                         agent_id=agent_id,
                         role=message.role,
-                        text=message.text,
+                        content=[TextContent(text=message.text)],
                         name=message.name,
                         # assigned later?
                         model=None,

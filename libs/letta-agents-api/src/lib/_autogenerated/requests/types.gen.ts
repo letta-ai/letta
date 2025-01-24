@@ -1198,9 +1198,9 @@ export type Message = {
    */
   role: MessageRole;
   /**
-   * The text of the message.
+   * The content of the message.
    */
-  text?: string | null;
+  content?: Array<TextContent> | null;
   /**
    * The unique identifier of the organization.
    */
@@ -1753,6 +1753,22 @@ export type TerminalToolRule = {
   tool_name: string;
   type?: ToolRuleType;
 };
+
+export type TextContent = {
+  /**
+   * The type of the message.
+   */
+  type?: 'text';
+  /**
+   * The text content of the message.
+   */
+  text: string;
+};
+
+/**
+ * The type of the message.
+ */
+export type type2 = 'text';
 
 /**
  * Representation of a tool, which is a function that can be called by the agent.

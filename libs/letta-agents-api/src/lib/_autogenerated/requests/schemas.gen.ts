@@ -2712,17 +2712,30 @@ export const $Message = {
       $ref: '#/components/schemas/MessageRole',
       description: 'The role of the participant.',
     },
-    text: {
+    content: {
       anyOf: [
         {
-          type: 'string',
+          items: {
+            oneOf: [
+              {
+                $ref: '#/components/schemas/TextContent',
+              },
+            ],
+            discriminator: {
+              propertyName: 'type',
+              mapping: {
+                text: '#/components/schemas/TextContent',
+              },
+            },
+          },
+          type: 'array',
         },
         {
           type: 'null',
         },
       ],
-      title: 'Text',
-      description: 'The text of the message.',
+      title: 'Content',
+      description: 'The content of the message.',
     },
     organization_id: {
       anyOf: [
@@ -4027,6 +4040,27 @@ export const $TerminalToolRule = {
   title: 'TerminalToolRule',
   description:
     'Represents a terminal tool rule configuration where if this tool gets called, it must end the agent loop.',
+} as const;
+
+export const $TextContent = {
+  properties: {
+    type: {
+      type: 'string',
+      enum: ['text'],
+      const: 'text',
+      title: 'Type',
+      description: 'The type of the message.',
+      default: 'text',
+    },
+    text: {
+      type: 'string',
+      title: 'Text',
+      description: 'The text content of the message.',
+    },
+  },
+  type: 'object',
+  required: ['text'],
+  title: 'TextContent',
 } as const;
 
 export const $Tool = {
