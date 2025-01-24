@@ -817,6 +817,7 @@ class RESTClient(AbstractClient):
         Returns:
             memory (Memory): In-context memory of the agent
         """
+
         response = requests.get(f"{self.base_url}/{self.api_prefix}/agents/{agent_id}/core-memory", headers=self.headers)
         if response.status_code != 200:
             raise ValueError(f"Failed to get in-context memory: {response.text}")
