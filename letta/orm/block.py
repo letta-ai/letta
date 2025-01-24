@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, Optional, Type
+from typing import TYPE_CHECKING, List, Optional, Type
 
 from sqlalchemy import JSON, BigInteger, Index, Integer, UniqueConstraint, event
 from sqlalchemy.orm import Mapped, attributes, mapped_column, relationship
@@ -39,6 +39,14 @@ class Block(OrganizationMixin, SqlalchemyBase):
 
     # relationships
     organization: Mapped[Optional["Organization"]] = relationship("Organization")
+    agents: Mapped[List["Agent"]] = relationship(
+        "Agent",
+        secondary="blocks_agents",
+        lazy="selectin",
+        passive_deletes=True,  # Ensures SQLAlchemy doesn't fetch blocks_agents rows before deleting
+        back_populates="core_memory",
+        doc="Agents associated with this block.",
+    )
 
     def to_pydantic(self) -> Type:
         match self.label:

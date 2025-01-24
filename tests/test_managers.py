@@ -1155,6 +1155,10 @@ def test_detach_block(server: SyncServer, sarah_agent, default_block, default_us
     agent = server.agent_manager.get_agent_by_id(sarah_agent.id, actor=default_user)
     assert len(agent.memory.blocks) == 0
 
+    # Check that block still exists
+    block = server.block_manager.get_block_by_id(block_id=default_block.id, actor=default_user)
+    assert block
+
 
 def test_detach_nonexistent_block(server: SyncServer, sarah_agent, default_user):
     """Test detaching a block that isn't attached."""
@@ -2078,6 +2082,26 @@ def test_delete_block(server: SyncServer, default_user):
     # Verify that the block was deleted
     blocks = block_manager.get_blocks(actor=default_user)
     assert len(blocks) == 0
+
+
+def test_delete_block_detaches_from_agent(server: SyncServer, sarah_agent, default_user):
+    # Create and delete a block
+    block = server.block_manager.create_or_update_block(PydanticBlock(label="human", value="Sample content"), actor=default_user)
+    agent_state = server.agent_manager.attach_block(agent_id=sarah_agent.id, block_id=block.id, actor=default_user)
+
+    # Check that block has been attached
+    assert block.id in [b.id for b in agent_state.memory.blocks]
+
+    # Now attempt to delete the block
+    server.block_manager.delete_block(block_id=block.id, actor=default_user)
+
+    # Verify that the block was deleted
+    blocks = server.block_manager.get_blocks(actor=default_user)
+    assert len(blocks) == 0
+
+    # Check that block has been detached too
+    agent_state = server.agent_manager.get_agent_by_id(agent_id=sarah_agent.id, actor=default_user)
+    assert not (block.id in [b.id for b in agent_state.memory.blocks])
 
 
 # ======================================================================================================================
