@@ -16,7 +16,7 @@
       }
 
       .cls-1, .cls-2 {
-        stroke-width: 0px;
+        strokeWidth: 0px;
       }
 
       .cls-2 {

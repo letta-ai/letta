@@ -550,11 +550,13 @@
       },
       "titles": {
         "allTools": "All tools",
+        "lettaTools": "Letta tools",
         "customTools": "Custom tools",
         "brandTools": "{brand} tools"
       },
       "categories": {
         "allTools": "All tools ({count})",
+        "lettaTools": "Letta ({count})",
         "customTools": "Custom tools ({count})",
         "brandTools": "{brand} ({count})"
       }

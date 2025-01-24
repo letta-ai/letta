@@ -20,7 +20,7 @@ export function ComposioLockupDynamic(props: ComposioLockupProps) {
         <path
           d="M239.413 1.3698H111.404C50.8349 1.3698 1.73349 50.4712 1.73349 111.041V239.05C1.73349 299.619 50.8349 348.721 111.404 348.721H239.413C299.983 348.721 349.085 299.619 349.085 239.05V111.041C349.085 50.4712 299.983 1.3698 239.413 1.3698Z"
           stroke="#F33004"
-          stroke-width="2.11409"
+          strokeWidth="2.11409"
         />
         <path
           fill-rule="evenodd"

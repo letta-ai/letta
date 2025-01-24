@@ -1,5 +1,6 @@
 import type { ToolMetadataPreviewType } from '@letta-cloud/web-api-client';
 import React, { useCallback, useMemo, useState } from 'react';
+import type { HTMLProps } from 'react';
 import { useTranslations } from '@letta-cloud/translations';
 import { useCurrentAgent } from '../../hooks';
 import type { AgentState, Tool } from '@letta-cloud/letta-agents-api';
@@ -45,7 +46,6 @@ import {
   FormProvider,
   HiddenOnMobile,
   HStack,
-  IconWrapper,
   InlineCode,
   isBrandKey,
   ListIcon,
@@ -66,6 +66,8 @@ import {
   Section,
   ComposioLockupDynamic,
   TabGroup,
+  Logo,
+  brandKeyToLogo,
 } from '@letta-cloud/component-library';
 import { webApi, webApiQueryKeys } from '@letta-cloud/web-api-client';
 import { useCurrentAgentMetaData } from '../../hooks';
@@ -76,6 +78,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { isAxiosError } from 'axios';
 import { useDebouncedValue } from '@mantine/hooks';
 import { get } from 'lodash-es';
+import { Slot } from '@radix-ui/react-slot';
 
 type ToolViewerState = 'edit' | 'view';
 
@@ -109,7 +112,8 @@ const toolsExplorerAtom = atom<ToolsExplorerContextState>({
 interface ToolCategoryButtonProps {
   category: ToolViewerCategory;
   label: string;
-  image?: string;
+  // eslint-disable-next-line @typescript-eslint/no-redundant-type-constituents
+  image?: React.ReactNode | string;
   selectedCategory: ToolViewerCategory;
   setSelectedCategory: (category: ToolViewerCategory) => void;
 }
@@ -119,18 +123,26 @@ function ToolCategoryButton(props: ToolCategoryButtonProps) {
   const { category, image, label, selectedCategory, setSelectedCategory } =
     props;
 
+  const preIcon = useMemo(() => {
+    if (typeof image === 'string') {
+      return <img src={image} alt="" />;
+    }
+
+    if (image) {
+      return image;
+    }
+
+    if (label.includes(t('AllToolsView.titles.customTools'))) {
+      return <CodeBlocksIcon />;
+    }
+
+    return <ToolsIcon />;
+  }, [image, label, t]);
+
   return (
     <Button
       label={label}
-      preIcon={
-        image ? (
-          <img src={image} alt="" />
-        ) : label.includes(t('AllToolsView.titles.customTools')) ? (
-          <CodeBlocksIcon />
-        ) : (
-          <ToolsIcon />
-        )
-      }
+      preIcon={preIcon}
       color="tertiary"
       active={selectedCategory === category}
       onClick={() => {
@@ -585,19 +597,15 @@ function ViewTool(props: ViewToolProps) {
       <VStack fullHeight gap="large" paddingBottom fullWidth>
         <HStack borderBottom paddingBottom fullWidth align="center">
           <div className="w-[100px] p-5">
-            {tool.imageUrl ? (
-              <IconWrapper
-                /* eslint-disable-next-line react/forbid-component-props */
-                className="w-full"
-              >
-                <img src={tool.imageUrl} alt="" />
-              </IconWrapper>
-            ) : (
-              <ToolsIcon
-                /* eslint-disable-next-line react/forbid-component-props */
-                className="w-full"
+            <Slot
+              /* eslint-disable-next-line react/forbid-component-props */
+              className="w-full"
+            >
+              <ToolIconRender
+                imageUrl={tool.imageUrl || ''}
+                brand={tool.brand}
               />
-            )}
+            </Slot>
           </div>
 
           <VStack fullWidth gap="medium">
@@ -683,8 +691,68 @@ function ViewTool(props: ViewToolProps) {
   );
 }
 
+interface ToolIconRenderProps extends HTMLProps<any> {
+  imageUrl?: string;
+  brand: string;
+}
+
+function ToolIconRender(props: ToolIconRenderProps) {
+  const { imageUrl, brand, ...rest } = props;
+
+  if (isBrandKey(brand) && brandKeyToLogo(brand)) {
+    return <Slot {...rest}>{brandKeyToLogo(brand)}</Slot>;
+  }
+
+  if (imageUrl) {
+    return (
+      <Slot {...rest}>
+        <img src={imageUrl} alt="" />
+      </Slot>
+    );
+  }
+
+  return (
+    <Slot {...rest}>
+      <ToolsIcon />
+    </Slot>
+  );
+}
+
+interface ToolActionCardProps {
+  tool: ToolMetadataPreviewType;
+  setCurrentTool: () => void;
+}
+
+function ToolActionCard(props: ToolActionCardProps) {
+  const { tool, setCurrentTool } = props;
+
+  return (
+    <ActionCard
+      key={tool.id}
+      title={tool.name}
+      subtitle={
+        isBrandKey(tool.brand) ? brandKeyToName(tool.brand) : tool.brand
+      }
+      icon={
+        <Slot className="w-[25px]">
+          <ToolIconRender imageUrl={tool.imageUrl || ''} brand={tool.brand} />
+        </Slot>
+      }
+      hideClickArrow
+      onClick={() => {
+        setCurrentTool();
+      }}
+    >
+      {/* eslint-disable-next-line react/forbid-component-props */}
+      <Typography align="left" className="line-clamp-3">
+        {tool.description}
+      </Typography>
+    </ActionCard>
+  );
+}
+
 // eslint-disable-next-line @typescript-eslint/no-redundant-type-constituents
-type ToolViewerCategory = string | 'all' | 'custom';
+type ToolViewerCategory = string | 'all' | 'custom' | 'letta';
 
 interface ViewCategoryToolsProps {
   category: ToolViewerCategory;
@@ -701,11 +769,17 @@ function ViewCategoryTools(props: ViewCategoryToolsProps) {
   const [debouncedSearch] = useDebouncedValue(search, 200);
   const query = useMemo(
     () => ({
-      brand: ['all', 'custom'].includes(category) ? undefined : category,
+      brand: ['all', 'custom', 'letta'].includes(category)
+        ? undefined
+        : category,
       search: debouncedSearch,
     }),
     [category, debouncedSearch],
   );
+
+  const usesToolMetadata = useMemo(() => {
+    return !['custom', 'letta'].includes(category);
+  }, [category]);
 
   const {
     data: toolMetaData,
@@ -727,7 +801,7 @@ function ViewCategoryTools(props: ViewCategoryToolsProps) {
         ? { limit: PAGE_SIZE, offset: allPages.length * PAGE_SIZE }
         : undefined;
     },
-    enabled: category !== 'custom',
+    enabled: usesToolMetadata,
   });
 
   const { data: customTools, isLoading: isLoadingCustomTools } =
@@ -737,29 +811,24 @@ function ViewCategoryTools(props: ViewCategoryToolsProps) {
       },
       undefined,
       {
-        enabled: ['all', 'custom'].includes(category),
+        enabled: ['all', 'custom', 'letta'].includes(category),
       },
     );
 
   const hasNextPage = useMemo(() => {
-    return category === 'custom' ? false : hasNextToolMetaData;
-  }, [category, hasNextToolMetaData]);
+    return !usesToolMetadata ? false : hasNextToolMetaData;
+  }, [usesToolMetadata, hasNextToolMetaData]);
 
   const isLoading = useMemo(() => {
     return isLoadingToolMetaData || isLoadingCustomTools;
   }, [isLoadingToolMetaData, isLoadingCustomTools]);
 
-  const customToolsList = useMemo(() => {
+  const nonMetatdataTools = useMemo(() => {
     if (!customTools) {
       return [];
     }
 
     return customTools
-      .filter((tool) => {
-        const provider = findProviderFromTags(tool);
-
-        return provider === 'custom';
-      })
       .filter((tool) => {
         if (!search) {
           return true;
@@ -771,26 +840,34 @@ function ViewCategoryTools(props: ViewCategoryToolsProps) {
         name: tool.name || '',
         description: tool.description || '',
         id: tool.id || '',
-        brand: 'custom',
-        provider: 'custom',
+        brand: findProviderFromTags(tool),
+        provider: findProviderFromTags(tool),
         imageUrl: null,
       }));
   }, [customTools, search]);
 
   const tools: ToolMetadataPreviewType[] = useMemo(() => {
     if (category === 'custom') {
-      return customToolsList;
+      return nonMetatdataTools.filter((tool) => {
+        return tool.provider === 'custom';
+      });
+    }
+
+    if (category === 'letta') {
+      return nonMetatdataTools.filter((tool) => {
+        return tool.provider === 'letta';
+      });
     }
 
     const categoryTools =
       toolMetaData?.pages.flatMap((page) => page.body.toolMetadata) || [];
 
     if (category === 'all') {
-      return [...customToolsList, ...categoryTools];
+      return [...nonMetatdataTools, ...categoryTools];
     }
 
     return categoryTools;
-  }, [category, customToolsList, toolMetaData?.pages]);
+  }, [category, nonMetatdataTools, toolMetaData?.pages]);
 
   const t = useTranslations('ADE/Tools');
 
@@ -830,31 +907,13 @@ function ViewCategoryTools(props: ViewCategoryToolsProps) {
           <VStack>
             <NiceGridDisplay>
               {tools.map((tool) => (
-                <ActionCard
+                <ToolActionCard
                   key={tool.id}
-                  title={tool.name}
-                  subtitle={
-                    isBrandKey(tool.brand)
-                      ? brandKeyToName(tool.brand)
-                      : tool.brand
-                  }
-                  icon={
-                    tool.imageUrl ? (
-                      <img src={tool.imageUrl} alt="" />
-                    ) : (
-                      <ToolsIcon />
-                    )
-                  }
-                  hideClickArrow
-                  onClick={() => {
+                  tool={tool}
+                  setCurrentTool={() => {
                     setCurrentTool(tool);
                   }}
-                >
-                  {/* eslint-disable-next-line react/forbid-component-props */}
-                  <Typography align="left" className="line-clamp-3">
-                    {tool.description}
-                  </Typography>
-                </ActionCard>
+                />
               ))}
             </NiceGridDisplay>
             {hasNextPage && (
@@ -916,6 +975,14 @@ function getCustomTools(tools: Tool[]) {
   });
 }
 
+function getLettaTools(tools: Tool[]) {
+  return tools.filter((tool) => {
+    const provider = findProviderFromTags(tool);
+
+    return provider === 'letta';
+  });
+}
+
 function AllToolsView() {
   const { currentTool, clearCurrentTool } = useToolsExplorerState();
 
@@ -972,6 +1039,10 @@ function AllToolsView() {
       return t('AllToolsView.titles.customTools');
     }
 
+    if (category === 'letta') {
+      return t('AllToolsView.titles.lettaTools');
+    }
+
     if (isBrandKey(category)) {
       return t('AllToolsView.titles.brandTools', {
         brand: brandKeyToName(category),
@@ -1004,6 +1075,18 @@ function AllToolsView() {
     }
 
     return getCustomTools(customTools).length;
+  }, [customTools, isLoadingCustomTools]);
+
+  const lettaToolCount = useMemo(() => {
+    if (isLoadingCustomTools) {
+      return '-';
+    }
+
+    if (!customTools) {
+      return 0;
+    }
+
+    return getLettaTools(customTools).length;
   }, [customTools, isLoadingCustomTools]);
 
   const allToolsCount = useMemo(() => {
@@ -1051,6 +1134,15 @@ function AllToolsView() {
                 selectedCategory={category}
                 label={t('AllToolsView.categories.customTools', {
                   count: customToolCount,
+                })}
+                setSelectedCategory={handleSelectCategory}
+              />
+              <ToolCategoryButton
+                category="letta"
+                image={<Logo size="small" />}
+                selectedCategory={category}
+                label={t('AllToolsView.categories.lettaTools', {
+                  count: lettaToolCount,
                 })}
                 setSelectedCategory={handleSelectCategory}
               />

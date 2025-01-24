@@ -157,6 +157,18 @@ function ToolsList(props: ToolsProps) {
                 },
               });
             },
+            actions: [
+              {
+                id: 'remove-tool',
+                label: t('ToolsList.removeTool'),
+                onClick: () => {
+                  setRemoveToolPayload({
+                    toolName: tool.name || '',
+                    toolId: tool.id || '',
+                  });
+                },
+              },
+            ],
             icon: <Logo size="small" />,
           });
         }
