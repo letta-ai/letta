@@ -8,6 +8,7 @@ from letta.orm.custom_columns import ToolCallColumn
 from letta.orm.mixins import AgentMixin, OrganizationMixin
 from letta.orm.sqlalchemy_base import SqlalchemyBase
 from letta.schemas.message import Message as PydanticMessage
+from letta.schemas.message import TextContent as PydanticTextContent
 
 
 class Message(SqlalchemyBase, OrganizationMixin, AgentMixin):
@@ -45,3 +46,10 @@ class Message(SqlalchemyBase, OrganizationMixin, AgentMixin):
     def job(self) -> Optional["Job"]:
         """Get the job associated with this message, if any."""
         return self.job_message.job if self.job_message else None
+
+    def to_pydantic(self) -> PydanticMessage:
+        """custom pydantic conversion for message content mapping"""
+        model = self.__pydantic_model__.model_validate(self)
+        if self.text:
+            model.content = [PydanticTextContent(text=self.text)]
+        return model

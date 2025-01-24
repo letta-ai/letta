@@ -49,7 +49,7 @@ class MessageManager:
         with self.session_maker() as session:
             # Set the organization id of the Pydantic message
             pydantic_msg.organization_id = actor.organization_id
-            msg_data = pydantic_msg.model_dump()
+            msg_data = pydantic_msg.model_dump(to_orm=True)
             msg = MessageModel(**msg_data)
             msg.create(session, actor=actor)  # Persist to database
             return msg.to_pydantic()
