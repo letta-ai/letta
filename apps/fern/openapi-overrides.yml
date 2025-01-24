@@ -172,7 +172,7 @@ paths:
         - agents
         - sources
       x-fern-sdk-method-name: list
-  /v1/agents/{agent_id}/core_memory:
+  /v1/agents/{agent_id}/core-memory:
     get:
       x-fern-sdk-group-name:
         - agents
@@ -184,7 +184,7 @@ paths:
           required: true
           schema:
             type: string
-  /v1/agents/{agent_id}/core_memory/blocks:
+  /v1/agents/{agent_id}/core-memory/blocks:
     get:
       x-fern-sdk-group-name:
         - agents
@@ -196,7 +196,7 @@ paths:
           required: true
           schema:
             type: string
-  /v1/agents/{agent_id}/core_memory/blocks/attach/{block_id}:
+  /v1/agents/{agent_id}/core-memory/blocks/attach/{block_id}:
     patch:
       x-fern-sdk-group-name:
         - agents
@@ -213,7 +213,7 @@ paths:
           required: true
           schema:
             type: string
-  /v1/agents/{agent_id}/core_memory/blocks/detach/{block_id}:
+  /v1/agents/{agent_id}/core-memory/blocks/detach/{block_id}:
     patch:
       x-fern-sdk-group-name:
         - agents
@@ -230,7 +230,7 @@ paths:
           required: true
           schema:
             type: string
-  /v1/agents/{agent_id}/core_memory/blocks/{block_label}:
+  /v1/agents/{agent_id}/core-memory/blocks/{block_label}:
     get:
       x-fern-sdk-group-name:
         - agents
@@ -263,7 +263,7 @@ paths:
           required: true
           schema:
             type: string
-  /v1/agents/{agent_id}/archival_memory:
+  /v1/agents/{agent_id}/archival-memory:
     get:
       x-fern-sdk-group-name:
         - agents
@@ -286,7 +286,7 @@ paths:
           required: true
           schema:
             type: string
-  /v1/agents/{agent_id}/archival_memory/{memory_id}:
+  /v1/agents/{agent_id}/archival-memory/{memory_id}:
     delete:
       x-fern-sdk-group-name:
         - agents
@@ -378,12 +378,18 @@ paths:
         <Note>This endpoint is only available on Letta Cloud.</Note>
 
         Creates a new version of the template version of the agent.
-  /v1/agents/{agent_id}/core_memory/variables:
+  /v1/agents/{agent_id}/core-memory/variables:
     get:
       x-fern-sdk-group-name:
         - agents
         - memory_variables
       x-fern-sdk-method-name: list
+      parameters:
+        - name: agent_id
+          in: path
+          required: true
+          schema:
+            type: string
       description: |
         <Note>This endpoint is only available on Letta Cloud.</Note>
 
