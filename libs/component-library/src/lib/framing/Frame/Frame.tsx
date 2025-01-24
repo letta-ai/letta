@@ -58,6 +58,9 @@ const frameVariants = cva('', {
       contained: 'max-w-[610px] w-full',
       sidebar: 'w-sidebar',
     },
+    minWidth: {
+      sidebar: 'min-w-sidebar',
+    },
     height: {
       header: 'h-header min-h-header',
       'header-sm': 'h-header-sm',
@@ -204,6 +207,7 @@ export const Frame = forwardRef<HTMLElement, PropsWithChildren<FrameProps>>(
       animate,
       paddingX,
       collapseWidth,
+      minWidth,
       collapseHeight,
       paddingTop,
       position,
@@ -231,6 +235,7 @@ export const Frame = forwardRef<HTMLElement, PropsWithChildren<FrameProps>>(
       collapseWidth,
       position,
       animate,
+      minWidth,
       width,
       borderLeft,
       borderTop,

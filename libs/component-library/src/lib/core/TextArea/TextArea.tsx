@@ -40,6 +40,7 @@ type TextAreaProps = TextareaAutosizeProps &
   VariantProps<typeof textareaVariants> & {
     fullWidth?: boolean;
     fullHeight?: boolean;
+    'data-testid'?: string;
     flex?: boolean;
     isLoading?: boolean;
     hideLabel?: boolean;
@@ -137,6 +138,9 @@ const WrappedTextArea = forwardRef<HTMLTextAreaElement, TextAreaProps>(
           <div className="absolute bottom-[4px] right-[6px]">
             <Button
               size="small"
+              data-testid={
+                props['data-testid'] ? `expand-${props['data-testid']}` : ''
+              }
               label={expandable.expandText}
               hideLabel
               color="tertiary"

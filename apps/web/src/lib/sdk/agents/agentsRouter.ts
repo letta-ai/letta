@@ -1,6 +1,7 @@
 import type { ServerInferRequest, ServerInferResponses } from '@ts-rest/core';
 import type { sdkContracts } from '@letta-cloud/letta-agents-api';
 import * as Sentry from '@sentry/node';
+import { BlocksService } from '@letta-cloud/letta-agents-api';
 
 import type { SDKContext } from '$web/sdk/shared';
 import type {
@@ -789,14 +790,24 @@ export async function updateAgentFromAgentId(options: UpdateAgentFromAgentId) {
     lettaAgentsUserId,
   } = options;
 
-  const agentTemplateData = await AgentsService.retrieveAgent(
-    {
-      agentId: baseAgentId,
-    },
-    {
-      user_id: lettaAgentsUserId,
-    },
-  );
+  const [agentTemplateData, existingAgent] = await Promise.all([
+    AgentsService.retrieveAgent(
+      {
+        agentId: baseAgentId,
+      },
+      {
+        user_id: lettaAgentsUserId,
+      },
+    ),
+    AgentsService.retrieveAgent(
+      {
+        agentId: agentToUpdateId,
+      },
+      {
+        user_id: lettaAgentsUserId,
+      },
+    ),
+  ]);
 
   let requestBody: UpdateAgent = {
     ...omit(agentTemplateData, omittedFieldsOnCopy),
@@ -826,8 +837,70 @@ export async function updateAgentFromAgentId(options: UpdateAgentFromAgentId) {
     };
 
     if (memory_blocks) {
-      await Promise.all(
-        memory_blocks.map(async (block) => {
+      const existingMemoryBlocks = existingAgent.memory.blocks;
+
+      const memoryBlocksToDelete = existingMemoryBlocks.filter((block) => {
+        return !memory_blocks.some(
+          (newBlock) => newBlock.label === block.label,
+        );
+      }, []);
+
+      const memoryBlocksToAdd = memory_blocks.filter((block) => {
+        return !existingMemoryBlocks.some(
+          (existingBlock) => existingBlock.label === block.label,
+        );
+      });
+
+      const memoryBlocksToUpdate = memory_blocks.filter((block) => {
+        return existingMemoryBlocks.some(
+          (existingBlock) => existingBlock.label === block.label,
+        );
+      }, []);
+
+      await Promise.all([
+        ...memoryBlocksToDelete.map(async (block) => {
+          return BlocksService.deleteBlock(
+            {
+              blockId: block.id || '',
+            },
+            {
+              user_id: lettaAgentsUserId,
+            },
+          );
+        }),
+        ...memoryBlocksToAdd.map(async (block) => {
+          if (!block.label) {
+            return;
+          }
+
+          const createdBlock = await BlocksService.createBlock(
+            {
+              requestBody: {
+                label: block.label,
+                value: block.value,
+                limit: block.limit,
+              },
+            },
+            {
+              user_id: lettaAgentsUserId,
+            },
+          );
+
+          if (!createdBlock?.id) {
+            throw new Error('Failed to create memory block');
+          }
+
+          return AgentsService.attachCoreMemoryBlock(
+            {
+              agentId: agentToUpdateId,
+              blockId: createdBlock.id,
+            },
+            {
+              user_id: lettaAgentsUserId,
+            },
+          );
+        }),
+        ...memoryBlocksToUpdate.map(async (block) => {
           if (!block.label) {
             return;
           }
@@ -846,7 +919,7 @@ export async function updateAgentFromAgentId(options: UpdateAgentFromAgentId) {
             },
           );
         }),
-      );
+      ]);
     }
   }
 

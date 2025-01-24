@@ -9,3 +9,4 @@ export * from './useCurrentDevelopmentServerConfig/useCurrentDevelopmentServerCo
 export * from './useCurrentAPIHostConfig/useCurrentAPIHostConfig';
 export * from './useCurrencyFormatter/useCurrencyFormatter';
 export * from './useNumberFormatter/useNumberFormatter';
+export * from './useSortedMemories/useSortedMemories';

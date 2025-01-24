@@ -23,6 +23,11 @@ const inputVariants = cva(
   'flex  items-center overflow-hidden border border-input text-base transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-content focus-visible:outline-none focus-within:ring-1 focus-within:ring-ring',
   {
     variants: {
+      size: {
+        default: 'h-biHeight',
+        small: 'h-biHeight-sm',
+        large: 'h-biHeight-lg',
+      },
       variant: {
         primary: 'text-default',
         secondary: 'text-lighter font-light',
@@ -56,6 +61,7 @@ const inputVariants = cva(
     ],
     defaultVariants: {
       variant: 'primary',
+      size: 'default',
       color: 'default',
     },
   },
@@ -198,6 +204,7 @@ const InputPrimitive = React.forwardRef<HTMLInputElement, InputPrimitiveProps>(
           inputVariants({
             disabled,
             width,
+            size,
             warned,
             fullWidth,
             color,

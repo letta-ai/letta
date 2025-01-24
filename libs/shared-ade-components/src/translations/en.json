@@ -318,38 +318,6 @@
     "EditMemoryForm": {
       "characterLimit": "{count}/{limit} CHARS"
     },
-    "MemoryWarning": {
-      "title": "You may need to update your system instructions",
-      "message": "Adjusting the memory label may require you to update your system instructions to reflect the new memory label."
-    },
-    "CharacterCounter": {
-      "count": "{count} CHARS"
-    },
-    "AdvancedMemoryEditorForm": {
-      "error": "There was an error updating your memory, please try again or contact support",
-      "id": {
-        "label": "Block ID"
-      },
-      "label": {
-        "label": "Label",
-        "placeholder": "my-label",
-        "error": "Labels must be alphanumeric and underscores only, and cannot start with a number"
-      },
-      "maxCharacters": {
-        "label": "Character Limit",
-        "placeholder": "100",
-        "error": "Minimum value is 100"
-      },
-      "value": {
-        "label": "Value",
-        "placeholder": "my-value"
-      },
-      "update": "Update memory",
-      "delete": {
-        "title": "Delete Memory",
-        "confirm": "Are you sure you want to delete this memory?"
-      }
-    },
     "AdvancedEditMemory": {
       "title": "Update Core Memories",
       "newMemory": "Add memory block"
@@ -416,6 +384,76 @@
   },
   "development-servers/hooks": {
     "localAgents": "Local agents"
+  },
+  "ADE/AdvancedCoreMemoryEditor": {
+    "DetachMemoryBlockDialog": {
+      "title": "Detach Memory Block",
+      "trigger": "Detach",
+      "confirm": "Detach",
+      "description": "Are you sure you want to detach this memory block? This will remove the memory block from this agent, but any other agents that use this memory block will still have it.",
+      "error": "There was an error detaching this memory block, please try again or contact support."
+    },
+    "EditorContent": {
+      "empty": "Please select or create a memory block to view or edit"
+    },
+    "DeleteMemoryBlockDialog": {
+      "title": "Delete Memory Block",
+      "trigger": "Delete",
+      "confirm": "Delete",
+      "description": "Are you sure you want to delete this memory block? This is permanent and cannot be undone, this will delete the memory block, if this memory block is used in other agents, it will also be deleted from those agents.",
+      "error": "There was an error deleting this memory block, please try again or contact support."
+    },
+    "MemoryWarning": {
+      "title": "You may need to update your system instructions",
+      "message": "Adjusting the memory label may require you to update your system instructions to reflect the new memory label."
+    },
+    "CharacterCounter": {
+      "count": "{count} CHARS"
+    },
+    "AdvancedMemoryEditorForm": {
+      "error": "There was an error updating your memory, please try again or contact support",
+      "id": {
+        "label": "Block ID"
+      },
+      "label": {
+        "label": "Label",
+        "placeholder": "my-label",
+        "error": "Labels must be alphanumeric and underscores only, and cannot start with a number"
+      },
+      "maxCharacters": {
+        "label": "Character Limit",
+        "placeholder": "100",
+        "error": "Minimum value is 100"
+      },
+      "value": {
+        "label": "Value",
+        "placeholder": "my-value"
+      },
+      "update": "Update memory",
+      "delete": {
+        "title": "Delete Memory",
+        "confirm": "Are you sure you want to delete this memory?"
+      }
+    },
+    "title": "Core Memory Editor",
+    "CreateNewMemoryBlockForm": {
+      "title": "Add new memory block",
+      "label": {
+        "label": "Memory Label",
+        "description": "Labels are used to reference memory blocks in the agent's memory, they must be unique, alphanumeric, and cannot start with a number",
+        "error": "Labels must be alphanumeric and underscores only, and cannot start with a number",
+        "exists": "This label is already in use, please choose another label"
+      },
+      "createBlockError": "There was an unexpected error creating the memory block, please try again or contact support. (ReportId: HBC1)"
+    },
+    "CoreMemorySidebar": {
+      "noResults": "No results found",
+      "search": {
+        "label": "Search by label",
+        "placeholder": "Search by label"
+      },
+      "create": "Create new memory block"
+    }
   },
   "ADE/useCurrentSimulatedAgent": {
     "error": "There was an error fetching the simulated agent, please try again or contact support."
@@ -615,6 +653,7 @@
         }
       }
     },
+
     "SpecificToolComponent": {
       "back": "Back",
       "codePreviewUnavailableForComposio": "# Code preview unavailable for Composio tools",
