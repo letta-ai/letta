@@ -22,6 +22,10 @@ class ServerLogs {
     this.logs = [];
   }
 
+  clearLogs() {
+    this.logs = [];
+  }
+
   addLog(log: ServerLogType) {
     this.logs.push(log);
     if (this.logs.length > this.limit) {
@@ -176,21 +180,42 @@ export default class App {
 
   static restartLettaServer() {
     App.stopLettaServer();
-    App.startLettaServer();
+
+    setTimeout(() => {
+      App.startLettaServer(false);
+    }, 1000);
   }
 
   static stopLettaServer() {
     if (lettaServer) {
+      lettaServerLogs.clearLogs();
+
+      lettaServerLogs.addLog({
+        type: 'info',
+        message: 'Stopping letta server...',
+        timestamp: new Date().toISOString(),
+      });
+
       lettaServer.kill();
-      lettaServer = null;
     }
   }
 
-  static startLettaServer() {
-    copyAlembicToLettaDir();
-    copyLettaServerToLettaDir();
+  static startLettaServer(copyFiles: boolean = true) {
+    if (copyFiles) {
+      copyAlembicToLettaDir();
+      copyLettaServerToLettaDir();
+    }
+
+    lettaServerLogs.clearLogs();
+
+    lettaServerLogs.addLog({
+      type: 'info',
+      message: 'Starting Letta server...',
+      timestamp: new Date().toISOString(),
+    });
 
     let lettaServerPath = path.join(homeDir || '/', '.letta', 'bin', 'letta');
+    lettaServer = null;
     lettaServer = execFile(lettaServerPath, ['--use-file-pg-uri']);
 
     if (lettaServer.stdout) {

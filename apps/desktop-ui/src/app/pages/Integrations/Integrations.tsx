@@ -306,6 +306,7 @@ export function Integrations() {
     }
 
     const serializedSettings = Object.entries(settings)
+      .filter(([key, value]) => key && value)
       .map(([key, value]) => `${key}=${value}`)
       .join('\n');
 

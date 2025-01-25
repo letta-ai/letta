@@ -24,25 +24,12 @@ export function ServerStatus() {
 
   const scrollRef = useRef<HTMLDivElement>(null);
 
-  const status = useServerStatus();
-
   function handleRestart() {
-    if (!status) {
-      return;
-    }
-
     if (!Object.prototype.hasOwnProperty.call(window, 'lettaServer')) {
       return;
     }
 
     void window.lettaServer.restart();
-    setLogs([
-      {
-        message: 'Restarting server...',
-        timestamp: new Date().toISOString(),
-        type: 'info',
-      },
-    ]);
   }
 
   useEffect(() => {
