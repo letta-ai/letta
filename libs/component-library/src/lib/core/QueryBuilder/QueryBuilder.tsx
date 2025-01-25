@@ -99,6 +99,7 @@ function InputConstructor(props: InputConstructorProps) {
       return (
         <RawInput
           hideLabel
+          className="min-w-[100px]"
           label={structure.label}
           value={value?.value || ''}
           onChange={(value) => {
@@ -204,7 +205,7 @@ function RemoveCondition(props: RemoveConditionProps) {
       <Button
         type="button"
         onClick={handleRemoveCondition}
-        color="secondary"
+        color="tertiary"
         label={t('removeCondition')}
         hideLabel
         preIcon={<CloseIcon />}
@@ -262,7 +263,7 @@ function QueryCondition(props: QueryRowProps) {
   }, [definition, field]);
 
   return (
-    <HStack fullWidth>
+    <HStack padding="xxsmall" fullWidth>
       <InputConstructor
         structure={{
           display: 'select',
@@ -378,8 +379,8 @@ function AddNewCondition(props: AddNewConditionProps) {
   return (
     <Button
       type="button"
-      color="secondary"
-      hideLabel
+      color="tertiary"
+      size="small"
       preIcon={<PlusIcon />}
       onClick={handleAddCondition}
       label={t('addCondition')}
@@ -446,7 +447,7 @@ function QueryCombinator(props: QueryCombinatorProps) {
 
   return (
     <HStack>
-      <HStack>
+      <HStack paddingTop="xxsmall">
         <RawSelect
           __use_rarely_className="min-w-[65px]"
           label="Select Condition"
@@ -460,29 +461,32 @@ function QueryCombinator(props: QueryCombinatorProps) {
           }}
         />
       </HStack>
-      <VStack fullWidth>
-        {items.map((item, index) => {
-          if ('combinator' in item) {
-            return (
-              <QueryCombinator
-                path={`${path}.items.${index}`}
-                key={index}
-                {...item}
-              />
-            );
-          } else {
-            return (
-              <HStack key={index}>
+      <VStack gap={false} collapseWidth flex>
+        <VStack color="background-grey" overflowX="auto" gap={false} fullWidth>
+          {items.map((item, index) => {
+            if ('combinator' in item) {
+              return (
+                <QueryCombinator
+                  path={`${path}.items.${index}`}
+                  key={index}
+                  {...item}
+                />
+              );
+            } else {
+              return (
                 <QueryCondition
+                  key={index}
                   isFirstCondition={index === 0 && path === 'root'}
                   path={`${path}.items.${index}`}
                   {...item}
                 />
-                {index === items.length - 1 && <AddNewCondition path={path} />}
-              </HStack>
-            );
-          }
-        })}
+              );
+            }
+          })}
+        </VStack>
+        <HStack>
+          <AddNewCondition path={path} />
+        </HStack>
         <HStack fullWidth justify="end">
           {!DISABLE_COMBINATOR && items.length > 0 && (
             <AddNewCombinator path={path} />

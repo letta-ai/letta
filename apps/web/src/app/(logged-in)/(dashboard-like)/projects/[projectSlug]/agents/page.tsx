@@ -720,16 +720,9 @@ function DeployedAgentsPage() {
               setQuery(draftQuery);
             }}
           >
-            <VStack border gap={false}>
-              <HStack
-                justify="spaceBetween"
-                color="background-grey"
-                padding="small"
-                borderBottom
-              >
-                <Typography>{t('search.label')}</Typography>
-              </HStack>
-              <VStack paddingX="small" paddingTop="small">
+            <VStack gap={false}>
+              <VStack>
+                <Typography bold>{t('search.label')}</Typography>
                 <QueryBuilder
                   query={draftQuery}
                   onSetQuery={(query) => {
@@ -739,37 +732,25 @@ function DeployedAgentsPage() {
                 />
               </VStack>
               <HStack
+                /* eslint-disable-next-line react/forbid-component-props */
+                className="mt-[-26px] pointer-events-none"
                 fullWidth
                 align="center"
-                justify="spaceBetween"
-                padding="small"
-                borderTop
+                justify="end"
               >
-                <HStack>
-                  {data?.body && (
-                    <>
-                      {typeof totalCount === 'number' ? (
-                        <Typography variant="body2" color="muted">
-                          {t('table.totalResults', { count: totalCount })}
-                        </Typography>
-                      ) : (
-                        <HStack align="center">
-                          <Typography variant="body2" color="muted">
-                            {t('table.wipResults')}
-                          </Typography>
-                          <InfoTooltip text={t('table.wipResultsInfo')} />
-                        </HStack>
-                      )}
-                    </>
-                  )}
+                <HStack
+                  /* eslint-disable-next-line react/forbid-component-props */
+                  className="pointer-events-auto"
+                  align="center"
+                  justify="end"
+                >
+                  <Button
+                    type="submit"
+                    preIcon={<SearchIcon />}
+                    label={t('search.button')}
+                    color="secondary"
+                  />
                 </HStack>
-
-                <Button
-                  type="submit"
-                  preIcon={<SearchIcon />}
-                  label={t('search.button')}
-                  color="secondary"
-                />
               </HStack>
             </VStack>
           </form>
@@ -780,6 +761,24 @@ function DeployedAgentsPage() {
               minHeight={400}
               limit={limit}
               onLimitChange={setLimit}
+              bottomLeftContent={
+                data?.body && (
+                  <>
+                    {typeof totalCount === 'number' ? (
+                      <Typography variant="body2" color="muted">
+                        {t('table.totalResults', { count: totalCount })}
+                      </Typography>
+                    ) : (
+                      <HStack align="center">
+                        <Typography variant="body2" color="muted">
+                          {t('table.wipResults')}
+                        </Typography>
+                        <InfoTooltip text={t('table.wipResultsInfo')} />
+                      </HStack>
+                    )}
+                  </>
+                )
+              }
               hasNextPage={hasNextPage}
               showPagination
               offset={offset}

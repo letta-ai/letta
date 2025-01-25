@@ -147,6 +147,7 @@ interface DataTablePropsBase<TData, TValue> {
   errorMessage?: string;
   autofitHeight?: boolean;
   limit?: number;
+  bottomLeftContent?: React.ReactNode;
   minHeight?: number;
   offset?: number;
 }
@@ -163,6 +164,7 @@ export function DataTable<TData, TValue>(props: DataTableProps<TData, TValue>) {
     errorMessage,
     onSetPage,
     page,
+    bottomLeftContent,
     onSetCursor,
     loadingText,
     noResultsAction,
@@ -350,8 +352,8 @@ export function DataTable<TData, TValue>(props: DataTableProps<TData, TValue>) {
         </Table>
       </div>
       {showPagination && (
-        <div className="flex items-center justify-end space-x-2 py-4">
-          <div />
+        <div className="flex items-center justify-between space-x-2 py-4">
+          {bottomLeftContent ? bottomLeftContent : <div />}
           <div className="space-x-2">
             <Button
               onClick={() => {
