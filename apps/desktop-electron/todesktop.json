@@ -6,6 +6,29 @@
   "uploadSizeLimit": 360,
   "schemaVersion": 1,
   "nodeVersion": "22.11.0",
+  "copyright": "Copyright © 2025 Letta",
+  "mac": {
+    "category": "public.app-category.developer-tools"
+  },
+  "dmg": {
+    "background": "dist/assets/background.png",
+    "icon": "dist/assets/icon.png",
+    "iconSize": 104,
+    "contents": [
+      {
+        "x": 230,
+        "y": 298
+      },
+      {
+        "x": 590,
+        "y": 298
+      }
+    ],
+    "window": {
+      "width": 800,
+      "height": 600
+    }
+  },
   "windows": {
     "publisherName": ["Letta AI"]
   }
