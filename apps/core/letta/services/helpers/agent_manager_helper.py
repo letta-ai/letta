@@ -191,7 +191,6 @@ def compile_system_message(
         # render the variables using the built-in templater
         try:
             formatted_prompt = safe_format(system_prompt, variables)
-            print(f"Formatted system prompt:\n{formatted_prompt}")
         except Exception as e:
             raise ValueError(f"Failed to format system prompt - {str(e)}. System prompt value:\n{system_prompt}")
 
