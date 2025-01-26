@@ -83,7 +83,7 @@ def create_tool(
     except UniqueConstraintViolationError as e:
         # Log or print the full exception here for debugging
         print(f"Error occurred: {e}")
-        clean_error_message = f"Tool with name {request.name} already exists."
+        clean_error_message = f"Tool with this name already exists."
         raise HTTPException(status_code=409, detail=clean_error_message)
     except LettaToolCreateError as e:
         # HTTP 400 == Bad Request

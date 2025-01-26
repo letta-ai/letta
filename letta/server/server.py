@@ -187,8 +187,8 @@ def db_error_handler():
         exit(1)
 
 
-print("Creating engine", settings.letta_pg_uri)
 if settings.letta_pg_uri_no_default:
+    print("Creating postgres engine", settings.letta_pg_uri)
     config.recall_storage_type = "postgres"
     config.recall_storage_uri = settings.letta_pg_uri_no_default
     config.archival_storage_type = "postgres"
@@ -205,7 +205,10 @@ if settings.letta_pg_uri_no_default:
     )
 else:
     # TODO: don't rely on config storage
-    engine = create_engine("sqlite:///" + os.path.join(config.recall_storage_path, "sqlite.db"))
+    engine_path = "sqlite:///" + os.path.join(config.recall_storage_path, "sqlite.db")
+    print("Creating sqlite engine", engine_path)
+
+    engine = create_engine(engine_path)
 
     # Store the original connect method
     original_connect = engine.connect
