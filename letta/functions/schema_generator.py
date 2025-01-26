@@ -437,6 +437,7 @@ def generate_tool_schema_for_composio(
     name: str,
     description: str,
     append_heartbeat: bool = True,
+    strict: bool = False,
 ) -> Dict[str, Any]:
     properties_json = {}
     required_fields = parameters_model.required or []
@@ -473,14 +474,26 @@ def generate_tool_schema_for_composio(
         required_fields.append("request_heartbeat")
 
     # Return the final schema
-    return {
-        "name": name,
-        "description": description,
-        "strict": True,
-        "parameters": {
-            "type": "object",
-            "properties": properties_json,
-            "additionalProperties": False,
-            "required": required_fields,
-        },
-    }
+    if strict:
+        # https://platform.openai.com/docs/guides/function-calling#strict-mode
+        return {
+            "name": name,
+            "description": description,
+            "strict": True,  # NOTE
+            "parameters": {
+                "type": "object",
+                "properties": properties_json,
+                "additionalProperties": False,  # NOTE
+                "required": required_fields,
+            },
+        }
+    else:
+        return {
+            "name": name,
+            "description": description,
+            "parameters": {
+                "type": "object",
+                "properties": properties_json,
+                "required": required_fields,
+            },
+        }
