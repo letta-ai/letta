@@ -455,7 +455,6 @@ function AgentResetMessagesDialog() {
 
   const { id: agentId } = useCurrentSimulatedAgent();
 
-  const queryClient = useQueryClient();
   const {
     mutate: resetMessages,
     isPending,
@@ -486,14 +485,13 @@ function AgentResetMessagesDialog() {
             setIsOpen(false);
 
             setMessagesInFlightCache({});
-            void queryClient.refetchQueries({
-              queryKey: UseAgentsServiceListMessagesKeyFn({ agentId }),
-            });
+
+            window.location.reload();
           },
         },
       );
     },
-    [agentId, resetMessages, queryClient, setMessagesInFlightCache],
+    [agentId, resetMessages, setMessagesInFlightCache],
   );
 
   return (
