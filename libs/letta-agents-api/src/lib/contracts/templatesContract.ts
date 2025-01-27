@@ -18,21 +18,16 @@ const createAgentsFromTemplate = c.mutation({
   summary: 'Create agents from template',
   pathParams: z.object({
     project: z.string().openapi({ description: 'The project slug' }),
-    template_version: z
-      .string()
-      .openapi({
-        description:
-          'The template version, formatted as {template-name}:{version-number} or {template-name}:latest',
-      }),
+    template_version: z.string().openapi({
+      description:
+        'The template version, formatted as {template-name}:{version-number} or {template-name}:latest',
+    }),
   }),
   body: z.object({
-    agent_name: z
-      .string()
-      .optional()
-      .openapi({
-        description:
-          'The name of the agent, optional otherwise a random one will be assigned',
-      }),
+    agent_name: z.string().optional().openapi({
+      description:
+        'The name of the agent, optional otherwise a random one will be assigned',
+    }),
     memory_variables: z
       .record(z.string())
       .optional()

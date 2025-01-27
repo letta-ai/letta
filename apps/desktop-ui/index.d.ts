@@ -10,7 +10,7 @@ declare global {
     };
     router: {
       onUpdateRoute: (callback: (path: string) => void) => void;
-    },
+    };
     darkMode: {
       toggle: () => Promise<void>;
       system: () => Promise<void>;
@@ -27,4 +27,3 @@ declare global {
     };
   }
 }
-
