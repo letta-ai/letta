@@ -10,7 +10,7 @@ from letta_client import CreateBlock
 from letta_client import Letta as LettaSDKClient
 from letta_client import MessageCreate
 from letta_client.core import ApiError
-from letta_client.types import LettaMessageUnion_ToolCallMessage, LettaMessageUnion_ToolReturnMessage, LettaRequestConfig
+from letta_client.types import AgentState, LettaRequestConfig, ToolCallMessage, ToolReturnMessage
 
 # Constants
 SERVER_PORT = 8283
@@ -26,7 +26,7 @@ def run_server():
 
 
 @pytest.fixture(scope="module")
-def client():
+def client() -> LettaSDKClient:
     # Get URL from environment or start server
     server_url = os.getenv("LETTA_SERVER_URL", f"http://localhost:{SERVER_PORT}")
     if not os.getenv("LETTA_SERVER_URL"):
@@ -40,7 +40,7 @@ def client():
 
 
 @pytest.fixture(scope="module")
-def agent(client):
+def agent(client: LettaSDKClient):
     agent_state = client.agents.create(
         memory_blocks=[
             CreateBlock(
@@ -57,7 +57,7 @@ def agent(client):
     client.agents.delete(agent_id=agent_state.id)
 
 
-def test_shared_blocks(client):
+def test_shared_blocks(client: LettaSDKClient):
     # create a block
     block = client.blocks.create(
         label="human",
@@ -91,7 +91,7 @@ def test_shared_blocks(client):
     )
 
     # update memory
-    client.agents.messages.send(
+    client.agents.messages.create(
         agent_id=agent_state1.id,
         messages=[
             MessageCreate(
@@ -102,9 +102,11 @@ def test_shared_blocks(client):
     )
 
     # check agent 2 memory
-    assert "charles" in client.blocks.get(block_id=block.id).value.lower(), f"Shared block update failed {client.get_block(block.id).value}"
+    assert (
+        "charles" in client.blocks.retrieve(block_id=block.id).value.lower()
+    ), f"Shared block update failed {client.retrieve_block(block.id).value}"
 
-    client.agents.messages.send(
+    client.agents.messages.create(
         agent_id=agent_state2.id,
         messages=[
             MessageCreate(
@@ -114,15 +116,15 @@ def test_shared_blocks(client):
         ],
     )
     assert (
-        "charles" in client.agents.core_memory.get_block(agent_id=agent_state2.id, block_label="human").value.lower()
-    ), f"Shared block update failed {client.agents.core_memory.get_block(agent_id=agent_state2.id, block_label="human").value}"
+        "charles" in client.agents.core_memory.retrieve_block(agent_id=agent_state2.id, block_label="human").value.lower()
+    ), f"Shared block update failed {client.agents.core_memory.retrieve_block(agent_id=agent_state2.id, block_label="human").value}"
 
     # cleanup
     client.agents.delete(agent_state1.id)
     client.agents.delete(agent_state2.id)
 
 
-def test_add_and_manage_tags_for_agent(client):
+def test_add_and_manage_tags_for_agent(client: LettaSDKClient):
     """
     Comprehensive happy path test for adding, retrieving, and managing tags on an agent.
     """
@@ -142,10 +144,10 @@ def test_add_and_manage_tags_for_agent(client):
     assert len(agent.tags) == 0
 
     # Step 1: Add multiple tags to the agent
-    client.agents.update(agent_id=agent.id, tags=tags_to_add)
+    client.agents.modify(agent_id=agent.id, tags=tags_to_add)
 
     # Step 2: Retrieve tags for the agent and verify they match the added tags
-    retrieved_tags = client.agents.get(agent_id=agent.id).tags
+    retrieved_tags = client.agents.retrieve(agent_id=agent.id).tags
     assert set(retrieved_tags) == set(tags_to_add), f"Expected tags {tags_to_add}, but got {retrieved_tags}"
 
     # Step 3: Retrieve agents by each tag to ensure the agent is associated correctly
@@ -155,25 +157,25 @@ def test_add_and_manage_tags_for_agent(client):
 
     # Step 4: Delete a specific tag from the agent and verify its removal
     tag_to_delete = tags_to_add.pop()
-    client.agents.update(agent_id=agent.id, tags=tags_to_add)
+    client.agents.modify(agent_id=agent.id, tags=tags_to_add)
 
     # Verify the tag is removed from the agent's tags
-    remaining_tags = client.agents.get(agent_id=agent.id).tags
+    remaining_tags = client.agents.retrieve(agent_id=agent.id).tags
     assert tag_to_delete not in remaining_tags, f"Tag '{tag_to_delete}' was not removed as expected"
     assert set(remaining_tags) == set(tags_to_add), f"Expected remaining tags to be {tags_to_add[1:]}, but got {remaining_tags}"
 
     # Step 5: Delete all remaining tags from the agent
-    client.agents.update(agent_id=agent.id, tags=[])
+    client.agents.modify(agent_id=agent.id, tags=[])
 
     # Verify all tags are removed
-    final_tags = client.agents.get(agent_id=agent.id).tags
+    final_tags = client.agents.retrieve(agent_id=agent.id).tags
     assert len(final_tags) == 0, f"Expected no tags, but found {final_tags}"
 
     # Remove agent
     client.agents.delete(agent.id)
 
 
-def test_agent_tags(client):
+def test_agent_tags(client: LettaSDKClient):
     """Test creating agents with tags and retrieving tags via the API."""
     # Clear all agents
     all_agents = client.agents.list()
@@ -229,7 +231,7 @@ def test_agent_tags(client):
     assert paginated_tags[1] == "agent2"
 
     # Test pagination with cursor
-    next_page_tags = client.tag.list_tags(cursor="agent2", limit=2)
+    next_page_tags = client.tag.list_tags(after="agent2", limit=2)
     assert len(next_page_tags) == 2
     assert next_page_tags[0] == "agent3"
     assert next_page_tags[1] == "development"
@@ -250,26 +252,26 @@ def test_agent_tags(client):
     client.agents.delete(agent3.id)
 
 
-def test_update_agent_memory_label(client, agent):
+def test_update_agent_memory_label(client: LettaSDKClient, agent: AgentState):
     """Test that we can update the label of a block in an agent's memory"""
-    current_labels = [block.label for block in client.agents.core_memory.get_blocks(agent_id=agent.id)]
+    current_labels = [block.label for block in client.agents.core_memory.list_blocks(agent_id=agent.id)]
     example_label = current_labels[0]
     example_new_label = "example_new_label"
     assert example_new_label not in current_labels
 
-    client.agents.core_memory.update_block(
+    client.agents.core_memory.modify_block(
         agent_id=agent.id,
         block_label=example_label,
         label=example_new_label,
     )
 
-    updated_block = client.agents.core_memory.get_block(agent_id=agent.id, block_label=example_new_label)
+    updated_block = client.agents.core_memory.retrieve_block(agent_id=agent.id, block_label=example_new_label)
     assert updated_block.label == example_new_label
 
 
-def test_add_remove_agent_memory_block(client, agent):
+def test_add_remove_agent_memory_block(client: LettaSDKClient, agent: AgentState):
     """Test that we can add and remove a block from an agent's memory"""
-    current_labels = [block.label for block in client.agents.core_memory.get_blocks(agent_id=agent.id)]
+    current_labels = [block.label for block in client.agents.core_memory.list_blocks(agent_id=agent.id)]
     example_new_label = current_labels[0] + "_v2"
     example_new_value = "example value"
     assert example_new_label not in current_labels
@@ -280,42 +282,42 @@ def test_add_remove_agent_memory_block(client, agent):
         value=example_new_value,
         limit=1000,
     )
-    client.blocks.link_agent_memory_block(
+    client.agents.core_memory.attach_block(
         agent_id=agent.id,
         block_id=block.id,
     )
 
-    updated_block = client.agents.core_memory.get_block(
+    updated_block = client.agents.core_memory.retrieve_block(
         agent_id=agent.id,
         block_label=example_new_label,
     )
     assert updated_block.value == example_new_value
 
     # Now unlink the block
-    client.blocks.unlink_agent_memory_block(
+    client.agents.core_memory.detach_block(
         agent_id=agent.id,
         block_id=block.id,
     )
 
-    current_labels = [block.label for block in client.agents.core_memory.get_blocks(agent_id=agent.id)]
+    current_labels = [block.label for block in client.agents.core_memory.list_blocks(agent_id=agent.id)]
     assert example_new_label not in current_labels
 
 
-def test_update_agent_memory_limit(client, agent):
+def test_update_agent_memory_limit(client: LettaSDKClient, agent: AgentState):
     """Test that we can update the limit of a block in an agent's memory"""
 
-    current_labels = [block.label for block in client.agents.core_memory.get_blocks(agent_id=agent.id)]
+    current_labels = [block.label for block in client.agents.core_memory.list_blocks(agent_id=agent.id)]
     example_label = current_labels[0]
     example_new_limit = 1
-    current_block = client.agents.core_memory.get_block(agent_id=agent.id, block_label=example_label)
+    current_block = client.agents.core_memory.retrieve_block(agent_id=agent.id, block_label=example_label)
     current_block_length = len(current_block.value)
 
-    assert example_new_limit != client.agents.core_memory.get_block(agent_id=agent.id, block_label=example_label).limit
+    assert example_new_limit != client.agents.core_memory.retrieve_block(agent_id=agent.id, block_label=example_label).limit
     assert example_new_limit < current_block_length
 
     # We expect this to throw a value error
     with pytest.raises(ApiError):
-        client.agents.core_memory.update_block(
+        client.agents.core_memory.modify_block(
             agent_id=agent.id,
             block_label=example_label,
             limit=example_new_limit,
@@ -324,17 +326,17 @@ def test_update_agent_memory_limit(client, agent):
     # Now try the same thing with a higher limit
     example_new_limit = current_block_length + 10000
     assert example_new_limit > current_block_length
-    client.agents.core_memory.update_block(
+    client.agents.core_memory.modify_block(
         agent_id=agent.id,
         block_label=example_label,
         limit=example_new_limit,
     )
 
-    assert example_new_limit == client.agents.core_memory.get_block(agent_id=agent.id, block_label=example_label).limit
+    assert example_new_limit == client.agents.core_memory.retrieve_block(agent_id=agent.id, block_label=example_label).limit
 
 
-def test_messages(client, agent):
-    send_message_response = client.agents.messages.send(
+def test_messages(client: LettaSDKClient, agent: AgentState):
+    send_message_response = client.agents.messages.create(
         agent_id=agent.id,
         messages=[
             MessageCreate(
@@ -352,9 +354,9 @@ def test_messages(client, agent):
     assert len(messages_response) > 0, "Retrieving messages failed"
 
 
-def test_send_system_message(client, agent):
+def test_send_system_message(client: LettaSDKClient, agent: AgentState):
     """Important unit test since the Letta API exposes sending system messages, but some backends don't natively support it (eg Anthropic)"""
-    send_system_message_response = client.agents.messages.send(
+    send_system_message_response = client.agents.messages.create(
         agent_id=agent.id,
         messages=[
             MessageCreate(
@@ -366,7 +368,7 @@ def test_send_system_message(client, agent):
     assert send_system_message_response, "Sending message failed"
 
 
-def test_function_return_limit(client, agent):
+def test_function_return_limit(client: LettaSDKClient, agent: AgentState):
     """Test to see if the function return limit works"""
 
     def big_return():
@@ -378,12 +380,12 @@ def test_function_return_limit(client, agent):
         """
         return "x" * 100000
 
-    tool = client.tools.upsert_from_function(func=big_return, name="big_return", return_char_limit=1000)
+    tool = client.tools.upsert_from_function(func=big_return, return_char_limit=1000)
 
-    client.agents.tools.add(agent_id=agent.id, tool_id=tool.id)
+    client.agents.tools.attach(agent_id=agent.id, tool_id=tool.id)
 
     # get function response
-    response = client.agents.messages.send(
+    response = client.agents.messages.create(
         agent_id=agent.id,
         messages=[
             MessageCreate(
@@ -396,7 +398,7 @@ def test_function_return_limit(client, agent):
 
     response_message = None
     for message in response.messages:
-        if isinstance(message, LettaMessageUnion_ToolReturnMessage):
+        if isinstance(message, ToolReturnMessage):
             response_message = message
             break
 
@@ -405,7 +407,7 @@ def test_function_return_limit(client, agent):
     assert "function output was truncated " in res
 
 
-def test_function_always_error(client, agent):
+def test_function_always_error(client: LettaSDKClient, agent: AgentState):
     """Test to see if function that errors works correctly"""
 
     def always_error():
@@ -414,12 +416,12 @@ def test_function_always_error(client, agent):
         """
         return 5 / 0
 
-    tool = client.tools.upsert_from_function(func=always_error, name="always_error", return_char_limit=1000)
+    tool = client.tools.upsert_from_function(func=always_error, return_char_limit=1000)
 
-    client.agents.tools.add(agent_id=agent.id, tool_id=tool.id)
+    client.agents.tools.attach(agent_id=agent.id, tool_id=tool.id)
 
     # get function response
-    response = client.agents.messages.send(
+    response = client.agents.messages.create(
         agent_id=agent.id,
         messages=[
             MessageCreate(
@@ -432,7 +434,7 @@ def test_function_always_error(client, agent):
 
     response_message = None
     for message in response.messages:
-        if isinstance(message, LettaMessageUnion_ToolReturnMessage):
+        if isinstance(message, ToolReturnMessage):
             response_message = message
             break
 
@@ -442,7 +444,7 @@ def test_function_always_error(client, agent):
 
 
 @pytest.mark.asyncio
-async def test_send_message_parallel(client, agent):
+async def test_send_message_parallel(client: LettaSDKClient, agent: AgentState):
     """
     Test that sending two messages in parallel does not error.
     """
@@ -450,7 +452,7 @@ async def test_send_message_parallel(client, agent):
     # Define a coroutine for sending a message using asyncio.to_thread for synchronous calls
     async def send_message_task(message: str):
         response = await asyncio.to_thread(
-            client.agents.messages.send,
+            client.agents.messages.create,
             agent_id=agent.id,
             messages=[
                 MessageCreate(
@@ -480,12 +482,12 @@ async def test_send_message_parallel(client, agent):
     assert len(responses) == len(messages), "Not all messages were processed"
 
 
-def test_send_message_async(client, agent):
+def test_send_message_async(client: LettaSDKClient, agent: AgentState):
     """
     Test that we can send a message asynchronously and retrieve the messages, along with usage statistics
     """
     test_message = "This is a test message, respond to the user with a sentence."
-    run = client.agents.messages.send_async(
+    run = client.agents.messages.create_async(
         agent_id=agent.id,
         messages=[
             MessageCreate(
@@ -502,7 +504,7 @@ def test_send_message_async(client, agent):
     start_time = time.time()
     while run.status == "created":
         time.sleep(1)
-        run = client.runs.get_run(run_id=run.id)
+        run = client.runs.retrieve_run(run_id=run.id)
         print(f"Run status: {run.status}")
         if time.time() - start_time > 10:
             pytest.fail("Run took too long to complete")
@@ -511,30 +513,28 @@ def test_send_message_async(client, agent):
     assert run.status == "completed"
 
     # Get messages for the job
-    messages = client.runs.get_run_messages(run_id=run.id)
+    messages = client.runs.list_run_messages(run_id=run.id)
     assert len(messages) >= 2  # At least assistant response
 
     # Check filters
-    assistant_messages = client.runs.get_run_messages(run_id=run.id, role="assistant")
+    assistant_messages = client.runs.list_run_messages(run_id=run.id, role="assistant")
     assert len(assistant_messages) > 0
-    tool_messages = client.runs.get_run_messages(run_id=run.id, role="tool")
+    tool_messages = client.runs.list_run_messages(run_id=run.id, role="tool")
     assert len(tool_messages) > 0
 
-    specific_tool_messages = [
-        message for message in client.runs.get_run_messages(run_id=run.id) if isinstance(message, LettaMessageUnion_ToolCallMessage)
-    ]
+    specific_tool_messages = [message for message in client.runs.list_run_messages(run_id=run.id) if isinstance(message, ToolCallMessage)]
     assert specific_tool_messages[0].tool_call.name == "send_message"
     assert len(specific_tool_messages) > 0
 
     # Get and verify usage statistics
-    usage = client.runs.get_run_usage(run_id=run.id)
+    usage = client.runs.retrieve_run_usage(run_id=run.id)
     assert usage.completion_tokens >= 0
     assert usage.prompt_tokens >= 0
     assert usage.total_tokens >= 0
     assert usage.total_tokens == usage.completion_tokens + usage.prompt_tokens
 
 
-def test_agent_creation(client):
+def test_agent_creation(client: LettaSDKClient):
     """Test that block IDs are properly attached when creating an agent."""
     offline_memory_agent_system = """
     You are a helpful agent. You will be provided with a list of memory blocks and a user preferences block.
@@ -558,8 +558,8 @@ def test_agent_creation(client):
         """Another test tool."""
         return "Hello from another test tool!"
 
-    tool1 = client.tools.upsert_from_function(func=test_tool, name="test_tool", tags=["test"])
-    tool2 = client.tools.upsert_from_function(func=another_test_tool, name="another_test_tool", tags=["test"])
+    tool1 = client.tools.upsert_from_function(func=test_tool, tags=["test"])
+    tool2 = client.tools.upsert_from_function(func=another_test_tool, tags=["test"])
 
     # Create test blocks
     offline_persona_block = client.blocks.create(label="persona", value="persona description", limit=5000)
@@ -583,7 +583,7 @@ def test_agent_creation(client):
 
     # Verify all memory blocks are properly attached
     for block in [offline_persona_block, mindy_block, user_preferences_block]:
-        agent_block = client.agents.core_memory.get_block(agent_id=agent.id, block_label=block.label)
+        agent_block = client.agents.core_memory.retrieve_block(agent_id=agent.id, block_label=block.label)
         assert block.value == agent_block.value and block.limit == agent_block.limit
 
     # Verify the tools are properly attached
