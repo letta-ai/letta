@@ -68,14 +68,16 @@ navigation:
                   path: pages/models/groq.mdx
                 - page: Together
                   path: pages/models/together.mdx
-                - page: Google AI (Gemini)
+                - page: Google AI / Gemini
                   path: pages/models/google.mdx
-                - page: Ollama
-                  path: pages/models/ollama.mdx
-                - page: vLLM
-                  path: pages/models/vllm.mdx
                 - page: Azure OpenAI
                   path: pages/models/azure.mdx
+                - page: Ollama
+                  path: pages/models/ollama.mdx
+                - page: LM Studio
+                  path: pages/models/lmstudio.mdx
+                - page: vLLM
+                  path: pages/models/vllm.mdx
             - page: Deploying on External Services
               path: pages/deployment/railway.mdx
           - page: Letta Cloud
