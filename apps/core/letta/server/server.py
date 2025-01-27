@@ -1277,12 +1277,14 @@ class SyncServer(Server):
             # This will be attached to the POST SSE request used under-the-hood
             letta_agent = self.load_agent(agent_id=agent_id, actor=actor)
 
-            # Disable token streaming if not OpenAI
+            # Disable token streaming if not OpenAI or Anthropic
             # TODO: cleanup this logic
             llm_config = letta_agent.agent_state.llm_config
-            if stream_tokens and (llm_config.model_endpoint_type != "openai" or "inference.memgpt.ai" in llm_config.model_endpoint):
+            if stream_tokens and (
+                llm_config.model_endpoint_type not in ["openai", "anthropic"] or "inference.memgpt.ai" in llm_config.model_endpoint
+            ):
                 warnings.warn(
-                    "Token streaming is only supported for models with type 'openai' or `inference.memgpt.ai` in the model_endpoint: agent has endpoint type {llm_config.model_endpoint_type} and {llm_config.model_endpoint}. Setting stream_tokens to False."
+                    "Token streaming is only supported for models with type 'openai', 'anthropic', or `inference.memgpt.ai` in the model_endpoint: agent has endpoint type {llm_config.model_endpoint_type} and {llm_config.model_endpoint}. Setting stream_tokens to False."
                 )
                 stream_tokens = False
 

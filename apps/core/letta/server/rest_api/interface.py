@@ -424,6 +424,16 @@ class StreamingServerInterface(AgentChunkStreamingInterface):
         choice = chunk.choices[0]
         message_delta = choice.delta
 
+        if (
+            message_delta.content is None
+            and message_delta.tool_calls is None
+            and message_delta.function_call is None
+            and choice.finish_reason is None
+            and chunk.model.startswith("claude-")
+        ):
+            # First chunk of Anthropic is empty
+            return None
+
         # inner thoughts
         if message_delta.content is not None:
             processed_chunk = ReasoningMessage(
@@ -515,7 +525,11 @@ class StreamingServerInterface(AgentChunkStreamingInterface):
                         self.function_id_buffer += tool_call.id
 
                 if tool_call.function.arguments:
-                    updates_main_json, updates_inner_thoughts = self.function_args_reader.process_fragment(tool_call.function.arguments)
+                    if chunk.model.startswith("claude-"):
+                        updates_main_json = tool_call.function.arguments
+                        updates_inner_thoughts = ""
+                    else:  # OpenAI
+                        updates_main_json, updates_inner_thoughts = self.function_args_reader.process_fragment(tool_call.function.arguments)
 
                     # If we have inner thoughts, we should output them as a chunk
                     if updates_inner_thoughts:
@@ -585,7 +599,6 @@ class StreamingServerInterface(AgentChunkStreamingInterface):
                             ):
                                 # do an additional parse on the updates_main_json
                                 if self.function_args_buffer:
-
                                     updates_main_json = self.function_args_buffer + updates_main_json
                                     self.function_args_buffer = None
 
@@ -875,7 +888,6 @@ class StreamingServerInterface(AgentChunkStreamingInterface):
             raise NotImplementedError("OpenAI proxy streaming temporarily disabled")
         else:
             processed_chunk = self._process_chunk_to_letta_style(chunk=chunk, message_id=message_id, message_date=message_date)
-
         if processed_chunk is None:
             return
 
