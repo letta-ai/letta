@@ -22,7 +22,10 @@ import {
   Typography,
 } from '@letta-cloud/component-library';
 import type { ColumnDef } from '@tanstack/react-table';
-import { useDateFormatter } from '@letta-cloud/helpful-client-utils';
+import {
+  useDateFormatter,
+  useNumberFormatter,
+} from '@letta-cloud/helpful-client-utils';
 import type { AdminInferenceModelType } from '$web/web-api/contracts';
 import { useQueryClient } from '@tanstack/react-query';
 import type { ServerInferResponses } from '@ts-rest/core';
@@ -204,6 +207,7 @@ function ImportModelsDialog() {
 function AdminInferenceModelsPage() {
   const [offset, setOffset] = useState(0);
   const [limit, setLimit] = useState(10);
+  const { formatNumber } = useNumberFormatter();
   const [search, setSearch] = useState('');
 
   const { data, isFetching, isError } =
@@ -255,6 +259,18 @@ function AdminInferenceModelsPage() {
           cell: ({ row }) => formatDateAndTime(row.original.updatedAt),
         },
         {
+          header: 'RPM Limit (per Org)',
+          accessorKey: 'rpm',
+          cell: ({ row }) =>
+            formatNumber(row.original.defaultRequestsPerMinutePerOrganization),
+        },
+        {
+          header: 'TPM Limit (per Org)',
+          accessorKey: 'tpm',
+          cell: ({ row }) =>
+            formatNumber(row.original.defaultTokensPerMinutePerOrganization),
+        },
+        {
           header: 'Visible to users',
           accessorKey: 'disabledAt',
           cell: ({ row }) =>
@@ -273,7 +289,7 @@ function AdminInferenceModelsPage() {
           ),
         },
       ],
-      [formatDateAndTime],
+      [formatDateAndTime, formatNumber],
     );
 
   const inferenceModels = useMemo(() => {

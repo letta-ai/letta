@@ -612,6 +612,9 @@ export const developmentServerPasswordRelations = relations(
   }),
 );
 
+const DEFAULT_INFERENCE_TOKENS_PER_MINUTE = '1000';
+const DEFAULT_INFERENCE_REQUESTS_PER_MINUTE = '1000';
+
 export const inferenceModelsMetadata = pgTable(
   'inference_models_metadata',
   {
@@ -624,6 +627,16 @@ export const inferenceModelsMetadata = pgTable(
     brand: text('brand').notNull(),
     isRecommended: boolean('is_recommended').notNull().default(false),
     tag: text('tag'),
+    defaultRequestsPerMinutePerOrganization: numeric(
+      'default_requests_per_minute_per_organization',
+    )
+      .default(DEFAULT_INFERENCE_REQUESTS_PER_MINUTE)
+      .notNull(),
+    defaultTokensPerMinutePerOrganization: numeric(
+      'default_tokens_per_minute_per_organization',
+    )
+      .default(DEFAULT_INFERENCE_TOKENS_PER_MINUTE)
+      .notNull(),
     modelName: text('model_name').notNull(),
     modelEndpoint: text('model_endpoint').notNull(),
     createdAt: timestamp('created_at').notNull().defaultNow(),
@@ -640,6 +653,9 @@ export const inferenceModelsMetadata = pgTable(
   }),
 );
 
+const DEFAULT_EMBEDDING_TOKENS_PER_MINUTE = '1000';
+const DEFAULT_EMBEDDING_REQUESTS_PER_MINUTE = '1000';
+
 export const embeddingModelsMetadata = pgTable(
   'embedding_models_metadata',
   {
@@ -651,6 +667,16 @@ export const embeddingModelsMetadata = pgTable(
     name: text('name').notNull(),
     brand: text('brand').notNull(),
     modelName: text('model_name').notNull(),
+    defaultRequestsPerMinutePerOrganization: numeric(
+      'default_requests_per_minute_per_organization',
+    )
+      .default(DEFAULT_EMBEDDING_REQUESTS_PER_MINUTE)
+      .notNull(),
+    defaultTokensPerMinutePerOrganization: numeric(
+      'default_tokens_per_minute_per_organization',
+    )
+      .default(DEFAULT_EMBEDDING_TOKENS_PER_MINUTE)
+      .notNull(),
     modelEndpoint: text('model_endpoint').notNull(),
     createdAt: timestamp('created_at').notNull().defaultNow(),
     disabledAt: timestamp('disabled_at'),

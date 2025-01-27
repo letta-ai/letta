@@ -13,6 +13,8 @@ export const InferenceModelSchema = z.object({
   name: z.string(),
   brand: z.string(),
   config: LLMConfigSchema.optional()?.nullable(),
+  defaultRequestsPerMinutePerOrganization: z.number(),
+  defaultTokensPerMinutePerOrganization: z.number(),
   isRecommended: z.boolean(),
   tag: z.string(),
   disabledAt: z.string().nullable().optional(),
@@ -79,6 +81,8 @@ const UpdateInferenceModelRequestBodySchema = z.object({
   disabled: z.boolean().optional(),
   name: z.string().optional(),
   tag: z.string().optional(),
+  defaultRequestsPerMinutePerOrganization: z.number().optional(),
+  defaultTokensPerMinutePerOrganization: z.number().optional(),
   isRecommended: z.boolean().optional(),
 });
 
@@ -114,6 +118,8 @@ export const EmbeddingModelSchema = z.object({
   id: z.string(),
   name: z.string(),
   brand: z.string(),
+  defaultRequestsPerMinutePerOrganization: z.number(),
+  defaultTokensPerMinutePerOrganization: z.number(),
   config: EmbeddingConfigSchema.optional()?.nullable(),
   disabledAt: z.string().nullable().optional(),
   createdAt: z.string(),
@@ -167,6 +173,8 @@ const createAdminEmbeddingModelContract = c.mutation({
 const UpdateEmbeddingModelRequestBodySchema = z.object({
   brand: z.string().optional(),
   disabled: z.boolean().optional(),
+  defaultRequestsPerMinutePerOrganization: z.number().optional(),
+  defaultTokensPerMinutePerOrganization: z.number().optional(),
   name: z.string().optional(),
 });
 

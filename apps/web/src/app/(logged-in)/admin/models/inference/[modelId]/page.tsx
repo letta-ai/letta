@@ -33,6 +33,8 @@ const updateInferenceModelSchema = z.object({
   name: z.string(),
   disabled: z.boolean(),
   isRecommended: z.boolean().optional(),
+  defaultRequestsPerMinutePerOrganization: z.coerce.number().positive(),
+  defaultTokensPerMinutePerOrganization: z.coerce.number().positive(),
   tag: z.string().optional(),
   brand: z.string(),
 });
@@ -65,6 +67,10 @@ function UpdateInferenceModelForm(props: UpdateInferenceModelFormProps) {
       name: model.name,
       disabled: !!model.disabledAt,
       brand: model.brand,
+      defaultRequestsPerMinutePerOrganization:
+        model.defaultRequestsPerMinutePerOrganization,
+      defaultTokensPerMinutePerOrganization:
+        model.defaultTokensPerMinutePerOrganization,
     },
   });
 
@@ -75,6 +81,10 @@ function UpdateInferenceModelForm(props: UpdateInferenceModelFormProps) {
           id: model.id,
         },
         body: {
+          defaultRequestsPerMinutePerOrganization:
+            values.defaultRequestsPerMinutePerOrganization,
+          defaultTokensPerMinutePerOrganization:
+            values.defaultTokensPerMinutePerOrganization,
           name: values.name,
           disabled: values.disabled,
           brand: values.brand,
@@ -108,7 +118,28 @@ function UpdateInferenceModelForm(props: UpdateInferenceModelFormProps) {
                 />
               )}
             />
-
+            <FormField
+              name="defaultRequestsPerMinutePerOrganization"
+              render={({ field }) => (
+                <Input
+                  fullWidth
+                  type="number"
+                  label="RPM Limit (per Org)"
+                  {...field}
+                />
+              )}
+            />
+            <FormField
+              name="defaultTokensPerMinutePerOrganization"
+              render={({ field }) => (
+                <Input
+                  fullWidth
+                  type="number"
+                  label="TPM Limit (per Org)"
+                  {...field}
+                />
+              )}
+            />
             <FormField
               name="brand"
               render={({ field }) => (

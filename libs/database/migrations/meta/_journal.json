@@ -295,6 +295,13 @@
       "when": 1737161926015,
       "tag": "0041_hard_stardust",
       "breakpoints": true
+    },
+    {
+      "idx": 42,
+      "version": "7",
+      "when": 1738015199771,
+      "tag": "0042_simple_wolfpack",
+      "breakpoints": true
     }
   ]
 }

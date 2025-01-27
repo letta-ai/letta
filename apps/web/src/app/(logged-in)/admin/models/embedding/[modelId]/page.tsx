@@ -23,12 +23,7 @@ import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { queryClientKeys } from '$web/web-api/contracts';
 import { useQueryClient } from '@tanstack/react-query';
-
-interface EmbeddingModelPageProps {
-  params: Promise<{
-    modelId: string;
-  }>;
-}
+import { useParams } from 'next/navigation';
 
 interface UpdateEmbeddingModelFormProps {
   model: AdminEmbeddingModelType;
@@ -38,6 +33,8 @@ const updateEmbeddingModelSchema = z.object({
   name: z.string(),
   disabled: z.boolean(),
   brand: z.string(),
+  defaultRequestsPerMinutePerOrganization: z.coerce.number().positive(),
+  defaultTokensPerMinutePerOrganization: z.coerce.number().positive(),
 });
 
 type UpdateEmbeddingModelFormValues = z.infer<
@@ -68,6 +65,10 @@ function UpdateEmbeddingModelForm(props: UpdateEmbeddingModelFormProps) {
       name: model.name,
       disabled: !!model.disabledAt,
       brand: model.brand,
+      defaultRequestsPerMinutePerOrganization:
+        model.defaultRequestsPerMinutePerOrganization,
+      defaultTokensPerMinutePerOrganization:
+        model.defaultTokensPerMinutePerOrganization,
     },
   });
 
@@ -78,6 +79,11 @@ function UpdateEmbeddingModelForm(props: UpdateEmbeddingModelFormProps) {
           id: model.id,
         },
         body: {
+          defaultRequestsPerMinutePerOrganization:
+            values.defaultRequestsPerMinutePerOrganization,
+          defaultTokensPerMinutePerOrganization:
+            values.defaultTokensPerMinutePerOrganization,
+
           name: values.name,
           disabled: values.disabled,
           brand: values.brand,
@@ -110,6 +116,28 @@ function UpdateEmbeddingModelForm(props: UpdateEmbeddingModelFormProps) {
                 />
               )}
             />
+            <FormField
+              name="defaultRequestsPerMinutePerOrganization"
+              render={({ field }) => (
+                <Input
+                  fullWidth
+                  type="number"
+                  label="RPM Limit (per Org)"
+                  {...field}
+                />
+              )}
+            />
+            <FormField
+              name="defaultTokensPerMinutePerOrganization"
+              render={({ field }) => (
+                <Input
+                  fullWidth
+                  type="number"
+                  label="TPM Limit (per Org)"
+                  {...field}
+                />
+              )}
+            />
             <VStack border paddingTop="large" padding="medium" fullWidth>
               <FormField
                 name="disabled"
@@ -134,9 +162,8 @@ function UpdateEmbeddingModelForm(props: UpdateEmbeddingModelFormProps) {
   );
 }
 
-async function EmbeddingModelPage(props: EmbeddingModelPageProps) {
-  const { params } = props;
-  const { modelId } = await params;
+function EmbeddingModelPage() {
+  const { modelId } = useParams<{ modelId: string }>();
 
   const {
     data: model,
@@ -149,6 +176,7 @@ async function EmbeddingModelPage(props: EmbeddingModelPageProps) {
         id: modelId,
       },
     },
+    enabled: !!modelId,
   });
 
   return (

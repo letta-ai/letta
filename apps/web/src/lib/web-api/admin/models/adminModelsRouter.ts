@@ -46,6 +46,8 @@ async function getAdminInferenceModels(
         inferenceModels: res.map((model) => ({
           id: model.model,
           name: model.model,
+          defaultRequestsPerMinutePerOrganization: 0,
+          defaultTokensPerMinutePerOrganization: 0,
           tag: '',
           isRecommended: false,
           brand: model.model_endpoint_type,
@@ -107,6 +109,14 @@ async function getAdminInferenceModels(
         id: model.id,
         name: model.name,
         brand: model.brand,
+        defaultRequestsPerMinutePerOrganization: parseInt(
+          model.defaultRequestsPerMinutePerOrganization,
+          10,
+        ),
+        defaultTokensPerMinutePerOrganization: parseInt(
+          model.defaultTokensPerMinutePerOrganization,
+          10,
+        ),
         tag: model.tag || '',
         isRecommended: model.isRecommended,
         config: configMap.get(`${model.modelEndpoint}${model.modelName}`),
@@ -153,6 +163,14 @@ async function getAdminInferenceModel(
       id: response.id,
       name: response.name,
       isRecommended: response.isRecommended,
+      defaultRequestsPerMinutePerOrganization: parseInt(
+        response.defaultRequestsPerMinutePerOrganization,
+        10,
+      ),
+      defaultTokensPerMinutePerOrganization: parseInt(
+        response.defaultTokensPerMinutePerOrganization,
+        10,
+      ),
       tag: response.tag || '',
       brand: response.brand,
       config: inferenceModels.find(
@@ -217,6 +235,10 @@ async function createAdminInferenceModel(
       disabledAt: inferenceModelsMetadata.disabledAt,
       createdAt: inferenceModelsMetadata.createdAt,
       updatedAt: inferenceModelsMetadata.updatedAt,
+      defaultTokensPerMinutePerOrganization:
+        inferenceModelsMetadata.defaultTokensPerMinutePerOrganization,
+      defaultRequestsPerMinutePerOrganization:
+        inferenceModelsMetadata.defaultRequestsPerMinutePerOrganization,
     });
 
   return {
@@ -226,6 +248,14 @@ async function createAdminInferenceModel(
       name: response.name,
       brand: response.brand,
       tag: response.tag || '',
+      defaultTokensPerMinutePerOrganization: parseInt(
+        response.defaultTokensPerMinutePerOrganization,
+        10,
+      ),
+      defaultRequestsPerMinutePerOrganization: parseInt(
+        response.defaultRequestsPerMinutePerOrganization,
+        10,
+      ),
       isRecommended: response.isRecommended,
       config: null,
       disabledAt: response.disabledAt?.toISOString(),
@@ -248,6 +278,8 @@ interface UpdateAdminInferenceSetterType {
   disabledAt?: Date | null;
   name?: string;
   tag?: string;
+  defaultRequestsPerMinutePerOrganization?: string;
+  defaultTokensPerMinutePerOrganization?: string;
   isRecommended?: boolean;
 }
 
@@ -279,6 +311,16 @@ async function updateAdminInferenceModel(
     set.isRecommended = isRecommended;
   }
 
+  if (req.body.defaultRequestsPerMinutePerOrganization) {
+    set.defaultRequestsPerMinutePerOrganization =
+      req.body.defaultRequestsPerMinutePerOrganization.toString();
+  }
+
+  if (req.body.defaultTokensPerMinutePerOrganization) {
+    set.defaultTokensPerMinutePerOrganization =
+      req.body.defaultTokensPerMinutePerOrganization.toString();
+  }
+
   if (Object.keys(set).length === 0) {
     return {
       status: 400,
@@ -299,6 +341,10 @@ async function updateAdminInferenceModel(
       modelEndpoint: inferenceModelsMetadata.modelEndpoint,
       isRecommended: inferenceModelsMetadata.isRecommended,
       tag: inferenceModelsMetadata.tag,
+      defaultTokensPerMinutePerOrganization:
+        inferenceModelsMetadata.defaultTokensPerMinutePerOrganization,
+      defaultRequestsPerMinutePerOrganization:
+        inferenceModelsMetadata.defaultRequestsPerMinutePerOrganization,
       modelName: inferenceModelsMetadata.modelName,
       disabledAt: inferenceModelsMetadata.disabledAt,
       createdAt: inferenceModelsMetadata.createdAt,
@@ -311,6 +357,14 @@ async function updateAdminInferenceModel(
       id: response.id,
       name: response.name,
       brand: response.brand,
+      defaultRequestsPerMinutePerOrganization: parseInt(
+        response.defaultTokensPerMinutePerOrganization,
+        10,
+      ),
+      defaultTokensPerMinutePerOrganization: parseInt(
+        response.defaultRequestsPerMinutePerOrganization,
+        10,
+      ),
       config: null,
       isRecommended: response.isRecommended,
       tag: response.tag || '',
@@ -380,6 +434,14 @@ async function getAdminEmbeddingModel(
       id: response.id,
       name: response.name,
       brand: response.brand,
+      defaultRequestsPerMinutePerOrganization: parseInt(
+        response.defaultRequestsPerMinutePerOrganization,
+        10,
+      ),
+      defaultTokensPerMinutePerOrganization: parseInt(
+        response.defaultTokensPerMinutePerOrganization,
+        10,
+      ),
       config: embeddingModels.find(
         (model) =>
           model.embedding_model === response.modelName &&
@@ -424,6 +486,8 @@ async function getAdminEmbeddingModels(
       body: {
         embeddingModels: res.map((model) => ({
           id: model.embedding_model,
+          defaultRequestsPerMinutePerOrganization: 0,
+          defaultTokensPerMinutePerOrganization: 0,
           name: model.embedding_model,
           brand: model.embedding_endpoint_type,
           config: model,
@@ -482,6 +546,14 @@ async function getAdminEmbeddingModels(
     body: {
       embeddingModels: response.slice(0, limit).map((model) => ({
         id: model.id,
+        defaultRequestsPerMinutePerOrganization: parseInt(
+          model.defaultRequestsPerMinutePerOrganization,
+          10,
+        ),
+        defaultTokensPerMinutePerOrganization: parseInt(
+          model.defaultTokensPerMinutePerOrganization,
+          10,
+        ),
         name: model.name,
         brand: model.brand,
         config: configMap.get(`${model.modelEndpoint}${model.modelName}`),
@@ -539,6 +611,10 @@ async function createAdminEmbeddingModel(
       name: embeddingModelsMetadata.name,
       brand: embeddingModelsMetadata.brand,
       modelEndpoint: embeddingModelsMetadata.modelEndpoint,
+      defaultRequestsPerMinutePerOrganization:
+        embeddingModelsMetadata.defaultRequestsPerMinutePerOrganization,
+      defaultTokensPerMinutePerOrganization:
+        embeddingModelsMetadata.defaultTokensPerMinutePerOrganization,
       modelName: embeddingModelsMetadata.modelName,
       disabledAt: embeddingModelsMetadata.disabledAt,
       createdAt: embeddingModelsMetadata.createdAt,
@@ -550,6 +626,14 @@ async function createAdminEmbeddingModel(
     body: {
       id: response.id,
       name: response.name,
+      defaultTokensPerMinutePerOrganization: parseInt(
+        response.defaultTokensPerMinutePerOrganization,
+        10,
+      ),
+      defaultRequestsPerMinutePerOrganization: parseInt(
+        response.defaultRequestsPerMinutePerOrganization,
+        10,
+      ),
       brand: response.brand,
       config: null,
       disabledAt: response.disabledAt?.toISOString(),
@@ -570,6 +654,8 @@ export type UpdateAdminEmbeddingModelResponse = ServerInferResponses<
 interface UpdateAdminEmbeddingSetterType {
   brand?: string;
   disabledAt?: Date | null;
+  defaultRequestsPerMinutePerOrganization?: string;
+  defaultTokensPerMinutePerOrganization?: string;
   name?: string;
 }
 
@@ -593,6 +679,16 @@ async function updateAdminEmbeddingModel(
     set.name = name;
   }
 
+  if (req.body.defaultRequestsPerMinutePerOrganization) {
+    set.defaultRequestsPerMinutePerOrganization =
+      req.body.defaultRequestsPerMinutePerOrganization.toString();
+  }
+
+  if (req.body.defaultTokensPerMinutePerOrganization) {
+    set.defaultTokensPerMinutePerOrganization =
+      req.body.defaultTokensPerMinutePerOrganization.toString();
+  }
+
   if (Object.keys(set).length === 0) {
     return {
       status: 400,
@@ -610,6 +706,10 @@ async function updateAdminEmbeddingModel(
       id: embeddingModelsMetadata.id,
       name: embeddingModelsMetadata.name,
       brand: embeddingModelsMetadata.brand,
+      defaultRequestsPerMinutePerOrganization:
+        embeddingModelsMetadata.defaultRequestsPerMinutePerOrganization,
+      defaultTokensPerMinutePerOrganization:
+        embeddingModelsMetadata.defaultTokensPerMinutePerOrganization,
       modelEndpoint: embeddingModelsMetadata.modelEndpoint,
       modelName: embeddingModelsMetadata.modelName,
       disabledAt: embeddingModelsMetadata.disabledAt,
@@ -622,6 +722,14 @@ async function updateAdminEmbeddingModel(
     body: {
       id: response.id,
       name: response.name,
+      defaultTokensPerMinutePerOrganization: parseInt(
+        response.defaultTokensPerMinutePerOrganization,
+        10,
+      ),
+      defaultRequestsPerMinutePerOrganization: parseInt(
+        response.defaultRequestsPerMinutePerOrganization,
+        10,
+      ),
       brand: response.brand,
       config: null,
       disabledAt: response.disabledAt?.toISOString(),

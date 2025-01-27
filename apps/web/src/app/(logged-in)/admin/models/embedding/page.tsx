@@ -22,7 +22,10 @@ import {
   Typography,
 } from '@letta-cloud/component-library';
 import type { ColumnDef } from '@tanstack/react-table';
-import { useDateFormatter } from '@letta-cloud/helpful-client-utils';
+import {
+  useDateFormatter,
+  useNumberFormatter,
+} from '@letta-cloud/helpful-client-utils';
 import type { AdminEmbeddingModelType } from '$web/web-api/contracts';
 import { useQueryClient } from '@tanstack/react-query';
 import type { ServerInferResponses } from '@ts-rest/core';
@@ -206,6 +209,8 @@ function AdminEmbeddingModelsPage() {
   const [limit, setLimit] = useState(10);
   const [search, setSearch] = useState('');
 
+  const { formatNumber } = useNumberFormatter();
+
   const { data, isFetching, isError } =
     webApi.admin.models.getAdminEmbeddingModels.useQuery({
       queryKey: queryClientKeys.admin.models.getAdminEmbeddingModelsWithSearch({
@@ -255,6 +260,18 @@ function AdminEmbeddingModelsPage() {
           cell: ({ row }) => formatDateAndTime(row.original.updatedAt),
         },
         {
+          header: 'RPM Limit (per Org)',
+          accessorKey: 'rpm',
+          cell: ({ row }) =>
+            formatNumber(row.original.defaultRequestsPerMinutePerOrganization),
+        },
+        {
+          header: 'TPM Limit (per Org)',
+          accessorKey: 'tpm',
+          cell: ({ row }) =>
+            formatNumber(row.original.defaultTokensPerMinutePerOrganization),
+        },
+        {
           header: 'Visible to users',
           accessorKey: 'disabledAt',
           cell: ({ row }) =>
@@ -273,7 +290,7 @@ function AdminEmbeddingModelsPage() {
           ),
         },
       ],
-      [formatDateAndTime],
+      [formatDateAndTime, formatNumber],
     );
 
   const embeddingModels = useMemo(() => {
