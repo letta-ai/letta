@@ -5,7 +5,7 @@ import requests
 from openai import OpenAI
 
 from letta.llm_api.helpers import add_inner_thoughts_to_functions, convert_to_structured_output, make_post_request
-from letta.local_llm.constants import INNER_THOUGHTS_KWARG, INNER_THOUGHTS_KWARG_DESCRIPTION
+from letta.local_llm.constants import INNER_THOUGHTS_KWARG, INNER_THOUGHTS_KWARG_DESCRIPTION, INNER_THOUGHTS_KWARG_DESCRIPTION_GO_FIRST
 from letta.local_llm.utils import num_tokens_from_functions, num_tokens_from_messages
 from letta.schemas.llm_config import LLMConfig
 from letta.schemas.message import Message as _Message
@@ -96,10 +96,15 @@ def build_openai_chat_completions_request(
     max_tokens: Optional[int],
 ) -> ChatCompletionRequest:
     if functions and llm_config.put_inner_thoughts_in_kwargs:
+        # Special case for LM Studio backend since it needs extra guidance to force out the thoughts first
+        # TODO(fix)
+        inner_thoughts_desc = (
+            INNER_THOUGHTS_KWARG_DESCRIPTION_GO_FIRST if ":1234" in llm_config.model_endpoint else INNER_THOUGHTS_KWARG_DESCRIPTION
+        )
         functions = add_inner_thoughts_to_functions(
             functions=functions,
             inner_thoughts_key=INNER_THOUGHTS_KWARG,
-            inner_thoughts_description=INNER_THOUGHTS_KWARG_DESCRIPTION,
+            inner_thoughts_description=inner_thoughts_desc,
         )
 
     openai_message_list = [
