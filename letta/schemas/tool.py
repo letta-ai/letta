@@ -112,7 +112,6 @@ class Tool(BaseTool):
 
 
 class ToolCreate(LettaBase):
-    name: Optional[str] = Field(None, description="The name of the function (auto-generated from source_code if not provided).")
     description: Optional[str] = Field(None, description="The description of the tool.")
     tags: List[str] = Field([], description="Metadata tags.")
     source_code: str = Field(..., description="The source code of the function.")
@@ -155,7 +154,6 @@ class ToolCreate(LettaBase):
         json_schema = generate_tool_schema_for_composio(composio_action_schema.parameters, name=wrapper_func_name, description=description)
 
         return cls(
-            name=wrapper_func_name,
             description=description,
             source_type=source_type,
             tags=tags,
@@ -187,7 +185,6 @@ class ToolCreate(LettaBase):
         json_schema = generate_schema_from_args_schema_v2(langchain_tool.args_schema, name=wrapper_func_name, description=description)
 
         return cls(
-            name=wrapper_func_name,
             description=description,
             source_type=source_type,
             tags=tags,
@@ -198,7 +195,6 @@ class ToolCreate(LettaBase):
 
 class ToolUpdate(LettaBase):
     description: Optional[str] = Field(None, description="The description of the tool.")
-    name: Optional[str] = Field(None, description="The name of the function.")
     tags: Optional[List[str]] = Field(None, description="Metadata tags.")
     source_code: Optional[str] = Field(None, description="The source code of the function.")
     source_type: Optional[str] = Field(None, description="The type of the source code.")

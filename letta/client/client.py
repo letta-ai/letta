@@ -185,20 +185,15 @@ class AbstractClient(object):
     def load_composio_tool(self, action: "ActionType") -> Tool:
         raise NotImplementedError
 
-    def create_tool(
-        self, func, name: Optional[str] = None, tags: Optional[List[str]] = None, return_char_limit: int = FUNCTION_RETURN_CHAR_LIMIT
-    ) -> Tool:
+    def create_tool(self, func, tags: Optional[List[str]] = None, return_char_limit: int = FUNCTION_RETURN_CHAR_LIMIT) -> Tool:
         raise NotImplementedError
 
-    def create_or_update_tool(
-        self, func, name: Optional[str] = None, tags: Optional[List[str]] = None, return_char_limit: int = FUNCTION_RETURN_CHAR_LIMIT
-    ) -> Tool:
+    def create_or_update_tool(self, func, tags: Optional[List[str]] = None, return_char_limit: int = FUNCTION_RETURN_CHAR_LIMIT) -> Tool:
         raise NotImplementedError
 
     def update_tool(
         self,
         id: str,
-        name: Optional[str] = None,
         description: Optional[str] = None,
         func: Optional[Callable] = None,
         tags: Optional[List[str]] = None,
@@ -1546,7 +1541,6 @@ class RESTClient(AbstractClient):
     def create_tool(
         self,
         func: Callable,
-        name: Optional[str] = None,
         tags: Optional[List[str]] = None,
         return_char_limit: int = FUNCTION_RETURN_CHAR_LIMIT,
     ) -> Tool:
@@ -1566,7 +1560,7 @@ class RESTClient(AbstractClient):
         source_type = "python"
 
         # call server function
-        request = ToolCreate(source_type=source_type, source_code=source_code, name=name, return_char_limit=return_char_limit)
+        request = ToolCreate(source_type=source_type, source_code=source_code, return_char_limit=return_char_limit)
         if tags:
             request.tags = tags
         response = requests.post(f"{self.base_url}/{self.api_prefix}/tools", json=request.model_dump(), headers=self.headers)
@@ -1577,7 +1571,6 @@ class RESTClient(AbstractClient):
     def create_or_update_tool(
         self,
         func: Callable,
-        name: Optional[str] = None,
         tags: Optional[List[str]] = None,
         return_char_limit: int = FUNCTION_RETURN_CHAR_LIMIT,
     ) -> Tool:
@@ -1597,7 +1590,7 @@ class RESTClient(AbstractClient):
         source_type = "python"
 
         # call server function
-        request = ToolCreate(source_type=source_type, source_code=source_code, name=name, return_char_limit=return_char_limit)
+        request = ToolCreate(source_type=source_type, source_code=source_code, return_char_limit=return_char_limit)
         if tags:
             request.tags = tags
         response = requests.put(f"{self.base_url}/{self.api_prefix}/tools", json=request.model_dump(), headers=self.headers)
@@ -1608,7 +1601,6 @@ class RESTClient(AbstractClient):
     def update_tool(
         self,
         id: str,
-        name: Optional[str] = None,
         description: Optional[str] = None,
         func: Optional[Callable] = None,
         tags: Optional[List[str]] = None,
@@ -1639,7 +1631,6 @@ class RESTClient(AbstractClient):
             source_type=source_type,
             source_code=source_code,
             tags=tags,
-            name=name,
             return_char_limit=return_char_limit,
         )
         response = requests.patch(f"{self.base_url}/{self.api_prefix}/tools/{id}", json=request.model_dump(), headers=self.headers)
@@ -2976,7 +2967,6 @@ class LocalClient(AbstractClient):
     def create_tool(
         self,
         func,
-        name: Optional[str] = None,
         tags: Optional[List[str]] = None,
         description: Optional[str] = None,
         return_char_limit: int = FUNCTION_RETURN_CHAR_LIMIT,
@@ -3018,7 +3008,6 @@ class LocalClient(AbstractClient):
     def create_or_update_tool(
         self,
         func,
-        name: Optional[str] = None,
         tags: Optional[List[str]] = None,
         description: Optional[str] = None,
         return_char_limit: int = FUNCTION_RETURN_CHAR_LIMIT,
@@ -3028,7 +3017,6 @@ class LocalClient(AbstractClient):
 
         Args:
             func (callable): The function to create a tool for.
-            name: (str): Name of the tool (must be unique per-user.)
             tags (Optional[List[str]], optional): Tags for the tool. Defaults to None.
             description (str, optional): The description.
             return_char_limit (int): The character limit for the tool's return value. Defaults to FUNCTION_RETURN_CHAR_LIMIT.
@@ -3046,7 +3034,6 @@ class LocalClient(AbstractClient):
             Tool(
                 source_type=source_type,
                 source_code=source_code,
-                name=name,
                 tags=tags,
                 description=description,
                 return_char_limit=return_char_limit,
@@ -3057,7 +3044,6 @@ class LocalClient(AbstractClient):
     def update_tool(
         self,
         id: str,
-        name: Optional[str] = None,
         description: Optional[str] = None,
         func: Optional[Callable] = None,
         tags: Optional[List[str]] = None,
@@ -3068,7 +3054,6 @@ class LocalClient(AbstractClient):
 
         Args:
             id (str): ID of the tool
-            name (str): Name of the tool
             func (callable): Function to wrap in a tool
             tags (List[str]): Tags for the tool
             return_char_limit (int): The character limit for the tool's return value. Defaults to FUNCTION_RETURN_CHAR_LIMIT.
@@ -3080,7 +3065,6 @@ class LocalClient(AbstractClient):
             "source_type": "python",  # Always include source_type
             "source_code": parse_source_code(func) if func else None,
             "tags": tags,
-            "name": name,
             "description": description,
             "return_char_limit": return_char_limit,
         }

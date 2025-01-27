@@ -1732,7 +1732,7 @@ def test_update_tool_source_code_refreshes_schema_only(server: SyncServer, print
     name = "counter_tool"
 
     # Create a ToolUpdate object to modify the tool's source_code
-    tool_update = ToolUpdate(name=name, source_code=source_code)
+    tool_update = ToolUpdate(source_code=source_code)
 
     # Update the tool using the manager method
     server.tool_manager.update_tool_by_id(print_tool.id, tool_update, actor=default_user)

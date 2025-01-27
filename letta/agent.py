@@ -466,7 +466,10 @@ class Agent(BaseAgent):
             if isinstance(heartbeat_request, str) and heartbeat_request.lower().strip() == "true":
                 heartbeat_request = True
 
-            if not isinstance(heartbeat_request, bool) or heartbeat_request is None:
+            if heartbeat_request is None:
+                heartbeat_request = False
+
+            if not isinstance(heartbeat_request, bool):
                 self.logger.warning(
                     f"{CLI_WARNING_PREFIX}'request_heartbeat' arg parsed was not a bool or None, type={type(heartbeat_request)}, value={heartbeat_request}"
                 )

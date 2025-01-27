@@ -118,6 +118,27 @@ def compile_memory_metadata_block(
     return memory_metadata_block
 
 
+class PreserveMapping(dict):
+    """Used to preserve (do not modify) undefined variables in the system prompt"""
+
+    def __missing__(self, key):
+        return "{" + key + "}"
+
+
+def safe_format(template: str, variables: dict) -> str:
+    """
+    Safely formats a template string, preserving empty {} and {unknown_vars}
+    while substituting known variables.
+
+    If we simply use {} in format_map, it'll be treated as a positional field
+    """
+    # First escape any empty {} by doubling them
+    escaped = template.replace("{}", "{{}}")
+
+    # Now use format_map with our custom mapping
+    return escaped.format_map(PreserveMapping(variables))
+
+
 def compile_system_message(
     system_prompt: str,
     in_context_memory: Memory,
@@ -169,7 +190,7 @@ def compile_system_message(
 
         # render the variables using the built-in templater
         try:
-            formatted_prompt = system_prompt.format_map(variables)
+            formatted_prompt = safe_format(system_prompt, variables)
         except Exception as e:
             raise ValueError(f"Failed to format system prompt - {str(e)}. System prompt value:\n{system_prompt}")
 

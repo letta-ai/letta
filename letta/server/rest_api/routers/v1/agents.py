@@ -408,6 +408,7 @@ AgentMessagesResponse = Annotated[
 def list_messages(
     agent_id: str,
     server: "SyncServer" = Depends(get_letta_server),
+    after: Optional[str] = Query(None, description="Message after which to retrieve the returned messages."),
     before: Optional[str] = Query(None, description="Message before which to retrieve the returned messages."),
     limit: int = Query(10, description="Maximum number of messages to retrieve."),
     msg_object: bool = Query(False, description="If true, returns Message objects. If false, return LettaMessage objects."),
@@ -430,6 +431,7 @@ def list_messages(
     return server.get_agent_recall(
         user_id=actor.id,
         agent_id=agent_id,
+        after=after,
         before=before,
         limit=limit,
         reverse=True,
