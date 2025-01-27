@@ -785,6 +785,18 @@ export const $AssistantMessage = {
   title: 'AssistantMessage',
 } as const;
 
+export const $Audio = {
+  properties: {
+    id: {
+      type: 'string',
+      title: 'Id',
+    },
+  },
+  type: 'object',
+  required: ['id'],
+  title: 'Audio',
+} as const;
+
 export const $AuthRequest = {
   properties: {
     password: {
@@ -1122,14 +1134,264 @@ export const $Body_upload_file_to_source = {
   title: 'Body_upload_file_to_source',
 } as const;
 
-export const $ChatCompletionMessageToolCall = {
+export const $ChatCompletionAssistantMessageParam = {
+  properties: {
+    role: {
+      type: 'string',
+      enum: ['assistant'],
+      const: 'assistant',
+      title: 'Role',
+    },
+    audio: {
+      anyOf: [
+        {
+          $ref: '#/components/schemas/Audio',
+        },
+        {
+          type: 'null',
+        },
+      ],
+    },
+    content: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          items: {
+            anyOf: [
+              {
+                $ref: '#/components/schemas/ChatCompletionContentPartTextParam',
+              },
+              {
+                $ref: '#/components/schemas/ChatCompletionContentPartRefusalParam',
+              },
+            ],
+          },
+          type: 'array',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Content',
+    },
+    function_call: {
+      anyOf: [
+        {
+          $ref: '#/components/schemas/FunctionCall',
+        },
+        {
+          type: 'null',
+        },
+      ],
+    },
+    name: {
+      type: 'string',
+      title: 'Name',
+    },
+    refusal: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Refusal',
+    },
+    tool_calls: {
+      items: {
+        $ref: '#/components/schemas/ChatCompletionMessageToolCallParam',
+      },
+      type: 'array',
+      title: 'Tool Calls',
+    },
+  },
+  type: 'object',
+  required: ['role'],
+  title: 'ChatCompletionAssistantMessageParam',
+} as const;
+
+export const $ChatCompletionAudioParam = {
+  properties: {
+    format: {
+      type: 'string',
+      enum: ['wav', 'mp3', 'flac', 'opus', 'pcm16'],
+      title: 'Format',
+    },
+    voice: {
+      type: 'string',
+      enum: [
+        'alloy',
+        'ash',
+        'ballad',
+        'coral',
+        'echo',
+        'sage',
+        'shimmer',
+        'verse',
+      ],
+      title: 'Voice',
+    },
+  },
+  type: 'object',
+  required: ['format', 'voice'],
+  title: 'ChatCompletionAudioParam',
+} as const;
+
+export const $ChatCompletionContentPartImageParam = {
+  properties: {
+    image_url: {
+      $ref: '#/components/schemas/ImageURL',
+    },
+    type: {
+      type: 'string',
+      enum: ['image_url'],
+      const: 'image_url',
+      title: 'Type',
+    },
+  },
+  type: 'object',
+  required: ['image_url', 'type'],
+  title: 'ChatCompletionContentPartImageParam',
+} as const;
+
+export const $ChatCompletionContentPartInputAudioParam = {
+  properties: {
+    input_audio: {
+      $ref: '#/components/schemas/InputAudio',
+    },
+    type: {
+      type: 'string',
+      enum: ['input_audio'],
+      const: 'input_audio',
+      title: 'Type',
+    },
+  },
+  type: 'object',
+  required: ['input_audio', 'type'],
+  title: 'ChatCompletionContentPartInputAudioParam',
+} as const;
+
+export const $ChatCompletionContentPartRefusalParam = {
+  properties: {
+    refusal: {
+      type: 'string',
+      title: 'Refusal',
+    },
+    type: {
+      type: 'string',
+      enum: ['refusal'],
+      const: 'refusal',
+      title: 'Type',
+    },
+  },
+  type: 'object',
+  required: ['refusal', 'type'],
+  title: 'ChatCompletionContentPartRefusalParam',
+} as const;
+
+export const $ChatCompletionContentPartTextParam = {
+  properties: {
+    text: {
+      type: 'string',
+      title: 'Text',
+    },
+    type: {
+      type: 'string',
+      enum: ['text'],
+      const: 'text',
+      title: 'Type',
+    },
+  },
+  type: 'object',
+  required: ['text', 'type'],
+  title: 'ChatCompletionContentPartTextParam',
+} as const;
+
+export const $ChatCompletionDeveloperMessageParam = {
+  properties: {
+    content: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          items: {
+            $ref: '#/components/schemas/ChatCompletionContentPartTextParam',
+          },
+          type: 'array',
+        },
+      ],
+      title: 'Content',
+    },
+    role: {
+      type: 'string',
+      enum: ['developer'],
+      const: 'developer',
+      title: 'Role',
+    },
+    name: {
+      type: 'string',
+      title: 'Name',
+    },
+  },
+  type: 'object',
+  required: ['content', 'role'],
+  title: 'ChatCompletionDeveloperMessageParam',
+} as const;
+
+export const $ChatCompletionFunctionCallOptionParam = {
+  properties: {
+    name: {
+      type: 'string',
+      title: 'Name',
+    },
+  },
+  type: 'object',
+  required: ['name'],
+  title: 'ChatCompletionFunctionCallOptionParam',
+} as const;
+
+export const $ChatCompletionFunctionMessageParam = {
+  properties: {
+    content: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Content',
+    },
+    name: {
+      type: 'string',
+      title: 'Name',
+    },
+    role: {
+      type: 'string',
+      enum: ['function'],
+      const: 'function',
+      title: 'Role',
+    },
+  },
+  type: 'object',
+  required: ['content', 'name', 'role'],
+  title: 'ChatCompletionFunctionMessageParam',
+} as const;
+
+export const $ChatCompletionMessageToolCall_Input = {
   properties: {
     id: {
       type: 'string',
       title: 'Id',
     },
     function: {
-      $ref: '#/components/schemas/Function',
+      $ref: '#/components/schemas/openai__types__chat__chat_completion_message_tool_call__Function',
     },
     type: {
       type: 'string',
@@ -1142,6 +1404,228 @@ export const $ChatCompletionMessageToolCall = {
   type: 'object',
   required: ['id', 'function', 'type'],
   title: 'ChatCompletionMessageToolCall',
+} as const;
+
+export const $ChatCompletionMessageToolCall_Output = {
+  properties: {
+    id: {
+      type: 'string',
+      title: 'Id',
+    },
+    function: {
+      $ref: '#/components/schemas/Function-Output',
+    },
+    type: {
+      type: 'string',
+      enum: ['function'],
+      const: 'function',
+      title: 'Type',
+    },
+  },
+  additionalProperties: true,
+  type: 'object',
+  required: ['id', 'function', 'type'],
+  title: 'ChatCompletionMessageToolCall',
+} as const;
+
+export const $ChatCompletionMessageToolCallParam = {
+  properties: {
+    id: {
+      type: 'string',
+      title: 'Id',
+    },
+    function: {
+      $ref: '#/components/schemas/openai__types__chat__chat_completion_message_tool_call_param__Function',
+    },
+    type: {
+      type: 'string',
+      enum: ['function'],
+      const: 'function',
+      title: 'Type',
+    },
+  },
+  type: 'object',
+  required: ['id', 'function', 'type'],
+  title: 'ChatCompletionMessageToolCallParam',
+} as const;
+
+export const $ChatCompletionNamedToolChoiceParam = {
+  properties: {
+    function: {
+      $ref: '#/components/schemas/openai__types__chat__chat_completion_named_tool_choice_param__Function',
+    },
+    type: {
+      type: 'string',
+      enum: ['function'],
+      const: 'function',
+      title: 'Type',
+    },
+  },
+  type: 'object',
+  required: ['function', 'type'],
+  title: 'ChatCompletionNamedToolChoiceParam',
+} as const;
+
+export const $ChatCompletionPredictionContentParam = {
+  properties: {
+    content: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          items: {
+            $ref: '#/components/schemas/ChatCompletionContentPartTextParam',
+          },
+          type: 'array',
+        },
+      ],
+      title: 'Content',
+    },
+    type: {
+      type: 'string',
+      enum: ['content'],
+      const: 'content',
+      title: 'Type',
+    },
+  },
+  type: 'object',
+  required: ['content', 'type'],
+  title: 'ChatCompletionPredictionContentParam',
+} as const;
+
+export const $ChatCompletionStreamOptionsParam = {
+  properties: {
+    include_usage: {
+      type: 'boolean',
+      title: 'Include Usage',
+    },
+  },
+  type: 'object',
+  title: 'ChatCompletionStreamOptionsParam',
+} as const;
+
+export const $ChatCompletionSystemMessageParam = {
+  properties: {
+    content: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          items: {
+            $ref: '#/components/schemas/ChatCompletionContentPartTextParam',
+          },
+          type: 'array',
+        },
+      ],
+      title: 'Content',
+    },
+    role: {
+      type: 'string',
+      enum: ['system'],
+      const: 'system',
+      title: 'Role',
+    },
+    name: {
+      type: 'string',
+      title: 'Name',
+    },
+  },
+  type: 'object',
+  required: ['content', 'role'],
+  title: 'ChatCompletionSystemMessageParam',
+} as const;
+
+export const $ChatCompletionToolMessageParam = {
+  properties: {
+    content: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          items: {
+            $ref: '#/components/schemas/ChatCompletionContentPartTextParam',
+          },
+          type: 'array',
+        },
+      ],
+      title: 'Content',
+    },
+    role: {
+      type: 'string',
+      enum: ['tool'],
+      const: 'tool',
+      title: 'Role',
+    },
+    tool_call_id: {
+      type: 'string',
+      title: 'Tool Call Id',
+    },
+  },
+  type: 'object',
+  required: ['content', 'role', 'tool_call_id'],
+  title: 'ChatCompletionToolMessageParam',
+} as const;
+
+export const $ChatCompletionToolParam = {
+  properties: {
+    function: {
+      $ref: '#/components/schemas/FunctionDefinition-Input',
+    },
+    type: {
+      type: 'string',
+      enum: ['function'],
+      const: 'function',
+      title: 'Type',
+    },
+  },
+  type: 'object',
+  required: ['function', 'type'],
+  title: 'ChatCompletionToolParam',
+} as const;
+
+export const $ChatCompletionUserMessageParam = {
+  properties: {
+    content: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          items: {
+            anyOf: [
+              {
+                $ref: '#/components/schemas/ChatCompletionContentPartTextParam',
+              },
+              {
+                $ref: '#/components/schemas/ChatCompletionContentPartImageParam',
+              },
+              {
+                $ref: '#/components/schemas/ChatCompletionContentPartInputAudioParam',
+              },
+            ],
+          },
+          type: 'array',
+        },
+      ],
+      title: 'Content',
+    },
+    role: {
+      type: 'string',
+      enum: ['user'],
+      const: 'user',
+      title: 'Role',
+    },
+    name: {
+      type: 'string',
+      title: 'Name',
+    },
+  },
+  type: 'object',
+  required: ['content', 'role'],
+  title: 'ChatCompletionUserMessageParam',
 } as const;
 
 export const $ChildToolRule = {
@@ -1170,6 +1654,769 @@ export const $ChildToolRule = {
   required: ['tool_name', 'children'],
   title: 'ChildToolRule',
   description: 'A ToolRule represents a tool that can be invoked by the agent.',
+} as const;
+
+export const $CompletionCreateParamsNonStreaming = {
+  properties: {
+    messages: {
+      items: {
+        anyOf: [
+          {
+            $ref: '#/components/schemas/ChatCompletionDeveloperMessageParam',
+          },
+          {
+            $ref: '#/components/schemas/ChatCompletionSystemMessageParam',
+          },
+          {
+            $ref: '#/components/schemas/ChatCompletionUserMessageParam',
+          },
+          {
+            $ref: '#/components/schemas/ChatCompletionAssistantMessageParam',
+          },
+          {
+            $ref: '#/components/schemas/ChatCompletionToolMessageParam',
+          },
+          {
+            $ref: '#/components/schemas/ChatCompletionFunctionMessageParam',
+          },
+        ],
+      },
+      type: 'array',
+      title: 'Messages',
+    },
+    model: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'string',
+          enum: [
+            'o1',
+            'o1-2024-12-17',
+            'o1-preview',
+            'o1-preview-2024-09-12',
+            'o1-mini',
+            'o1-mini-2024-09-12',
+            'gpt-4o',
+            'gpt-4o-2024-11-20',
+            'gpt-4o-2024-08-06',
+            'gpt-4o-2024-05-13',
+            'gpt-4o-audio-preview',
+            'gpt-4o-audio-preview-2024-10-01',
+            'gpt-4o-audio-preview-2024-12-17',
+            'gpt-4o-mini-audio-preview',
+            'gpt-4o-mini-audio-preview-2024-12-17',
+            'chatgpt-4o-latest',
+            'gpt-4o-mini',
+            'gpt-4o-mini-2024-07-18',
+            'gpt-4-turbo',
+            'gpt-4-turbo-2024-04-09',
+            'gpt-4-0125-preview',
+            'gpt-4-turbo-preview',
+            'gpt-4-1106-preview',
+            'gpt-4-vision-preview',
+            'gpt-4',
+            'gpt-4-0314',
+            'gpt-4-0613',
+            'gpt-4-32k',
+            'gpt-4-32k-0314',
+            'gpt-4-32k-0613',
+            'gpt-3.5-turbo',
+            'gpt-3.5-turbo-16k',
+            'gpt-3.5-turbo-0301',
+            'gpt-3.5-turbo-0613',
+            'gpt-3.5-turbo-1106',
+            'gpt-3.5-turbo-0125',
+            'gpt-3.5-turbo-16k-0613',
+          ],
+        },
+      ],
+      title: 'Model',
+    },
+    audio: {
+      anyOf: [
+        {
+          $ref: '#/components/schemas/ChatCompletionAudioParam',
+        },
+        {
+          type: 'null',
+        },
+      ],
+    },
+    frequency_penalty: {
+      anyOf: [
+        {
+          type: 'number',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Frequency Penalty',
+    },
+    function_call: {
+      anyOf: [
+        {
+          type: 'string',
+          enum: ['none', 'auto'],
+        },
+        {
+          $ref: '#/components/schemas/ChatCompletionFunctionCallOptionParam',
+        },
+      ],
+      title: 'Function Call',
+    },
+    functions: {
+      items: {
+        $ref: '#/components/schemas/openai__types__chat__completion_create_params__Function',
+      },
+      type: 'array',
+      title: 'Functions',
+    },
+    logit_bias: {
+      anyOf: [
+        {
+          additionalProperties: {
+            type: 'integer',
+          },
+          type: 'object',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Logit Bias',
+    },
+    logprobs: {
+      anyOf: [
+        {
+          type: 'boolean',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Logprobs',
+    },
+    max_completion_tokens: {
+      anyOf: [
+        {
+          type: 'integer',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Max Completion Tokens',
+    },
+    max_tokens: {
+      anyOf: [
+        {
+          type: 'integer',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Max Tokens',
+    },
+    metadata: {
+      anyOf: [
+        {
+          additionalProperties: {
+            type: 'string',
+          },
+          type: 'object',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Metadata',
+    },
+    modalities: {
+      anyOf: [
+        {
+          items: {
+            type: 'string',
+            enum: ['text', 'audio'],
+          },
+          type: 'array',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Modalities',
+    },
+    n: {
+      anyOf: [
+        {
+          type: 'integer',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'N',
+    },
+    parallel_tool_calls: {
+      type: 'boolean',
+      title: 'Parallel Tool Calls',
+    },
+    prediction: {
+      anyOf: [
+        {
+          $ref: '#/components/schemas/ChatCompletionPredictionContentParam',
+        },
+        {
+          type: 'null',
+        },
+      ],
+    },
+    presence_penalty: {
+      anyOf: [
+        {
+          type: 'number',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Presence Penalty',
+    },
+    reasoning_effort: {
+      type: 'string',
+      enum: ['low', 'medium', 'high'],
+      title: 'Reasoning Effort',
+    },
+    response_format: {
+      anyOf: [
+        {
+          $ref: '#/components/schemas/ResponseFormatText',
+        },
+        {
+          $ref: '#/components/schemas/ResponseFormatJSONObject',
+        },
+        {
+          $ref: '#/components/schemas/ResponseFormatJSONSchema',
+        },
+      ],
+      title: 'Response Format',
+    },
+    seed: {
+      anyOf: [
+        {
+          type: 'integer',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Seed',
+    },
+    service_tier: {
+      anyOf: [
+        {
+          type: 'string',
+          enum: ['auto', 'default'],
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Service Tier',
+    },
+    stop: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          items: {
+            type: 'string',
+          },
+          type: 'array',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Stop',
+    },
+    store: {
+      anyOf: [
+        {
+          type: 'boolean',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Store',
+    },
+    stream_options: {
+      anyOf: [
+        {
+          $ref: '#/components/schemas/ChatCompletionStreamOptionsParam',
+        },
+        {
+          type: 'null',
+        },
+      ],
+    },
+    temperature: {
+      anyOf: [
+        {
+          type: 'number',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Temperature',
+    },
+    tool_choice: {
+      anyOf: [
+        {
+          type: 'string',
+          enum: ['none', 'auto', 'required'],
+        },
+        {
+          $ref: '#/components/schemas/ChatCompletionNamedToolChoiceParam',
+        },
+      ],
+      title: 'Tool Choice',
+    },
+    tools: {
+      items: {
+        $ref: '#/components/schemas/ChatCompletionToolParam',
+      },
+      type: 'array',
+      title: 'Tools',
+    },
+    top_logprobs: {
+      anyOf: [
+        {
+          type: 'integer',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Top Logprobs',
+    },
+    top_p: {
+      anyOf: [
+        {
+          type: 'number',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Top P',
+    },
+    user: {
+      type: 'string',
+      title: 'User',
+    },
+    stream: {
+      anyOf: [
+        {
+          type: 'boolean',
+          enum: [false],
+          const: false,
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Stream',
+    },
+  },
+  type: 'object',
+  required: ['messages', 'model'],
+  title: 'CompletionCreateParamsNonStreaming',
+} as const;
+
+export const $CompletionCreateParamsStreaming = {
+  properties: {
+    messages: {
+      items: {
+        anyOf: [
+          {
+            $ref: '#/components/schemas/ChatCompletionDeveloperMessageParam',
+          },
+          {
+            $ref: '#/components/schemas/ChatCompletionSystemMessageParam',
+          },
+          {
+            $ref: '#/components/schemas/ChatCompletionUserMessageParam',
+          },
+          {
+            $ref: '#/components/schemas/ChatCompletionAssistantMessageParam',
+          },
+          {
+            $ref: '#/components/schemas/ChatCompletionToolMessageParam',
+          },
+          {
+            $ref: '#/components/schemas/ChatCompletionFunctionMessageParam',
+          },
+        ],
+      },
+      type: 'array',
+      title: 'Messages',
+    },
+    model: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'string',
+          enum: [
+            'o1',
+            'o1-2024-12-17',
+            'o1-preview',
+            'o1-preview-2024-09-12',
+            'o1-mini',
+            'o1-mini-2024-09-12',
+            'gpt-4o',
+            'gpt-4o-2024-11-20',
+            'gpt-4o-2024-08-06',
+            'gpt-4o-2024-05-13',
+            'gpt-4o-audio-preview',
+            'gpt-4o-audio-preview-2024-10-01',
+            'gpt-4o-audio-preview-2024-12-17',
+            'gpt-4o-mini-audio-preview',
+            'gpt-4o-mini-audio-preview-2024-12-17',
+            'chatgpt-4o-latest',
+            'gpt-4o-mini',
+            'gpt-4o-mini-2024-07-18',
+            'gpt-4-turbo',
+            'gpt-4-turbo-2024-04-09',
+            'gpt-4-0125-preview',
+            'gpt-4-turbo-preview',
+            'gpt-4-1106-preview',
+            'gpt-4-vision-preview',
+            'gpt-4',
+            'gpt-4-0314',
+            'gpt-4-0613',
+            'gpt-4-32k',
+            'gpt-4-32k-0314',
+            'gpt-4-32k-0613',
+            'gpt-3.5-turbo',
+            'gpt-3.5-turbo-16k',
+            'gpt-3.5-turbo-0301',
+            'gpt-3.5-turbo-0613',
+            'gpt-3.5-turbo-1106',
+            'gpt-3.5-turbo-0125',
+            'gpt-3.5-turbo-16k-0613',
+          ],
+        },
+      ],
+      title: 'Model',
+    },
+    audio: {
+      anyOf: [
+        {
+          $ref: '#/components/schemas/ChatCompletionAudioParam',
+        },
+        {
+          type: 'null',
+        },
+      ],
+    },
+    frequency_penalty: {
+      anyOf: [
+        {
+          type: 'number',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Frequency Penalty',
+    },
+    function_call: {
+      anyOf: [
+        {
+          type: 'string',
+          enum: ['none', 'auto'],
+        },
+        {
+          $ref: '#/components/schemas/ChatCompletionFunctionCallOptionParam',
+        },
+      ],
+      title: 'Function Call',
+    },
+    functions: {
+      items: {
+        $ref: '#/components/schemas/openai__types__chat__completion_create_params__Function',
+      },
+      type: 'array',
+      title: 'Functions',
+    },
+    logit_bias: {
+      anyOf: [
+        {
+          additionalProperties: {
+            type: 'integer',
+          },
+          type: 'object',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Logit Bias',
+    },
+    logprobs: {
+      anyOf: [
+        {
+          type: 'boolean',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Logprobs',
+    },
+    max_completion_tokens: {
+      anyOf: [
+        {
+          type: 'integer',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Max Completion Tokens',
+    },
+    max_tokens: {
+      anyOf: [
+        {
+          type: 'integer',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Max Tokens',
+    },
+    metadata: {
+      anyOf: [
+        {
+          additionalProperties: {
+            type: 'string',
+          },
+          type: 'object',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Metadata',
+    },
+    modalities: {
+      anyOf: [
+        {
+          items: {
+            type: 'string',
+            enum: ['text', 'audio'],
+          },
+          type: 'array',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Modalities',
+    },
+    n: {
+      anyOf: [
+        {
+          type: 'integer',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'N',
+    },
+    parallel_tool_calls: {
+      type: 'boolean',
+      title: 'Parallel Tool Calls',
+    },
+    prediction: {
+      anyOf: [
+        {
+          $ref: '#/components/schemas/ChatCompletionPredictionContentParam',
+        },
+        {
+          type: 'null',
+        },
+      ],
+    },
+    presence_penalty: {
+      anyOf: [
+        {
+          type: 'number',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Presence Penalty',
+    },
+    reasoning_effort: {
+      type: 'string',
+      enum: ['low', 'medium', 'high'],
+      title: 'Reasoning Effort',
+    },
+    response_format: {
+      anyOf: [
+        {
+          $ref: '#/components/schemas/ResponseFormatText',
+        },
+        {
+          $ref: '#/components/schemas/ResponseFormatJSONObject',
+        },
+        {
+          $ref: '#/components/schemas/ResponseFormatJSONSchema',
+        },
+      ],
+      title: 'Response Format',
+    },
+    seed: {
+      anyOf: [
+        {
+          type: 'integer',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Seed',
+    },
+    service_tier: {
+      anyOf: [
+        {
+          type: 'string',
+          enum: ['auto', 'default'],
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Service Tier',
+    },
+    stop: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          items: {
+            type: 'string',
+          },
+          type: 'array',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Stop',
+    },
+    store: {
+      anyOf: [
+        {
+          type: 'boolean',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Store',
+    },
+    stream_options: {
+      anyOf: [
+        {
+          $ref: '#/components/schemas/ChatCompletionStreamOptionsParam',
+        },
+        {
+          type: 'null',
+        },
+      ],
+    },
+    temperature: {
+      anyOf: [
+        {
+          type: 'number',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Temperature',
+    },
+    tool_choice: {
+      anyOf: [
+        {
+          type: 'string',
+          enum: ['none', 'auto', 'required'],
+        },
+        {
+          $ref: '#/components/schemas/ChatCompletionNamedToolChoiceParam',
+        },
+      ],
+      title: 'Tool Choice',
+    },
+    tools: {
+      items: {
+        $ref: '#/components/schemas/ChatCompletionToolParam',
+      },
+      type: 'array',
+      title: 'Tools',
+    },
+    top_logprobs: {
+      anyOf: [
+        {
+          type: 'integer',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Top Logprobs',
+    },
+    top_p: {
+      anyOf: [
+        {
+          type: 'number',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Top P',
+    },
+    user: {
+      type: 'string',
+      title: 'User',
+    },
+    stream: {
+      type: 'boolean',
+      enum: [true],
+      const: true,
+      title: 'Stream',
+    },
+  },
+  type: 'object',
+  required: ['messages', 'model', 'stream'],
+  title: 'CompletionCreateParamsStreaming',
 } as const;
 
 export const $ConditionalToolRule = {
@@ -2090,7 +3337,7 @@ export const $FileMetadata = {
   description: 'Representation of a single FileMetadata',
 } as const;
 
-export const $Function = {
+export const $Function_Output = {
   properties: {
     arguments: {
       type: 'string',
@@ -2107,7 +3354,54 @@ export const $Function = {
   title: 'Function',
 } as const;
 
-export const $FunctionDefinition = {
+export const $FunctionCall = {
+  properties: {
+    arguments: {
+      type: 'string',
+      title: 'Arguments',
+    },
+    name: {
+      type: 'string',
+      title: 'Name',
+    },
+  },
+  type: 'object',
+  required: ['arguments', 'name'],
+  title: 'FunctionCall',
+} as const;
+
+export const $FunctionDefinition_Input = {
+  properties: {
+    name: {
+      type: 'string',
+      title: 'Name',
+    },
+    description: {
+      type: 'string',
+      title: 'Description',
+    },
+    parameters: {
+      type: 'object',
+      title: 'Parameters',
+    },
+    strict: {
+      anyOf: [
+        {
+          type: 'boolean',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Strict',
+    },
+  },
+  type: 'object',
+  required: ['name'],
+  title: 'FunctionDefinition',
+} as const;
+
+export const $FunctionDefinition_Output = {
   properties: {
     name: {
       type: 'string',
@@ -2156,7 +3450,7 @@ export const $FunctionDefinition = {
 export const $FunctionTool = {
   properties: {
     function: {
-      $ref: '#/components/schemas/FunctionDefinition',
+      $ref: '#/components/schemas/FunctionDefinition-Output',
     },
     type: {
       type: 'string',
@@ -2202,6 +3496,23 @@ export const $Health = {
   description: 'Health check response body',
 } as const;
 
+export const $ImageURL = {
+  properties: {
+    url: {
+      type: 'string',
+      title: 'Url',
+    },
+    detail: {
+      type: 'string',
+      enum: ['auto', 'low', 'high'],
+      title: 'Detail',
+    },
+  },
+  type: 'object',
+  required: ['url'],
+  title: 'ImageURL',
+} as const;
+
 export const $InitToolRule = {
   properties: {
     tool_name: {
@@ -2220,6 +3531,54 @@ export const $InitToolRule = {
   required: ['tool_name'],
   title: 'InitToolRule',
   description: 'Represents the initial tool rule configuration.',
+} as const;
+
+export const $InputAudio = {
+  properties: {
+    data: {
+      type: 'string',
+      title: 'Data',
+    },
+    format: {
+      type: 'string',
+      enum: ['wav', 'mp3'],
+      title: 'Format',
+    },
+  },
+  type: 'object',
+  required: ['data', 'format'],
+  title: 'InputAudio',
+} as const;
+
+export const $JSONSchema = {
+  properties: {
+    name: {
+      type: 'string',
+      title: 'Name',
+    },
+    description: {
+      type: 'string',
+      title: 'Description',
+    },
+    schema: {
+      type: 'object',
+      title: 'Schema',
+    },
+    strict: {
+      anyOf: [
+        {
+          type: 'boolean',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Strict',
+    },
+  },
+  type: 'object',
+  required: ['name'],
+  title: 'JSONSchema',
 } as const;
 
 export const $Job = {
@@ -2809,7 +4168,7 @@ export const $Message = {
       anyOf: [
         {
           items: {
-            $ref: '#/components/schemas/ChatCompletionMessageToolCall',
+            $ref: '#/components/schemas/ChatCompletionMessageToolCall-Output',
           },
           type: 'array',
         },
@@ -2979,7 +4338,7 @@ export const $MessageUpdate = {
       anyOf: [
         {
           items: {
-            $ref: '#/components/schemas/ChatCompletionMessageToolCall',
+            $ref: '#/components/schemas/ChatCompletionMessageToolCall-Input',
           },
           type: 'array',
         },
@@ -3368,6 +4727,51 @@ Attributes:
     reasoning (str): The internal reasoning of the agent
     id (str): The ID of the message
     date (datetime): The date the message was created in ISO format`,
+} as const;
+
+export const $ResponseFormatJSONObject = {
+  properties: {
+    type: {
+      type: 'string',
+      enum: ['json_object'],
+      const: 'json_object',
+      title: 'Type',
+    },
+  },
+  type: 'object',
+  required: ['type'],
+  title: 'ResponseFormatJSONObject',
+} as const;
+
+export const $ResponseFormatJSONSchema = {
+  properties: {
+    json_schema: {
+      $ref: '#/components/schemas/JSONSchema',
+    },
+    type: {
+      type: 'string',
+      enum: ['json_schema'],
+      const: 'json_schema',
+      title: 'Type',
+    },
+  },
+  type: 'object',
+  required: ['json_schema', 'type'],
+  title: 'ResponseFormatJSONSchema',
+} as const;
+
+export const $ResponseFormatText = {
+  properties: {
+    type: {
+      type: 'string',
+      enum: ['text'],
+      const: 'text',
+      title: 'Type',
+    },
+  },
+  type: 'object',
+  required: ['type'],
+  title: 'ResponseFormatText',
 } as const;
 
 export const $Run = {
@@ -5106,6 +6510,74 @@ export const $ValidationError = {
   type: 'object',
   required: ['loc', 'msg', 'type'],
   title: 'ValidationError',
+} as const;
+
+export const $openai__types__chat__chat_completion_message_tool_call__Function =
+  {
+    properties: {
+      arguments: {
+        type: 'string',
+        title: 'Arguments',
+      },
+      name: {
+        type: 'string',
+        title: 'Name',
+      },
+    },
+    additionalProperties: true,
+    type: 'object',
+    required: ['arguments', 'name'],
+    title: 'Function',
+  } as const;
+
+export const $openai__types__chat__chat_completion_message_tool_call_param__Function =
+  {
+    properties: {
+      arguments: {
+        type: 'string',
+        title: 'Arguments',
+      },
+      name: {
+        type: 'string',
+        title: 'Name',
+      },
+    },
+    type: 'object',
+    required: ['arguments', 'name'],
+    title: 'Function',
+  } as const;
+
+export const $openai__types__chat__chat_completion_named_tool_choice_param__Function =
+  {
+    properties: {
+      name: {
+        type: 'string',
+        title: 'Name',
+      },
+    },
+    type: 'object',
+    required: ['name'],
+    title: 'Function',
+  } as const;
+
+export const $openai__types__chat__completion_create_params__Function = {
+  properties: {
+    name: {
+      type: 'string',
+      title: 'Name',
+    },
+    description: {
+      type: 'string',
+      title: 'Description',
+    },
+    parameters: {
+      type: 'object',
+      title: 'Parameters',
+    },
+  },
+  type: 'object',
+  required: ['name'],
+  title: 'Function',
 } as const;
 
 export const $LettaMessageUnion = {

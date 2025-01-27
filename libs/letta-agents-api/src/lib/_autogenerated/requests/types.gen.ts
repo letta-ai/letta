@@ -258,6 +258,10 @@ export type AssistantMessage = {
   content: string | Array<TextContent>;
 };
 
+export type Audio = {
+  id: string;
+};
+
 export type AuthRequest = {
   /**
    * Admin password provided when starting the Letta server
@@ -393,14 +397,172 @@ export type Body_upload_file_to_source = {
   file: Blob | File;
 };
 
-export type ChatCompletionMessageToolCall = {
-  id: string;
-  function: Function;
-  type: 'function';
-  [key: string]: unknown | string | Function;
+export type ChatCompletionAssistantMessageParam = {
+  role: 'assistant';
+  audio?: Audio | null;
+  content?:
+    | string
+    | Array<
+        | ChatCompletionContentPartTextParam
+        | ChatCompletionContentPartRefusalParam
+      >
+    | null;
+  function_call?: FunctionCall | null;
+  name?: string;
+  refusal?: string | null;
+  tool_calls?: Array<ChatCompletionMessageToolCallParam>;
 };
 
-export type type = 'function';
+export type role = 'assistant';
+
+export type ChatCompletionAudioParam = {
+  format: 'wav' | 'mp3' | 'flac' | 'opus' | 'pcm16';
+  voice:
+    | 'alloy'
+    | 'ash'
+    | 'ballad'
+    | 'coral'
+    | 'echo'
+    | 'sage'
+    | 'shimmer'
+    | 'verse';
+};
+
+export type format = 'wav' | 'mp3' | 'flac' | 'opus' | 'pcm16';
+
+export type voice =
+  | 'alloy'
+  | 'ash'
+  | 'ballad'
+  | 'coral'
+  | 'echo'
+  | 'sage'
+  | 'shimmer'
+  | 'verse';
+
+export type ChatCompletionContentPartImageParam = {
+  image_url: ImageURL;
+  type: 'image_url';
+};
+
+export type type = 'image_url';
+
+export type ChatCompletionContentPartInputAudioParam = {
+  input_audio: InputAudio;
+  type: 'input_audio';
+};
+
+export type type2 = 'input_audio';
+
+export type ChatCompletionContentPartRefusalParam = {
+  refusal: string;
+  type: 'refusal';
+};
+
+export type type3 = 'refusal';
+
+export type ChatCompletionContentPartTextParam = {
+  text: string;
+  type: 'text';
+};
+
+export type type4 = 'text';
+
+export type ChatCompletionDeveloperMessageParam = {
+  content: string | Array<ChatCompletionContentPartTextParam>;
+  role: 'developer';
+  name?: string;
+};
+
+export type role2 = 'developer';
+
+export type ChatCompletionFunctionCallOptionParam = {
+  name: string;
+};
+
+export type ChatCompletionFunctionMessageParam = {
+  content: string | null;
+  name: string;
+  role: 'function';
+};
+
+export type role3 = 'function';
+
+export type ChatCompletionMessageToolCall_Input = {
+  id: string;
+  function: openai__types__chat__chat_completion_message_tool_call__Function;
+  type: 'function';
+  [key: string]:
+    | unknown
+    | string
+    | openai__types__chat__chat_completion_message_tool_call__Function;
+};
+
+export type type5 = 'function';
+
+export type ChatCompletionMessageToolCall_Output = {
+  id: string;
+  function: Function_Output;
+  type: 'function';
+  [key: string]: unknown | string | Function_Output;
+};
+
+export type ChatCompletionMessageToolCallParam = {
+  id: string;
+  function: openai__types__chat__chat_completion_message_tool_call_param__Function;
+  type: 'function';
+};
+
+export type ChatCompletionNamedToolChoiceParam = {
+  function: openai__types__chat__chat_completion_named_tool_choice_param__Function;
+  type: 'function';
+};
+
+export type ChatCompletionPredictionContentParam = {
+  content: string | Array<ChatCompletionContentPartTextParam>;
+  type: 'content';
+};
+
+export type type6 = 'content';
+
+export type ChatCompletionStreamOptionsParam = {
+  include_usage?: boolean;
+};
+
+export type ChatCompletionSystemMessageParam = {
+  content: string | Array<ChatCompletionContentPartTextParam>;
+  role: 'system';
+  name?: string;
+};
+
+export type role4 = 'system';
+
+export type ChatCompletionToolMessageParam = {
+  content: string | Array<ChatCompletionContentPartTextParam>;
+  role: 'tool';
+  tool_call_id: string;
+};
+
+export type role5 = 'tool';
+
+export type ChatCompletionToolParam = {
+  function: FunctionDefinition_Input;
+  type: 'function';
+};
+
+export type ChatCompletionUserMessageParam = {
+  content:
+    | string
+    | Array<
+        | ChatCompletionContentPartTextParam
+        | ChatCompletionContentPartImageParam
+        | ChatCompletionContentPartInputAudioParam
+      >;
+  role: 'user';
+  name?: string;
+};
+
+export type role6 = 'user';
 
 /**
  * A ToolRule represents a tool that can be invoked by the agent.
@@ -415,6 +577,186 @@ export type ChildToolRule = {
    * The children tools that can be invoked.
    */
   children: Array<string>;
+};
+
+export type CompletionCreateParamsNonStreaming = {
+  messages: Array<
+    | ChatCompletionDeveloperMessageParam
+    | ChatCompletionSystemMessageParam
+    | ChatCompletionUserMessageParam
+    | ChatCompletionAssistantMessageParam
+    | ChatCompletionToolMessageParam
+    | ChatCompletionFunctionMessageParam
+  >;
+  model:
+    | string
+    | 'o1'
+    | 'o1-2024-12-17'
+    | 'o1-preview'
+    | 'o1-preview-2024-09-12'
+    | 'o1-mini'
+    | 'o1-mini-2024-09-12'
+    | 'gpt-4o'
+    | 'gpt-4o-2024-11-20'
+    | 'gpt-4o-2024-08-06'
+    | 'gpt-4o-2024-05-13'
+    | 'gpt-4o-audio-preview'
+    | 'gpt-4o-audio-preview-2024-10-01'
+    | 'gpt-4o-audio-preview-2024-12-17'
+    | 'gpt-4o-mini-audio-preview'
+    | 'gpt-4o-mini-audio-preview-2024-12-17'
+    | 'chatgpt-4o-latest'
+    | 'gpt-4o-mini'
+    | 'gpt-4o-mini-2024-07-18'
+    | 'gpt-4-turbo'
+    | 'gpt-4-turbo-2024-04-09'
+    | 'gpt-4-0125-preview'
+    | 'gpt-4-turbo-preview'
+    | 'gpt-4-1106-preview'
+    | 'gpt-4-vision-preview'
+    | 'gpt-4'
+    | 'gpt-4-0314'
+    | 'gpt-4-0613'
+    | 'gpt-4-32k'
+    | 'gpt-4-32k-0314'
+    | 'gpt-4-32k-0613'
+    | 'gpt-3.5-turbo'
+    | 'gpt-3.5-turbo-16k'
+    | 'gpt-3.5-turbo-0301'
+    | 'gpt-3.5-turbo-0613'
+    | 'gpt-3.5-turbo-1106'
+    | 'gpt-3.5-turbo-0125'
+    | 'gpt-3.5-turbo-16k-0613';
+  audio?: ChatCompletionAudioParam | null;
+  frequency_penalty?: number | null;
+  function_call?: 'none' | 'auto' | ChatCompletionFunctionCallOptionParam;
+  functions?: Array<openai__types__chat__completion_create_params__Function>;
+  logit_bias?: {
+    [key: string]: number;
+  } | null;
+  logprobs?: boolean | null;
+  max_completion_tokens?: number | null;
+  max_tokens?: number | null;
+  metadata?: {
+    [key: string]: string;
+  } | null;
+  modalities?: Array<'text' | 'audio'> | null;
+  n?: number | null;
+  parallel_tool_calls?: boolean;
+  prediction?: ChatCompletionPredictionContentParam | null;
+  presence_penalty?: number | null;
+  reasoning_effort?: 'low' | 'medium' | 'high';
+  response_format?:
+    | ResponseFormatText
+    | ResponseFormatJSONObject
+    | ResponseFormatJSONSchema;
+  seed?: number | null;
+  service_tier?: 'auto' | 'default' | null;
+  stop?: string | Array<string> | null;
+  store?: boolean | null;
+  stream_options?: ChatCompletionStreamOptionsParam | null;
+  temperature?: number | null;
+  tool_choice?:
+    | 'none'
+    | 'auto'
+    | 'required'
+    | ChatCompletionNamedToolChoiceParam;
+  tools?: Array<ChatCompletionToolParam>;
+  top_logprobs?: number | null;
+  top_p?: number | null;
+  user?: string;
+  stream?: false | null;
+};
+
+export type reasoning_effort = 'low' | 'medium' | 'high';
+
+export type CompletionCreateParamsStreaming = {
+  messages: Array<
+    | ChatCompletionDeveloperMessageParam
+    | ChatCompletionSystemMessageParam
+    | ChatCompletionUserMessageParam
+    | ChatCompletionAssistantMessageParam
+    | ChatCompletionToolMessageParam
+    | ChatCompletionFunctionMessageParam
+  >;
+  model:
+    | string
+    | 'o1'
+    | 'o1-2024-12-17'
+    | 'o1-preview'
+    | 'o1-preview-2024-09-12'
+    | 'o1-mini'
+    | 'o1-mini-2024-09-12'
+    | 'gpt-4o'
+    | 'gpt-4o-2024-11-20'
+    | 'gpt-4o-2024-08-06'
+    | 'gpt-4o-2024-05-13'
+    | 'gpt-4o-audio-preview'
+    | 'gpt-4o-audio-preview-2024-10-01'
+    | 'gpt-4o-audio-preview-2024-12-17'
+    | 'gpt-4o-mini-audio-preview'
+    | 'gpt-4o-mini-audio-preview-2024-12-17'
+    | 'chatgpt-4o-latest'
+    | 'gpt-4o-mini'
+    | 'gpt-4o-mini-2024-07-18'
+    | 'gpt-4-turbo'
+    | 'gpt-4-turbo-2024-04-09'
+    | 'gpt-4-0125-preview'
+    | 'gpt-4-turbo-preview'
+    | 'gpt-4-1106-preview'
+    | 'gpt-4-vision-preview'
+    | 'gpt-4'
+    | 'gpt-4-0314'
+    | 'gpt-4-0613'
+    | 'gpt-4-32k'
+    | 'gpt-4-32k-0314'
+    | 'gpt-4-32k-0613'
+    | 'gpt-3.5-turbo'
+    | 'gpt-3.5-turbo-16k'
+    | 'gpt-3.5-turbo-0301'
+    | 'gpt-3.5-turbo-0613'
+    | 'gpt-3.5-turbo-1106'
+    | 'gpt-3.5-turbo-0125'
+    | 'gpt-3.5-turbo-16k-0613';
+  audio?: ChatCompletionAudioParam | null;
+  frequency_penalty?: number | null;
+  function_call?: 'none' | 'auto' | ChatCompletionFunctionCallOptionParam;
+  functions?: Array<openai__types__chat__completion_create_params__Function>;
+  logit_bias?: {
+    [key: string]: number;
+  } | null;
+  logprobs?: boolean | null;
+  max_completion_tokens?: number | null;
+  max_tokens?: number | null;
+  metadata?: {
+    [key: string]: string;
+  } | null;
+  modalities?: Array<'text' | 'audio'> | null;
+  n?: number | null;
+  parallel_tool_calls?: boolean;
+  prediction?: ChatCompletionPredictionContentParam | null;
+  presence_penalty?: number | null;
+  reasoning_effort?: 'low' | 'medium' | 'high';
+  response_format?:
+    | ResponseFormatText
+    | ResponseFormatJSONObject
+    | ResponseFormatJSONSchema;
+  seed?: number | null;
+  service_tier?: 'auto' | 'default' | null;
+  stop?: string | Array<string> | null;
+  store?: boolean | null;
+  stream_options?: ChatCompletionStreamOptionsParam | null;
+  temperature?: number | null;
+  tool_choice?:
+    | 'none'
+    | 'auto'
+    | 'required'
+    | ChatCompletionNamedToolChoiceParam;
+  tools?: Array<ChatCompletionToolParam>;
+  top_logprobs?: number | null;
+  top_p?: number | null;
+  user?: string;
+  stream: true;
 };
 
 /**
@@ -837,13 +1179,27 @@ export type FileMetadata = {
   is_deleted?: boolean;
 };
 
-export type Function = {
+export type Function_Output = {
   arguments: string;
   name: string;
   [key: string]: unknown | string;
 };
 
-export type FunctionDefinition = {
+export type FunctionCall = {
+  arguments: string;
+  name: string;
+};
+
+export type FunctionDefinition_Input = {
+  name: string;
+  description?: string;
+  parameters?: {
+    [key: string]: unknown;
+  };
+  strict?: boolean | null;
+};
+
+export type FunctionDefinition_Output = {
   name: string;
   description?: string | null;
   parameters?: {
@@ -854,9 +1210,9 @@ export type FunctionDefinition = {
 };
 
 export type FunctionTool = {
-  function: FunctionDefinition;
+  function: FunctionDefinition_Output;
   type: 'function';
-  [key: string]: unknown | FunctionDefinition | string;
+  [key: string]: unknown | FunctionDefinition_Output | string;
 };
 
 export type HTTPValidationError = {
@@ -871,6 +1227,13 @@ export type Health = {
   status: string;
 };
 
+export type ImageURL = {
+  url: string;
+  detail?: 'auto' | 'low' | 'high';
+};
+
+export type detail = 'auto' | 'low' | 'high';
+
 /**
  * Represents the initial tool rule configuration.
  */
@@ -880,6 +1243,22 @@ export type InitToolRule = {
    */
   tool_name: string;
   type?: ToolRuleType;
+};
+
+export type InputAudio = {
+  data: string;
+  format: 'wav' | 'mp3';
+};
+
+export type format2 = 'wav' | 'mp3';
+
+export type JSONSchema = {
+  name: string;
+  description?: string;
+  schema?: {
+    [key: string]: unknown;
+  };
+  strict?: boolean | null;
 };
 
 /**
@@ -1220,7 +1599,7 @@ export type Message = {
   /**
    * The list of tool calls requested.
    */
-  tool_calls?: Array<ChatCompletionMessageToolCall> | null;
+  tool_calls?: Array<ChatCompletionMessageToolCall_Output> | null;
   /**
    * The id of the tool call.
    */
@@ -1252,7 +1631,7 @@ export type MessageCreate = {
 /**
  * The role of the participant.
  */
-export type role = 'user' | 'system';
+export type role7 = 'user' | 'system';
 
 export type MessageRole = 'assistant' | 'user' | 'tool' | 'function' | 'system';
 
@@ -1275,7 +1654,7 @@ export type MessageUpdate = {
   /**
    * The list of tool calls requested.
    */
-  tool_calls?: Array<ChatCompletionMessageToolCall> | null;
+  tool_calls?: Array<ChatCompletionMessageToolCall_Input> | null;
   /**
    * The id of the tool call.
    */
@@ -1436,6 +1815,23 @@ export type ReasoningMessage = {
   date: string;
   message_type?: 'reasoning_message';
   reasoning: string;
+};
+
+export type ResponseFormatJSONObject = {
+  type: 'json_object';
+};
+
+export type type7 = 'json_object';
+
+export type ResponseFormatJSONSchema = {
+  json_schema: JSONSchema;
+  type: 'json_schema';
+};
+
+export type type8 = 'json_schema';
+
+export type ResponseFormatText = {
+  type: 'text';
 };
 
 /**
@@ -1764,11 +2160,6 @@ export type TextContent = {
    */
   text: string;
 };
-
-/**
- * The type of the message.
- */
-export type type2 = 'text';
 
 /**
  * Representation of a tool, which is a function that can be called by the agent.
@@ -2135,6 +2526,31 @@ export type ValidationError = {
   loc: Array<string | number>;
   msg: string;
   type: string;
+};
+
+export type openai__types__chat__chat_completion_message_tool_call__Function = {
+  arguments: string;
+  name: string;
+  [key: string]: unknown | string;
+};
+
+export type openai__types__chat__chat_completion_message_tool_call_param__Function =
+  {
+    arguments: string;
+    name: string;
+  };
+
+export type openai__types__chat__chat_completion_named_tool_choice_param__Function =
+  {
+    name: string;
+  };
+
+export type openai__types__chat__completion_create_params__Function = {
+  name: string;
+  description?: string;
+  parameters?: {
+    [key: string]: unknown;
+  };
 };
 
 export type LettaMessageUnion =

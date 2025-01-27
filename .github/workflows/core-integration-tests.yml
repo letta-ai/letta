@@ -49,6 +49,7 @@ jobs:
           - "integration_test_offline_memory_agent.py"
           - "integration_test_agent_tool_graph.py"
           - "integration_test_composio.py"
+          - "integration_test_chat_completions.py"
     services:
       qdrant:
         image: qdrant/qdrant

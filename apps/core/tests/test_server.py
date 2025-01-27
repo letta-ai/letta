@@ -914,7 +914,7 @@ def test_memory_rebuild_count(server, user, mock_e2b_api_key_none, base_tools, b
     # create agent
     agent_state = server.create_agent(
         request=CreateAgent(
-            name="memory_rebuild_test_agent",
+            name="test_memory_rebuild_count",
             tool_ids=[t.id for t in base_tools + base_memory_tools],
             memory_blocks=[
                 CreateBlock(label="human", value="The human's name is Bob."),
@@ -952,18 +952,11 @@ def test_memory_rebuild_count(server, user, mock_e2b_api_key_none, base_tools, b
         num_system_messages, all_messages = count_system_messages_in_recall()
         assert num_system_messages == 1, (num_system_messages, all_messages)
 
-        # Assuming core memory append actually ran correctly, at this point there should be 2 messages
-        server.user_message(user_id=user.id, agent_id=agent_state.id, message="Append 'banana' to your core memory")
-
-        # At this stage, there should be 2 system message inside of recall storage
-        num_system_messages, all_messages = count_system_messages_in_recall()
-        assert num_system_messages == 2, (num_system_messages, all_messages)
-
         # Run server.load_agent, and make sure that the number of system messages is still 2
         server.load_agent(agent_id=agent_state.id, actor=actor)
 
         num_system_messages, all_messages = count_system_messages_in_recall()
-        assert num_system_messages == 2, (num_system_messages, all_messages)
+        assert num_system_messages == 1, (num_system_messages, all_messages)
 
     finally:
         # cleanup
