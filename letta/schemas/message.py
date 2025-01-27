@@ -1,6 +1,7 @@
 import copy
 import json
 import warnings
+from collections import OrderedDict
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Literal, Optional, Union
 
@@ -33,18 +34,18 @@ def add_inner_thoughts_to_tool_call(
     inner_thoughts_key: str,
 ) -> OpenAIToolCall:
     """Add inner thoughts (arg + value) to a tool call"""
-    # because the kwargs are stored as strings, we need to load then write the JSON dicts
     try:
         # load the args list
         func_args = json.loads(tool_call.function.arguments)
-        # add the inner thoughts to the args list
-        func_args[inner_thoughts_key] = inner_thoughts
+        # create new ordered dict with inner thoughts first
+        ordered_args = OrderedDict({inner_thoughts_key: inner_thoughts})
+        # update with remaining args
+        ordered_args.update(func_args)
         # create the updated tool call (as a string)
         updated_tool_call = copy.deepcopy(tool_call)
-        updated_tool_call.function.arguments = json_dumps(func_args)
+        updated_tool_call.function.arguments = json_dumps(ordered_args)
         return updated_tool_call
     except json.JSONDecodeError as e:
-        # TODO: change to logging
         warnings.warn(f"Failed to put inner thoughts in kwargs: {e}")
         raise e
 

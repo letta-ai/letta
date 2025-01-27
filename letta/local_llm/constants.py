@@ -27,6 +27,7 @@ DEFAULT_WRAPPER_NAME = "chatml"
 
 INNER_THOUGHTS_KWARG = "inner_thoughts"
 INNER_THOUGHTS_KWARG_DESCRIPTION = "Deep inner monologue private to you only."
+INNER_THOUGHTS_KWARG_DESCRIPTION_GO_FIRST = f"Deep inner monologue private to you only. Think before you act, so always generate arg '{INNER_THOUGHTS_KWARG}' first before any other arg."
 INNER_THOUGHTS_CLI_SYMBOL = "💭"
 
 ASSISTANT_MESSAGE_CLI_SYMBOL = "🤖"

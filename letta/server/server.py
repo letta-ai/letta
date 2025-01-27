@@ -397,11 +397,16 @@ class SyncServer(Server):
             )
         # Attempt to enable LM Studio by default
         if model_settings.lmstudio_base_url:
-            self._enabled_providers.append(
-                LMStudioOpenAIProvider(
-                    base_url=model_settings.lmstudio_base_url,
-                )
+            # Auto-append v1 to the base URL
+            lmstudio_url = (
+                model_settings.lmstudio_base_url
+                if model_settings.lmstudio_base_url.endswith("/v1")
+                else model_settings.lmstudio_base_url + "/v1"
             )
+            # Set the OpenAI API key to something non-empty
+            if model_settings.openai_api_key is None:
+                model_settings.openai_api_key = "DUMMY"
+            self._enabled_providers.append(LMStudioOpenAIProvider(base_url=lmstudio_url))
 
     def load_agent(self, agent_id: str, actor: User, interface: Union[AgentInterface, None] = None) -> Agent:
         """Updated method to load agents from persisted storage"""
