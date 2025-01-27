@@ -348,12 +348,12 @@ paths:
                     - "$ref": "#/components/schemas/ToolReturnMessage"
                     - "$ref": "#/components/schemas/AssistantMessage"
                     - "$ref": "#/components/schemas/LettaUsageStatistics"
-      x-fern-examples: 
-        - code-samples: 
+      x-fern-examples:
+        - code-samples:
           - sdk: typescript
-            code: | 
+            code: |
               import { Letta } from "letta";
-              
+
               const client = new LettaClient({
                   token: "YOUR_TOKEN",
               });
@@ -505,3 +505,23 @@ paths:
       x-fern-sdk-group-name:
         - health
       x-fern-sdk-method-name: check
+  /v1/templates/{project_slug}/{template_version}:
+    post:
+      x-fern-sdk-group-name:
+        - templates
+      x-fern-sdk-method-name: createAgentsFromTemplate
+      parameters:
+        - name: project_slug
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: template_version
+          in: path
+          required: true
+          schema:
+              type: string
+      description: |
+        <Note>This endpoint is only available on Letta Cloud.</Note>
+
+        Returns the memory variables associated with an agent.

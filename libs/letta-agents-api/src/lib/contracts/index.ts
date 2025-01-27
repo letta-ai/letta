@@ -2,11 +2,13 @@ import { agentsContract, agentsQueryKeys } from './agentsContract';
 import { healthContract } from './healthContract';
 import { modelContracts, modelQueryClientKeys } from './modelsContracts';
 import { initTsrReactQuery } from '@ts-rest/react-query/v5';
+import { templatesContract } from './templatesContract';
 
 export const sdkContracts = {
   agents: agentsContract,
   models: modelContracts,
   health: healthContract,
+  templates: templatesContract,
 };
 
 export const sdkQueryKeys = {

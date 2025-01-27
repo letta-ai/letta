@@ -292,10 +292,10 @@ function SelectedTemplateState(props: SelectedTemplateStateProps) {
     mutate: createAgent,
     isSuccess,
     isPending,
-  } = webOriginSDKApi.agents.createAgent.useMutation({
+  } = webOriginSDKApi.templates.createAgentsFromTemplate.useMutation({
     onError: onErrored,
     onSuccess: (data) => {
-      push(`/projects/${projectSlug}/agents/${data.body.id}`);
+      push(`/projects/${projectSlug}/agents/${data.body.agents[0].id}`);
     },
   });
 
@@ -319,12 +319,15 @@ function SelectedTemplateState(props: SelectedTemplateStateProps) {
     }
 
     createAgent({
+      params: {
+        project: projectSlug,
+        template_version: selectedTemplate.version,
+      },
       body: {
         memory_variables: Object.fromEntries(
           memoryVariables.map(({ key, value }) => [key, value]),
         ),
-        from_template: selectedTemplate.version,
-        tool_exec_environment_variables: Object.fromEntries(
+        tool_variables: Object.fromEntries(
           toolVariables.map(({ key, value }) => [key, value]),
         ),
       },
@@ -333,6 +336,7 @@ function SelectedTemplateState(props: SelectedTemplateStateProps) {
     createAgent,
     isPending,
     isSuccess,
+    projectSlug,
     onCreating,
     toolVariables,
     selectedTemplate.version,

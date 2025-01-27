@@ -1029,6 +1029,69 @@
           }
         }
       }
+    },
+    "/v1/templates/{project}/{template_version}": {
+      "post": {
+        "description": "Creates agents given a template",
+        "summary": "Create agents from template",
+        "tags": ["templates"],
+        "parameters": [
+          {
+            "name": "project",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "The project slug"
+          },
+          {
+            "name": "template_version",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "The template version, formatted as {template-name}:{version-number} or {template-name}:latest"
+          }
+        ],
+        "operationId": "templates.createAgentsFromTemplate",
+        "requestBody": {
+          "description": "Body",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "agent_name": {
+                    "type": "string",
+                    "description": "The name of the agent, optional otherwise a random one will be assigned"
+                  },
+                  "memory_variables": {
+                    "type": "object",
+                    "additionalProperties": {
+                      "type": "string"
+                    },
+                    "description": "The memory variables to assign to the agent"
+                  },
+                  "tool_variables": {
+                    "type": "object",
+                    "additionalProperties": {
+                      "type": "string"
+                    },
+                    "description": "The tool variables to assign to the agent"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "201"
+          }
+        }
+      }
     }
   }
 }
