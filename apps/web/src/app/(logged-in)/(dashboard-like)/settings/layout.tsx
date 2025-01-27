@@ -17,8 +17,12 @@ function SettingsLayout(props: SettingsLayoutProps) {
 
   const { isLoading: isLoadingModelProviders, data: isModelProvidersEnabled } =
     useFeatureFlag('ALLOW_MODEL_PROVIDER_CONFIGURATION');
+  const { isLoading: isLoadingBilling, data: isBillingProviderEnabled } =
+    useFeatureFlag('BILLING');
   const showModelProviders =
     !isLoadingModelProviders && isModelProvidersEnabled;
+
+  const showBilling = !isLoadingBilling && isBillingProviderEnabled;
 
   return (
     <DashboardWithSidebarWrapper
@@ -55,10 +59,19 @@ function SettingsLayout(props: SettingsLayoutProps) {
                     label: t('organization.members'),
                     href: '/settings/organization/members',
                   },
+                  ...(showBilling
+                    ? [
+                        {
+                          id: 'billing',
+                          label: t('organization.billing'),
+                          href: '/settings/organization/billing',
+                        },
+                      ]
+                    : []),
                   {
-                    id: 'billing',
-                    label: t('organization.billing'),
-                    href: '/settings/organization/billing',
+                    id: 'usage',
+                    label: t('organization.usage'),
+                    href: '/settings/organization/usage',
                   },
                   {
                     id: 'integrations',

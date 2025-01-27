@@ -79,10 +79,12 @@ export function Alert(props: AlertProps) {
       role="alert"
       className={cn(alertVariants({ fullWidth, variant }), className)}
     >
-      <Slot className="w-5 h-5">{icon || defaultIcon}</Slot>
       <div className="flex flex-col w-full text-base gap">
-        <HStack fullWidth gap="small" justify="spaceBetween" align="start">
-          <h5 className="font-medium">{title}</h5>
+        <HStack fullWidth gap="small" justify="spaceBetween" align="center">
+          <HStack gap="small" align="center">
+            <Slot className="min-w-5 min-h-5">{icon || defaultIcon}</Slot>
+            <h5 className="font-medium">{title}</h5>
+          </HStack>
           {action}
           {onDismiss && (
             <button

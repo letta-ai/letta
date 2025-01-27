@@ -761,3 +761,25 @@ export const organizationCreditTransactionRelations = relations(
     }),
   }),
 );
+
+export const organizationBillingDetails = pgTable(
+  'organization_billing_details',
+  {
+    organizationId: text('organization_id')
+      .notNull()
+      .references(() => organizations.id, { onDelete: 'cascade' })
+      .primaryKey(),
+    stripeCustomerId: text('stripe_customer_id'),
+    billingTier: text('billing_tier'),
+  },
+);
+
+export const organizationBillingDetailsRelations = relations(
+  organizationBillingDetails,
+  ({ one }) => ({
+    organization: one(organizations, {
+      fields: [organizationBillingDetails.organizationId],
+      references: [organizations.id],
+    }),
+  }),
+);

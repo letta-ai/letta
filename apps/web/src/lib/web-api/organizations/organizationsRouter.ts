@@ -5,6 +5,8 @@ import {
   organizations,
   organizationUsers,
   organizationPreferences,
+  organizationBillingDetails,
+  organizationCredits,
 } from '@letta-cloud/database';
 import {
   createOrganization as authCreateOrganization,
@@ -16,6 +18,12 @@ import type { ServerInferRequest, ServerInferResponses } from '@ts-rest/core';
 import type { contracts } from '$web/web-api/contracts';
 import { and, eq, gt, ilike, inArray } from 'drizzle-orm';
 import { generateInviteCode, parseInviteCode } from '$web/utils';
+import {
+  createSetupIntent,
+  getPaymentCustomer,
+  listCreditCards,
+  removePaymentMethod,
+} from '@letta-cloud/payments';
 
 type GetCurrentOrganizationResponse = ServerInferResponses<
   typeof contracts.organizations.getCurrentOrganization
@@ -459,10 +467,11 @@ type CreateOrganizationResponse = ServerInferResponses<
 async function createOrganization(
   req: CreateOrganizationRequest,
 ): Promise<CreateOrganizationResponse> {
-  const { id } = await getUserOrThrow();
+  const { id, email } = await getUserOrThrow();
 
   const res = await authCreateOrganization({
     name: req.body.name,
+    email,
   });
 
   await Promise.all([
@@ -572,6 +581,120 @@ async function getInviteByCode(
   };
 }
 
+type GetCurrentOrganizationBillingInfo = ServerInferResponses<
+  typeof contracts.organizations.getCurrentOrganizationBillingInfo
+>;
+
+async function getCurrentOrganizationBillingInfo(): Promise<GetCurrentOrganizationBillingInfo> {
+  const { activeOrganizationId } =
+    await getUserWithActiveOrganizationIdOrThrow();
+
+  const [organization, credits] = await Promise.all([
+    db.query.organizationBillingDetails.findFirst({
+      where: eq(
+        organizationBillingDetails.organizationId,
+        activeOrganizationId,
+      ),
+    }),
+    db.query.organizationCredits.findFirst({
+      where: eq(organizationCredits.organizationId, activeOrganizationId),
+    }),
+  ]);
+
+  if (!organization || !credits) {
+    throw new Error('Organization not found');
+  }
+
+  // do not run in parallel as payment customer may not exist yet
+  const paymentCustomer = await getPaymentCustomer(activeOrganizationId);
+  const creditCards = await listCreditCards({
+    organizationId: activeOrganizationId,
+  });
+
+  return {
+    status: 200,
+    body: {
+      billingTier: organization.billingTier || 'basic',
+      creditCards: creditCards.map((card) => ({
+        id: card.id,
+        brand: card.card.brand,
+        last4: card.card.last4,
+        expMonth: card.card.exp_month,
+        expYear: card.card.exp_year,
+        isExpired:
+          card.card.exp_year < new Date().getFullYear() ||
+          (card.card.exp_year === new Date().getFullYear() &&
+            card.card.exp_month < new Date().getMonth() + 1),
+        billingAddress: {
+          address1: card.billing_details.address?.line1 || '',
+          address2: card.billing_details.address?.line2 || '',
+          city: card.billing_details.address?.city || '',
+          state: card.billing_details.address?.state || '',
+          postalCode: card.billing_details.address?.postal_code || '',
+          country: card.billing_details.address?.country || '',
+        },
+        isDefault: paymentCustomer?.default_source === card.id,
+        name: card.billing_details.name || '',
+      })),
+      totalCredits: parseInt(credits.credits, 10),
+    },
+  };
+}
+
+type StartSetupIntentResponse = ServerInferResponses<
+  typeof contracts.organizations.startSetupIntent
+>;
+
+export async function startSetupIntent(): Promise<StartSetupIntentResponse> {
+  const { activeOrganizationId } =
+    await getUserWithActiveOrganizationIdOrThrow();
+
+  const intent = await createSetupIntent({
+    organizationId: activeOrganizationId,
+  });
+
+  if (!intent?.client_secret) {
+    return {
+      status: 500,
+      body: {
+        message: 'Failed to create setup intent',
+      },
+    };
+  }
+
+  return {
+    status: 200,
+    body: {
+      clientSecret: intent.client_secret,
+    },
+  };
+}
+
+type RemoveOrganizationBillingMethodRequest = ServerInferRequest<
+  typeof contracts.organizations.removeOrganizationBillingMethod
+>;
+
+type RemoveOrganizationBillingMethodResponse = ServerInferResponses<
+  typeof contracts.organizations.removeOrganizationBillingMethod
+>;
+
+export async function removeOrganizationBillingMethod(
+  req: RemoveOrganizationBillingMethodRequest,
+): Promise<RemoveOrganizationBillingMethodResponse> {
+  const { methodId } = req.params;
+
+  await removePaymentMethod({
+    paymentMethodId: methodId,
+  });
+
+  return {
+    status: 200,
+    body: {
+      success: true,
+    },
+  };
+}
+
 export const organizationsRouter = {
   getCurrentOrganization,
   getCurrentOrganizationPreferences,
@@ -583,6 +706,9 @@ export const organizationsRouter = {
   deleteOrganization,
   updateOrganization,
   createOrganization,
+  getCurrentOrganizationBillingInfo,
   regenerateInviteCode,
   getInviteByCode,
+  startSetupIntent,
+  removeOrganizationBillingMethod,
 };

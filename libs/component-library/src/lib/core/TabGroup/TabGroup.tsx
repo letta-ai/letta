@@ -16,6 +16,7 @@ interface TabGroupProps extends Tabs.TabsProps {
   items: TabItemType[];
   fullWidth?: boolean;
   upperCase?: boolean;
+  extendBorder?: boolean;
   noBottomBorder?: boolean;
   variant?: 'border' | 'bordered-background';
 }
@@ -24,6 +25,7 @@ export function TabGroup(props: TabGroupProps) {
   const {
     items,
     fullWidth,
+    extendBorder,
     upperCase,
     value,
     variant = 'border',
@@ -33,7 +35,7 @@ export function TabGroup(props: TabGroupProps) {
 
   return (
     <Tabs.Root
-      className={cn(fullWidth ? 'w-full' : '')}
+      className={cn(fullWidth || extendBorder ? 'w-full' : '')}
       value={value}
       defaultValue={defaultValue}
       onValueChange={onValueChange}
@@ -67,6 +69,7 @@ export function TabGroup(props: TabGroupProps) {
             <Slot className="w-4 h-4">{item.postIcon}</Slot>
           </Tabs.Trigger>
         ))}
+        {extendBorder && <div className="border-b flex-1" />}
       </Tabs.List>
     </Tabs.Root>
   );

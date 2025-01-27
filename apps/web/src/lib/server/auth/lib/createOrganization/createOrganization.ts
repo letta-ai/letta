@@ -1,13 +1,17 @@
 import { AdminService, ToolsService } from '@letta-cloud/letta-agents-api';
 import {
   db,
+  organizationBillingDetails,
+  organizationCredits,
   organizationPreferences,
   organizations,
   projects,
 } from '@letta-cloud/database';
+import { createPaymentCustomer } from '@letta-cloud/payments';
 
 interface CreateOrganizationArgs {
   name: string;
+  email: string;
   isAdmin?: boolean;
   enableCloud?: boolean;
 }
@@ -56,16 +60,34 @@ export async function createOrganization(args: CreateOrganizationArgs) {
     })
     .returning({ organizationId: organizations.id });
 
-  const [createdProject] = await await db
-    .insert(projects)
-    .values({
-      slug: 'default-project',
-      name: 'Default Project',
+  const { id: stripeCustomerId } = process.env.IS_CYPRESS_RUN
+    ? { id: 'cus_Rd2i53yeQHNGYA' }
+    : await createPaymentCustomer({
+        organizationId: createdOrg.organizationId,
+        email: args.email,
+        name,
+      });
+
+  const [[createdProject]] = await Promise.all([
+    db
+      .insert(projects)
+      .values({
+        slug: 'default-project',
+        name: 'Default Project',
+        organizationId: createdOrg.organizationId,
+      })
+      .returning({
+        id: projects.id,
+      }),
+    db.insert(organizationCredits).values({
+      credits: '0',
       organizationId: createdOrg.organizationId,
-    })
-    .returning({
-      id: projects.id,
-    });
+    }),
+    db.insert(organizationBillingDetails).values({
+      organizationId: createdOrg.organizationId,
+      stripeCustomerId,
+    }),
+  ]);
 
   await db.insert(organizationPreferences).values({
     organizationId: createdOrg.organizationId,

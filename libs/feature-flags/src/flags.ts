@@ -16,6 +16,11 @@ export const featureFlags = {
     expiryDate: '2024-01-31',
     flagValue: z.boolean(),
   },
+  BILLING: {
+    description: 'Billing',
+    expiryDate: '2024-01-31',
+    flagValue: z.boolean(),
+  },
   CONTEXT_WINDOW_SIMULATOR: {
     description: 'Context window simulator',
     expiryDate: '2024-01-31',

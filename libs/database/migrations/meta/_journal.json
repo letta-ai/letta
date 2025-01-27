@@ -288,6 +288,13 @@
       "when": 1737158521213,
       "tag": "0040_supreme_queen_noir",
       "breakpoints": true
+    },
+    {
+      "idx": 41,
+      "version": "7",
+      "when": 1737161926015,
+      "tag": "0041_hard_stardust",
+      "breakpoints": true
     }
   ]
 }

@@ -109,6 +109,7 @@ async function createUserAndOrganization(
 
     const createdOrg = await createOrganization({
       name: organizationName,
+      email: userData.email,
       enableCloud: options.enableCloud,
     });
 

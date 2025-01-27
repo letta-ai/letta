@@ -54,6 +54,7 @@
       "@letta-cloud/lettuce-server": [
         "libs/lettuce-client/src/lib/lettuce-server.ts"
       ],
+      "@letta-cloud/payments": ["libs/payments/src/index.ts"],
       "@letta-cloud/redis": ["libs/redis/src/index.ts"],
       "@letta-cloud/runtime": ["libs/runtime/src/index.ts"],
       "@letta-cloud/server-utils": ["libs/server-utils/src/index.ts"],

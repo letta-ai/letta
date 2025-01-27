@@ -269,6 +269,67 @@ const GetInviteByCodeContract = c.query({
   },
 });
 
+const BillingAddressSchema = z.object({
+  address1: z.string(),
+  address2: z.string().optional(),
+  city: z.string(),
+  state: z.string(),
+  postalCode: z.string(),
+  country: z.string(),
+});
+
+const CreditCardSchema = z.object({
+  id: z.string(),
+  last4: z.string(),
+  expMonth: z.number(),
+  expYear: z.number(),
+  brand: z.string(),
+  billingAddress: BillingAddressSchema,
+  isDefault: z.boolean(),
+  isExpired: z.boolean(),
+  name: z.string(),
+});
+
+export type CreditCardType = z.infer<typeof CreditCardSchema>;
+
+const GetCurrentOrganizationBillingInfoResponse = z.object({
+  creditCards: CreditCardSchema.array(),
+  billingTier: z.string().optional(),
+  totalCredits: z.number(),
+});
+
+const getCurrentOrganizationBillingInfoContract = c.query({
+  path: '/organizations/self/billing-info',
+  method: 'GET',
+  responses: {
+    200: GetCurrentOrganizationBillingInfoResponse,
+  },
+});
+
+const startSetupIntentContract = c.query({
+  path: '/organizations/self/setup-intent',
+  method: 'GET',
+  responses: {
+    200: z.object({
+      clientSecret: z.string(),
+    }),
+  },
+});
+
+const removeOrganizationBillingMethodContract = c.mutation({
+  path: '/organizations/self/billing-info/methods/:methodId',
+  method: 'DELETE',
+  pathParams: z.object({
+    methodId: z.string(),
+  }),
+  body: z.undefined(),
+  responses: {
+    200: z.object({
+      success: z.boolean(),
+    }),
+  },
+});
+
 export const organizationsContract = c.router({
   getCurrentOrganization: getCurrentOrganizationContract,
   getCurrentOrganizationPreferences: getCurrentOrganizationPreferencesContract,
@@ -282,6 +343,9 @@ export const organizationsContract = c.router({
   createOrganization: createOrganizationContract,
   regenerateInviteCode: regenerateInviteCodeContract,
   getInviteByCode: GetInviteByCodeContract,
+  getCurrentOrganizationBillingInfo: getCurrentOrganizationBillingInfoContract,
+  startSetupIntent: startSetupIntentContract,
+  removeOrganizationBillingMethod: removeOrganizationBillingMethodContract,
 });
 
 export const organizationsQueryClientKeys = {
@@ -300,4 +364,6 @@ export const organizationsQueryClientKeys = {
   ],
   getCurrentOrganizationPreferences: ['organizations', 'self', 'preferences'],
   getInviteByCode: (inviteCode: string) => ['invites', inviteCode],
+  getCurrentOrganizationBillingInfo: ['organizations', 'self', 'billing-info'],
+  startSetupIntent: ['organizations', 'self', 'setup-intent'],
 };

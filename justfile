@@ -70,6 +70,8 @@ configure-kubectl:
         --set env.LETTA_AGENTS_ENDPOINT="${LETTA_AGENTS_ENDPOINT}" \
         --set env.MIXPANEL_TOKEN="${MIXPANEL_TOKEN}" \
         --set env.NEXT_PUBLIC_MIXPANEL_TOKEN="${MIXPANEL_TOKEN}" \
+        --set env.STRIPE_SECRET_KEY="${STRIPE_SECRET_KEY}" \
+        --set env.NEXT_PUBLIC_STRIPE_PUBLISH_KEY="${NEXT_PUBLIC_STRIPE_PUBLISH_KEY}" \
         --set env.LAUNCH_DARKLY_SDK_KEY="${LAUNCH_DARKLY_SDK_KEY}" \
         --set env.SENTRY_AUTH_TOKEN="${SENTRY_AUTH_TOKEN}" \
         --set env.NEXT_PUBLIC_CURRENT_HOST="${NEXT_PUBLIC_CURRENT_HOST}" \
@@ -280,3 +282,7 @@ package-desktop:
 setup-pg-vector:
     @echo "Setting up pg-vector..."
     apps/desktop-electron/scripts/install-pgvector.sh
+
+env:
+    @echo "🚧 Setting up the environment..."
+    op inject -i .env.template -o .env

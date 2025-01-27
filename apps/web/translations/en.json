@@ -272,7 +272,8 @@
       "general": "General",
       "members": "Members",
       "root": "Organization",
-      "billing": "Usage and billing",
+      "billing": "Billing",
+      "usage": "Usage",
       "integrations": "Integrations",
       "environmentVariables": "Environment variables",
       "modelProviders": "Model providers"
@@ -346,9 +347,9 @@
     "createNewOrganization": "Create a new organization",
     "missingOrg": "If you do not see your organization, you may have not been invited yet. Please contact your organization's administrator."
   },
-  "organization/billing": {
-    "title": "Usage and billing",
-    "description": "You are currently using a managed enterprise plan. If you have any questions or need help, please contact support.",
+  "organization/usage": {
+    "title": "Organization usage",
+    "description": "View and manage your organization's usage",
     "UsageTable": {
       "title": "Usage for {startDate} - {endDate}",
       "model": "Model",
@@ -358,6 +359,55 @@
       "previousMonth": "Previous month",
       "nextMonth": "Next month",
       "error": "There was an error loading usage data, please try again or contact support."
+    }
+  },
+  "organization/billing": {
+    "title": "Billing Information",
+    "description": "You are currently using a managed enterprise plan. If you have any questions or need help, please contact support.",
+    "Overview": {
+      "title": "Overview"
+    },
+    "RemoveCreditCardDialog": {
+      "title": "Remove credit card",
+      "trigger": "Remove credit card",
+      "confirm": "Remove",
+      "description": "Are you sure you want to remove this credit card? This will not remove any credits you have purchased."
+    },
+    "CreditCardSlot": {
+      "endingIn": "●●● ●●●● ●●●● {last4}",
+      "delete": "Delete card",
+      "default": "Default card",
+      "expires": "Expires {month}/{year}"
+    },
+    "PaymentMethods": {
+      "noPaymentMethods": "You have not added any payment methods yet.",
+      "addPaymentMethod": "Add a credit card",
+      "title": "Payment methods",
+      "description": "You can add up to four credit cards to your account. We will automatically charge the default card when your balance is low."
+    },
+    "BillingOverview": {
+      "noPaymentMethods": "You have not added any payment methods yet.",
+      "addPaymentMethod": "Add payment method",
+      "error": "There was an error loading billing information, please try again or contact support.",
+      "Credits": {
+        "title": "Available credits",
+        "description": "Credits are used to pay for agent usage. You can purchase more credits below.",
+        "add": "Purchase credits"
+      },
+      "Preferences": {
+        "title": "Preferences",
+        "preferences": {
+          "comingSoon": "Coming soon",
+          "autoReload": {
+            "label": "Automatically purchase credits when balance is low",
+            "description": "We will automatically purchase $5.00 of credits when your balance is lower than 5000 credits"
+          },
+          "emailAlert": {
+            "label": "Email me when balance is low",
+            "description": "We will email you when your balance is lower than 5000 credits"
+          }
+        }
+      }
     }
   },
   "organization/settings": {
@@ -471,6 +521,15 @@
       },
       "submitButton": "Update profile"
     }
+  },
+  "components/AddCreditCardDialog": {
+    "isLoading": "Initializing credit card form...",
+    "title": "Add a credit card",
+    "submit": "Add credit card",
+    "addCard": "Save credit card",
+    "unknownError": "There was an error adding your credit card, please try again or contact support.",
+    "error": "There was an error adding your credit card, please try again or contact support.",
+    "errorLoading": "There was an error loading the credit card form, please try again or contact support."
   },
   "components/LocaleSelector": {
     "changeLocale": "Change language",

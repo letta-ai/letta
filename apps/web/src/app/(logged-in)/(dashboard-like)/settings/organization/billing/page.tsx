@@ -2,182 +2,341 @@
 import { useTranslations } from '@letta-cloud/translations';
 import {
   Alert,
-  brandKeyToLogo,
+  Badge,
   Button,
+  CreditCardIcon,
   DashboardPageLayout,
   DashboardPageSection,
-  DataTable,
+  Dialog,
   HStack,
-  isBrandKey,
+  LoadingEmptyStatusComponent,
+  NiceGridDisplay,
+  PlusIcon,
+  Section,
+  TabGroup,
+  TrashIcon,
+  Typography,
+  VStack,
+  WalletIcon,
 } from '@letta-cloud/component-library';
-import React, { useMemo } from 'react';
+import React, { useCallback } from 'react';
 import { webApi, webApiQueryKeys } from '$web/client';
-import type { ColumnDef } from '@tanstack/react-table';
-import type { GetUsageByModelItem } from '$web/web-api/contracts';
-import { useMonthCursor } from '@letta-cloud/helpful-client-utils';
+import type { contracts, CreditCardType } from '$web/web-api/contracts';
+import { useNumberFormatter } from '@letta-cloud/helpful-client-utils';
+import { AddCreditCardDialog } from '$web/client/components/AddCreditCardDialog/AddCreditCardDialog';
+import { useQueryClient } from '@tanstack/react-query';
+import type { ServerInferResponses } from '@ts-rest/core';
 
-function getStartOfMonth(date: Date) {
-  return new Date(date.getFullYear(), date.getMonth(), 1);
+interface RemoveCreditCardDialogProps {
+  paymentMethodId: string;
 }
 
-function getEndOfMonth(date: Date) {
-  return new Date(date.getFullYear(), date.getMonth() + 1, 0);
-}
-
-function UsageTable() {
-  const {
-    startOfMonth,
-    cursor: monthCursor,
-    moveToNextMonth,
-    moveToPrevMonth,
-    endOfMonth,
-  } = useMonthCursor();
-
+function RemoveCreditCardDialog(props: RemoveCreditCardDialogProps) {
+  const { paymentMethodId } = props;
   const t = useTranslations('organization/billing');
+  const queryClient = useQueryClient();
+  const [isOpen, setIsOpen] = React.useState(false);
 
-  const {
-    data: usageSummary,
-    isLoading,
-    isError,
-  } = webApi.usage.getUsageByModelSummary.useQuery({
-    queryKey: webApiQueryKeys.usage.getUsageByModelSummary({
-      startDate: startOfMonth.getTime(),
-      endDate: endOfMonth.getTime(),
-    }),
-    queryData: {
-      query: {
-        startDate: startOfMonth.getTime(),
-        endDate: endOfMonth.getTime(),
+  const { mutate, isPending } =
+    webApi.organizations.removeOrganizationBillingMethod.useMutation({
+      onSuccess: () => {
+        setIsOpen(false);
+        queryClient.setQueriesData<
+          ServerInferResponses<
+            typeof contracts.organizations.getCurrentOrganizationBillingInfo,
+            200
+          >
+        >(
+          {
+            queryKey:
+              webApiQueryKeys.organizations.getCurrentOrganizationBillingInfo,
+          },
+          (oldData) => {
+            if (!oldData) {
+              return oldData;
+            }
+            return {
+              ...oldData,
+              body: {
+                ...oldData.body,
+                creditCards: oldData.body.creditCards.filter(
+                  (creditCard) => creditCard.id !== paymentMethodId,
+                ),
+              },
+            };
+          },
+        );
       },
-    },
-  });
-
-  const columns: Array<ColumnDef<GetUsageByModelItem>> = useMemo(
-    () => [
-      {
-        header: t('UsageTable.model'),
-        accessorKey: 'modelName',
-        cell: ({ cell }) => {
-          const { brand, modelName } = cell.row.original;
-          return (
-            <HStack>
-              {isBrandKey(brand) ? brandKeyToLogo(brand) : ''}
-              {modelName}
-            </HStack>
-          );
-        },
-      },
-      {
-        header: t('UsageTable.totalTokens'),
-        accessorKey: 'totalTokens',
-      },
-
-      {
-        header: t('UsageTable.totalRequests'),
-        accessorKey: 'totalRequests',
-      },
-      {
-        header: t('UsageTable.totalCost'),
-        accessorKey: 'totalCost',
-        cell: ({ cell }) => {
-          return Intl.NumberFormat(undefined, {
-            currency: 'USD',
-            style: 'currency',
-          }).format(cell.row.original.totalCost);
-        },
-      },
-    ],
-    [t],
-  );
-
-  const [limit, setLimit] = React.useState(10);
-  const [offset, setOffset] = React.useState(0);
-  const [search, setSearch] = React.useState('');
-
-  const data = useMemo(() => {
-    if (!usageSummary) {
-      return [];
-    }
-
-    return usageSummary.body.slice(offset, offset + limit);
-  }, [usageSummary, limit, offset]);
-
-  const localeStringNiceStartDate = useMemo(() => {
-    return getStartOfMonth(monthCursor).toLocaleDateString(undefined, {
-      month: 'long',
-      year: 'numeric',
-      day: 'numeric',
     });
-  }, [monthCursor]);
-
-  const localeStringNiceEndDate = useMemo(() => {
-    return getEndOfMonth(monthCursor).toLocaleDateString(undefined, {
-      month: 'long',
-      year: 'numeric',
-      day: 'numeric',
+  const removeCreditCard = useCallback(() => {
+    mutate({
+      params: {
+        methodId: paymentMethodId,
+      },
     });
-  }, [monthCursor]);
-
-  const isAtCurrentMonth = useMemo(() => {
-    const now = new Date();
-    return (
-      now.getFullYear() === monthCursor.getFullYear() &&
-      now.getMonth() === monthCursor.getMonth()
-    );
-  }, [monthCursor]);
+  }, [paymentMethodId, mutate]);
 
   return (
-    <DashboardPageSection
-      fullHeight
-      title={t('UsageTable.title', {
-        startDate: localeStringNiceStartDate,
-        endDate: localeStringNiceEndDate,
-      })}
-      actions={
-        <HStack>
-          <Button
-            color="secondary"
-            label={t('UsageTable.previousMonth')}
-            onClick={moveToPrevMonth}
-          />
-          <Button
-            color="secondary"
-            label={t('UsageTable.nextMonth')}
-            onClick={moveToNextMonth}
-            disabled={isAtCurrentMonth}
-          />
-        </HStack>
+    <Dialog
+      title={t('RemoveCreditCardDialog.title')}
+      onConfirm={removeCreditCard}
+      onOpenChange={setIsOpen}
+      isOpen={isOpen}
+      isConfirmBusy={isPending}
+      confirmColor="destructive"
+      confirmText={t('RemoveCreditCardDialog.confirm')}
+      trigger={
+        <Button
+          preIcon={<TrashIcon />}
+          label={t('RemoveCreditCardDialog.trigger')}
+          hideLabel
+          color="tertiary"
+        />
       }
     >
-      <DataTable
-        searchValue={search}
-        showPagination
-        onSearch={setSearch}
-        columns={columns}
-        data={data}
-        limit={limit}
-        offset={offset}
-        isLoading={isLoading}
-        errorMessage={isError ? t('UsageTable.error') : undefined}
-        onSetOffset={setOffset}
-        onLimitChange={setLimit}
-        autofitHeight
-      />
-    </DashboardPageSection>
+      {t('RemoveCreditCardDialog.description')}
+    </Dialog>
   );
 }
 
-function Members() {
+interface CreditCardSlotProps {
+  creditCard: CreditCardType;
+}
+
+function CreditCardSlot(props: CreditCardSlotProps) {
+  const { id, last4, brand, isDefault, expMonth, expYear } = props.creditCard;
   const t = useTranslations('organization/billing');
 
   return (
-    <DashboardPageLayout encapsulatedFullHeight title={t('title')}>
-      <DashboardPageSection>
-        <Alert title={t('description')} variant="info" />
-      </DashboardPageSection>
-      <UsageTable />
+    <VStack gap={false} border>
+      <VStack fullWidth>
+        {isDefault && (
+          <Badge content={t('CreditCardSlot.default')} variant="info" />
+        )}
+        <HStack
+          padding="small"
+          borderBottom
+          align="center"
+          justify="spaceBetween"
+        >
+          <HStack align="center">
+            <Badge uppercase content={brand} />
+            <Typography>{t('CreditCardSlot.endingIn', { last4 })}</Typography>
+          </HStack>
+
+          <RemoveCreditCardDialog paymentMethodId={id} />
+        </HStack>
+      </VStack>
+      <HStack padding="small" color="background-grey">
+        <Typography variant="body2">
+          {t('CreditCardSlot.expires', { month: expMonth, year: expYear })}
+        </Typography>
+      </HStack>
+    </VStack>
+  );
+}
+
+function PaymentMethods() {
+  const { data, isLoading, isError } =
+    webApi.organizations.getCurrentOrganizationBillingInfo.useQuery({
+      queryKey: webApiQueryKeys.organizations.getCurrentOrganizationBillingInfo,
+    });
+
+  const t = useTranslations('organization/billing');
+
+  if (!data) {
+    return (
+      <LoadingEmptyStatusComponent
+        isLoading={isLoading}
+        isError={isError}
+        errorMessage={t('BillingOverview.error')}
+      />
+    );
+  }
+
+  return (
+    <Section
+      title={t('PaymentMethods.title')}
+      description={t('PaymentMethods.description')}
+      actions={
+        data.body.creditCards.length > 0 &&
+        data.body.creditCards.length < 4 && (
+          <AddCreditCardDialog
+            trigger={
+              <Button
+                preIcon={<PlusIcon />}
+                label={t('PaymentMethods.addPaymentMethod')}
+                color="primary"
+                size="small"
+              />
+            }
+          />
+        )
+      }
+    >
+      <VStack position="relative">
+        {data.body.creditCards.length === 0 && (
+          <VStack
+            padding="xxlarge"
+            color="background-grey"
+            fullWidth
+            align="center"
+          >
+            <Typography>{t('PaymentMethods.noPaymentMethods')}</Typography>
+            <AddCreditCardDialog
+              trigger={
+                <Button
+                  id="add-payment-method"
+                  label={t('PaymentMethods.addPaymentMethod')}
+                  color="primary"
+                  size="small"
+                />
+              }
+            />
+          </VStack>
+        )}
+        <VStack paddingY="small">
+          <NiceGridDisplay itemWidth="400px">
+            {data.body.creditCards.map((creditCard) => (
+              <CreditCardSlot key={creditCard.id} creditCard={creditCard} />
+            ))}
+          </NiceGridDisplay>
+        </VStack>
+      </VStack>
+    </Section>
+  );
+}
+
+type Tabs = 'overview' | 'payment-methods';
+
+interface BillingOverviewProps {
+  changeTab: (tab: Tabs) => void;
+}
+
+function BillingOverview(props: BillingOverviewProps) {
+  const { changeTab } = props;
+  const { data, isLoading, isError } =
+    webApi.organizations.getCurrentOrganizationBillingInfo.useQuery({
+      queryKey: webApiQueryKeys.organizations.getCurrentOrganizationBillingInfo,
+    });
+
+  const t = useTranslations('organization/billing');
+
+  const { formatNumber } = useNumberFormatter();
+
+  if (!data) {
+    return (
+      <LoadingEmptyStatusComponent
+        isLoading={isLoading}
+        isError={isError}
+        errorMessage={t('BillingOverview.error')}
+      />
+    );
+  }
+
+  return (
+    <VStack>
+      {data.body.creditCards.length === 0 && (
+        <Alert
+          variant="warning"
+          title={t('BillingOverview.noPaymentMethods')}
+          action={
+            <Button
+              label={t('BillingOverview.addPaymentMethod')}
+              color="primary"
+              size="small"
+              onClick={() => {
+                changeTab('payment-methods');
+                setTimeout(() => {
+                  document.getElementById('add-payment-method')?.click();
+                }, 100);
+              }}
+            />
+          }
+        />
+      )}
+      <Section
+        title={t('BillingOverview.Credits.title')}
+        description={t('BillingOverview.Credits.description')}
+      >
+        <VStack width="contained">
+          <HStack align="end">
+            <Typography variant="heading4" bold>
+              {formatNumber(data.body.totalCredits)}
+            </Typography>
+          </HStack>
+          <HStack>
+            <Button
+              preIcon={<PlusIcon />}
+              label={t('BillingOverview.Credits.add')}
+              color="primary"
+              size="small"
+            />
+          </HStack>
+        </VStack>
+      </Section>
+      {/*<Section*/}
+      {/*  borderBottom*/}
+      {/*  title={t('BillingOverview.Preferences.title')}*/}
+      {/*>*/}
+      {/*  <VStack>*/}
+      {/*    <HStack>*/}
+      {/*      <Badge variant="info" content={t('BillingOverview.Preferences.preferences.comingSoon')} />*/}
+      {/*    </HStack>*/}
+      {/*    <RawSwitch*/}
+      {/*      disabled*/}
+      {/*      description={t('BillingOverview.Preferences.preferences.autoReload.description')}*/}
+      {/*      labelVariant="simple" fullWidth  label={t('BillingOverview.Preferences.preferences.autoReload.label')} />*/}
+      {/*  </VStack>*/}
+      {/*  <VStack>*/}
+      {/*    <HStack>*/}
+      {/*      <Badge variant="info" content={t('BillingOverview.Preferences.preferences.comingSoon')} />*/}
+      {/*    </HStack>*/}
+      {/*    <RawSwitch*/}
+      {/*      disabled*/}
+      {/*      description={t('BillingOverview.Preferences.preferences.emailAlert.description')}*/}
+      {/*      labelVariant="simple" fullWidth  label={t('BillingOverview.Preferences.preferences.emailAlert.label')} />*/}
+      {/*  </VStack>*/}
+      {/*</Section>*/}
+    </VStack>
+  );
+}
+
+function Billing() {
+  const t = useTranslations('organization/billing');
+  const [selectedTab, setSelectedTab] = React.useState<Tabs>('overview');
+
+  return (
+    <DashboardPageLayout title={t('title')}>
+      <VStack width="largeContained">
+        <DashboardPageSection>
+          <TabGroup
+            extendBorder
+            onValueChange={(value) => {
+              setSelectedTab(value as Tabs);
+            }}
+            value={selectedTab}
+            items={[
+              {
+                icon: <WalletIcon />,
+                label: t('Overview.title'),
+                value: 'overview',
+              },
+              {
+                icon: <CreditCardIcon />,
+                label: t('PaymentMethods.title'),
+                value: 'payment-methods',
+              },
+            ]}
+          />
+          {selectedTab === 'overview' && (
+            <BillingOverview changeTab={setSelectedTab} />
+          )}
+          {selectedTab === 'payment-methods' && <PaymentMethods />}
+        </DashboardPageSection>
+      </VStack>
     </DashboardPageLayout>
   );
 }
 
-export default Members;
+export default Billing;

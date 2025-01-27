@@ -160,6 +160,7 @@ type LabelVariant = 'default' | 'simple';
 
 interface InputContainerHeaderProps {
   preLabelIcon?: React.ReactNode;
+  labelBadge?: React.ReactNode;
   infoTooltip?: {
     text: string;
   };
@@ -168,7 +169,13 @@ interface InputContainerHeaderProps {
 }
 
 function InputContainerHeader(props: InputContainerHeaderProps) {
-  const { preLabelIcon, label, infoTooltip, variant = 'default' } = props;
+  const {
+    preLabelIcon,
+    labelBadge,
+    label,
+    infoTooltip,
+    variant = 'default',
+  } = props;
   return (
     <HStack>
       <HStack gap="small" align="center">
@@ -181,6 +188,7 @@ function InputContainerHeader(props: InputContainerHeaderProps) {
         >
           {label}
         </Typography>
+        {labelBadge}
       </HStack>
       {infoTooltip && <InfoTooltip text={infoTooltip.text} />}
     </HStack>
@@ -191,6 +199,7 @@ export interface InputContainerProps {
   label: string;
   ref?: any;
   preLabelIcon?: React.ReactNode;
+  labelBadge?: React.ReactNode;
   labelVariant?: LabelVariant;
   hideLabel?: boolean;
   description?: React.ReactNode | string;
@@ -213,6 +222,7 @@ export function InputContainer(props: InputContainerProps) {
     preLabelIcon,
     fullWidth,
     fullHeight,
+    labelBadge,
     labelVariant,
     flex,
     description,
@@ -240,6 +250,7 @@ export function InputContainer(props: InputContainerProps) {
                 <InputContainerHeader
                   variant={labelVariant}
                   preLabelIcon={preLabelIcon}
+                  labelBadge={labelBadge}
                   label={label}
                   infoTooltip={infoTooltip}
                 />
@@ -271,6 +282,7 @@ export function RawInputContainer(props: RawInputContainerProps) {
     id,
     hideLabel,
     fullHeight,
+    labelBadge,
     flex,
     inline,
     fullWidth,
@@ -279,6 +291,7 @@ export function RawInputContainer(props: RawInputContainerProps) {
     collapseHeight,
     description,
     children,
+    labelVariant,
     infoTooltip,
     rightOfLabelContent,
   } = props;
@@ -303,7 +316,9 @@ export function RawInputContainer(props: RawInputContainerProps) {
             >
               <InputContainerHeader
                 preLabelIcon={preLabelIcon}
+                labelBadge={labelBadge}
                 label={label}
+                variant={labelVariant}
                 infoTooltip={infoTooltip}
               />
             </LabelPrimitive>
@@ -345,6 +360,7 @@ const omitProps = [
   'infoTooltip',
   'errorMessage',
   'labelVariant',
+  'labelBadge',
 ];
 
 export function makeInput<T>(

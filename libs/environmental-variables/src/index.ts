@@ -24,10 +24,12 @@ export const environment = createEnv({
     AUTH_GITHUB_CLIENT_SECRET: z.string().optional(),
     AUTH_GITHUB_REDIRECT_URI: z.string().optional(),
     TEMPORAL_API_HOST: z.string().optional(),
+    STRIPE_SECRET_KEY: z.string().optional(),
   },
   client: {
     NEXT_PUBLIC_CURRENT_HOST: z.string().optional(),
     NEXT_PUBLIC_MIXPANEL_TOKEN: z.string().optional(),
+    NEXT_PUBLIC_STRIPE_PUBLISH_KEY: z.string().optional(),
   },
   runtimeEnv: {
     TEMPORAL_API_HOST: process.env.TEMPORAL_API_HOST,
@@ -47,5 +49,7 @@ export const environment = createEnv({
     AUTH_GITHUB_CLIENT_ID: process.env.AUTH_GITHUB_CLIENT_ID,
     AUTH_GITHUB_CLIENT_SECRET: process.env.AUTH_GITHUB_CLIENT_SECRET,
     AUTH_GITHUB_REDIRECT_URI: process.env.AUTH_GITHUB_REDIRECT_URI,
+    STRIPE_SECRET_KEY: process.env.STRIPE_SECRET_KEY,
+    NEXT_PUBLIC_STRIPE_PUBLISH_KEY: process.env.NEXT_PUBLIC_STRIPE_PUBLISH_KEY,
   },
 });

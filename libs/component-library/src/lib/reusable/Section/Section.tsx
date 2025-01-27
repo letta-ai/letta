@@ -67,23 +67,23 @@ export function Section(props: SectionProps) {
       fullWidth
       borderBottom={borderBottom}
     >
-      <VStack gap={false}>
-        {title && (
-          <HStack align="center" justify="spaceBetween">
+      <HStack align="center" justify="spaceBetween">
+        <VStack gap={false}>
+          {title && (
             <Typography align="left" noWrap bold variant="body">
               {title}
             </Typography>
-            <HiddenOnMobile>
-              <HStack>{actions}</HStack>
-            </HiddenOnMobile>
-          </HStack>
-        )}
-        {description && (
-          <Typography align="left" color="lighter" variant="body">
-            {description}
-          </Typography>
-        )}
-      </VStack>
+          )}
+          {description && (
+            <Typography align="left" color="lighter" variant="body">
+              {description}
+            </Typography>
+          )}
+        </VStack>
+        <HiddenOnMobile>
+          <HStack>{actions}</HStack>
+        </HiddenOnMobile>
+      </HStack>
       {onSearch && (
         <Frame>
           <SectionSearchBar

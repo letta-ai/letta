@@ -13,8 +13,9 @@ const SwitchPrimitive = React.forwardRef<
   React.ElementRef<typeof SwitchPrimitives.Root>,
   React.ComponentPropsWithoutRef<typeof SwitchPrimitives.Root> & {
     reverse?: boolean;
+    fullWidth?: boolean;
   }
->(({ className, ...props }, ref) => {
+>(({ className, reverse: _reverse, fullWidth: _fullWidth, ...props }, ref) => {
   const rest = extractAndRemoveInputProps(props);
 
   return (
