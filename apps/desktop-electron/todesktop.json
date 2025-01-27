@@ -11,8 +11,7 @@
     "category": "public.app-category.developer-tools"
   },
   "dmg": {
-    "background": "dist/assets/background.png",
-    "icon": "dist/assets/icon.png",
+    "background": "dist/assets/background.tiff",
     "iconSize": 104,
     "contents": [
       {
