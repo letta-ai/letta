@@ -209,6 +209,11 @@ class JSONInnerThoughtsExtractor:
 
         return updates_main_json, updates_inner_thoughts
 
+    # def process_anthropic_fragment(self, fragment) -> Tuple[str, str]:
+    #     # Add to buffer
+    #     self.main_buffer += fragment
+    #     return fragment, ""
+
     @property
     def main_json(self):
         return self.main_buffer
@@ -233,7 +238,6 @@ class FunctionArgumentsStreamHandler:
 
     def process_json_chunk(self, chunk: str) -> Optional[str]:
         """Process a chunk from the function arguments and return the plaintext version"""
-
         # Use strip to handle only leading and trailing whitespace in control structures
         if self.accumulating:
             clean_chunk = chunk.strip()

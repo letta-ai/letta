@@ -224,11 +224,28 @@ def test_core_memory(mock_e2b_api_key_none, client: Union[LocalClient, RESTClien
     assert "Timber" in memory.get_block("human").value, f"Updating core memory failed: {memory.get_block('human').value}"
 
 
-@pytest.mark.parametrize("stream_tokens", [True, False])
-def test_streaming_send_message(mock_e2b_api_key_none, client: RESTClient, agent: AgentState, stream_tokens):
+@pytest.mark.parametrize(
+    "stream_tokens,model",
+    [
+        (True, "gpt-4o-mini"),
+        (True, "claude-3-sonnet-20240229"),
+        (False, "gpt-4o-mini"),
+        (False, "claude-3-sonnet-20240229"),
+    ],
+)
+def test_streaming_send_message(
+    mock_e2b_api_key_none,
+    client: RESTClient,
+    agent: AgentState,
+    stream_tokens: bool,
+    model: str,
+):
     if isinstance(client, LocalClient):
         pytest.skip("Skipping test_streaming_send_message because LocalClient does not support streaming")
     assert isinstance(client, RESTClient), client
+
+    # Update agent's model
+    agent.llm_config.model = model
 
     # First, try streaming just steps
 
@@ -249,11 +266,8 @@ def test_streaming_send_message(mock_e2b_api_key_none, client: RESTClient, agent
     send_message_ran = False
     # 3. Check that we get all the start/stop/end tokens we want
     #    This includes all of the MessageStreamStatus enums
-    # done_gen = False
-    # done_step = False
     done = False
 
-    # print(response)
     assert response, "Sending message failed"
     for chunk in response:
         assert isinstance(chunk, LettaStreamingResponse)
@@ -268,12 +282,6 @@ def test_streaming_send_message(mock_e2b_api_key_none, client: RESTClient, agent
             if chunk == MessageStreamStatus.done:
                 assert not done, "Message stream already done"
                 done = True
-            # elif chunk == MessageStreamStatus.done_step:
-            #     assert not done_step, "Message stream already done step"
-            #     done_step = True
-            # elif chunk == MessageStreamStatus.done_generation:
-            #     assert not done_gen, "Message stream already done generation"
-            #     done_gen = True
         if isinstance(chunk, LettaUsageStatistics):
             # Some rough metrics for a reasonable usage pattern
             assert chunk.step_count == 1
@@ -286,8 +294,6 @@ def test_streaming_send_message(mock_e2b_api_key_none, client: RESTClient, agent
     assert inner_thoughts_exist, "No inner thoughts found"
     assert send_message_ran, "send_message function call not found"
     assert done, "Message stream not done"
-    # assert done_step, "Message stream not done step"
-    # assert done_gen, "Message stream not done generation"
 
 
 def test_humans_personas(client: Union[LocalClient, RESTClient], agent: AgentState):
