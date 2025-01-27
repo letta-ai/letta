@@ -62,6 +62,7 @@ from letta.schemas.source import Source
 from letta.schemas.tool import Tool
 from letta.schemas.usage import LettaUsageStatistics
 from letta.schemas.user import User
+from letta.server.rest_api.chat_completions_interface import ChatCompletionsStreamingInterface
 from letta.server.rest_api.interface import StreamingServerInterface
 from letta.server.rest_api.utils import sse_async_generator
 from letta.services.agent_manager import AgentManager
@@ -719,7 +720,7 @@ class SyncServer(Server):
         # whether or not to wrap user and system message as MemGPT-style stringified JSON
         wrap_user_message: bool = True,
         wrap_system_message: bool = True,
-        interface: Union[AgentInterface, None] = None,  # needed to getting responses
+        interface: Union[AgentInterface, ChatCompletionsStreamingInterface, None] = None,  # needed to getting responses
         metadata: Optional[dict] = None,  # Pass through metadata to interface
     ) -> LettaUsageStatistics:
         """Send a list of messages to the agent
@@ -735,7 +736,7 @@ class SyncServer(Server):
             for message in messages:
                 assert isinstance(message, MessageCreate)
 
-                # If wrapping is eanbled, wrap with metadata before placing content inside the Message object
+                # If wrapping is enabled, wrap with metadata before placing content inside the Message object
                 if message.role == MessageRole.user and wrap_user_message:
                     message.content = system.package_user_message(user_message=message.content)
                 elif message.role == MessageRole.system and wrap_system_message:

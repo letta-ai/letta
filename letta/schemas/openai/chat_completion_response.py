@@ -116,7 +116,7 @@ class MessageDelta(BaseModel):
 
     content: Optional[str] = None
     tool_calls: Optional[List[ToolCallDelta]] = None
-    # role: Optional[str] = None
+    role: Optional[str] = None
     function_call: Optional[FunctionCallDelta] = None  # Deprecated
 
 
@@ -132,7 +132,7 @@ class ChatCompletionChunkResponse(BaseModel):
 
     id: str
     choices: List[ChunkChoice]
-    created: datetime.datetime
+    created: Union[datetime.datetime, str]
     model: str
     # system_fingerprint: str  # docs say this is mandatory, but in reality API returns None
     system_fingerprint: Optional[str] = None
