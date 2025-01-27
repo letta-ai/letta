@@ -89,21 +89,26 @@ export async function copyAgentById(
 
   const agentBody = attachVariablesToTemplates(baseAgent, memoryVariables);
 
+  const nextToolVariables = baseAgent.tool_exec_environment_variables?.reduce(
+    (acc, tool) => {
+      acc[tool.key] = toolVariables?.[tool.key] || '';
+
+      return acc;
+    },
+    {} as Record<string, string>,
+  );
+
   const nextAgent = await AgentsService.createAgent(
     {
       requestBody: {
         ...omit(baseAgent, omittedFieldsOnCopy),
         tool_ids: agentBody.tool_ids,
         name: agentBody.name,
-        tool_exec_environment_variables:
-          baseAgent.tool_exec_environment_variables?.reduce(
-            (acc, tool) => {
-              acc[tool.key] = toolVariables?.[tool.key] || '';
-
-              return acc;
-            },
-            {} as Record<string, string>,
-          ) || {},
+        // merge base tool variables as well as the tool variables passed in
+        tool_exec_environment_variables: {
+          ...nextToolVariables,
+          ...toolVariables,
+        },
         tags,
         memory_blocks: agentBody.memory_blocks.map((block) => {
           return {
