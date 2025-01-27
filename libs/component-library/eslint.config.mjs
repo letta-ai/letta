@@ -19,6 +19,7 @@ export default [{
         "**/*.config.js",
         "**/*.config.ts",
         "**/node_modules",
+      "**/*.d.ts",
     ],
 }, ...compat.extends("plugin:@nx/react", "../../.eslintrc.json"), {
     files: ["**/*.ts", "**/*.tsx", "**/*.js", "**/*.jsx"],

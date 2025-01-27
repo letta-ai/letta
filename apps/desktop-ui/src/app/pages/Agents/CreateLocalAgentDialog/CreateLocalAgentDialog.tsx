@@ -83,7 +83,6 @@ export function CreateLocalAgentDialog(props: CreateAgentDialogProps) {
                 requestBody: {
                   source_code: tool.code,
                   description: 'A custom tool',
-                  name: tool.name,
                 },
               });
             }),

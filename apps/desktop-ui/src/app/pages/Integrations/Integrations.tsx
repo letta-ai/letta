@@ -291,7 +291,7 @@ export function Integrations() {
 
       setUnserializedSettings(config);
       setSettings(nextSettings);
-    }, []);
+    });
 
     return () => {
       window.lettaConfig.onLoad(() => {

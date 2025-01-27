@@ -47,7 +47,7 @@ export function ServerStatus() {
       }
 
       setLogs(logs);
-    }, []);
+    });
 
     return () => {
       clearInterval(interval);

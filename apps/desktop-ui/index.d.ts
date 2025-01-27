@@ -5,8 +5,12 @@ declare global {
   interface Window {
     electron: {
       getAppVersion: () => Promise<string>;
+      setToDashboardSize: () => void;
       platform: string;
     };
+    router: {
+      onUpdateRoute: (callback: (path: string) => void) => void;
+    },
     darkMode: {
       toggle: () => Promise<void>;
       system: () => Promise<void>;
@@ -19,7 +23,8 @@ declare global {
     lettaConfig: {
       load: () => Promise<void>;
       save: (config: any) => Promise<void>;
-      onLoad: (callback: (config: any) => void) => void;
+      onLoad: (callback: (config: string) => void) => void;
     };
   }
 }
+
