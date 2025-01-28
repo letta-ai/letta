@@ -108,9 +108,6 @@ class Agent(BaseAgent):
                 if not isinstance(rule, TerminalToolRule):
                     warnings.warn("Tool rules only work reliably for the latest OpenAI models that support structured outputs.")
                     break
-        # add default rule for having send_message be a terminal tool
-        if agent_state.tool_rules is None:
-            agent_state.tool_rules = []
 
         self.tool_rules_solver = ToolRulesSolver(tool_rules=agent_state.tool_rules)
 
