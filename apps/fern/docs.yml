@@ -102,8 +102,14 @@ navigation:
             path: pages/agents/data_sources.mdx
           - page: Streaming Responses
             path: pages/agents/streaming.mdx
-          - page: Multi-Agent
-            path: pages/agents/multiagent.mdx
+          - section: Multi-Agent
+            contents:
+            - page: Multi-Agent Overview
+              path: pages/agents/multiagent.mdx
+            - page: Custom Multi-Agent Tools
+              path: pages/agents/multiagent_custom.mdx
+            - page: Multi-Agent Shared Memory
+              path: pages/agents/multiagent_memory.mdx
           - page: Multi-User Setup
             path: pages/agents/multiuser.mdx
       - section: ADE Guide

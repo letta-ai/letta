@@ -1,6 +1,7 @@
 from datetime import datetime
 from enum import Enum
 from functools import wraps
+from pprint import pformat
 from typing import TYPE_CHECKING, List, Literal, Optional, Tuple, Union
 
 from sqlalchemy import String, and_, func, or_, select
@@ -504,7 +505,14 @@ class SqlalchemyBase(CommonSqlalchemyMetaMixins, Base):
             model.metadata = self.metadata_
         return model
 
-    def to_record(self) -> "BaseModel":
-        """Deprecated accessor for to_pydantic"""
-        logger.warning("to_record is deprecated, use to_pydantic instead.")
-        return self.to_pydantic()
+    def pretty_print_columns(self) -> str:
+        """
+        Pretty prints all columns of the current SQLAlchemy object along with their values.
+        """
+        if not hasattr(self, "__table__") or not hasattr(self.__table__, "columns"):
+            raise NotImplementedError("This object does not have a '__table__.columns' attribute.")
+
+        # Iterate over the columns correctly
+        column_data = {column.name: getattr(self, column.name, None) for column in self.__table__.columns}
+
+        return pformat(column_data, indent=4, sort_dicts=True)
