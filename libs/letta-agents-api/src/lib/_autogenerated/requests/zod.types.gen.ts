@@ -33,20 +33,14 @@ export const ActionResponseModel = z.object({
 export type ActionModel = z.infer<typeof ActionModel>;
 export const ActionModel = z.object({
   name: z.string(),
-  display_name: z
-    .union([
-      z.string(),
-      z.null(),
-      z.array(z.union([z.string(), z.null()])),
-      z.undefined(),
-    ])
-    .optional(),
+  description: z.string(),
   parameters: ActionParametersModel,
   response: ActionResponseModel,
   appName: z.string(),
   appId: z.string(),
+  version: z.string(),
+  available_versions: z.array(z.string()),
   tags: z.array(z.string()),
-  enabled: z.union([z.boolean(), z.undefined()]).optional(),
   logo: z
     .union([
       z.string(),
@@ -55,7 +49,7 @@ export const ActionModel = z.object({
       z.undefined(),
     ])
     .optional(),
-  description: z
+  display_name: z
     .union([
       z.string(),
       z.null(),
@@ -63,6 +57,7 @@ export const ActionModel = z.object({
       z.undefined(),
     ])
     .optional(),
+  enabled: z.union([z.boolean(), z.undefined()]).optional(),
 });
 
 export type AgentEnvironmentVariable = z.infer<typeof AgentEnvironmentVariable>;

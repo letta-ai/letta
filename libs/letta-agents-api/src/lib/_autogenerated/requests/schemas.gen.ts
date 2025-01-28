@@ -6,16 +6,9 @@ export const $ActionModel = {
       type: 'string',
       title: 'Name',
     },
-    display_name: {
-      anyOf: [
-        {
-          type: 'string',
-        },
-        {
-          type: 'null',
-        },
-      ],
-      title: 'Display Name',
+    description: {
+      type: 'string',
+      title: 'Description',
     },
     parameters: {
       $ref: '#/components/schemas/ActionParametersModel',
@@ -31,17 +24,23 @@ export const $ActionModel = {
       type: 'string',
       title: 'Appid',
     },
+    version: {
+      type: 'string',
+      title: 'Version',
+    },
+    available_versions: {
+      items: {
+        type: 'string',
+      },
+      type: 'array',
+      title: 'Available Versions',
+    },
     tags: {
       items: {
         type: 'string',
       },
       type: 'array',
       title: 'Tags',
-    },
-    enabled: {
-      type: 'boolean',
-      title: 'Enabled',
-      default: false,
     },
     logo: {
       anyOf: [
@@ -54,7 +53,7 @@ export const $ActionModel = {
       ],
       title: 'Logo',
     },
-    description: {
+    display_name: {
       anyOf: [
         {
           type: 'string',
@@ -63,11 +62,26 @@ export const $ActionModel = {
           type: 'null',
         },
       ],
-      title: 'Description',
+      title: 'Display Name',
+    },
+    enabled: {
+      type: 'boolean',
+      title: 'Enabled',
+      default: false,
     },
   },
   type: 'object',
-  required: ['name', 'parameters', 'response', 'appName', 'appId', 'tags'],
+  required: [
+    'name',
+    'description',
+    'parameters',
+    'response',
+    'appName',
+    'appId',
+    'version',
+    'available_versions',
+    'tags',
+  ],
   title: 'ActionModel',
   description: 'Action data model.',
 } as const;

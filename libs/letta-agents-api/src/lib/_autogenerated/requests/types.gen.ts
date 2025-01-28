@@ -5,15 +5,17 @@
  */
 export type ActionModel = {
   name: string;
-  display_name?: string | null;
+  description: string;
   parameters: ActionParametersModel;
   response: ActionResponseModel;
   appName: string;
   appId: string;
+  version: string;
+  available_versions: Array<string>;
   tags: Array<string>;
-  enabled?: boolean;
   logo?: string | null;
-  description?: string | null;
+  display_name?: string | null;
+  enabled?: boolean;
 };
 
 /**
