@@ -3,6 +3,7 @@ import {
   db,
   organizationBillingDetails,
   organizationCredits,
+  organizationLimits,
   organizationPreferences,
   organizations,
   projects,
@@ -86,6 +87,9 @@ export async function createOrganization(args: CreateOrganizationArgs) {
     db.insert(organizationBillingDetails).values({
       organizationId: createdOrg.organizationId,
       stripeCustomerId,
+    }),
+    db.insert(organizationLimits).values({
+      organizationId: createdOrg.organizationId,
     }),
   ]);
 

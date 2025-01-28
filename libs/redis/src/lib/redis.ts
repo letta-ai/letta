@@ -1,8 +1,9 @@
 import type { RedisOptions } from 'ioredis';
 import Redis from 'ioredis';
 import { environment } from '@letta-cloud/environmental-variables';
-import type { RedisTypes, RedisKeySchemaMap } from '../schemas';
-import { redisTypeKeyMap } from '../schemas';
+import type { RedisTypes, RedisDefinitionMap } from '../schemas';
+import { redisDefinitions } from '../schemas';
+import type { z } from 'zod';
 
 const BOUNCE = 200;
 const MAX_BOUNCE = 1000;
@@ -33,6 +34,8 @@ if (environment.REDIS_PASSWORD) {
   options.password = environment.REDIS_PASSWORD;
 }
 
+type GetArgsType<T> = T extends (...args: infer Args) => unknown ? Args : never;
+
 function createRedisInstance() {
   try {
     if (!redisInstance) {
@@ -51,11 +54,11 @@ function createRedisInstance() {
 
 export async function getRedisData<Type extends RedisTypes = RedisTypes>(
   type: Type,
-  key: string,
-): Promise<RedisKeySchemaMap[Type] | null> {
+  args: z.infer<(typeof redisDefinitions)[Type]['input']>,
+): Promise<z.infer<RedisDefinitionMap[Type]['output']> | null> {
   const redis = createRedisInstance();
 
-  const res = await redis.get(redisTypeKeyMap[type](key));
+  const res = await redis.get(redisDefinitions[type].getKey(args));
 
   if (!res) {
     return null;
@@ -75,13 +78,15 @@ interface SetRedisDataOptions<Data> {
 
 export async function setRedisData<Type extends RedisTypes = RedisTypes>(
   type: Type,
-  key: string,
-  options: SetRedisDataOptions<RedisKeySchemaMap[Type]>,
+  args: z.infer<(typeof redisDefinitions)[Type]['input']>,
+  options: SetRedisDataOptions<
+    z.infer<(typeof redisDefinitions)[Type]['output']>
+  >,
 ) {
   const redis = createRedisInstance();
   const { data, expiresAt } = options;
 
-  const keyName = redisTypeKeyMap[type](key);
+  const keyName = redisDefinitions[type].getKey(args);
 
   await redis.set(keyName, JSON.stringify(data));
 
@@ -92,9 +97,9 @@ export async function setRedisData<Type extends RedisTypes = RedisTypes>(
 
 export async function deleteRedisData<Type extends RedisTypes = RedisTypes>(
   type: Type,
-  key: string,
+  args: z.infer<(typeof redisDefinitions)[Type]['input']>,
 ) {
   const redis = createRedisInstance();
 
-  await redis.del(redisTypeKeyMap[type](key));
+  await redis.del(redisDefinitions[type].getKey(args));
 }

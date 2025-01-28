@@ -12,6 +12,7 @@ import {
 } from '$web/server';
 import type { EmbeddingConfig, LLMConfig } from '@letta-cloud/letta-agents-api';
 import { getBrandFromModelName } from '@letta-cloud/generic-utils';
+import { setRedisData } from '@letta-cloud/redis';
 
 type GetAdminInferenceModelsResponse = ServerInferResponses<
   typeof contracts.admin.models.getAdminInferenceModels
@@ -311,14 +312,39 @@ async function updateAdminInferenceModel(
     set.isRecommended = isRecommended;
   }
 
-  if (req.body.defaultRequestsPerMinutePerOrganization) {
+  const {
+    defaultRequestsPerMinutePerOrganization,
+    defaultTokensPerMinutePerOrganization,
+  } = req.body;
+
+  if (defaultRequestsPerMinutePerOrganization) {
     set.defaultRequestsPerMinutePerOrganization =
-      req.body.defaultRequestsPerMinutePerOrganization.toString();
+      defaultRequestsPerMinutePerOrganization.toString();
+
+    await setRedisData(
+      'defaultModelRequestPerMinute',
+      { modelId: id },
+      {
+        data: {
+          maxRequestsPerMinute: defaultRequestsPerMinutePerOrganization,
+        },
+      },
+    );
   }
 
-  if (req.body.defaultTokensPerMinutePerOrganization) {
+  if (defaultTokensPerMinutePerOrganization) {
     set.defaultTokensPerMinutePerOrganization =
-      req.body.defaultTokensPerMinutePerOrganization.toString();
+      defaultTokensPerMinutePerOrganization.toString();
+
+    await setRedisData(
+      'defaultModelTokensPerMinute',
+      { modelId: id },
+      {
+        data: {
+          maxTokensPerMinute: defaultTokensPerMinutePerOrganization,
+        },
+      },
+    );
   }
 
   if (Object.keys(set).length === 0) {
@@ -679,14 +705,39 @@ async function updateAdminEmbeddingModel(
     set.name = name;
   }
 
-  if (req.body.defaultRequestsPerMinutePerOrganization) {
+  const {
+    defaultRequestsPerMinutePerOrganization,
+    defaultTokensPerMinutePerOrganization,
+  } = req.body;
+
+  if (defaultRequestsPerMinutePerOrganization) {
     set.defaultRequestsPerMinutePerOrganization =
-      req.body.defaultRequestsPerMinutePerOrganization.toString();
+      defaultRequestsPerMinutePerOrganization.toString();
+
+    await setRedisData(
+      'defaultModelRequestPerMinute',
+      { modelId: id },
+      {
+        data: {
+          maxRequestsPerMinute: defaultRequestsPerMinutePerOrganization,
+        },
+      },
+    );
   }
 
-  if (req.body.defaultTokensPerMinutePerOrganization) {
+  if (defaultTokensPerMinutePerOrganization) {
     set.defaultTokensPerMinutePerOrganization =
-      req.body.defaultTokensPerMinutePerOrganization.toString();
+      defaultTokensPerMinutePerOrganization.toString();
+
+    await setRedisData(
+      'defaultModelTokensPerMinute',
+      { modelId: id },
+      {
+        data: {
+          maxTokensPerMinute: defaultTokensPerMinutePerOrganization,
+        },
+      },
+    );
   }
 
   if (Object.keys(set).length === 0) {

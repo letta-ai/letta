@@ -11,5 +11,5 @@ export async function signOutUser() {
 
   await deleteCookie(CookieNames.LETTA_SESSION);
 
-  await deleteRedisData('userSession', session.sessionId);
+  await deleteRedisData('userSession', { sessionId: session.sessionId });
 }

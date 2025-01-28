@@ -25,7 +25,9 @@ export async function getUser(): Promise<GetUserDataResponse | null> {
     return null;
   }
 
-  const user = await getRedisData('userSession', session.sessionId);
+  const user = await getRedisData('userSession', {
+    sessionId: session.sessionId,
+  });
 
   if (!user) {
     return null;

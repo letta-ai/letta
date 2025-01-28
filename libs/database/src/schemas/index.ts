@@ -12,6 +12,7 @@ import {
 } from 'drizzle-orm/pg-core';
 import { sql, relations } from 'drizzle-orm';
 import type { ProviderConfiguration } from '@letta-cloud/types';
+import { z } from 'zod';
 
 export const emailWhitelist = pgTable('email_whitelist', {
   id: text('id')
@@ -51,6 +52,46 @@ export const orgRelationsTable = relations(organizations, ({ many }) => ({
   organizationInvitedUsers: many(organizationInvitedUsers),
   organizationDevelopmentServers: many(developmentServers),
 }));
+
+export const MaxRequestsPerMinutePerModelSchema = z.object({
+  version: z.string(),
+  data: z.record(z.number()),
+});
+
+export const MaxTokensPerMinutePerModelSchema = z.object({
+  version: z.string(),
+  data: z.record(z.number()),
+});
+
+type MaxRequestsPerMinutePerModel = z.infer<
+  typeof MaxRequestsPerMinutePerModelSchema
+>;
+type MaxTokensPerMinutePerModel = z.infer<
+  typeof MaxTokensPerMinutePerModelSchema
+>;
+
+export const organizationLimits = pgTable('organization_limits', {
+  organizationId: text('organization_id')
+    .notNull()
+    .references(() => organizations.id, { onDelete: 'cascade' })
+    .primaryKey(),
+  maxRequestsPerMinutePerModel: json(
+    'max_requests_per_minute_per_model',
+  ).$type<MaxRequestsPerMinutePerModel>(),
+  maxTokensPerMinutePerModel: json(
+    'max_tokens_per_minute_per_model',
+  ).$type<MaxTokensPerMinutePerModel>(),
+});
+
+export const organizationLimitsRelations = relations(
+  organizationLimits,
+  ({ one }) => ({
+    organization: one(organizations, {
+      fields: [organizationLimits.organizationId],
+      references: [organizations.id],
+    }),
+  }),
+);
 
 export const organizationPreferences = pgTable('organization_preferences', {
   id: text('id')

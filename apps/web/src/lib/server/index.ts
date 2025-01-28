@@ -19,9 +19,9 @@ export function streamedArgumentsParserGenerator() {
     text: string,
     onMessage: (
       data: StreamedDataOutput,
-      options: StreamedArgumentsParserGeneratorOptions
+      options: StreamedArgumentsParserGeneratorOptions,
     ) => void,
-    options: StreamedArgumentsParserGeneratorOptions = {}
+    options: StreamedArgumentsParserGeneratorOptions = {},
   ) {
     // when we first encounter the " character after edge state, we start reading the key
     if (step === 'edge' && text.trim() === '"') {
@@ -114,3 +114,4 @@ export function generateSlug(name: string) {
 
 export * from './lib/findUniqueAgentTemplateName/findUniqueAgentTemplateName';
 export * from '$web/server/lib/getLettaAgentsInferenceModelsSingleton/getLettaAgentsInferenceModelsSingleton';
+export * from './lib/handleMessageRateLimiting/handleMessageRateLimiting';

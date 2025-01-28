@@ -389,10 +389,14 @@ export async function signInUserFromProviderLogin(
 
   (await cookies()).set(CookieNames.THEME, user.theme);
 
-  await setRedisData('userSession', sessionId, {
-    expiresAt: expires,
-    data: user,
-  });
+  await setRedisData(
+    'userSession',
+    { sessionId },
+    {
+      expiresAt: expires,
+      data: user,
+    },
+  );
 
   return {
     newUserDetails,
