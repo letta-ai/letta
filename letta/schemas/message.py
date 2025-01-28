@@ -25,7 +25,6 @@ from letta.schemas.letta_message import (
     ToolReturnMessage,
     UserMessage,
 )
-from letta.system import unpack_message
 from letta.utils import get_utc_time, is_utc_datetime, json_dumps
 
 
@@ -265,12 +264,11 @@ class Message(BaseMessage):
         elif self.role == MessageRole.user:
             # This is type UserMessage
             assert self.text is not None, self
-            message_str = unpack_message(self.text)
             messages.append(
                 UserMessage(
                     id=self.id,
                     date=self.created_at,
-                    content=message_str or self.text,
+                    content=self.text,
                 )
             )
         elif self.role == MessageRole.system:
