@@ -280,7 +280,7 @@ class AbstractClient(object):
 
     def get_messages(
         self, agent_id: str, after: Optional[str] = None, before: Optional[str] = None, limit: Optional[int] = 1000
-    ) -> List[Message]:
+    ) -> List[LettaMessage]:
         raise NotImplementedError
 
     def list_model_configs(self) -> List[LLMConfig]:
@@ -965,7 +965,7 @@ class RESTClient(AbstractClient):
 
     def get_messages(
         self, agent_id: str, before: Optional[str] = None, after: Optional[str] = None, limit: Optional[int] = 1000
-    ) -> List[Message]:
+    ) -> List[LettaMessage]:
         """
         Get messages from an agent with pagination.
 
@@ -983,7 +983,7 @@ class RESTClient(AbstractClient):
         response = requests.get(f"{self.base_url}/{self.api_prefix}/agents/{agent_id}/messages", params=params, headers=self.headers)
         if response.status_code != 200:
             raise ValueError(f"Failed to get messages: {response.text}")
-        return [Message(**message) for message in response.json()]
+        return [LettaMessage(**message) for message in response.json()]
 
     def send_message(
         self,
@@ -3355,7 +3355,7 @@ class LocalClient(AbstractClient):
 
     def get_messages(
         self, agent_id: str, before: Optional[str] = None, after: Optional[str] = None, limit: Optional[int] = 1000
-    ) -> List[Message]:
+    ) -> List[LettaMessage]:
         """
         Get messages from an agent with pagination.
 
@@ -3377,6 +3377,7 @@ class LocalClient(AbstractClient):
             after=after,
             limit=limit,
             reverse=True,
+            return_message_object=False,
         )
 
     def list_blocks(self, label: Optional[str] = None, templates_only: Optional[bool] = True) -> List[Block]:

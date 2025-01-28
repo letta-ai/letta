@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Annotated, List, Optional, Union
+from typing import Annotated, List, Optional
 
 from fastapi import APIRouter, BackgroundTasks, Body, Depends, Header, HTTPException, Query, status
 from fastapi.responses import JSONResponse
@@ -391,15 +391,7 @@ def delete_archival_memory(
 
 
 AgentMessagesResponse = Annotated[
-    Union[List[Message], List[LettaMessageUnion]],
-    Field(
-        json_schema_extra={
-            "anyOf": [
-                {"type": "array", "items": {"$ref": "#/components/schemas/Message"}},
-                {"type": "array", "items": {"$ref": "#/components/schemas/LettaMessageUnion"}},
-            ]
-        }
-    ),
+    List[LettaMessageUnion], Field(json_schema_extra={"type": "array", "items": {"$ref": "#/components/schemas/LettaMessageUnion"}})
 ]
 
 
@@ -410,7 +402,6 @@ def list_messages(
     after: Optional[str] = Query(None, description="Message after which to retrieve the returned messages."),
     before: Optional[str] = Query(None, description="Message before which to retrieve the returned messages."),
     limit: int = Query(10, description="Maximum number of messages to retrieve."),
-    msg_object: bool = Query(False, description="If true, returns Message objects. If false, return LettaMessage objects."),
     config: LettaRequestConfig = Query(LettaRequestConfig(), description="Configuration options for the LettaRequest."),
     user_id: Optional[str] = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
 ):
@@ -426,7 +417,7 @@ def list_messages(
         before=before,
         limit=limit,
         reverse=True,
-        return_message_object=msg_object,
+        return_message_object=False,
         assistant_message_tool_name=config.assistant_message_tool_name,
         assistant_message_tool_kwarg=config.assistant_message_tool_kwarg,
     )
