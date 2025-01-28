@@ -1,0 +1,5285 @@
+import { z } from 'zod';
+
+export type ActionParametersModel = z.infer<typeof ActionParametersModel>;
+export const ActionParametersModel = z.object({
+  properties: z.unknown(),
+  title: z.string(),
+  type: z.string(),
+  required: z
+    .union([
+      z.array(z.string()),
+      z.null(),
+      z.array(z.union([z.array(z.string()), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+});
+
+export type ActionResponseModel = z.infer<typeof ActionResponseModel>;
+export const ActionResponseModel = z.object({
+  properties: z.unknown(),
+  title: z.string(),
+  type: z.string(),
+  required: z
+    .union([
+      z.array(z.string()),
+      z.null(),
+      z.array(z.union([z.array(z.string()), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+});
+
+export type ActionModel = z.infer<typeof ActionModel>;
+export const ActionModel = z.object({
+  name: z.string(),
+  display_name: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  parameters: ActionParametersModel,
+  response: ActionResponseModel,
+  appName: z.string(),
+  appId: z.string(),
+  tags: z.array(z.string()),
+  enabled: z.union([z.boolean(), z.undefined()]).optional(),
+  logo: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  description: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+});
+
+export type AgentEnvironmentVariable = z.infer<typeof AgentEnvironmentVariable>;
+export const AgentEnvironmentVariable = z.object({
+  created_by_id: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  last_updated_by_id: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  created_at: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  updated_at: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  id: z.union([z.string(), z.undefined()]).optional(),
+  key: z.string(),
+  value: z.string(),
+  description: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  organization_id: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  agent_id: z.string(),
+});
+
+export type ToolRuleType = z.infer<typeof ToolRuleType>;
+export const ToolRuleType = z.union([
+  z.literal('InitToolRule'),
+  z.literal('TerminalToolRule'),
+  z.literal('continue_loop'),
+  z.literal('conditional'),
+  z.literal('ToolRule'),
+  z.literal('require_parent_tools'),
+]);
+
+export type ChildToolRule = z.infer<typeof ChildToolRule>;
+export const ChildToolRule = z.object({
+  tool_name: z.string(),
+  type: z.union([ToolRuleType, z.undefined()]).optional(),
+  children: z.array(z.string()),
+});
+
+export type InitToolRule = z.infer<typeof InitToolRule>;
+export const InitToolRule = z.object({
+  tool_name: z.string(),
+  type: z.union([ToolRuleType, z.undefined()]).optional(),
+});
+
+export type TerminalToolRule = z.infer<typeof TerminalToolRule>;
+export const TerminalToolRule = z.object({
+  tool_name: z.string(),
+  type: z.union([ToolRuleType, z.undefined()]).optional(),
+});
+
+export type ConditionalToolRule = z.infer<typeof ConditionalToolRule>;
+export const ConditionalToolRule = z.object({
+  tool_name: z.string(),
+  type: z.union([ToolRuleType, z.undefined()]).optional(),
+  default_child: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  child_output_mapping: z.unknown(),
+  require_output_mapping: z.union([z.boolean(), z.undefined()]).optional(),
+});
+
+export type AgentType = z.infer<typeof AgentType>;
+export const AgentType = z.union([
+  z.literal('memgpt_agent'),
+  z.literal('split_thread_agent'),
+  z.literal('offline_memory_agent'),
+  z.literal('chat_only_agent'),
+]);
+
+export type LLMConfig = z.infer<typeof LLMConfig>;
+export const LLMConfig = z.object({
+  model: z.string(),
+  model_endpoint_type: z.union([
+    z.literal('openai'),
+    z.literal('anthropic'),
+    z.literal('cohere'),
+    z.literal('google_ai'),
+    z.literal('azure'),
+    z.literal('groq'),
+    z.literal('ollama'),
+    z.literal('webui'),
+    z.literal('webui-legacy'),
+    z.literal('lmstudio'),
+    z.literal('lmstudio-legacy'),
+    z.literal('llamacpp'),
+    z.literal('koboldcpp'),
+    z.literal('vllm'),
+    z.literal('hugging-face'),
+    z.literal('mistral'),
+    z.literal('together'),
+    z.literal('bedrock'),
+  ]),
+  model_endpoint: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  model_wrapper: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  context_window: z.number(),
+  put_inner_thoughts_in_kwargs: z
+    .union([
+      z.boolean(),
+      z.null(),
+      z.array(z.union([z.boolean(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  handle: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  temperature: z.union([z.number(), z.undefined()]).optional(),
+});
+
+export type EmbeddingConfig = z.infer<typeof EmbeddingConfig>;
+export const EmbeddingConfig = z.object({
+  embedding_endpoint_type: z.union([
+    z.literal('openai'),
+    z.literal('anthropic'),
+    z.literal('bedrock'),
+    z.literal('cohere'),
+    z.literal('google_ai'),
+    z.literal('azure'),
+    z.literal('groq'),
+    z.literal('ollama'),
+    z.literal('webui'),
+    z.literal('webui-legacy'),
+    z.literal('lmstudio'),
+    z.literal('lmstudio-legacy'),
+    z.literal('llamacpp'),
+    z.literal('koboldcpp'),
+    z.literal('vllm'),
+    z.literal('hugging-face'),
+    z.literal('mistral'),
+    z.literal('together'),
+  ]),
+  embedding_endpoint: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  embedding_model: z.string(),
+  embedding_dim: z.number(),
+  embedding_chunk_size: z
+    .union([
+      z.number(),
+      z.null(),
+      z.array(z.union([z.number(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  handle: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  azure_endpoint: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  azure_version: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  azure_deployment: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+});
+
+export type Block = z.infer<typeof Block>;
+export const Block = z.object({
+  value: z.string(),
+  limit: z.union([z.number(), z.undefined()]).optional(),
+  name: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  is_template: z.union([z.boolean(), z.undefined()]).optional(),
+  label: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  description: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  metadata: z
+    .union([
+      z.unknown(),
+      z.null(),
+      z.array(z.union([z.unknown(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  id: z.union([z.string(), z.undefined()]).optional(),
+  organization_id: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  created_by_id: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  last_updated_by_id: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+});
+
+export type Memory = z.infer<typeof Memory>;
+export const Memory = z.object({
+  blocks: z.array(Block),
+  prompt_template: z.union([z.string(), z.undefined()]).optional(),
+});
+
+export type ToolType = z.infer<typeof ToolType>;
+export const ToolType = z.union([
+  z.literal('custom'),
+  z.literal('letta_core'),
+  z.literal('letta_memory_core'),
+  z.literal('letta_multi_agent_core'),
+  z.literal('external_composio'),
+]);
+
+export type Tool = z.infer<typeof Tool>;
+export const Tool = z.object({
+  id: z.string().optional(),
+  tool_type: ToolType.optional(),
+  description: z
+    .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+    .optional(),
+  source_type: z
+    .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+    .optional(),
+  organization_id: z
+    .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+    .optional(),
+  name: z
+    .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+    .optional(),
+  tags: z.array(z.string()).optional(),
+  source_code: z
+    .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+    .optional(),
+  json_schema: z
+    .union([z.unknown(), z.null(), z.array(z.union([z.unknown(), z.null()]))])
+    .optional(),
+  return_char_limit: z.number().optional(),
+  created_by_id: z
+    .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+    .optional(),
+  last_updated_by_id: z
+    .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+    .optional(),
+});
+
+export type Source = z.infer<typeof Source>;
+export const Source = z.object({
+  id: z.union([z.string(), z.undefined()]).optional(),
+  name: z.string(),
+  description: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  embedding_config: EmbeddingConfig,
+  organization_id: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  metadata: z
+    .union([
+      z.unknown(),
+      z.null(),
+      z.array(z.union([z.unknown(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  created_by_id: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  last_updated_by_id: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  created_at: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  updated_at: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+});
+
+export type AgentState = z.infer<typeof AgentState>;
+export const AgentState = z.object({
+  created_by_id: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  last_updated_by_id: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  created_at: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  updated_at: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  id: z.string(),
+  name: z.string(),
+  tool_rules: z
+    .union([
+      z.array(
+        z.union([
+          ChildToolRule,
+          InitToolRule,
+          TerminalToolRule,
+          ConditionalToolRule,
+          z.array(
+            z.union([
+              ChildToolRule,
+              InitToolRule,
+              TerminalToolRule,
+              ConditionalToolRule,
+            ]),
+          ),
+        ]),
+      ),
+      z.null(),
+      z.array(
+        z.union([
+          z.array(
+            z.union([
+              ChildToolRule,
+              InitToolRule,
+              TerminalToolRule,
+              ConditionalToolRule,
+              z.array(
+                z.union([
+                  ChildToolRule,
+                  InitToolRule,
+                  TerminalToolRule,
+                  ConditionalToolRule,
+                ]),
+              ),
+            ]),
+          ),
+          z.null(),
+        ]),
+      ),
+      z.undefined(),
+    ])
+    .optional(),
+  message_ids: z
+    .union([
+      z.array(z.string()),
+      z.null(),
+      z.array(z.union([z.array(z.string()), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  system: z.string(),
+  agent_type: AgentType,
+  llm_config: LLMConfig,
+  embedding_config: EmbeddingConfig,
+  organization_id: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  description: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  metadata: z
+    .union([
+      z.unknown(),
+      z.null(),
+      z.array(z.union([z.unknown(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  memory: Memory,
+  tools: z.array(Tool),
+  sources: z.array(Source),
+  tags: z.array(z.string()),
+  tool_exec_environment_variables: z
+    .union([z.array(AgentEnvironmentVariable), z.undefined()])
+    .optional(),
+});
+
+export type AuthSchemeField = z.infer<typeof AuthSchemeField>;
+export const AuthSchemeField = z.object({
+  name: z.string(),
+  display_name: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  description: z.string(),
+  type: z.string(),
+  default: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  required: z.union([z.boolean(), z.undefined()]).optional(),
+  expected_from_customer: z.union([z.boolean(), z.undefined()]).optional(),
+  get_current_user_endpoint: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+});
+
+export type AppAuthScheme = z.infer<typeof AppAuthScheme>;
+export const AppAuthScheme = z.object({
+  scheme_name: z.string(),
+  auth_mode: z.union([
+    z.literal('OAUTH2'),
+    z.literal('OAUTH1'),
+    z.literal('API_KEY'),
+    z.literal('BASIC'),
+    z.literal('BEARER_TOKEN'),
+    z.literal('BASIC_WITH_JWT'),
+  ]),
+  fields: z.array(AuthSchemeField),
+  proxy: z
+    .union([
+      z.unknown(),
+      z.null(),
+      z.array(z.union([z.unknown(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  authorization_url: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  token_url: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  default_scopes: z
+    .union([
+      z.array(z.unknown()),
+      z.null(),
+      z.array(z.union([z.array(z.unknown()), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  token_response_metadata: z
+    .union([
+      z.array(z.unknown()),
+      z.null(),
+      z.array(z.union([z.array(z.unknown()), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  client_id: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  client_secret: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+});
+
+export type AppModel = z.infer<typeof AppModel>;
+export const AppModel = z.object({
+  name: z.string(),
+  key: z.string(),
+  appId: z.string(),
+  description: z.string(),
+  categories: z.array(z.string()),
+  meta: z.unknown(),
+  logo: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  docs: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  group: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  status: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  enabled: z.union([z.boolean(), z.undefined()]).optional(),
+  no_auth: z.union([z.boolean(), z.undefined()]).optional(),
+  auth_schemes: z
+    .union([
+      z.array(AppAuthScheme),
+      z.null(),
+      z.array(z.union([z.array(AppAuthScheme), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  testConnectors: z
+    .union([
+      z.array(z.unknown()),
+      z.null(),
+      z.array(z.union([z.array(z.unknown()), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  documentation_doc_text: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  configuration_docs_text: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+});
+
+export type TextContent = z.infer<typeof TextContent>;
+export const TextContent = z.object({
+  type: z.union([z.literal('text'), z.undefined()]).optional(),
+  text: z.string(),
+});
+
+export type AssistantMessage = z.infer<typeof AssistantMessage>;
+export const AssistantMessage = z.object({
+  id: z.string(),
+  date: z.string(),
+  message_type: z
+    .union([z.literal('assistant_message'), z.undefined()])
+    .optional(),
+  content: z.union([
+    z.string(),
+    z.array(TextContent),
+    z.array(z.union([z.string(), z.array(TextContent)])),
+  ]),
+});
+
+export type Audio = z.infer<typeof Audio>;
+export const Audio = z.object({
+  id: z.string(),
+});
+
+export type AuthRequest = z.infer<typeof AuthRequest>;
+export const AuthRequest = z.object({
+  password: z.string().optional(),
+});
+
+export type AuthResponse = z.infer<typeof AuthResponse>;
+export const AuthResponse = z.object({
+  uuid: z.string(),
+  is_admin: z
+    .union([
+      z.boolean(),
+      z.null(),
+      z.array(z.union([z.boolean(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+});
+
+export type BlockUpdate = z.infer<typeof BlockUpdate>;
+export const BlockUpdate = z.object({
+  value: z
+    .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+    .optional(),
+  limit: z
+    .union([z.number(), z.null(), z.array(z.union([z.number(), z.null()]))])
+    .optional(),
+  name: z
+    .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+    .optional(),
+  is_template: z.boolean().optional(),
+  label: z
+    .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+    .optional(),
+  description: z
+    .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+    .optional(),
+  metadata: z
+    .union([z.unknown(), z.null(), z.array(z.union([z.unknown(), z.null()]))])
+    .optional(),
+});
+
+export type Body_upload_file_to_source = z.infer<
+  typeof Body_upload_file_to_source
+>;
+export const Body_upload_file_to_source = z.object({
+  file: z.string(),
+});
+
+export type ChatCompletionContentPartTextParam = z.infer<
+  typeof ChatCompletionContentPartTextParam
+>;
+export const ChatCompletionContentPartTextParam = z.object({
+  text: z.string(),
+  type: z.literal('text'),
+});
+
+export type ChatCompletionContentPartRefusalParam = z.infer<
+  typeof ChatCompletionContentPartRefusalParam
+>;
+export const ChatCompletionContentPartRefusalParam = z.object({
+  refusal: z.string(),
+  type: z.literal('refusal'),
+});
+
+export type FunctionCall = z.infer<typeof FunctionCall>;
+export const FunctionCall = z.object({
+  arguments: z.string(),
+  name: z.string(),
+});
+
+export type openai__types__chat__chat_completion_message_tool_call_param__Function =
+  z.infer<
+    typeof openai__types__chat__chat_completion_message_tool_call_param__Function
+  >;
+export const openai__types__chat__chat_completion_message_tool_call_param__Function =
+  z.object({
+    arguments: z.string(),
+    name: z.string(),
+  });
+
+export type ChatCompletionMessageToolCallParam = z.infer<
+  typeof ChatCompletionMessageToolCallParam
+>;
+export const ChatCompletionMessageToolCallParam = z.object({
+  id: z.string(),
+  function:
+    openai__types__chat__chat_completion_message_tool_call_param__Function,
+  type: z.literal('function'),
+});
+
+export type ChatCompletionAssistantMessageParam = z.infer<
+  typeof ChatCompletionAssistantMessageParam
+>;
+export const ChatCompletionAssistantMessageParam = z.object({
+  role: z.literal('assistant'),
+  audio: z
+    .union([
+      Audio,
+      z.null(),
+      z.array(z.union([Audio, z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  content: z
+    .union([
+      z.string(),
+      z.array(
+        z.union([
+          ChatCompletionContentPartTextParam,
+          ChatCompletionContentPartRefusalParam,
+          z.array(
+            z.union([
+              ChatCompletionContentPartTextParam,
+              ChatCompletionContentPartRefusalParam,
+            ]),
+          ),
+        ]),
+      ),
+      z.null(),
+      z.array(
+        z.union([
+          z.string(),
+          z.array(
+            z.union([
+              ChatCompletionContentPartTextParam,
+              ChatCompletionContentPartRefusalParam,
+              z.array(
+                z.union([
+                  ChatCompletionContentPartTextParam,
+                  ChatCompletionContentPartRefusalParam,
+                ]),
+              ),
+            ]),
+          ),
+          z.null(),
+        ]),
+      ),
+      z.undefined(),
+    ])
+    .optional(),
+  function_call: z
+    .union([
+      FunctionCall,
+      z.null(),
+      z.array(z.union([FunctionCall, z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  name: z.union([z.string(), z.undefined()]).optional(),
+  refusal: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  tool_calls: z
+    .union([z.array(ChatCompletionMessageToolCallParam), z.undefined()])
+    .optional(),
+});
+
+export type ChatCompletionAudioParam = z.infer<typeof ChatCompletionAudioParam>;
+export const ChatCompletionAudioParam = z.object({
+  format: z.union([
+    z.literal('wav'),
+    z.literal('mp3'),
+    z.literal('flac'),
+    z.literal('opus'),
+    z.literal('pcm16'),
+  ]),
+  voice: z.union([
+    z.literal('alloy'),
+    z.literal('ash'),
+    z.literal('ballad'),
+    z.literal('coral'),
+    z.literal('echo'),
+    z.literal('sage'),
+    z.literal('shimmer'),
+    z.literal('verse'),
+  ]),
+});
+
+export type ImageURL = z.infer<typeof ImageURL>;
+export const ImageURL = z.object({
+  url: z.string(),
+  detail: z
+    .union([
+      z.literal('auto'),
+      z.literal('low'),
+      z.literal('high'),
+      z.undefined(),
+    ])
+    .optional(),
+});
+
+export type ChatCompletionContentPartImageParam = z.infer<
+  typeof ChatCompletionContentPartImageParam
+>;
+export const ChatCompletionContentPartImageParam = z.object({
+  image_url: ImageURL,
+  type: z.literal('image_url'),
+});
+
+export type InputAudio = z.infer<typeof InputAudio>;
+export const InputAudio = z.object({
+  data: z.string(),
+  format: z.union([z.literal('wav'), z.literal('mp3')]),
+});
+
+export type ChatCompletionContentPartInputAudioParam = z.infer<
+  typeof ChatCompletionContentPartInputAudioParam
+>;
+export const ChatCompletionContentPartInputAudioParam = z.object({
+  input_audio: InputAudio,
+  type: z.literal('input_audio'),
+});
+
+export type ChatCompletionDeveloperMessageParam = z.infer<
+  typeof ChatCompletionDeveloperMessageParam
+>;
+export const ChatCompletionDeveloperMessageParam = z.object({
+  content: z.union([
+    z.string(),
+    z.array(ChatCompletionContentPartTextParam),
+    z.array(z.union([z.string(), z.array(ChatCompletionContentPartTextParam)])),
+  ]),
+  role: z.literal('developer'),
+  name: z.union([z.string(), z.undefined()]).optional(),
+});
+
+export type ChatCompletionFunctionCallOptionParam = z.infer<
+  typeof ChatCompletionFunctionCallOptionParam
+>;
+export const ChatCompletionFunctionCallOptionParam = z.object({
+  name: z.string(),
+});
+
+export type ChatCompletionFunctionMessageParam = z.infer<
+  typeof ChatCompletionFunctionMessageParam
+>;
+export const ChatCompletionFunctionMessageParam = z.object({
+  content: z.union([
+    z.string(),
+    z.null(),
+    z.array(z.union([z.string(), z.null()])),
+  ]),
+  name: z.string(),
+  role: z.literal('function'),
+});
+
+export type openai__types__chat__chat_completion_message_tool_call__Function =
+  z.infer<
+    typeof openai__types__chat__chat_completion_message_tool_call__Function
+  >;
+export const openai__types__chat__chat_completion_message_tool_call__Function =
+  z.intersection(
+    z.object({
+      arguments: z.string(),
+      name: z.string(),
+    }),
+    z.object({
+      string: z.any(),
+    }),
+  );
+
+export type ChatCompletionMessageToolCall_Input = z.infer<
+  typeof ChatCompletionMessageToolCall_Input
+>;
+export const ChatCompletionMessageToolCall_Input = z.intersection(
+  z.object({
+    id: z.string(),
+    function: openai__types__chat__chat_completion_message_tool_call__Function,
+    type: z.literal('function'),
+  }),
+  z.object({
+    string: z.any(),
+  }),
+);
+
+export type Function_Output = z.infer<typeof Function_Output>;
+export const Function_Output = z.intersection(
+  z.object({
+    arguments: z.string(),
+    name: z.string(),
+  }),
+  z.object({
+    string: z.any(),
+  }),
+);
+
+export type ChatCompletionMessageToolCall_Output = z.infer<
+  typeof ChatCompletionMessageToolCall_Output
+>;
+export const ChatCompletionMessageToolCall_Output = z.intersection(
+  z.object({
+    id: z.string(),
+    function: Function_Output,
+    type: z.literal('function'),
+  }),
+  z.object({
+    string: z.any(),
+  }),
+);
+
+export type openai__types__chat__chat_completion_named_tool_choice_param__Function =
+  z.infer<
+    typeof openai__types__chat__chat_completion_named_tool_choice_param__Function
+  >;
+export const openai__types__chat__chat_completion_named_tool_choice_param__Function =
+  z.object({
+    name: z.string(),
+  });
+
+export type ChatCompletionNamedToolChoiceParam = z.infer<
+  typeof ChatCompletionNamedToolChoiceParam
+>;
+export const ChatCompletionNamedToolChoiceParam = z.object({
+  function:
+    openai__types__chat__chat_completion_named_tool_choice_param__Function,
+  type: z.literal('function'),
+});
+
+export type ChatCompletionPredictionContentParam = z.infer<
+  typeof ChatCompletionPredictionContentParam
+>;
+export const ChatCompletionPredictionContentParam = z.object({
+  content: z.union([
+    z.string(),
+    z.array(ChatCompletionContentPartTextParam),
+    z.array(z.union([z.string(), z.array(ChatCompletionContentPartTextParam)])),
+  ]),
+  type: z.literal('content'),
+});
+
+export type ChatCompletionStreamOptionsParam = z.infer<
+  typeof ChatCompletionStreamOptionsParam
+>;
+export const ChatCompletionStreamOptionsParam = z.object({
+  include_usage: z.boolean().optional(),
+});
+
+export type ChatCompletionSystemMessageParam = z.infer<
+  typeof ChatCompletionSystemMessageParam
+>;
+export const ChatCompletionSystemMessageParam = z.object({
+  content: z.union([
+    z.string(),
+    z.array(ChatCompletionContentPartTextParam),
+    z.array(z.union([z.string(), z.array(ChatCompletionContentPartTextParam)])),
+  ]),
+  role: z.literal('system'),
+  name: z.union([z.string(), z.undefined()]).optional(),
+});
+
+export type ChatCompletionToolMessageParam = z.infer<
+  typeof ChatCompletionToolMessageParam
+>;
+export const ChatCompletionToolMessageParam = z.object({
+  content: z.union([
+    z.string(),
+    z.array(ChatCompletionContentPartTextParam),
+    z.array(z.union([z.string(), z.array(ChatCompletionContentPartTextParam)])),
+  ]),
+  role: z.literal('tool'),
+  tool_call_id: z.string(),
+});
+
+export type FunctionDefinition_Input = z.infer<typeof FunctionDefinition_Input>;
+export const FunctionDefinition_Input = z.object({
+  name: z.string(),
+  description: z.union([z.string(), z.undefined()]).optional(),
+  parameters: z.union([z.unknown(), z.undefined()]).optional(),
+  strict: z
+    .union([
+      z.boolean(),
+      z.null(),
+      z.array(z.union([z.boolean(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+});
+
+export type ChatCompletionToolParam = z.infer<typeof ChatCompletionToolParam>;
+export const ChatCompletionToolParam = z.object({
+  function: FunctionDefinition_Input,
+  type: z.literal('function'),
+});
+
+export type ChatCompletionUserMessageParam = z.infer<
+  typeof ChatCompletionUserMessageParam
+>;
+export const ChatCompletionUserMessageParam = z.object({
+  content: z.union([
+    z.string(),
+    z.array(
+      z.union([
+        ChatCompletionContentPartTextParam,
+        ChatCompletionContentPartImageParam,
+        ChatCompletionContentPartInputAudioParam,
+        z.array(
+          z.union([
+            ChatCompletionContentPartTextParam,
+            ChatCompletionContentPartImageParam,
+            ChatCompletionContentPartInputAudioParam,
+          ]),
+        ),
+      ]),
+    ),
+    z.array(
+      z.union([
+        z.string(),
+        z.array(
+          z.union([
+            ChatCompletionContentPartTextParam,
+            ChatCompletionContentPartImageParam,
+            ChatCompletionContentPartInputAudioParam,
+            z.array(
+              z.union([
+                ChatCompletionContentPartTextParam,
+                ChatCompletionContentPartImageParam,
+                ChatCompletionContentPartInputAudioParam,
+              ]),
+            ),
+          ]),
+        ),
+      ]),
+    ),
+  ]),
+  role: z.literal('user'),
+  name: z.union([z.string(), z.undefined()]).optional(),
+});
+
+export type openai__types__chat__completion_create_params__Function = z.infer<
+  typeof openai__types__chat__completion_create_params__Function
+>;
+export const openai__types__chat__completion_create_params__Function = z.object(
+  {
+    name: z.string(),
+    description: z.union([z.string(), z.undefined()]).optional(),
+    parameters: z.union([z.unknown(), z.undefined()]).optional(),
+  },
+);
+
+export type ResponseFormatText = z.infer<typeof ResponseFormatText>;
+export const ResponseFormatText = z.object({
+  type: z.literal('text'),
+});
+
+export type ResponseFormatJSONObject = z.infer<typeof ResponseFormatJSONObject>;
+export const ResponseFormatJSONObject = z.object({
+  type: z.literal('json_object'),
+});
+
+export type JSONSchema = z.infer<typeof JSONSchema>;
+export const JSONSchema = z.object({
+  name: z.string(),
+  description: z.union([z.string(), z.undefined()]).optional(),
+  schema: z.union([z.unknown(), z.undefined()]).optional(),
+  strict: z
+    .union([
+      z.boolean(),
+      z.null(),
+      z.array(z.union([z.boolean(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+});
+
+export type ResponseFormatJSONSchema = z.infer<typeof ResponseFormatJSONSchema>;
+export const ResponseFormatJSONSchema = z.object({
+  json_schema: JSONSchema,
+  type: z.literal('json_schema'),
+});
+
+export type CompletionCreateParamsNonStreaming = z.infer<
+  typeof CompletionCreateParamsNonStreaming
+>;
+export const CompletionCreateParamsNonStreaming = z.object({
+  messages: z.array(
+    z.union([
+      ChatCompletionDeveloperMessageParam,
+      ChatCompletionSystemMessageParam,
+      ChatCompletionUserMessageParam,
+      ChatCompletionAssistantMessageParam,
+      ChatCompletionToolMessageParam,
+      ChatCompletionFunctionMessageParam,
+      z.array(
+        z.union([
+          ChatCompletionDeveloperMessageParam,
+          ChatCompletionSystemMessageParam,
+          ChatCompletionUserMessageParam,
+          ChatCompletionAssistantMessageParam,
+          ChatCompletionToolMessageParam,
+          ChatCompletionFunctionMessageParam,
+        ]),
+      ),
+    ]),
+  ),
+  model: z.union([
+    z.string(),
+    z.literal('o1'),
+    z.literal('o1-2024-12-17'),
+    z.literal('o1-preview'),
+    z.literal('o1-preview-2024-09-12'),
+    z.literal('o1-mini'),
+    z.literal('o1-mini-2024-09-12'),
+    z.literal('gpt-4o'),
+    z.literal('gpt-4o-2024-11-20'),
+    z.literal('gpt-4o-2024-08-06'),
+    z.literal('gpt-4o-2024-05-13'),
+    z.literal('gpt-4o-audio-preview'),
+    z.literal('gpt-4o-audio-preview-2024-10-01'),
+    z.literal('gpt-4o-audio-preview-2024-12-17'),
+    z.literal('gpt-4o-mini-audio-preview'),
+    z.literal('gpt-4o-mini-audio-preview-2024-12-17'),
+    z.literal('chatgpt-4o-latest'),
+    z.literal('gpt-4o-mini'),
+    z.literal('gpt-4o-mini-2024-07-18'),
+    z.literal('gpt-4-turbo'),
+    z.literal('gpt-4-turbo-2024-04-09'),
+    z.literal('gpt-4-0125-preview'),
+    z.literal('gpt-4-turbo-preview'),
+    z.literal('gpt-4-1106-preview'),
+    z.literal('gpt-4-vision-preview'),
+    z.literal('gpt-4'),
+    z.literal('gpt-4-0314'),
+    z.literal('gpt-4-0613'),
+    z.literal('gpt-4-32k'),
+    z.literal('gpt-4-32k-0314'),
+    z.literal('gpt-4-32k-0613'),
+    z.literal('gpt-3.5-turbo'),
+    z.literal('gpt-3.5-turbo-16k'),
+    z.literal('gpt-3.5-turbo-0301'),
+    z.literal('gpt-3.5-turbo-0613'),
+    z.literal('gpt-3.5-turbo-1106'),
+    z.literal('gpt-3.5-turbo-0125'),
+    z.literal('gpt-3.5-turbo-16k-0613'),
+    z.array(
+      z.union([
+        z.string(),
+        z.literal('o1'),
+        z.literal('o1-2024-12-17'),
+        z.literal('o1-preview'),
+        z.literal('o1-preview-2024-09-12'),
+        z.literal('o1-mini'),
+        z.literal('o1-mini-2024-09-12'),
+        z.literal('gpt-4o'),
+        z.literal('gpt-4o-2024-11-20'),
+        z.literal('gpt-4o-2024-08-06'),
+        z.literal('gpt-4o-2024-05-13'),
+        z.literal('gpt-4o-audio-preview'),
+        z.literal('gpt-4o-audio-preview-2024-10-01'),
+        z.literal('gpt-4o-audio-preview-2024-12-17'),
+        z.literal('gpt-4o-mini-audio-preview'),
+        z.literal('gpt-4o-mini-audio-preview-2024-12-17'),
+        z.literal('chatgpt-4o-latest'),
+        z.literal('gpt-4o-mini'),
+        z.literal('gpt-4o-mini-2024-07-18'),
+        z.literal('gpt-4-turbo'),
+        z.literal('gpt-4-turbo-2024-04-09'),
+        z.literal('gpt-4-0125-preview'),
+        z.literal('gpt-4-turbo-preview'),
+        z.literal('gpt-4-1106-preview'),
+        z.literal('gpt-4-vision-preview'),
+        z.literal('gpt-4'),
+        z.literal('gpt-4-0314'),
+        z.literal('gpt-4-0613'),
+        z.literal('gpt-4-32k'),
+        z.literal('gpt-4-32k-0314'),
+        z.literal('gpt-4-32k-0613'),
+        z.literal('gpt-3.5-turbo'),
+        z.literal('gpt-3.5-turbo-16k'),
+        z.literal('gpt-3.5-turbo-0301'),
+        z.literal('gpt-3.5-turbo-0613'),
+        z.literal('gpt-3.5-turbo-1106'),
+        z.literal('gpt-3.5-turbo-0125'),
+        z.literal('gpt-3.5-turbo-16k-0613'),
+      ]),
+    ),
+  ]),
+  audio: z
+    .union([
+      ChatCompletionAudioParam,
+      z.null(),
+      z.array(z.union([ChatCompletionAudioParam, z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  frequency_penalty: z
+    .union([
+      z.number(),
+      z.null(),
+      z.array(z.union([z.number(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  function_call: z
+    .union([
+      z.literal('none'),
+      z.literal('auto'),
+      ChatCompletionFunctionCallOptionParam,
+      z.array(
+        z.union([
+          z.literal('none'),
+          z.literal('auto'),
+          ChatCompletionFunctionCallOptionParam,
+        ]),
+      ),
+      z.undefined(),
+    ])
+    .optional(),
+  functions: z
+    .union([
+      z.array(openai__types__chat__completion_create_params__Function),
+      z.undefined(),
+    ])
+    .optional(),
+  logit_bias: z
+    .union([
+      z.unknown(),
+      z.null(),
+      z.array(z.union([z.unknown(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  logprobs: z
+    .union([
+      z.boolean(),
+      z.null(),
+      z.array(z.union([z.boolean(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  max_completion_tokens: z
+    .union([
+      z.number(),
+      z.null(),
+      z.array(z.union([z.number(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  max_tokens: z
+    .union([
+      z.number(),
+      z.null(),
+      z.array(z.union([z.number(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  metadata: z
+    .union([
+      z.unknown(),
+      z.null(),
+      z.array(z.union([z.unknown(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  modalities: z
+    .union([
+      z.array(z.union([z.literal('text'), z.literal('audio')])),
+      z.null(),
+      z.array(
+        z.union([
+          z.array(z.union([z.literal('text'), z.literal('audio')])),
+          z.null(),
+        ]),
+      ),
+      z.undefined(),
+    ])
+    .optional(),
+  n: z
+    .union([
+      z.number(),
+      z.null(),
+      z.array(z.union([z.number(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  parallel_tool_calls: z.union([z.boolean(), z.undefined()]).optional(),
+  prediction: z
+    .union([
+      ChatCompletionPredictionContentParam,
+      z.null(),
+      z.array(z.union([ChatCompletionPredictionContentParam, z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  presence_penalty: z
+    .union([
+      z.number(),
+      z.null(),
+      z.array(z.union([z.number(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  reasoning_effort: z
+    .union([
+      z.literal('low'),
+      z.literal('medium'),
+      z.literal('high'),
+      z.undefined(),
+    ])
+    .optional(),
+  response_format: z
+    .union([
+      ResponseFormatText,
+      ResponseFormatJSONObject,
+      ResponseFormatJSONSchema,
+      z.array(
+        z.union([
+          ResponseFormatText,
+          ResponseFormatJSONObject,
+          ResponseFormatJSONSchema,
+        ]),
+      ),
+      z.undefined(),
+    ])
+    .optional(),
+  seed: z
+    .union([
+      z.number(),
+      z.null(),
+      z.array(z.union([z.number(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  service_tier: z
+    .union([
+      z.literal('auto'),
+      z.literal('default'),
+      z.null(),
+      z.array(z.union([z.literal('auto'), z.literal('default'), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  stop: z
+    .union([
+      z.string(),
+      z.array(z.string()),
+      z.null(),
+      z.array(z.union([z.string(), z.array(z.string()), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  store: z
+    .union([
+      z.boolean(),
+      z.null(),
+      z.array(z.union([z.boolean(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  stream_options: z
+    .union([
+      ChatCompletionStreamOptionsParam,
+      z.null(),
+      z.array(z.union([ChatCompletionStreamOptionsParam, z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  temperature: z
+    .union([
+      z.number(),
+      z.null(),
+      z.array(z.union([z.number(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  tool_choice: z
+    .union([
+      z.literal('none'),
+      z.literal('auto'),
+      z.literal('required'),
+      ChatCompletionNamedToolChoiceParam,
+      z.array(
+        z.union([
+          z.literal('none'),
+          z.literal('auto'),
+          z.literal('required'),
+          ChatCompletionNamedToolChoiceParam,
+        ]),
+      ),
+      z.undefined(),
+    ])
+    .optional(),
+  tools: z.union([z.array(ChatCompletionToolParam), z.undefined()]).optional(),
+  top_logprobs: z
+    .union([
+      z.number(),
+      z.null(),
+      z.array(z.union([z.number(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  top_p: z
+    .union([
+      z.number(),
+      z.null(),
+      z.array(z.union([z.number(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  user: z.union([z.string(), z.undefined()]).optional(),
+  stream: z
+    .union([
+      z.literal('false'),
+      z.null(),
+      z.array(z.union([z.literal('false'), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+});
+
+export type CompletionCreateParamsStreaming = z.infer<
+  typeof CompletionCreateParamsStreaming
+>;
+export const CompletionCreateParamsStreaming = z.object({
+  messages: z.array(
+    z.union([
+      ChatCompletionDeveloperMessageParam,
+      ChatCompletionSystemMessageParam,
+      ChatCompletionUserMessageParam,
+      ChatCompletionAssistantMessageParam,
+      ChatCompletionToolMessageParam,
+      ChatCompletionFunctionMessageParam,
+      z.array(
+        z.union([
+          ChatCompletionDeveloperMessageParam,
+          ChatCompletionSystemMessageParam,
+          ChatCompletionUserMessageParam,
+          ChatCompletionAssistantMessageParam,
+          ChatCompletionToolMessageParam,
+          ChatCompletionFunctionMessageParam,
+        ]),
+      ),
+    ]),
+  ),
+  model: z.union([
+    z.string(),
+    z.literal('o1'),
+    z.literal('o1-2024-12-17'),
+    z.literal('o1-preview'),
+    z.literal('o1-preview-2024-09-12'),
+    z.literal('o1-mini'),
+    z.literal('o1-mini-2024-09-12'),
+    z.literal('gpt-4o'),
+    z.literal('gpt-4o-2024-11-20'),
+    z.literal('gpt-4o-2024-08-06'),
+    z.literal('gpt-4o-2024-05-13'),
+    z.literal('gpt-4o-audio-preview'),
+    z.literal('gpt-4o-audio-preview-2024-10-01'),
+    z.literal('gpt-4o-audio-preview-2024-12-17'),
+    z.literal('gpt-4o-mini-audio-preview'),
+    z.literal('gpt-4o-mini-audio-preview-2024-12-17'),
+    z.literal('chatgpt-4o-latest'),
+    z.literal('gpt-4o-mini'),
+    z.literal('gpt-4o-mini-2024-07-18'),
+    z.literal('gpt-4-turbo'),
+    z.literal('gpt-4-turbo-2024-04-09'),
+    z.literal('gpt-4-0125-preview'),
+    z.literal('gpt-4-turbo-preview'),
+    z.literal('gpt-4-1106-preview'),
+    z.literal('gpt-4-vision-preview'),
+    z.literal('gpt-4'),
+    z.literal('gpt-4-0314'),
+    z.literal('gpt-4-0613'),
+    z.literal('gpt-4-32k'),
+    z.literal('gpt-4-32k-0314'),
+    z.literal('gpt-4-32k-0613'),
+    z.literal('gpt-3.5-turbo'),
+    z.literal('gpt-3.5-turbo-16k'),
+    z.literal('gpt-3.5-turbo-0301'),
+    z.literal('gpt-3.5-turbo-0613'),
+    z.literal('gpt-3.5-turbo-1106'),
+    z.literal('gpt-3.5-turbo-0125'),
+    z.literal('gpt-3.5-turbo-16k-0613'),
+    z.array(
+      z.union([
+        z.string(),
+        z.literal('o1'),
+        z.literal('o1-2024-12-17'),
+        z.literal('o1-preview'),
+        z.literal('o1-preview-2024-09-12'),
+        z.literal('o1-mini'),
+        z.literal('o1-mini-2024-09-12'),
+        z.literal('gpt-4o'),
+        z.literal('gpt-4o-2024-11-20'),
+        z.literal('gpt-4o-2024-08-06'),
+        z.literal('gpt-4o-2024-05-13'),
+        z.literal('gpt-4o-audio-preview'),
+        z.literal('gpt-4o-audio-preview-2024-10-01'),
+        z.literal('gpt-4o-audio-preview-2024-12-17'),
+        z.literal('gpt-4o-mini-audio-preview'),
+        z.literal('gpt-4o-mini-audio-preview-2024-12-17'),
+        z.literal('chatgpt-4o-latest'),
+        z.literal('gpt-4o-mini'),
+        z.literal('gpt-4o-mini-2024-07-18'),
+        z.literal('gpt-4-turbo'),
+        z.literal('gpt-4-turbo-2024-04-09'),
+        z.literal('gpt-4-0125-preview'),
+        z.literal('gpt-4-turbo-preview'),
+        z.literal('gpt-4-1106-preview'),
+        z.literal('gpt-4-vision-preview'),
+        z.literal('gpt-4'),
+        z.literal('gpt-4-0314'),
+        z.literal('gpt-4-0613'),
+        z.literal('gpt-4-32k'),
+        z.literal('gpt-4-32k-0314'),
+        z.literal('gpt-4-32k-0613'),
+        z.literal('gpt-3.5-turbo'),
+        z.literal('gpt-3.5-turbo-16k'),
+        z.literal('gpt-3.5-turbo-0301'),
+        z.literal('gpt-3.5-turbo-0613'),
+        z.literal('gpt-3.5-turbo-1106'),
+        z.literal('gpt-3.5-turbo-0125'),
+        z.literal('gpt-3.5-turbo-16k-0613'),
+      ]),
+    ),
+  ]),
+  audio: z
+    .union([
+      ChatCompletionAudioParam,
+      z.null(),
+      z.array(z.union([ChatCompletionAudioParam, z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  frequency_penalty: z
+    .union([
+      z.number(),
+      z.null(),
+      z.array(z.union([z.number(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  function_call: z
+    .union([
+      z.literal('none'),
+      z.literal('auto'),
+      ChatCompletionFunctionCallOptionParam,
+      z.array(
+        z.union([
+          z.literal('none'),
+          z.literal('auto'),
+          ChatCompletionFunctionCallOptionParam,
+        ]),
+      ),
+      z.undefined(),
+    ])
+    .optional(),
+  functions: z
+    .union([
+      z.array(openai__types__chat__completion_create_params__Function),
+      z.undefined(),
+    ])
+    .optional(),
+  logit_bias: z
+    .union([
+      z.unknown(),
+      z.null(),
+      z.array(z.union([z.unknown(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  logprobs: z
+    .union([
+      z.boolean(),
+      z.null(),
+      z.array(z.union([z.boolean(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  max_completion_tokens: z
+    .union([
+      z.number(),
+      z.null(),
+      z.array(z.union([z.number(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  max_tokens: z
+    .union([
+      z.number(),
+      z.null(),
+      z.array(z.union([z.number(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  metadata: z
+    .union([
+      z.unknown(),
+      z.null(),
+      z.array(z.union([z.unknown(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  modalities: z
+    .union([
+      z.array(z.union([z.literal('text'), z.literal('audio')])),
+      z.null(),
+      z.array(
+        z.union([
+          z.array(z.union([z.literal('text'), z.literal('audio')])),
+          z.null(),
+        ]),
+      ),
+      z.undefined(),
+    ])
+    .optional(),
+  n: z
+    .union([
+      z.number(),
+      z.null(),
+      z.array(z.union([z.number(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  parallel_tool_calls: z.union([z.boolean(), z.undefined()]).optional(),
+  prediction: z
+    .union([
+      ChatCompletionPredictionContentParam,
+      z.null(),
+      z.array(z.union([ChatCompletionPredictionContentParam, z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  presence_penalty: z
+    .union([
+      z.number(),
+      z.null(),
+      z.array(z.union([z.number(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  reasoning_effort: z
+    .union([
+      z.literal('low'),
+      z.literal('medium'),
+      z.literal('high'),
+      z.undefined(),
+    ])
+    .optional(),
+  response_format: z
+    .union([
+      ResponseFormatText,
+      ResponseFormatJSONObject,
+      ResponseFormatJSONSchema,
+      z.array(
+        z.union([
+          ResponseFormatText,
+          ResponseFormatJSONObject,
+          ResponseFormatJSONSchema,
+        ]),
+      ),
+      z.undefined(),
+    ])
+    .optional(),
+  seed: z
+    .union([
+      z.number(),
+      z.null(),
+      z.array(z.union([z.number(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  service_tier: z
+    .union([
+      z.literal('auto'),
+      z.literal('default'),
+      z.null(),
+      z.array(z.union([z.literal('auto'), z.literal('default'), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  stop: z
+    .union([
+      z.string(),
+      z.array(z.string()),
+      z.null(),
+      z.array(z.union([z.string(), z.array(z.string()), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  store: z
+    .union([
+      z.boolean(),
+      z.null(),
+      z.array(z.union([z.boolean(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  stream_options: z
+    .union([
+      ChatCompletionStreamOptionsParam,
+      z.null(),
+      z.array(z.union([ChatCompletionStreamOptionsParam, z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  temperature: z
+    .union([
+      z.number(),
+      z.null(),
+      z.array(z.union([z.number(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  tool_choice: z
+    .union([
+      z.literal('none'),
+      z.literal('auto'),
+      z.literal('required'),
+      ChatCompletionNamedToolChoiceParam,
+      z.array(
+        z.union([
+          z.literal('none'),
+          z.literal('auto'),
+          z.literal('required'),
+          ChatCompletionNamedToolChoiceParam,
+        ]),
+      ),
+      z.undefined(),
+    ])
+    .optional(),
+  tools: z.union([z.array(ChatCompletionToolParam), z.undefined()]).optional(),
+  top_logprobs: z
+    .union([
+      z.number(),
+      z.null(),
+      z.array(z.union([z.number(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  top_p: z
+    .union([
+      z.number(),
+      z.null(),
+      z.array(z.union([z.number(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  user: z.union([z.string(), z.undefined()]).optional(),
+  stream: z.literal('true'),
+});
+
+export type FunctionDefinition_Output = z.infer<
+  typeof FunctionDefinition_Output
+>;
+export const FunctionDefinition_Output = z.intersection(
+  z.object({
+    name: z.string(),
+    description: z
+      .union([
+        z.string(),
+        z.null(),
+        z.array(z.union([z.string(), z.null()])),
+        z.undefined(),
+      ])
+      .optional(),
+    parameters: z
+      .union([
+        z.unknown(),
+        z.null(),
+        z.array(z.union([z.unknown(), z.null()])),
+        z.undefined(),
+      ])
+      .optional(),
+    strict: z
+      .union([
+        z.boolean(),
+        z.null(),
+        z.array(z.union([z.boolean(), z.null()])),
+        z.undefined(),
+      ])
+      .optional(),
+  }),
+  z.object({
+    string: z.any(),
+  }),
+);
+
+export type FunctionTool = z.infer<typeof FunctionTool>;
+export const FunctionTool = z.intersection(
+  z.object({
+    function: FunctionDefinition_Output,
+    type: z.literal('function'),
+  }),
+  z.object({
+    string: z.any(),
+  }),
+);
+
+export type MessageRole = z.infer<typeof MessageRole>;
+export const MessageRole = z.union([
+  z.literal('assistant'),
+  z.literal('user'),
+  z.literal('tool'),
+  z.literal('function'),
+  z.literal('system'),
+]);
+
+export type Message = z.infer<typeof Message>;
+export const Message = z.object({
+  created_by_id: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  last_updated_by_id: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  created_at: z.union([z.string(), z.undefined()]).optional(),
+  updated_at: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  id: z.union([z.string(), z.undefined()]).optional(),
+  role: MessageRole,
+  content: z
+    .union([
+      z.array(TextContent),
+      z.null(),
+      z.array(z.union([z.array(TextContent), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  organization_id: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  agent_id: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  model: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  name: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  tool_calls: z
+    .union([
+      z.array(ChatCompletionMessageToolCall_Output),
+      z.null(),
+      z.array(
+        z.union([z.array(ChatCompletionMessageToolCall_Output), z.null()]),
+      ),
+      z.undefined(),
+    ])
+    .optional(),
+  tool_call_id: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  step_id: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+});
+
+export type ContextWindowOverview = z.infer<typeof ContextWindowOverview>;
+export const ContextWindowOverview = z.object({
+  context_window_size_max: z.number(),
+  context_window_size_current: z.number(),
+  num_messages: z.number(),
+  num_archival_memory: z.number(),
+  num_recall_memory: z.number(),
+  num_tokens_external_memory_summary: z.number(),
+  external_memory_summary: z.string(),
+  num_tokens_system: z.number(),
+  system_prompt: z.string(),
+  num_tokens_core_memory: z.number(),
+  core_memory: z.string(),
+  num_tokens_summary_memory: z.number(),
+  summary_memory: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  num_tokens_functions_definitions: z.number(),
+  functions_definitions: z.union([
+    z.array(FunctionTool),
+    z.null(),
+    z.array(z.union([z.array(FunctionTool), z.null()])),
+  ]),
+  num_tokens_messages: z.number(),
+  messages: z.array(Message),
+});
+
+export type CreateBlock = z.infer<typeof CreateBlock>;
+export const CreateBlock = z.object({
+  value: z.string(),
+  limit: z.union([z.number(), z.undefined()]).optional(),
+  name: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  is_template: z.union([z.boolean(), z.undefined()]).optional(),
+  label: z.string(),
+  description: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  metadata: z
+    .union([
+      z.unknown(),
+      z.null(),
+      z.array(z.union([z.unknown(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+});
+
+export type MessageCreate = z.infer<typeof MessageCreate>;
+export const MessageCreate = z.object({
+  role: z.union([z.literal('user'), z.literal('system')]),
+  content: z.union([
+    z.string(),
+    z.array(TextContent),
+    z.array(z.union([z.string(), z.array(TextContent)])),
+  ]),
+  name: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+});
+
+export type CreateAgentRequest = z.infer<typeof CreateAgentRequest>;
+export const CreateAgentRequest = z.object({
+  name: z.string().optional(),
+  memory_blocks: z
+    .union([
+      z.array(CreateBlock),
+      z.null(),
+      z.array(z.union([z.array(CreateBlock), z.null()])),
+    ])
+    .optional(),
+  tools: z
+    .union([
+      z.array(z.string()),
+      z.null(),
+      z.array(z.union([z.array(z.string()), z.null()])),
+    ])
+    .optional(),
+  tool_ids: z
+    .union([
+      z.array(z.string()),
+      z.null(),
+      z.array(z.union([z.array(z.string()), z.null()])),
+    ])
+    .optional(),
+  source_ids: z
+    .union([
+      z.array(z.string()),
+      z.null(),
+      z.array(z.union([z.array(z.string()), z.null()])),
+    ])
+    .optional(),
+  block_ids: z
+    .union([
+      z.array(z.string()),
+      z.null(),
+      z.array(z.union([z.array(z.string()), z.null()])),
+    ])
+    .optional(),
+  tool_rules: z
+    .union([
+      z.array(
+        z.union([
+          ChildToolRule,
+          InitToolRule,
+          TerminalToolRule,
+          ConditionalToolRule,
+          z.array(
+            z.union([
+              ChildToolRule,
+              InitToolRule,
+              TerminalToolRule,
+              ConditionalToolRule,
+            ]),
+          ),
+        ]),
+      ),
+      z.null(),
+      z.array(
+        z.union([
+          z.array(
+            z.union([
+              ChildToolRule,
+              InitToolRule,
+              TerminalToolRule,
+              ConditionalToolRule,
+              z.array(
+                z.union([
+                  ChildToolRule,
+                  InitToolRule,
+                  TerminalToolRule,
+                  ConditionalToolRule,
+                ]),
+              ),
+            ]),
+          ),
+          z.null(),
+        ]),
+      ),
+    ])
+    .optional(),
+  tags: z
+    .union([
+      z.array(z.string()),
+      z.null(),
+      z.array(z.union([z.array(z.string()), z.null()])),
+    ])
+    .optional(),
+  system: z
+    .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+    .optional(),
+  agent_type: AgentType.optional(),
+  llm_config: z
+    .union([LLMConfig, z.null(), z.array(z.union([LLMConfig, z.null()]))])
+    .optional(),
+  embedding_config: z
+    .union([
+      EmbeddingConfig,
+      z.null(),
+      z.array(z.union([EmbeddingConfig, z.null()])),
+    ])
+    .optional(),
+  initial_message_sequence: z
+    .union([
+      z.array(MessageCreate),
+      z.null(),
+      z.array(z.union([z.array(MessageCreate), z.null()])),
+    ])
+    .optional(),
+  include_base_tools: z.boolean().optional(),
+  include_multi_agent_tools: z.boolean().optional(),
+  description: z
+    .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+    .optional(),
+  metadata: z
+    .union([z.unknown(), z.null(), z.array(z.union([z.unknown(), z.null()]))])
+    .optional(),
+  model: z
+    .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+    .optional(),
+  embedding: z
+    .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+    .optional(),
+  context_window_limit: z
+    .union([z.number(), z.null(), z.array(z.union([z.number(), z.null()]))])
+    .optional(),
+  embedding_chunk_size: z
+    .union([z.number(), z.null(), z.array(z.union([z.number(), z.null()]))])
+    .optional(),
+  from_template: z
+    .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+    .optional(),
+  template: z.boolean().optional(),
+  project: z
+    .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+    .optional(),
+  tool_exec_environment_variables: z
+    .union([z.unknown(), z.null(), z.array(z.union([z.unknown(), z.null()]))])
+    .optional(),
+  memory_variables: z
+    .union([z.unknown(), z.null(), z.array(z.union([z.unknown(), z.null()]))])
+    .optional(),
+  user_id: z
+    .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+    .optional(),
+});
+
+export type CreateArchivalMemory = z.infer<typeof CreateArchivalMemory>;
+export const CreateArchivalMemory = z.object({
+  text: z.string(),
+});
+
+export type E2BSandboxConfig = z.infer<typeof E2BSandboxConfig>;
+export const E2BSandboxConfig = z.object({
+  timeout: z.number().optional(),
+  template: z
+    .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+    .optional(),
+  pip_requirements: z
+    .union([
+      z.array(z.string()),
+      z.null(),
+      z.array(z.union([z.array(z.string()), z.null()])),
+    ])
+    .optional(),
+});
+
+export type FileMetadata = z.infer<typeof FileMetadata>;
+export const FileMetadata = z.object({
+  id: z.union([z.string(), z.undefined()]).optional(),
+  organization_id: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  source_id: z.string(),
+  file_name: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  file_path: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  file_type: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  file_size: z
+    .union([
+      z.number(),
+      z.null(),
+      z.array(z.union([z.number(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  file_creation_date: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  file_last_modified_date: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  created_at: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  updated_at: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  is_deleted: z.union([z.boolean(), z.undefined()]).optional(),
+});
+
+export type ValidationError = z.infer<typeof ValidationError>;
+export const ValidationError = z.object({
+  loc: z.array(
+    z.union([
+      z.string(),
+      z.number(),
+      z.array(z.union([z.string(), z.number()])),
+    ]),
+  ),
+  msg: z.string(),
+  type: z.string(),
+});
+
+export type HTTPValidationError = z.infer<typeof HTTPValidationError>;
+export const HTTPValidationError = z.object({
+  detail: z.array(ValidationError).optional(),
+});
+
+export type Health = z.infer<typeof Health>;
+export const Health = z.object({
+  version: z.string(),
+  status: z.string(),
+});
+
+export type JobStatus = z.infer<typeof JobStatus>;
+export const JobStatus = z.union([
+  z.literal('created'),
+  z.literal('running'),
+  z.literal('completed'),
+  z.literal('failed'),
+  z.literal('pending'),
+]);
+
+export type JobType = z.infer<typeof JobType>;
+export const JobType = z.union([z.literal('job'), z.literal('run')]);
+
+export type Job = z.infer<typeof Job>;
+export const Job = z.object({
+  created_by_id: z
+    .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+    .optional(),
+  last_updated_by_id: z
+    .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+    .optional(),
+  created_at: z
+    .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+    .optional(),
+  updated_at: z
+    .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+    .optional(),
+  status: JobStatus.optional(),
+  completed_at: z
+    .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+    .optional(),
+  metadata: z
+    .union([z.unknown(), z.null(), z.array(z.union([z.unknown(), z.null()]))])
+    .optional(),
+  job_type: JobType.optional(),
+  id: z.string().optional(),
+  user_id: z
+    .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+    .optional(),
+});
+
+export type LettaRequestConfig = z.infer<typeof LettaRequestConfig>;
+export const LettaRequestConfig = z.object({
+  use_assistant_message: z.boolean().optional(),
+  assistant_message_tool_name: z.string().optional(),
+  assistant_message_tool_kwarg: z.string().optional(),
+});
+
+export type LettaRequest = z.infer<typeof LettaRequest>;
+export const LettaRequest = z.object({
+  messages: z.array(MessageCreate),
+  config: z.union([LettaRequestConfig, z.undefined()]).optional(),
+});
+
+export type SystemMessage = z.infer<typeof SystemMessage>;
+export const SystemMessage = z.object({
+  id: z.string(),
+  date: z.string(),
+  message_type: z
+    .union([z.literal('system_message'), z.undefined()])
+    .optional(),
+  content: z.union([
+    z.string(),
+    z.array(TextContent),
+    z.array(z.union([z.string(), z.array(TextContent)])),
+  ]),
+});
+
+export type UserMessage = z.infer<typeof UserMessage>;
+export const UserMessage = z.object({
+  id: z.string(),
+  date: z.string(),
+  message_type: z.union([z.literal('user_message'), z.undefined()]).optional(),
+  content: z.union([
+    z.string(),
+    z.array(TextContent),
+    z.array(z.union([z.string(), z.array(TextContent)])),
+  ]),
+});
+
+export type ReasoningMessage = z.infer<typeof ReasoningMessage>;
+export const ReasoningMessage = z.object({
+  id: z.string(),
+  date: z.string(),
+  message_type: z
+    .union([z.literal('reasoning_message'), z.undefined()])
+    .optional(),
+  reasoning: z.string(),
+});
+
+export type ToolCall = z.infer<typeof ToolCall>;
+export const ToolCall = z.object({
+  name: z.string(),
+  arguments: z.string(),
+  tool_call_id: z.string(),
+});
+
+export type ToolCallDelta = z.infer<typeof ToolCallDelta>;
+export const ToolCallDelta = z.object({
+  name: z.union([
+    z.string(),
+    z.null(),
+    z.array(z.union([z.string(), z.null()])),
+  ]),
+  arguments: z.union([
+    z.string(),
+    z.null(),
+    z.array(z.union([z.string(), z.null()])),
+  ]),
+  tool_call_id: z.union([
+    z.string(),
+    z.null(),
+    z.array(z.union([z.string(), z.null()])),
+  ]),
+});
+
+export type ToolCallMessage = z.infer<typeof ToolCallMessage>;
+export const ToolCallMessage = z.object({
+  id: z.string(),
+  date: z.string(),
+  message_type: z
+    .union([z.literal('tool_call_message'), z.undefined()])
+    .optional(),
+  tool_call: z.union([
+    ToolCall,
+    ToolCallDelta,
+    z.array(z.union([ToolCall, ToolCallDelta])),
+  ]),
+});
+
+export type ToolReturnMessage = z.infer<typeof ToolReturnMessage>;
+export const ToolReturnMessage = z.object({
+  id: z.string(),
+  date: z.string(),
+  message_type: z
+    .union([z.literal('tool_return_message'), z.undefined()])
+    .optional(),
+  tool_return: z.string(),
+  status: z.union([z.literal('success'), z.literal('error')]),
+  tool_call_id: z.string(),
+  stdout: z
+    .union([
+      z.array(z.string()),
+      z.null(),
+      z.array(z.union([z.array(z.string()), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  stderr: z
+    .union([
+      z.array(z.string()),
+      z.null(),
+      z.array(z.union([z.array(z.string()), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+});
+
+export type LettaMessageUnion = z.infer<typeof LettaMessageUnion>;
+export const LettaMessageUnion = z.union([
+  SystemMessage,
+  UserMessage,
+  ReasoningMessage,
+  ToolCallMessage,
+  ToolReturnMessage,
+  AssistantMessage,
+]);
+
+export type LettaUsageStatistics = z.infer<typeof LettaUsageStatistics>;
+export const LettaUsageStatistics = z.object({
+  message_type: z.literal('usage_statistics').optional(),
+  completion_tokens: z.number().optional(),
+  prompt_tokens: z.number().optional(),
+  total_tokens: z.number().optional(),
+  step_count: z.number().optional(),
+});
+
+export type LettaResponse = z.infer<typeof LettaResponse>;
+export const LettaResponse = z.object({
+  messages: z.array(LettaMessageUnion),
+  usage: LettaUsageStatistics,
+});
+
+export type LettaStreamingRequest = z.infer<typeof LettaStreamingRequest>;
+export const LettaStreamingRequest = z.object({
+  messages: z.array(MessageCreate),
+  config: z.union([LettaRequestConfig, z.undefined()]).optional(),
+  stream_tokens: z.union([z.boolean(), z.undefined()]).optional(),
+});
+
+export type LocalSandboxConfig = z.infer<typeof LocalSandboxConfig>;
+export const LocalSandboxConfig = z.object({
+  sandbox_dir: z.string(),
+  use_venv: z.union([z.boolean(), z.undefined()]).optional(),
+  venv_name: z.union([z.string(), z.undefined()]).optional(),
+});
+
+export type MessageUpdate = z.infer<typeof MessageUpdate>;
+export const MessageUpdate = z.object({
+  role: z
+    .union([
+      MessageRole,
+      z.null(),
+      z.array(z.union([MessageRole, z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  content: z.union([
+    z.string(),
+    z.array(TextContent),
+    z.null(),
+    z.array(z.union([z.string(), z.array(TextContent), z.null()])),
+  ]),
+  name: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  tool_calls: z
+    .union([
+      z.array(ChatCompletionMessageToolCall_Input),
+      z.null(),
+      z.array(
+        z.union([z.array(ChatCompletionMessageToolCall_Input), z.null()]),
+      ),
+      z.undefined(),
+    ])
+    .optional(),
+  tool_call_id: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+});
+
+export type Organization = z.infer<typeof Organization>;
+export const Organization = z.object({
+  id: z.string().optional(),
+  name: z.string().optional(),
+  created_at: z
+    .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+    .optional(),
+});
+
+export type OrganizationCreate = z.infer<typeof OrganizationCreate>;
+export const OrganizationCreate = z.object({
+  name: z
+    .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+    .optional(),
+});
+
+export type Passage = z.infer<typeof Passage>;
+export const Passage = z.object({
+  created_by_id: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  last_updated_by_id: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  created_at: z.union([z.string(), z.undefined()]).optional(),
+  updated_at: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  is_deleted: z.union([z.boolean(), z.undefined()]).optional(),
+  organization_id: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  agent_id: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  source_id: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  file_id: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  metadata: z
+    .union([
+      z.unknown(),
+      z.null(),
+      z.array(z.union([z.unknown(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  id: z.union([z.string(), z.undefined()]).optional(),
+  text: z.string(),
+  embedding: z.union([
+    z.array(z.number()),
+    z.null(),
+    z.array(z.union([z.array(z.number()), z.null()])),
+  ]),
+  embedding_config: z.union([
+    EmbeddingConfig,
+    z.null(),
+    z.array(z.union([EmbeddingConfig, z.null()])),
+  ]),
+});
+
+export type Provider = z.infer<typeof Provider>;
+export const Provider = z.object({
+  id: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  name: z.string(),
+  api_key: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  organization_id: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  updated_at: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+});
+
+export type ProviderCreate = z.infer<typeof ProviderCreate>;
+export const ProviderCreate = z.object({
+  name: z.string(),
+  api_key: z.string(),
+});
+
+export type ProviderUpdate = z.infer<typeof ProviderUpdate>;
+export const ProviderUpdate = z.object({
+  id: z.string(),
+  api_key: z.string(),
+});
+
+export type Run = z.infer<typeof Run>;
+export const Run = z.object({
+  created_by_id: z
+    .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+    .optional(),
+  last_updated_by_id: z
+    .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+    .optional(),
+  created_at: z
+    .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+    .optional(),
+  updated_at: z
+    .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+    .optional(),
+  status: JobStatus.optional(),
+  completed_at: z
+    .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+    .optional(),
+  metadata: z
+    .union([z.unknown(), z.null(), z.array(z.union([z.unknown(), z.null()]))])
+    .optional(),
+  job_type: JobType.optional(),
+  id: z.string().optional(),
+  user_id: z
+    .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+    .optional(),
+  request_config: z
+    .union([
+      LettaRequestConfig,
+      z.null(),
+      z.array(z.union([LettaRequestConfig, z.null()])),
+    ])
+    .optional(),
+});
+
+export type SandboxType = z.infer<typeof SandboxType>;
+export const SandboxType = z.union([z.literal('e2b'), z.literal('local')]);
+
+export type SandboxConfig = z.infer<typeof SandboxConfig>;
+export const SandboxConfig = z.object({
+  created_by_id: z
+    .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+    .optional(),
+  last_updated_by_id: z
+    .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+    .optional(),
+  created_at: z
+    .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+    .optional(),
+  updated_at: z
+    .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+    .optional(),
+  id: z.string().optional(),
+  type: SandboxType.optional(),
+  organization_id: z
+    .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+    .optional(),
+  config: z.unknown().optional(),
+});
+
+export type SandboxConfigCreate = z.infer<typeof SandboxConfigCreate>;
+export const SandboxConfigCreate = z.object({
+  config: z.union([
+    LocalSandboxConfig,
+    E2BSandboxConfig,
+    z.array(z.union([LocalSandboxConfig, E2BSandboxConfig])),
+  ]),
+});
+
+export type SandboxConfigUpdate = z.infer<typeof SandboxConfigUpdate>;
+export const SandboxConfigUpdate = z.object({
+  config: z
+    .union([
+      LocalSandboxConfig,
+      E2BSandboxConfig,
+      z.array(z.union([LocalSandboxConfig, E2BSandboxConfig])),
+    ])
+    .optional(),
+});
+
+export type SandboxEnvironmentVariable = z.infer<
+  typeof SandboxEnvironmentVariable
+>;
+export const SandboxEnvironmentVariable = z.object({
+  created_by_id: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  last_updated_by_id: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  created_at: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  updated_at: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  id: z.union([z.string(), z.undefined()]).optional(),
+  key: z.string(),
+  value: z.string(),
+  description: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  organization_id: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  sandbox_config_id: z.string(),
+});
+
+export type SandboxEnvironmentVariableCreate = z.infer<
+  typeof SandboxEnvironmentVariableCreate
+>;
+export const SandboxEnvironmentVariableCreate = z.object({
+  key: z.string(),
+  value: z.string(),
+  description: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+});
+
+export type SandboxEnvironmentVariableUpdate = z.infer<
+  typeof SandboxEnvironmentVariableUpdate
+>;
+export const SandboxEnvironmentVariableUpdate = z.object({
+  key: z
+    .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+    .optional(),
+  value: z
+    .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+    .optional(),
+  description: z
+    .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+    .optional(),
+});
+
+export type SourceCreate = z.infer<typeof SourceCreate>;
+export const SourceCreate = z.object({
+  name: z.string(),
+  embedding_config: z
+    .union([
+      EmbeddingConfig,
+      z.null(),
+      z.array(z.union([EmbeddingConfig, z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  description: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  metadata: z
+    .union([
+      z.unknown(),
+      z.null(),
+      z.array(z.union([z.unknown(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+});
+
+export type SourceUpdate = z.infer<typeof SourceUpdate>;
+export const SourceUpdate = z.object({
+  name: z
+    .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+    .optional(),
+  description: z
+    .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+    .optional(),
+  metadata: z
+    .union([z.unknown(), z.null(), z.array(z.union([z.unknown(), z.null()]))])
+    .optional(),
+  embedding_config: z
+    .union([
+      EmbeddingConfig,
+      z.null(),
+      z.array(z.union([EmbeddingConfig, z.null()])),
+    ])
+    .optional(),
+});
+
+export type ToolCreate = z.infer<typeof ToolCreate>;
+export const ToolCreate = z.object({
+  description: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  tags: z.union([z.array(z.string()), z.undefined()]).optional(),
+  source_code: z.string(),
+  source_type: z.union([z.string(), z.undefined()]).optional(),
+  json_schema: z
+    .union([
+      z.unknown(),
+      z.null(),
+      z.array(z.union([z.unknown(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  return_char_limit: z.union([z.number(), z.undefined()]).optional(),
+});
+
+export type ToolRunFromSource = z.infer<typeof ToolRunFromSource>;
+export const ToolRunFromSource = z.object({
+  source_code: z.string(),
+  args: z.unknown(),
+  env_vars: z.union([z.unknown(), z.undefined()]).optional(),
+  name: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  source_type: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+});
+
+export type ToolUpdate = z.infer<typeof ToolUpdate>;
+export const ToolUpdate = z.object({
+  description: z
+    .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+    .optional(),
+  tags: z
+    .union([
+      z.array(z.string()),
+      z.null(),
+      z.array(z.union([z.array(z.string()), z.null()])),
+    ])
+    .optional(),
+  source_code: z
+    .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+    .optional(),
+  source_type: z
+    .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+    .optional(),
+  json_schema: z
+    .union([z.unknown(), z.null(), z.array(z.union([z.unknown(), z.null()]))])
+    .optional(),
+  return_char_limit: z
+    .union([z.number(), z.null(), z.array(z.union([z.number(), z.null()]))])
+    .optional(),
+});
+
+export type UpdateAgent = z.infer<typeof UpdateAgent>;
+export const UpdateAgent = z.object({
+  name: z
+    .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+    .optional(),
+  tool_ids: z
+    .union([
+      z.array(z.string()),
+      z.null(),
+      z.array(z.union([z.array(z.string()), z.null()])),
+    ])
+    .optional(),
+  source_ids: z
+    .union([
+      z.array(z.string()),
+      z.null(),
+      z.array(z.union([z.array(z.string()), z.null()])),
+    ])
+    .optional(),
+  block_ids: z
+    .union([
+      z.array(z.string()),
+      z.null(),
+      z.array(z.union([z.array(z.string()), z.null()])),
+    ])
+    .optional(),
+  tags: z
+    .union([
+      z.array(z.string()),
+      z.null(),
+      z.array(z.union([z.array(z.string()), z.null()])),
+    ])
+    .optional(),
+  system: z
+    .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+    .optional(),
+  tool_rules: z
+    .union([
+      z.array(
+        z.union([
+          ChildToolRule,
+          InitToolRule,
+          TerminalToolRule,
+          ConditionalToolRule,
+          z.array(
+            z.union([
+              ChildToolRule,
+              InitToolRule,
+              TerminalToolRule,
+              ConditionalToolRule,
+            ]),
+          ),
+        ]),
+      ),
+      z.null(),
+      z.array(
+        z.union([
+          z.array(
+            z.union([
+              ChildToolRule,
+              InitToolRule,
+              TerminalToolRule,
+              ConditionalToolRule,
+              z.array(
+                z.union([
+                  ChildToolRule,
+                  InitToolRule,
+                  TerminalToolRule,
+                  ConditionalToolRule,
+                ]),
+              ),
+            ]),
+          ),
+          z.null(),
+        ]),
+      ),
+    ])
+    .optional(),
+  llm_config: z
+    .union([LLMConfig, z.null(), z.array(z.union([LLMConfig, z.null()]))])
+    .optional(),
+  embedding_config: z
+    .union([
+      EmbeddingConfig,
+      z.null(),
+      z.array(z.union([EmbeddingConfig, z.null()])),
+    ])
+    .optional(),
+  message_ids: z
+    .union([
+      z.array(z.string()),
+      z.null(),
+      z.array(z.union([z.array(z.string()), z.null()])),
+    ])
+    .optional(),
+  description: z
+    .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+    .optional(),
+  metadata: z
+    .union([z.unknown(), z.null(), z.array(z.union([z.unknown(), z.null()]))])
+    .optional(),
+  tool_exec_environment_variables: z
+    .union([z.unknown(), z.null(), z.array(z.union([z.unknown(), z.null()]))])
+    .optional(),
+});
+
+export type UsageStatistics = z.infer<typeof UsageStatistics>;
+export const UsageStatistics = z.object({
+  completion_tokens: z.number().optional(),
+  prompt_tokens: z.number().optional(),
+  total_tokens: z.number().optional(),
+});
+
+export type User = z.infer<typeof User>;
+export const User = z.object({
+  id: z.union([z.string(), z.undefined()]).optional(),
+  organization_id: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  name: z.string(),
+  created_at: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  updated_at: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  is_deleted: z.union([z.boolean(), z.undefined()]).optional(),
+});
+
+export type UserCreate = z.infer<typeof UserCreate>;
+export const UserCreate = z.object({
+  name: z.string(),
+  organization_id: z.string(),
+});
+
+export type UserUpdate = z.infer<typeof UserUpdate>;
+export const UserUpdate = z.object({
+  id: z.string(),
+  name: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  organization_id: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+});
+
+export type delete_Delete_tool = typeof delete_Delete_tool;
+export const delete_Delete_tool = {
+  method: z.literal('DELETE'),
+  path: z.literal('/v1/tools/{tool_id}'),
+  requestFormat: z.literal('json'),
+  parameters: z.object({
+    path: z.object({
+      tool_id: z.string(),
+    }),
+    header: z.object({
+      user_id: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+    }),
+  }),
+  response: z.unknown(),
+};
+
+export type get_Retrieve_tool = typeof get_Retrieve_tool;
+export const get_Retrieve_tool = {
+  method: z.literal('GET'),
+  path: z.literal('/v1/tools/{tool_id}'),
+  requestFormat: z.literal('json'),
+  parameters: z.object({
+    path: z.object({
+      tool_id: z.string(),
+    }),
+    header: z.object({
+      user_id: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+    }),
+  }),
+  response: Tool,
+};
+
+export type patch_Modify_tool = typeof patch_Modify_tool;
+export const patch_Modify_tool = {
+  method: z.literal('PATCH'),
+  path: z.literal('/v1/tools/{tool_id}'),
+  requestFormat: z.literal('json'),
+  parameters: z.object({
+    path: z.object({
+      tool_id: z.string(),
+    }),
+    header: z.object({
+      user_id: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+    }),
+    body: ToolUpdate,
+  }),
+  response: Tool,
+};
+
+export type get_List_tools = typeof get_List_tools;
+export const get_List_tools = {
+  method: z.literal('GET'),
+  path: z.literal('/v1/tools/'),
+  requestFormat: z.literal('json'),
+  parameters: z.object({
+    query: z.object({
+      after: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      limit: z
+        .union([z.number(), z.null(), z.array(z.union([z.number(), z.null()]))])
+        .optional(),
+    }),
+    header: z.object({
+      user_id: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+    }),
+  }),
+  response: z.array(Tool),
+};
+
+export type post_Create_tool = typeof post_Create_tool;
+export const post_Create_tool = {
+  method: z.literal('POST'),
+  path: z.literal('/v1/tools/'),
+  requestFormat: z.literal('json'),
+  parameters: z.object({
+    header: z.object({
+      user_id: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+    }),
+    body: ToolCreate,
+  }),
+  response: Tool,
+};
+
+export type put_Upsert_tool = typeof put_Upsert_tool;
+export const put_Upsert_tool = {
+  method: z.literal('PUT'),
+  path: z.literal('/v1/tools/'),
+  requestFormat: z.literal('json'),
+  parameters: z.object({
+    header: z.object({
+      user_id: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+    }),
+    body: ToolCreate,
+  }),
+  response: Tool,
+};
+
+export type post_Add_base_tools = typeof post_Add_base_tools;
+export const post_Add_base_tools = {
+  method: z.literal('POST'),
+  path: z.literal('/v1/tools/add-base-tools'),
+  requestFormat: z.literal('json'),
+  parameters: z.object({
+    header: z.object({
+      user_id: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+    }),
+  }),
+  response: z.array(Tool),
+};
+
+export type post_Run_tool_from_source = typeof post_Run_tool_from_source;
+export const post_Run_tool_from_source = {
+  method: z.literal('POST'),
+  path: z.literal('/v1/tools/run'),
+  requestFormat: z.literal('json'),
+  parameters: z.object({
+    header: z.object({
+      user_id: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+    }),
+    body: ToolRunFromSource,
+  }),
+  response: ToolReturnMessage,
+};
+
+export type get_List_composio_apps = typeof get_List_composio_apps;
+export const get_List_composio_apps = {
+  method: z.literal('GET'),
+  path: z.literal('/v1/tools/composio/apps'),
+  requestFormat: z.literal('json'),
+  parameters: z.object({
+    header: z.object({
+      user_id: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+    }),
+  }),
+  response: z.array(AppModel),
+};
+
+export type get_List_composio_actions_by_app =
+  typeof get_List_composio_actions_by_app;
+export const get_List_composio_actions_by_app = {
+  method: z.literal('GET'),
+  path: z.literal('/v1/tools/composio/apps/{composio_app_name}/actions'),
+  requestFormat: z.literal('json'),
+  parameters: z.object({
+    path: z.object({
+      composio_app_name: z.string(),
+    }),
+    header: z.object({
+      user_id: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+    }),
+  }),
+  response: z.array(ActionModel),
+};
+
+export type post_Add_composio_tool = typeof post_Add_composio_tool;
+export const post_Add_composio_tool = {
+  method: z.literal('POST'),
+  path: z.literal('/v1/tools/composio/{composio_action_name}'),
+  requestFormat: z.literal('json'),
+  parameters: z.object({
+    path: z.object({
+      composio_action_name: z.string(),
+    }),
+    header: z.object({
+      user_id: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+    }),
+  }),
+  response: Tool,
+};
+
+export type get_Retrieve_source = typeof get_Retrieve_source;
+export const get_Retrieve_source = {
+  method: z.literal('GET'),
+  path: z.literal('/v1/sources/{source_id}'),
+  requestFormat: z.literal('json'),
+  parameters: z.object({
+    path: z.object({
+      source_id: z.string(),
+    }),
+    header: z.object({
+      user_id: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+    }),
+  }),
+  response: Source,
+};
+
+export type patch_Modify_source = typeof patch_Modify_source;
+export const patch_Modify_source = {
+  method: z.literal('PATCH'),
+  path: z.literal('/v1/sources/{source_id}'),
+  requestFormat: z.literal('json'),
+  parameters: z.object({
+    path: z.object({
+      source_id: z.string(),
+    }),
+    header: z.object({
+      user_id: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+    }),
+    body: SourceUpdate,
+  }),
+  response: Source,
+};
+
+export type delete_Delete_source = typeof delete_Delete_source;
+export const delete_Delete_source = {
+  method: z.literal('DELETE'),
+  path: z.literal('/v1/sources/{source_id}'),
+  requestFormat: z.literal('json'),
+  parameters: z.object({
+    path: z.object({
+      source_id: z.string(),
+    }),
+    header: z.object({
+      user_id: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+    }),
+  }),
+  response: z.unknown(),
+};
+
+export type get_Get_source_id_by_name = typeof get_Get_source_id_by_name;
+export const get_Get_source_id_by_name = {
+  method: z.literal('GET'),
+  path: z.literal('/v1/sources/name/{source_name}'),
+  requestFormat: z.literal('json'),
+  parameters: z.object({
+    path: z.object({
+      source_name: z.string(),
+    }),
+    header: z.object({
+      user_id: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+    }),
+  }),
+  response: z.string(),
+};
+
+export type get_List_sources = typeof get_List_sources;
+export const get_List_sources = {
+  method: z.literal('GET'),
+  path: z.literal('/v1/sources/'),
+  requestFormat: z.literal('json'),
+  parameters: z.object({
+    header: z.object({
+      user_id: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+    }),
+  }),
+  response: z.array(Source),
+};
+
+export type post_Create_source = typeof post_Create_source;
+export const post_Create_source = {
+  method: z.literal('POST'),
+  path: z.literal('/v1/sources/'),
+  requestFormat: z.literal('json'),
+  parameters: z.object({
+    header: z.object({
+      user_id: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+    }),
+    body: SourceCreate,
+  }),
+  response: Source,
+};
+
+export type post_Upload_file_to_source = typeof post_Upload_file_to_source;
+export const post_Upload_file_to_source = {
+  method: z.literal('POST'),
+  path: z.literal('/v1/sources/{source_id}/upload'),
+  requestFormat: z.literal('form-data'),
+  parameters: z.object({
+    path: z.object({
+      source_id: z.string(),
+    }),
+    header: z.object({
+      user_id: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+    }),
+    body: Body_upload_file_to_source,
+  }),
+  response: Job,
+};
+
+export type get_List_source_passages = typeof get_List_source_passages;
+export const get_List_source_passages = {
+  method: z.literal('GET'),
+  path: z.literal('/v1/sources/{source_id}/passages'),
+  requestFormat: z.literal('json'),
+  parameters: z.object({
+    path: z.object({
+      source_id: z.string(),
+    }),
+    header: z.object({
+      user_id: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+    }),
+  }),
+  response: z.array(Passage),
+};
+
+export type get_List_source_files = typeof get_List_source_files;
+export const get_List_source_files = {
+  method: z.literal('GET'),
+  path: z.literal('/v1/sources/{source_id}/files'),
+  requestFormat: z.literal('json'),
+  parameters: z.object({
+    query: z.object({
+      limit: z.number().optional(),
+      after: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+    }),
+    path: z.object({
+      source_id: z.string(),
+    }),
+    header: z.object({
+      user_id: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+    }),
+  }),
+  response: z.array(FileMetadata),
+};
+
+export type delete_Delete_file_from_source =
+  typeof delete_Delete_file_from_source;
+export const delete_Delete_file_from_source = {
+  method: z.literal('DELETE'),
+  path: z.literal('/v1/sources/{source_id}/{file_id}'),
+  requestFormat: z.literal('json'),
+  parameters: z.object({
+    path: z.object({
+      source_id: z.string(),
+      file_id: z.string(),
+    }),
+    header: z.object({
+      user_id: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+    }),
+  }),
+  response: z.unknown(),
+};
+
+export type get_List_agents = typeof get_List_agents;
+export const get_List_agents = {
+  method: z.literal('GET'),
+  path: z.literal('/v1/agents/'),
+  requestFormat: z.literal('json'),
+  parameters: z.object({
+    query: z.object({
+      name: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      tags: z
+        .union([
+          z.array(z.string()),
+          z.null(),
+          z.array(z.union([z.array(z.string()), z.null()])),
+        ])
+        .optional(),
+      match_all_tags: z.boolean().optional(),
+      before: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      after: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      limit: z
+        .union([z.number(), z.null(), z.array(z.union([z.number(), z.null()]))])
+        .optional(),
+      query_text: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+    }),
+    header: z.object({
+      user_id: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+    }),
+  }),
+  response: z.array(AgentState),
+};
+
+export type post_Create_agent = typeof post_Create_agent;
+export const post_Create_agent = {
+  method: z.literal('POST'),
+  path: z.literal('/v1/agents/'),
+  requestFormat: z.literal('json'),
+  parameters: z.object({
+    header: z.object({
+      user_id: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+    }),
+    body: CreateAgentRequest,
+  }),
+  response: AgentState,
+};
+
+export type get_Retrieve_agent_context_window =
+  typeof get_Retrieve_agent_context_window;
+export const get_Retrieve_agent_context_window = {
+  method: z.literal('GET'),
+  path: z.literal('/v1/agents/{agent_id}/context'),
+  requestFormat: z.literal('json'),
+  parameters: z.object({
+    path: z.object({
+      agent_id: z.string(),
+    }),
+    header: z.object({
+      user_id: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+    }),
+  }),
+  response: ContextWindowOverview,
+};
+
+export type patch_Modify_agent = typeof patch_Modify_agent;
+export const patch_Modify_agent = {
+  method: z.literal('PATCH'),
+  path: z.literal('/v1/agents/{agent_id}'),
+  requestFormat: z.literal('json'),
+  parameters: z.object({
+    path: z.object({
+      agent_id: z.string(),
+    }),
+    header: z.object({
+      user_id: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+    }),
+    body: UpdateAgent,
+  }),
+  response: AgentState,
+};
+
+export type get_Retrieve_agent = typeof get_Retrieve_agent;
+export const get_Retrieve_agent = {
+  method: z.literal('GET'),
+  path: z.literal('/v1/agents/{agent_id}'),
+  requestFormat: z.literal('json'),
+  parameters: z.object({
+    path: z.object({
+      agent_id: z.string(),
+    }),
+    header: z.object({
+      user_id: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+    }),
+  }),
+  response: AgentState,
+};
+
+export type delete_Delete_agent = typeof delete_Delete_agent;
+export const delete_Delete_agent = {
+  method: z.literal('DELETE'),
+  path: z.literal('/v1/agents/{agent_id}'),
+  requestFormat: z.literal('json'),
+  parameters: z.object({
+    path: z.object({
+      agent_id: z.string(),
+    }),
+    header: z.object({
+      user_id: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+    }),
+  }),
+  response: z.unknown(),
+};
+
+export type get_List_agent_tools = typeof get_List_agent_tools;
+export const get_List_agent_tools = {
+  method: z.literal('GET'),
+  path: z.literal('/v1/agents/{agent_id}/tools'),
+  requestFormat: z.literal('json'),
+  parameters: z.object({
+    path: z.object({
+      agent_id: z.string(),
+    }),
+    header: z.object({
+      user_id: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+    }),
+  }),
+  response: z.array(Tool),
+};
+
+export type patch_Attach_tool = typeof patch_Attach_tool;
+export const patch_Attach_tool = {
+  method: z.literal('PATCH'),
+  path: z.literal('/v1/agents/{agent_id}/tools/attach/{tool_id}'),
+  requestFormat: z.literal('json'),
+  parameters: z.object({
+    path: z.object({
+      agent_id: z.string(),
+      tool_id: z.string(),
+    }),
+    header: z.object({
+      user_id: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+    }),
+  }),
+  response: AgentState,
+};
+
+export type patch_Detach_tool = typeof patch_Detach_tool;
+export const patch_Detach_tool = {
+  method: z.literal('PATCH'),
+  path: z.literal('/v1/agents/{agent_id}/tools/detach/{tool_id}'),
+  requestFormat: z.literal('json'),
+  parameters: z.object({
+    path: z.object({
+      agent_id: z.string(),
+      tool_id: z.string(),
+    }),
+    header: z.object({
+      user_id: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+    }),
+  }),
+  response: AgentState,
+};
+
+export type patch_Attach_source_to_agent = typeof patch_Attach_source_to_agent;
+export const patch_Attach_source_to_agent = {
+  method: z.literal('PATCH'),
+  path: z.literal('/v1/agents/{agent_id}/sources/attach/{source_id}'),
+  requestFormat: z.literal('json'),
+  parameters: z.object({
+    path: z.object({
+      agent_id: z.string(),
+      source_id: z.string(),
+    }),
+    header: z.object({
+      user_id: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+    }),
+  }),
+  response: AgentState,
+};
+
+export type patch_Detach_source_from_agent =
+  typeof patch_Detach_source_from_agent;
+export const patch_Detach_source_from_agent = {
+  method: z.literal('PATCH'),
+  path: z.literal('/v1/agents/{agent_id}/sources/detach/{source_id}'),
+  requestFormat: z.literal('json'),
+  parameters: z.object({
+    path: z.object({
+      agent_id: z.string(),
+      source_id: z.string(),
+    }),
+    header: z.object({
+      user_id: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+    }),
+  }),
+  response: AgentState,
+};
+
+export type get_List_agent_sources = typeof get_List_agent_sources;
+export const get_List_agent_sources = {
+  method: z.literal('GET'),
+  path: z.literal('/v1/agents/{agent_id}/sources'),
+  requestFormat: z.literal('json'),
+  parameters: z.object({
+    path: z.object({
+      agent_id: z.string(),
+    }),
+    header: z.object({
+      user_id: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+    }),
+  }),
+  response: z.array(Source),
+};
+
+export type get_Retrieve_agent_memory = typeof get_Retrieve_agent_memory;
+export const get_Retrieve_agent_memory = {
+  method: z.literal('GET'),
+  path: z.literal('/v1/agents/{agent_id}/core-memory'),
+  requestFormat: z.literal('json'),
+  parameters: z.object({
+    path: z.object({
+      agent_id: z.string(),
+    }),
+    header: z.object({
+      user_id: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+    }),
+  }),
+  response: Memory,
+};
+
+export type get_Retrieve_core_memory_block =
+  typeof get_Retrieve_core_memory_block;
+export const get_Retrieve_core_memory_block = {
+  method: z.literal('GET'),
+  path: z.literal('/v1/agents/{agent_id}/core-memory/blocks/{block_label}'),
+  requestFormat: z.literal('json'),
+  parameters: z.object({
+    path: z.object({
+      agent_id: z.string(),
+      block_label: z.string(),
+    }),
+    header: z.object({
+      user_id: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+    }),
+  }),
+  response: Block,
+};
+
+export type patch_Modify_core_memory_block =
+  typeof patch_Modify_core_memory_block;
+export const patch_Modify_core_memory_block = {
+  method: z.literal('PATCH'),
+  path: z.literal('/v1/agents/{agent_id}/core-memory/blocks/{block_label}'),
+  requestFormat: z.literal('json'),
+  parameters: z.object({
+    path: z.object({
+      agent_id: z.string(),
+      block_label: z.string(),
+    }),
+    header: z.object({
+      user_id: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+    }),
+    body: BlockUpdate,
+  }),
+  response: Block,
+};
+
+export type get_List_core_memory_blocks = typeof get_List_core_memory_blocks;
+export const get_List_core_memory_blocks = {
+  method: z.literal('GET'),
+  path: z.literal('/v1/agents/{agent_id}/core-memory/blocks'),
+  requestFormat: z.literal('json'),
+  parameters: z.object({
+    path: z.object({
+      agent_id: z.string(),
+    }),
+    header: z.object({
+      user_id: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+    }),
+  }),
+  response: z.array(Block),
+};
+
+export type patch_Attach_core_memory_block =
+  typeof patch_Attach_core_memory_block;
+export const patch_Attach_core_memory_block = {
+  method: z.literal('PATCH'),
+  path: z.literal('/v1/agents/{agent_id}/core-memory/blocks/attach/{block_id}'),
+  requestFormat: z.literal('json'),
+  parameters: z.object({
+    path: z.object({
+      agent_id: z.string(),
+      block_id: z.string(),
+    }),
+    header: z.object({
+      user_id: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+    }),
+  }),
+  response: AgentState,
+};
+
+export type patch_Detach_core_memory_block =
+  typeof patch_Detach_core_memory_block;
+export const patch_Detach_core_memory_block = {
+  method: z.literal('PATCH'),
+  path: z.literal('/v1/agents/{agent_id}/core-memory/blocks/detach/{block_id}'),
+  requestFormat: z.literal('json'),
+  parameters: z.object({
+    path: z.object({
+      agent_id: z.string(),
+      block_id: z.string(),
+    }),
+    header: z.object({
+      user_id: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+    }),
+  }),
+  response: AgentState,
+};
+
+export type get_List_archival_memory = typeof get_List_archival_memory;
+export const get_List_archival_memory = {
+  method: z.literal('GET'),
+  path: z.literal('/v1/agents/{agent_id}/archival-memory'),
+  requestFormat: z.literal('json'),
+  parameters: z.object({
+    query: z.object({
+      after: z
+        .union([z.number(), z.null(), z.array(z.union([z.number(), z.null()]))])
+        .optional(),
+      before: z
+        .union([z.number(), z.null(), z.array(z.union([z.number(), z.null()]))])
+        .optional(),
+      limit: z
+        .union([z.number(), z.null(), z.array(z.union([z.number(), z.null()]))])
+        .optional(),
+    }),
+    path: z.object({
+      agent_id: z.string(),
+    }),
+    header: z.object({
+      user_id: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+    }),
+  }),
+  response: z.array(Passage),
+};
+
+export type post_Create_archival_memory = typeof post_Create_archival_memory;
+export const post_Create_archival_memory = {
+  method: z.literal('POST'),
+  path: z.literal('/v1/agents/{agent_id}/archival-memory'),
+  requestFormat: z.literal('json'),
+  parameters: z.object({
+    path: z.object({
+      agent_id: z.string(),
+    }),
+    header: z.object({
+      user_id: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+    }),
+    body: CreateArchivalMemory,
+  }),
+  response: z.array(Passage),
+};
+
+export type delete_Delete_archival_memory =
+  typeof delete_Delete_archival_memory;
+export const delete_Delete_archival_memory = {
+  method: z.literal('DELETE'),
+  path: z.literal('/v1/agents/{agent_id}/archival-memory/{memory_id}'),
+  requestFormat: z.literal('json'),
+  parameters: z.object({
+    path: z.object({
+      agent_id: z.string(),
+      memory_id: z.string(),
+    }),
+    header: z.object({
+      user_id: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+    }),
+  }),
+  response: z.unknown(),
+};
+
+export type get_List_messages = typeof get_List_messages;
+export const get_List_messages = {
+  method: z.literal('GET'),
+  path: z.literal('/v1/agents/{agent_id}/messages'),
+  requestFormat: z.literal('json'),
+  parameters: z.object({
+    query: z.object({
+      after: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      before: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      limit: z.number().optional(),
+      use_assistant_message: z.boolean().optional(),
+      assistant_message_tool_name: z.string().optional(),
+      assistant_message_tool_kwarg: z.string().optional(),
+    }),
+    path: z.object({
+      agent_id: z.string(),
+    }),
+    header: z.object({
+      user_id: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+    }),
+  }),
+  response: z.array(LettaMessageUnion),
+};
+
+export type post_Send_message = typeof post_Send_message;
+export const post_Send_message = {
+  method: z.literal('POST'),
+  path: z.literal('/v1/agents/{agent_id}/messages'),
+  requestFormat: z.literal('json'),
+  parameters: z.object({
+    path: z.object({
+      agent_id: z.string(),
+    }),
+    header: z.object({
+      user_id: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+    }),
+    body: LettaRequest,
+  }),
+  response: LettaResponse,
+};
+
+export type patch_Modify_message = typeof patch_Modify_message;
+export const patch_Modify_message = {
+  method: z.literal('PATCH'),
+  path: z.literal('/v1/agents/{agent_id}/messages/{message_id}'),
+  requestFormat: z.literal('json'),
+  parameters: z.object({
+    path: z.object({
+      agent_id: z.string(),
+      message_id: z.string(),
+    }),
+    header: z.object({
+      user_id: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+    }),
+    body: MessageUpdate,
+  }),
+  response: Message,
+};
+
+export type post_Create_agent_message_stream =
+  typeof post_Create_agent_message_stream;
+export const post_Create_agent_message_stream = {
+  method: z.literal('POST'),
+  path: z.literal('/v1/agents/{agent_id}/messages/stream'),
+  requestFormat: z.literal('json'),
+  parameters: z.object({
+    path: z.object({
+      agent_id: z.string(),
+    }),
+    header: z.object({
+      user_id: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+    }),
+    body: LettaStreamingRequest,
+  }),
+  response: z.unknown(),
+};
+
+export type post_Create_agent_message_async =
+  typeof post_Create_agent_message_async;
+export const post_Create_agent_message_async = {
+  method: z.literal('POST'),
+  path: z.literal('/v1/agents/{agent_id}/messages/async'),
+  requestFormat: z.literal('json'),
+  parameters: z.object({
+    path: z.object({
+      agent_id: z.string(),
+    }),
+    header: z.object({
+      user_id: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+    }),
+    body: LettaRequest,
+  }),
+  response: Run,
+};
+
+export type patch_Reset_messages = typeof patch_Reset_messages;
+export const patch_Reset_messages = {
+  method: z.literal('PATCH'),
+  path: z.literal('/v1/agents/{agent_id}/reset-messages'),
+  requestFormat: z.literal('json'),
+  parameters: z.object({
+    query: z.object({
+      add_default_initial_messages: z.boolean().optional(),
+    }),
+    path: z.object({
+      agent_id: z.string(),
+    }),
+    header: z.object({
+      user_id: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+    }),
+  }),
+  response: AgentState,
+};
+
+export type get_List_models = typeof get_List_models;
+export const get_List_models = {
+  method: z.literal('GET'),
+  path: z.literal('/v1/models/'),
+  requestFormat: z.literal('json'),
+  parameters: z.never(),
+  response: z.array(LLMConfig),
+};
+
+export type get_List_embedding_models = typeof get_List_embedding_models;
+export const get_List_embedding_models = {
+  method: z.literal('GET'),
+  path: z.literal('/v1/models/embedding'),
+  requestFormat: z.literal('json'),
+  parameters: z.never(),
+  response: z.array(EmbeddingConfig),
+};
+
+export type get_List_blocks = typeof get_List_blocks;
+export const get_List_blocks = {
+  method: z.literal('GET'),
+  path: z.literal('/v1/blocks/'),
+  requestFormat: z.literal('json'),
+  parameters: z.object({
+    query: z.object({
+      label: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      templates_only: z.boolean().optional(),
+      name: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+    }),
+    header: z.object({
+      user_id: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+    }),
+  }),
+  response: z.array(Block),
+};
+
+export type post_Create_block = typeof post_Create_block;
+export const post_Create_block = {
+  method: z.literal('POST'),
+  path: z.literal('/v1/blocks/'),
+  requestFormat: z.literal('json'),
+  parameters: z.object({
+    header: z.object({
+      user_id: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+    }),
+    body: CreateBlock,
+  }),
+  response: Block,
+};
+
+export type patch_Modify_block = typeof patch_Modify_block;
+export const patch_Modify_block = {
+  method: z.literal('PATCH'),
+  path: z.literal('/v1/blocks/{block_id}'),
+  requestFormat: z.literal('json'),
+  parameters: z.object({
+    path: z.object({
+      block_id: z.string(),
+    }),
+    header: z.object({
+      user_id: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+    }),
+    body: BlockUpdate,
+  }),
+  response: Block,
+};
+
+export type delete_Delete_block = typeof delete_Delete_block;
+export const delete_Delete_block = {
+  method: z.literal('DELETE'),
+  path: z.literal('/v1/blocks/{block_id}'),
+  requestFormat: z.literal('json'),
+  parameters: z.object({
+    path: z.object({
+      block_id: z.string(),
+    }),
+    header: z.object({
+      user_id: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+    }),
+  }),
+  response: Block,
+};
+
+export type get_Retrieve_block = typeof get_Retrieve_block;
+export const get_Retrieve_block = {
+  method: z.literal('GET'),
+  path: z.literal('/v1/blocks/{block_id}'),
+  requestFormat: z.literal('json'),
+  parameters: z.object({
+    path: z.object({
+      block_id: z.string(),
+    }),
+    header: z.object({
+      user_id: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+    }),
+  }),
+  response: Block,
+};
+
+export type get_List_agents_for_block = typeof get_List_agents_for_block;
+export const get_List_agents_for_block = {
+  method: z.literal('GET'),
+  path: z.literal('/v1/blocks/{block_id}/agents'),
+  requestFormat: z.literal('json'),
+  parameters: z.object({
+    path: z.object({
+      block_id: z.string(),
+    }),
+    header: z.object({
+      user_id: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+    }),
+  }),
+  response: z.array(AgentState),
+};
+
+export type get_List_jobs = typeof get_List_jobs;
+export const get_List_jobs = {
+  method: z.literal('GET'),
+  path: z.literal('/v1/jobs/'),
+  requestFormat: z.literal('json'),
+  parameters: z.object({
+    query: z.object({
+      source_id: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+    }),
+    header: z.object({
+      user_id: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+    }),
+  }),
+  response: z.array(Job),
+};
+
+export type get_List_active_jobs = typeof get_List_active_jobs;
+export const get_List_active_jobs = {
+  method: z.literal('GET'),
+  path: z.literal('/v1/jobs/active'),
+  requestFormat: z.literal('json'),
+  parameters: z.object({
+    header: z.object({
+      user_id: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+    }),
+  }),
+  response: z.array(Job),
+};
+
+export type get_Retrieve_job = typeof get_Retrieve_job;
+export const get_Retrieve_job = {
+  method: z.literal('GET'),
+  path: z.literal('/v1/jobs/{job_id}'),
+  requestFormat: z.literal('json'),
+  parameters: z.object({
+    path: z.object({
+      job_id: z.string(),
+    }),
+    header: z.object({
+      user_id: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+    }),
+  }),
+  response: Job,
+};
+
+export type delete_Delete_job = typeof delete_Delete_job;
+export const delete_Delete_job = {
+  method: z.literal('DELETE'),
+  path: z.literal('/v1/jobs/{job_id}'),
+  requestFormat: z.literal('json'),
+  parameters: z.object({
+    path: z.object({
+      job_id: z.string(),
+    }),
+    header: z.object({
+      user_id: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+    }),
+  }),
+  response: Job,
+};
+
+export type get_Health_check = typeof get_Health_check;
+export const get_Health_check = {
+  method: z.literal('GET'),
+  path: z.literal('/v1/health/'),
+  requestFormat: z.literal('json'),
+  parameters: z.never(),
+  response: Health,
+};
+
+export type post_Create_sandbox_config_v1_sandbox_config__post =
+  typeof post_Create_sandbox_config_v1_sandbox_config__post;
+export const post_Create_sandbox_config_v1_sandbox_config__post = {
+  method: z.literal('POST'),
+  path: z.literal('/v1/sandbox-config/'),
+  requestFormat: z.literal('json'),
+  parameters: z.object({
+    header: z.object({
+      user_id: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+    }),
+    body: SandboxConfigCreate,
+  }),
+  response: SandboxConfig,
+};
+
+export type get_List_sandbox_configs_v1_sandbox_config__get =
+  typeof get_List_sandbox_configs_v1_sandbox_config__get;
+export const get_List_sandbox_configs_v1_sandbox_config__get = {
+  method: z.literal('GET'),
+  path: z.literal('/v1/sandbox-config/'),
+  requestFormat: z.literal('json'),
+  parameters: z.object({
+    query: z.object({
+      limit: z.number().optional(),
+      after: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      sandbox_type: z
+        .union([
+          SandboxType,
+          z.null(),
+          z.array(z.union([SandboxType, z.null()])),
+        ])
+        .optional(),
+    }),
+    header: z.object({
+      user_id: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+    }),
+  }),
+  response: z.array(SandboxConfig),
+};
+
+export type post_Create_default_e2b_sandbox_config_v1_sandbox_config_e2b_default_post =
+  typeof post_Create_default_e2b_sandbox_config_v1_sandbox_config_e2b_default_post;
+export const post_Create_default_e2b_sandbox_config_v1_sandbox_config_e2b_default_post =
+  {
+    method: z.literal('POST'),
+    path: z.literal('/v1/sandbox-config/e2b/default'),
+    requestFormat: z.literal('json'),
+    parameters: z.object({
+      header: z.object({
+        user_id: z
+          .union([
+            z.string(),
+            z.null(),
+            z.array(z.union([z.string(), z.null()])),
+          ])
+          .optional(),
+      }),
+    }),
+    response: SandboxConfig,
+  };
+
+export type post_Create_default_local_sandbox_config_v1_sandbox_config_local_default_post =
+  typeof post_Create_default_local_sandbox_config_v1_sandbox_config_local_default_post;
+export const post_Create_default_local_sandbox_config_v1_sandbox_config_local_default_post =
+  {
+    method: z.literal('POST'),
+    path: z.literal('/v1/sandbox-config/local/default'),
+    requestFormat: z.literal('json'),
+    parameters: z.object({
+      header: z.object({
+        user_id: z
+          .union([
+            z.string(),
+            z.null(),
+            z.array(z.union([z.string(), z.null()])),
+          ])
+          .optional(),
+      }),
+    }),
+    response: SandboxConfig,
+  };
+
+export type patch_Update_sandbox_config_v1_sandbox_config__sandbox_config_id__patch =
+  typeof patch_Update_sandbox_config_v1_sandbox_config__sandbox_config_id__patch;
+export const patch_Update_sandbox_config_v1_sandbox_config__sandbox_config_id__patch =
+  {
+    method: z.literal('PATCH'),
+    path: z.literal('/v1/sandbox-config/{sandbox_config_id}'),
+    requestFormat: z.literal('json'),
+    parameters: z.object({
+      path: z.object({
+        sandbox_config_id: z.string(),
+      }),
+      header: z.object({
+        user_id: z
+          .union([
+            z.string(),
+            z.null(),
+            z.array(z.union([z.string(), z.null()])),
+          ])
+          .optional(),
+      }),
+      body: SandboxConfigUpdate,
+    }),
+    response: SandboxConfig,
+  };
+
+export type delete_Delete_sandbox_config_v1_sandbox_config__sandbox_config_id__delete =
+  typeof delete_Delete_sandbox_config_v1_sandbox_config__sandbox_config_id__delete;
+export const delete_Delete_sandbox_config_v1_sandbox_config__sandbox_config_id__delete =
+  {
+    method: z.literal('DELETE'),
+    path: z.literal('/v1/sandbox-config/{sandbox_config_id}'),
+    requestFormat: z.literal('json'),
+    parameters: z.object({
+      path: z.object({
+        sandbox_config_id: z.string(),
+      }),
+      header: z.object({
+        user_id: z
+          .union([
+            z.string(),
+            z.null(),
+            z.array(z.union([z.string(), z.null()])),
+          ])
+          .optional(),
+      }),
+    }),
+    response: z.unknown(),
+  };
+
+export type post_Create_sandbox_env_var_v1_sandbox_config__sandbox_config_id__environment_variable_post =
+  typeof post_Create_sandbox_env_var_v1_sandbox_config__sandbox_config_id__environment_variable_post;
+export const post_Create_sandbox_env_var_v1_sandbox_config__sandbox_config_id__environment_variable_post =
+  {
+    method: z.literal('POST'),
+    path: z.literal(
+      '/v1/sandbox-config/{sandbox_config_id}/environment-variable',
+    ),
+    requestFormat: z.literal('json'),
+    parameters: z.object({
+      path: z.object({
+        sandbox_config_id: z.string(),
+      }),
+      header: z.object({
+        user_id: z
+          .union([
+            z.string(),
+            z.null(),
+            z.array(z.union([z.string(), z.null()])),
+          ])
+          .optional(),
+      }),
+      body: SandboxEnvironmentVariableCreate,
+    }),
+    response: SandboxEnvironmentVariable,
+  };
+
+export type get_List_sandbox_env_vars_v1_sandbox_config__sandbox_config_id__environment_variable_get =
+  typeof get_List_sandbox_env_vars_v1_sandbox_config__sandbox_config_id__environment_variable_get;
+export const get_List_sandbox_env_vars_v1_sandbox_config__sandbox_config_id__environment_variable_get =
+  {
+    method: z.literal('GET'),
+    path: z.literal(
+      '/v1/sandbox-config/{sandbox_config_id}/environment-variable',
+    ),
+    requestFormat: z.literal('json'),
+    parameters: z.object({
+      query: z.object({
+        limit: z.number().optional(),
+        after: z
+          .union([
+            z.string(),
+            z.null(),
+            z.array(z.union([z.string(), z.null()])),
+          ])
+          .optional(),
+      }),
+      path: z.object({
+        sandbox_config_id: z.string(),
+      }),
+      header: z.object({
+        user_id: z
+          .union([
+            z.string(),
+            z.null(),
+            z.array(z.union([z.string(), z.null()])),
+          ])
+          .optional(),
+      }),
+    }),
+    response: z.array(SandboxEnvironmentVariable),
+  };
+
+export type patch_Update_sandbox_env_var_v1_sandbox_config_environment_variable__env_var_id__patch =
+  typeof patch_Update_sandbox_env_var_v1_sandbox_config_environment_variable__env_var_id__patch;
+export const patch_Update_sandbox_env_var_v1_sandbox_config_environment_variable__env_var_id__patch =
+  {
+    method: z.literal('PATCH'),
+    path: z.literal('/v1/sandbox-config/environment-variable/{env_var_id}'),
+    requestFormat: z.literal('json'),
+    parameters: z.object({
+      path: z.object({
+        env_var_id: z.string(),
+      }),
+      header: z.object({
+        user_id: z
+          .union([
+            z.string(),
+            z.null(),
+            z.array(z.union([z.string(), z.null()])),
+          ])
+          .optional(),
+      }),
+      body: SandboxEnvironmentVariableUpdate,
+    }),
+    response: SandboxEnvironmentVariable,
+  };
+
+export type delete_Delete_sandbox_env_var_v1_sandbox_config_environment_variable__env_var_id__delete =
+  typeof delete_Delete_sandbox_env_var_v1_sandbox_config_environment_variable__env_var_id__delete;
+export const delete_Delete_sandbox_env_var_v1_sandbox_config_environment_variable__env_var_id__delete =
+  {
+    method: z.literal('DELETE'),
+    path: z.literal('/v1/sandbox-config/environment-variable/{env_var_id}'),
+    requestFormat: z.literal('json'),
+    parameters: z.object({
+      path: z.object({
+        env_var_id: z.string(),
+      }),
+      header: z.object({
+        user_id: z
+          .union([
+            z.string(),
+            z.null(),
+            z.array(z.union([z.string(), z.null()])),
+          ])
+          .optional(),
+      }),
+    }),
+    response: z.unknown(),
+  };
+
+export type get_List_providers = typeof get_List_providers;
+export const get_List_providers = {
+  method: z.literal('GET'),
+  path: z.literal('/v1/providers/'),
+  requestFormat: z.literal('json'),
+  parameters: z.object({
+    query: z.object({
+      after: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      limit: z
+        .union([z.number(), z.null(), z.array(z.union([z.number(), z.null()]))])
+        .optional(),
+    }),
+  }),
+  response: z.array(Provider),
+};
+
+export type post_Create_provider = typeof post_Create_provider;
+export const post_Create_provider = {
+  method: z.literal('POST'),
+  path: z.literal('/v1/providers/'),
+  requestFormat: z.literal('json'),
+  parameters: z.object({
+    header: z.object({
+      user_id: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+    }),
+    body: ProviderCreate,
+  }),
+  response: Provider,
+};
+
+export type patch_Modify_provider = typeof patch_Modify_provider;
+export const patch_Modify_provider = {
+  method: z.literal('PATCH'),
+  path: z.literal('/v1/providers/'),
+  requestFormat: z.literal('json'),
+  parameters: z.object({
+    body: ProviderUpdate,
+  }),
+  response: Provider,
+};
+
+export type delete_Delete_provider = typeof delete_Delete_provider;
+export const delete_Delete_provider = {
+  method: z.literal('DELETE'),
+  path: z.literal('/v1/providers/'),
+  requestFormat: z.literal('json'),
+  parameters: z.object({
+    query: z.object({
+      provider_id: z.string(),
+    }),
+  }),
+  response: z.unknown(),
+};
+
+export type get_List_runs = typeof get_List_runs;
+export const get_List_runs = {
+  method: z.literal('GET'),
+  path: z.literal('/v1/runs/'),
+  requestFormat: z.literal('json'),
+  parameters: z.object({
+    header: z.object({
+      user_id: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+    }),
+  }),
+  response: z.array(Run),
+};
+
+export type get_List_active_runs = typeof get_List_active_runs;
+export const get_List_active_runs = {
+  method: z.literal('GET'),
+  path: z.literal('/v1/runs/active'),
+  requestFormat: z.literal('json'),
+  parameters: z.object({
+    header: z.object({
+      user_id: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+    }),
+  }),
+  response: z.array(Run),
+};
+
+export type get_Retrieve_run = typeof get_Retrieve_run;
+export const get_Retrieve_run = {
+  method: z.literal('GET'),
+  path: z.literal('/v1/runs/{run_id}'),
+  requestFormat: z.literal('json'),
+  parameters: z.object({
+    path: z.object({
+      run_id: z.string(),
+    }),
+    header: z.object({
+      user_id: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+    }),
+  }),
+  response: Run,
+};
+
+export type delete_Delete_run = typeof delete_Delete_run;
+export const delete_Delete_run = {
+  method: z.literal('DELETE'),
+  path: z.literal('/v1/runs/{run_id}'),
+  requestFormat: z.literal('json'),
+  parameters: z.object({
+    path: z.object({
+      run_id: z.string(),
+    }),
+    header: z.object({
+      user_id: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+    }),
+  }),
+  response: Run,
+};
+
+export type get_List_run_messages = typeof get_List_run_messages;
+export const get_List_run_messages = {
+  method: z.literal('GET'),
+  path: z.literal('/v1/runs/{run_id}/messages'),
+  requestFormat: z.literal('json'),
+  parameters: z.object({
+    query: z.object({
+      before: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      after: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      limit: z
+        .union([z.number(), z.null(), z.array(z.union([z.number(), z.null()]))])
+        .optional(),
+      order: z.string().optional(),
+      role: z
+        .union([
+          MessageRole,
+          z.null(),
+          z.array(z.union([MessageRole, z.null()])),
+        ])
+        .optional(),
+    }),
+    path: z.object({
+      run_id: z.string(),
+    }),
+    header: z.object({
+      user_id: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+    }),
+  }),
+  response: z.array(LettaMessageUnion),
+};
+
+export type get_Retrieve_run_usage = typeof get_Retrieve_run_usage;
+export const get_Retrieve_run_usage = {
+  method: z.literal('GET'),
+  path: z.literal('/v1/runs/{run_id}/usage'),
+  requestFormat: z.literal('json'),
+  parameters: z.object({
+    path: z.object({
+      run_id: z.string(),
+    }),
+    header: z.object({
+      user_id: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+    }),
+  }),
+  response: UsageStatistics,
+};
+
+export type get_List_tags = typeof get_List_tags;
+export const get_List_tags = {
+  method: z.literal('GET'),
+  path: z.literal('/v1/tags/'),
+  requestFormat: z.literal('json'),
+  parameters: z.object({
+    query: z.object({
+      after: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      limit: z
+        .union([z.number(), z.null(), z.array(z.union([z.number(), z.null()]))])
+        .optional(),
+      query_text: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+    }),
+    header: z.object({
+      user_id: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+    }),
+  }),
+  response: z.array(z.string()),
+};
+
+export type get_List_users = typeof get_List_users;
+export const get_List_users = {
+  method: z.literal('GET'),
+  path: z.literal('/v1/admin/users/'),
+  requestFormat: z.literal('json'),
+  parameters: z.object({
+    query: z.object({
+      after: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      limit: z
+        .union([z.number(), z.null(), z.array(z.union([z.number(), z.null()]))])
+        .optional(),
+    }),
+  }),
+  response: z.array(User),
+};
+
+export type post_Create_user = typeof post_Create_user;
+export const post_Create_user = {
+  method: z.literal('POST'),
+  path: z.literal('/v1/admin/users/'),
+  requestFormat: z.literal('json'),
+  parameters: z.object({
+    body: UserCreate,
+  }),
+  response: User,
+};
+
+export type put_Update_user = typeof put_Update_user;
+export const put_Update_user = {
+  method: z.literal('PUT'),
+  path: z.literal('/v1/admin/users/'),
+  requestFormat: z.literal('json'),
+  parameters: z.object({
+    body: UserUpdate,
+  }),
+  response: User,
+};
+
+export type delete_Delete_user = typeof delete_Delete_user;
+export const delete_Delete_user = {
+  method: z.literal('DELETE'),
+  path: z.literal('/v1/admin/users/'),
+  requestFormat: z.literal('json'),
+  parameters: z.object({
+    query: z.object({
+      user_id: z.string(),
+    }),
+  }),
+  response: User,
+};
+
+export type get_List_orgs = typeof get_List_orgs;
+export const get_List_orgs = {
+  method: z.literal('GET'),
+  path: z.literal('/v1/admin/orgs/'),
+  requestFormat: z.literal('json'),
+  parameters: z.object({
+    query: z.object({
+      after: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      limit: z
+        .union([z.number(), z.null(), z.array(z.union([z.number(), z.null()]))])
+        .optional(),
+    }),
+  }),
+  response: z.array(Organization),
+};
+
+export type post_Create_organization = typeof post_Create_organization;
+export const post_Create_organization = {
+  method: z.literal('POST'),
+  path: z.literal('/v1/admin/orgs/'),
+  requestFormat: z.literal('json'),
+  parameters: z.object({
+    body: OrganizationCreate,
+  }),
+  response: Organization,
+};
+
+export type delete_Delete_organization_by_id =
+  typeof delete_Delete_organization_by_id;
+export const delete_Delete_organization_by_id = {
+  method: z.literal('DELETE'),
+  path: z.literal('/v1/admin/orgs/'),
+  requestFormat: z.literal('json'),
+  parameters: z.object({
+    query: z.object({
+      org_id: z.string(),
+    }),
+  }),
+  response: Organization,
+};
+
+export type post_Authenticate_user_v1_auth_post =
+  typeof post_Authenticate_user_v1_auth_post;
+export const post_Authenticate_user_v1_auth_post = {
+  method: z.literal('POST'),
+  path: z.literal('/v1/auth'),
+  requestFormat: z.literal('json'),
+  parameters: z.object({
+    body: AuthRequest,
+  }),
+  response: AuthResponse,
+};
+
+// <EndpointByMethod>
+export const EndpointByMethod = {
+  delete: {
+    '/v1/tools/{tool_id}': delete_Delete_tool,
+    '/v1/sources/{source_id}': delete_Delete_source,
+    '/v1/sources/{source_id}/{file_id}': delete_Delete_file_from_source,
+    '/v1/agents/{agent_id}': delete_Delete_agent,
+    '/v1/agents/{agent_id}/archival-memory/{memory_id}':
+      delete_Delete_archival_memory,
+    '/v1/blocks/{block_id}': delete_Delete_block,
+    '/v1/jobs/{job_id}': delete_Delete_job,
+    '/v1/sandbox-config/{sandbox_config_id}':
+      delete_Delete_sandbox_config_v1_sandbox_config__sandbox_config_id__delete,
+    '/v1/sandbox-config/environment-variable/{env_var_id}':
+      delete_Delete_sandbox_env_var_v1_sandbox_config_environment_variable__env_var_id__delete,
+    '/v1/providers/': delete_Delete_provider,
+    '/v1/runs/{run_id}': delete_Delete_run,
+    '/v1/admin/users/': delete_Delete_user,
+    '/v1/admin/orgs/': delete_Delete_organization_by_id,
+  },
+  get: {
+    '/v1/tools/{tool_id}': get_Retrieve_tool,
+    '/v1/tools/': get_List_tools,
+    '/v1/tools/composio/apps': get_List_composio_apps,
+    '/v1/tools/composio/apps/{composio_app_name}/actions':
+      get_List_composio_actions_by_app,
+    '/v1/sources/{source_id}': get_Retrieve_source,
+    '/v1/sources/name/{source_name}': get_Get_source_id_by_name,
+    '/v1/sources/': get_List_sources,
+    '/v1/sources/{source_id}/passages': get_List_source_passages,
+    '/v1/sources/{source_id}/files': get_List_source_files,
+    '/v1/agents/': get_List_agents,
+    '/v1/agents/{agent_id}/context': get_Retrieve_agent_context_window,
+    '/v1/agents/{agent_id}': get_Retrieve_agent,
+    '/v1/agents/{agent_id}/tools': get_List_agent_tools,
+    '/v1/agents/{agent_id}/sources': get_List_agent_sources,
+    '/v1/agents/{agent_id}/core-memory': get_Retrieve_agent_memory,
+    '/v1/agents/{agent_id}/core-memory/blocks/{block_label}':
+      get_Retrieve_core_memory_block,
+    '/v1/agents/{agent_id}/core-memory/blocks': get_List_core_memory_blocks,
+    '/v1/agents/{agent_id}/archival-memory': get_List_archival_memory,
+    '/v1/agents/{agent_id}/messages': get_List_messages,
+    '/v1/models/': get_List_models,
+    '/v1/models/embedding': get_List_embedding_models,
+    '/v1/blocks/': get_List_blocks,
+    '/v1/blocks/{block_id}': get_Retrieve_block,
+    '/v1/blocks/{block_id}/agents': get_List_agents_for_block,
+    '/v1/jobs/': get_List_jobs,
+    '/v1/jobs/active': get_List_active_jobs,
+    '/v1/jobs/{job_id}': get_Retrieve_job,
+    '/v1/health/': get_Health_check,
+    '/v1/sandbox-config/': get_List_sandbox_configs_v1_sandbox_config__get,
+    '/v1/sandbox-config/{sandbox_config_id}/environment-variable':
+      get_List_sandbox_env_vars_v1_sandbox_config__sandbox_config_id__environment_variable_get,
+    '/v1/providers/': get_List_providers,
+    '/v1/runs/': get_List_runs,
+    '/v1/runs/active': get_List_active_runs,
+    '/v1/runs/{run_id}': get_Retrieve_run,
+    '/v1/runs/{run_id}/messages': get_List_run_messages,
+    '/v1/runs/{run_id}/usage': get_Retrieve_run_usage,
+    '/v1/tags/': get_List_tags,
+    '/v1/admin/users/': get_List_users,
+    '/v1/admin/orgs/': get_List_orgs,
+  },
+  patch: {
+    '/v1/tools/{tool_id}': patch_Modify_tool,
+    '/v1/sources/{source_id}': patch_Modify_source,
+    '/v1/agents/{agent_id}': patch_Modify_agent,
+    '/v1/agents/{agent_id}/tools/attach/{tool_id}': patch_Attach_tool,
+    '/v1/agents/{agent_id}/tools/detach/{tool_id}': patch_Detach_tool,
+    '/v1/agents/{agent_id}/sources/attach/{source_id}':
+      patch_Attach_source_to_agent,
+    '/v1/agents/{agent_id}/sources/detach/{source_id}':
+      patch_Detach_source_from_agent,
+    '/v1/agents/{agent_id}/core-memory/blocks/{block_label}':
+      patch_Modify_core_memory_block,
+    '/v1/agents/{agent_id}/core-memory/blocks/attach/{block_id}':
+      patch_Attach_core_memory_block,
+    '/v1/agents/{agent_id}/core-memory/blocks/detach/{block_id}':
+      patch_Detach_core_memory_block,
+    '/v1/agents/{agent_id}/messages/{message_id}': patch_Modify_message,
+    '/v1/agents/{agent_id}/reset-messages': patch_Reset_messages,
+    '/v1/blocks/{block_id}': patch_Modify_block,
+    '/v1/sandbox-config/{sandbox_config_id}':
+      patch_Update_sandbox_config_v1_sandbox_config__sandbox_config_id__patch,
+    '/v1/sandbox-config/environment-variable/{env_var_id}':
+      patch_Update_sandbox_env_var_v1_sandbox_config_environment_variable__env_var_id__patch,
+    '/v1/providers/': patch_Modify_provider,
+  },
+  post: {
+    '/v1/tools/': post_Create_tool,
+    '/v1/tools/add-base-tools': post_Add_base_tools,
+    '/v1/tools/run': post_Run_tool_from_source,
+    '/v1/tools/composio/{composio_action_name}': post_Add_composio_tool,
+    '/v1/sources/': post_Create_source,
+    '/v1/sources/{source_id}/upload': post_Upload_file_to_source,
+    '/v1/agents/': post_Create_agent,
+    '/v1/agents/{agent_id}/archival-memory': post_Create_archival_memory,
+    '/v1/agents/{agent_id}/messages': post_Send_message,
+    '/v1/agents/{agent_id}/messages/stream': post_Create_agent_message_stream,
+    '/v1/agents/{agent_id}/messages/async': post_Create_agent_message_async,
+    '/v1/blocks/': post_Create_block,
+    '/v1/sandbox-config/': post_Create_sandbox_config_v1_sandbox_config__post,
+    '/v1/sandbox-config/e2b/default':
+      post_Create_default_e2b_sandbox_config_v1_sandbox_config_e2b_default_post,
+    '/v1/sandbox-config/local/default':
+      post_Create_default_local_sandbox_config_v1_sandbox_config_local_default_post,
+    '/v1/sandbox-config/{sandbox_config_id}/environment-variable':
+      post_Create_sandbox_env_var_v1_sandbox_config__sandbox_config_id__environment_variable_post,
+    '/v1/providers/': post_Create_provider,
+    '/v1/admin/users/': post_Create_user,
+    '/v1/admin/orgs/': post_Create_organization,
+    '/v1/auth': post_Authenticate_user_v1_auth_post,
+  },
+  put: {
+    '/v1/tools/': put_Upsert_tool,
+    '/v1/admin/users/': put_Update_user,
+  },
+};
+export type EndpointByMethod = typeof EndpointByMethod;
+// </EndpointByMethod>
+
+// <EndpointByMethod.Shorthands>
+export type DeleteEndpoints = EndpointByMethod['delete'];
+export type GetEndpoints = EndpointByMethod['get'];
+export type PatchEndpoints = EndpointByMethod['patch'];
+export type PostEndpoints = EndpointByMethod['post'];
+export type PutEndpoints = EndpointByMethod['put'];
+export type AllEndpoints = EndpointByMethod[keyof EndpointByMethod];
+// </EndpointByMethod.Shorthands>
+
+// <ApiClientTypes>
+export type EndpointParameters = {
+  body?: unknown;
+  query?: Record<string, unknown>;
+  header?: Record<string, unknown>;
+  path?: Record<string, unknown>;
+};
+
+export type MutationMethod = 'post' | 'put' | 'patch' | 'delete';
+export type Method = 'get' | 'head' | 'options' | MutationMethod;
+
+type RequestFormat = 'json' | 'form-data' | 'form-url' | 'binary' | 'text';
+
+export type DefaultEndpoint = {
+  parameters?: EndpointParameters | undefined;
+  response: unknown;
+};
+
+export type Endpoint<TConfig extends DefaultEndpoint = DefaultEndpoint> = {
+  operationId: string;
+  method: Method;
+  path: string;
+  requestFormat: RequestFormat;
+  parameters?: TConfig['parameters'];
+  meta: {
+    alias: string;
+    hasParameters: boolean;
+    areParametersRequired: boolean;
+  };
+  response: TConfig['response'];
+};
+
+type Fetcher = (
+  method: Method,
+  url: string,
+  parameters?: EndpointParameters | undefined,
+) => Promise<Endpoint['response']>;
+
+type RequiredKeys<T> = {
+  [P in keyof T]-?: undefined extends T[P] ? never : P;
+}[keyof T];
+
+type MaybeOptionalArg<T> =
+  RequiredKeys<T> extends never ? [config?: T] : [config: T];
+
+// </ApiClientTypes>
+
+// <ApiClient>
+export class ApiClient {
+  baseUrl: string = '';
+
+  constructor(public fetcher: Fetcher) {}
+
+  setBaseUrl(baseUrl: string) {
+    this.baseUrl = baseUrl;
+    return this;
+  }
+
+  // <ApiClient.delete>
+  delete<
+    Path extends keyof DeleteEndpoints,
+    TEndpoint extends DeleteEndpoints[Path],
+  >(
+    path: Path,
+    ...params: MaybeOptionalArg<z.infer<TEndpoint['parameters']>>
+  ): Promise<z.infer<TEndpoint['response']>> {
+    return this.fetcher('delete', this.baseUrl + path, params[0]) as Promise<
+      z.infer<TEndpoint['response']>
+    >;
+  }
+  // </ApiClient.delete>
+
+  // <ApiClient.get>
+  get<Path extends keyof GetEndpoints, TEndpoint extends GetEndpoints[Path]>(
+    path: Path,
+    ...params: MaybeOptionalArg<z.infer<TEndpoint['parameters']>>
+  ): Promise<z.infer<TEndpoint['response']>> {
+    return this.fetcher('get', this.baseUrl + path, params[0]) as Promise<
+      z.infer<TEndpoint['response']>
+    >;
+  }
+  // </ApiClient.get>
+
+  // <ApiClient.patch>
+  patch<
+    Path extends keyof PatchEndpoints,
+    TEndpoint extends PatchEndpoints[Path],
+  >(
+    path: Path,
+    ...params: MaybeOptionalArg<z.infer<TEndpoint['parameters']>>
+  ): Promise<z.infer<TEndpoint['response']>> {
+    return this.fetcher('patch', this.baseUrl + path, params[0]) as Promise<
+      z.infer<TEndpoint['response']>
+    >;
+  }
+  // </ApiClient.patch>
+
+  // <ApiClient.post>
+  post<Path extends keyof PostEndpoints, TEndpoint extends PostEndpoints[Path]>(
+    path: Path,
+    ...params: MaybeOptionalArg<z.infer<TEndpoint['parameters']>>
+  ): Promise<z.infer<TEndpoint['response']>> {
+    return this.fetcher('post', this.baseUrl + path, params[0]) as Promise<
+      z.infer<TEndpoint['response']>
+    >;
+  }
+  // </ApiClient.post>
+
+  // <ApiClient.put>
+  put<Path extends keyof PutEndpoints, TEndpoint extends PutEndpoints[Path]>(
+    path: Path,
+    ...params: MaybeOptionalArg<z.infer<TEndpoint['parameters']>>
+  ): Promise<z.infer<TEndpoint['response']>> {
+    return this.fetcher('put', this.baseUrl + path, params[0]) as Promise<
+      z.infer<TEndpoint['response']>
+    >;
+  }
+  // </ApiClient.put>
+}
+
+export function createApiClient(fetcher: Fetcher, baseUrl?: string) {
+  return new ApiClient(fetcher).setBaseUrl(baseUrl ?? '');
+}
+
+/**
+ Example usage:
+ const api = createApiClient((method, url, params) =>
+   fetch(url, { method, body: JSON.stringify(params) }).then((res) => res.json()),
+ );
+ api.get("/users").then((users) => console.log(users));
+ api.post("/users", { body: { name: "John" } }).then((user) => console.log(user));
+ api.put("/users/:id", { path: { id: 1 }, body: { name: "John" } }).then((user) => console.log(user));
+*/
+
+// </ApiClient

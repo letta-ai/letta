@@ -1,5 +1,5 @@
 import type { ServerInferRequest, ServerInferResponses } from '@ts-rest/core';
-import type { sdkContracts } from '@letta-cloud/letta-agents-api';
+import { zodTypes, type sdkContracts } from '@letta-cloud/letta-agents-api';
 import {
   agentTemplates,
   db,
@@ -146,15 +146,26 @@ async function createAgentsFromTemplate(
     organizationId,
   });
 
+  const preparedAgent = await prepareAgentForUser(response, {
+    projectId: project.id,
+    agentName: uniqueId,
+  });
+
+  const agent = zodTypes.AgentState.safeParse(preparedAgent);
+
+  if (!agent.success) {
+    return {
+      status: 500,
+      body: {
+        message: 'Failed to create agent from template',
+      },
+    };
+  }
+
   return {
     status: 201,
     body: {
-      agents: [
-        await prepareAgentForUser(response, {
-          projectId: project.id,
-          agentName: uniqueId,
-        }),
-      ],
+      agents: [agent.data],
     },
   };
 }
