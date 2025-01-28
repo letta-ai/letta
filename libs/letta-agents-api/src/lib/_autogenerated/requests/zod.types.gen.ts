@@ -2494,17 +2494,19 @@ export const Job = z.object({
     .optional(),
 });
 
+export type LettaRequest = z.infer<typeof LettaRequest>;
+export const LettaRequest = z.object({
+  messages: z.array(MessageCreate),
+  use_assistant_message: z.union([z.boolean(), z.undefined()]).optional(),
+  assistant_message_tool_name: z.union([z.string(), z.undefined()]).optional(),
+  assistant_message_tool_kwarg: z.union([z.string(), z.undefined()]).optional(),
+});
+
 export type LettaRequestConfig = z.infer<typeof LettaRequestConfig>;
 export const LettaRequestConfig = z.object({
   use_assistant_message: z.boolean().optional(),
   assistant_message_tool_name: z.string().optional(),
   assistant_message_tool_kwarg: z.string().optional(),
-});
-
-export type LettaRequest = z.infer<typeof LettaRequest>;
-export const LettaRequest = z.object({
-  messages: z.array(MessageCreate),
-  config: z.union([LettaRequestConfig, z.undefined()]).optional(),
 });
 
 export type SystemMessage = z.infer<typeof SystemMessage>;
@@ -2639,7 +2641,9 @@ export const LettaResponse = z.object({
 export type LettaStreamingRequest = z.infer<typeof LettaStreamingRequest>;
 export const LettaStreamingRequest = z.object({
   messages: z.array(MessageCreate),
-  config: z.union([LettaRequestConfig, z.undefined()]).optional(),
+  use_assistant_message: z.union([z.boolean(), z.undefined()]).optional(),
+  assistant_message_tool_name: z.union([z.string(), z.undefined()]).optional(),
+  assistant_message_tool_kwarg: z.union([z.string(), z.undefined()]).optional(),
   stream_tokens: z.union([z.boolean(), z.undefined()]).optional(),
 });
 

@@ -1424,9 +1424,17 @@ export type LettaRequest = {
    */
   messages: Array<MessageCreate>;
   /**
-   * Configuration options for the LettaRequest.
+   * Whether the server should parse specific tool call arguments (default `send_message`) as `AssistantMessage` objects.
    */
-  config?: LettaRequestConfig;
+  use_assistant_message?: boolean;
+  /**
+   * The name of the designated message tool.
+   */
+  assistant_message_tool_name?: string;
+  /**
+   * The name of the message argument in the designated message tool.
+   */
+  assistant_message_tool_kwarg?: string;
 };
 
 export type LettaRequestConfig = {
@@ -1469,9 +1477,17 @@ export type LettaStreamingRequest = {
    */
   messages: Array<MessageCreate>;
   /**
-   * Configuration options for the LettaRequest.
+   * Whether the server should parse specific tool call arguments (default `send_message`) as `AssistantMessage` objects.
    */
-  config?: LettaRequestConfig;
+  use_assistant_message?: boolean;
+  /**
+   * The name of the designated message tool.
+   */
+  assistant_message_tool_name?: string;
+  /**
+   * The name of the message argument in the designated message tool.
+   */
+  assistant_message_tool_kwarg?: string;
   /**
    * Flag to determine if individual tokens should be streamed. Set to True for token streaming (requires stream_steps = True).
    */

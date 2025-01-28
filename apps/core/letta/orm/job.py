@@ -9,7 +9,7 @@ from letta.orm.mixins import UserMixin
 from letta.orm.sqlalchemy_base import SqlalchemyBase
 from letta.schemas.enums import JobStatus
 from letta.schemas.job import Job as PydanticJob
-from letta.schemas.letta_request import LettaRequestConfig
+from letta.schemas.job import LettaRequestConfig
 
 if TYPE_CHECKING:
     from letta.orm.job_messages import JobMessage

@@ -3849,14 +3849,25 @@ export const $LettaRequest = {
       title: 'Messages',
       description: 'The messages to be sent to the agent.',
     },
-    config: {
-      $ref: '#/components/schemas/LettaRequestConfig',
-      description: 'Configuration options for the LettaRequest.',
-      default: {
-        use_assistant_message: true,
-        assistant_message_tool_name: 'send_message',
-        assistant_message_tool_kwarg: 'message',
-      },
+    use_assistant_message: {
+      type: 'boolean',
+      title: 'Use Assistant Message',
+      description:
+        'Whether the server should parse specific tool call arguments (default `send_message`) as `AssistantMessage` objects.',
+      default: true,
+    },
+    assistant_message_tool_name: {
+      type: 'string',
+      title: 'Assistant Message Tool Name',
+      description: 'The name of the designated message tool.',
+      default: 'send_message',
+    },
+    assistant_message_tool_kwarg: {
+      type: 'string',
+      title: 'Assistant Message Tool Kwarg',
+      description:
+        'The name of the message argument in the designated message tool.',
+      default: 'message',
     },
   },
   type: 'object',
@@ -3927,14 +3938,25 @@ export const $LettaStreamingRequest = {
       title: 'Messages',
       description: 'The messages to be sent to the agent.',
     },
-    config: {
-      $ref: '#/components/schemas/LettaRequestConfig',
-      description: 'Configuration options for the LettaRequest.',
-      default: {
-        use_assistant_message: true,
-        assistant_message_tool_name: 'send_message',
-        assistant_message_tool_kwarg: 'message',
-      },
+    use_assistant_message: {
+      type: 'boolean',
+      title: 'Use Assistant Message',
+      description:
+        'Whether the server should parse specific tool call arguments (default `send_message`) as `AssistantMessage` objects.',
+      default: true,
+    },
+    assistant_message_tool_name: {
+      type: 'string',
+      title: 'Assistant Message Tool Name',
+      description: 'The name of the designated message tool.',
+      default: 'send_message',
+    },
+    assistant_message_tool_kwarg: {
+      type: 'string',
+      title: 'Assistant Message Tool Kwarg',
+      description:
+        'The name of the message argument in the designated message tool.',
+      default: 'message',
     },
     stream_tokens: {
       type: 'boolean',
