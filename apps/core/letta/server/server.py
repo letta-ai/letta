@@ -871,6 +871,7 @@ class SyncServer(Server):
         limit: Optional[int] = 100,
         reverse: Optional[bool] = False,
         return_message_object: bool = True,
+        use_assistant_message: bool = True,
         assistant_message_tool_name: str = constants.DEFAULT_MESSAGE_TOOL,
         assistant_message_tool_kwarg: str = constants.DEFAULT_MESSAGE_TOOL_KWARG,
     ) -> Union[List[Message], List[LettaMessage]]:
@@ -890,14 +891,12 @@ class SyncServer(Server):
         )
 
         if not return_message_object:
-            records = [
-                msg
-                for m in records
-                for msg in m.to_letta_message(
-                    assistant_message_tool_name=assistant_message_tool_name,
-                    assistant_message_tool_kwarg=assistant_message_tool_kwarg,
-                )
-            ]
+            records = Message.to_letta_messages_from_list(
+                messages=records,
+                use_assistant_message=use_assistant_message,
+                assistant_message_tool_name=assistant_message_tool_name,
+                assistant_message_tool_kwarg=assistant_message_tool_kwarg,
+            )
 
         if reverse:
             records = records[::-1]

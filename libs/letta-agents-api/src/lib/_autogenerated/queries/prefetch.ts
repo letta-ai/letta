@@ -18,11 +18,7 @@ import {
   ToolsService,
   UsersService,
 } from '../requests/services.gen';
-import {
-  LettaRequestConfig,
-  MessageRole,
-  SandboxType,
-} from '../requests/types.gen';
+import { MessageRole, SandboxType } from '../requests/types.gen';
 import * as Common from './common';
 /**
  * Retrieve Tool
@@ -544,7 +540,9 @@ export const prefetchUseAgentsServiceListArchivalMemory = (
  * @param data.after Message after which to retrieve the returned messages.
  * @param data.before Message before which to retrieve the returned messages.
  * @param data.limit Maximum number of messages to retrieve.
- * @param data.config Configuration options for the LettaRequest.
+ * @param data.useAssistantMessage Whether to use assistant messages
+ * @param data.assistantMessageToolName The name of the designated message tool.
+ * @param data.assistantMessageToolKwarg The name of the message argument.
  * @param data.userId
  * @returns LettaMessageUnion Successful Response
  * @throws ApiError
@@ -554,16 +552,20 @@ export const prefetchUseAgentsServiceListMessages = (
   {
     after,
     agentId,
+    assistantMessageToolKwarg,
+    assistantMessageToolName,
     before,
-    config,
     limit,
+    useAssistantMessage,
     userId,
   }: {
     after?: string;
     agentId: string;
+    assistantMessageToolKwarg?: string;
+    assistantMessageToolName?: string;
     before?: string;
-    config?: LettaRequestConfig;
     limit?: number;
+    useAssistantMessage?: boolean;
     userId?: string;
   },
 ) =>
@@ -571,18 +573,22 @@ export const prefetchUseAgentsServiceListMessages = (
     queryKey: Common.UseAgentsServiceListMessagesKeyFn({
       after,
       agentId,
+      assistantMessageToolKwarg,
+      assistantMessageToolName,
       before,
-      config,
       limit,
+      useAssistantMessage,
       userId,
     }),
     queryFn: () =>
       AgentsService.listMessages({
         after,
         agentId,
+        assistantMessageToolKwarg,
+        assistantMessageToolName,
         before,
-        config,
         limit,
+        useAssistantMessage,
         userId,
       }),
   });

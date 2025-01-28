@@ -32,7 +32,6 @@ import {
   CreateArchivalMemory,
   CreateBlock,
   LettaRequest,
-  LettaRequestConfig,
   LettaStreamingRequest,
   MessageRole,
   MessageUpdate,
@@ -704,7 +703,9 @@ export const useAgentsServiceListArchivalMemory = <
  * @param data.after Message after which to retrieve the returned messages.
  * @param data.before Message before which to retrieve the returned messages.
  * @param data.limit Maximum number of messages to retrieve.
- * @param data.config Configuration options for the LettaRequest.
+ * @param data.useAssistantMessage Whether to use assistant messages
+ * @param data.assistantMessageToolName The name of the designated message tool.
+ * @param data.assistantMessageToolKwarg The name of the message argument.
  * @param data.userId
  * @returns LettaMessageUnion Successful Response
  * @throws ApiError
@@ -717,16 +718,20 @@ export const useAgentsServiceListMessages = <
   {
     after,
     agentId,
+    assistantMessageToolKwarg,
+    assistantMessageToolName,
     before,
-    config,
     limit,
+    useAssistantMessage,
     userId,
   }: {
     after?: string;
     agentId: string;
+    assistantMessageToolKwarg?: string;
+    assistantMessageToolName?: string;
     before?: string;
-    config?: LettaRequestConfig;
     limit?: number;
+    useAssistantMessage?: boolean;
     userId?: string;
   },
   queryKey?: TQueryKey,
@@ -734,16 +739,27 @@ export const useAgentsServiceListMessages = <
 ) =>
   useQuery<TData, TError>({
     queryKey: Common.UseAgentsServiceListMessagesKeyFn(
-      { after, agentId, before, config, limit, userId },
+      {
+        after,
+        agentId,
+        assistantMessageToolKwarg,
+        assistantMessageToolName,
+        before,
+        limit,
+        useAssistantMessage,
+        userId,
+      },
       queryKey,
     ),
     queryFn: () =>
       AgentsService.listMessages({
         after,
         agentId,
+        assistantMessageToolKwarg,
+        assistantMessageToolName,
         before,
-        config,
         limit,
+        useAssistantMessage,
         userId,
       }) as TData,
     ...options,

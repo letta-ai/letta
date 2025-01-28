@@ -636,6 +636,7 @@ def _test_get_messages_letta_format(
         limit=1000,
         reverse=reverse,
         return_message_object=True,
+        use_assistant_message=False,
     )
     assert all(isinstance(m, Message) for m in messages)
 
@@ -645,6 +646,7 @@ def _test_get_messages_letta_format(
         limit=1000,
         reverse=reverse,
         return_message_object=False,
+        use_assistant_message=False,
     )
     assert all(isinstance(m, LettaMessage) for m in letta_messages)
 

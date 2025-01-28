@@ -2163,19 +2163,40 @@
             "description": "Maximum number of messages to retrieve."
           },
           {
-            "name": "config",
+            "name": "use_assistant_message",
             "in": "query",
             "required": false,
             "schema": {
-              "$ref": "#/components/schemas/LettaRequestConfig",
-              "description": "Configuration options for the LettaRequest.",
-              "default": {
-                "use_assistant_message": true,
-                "assistant_message_tool_name": "send_message",
-                "assistant_message_tool_kwarg": "message"
-              }
+              "type": "boolean",
+              "description": "Whether to use assistant messages",
+              "default": true,
+              "title": "Use Assistant Message"
             },
-            "description": "Configuration options for the LettaRequest."
+            "description": "Whether to use assistant messages"
+          },
+          {
+            "name": "assistant_message_tool_name",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "description": "The name of the designated message tool.",
+              "default": "send_message",
+              "title": "Assistant Message Tool Name"
+            },
+            "description": "The name of the designated message tool."
+          },
+          {
+            "name": "assistant_message_tool_kwarg",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "description": "The name of the message argument.",
+              "default": "message",
+              "title": "Assistant Message Tool Kwarg"
+            },
+            "description": "The name of the message argument."
           }
         ],
         "responses": {

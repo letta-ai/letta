@@ -12,6 +12,8 @@ registerPromiseWorker(async (message: GetMessagesWorkerPayload) => {
 
   queryparams.append('limit', limit.toString());
 
+  queryparams.append('use_assistant_message', 'false');
+
   return fetch(
     `${url}/v1/agents/${agentId}/messages?${queryparams.toString()}`,
     {
