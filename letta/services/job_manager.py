@@ -14,9 +14,8 @@ from letta.orm.sqlalchemy_base import AccessType
 from letta.orm.step import Step
 from letta.schemas.enums import JobStatus, MessageRole
 from letta.schemas.job import Job as PydanticJob
-from letta.schemas.job import JobUpdate
+from letta.schemas.job import JobUpdate, LettaRequestConfig
 from letta.schemas.letta_message import LettaMessage
-from letta.schemas.letta_request import LettaRequestConfig
 from letta.schemas.message import Message as PydanticMessage
 from letta.schemas.run import Run as PydanticRun
 from letta.schemas.usage import LettaUsageStatistics

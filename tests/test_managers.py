@@ -44,8 +44,7 @@ from letta.schemas.enums import JobStatus, MessageRole
 from letta.schemas.environment_variables import SandboxEnvironmentVariableCreate, SandboxEnvironmentVariableUpdate
 from letta.schemas.file import FileMetadata as PydanticFileMetadata
 from letta.schemas.job import Job as PydanticJob
-from letta.schemas.job import JobUpdate
-from letta.schemas.letta_request import LettaRequestConfig
+from letta.schemas.job import JobUpdate, LettaRequestConfig
 from letta.schemas.llm_config import LLMConfig
 from letta.schemas.message import Message as PydanticMessage
 from letta.schemas.message import MessageCreate, MessageUpdate
