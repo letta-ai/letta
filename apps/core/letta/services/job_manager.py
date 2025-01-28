@@ -303,16 +303,12 @@ class JobManager:
 
         request_config = self._get_run_request_config(run_id)
 
-        # Convert messages to LettaMessages
-        messages = [
-            msg
-            for m in messages
-            for msg in m.to_letta_message(
-                use_assistant_message=request_config["use_assistant_message"],
-                assistant_message_tool_name=request_config["assistant_message_tool_name"],
-                assistant_message_tool_kwarg=request_config["assistant_message_tool_kwarg"],
-            )
-        ]
+        messages = PydanticMessage.to_letta_messages_from_list(
+            messages=messages,
+            use_assistant_message=request_config["use_assistant_message"],
+            assistant_message_tool_name=request_config["assistant_message_tool_name"],
+            assistant_message_tool_kwarg=request_config["assistant_message_tool_kwarg"],
+        )
 
         return messages
 
