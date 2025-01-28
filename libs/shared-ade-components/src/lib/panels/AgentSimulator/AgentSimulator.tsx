@@ -794,6 +794,7 @@ export function AgentSimulator() {
           <VStack gap="large" collapseHeight>
             <VStack collapseHeight position="relative">
               <Messages
+                renderAgentsLink
                 mode={renderMode}
                 isPanelActive
                 isSendingMessage={isPending}

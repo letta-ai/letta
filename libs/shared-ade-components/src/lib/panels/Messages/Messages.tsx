@@ -48,6 +48,7 @@ import { useGetMessagesWorker } from './useGetMessagesWorker/useGetMessagesWorke
 import { useAtom } from 'jotai';
 import { messagesInFlightCacheAtom } from './messagesInFlightCacheAtom/messagesInFlightCacheAtom';
 import { useCurrentDevelopmentServerConfig } from '@letta-cloud/helpful-client-utils';
+import { CURRENT_RUNTIME } from '@letta-cloud/runtime';
 
 // tryFallbackParseJson will attempt to parse a string as JSON, if it fails, it will trim the last character and try again
 // until it succeeds or the string is empty
@@ -155,6 +156,7 @@ interface MessagesProps {
   agentId: string;
   mode: MessagesDisplayMode;
   isPanelActive?: boolean;
+  renderAgentsLink?: boolean;
 }
 
 interface LastMessageReceived {
@@ -163,7 +165,8 @@ interface LastMessageReceived {
 }
 
 export function Messages(props: MessagesProps) {
-  const { isSendingMessage, mode, isPanelActive, agentId } = props;
+  const { isSendingMessage, renderAgentsLink, mode, isPanelActive, agentId } =
+    props;
   const ref = useRef<HTMLDivElement>(null);
   const hasScrolledInitially = useRef(false);
   const t = useTranslations('components/Messages');
@@ -172,6 +175,25 @@ export function Messages(props: MessagesProps) {
 
   const developmentServerConfig = useCurrentDevelopmentServerConfig();
   const { getMessages } = useGetMessagesWorker();
+
+  const agentIdWrapper = useCallback(
+    (str: string) => {
+      if (CURRENT_RUNTIME === 'letta-desktop') {
+        return str;
+      }
+
+      if (!renderAgentsLink) {
+        return str;
+      }
+
+      const baseUrl = window.location.pathname.split('/').slice(1, 3).join('/');
+
+      return str.replace(/agent-[a-f0-9-]{36}/g, (match) => {
+        return `[${match}](/${baseUrl}/agents/${match})`;
+      });
+    },
+    [renderAgentsLink],
+  );
 
   const refetchInterval = useMemo(() => {
     if (isSendingMessage) {
@@ -346,7 +368,7 @@ export function Messages(props: MessagesProps) {
                   id: `${agentMessage.id}-${agentMessage.message_type}`,
                   content: (
                     <VStack>
-                      <Markdown text={out.data.message} />
+                      <Markdown text={agentIdWrapper(out.data.message)} />
                     </VStack>
                   ),
                   name: 'Agent',
@@ -480,7 +502,7 @@ export function Messages(props: MessagesProps) {
               id: `${agentMessage.id}-${agentMessage.message_type}`,
               content: (
                 <VStack>
-                  <Markdown text={out.data.message} />
+                  <Markdown text={agentIdWrapper(out.data.message)} />
                 </VStack>
               ),
               timestamp: new Date(agentMessage.date).toISOString(),
@@ -557,7 +579,7 @@ export function Messages(props: MessagesProps) {
         }
       }
     },
-    [t],
+    [t, agentIdWrapper],
   );
 
   const messageGroups = useMemo(() => {

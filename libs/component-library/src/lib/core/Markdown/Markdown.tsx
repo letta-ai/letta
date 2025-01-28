@@ -5,6 +5,7 @@ import { isSupportedLanguage, RawCodeEditor } from '../Code/Code';
 import { InlineCode } from '../InlineCode/InlineCode';
 import { Typography } from '../Typography/Typography';
 import remarkGfm from 'remark-gfm';
+import { LettaInvaderIcon } from '../../icons';
 
 interface MarkdownProps {
   text: string;
@@ -44,6 +45,31 @@ export function Markdown(props: MarkdownProps) {
             <blockquote className="border-l-4 border-accent pl-4 my-4">
               {children}
             </blockquote>
+          );
+        },
+        a: function A({ children, href }) {
+          if (children.toString().startsWith('agent-')) {
+            return (
+              <a
+                className="border px-0.5 gap-0.5 inline rounded hover:border-transparent hover:bg-background-grey2 hover:text-background-grey2-content transition-colors"
+                href={href}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                <LettaInvaderIcon className="w-4 h-4" /> {children}
+              </a>
+            );
+          }
+
+          return (
+            <a
+              className="text-accent underline"
+              href={href as string}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              {children}
+            </a>
           );
         },
         ul: function Ul({ children }) {
