@@ -5,14 +5,13 @@ from fastapi import APIRouter, BackgroundTasks, Body, Depends, Header, HTTPExcep
 from fastapi.responses import JSONResponse
 from pydantic import Field
 
-from letta.constants import DEFAULT_MESSAGE_TOOL, DEFAULT_MESSAGE_TOOL_KWARG
 from letta.log import get_logger
 from letta.orm.errors import NoResultFound
 from letta.schemas.agent import AgentState, CreateAgent, UpdateAgent
 from letta.schemas.block import Block, BlockUpdate, CreateBlock  # , BlockLabelUpdate, BlockLimitUpdate
 from letta.schemas.job import JobStatus, JobUpdate
 from letta.schemas.letta_message import LettaMessageUnion
-from letta.schemas.letta_request import LettaRequest, LettaStreamingRequest
+from letta.schemas.letta_request import LettaRequest, LettaRequestConfig, LettaStreamingRequest
 from letta.schemas.letta_response import LettaResponse
 from letta.schemas.memory import ContextWindowOverview, CreateArchivalMemory, Memory
 from letta.schemas.message import Message, MessageUpdate
@@ -412,15 +411,7 @@ def list_messages(
     before: Optional[str] = Query(None, description="Message before which to retrieve the returned messages."),
     limit: int = Query(10, description="Maximum number of messages to retrieve."),
     msg_object: bool = Query(False, description="If true, returns Message objects. If false, return LettaMessage objects."),
-    # Flags to support the use of AssistantMessage message types
-    assistant_message_tool_name: str = Query(
-        DEFAULT_MESSAGE_TOOL,
-        description="The name of the designated message tool.",
-    ),
-    assistant_message_tool_kwarg: str = Query(
-        DEFAULT_MESSAGE_TOOL_KWARG,
-        description="The name of the message argument in the designated message tool.",
-    ),
+    config: LettaRequestConfig = Query(LettaRequestConfig(), description="Configuration options for the LettaRequest."),
     user_id: Optional[str] = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
 ):
     """
@@ -436,8 +427,8 @@ def list_messages(
         limit=limit,
         reverse=True,
         return_message_object=msg_object,
-        assistant_message_tool_name=assistant_message_tool_name,
-        assistant_message_tool_kwarg=assistant_message_tool_kwarg,
+        assistant_message_tool_name=config.assistant_message_tool_name,
+        assistant_message_tool_kwarg=config.assistant_message_tool_kwarg,
     )
 
 
