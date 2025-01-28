@@ -544,10 +544,9 @@ export const prefetchUseAgentsServiceListArchivalMemory = (
  * @param data.after Message after which to retrieve the returned messages.
  * @param data.before Message before which to retrieve the returned messages.
  * @param data.limit Maximum number of messages to retrieve.
- * @param data.msgObject If true, returns Message objects. If false, return LettaMessage objects.
  * @param data.config Configuration options for the LettaRequest.
  * @param data.userId
- * @returns unknown Successful Response
+ * @returns LettaMessageUnion Successful Response
  * @throws ApiError
  */
 export const prefetchUseAgentsServiceListMessages = (
@@ -558,7 +557,6 @@ export const prefetchUseAgentsServiceListMessages = (
     before,
     config,
     limit,
-    msgObject,
     userId,
   }: {
     after?: string;
@@ -566,7 +564,6 @@ export const prefetchUseAgentsServiceListMessages = (
     before?: string;
     config?: LettaRequestConfig;
     limit?: number;
-    msgObject?: boolean;
     userId?: string;
   },
 ) =>
@@ -577,7 +574,6 @@ export const prefetchUseAgentsServiceListMessages = (
       before,
       config,
       limit,
-      msgObject,
       userId,
     }),
     queryFn: () =>
@@ -587,7 +583,6 @@ export const prefetchUseAgentsServiceListMessages = (
         before,
         config,
         limit,
-        msgObject,
         userId,
       }),
   });

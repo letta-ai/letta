@@ -438,7 +438,6 @@ export const UseAgentsServiceListMessagesKeyFn = (
     before,
     config,
     limit,
-    msgObject,
     userId,
   }: {
     after?: string;
@@ -446,15 +445,12 @@ export const UseAgentsServiceListMessagesKeyFn = (
     before?: string;
     config?: LettaRequestConfig;
     limit?: number;
-    msgObject?: boolean;
     userId?: string;
   },
   queryKey?: Array<unknown>,
 ) => [
   useAgentsServiceListMessagesKey,
-  ...(queryKey ?? [
-    { after, agentId, before, config, limit, msgObject, userId },
-  ]),
+  ...(queryKey ?? [{ after, agentId, before, config, limit, userId }]),
 ];
 export type ModelsServiceListModelsDefaultResponse = Awaited<
   ReturnType<typeof ModelsService.listModels>

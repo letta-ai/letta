@@ -2934,14 +2934,10 @@ export type ListMessagesData = {
    * Maximum number of messages to retrieve.
    */
   limit?: number;
-  /**
-   * If true, returns Message objects. If false, return LettaMessage objects.
-   */
-  msgObject?: boolean;
   userId?: string | null;
 };
 
-export type ListMessagesResponse = Array<Message> | Array<LettaMessageUnion>;
+export type ListMessagesResponse = Array<LettaMessageUnion>;
 
 export type SendMessageData = {
   agentId: string;
@@ -3948,7 +3944,7 @@ export type $OpenApiTs = {
         /**
          * Successful Response
          */
-        200: Array<Message> | Array<LettaMessageUnion>;
+        200: Array<LettaMessageUnion>;
         /**
          * Validation Error
          */

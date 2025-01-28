@@ -1339,10 +1339,9 @@ export class AgentsService {
    * @param data.after Message after which to retrieve the returned messages.
    * @param data.before Message before which to retrieve the returned messages.
    * @param data.limit Maximum number of messages to retrieve.
-   * @param data.msgObject If true, returns Message objects. If false, return LettaMessage objects.
    * @param data.config Configuration options for the LettaRequest.
    * @param data.userId
-   * @returns unknown Successful Response
+   * @returns LettaMessageUnion Successful Response
    * @throws ApiError
    */
   public static listMessages(
@@ -1359,7 +1358,6 @@ export class AgentsService {
         after: data.after,
         before: data.before,
         limit: data.limit,
-        msg_object: data.msgObject,
         config: data.config,
       },
       errors: {

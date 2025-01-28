@@ -704,10 +704,9 @@ export const useAgentsServiceListArchivalMemory = <
  * @param data.after Message after which to retrieve the returned messages.
  * @param data.before Message before which to retrieve the returned messages.
  * @param data.limit Maximum number of messages to retrieve.
- * @param data.msgObject If true, returns Message objects. If false, return LettaMessage objects.
  * @param data.config Configuration options for the LettaRequest.
  * @param data.userId
- * @returns unknown Successful Response
+ * @returns LettaMessageUnion Successful Response
  * @throws ApiError
  */
 export const useAgentsServiceListMessages = <
@@ -721,7 +720,6 @@ export const useAgentsServiceListMessages = <
     before,
     config,
     limit,
-    msgObject,
     userId,
   }: {
     after?: string;
@@ -729,7 +727,6 @@ export const useAgentsServiceListMessages = <
     before?: string;
     config?: LettaRequestConfig;
     limit?: number;
-    msgObject?: boolean;
     userId?: string;
   },
   queryKey?: TQueryKey,
@@ -737,7 +734,7 @@ export const useAgentsServiceListMessages = <
 ) =>
   useQuery<TData, TError>({
     queryKey: Common.UseAgentsServiceListMessagesKeyFn(
-      { after, agentId, before, config, limit, msgObject, userId },
+      { after, agentId, before, config, limit, userId },
       queryKey,
     ),
     queryFn: () =>
@@ -747,7 +744,6 @@ export const useAgentsServiceListMessages = <
         before,
         config,
         limit,
-        msgObject,
         userId,
       }) as TData,
     ...options,

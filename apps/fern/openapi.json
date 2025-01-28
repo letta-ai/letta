@@ -2163,18 +2163,6 @@
             "description": "Maximum number of messages to retrieve."
           },
           {
-            "name": "msg_object",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": "boolean",
-              "description": "If true, returns Message objects. If false, return LettaMessage objects.",
-              "default": false,
-              "title": "Msg Object"
-            },
-            "description": "If true, returns Message objects. If false, return LettaMessage objects."
-          },
-          {
             "name": "config",
             "in": "query",
             "required": false,
@@ -2196,20 +2184,10 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "anyOf": [
-                    {
-                      "type": "array",
-                      "items": {
-                        "$ref": "#/components/schemas/Message"
-                      }
-                    },
-                    {
-                      "type": "array",
-                      "items": {
-                        "$ref": "#/components/schemas/LettaMessageUnion"
-                      }
-                    }
-                  ],
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/LettaMessageUnion"
+                  },
                   "title": "Response List Messages"
                 }
               }
