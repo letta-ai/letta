@@ -1,8 +1,8 @@
 import warnings
-from typing import Generator, List, Optional, Union
+from typing import AsyncGenerator, List, Optional, Union
 
 import requests
-from openai import OpenAI
+from openai import AsyncOpenAI
 
 from letta.llm_api.helpers import add_inner_thoughts_to_functions, convert_to_structured_output, make_post_request
 from letta.local_llm.constants import INNER_THOUGHTS_KWARG, INNER_THOUGHTS_KWARG_DESCRIPTION, INNER_THOUGHTS_KWARG_DESCRIPTION_GO_FIRST
@@ -158,7 +158,7 @@ def build_openai_chat_completions_request(
     return data
 
 
-def openai_chat_completions_process_stream(
+async def openai_chat_completions_process_stream(
     url: str,
     api_key: str,
     chat_completion_request: ChatCompletionRequest,
@@ -229,9 +229,10 @@ def openai_chat_completions_process_stream(
         stream_interface.stream_start()
 
     n_chunks = 0  # approx == n_tokens
+    chunk_idx = 0
     try:
-        for chunk_idx, chat_completion_chunk in enumerate(
-            openai_chat_completions_request_stream(url=url, api_key=api_key, chat_completion_request=chat_completion_request)
+        async for chat_completion_chunk in openai_chat_completions_request_stream(
+            url=url, api_key=api_key, chat_completion_request=chat_completion_request
         ):
             assert isinstance(chat_completion_chunk, ChatCompletionChunkResponse), type(chat_completion_chunk)
 
@@ -348,6 +349,7 @@ def openai_chat_completions_process_stream(
 
             # increment chunk counter
             n_chunks += 1
+            chunk_idx += 1
 
     except Exception as e:
         if stream_interface:
@@ -380,24 +382,24 @@ def openai_chat_completions_process_stream(
     return chat_completion_response
 
 
-def openai_chat_completions_request_stream(
+async def openai_chat_completions_request_stream(
     url: str,
     api_key: str,
     chat_completion_request: ChatCompletionRequest,
-) -> Generator[ChatCompletionChunkResponse, None, None]:
+) -> AsyncGenerator[ChatCompletionChunkResponse, None]:
     data = prepare_openai_payload(chat_completion_request)
     data["stream"] = True
-    client = OpenAI(
+    client = AsyncOpenAI(
         api_key=api_key,
         base_url=url,
     )
-    stream = client.chat.completions.create(**data)
-    for chunk in stream:
+    stream = await client.chat.completions.create(**data)
+    async for chunk in stream:
         # TODO: Use the native OpenAI objects here?
         yield ChatCompletionChunkResponse(**chunk.model_dump(exclude_none=True))
 
 
-def openai_chat_completions_request(
+async def openai_chat_completions_request(
     url: str,
     api_key: str,
     chat_completion_request: ChatCompletionRequest,
@@ -410,8 +412,8 @@ def openai_chat_completions_request(
     https://platform.openai.com/docs/guides/text-generation?lang=curl
     """
     data = prepare_openai_payload(chat_completion_request)
-    client = OpenAI(api_key=api_key, base_url=url)
-    chat_completion = client.chat.completions.create(**data)
+    client = AsyncOpenAI(api_key=api_key, base_url=url)
+    chat_completion = await client.chat.completions.create(**data)
     return ChatCompletionResponse(**chat_completion.model_dump())
 
 

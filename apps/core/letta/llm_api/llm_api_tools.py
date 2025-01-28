@@ -29,6 +29,7 @@ from letta.schemas.openai.chat_completion_request import ChatCompletionRequest, 
 from letta.schemas.openai.chat_completion_response import ChatCompletionResponse
 from letta.settings import ModelSettings
 from letta.streaming_interface import AgentChunkStreamingInterface, AgentRefreshStreamingInterface
+from letta.utils import run_async_task
 
 LLM_API_PROVIDER_OPTIONS = ["openai", "azure", "anthropic", "google_ai", "cohere", "local", "groq"]
 
@@ -156,21 +157,25 @@ def create(
             assert isinstance(stream_interface, AgentChunkStreamingInterface) or isinstance(
                 stream_interface, AgentRefreshStreamingInterface
             ), type(stream_interface)
-            response = openai_chat_completions_process_stream(
-                url=llm_config.model_endpoint,  # https://api.openai.com/v1 -> https://api.openai.com/v1/chat/completions
-                api_key=model_settings.openai_api_key,
-                chat_completion_request=data,
-                stream_interface=stream_interface,
+            response = run_async_task(
+                openai_chat_completions_process_stream(
+                    url=llm_config.model_endpoint,
+                    api_key=model_settings.openai_api_key,
+                    chat_completion_request=data,
+                    stream_interface=stream_interface,
+                )
             )
         else:  # Client did not request token streaming (expect a blocking backend response)
             data.stream = False
             if isinstance(stream_interface, AgentChunkStreamingInterface):
                 stream_interface.stream_start()
             try:
-                response = openai_chat_completions_request(
-                    url=llm_config.model_endpoint,  # https://api.openai.com/v1 -> https://api.openai.com/v1/chat/completions
-                    api_key=model_settings.openai_api_key,
-                    chat_completion_request=data,
+                response = run_async_task(
+                    openai_chat_completions_request(
+                        url=llm_config.model_endpoint,
+                        api_key=model_settings.openai_api_key,
+                        chat_completion_request=data,
+                    )
                 )
             finally:
                 if isinstance(stream_interface, AgentChunkStreamingInterface):
@@ -344,9 +349,12 @@ def create(
             stream_interface.stream_start()
         try:
             # groq uses the openai chat completions API, so this component should be reusable
-            response = openai_chat_completions_request(
-                api_key=model_settings.groq_api_key,
-                chat_completion_request=data,
+            response = run_async_task(
+                openai_chat_completions_request(
+                    url=llm_config.model_endpoint,
+                    api_key=model_settings.groq_api_key,
+                    chat_completion_request=data,
+                )
             )
         finally:
             if isinstance(stream_interface, AgentChunkStreamingInterface):
