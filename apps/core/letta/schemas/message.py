@@ -311,26 +311,13 @@ class Message(BaseMessage):
             assert "tool_call_id" in openai_message_dict, openai_message_dict
 
             # Convert from 'function' response to a 'tool' response
-            # NOTE: this does not conventionally include a tool_call_id, it's on the caster to provide it
-            message_args = dict(
-                user_id=user_id,
-                agent_id=agent_id,
-                model=model,
-                # standard fields expected in an OpenAI ChatCompletion message object
-                role=MessageRole.tool,  # NOTE
-                text=openai_message_dict["content"],
-                name=openai_message_dict["name"] if "name" in openai_message_dict else None,
-                tool_calls=openai_message_dict["tool_calls"] if "tool_calls" in openai_message_dict else None,
-                tool_call_id=openai_message_dict["tool_call_id"] if "tool_call_id" in openai_message_dict else None,
-                created_at=created_at,
-            )
             if id is not None:
                 return Message(
                     agent_id=agent_id,
                     model=model,
                     # standard fields expected in an OpenAI ChatCompletion message object
                     role=MessageRole.tool,  # NOTE
-                    content=[TextContent(text=openai_message_dict["content"])],
+                    content=[TextContent(text=openai_message_dict["content"])] if openai_message_dict["content"] else [],
                     name=openai_message_dict["name"] if "name" in openai_message_dict else None,
                     tool_calls=openai_message_dict["tool_calls"] if "tool_calls" in openai_message_dict else None,
                     tool_call_id=openai_message_dict["tool_call_id"] if "tool_call_id" in openai_message_dict else None,
@@ -343,7 +330,7 @@ class Message(BaseMessage):
                     model=model,
                     # standard fields expected in an OpenAI ChatCompletion message object
                     role=MessageRole.tool,  # NOTE
-                    content=[TextContent(text=openai_message_dict["content"])],
+                    content=[TextContent(text=openai_message_dict["content"])] if openai_message_dict["content"] else [],
                     name=openai_message_dict["name"] if "name" in openai_message_dict else None,
                     tool_calls=openai_message_dict["tool_calls"] if "tool_calls" in openai_message_dict else None,
                     tool_call_id=openai_message_dict["tool_call_id"] if "tool_call_id" in openai_message_dict else None,
@@ -375,7 +362,7 @@ class Message(BaseMessage):
                     model=model,
                     # standard fields expected in an OpenAI ChatCompletion message object
                     role=MessageRole(openai_message_dict["role"]),
-                    content=[TextContent(text=openai_message_dict["content"])],
+                    content=[TextContent(text=openai_message_dict["content"])] if openai_message_dict["content"] else [],
                     name=openai_message_dict["name"] if "name" in openai_message_dict else None,
                     tool_calls=tool_calls,
                     tool_call_id=None,  # NOTE: None, since this field is only non-null for role=='tool'
@@ -388,7 +375,7 @@ class Message(BaseMessage):
                     model=model,
                     # standard fields expected in an OpenAI ChatCompletion message object
                     role=MessageRole(openai_message_dict["role"]),
-                    content=[TextContent(text=openai_message_dict["content"])],
+                    content=[TextContent(text=openai_message_dict["content"])] if openai_message_dict["content"] else [],
                     name=openai_message_dict["name"] if "name" in openai_message_dict else None,
                     tool_calls=tool_calls,
                     tool_call_id=None,  # NOTE: None, since this field is only non-null for role=='tool'
@@ -420,7 +407,7 @@ class Message(BaseMessage):
                     model=model,
                     # standard fields expected in an OpenAI ChatCompletion message object
                     role=MessageRole(openai_message_dict["role"]),
-                    content=[TextContent(text=openai_message_dict["content"])],
+                    content=[TextContent(text=openai_message_dict["content"])] if openai_message_dict["content"] else [],
                     name=openai_message_dict["name"] if "name" in openai_message_dict else None,
                     tool_calls=tool_calls,
                     tool_call_id=openai_message_dict["tool_call_id"] if "tool_call_id" in openai_message_dict else None,
@@ -433,7 +420,7 @@ class Message(BaseMessage):
                     model=model,
                     # standard fields expected in an OpenAI ChatCompletion message object
                     role=MessageRole(openai_message_dict["role"]),
-                    content=[TextContent(text=openai_message_dict["content"] or "")],
+                    content=[TextContent(text=openai_message_dict["content"])] if openai_message_dict["content"] else [],
                     name=openai_message_dict["name"] if "name" in openai_message_dict else None,
                     tool_calls=tool_calls,
                     tool_call_id=openai_message_dict["tool_call_id"] if "tool_call_id" in openai_message_dict else None,
