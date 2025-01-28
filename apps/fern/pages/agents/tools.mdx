@@ -60,7 +60,7 @@ agent = client.agents.create(
         {"label": "human", "limit": 2000, "value": "Name: Bob"},
         {"label": "persona", "limit": 2000, "value": "You are a friendly agent"}
     ],
-    model="openai/gpt-4",
+    model="openai/gpt-4o-mini",
     embedding="openai/text-embedding-ada-002",
     tool_ids=[tool.id]
 )
@@ -75,7 +75,7 @@ For example, if you define a custom tool that requires an API key to run (e.g. `
 curl -X POST http://localhost:8283/v1/agents/ \
      -H "Content-Type: application/json" \
      -d '{
-  "llm":"openai/gpt-4",
+  "llm":"openai/gpt-4o-mini",
   "embedding":"openai/text-embedding-ada-002",
   "tool_exec_environment_variables": {
       "EXAMPLE_TOOL_API_KEY": "banana"

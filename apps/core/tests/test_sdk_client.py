@@ -48,7 +48,7 @@ def agent(client: LettaSDKClient):
                 value="username: sarah",
             ),
         ],
-        model="openai/gpt-4",
+        model="openai/gpt-4o-mini",
         embedding="openai/text-embedding-ada-002",
     )
     yield agent_state
@@ -74,7 +74,7 @@ def test_shared_blocks(client: LettaSDKClient):
             ),
         ],
         block_ids=[block.id],
-        model="openai/gpt-4",
+        model="openai/gpt-4o-mini",
         embedding="openai/text-embedding-ada-002",
     )
     agent_state2 = client.agents.create(
@@ -86,7 +86,7 @@ def test_shared_blocks(client: LettaSDKClient):
             ),
         ],
         block_ids=[block.id],
-        model="openai/gpt-4",
+        model="openai/gpt-4o-mini",
         embedding="openai/text-embedding-ada-002",
     )
 
@@ -138,7 +138,7 @@ def test_add_and_manage_tags_for_agent(client: LettaSDKClient):
                 value="username: sarah",
             ),
         ],
-        model="openai/gpt-4",
+        model="openai/gpt-4o-mini",
         embedding="openai/text-embedding-ada-002",
     )
     assert len(agent.tags) == 0
@@ -190,7 +190,7 @@ def test_agent_tags(client: LettaSDKClient):
                 value="username: sarah",
             ),
         ],
-        model="openai/gpt-4",
+        model="openai/gpt-4o-mini",
         embedding="openai/text-embedding-ada-002",
         tags=["test", "agent1", "production"],
     )
@@ -202,7 +202,7 @@ def test_agent_tags(client: LettaSDKClient):
                 value="username: sarah",
             ),
         ],
-        model="openai/gpt-4",
+        model="openai/gpt-4o-mini",
         embedding="openai/text-embedding-ada-002",
         tags=["test", "agent2", "development"],
     )
@@ -214,7 +214,7 @@ def test_agent_tags(client: LettaSDKClient):
                 value="username: sarah",
             ),
         ],
-        model="openai/gpt-4",
+        model="openai/gpt-4o-mini",
         embedding="openai/text-embedding-ada-002",
         tags=["test", "agent3", "production"],
     )
@@ -569,7 +569,7 @@ def test_agent_creation(client: LettaSDKClient):
     agent = client.agents.create(
         name=f"test_agent_{str(uuid.uuid4())}",
         memory_blocks=[offline_persona_block, mindy_block],
-        model="openai/gpt-4",
+        model="openai/gpt-4o-mini",
         embedding="openai/text-embedding-ada-002",
         tool_ids=[tool1.id, tool2.id],
         include_base_tools=False,

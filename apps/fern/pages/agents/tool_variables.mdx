@@ -14,7 +14,7 @@ You can also assign tool variables on agent creation in the API with the `tool_e
 curl -X POST http://localhost:8283/v1/agents/ \
      -H "Content-Type: application/json" \
      -d '{
-  "llm":"openai/gpt-4",
+  "llm":"openai/gpt-4o-mini",
   "embedding":"openai/text-embedding-ada-002",
   "tool_exec_environment_variables": {
       "COMPOSIO_ENTITY": "banana"

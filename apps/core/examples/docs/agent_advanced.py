@@ -27,7 +27,7 @@ agent_state = client.agents.create(
         ),
     ],
     # LLM model & endpoint configuration
-    model="openai/gpt-4",
+    model="openai/gpt-4o-mini",
     context_window_limit=8000,
     # embedding model & endpoint configuration (cannot be changed)
     embedding="openai/text-embedding-ada-002",
