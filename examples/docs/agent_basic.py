@@ -18,7 +18,7 @@ agent_state = client.agents.create(
         ),
     ],
     # set automatic defaults for LLM/embedding config
-    model="openai/gpt-4",
+    model="openai/gpt-4o-mini",
     embedding="openai/text-embedding-ada-002",
 )
 print(f"Created agent with name {agent_state.name} and unique ID {agent_state.id}")
