@@ -24,6 +24,10 @@ tabs:
     display-name: Discord Community
     icon: fa-brands fa-discord
     href: https://discord.gg/letta
+  changelog:
+    display-name: Changelog
+    icon: light clock
+    changelog: ./changelog
 
 landing-page:
   page: home
