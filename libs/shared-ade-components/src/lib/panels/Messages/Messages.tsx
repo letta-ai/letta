@@ -658,6 +658,32 @@ export function Messages(props: MessagesProps) {
     }
   }, [messageGroups, isPanelActive, isSendingMessage]);
 
+  const lastMessageRefId = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (!ref.current) {
+      return;
+    }
+
+    if (
+      lastMessageRefId.current === messageGroups[messageGroups.length - 1]?.id
+    ) {
+      return;
+    }
+
+    lastMessageRefId.current = messageGroups[messageGroups.length - 1]?.id;
+
+    // scroll down if new messages are received, and the user is within 300px of the bottom
+    const boundary = 300;
+
+    const bottom =
+      ref.current.scrollHeight - ref.current.clientHeight - boundary;
+
+    if (ref.current.scrollTop >= bottom || isSendingMessage) {
+      ref.current.scrollTop = ref.current.scrollHeight;
+    }
+  }, [messageGroups, isSendingMessage]);
+
   return (
     <VStack
       data-testid="messages-list"
