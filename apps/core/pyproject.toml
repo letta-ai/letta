@@ -60,8 +60,8 @@ nltk = "^3.8.1"
 jinja2 = "^3.1.5"
 locust = {version = "^2.31.5", optional = true}
 wikipedia = {version = "^1.4.0", optional = true}
-composio-langchain = "^0.6.15"
-composio-core = "^0.6.15"
+composio-langchain = "^0.6.19"
+composio-core = "^0.6.19"
 alembic = "^1.13.3"
 pyhumps = "^3.8.0"
 psycopg2 = {version = "^2.9.10", optional = true}
