@@ -15,7 +15,7 @@ const createAgentsFromTemplate = c.mutation({
   method: 'POST',
   path: '/v1/templates/:project/:template_version',
   description: 'Creates agents given a template',
-  summary: 'Create agents from template',
+  summary: 'Create Agents from Template',
   pathParams: z.object({
     project: z.string().openapi({ description: 'The project slug' }),
     template_version: z.string().openapi({

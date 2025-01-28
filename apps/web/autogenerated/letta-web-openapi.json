@@ -1033,7 +1033,7 @@
     "/v1/templates/{project}/{template_version}": {
       "post": {
         "description": "Creates agents given a template",
-        "summary": "Create agents from template",
+        "summary": "Create Agents from Template",
         "tags": ["templates"],
         "parameters": [
           {

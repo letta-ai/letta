@@ -1608,23 +1608,3 @@ paths:
                   token="YOUR_TOKEN",
               )
               client.health.check()
-  /v1/templates/{project_slug}/{template_version}:
-    post:
-      x-fern-sdk-group-name:
-        - templates
-      x-fern-sdk-method-name: createAgentsFromTemplate
-      parameters:
-        - name: project_slug
-          in: path
-          required: true
-          schema:
-            type: string
-        - name: template_version
-          in: path
-          required: true
-          schema:
-              type: string
-      description: |
-        <Note>This endpoint is only available on Letta Cloud.</Note>
-
-        Returns the memory variables associated with an agent.
