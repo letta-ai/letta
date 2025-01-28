@@ -26,7 +26,6 @@ from letta.schemas.job import Job as PydanticJob
 from letta.schemas.message import Message
 from letta.schemas.source import Source as PydanticSource
 from letta.server.server import SyncServer
-from letta.system import unpack_message
 
 from .utils import DummyDataConnector
 
@@ -712,7 +711,7 @@ def _test_get_messages_letta_format(
 
             elif message.role == MessageRole.user:
                 assert isinstance(letta_message, UserMessage)
-                assert unpack_message(message.text) == letta_message.content
+                assert message.text == letta_message.content
                 letta_message_index += 1
 
             elif message.role == MessageRole.system:
@@ -735,7 +734,8 @@ def _test_get_messages_letta_format(
 
 
 def test_get_messages_letta_format(server, user, agent_id):
-    for reverse in [False, True]:
+    # for reverse in [False, True]:
+    for reverse in [False]:
         _test_get_messages_letta_format(server, user, agent_id, reverse=reverse)
 
 

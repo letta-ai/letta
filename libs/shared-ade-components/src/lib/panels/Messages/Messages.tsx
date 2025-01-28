@@ -32,6 +32,7 @@ import { SendMessageFunctionCallSchema } from '@letta-cloud/letta-agents-api';
 import {
   type ListMessagesResponse,
   UseAgentsServiceListMessagesKeyFn,
+  UserMessageMessageSchema,
 } from '@letta-cloud/letta-agents-api';
 import type {
   AgentSimulatorMessageGroupType,
@@ -488,16 +489,12 @@ export function Messages(props: MessagesProps) {
             name: 'Agent',
           };
         case 'user_message': {
-          let isContentJson = false;
-          try {
-            JSON.parse(agentMessage.content);
-            isContentJson = true;
-          } catch {
-            isContentJson = false;
-          }
+          const out = UserMessageMessageSchema.safeParse(
+            JSON.parse(agentMessage.content),
+          );
 
           if (mode === 'simple' || mode === 'interactive') {
-            if (isContentJson) {
+            if (!out.success) {
               return null;
             }
 
@@ -505,7 +502,7 @@ export function Messages(props: MessagesProps) {
               id: `${agentMessage.id}-${agentMessage.message_type}`,
               content: (
                 <VStack>
-                  <Markdown text={agentIdWrapper(agentMessage.content)} />
+                  <Markdown text={agentIdWrapper(out.data.message)} />
                 </VStack>
               ),
               timestamp: new Date(agentMessage.date).toISOString(),
@@ -513,7 +510,7 @@ export function Messages(props: MessagesProps) {
             };
           }
 
-          if (isContentJson) {
+          if (!out.success) {
             const tryParseResp = tryFallbackParseJson(agentMessage.content);
 
             if (tryParseResp) {
@@ -550,7 +547,7 @@ export function Messages(props: MessagesProps) {
 
           return {
             id: `${agentMessage.id}-${agentMessage.message_type}`,
-            content: <Typography>{agentMessage.content}</Typography>,
+            content: <Typography>{out.data.message}</Typography>,
             timestamp: new Date(agentMessage.date).toISOString(),
             name: 'User',
           };
