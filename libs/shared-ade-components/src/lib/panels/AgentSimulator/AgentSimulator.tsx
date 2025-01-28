@@ -113,11 +113,14 @@ function useSendMessage(agentId: string, options: UseSendMessageOptions = {}) {
 
       const newMessage: AgentMessage = {
         message_type: role === 'user' ? 'user_message' : 'system_message',
-        content: JSON.stringify({
-          type: role === 'user' ? 'user_message' : 'system_alert',
-          message: message,
-          time: new Date().toISOString(),
-        }),
+        content:
+          role === 'user'
+            ? message
+            : JSON.stringify({
+                type: 'system_alert',
+                message: message,
+                time: new Date().toISOString(),
+              }),
         date: new Date().toISOString(),
         id: `${new Date().getTime()}-user_message`,
       };
