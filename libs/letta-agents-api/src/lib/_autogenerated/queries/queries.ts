@@ -32,6 +32,7 @@ import {
   CreateArchivalMemory,
   CreateBlock,
   LettaRequest,
+  LettaRequestConfig,
   LettaStreamingRequest,
   MessageRole,
   MessageUpdate,
@@ -704,8 +705,7 @@ export const useAgentsServiceListArchivalMemory = <
  * @param data.before Message before which to retrieve the returned messages.
  * @param data.limit Maximum number of messages to retrieve.
  * @param data.msgObject If true, returns Message objects. If false, return LettaMessage objects.
- * @param data.assistantMessageToolName The name of the designated message tool.
- * @param data.assistantMessageToolKwarg The name of the message argument in the designated message tool.
+ * @param data.config Configuration options for the LettaRequest.
  * @param data.userId
  * @returns unknown Successful Response
  * @throws ApiError
@@ -718,18 +718,16 @@ export const useAgentsServiceListMessages = <
   {
     after,
     agentId,
-    assistantMessageToolKwarg,
-    assistantMessageToolName,
     before,
+    config,
     limit,
     msgObject,
     userId,
   }: {
     after?: string;
     agentId: string;
-    assistantMessageToolKwarg?: string;
-    assistantMessageToolName?: string;
     before?: string;
+    config?: LettaRequestConfig;
     limit?: number;
     msgObject?: boolean;
     userId?: string;
@@ -739,25 +737,15 @@ export const useAgentsServiceListMessages = <
 ) =>
   useQuery<TData, TError>({
     queryKey: Common.UseAgentsServiceListMessagesKeyFn(
-      {
-        after,
-        agentId,
-        assistantMessageToolKwarg,
-        assistantMessageToolName,
-        before,
-        limit,
-        msgObject,
-        userId,
-      },
+      { after, agentId, before, config, limit, msgObject, userId },
       queryKey,
     ),
     queryFn: () =>
       AgentsService.listMessages({
         after,
         agentId,
-        assistantMessageToolKwarg,
-        assistantMessageToolName,
         before,
+        config,
         limit,
         msgObject,
         userId,

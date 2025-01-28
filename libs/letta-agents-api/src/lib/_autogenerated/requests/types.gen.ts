@@ -2923,17 +2923,13 @@ export type ListMessagesData = {
   after?: string | null;
   agentId: string;
   /**
-   * The name of the message argument in the designated message tool.
-   */
-  assistantMessageToolKwarg?: string;
-  /**
-   * The name of the designated message tool.
-   */
-  assistantMessageToolName?: string;
-  /**
    * Message before which to retrieve the returned messages.
    */
   before?: string | null;
+  /**
+   * Configuration options for the LettaRequest.
+   */
+  config?: LettaRequestConfig;
   /**
    * Maximum number of messages to retrieve.
    */

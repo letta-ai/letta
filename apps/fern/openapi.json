@@ -2175,28 +2175,19 @@
             "description": "If true, returns Message objects. If false, return LettaMessage objects."
           },
           {
-            "name": "assistant_message_tool_name",
+            "name": "config",
             "in": "query",
             "required": false,
             "schema": {
-              "type": "string",
-              "description": "The name of the designated message tool.",
-              "default": "send_message",
-              "title": "Assistant Message Tool Name"
+              "$ref": "#/components/schemas/LettaRequestConfig",
+              "description": "Configuration options for the LettaRequest.",
+              "default": {
+                "use_assistant_message": true,
+                "assistant_message_tool_name": "send_message",
+                "assistant_message_tool_kwarg": "message"
+              }
             },
-            "description": "The name of the designated message tool."
-          },
-          {
-            "name": "assistant_message_tool_kwarg",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": "string",
-              "description": "The name of the message argument in the designated message tool.",
-              "default": "message",
-              "title": "Assistant Message Tool Kwarg"
-            },
-            "description": "The name of the message argument in the designated message tool."
+            "description": "Configuration options for the LettaRequest."
           }
         ],
         "responses": {

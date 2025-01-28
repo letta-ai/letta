@@ -1340,8 +1340,7 @@ export class AgentsService {
    * @param data.before Message before which to retrieve the returned messages.
    * @param data.limit Maximum number of messages to retrieve.
    * @param data.msgObject If true, returns Message objects. If false, return LettaMessage objects.
-   * @param data.assistantMessageToolName The name of the designated message tool.
-   * @param data.assistantMessageToolKwarg The name of the message argument in the designated message tool.
+   * @param data.config Configuration options for the LettaRequest.
    * @param data.userId
    * @returns unknown Successful Response
    * @throws ApiError
@@ -1361,8 +1360,7 @@ export class AgentsService {
         before: data.before,
         limit: data.limit,
         msg_object: data.msgObject,
-        assistant_message_tool_name: data.assistantMessageToolName,
-        assistant_message_tool_kwarg: data.assistantMessageToolKwarg,
+        config: data.config,
       },
       errors: {
         422: 'Validation Error',

@@ -18,7 +18,11 @@ import {
   ToolsService,
   UsersService,
 } from '../requests/services.gen';
-import { MessageRole, SandboxType } from '../requests/types.gen';
+import {
+  LettaRequestConfig,
+  MessageRole,
+  SandboxType,
+} from '../requests/types.gen';
 import * as Common from './common';
 /**
  * Retrieve Tool
@@ -541,8 +545,7 @@ export const prefetchUseAgentsServiceListArchivalMemory = (
  * @param data.before Message before which to retrieve the returned messages.
  * @param data.limit Maximum number of messages to retrieve.
  * @param data.msgObject If true, returns Message objects. If false, return LettaMessage objects.
- * @param data.assistantMessageToolName The name of the designated message tool.
- * @param data.assistantMessageToolKwarg The name of the message argument in the designated message tool.
+ * @param data.config Configuration options for the LettaRequest.
  * @param data.userId
  * @returns unknown Successful Response
  * @throws ApiError
@@ -552,18 +555,16 @@ export const prefetchUseAgentsServiceListMessages = (
   {
     after,
     agentId,
-    assistantMessageToolKwarg,
-    assistantMessageToolName,
     before,
+    config,
     limit,
     msgObject,
     userId,
   }: {
     after?: string;
     agentId: string;
-    assistantMessageToolKwarg?: string;
-    assistantMessageToolName?: string;
     before?: string;
+    config?: LettaRequestConfig;
     limit?: number;
     msgObject?: boolean;
     userId?: string;
@@ -573,9 +574,8 @@ export const prefetchUseAgentsServiceListMessages = (
     queryKey: Common.UseAgentsServiceListMessagesKeyFn({
       after,
       agentId,
-      assistantMessageToolKwarg,
-      assistantMessageToolName,
       before,
+      config,
       limit,
       msgObject,
       userId,
@@ -584,9 +584,8 @@ export const prefetchUseAgentsServiceListMessages = (
       AgentsService.listMessages({
         after,
         agentId,
-        assistantMessageToolKwarg,
-        assistantMessageToolName,
         before,
+        config,
         limit,
         msgObject,
         userId,

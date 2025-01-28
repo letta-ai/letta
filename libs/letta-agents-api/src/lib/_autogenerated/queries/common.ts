@@ -19,7 +19,11 @@ import {
   ToolsService,
   UsersService,
 } from '../requests/services.gen';
-import { MessageRole, SandboxType } from '../requests/types.gen';
+import {
+  LettaRequestConfig,
+  MessageRole,
+  SandboxType,
+} from '../requests/types.gen';
 export type ToolsServiceRetrieveToolDefaultResponse = Awaited<
   ReturnType<typeof ToolsService.retrieveTool>
 >;
@@ -431,18 +435,16 @@ export const UseAgentsServiceListMessagesKeyFn = (
   {
     after,
     agentId,
-    assistantMessageToolKwarg,
-    assistantMessageToolName,
     before,
+    config,
     limit,
     msgObject,
     userId,
   }: {
     after?: string;
     agentId: string;
-    assistantMessageToolKwarg?: string;
-    assistantMessageToolName?: string;
     before?: string;
+    config?: LettaRequestConfig;
     limit?: number;
     msgObject?: boolean;
     userId?: string;
@@ -451,16 +453,7 @@ export const UseAgentsServiceListMessagesKeyFn = (
 ) => [
   useAgentsServiceListMessagesKey,
   ...(queryKey ?? [
-    {
-      after,
-      agentId,
-      assistantMessageToolKwarg,
-      assistantMessageToolName,
-      before,
-      limit,
-      msgObject,
-      userId,
-    },
+    { after, agentId, before, config, limit, msgObject, userId },
   ]),
 ];
 export type ModelsServiceListModelsDefaultResponse = Awaited<
