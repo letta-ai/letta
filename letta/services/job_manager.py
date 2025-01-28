@@ -308,7 +308,7 @@ class JobManager:
             msg
             for m in messages
             for msg in m.to_letta_message(
-                assistant_message=request_config["use_assistant_message"],
+                use_assistant_message=request_config["use_assistant_message"],
                 assistant_message_tool_name=request_config["assistant_message_tool_name"],
                 assistant_message_tool_kwarg=request_config["assistant_message_tool_kwarg"],
             )
