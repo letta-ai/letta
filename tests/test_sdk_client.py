@@ -10,7 +10,7 @@ from letta_client import CreateBlock
 from letta_client import Letta as LettaSDKClient
 from letta_client import MessageCreate
 from letta_client.core import ApiError
-from letta_client.types import AgentState, LettaRequestConfig, ToolReturnMessage
+from letta_client.types import AgentState, ToolReturnMessage
 
 # Constants
 SERVER_PORT = 8283
@@ -393,7 +393,7 @@ def test_function_return_limit(client: LettaSDKClient, agent: AgentState):
                 content="call the big_return function",
             ),
         ],
-        config=LettaRequestConfig(use_assistant_message=False),
+        use_assistant_message=False,
     )
 
     response_message = None
@@ -429,7 +429,7 @@ def test_function_always_error(client: LettaSDKClient, agent: AgentState):
                 content="call the always_error function",
             ),
         ],
-        config=LettaRequestConfig(use_assistant_message=False),
+        use_assistant_message=False,
     )
 
     response_message = None
@@ -495,7 +495,7 @@ def test_send_message_async(client: LettaSDKClient, agent: AgentState):
                 content=test_message,
             ),
         ],
-        config=LettaRequestConfig(use_assistant_message=False),
+        use_assistant_message=False,
     )
     assert run.id is not None
     assert run.status == "created"
