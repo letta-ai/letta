@@ -150,6 +150,7 @@ CORE_MEMORY_BLOCK_CHAR_LIMIT: int = 5000
 
 # Function return limits
 FUNCTION_RETURN_CHAR_LIMIT = 6000  # ~300 words
+BASE_FUNCTION_RETURN_CHAR_LIMIT = 1000000  # very high (we rely on implementation)
 
 MAX_PAUSE_HEARTBEATS = 360  # in min
 
