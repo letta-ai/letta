@@ -111,3 +111,20 @@ code:not(.code-block) {
     overscroll-behavior: none;
   }
 } */
+
+/* dark/light mode toggle for images */
+:is(.dark) img.dark {
+  display: block;
+}
+
+:is(.dark) img.light {
+  display: none;
+}
+
+:is(.light) img.light {
+  display: block;
+}
+
+:is(.light) img.dark {
+  display: none;
+}

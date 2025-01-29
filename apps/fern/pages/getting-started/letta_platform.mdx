@@ -5,7 +5,8 @@ slug: letta-platform
 ---
 
 Letta enables developers to build and deploy stateful AI agents - agents that maintain memory and context across long-running conversations. The platform includes our open-source agents framework and all the tools needed to build and deploy agents in production.
-<img src="/images/platform_overview.png" />
+<img className="light" src="/images/platform_overview.png" />
+<img className="dark" src="/images/platform_overview_dark.png" />
 
 ## Letta's Stateful Agents
 Letta agents are stateful AI systems that evolve and learn over time, maintaining consistent memory and behavior beyond the limitations of traditional LLMs.
@@ -18,8 +19,8 @@ The **Letta Server** manages agent state and persistence through sophisticated c
 ## Building with Stateful Agents
 Try the [ADE](/agent-development-environment) to see stateful agents in action. The ADE provides complete visibility into your agent's memory, context window, and decision-making process - essential tools for developing and debugging production agent applications.
 
-<img className="block w-300 light-img" src="https://raw.githubusercontent.com/letta-ai/letta/refs/heads/main/assets/example_ade_screenshot_light.png" />
-<img className="hidden w-300 dark-img" src="https://raw.githubusercontent.com/letta-ai/letta/refs/heads/main/assets/example_ade_screenshot.png" />
+<img className="w-300 light" src="https://raw.githubusercontent.com/letta-ai/letta/refs/heads/main/assets/example_ade_screenshot_light.png" />
+<img className="w-300 dark" src="https://raw.githubusercontent.com/letta-ai/letta/refs/heads/main/assets/example_ade_screenshot.png" />
 
 Our goal is to enable you to build AI applications that go beyond simple chatbots.
 With Letta, you can create agents that maintain consistent personalities, learn from past interactions, and integrate with your existing systems through custom tools.
@@ -38,7 +39,8 @@ Letta's context management system handles everything from memory prioritization 
 
 ## Running Agents as Production Services
 Unlike traditional LLM agents that run inside of Python scripts, Letta agents run as autonomous services with their own APIs.
-<img src="/images/platform_system.png" />
+<img className="light" src="/images/platform_system.png" />
+<img className="dark" src="/images/platform_system_dark.png" />
 Each agent maintains its own state, can be connected to custom tools and data sources, and can be accessed by multiple clients simultaneously. The Letta Server handles all the complexity of managing agent state, persistence, and scaling.
 
 ## Where to Run Letta
