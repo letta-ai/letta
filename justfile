@@ -168,7 +168,7 @@ check-github-status:
     npm run check-github-status
 
 # Build all Docker images for GitHub Actions with cache management
-deploy-web-on-github:
+build-web-images:
     npm run slack-bot-says "Building Docker images for GitHub Actions with tag: {{TAG}}..."
     @echo "🚧 Building web Docker image with tag: {{TAG}}..."
     @mkdir -p /tmp/.buildx-cache
@@ -251,17 +251,6 @@ start-temporal:
     @echo "🚧 Starting Temporal server..."
     temporal server start-dev
 
-
-push-core-to-oss $name:
-    @echo "🚀 Pushing core to OSS..."
-    ./scripts/oss-sync-scripts/push.sh $name
-
-
-pull-oss-to-core:
-    @echo "🚀 Pulling OSS into core..."
-    ./scripts/oss-sync-scripts/pull.sh
-
-
 desktop:
     @echo "🚧 Starting up the desktop app..."
     npm run desktop:dev
@@ -282,6 +271,70 @@ package-desktop:
 setup-pg-vector:
     @echo "Setting up pg-vector..."
     apps/desktop-electron/scripts/install-pgvector.sh
+
+
+# Trigger the OSS sync workflow (defaults to current branch if none specified)
+trigger-sync branch="":
+    #!/usr/bin/env bash
+    if [ -z "{{branch}}" ]; then
+        BRANCH=$(git branch --show-current)
+    else
+        BRANCH="{{branch}}"
+    fi
+    echo "🔄 Triggering OSS sync workflow on branch: $BRANCH"
+    gh workflow run "Sync With OSS" --ref $BRANCH
+
+push-core-to-oss name="":
+    #!/usr/bin/env zsh
+    if [ -z "{{name}}" ]; then
+        BRANCH=$(git branch --show-current)
+    else
+        BRANCH="{{name}}"
+    fi
+    echo "🚀 Pushing core to OSS..."
+    git subtree push --prefix apps/core git@github.com:letta-ai/letta.git $BRANCH
+
+
+pull-oss-to-core:
+    @echo "🚀 Pulling OSS into core..."
+    # Use SYNC_PAT if available, otherwise use default git credentials
+    if [ ! -z "${GH_TOKEN:-}" ]; then \
+        git subtree pull --prefix apps/core "https://${GH_TOKEN}@github.com/letta-ai/letta.git" main; \
+    else \
+        git subtree pull --prefix apps/core git@github.com:letta-ai/letta.git main; \
+    fi
+
+# Create or update the PR from the integration branch into main
+@generate-integration-pr: pull-oss-to-core
+    #!/usr/bin/env bash
+    echo "🔀 Generating or updating OSS integration PR..."
+
+    # Delete integration branch if it exists, then create it pointing to current HEAD
+    git branch -D letta-oss-integration 2>/dev/null || true
+    git branch letta-oss-integration HEAD
+
+    # Push integration branch (force in case of filter-repo changes)
+    if [ ! -z "${GH_TOKEN:-}" ]; then
+        remote_url="https://${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
+        git remote set-url origin "${remote_url}"
+    fi
+    git push -u origin letta-oss-integration --force
+
+    # Check if a PR already exists
+    existing_pr=$(gh pr list --base main --head letta-oss-integration --json number -q '.[0].number')
+
+    if [ -z "$existing_pr" ]; then
+      # Create a new PR
+      gh pr create \
+        --base main \
+        --head letta-oss-integration \
+        --title "chore: sync changes from OSS repository" \
+        --body "Automated PR to pull changes from OSS into private repo"
+      echo "✅ Created new pull request."
+    else
+      # Otherwise just note that we updated the existing PR
+      echo "✅ PR #$existing_pr already exists; branch has been updated."
+    fi
 
 env:
     @echo "🚧 Setting up the environment..."

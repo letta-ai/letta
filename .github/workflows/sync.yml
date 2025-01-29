@@ -1,22 +1,29 @@
 name: Sync With OSS
 
+permissions:
+  contents: write
+  pull-requests: write
+
 on:
-  # 1) Triggered by a repository_dispatch from the OSS repo (letta)
+  # 1) Triggered by a local push that touches files under apps/core/**
+  push:
+    branches: [ main ]
+    paths:
+      - 'apps/core/**'
+
+  # 2) Triggered by a repository_dispatch from the OSS repo
   repository_dispatch:
     types: [oss-update]
 
-  # 2) Triggered by a local push that touches files under apps/core/**
-  push:
-    branches: [main]
-    paths:
-      - 'apps/core/**'
-      
   # 3) Manual trigger from GitHub web interface
   workflow_dispatch:
 
 jobs:
   sync:
     runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ secrets.SYNC_PAT }}
+
     steps:
       - name: Check out private repo
         uses: actions/checkout@v3
@@ -29,33 +36,34 @@ jobs:
           git config user.name "Letta Sync Bot"
           git config user.email "bot@users.noreply.github.com"
 
-      - name: Configure Git remote
-        run: |
-          git remote remove letta-oss || true
-          git remote add letta-oss "https://x-access-token:${{ secrets.SYNC_PAT }}@github.com/letta-ai/letta.git"
+      - name: Install Just
+        uses: extractions/setup-just@v2
 
-      - name: Decide whether to pull or push
+      - name: Determine sync direction
+        id: determine
         run: |
-          if [ "${{ github.event_name }}" = "repository_dispatch" ] || [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            echo "Triggered by ${{ github.event_name }}. Pulling from OSS..."
-            
-            # Pull changes from the OSS repo into apps/core
-            git subtree split --prefix=apps/core --rejoin
-            git subtree pull --prefix=apps/core letta-oss main
-            
-            # If the pull added any new commits, commit and push them back to this private repo
-            if ! git diff --quiet apps/core; then
-              echo "New changes from OSS found. Committing..."
-              git add apps/core
-              git commit -m "Pull from OSS [sync-skip]"
-              git push origin HEAD:main
-              echo "Pushed updated subtree to private repo main."
-            else
-              echo "No new changes from OSS. Nothing to commit."
-            fi
+          echo "event_name=${{ github.event_name }}" >> $GITHUB_OUTPUT
 
-          elif [ "${{ github.event_name }}" = "push" ]; then
-            echo "Triggered by push to private repo. Pushing changes to OSS..."
-            git subtree push --prefix apps/core letta-oss letta-automated-integration-branch
-            echo "Subtree changes pushed to OSS."
-          fi
+      - name: Push to OSS if push event
+        if: ${{ steps.determine.outputs.event_name == 'push' }}
+        run: |
+          # TODO: switch from sync to main branch once finished testing
+          just push-core-to-oss sync
+
+      - name: Pull from OSS + open PR if dispatch or manual
+        if: ${{ steps.determine.outputs.event_name == 'repository_dispatch' || steps.determine.outputs.event_name == 'workflow_dispatch' }}
+        run: |
+          # Pull from OSS
+          just pull-oss-to-core
+
+          # Attempt to generate PR immediately.
+          # If there's a conflict that wasn't auto-committed, it will fail here.
+          just generate-integration-pr
+
+      # Optional Slack notification on failure
+      - name: Notify Slack on failure
+        if: failure()
+        run: |
+          curl -X POST -H 'Content-type: application/json' \
+            --data '{"text":"Sync job failed. Likely a merge conflict. Please run `just pull-oss-to-core`, resolve conflicts, and `just generate-integration-pr` manually."}' \
+            ${{ secrets.SLACK_WEBHOOK_URL }}
