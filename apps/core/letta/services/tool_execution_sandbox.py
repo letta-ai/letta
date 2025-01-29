@@ -225,7 +225,8 @@ class ToolExecutionSandbox:
 
         try:
             # Execute the temp file
-            result = runpy.run_path(temp_file_path, init_globals=env)
+            with self.temporary_env_vars(env):
+                result = runpy.run_path(temp_file_path, init_globals=env)
 
             # Fetch the result
             func_result = result.get(self.LOCAL_SANDBOX_RESULT_VAR_NAME)
