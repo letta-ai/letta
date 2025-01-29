@@ -339,3 +339,7 @@ pull-oss-to-core:
 env:
     @echo "🚧 Setting up the environment..."
     op inject -i .env.template -o .env
+
+undertaker:
+    @echo "🚧 Running the undertaker..."
+    npm run undertaker:dev
