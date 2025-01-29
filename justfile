@@ -285,7 +285,7 @@ trigger-sync branch="":
     gh workflow run "Sync With OSS" --ref $BRANCH
 
 push-core-to-oss name="":
-    #!/usr/bin/env zsh
+    #!/usr/bin/env bash
     if [ -z "{{name}}" ]; then
         BRANCH=$(git branch --show-current)
     else
