@@ -207,7 +207,7 @@ if settings.letta_pg_uri_no_default:
 else:
     # TODO: don't rely on config storage
     engine_path = "sqlite:///" + os.path.join(config.recall_storage_path, "sqlite.db")
-    print("Creating sqlite engine", engine_path)
+    logger.info("Creating sqlite engine " + engine_path)
 
     engine = create_engine(engine_path)
 
