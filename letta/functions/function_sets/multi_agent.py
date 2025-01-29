@@ -22,7 +22,12 @@ def send_message_to_agent_and_wait_for_reply(self: "Agent", message: str, other_
     Returns:
         str: The response from the target agent.
     """
-    messages = [MessageCreate(role=MessageRole.user, content=message, name=self.agent_state.name)]
+    message = (
+        f"[Incoming message from agent with ID '{self.agent_state.id}' - to reply to this message, "
+        f"make sure to use the 'send_message' at the end, and the system will notify the sender of your response] "
+        f"{message}"
+    )
+    messages = [MessageCreate(role=MessageRole.system, content=message, name=self.agent_state.name)]
     return execute_send_message_to_agent(
         sender_agent=self,
         messages=messages,
@@ -78,9 +83,15 @@ def send_message_to_agents_matching_all_tags(self: "Agent", message: str, tags: 
 
     server = get_letta_server()
 
+    message = (
+        f"[Incoming message from agent with ID '{self.agent_state.id}' - to reply to this message, "
+        f"make sure to use the 'send_message' at the end, and the system will notify the sender of your response] "
+        f"{message}"
+    )
+
     # Retrieve agents that match ALL specified tags
     matching_agents = server.agent_manager.list_agents(actor=self.user, tags=tags, match_all_tags=True, limit=100)
-    messages = [MessageCreate(role=MessageRole.user, content=message, name=self.agent_state.name)]
+    messages = [MessageCreate(role=MessageRole.system, content=message, name=self.agent_state.name)]
 
     async def send_messages_to_all_agents():
         tasks = [
