@@ -4262,12 +4262,15 @@
                                             {
                                               "type": "string",
                                               "enum": [
-                                                "InitToolRule",
-                                                "TerminalToolRule",
+                                                "run_first",
+                                                "exit_loop",
                                                 "continue_loop",
                                                 "conditional",
-                                                "ToolRule",
-                                                "require_parent_tools"
+                                                "constrain_child_tools",
+                                                "require_parent_tools",
+                                                "InitToolRule",
+                                                "TerminalToolRule",
+                                                "ToolRule"
                                               ]
                                             },
                                             {}
@@ -4293,12 +4296,15 @@
                                             {
                                               "type": "string",
                                               "enum": [
-                                                "InitToolRule",
-                                                "TerminalToolRule",
+                                                "run_first",
+                                                "exit_loop",
                                                 "continue_loop",
                                                 "conditional",
-                                                "ToolRule",
-                                                "require_parent_tools"
+                                                "constrain_child_tools",
+                                                "require_parent_tools",
+                                                "InitToolRule",
+                                                "TerminalToolRule",
+                                                "ToolRule"
                                               ]
                                             },
                                             {}
@@ -4318,12 +4324,15 @@
                                             {
                                               "type": "string",
                                               "enum": [
-                                                "InitToolRule",
-                                                "TerminalToolRule",
+                                                "run_first",
+                                                "exit_loop",
                                                 "continue_loop",
                                                 "conditional",
-                                                "ToolRule",
-                                                "require_parent_tools"
+                                                "constrain_child_tools",
+                                                "require_parent_tools",
+                                                "InitToolRule",
+                                                "TerminalToolRule",
+                                                "ToolRule"
                                               ]
                                             },
                                             {}
@@ -4343,12 +4352,15 @@
                                             {
                                               "type": "string",
                                               "enum": [
-                                                "InitToolRule",
-                                                "TerminalToolRule",
+                                                "run_first",
+                                                "exit_loop",
                                                 "continue_loop",
                                                 "conditional",
-                                                "ToolRule",
-                                                "require_parent_tools"
+                                                "constrain_child_tools",
+                                                "require_parent_tools",
+                                                "InitToolRule",
+                                                "TerminalToolRule",
+                                                "ToolRule"
                                               ]
                                             },
                                             {}
@@ -4413,12 +4425,15 @@
                                                   {
                                                     "type": "string",
                                                     "enum": [
-                                                      "InitToolRule",
-                                                      "TerminalToolRule",
+                                                      "run_first",
+                                                      "exit_loop",
                                                       "continue_loop",
                                                       "conditional",
-                                                      "ToolRule",
-                                                      "require_parent_tools"
+                                                      "constrain_child_tools",
+                                                      "require_parent_tools",
+                                                      "InitToolRule",
+                                                      "TerminalToolRule",
+                                                      "ToolRule"
                                                     ]
                                                   },
                                                   {}
@@ -4447,12 +4462,15 @@
                                                   {
                                                     "type": "string",
                                                     "enum": [
-                                                      "InitToolRule",
-                                                      "TerminalToolRule",
+                                                      "run_first",
+                                                      "exit_loop",
                                                       "continue_loop",
                                                       "conditional",
-                                                      "ToolRule",
-                                                      "require_parent_tools"
+                                                      "constrain_child_tools",
+                                                      "require_parent_tools",
+                                                      "InitToolRule",
+                                                      "TerminalToolRule",
+                                                      "ToolRule"
                                                     ]
                                                   },
                                                   {}
@@ -4472,12 +4490,15 @@
                                                   {
                                                     "type": "string",
                                                     "enum": [
-                                                      "InitToolRule",
-                                                      "TerminalToolRule",
+                                                      "run_first",
+                                                      "exit_loop",
                                                       "continue_loop",
                                                       "conditional",
-                                                      "ToolRule",
-                                                      "require_parent_tools"
+                                                      "constrain_child_tools",
+                                                      "require_parent_tools",
+                                                      "InitToolRule",
+                                                      "TerminalToolRule",
+                                                      "ToolRule"
                                                     ]
                                                   },
                                                   {}
@@ -4497,12 +4518,15 @@
                                                   {
                                                     "type": "string",
                                                     "enum": [
-                                                      "InitToolRule",
-                                                      "TerminalToolRule",
+                                                      "run_first",
+                                                      "exit_loop",
                                                       "continue_loop",
                                                       "conditional",
-                                                      "ToolRule",
-                                                      "require_parent_tools"
+                                                      "constrain_child_tools",
+                                                      "require_parent_tools",
+                                                      "InitToolRule",
+                                                      "TerminalToolRule",
+                                                      "ToolRule"
                                                     ]
                                                   },
                                                   {}
@@ -4582,12 +4606,15 @@
                                                   {
                                                     "type": "string",
                                                     "enum": [
-                                                      "InitToolRule",
-                                                      "TerminalToolRule",
+                                                      "run_first",
+                                                      "exit_loop",
                                                       "continue_loop",
                                                       "conditional",
-                                                      "ToolRule",
-                                                      "require_parent_tools"
+                                                      "constrain_child_tools",
+                                                      "require_parent_tools",
+                                                      "InitToolRule",
+                                                      "TerminalToolRule",
+                                                      "ToolRule"
                                                     ]
                                                   },
                                                   {}
@@ -4616,12 +4643,15 @@
                                                   {
                                                     "type": "string",
                                                     "enum": [
-                                                      "InitToolRule",
-                                                      "TerminalToolRule",
+                                                      "run_first",
+                                                      "exit_loop",
                                                       "continue_loop",
                                                       "conditional",
-                                                      "ToolRule",
-                                                      "require_parent_tools"
+                                                      "constrain_child_tools",
+                                                      "require_parent_tools",
+                                                      "InitToolRule",
+                                                      "TerminalToolRule",
+                                                      "ToolRule"
                                                     ]
                                                   },
                                                   {}
@@ -4641,12 +4671,15 @@
                                                   {
                                                     "type": "string",
                                                     "enum": [
-                                                      "InitToolRule",
-                                                      "TerminalToolRule",
+                                                      "run_first",
+                                                      "exit_loop",
                                                       "continue_loop",
                                                       "conditional",
-                                                      "ToolRule",
-                                                      "require_parent_tools"
+                                                      "constrain_child_tools",
+                                                      "require_parent_tools",
+                                                      "InitToolRule",
+                                                      "TerminalToolRule",
+                                                      "ToolRule"
                                                     ]
                                                   },
                                                   {}
@@ -4666,12 +4699,15 @@
                                                   {
                                                     "type": "string",
                                                     "enum": [
-                                                      "InitToolRule",
-                                                      "TerminalToolRule",
+                                                      "run_first",
+                                                      "exit_loop",
                                                       "continue_loop",
                                                       "conditional",
-                                                      "ToolRule",
-                                                      "require_parent_tools"
+                                                      "constrain_child_tools",
+                                                      "require_parent_tools",
+                                                      "InitToolRule",
+                                                      "TerminalToolRule",
+                                                      "ToolRule"
                                                     ]
                                                   },
                                                   {}
@@ -4736,12 +4772,15 @@
                                                         {
                                                           "type": "string",
                                                           "enum": [
-                                                            "InitToolRule",
-                                                            "TerminalToolRule",
+                                                            "run_first",
+                                                            "exit_loop",
                                                             "continue_loop",
                                                             "conditional",
-                                                            "ToolRule",
-                                                            "require_parent_tools"
+                                                            "constrain_child_tools",
+                                                            "require_parent_tools",
+                                                            "InitToolRule",
+                                                            "TerminalToolRule",
+                                                            "ToolRule"
                                                           ]
                                                         },
                                                         {}
@@ -4770,12 +4809,15 @@
                                                         {
                                                           "type": "string",
                                                           "enum": [
-                                                            "InitToolRule",
-                                                            "TerminalToolRule",
+                                                            "run_first",
+                                                            "exit_loop",
                                                             "continue_loop",
                                                             "conditional",
-                                                            "ToolRule",
-                                                            "require_parent_tools"
+                                                            "constrain_child_tools",
+                                                            "require_parent_tools",
+                                                            "InitToolRule",
+                                                            "TerminalToolRule",
+                                                            "ToolRule"
                                                           ]
                                                         },
                                                         {}
@@ -4795,12 +4837,15 @@
                                                         {
                                                           "type": "string",
                                                           "enum": [
-                                                            "InitToolRule",
-                                                            "TerminalToolRule",
+                                                            "run_first",
+                                                            "exit_loop",
                                                             "continue_loop",
                                                             "conditional",
-                                                            "ToolRule",
-                                                            "require_parent_tools"
+                                                            "constrain_child_tools",
+                                                            "require_parent_tools",
+                                                            "InitToolRule",
+                                                            "TerminalToolRule",
+                                                            "ToolRule"
                                                           ]
                                                         },
                                                         {}
@@ -4820,12 +4865,15 @@
                                                         {
                                                           "type": "string",
                                                           "enum": [
-                                                            "InitToolRule",
-                                                            "TerminalToolRule",
+                                                            "run_first",
+                                                            "exit_loop",
                                                             "continue_loop",
                                                             "conditional",
-                                                            "ToolRule",
-                                                            "require_parent_tools"
+                                                            "constrain_child_tools",
+                                                            "require_parent_tools",
+                                                            "InitToolRule",
+                                                            "TerminalToolRule",
+                                                            "ToolRule"
                                                           ]
                                                         },
                                                         {}
@@ -8190,7 +8238,7 @@
           },
           "type": {
             "$ref": "#/components/schemas/ToolRuleType",
-            "default": "ToolRule"
+            "default": "constrain_child_tools"
           },
           "children": {
             "items": {
@@ -10009,7 +10057,7 @@
           },
           "type": {
             "$ref": "#/components/schemas/ToolRuleType",
-            "default": "InitToolRule"
+            "default": "run_first"
           }
         },
         "additionalProperties": false,
@@ -11784,7 +11832,7 @@
           },
           "type": {
             "$ref": "#/components/schemas/ToolRuleType",
-            "default": "TerminalToolRule"
+            "default": "exit_loop"
           }
         },
         "additionalProperties": false,
@@ -12152,12 +12200,15 @@
       "ToolRuleType": {
         "type": "string",
         "enum": [
-          "InitToolRule",
-          "TerminalToolRule",
+          "run_first",
+          "exit_loop",
           "continue_loop",
           "conditional",
-          "ToolRule",
-          "require_parent_tools"
+          "constrain_child_tools",
+          "require_parent_tools",
+          "InitToolRule",
+          "TerminalToolRule",
+          "ToolRule"
         ],
         "title": "ToolRuleType",
         "description": "Type of tool rule."

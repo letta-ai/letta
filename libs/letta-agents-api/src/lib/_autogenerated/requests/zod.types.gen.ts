@@ -118,12 +118,15 @@ export const AgentEnvironmentVariable = z.object({
 
 export type ToolRuleType = z.infer<typeof ToolRuleType>;
 export const ToolRuleType = z.union([
-  z.literal('InitToolRule'),
-  z.literal('TerminalToolRule'),
+  z.literal('run_first'),
+  z.literal('exit_loop'),
   z.literal('continue_loop'),
   z.literal('conditional'),
-  z.literal('ToolRule'),
+  z.literal('constrain_child_tools'),
   z.literal('require_parent_tools'),
+  z.literal('InitToolRule'),
+  z.literal('TerminalToolRule'),
+  z.literal('ToolRule'),
 ]);
 
 export type ChildToolRule = z.infer<typeof ChildToolRule>;

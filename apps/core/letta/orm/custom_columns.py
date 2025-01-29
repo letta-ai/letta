@@ -84,11 +84,11 @@ class ToolRulesColumn(TypeDecorator):
     def deserialize_tool_rule(data: dict) -> Union[ChildToolRule, InitToolRule, TerminalToolRule, ConditionalToolRule]:
         """Deserialize a dictionary to the appropriate ToolRule subclass based on the 'type'."""
         rule_type = ToolRuleType(data.get("type"))  # Remove 'type' field if it exists since it is a class var
-        if rule_type == ToolRuleType.run_first:
+        if rule_type == ToolRuleType.run_first or rule_type == "InitToolRule":
             return InitToolRule(**data)
-        elif rule_type == ToolRuleType.exit_loop:
+        elif rule_type == ToolRuleType.exit_loop or rule_type == "TerminalToolRule":
             return TerminalToolRule(**data)
-        elif rule_type == ToolRuleType.constrain_child_tools:
+        elif rule_type == ToolRuleType.constrain_child_tools or rule_type == "ToolRule":
             rule = ChildToolRule(**data)
             return rule
         elif rule_type == ToolRuleType.conditional:

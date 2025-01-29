@@ -2327,12 +2327,15 @@ export type status = 'success' | 'error';
  * Type of tool rule.
  */
 export type ToolRuleType =
-  | 'InitToolRule'
-  | 'TerminalToolRule'
+  | 'run_first'
+  | 'exit_loop'
   | 'continue_loop'
   | 'conditional'
-  | 'ToolRule'
-  | 'require_parent_tools';
+  | 'constrain_child_tools'
+  | 'require_parent_tools'
+  | 'InitToolRule'
+  | 'TerminalToolRule'
+  | 'ToolRule';
 
 export type ToolRunFromSource = {
   /**

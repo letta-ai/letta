@@ -1652,7 +1652,7 @@ export const $ChildToolRule = {
     },
     type: {
       $ref: '#/components/schemas/ToolRuleType',
-      default: 'ToolRule',
+      default: 'constrain_child_tools',
     },
     children: {
       items: {
@@ -3537,7 +3537,7 @@ export const $InitToolRule = {
     },
     type: {
       $ref: '#/components/schemas/ToolRuleType',
-      default: 'InitToolRule',
+      default: 'run_first',
     },
   },
   additionalProperties: false,
@@ -5548,7 +5548,7 @@ export const $TerminalToolRule = {
     },
     type: {
       $ref: '#/components/schemas/ToolRuleType',
-      default: 'TerminalToolRule',
+      default: 'exit_loop',
     },
   },
   additionalProperties: false,
@@ -5960,12 +5960,15 @@ Attributes:
 export const $ToolRuleType = {
   type: 'string',
   enum: [
-    'InitToolRule',
-    'TerminalToolRule',
+    'run_first',
+    'exit_loop',
     'continue_loop',
     'conditional',
-    'ToolRule',
+    'constrain_child_tools',
     'require_parent_tools',
+    'InitToolRule',
+    'TerminalToolRule',
+    'ToolRule',
   ],
   title: 'ToolRuleType',
   description: 'Type of tool rule.',
