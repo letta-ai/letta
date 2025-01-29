@@ -333,9 +333,7 @@ async function adminAddUserToOrganization(
   await db.insert(organizationUsers).values({
     organizationId: organizationId,
     userId: userId,
-    permissions: {
-      isOrganizationAdmin: true,
-    },
+    role: 'admin',
   });
 
   return {

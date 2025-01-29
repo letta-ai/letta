@@ -1,12 +1,12 @@
 import {
   db,
-  organizationInvitedUsers,
-  users,
-  organizations,
-  organizationUsers,
-  organizationPreferences,
   organizationBillingDetails,
   organizationCredits,
+  organizationInvitedUsers,
+  organizationPreferences,
+  organizations,
+  organizationUsers,
+  users,
 } from '@letta-cloud/database';
 import {
   createOrganization as authCreateOrganization,
@@ -16,7 +16,7 @@ import {
 } from '$web/server/auth';
 import type { ServerInferRequest, ServerInferResponses } from '@ts-rest/core';
 import type { contracts } from '$web/web-api/contracts';
-import { and, eq, gt, ilike, inArray } from 'drizzle-orm';
+import { and, eq, gt, ilike } from 'drizzle-orm';
 import { generateInviteCode, parseInviteCode } from '$web/utils';
 import {
   createSetupIntent,
@@ -24,6 +24,7 @@ import {
   listCreditCards,
   removePaymentMethod,
 } from '@letta-cloud/payments';
+import { ApplicationServices } from '@letta-cloud/rbac';
 
 type GetCurrentOrganizationResponse = ServerInferResponses<
   typeof contracts.organizations.getCurrentOrganization
@@ -84,26 +85,21 @@ async function getCurrentOrganizationTeamMembers(
     where: and(...where),
     offset,
     limit: limit + 1,
-  });
-
-  const userList = await db.query.users.findMany({
-    where: and(
-      inArray(
-        users.id,
-        members.map((member) => member.userId),
-      ),
-    ),
+    with: {
+      user: true,
+    },
   });
 
   return {
     status: 200,
     body: {
       nextCursor:
-        userList.length > limit ? members[limit - 1].userId : undefined,
-      members: userList.slice(0, limit).map((member) => ({
-        id: member.id,
-        name: member.name,
-        email: member.email,
+        members.length > limit ? members[limit - 1].userId : undefined,
+      members: members.slice(0, limit).map((member) => ({
+        id: member.userId,
+        role: member.role,
+        name: member.user.name,
+        email: member.user.email,
         createdAt: member.createdAt.toISOString(),
         updatedAt: member.updatedAt.toISOString(),
       })),
@@ -122,9 +118,18 @@ type RegenerateInviteCodeResponse = ServerInferResponses<
 async function regenerateInviteCode(
   req: RegenerateInviteCodeRequest,
 ): Promise<RegenerateInviteCodeResponse> {
-  const { activeOrganizationId } =
+  const { activeOrganizationId, permissions } =
     await getUserWithActiveOrganizationIdOrThrow();
   const { memberId } = req.params;
+
+  if (!permissions.has(ApplicationServices.UPDATE_USERS_IN_ORGANIZATION)) {
+    return {
+      status: 403,
+      body: {
+        message: 'Permission denied',
+      },
+    };
+  }
 
   const invitedMember = await db.query.organizationInvitedUsers.findFirst({
     where: eq(organizationInvitedUsers.id, memberId),
@@ -177,9 +182,18 @@ type InviteNewTeamMemberResponse = ServerInferResponses<
 async function inviteNewTeamMember(
   req: InviteNewTeamMemberRequest,
 ): Promise<InviteNewTeamMemberResponse> {
-  const { activeOrganizationId, id: userId } =
+  const { activeOrganizationId, id: userId, permissions } =
     await getUserWithActiveOrganizationIdOrThrow();
   const { email } = req.body;
+
+  if (!permissions.has(ApplicationServices.UPDATE_USERS_IN_ORGANIZATION)) {
+    return {
+      status: 403,
+      body: {
+        message: 'Permission denied',
+      },
+    };
+  }
 
   const user = await db.query.users.findFirst({
     where: eq(users.email, email),
@@ -208,7 +222,7 @@ async function inviteNewTeamMember(
     await db.insert(organizationUsers).values({
       userId: user.id,
       organizationId: activeOrganizationId,
-      permissions: {},
+      role: 'admin',
     });
 
     const nextUser = await db.query.users.findFirst({
@@ -287,9 +301,18 @@ type UnInviteTeamMemberResponse = ServerInferResponses<
 async function unInviteTeamMember(
   req: UnInviteTeamMemberRequest,
 ): Promise<UnInviteTeamMemberResponse> {
-  const { activeOrganizationId } =
+  const { activeOrganizationId, permissions } =
     await getUserWithActiveOrganizationIdOrThrow();
   const { memberId } = req.params;
+
+  if (!permissions.has(ApplicationServices.UPDATE_USERS_IN_ORGANIZATION)) {
+    return {
+      status: 403,
+      body: {
+        message: 'Permission denied',
+      },
+    };
+  }
 
   await db
     .delete(organizationInvitedUsers)
@@ -319,9 +342,18 @@ type RemoveTeamMemberResponse = ServerInferResponses<
 async function removeTeamMember(
   req: RemoveTeamMember,
 ): Promise<RemoveTeamMemberResponse> {
-  const { activeOrganizationId, id: userId } =
+  const { activeOrganizationId,  permissions, id: userId } =
     await getUserWithActiveOrganizationIdOrThrow();
   const { memberId } = req.params;
+
+  if (!permissions.has(ApplicationServices.UPDATE_USERS_IN_ORGANIZATION)) {
+    return {
+      status: 403,
+      body: {
+        message: 'Permission denied',
+      },
+    };
+  }
 
   // you cannot remove yourself
   if (memberId === userId) {
@@ -421,9 +453,18 @@ type UpdateOrganizationResponse = ServerInferResponses<
 async function updateOrganization(
   req: UpdateOrganizationRequest,
 ): Promise<UpdateOrganizationResponse> {
-  const { activeOrganizationId } =
+  const { activeOrganizationId, permissions } =
     await getUserWithActiveOrganizationIdOrThrow();
   const { name } = req.body;
+
+  if (!permissions.has(ApplicationServices.UPDATE_ORGANIZATION)) {
+    return {
+      status: 403,
+      body: {
+        message: 'Permission denied',
+      },
+    };
+  }
 
   await db
     .update(organizations)
@@ -483,7 +524,7 @@ async function createOrganization(
       .where(eq(users.id, id)),
     db.insert(organizationUsers).values({
       userId: id,
-      permissions: { isOrganizationAdmin: true },
+      role: 'admin',
       organizationId: res.organizationId,
     }),
   ]);
@@ -695,6 +736,60 @@ export async function removeOrganizationBillingMethod(
   };
 }
 
+type UpdateOrganizationUserRoleRequest = ServerInferRequest<
+  typeof contracts.organizations.updateOrganizationUserRole
+>;
+
+type UpdateOrganizationUserRoleResponse = ServerInferResponses<
+  typeof contracts.organizations.updateOrganizationUserRole
+>;
+
+const ApplicationServicesSet = new Set<string>(
+  Object.values(ApplicationServices),
+);
+
+export async function updateOrganizationUserRole(
+  req: UpdateOrganizationUserRoleRequest,
+): Promise<UpdateOrganizationUserRoleResponse> {
+  const { activeOrganizationId, permissions } =
+    await getUserWithActiveOrganizationIdOrThrow();
+
+  if (!permissions.has(ApplicationServices.UPDATE_USERS_IN_ORGANIZATION)) {
+    return {
+      status: 403,
+      body: {
+        message: 'Permission denied',
+      },
+    };
+  }
+
+const { userId } = req.params;
+
+  const { role, customPermissions } = req.body;
+
+  await db
+    .update(organizationUsers)
+    .set({
+      role,
+      customPermissions: (customPermissions || []).filter((v) =>
+        ApplicationServicesSet.has(v),
+      ) as ApplicationServices[],
+    })
+    .where(
+      and(
+        eq(organizationUsers.userId, userId),
+        eq(organizationUsers.organizationId, activeOrganizationId),
+      ),
+    );
+
+  return {
+    status: 200,
+    body: {
+      success: true,
+    },
+  };
+}
+
 export const organizationsRouter = {
   getCurrentOrganization,
   getCurrentOrganizationPreferences,
@@ -710,5 +805,6 @@ export const organizationsRouter = {
   regenerateInviteCode,
   getInviteByCode,
   startSetupIntent,
+  updateOrganizationUserRole,
   removeOrganizationBillingMethod,
 };

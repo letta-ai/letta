@@ -175,7 +175,7 @@ async function createUserAndOrganization(
       .where(eq(users.id, createdUser.userId)),
     db.insert(organizationUsers).values({
       userId: createdUser.userId,
-      permissions: { isOrganizationAdmin: isNewOrganization },
+      role: 'admin',
       organizationId,
     }),
   ]);

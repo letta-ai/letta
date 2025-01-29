@@ -1,6 +1,5 @@
 'use client';
-import { useCallback, useMemo, useState } from 'react';
-import React from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import {
   Alert,
   Button,
@@ -30,6 +29,8 @@ import type { APIKeyType } from '$web/web-api/contracts';
 import type { ColumnDef } from '@tanstack/react-table';
 import { useQueryClient } from '@tanstack/react-query';
 import { useTranslations } from '@letta-cloud/translations';
+import { ApplicationServices } from '@letta-cloud/rbac';
+import { useUserHasPermission } from '$web/client/hooks';
 
 const CreateAPIKeySchema = z.object({
   name: z.string(),
@@ -232,6 +233,14 @@ function APIKeysPage() {
   const [offset, setOffset] = useState(0);
   const [limit, setLimit] = useState(10);
 
+  const [canReadKeys] = useUserHasPermission(ApplicationServices.READ_API_KEYS);
+  const [canDeleteKey] = useUserHasPermission(
+    ApplicationServices.DELETE_API_KEY,
+  );
+  const [canCreateKey] = useUserHasPermission(
+    ApplicationServices.CREATE_API_KEY,
+  );
+
   const { data, isFetching, isError } = webApi.apiKeys.getAPIKeys.useQuery({
     queryKey: webApiQueryKeys.apiKeys.getAPIKeysWithSearch({
       offset,
@@ -243,6 +252,7 @@ function APIKeysPage() {
         limit,
       },
     },
+    enabled: canReadKeys,
   });
 
   const t = useTranslations('api-keys/page');
@@ -281,16 +291,18 @@ function APIKeysPage() {
                 apiKeyId={cell.row.original.id}
                 name={cell.row.original.name}
               />
-              <DeleteAPIKeyDialog
-                name={cell.row.original.name}
-                apiKeyId={cell.row.original.id}
-              />
+              {canDeleteKey && (
+                <DeleteAPIKeyDialog
+                  name={cell.row.original.name}
+                  apiKeyId={cell.row.original.id}
+                />
+              )}
             </DropdownMenu>
           );
         },
       },
     ],
-    [t],
+    [t, canDeleteKey],
   );
 
   const apiKeys = useMemo(() => {
@@ -306,9 +318,11 @@ function APIKeysPage() {
       encapsulatedFullHeight
       title="API keys"
       actions={
-        <>
-          <CreateAPIKeyDialog />
-        </>
+        canCreateKey ? (
+          <>
+            <CreateAPIKeyDialog />
+          </>
+        ) : null
       }
     >
       <DashboardPageSection fullHeight>

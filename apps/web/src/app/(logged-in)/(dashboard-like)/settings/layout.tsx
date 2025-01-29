@@ -1,8 +1,9 @@
 'use client';
 import { DashboardWithSidebarWrapper } from '@letta-cloud/component-library';
 import { useTranslations } from '@letta-cloud/translations';
-import { useCurrentUser } from '$web/client/hooks';
+import { useCurrentUser, useUserHasPermission } from '$web/client/hooks';
 import { useFeatureFlag } from '@letta-cloud/web-api-client';
+import { ApplicationServices } from '@letta-cloud/rbac';
 
 interface SettingsLayoutProps {
   children: React.ReactNode;
@@ -24,6 +25,9 @@ function SettingsLayout(props: SettingsLayoutProps) {
 
   const showBilling = !isLoadingBilling && isBillingProviderEnabled;
 
+  const [canCRUDTheOrg] = useUserHasPermission(
+    ApplicationServices.UPDATE_ORGANIZATION,
+  );
   return (
     <DashboardWithSidebarWrapper
       baseUrl="/settings"
@@ -49,11 +53,15 @@ function SettingsLayout(props: SettingsLayoutProps) {
               {
                 title: t('organization.root'),
                 items: [
-                  {
-                    id: 'organization',
-                    label: t('organization.general'),
-                    href: '/settings/organization/general',
-                  },
+                  ...(canCRUDTheOrg
+                    ? [
+                        {
+                          id: 'organization',
+                          label: t('organization.general'),
+                          href: '/settings/organization/general',
+                        },
+                      ]
+                    : []),
                   {
                     id: 'members',
                     label: t('organization.members'),

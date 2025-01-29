@@ -1,12 +1,12 @@
 import { db, lettaAPIKeys } from '@letta-cloud/database';
 import {
   generateAPIKey,
-  getUser,
-  getUserActiveOrganizationIdOrThrow,
+  getUserWithActiveOrganizationIdOrThrow,
 } from '$web/server/auth';
 import type { ServerInferRequest, ServerInferResponses } from '@ts-rest/core';
 import type { contracts } from '$web/web-api/contracts';
 import { and, eq, isNull } from 'drizzle-orm';
+import { ApplicationServices } from '@letta-cloud/rbac';
 
 type CreateAPIKeyPayload = ServerInferRequest<
   typeof contracts.apiKeys.createAPIKey
@@ -20,16 +20,23 @@ export async function createAPIKey(
 ): Promise<CreateAPIKeyResponse> {
   const { name } = req.body;
 
-  const user = await getUser();
+  const {
+    activeOrganizationId: organizationId,
+    id: userId,
+    permissions,
+  } = await getUserWithActiveOrganizationIdOrThrow();
 
-  if (!user?.activeOrganizationId) {
-    throw new Error('User not found');
+  if (!permissions.has(ApplicationServices.CREATE_API_KEY)) {
+    return {
+      status: 403,
+      body: null,
+    };
   }
 
   const apiKey = await generateAPIKey({
     name,
-    creatorUserId: user.id,
-    organizationId: user.activeOrganizationId,
+    creatorUserId: userId,
+    organizationId: organizationId,
   });
 
   return {
@@ -50,7 +57,16 @@ type GetAPIKeysResponse = ServerInferResponses<
 export async function getAPIKeys(
   req: GetAPIKeysRequest,
 ): Promise<GetAPIKeysResponse> {
-  const organizationId = await getUserActiveOrganizationIdOrThrow();
+  const { activeOrganizationId: organizationId, permissions } =
+    await getUserWithActiveOrganizationIdOrThrow();
+
+  if (!permissions.has(ApplicationServices.READ_API_KEYS)) {
+    return {
+      status: 403,
+      body: null,
+    };
+  }
+
   const { offset, limit = 10, search } = req.query;
 
   const where = [
@@ -100,7 +116,15 @@ export async function deleteAPIKey(
 ): Promise<DeleteAPIKeyResponse> {
   const { apiKeyId } = req.params;
 
-  const organizationId = await getUserActiveOrganizationIdOrThrow();
+  const { activeOrganizationId: organizationId, permissions } =
+    await getUserWithActiveOrganizationIdOrThrow();
+
+  if (!permissions.has(ApplicationServices.DELETE_API_KEY)) {
+    return {
+      status: 403,
+      body: null,
+    };
+  }
 
   await db
     .delete(lettaAPIKeys)
@@ -128,7 +152,15 @@ export async function getAPIKey(
 ): Promise<GetAPIKeyResponse> {
   const { apiKeyId } = req.params;
 
-  const organizationId = await getUserActiveOrganizationIdOrThrow();
+  const { activeOrganizationId: organizationId, permissions } =
+    await getUserWithActiveOrganizationIdOrThrow();
+
+  if (!permissions.has(ApplicationServices.READ_API_KEYS)) {
+    return {
+      status: 403,
+      body: null,
+    };
+  }
 
   const where = [
     eq(lettaAPIKeys.organizationId, organizationId),

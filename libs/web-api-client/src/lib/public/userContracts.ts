@@ -8,6 +8,7 @@ export const PublicUserSchema = z.object({
   name: z.string(),
   email: z.string(),
   imageUrl: z.string(),
+  permissions: z.string().array(),
   theme: z.string(),
   locale: z.string(),
   activeOrganizationId: z.string(),

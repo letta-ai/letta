@@ -4,6 +4,8 @@ import { getRedisData } from '@letta-cloud/redis';
 import { db, organizationUsers, users } from '@letta-cloud/database';
 import { and, eq, isNull } from 'drizzle-orm';
 import { redirect } from 'next/navigation';
+import type { ApplicationServices } from '@letta-cloud/rbac';
+import { roleToServicesMap } from '@letta-cloud/rbac';
 
 export interface GetUserDataResponse {
   activeOrganizationId: string | null;
@@ -12,6 +14,7 @@ export interface GetUserDataResponse {
   lettaAgentsId: string;
   email: string;
   imageUrl: string;
+  permissions: Set<ApplicationServices>;
   theme: string;
   locale: string;
   hasOnboarded: boolean;
@@ -48,6 +51,12 @@ export async function getUser(): Promise<GetUserDataResponse | null> {
       bannedAt: true,
     },
     with: {
+      organizationUsers: {
+        where: eq(organizationUsers.organizationId, user.activeOrganizationId),
+        columns: {
+          role: true,
+        },
+      },
       activeOrganization: {
         columns: {
           enabledCloudAt: true,
@@ -81,6 +90,9 @@ export async function getUser(): Promise<GetUserDataResponse | null> {
     }
   }
 
+  const permissions =
+    roleToServicesMap[userFromDb.organizationUsers[0]?.role || 'custom'];
+
   return {
     activeOrganizationId: userFromDb.activeOrganizationId || null,
     hasCloudAccess: !!userFromDb.activeOrganization?.enabledCloudAt,
@@ -90,6 +102,7 @@ export async function getUser(): Promise<GetUserDataResponse | null> {
     lettaAgentsId: userFromDb.lettaAgentsId,
     email: userFromDb.email,
     imageUrl: userFromDb.imageUrl,
+    permissions: new Set(permissions),
     name: userFromDb.name,
     theme: userFromDb.theme || 'auto',
   };

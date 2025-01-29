@@ -1,6 +1,7 @@
 import type { ServerInferResponses } from '@ts-rest/core';
 import { initContract } from '@ts-rest/core';
 import { z } from 'zod';
+import { UserPresetRoles } from '@letta-cloud/rbac';
 
 const c = initContract();
 
@@ -30,6 +31,7 @@ export type GetCurrentOrganizationSuccessResponse = ServerInferResponses<
 export const CurrentOrganizationTeamMembersSchema = z.object({
   id: z.string(),
   name: z.string(),
+  role: UserPresetRoles,
   email: z.string(),
   createdAt: z.string(),
   updatedAt: z.string(),
@@ -330,6 +332,28 @@ const removeOrganizationBillingMethodContract = c.mutation({
   },
 });
 
+const updateOrganizationUserRolePayload = z.object({
+  role: UserPresetRoles,
+  customPermissions: z.array(z.string()).optional(),
+});
+
+const updateOrganizationUserRoleResponse = z.object({
+  success: z.boolean(),
+});
+
+const updateOrganizationUserRoleContract = c.mutation({
+  path: '/organizations/self/members/:userId/role',
+  method: 'PATCH',
+  pathParams: z.object({
+    userId: z.string(),
+  }),
+  body: updateOrganizationUserRolePayload,
+  responses: {
+    200: updateOrganizationUserRoleResponse,
+  },
+});
+
+
 export const organizationsContract = c.router({
   getCurrentOrganization: getCurrentOrganizationContract,
   getCurrentOrganizationPreferences: getCurrentOrganizationPreferencesContract,
@@ -337,6 +361,7 @@ export const organizationsContract = c.router({
   inviteNewTeamMember: inviteNewTeamMemberContract,
   unInviteTeamMember: unInviteTeamMemberContract,
   removeTeamMember: removeTeamMemberContract,
+  updateOrganizationUserRole: updateOrganizationUserRoleContract,
   listInvitedMembers: listInvitedMembersContract,
   deleteOrganization: deleteOrganizationContract,
   updateOrganization: updateOrganizationContract,

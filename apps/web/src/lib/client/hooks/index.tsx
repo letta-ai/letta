@@ -21,3 +21,5 @@ export function useCurrentOrganization() {
 
   return organization?.body;
 }
+
+export * from './useUserHasPermission/useUserHasPermission';

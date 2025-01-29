@@ -440,6 +440,45 @@
     "settings": "Settings"
   },
   "organization/members": {
+    "PermissionGrantView": {
+      "granted": "Granted",
+      "notGranted": "Not granted"
+    },
+    "permissions": {
+      "organization": {
+        "title": "Organization",
+        "update": "Modify organization settings",
+        "updateMembers": "Manage members",
+        "updateOrganizationEnvironmentVariables": "Update global environment variables"
+      },
+      "agents": {
+        "title": "Agents",
+        "create": "Create agents",
+        "delete": "Delete agents",
+        "read": "View agents",
+        "message": "Send messages to agents",
+        "update": "Update agents"
+      },
+      "apiKeys": {
+        "title": "API Keys",
+        "create": "Create API keys",
+        "delete": "Delete API Keys",
+        "read": "View API keys"
+      }
+    },
+    "roles": {
+      "admin": "Admin",
+      "editor": "Editor",
+      "custom": "Custom"
+    },
+    "UpdateMemberRoleDialog": {
+      "trigger": "Update role",
+      "title": "Update member role",
+      "error": "There was an error updating the member role, please try again or contact support.",
+      "select": {
+        "label": "Current role"
+      }
+    },
     "CopyInviteCodeButton": {
       "success": "Invite code has been copied to your clipboard",
       "label": "Copy invite code"
@@ -493,6 +532,7 @@
     "title": "Organization members",
     "table": {
       "columns": {
+        "role": "Role",
         "name": "Name",
         "email": "Email",
         "actions": "Actions"

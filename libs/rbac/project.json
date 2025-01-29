@@ -1,0 +1,20 @@
+{
+  "name": "@letta-cloud/rbac",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "libs/rbac/src",
+  "projectType": "library",
+  "tags": [],
+  "targets": {
+    "build": {
+      "executor": "@nx/js:tsc",
+      "outputs": ["{options.outputPath}"],
+      "options": {
+        "outputPath": "dist/libs/rbac",
+        "tsConfig": "libs/rbac/tsconfig.lib.json",
+        "packageJson": "libs/rbac/package.json",
+        "main": "libs/rbac/src/index.ts",
+        "assets": ["libs/rbac/*.md"]
+      }
+    }
+  }
+}

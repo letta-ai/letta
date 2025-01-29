@@ -1,9 +1,10 @@
 'use client';
 
 import { useTranslations } from '@letta-cloud/translations';
-import { useCurrentUser } from '$web/client/hooks';
+import { useCurrentUser, useUserHasPermission } from '$web/client/hooks';
 import {
   Button,
+  CheckIcon,
   DashboardPageLayout,
   DashboardPageSection,
   DataTable,
@@ -17,13 +18,21 @@ import {
   FormProvider,
   HStack,
   Input,
+  isMultiValue,
   LoadingEmptyStatusComponent,
+  NiceGridDisplay,
   RawInput,
   SearchIcon,
+  Select,
   toast,
   Typography,
+  CloseIcon,
   useCopyToClipboard,
   useForm,
+  VStack,
+  CompanyIcon,
+  KeyIcon,
+  LettaInvaderIcon,
 } from '@letta-cloud/component-library';
 import React, { useCallback, useMemo, useState } from 'react';
 import type { ColumnDef } from '@tanstack/react-table';
@@ -39,6 +48,12 @@ import { z } from 'zod';
 import { useErrorTranslationMessage } from '@letta-cloud/helpful-client-utils';
 import { environment } from '@letta-cloud/environmental-variables';
 import { parseInviteCode } from '$web/utils';
+import {
+  ApplicationServices,
+  roleToServicesMap,
+  UserPresetRoles,
+} from '@letta-cloud/rbac';
+import type { UserPresetRolesType } from '@letta-cloud/rbac';
 
 const inviteMemberDialogFormSchema = z.object({
   email: z.string().email(),
@@ -216,6 +231,279 @@ function InviteMemberDialog() {
   );
 }
 
+interface UpdateMemberRoleDialogProps {
+  userId: string;
+  currentRole: UserPresetRolesType;
+}
+
+const updateMemberRoleSchema = z.object({
+  role: z.object({
+    value: UserPresetRoles,
+    label: z.string(),
+    description: z.string().optional(),
+  }),
+});
+
+interface PermissionReferenceSheetProps {
+  role: UserPresetRolesType;
+}
+
+interface PermissionGrantViewProps {
+  service: string;
+  hasAccess: boolean;
+}
+
+function PermissionGrantView(props: PermissionGrantViewProps) {
+  const { service, hasAccess } = props;
+
+  return (
+    <HStack>
+      <Typography color={hasAccess ? 'positive' : 'destructive'}>
+        {hasAccess ? <CheckIcon /> : <CloseIcon />}
+      </Typography>
+      <Typography>{service}</Typography>
+    </HStack>
+  );
+}
+
+interface PermissionCategoryViewProps {
+  title: string;
+  icon: React.ReactNode;
+  permissions: PermissionGrantViewProps[];
+}
+
+function PermissionCategoryView(props: PermissionCategoryViewProps) {
+  return (
+    <VStack>
+      <HStack>
+        {props.icon}
+        <Typography bold>{props.title}</Typography>
+      </HStack>
+      <NiceGridDisplay itemWidth="200px">
+        {props.permissions.map((permission) => (
+          <PermissionGrantView key={permission.service} {...permission} />
+        ))}
+      </NiceGridDisplay>
+    </VStack>
+  );
+}
+
+function PermissionReferenceSheet(props: PermissionReferenceSheetProps) {
+  const { role } = props;
+  const t = useTranslations('organization/members');
+
+  const permissions = new Set(roleToServicesMap[role]);
+
+  return (
+    <VStack gap="large">
+      <PermissionCategoryView
+        title={t('permissions.organization.title')}
+        icon={<CompanyIcon />}
+        permissions={[
+          {
+            service: t('permissions.organization.update'),
+            hasAccess: permissions.has(ApplicationServices.UPDATE_ORGANIZATION),
+          },
+          {
+            service: t('permissions.organization.updateMembers'),
+            hasAccess: permissions.has(
+              ApplicationServices.UPDATE_USERS_IN_ORGANIZATION,
+            ),
+          },
+          {
+            service: t(
+              'permissions.organization.updateOrganizationEnvironmentVariables',
+            ),
+            hasAccess: permissions.has(
+              ApplicationServices.UPDATE_ORGANIZATION_ENVIRONMENT_VARIABLES,
+            ),
+          },
+        ]}
+      />
+      <PermissionCategoryView
+        title={t('permissions.apiKeys.title')}
+        icon={<KeyIcon />}
+        permissions={[
+          {
+            service: t('permissions.apiKeys.create'),
+            hasAccess: permissions.has(ApplicationServices.CREATE_API_KEY),
+          },
+          {
+            service: t('permissions.apiKeys.read'),
+            hasAccess: permissions.has(ApplicationServices.READ_API_KEYS),
+          },
+          {
+            service: t('permissions.apiKeys.delete'),
+            hasAccess: permissions.has(ApplicationServices.DELETE_API_KEY),
+          },
+        ]}
+      />
+      <PermissionCategoryView
+        title={t('permissions.agents.title')}
+        icon={<LettaInvaderIcon />}
+        permissions={[
+          {
+            service: t('permissions.agents.create'),
+            hasAccess: permissions.has(ApplicationServices.CREATE_AGENT),
+          },
+          {
+            service: t('permissions.agents.read'),
+            hasAccess: permissions.has(ApplicationServices.READ_AGENT),
+          },
+          {
+            service: t('permissions.agents.delete'),
+            hasAccess: permissions.has(ApplicationServices.DELETE_AGENT),
+          },
+          {
+            service: t('permissions.agents.update'),
+            hasAccess: permissions.has(ApplicationServices.UPDATE_AGENT),
+          },
+          {
+            service: t('permissions.agents.message'),
+            hasAccess: permissions.has(ApplicationServices.MESSAGE_AGENT),
+          },
+        ]}
+      />
+    </VStack>
+  );
+}
+
+type UpdateMemberRoleFormValues = z.infer<typeof updateMemberRoleSchema>;
+
+function UpdateMemberRoleDialog(props: UpdateMemberRoleDialogProps) {
+  const { userId, currentRole } = props;
+
+  const t = useTranslations('organization/members');
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+
+  const getLabelForRole = useGetLabelForRole();
+
+  const form = useForm<UpdateMemberRoleFormValues>({
+    resolver: zodResolver(updateMemberRoleSchema),
+    defaultValues: {
+      role: {
+        label: getLabelForRole(currentRole),
+        value: currentRole,
+      },
+    },
+  });
+
+  const roleOptions = useMemo(() => {
+    return Object.values(UserPresetRoles.Enum)
+      .map((role) => ({
+        value: role,
+        label: getLabelForRole(role),
+      }))
+      .filter((role) => role.value !== 'custom');
+  }, [getLabelForRole]);
+
+  const queryClient = useQueryClient();
+
+  const { mutate, isPending, isError } =
+    webApi.organizations.updateOrganizationUserRole.useMutation({
+      onSuccess: (_, values) => {
+        setIsDialogOpen(false);
+        queryClient.setQueriesData<
+          GetCurrentOrganizationTeamMembersResponseBodyType | undefined
+        >(
+          {
+            queryKey:
+              webApiQueryKeys.organizations.getCurrentOrganizationTeamMembers,
+            exact: false,
+          },
+          (input) => {
+            if (!input) {
+              return input;
+            }
+
+            return {
+              ...input,
+              body: {
+                ...input.body,
+                members: input.body.members.map((member) => {
+                  if (member.id === userId) {
+                    return {
+                      ...member,
+                      role: values.body.role,
+                    };
+                  }
+
+                  return member;
+                }),
+              },
+            };
+          },
+        );
+      },
+    });
+
+  const handleUpdateRole = useCallback(
+    (values: UpdateMemberRoleFormValues) => {
+      mutate({
+        params: {
+          userId,
+        },
+        body: {
+          role: values.role.value,
+        },
+      });
+    },
+    [mutate, userId],
+  );
+
+  return (
+    <FormProvider {...form}>
+      <Dialog
+        isConfirmBusy={isPending}
+        isOpen={isDialogOpen}
+        onOpenChange={(open) => {
+          setIsDialogOpen(open);
+        }}
+        size="large"
+        color="background"
+        errorMessage={isError ? t('UpdateMemberRoleDialog.error') : undefined}
+        title={t('UpdateMemberRoleDialog.title')}
+        onSubmit={form.handleSubmit(handleUpdateRole)}
+        trigger={
+          <DropdownMenuItem
+            color="secondary"
+            doNotCloseOnSelect
+            label={t('UpdateMemberRoleDialog.trigger')}
+          />
+        }
+      >
+        <FormField
+          name="role"
+          render={({ field }) => {
+            return (
+              <VStack>
+                <Select
+                  labelVariant="simple"
+                  label={t('UpdateMemberRoleDialog.select.label')}
+                  options={roleOptions}
+                  onSelect={(value) => {
+                    if (isMultiValue(value)) {
+                      return;
+                    }
+
+                    field.onChange(value);
+                  }}
+                  value={field.value}
+                />
+                <VStack paddingTop>
+                  <VStack borderTop paddingTop>
+                    <PermissionReferenceSheet role={field.value.value} />
+                  </VStack>
+                </VStack>
+              </VStack>
+            );
+          }}
+        />
+      </Dialog>
+    </FormProvider>
+  );
+}
+
 interface DeleteMemberDialogProps {
   userId: string;
   name: string;
@@ -280,11 +568,33 @@ function DeleteMemberDialog(props: DeleteMemberDialogProps) {
   );
 }
 
+function useGetLabelForRole() {
+  const t = useTranslations('organization/members');
+
+  return useCallback(
+    (role: string) => {
+      switch (role) {
+        case 'admin':
+          return t('roles.admin');
+        case 'editor':
+          return t('roles.editor');
+        case 'custom':
+          return t('roles.custom');
+        default:
+          return role;
+      }
+    },
+    [t],
+  );
+}
+
 function ExistingMembers() {
   const user = useCurrentUser();
   const [search, setSearch] = useState('');
   const t = useTranslations('organization/members');
   const [offset, setOffset] = useState<number>(0);
+
+  const getLabelForRole = useGetLabelForRole();
 
   const [limit, setLimit] = useState<number>(30);
   const { data, isFetching, isError } =
@@ -314,6 +624,10 @@ function ExistingMembers() {
     return data.body.members;
   }, [data?.body]);
 
+  const [canUpdateUsers] = useUserHasPermission(
+    ApplicationServices.UPDATE_USERS_IN_ORGANIZATION,
+  );
+
   const membersColumns: Array<ColumnDef<CurrentOrganizationTeamMembersType>> =
     useMemo(() => {
       return [
@@ -326,6 +640,13 @@ function ExistingMembers() {
           accessorKey: 'email',
         },
         {
+          header: t('table.columns.role'),
+          accessorKey: 'role',
+          cell: ({ cell }) => {
+            return getLabelForRole(cell.row.original.role);
+          },
+        },
+        {
           header: '',
           meta: {
             style: {
@@ -334,6 +655,10 @@ function ExistingMembers() {
           },
           accessorKey: 'id',
           cell: ({ cell }) => {
+            if (!canUpdateUsers) {
+              return null;
+            }
+
             if (cell.row.original.id === user?.id) {
               return null;
             }
@@ -352,6 +677,10 @@ function ExistingMembers() {
                 }
                 triggerAsChild
               >
+                <UpdateMemberRoleDialog
+                  userId={cell.row.original.id}
+                  currentRole={cell.row.original.role}
+                />
                 <DeleteMemberDialog
                   name={cell.row.original.email}
                   email={cell.row.original.name}
@@ -362,7 +691,7 @@ function ExistingMembers() {
           },
         },
       ];
-    }, [t, user?.id]);
+    }, [t, user?.id, getLabelForRole, canUpdateUsers]);
 
   return (
     <DashboardPageSection fullHeight>
@@ -641,15 +970,21 @@ function InvitedMembersDialog() {
 function Members() {
   const t = useTranslations('organization/members');
 
+  const [canUpdateUsers] = useUserHasPermission(
+    ApplicationServices.UPDATE_USERS_IN_ORGANIZATION,
+  );
+
   return (
     <DashboardPageLayout
       encapsulatedFullHeight
       title={t('title')}
       actions={
-        <HStack>
-          <InvitedMembersDialog />
-          <InviteMemberDialog />
-        </HStack>
+        canUpdateUsers ? (
+          <HStack>
+            <InvitedMembersDialog />
+            <InviteMemberDialog />
+          </HStack>
+        ) : null
       }
     >
       <ExistingMembers />

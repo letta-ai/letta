@@ -13,6 +13,8 @@ import {
 import { sql, relations } from 'drizzle-orm';
 import type { ProviderConfiguration } from '@letta-cloud/types';
 import { z } from 'zod';
+import type { ApplicationServices } from '@letta-cloud/rbac';
+import type { UserPresetRolesType } from '@letta-cloud/rbac';
 
 export const emailWhitelist = pgTable('email_whitelist', {
   id: text('id')
@@ -198,9 +200,9 @@ export const organizationUsers = pgTable(
       .notNull()
       .references(() => organizations.id, { onDelete: 'cascade' })
       .notNull(),
-    permissions: json('permissions')
-      .$type<OrganizationPermissionType>()
-      .notNull(),
+    customPermissions:
+      json('custom_permissions').$type<ApplicationServices[]>(),
+    role: text('role').$type<UserPresetRolesType>().notNull(),
     createdAt: timestamp('created_at').notNull().defaultNow(),
     updatedAt: timestamp('updated_at')
       .notNull()
