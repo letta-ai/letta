@@ -83,7 +83,7 @@ export function Alert(props: AlertProps) {
         <HStack fullWidth gap="small" justify="spaceBetween" align="center">
           <HStack gap="small" align="center">
             <Slot className="min-w-5 min-h-5">{icon || defaultIcon}</Slot>
-            <h5 className="font-medium">{title}</h5>
+            <h5 className="text-left font-medium">{title}</h5>
           </HStack>
           {action}
           {onDismiss && (

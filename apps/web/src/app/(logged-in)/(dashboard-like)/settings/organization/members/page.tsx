@@ -311,6 +311,10 @@ function PermissionReferenceSheet(props: PermissionReferenceSheetProps) {
             ),
           },
           {
+            service: t('permissions.organization.manageBilling'),
+            hasAccess: permissions.has(ApplicationServices.MANAGE_BILLING),
+          },
+          {
             service: t(
               'permissions.organization.updateOrganizationEnvironmentVariables',
             ),

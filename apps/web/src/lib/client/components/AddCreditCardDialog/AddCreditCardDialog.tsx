@@ -117,7 +117,7 @@ interface CreditCardFormProps {
   onComplete: VoidFunction;
 }
 
-function CreditCardForm(props: CreditCardFormProps) {
+export function CreditCardForm(props: CreditCardFormProps) {
   const { onComplete } = props;
   const [isLoading, setIsLoading] = useState(true);
   const [isError, setError] = useState(false);

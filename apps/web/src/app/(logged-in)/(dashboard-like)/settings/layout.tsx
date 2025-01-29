@@ -23,7 +23,12 @@ function SettingsLayout(props: SettingsLayoutProps) {
   const showModelProviders =
     !isLoadingModelProviders && isModelProvidersEnabled;
 
-  const showBilling = !isLoadingBilling && isBillingProviderEnabled;
+  const [canManageBilling] = useUserHasPermission(
+    ApplicationServices.MANAGE_BILLING,
+  );
+
+  const showBilling =
+    !isLoadingBilling && isBillingProviderEnabled && canManageBilling;
 
   const [canCRUDTheOrg] = useUserHasPermission(
     ApplicationServices.UPDATE_ORGANIZATION,

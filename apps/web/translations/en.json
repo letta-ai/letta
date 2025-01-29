@@ -362,6 +362,7 @@
     }
   },
   "organization/billing": {
+    "noPermission": "You do not have permission to view billing information for this organization, please contact your organization's administrator.",
     "title": "Billing Information",
     "description": "You are currently using a managed enterprise plan. If you have any questions or need help, please contact support.",
     "Overview": {
@@ -457,6 +458,7 @@
       "organization": {
         "title": "Organization",
         "update": "Modify organization settings",
+        "manageBilling": "Manage billing and payment methods",
         "updateMembers": "Manage members",
         "updateOrganizationEnvironmentVariables": "Update global environment variables"
       },
@@ -558,7 +560,24 @@
       "description": "Are you sure you want to remove {name} ({email}) from this organization? This will not remove any projects or agents they have created."
     }
   },
-
+  "components/PurchaseCreditsDialog": {
+    "title": "Purchase credits",
+    "errors": {
+      "default": "There was an unknown error purchasing credits, please try again or contact support.",
+      "paymentError": "There was an error purchasing credits, please relay \"{error}\" to support."
+    },
+    "noCreditCard": "You must add a credit card before purchasing credits",
+    "trigger": "Purchase credits",
+    "error": "There was an error loading the purchase credits form, please try again or contact support.",
+    "confirm": "Purchase",
+    "confirmation": "By clicking 'Purchase', you agree to purchase {credits} credits for {price} with the card ending in {last4}.",
+    "cancel": "Cancel",
+    "description": "You can purchase credits to pay for agent usage. Credits are used to pay for agent usage, and are deducted from your balance each time an agent is used. Credits do not expire and are non-refundable.",
+    "amount": {
+      "label": "Please enter the amount of credits you would like to purchase",
+      "option": "{credits} credits ({price})"
+    }
+  },
   "settings/profile/page": {
     "title": "Profile settings",
     "form": {

@@ -258,6 +258,23 @@ export const getCurrentOrganizationPreferencesContract = c.query({
   },
 });
 
+const purchaseCreditsContract = c.mutation({
+  path: '/organizations/self/credits',
+  method: 'POST',
+  body: z.object({
+    credits: z.number(),
+  }),
+  responses: {
+    200: z.object({
+      success: z.boolean(),
+    }),
+    400: z.object({
+      message: z.string(),
+      errorCode: z.literal('paymentError'),
+    }),
+  },
+});
+
 const GetInviteByCodeResponse = z.object({
   organizationName: z.string(),
   email: z.string(),
@@ -376,6 +393,7 @@ export const organizationsContract = c.router({
   removeTeamMember: removeTeamMemberContract,
   updateOrganizationUserRole: updateOrganizationUserRoleContract,
   listInvitedMembers: listInvitedMembersContract,
+  purchaseCredits: purchaseCreditsContract,
   deleteOrganization: deleteOrganizationContract,
   updateOrganization: updateOrganizationContract,
   createOrganization: createOrganizationContract,

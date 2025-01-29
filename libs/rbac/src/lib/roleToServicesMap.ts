@@ -35,9 +35,8 @@ const adminPermissions = [
   ApplicationServices.DELETE_API_KEY,
   ApplicationServices.UPDATE_USERS_IN_ORGANIZATION,
   ApplicationServices.UPDATE_ORGANIZATION,
-  ApplicationServices.READ_BILLING,
+  ApplicationServices.MANAGE_BILLING,
   ApplicationServices.CONNECT_INTEGRATIONS,
-  ApplicationServices.UPDATE_BILLING,
 ];
 
 export const roleToServicesMap: Record<

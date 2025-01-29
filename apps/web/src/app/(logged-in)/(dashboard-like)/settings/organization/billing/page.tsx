@@ -33,6 +33,9 @@ import { AddCreditCardDialog } from '$web/client/components/AddCreditCardDialog/
 import { useQueryClient } from '@tanstack/react-query';
 import type { ServerInferResponses } from '@ts-rest/core';
 import { Slot } from '@radix-ui/react-slot';
+import { useUserHasPermission } from '$web/client/hooks';
+import { ApplicationServices } from '@letta-cloud/rbac';
+import { PurchaseCreditsDialog } from '$web/client/components/PurchaseCreditsDialog/PurchaseCreditsDialog';
 
 interface RemoveCreditCardDialogProps {
   paymentMethodId: string;
@@ -407,11 +410,15 @@ function BillingOverview(props: BillingOverviewProps) {
             </Typography>
           </VStack>
           <HStack>
-            <Button
-              preIcon={<PlusIcon />}
-              label={t('BillingOverview.Credits.add')}
-              color="primary"
-              size="small"
+            <PurchaseCreditsDialog
+              trigger={
+                <Button
+                  preIcon={<PlusIcon />}
+                  label={t('BillingOverview.Credits.add')}
+                  color="primary"
+                  size="small"
+                />
+              }
             />
           </HStack>
         </VStack>
@@ -446,6 +453,14 @@ function BillingOverview(props: BillingOverviewProps) {
 function Billing() {
   const t = useTranslations('organization/billing');
   const [selectedTab, setSelectedTab] = React.useState<Tabs>('overview');
+
+  const [canManageBilling] = useUserHasPermission(
+    ApplicationServices.MANAGE_BILLING,
+  );
+
+  if (!canManageBilling) {
+    return <Alert title={t('noPermission')} variant="destructive" />;
+  }
 
   return (
     <DashboardPageLayout title={t('title')}>

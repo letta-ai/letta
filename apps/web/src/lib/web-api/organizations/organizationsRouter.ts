@@ -19,6 +19,7 @@ import type { contracts } from '$web/web-api/contracts';
 import { and, eq, gt, ilike } from 'drizzle-orm';
 import { generateInviteCode, parseInviteCode } from '$web/utils';
 import {
+  createPayment,
   createSetupIntent,
   getPaymentCustomer,
   listCreditCards,
@@ -26,6 +27,8 @@ import {
 } from '@letta-cloud/payments';
 import { setDefaultPaymentMethod } from '@letta-cloud/payments';
 import { ApplicationServices } from '@letta-cloud/rbac';
+import { addCreditsToOrganization } from '@letta-cloud/server-utils';
+import { creditsToDollars } from '@letta-cloud/generic-utils';
 
 type GetCurrentOrganizationResponse = ServerInferResponses<
   typeof contracts.organizations.getCurrentOrganization
@@ -634,8 +637,17 @@ type GetCurrentOrganizationBillingInfo = ServerInferResponses<
 >;
 
 async function getCurrentOrganizationBillingInfo(): Promise<GetCurrentOrganizationBillingInfo> {
-  const { activeOrganizationId } =
+  const { activeOrganizationId, permissions } =
     await getUserWithActiveOrganizationIdOrThrow();
+
+  if (!permissions.has(ApplicationServices.MANAGE_BILLING)) {
+    return {
+      status: 403,
+      body: {
+        message: 'Permission denied',
+      },
+    };
+  }
 
   const [organization, credits] = await Promise.all([
     db.query.organizationBillingDetails.findFirst({
@@ -695,8 +707,17 @@ type StartSetupIntentResponse = ServerInferResponses<
 >;
 
 export async function startSetupIntent(): Promise<StartSetupIntentResponse> {
-  const { activeOrganizationId } =
+  const { activeOrganizationId, permissions } =
     await getUserWithActiveOrganizationIdOrThrow();
+
+  if (!permissions.has(ApplicationServices.MANAGE_BILLING)) {
+    return {
+      status: 403,
+      body: {
+        message: 'Permission denied',
+      },
+    };
+  }
 
   const intent = await createSetupIntent({
     organizationId: activeOrganizationId,
@@ -719,6 +740,60 @@ export async function startSetupIntent(): Promise<StartSetupIntentResponse> {
   };
 }
 
+type PurchaseCreditsRequest = ServerInferRequest<
+  typeof contracts.organizations.purchaseCredits
+>;
+
+type PurchaseCreditsResponse = ServerInferResponses<
+  typeof contracts.organizations.purchaseCredits
+>;
+
+export async function purchaseCredits(
+  req: PurchaseCreditsRequest,
+): Promise<PurchaseCreditsResponse> {
+  const { activeOrganizationId, permissions } =
+    await getUserWithActiveOrganizationIdOrThrow();
+
+  if (!permissions.has(ApplicationServices.MANAGE_BILLING)) {
+    return {
+      status: 403,
+      body: {
+        message: 'Permission denied',
+      },
+    };
+  }
+
+  const { credits } = req.body;
+
+  const payment = await createPayment({
+    organizationId: activeOrganizationId,
+    amountInCents: creditsToDollars(credits) * 100,
+  });
+
+  if (payment.status !== 'succeeded') {
+    return {
+      status: 400,
+      body: {
+        message: payment.status,
+        errorCode: 'paymentError',
+      },
+    };
+  }
+
+  await addCreditsToOrganization({
+    organizationId: activeOrganizationId,
+    amount: credits,
+    source: 'Purchase',
+  });
+
+  return {
+    status: 200,
+    body: {
+      success: true,
+    },
+  };
+}
+
 type RemoveOrganizationBillingMethodRequest = ServerInferRequest<
   typeof contracts.organizations.removeOrganizationBillingMethod
 >;
@@ -731,6 +806,17 @@ export async function removeOrganizationBillingMethod(
   req: RemoveOrganizationBillingMethodRequest,
 ): Promise<RemoveOrganizationBillingMethodResponse> {
   const { methodId } = req.params;
+
+  const { permissions } = await getUserWithActiveOrganizationIdOrThrow();
+
+  if (!permissions.has(ApplicationServices.MANAGE_BILLING)) {
+    return {
+      status: 403,
+      body: {
+        message: 'Permission denied',
+      },
+    };
+  }
 
   await removePaymentMethod({
     paymentMethodId: methodId,
@@ -756,8 +842,17 @@ export async function setDefaultOrganizationBillingMethod(
   req: SetDefaultOrganizationBillingMethodRequest,
 ): Promise<SetDefaultOrganizationBillingMethodResponse> {
   const { methodId } = req.params;
-  const { activeOrganizationId } =
+  const { activeOrganizationId, permissions } =
     await getUserWithActiveOrganizationIdOrThrow();
+
+  if (!permissions.has(ApplicationServices.MANAGE_BILLING)) {
+    return {
+      status: 403,
+      body: {
+        message: 'Permission denied',
+      },
+    };
+  }
 
   await setDefaultPaymentMethod({
     paymentMethodId: methodId,
@@ -831,6 +926,7 @@ export const organizationsRouter = {
   getCurrentOrganizationPreferences,
   getCurrentOrganizationTeamMembers,
   removeTeamMember,
+  purchaseCredits,
   inviteNewTeamMember,
   unInviteTeamMember,
   listInvitedMembers,
