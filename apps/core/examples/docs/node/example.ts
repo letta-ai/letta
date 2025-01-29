@@ -1,0 +1,138 @@
+import { LettaClient } from '@letta-ai/letta-client';
+import {
+  AssistantMessage,
+  ReasoningMessage,
+  ToolCallMessage,
+  ToolReturnMessage,
+} from '@letta-ai/letta-client/api/types';
+
+// Start letta server and run `npm run example`
+const client = new LettaClient({
+  baseUrl: 'http://localhost:8283',
+});
+
+const agent = await client.agents.create({
+  memoryBlocks: [
+    {
+      value: 'name: Caren',
+      label: 'human',
+    },
+  ],
+  model: 'openai/gpt-4o-mini',
+  embedding: 'openai/text-embedding-ada-002',
+});
+
+console.log('Created agent with name', agent.name);
+
+let messageText = "What's my name?";
+let response = await client.agents.messages.create(agent.id, {
+  messages: [
+    {
+      role: 'user',
+      content: messageText,
+    },
+  ],
+});
+
+console.log(`Sent message to agent ${agent.name}: ${messageText}`);
+console.log(
+  'Agent thoughts:',
+  (response.messages[0] as ReasoningMessage).reasoning,
+);
+console.log(
+  'Agent response:',
+  (response.messages[1] as AssistantMessage).content,
+);
+
+const custom_tool_source_code = `
+def secret_message():
+    """Return a secret message."""
+    return "Hello world!"
+    `.trim();
+
+const tool = await client.tools.upsert({
+  sourceCode: custom_tool_source_code,
+});
+
+await client.agents.tools.attach(agent.id, tool.id!);
+
+console.log(
+  `Created tool with name ${tool.name} and attached to agent ${agent.name}`,
+);
+
+messageText = 'Run secret message tool and tell me what it returns';
+response = await client.agents.messages.create(agent.id, {
+  messages: [
+    {
+      role: 'user',
+      content: messageText,
+    },
+  ],
+});
+
+console.log('Sent message to agent:', messageText);
+console.log(
+  'Agent thoughts',
+  (response.messages[0] as ReasoningMessage).reasoning,
+);
+console.log(
+  'Tool call information',
+  (response.messages[1] as ToolCallMessage).toolCall,
+);
+console.log(
+  'Tool response information',
+  (response.messages[2] as ToolReturnMessage).status,
+);
+console.log(
+  'Agent thoughts',
+  (response.messages[3] as ReasoningMessage).reasoning,
+);
+console.log(
+  'Agent response:',
+  (response.messages[4] as AssistantMessage).content,
+);
+
+let agentCopy = await client.agents.create({
+  model: 'openai/gpt-4o-mini',
+  embedding: 'openai/text-embedding-ada-002',
+});
+let block = await client.agents.coreMemory.retrieveBlock(agent.id, 'human');
+agentCopy = await client.agents.coreMemory.attachBlock(agentCopy.id, block.id!);
+
+console.log('Created agent copy with shared memory named', agentCopy.name);
+
+messageText =
+  "My name isn't Caren, it's Sarah. Please update your core memory with core_memory_replace";
+console.log(`Sent message to agent ${agentCopy.name}: ${messageText}`);
+
+response = await client.agents.messages.create(agentCopy.id, {
+  messages: [
+    {
+      role: 'user',
+      content: messageText,
+    },
+  ],
+});
+
+block = await client.agents.coreMemory.retrieveBlock(agentCopy.id, 'human');
+console.log(`New core memory for agent ${agentCopy.name}: ${block.value}`);
+
+messageText = "What's my name?";
+response = await client.agents.messages.create(agentCopy.id, {
+  messages: [
+    {
+      role: 'user',
+      content: messageText,
+    },
+  ],
+});
+
+console.log(`Sent message to agent ${agentCopy.name}: ${messageText}`);
+console.log(
+  'Agent thoughts:',
+  (response.messages[0] as ReasoningMessage).reasoning,
+);
+console.log(
+  'Agent response:',
+  (response.messages[1] as AssistantMessage).content,
+);
