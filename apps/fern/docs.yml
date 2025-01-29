@@ -160,6 +160,7 @@ navigation:
   - tab: release
   - tab: github
   - tab: discord
+  - tab: changelog
 
 colors:
   accent-primary:
