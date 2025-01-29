@@ -6,7 +6,13 @@ import {
   ToolReturnMessage,
 } from '@letta-ai/letta-client/api/types';
 
-// Start letta server and run `npm run example`
+/**
+ * Make sure you run the Letta server before running this example.
+ * ```
+ * letta server
+ * ```
+ * Execute this script using `npm run example`
+ */
 const client = new LettaClient({
   baseUrl: 'http://localhost:8283',
 });
@@ -56,9 +62,7 @@ const tool = await client.tools.upsert({
 
 await client.agents.tools.attach(agent.id, tool.id!);
 
-console.log(
-  `Created tool with name ${tool.name} and attached to agent ${agent.name}`,
-);
+console.log(`Created tool ${tool.name} and attached to agent ${agent.name}`);
 
 messageText = 'Run secret message tool and tell me what it returns';
 response = await client.agents.messages.create(agent.id, {
@@ -70,21 +74,21 @@ response = await client.agents.messages.create(agent.id, {
   ],
 });
 
-console.log('Sent message to agent:', messageText);
+console.log(`Sent message to agent ${agent.name}: ${messageText}`);
 console.log(
-  'Agent thoughts',
+  'Agent thoughts:',
   (response.messages[0] as ReasoningMessage).reasoning,
 );
 console.log(
-  'Tool call information',
+  'Tool call information:',
   (response.messages[1] as ToolCallMessage).toolCall,
 );
 console.log(
-  'Tool response information',
+  'Tool response information:',
   (response.messages[2] as ToolReturnMessage).status,
 );
 console.log(
-  'Agent thoughts',
+  'Agent thoughts:',
   (response.messages[3] as ReasoningMessage).reasoning,
 );
 console.log(
@@ -103,8 +107,6 @@ console.log('Created agent copy with shared memory named', agentCopy.name);
 
 messageText =
   "My name isn't Caren, it's Sarah. Please update your core memory with core_memory_replace";
-console.log(`Sent message to agent ${agentCopy.name}: ${messageText}`);
-
 response = await client.agents.messages.create(agentCopy.id, {
   messages: [
     {
@@ -113,6 +115,8 @@ response = await client.agents.messages.create(agentCopy.id, {
     },
   ],
 });
+
+console.log(`Sent message to agent ${agentCopy.name}: ${messageText}`);
 
 block = await client.agents.coreMemory.retrieveBlock(agentCopy.id, 'human');
 console.log(`New core memory for agent ${agentCopy.name}: ${block.value}`);
@@ -136,3 +140,8 @@ console.log(
   'Agent response:',
   (response.messages[1] as AssistantMessage).content,
 );
+
+await client.agents.delete(agent.id);
+await client.agents.delete(agentCopy.id);
+
+console.log(`Deleted agents ${agent.name} and ${agentCopy.name}`);

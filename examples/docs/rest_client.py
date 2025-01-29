@@ -38,7 +38,7 @@ def main():
 
     # Send a message to the agent
     print(f"Created agent: {agent_state.name} with ID {str(agent_state.id)}")
-    response = client.agents.messages.send(
+    response = client.agents.messages.create(
         agent_id=agent_state.id, 
         messages=[
             MessageCreate(

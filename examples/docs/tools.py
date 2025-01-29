@@ -33,7 +33,7 @@ def roll_d20() -> str:
 
 
 # create a tool from the function
-tool = client.tools.upsert_from_function(func=roll_d20, name="roll_d20")
+tool = client.tools.upsert_from_function(func=roll_d20)
 print(f"Created tool with name {tool.name}")
 
 # create a new agent
@@ -59,7 +59,7 @@ agent_state = client.agents.create(
 print(f"Created agent with name {agent_state.name} with tools {[t.name for t in agent_state.tools]}")
 
 # Message an agent
-response = client.agents.messages.send(
+response = client.agents.messages.create(
     agent_id=agent_state.id, 
     messages=[
         MessageCreate(
@@ -72,15 +72,15 @@ print("Usage", response.usage)
 print("Agent messages", response.messages)
 
 # remove a tool from the agent
-client.agents.tools.remove(agent_id=agent_state.id, tool_id=tool.id)
+client.agents.tools.detach(agent_id=agent_state.id, tool_id=tool.id)
 
 # add a tool to the agent
-client.agents.tools.add(agent_id=agent_state.id, tool_id=tool.id)
+client.agents.tools.attach(agent_id=agent_state.id, tool_id=tool.id)
 
 client.agents.delete(agent_id=agent_state.id)
 
 # create an agent with only a subset of default tools
-send_message_tool = client.tools.get_by_name(tool_name="send_message")
+send_message_tool = [t for t in client.tools.list() if t.name == "send_message"][0]
 agent_state = client.agents.create(
     memory_blocks=[
         CreateBlock(
@@ -91,11 +91,11 @@ agent_state = client.agents.create(
     model="openai/gpt-4o-mini",
     embedding="openai/text-embedding-ada-002",
     include_base_tools=False, 
-    tool_ids=[tool.id, send_message_tool],
+    tool_ids=[tool.id, send_message_tool.id],
 )
 
 # message the agent to search archival memory (will be unable to do so)
-client.agents.messages.send(
+client.agents.messages.create(
     agent_id=agent_state.id,
     messages=[
         MessageCreate(
