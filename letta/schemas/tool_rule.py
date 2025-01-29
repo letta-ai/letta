@@ -9,7 +9,7 @@ from letta.schemas.letta_base import LettaBase
 class BaseToolRule(LettaBase):
     __id_prefix__ = "tool_rule"
     tool_name: str = Field(..., description="The name of the tool. Must exist in the database for the user's organization.")
-    type: ToolRuleType
+    type: ToolRuleType = Field(..., description="The type of the message.")
 
 
 class ChildToolRule(BaseToolRule):

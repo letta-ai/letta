@@ -232,6 +232,7 @@ def agent_state():
         embedding_config=EmbeddingConfig.default_config(provider="openai"),
         llm_config=LLMConfig.default_config(model_name="gpt-4"),
     )
+    agent_state.tool_rules = []
     yield agent_state
 
 
