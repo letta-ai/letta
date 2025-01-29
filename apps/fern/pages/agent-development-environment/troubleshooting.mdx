@@ -1,6 +1,6 @@
 ---
-title: Troubleshooting
-subtitle: A guide on common pitfalls and how to resolve them in the ADE
+title: Troubleshooting the web ADE
+subtitle: Resolving issues with the [web ADE](https://app.letta.com)
 slug: guides/ade/troubleshooting
 ---
 <Note>
@@ -8,6 +8,16 @@ For additional support please visit our [Discord server](https://discord.gg/lett
 </Note>
 
 ## Issues connecting to the ADE
+
+### Recommended browsers
+We recommend using Google Chrome to access the ADE.
+
+### Ad-blockers
+Ad-blockers may cause issues with allowing the ADE to access your local Letta server.
+If you are having issues connecting your server to the ADE, try disabling your ad-blocker.
+
+### <Icon icon="brands brave" /> Brave
+Please disable Brave Shields to access your ADE.
 
 ### <Icon icon="brands safari" /> Safari
 Safari has specific restrictions to accessing `localhost`, and must always serve content via `https`.
@@ -19,6 +29,3 @@ Follow the steps below to be able to access the ADE on Safari:
 5. Restart your Letta Docker container
 6. Access the ADE at [https://app.letta.com/development-servers/local/dashboard](https://app.letta.com/development-servers/local/dashboard)
 7. Click "Add remote server" and enter `https://localhost:8283` as the URL, leave password blank unless you have secured your ADE with a password.
-
-### <Icon icon="brands brave" /> Brave
-Please disable Brave Shields to access your ADE.

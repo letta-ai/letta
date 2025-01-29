@@ -22,19 +22,6 @@ To connect the ADE with your local Letta server, simply:
 <img className="block w-300 dark:hidden" src="https://raw.githubusercontent.com/letta-ai/letta/refs/heads/main/assets/example_ade_screenshot_agents_light.png" />
 <img className="hidden w-300 dark:block" src="https://raw.githubusercontent.com/letta-ai/letta/refs/heads/main/assets/example_ade_screenshot_agents.png" />
 
-### 🔐 Password protection
-To password protect your server, include `SECURE=true` and `LETTA_SERVER_PASSWORD=yourpassword` in your `docker run` command:
-```sh
-# If LETTA_SERVER_PASSWORD isn't set, the server will autogenerate a password
-docker run \
-  -v ~/.letta/.persist/pgdata:/var/lib/postgresql/data \
-  -p 8283:8283 \
-  --env-file .env \
-  -e SECURE=true \
-  -e LETTA_SERVER_PASSWORD=yourpassword \
-  letta/letta:latest
-```
-
 ## 🌐 Connecting to an external (self-hosted) server
 If your Letta server isn't running on `localhost` (for example, you deployed it on an external service like EC2):
 1. Click "Add remote server"

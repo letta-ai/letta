@@ -67,7 +67,7 @@ VLLM_API_BASE=...
 ## Using the development image (advanced)
 When you use the `latest` tag, you will get the latest stable release of Letta.
 
-The `nightly` image is a development image that is updated frequently off of `main` (it is not recommended for production use).
+The `nightly` image is a development image thkat is updated frequently off of `main` (it is not recommended for production use).
 If you would like to use the development image, you can use the `nightly` tag instead of `latest`:
 ```sh
 docker run \
@@ -76,6 +76,47 @@ docker run \
   -e OPENAI_API_KEY="your_openai_api_key" \
   letta/letta:nightly
 ```
+
+## Password protection (advanced)
+To password protect your server, include `SECURE=true` and `LETTA_SERVER_PASSWORD=yourpassword` in your `docker run` command:
+```sh
+# If LETTA_SERVER_PASSWORD isn't set, the server will autogenerate a password
+docker run \
+  -v ~/.letta/.persist/pgdata:/var/lib/postgresql/data \
+  -p 8283:8283 \
+  --env-file .env \
+  -e SECURE=true \
+  -e LETTA_SERVER_PASSWORD=yourpassword \
+  letta/letta:latest
+```
+
+With password protection enabled, you will have to provide your password in the bearer token header in your API requests:
+<CodeGroup>
+```curl curl
+curl --request POST \
+  --url http://localhost:8283/v1/agents/$AGENT_ID/messages \
+  --header 'Content-Type: application/json' \
+  --header 'Authorization: Bearer yourpassword' \
+  --data '{
+  "messages": [
+    {
+      "role": "user",
+      "text": "hows it going????"
+    }
+  ]
+}'
+```
+```python title="python" maxLines=50
+# create the client with the token set to your password
+client = Letta(token="yourpassword")
+```
+```typescript maxLines=50 title="node.js"
+// create the client with the token set to your password
+const client = new LettaClient({
+    token: "yourpassword",
+});
+```
+</CodeGroup>
 
 ## Connecting pgAdmin (advanced)
 If you'd like to directly view the contents of your Letta Server's database, you can connect to it via [pgAdmin](https://www.pgadmin.org/).

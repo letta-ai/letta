@@ -9,7 +9,16 @@ slug: quickstart
 **Letta agents** live inside the **Letta server**, which persists them to a database. You can interact with the Letta agents inside your Letta server via the [REST API](https://docs.letta.com/api-reference) + Python / Typescript SDKs, and the [Agent Development Environment](https://app.letta.com) (a graphical interface).
 </Tip>
 
-## Install Letta and run the server
+## Install Letta
+There are multiple ways to use Letta, depending on
+ and run the server
+| Installation method | Start server command | Database backend | Data migrations supported? |
+|---|---|---|---|
+| `pip install letta` | `letta server` | SQLite | ❌ |
+| `pip install letta` | `export LETTA_PG_URI=...` + `letta server` | PostgreSQL | ✅ |
+| *[Install Docker](https://www.docker.com/get-started/)*  |`docker run ...` ([full command](#-run-the-letta-server)) | PostgreSQL | ✅ |
+
+
 <Note>
 The recommended way to use Letta is to run use Docker.
 To install Docker, see [Docker's installation guide](https://docs.docker.com/get-docker/).

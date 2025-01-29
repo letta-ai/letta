@@ -12,21 +12,29 @@ tabs:
     display-name: API Reference
     icon: fa-sharp fa-light code
     skip-slug: true
-  release:
-    display-name: Release Notes
-    icon: fa-sharp fa-light fa-square-rss
-    href: https://www.letta.com/news
+  cookbooks:
+    display-name: Cookbooks
+    icon: fa-sharp fa-light fa-books
+    skip-slug: true
   github:
     display-name: GitHub
     icon: fa-brands fa-github
     href: https://github.com/letta-ai/letta
   discord:
-    display-name: Discord Community
+    display-name: Discord
     icon: fa-brands fa-discord
     href: https://discord.gg/letta
+  community:
+    display-name: Community Events
+    icon: fa-sharp fa-light fa-user-astronaut
+    skip-slug: true
+  install:
+    display-name: Download
+    icon: fa-sharp fa-light fa-download
+    skip-slug: true
   changelog:
-    display-name: Changelog
-    icon: light clock
+    display-name: API Changelog
+    icon: fa-sharp fa-light rss-square
     changelog: ./changelog
 
 landing-page:
@@ -34,6 +42,10 @@ landing-page:
   path: pages/index.mdx
 
 navigation:
+  - tab: install
+    layout:
+      - page: Install Letta
+        path: pages/install.mdx
   - tab: docs
     layout:
       - section: Get Started
@@ -44,48 +56,23 @@ navigation:
             path: pages/getting-started/stateful_agents.mdx
           - page: Agent Development Environment
             path: pages/getting-started/ade.mdx
-          - page: Letta FAQs
+          - section: Letta FAQs & Troubleshooting
             path: pages/getting-started/faq.mdx
-          - page: Quickstart
-            path: pages/getting-started/quickstart.mdx
-      - section: Deployment Options
-        contents:
-          - section: Self-hosted Letta Server
             contents:
-            - page: Run with Docker (recommended)
-              path: pages/server/docker.mdx
-            - section: Alternate install methods
-              contents:
-              - page: Using pip
-                path: pages/server/pip.mdx
-              - page: Installing from Source
-                path: pages/server/source.mdx
-            - section: Connecting API Providers
-              contents:
-                - page: OpenAI
-                  path: pages/models/openai.mdx
-                - page: OpenAI proxy
-                  path: pages/models/openai_proxy.mdx
-                - page: Anthropic
-                  path: pages/models/anthropic.mdx
-                - page: Groq
-                  path: pages/models/groq.mdx
-                - page: Together
-                  path: pages/models/together.mdx
-                - page: Google AI / Gemini
-                  path: pages/models/google.mdx
-                - page: Azure OpenAI
-                  path: pages/models/azure.mdx
-                - page: Ollama
-                  path: pages/models/ollama.mdx
-                - page: LM Studio
-                  path: pages/models/lmstudio.mdx
-                - page: vLLM
-                  path: pages/models/vllm.mdx
-            - page: Deploying on External Services
-              path: pages/deployment/railway.mdx
-          - page: Letta Cloud
-            path: pages/cloud/cloud.mdx
+              - page: Letta Desktop Troubleshooting
+                path: pages/desktop/troubleshooting.mdx
+              - page: ADE Troubleshooting
+                path: pages/agent-development-environment/troubleshooting.mdx
+          - section: Quickstart
+            icon: fa-sharp fa-light fa-bolt
+            path: pages/getting-started/quickstart.mdx
+            contents:
+              - page: Letta Desktop
+                path: pages/getting-started/quickstart_desktop.mdx
+              - page: Docker
+                path: pages/getting-started/quickstart_docker.mdx
+              - page: Letta Cloud
+                path: pages/getting-started/quickstart_cloud.mdx
       - section: Stateful Agents
         contents:
           - page: Building Stateful Agents
@@ -93,9 +80,8 @@ navigation:
           - page: Memory
             path: pages/agents/memory.mdx
           - section: Tools
+            path: pages/agents/tools.mdx
             contents:
-              - page: Tools Overview
-                path: pages/agents/tools.mdx
               - page: Tool Rules
                 path: pages/agents/tool_rules.mdx
               - page: Tool Variables
@@ -107,9 +93,8 @@ navigation:
           - page: Streaming Responses
             path: pages/agents/streaming.mdx
           - section: Multi-Agent
+            path: pages/agents/multiagent.mdx
             contents:
-            - page: Multi-Agent Overview
-              path: pages/agents/multiagent.mdx
             - page: Custom Multi-Agent Tools
               path: pages/agents/multiagent_custom.mdx
             - page: Multi-Agent Shared Memory
@@ -122,8 +107,40 @@ navigation:
             path: pages/agent-development-environment/connect.mdx
           - page: Using the ADE
             path: pages/agent-development-environment/usage.mdx
-          - page: Troubleshooting
-            path: pages/agent-development-environment/troubleshooting.mdx
+      - section: Deploying a Letta Server
+        contents:
+          - page: Letta Docker Image
+            path: pages/server/docker.mdx
+          - section: Connecting Model Providers
+            contents:
+              - page: OpenAI
+                path: pages/models/openai.mdx
+              - page: OpenAI proxy
+                path: pages/models/openai_proxy.mdx
+              - page: Anthropic
+                path: pages/models/anthropic.mdx
+              - page: Groq
+                path: pages/models/groq.mdx
+              - page: Together
+                path: pages/models/together.mdx
+              - page: Google AI / Gemini
+                path: pages/models/google.mdx
+              - page: Azure OpenAI
+                path: pages/models/azure.mdx
+              - page: Ollama
+                path: pages/models/ollama.mdx
+              - page: LM Studio
+                path: pages/models/lmstudio.mdx
+              - page: vLLM
+                path: pages/models/vllm.mdx
+          - page: Remote Hosting
+            path: pages/deployment/railway.mdx
+          - section: Alternate Install Methods
+            contents:
+            - page: Using pip
+              path: pages/server/pip.mdx
+            - page: Installing from Source
+              path: pages/server/source.mdx
       - section: Agent Templates
         contents:
           - page: Introduction to Templates
@@ -157,10 +174,21 @@ navigation:
           python: letta
         layout:
           - agents
-  - tab: release
-  - tab: github
-  - tab: discord
   - tab: changelog
+  - tab: cookbooks
+    layout:
+      - section: Cookbooks
+        path: pages/cookbooks.mdx
+        contents:
+          - section: Multi-Agent
+            contents:
+              - page: Async Multi-Agent
+                path: pages/tutorials/multiagent_async.mdx
+  - tab: discord
+  - tab: community
+    layout:
+      - page: Community Events
+        path: pages/community.mdx
 
 colors:
   accent-primary:

@@ -1,6 +1,6 @@
 ---
 title: Letta FAQs
-slug: faq 
+slug: faq
 ---
 
 Can't find the answer to your question?
@@ -25,6 +25,7 @@ When you run Letta locally, you have the option to connect the agents server to 
   </Accordion>
   <Accordion title="Is Letta free to use?">
 The open source Letta software is free to use and permissively licensed under the Apache 2.0 license.
+Letta Desktop is a free application that combines the Letta Server and ADE into a single application.
 Letta Cloud is a paid service and requires a Letta Cloud account to use.
   </Accordion>
   <Accordion title="What's the difference between open source Letta and Letta Cloud?">
@@ -36,12 +37,14 @@ If you'd like to build production applications using the Letta API, consider usi
 ## Agent Development Environment (ADE)
 <AccordionGroup>
   <Accordion title="How do I use the ADE locally?">
-To connect the ADE to your local Letta server, simply run your Letta server (make sure you can access `localhost:8283`) and go to [https://app.letta.com](https://app.letta.com).
-If you would like to use the old version of the ADE (that runs on `localhost`), downgrade to Letta version `<=0.5.0`.
+If you use [Letta Desktop](/quickstart/desktop), the ADE runs inside of Letta Desktop locally on your machine.<br /><br />
+If you are deploying Letta via Docker and want to use the ADE, you can connect the web ADE to your Docker deployment.
+To connect the ADE to your deployed Letta server, simply run your Letta server (if running locally, make sure you can access `localhost:8283`) and go to [https://app.letta.com](https://app.letta.com).
   </Accordion>
-  <Accordion title="If I connect the ADE to my local server, does my agent data get uploaded to letta.com?">
+  <Accordion title="If I connect the web ADE to my local server, does my agent data get uploaded to letta.com?">
 No, the data in your Letta server database stays on your machine.
-The Letta ADE web application simply connects to your local Letta server (via the REST API) and provides a graphical interface on top of it to visualize your local Letta data in your browser's local state.
+The ADE web application simply connects to your local Letta server (via the REST API) and provides a graphical interface on top of it to visualize your local Letta data in your browser's local state.
+If you would like to run the ADE completely locally, you can use [Letta Desktop](/quickstart/desktop) instead.
   </Accordion>
   <Accordion title="Do I have to use your ADE? Can I build my own?">
 The ADE is built on top of the (fully open source) Letta server and Letta Agents API.
@@ -66,6 +69,6 @@ Full compatability table below:
 |---|---|---|---|
 | `pip install letta` | `letta server` | SQLite | ❌ |
 | `pip install letta` | `export LETTA_PG_URI=...` + `letta server` | PostgreSQL | ✅ |
-| *[Install Docker](https://www.docker.com/get-started/)*  |`docker run ...` | PostgreSQL | ✅ |    
+| *[Install Docker](https://www.docker.com/get-started/)*  |`docker run ...` | PostgreSQL | ✅ |
   </Accordion>
 </AccordionGroup>

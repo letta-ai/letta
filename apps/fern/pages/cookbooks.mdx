@@ -1,6 +1,6 @@
 ---
 title: Letta Cookbooks
-layout: page 
+layout: page
 hide-feedback: true
 no-image-zoom: true
 slug: cookbooks
@@ -31,7 +31,7 @@ slug: cookbooks
     }
 
     .text-blurb {
-      width: 60% !important; 
+      width: 60% !important;
     }
 
   `}
@@ -40,68 +40,97 @@ slug: cookbooks
 <div className="max-w-7xl mx-auto px-8">
 
 <div className="text-blurb">
-Explore what you can build with stateful agents. 
-These ready-made guides demonstrate best practices for building and deploying agents that maintain long-term memory and context. 
-Each example is production-ready and fully integrated with the Letta platform.
+Explore what you can build with stateful agents.<br />
+If you're just starting out, check out our <Icon icon="fa-sharp fa-light fa-bolt" /> [quickstart guide](/quickstart).<br />
+Further documentation on the Letta API can be found in our <Icon icon="fa-sharp fa-light fa-code" /> [API reference](/api-reference/overview).
 </div>
 
-## Example integrations
+## Ready-to-go Applications
 <div className="text-blurb">
-Learn how to connect Letta agents to your applications. 
-Whether you're building a web app or a command-line tool, these guides show you how to integrate stateful agents into your tech stack.
+Open source projects that can be used as a starting point for your own application.
 </div>
 
 <CardGroup cols={2}>
   <Card
-    title="Letta + Vercel"
-    icon="fa-brands fa-js"
-    href="/cookbooks"
+    title="LettaGPT chatbot application"
+    icon="fa-sharp fa-light messages"
+    href="https://github.com/letta-ai/letta-chatbot-template"
+    iconPosition="left"
   >
-Connect the Letta TypeScript SDK to a Vercel web app
+A chatbot application (using Next.js) where each user can chat with their own agents with long-term memory.
   </Card>
   <Card
-    title="Letta + Streamlit"
-    icon="fa-brands fa-python"
-    href="/cookbooks"
+    title="Create a Discord Bot (coming soon!)"
+    icon="fa-sharp fa-light fa-comments"
+    iconPosition="left"
   >
-Connect the Letta Python SDK to a Streamlit web app
+Use Letta to create a Discord bot that can chat with users and perform tasks.
   </Card>
 </CardGroup>
 
-## Example agents
+
+## Basic SDK Examples
 <div className="text-blurb">
-Discover how to build sophisticated AI applications with stateful agents. 
-From simple chatbots that learn over time to complex multi-agent systems, these examples showcase the power of proper context management and long-term memory.
+Read some example code to learn how to use the Letta SDKs.
 </div>
 
 <CardGroup cols={2}>
   <Card
-    title="Create a Chatbot with Memory"
-    icon="fa-sharp fa-light fa-brain-circuit"
-    href="/cookbooks/chatbot-memory"
+    title="TypeScript SDK"
+    icon="fa-brands fa-js"
+    href="https://github.com/letta-ai/letta/tree/main/examples/docs/node/example.ts"
+    iconPosition="left"
   >
-Build a chatbot that can adapt over time using long-term memory
+A basic example script using the Letta TypeScript SDK
   </Card>
   <Card
-    title="Built a multi-agent system"
-    icon="fa-sharp fa-light fa-people-group"
-    href="/cookbooks/multi-agent"
+    title="Python SDK"
+    icon="fa-brands fa-python"
+    href="https://github.com/letta-ai/letta/tree/main/examples/docs/node/example.py"
+    iconPosition="left"
   >
-Create a multi-agent system with an orchestrator and multiple workers
+A basic example script using the Letta Python SDK
+  </Card>
+</CardGroup>
+
+## Multi-Agent Examples
+<div className="text-blurb">
+Letta makes it easy to build powerful multi-agent systems with stateful agents.
+</div>
+
+<CardGroup cols={2}>
+  <Card
+    title="Connecting agents to each other"
+    icon="fa-sharp fa-light user-group"
+    href="/cookbooks/multi-agent-async"
+    iconPosition="left"
+  >
+Connect two independent agents together to allow them to chat with each other (as well as with a user).
   </Card>
   <Card
-    title="Create a Discord Bot"
-    icon="fa-sharp fa-light fa-comments"
-    href="/cookbooks/discord-bot"
+    title="Supervisor-Worker pattern (coming soon!)"
+    icon="fa-sharp fa-light people-group"
+    iconPosition="left"
   >
-    Integrate Letta into your application with a few lines of code
+Create a multi-agent system where a supervisor (aka orchestrator) agent directs multiple worker agents.
   </Card>
   <Card
-    title="Activate Voice Mode" 
+    title="Swarm pattern (coming soon!)"
+    icon="fa-sharp fa-light bee"
+    iconPosition="left"
+  >
+Create a multi-agent system where a supervisor (aka orchestrator) agent directs multiple worker agents.
+  </Card>
+</CardGroup>
+
+## Advanced Integrations
+<CardGroup cols={2}>
+  <Card
+    title="Advanced Voice Mode (coming soon!)"
     icon="fa-sharp fa-light fa-phone-volume"
-    href="/cookbooks/voice-mode"
+    iconPosition="left"
   >
-  Chat with your Letta agents using voice using our native integration
+Chat with your Letta agents using voice mode using our native voice integration.
   </Card>
 </CardGroup>
 
