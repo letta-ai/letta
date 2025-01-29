@@ -24,7 +24,7 @@ agent_state = client.agents.create(
 print(f"Created agent with name {agent_state.name} and unique ID {agent_state.id}")
 
 # Message an agent
-response = client.agents.messages.send(
+response = client.agents.messages.create(
     agent_id=agent_state.id,
     messages=[
         MessageCreate(
@@ -40,7 +40,7 @@ print("Agent messages", response.messages)
 agents = client.agents.list()
 
 # get the agent by ID
-agent_state = client.agents.get(agent_id=agent_state.id)
+agent_state = client.agents.retrieve(agent_id=agent_state.id)
 
 # get the agent by name
 agent_state = client.agents.list(name=agent_state.name)[0]
