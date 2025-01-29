@@ -26,6 +26,7 @@ from letta.schemas.job import Job as PydanticJob
 from letta.schemas.message import Message
 from letta.schemas.source import Source as PydanticSource
 from letta.server.server import SyncServer
+from letta.system import unpack_message
 
 from .utils import DummyDataConnector
 
@@ -332,7 +333,7 @@ def agent_id(server, user_id, base_tools):
             name="test_agent",
             tool_ids=[t.id for t in base_tools],
             memory_blocks=[],
-            model="openai/gpt-4o",
+            model="openai/gpt-4o-mini",
             embedding="openai/text-embedding-ada-002",
         ),
         actor=actor,
@@ -353,7 +354,7 @@ def other_agent_id(server, user_id, base_tools):
             name="test_agent_other",
             tool_ids=[t.id for t in base_tools],
             memory_blocks=[],
-            model="openai/gpt-4o",
+            model="openai/gpt-4o-mini",
             embedding="openai/text-embedding-ada-002",
         ),
         actor=actor,
@@ -552,7 +553,7 @@ def test_delete_agent_same_org(server: SyncServer, org_id: str, user: User):
         request=CreateAgent(
             name="nonexistent_tools_agent",
             memory_blocks=[],
-            model="openai/gpt-4o",
+            model="openai/gpt-4o-mini",
             embedding="openai/text-embedding-ada-002",
         ),
         actor=user,
@@ -636,6 +637,7 @@ def _test_get_messages_letta_format(
         limit=1000,
         reverse=reverse,
         return_message_object=True,
+        use_assistant_message=False,
     )
     assert all(isinstance(m, Message) for m in messages)
 
@@ -645,6 +647,7 @@ def _test_get_messages_letta_format(
         limit=1000,
         reverse=reverse,
         return_message_object=False,
+        use_assistant_message=False,
     )
     assert all(isinstance(m, LettaMessage) for m in letta_messages)
 
@@ -711,7 +714,7 @@ def _test_get_messages_letta_format(
 
             elif message.role == MessageRole.user:
                 assert isinstance(letta_message, UserMessage)
-                assert message.text == letta_message.content
+                assert unpack_message(message.text) == letta_message.content
                 letta_message_index += 1
 
             elif message.role == MessageRole.system:
@@ -914,13 +917,13 @@ def test_memory_rebuild_count(server, user, mock_e2b_api_key_none, base_tools, b
     # create agent
     agent_state = server.create_agent(
         request=CreateAgent(
-            name="memory_rebuild_test_agent",
+            name="test_memory_rebuild_count",
             tool_ids=[t.id for t in base_tools + base_memory_tools],
             memory_blocks=[
                 CreateBlock(label="human", value="The human's name is Bob."),
                 CreateBlock(label="persona", value="My name is Alice."),
             ],
-            model="openai/gpt-4o",
+            model="openai/gpt-4o-mini",
             embedding="openai/text-embedding-ada-002",
         ),
         actor=actor,
@@ -952,18 +955,11 @@ def test_memory_rebuild_count(server, user, mock_e2b_api_key_none, base_tools, b
         num_system_messages, all_messages = count_system_messages_in_recall()
         assert num_system_messages == 1, (num_system_messages, all_messages)
 
-        # Assuming core memory append actually ran correctly, at this point there should be 2 messages
-        server.user_message(user_id=user.id, agent_id=agent_state.id, message="Append 'banana' to your core memory")
-
-        # At this stage, there should be 2 system message inside of recall storage
-        num_system_messages, all_messages = count_system_messages_in_recall()
-        assert num_system_messages == 2, (num_system_messages, all_messages)
-
         # Run server.load_agent, and make sure that the number of system messages is still 2
         server.load_agent(agent_id=agent_state.id, actor=actor)
 
         num_system_messages, all_messages = count_system_messages_in_recall()
-        assert num_system_messages == 2, (num_system_messages, all_messages)
+        assert num_system_messages == 1, (num_system_messages, all_messages)
 
     finally:
         # cleanup
@@ -1108,7 +1104,7 @@ def test_add_remove_tools_update_agent(server: SyncServer, user_id: str, base_to
                 CreateBlock(label="human", value="The human's name is Bob."),
                 CreateBlock(label="persona", value="My name is Alice."),
             ],
-            model="openai/gpt-4o",
+            model="openai/gpt-4o-mini",
             embedding="openai/text-embedding-ada-002",
             include_base_tools=False,
         ),

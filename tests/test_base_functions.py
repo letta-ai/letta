@@ -1,6 +1,4 @@
 import json
-import secrets
-import string
 
 import pytest
 
@@ -9,30 +7,33 @@ from letta import LocalClient, create_client
 from letta.schemas.embedding_config import EmbeddingConfig
 from letta.schemas.letta_message import ToolReturnMessage
 from letta.schemas.llm_config import LLMConfig
+from letta.schemas.memory import ChatMemory
 from tests.helpers.utils import retry_until_success
+from tests.utils import wait_for_incoming_message
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope="function")
 def client():
     client = create_client()
-    client.set_default_llm_config(LLMConfig.default_config("gpt-4o-mini"))
+    client.set_default_llm_config(LLMConfig.default_config("gpt-4o"))
     client.set_default_embedding_config(EmbeddingConfig.default_config(provider="openai"))
 
     yield client
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope="function")
 def agent_obj(client: LocalClient):
     """Create a test agent that we can call functions on"""
-    agent_state = client.create_agent(include_multi_agent_tools=True)
+    send_message_to_agent_and_wait_for_reply_tool_id = client.get_tool_id(name="send_message_to_agent_and_wait_for_reply")
+    agent_state = client.create_agent(tool_ids=[send_message_to_agent_and_wait_for_reply_tool_id])
 
     agent_obj = client.server.load_agent(agent_id=agent_state.id, actor=client.user)
     yield agent_obj
 
-    client.delete_agent(agent_obj.agent_state.id)
+    # client.delete_agent(agent_obj.agent_state.id)
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope="function")
 def other_agent_obj(client: LocalClient):
     """Create another test agent that we can call functions on"""
     agent_state = client.create_agent(include_multi_agent_tools=False)
@@ -119,18 +120,18 @@ def test_recall(client, agent_obj):
 # This test is nondeterministic, so we retry until we get the perfect behavior from the LLM
 @retry_until_success(max_attempts=5, sleep_time_seconds=2)
 def test_send_message_to_agent(client, agent_obj, other_agent_obj):
-    long_random_string = "".join(secrets.choice(string.ascii_letters + string.digits) for _ in range(10))
+    secret_word = "banana"
 
     # Encourage the agent to send a message to the other agent_obj with the secret string
     client.send_message(
         agent_id=agent_obj.agent_state.id,
         role="user",
-        message=f"Use your tool to send a message to another agent with id {other_agent_obj.agent_state.id} with the secret password={long_random_string}",
+        message=f"Use your tool to send a message to another agent with id {other_agent_obj.agent_state.id} to share the secret word: {secret_word}!",
     )
 
     # Conversation search the other agent
-    result = base_functions.conversation_search(other_agent_obj, long_random_string)
-    assert long_random_string in result
+    result = base_functions.conversation_search(other_agent_obj, secret_word)
+    assert secret_word in result
 
     # Search the sender agent for the response from another agent
     in_context_messages = agent_obj.agent_manager.get_in_context_messages(agent_id=agent_obj.agent_state.id, actor=agent_obj.user)
@@ -144,7 +145,7 @@ def test_send_message_to_agent(client, agent_obj, other_agent_obj):
 
     print(f"In context messages of the sender agent (without system):\n\n{"\n".join([m.text for m in in_context_messages[1:]])}")
     if not found:
-        pytest.fail(f"Was not able to find an instance of the target snippet: {target_snippet}")
+        raise Exception(f"Was not able to find an instance of the target snippet: {target_snippet}")
 
     # Test that the agent can still receive messages fine
     response = client.send_message(agent_id=agent_obj.agent_state.id, role="user", message="So what did the other agent say?")
@@ -161,10 +162,11 @@ def test_send_message_to_agents_with_tags(client):
     for agent in prev_worker_agents:
         client.delete_agent(agent.id)
 
-    long_random_string = "".join(secrets.choice(string.ascii_letters + string.digits) for _ in range(10))
+    secret_word = "banana"
 
     # Create "manager" agent
-    manager_agent_state = client.create_agent(include_multi_agent_tools=True)
+    send_message_to_agents_matching_all_tags_tool_id = client.get_tool_id(name="send_message_to_agents_matching_all_tags")
+    manager_agent_state = client.create_agent(tool_ids=[send_message_to_agents_matching_all_tags_tool_id])
     manager_agent = client.server.load_agent(agent_id=manager_agent_state.id, actor=client.user)
 
     # Create 3 worker agents
@@ -187,7 +189,7 @@ def test_send_message_to_agents_with_tags(client):
     response = client.send_message(
         agent_id=manager_agent.agent_state.id,
         role="user",
-        message=f"Send a message to all agents with tags {worker_tags} informing them of the secret password={long_random_string}",
+        message=f"Send a message to all agents with tags {worker_tags} informing them of the secret word: {secret_word}!",
     )
 
     for m in response.messages:
@@ -201,8 +203,8 @@ def test_send_message_to_agents_with_tags(client):
 
     # Conversation search the worker agents
     for agent in worker_agents:
-        result = base_functions.conversation_search(agent, long_random_string)
-        assert long_random_string in result
+        result = base_functions.conversation_search(agent, secret_word)
+        assert secret_word in result
 
     # Test that the agent can still receive messages fine
     response = client.send_message(agent_id=manager_agent.agent_state.id, role="user", message="So what did the other agents say?")
@@ -212,3 +214,56 @@ def test_send_message_to_agents_with_tags(client):
     client.delete_agent(manager_agent_state.id)
     for agent in worker_agents:
         client.delete_agent(agent.agent_state.id)
+
+
+@retry_until_success(max_attempts=5, sleep_time_seconds=2)
+def test_agents_async_simple(client):
+    """
+    Test two agents with multi-agent tools sending messages back and forth to count to 5.
+    The chain is started by prompting one of the agents.
+    """
+    # Cleanup from potentially failed previous runs
+    existing_agents = client.server.agent_manager.list_agents(client.user)
+    for agent in existing_agents:
+        client.delete_agent(agent.id)
+
+    # Create two agents with multi-agent tools
+    send_message_to_agent_async_tool_id = client.get_tool_id(name="send_message_to_agent_async")
+    memory_a = ChatMemory(
+        human="Chad - I'm interested in hearing poem.",
+        persona="You are an AI agent that can communicate with your agent buddy using `send_message_to_agent_async`, who has some great poem ideas (so I've heard).",
+    )
+    charles_state = client.create_agent(name="charles", memory=memory_a, tool_ids=[send_message_to_agent_async_tool_id])
+    charles = client.server.load_agent(agent_id=charles_state.id, actor=client.user)
+
+    memory_b = ChatMemory(
+        human="No human - you are to only communicate with the other AI agent.",
+        persona="You are an AI agent that can communicate with your agent buddy using `send_message_to_agent_async`, who is interested in great poem ideas.",
+    )
+    sarah_state = client.create_agent(name="sarah", memory=memory_b, tool_ids=[send_message_to_agent_async_tool_id])
+
+    # Start the count chain with Agent1
+    initial_prompt = f"I want you to talk to the other agent with ID {sarah_state.id} using `send_message_to_agent_async`. Specifically, I want you to ask him for a poem idea, and then craft a poem for me."
+    client.send_message(
+        agent_id=charles.agent_state.id,
+        role="user",
+        message=initial_prompt,
+    )
+
+    found_in_charles = wait_for_incoming_message(
+        client=client,
+        agent_id=charles_state.id,
+        substring="[Incoming message from agent with ID",
+        max_wait_seconds=10,
+        sleep_interval=0.5,
+    )
+    assert found_in_charles, "Charles never received the system message from Sarah (timed out)."
+
+    found_in_sarah = wait_for_incoming_message(
+        client=client,
+        agent_id=sarah_state.id,
+        substring="[Incoming message from agent with ID",
+        max_wait_seconds=10,
+        sleep_interval=0.5,
+    )
+    assert found_in_sarah, "Sarah never received the system message from Charles (timed out)."

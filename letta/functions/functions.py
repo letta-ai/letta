@@ -122,7 +122,6 @@ def get_json_schema_from_module(module_name: str, function_name: str) -> dict:
         generated_schema = generate_schema(attr)
 
         return generated_schema
-
     except ModuleNotFoundError:
         raise ModuleNotFoundError(f"Module '{module_name}' not found.")
     except AttributeError:

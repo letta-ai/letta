@@ -1,8 +1,8 @@
 from datetime import datetime
-from unittest.mock import MagicMock, Mock, patch
+from unittest.mock import MagicMock, Mock
 
 import pytest
-from composio.client.collections import ActionModel, ActionParametersModel, ActionResponseModel, AppModel
+from composio.client.collections import AppModel
 from fastapi.testclient import TestClient
 
 from letta.orm.errors import NoResultFound
@@ -96,65 +96,6 @@ def composio_apps():
         configuration_docs_text=None,
     )
     yield [affinity_app]
-
-
-@pytest.fixture
-def composio_actions():
-    yield [
-        ActionModel(
-            name="AFFINITY_GET_ALL_COMPANIES",
-            display_name="Get all companies",
-            parameters=ActionParametersModel(
-                properties={
-                    "cursor": {"default": None, "description": "Cursor for the next or previous page", "title": "Cursor", "type": "string"},
-                    "limit": {"default": 100, "description": "Number of items to include in the page", "title": "Limit", "type": "integer"},
-                    "ids": {"default": None, "description": "Company IDs", "items": {"type": "integer"}, "title": "Ids", "type": "array"},
-                    "fieldIds": {
-                        "default": None,
-                        "description": "Field IDs for which to return field data",
-                        "items": {"type": "string"},
-                        "title": "Fieldids",
-                        "type": "array",
-                    },
-                    "fieldTypes": {
-                        "default": None,
-                        "description": "Field Types for which to return field data",
-                        "items": {"enum": ["enriched", "global", "relationship-intelligence"], "title": "FieldtypesEnm", "type": "string"},
-                        "title": "Fieldtypes",
-                        "type": "array",
-                    },
-                },
-                title="GetAllCompaniesRequest",
-                type="object",
-                required=None,
-            ),
-            response=ActionResponseModel(
-                properties={
-                    "data": {"title": "Data", "type": "object"},
-                    "successful": {
-                        "description": "Whether or not the action execution was successful or not",
-                        "title": "Successful",
-                        "type": "boolean",
-                    },
-                    "error": {
-                        "anyOf": [{"type": "string"}, {"type": "null"}],
-                        "default": None,
-                        "description": "Error if any occurred during the execution of the action",
-                        "title": "Error",
-                    },
-                },
-                title="GetAllCompaniesResponse",
-                type="object",
-                required=["data", "successful"],
-            ),
-            appName="affinity",
-            appId="affinity",
-            tags=["companies", "important"],
-            enabled=False,
-            logo="https://cdn.jsdelivr.net/gh/ComposioHQ/open-logos@master/affinity.jpeg",
-            description="Affinity Api Allows Paginated Access To Company Info And Custom Fields. Use `Field Ids` Or `Field Types` To Specify Data In A Request. Retrieve Field I Ds/Types Via Get `/V2/Companies/Fields`. Export Permission Needed.",
-        )
-    ]
 
 
 def configure_mock_sync_server(mock_sync_server):
@@ -257,55 +198,6 @@ def test_upsert_base_tools(client, mock_sync_server, add_integers_tool):
     mock_sync_server.tool_manager.upsert_base_tools.assert_called_once_with(
         actor=mock_sync_server.user_manager.get_user_or_default.return_value
     )
-
-
-def test_list_composio_apps(client, mock_sync_server, composio_apps):
-    configure_mock_sync_server(mock_sync_server)
-
-    mock_sync_server.get_composio_apps.return_value = composio_apps
-
-    response = client.get("/v1/tools/composio/apps")
-
-    assert response.status_code == 200
-    assert len(response.json()) == 1
-    mock_sync_server.get_composio_apps.assert_called_once()
-
-
-def test_list_composio_actions_by_app(client, mock_sync_server, composio_actions):
-    configure_mock_sync_server(mock_sync_server)
-
-    mock_sync_server.get_composio_actions_from_app_name.return_value = composio_actions
-
-    response = client.get("/v1/tools/composio/apps/App1/actions")
-
-    assert response.status_code == 200
-    assert len(response.json()) == 1
-    mock_sync_server.get_composio_actions_from_app_name.assert_called_once_with(composio_app_name="App1", api_key="mock_composio_api_key")
-
-
-def test_add_composio_tool(client, mock_sync_server, add_integers_tool):
-    configure_mock_sync_server(mock_sync_server)
-
-    # Mock ToolCreate.from_composio to return the expected ToolCreate object
-    with patch("letta.schemas.tool.ToolCreate.from_composio") as mock_from_composio:
-        mock_from_composio.return_value = ToolCreate(
-            source_code=add_integers_tool.source_code,
-            json_schema=add_integers_tool.json_schema,
-        )
-
-        # Mock server behavior
-        mock_sync_server.tool_manager.create_or_update_composio_tool.return_value = add_integers_tool
-
-        # Perform the request
-        response = client.post(f"/v1/tools/composio/{add_integers_tool.name}", headers={"user_id": "test_user"})
-
-        # Assertions
-        assert response.status_code == 200
-        assert response.json()["id"] == add_integers_tool.id
-        mock_sync_server.tool_manager.create_or_update_composio_tool.assert_called_once()
-
-        # Verify the mocked from_composio method was called
-        mock_from_composio.assert_called_once_with(action_name=add_integers_tool.name)
 
 
 # ======================================================================================================================

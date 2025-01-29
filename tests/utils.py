@@ -1,5 +1,6 @@
 import datetime
 import os
+import time
 from datetime import datetime
 from importlib import util
 from typing import Dict, Iterator, List, Tuple
@@ -8,6 +9,7 @@ import requests
 
 from letta.config import LettaConfig
 from letta.data_sources.connectors import DataConnector
+from letta.schemas.enums import MessageRole
 from letta.schemas.file import FileMetadata
 from letta.settings import TestSettings
 
@@ -145,3 +147,27 @@ def with_qdrant_storage(storage: list[str]):
         storage.append("qdrant")
 
     return storage
+
+
+def wait_for_incoming_message(
+    client,
+    agent_id: str,
+    substring: str = "[Incoming message from agent with ID",
+    max_wait_seconds: float = 10.0,
+    sleep_interval: float = 0.5,
+) -> bool:
+    """
+    Polls for up to `max_wait_seconds` to see if the agent's message list
+    contains a system message with `substring`.
+    Returns True if found, otherwise False after timeout.
+    """
+    deadline = time.time() + max_wait_seconds
+
+    while time.time() < deadline:
+        messages = client.server.message_manager.list_messages_for_agent(agent_id=agent_id)
+        # Check for the system message containing `substring`
+        if any(message.role == MessageRole.system and substring in (message.text or "") for message in messages):
+            return True
+        time.sleep(sleep_interval)
+
+    return False

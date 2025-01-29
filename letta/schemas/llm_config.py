@@ -88,10 +88,19 @@ class LLMConfig(BaseModel):
                 model_endpoint="https://api.openai.com/v1",
                 model_wrapper=None,
                 context_window=8192,
+                put_inner_thoughts_in_kwargs=True,
             )
         elif model_name == "gpt-4o-mini":
             return cls(
                 model="gpt-4o-mini",
+                model_endpoint_type="openai",
+                model_endpoint="https://api.openai.com/v1",
+                model_wrapper=None,
+                context_window=128000,
+            )
+        elif model_name == "gpt-4o":
+            return cls(
+                model="gpt-4o",
                 model_endpoint_type="openai",
                 model_endpoint="https://api.openai.com/v1",
                 model_wrapper=None,

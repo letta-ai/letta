@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Annotated, List, Optional, Union
+from typing import Annotated, List, Optional
 
 from fastapi import APIRouter, BackgroundTasks, Body, Depends, Header, HTTPException, Query, status
 from fastapi.responses import JSONResponse
@@ -10,7 +10,7 @@ from letta.log import get_logger
 from letta.orm.errors import NoResultFound
 from letta.schemas.agent import AgentState, CreateAgent, UpdateAgent
 from letta.schemas.block import Block, BlockUpdate, CreateBlock  # , BlockLabelUpdate, BlockLimitUpdate
-from letta.schemas.job import JobStatus, JobUpdate
+from letta.schemas.job import JobStatus, JobUpdate, LettaRequestConfig
 from letta.schemas.letta_message import LettaMessageUnion
 from letta.schemas.letta_request import LettaRequest, LettaStreamingRequest
 from letta.schemas.letta_response import LettaResponse
@@ -392,15 +392,7 @@ def delete_archival_memory(
 
 
 AgentMessagesResponse = Annotated[
-    Union[List[Message], List[LettaMessageUnion]],
-    Field(
-        json_schema_extra={
-            "anyOf": [
-                {"type": "array", "items": {"$ref": "#/components/schemas/Message"}},
-                {"type": "array", "items": {"$ref": "#/components/schemas/LettaMessageUnion"}},
-            ]
-        }
-    ),
+    List[LettaMessageUnion], Field(json_schema_extra={"type": "array", "items": {"$ref": "#/components/schemas/LettaMessageUnion"}})
 ]
 
 
@@ -411,16 +403,9 @@ def list_messages(
     after: Optional[str] = Query(None, description="Message after which to retrieve the returned messages."),
     before: Optional[str] = Query(None, description="Message before which to retrieve the returned messages."),
     limit: int = Query(10, description="Maximum number of messages to retrieve."),
-    msg_object: bool = Query(False, description="If true, returns Message objects. If false, return LettaMessage objects."),
-    # Flags to support the use of AssistantMessage message types
-    assistant_message_tool_name: str = Query(
-        DEFAULT_MESSAGE_TOOL,
-        description="The name of the designated message tool.",
-    ),
-    assistant_message_tool_kwarg: str = Query(
-        DEFAULT_MESSAGE_TOOL_KWARG,
-        description="The name of the message argument in the designated message tool.",
-    ),
+    use_assistant_message: bool = Query(True, description="Whether to use assistant messages"),
+    assistant_message_tool_name: str = Query(DEFAULT_MESSAGE_TOOL, description="The name of the designated message tool."),
+    assistant_message_tool_kwarg: str = Query(DEFAULT_MESSAGE_TOOL_KWARG, description="The name of the message argument."),
     user_id: Optional[str] = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
 ):
     """
@@ -435,7 +420,8 @@ def list_messages(
         before=before,
         limit=limit,
         reverse=True,
-        return_message_object=msg_object,
+        return_message_object=False,
+        use_assistant_message=use_assistant_message,
         assistant_message_tool_name=assistant_message_tool_name,
         assistant_message_tool_kwarg=assistant_message_tool_kwarg,
     )
@@ -480,9 +466,9 @@ async def send_message(
         stream_steps=False,
         stream_tokens=False,
         # Support for AssistantMessage
-        use_assistant_message=request.config.use_assistant_message,
-        assistant_message_tool_name=request.config.assistant_message_tool_name,
-        assistant_message_tool_kwarg=request.config.assistant_message_tool_kwarg,
+        use_assistant_message=request.use_assistant_message,
+        assistant_message_tool_name=request.assistant_message_tool_name,
+        assistant_message_tool_kwarg=request.assistant_message_tool_kwarg,
     )
     return result
 
@@ -520,9 +506,9 @@ async def send_message_streaming(
         stream_steps=True,
         stream_tokens=request.stream_tokens,
         # Support for AssistantMessage
-        use_assistant_message=request.config.use_assistant_message,
-        assistant_message_tool_name=request.config.assistant_message_tool_name,
-        assistant_message_tool_kwarg=request.config.assistant_message_tool_kwarg,
+        use_assistant_message=request.use_assistant_message,
+        assistant_message_tool_name=request.assistant_message_tool_name,
+        assistant_message_tool_kwarg=request.assistant_message_tool_kwarg,
     )
     return result
 
@@ -597,7 +583,11 @@ async def send_message_async(
             "job_type": "send_message_async",
             "agent_id": agent_id,
         },
-        request_config=request.config,
+        request_config=LettaRequestConfig(
+            use_assistant_message=request.use_assistant_message,
+            assistant_message_tool_name=request.assistant_message_tool_name,
+            assistant_message_tool_kwarg=request.assistant_message_tool_kwarg,
+        ),
     )
     run = server.job_manager.create_job(pydantic_job=run, actor=actor)
 
@@ -609,9 +599,9 @@ async def send_message_async(
         actor=actor,
         agent_id=agent_id,
         messages=request.messages,
-        use_assistant_message=request.config.use_assistant_message,
-        assistant_message_tool_name=request.config.assistant_message_tool_name,
-        assistant_message_tool_kwarg=request.config.assistant_message_tool_kwarg,
+        use_assistant_message=request.use_assistant_message,
+        assistant_message_tool_name=request.assistant_message_tool_name,
+        assistant_message_tool_kwarg=request.assistant_message_tool_kwarg,
     )
 
     return run

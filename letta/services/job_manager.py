@@ -14,9 +14,8 @@ from letta.orm.sqlalchemy_base import AccessType
 from letta.orm.step import Step
 from letta.schemas.enums import JobStatus, MessageRole
 from letta.schemas.job import Job as PydanticJob
-from letta.schemas.job import JobUpdate
+from letta.schemas.job import JobUpdate, LettaRequestConfig
 from letta.schemas.letta_message import LettaMessage
-from letta.schemas.letta_request import LettaRequestConfig
 from letta.schemas.message import Message as PydanticMessage
 from letta.schemas.run import Run as PydanticRun
 from letta.schemas.usage import LettaUsageStatistics
@@ -303,16 +302,12 @@ class JobManager:
 
         request_config = self._get_run_request_config(run_id)
 
-        # Convert messages to LettaMessages
-        messages = [
-            msg
-            for m in messages
-            for msg in m.to_letta_message(
-                assistant_message=request_config["use_assistant_message"],
-                assistant_message_tool_name=request_config["assistant_message_tool_name"],
-                assistant_message_tool_kwarg=request_config["assistant_message_tool_kwarg"],
-            )
-        ]
+        messages = PydanticMessage.to_letta_messages_from_list(
+            messages=messages,
+            use_assistant_message=request_config["use_assistant_message"],
+            assistant_message_tool_name=request_config["assistant_message_tool_name"],
+            assistant_message_tool_kwarg=request_config["assistant_message_tool_kwarg"],
+        )
 
         return messages
 

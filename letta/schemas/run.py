@@ -3,8 +3,7 @@ from typing import Optional
 from pydantic import Field
 
 from letta.orm.enums import JobType
-from letta.schemas.job import Job, JobBase
-from letta.schemas.letta_request import LettaRequestConfig
+from letta.schemas.job import Job, JobBase, LettaRequestConfig
 
 
 class RunBase(JobBase):

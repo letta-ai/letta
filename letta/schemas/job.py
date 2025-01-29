@@ -1,8 +1,9 @@
 from datetime import datetime
 from typing import Optional
 
-from pydantic import Field
+from pydantic import BaseModel, Field
 
+from letta.constants import DEFAULT_MESSAGE_TOOL, DEFAULT_MESSAGE_TOOL_KWARG
 from letta.orm.enums import JobType
 from letta.schemas.enums import JobStatus
 from letta.schemas.letta_base import OrmMetadataBase
@@ -38,3 +39,18 @@ class JobUpdate(JobBase):
 
     class Config:
         extra = "ignore"  # Ignores extra fields
+
+
+class LettaRequestConfig(BaseModel):
+    use_assistant_message: bool = Field(
+        default=True,
+        description="Whether the server should parse specific tool call arguments (default `send_message`) as `AssistantMessage` objects.",
+    )
+    assistant_message_tool_name: str = Field(
+        default=DEFAULT_MESSAGE_TOOL,
+        description="The name of the designated message tool.",
+    )
+    assistant_message_tool_kwarg: str = Field(
+        default=DEFAULT_MESSAGE_TOOL_KWARG,
+        description="The name of the message argument in the designated message tool.",
+    )
