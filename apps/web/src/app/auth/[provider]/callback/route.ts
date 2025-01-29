@@ -131,7 +131,6 @@ export async function GET(
       redirectUrl,
     });
   } catch (e) {
-    console.error(e);
     const errorCode = (() => {
       if (e instanceof Error) {
         if (Object.values(LoginErrorsEnum).some((code) => code === e.message)) {

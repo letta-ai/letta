@@ -6,6 +6,9 @@ export enum LoginErrorsEnum {
   EXPIRED_INVITE_CODE = 'expired-invite-code',
   INVALID_INVITE_CODE = 'invalid-invite-code',
   INVITE_MISMATCH_EMAIL = 'invite-mismatch-email',
+  GITHUB_NO_EMAIL = 'github-no-email',
+  GITHUB_NO_USER = 'github-no-user',
+  GITHUB_NO_VERIFIED_EMAIL = 'github-no-verified-email',
 }
 
 export const LoginErrorsMap: Record<LoginErrorsEnum, string> = {
@@ -23,6 +26,12 @@ export const LoginErrorsMap: Record<LoginErrorsEnum, string> = {
     'Your account has been restricted due to a possible violation of our terms of service. Please contact support.',
   [LoginErrorsEnum.EMAIL_ALREADY_EXISTS]:
     'An account with this email already exists but was created using a different provider. Please sign in with a different provider.',
+  [LoginErrorsEnum.GITHUB_NO_EMAIL]:
+    'Could not find an email address associated with your Github account. Please add an email address to your Github account and try again.',
+  [LoginErrorsEnum.GITHUB_NO_USER]:
+    'Could not find user details associated with your Github account. This is usually due to permissions issues with your Github account. Please check your Github account settings and try again.',
+  [LoginErrorsEnum.GITHUB_NO_VERIFIED_EMAIL]:
+    'Could not find a verified or primary email address associated with your Github account. We use email addresses to identify users. Please add a verified primary email address to your Github account and try again.',
 };
 
 export function isTextALoginError(text: unknown): text is LoginErrorsEnum {

@@ -1,5 +1,6 @@
 import axios from 'axios';
 import type { ProviderUserPayload } from '@letta-cloud/web-api-client';
+import { LoginErrorsEnum } from '$web/errors';
 
 interface GithubUserResponse {
   login: string;
@@ -71,13 +72,15 @@ export async function getGithubUserDetails(
   );
 
   if (!emailsResponse.data.length) {
-    throw new Error('Could not get email from Github');
+    throw new Error(LoginErrorsEnum.GITHUB_NO_EMAIL);
   }
 
-  const primaryEmail = emailsResponse.data.find((email) => email.primary);
+  const primaryEmail = emailsResponse.data.find(
+    (email) => email.primary && email.verified,
+  );
 
   if (!primaryEmail) {
-    throw new Error('Could not get primary email from Github');
+    throw new Error(LoginErrorsEnum.GITHUB_NO_VERIFIED_EMAIL);
   }
 
   const userResponse = await axios.get<GithubUserResponse>(
@@ -90,11 +93,15 @@ export async function getGithubUserDetails(
     },
   );
 
+  if (!userResponse.data) {
+    throw new Error(LoginErrorsEnum.GITHUB_NO_USER);
+  }
+
   return {
     email: primaryEmail.email,
     uniqueId: `github-${userResponse.data.node_id.toString()}`,
     imageUrl: userResponse.data.avatar_url,
     provider: 'github',
-    name: userResponse.data.name,
+    name: userResponse.data.name || primaryEmail.email,
   };
 }
