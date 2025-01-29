@@ -46,9 +46,13 @@ class ToolRuleType(str, Enum):
 
     # note: some of these should be renamed when we do the data migration
 
-    run_first = "InitToolRule"
-    exit_loop = "TerminalToolRule"  # reasoning loop should exit
-    continue_loop = "continue_loop"  # reasoning loop should continue
+    run_first = "run_first"
+    exit_loop = "exit_loop"  # reasoning loop should exit
+    continue_loop = "continue_loop"
     conditional = "conditional"
-    constrain_child_tools = "ToolRule"
+    constrain_child_tools = "constrain_child_tools"
     require_parent_tools = "require_parent_tools"
+    # Deprecated
+    InitToolRule = "InitToolRule"
+    TerminalToolRule = "TerminalToolRule"
+    ToolRule = "ToolRule"

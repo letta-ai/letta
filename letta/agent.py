@@ -235,6 +235,7 @@ class Agent(BaseAgent):
                 # TODO: This is only temporary, can remove after we publish a pip package with this object
                 agent_state_copy = self.agent_state.__deepcopy__()
                 agent_state_copy.tools = []
+                agent_state_copy.tool_rules = []
 
                 sandbox_run_result = ToolExecutionSandbox(function_name, function_args, self.user).run(agent_state=agent_state_copy)
                 function_response, updated_agent_state = sandbox_run_result.func_return, sandbox_run_result.agent_state
