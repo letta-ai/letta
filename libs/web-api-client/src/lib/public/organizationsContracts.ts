@@ -332,6 +332,20 @@ const removeOrganizationBillingMethodContract = c.mutation({
   },
 });
 
+const setDefaultOrganizationBillingMethodContract = c.mutation({
+  path: '/organizations/self/billing-info/methods/:methodId/default',
+  method: 'POST',
+  pathParams: z.object({
+    methodId: z.string(),
+  }),
+  body: z.undefined(),
+  responses: {
+    200: z.object({
+      success: z.boolean(),
+    }),
+  },
+});
+
 const updateOrganizationUserRolePayload = z.object({
   role: UserPresetRoles,
   customPermissions: z.array(z.string()).optional(),
@@ -353,7 +367,6 @@ const updateOrganizationUserRoleContract = c.mutation({
   },
 });
 
-
 export const organizationsContract = c.router({
   getCurrentOrganization: getCurrentOrganizationContract,
   getCurrentOrganizationPreferences: getCurrentOrganizationPreferencesContract,
@@ -371,6 +384,8 @@ export const organizationsContract = c.router({
   getCurrentOrganizationBillingInfo: getCurrentOrganizationBillingInfoContract,
   startSetupIntent: startSetupIntentContract,
   removeOrganizationBillingMethod: removeOrganizationBillingMethodContract,
+  setDefaultOrganizationBillingMethod:
+    setDefaultOrganizationBillingMethodContract,
 });
 
 export const organizationsQueryClientKeys = {

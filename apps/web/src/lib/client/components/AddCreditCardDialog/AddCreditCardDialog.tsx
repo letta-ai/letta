@@ -59,7 +59,7 @@ function CreditCardFormInner(props: CreditCardFormInnerProps) {
           return;
         }
 
-        const { error } = await stripe.confirmSetup({
+        const { error, setupIntent } = await stripe.confirmSetup({
           elements,
           clientSecret,
           redirect: 'if_required',
@@ -69,6 +69,16 @@ function CreditCardFormInner(props: CreditCardFormInnerProps) {
           setError(error.message || '');
           setIsSubmitting(false);
           return;
+        }
+
+        if (typeof setupIntent?.payment_method === 'string') {
+          await webApi.organizations.setDefaultOrganizationBillingMethod.mutate(
+            {
+              params: {
+                methodId: setupIntent.payment_method,
+              },
+            },
+          );
         }
 
         onComplete();

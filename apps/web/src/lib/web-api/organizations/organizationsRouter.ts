@@ -24,6 +24,7 @@ import {
   listCreditCards,
   removePaymentMethod,
 } from '@letta-cloud/payments';
+import { setDefaultPaymentMethod } from '@letta-cloud/payments';
 import { ApplicationServices } from '@letta-cloud/rbac';
 
 type GetCurrentOrganizationResponse = ServerInferResponses<
@@ -182,8 +183,11 @@ type InviteNewTeamMemberResponse = ServerInferResponses<
 async function inviteNewTeamMember(
   req: InviteNewTeamMemberRequest,
 ): Promise<InviteNewTeamMemberResponse> {
-  const { activeOrganizationId, id: userId, permissions } =
-    await getUserWithActiveOrganizationIdOrThrow();
+  const {
+    activeOrganizationId,
+    id: userId,
+    permissions,
+  } = await getUserWithActiveOrganizationIdOrThrow();
   const { email } = req.body;
 
   if (!permissions.has(ApplicationServices.UPDATE_USERS_IN_ORGANIZATION)) {
@@ -342,8 +346,11 @@ type RemoveTeamMemberResponse = ServerInferResponses<
 async function removeTeamMember(
   req: RemoveTeamMember,
 ): Promise<RemoveTeamMemberResponse> {
-  const { activeOrganizationId,  permissions, id: userId } =
-    await getUserWithActiveOrganizationIdOrThrow();
+  const {
+    activeOrganizationId,
+    permissions,
+    id: userId,
+  } = await getUserWithActiveOrganizationIdOrThrow();
   const { memberId } = req.params;
 
   if (!permissions.has(ApplicationServices.UPDATE_USERS_IN_ORGANIZATION)) {
@@ -674,7 +681,8 @@ async function getCurrentOrganizationBillingInfo(): Promise<GetCurrentOrganizati
           postalCode: card.billing_details.address?.postal_code || '',
           country: card.billing_details.address?.country || '',
         },
-        isDefault: paymentCustomer?.default_source === card.id,
+        isDefault:
+          paymentCustomer?.invoice_settings.default_payment_method === card.id,
         name: card.billing_details.name || '',
       })),
       totalCredits: parseInt(credits.credits, 10),
@@ -736,6 +744,34 @@ export async function removeOrganizationBillingMethod(
   };
 }
 
+type SetDefaultOrganizationBillingMethodRequest = ServerInferRequest<
+  typeof contracts.organizations.setDefaultOrganizationBillingMethod
+>;
+
+type SetDefaultOrganizationBillingMethodResponse = ServerInferResponses<
+  typeof contracts.organizations.setDefaultOrganizationBillingMethod
+>;
+
+export async function setDefaultOrganizationBillingMethod(
+  req: SetDefaultOrganizationBillingMethodRequest,
+): Promise<SetDefaultOrganizationBillingMethodResponse> {
+  const { methodId } = req.params;
+  const { activeOrganizationId } =
+    await getUserWithActiveOrganizationIdOrThrow();
+
+  await setDefaultPaymentMethod({
+    paymentMethodId: methodId,
+    organizationId: activeOrganizationId,
+  });
+
+  return {
+    status: 200,
+    body: {
+      success: true,
+    },
+  };
+}
+
 type UpdateOrganizationUserRoleRequest = ServerInferRequest<
   typeof contracts.organizations.updateOrganizationUserRole
 >;
@@ -763,7 +799,7 @@ export async function updateOrganizationUserRole(
     };
   }
 
-const { userId } = req.params;
+  const { userId } = req.params;
 
   const { role, customPermissions } = req.body;
 
@@ -807,4 +843,5 @@ export const organizationsRouter = {
   startSetupIntent,
   updateOrganizationUserRole,
   removeOrganizationBillingMethod,
+  setDefaultOrganizationBillingMethod,
 };

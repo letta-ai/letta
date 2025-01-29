@@ -1,19 +1,14 @@
 import { ApplicationServices } from './services';
 import { z } from 'zod';
 
-export const UserPresetRoles = z.enum([
-  'admin',
-  'editor',
-  'custom'
-])
+export const UserPresetRoles = z.enum(['admin', 'editor', 'custom']);
 
 export type UserPresetRolesType = z.infer<typeof UserPresetRoles>;
 
-
 const analystPermissions = [
   ApplicationServices.READ_AGENT,
-  ApplicationServices.MESSAGE_AGENT
-]
+  ApplicationServices.MESSAGE_AGENT,
+];
 
 const editorPermissions = [
   ...analystPermissions,
@@ -30,8 +25,8 @@ const editorPermissions = [
   ApplicationServices.DELETE_DATA_SOURCE,
   ApplicationServices.READ_DATA_SOURCE,
   ApplicationServices.UPDATE_DATA_SOURCE,
-  ApplicationServices.UPDATE_ORGANIZATION_ENVIRONMENT_VARIABLES
-]
+  ApplicationServices.UPDATE_ORGANIZATION_ENVIRONMENT_VARIABLES,
+];
 
 const adminPermissions = [
   ...editorPermissions,
@@ -43,11 +38,13 @@ const adminPermissions = [
   ApplicationServices.READ_BILLING,
   ApplicationServices.CONNECT_INTEGRATIONS,
   ApplicationServices.UPDATE_BILLING,
-]
+];
 
-
-export const roleToServicesMap: Record<UserPresetRolesType, ApplicationServices[]> = {
+export const roleToServicesMap: Record<
+  UserPresetRolesType,
+  ApplicationServices[]
+> = {
   admin: adminPermissions,
   editor: editorPermissions,
-  custom: []
-}
+  custom: [],
+};

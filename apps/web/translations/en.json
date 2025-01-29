@@ -374,25 +374,34 @@
       "description": "Are you sure you want to remove this credit card? This will not remove any credits you have purchased."
     },
     "CreditCardSlot": {
-      "endingIn": "●●● ●●●● ●●●● {last4}",
+      "endingIn": "●●●● {last4}",
       "delete": "Delete card",
       "default": "Default card",
       "expires": "Expires {month}/{year}"
+    },
+    "SetDefaultCreditCardDialog": {
+      "title": "Set default credit card",
+      "confirm": "Set default",
+      "trigger": "Set as default",
+      "description": "Are you sure you want to set this as your default credit card?",
+      "error": "There was an error setting this as your default credit card, please try again or contact support."
     },
     "PaymentMethods": {
       "noPaymentMethods": "You have not added any payment methods yet.",
       "addPaymentMethod": "Add a credit card",
       "title": "Payment methods",
-      "description": "You can add up to four credit cards to your account. We will automatically charge the default card when your balance is low."
+      "description": "You can add up to four credit cards to your account."
     },
     "BillingOverview": {
       "noPaymentMethods": "You have not added any payment methods yet.",
       "addPaymentMethod": "Add payment method",
       "error": "There was an error loading billing information, please try again or contact support.",
       "Credits": {
-        "title": "Available credits",
+        "title": "Credit balance",
         "description": "Credits are used to pay for agent usage. You can purchase more credits below.",
-        "add": "Purchase credits"
+        "add": "Purchase credits",
+        "available": "Credits available",
+        "used": "of {total} credits used"
       },
       "Preferences": {
         "title": "Preferences",

@@ -22,6 +22,3 @@ export enum ApplicationServices {
   UPDATE_BILLING = 'UPDATE_BILLING',
   CONNECT_INTEGRATIONS = 'CONNECT_INTEGRATIONS',
 }
-
-
-

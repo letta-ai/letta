@@ -2,20 +2,26 @@
 import { useTranslations } from '@letta-cloud/translations';
 import {
   Alert,
+  AmexCardIcon,
   Badge,
   Button,
   CreditCardIcon,
   DashboardPageLayout,
   DashboardPageSection,
   Dialog,
+  DiscoverCardIcon,
   HStack,
+  LettaCoinIcon,
   LoadingEmptyStatusComponent,
+  MastercardCardIcon,
   NiceGridDisplay,
   PlusIcon,
   Section,
+  StripeCardIcon,
   TabGroup,
   TrashIcon,
   Typography,
+  VisaCardIcon,
   VStack,
   WalletIcon,
 } from '@letta-cloud/component-library';
@@ -26,6 +32,7 @@ import { useNumberFormatter } from '@letta-cloud/helpful-client-utils';
 import { AddCreditCardDialog } from '$web/client/components/AddCreditCardDialog/AddCreditCardDialog';
 import { useQueryClient } from '@tanstack/react-query';
 import type { ServerInferResponses } from '@ts-rest/core';
+import { Slot } from '@radix-ui/react-slot';
 
 interface RemoveCreditCardDialogProps {
   paymentMethodId: string;
@@ -99,6 +106,118 @@ function RemoveCreditCardDialog(props: RemoveCreditCardDialogProps) {
   );
 }
 
+interface CreditCardOverrideIconProps {
+  brand: string;
+}
+
+function CreditCardOverrideIcon(props: CreditCardOverrideIconProps) {
+  const { brand } = props;
+
+  const icon = (() => {
+    if (brand === 'visa') {
+      return <VisaCardIcon />;
+    }
+
+    if (brand === 'mastercard') {
+      return <MastercardCardIcon />;
+    }
+
+    if (brand === 'amex') {
+      return <AmexCardIcon />;
+    }
+
+    if (brand === 'discover') {
+      return <DiscoverCardIcon />;
+    }
+
+    return <StripeCardIcon />;
+  })();
+
+  return (
+    <Slot
+      /* eslint-disable-next-line react/forbid-component-props */
+      className="h-[48px] w-auto"
+    >
+      {icon}
+    </Slot>
+  );
+}
+
+interface SetDefaultCreditCardDialogProps {
+  paymentMethodId: string;
+}
+
+function SetDefaultCreditCardDialog(props: SetDefaultCreditCardDialogProps) {
+  const { paymentMethodId } = props;
+
+  const t = useTranslations('organization/billing');
+
+  const queryClient = useQueryClient();
+  const [isOpen, setIsOpen] = React.useState(false);
+
+  const { mutate, isError, isPending } =
+    webApi.organizations.setDefaultOrganizationBillingMethod.useMutation({
+      onSuccess: () => {
+        setIsOpen(false);
+        queryClient.setQueriesData<
+          ServerInferResponses<
+            typeof contracts.organizations.getCurrentOrganizationBillingInfo,
+            200
+          >
+        >(
+          {
+            queryKey:
+              webApiQueryKeys.organizations.getCurrentOrganizationBillingInfo,
+          },
+          (oldData) => {
+            if (!oldData) {
+              return oldData;
+            }
+            return {
+              ...oldData,
+              body: {
+                ...oldData.body,
+                creditCards: oldData.body.creditCards.map((creditCard) => ({
+                  ...creditCard,
+                  isDefault: creditCard.id === paymentMethodId,
+                })),
+              },
+            };
+          },
+        );
+      },
+    });
+
+  const handleSetDefault = useCallback(() => {
+    mutate({
+      params: {
+        methodId: paymentMethodId,
+      },
+    });
+  }, [paymentMethodId, mutate]);
+
+  return (
+    <Dialog
+      isOpen={isOpen}
+      onOpenChange={setIsOpen}
+      errorMessage={isError ? t('SetDefaultCreditCardDialog.error') : undefined}
+      title={t('SetDefaultCreditCardDialog.title')}
+      onConfirm={handleSetDefault}
+      isConfirmBusy={isPending}
+      confirmText={t('SetDefaultCreditCardDialog.confirm')}
+      trigger={
+        <Button
+          size="xsmall"
+          label={t('SetDefaultCreditCardDialog.trigger')}
+          color="tertiary"
+        />
+      }
+    >
+      {t('SetDefaultCreditCardDialog.description')}
+    </Dialog>
+  );
+}
+
 interface CreditCardSlotProps {
   creditCard: CreditCardType;
 }
@@ -110,28 +229,34 @@ function CreditCardSlot(props: CreditCardSlotProps) {
   return (
     <VStack gap={false} border>
       <VStack fullWidth>
-        {isDefault && (
-          <Badge content={t('CreditCardSlot.default')} variant="info" />
-        )}
-        <HStack
-          padding="small"
-          borderBottom
-          align="center"
-          justify="spaceBetween"
-        >
+        <HStack padding="small" align="center" justify="spaceBetween">
           <HStack align="center">
-            <Badge uppercase content={brand} />
-            <Typography>{t('CreditCardSlot.endingIn', { last4 })}</Typography>
-          </HStack>
+            <CreditCardOverrideIcon brand={brand} />
 
-          <RemoveCreditCardDialog paymentMethodId={id} />
+            <VStack gap={false} align="start">
+              <Typography align="left">
+                {t('CreditCardSlot.endingIn', { last4 })}
+              </Typography>
+              <Typography align="left" variant="body2">
+                {t('CreditCardSlot.expires', {
+                  month: expMonth,
+                  year: expYear,
+                })}
+              </Typography>
+            </VStack>
+          </HStack>
+          <HStack align="center">
+            {isDefault ? (
+              <Badge content={t('CreditCardSlot.default')} variant="info" />
+            ) : (
+              <HStack align="center">
+                <SetDefaultCreditCardDialog paymentMethodId={id} />
+                <RemoveCreditCardDialog paymentMethodId={id} />
+              </HStack>
+            )}
+          </HStack>
         </HStack>
       </VStack>
-      <HStack padding="small" color="background-grey">
-        <Typography variant="body2">
-          {t('CreditCardSlot.expires', { month: expMonth, year: expYear })}
-        </Typography>
-      </HStack>
     </VStack>
   );
 }
@@ -235,7 +360,7 @@ function BillingOverview(props: BillingOverviewProps) {
   }
 
   return (
-    <VStack>
+    <VStack width="contained">
       {data.body.creditCards.length === 0 && (
         <Alert
           variant="warning"
@@ -259,12 +384,28 @@ function BillingOverview(props: BillingOverviewProps) {
         title={t('BillingOverview.Credits.title')}
         description={t('BillingOverview.Credits.description')}
       >
-        <VStack width="contained">
-          <HStack align="end">
-            <Typography variant="heading4" bold>
-              {formatNumber(data.body.totalCredits)}
+        <VStack>
+          <VStack paddingY="small" align="start">
+            <HStack align="center">
+              <LettaCoinIcon size="large" />
+              <Typography
+                variant="heading2"
+                /* eslint-disable-next-line react/forbid-component-props */
+                className="leading-none"
+                bold
+              >
+                {formatNumber(data.body.totalCredits)}
+              </Typography>
+            </HStack>
+            <Typography
+              /* eslint-disable-next-line react/forbid-component-props */
+              className="leading-none"
+              variant="body2"
+              color="lighter"
+            >
+              {t('BillingOverview.Credits.available')}
             </Typography>
-          </HStack>
+          </VStack>
           <HStack>
             <Button
               preIcon={<PlusIcon />}
