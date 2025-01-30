@@ -191,7 +191,9 @@ async function inviteNewTeamMember(
     id: userId,
     permissions,
   } = await getUserWithActiveOrganizationIdOrThrow();
-  const { email } = req.body;
+  const { email: pEmail } = req.body;
+
+  const email = pEmail.toLowerCase();
 
   if (!permissions.has(ApplicationServices.UPDATE_USERS_IN_ORGANIZATION)) {
     return {

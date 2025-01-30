@@ -288,6 +288,10 @@ async function findOrCreateUserAndOrganizationFromProviderLogin(
   userData: ProviderUserPayload,
 ): Promise<FindOrCreateUserAndOrganizationFromProviderLoginResponse> {
   let newUserDetails: NewUserDetails | undefined;
+
+  // normalize email
+  userData.email = userData.email.toLowerCase();
+
   const res = await Promise.all([
     findExistingUser(userData),
     db.query.users.findFirst({
