@@ -2,7 +2,7 @@ import importlib
 import warnings
 from typing import List, Optional
 
-from letta.constants import BASE_MEMORY_TOOLS, BASE_TOOLS, MULTI_AGENT_TOOLS
+from letta.constants import BASE_FUNCTION_RETURN_CHAR_LIMIT, BASE_MEMORY_TOOLS, BASE_TOOLS, MULTI_AGENT_TOOLS
 from letta.functions.functions import derive_openai_json_schema, load_function_set
 from letta.log import get_logger
 from letta.orm.enums import ToolType
@@ -200,6 +200,7 @@ class ToolManager:
                             tags=tags,
                             source_type="python",
                             tool_type=tool_type,
+                            return_char_limit=BASE_FUNCTION_RETURN_CHAR_LIMIT,
                         ),
                         actor=actor,
                     )

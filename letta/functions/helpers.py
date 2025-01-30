@@ -249,24 +249,31 @@ def generate_import_code(module_attr_map: Optional[dict]):
 
 
 def parse_letta_response_for_assistant_message(
+    target_agent_id: str,
     letta_response: LettaResponse,
     assistant_message_tool_name: str = DEFAULT_MESSAGE_TOOL,
     assistant_message_tool_kwarg: str = DEFAULT_MESSAGE_TOOL_KWARG,
 ) -> Optional[str]:
-    reasoning_message = ""
+    messages = []
+    # This is not ideal, but we would like to return something rather than nothing
+    fallback_reasoning = []
     for m in letta_response.messages:
         if isinstance(m, AssistantMessage):
-            return m.content
+            messages.append(m.content)
         elif isinstance(m, ToolCallMessage) and m.tool_call.name == assistant_message_tool_name:
             try:
-                return json.loads(m.tool_call.arguments)[assistant_message_tool_kwarg]
+                messages.append(json.loads(m.tool_call.arguments)[assistant_message_tool_kwarg])
             except Exception:  # TODO: Make this more specific
                 continue
         elif isinstance(m, ReasoningMessage):
-            # This is not ideal, but we would like to return something rather than nothing
-            reasoning_message += f"{m.reasoning}\n"
+            fallback_reasoning.append(m.reasoning)
 
-    return None
+    if messages:
+        messages_str = "\n".join(messages)
+        return f"Agent {target_agent_id} said: '{messages_str}'"
+    else:
+        messages_str = "\n".join(fallback_reasoning)
+        return f"Agent {target_agent_id}'s inner thoughts: '{messages_str}'"
 
 
 def execute_send_message_to_agent(
@@ -364,17 +371,19 @@ async def async_send_message_with_retries(
 
             # Extract assistant message
             assistant_message = parse_letta_response_for_assistant_message(
+                target_agent_id,
                 response,
                 assistant_message_tool_name=DEFAULT_MESSAGE_TOOL,
                 assistant_message_tool_kwarg=DEFAULT_MESSAGE_TOOL_KWARG,
             )
             if assistant_message:
-                msg = f"Agent {target_agent_id} said '{assistant_message}'"
-                sender_agent.logger.info(f"{logging_prefix} - {msg}")
-                return msg
+                sender_agent.logger.info(f"{logging_prefix} - {assistant_message}")
+                return assistant_message
             else:
                 msg = f"(No response from agent {target_agent_id})"
                 sender_agent.logger.info(f"{logging_prefix} - {msg}")
+                sender_agent.logger.info(f"{logging_prefix} - raw response: {response.model_dump_json(indent=4)}")
+                sender_agent.logger.info(f"{logging_prefix} - parsed assistant message: {assistant_message}")
                 return msg
         except asyncio.TimeoutError:
             error_msg = f"(Timeout on attempt {attempt}/{max_retries} for agent {target_agent_id})"
