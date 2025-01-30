@@ -5,7 +5,7 @@ repos:
       - id: check-yaml
         exclude: 'docs/.*|tests/data/.*|configs/.*'
       - id: end-of-file-fixer
-        exclude: 'docs/.*|tests/data/.*|letta/server/static_files/.*|.*/.*\.(scss|css|html)'
+        exclude: 'docs/.*|tests/data/.*|letta/server/static_files/.*'
       - id: trailing-whitespace
         exclude: 'docs/.*|tests/data/.*|letta/server/static_files/.*'
 
@@ -13,18 +13,21 @@ repos:
     hooks:
       - id: autoflake
         name: autoflake
-        entry: bash -c 'poetry run autoflake --remove-all-unused-imports --remove-unused-variables --in-place --recursive --ignore-init-module-imports .'
+        entry: poetry run autoflake
         language: system
         types: [python]
+        args: ['--remove-all-unused-imports', '--remove-unused-variables', '--in-place', '--recursive', '--ignore-init-module-imports']
       - id: isort
         name: isort
-        entry: bash -c 'poetry run isort --profile black .'
+        entry: poetry run isort
         language: system
         types: [python]
+        args: ['--profile', 'black']
         exclude: ^docs/
       - id: black
         name: black
-        entry: bash -c 'poetry run black --line-length 140 --target-version py310 --target-version py311 .'
+        entry: poetry run black
         language: system
         types: [python]
+        args: ['--line-length', '140', '--target-version', 'py310', '--target-version', 'py311']
         exclude: ^docs/
