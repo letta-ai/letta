@@ -1,3 +1,4 @@
+import datetime
 from typing import List, Literal, Optional
 
 from sqlalchemy import select
@@ -19,6 +20,34 @@ class StepManager:
         from letta.server.server import db_context
 
         self.session_maker = db_context
+
+    @enforce_types
+    def list_steps(
+        self,
+        actor: PydanticUser,
+        before: Optional[str] = None,
+        after: Optional[str] = None,
+        start_date: Optional[datetime] = None,
+        end_date: Optional[datetime] = None,
+        limit: Optional[int] = 50,
+        order: Optional[str] = None,
+        model: Optional[str] = None,
+    ) -> List[PydanticStep]:
+        """List all jobs with optional pagination and status filter."""
+        with self.session_maker() as session:
+            filter_kwargs = {"organization_id": actor.organization_id, "model": model}
+
+            steps = StepModel.list(
+                db_session=session,
+                before=before,
+                after=after,
+                start_date=start_date,
+                end_date=end_date,
+                limit=limit,
+                ascending=True if order == "asc" else False,
+                **filter_kwargs,
+            )
+            return [step.to_pydantic() for step in steps]
 
     @enforce_types
     def log_step(
@@ -56,6 +85,32 @@ class StepManager:
     def get_step(self, step_id: str) -> PydanticStep:
         with self.session_maker() as session:
             step = StepModel.read(db_session=session, identifier=step_id)
+            return step.to_pydantic()
+
+    @enforce_types
+    def update_step_transaction_id(self, actor: PydanticUser, step_id: str, transaction_id: str) -> PydanticStep:
+        """Update the transaction ID for a step.
+
+        Args:
+            actor: The user making the request
+            step_id: The ID of the step to update
+            transaction_id: The new transaction ID to set
+
+        Returns:
+            The updated step
+
+        Raises:
+            NoResultFound: If the step does not exist
+        """
+        with self.session_maker() as session:
+            step = session.get(StepModel, step_id)
+            if not step:
+                raise NoResultFound(f"Step with id {step_id} does not exist")
+            if step.organization_id != actor.organization_id:
+                raise Exception("Unauthorized")
+
+            step.tid = transaction_id
+            session.commit()
             return step.to_pydantic()
 
     def _verify_job_access(
