@@ -107,6 +107,10 @@ describe('letta', () => {
       force: true,
     });
 
+    cy.findByTestId('user-message-content', { timeout: 50000 }).contains(
+      'What is my name',
+    );
+
     cy.findByTestId('messages-list', { timeout: 50000 }).contains('Shubham');
     cy.findByTestId('messages-list', { timeout: 50000 }).contains('BananaMan');
 

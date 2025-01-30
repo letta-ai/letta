@@ -136,7 +136,10 @@ function MessageGroup({ group }: MessageGroupType) {
         <Typography bold uppercase variant="body2" color="lighter">
           {name}
         </Typography>
-        <VStack gap="large">
+        <VStack
+          gap="large"
+          data-testid={`${name.toLowerCase()}-message-content`}
+        >
           {sortedMessages.map((message, index) => (
             <Message key={`${message.id}_${index}`} message={message} />
           ))}
