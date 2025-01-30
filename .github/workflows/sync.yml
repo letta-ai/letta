@@ -6,14 +6,14 @@ permissions:
 
 on:
   # 1) Triggered by a local push that touches files under apps/core/**
-  push:
-    branches: [ main ]
-    paths:
-      - 'apps/core/**'
+  # push:
+  #   branches: [ main ]
+  #   paths:
+  #     - 'apps/core/**'
 
   # 2) Triggered by a repository_dispatch from the OSS repo
-  repository_dispatch:
-    types: [oss-update]
+  # repository_dispatch:
+  #   types: [oss-update]
 
   # 3) Manual trigger from GitHub web interface
   workflow_dispatch:
