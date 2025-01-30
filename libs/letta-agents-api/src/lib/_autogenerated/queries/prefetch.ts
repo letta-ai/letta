@@ -49,6 +49,7 @@ export const prefetchUseToolsServiceRetrieveTool = (
  * @param data The data for the request.
  * @param data.after
  * @param data.limit
+ * @param data.name
  * @param data.userId
  * @returns Tool Successful Response
  * @throws ApiError
@@ -58,16 +59,23 @@ export const prefetchUseToolsServiceListTools = (
   {
     after,
     limit,
+    name,
     userId,
   }: {
     after?: string;
     limit?: number;
+    name?: string;
     userId?: string;
   } = {},
 ) =>
   queryClient.prefetchQuery({
-    queryKey: Common.UseToolsServiceListToolsKeyFn({ after, limit, userId }),
-    queryFn: () => ToolsService.listTools({ after, limit, userId }),
+    queryKey: Common.UseToolsServiceListToolsKeyFn({
+      after,
+      limit,
+      name,
+      userId,
+    }),
+    queryFn: () => ToolsService.listTools({ after, limit, name, userId }),
   });
 /**
  * List Composio Apps

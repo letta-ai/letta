@@ -52,6 +52,7 @@ def retrieve_tool(
 def list_tools(
     after: Optional[str] = None,
     limit: Optional[int] = 50,
+    name: Optional[str] = None,
     server: SyncServer = Depends(get_letta_server),
     user_id: Optional[str] = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
 ):
@@ -60,6 +61,9 @@ def list_tools(
     """
     try:
         actor = server.user_manager.get_user_or_default(user_id=user_id)
+        if name is not None:
+            tool = server.tool_manager.get_tool_by_name(name=name, actor=actor)
+            return [tool] if tool else []
         return server.tool_manager.list_tools(actor=actor, after=after, limit=limit)
     except Exception as e:
         # Log or print the full exception here for debugging

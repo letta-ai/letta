@@ -271,6 +271,7 @@ export class ToolsService {
    * @param data The data for the request.
    * @param data.after
    * @param data.limit
+   * @param data.name
    * @param data.userId
    * @returns Tool Successful Response
    * @throws ApiError
@@ -285,6 +286,7 @@ export class ToolsService {
       query: {
         after: data.after,
         limit: data.limit,
+        name: data.name,
       },
       errors: {
         422: 'Validation Error',

@@ -2607,6 +2607,7 @@ export type ModifyToolResponse = Tool;
 export type ListToolsData = {
   after?: string | null;
   limit?: number | null;
+  name?: string | null;
   userId?: string | null;
 };
 

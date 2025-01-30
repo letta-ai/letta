@@ -50,14 +50,19 @@ export const UseToolsServiceListToolsKeyFn = (
   {
     after,
     limit,
+    name,
     userId,
   }: {
     after?: string;
     limit?: number;
+    name?: string;
     userId?: string;
   } = {},
   queryKey?: Array<unknown>,
-) => [useToolsServiceListToolsKey, ...(queryKey ?? [{ after, limit, userId }])];
+) => [
+  useToolsServiceListToolsKey,
+  ...(queryKey ?? [{ after, limit, name, userId }]),
+];
 export type ToolsServiceListComposioAppsDefaultResponse = Awaited<
   ReturnType<typeof ToolsService.listComposioApps>
 >;

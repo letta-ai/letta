@@ -91,6 +91,7 @@ export const useToolsServiceRetrieveTool = <
  * @param data The data for the request.
  * @param data.after
  * @param data.limit
+ * @param data.name
  * @param data.userId
  * @returns Tool Successful Response
  * @throws ApiError
@@ -103,10 +104,12 @@ export const useToolsServiceListTools = <
   {
     after,
     limit,
+    name,
     userId,
   }: {
     after?: string;
     limit?: number;
+    name?: string;
     userId?: string;
   } = {},
   queryKey?: TQueryKey,
@@ -114,10 +117,11 @@ export const useToolsServiceListTools = <
 ) =>
   useQuery<TData, TError>({
     queryKey: Common.UseToolsServiceListToolsKeyFn(
-      { after, limit, userId },
+      { after, limit, name, userId },
       queryKey,
     ),
-    queryFn: () => ToolsService.listTools({ after, limit, userId }) as TData,
+    queryFn: () =>
+      ToolsService.listTools({ after, limit, name, userId }) as TData,
     ...options,
   });
 /**

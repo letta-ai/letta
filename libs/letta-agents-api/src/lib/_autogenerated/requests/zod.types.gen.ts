@@ -3378,6 +3378,9 @@ export const get_List_tools = {
       limit: z
         .union([z.number(), z.null(), z.array(z.union([z.number(), z.null()]))])
         .optional(),
+      name: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
     }),
     header: z.object({
       user_id: z
