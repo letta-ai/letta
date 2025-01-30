@@ -37,7 +37,7 @@ def get_app_global_path():
 def initialize_database():
   """Initialize the postgres binary database"""
   # create the pgdata
-  pgdata = letta_dir / 'data'
+  pgdata = letta_dir / 'desktop_data'
   pgdata.mkdir(parents=True, exist_ok=True)
 
   try:
