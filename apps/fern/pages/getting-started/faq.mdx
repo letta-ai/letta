@@ -54,6 +54,21 @@ You can build your own application like the ADE on top of the REST API (view the
 
 ## Self-hosted (local) Letta Server
 <AccordionGroup>
+  <Accordion title="Where is my agent data stored?">
+When you run Letta with Docker, the Letta server uses a postgres database to store all your agents' data.
+The postgres instance is bundled into the image, so to have persistent data (across restarts) you need to mount a volume to the container.
+
+Our recommend `docker run` script includes `-v ~/.letta/.persist/pgdata:/var/lib/postgresql/data` as a flag.
+This mounts your local directory `~/.letta/.persist/pgdata` to the container's `/var/lib/postgresql/data` directory (so all your agent data is stored at `~/.letta/.persist/pgdata`).
+If you would like to use a different directory, you can use `-v <path_to_your_directory>:/var/lib/postgresql/data` instead.
+  </Accordion>
+  <Accordion title="How can I back up my postgres data?">
+Postgres has a number of [recommended ways](https://www.postgresql.org/docs/current/backup.html) to backup your data.
+
+We recommend directly `exec`ing into your Docker container and running [`pg_dump`](https://www.postgresql.org/docs/current/app-pgdump.html) from inside the container.
+
+Alternatively, you can run `docker run` with an extra flag to expose the postgres port with `-p 5432:5432` and then run `pg_dump` from your local machine.
+  </Accordion>
   <Accordion title="Do I need to install Docker to use Letta?">
 No, you can install Letta using `pip` (via `pip install -U letta`), as well as from source (via `poetry install`).
   </Accordion>
