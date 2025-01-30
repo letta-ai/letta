@@ -404,9 +404,6 @@ class SyncServer(Server):
                 if model_settings.lmstudio_base_url.endswith("/v1")
                 else model_settings.lmstudio_base_url + "/v1"
             )
-            # Set the OpenAI API key to something non-empty
-            if model_settings.openai_api_key is None:
-                model_settings.openai_api_key = "DUMMY"
             self._enabled_providers.append(LMStudioOpenAIProvider(base_url=lmstudio_url))
 
     def load_agent(self, agent_id: str, actor: User, interface: Union[AgentInterface, None] = None) -> Agent:
