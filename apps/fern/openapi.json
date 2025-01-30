@@ -4482,17 +4482,7 @@
                                           "oneOf": [
                                             {
                                               "type": "string",
-                                              "enum": [
-                                                "run_first",
-                                                "exit_loop",
-                                                "continue_loop",
-                                                "conditional",
-                                                "constrain_child_tools",
-                                                "require_parent_tools",
-                                                "InitToolRule",
-                                                "TerminalToolRule",
-                                                "ToolRule"
-                                              ]
+                                              "enum": ["constrain_child_tools"]
                                             },
                                             {}
                                           ]
@@ -4516,17 +4506,7 @@
                                           "oneOf": [
                                             {
                                               "type": "string",
-                                              "enum": [
-                                                "run_first",
-                                                "exit_loop",
-                                                "continue_loop",
-                                                "conditional",
-                                                "constrain_child_tools",
-                                                "require_parent_tools",
-                                                "InitToolRule",
-                                                "TerminalToolRule",
-                                                "ToolRule"
-                                              ]
+                                              "enum": ["run_first"]
                                             },
                                             {}
                                           ]
@@ -4544,17 +4524,7 @@
                                           "oneOf": [
                                             {
                                               "type": "string",
-                                              "enum": [
-                                                "run_first",
-                                                "exit_loop",
-                                                "continue_loop",
-                                                "conditional",
-                                                "constrain_child_tools",
-                                                "require_parent_tools",
-                                                "InitToolRule",
-                                                "TerminalToolRule",
-                                                "ToolRule"
-                                              ]
+                                              "enum": ["exit_loop"]
                                             },
                                             {}
                                           ]
@@ -4572,17 +4542,7 @@
                                           "oneOf": [
                                             {
                                               "type": "string",
-                                              "enum": [
-                                                "run_first",
-                                                "exit_loop",
-                                                "continue_loop",
-                                                "conditional",
-                                                "constrain_child_tools",
-                                                "require_parent_tools",
-                                                "InitToolRule",
-                                                "TerminalToolRule",
-                                                "ToolRule"
-                                              ]
+                                              "enum": ["conditional"]
                                             },
                                             {}
                                           ]
@@ -4630,175 +4590,6 @@
                                         }
                                       },
                                       "required": ["tool_name"]
-                                    },
-                                    {
-                                      "type": "array",
-                                      "items": {
-                                        "oneOf": [
-                                          {
-                                            "type": "object",
-                                            "properties": {
-                                              "tool_name": {
-                                                "type": "string"
-                                              },
-                                              "type": {
-                                                "oneOf": [
-                                                  {
-                                                    "type": "string",
-                                                    "enum": [
-                                                      "run_first",
-                                                      "exit_loop",
-                                                      "continue_loop",
-                                                      "conditional",
-                                                      "constrain_child_tools",
-                                                      "require_parent_tools",
-                                                      "InitToolRule",
-                                                      "TerminalToolRule",
-                                                      "ToolRule"
-                                                    ]
-                                                  },
-                                                  {}
-                                                ]
-                                              },
-                                              "children": {
-                                                "type": "array",
-                                                "items": {
-                                                  "type": "string"
-                                                }
-                                              }
-                                            },
-                                            "required": [
-                                              "tool_name",
-                                              "children"
-                                            ]
-                                          },
-                                          {
-                                            "type": "object",
-                                            "properties": {
-                                              "tool_name": {
-                                                "type": "string"
-                                              },
-                                              "type": {
-                                                "oneOf": [
-                                                  {
-                                                    "type": "string",
-                                                    "enum": [
-                                                      "run_first",
-                                                      "exit_loop",
-                                                      "continue_loop",
-                                                      "conditional",
-                                                      "constrain_child_tools",
-                                                      "require_parent_tools",
-                                                      "InitToolRule",
-                                                      "TerminalToolRule",
-                                                      "ToolRule"
-                                                    ]
-                                                  },
-                                                  {}
-                                                ]
-                                              }
-                                            },
-                                            "required": ["tool_name"]
-                                          },
-                                          {
-                                            "type": "object",
-                                            "properties": {
-                                              "tool_name": {
-                                                "type": "string"
-                                              },
-                                              "type": {
-                                                "oneOf": [
-                                                  {
-                                                    "type": "string",
-                                                    "enum": [
-                                                      "run_first",
-                                                      "exit_loop",
-                                                      "continue_loop",
-                                                      "conditional",
-                                                      "constrain_child_tools",
-                                                      "require_parent_tools",
-                                                      "InitToolRule",
-                                                      "TerminalToolRule",
-                                                      "ToolRule"
-                                                    ]
-                                                  },
-                                                  {}
-                                                ]
-                                              }
-                                            },
-                                            "required": ["tool_name"]
-                                          },
-                                          {
-                                            "type": "object",
-                                            "properties": {
-                                              "tool_name": {
-                                                "type": "string"
-                                              },
-                                              "type": {
-                                                "oneOf": [
-                                                  {
-                                                    "type": "string",
-                                                    "enum": [
-                                                      "run_first",
-                                                      "exit_loop",
-                                                      "continue_loop",
-                                                      "conditional",
-                                                      "constrain_child_tools",
-                                                      "require_parent_tools",
-                                                      "InitToolRule",
-                                                      "TerminalToolRule",
-                                                      "ToolRule"
-                                                    ]
-                                                  },
-                                                  {}
-                                                ]
-                                              },
-                                              "default_child": {
-                                                "oneOf": [
-                                                  {
-                                                    "type": "string"
-                                                  },
-                                                  {
-                                                    "type": "string",
-                                                    "format": "null",
-                                                    "nullable": true
-                                                  },
-                                                  {
-                                                    "type": "array",
-                                                    "items": {
-                                                      "oneOf": [
-                                                        {
-                                                          "type": "string"
-                                                        },
-                                                        {
-                                                          "type": "string",
-                                                          "format": "null",
-                                                          "nullable": true
-                                                        }
-                                                      ],
-                                                      "nullable": true
-                                                    }
-                                                  },
-                                                  {}
-                                                ],
-                                                "nullable": true
-                                              },
-                                              "child_output_mapping": {
-                                                "nullable": true
-                                              },
-                                              "require_output_mapping": {
-                                                "oneOf": [
-                                                  {
-                                                    "type": "boolean"
-                                                  },
-                                                  {}
-                                                ]
-                                              }
-                                            },
-                                            "required": ["tool_name"]
-                                          }
-                                        ]
-                                      }
                                     }
                                   ]
                                 }
@@ -4827,15 +4618,7 @@
                                                   {
                                                     "type": "string",
                                                     "enum": [
-                                                      "run_first",
-                                                      "exit_loop",
-                                                      "continue_loop",
-                                                      "conditional",
-                                                      "constrain_child_tools",
-                                                      "require_parent_tools",
-                                                      "InitToolRule",
-                                                      "TerminalToolRule",
-                                                      "ToolRule"
+                                                      "constrain_child_tools"
                                                     ]
                                                   },
                                                   {}
@@ -4863,17 +4646,7 @@
                                                 "oneOf": [
                                                   {
                                                     "type": "string",
-                                                    "enum": [
-                                                      "run_first",
-                                                      "exit_loop",
-                                                      "continue_loop",
-                                                      "conditional",
-                                                      "constrain_child_tools",
-                                                      "require_parent_tools",
-                                                      "InitToolRule",
-                                                      "TerminalToolRule",
-                                                      "ToolRule"
-                                                    ]
+                                                    "enum": ["run_first"]
                                                   },
                                                   {}
                                                 ]
@@ -4891,17 +4664,7 @@
                                                 "oneOf": [
                                                   {
                                                     "type": "string",
-                                                    "enum": [
-                                                      "run_first",
-                                                      "exit_loop",
-                                                      "continue_loop",
-                                                      "conditional",
-                                                      "constrain_child_tools",
-                                                      "require_parent_tools",
-                                                      "InitToolRule",
-                                                      "TerminalToolRule",
-                                                      "ToolRule"
-                                                    ]
+                                                    "enum": ["exit_loop"]
                                                   },
                                                   {}
                                                 ]
@@ -4919,17 +4682,7 @@
                                                 "oneOf": [
                                                   {
                                                     "type": "string",
-                                                    "enum": [
-                                                      "run_first",
-                                                      "exit_loop",
-                                                      "continue_loop",
-                                                      "conditional",
-                                                      "constrain_child_tools",
-                                                      "require_parent_tools",
-                                                      "InitToolRule",
-                                                      "TerminalToolRule",
-                                                      "ToolRule"
-                                                    ]
+                                                    "enum": ["conditional"]
                                                   },
                                                   {}
                                                 ]
@@ -4977,175 +4730,6 @@
                                               }
                                             },
                                             "required": ["tool_name"]
-                                          },
-                                          {
-                                            "type": "array",
-                                            "items": {
-                                              "oneOf": [
-                                                {
-                                                  "type": "object",
-                                                  "properties": {
-                                                    "tool_name": {
-                                                      "type": "string"
-                                                    },
-                                                    "type": {
-                                                      "oneOf": [
-                                                        {
-                                                          "type": "string",
-                                                          "enum": [
-                                                            "run_first",
-                                                            "exit_loop",
-                                                            "continue_loop",
-                                                            "conditional",
-                                                            "constrain_child_tools",
-                                                            "require_parent_tools",
-                                                            "InitToolRule",
-                                                            "TerminalToolRule",
-                                                            "ToolRule"
-                                                          ]
-                                                        },
-                                                        {}
-                                                      ]
-                                                    },
-                                                    "children": {
-                                                      "type": "array",
-                                                      "items": {
-                                                        "type": "string"
-                                                      }
-                                                    }
-                                                  },
-                                                  "required": [
-                                                    "tool_name",
-                                                    "children"
-                                                  ]
-                                                },
-                                                {
-                                                  "type": "object",
-                                                  "properties": {
-                                                    "tool_name": {
-                                                      "type": "string"
-                                                    },
-                                                    "type": {
-                                                      "oneOf": [
-                                                        {
-                                                          "type": "string",
-                                                          "enum": [
-                                                            "run_first",
-                                                            "exit_loop",
-                                                            "continue_loop",
-                                                            "conditional",
-                                                            "constrain_child_tools",
-                                                            "require_parent_tools",
-                                                            "InitToolRule",
-                                                            "TerminalToolRule",
-                                                            "ToolRule"
-                                                          ]
-                                                        },
-                                                        {}
-                                                      ]
-                                                    }
-                                                  },
-                                                  "required": ["tool_name"]
-                                                },
-                                                {
-                                                  "type": "object",
-                                                  "properties": {
-                                                    "tool_name": {
-                                                      "type": "string"
-                                                    },
-                                                    "type": {
-                                                      "oneOf": [
-                                                        {
-                                                          "type": "string",
-                                                          "enum": [
-                                                            "run_first",
-                                                            "exit_loop",
-                                                            "continue_loop",
-                                                            "conditional",
-                                                            "constrain_child_tools",
-                                                            "require_parent_tools",
-                                                            "InitToolRule",
-                                                            "TerminalToolRule",
-                                                            "ToolRule"
-                                                          ]
-                                                        },
-                                                        {}
-                                                      ]
-                                                    }
-                                                  },
-                                                  "required": ["tool_name"]
-                                                },
-                                                {
-                                                  "type": "object",
-                                                  "properties": {
-                                                    "tool_name": {
-                                                      "type": "string"
-                                                    },
-                                                    "type": {
-                                                      "oneOf": [
-                                                        {
-                                                          "type": "string",
-                                                          "enum": [
-                                                            "run_first",
-                                                            "exit_loop",
-                                                            "continue_loop",
-                                                            "conditional",
-                                                            "constrain_child_tools",
-                                                            "require_parent_tools",
-                                                            "InitToolRule",
-                                                            "TerminalToolRule",
-                                                            "ToolRule"
-                                                          ]
-                                                        },
-                                                        {}
-                                                      ]
-                                                    },
-                                                    "default_child": {
-                                                      "oneOf": [
-                                                        {
-                                                          "type": "string"
-                                                        },
-                                                        {
-                                                          "type": "string",
-                                                          "format": "null",
-                                                          "nullable": true
-                                                        },
-                                                        {
-                                                          "type": "array",
-                                                          "items": {
-                                                            "oneOf": [
-                                                              {
-                                                                "type": "string"
-                                                              },
-                                                              {
-                                                                "type": "string",
-                                                                "format": "null",
-                                                                "nullable": true
-                                                              }
-                                                            ],
-                                                            "nullable": true
-                                                          }
-                                                        },
-                                                        {}
-                                                      ],
-                                                      "nullable": true
-                                                    },
-                                                    "child_output_mapping": {
-                                                      "nullable": true
-                                                    },
-                                                    "require_output_mapping": {
-                                                      "oneOf": [
-                                                        {
-                                                          "type": "boolean"
-                                                        },
-                                                        {}
-                                                      ]
-                                                    }
-                                                  },
-                                                  "required": ["tool_name"]
-                                                }
-                                              ]
-                                            }
                                           }
                                         ]
                                       }
@@ -7213,7 +6797,7 @@
             "anyOf": [
               {
                 "items": {
-                  "anyOf": [
+                  "oneOf": [
                     {
                       "$ref": "#/components/schemas/ChildToolRule"
                     },
@@ -7226,7 +6810,16 @@
                     {
                       "$ref": "#/components/schemas/ConditionalToolRule"
                     }
-                  ]
+                  ],
+                  "discriminator": {
+                    "propertyName": "type",
+                    "mapping": {
+                      "conditional": "#/components/schemas/ConditionalToolRule",
+                      "constrain_child_tools": "#/components/schemas/ChildToolRule",
+                      "exit_loop": "#/components/schemas/TerminalToolRule",
+                      "run_first": "#/components/schemas/InitToolRule"
+                    }
+                  }
                 },
                 "type": "array"
               },
@@ -8458,7 +8051,10 @@
             "description": "The name of the tool. Must exist in the database for the user's organization."
           },
           "type": {
-            "$ref": "#/components/schemas/ToolRuleType",
+            "type": "string",
+            "enum": ["constrain_child_tools"],
+            "const": "constrain_child_tools",
+            "title": "Type",
             "default": "constrain_child_tools"
           },
           "children": {
@@ -9245,7 +8841,10 @@
             "description": "The name of the tool. Must exist in the database for the user's organization."
           },
           "type": {
-            "$ref": "#/components/schemas/ToolRuleType",
+            "type": "string",
+            "enum": ["conditional"],
+            "const": "conditional",
+            "title": "Type",
             "default": "conditional"
           },
           "default_child": {
@@ -9497,7 +9096,7 @@
             "anyOf": [
               {
                 "items": {
-                  "anyOf": [
+                  "oneOf": [
                     {
                       "$ref": "#/components/schemas/ChildToolRule"
                     },
@@ -9510,7 +9109,16 @@
                     {
                       "$ref": "#/components/schemas/ConditionalToolRule"
                     }
-                  ]
+                  ],
+                  "discriminator": {
+                    "propertyName": "type",
+                    "mapping": {
+                      "conditional": "#/components/schemas/ConditionalToolRule",
+                      "constrain_child_tools": "#/components/schemas/ChildToolRule",
+                      "exit_loop": "#/components/schemas/TerminalToolRule",
+                      "run_first": "#/components/schemas/InitToolRule"
+                    }
+                  }
                 },
                 "type": "array"
               },
@@ -10277,7 +9885,10 @@
             "description": "The name of the tool. Must exist in the database for the user's organization."
           },
           "type": {
-            "$ref": "#/components/schemas/ToolRuleType",
+            "type": "string",
+            "enum": ["run_first"],
+            "const": "run_first",
+            "title": "Type",
             "default": "run_first"
           }
         },
@@ -12215,7 +11826,10 @@
             "description": "The name of the tool. Must exist in the database for the user's organization."
           },
           "type": {
-            "$ref": "#/components/schemas/ToolRuleType",
+            "type": "string",
+            "enum": ["exit_loop"],
+            "const": "exit_loop",
+            "title": "Type",
             "default": "exit_loop"
           }
         },
@@ -12581,22 +12195,6 @@
         "title": "ToolReturnMessage",
         "description": "A message representing the return value of a tool call (generated by Letta executing the requested tool).\n\nAttributes:\n    tool_return (str): The return value of the tool\n    status (Literal[\"success\", \"error\"]): The status of the tool call\n    id (str): The ID of the message\n    date (datetime): The date the message was created in ISO format\n    tool_call_id (str): A unique identifier for the tool call that generated this message\n    stdout (Optional[List(str)]): Captured stdout (e.g. prints, logs) from the tool invocation\n    stderr (Optional[List(str)]): Captured stderr from the tool invocation"
       },
-      "ToolRuleType": {
-        "type": "string",
-        "enum": [
-          "run_first",
-          "exit_loop",
-          "continue_loop",
-          "conditional",
-          "constrain_child_tools",
-          "require_parent_tools",
-          "InitToolRule",
-          "TerminalToolRule",
-          "ToolRule"
-        ],
-        "title": "ToolRuleType",
-        "description": "Type of tool rule."
-      },
       "ToolRunFromSource": {
         "properties": {
           "source_code": {
@@ -12829,7 +12427,7 @@
             "anyOf": [
               {
                 "items": {
-                  "anyOf": [
+                  "oneOf": [
                     {
                       "$ref": "#/components/schemas/ChildToolRule"
                     },
@@ -12842,7 +12440,16 @@
                     {
                       "$ref": "#/components/schemas/ConditionalToolRule"
                     }
-                  ]
+                  ],
+                  "discriminator": {
+                    "propertyName": "type",
+                    "mapping": {
+                      "conditional": "#/components/schemas/ConditionalToolRule",
+                      "constrain_child_tools": "#/components/schemas/ChildToolRule",
+                      "exit_loop": "#/components/schemas/TerminalToolRule",
+                      "run_first": "#/components/schemas/InitToolRule"
+                    }
+                  }
                 },
                 "type": "array"
               },

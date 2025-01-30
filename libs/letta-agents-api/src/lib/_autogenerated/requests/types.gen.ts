@@ -574,12 +574,14 @@ export type ChildToolRule = {
    * The name of the tool. Must exist in the database for the user's organization.
    */
   tool_name: string;
-  type?: ToolRuleType;
+  type?: 'constrain_child_tools';
   /**
    * The children tools that can be invoked.
    */
   children: Array<string>;
 };
+
+export type type7 = 'constrain_child_tools';
 
 export type CompletionCreateParamsNonStreaming = {
   messages: Array<
@@ -769,7 +771,7 @@ export type ConditionalToolRule = {
    * The name of the tool. Must exist in the database for the user's organization.
    */
   tool_name: string;
-  type?: ToolRuleType;
+  type?: 'conditional';
   /**
    * The default child tool to be called. If None, any tool can be called.
    */
@@ -785,6 +787,8 @@ export type ConditionalToolRule = {
    */
   require_output_mapping?: boolean;
 };
+
+export type type8 = 'conditional';
 
 /**
  * Overview of the context window, including the number of messages and tokens.
@@ -1244,8 +1248,10 @@ export type InitToolRule = {
    * The name of the tool. Must exist in the database for the user's organization.
    */
   tool_name: string;
-  type?: ToolRuleType;
+  type?: 'run_first';
 };
+
+export type type9 = 'run_first';
 
 export type InputAudio = {
   data: string;
@@ -1839,14 +1845,14 @@ export type ResponseFormatJSONObject = {
   type: 'json_object';
 };
 
-export type type7 = 'json_object';
+export type type10 = 'json_object';
 
 export type ResponseFormatJSONSchema = {
   json_schema: JSONSchema;
   type: 'json_schema';
 };
 
-export type type8 = 'json_schema';
+export type type11 = 'json_schema';
 
 export type ResponseFormatText = {
   type: 'text';
@@ -2230,8 +2236,10 @@ export type TerminalToolRule = {
    * The name of the tool. Must exist in the database for the user's organization.
    */
   tool_name: string;
-  type?: ToolRuleType;
+  type?: 'exit_loop';
 };
+
+export type type12 = 'exit_loop';
 
 export type TextContent = {
   /**
@@ -2387,20 +2395,6 @@ export type ToolReturnMessage = {
 };
 
 export type status = 'success' | 'error';
-
-/**
- * Type of tool rule.
- */
-export type ToolRuleType =
-  | 'run_first'
-  | 'exit_loop'
-  | 'continue_loop'
-  | 'conditional'
-  | 'constrain_child_tools'
-  | 'require_parent_tools'
-  | 'InitToolRule'
-  | 'TerminalToolRule'
-  | 'ToolRule';
 
 export type ToolRunFromSource = {
   /**

@@ -116,42 +116,29 @@ export const AgentEnvironmentVariable = z.object({
   agent_id: z.string(),
 });
 
-export type ToolRuleType = z.infer<typeof ToolRuleType>;
-export const ToolRuleType = z.union([
-  z.literal('run_first'),
-  z.literal('exit_loop'),
-  z.literal('continue_loop'),
-  z.literal('conditional'),
-  z.literal('constrain_child_tools'),
-  z.literal('require_parent_tools'),
-  z.literal('InitToolRule'),
-  z.literal('TerminalToolRule'),
-  z.literal('ToolRule'),
-]);
-
 export type ChildToolRule = z.infer<typeof ChildToolRule>;
 export const ChildToolRule = z.object({
   tool_name: z.string(),
-  type: z.union([ToolRuleType, z.undefined()]).optional(),
+  type: z.union([z.literal('constrain_child_tools'), z.undefined()]).optional(),
   children: z.array(z.string()),
 });
 
 export type InitToolRule = z.infer<typeof InitToolRule>;
 export const InitToolRule = z.object({
   tool_name: z.string(),
-  type: z.union([ToolRuleType, z.undefined()]).optional(),
+  type: z.union([z.literal('run_first'), z.undefined()]).optional(),
 });
 
 export type TerminalToolRule = z.infer<typeof TerminalToolRule>;
 export const TerminalToolRule = z.object({
   tool_name: z.string(),
-  type: z.union([ToolRuleType, z.undefined()]).optional(),
+  type: z.union([z.literal('exit_loop'), z.undefined()]).optional(),
 });
 
 export type ConditionalToolRule = z.infer<typeof ConditionalToolRule>;
 export const ConditionalToolRule = z.object({
   tool_name: z.string(),
-  type: z.union([ToolRuleType, z.undefined()]).optional(),
+  type: z.union([z.literal('conditional'), z.undefined()]).optional(),
   default_child: z
     .union([
       z.string(),
@@ -523,14 +510,6 @@ export const AgentState = z.object({
           InitToolRule,
           TerminalToolRule,
           ConditionalToolRule,
-          z.array(
-            z.union([
-              ChildToolRule,
-              InitToolRule,
-              TerminalToolRule,
-              ConditionalToolRule,
-            ]),
-          ),
         ]),
       ),
       z.null(),
@@ -542,14 +521,6 @@ export const AgentState = z.object({
               InitToolRule,
               TerminalToolRule,
               ConditionalToolRule,
-              z.array(
-                z.union([
-                  ChildToolRule,
-                  InitToolRule,
-                  TerminalToolRule,
-                  ConditionalToolRule,
-                ]),
-              ),
             ]),
           ),
           z.null(),
@@ -2234,14 +2205,6 @@ export const CreateAgentRequest = z.object({
           InitToolRule,
           TerminalToolRule,
           ConditionalToolRule,
-          z.array(
-            z.union([
-              ChildToolRule,
-              InitToolRule,
-              TerminalToolRule,
-              ConditionalToolRule,
-            ]),
-          ),
         ]),
       ),
       z.null(),
@@ -2253,14 +2216,6 @@ export const CreateAgentRequest = z.object({
               InitToolRule,
               TerminalToolRule,
               ConditionalToolRule,
-              z.array(
-                z.union([
-                  ChildToolRule,
-                  InitToolRule,
-                  TerminalToolRule,
-                  ConditionalToolRule,
-                ]),
-              ),
             ]),
           ),
           z.null(),
@@ -3286,14 +3241,6 @@ export const UpdateAgent = z.object({
           InitToolRule,
           TerminalToolRule,
           ConditionalToolRule,
-          z.array(
-            z.union([
-              ChildToolRule,
-              InitToolRule,
-              TerminalToolRule,
-              ConditionalToolRule,
-            ]),
-          ),
         ]),
       ),
       z.null(),
@@ -3305,14 +3252,6 @@ export const UpdateAgent = z.object({
               InitToolRule,
               TerminalToolRule,
               ConditionalToolRule,
-              z.array(
-                z.union([
-                  ChildToolRule,
-                  InitToolRule,
-                  TerminalToolRule,
-                  ConditionalToolRule,
-                ]),
-              ),
             ]),
           ),
           z.null(),

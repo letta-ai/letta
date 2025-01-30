@@ -328,7 +328,7 @@ export const $AgentState = {
       anyOf: [
         {
           items: {
-            anyOf: [
+            oneOf: [
               {
                 $ref: '#/components/schemas/ChildToolRule',
               },
@@ -342,6 +342,15 @@ export const $AgentState = {
                 $ref: '#/components/schemas/ConditionalToolRule',
               },
             ],
+            discriminator: {
+              propertyName: 'type',
+              mapping: {
+                conditional: '#/components/schemas/ConditionalToolRule',
+                constrain_child_tools: '#/components/schemas/ChildToolRule',
+                exit_loop: '#/components/schemas/TerminalToolRule',
+                run_first: '#/components/schemas/InitToolRule',
+              },
+            },
           },
           type: 'array',
         },
@@ -1651,7 +1660,10 @@ export const $ChildToolRule = {
         "The name of the tool. Must exist in the database for the user's organization.",
     },
     type: {
-      $ref: '#/components/schemas/ToolRuleType',
+      type: 'string',
+      enum: ['constrain_child_tools'],
+      const: 'constrain_child_tools',
+      title: 'Type',
       default: 'constrain_child_tools',
     },
     children: {
@@ -2442,7 +2454,10 @@ export const $ConditionalToolRule = {
         "The name of the tool. Must exist in the database for the user's organization.",
     },
     type: {
-      $ref: '#/components/schemas/ToolRuleType',
+      type: 'string',
+      enum: ['conditional'],
+      const: 'conditional',
+      title: 'Type',
       default: 'conditional',
     },
     default_child: {
@@ -2702,7 +2717,7 @@ export const $CreateAgentRequest = {
       anyOf: [
         {
           items: {
-            anyOf: [
+            oneOf: [
               {
                 $ref: '#/components/schemas/ChildToolRule',
               },
@@ -2716,6 +2731,15 @@ export const $CreateAgentRequest = {
                 $ref: '#/components/schemas/ConditionalToolRule',
               },
             ],
+            discriminator: {
+              propertyName: 'type',
+              mapping: {
+                conditional: '#/components/schemas/ConditionalToolRule',
+                constrain_child_tools: '#/components/schemas/ChildToolRule',
+                exit_loop: '#/components/schemas/TerminalToolRule',
+                run_first: '#/components/schemas/InitToolRule',
+              },
+            },
           },
           type: 'array',
         },
@@ -3536,7 +3560,10 @@ export const $InitToolRule = {
         "The name of the tool. Must exist in the database for the user's organization.",
     },
     type: {
-      $ref: '#/components/schemas/ToolRuleType',
+      type: 'string',
+      enum: ['run_first'],
+      const: 'run_first',
+      title: 'Type',
       default: 'run_first',
     },
   },
@@ -5729,7 +5756,10 @@ export const $TerminalToolRule = {
         "The name of the tool. Must exist in the database for the user's organization.",
     },
     type: {
-      $ref: '#/components/schemas/ToolRuleType',
+      type: 'string',
+      enum: ['exit_loop'],
+      const: 'exit_loop',
+      title: 'Type',
       default: 'exit_loop',
     },
   },
@@ -6139,23 +6169,6 @@ Attributes:
     stderr (Optional[List(str)]): Captured stderr from the tool invocation`,
 } as const;
 
-export const $ToolRuleType = {
-  type: 'string',
-  enum: [
-    'run_first',
-    'exit_loop',
-    'continue_loop',
-    'conditional',
-    'constrain_child_tools',
-    'require_parent_tools',
-    'InitToolRule',
-    'TerminalToolRule',
-    'ToolRule',
-  ],
-  title: 'ToolRuleType',
-  description: 'Type of tool rule.',
-} as const;
-
 export const $ToolRunFromSource = {
   properties: {
     source_code: {
@@ -6392,7 +6405,7 @@ export const $UpdateAgent = {
       anyOf: [
         {
           items: {
-            anyOf: [
+            oneOf: [
               {
                 $ref: '#/components/schemas/ChildToolRule',
               },
@@ -6406,6 +6419,15 @@ export const $UpdateAgent = {
                 $ref: '#/components/schemas/ConditionalToolRule',
               },
             ],
+            discriminator: {
+              propertyName: 'type',
+              mapping: {
+                conditional: '#/components/schemas/ConditionalToolRule',
+                constrain_child_tools: '#/components/schemas/ChildToolRule',
+                exit_loop: '#/components/schemas/TerminalToolRule',
+                run_first: '#/components/schemas/InitToolRule',
+              },
+            },
           },
           type: 'array',
         },
