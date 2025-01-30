@@ -3066,6 +3066,109 @@ export const SourceUpdate = z.object({
     .optional(),
 });
 
+export type Step = z.infer<typeof Step>;
+export const Step = z.object({
+  id: z.string(),
+  origin: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  organization_id: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  provider_id: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  job_id: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  provider_name: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  model: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  context_window_limit: z
+    .union([
+      z.number(),
+      z.null(),
+      z.array(z.union([z.number(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  completion_tokens: z
+    .union([
+      z.number(),
+      z.null(),
+      z.array(z.union([z.number(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  prompt_tokens: z
+    .union([
+      z.number(),
+      z.null(),
+      z.array(z.union([z.number(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  total_tokens: z
+    .union([
+      z.number(),
+      z.null(),
+      z.array(z.union([z.number(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  completion_tokens_details: z
+    .union([
+      z.unknown(),
+      z.null(),
+      z.array(z.union([z.unknown(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  tags: z.union([z.array(z.string()), z.undefined()]).optional(),
+  tid: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  messages: z.union([z.array(Message), z.undefined()]).optional(),
+});
+
 export type ToolCreate = z.infer<typeof ToolCreate>;
 export const ToolCreate = z.object({
   description: z
@@ -4888,6 +4991,82 @@ export const get_Retrieve_run_usage = {
   response: UsageStatistics,
 };
 
+export type get_List_steps = typeof get_List_steps;
+export const get_List_steps = {
+  method: z.literal('GET'),
+  path: z.literal('/v1/steps'),
+  requestFormat: z.literal('json'),
+  parameters: z.object({
+    query: z.object({
+      before: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      after: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      limit: z
+        .union([z.number(), z.null(), z.array(z.union([z.number(), z.null()]))])
+        .optional(),
+      order: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      start_date: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      end_date: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      model: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+    }),
+    header: z.object({
+      user_id: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+    }),
+  }),
+  response: z.array(Step),
+};
+
+export type get_Retrieve_step = typeof get_Retrieve_step;
+export const get_Retrieve_step = {
+  method: z.literal('GET'),
+  path: z.literal('/v1/steps/{step_id}'),
+  requestFormat: z.literal('json'),
+  parameters: z.object({
+    path: z.object({
+      step_id: z.string(),
+    }),
+    header: z.object({
+      user_id: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+    }),
+  }),
+  response: Step,
+};
+
+export type patch_Update_step_transaction_id =
+  typeof patch_Update_step_transaction_id;
+export const patch_Update_step_transaction_id = {
+  method: z.literal('PATCH'),
+  path: z.literal('/v1/steps/{step_id}/transaction/{transaction_id}'),
+  requestFormat: z.literal('json'),
+  parameters: z.object({
+    path: z.object({
+      step_id: z.string(),
+      transaction_id: z.string(),
+    }),
+    header: z.object({
+      user_id: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+    }),
+  }),
+  response: Step,
+};
+
 export type get_List_tags = typeof get_List_tags;
 export const get_List_tags = {
   method: z.literal('GET'),
@@ -5082,6 +5261,8 @@ export const EndpointByMethod = {
     '/v1/runs/{run_id}': get_Retrieve_run,
     '/v1/runs/{run_id}/messages': get_List_run_messages,
     '/v1/runs/{run_id}/usage': get_Retrieve_run_usage,
+    '/v1/steps': get_List_steps,
+    '/v1/steps/{step_id}': get_Retrieve_step,
     '/v1/tags/': get_List_tags,
     '/v1/admin/users/': get_List_users,
     '/v1/admin/orgs/': get_List_orgs,
@@ -5110,6 +5291,8 @@ export const EndpointByMethod = {
     '/v1/sandbox-config/environment-variable/{env_var_id}':
       patch_Update_sandbox_env_var_v1_sandbox_config_environment_variable__env_var_id__patch,
     '/v1/providers/': patch_Modify_provider,
+    '/v1/steps/{step_id}/transaction/{transaction_id}':
+      patch_Update_step_transaction_id,
   },
   post: {
     '/v1/tools/': post_Create_tool,

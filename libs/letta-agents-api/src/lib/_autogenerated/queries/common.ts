@@ -15,6 +15,7 @@ import {
   RunsService,
   SandboxConfigService,
   SourcesService,
+  StepsService,
   TagService,
   ToolsService,
   UsersService,
@@ -821,6 +822,59 @@ export const UseRunsServiceRetrieveRunUsageKeyFn = (
   },
   queryKey?: Array<unknown>,
 ) => [useRunsServiceRetrieveRunUsageKey, ...(queryKey ?? [{ runId, userId }])];
+export type StepsServiceListStepsDefaultResponse = Awaited<
+  ReturnType<typeof StepsService.listSteps>
+>;
+export type StepsServiceListStepsQueryResult<
+  TData = StepsServiceListStepsDefaultResponse,
+  TError = unknown,
+> = UseQueryResult<TData, TError>;
+export const useStepsServiceListStepsKey = 'StepsServiceListSteps';
+export const UseStepsServiceListStepsKeyFn = (
+  {
+    after,
+    before,
+    endDate,
+    limit,
+    model,
+    order,
+    startDate,
+    userId,
+  }: {
+    after?: string;
+    before?: string;
+    endDate?: string;
+    limit?: number;
+    model?: string;
+    order?: string;
+    startDate?: string;
+    userId?: string;
+  } = {},
+  queryKey?: Array<unknown>,
+) => [
+  useStepsServiceListStepsKey,
+  ...(queryKey ?? [
+    { after, before, endDate, limit, model, order, startDate, userId },
+  ]),
+];
+export type StepsServiceRetrieveStepDefaultResponse = Awaited<
+  ReturnType<typeof StepsService.retrieveStep>
+>;
+export type StepsServiceRetrieveStepQueryResult<
+  TData = StepsServiceRetrieveStepDefaultResponse,
+  TError = unknown,
+> = UseQueryResult<TData, TError>;
+export const useStepsServiceRetrieveStepKey = 'StepsServiceRetrieveStep';
+export const UseStepsServiceRetrieveStepKeyFn = (
+  {
+    stepId,
+    userId,
+  }: {
+    stepId: string;
+    userId?: string;
+  },
+  queryKey?: Array<unknown>,
+) => [useStepsServiceRetrieveStepKey, ...(queryKey ?? [{ stepId, userId }])];
 export type TagServiceListTagsDefaultResponse = Awaited<
   ReturnType<typeof TagService.listTags>
 >;
@@ -1083,6 +1137,9 @@ export type SandboxConfigServiceUpdateSandboxEnvVarV1SandboxConfigEnvironmentVar
   >;
 export type ProvidersServiceModifyProviderMutationResult = Awaited<
   ReturnType<typeof ProvidersService.modifyProvider>
+>;
+export type StepsServiceUpdateStepTransactionIdMutationResult = Awaited<
+  ReturnType<typeof StepsService.updateStepTransactionId>
 >;
 export type ToolsServiceDeleteToolMutationResult = Awaited<
   ReturnType<typeof ToolsService.deleteTool>

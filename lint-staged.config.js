@@ -6,4 +6,5 @@ module.exports = {
     (files) => `nx affected:lint  --files=${files.join(',')}`,
     (files) => `nx format:write --files=${files.join(',')}`,
   ],
+  'apps/core/**/*.py': () => 'cd apps/core && poetry run pre-commit run --all-files',
 };

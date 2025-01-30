@@ -3,4 +3,5 @@ export const RESTRICTED_ROUTE_BASE_PATHS = [
   '/v1/auth',
   '/v1/admin',
   '/v1/sandbox-config/',
+  '/v1/steps/{step_id}/transaction/{transaction_id}',
 ];
