@@ -467,6 +467,42 @@ export const $AgentState = {
       description:
         'The environment variables for tool execution specific to this agent.',
     },
+    project_id: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Project Id',
+      description: 'The id of the project the agent belongs to.',
+    },
+    template_id: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Template Id',
+      description: 'The id of the template the agent belongs to.',
+    },
+    base_template_id: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Base Template Id',
+      description: 'The base template id of the agent.',
+    },
   },
   additionalProperties: false,
   type: 'object',

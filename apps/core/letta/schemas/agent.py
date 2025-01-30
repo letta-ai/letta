@@ -81,6 +81,9 @@ class AgentState(OrmMetadataBase, validate_assignment=True):
     tool_exec_environment_variables: List[AgentEnvironmentVariable] = Field(
         default_factory=list, description="The environment variables for tool execution specific to this agent."
     )
+    project_id: Optional[str] = Field(None, description="The id of the project the agent belongs to.")
+    template_id: Optional[str] = Field(None, description="The id of the template the agent belongs to.")
+    base_template_id: Optional[str] = Field(None, description="The base template id of the agent.")
 
     def get_agent_env_vars_as_dict(self) -> Dict[str, str]:
         # Get environment variables for this agent specifically

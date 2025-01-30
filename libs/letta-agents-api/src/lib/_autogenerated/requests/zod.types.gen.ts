@@ -572,6 +572,30 @@ export const AgentState = z.object({
   tool_exec_environment_variables: z
     .union([z.array(AgentEnvironmentVariable), z.undefined()])
     .optional(),
+  project_id: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  template_id: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  base_template_id: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
 });
 
 export type AuthSchemeField = z.infer<typeof AuthSchemeField>;
