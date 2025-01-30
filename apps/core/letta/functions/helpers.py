@@ -269,9 +269,11 @@ def parse_letta_response_for_assistant_message(
             fallback_reasoning.append(m.reasoning)
 
     if messages:
-        return f"Agent {target_agent_id} said: '{"\n".join(messages)}'"
+        messages_str = "\n".join(messages)
+        return f"Agent {target_agent_id} said: '{messages_str}'"
     else:
-        return f"Agent {target_agent_id}'s inner thoughts: '{"\n".join(messages)}'"
+        messages_str = "\n".join(fallback_reasoning)
+        return f"Agent {target_agent_id}'s inner thoughts: '{messages_str}'"
 
 
 def execute_send_message_to_agent(
