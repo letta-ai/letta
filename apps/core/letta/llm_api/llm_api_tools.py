@@ -142,6 +142,11 @@ def create(
         if model_settings.openai_api_key is None and llm_config.model_endpoint == "https://api.openai.com/v1":
             # only is a problem if we are *not* using an openai proxy
             raise LettaConfigurationError(message="OpenAI key is missing from letta config file", missing_fields=["openai_api_key"])
+        elif model_settings.openai_api_key is None:
+            # the openai python client requires a dummy API key
+            api_key = "DUMMY_API_KEY"
+        else:
+            api_key = model_settings.openai_api_key
 
         if function_call is None and functions is not None and len(functions) > 0:
             # force function calling for reliability, see https://platform.openai.com/docs/api-reference/chat/create#chat-create-tool_choice
@@ -160,7 +165,7 @@ def create(
             response = run_async_task(
                 openai_chat_completions_process_stream(
                     url=llm_config.model_endpoint,
-                    api_key=model_settings.openai_api_key,
+                    api_key=api_key,
                     chat_completion_request=data,
                     stream_interface=stream_interface,
                 )
@@ -173,7 +178,7 @@ def create(
                 response = run_async_task(
                     openai_chat_completions_request(
                         url=llm_config.model_endpoint,
-                        api_key=model_settings.openai_api_key,
+                        api_key=api_key,
                         chat_completion_request=data,
                     )
                 )
