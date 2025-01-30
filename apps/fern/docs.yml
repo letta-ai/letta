@@ -287,3 +287,5 @@ redirects:
     destination: "/letta-platform"
   - source: "/advanced/memory_management"
     destination: "/guides/agents/memory"
+  - source: "/changelog"
+    destination: "/api-changelog"
