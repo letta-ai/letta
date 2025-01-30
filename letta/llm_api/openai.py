@@ -411,7 +411,6 @@ async def openai_chat_completions_request(
 
     https://platform.openai.com/docs/guides/text-generation?lang=curl
     """
-    print(f"\n\n\n\napi_key is {api_key}")
     data = prepare_openai_payload(chat_completion_request)
     client = AsyncOpenAI(api_key=api_key, base_url=url)
     chat_completion = await client.chat.completions.create(**data)
