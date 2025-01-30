@@ -2,6 +2,7 @@ import pg from 'pg';
 import * as Sentry from '@sentry/node';
 import { config } from 'dotenv';
 import { resolve } from 'path';
+import { deductCreditsFromStep } from '@letta-cloud/server-utils';
 config({ path: resolve(__dirname, '.env') });
 
 const CORE_DATABASE_URL = `postgresql://${process.env.LETTA_PG_USER}:${process.env.LETTA_PG_PASSWORD}@${process.env.LETTA_PG_HOST}:${process.env.LETTA_PG_PORT}/${process.env.LETTA_PG_DB}`;
@@ -39,8 +40,10 @@ END;$$;
   async function listenToDatabase() {
     await client.query('LISTEN new_step');
 
-    client.on('notification', (msg) => {
-      console.log('Received notification:', msg);
+    client.on('notification', async (msg) => {
+      if (msg.payload) {
+        await deductCreditsFromStep(JSON.parse(msg.payload));
+      }
     });
   }
 

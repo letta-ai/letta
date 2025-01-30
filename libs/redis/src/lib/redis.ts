@@ -1,6 +1,7 @@
 import type { RedisOptions } from 'ioredis';
 import Redis from 'ioredis';
 import { environment } from '@letta-cloud/environmental-variables';
+import { hasPopulateOnMissFn } from '../schemas';
 import type { RedisTypes, RedisDefinitionMap } from '../schemas';
 import { redisDefinitions } from '../schemas';
 import type { z } from 'zod';
@@ -61,6 +62,21 @@ export async function getRedisData<Type extends RedisTypes = RedisTypes>(
   const res = await redis.get(redisDefinitions[type].getKey(args));
 
   if (!res) {
+    if (hasPopulateOnMissFn(redisDefinitions[type])) {
+      const data = await redisDefinitions[type].populateOnMissFn(args);
+
+      if (data) {
+        // @ts-expect-error - this works, my typings are just bad
+        await setRedisData(type, args, {
+          data: data.data,
+          expiresAt: data.expiry,
+        });
+
+        // @ts-expect-error - this works, my typings are just bad
+        return data.data;
+      }
+    }
+
     return null;
   }
 

@@ -2,11 +2,13 @@ import {
   db,
   organizationCredits,
   organizationCreditTransactions,
+  organizations,
 } from '@letta-cloud/database';
 import { eq, sql } from 'drizzle-orm';
+import { getRedisData, setRedisData } from '@letta-cloud/redis';
 
 interface RemoveCreditsFromOrganizationOptions {
-  organizationId: string;
+  coreOrganizationId: string;
   amount: number;
   source: string;
   note?: string;
@@ -15,7 +17,7 @@ interface RemoveCreditsFromOrganizationOptions {
 export async function removeCreditsFromOrganization(
   options: RemoveCreditsFromOrganizationOptions,
 ) {
-  const { organizationId, note, source, amount } = options;
+  const { coreOrganizationId, note, source, amount } = options;
 
   if (isNaN(amount)) {
     throw new Error('Amount must be a number');
@@ -30,9 +32,44 @@ export async function removeCreditsFromOrganization(
     throw new Error('Amount must be a whole number');
   }
 
+  const currentCredits = await getRedisData('organizationCredits', {
+    coreOrganizationId: coreOrganizationId,
+  });
+
+  if (!currentCredits) {
+    throw new Error(
+      `Could not find credits for organization ${coreOrganizationId}`,
+    );
+  }
+
+  await setRedisData(
+    'organizationCredits',
+    {
+      coreOrganizationId,
+    },
+    {
+      data: {
+        credits: currentCredits.credits - amount,
+      },
+    },
+  );
+
+  const org = await db.query.organizations.findFirst({
+    where: eq(organizations.lettaAgentsId, coreOrganizationId),
+    columns: {
+      id: true,
+    },
+  });
+
+  if (!org) {
+    throw new Error(
+      `Could not find organization with id ${coreOrganizationId}`,
+    );
+  }
+
   await db.insert(organizationCreditTransactions).values({
     amount: amount.toString(),
-    organizationId,
+    organizationId: org.id,
     source,
     note,
     transactionType: 'subtraction',
@@ -43,7 +80,7 @@ export async function removeCreditsFromOrganization(
     .set({
       credits: sql`${organizationCredits.credits} - ${amount}`,
     })
-    .where(eq(organizationCredits.organizationId, organizationId))
+    .where(eq(organizationCredits.organizationId, org.id))
     .returning({
       credits: organizationCredits.credits,
     });

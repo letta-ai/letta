@@ -682,8 +682,21 @@ async function adminRemoveCreditsFromOrganization(
   const { organizationId } = req.params;
   const { amount, note } = req.body;
 
+  const currentOrganization = await db.query.organizations.findFirst({
+    where: eq(organizations.id, organizationId),
+  });
+
+  if (!currentOrganization) {
+    return {
+      status: 404,
+      body: {
+        message: 'Organization not found',
+      },
+    };
+  }
+
   const response = await removeCreditsFromOrganization({
-    organizationId,
+    coreOrganizationId: currentOrganization.lettaAgentsId,
     amount,
     source: 'admin',
     note,
