@@ -63,18 +63,19 @@ export async function getPaymentCustomer(organizationId: string) {
 
   // get first admin user
 
-  const [admin] = await db.execute<{
-    user_id: string;
-  }>(
-    sql`SELECT * FROM organization_users WHERE organization_id = ${organizationId} AND permissions->>'isOrganizationAdmin' = 'true'`,
-  );
+  const admin = await db.query.organizationUsers.findFirst({
+    where: and(
+      eq(organizationUsers.organizationId, organizationId),
+      eq(organizationUsers.role, 'admin'),
+    ),
+  });
 
   if (!admin) {
     throw new Error('This organization does not have an admin user');
   }
 
   const user = await db.query.users.findFirst({
-    where: eq(users.id, admin.user_id),
+    where: eq(users.id, admin.userId),
   });
 
   if (!user) {
