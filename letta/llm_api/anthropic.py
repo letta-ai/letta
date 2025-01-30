@@ -1,7 +1,8 @@
 import json
 import re
 import time
-from typing import Generator, List, Optional, Tuple, Union
+import warnings
+from typing import Generator, List, Optional, Union
 
 import anthropic
 from anthropic import PermissionDeniedError
@@ -36,7 +37,7 @@ from letta.schemas.openai.chat_completion_response import MessageDelta, ToolCall
 from letta.services.provider_manager import ProviderManager
 from letta.settings import model_settings
 from letta.streaming_interface import AgentChunkStreamingInterface, AgentRefreshStreamingInterface
-from letta.utils import get_utc_time, smart_urljoin
+from letta.utils import get_utc_time
 
 BASE_URL = "https://api.anthropic.com/v1"
 
@@ -565,30 +566,6 @@ def _prepare_anthropic_request(
         data.pop(field, None)
 
     return data
-
-
-def get_anthropic_endpoint_and_headers(
-    base_url: str,
-    api_key: str,
-    version: str = "2023-06-01",
-    beta: Optional[str] = "tools-2024-04-04",
-) -> Tuple[str, dict]:
-    """
-    Dynamically generate the Anthropic endpoint and headers.
-    """
-    url = smart_urljoin(base_url, "messages")
-
-    headers = {
-        "Content-Type": "application/json",
-        "x-api-key": api_key,
-        "anthropic-version": version,
-    }
-
-    # Add beta header if specified
-    if beta:
-        headers["anthropic-beta"] = beta
-
-    return url, headers
 
 
 def anthropic_chat_completions_request(
