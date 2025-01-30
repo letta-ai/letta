@@ -394,6 +394,12 @@ export default class App {
     App.BrowserWindow = browserWindow;
     App.application = app;
 
+    electron.app.once('window-all-closed', electron.app.quit);
+    electron.app.once('before-quit', () => {
+      if (lettaServer) {
+        lettaServer.kill();
+      }
+    });
     App.application.on('window-all-closed', App.onWindowAllClosed); // Quit when all windows are closed.
     App.application.on('ready', App.onReady); // App is ready to load data
     App.application.on('activate', App.onActivate); // App is activated

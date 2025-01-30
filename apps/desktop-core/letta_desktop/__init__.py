@@ -20,6 +20,7 @@ import pg8000 # noqa
 from tiktoken_ext import openai_public # noqa
 import tiktoken_ext # noqa
 import tiktoken # noqa
+import pydantic.deprecated.decorator # noqa
 
 # read first argument
 
@@ -47,7 +48,7 @@ def initialize_database():
   except Exception as e:
     print("Database initialization failed: %s", e)
     raise e
-  print("Configuring app with databsase uri...")
+  print("Configuring app with database uri...")
 
   pg_uri = database.get_uri()
   print('Saving pg_uri to ~/.letta/pg_uri')

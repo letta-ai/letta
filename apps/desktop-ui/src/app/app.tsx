@@ -30,6 +30,7 @@ function Sidebar() {
   const t = useTranslations('App');
 
   const location = useLocation();
+
   return (
     <VStack padding="small" borderRight fullHeight>
       <Link to="/dashboard/agents">

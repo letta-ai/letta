@@ -75,7 +75,7 @@ const buttonVariants = cva(
         className: 'border-white',
       },
       {
-        color: 'secondary',
+        color: 'tertiary',
         active: true,
         className: 'bg-secondary-active',
       },
