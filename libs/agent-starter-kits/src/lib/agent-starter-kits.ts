@@ -136,7 +136,7 @@ export const STARTER_KITS = {
     },
     tools: [
       {
-        name: 'role_d20',
+        name: 'roll_d20',
         code: `def roll_d20():
     """
     Simulate the roll of a 20-sided die (d20).
