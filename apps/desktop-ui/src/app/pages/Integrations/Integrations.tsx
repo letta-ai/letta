@@ -10,6 +10,7 @@ import {
   Dialog,
   HStack,
   Link,
+  LmstudioLogoMarkDynamic,
   LoadingEmptyStatusComponent,
   OllamaLogoMarkDynamic,
   OpenaiLogoMarkDynamic,
@@ -239,6 +240,18 @@ function SettingsEditor(props: SettingsEditorProps) {
           {
             key: 'COMPOSIO_API_KEY',
             label: t('integrations.composio.keyLabel'),
+          },
+        ],
+      },
+      {
+        icon: <LmstudioLogoMarkDynamic />,
+        name: 'LM Studio',
+        description: t('integrations.lmstudio.description'),
+        docsLink: 'https://docs.letta.com/guides/server/providers/lmstudio',
+        configSchema: [
+          {
+            key: 'LMSTUDIO_BASE_URL',
+            label: t('integrations.lmstudio.keyLabel'),
           },
         ],
       },

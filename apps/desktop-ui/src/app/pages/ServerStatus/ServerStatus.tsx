@@ -16,7 +16,7 @@ export function ServerStatus() {
   const t = useTranslations('ServerStatus');
   const [logs, setLogs] = useState<ServerLogType[]>([
     {
-      message: 'Starting server...',
+      message: 'Connecting to server...',
       timestamp: new Date().toISOString(),
       type: 'info',
     },

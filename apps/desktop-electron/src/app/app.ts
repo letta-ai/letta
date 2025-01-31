@@ -179,15 +179,15 @@ export default class App {
     App.restartLettaServer();
   }
 
-  static restartLettaServer() {
-    App.stopLettaServer();
+  static async restartLettaServer() {
+    await App.stopLettaServer();
 
     setTimeout(() => {
       App.startLettaServer(false);
     }, 1000);
   }
 
-  static stopLettaServer() {
+  static async stopLettaServer() {
     if (lettaServer) {
       lettaServerLogs.clearLogs();
 
@@ -198,6 +198,8 @@ export default class App {
       });
 
       lettaServer.kill();
+
+      await App.killLettaServer();
     }
   }
 
@@ -258,43 +260,47 @@ export default class App {
     App.mainWindow.webContents.send('set-path', '/dashboard/agents');
   }
 
+  static async killLettaServer() {
+    await new Promise((resolve) =>
+      ps.lookup(
+        {
+          command: 'letta',
+          arguments: '--use-file-pg-uri',
+        },
+        (err, resultList) => {
+          if (err) {
+            console.log(err);
+            resolve(true);
+            return;
+          }
+
+          if (resultList.length === 0) {
+            resolve(true);
+            return;
+          }
+
+          Promise.all(
+            resultList.map((process) => {
+              return new Promise((re) => {
+                ps.kill(process.pid, () => {
+                  re(true);
+                });
+              });
+            }),
+          ).then(() => {
+            resolve(true);
+          });
+        },
+      ),
+    );
+  }
+
   private static async onReady() {
     // This method will be called when Electron has finished
     // initialization and is ready to create browser windows.
     // Some APIs can only be used after this event occurs.
     if (rendererAppName) {
-      await new Promise((resolve) =>
-        ps.lookup(
-          {
-            command: 'letta',
-            arguments: '--use-file-pg-uri',
-          },
-          (err, resultList) => {
-            if (err) {
-              console.log(err);
-              resolve(true);
-              return;
-            }
-
-            if (resultList.length === 0) {
-              resolve(true);
-              return;
-            }
-
-            Promise.all(
-              resultList.map((process) => {
-                return new Promise((re) => {
-                  ps.kill(process.pid, () => {
-                    re(true);
-                  });
-                });
-              }),
-            ).then(() => {
-              resolve(true);
-            });
-          },
-        ),
-      );
+      await App.killLettaServer();
 
       App.startLettaServer();
 
@@ -429,10 +435,12 @@ export default class App {
     App.application = app;
 
     electron.app.once('window-all-closed', electron.app.quit);
-    electron.app.once('before-quit', () => {
+    electron.app.once('before-quit', async () => {
       if (lettaServer) {
         lettaServer.kill();
       }
+
+      await App.killLettaServer();
     });
     App.application.on('window-all-closed', App.onWindowAllClosed); // Quit when all windows are closed.
     App.application.on('ready', App.onReady); // App is ready to load data

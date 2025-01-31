@@ -1,4 +1,5 @@
 export * from './anthropic';
+export * from './azure';
 export * from './claude';
 export * from './composio';
 export * from './discord';
@@ -6,16 +7,16 @@ export * from './github';
 export * from './google';
 export * from './letta';
 export * from './llama';
+export * from './lmstudio';
 export * from './meta';
 export * from './mistral';
 export * from './nous-research';
 export * from './nvidia';
+export * from './ollama';
 export * from './openai';
 export * from './qwen';
 export * from './snorkel-ai';
 export * from './together-ai';
-export * from './azure';
-export * from './ollama';
 export type BrandKeys =
   | 'affinity'
   | 'agencyzoom'
@@ -71,6 +72,7 @@ export type BrandKeys =
   | 'listennotes'
   | 'llama'
   | 'lmnt'
+  | 'lmstudio'
   | 'mailchimp'
   | 'mem0'
   | 'meta'

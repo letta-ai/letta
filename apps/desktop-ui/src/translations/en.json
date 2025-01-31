@@ -34,6 +34,10 @@
       "composio": {
         "keyLabel": "Composio API Key",
         "description": "Connect to the Composio API to use Composio tools in the ADE"
+      },
+      "lmstudio": {
+        "keyLabel": "LM Studio Base URL",
+        "description": "Connect to LM Studio to use LM Studio models in the ADE"
       }
     }
   },
