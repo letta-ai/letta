@@ -11,7 +11,6 @@ import {
 import {
   createOrganization as authCreateOrganization,
   getUserActiveOrganizationIdOrThrow,
-  getUserOrThrow,
   getUserWithActiveOrganizationIdOrThrow,
 } from '$web/server/auth';
 import type { ServerInferRequest, ServerInferResponses } from '@ts-rest/core';
@@ -520,7 +519,21 @@ type CreateOrganizationResponse = ServerInferResponses<
 async function createOrganization(
   req: CreateOrganizationRequest,
 ): Promise<CreateOrganizationResponse> {
-  const { id, email } = await getUserOrThrow();
+  const { id, email, activeOrganizationId } =
+    await getUserWithActiveOrganizationIdOrThrow();
+
+  const org = await db.query.organizations.findFirst({
+    where: eq(organizations.id, activeOrganizationId),
+  });
+
+  if (!org?.isAdmin) {
+    return {
+      status: 403,
+      body: {
+        message: 'Permission denied',
+      },
+    };
+  }
 
   const res = await authCreateOrganization({
     name: req.body.name,

@@ -11,7 +11,7 @@ import {
   VStack,
 } from '@letta-cloud/component-library';
 import { useTranslations } from '@letta-cloud/translations';
-import { webApi } from '$web/client';
+import { webApi, webApiQueryKeys } from '$web/client';
 import type { ListUserOrganizationsItemSchemaType } from '$web/web-api/contracts';
 import { queryClientKeys } from '$web/web-api/contracts';
 import { CenteredPageCard } from '$web/client/components';
@@ -65,9 +65,32 @@ function OrganizationsList(props: OrganizationsListProps) {
   });
 }
 
+function CreateOrganizationButton() {
+  const currentUser = useCurrentUser();
+  const t = useTranslations('select-organization');
+
+  const { data } = webApi.organizations.getCurrentOrganization.useQuery({
+    queryKey: webApiQueryKeys.organizations.getCurrentOrganization,
+    enabled: !!currentUser?.activeOrganizationId,
+  });
+
+  if (!data?.body.isAdmin) {
+    return null;
+  }
+
+  return (
+    <Frame borderTop padding>
+      <Button
+        href="/create-organization"
+        fullWidth
+        label={t('createNewOrganization')}
+      />
+    </Frame>
+  );
+}
+
 function SelectOrganizationPage() {
   const t = useTranslations('select-organization');
-  const currentUser = useCurrentUser();
 
   const { data: organizations, isError } =
     webApi.user.listUserOrganizations.useQuery({
@@ -127,15 +150,7 @@ function SelectOrganizationPage() {
           />
         )}
       </VStack>
-      {currentUser?.hasCloudAccess && (
-        <Frame borderTop padding>
-          <Button
-            href="/create-organization"
-            fullWidth
-            label={t('createNewOrganization')}
-          />
-        </Frame>
-      )}
+      <CreateOrganizationButton />
     </CenteredPageCard>
   );
 }
