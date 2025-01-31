@@ -34,6 +34,7 @@ import {
   CreateBlock,
   LettaRequest,
   LettaStreamingRequest,
+  LocalSandboxConfig,
   MessageRole,
   MessageUpdate,
   OrganizationCreate,
@@ -2294,6 +2295,90 @@ export const useSandboxConfigServiceCreateDefaultLocalSandboxConfigV1SandboxConf
     >({
       mutationFn: ({ userId }) =>
         SandboxConfigService.createDefaultLocalSandboxConfigV1SandboxConfigLocalDefaultPost(
+          { userId },
+        ) as unknown as Promise<TData>,
+      ...options,
+    });
+/**
+ * Create Custom Local Sandbox Config
+ * Create or update a custom LocalSandboxConfig, including pip_requirements.
+ * @param data The data for the request.
+ * @param data.requestBody
+ * @param data.userId
+ * @returns SandboxConfig Successful Response
+ * @throws ApiError
+ */
+export const useSandboxConfigServiceCreateCustomLocalSandboxConfigV1SandboxConfigLocalPost =
+  <
+    TData = Common.SandboxConfigServiceCreateCustomLocalSandboxConfigV1SandboxConfigLocalPostMutationResult,
+    TError = unknown,
+    TContext = unknown,
+  >(
+    options?: Omit<
+      UseMutationOptions<
+        TData,
+        TError,
+        {
+          requestBody: LocalSandboxConfig;
+          userId?: string;
+        },
+        TContext
+      >,
+      'mutationFn'
+    >,
+  ) =>
+    useMutation<
+      TData,
+      TError,
+      {
+        requestBody: LocalSandboxConfig;
+        userId?: string;
+      },
+      TContext
+    >({
+      mutationFn: ({ requestBody, userId }) =>
+        SandboxConfigService.createCustomLocalSandboxConfigV1SandboxConfigLocalPost(
+          { requestBody, userId },
+        ) as unknown as Promise<TData>,
+      ...options,
+    });
+/**
+ * Force Recreate Local Sandbox Venv
+ * Forcefully recreate the virtual environment for the local sandbox.
+ * Deletes and recreates the venv, then reinstalls required dependencies.
+ * @param data The data for the request.
+ * @param data.userId
+ * @returns SandboxConfig Successful Response
+ * @throws ApiError
+ */
+export const useSandboxConfigServiceForceRecreateLocalSandboxVenvV1SandboxConfigLocalRecreateVenvPost =
+  <
+    TData = Common.SandboxConfigServiceForceRecreateLocalSandboxVenvV1SandboxConfigLocalRecreateVenvPostMutationResult,
+    TError = unknown,
+    TContext = unknown,
+  >(
+    options?: Omit<
+      UseMutationOptions<
+        TData,
+        TError,
+        {
+          userId?: string;
+        },
+        TContext
+      >,
+      'mutationFn'
+    >,
+  ) =>
+    useMutation<
+      TData,
+      TError,
+      {
+        userId?: string;
+      },
+      TContext
+    >({
+      mutationFn: ({ userId }) =>
+        SandboxConfigService.forceRecreateLocalSandboxVenvV1SandboxConfigLocalRecreateVenvPost(
           { userId },
         ) as unknown as Promise<TData>,
       ...options,

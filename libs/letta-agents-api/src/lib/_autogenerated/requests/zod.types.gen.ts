@@ -2629,11 +2629,27 @@ export const LettaStreamingRequest = z.object({
   stream_tokens: z.union([z.boolean(), z.undefined()]).optional(),
 });
 
+export type PipRequirement = z.infer<typeof PipRequirement>;
+export const PipRequirement = z.object({
+  name: z.string(),
+  version: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+});
+
 export type LocalSandboxConfig = z.infer<typeof LocalSandboxConfig>;
 export const LocalSandboxConfig = z.object({
-  sandbox_dir: z.string(),
-  use_venv: z.union([z.boolean(), z.undefined()]).optional(),
-  venv_name: z.union([z.string(), z.undefined()]).optional(),
+  sandbox_dir: z
+    .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+    .optional(),
+  use_venv: z.boolean().optional(),
+  venv_name: z.string().optional(),
+  pip_requirements: z.array(PipRequirement).optional(),
 });
 
 export type MessageUpdate = z.infer<typeof MessageUpdate>;
@@ -4614,6 +4630,28 @@ export const post_Create_default_local_sandbox_config_v1_sandbox_config_local_de
     response: SandboxConfig,
   };
 
+export type post_Create_custom_local_sandbox_config_v1_sandbox_config_local_post =
+  typeof post_Create_custom_local_sandbox_config_v1_sandbox_config_local_post;
+export const post_Create_custom_local_sandbox_config_v1_sandbox_config_local_post =
+  {
+    method: z.literal('POST'),
+    path: z.literal('/v1/sandbox-config/local'),
+    requestFormat: z.literal('json'),
+    parameters: z.object({
+      header: z.object({
+        user_id: z
+          .union([
+            z.string(),
+            z.null(),
+            z.array(z.union([z.string(), z.null()])),
+          ])
+          .optional(),
+      }),
+      body: LocalSandboxConfig,
+    }),
+    response: SandboxConfig,
+  };
+
 export type patch_Update_sandbox_config_v1_sandbox_config__sandbox_config_id__patch =
   typeof patch_Update_sandbox_config_v1_sandbox_config__sandbox_config_id__patch;
 export const patch_Update_sandbox_config_v1_sandbox_config__sandbox_config_id__patch =
@@ -4661,6 +4699,27 @@ export const delete_Delete_sandbox_config_v1_sandbox_config__sandbox_config_id__
       }),
     }),
     response: z.unknown(),
+  };
+
+export type post_Force_recreate_local_sandbox_venv_v1_sandbox_config_local_recreate_venv_post =
+  typeof post_Force_recreate_local_sandbox_venv_v1_sandbox_config_local_recreate_venv_post;
+export const post_Force_recreate_local_sandbox_venv_v1_sandbox_config_local_recreate_venv_post =
+  {
+    method: z.literal('POST'),
+    path: z.literal('/v1/sandbox-config/local/recreate-venv'),
+    requestFormat: z.literal('json'),
+    parameters: z.object({
+      header: z.object({
+        user_id: z
+          .union([
+            z.string(),
+            z.null(),
+            z.array(z.union([z.string(), z.null()])),
+          ])
+          .optional(),
+      }),
+    }),
+    response: SandboxConfig,
   };
 
 export type post_Create_sandbox_env_var_v1_sandbox_config__sandbox_config_id__environment_variable_post =
@@ -5275,6 +5334,10 @@ export const EndpointByMethod = {
       post_Create_default_e2b_sandbox_config_v1_sandbox_config_e2b_default_post,
     '/v1/sandbox-config/local/default':
       post_Create_default_local_sandbox_config_v1_sandbox_config_local_default_post,
+    '/v1/sandbox-config/local':
+      post_Create_custom_local_sandbox_config_v1_sandbox_config_local_post,
+    '/v1/sandbox-config/local/recreate-venv':
+      post_Force_recreate_local_sandbox_venv_v1_sandbox_config_local_recreate_venv_post,
     '/v1/sandbox-config/{sandbox_config_id}/environment-variable':
       post_Create_sandbox_env_var_v1_sandbox_config__sandbox_config_id__environment_variable_post,
     '/v1/providers/': post_Create_provider,

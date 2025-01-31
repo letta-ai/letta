@@ -1051,6 +1051,18 @@ export type SandboxConfigServiceCreateDefaultLocalSandboxConfigV1SandboxConfigLo
       typeof SandboxConfigService.createDefaultLocalSandboxConfigV1SandboxConfigLocalDefaultPost
     >
   >;
+export type SandboxConfigServiceCreateCustomLocalSandboxConfigV1SandboxConfigLocalPostMutationResult =
+  Awaited<
+    ReturnType<
+      typeof SandboxConfigService.createCustomLocalSandboxConfigV1SandboxConfigLocalPost
+    >
+  >;
+export type SandboxConfigServiceForceRecreateLocalSandboxVenvV1SandboxConfigLocalRecreateVenvPostMutationResult =
+  Awaited<
+    ReturnType<
+      typeof SandboxConfigService.forceRecreateLocalSandboxVenvV1SandboxConfigLocalRecreateVenvPost
+    >
+  >;
 export type SandboxConfigServiceCreateSandboxEnvVarV1SandboxConfigSandboxConfigIdEnvironmentVariablePostMutationResult =
   Awaited<
     ReturnType<

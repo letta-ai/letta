@@ -1547,7 +1547,7 @@ export type LocalSandboxConfig = {
   /**
    * Directory for the sandbox environment.
    */
-  sandbox_dir: string;
+  sandbox_dir?: string | null;
   /**
    * Whether or not to use the venv, or run directly in the same run loop.
    */
@@ -1556,6 +1556,10 @@ export type LocalSandboxConfig = {
    * The name for the venv in the sandbox directory. We first search for an existing venv with this name, otherwise, we make it from the requirements.txt.
    */
   venv_name?: string;
+  /**
+   * List of pip packages to install with mandatory name and optional version following semantic versioning. This only is considered when use_venv is True.
+   */
+  pip_requirements?: Array<PipRequirement>;
 };
 
 /**
@@ -1791,6 +1795,17 @@ export type Passage = {
    * The embedding configuration used by the passage.
    */
   embedding_config: EmbeddingConfig | null;
+};
+
+export type PipRequirement = {
+  /**
+   * Name of the pip package.
+   */
+  name: string;
+  /**
+   * Optional version of the package, following semantic versioning.
+   */
+  version?: string | null;
 };
 
 export type Provider = {
@@ -3214,6 +3229,14 @@ export type CreateDefaultLocalSandboxConfigV1SandboxConfigLocalDefaultPostData =
 export type CreateDefaultLocalSandboxConfigV1SandboxConfigLocalDefaultPostResponse =
   SandboxConfig;
 
+export type CreateCustomLocalSandboxConfigV1SandboxConfigLocalPostData = {
+  requestBody: LocalSandboxConfig;
+  userId?: string | null;
+};
+
+export type CreateCustomLocalSandboxConfigV1SandboxConfigLocalPostResponse =
+  SandboxConfig;
+
 export type UpdateSandboxConfigV1SandboxConfigSandboxConfigIdPatchData = {
   requestBody: SandboxConfigUpdate;
   sandboxConfigId: string;
@@ -3230,6 +3253,14 @@ export type DeleteSandboxConfigV1SandboxConfigSandboxConfigIdDeleteData = {
 
 export type DeleteSandboxConfigV1SandboxConfigSandboxConfigIdDeleteResponse =
   void;
+
+export type ForceRecreateLocalSandboxVenvV1SandboxConfigLocalRecreateVenvPostData =
+  {
+    userId?: string | null;
+  };
+
+export type ForceRecreateLocalSandboxVenvV1SandboxConfigLocalRecreateVenvPostResponse =
+  SandboxConfig;
 
 export type CreateSandboxEnvVarV1SandboxConfigSandboxConfigIdEnvironmentVariablePostData =
   {
@@ -4405,6 +4436,21 @@ export type $OpenApiTs = {
       };
     };
   };
+  '/v1/sandbox-config/local': {
+    post: {
+      req: CreateCustomLocalSandboxConfigV1SandboxConfigLocalPostData;
+      res: {
+        /**
+         * Successful Response
+         */
+        200: SandboxConfig;
+        /**
+         * Validation Error
+         */
+        422: HTTPValidationError;
+      };
+    };
+  };
   '/v1/sandbox-config/{sandbox_config_id}': {
     patch: {
       req: UpdateSandboxConfigV1SandboxConfigSandboxConfigIdPatchData;
@@ -4426,6 +4472,21 @@ export type $OpenApiTs = {
          * Successful Response
          */
         204: void;
+        /**
+         * Validation Error
+         */
+        422: HTTPValidationError;
+      };
+    };
+  };
+  '/v1/sandbox-config/local/recreate-venv': {
+    post: {
+      req: ForceRecreateLocalSandboxVenvV1SandboxConfigLocalRecreateVenvPostData;
+      res: {
+        /**
+         * Successful Response
+         */
+        200: SandboxConfig;
         /**
          * Validation Error
          */

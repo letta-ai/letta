@@ -9,7 +9,6 @@ import sys
 import tempfile
 import traceback
 import uuid
-import venv
 from typing import Any, Dict, Optional
 
 from letta.log import get_logger
@@ -17,6 +16,11 @@ from letta.schemas.agent import AgentState
 from letta.schemas.sandbox_config import SandboxConfig, SandboxRunResult, SandboxType
 from letta.schemas.tool import Tool
 from letta.schemas.user import User
+from letta.services.helpers.tool_execution_helper import (
+    create_venv_for_local_sandbox,
+    find_python_executable,
+    install_pip_requirements_for_sandbox,
+)
 from letta.services.sandbox_config_manager import SandboxConfigManager
 from letta.services.tool_manager import ToolManager
 from letta.settings import tool_settings
@@ -38,7 +42,9 @@ class ToolExecutionSandbox:
     # We make this a long random string to avoid collisions with any variables in the user's code
     LOCAL_SANDBOX_RESULT_VAR_NAME = "result_ZQqiequkcFwRwwGQMqkt"
 
-    def __init__(self, tool_name: str, args: dict, user: User, force_recreate=True, tool_object: Optional[Tool] = None):
+    def __init__(
+        self, tool_name: str, args: dict, user: User, force_recreate=True, force_recreate_venv=False, tool_object: Optional[Tool] = None
+    ):
         self.tool_name = tool_name
         self.args = args
         self.user = user
@@ -58,6 +64,7 @@ class ToolExecutionSandbox:
 
         self.sandbox_config_manager = SandboxConfigManager(tool_settings)
         self.force_recreate = force_recreate
+        self.force_recreate_venv = force_recreate_venv
 
     def run(self, agent_state: Optional[AgentState] = None, additional_env_vars: Optional[Dict] = None) -> SandboxRunResult:
         """
@@ -150,36 +157,41 @@ class ToolExecutionSandbox:
 
     def run_local_dir_sandbox_venv(self, sbx_config: SandboxConfig, env: Dict[str, str], temp_file_path: str) -> SandboxRunResult:
         local_configs = sbx_config.get_local_config()
-        venv_path = os.path.join(local_configs.sandbox_dir, local_configs.venv_name)
+        sandbox_dir = os.path.expanduser(local_configs.sandbox_dir)  # Expand tilde
+        venv_path = os.path.join(sandbox_dir, local_configs.venv_name)
 
-        # Safety checks for the venv: verify that the venv path exists and is a directory
-        if not os.path.isdir(venv_path):
+        # Recreate venv if required
+        if self.force_recreate_venv or not os.path.isdir(venv_path):
             logger.warning(f"Virtual environment directory does not exist at: {venv_path}, creating one now...")
-            self.create_venv_for_local_sandbox(sandbox_dir_path=local_configs.sandbox_dir, venv_path=venv_path, env=env)
+            create_venv_for_local_sandbox(
+                sandbox_dir_path=sandbox_dir, venv_path=venv_path, env=env, force_recreate=self.force_recreate_venv
+            )
 
-        # Ensure the python interpreter exists in the virtual environment
-        python_executable = os.path.join(venv_path, "bin", "python3")
+        install_pip_requirements_for_sandbox(local_configs, env=env)
+
+        # Ensure Python executable exists
+        python_executable = find_python_executable(local_configs)
         if not os.path.isfile(python_executable):
             raise FileNotFoundError(f"Python executable not found in virtual environment: {python_executable}")
 
-        # Set up env for venv
+        # Set up environment variables
         env["VIRTUAL_ENV"] = venv_path
         env["PATH"] = os.path.join(venv_path, "bin") + ":" + env["PATH"]
-        # Suppress all warnings
         env["PYTHONWARNINGS"] = "ignore"
 
-        # Execute the code in a restricted subprocess
+        # Execute the code
         try:
             result = subprocess.run(
-                [os.path.join(venv_path, "bin", "python3"), temp_file_path],
+                [python_executable, temp_file_path],
                 env=env,
-                cwd=local_configs.sandbox_dir,  # Restrict execution to sandbox_dir
+                cwd=sandbox_dir,
                 timeout=60,
                 capture_output=True,
                 text=True,
             )
             func_result, stdout = self.parse_out_function_results_markers(result.stdout)
             func_return, agent_state = self.parse_best_effort(func_result)
+
             return SandboxRunResult(
                 func_return=func_return,
                 agent_state=agent_state,
@@ -259,29 +271,6 @@ class ToolExecutionSandbox:
         start_index = text.index(self.LOCAL_SANDBOX_RESULT_START_MARKER) + marker_len
         end_index = text.index(self.LOCAL_SANDBOX_RESULT_END_MARKER)
         return text[start_index:end_index], text[: start_index - marker_len] + text[end_index + +marker_len :]
-
-    def create_venv_for_local_sandbox(self, sandbox_dir_path: str, venv_path: str, env: Dict[str, str]):
-        # Step 1: Create the virtual environment
-        venv.create(venv_path, with_pip=True)
-
-        pip_path = os.path.join(venv_path, "bin", "pip")
-        try:
-            # Step 2: Upgrade pip
-            logger.info("Upgrading pip in the virtual environment...")
-            subprocess.run([pip_path, "install", "--upgrade", "pip"], env=env, check=True)
-
-            # Step 3: Install packages from requirements.txt if provided
-            requirements_txt_path = os.path.join(sandbox_dir_path, self.REQUIREMENT_TXT_NAME)
-            if os.path.isfile(requirements_txt_path):
-                logger.info(f"Installing packages from requirements file: {requirements_txt_path}")
-                subprocess.run([pip_path, "install", "-r", requirements_txt_path], env=env, check=True)
-                logger.info("Successfully installed packages from requirements.txt")
-            else:
-                logger.warning("No requirements.txt file provided or the file does not exist. Skipping package installation.")
-
-        except subprocess.CalledProcessError as e:
-            logger.error(f"Error while setting up the virtual environment: {e}")
-            raise RuntimeError(f"Failed to set up the virtual environment: {e}")
 
     # e2b sandbox specific functions
 

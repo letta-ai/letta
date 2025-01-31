@@ -131,10 +131,14 @@ import type {
   CreateDefaultE2bSandboxConfigV1SandboxConfigE2bDefaultPostResponse,
   CreateDefaultLocalSandboxConfigV1SandboxConfigLocalDefaultPostData,
   CreateDefaultLocalSandboxConfigV1SandboxConfigLocalDefaultPostResponse,
+  CreateCustomLocalSandboxConfigV1SandboxConfigLocalPostData,
+  CreateCustomLocalSandboxConfigV1SandboxConfigLocalPostResponse,
   UpdateSandboxConfigV1SandboxConfigSandboxConfigIdPatchData,
   UpdateSandboxConfigV1SandboxConfigSandboxConfigIdPatchResponse,
   DeleteSandboxConfigV1SandboxConfigSandboxConfigIdDeleteData,
   DeleteSandboxConfigV1SandboxConfigSandboxConfigIdDeleteResponse,
+  ForceRecreateLocalSandboxVenvV1SandboxConfigLocalRecreateVenvPostData,
+  ForceRecreateLocalSandboxVenvV1SandboxConfigLocalRecreateVenvPostResponse,
   CreateSandboxEnvVarV1SandboxConfigSandboxConfigIdEnvironmentVariablePostData,
   CreateSandboxEnvVarV1SandboxConfigSandboxConfigIdEnvironmentVariablePostResponse,
   ListSandboxEnvVarsV1SandboxConfigSandboxConfigIdEnvironmentVariableGetData,
@@ -1972,6 +1976,31 @@ export class SandboxConfigService {
   }
 
   /**
+   * Create Custom Local Sandbox Config
+   * Create or update a custom LocalSandboxConfig, including pip_requirements.
+   * @param data The data for the request.
+   * @param data.requestBody
+   * @param data.userId
+   * @returns SandboxConfig Successful Response
+   * @throws ApiError
+   */
+  public static createCustomLocalSandboxConfigV1SandboxConfigLocalPost(
+    data: CreateCustomLocalSandboxConfigV1SandboxConfigLocalPostData,
+    headers?: { user_id: string },
+  ): CancelablePromise<CreateCustomLocalSandboxConfigV1SandboxConfigLocalPostResponse> {
+    return __request(OpenAPI, {
+      method: 'POST',
+      url: '/v1/sandbox-config/local',
+      body: data.requestBody,
+      mediaType: 'application/json',
+      errors: {
+        422: 'Validation Error',
+      },
+      headers,
+    });
+  }
+
+  /**
    * Update Sandbox Config
    * @param data The data for the request.
    * @param data.sandboxConfigId
@@ -2017,6 +2046,29 @@ export class SandboxConfigService {
       path: {
         sandbox_config_id: data.sandboxConfigId,
       },
+      errors: {
+        422: 'Validation Error',
+      },
+      headers,
+    });
+  }
+
+  /**
+   * Force Recreate Local Sandbox Venv
+   * Forcefully recreate the virtual environment for the local sandbox.
+   * Deletes and recreates the venv, then reinstalls required dependencies.
+   * @param data The data for the request.
+   * @param data.userId
+   * @returns SandboxConfig Successful Response
+   * @throws ApiError
+   */
+  public static forceRecreateLocalSandboxVenvV1SandboxConfigLocalRecreateVenvPost(
+    data: ForceRecreateLocalSandboxVenvV1SandboxConfigLocalRecreateVenvPostData = {},
+    headers?: { user_id: string },
+  ): CancelablePromise<ForceRecreateLocalSandboxVenvV1SandboxConfigLocalRecreateVenvPostResponse> {
+    return __request(OpenAPI, {
+      method: 'POST',
+      url: '/v1/sandbox-config/local/recreate-venv',
       errors: {
         422: 'Validation Error',
       },

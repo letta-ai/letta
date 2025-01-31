@@ -4082,7 +4082,14 @@ Attributes:
 export const $LocalSandboxConfig = {
   properties: {
     sandbox_dir: {
-      type: 'string',
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
       title: 'Sandbox Dir',
       description: 'Directory for the sandbox environment.',
     },
@@ -4100,9 +4107,17 @@ export const $LocalSandboxConfig = {
         'The name for the venv in the sandbox directory. We first search for an existing venv with this name, otherwise, we make it from the requirements.txt.',
       default: 'venv',
     },
+    pip_requirements: {
+      items: {
+        $ref: '#/components/schemas/PipRequirement',
+      },
+      type: 'array',
+      title: 'Pip Requirements',
+      description:
+        'List of pip packages to install with mandatory name and optional version following semantic versioning. This only is considered when use_venv is True.',
+    },
   },
   type: 'object',
-  required: ['sandbox_dir'],
   title: 'LocalSandboxConfig',
 } as const;
 
@@ -4690,6 +4705,33 @@ Parameters:
     agent_id (str): The unique identifier of the agent associated with the passage.
     source_id (str): The data source of the passage.
     file_id (str): The unique identifier of the file associated with the passage.`,
+} as const;
+
+export const $PipRequirement = {
+  properties: {
+    name: {
+      type: 'string',
+      minLength: 1,
+      title: 'Name',
+      description: 'Name of the pip package.',
+    },
+    version: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Version',
+      description:
+        'Optional version of the package, following semantic versioning.',
+    },
+  },
+  type: 'object',
+  required: ['name'],
+  title: 'PipRequirement',
 } as const;
 
 export const $Provider = {
