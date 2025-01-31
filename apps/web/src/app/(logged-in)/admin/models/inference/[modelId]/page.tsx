@@ -33,6 +33,7 @@ const updateInferenceModelSchema = z.object({
   name: z.string(),
   disabled: z.boolean(),
   isRecommended: z.boolean().optional(),
+  defaultCUPerStep: z.coerce.number().positive(),
   defaultRequestsPerMinutePerOrganization: z.coerce.number().positive(),
   defaultTokensPerMinutePerOrganization: z.coerce.number().positive(),
   tag: z.string().optional(),
@@ -65,6 +66,7 @@ function UpdateInferenceModelForm(props: UpdateInferenceModelFormProps) {
     resolver: zodResolver(updateInferenceModelSchema),
     defaultValues: {
       name: model.name,
+      defaultCUPerStep: model.defaultCUPerStep || 0,
       disabled: !!model.disabledAt,
       brand: model.brand,
       defaultRequestsPerMinutePerOrganization:
@@ -81,6 +83,7 @@ function UpdateInferenceModelForm(props: UpdateInferenceModelFormProps) {
           id: model.id,
         },
         body: {
+          defaultCUPerStep: values.defaultCUPerStep,
           defaultRequestsPerMinutePerOrganization:
             values.defaultRequestsPerMinutePerOrganization,
           defaultTokensPerMinutePerOrganization:
@@ -116,6 +119,12 @@ function UpdateInferenceModelForm(props: UpdateInferenceModelFormProps) {
                   label="Tag"
                   {...field}
                 />
+              )}
+            />
+            <FormField
+              name="defaultCUPerStep"
+              render={({ field }) => (
+                <Input fullWidth type="number" label="CU per step" {...field} />
               )}
             />
             <FormField

@@ -13,6 +13,7 @@ export const InferenceModelSchema = z.object({
   name: z.string(),
   brand: z.string(),
   config: LLMConfigSchema.optional()?.nullable(),
+  defaultCUPerStep: z.number().or(z.null()).optional(),
   defaultRequestsPerMinutePerOrganization: z.number(),
   defaultTokensPerMinutePerOrganization: z.number(),
   isRecommended: z.boolean(),
@@ -78,6 +79,7 @@ const createAdminInferenceModelContract = c.mutation({
 /* Update Inference Model */
 const UpdateInferenceModelRequestBodySchema = z.object({
   brand: z.string().optional(),
+  defaultCUPerStep: z.number().optional(),
   disabled: z.boolean().optional(),
   name: z.string().optional(),
   tag: z.string().optional(),

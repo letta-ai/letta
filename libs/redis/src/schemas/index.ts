@@ -2,6 +2,7 @@ import { z } from 'zod';
 import type { ZodType } from 'zod';
 import {
   db,
+  inferenceModelsMetadata,
   MaxRequestsPerMinutePerModelSchema,
   MaxTokensPerMinutePerModelSchema,
   organizationCredits,
@@ -145,11 +146,33 @@ const tpmWindowDefinition = generateDefinitionSatisfies({
   output: z.object({ data: z.number() }),
 });
 
+const defaultCUPerStepDefinition = generateDefinitionSatisfies({
+  baseKey: 'defaultCUPerStep',
+  input: z.object({ modelId: z.string() }),
+  getKey: (args) => `defaultCUPerStep:${args.modelId}`,
+  populateOnMissFn: async (args) => {
+    const result = await db.query.inferenceModelsMetadata.findFirst({
+      where: eq(inferenceModelsMetadata.id, args.modelId),
+      columns: {
+        defaultCUPerStep: true,
+      },
+    });
+
+    if (!result) {
+      return null;
+    }
+
+    return { expiry: 0, data: { data: result.defaultCUPerStep } };
+  },
+  output: z.object({ defaultCUPerStep: z.number() }),
+});
+
 export const redisDefinitions = {
   userSession: userSessionDefinition,
   organizationLimits: organizationLimitsDefinition,
   defaultModelRequestPerMinute: defaultModelRequestPerMinuteDefinition,
   defaultModelTokensPerMinute: defaultModelTokenPerMinuteDefinition,
+  defaultCUPerStep: defaultCUPerStepDefinition,
   rpmWindow: rpmWindowDefinition,
   tpmWindow: tpmWindowDefinition,
   organizationCredits: organizationCreditsDefinition,

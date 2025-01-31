@@ -655,6 +655,25 @@ export const developmentServerPasswordRelations = relations(
   }),
 );
 
+export const cuChangeAudit = pgTable('cu_change_audit', {
+  id: text('id')
+    .primaryKey()
+    .default(sql`gen_random_uuid()`),
+  modelId: text('model_id').notNull(),
+  previousCu: numeric('previous_cu'),
+  newCu: numeric('new_cu').notNull(),
+  reason: text('reason').notNull(),
+  changedBy: text('changed_by').notNull(),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+});
+
+const cuChangeAuditRelations = relations(cuChangeAudit, ({ one }) => ({
+  model: one(inferenceModelsMetadata, {
+    fields: [cuChangeAudit.modelId],
+    references: [inferenceModelsMetadata.id],
+  }),
+}));
+
 const DEFAULT_INFERENCE_TOKENS_PER_MINUTE = '1000';
 const DEFAULT_INFERENCE_REQUESTS_PER_MINUTE = '1000';
 
@@ -670,6 +689,7 @@ export const inferenceModelsMetadata = pgTable(
     brand: text('brand').notNull(),
     isRecommended: boolean('is_recommended').notNull().default(false),
     tag: text('tag'),
+    defaultCUPerStep: numeric('default_cu_per_step'),
     defaultRequestsPerMinutePerOrganization: numeric(
       'default_requests_per_minute_per_organization',
     )
