@@ -8,6 +8,7 @@ from fastapi.testclient import TestClient
 from letta.orm.errors import NoResultFound
 from letta.schemas.block import Block, BlockUpdate, CreateBlock
 from letta.schemas.message import UserMessage
+from letta.schemas.sandbox_config import LocalSandboxConfig, PipRequirement, SandboxConfig
 from letta.schemas.tool import ToolCreate, ToolUpdate
 from letta.server.rest_api.app import app
 from letta.server.rest_api.utils import get_letta_server
@@ -480,3 +481,39 @@ def test_list_agents_for_block(client, mock_sync_server):
         block_id="block-abc",
         actor=mock_sync_server.user_manager.get_user_or_default.return_value,
     )
+
+
+# ======================================================================================================================
+# Sandbox Config Routes Tests
+# ======================================================================================================================
+@pytest.fixture
+def sample_local_sandbox_config():
+    """Fixture for a sample LocalSandboxConfig object."""
+    return LocalSandboxConfig(
+        sandbox_dir="/custom/path",
+        use_venv=True,
+        venv_name="custom_venv_name",
+        pip_requirements=[
+            PipRequirement(name="numpy", version="1.23.0"),
+            PipRequirement(name="pandas"),
+        ],
+    )
+
+
+def test_create_custom_local_sandbox_config(client, mock_sync_server, sample_local_sandbox_config):
+    """Test creating or updating a LocalSandboxConfig."""
+    mock_sync_server.sandbox_config_manager.create_or_update_sandbox_config.return_value = SandboxConfig(
+        type="local", organization_id="org-123", config=sample_local_sandbox_config.model_dump()
+    )
+
+    response = client.post("/v1/sandbox-config/local", json=sample_local_sandbox_config.model_dump(), headers={"user_id": "test_user"})
+
+    assert response.status_code == 200
+    assert response.json()["type"] == "local"
+    assert response.json()["config"]["sandbox_dir"] == "/custom/path"
+    assert response.json()["config"]["pip_requirements"] == [
+        {"name": "numpy", "version": "1.23.0"},
+        {"name": "pandas", "version": None},
+    ]
+
+    mock_sync_server.sandbox_config_manager.create_or_update_sandbox_config.assert_called_once()

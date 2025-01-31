@@ -2355,6 +2355,19 @@ def test_create_or_update_sandbox_config(server: SyncServer, default_user):
     assert created_config.organization_id == default_user.organization_id
 
 
+def test_create_local_sandbox_config_defaults(server: SyncServer, default_user):
+    sandbox_config_create = SandboxConfigCreate(
+        config=LocalSandboxConfig(),
+    )
+    created_config = server.sandbox_config_manager.create_or_update_sandbox_config(sandbox_config_create, actor=default_user)
+
+    # Assertions
+    assert created_config.type == SandboxType.LOCAL
+    assert created_config.get_local_config() == sandbox_config_create.config
+    assert created_config.get_local_config().sandbox_dir in {"~/.letta", tool_settings.local_sandbox_dir}
+    assert created_config.organization_id == default_user.organization_id
+
+
 def test_default_e2b_settings_sandbox_config(server: SyncServer, default_user):
     created_config = server.sandbox_config_manager.get_or_create_default_sandbox_config(sandbox_type=SandboxType.E2B, actor=default_user)
     e2b_config = created_config.get_e2b_config()

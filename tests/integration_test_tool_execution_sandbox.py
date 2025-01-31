@@ -17,7 +17,14 @@ from letta.schemas.environment_variables import AgentEnvironmentVariable, Sandbo
 from letta.schemas.llm_config import LLMConfig
 from letta.schemas.memory import ChatMemory
 from letta.schemas.organization import Organization
-from letta.schemas.sandbox_config import E2BSandboxConfig, LocalSandboxConfig, SandboxConfigCreate, SandboxConfigUpdate, SandboxType
+from letta.schemas.sandbox_config import (
+    E2BSandboxConfig,
+    LocalSandboxConfig,
+    PipRequirement,
+    SandboxConfigCreate,
+    SandboxConfigUpdate,
+    SandboxType,
+)
 from letta.schemas.tool import Tool, ToolCreate
 from letta.schemas.user import User
 from letta.services.organization_manager import OrganizationManager
@@ -252,7 +259,10 @@ def custom_test_sandbox_config(test_user):
 
     # Set the sandbox to be within the external codebase path and use a venv
     external_codebase_path = str(Path(__file__).parent / "test_tool_sandbox" / "restaurant_management_system")
-    local_sandbox_config = LocalSandboxConfig(sandbox_dir=external_codebase_path, use_venv=True)
+    # tqdm is used in this codebase, but NOT in the requirements.txt, this tests that we can successfully install pip requirements
+    local_sandbox_config = LocalSandboxConfig(
+        sandbox_dir=external_codebase_path, use_venv=True, pip_requirements=[PipRequirement(name="tqdm")]
+    )
 
     # Create the sandbox configuration
     config_create = SandboxConfigCreate(config=local_sandbox_config.model_dump())
@@ -436,7 +446,7 @@ def test_local_sandbox_e2e_composio_star_github_without_setting_db_env_vars(
 
 
 @pytest.mark.local_sandbox
-def test_local_sandbox_external_codebase(mock_e2b_api_key_none, custom_test_sandbox_config, external_codebase_tool, test_user):
+def test_local_sandbox_external_codebase_with_venv(mock_e2b_api_key_none, custom_test_sandbox_config, external_codebase_tool, test_user):
     # Set the args
     args = {"percentage": 10}
 
@@ -468,6 +478,59 @@ def test_local_sandbox_with_venv_errors(mock_e2b_api_key_none, custom_test_sandb
     assert "error" in result.stdout[0], "stdout contains printed string"
     assert len(result.stderr) != 0, "stderr not empty"
     assert "ZeroDivisionError: This is an intentionally weird division!" in result.stderr[0], "stderr contains expected error"
+
+
+@pytest.mark.e2b_sandbox
+def test_local_sandbox_with_venv_pip_installs_basic(mock_e2b_api_key_none, cowsay_tool, test_user):
+    manager = SandboxConfigManager(tool_settings)
+    config_create = SandboxConfigCreate(
+        config=LocalSandboxConfig(use_venv=True, pip_requirements=[PipRequirement(name="cowsay")]).model_dump()
+    )
+    config = manager.create_or_update_sandbox_config(config_create, test_user)
+
+    # Add an environment variable
+    key = "secret_word"
+    long_random_string = "".join(secrets.choice(string.ascii_letters + string.digits) for _ in range(20))
+    manager.create_sandbox_env_var(
+        SandboxEnvironmentVariableCreate(key=key, value=long_random_string), sandbox_config_id=config.id, actor=test_user
+    )
+
+    sandbox = ToolExecutionSandbox(cowsay_tool.name, {}, user=test_user, force_recreate_venv=True)
+    result = sandbox.run()
+    assert long_random_string in result.stdout[0]
+
+
+@pytest.mark.e2b_sandbox
+def test_local_sandbox_with_venv_pip_installs_with_update(mock_e2b_api_key_none, cowsay_tool, test_user):
+    manager = SandboxConfigManager(tool_settings)
+    config_create = SandboxConfigCreate(config=LocalSandboxConfig(use_venv=True).model_dump())
+    config = manager.create_or_update_sandbox_config(config_create, test_user)
+
+    # Add an environment variable
+    key = "secret_word"
+    long_random_string = "".join(secrets.choice(string.ascii_letters + string.digits) for _ in range(20))
+    manager.create_sandbox_env_var(
+        SandboxEnvironmentVariableCreate(key=key, value=long_random_string), sandbox_config_id=config.id, actor=test_user
+    )
+
+    sandbox = ToolExecutionSandbox(cowsay_tool.name, {}, user=test_user, force_recreate_venv=True)
+    result = sandbox.run()
+
+    # Check that this should error
+    assert len(result.stdout) == 0
+    error_message = "No module named 'cowsay'"
+    assert error_message in result.stderr[0]
+
+    # Now update the SandboxConfig
+    config_create = SandboxConfigCreate(
+        config=LocalSandboxConfig(use_venv=True, pip_requirements=[PipRequirement(name="cowsay")]).model_dump()
+    )
+    manager.create_or_update_sandbox_config(config_create, test_user)
+
+    # Run it again WITHOUT force recreating the venv
+    sandbox = ToolExecutionSandbox(cowsay_tool.name, {}, user=test_user, force_recreate_venv=False)
+    result = sandbox.run()
+    assert long_random_string in result.stdout[0]
 
 
 # E2B sandbox tests

@@ -1,5 +1,6 @@
 import hashlib
 import json
+import re
 from enum import Enum
 from typing import Any, Dict, List, Literal, Optional, Union
 
@@ -25,17 +26,54 @@ class SandboxRunResult(BaseModel):
     sandbox_config_fingerprint: str = Field(None, description="The fingerprint of the config for the sandbox")
 
 
+class PipRequirement(BaseModel):
+    name: str = Field(..., min_length=1, description="Name of the pip package.")
+    version: Optional[str] = Field(None, description="Optional version of the package, following semantic versioning.")
+
+    @classmethod
+    def validate_version(cls, version: Optional[str]) -> Optional[str]:
+        if version is None:
+            return None
+        semver_pattern = re.compile(r"^\d+(\.\d+){0,2}(-[a-zA-Z0-9.]+)?$")
+        if not semver_pattern.match(version):
+            raise ValueError(f"Invalid version format: {version}. Must follow semantic versioning (e.g., 1.2.3, 2.0, 1.5.0-alpha).")
+        return version
+
+    def __init__(self, **data):
+        super().__init__(**data)
+        self.version = self.validate_version(self.version)
+
+
 class LocalSandboxConfig(BaseModel):
-    sandbox_dir: str = Field(..., description="Directory for the sandbox environment.")
+    sandbox_dir: Optional[str] = Field(None, description="Directory for the sandbox environment.")
     use_venv: bool = Field(False, description="Whether or not to use the venv, or run directly in the same run loop.")
     venv_name: str = Field(
         "venv",
         description="The name for the venv in the sandbox directory. We first search for an existing venv with this name, otherwise, we make it from the requirements.txt.",
     )
+    pip_requirements: List[PipRequirement] = Field(
+        default_factory=list,
+        description="List of pip packages to install with mandatory name and optional version following semantic versioning. This only is considered when use_venv is True.",
+    )
 
     @property
     def type(self) -> "SandboxType":
         return SandboxType.LOCAL
+
+    @model_validator(mode="before")
+    @classmethod
+    def set_default_sandbox_dir(cls, data):
+        # If `data` is not a dict (e.g., it's another Pydantic model), just return it
+        if not isinstance(data, dict):
+            return data
+
+        if data.get("sandbox_dir") is None:
+            if tool_settings.local_sandbox_dir:
+                data["sandbox_dir"] = tool_settings.local_sandbox_dir
+            else:
+                data["sandbox_dir"] = "~/.letta"
+
+        return data
 
 
 class E2BSandboxConfig(BaseModel):
@@ -53,6 +91,10 @@ class E2BSandboxConfig(BaseModel):
         """
         Assign a default template value if the template field is not provided.
         """
+        # If `data` is not a dict (e.g., it's another Pydantic model), just return it
+        if not isinstance(data, dict):
+            return data
+
         if data.get("template") is None:
             data["template"] = tool_settings.e2b_sandbox_template_id
         return data
