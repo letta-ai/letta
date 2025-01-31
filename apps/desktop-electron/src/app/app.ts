@@ -10,6 +10,7 @@ import * as path from 'path';
 import type { ServerLogType } from '@letta-cloud/types';
 import * as todesktop from '@todesktop/runtime';
 import * as os from 'os';
+import * as ps from 'ps-node';
 todesktop.init();
 
 let lettaServer: ReturnType<typeof execFile> | null = null;
@@ -257,11 +258,44 @@ export default class App {
     App.mainWindow.webContents.send('set-path', '/dashboard/agents');
   }
 
-  private static onReady() {
+  private static async onReady() {
     // This method will be called when Electron has finished
     // initialization and is ready to create browser windows.
     // Some APIs can only be used after this event occurs.
     if (rendererAppName) {
+      await new Promise((resolve) =>
+        ps.lookup(
+          {
+            command: 'letta',
+            arguments: '--use-file-pg-uri',
+          },
+          (err, resultList) => {
+            if (err) {
+              console.log(err);
+              resolve(true);
+              return;
+            }
+
+            if (resultList.length === 0) {
+              resolve(true);
+              return;
+            }
+
+            Promise.all(
+              resultList.map((process) => {
+                return new Promise((re) => {
+                  ps.kill(process.pid, () => {
+                    re(true);
+                  });
+                });
+              }),
+            ).then(() => {
+              resolve(true);
+            });
+          },
+        ),
+      );
+
       App.startLettaServer();
 
       App.initMainWindow();
