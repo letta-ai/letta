@@ -30,6 +30,24 @@ services:
     volumes:
       - ./data/postgres:/var/lib/postgresql/data
       - ./scripts/postgres-db-init/init.sql:/docker-entrypoint-initdb.d/init.sql
+  undertaker:
+    depends_on:
+        postgres:
+            condition: service_healthy
+        redis:
+            condition: service_healthy
+    container_name: letta-undertaker
+    build:
+      context: ./apps/credit-undertaker
+      dockerfile: Dockerfile
+      target: undertaker
+    environment:
+        DATABASE_URL: postgresql://postgres:postgres@postgres:5432/letta
+        LETTA_PG_USER: ${LETTA_PG_USER}
+        LETTA_PG_PASSWORD: ${LETTA_PG_PASSWORD}
+        LETTA_PG_DB: ${LETTA_PG_DB}
+        LETTA_PG_PORT: ${LETTA_PG_PORT}
+        LETTA_PG_HOST: ${LETTA_PG_HOST}
   web:
     depends_on:
       postgres:

@@ -1,0 +1,20 @@
+{
+  "name": "credit-undertaker",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "build": "esbuild src/main.ts --bundle --platform=node --outdir=dist"
+  },
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "devDependencies": {
+    "esbuild": "^0.24.2"
+  },
+  "dependencies": {
+    "@sentry/node": "^8.52.0",
+    "@sentry/profiling-node": "^8.52.0",
+    "dotenv": "^16.4.7",
+    "pg": "^8.13.1"
+  }
+}

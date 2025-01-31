@@ -167,6 +167,35 @@ check-github-status:
     @echo "🚧 Checking GitHub status..."
     npm run check-github-status
 
+build-undertaker:
+  @echo "🚧 Building web Docker image with tag: {{TAG}}..."
+  @mkdir -p /tmp/.buildx-cache
+  docker buildx build --platform linux/amd64 --target undertaker \
+      --cache-from type=local,src=/tmp/.buildx-cache \
+      --cache-to type=local,dest=/tmp/.buildx-cache-new,mode=max \
+      -t {{DOCKER_REGISTRY}}/undertaker:{{TAG}} . --load --file apps/credit-undertaker/Dockerfile
+  @echo "🚧 Moving cache..."
+  @rm -rf /tmp/.buildx-cache
+  @mv /tmp/.buildx-cache-new /tmp/.buildx-cache
+
+@push-undertaker:
+    @echo "🚀 Pushing Docker images to registry with tag: {{TAG}}..."
+    docker push {{DOCKER_REGISTRY}}/undertaker:{{TAG}}
+
+@deploy-undertaker: push-undertaker
+    @echo "🚧 Deploying Helm chart..."
+    helm upgrade --install undertaker {{HELM_CHARTS_DIR}}/undertaker \
+        --set image.repository={{DOCKER_REGISTRY}}/undertaker \
+        --set image.tag={{TAG}} \
+        --set-string "podAnnotations.kubectl\.kubernetes\.io/restartedAt"="$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+        --set env.LETTA_PG_PASSWORD=${LETTA_PG_PASSWORD} \
+        --set env.LETTA_PG_USER=${LETTA_PG_USER} \
+        --set env.LETTA_PG_DB=${LETTA_PG_DB} \
+        --set env.LETTA_PG_HOST=${LETTA_PG_HOST} \
+        --set env.LETTA_PG_PORT=${LETTA_PG_PORT} \
+        --set env.UNDERTAKER_SENTRY_DSN=${UNDERTAKER_SENTRY_DSN} \
+        --set env.DATABASE_URL=${DATABASE_URL}
+
 # Build all Docker images for GitHub Actions with cache management
 build-web-images:
     npm run slack-bot-says "Building Docker images for GitHub Actions with tag: {{TAG}}..."
