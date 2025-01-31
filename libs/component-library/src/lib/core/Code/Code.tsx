@@ -10,6 +10,7 @@ import 'prismjs/components/prism-typescript';
 import 'prismjs/components/prism-markup-templating';
 import 'prismjs/components/prism-django';
 import 'prismjs/components/prism-bash';
+import 'prismjs/components/prism-markup';
 import './Code.scss';
 import { CopyButton } from '../../reusable/CopyButton/CopyButton';
 import { DownloadButton } from '../../reusable/DownloadButton/DownloadButton';
@@ -27,7 +28,8 @@ export type SupportedLangauges =
   | 'javascript'
   | 'python'
   | 'text'
-  | 'typescript';
+  | 'typescript'
+  | 'xml';
 
 export function isSupportedLanguage(
   language: string,
@@ -37,6 +39,7 @@ export function isSupportedLanguage(
     'django',
     'javascript',
     'python',
+    'xml',
     'typescript',
     'text',
   ].includes(language);
@@ -81,6 +84,11 @@ const languageToFileNameMap: Record<SupportedLangauges, string> = {
   django: 'file.jinja',
   bash: 'file.sh',
   text: 'file.txt',
+  xml: 'file.xml',
+};
+
+const languageToTypeOverrideMap: Partial<Record<SupportedLangauges, string>> = {
+  xml: 'markup',
 };
 
 export function Code(props: CodeProps) {
@@ -174,7 +182,14 @@ export function Code(props: CodeProps) {
               onSetCode(code);
             }}
             highlight={(code) => {
-              let res = highlight(code, languages[language], language);
+              const langaugeToUse =
+                languageToTypeOverrideMap[language] || language;
+
+              let res = highlight(
+                code,
+                languages[langaugeToUse],
+                langaugeToUse,
+              );
 
               if (showLineNumbers) {
                 res = res

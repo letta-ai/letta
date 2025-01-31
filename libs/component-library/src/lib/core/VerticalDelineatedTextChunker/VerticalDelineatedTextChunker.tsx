@@ -10,7 +10,7 @@ export interface VerticalBarChartChunk {
   label: string;
   color: string;
   size: number;
-  text?: string;
+  content?: React.ReactNode;
 }
 
 interface VerticalBarChartProps {
@@ -115,11 +115,7 @@ function TextChunks(props: TextChunksProps) {
               style={{ borderColor: c.color }}
               className="relative border-solid p-2"
             >
-              <div className="relative z-[1]">
-                <Typography className="leading-4" variant="body2">
-                  {c.text}
-                </Typography>
-              </div>
+              <div className="relative z-[1]">{c.content}</div>
             </div>
           </VStack>
         );

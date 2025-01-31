@@ -4,6 +4,7 @@ import { useCoreMemorySummaryWorker } from './hooks/useCoreMemorySummaryWorker/u
 import type { WorkerResponse } from './types';
 import {
   Chart,
+  Code,
   HStack,
   makeFormattedTooltip,
   Typography,
@@ -19,6 +20,7 @@ import type { TiktokenModel } from 'js-tiktoken';
 import { encodingForModel } from 'js-tiktoken';
 import './ContextEditorPanel.scss';
 import { useCurrentAgent } from '../../hooks';
+import { useCurrentSimulatedAgent } from '../../hooks/useCurrentSimulatedAgent/useCurrentSimulatedAgent';
 
 const computedMemoryStringAtom = atom<string | null>(null);
 
@@ -92,7 +94,9 @@ const supportedModels: TiktokenModel[] = [
 ];
 
 function useContextWindowDetails() {
-  const { memory, system, id, llm_config } = useCurrentAgent();
+  const { system, llm_config, ...rest } = useCurrentAgent();
+  const { id, agentSession } = useCurrentSimulatedAgent();
+
   const [computedMemoryString, setComputedMemoryString] = useAtom(
     computedMemoryStringAtom,
   );
@@ -106,6 +110,10 @@ function useContextWindowDetails() {
       refetchInterval: 2500,
     },
   );
+
+  const memory = useMemo(() => {
+    return agentSession?.body.agent.memory || rest.memory;
+  }, [agentSession?.body.agent.memory, rest.memory]);
 
   const { postMessage } = useCoreMemorySummaryWorker({
     onMessage: (message: MessageEvent<WorkerResponse>) => {
@@ -520,48 +528,74 @@ export function ContextWindowSimulator() {
       {
         id: 'system',
         label: t('ContextWindowPreview.systemPrompt'),
-        text: systemPromptSummary,
+        content: (
+          <Typography variant="body2" font="mono">
+            {systemPromptSummary}
+          </Typography>
+        ),
         size: systemPromptLength,
         color: '#3758F9',
       },
       {
         id: 'tool',
         label: t('ContextWindowPreview.toolPrompt'),
-        text: JSON.stringify(toolSummary, null, 2),
+        content: (
+          <Code
+            code={JSON.stringify(toolSummary, null, 2)}
+            fontSize="small"
+            showLineNumbers={false}
+            variant="minimal"
+            language="javascript"
+          />
+        ),
         size: toolLength,
         color: '#37e2f9',
       },
       {
         id: 'external',
         label: t('ContextWindowPreview.externalSummaryLength'),
-        text: externalSummary,
+        content: (
+          <Typography variant="body2" font="mono">
+            {externalSummary}
+          </Typography>
+        ),
         size: externalSummaryLength,
         color: '#37f9a2',
       },
       {
         id: 'coreMemory',
         label: t('ContextWindowPreview.memoryBlocks'),
-        text: coreMemorySummary || '',
+        content: (
+          <Code
+            language="xml"
+            code={coreMemorySummary || ''}
+            fontSize="small"
+            showLineNumbers={false}
+            variant="minimal"
+          />
+        ),
         size: coreMemoryLength,
         color: '#76e76e',
       },
       {
         id: 'recursiveMemory',
         label: t('ContextWindowPreview.summaryMemory'),
-        text: recursiveMemorySummary || '',
+        content: recursiveMemorySummary || '',
         size: recursiveMemoryLength,
         color: 'green',
       },
       {
         id: 'messages',
         label: t('ContextWindowPreview.messagesTokens'),
-        text: (messagesTokensSummary || [])
-          .flatMap((message) =>
-            message.content
-              ?.filter((c) => c.type === 'text')
-              .map((c) => c.text),
-          )
-          .join(''),
+        content: (
+          <Code
+            language="javascript"
+            code={JSON.stringify(messagesTokensSummary, null, 2)}
+            fontSize="small"
+            showLineNumbers={false}
+            variant="minimal"
+          />
+        ),
         size: messagesTokensLength,
         color: 'orange',
       },
