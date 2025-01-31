@@ -6,9 +6,6 @@ permissions:
   contents: read
 
 on:
-  push:
-    branches:
-      - main
   pull_request:
     branches:
       - main
@@ -29,9 +26,16 @@ jobs:
         with:
           files: |
             .github/workflows/migration-api-stability.yml
+            apps/web/**
+            apps/core/**
+            libs/**
+            package.json
+            package-lock.json
+            tsconfig.json
   migration-api-stability:
     env:
       IS_API_STABILITY_TEST: yes
+      IS_CYPRESS_RUN: yes
     needs: [changed-files]
     permissions:
       actions: read
@@ -159,10 +163,10 @@ jobs:
         run: npm run test:api-stability
         env:
           TEST_STAGE: main
-      - name: Kill Letta agents
-        run: kill $(pgrep -f "poetry run letta server")
       - name: Kill Letta web
-        run: kill $(pgrep -f "npm run start:api-stability")
+        run: kill $(pgrep -f "npm run start:api-stability") || true
+      - name: Kill Letta agents
+        run: kill $(pgrep -f "poetry run letta server") || true
       - name: Migrate database on branch code
         working-directory: branch-code/apps/core
         env:
@@ -172,7 +176,6 @@ jobs:
           LETTA_PG_DB: postgres
           LETTA_PG_HOST: localhost
         run: |
-          psql -h localhost -U postgres -d postgres -c 'CREATE EXTENSION vector'
           poetry run alembic upgrade head
       - name: Build and migrate web on branch code
         working-directory: branch-code/apps/web
