@@ -1,16 +1,22 @@
+import os
+import shutil
 from typing import List, Optional
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, HTTPException, Query
 
+from letta.log import get_logger
 from letta.schemas.environment_variables import SandboxEnvironmentVariable as PydanticEnvVar
 from letta.schemas.environment_variables import SandboxEnvironmentVariableCreate, SandboxEnvironmentVariableUpdate
+from letta.schemas.sandbox_config import LocalSandboxConfig
 from letta.schemas.sandbox_config import SandboxConfig as PydanticSandboxConfig
 from letta.schemas.sandbox_config import SandboxConfigCreate, SandboxConfigUpdate, SandboxType
 from letta.server.rest_api.utils import get_letta_server, get_user_id
 from letta.server.server import SyncServer
+from letta.services.helpers.tool_execution_helper import create_venv_for_local_sandbox, install_pip_requirements_for_sandbox
 
 router = APIRouter(prefix="/sandbox-config", tags=["sandbox-config"])
 
+logger = get_logger(__name__)
 
 ### Sandbox Config Routes
 
@@ -44,6 +50,34 @@ def create_default_local_sandbox_config(
     return server.sandbox_config_manager.get_or_create_default_sandbox_config(sandbox_type=SandboxType.LOCAL, actor=actor)
 
 
+@router.post("/local", response_model=PydanticSandboxConfig)
+def create_custom_local_sandbox_config(
+    local_sandbox_config: LocalSandboxConfig,
+    server: SyncServer = Depends(get_letta_server),
+    user_id: str = Depends(get_user_id),
+):
+    """
+    Create or update a custom LocalSandboxConfig, including pip_requirements.
+    """
+    # Ensure the incoming config is of type LOCAL
+    if local_sandbox_config.type != SandboxType.LOCAL:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Provided config must be of type '{SandboxType.LOCAL.value}'.",
+        )
+
+    # Retrieve the user (actor)
+    actor = server.user_manager.get_user_or_default(user_id=user_id)
+
+    # Wrap the LocalSandboxConfig into a SandboxConfigCreate
+    sandbox_config_create = SandboxConfigCreate(config=local_sandbox_config)
+
+    # Use the manager to create or update the sandbox config
+    sandbox_config = server.sandbox_config_manager.create_or_update_sandbox_config(sandbox_config_create, actor=actor)
+
+    return sandbox_config
+
+
 @router.patch("/{sandbox_config_id}", response_model=PydanticSandboxConfig)
 def update_sandbox_config(
     sandbox_config_id: str,
@@ -75,6 +109,49 @@ def list_sandbox_configs(
 ):
     actor = server.user_manager.get_user_or_default(user_id=user_id)
     return server.sandbox_config_manager.list_sandbox_configs(actor, limit=limit, after=after, sandbox_type=sandbox_type)
+
+
+@router.post("/local/recreate-venv", response_model=PydanticSandboxConfig)
+def force_recreate_local_sandbox_venv(
+    server: SyncServer = Depends(get_letta_server),
+    user_id: str = Depends(get_user_id),
+):
+    """
+    Forcefully recreate the virtual environment for the local sandbox.
+    Deletes and recreates the venv, then reinstalls required dependencies.
+    """
+    actor = server.user_manager.get_user_or_default(user_id=user_id)
+
+    # Retrieve the local sandbox config
+    sbx_config = server.sandbox_config_manager.get_or_create_default_sandbox_config(sandbox_type=SandboxType.LOCAL, actor=actor)
+
+    local_configs = sbx_config.get_local_config()
+    sandbox_dir = os.path.expanduser(local_configs.sandbox_dir)  # Expand tilde
+    venv_path = os.path.join(sandbox_dir, local_configs.venv_name)
+
+    # Check if venv exists, and delete if necessary
+    if os.path.isdir(venv_path):
+        try:
+            shutil.rmtree(venv_path)
+            logger.info(f"Deleted existing virtual environment at: {venv_path}")
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=f"Failed to delete existing venv: {e}")
+
+    # Recreate the virtual environment
+    try:
+        create_venv_for_local_sandbox(sandbox_dir_path=sandbox_dir, venv_path=str(venv_path), env=os.environ.copy(), force_recreate=True)
+        logger.info(f"Successfully recreated virtual environment at: {venv_path}")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to recreate venv: {e}")
+
+    # Install pip requirements
+    try:
+        install_pip_requirements_for_sandbox(local_configs=local_configs, env=os.environ.copy())
+        logger.info(f"Successfully installed pip requirements for venv at: {venv_path}")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to install pip requirements: {e}")
+
+    return sbx_config
 
 
 ### Sandbox Environment Variable Routes

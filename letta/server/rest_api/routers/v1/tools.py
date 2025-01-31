@@ -8,14 +8,18 @@ from composio.tools.base.abs import InvalidClassDefinition
 from fastapi import APIRouter, Body, Depends, Header, HTTPException
 
 from letta.errors import LettaToolCreateError
+from letta.log import get_logger
 from letta.orm.errors import UniqueConstraintViolationError
 from letta.schemas.letta_message import ToolReturnMessage
 from letta.schemas.tool import Tool, ToolCreate, ToolRunFromSource, ToolUpdate
 from letta.schemas.user import User
 from letta.server.rest_api.utils import get_letta_server
 from letta.server.server import SyncServer
+from letta.settings import tool_settings
 
 router = APIRouter(prefix="/tools", tags=["tools"])
+
+logger = get_logger(__name__)
 
 
 @router.delete("/{tool_id}", operation_id="delete_tool")
@@ -52,6 +56,7 @@ def retrieve_tool(
 def list_tools(
     after: Optional[str] = None,
     limit: Optional[int] = 50,
+    name: Optional[str] = None,
     server: SyncServer = Depends(get_letta_server),
     user_id: Optional[str] = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
 ):
@@ -60,6 +65,9 @@ def list_tools(
     """
     try:
         actor = server.user_manager.get_user_or_default(user_id=user_id)
+        if name is not None:
+            tool = server.tool_manager.get_tool_by_name(name=name, actor=actor)
+            return [tool] if tool else []
         return server.tool_manager.list_tools(actor=actor, after=after, limit=limit)
     except Exception as e:
         # Log or print the full exception here for debugging
@@ -293,12 +301,18 @@ def add_composio_tool(
 def get_composio_key(server: SyncServer, actor: User):
     api_keys = server.sandbox_config_manager.list_sandbox_env_vars_by_key(key="COMPOSIO_API_KEY", actor=actor)
     if not api_keys:
-        raise HTTPException(
-            status_code=400,  # Bad Request
-            detail=f"No API keys found for Composio. Please add your Composio API Key as an environment variable for your sandbox configuration.",
-        )
+        logger.warning(f"No API keys found for Composio. Defaulting to the environment variable...")
 
-    # TODO: Add more protections around this
-    # Ideally, not tied to a specific sandbox, but for now we just get the first one
-    # Theoretically possible for someone to have different composio api keys per sandbox
-    return api_keys[0].value
+        if tool_settings.composio_api_key:
+            return tool_settings.composio_api_key
+        else:
+            # Nothing, raise fatal warning
+            raise HTTPException(
+                status_code=400,  # Bad Request
+                detail=f"No API keys found for Composio. Please add your Composio API Key as an environment variable for your sandbox configuration, or set it as environment variable COMPOSIO_API_KEY.",
+            )
+    else:
+        # TODO: Add more protections around this
+        # Ideally, not tied to a specific sandbox, but for now we just get the first one
+        # Theoretically possible for someone to have different composio api keys per sandbox
+        return api_keys[0].value

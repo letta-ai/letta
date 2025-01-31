@@ -97,7 +97,10 @@ class CheckPasswordMiddleware(BaseHTTPMiddleware):
         if request.url.path == "/v1/health/" or request.url.path == "/latest/health/":
             return await call_next(request)
 
-        if request.headers.get("X-BARE-PASSWORD") == f"password {random_password}":
+        if (
+            request.headers.get("X-BARE-PASSWORD") == f"password {random_password}"
+            or request.headers.get("Authorization") == f"Bearer {random_password}"
+        ):
             return await call_next(request)
 
         return JSONResponse(

@@ -56,6 +56,9 @@ class Agent(SqlalchemyBase, OrganizationMixin):
     embedding_config: Mapped[Optional[EmbeddingConfig]] = mapped_column(
         EmbeddingConfigColumn, doc="the embedding configuration object for this agent."
     )
+    project_id: Mapped[Optional[str]] = mapped_column(String, nullable=True, doc="The id of the project the agent belongs to.")
+    template_id: Mapped[Optional[str]] = mapped_column(String, nullable=True, doc="The id of the template the agent belongs to.")
+    base_template_id: Mapped[Optional[str]] = mapped_column(String, nullable=True, doc="The base template id of the agent.")
 
     # Tool rules
     tool_rules: Mapped[Optional[List[ToolRule]]] = mapped_column(ToolRulesColumn, doc="the tool rules for this agent.")
@@ -146,6 +149,9 @@ class Agent(SqlalchemyBase, OrganizationMixin):
             "created_at": self.created_at,
             "updated_at": self.updated_at,
             "tool_exec_environment_variables": self.tool_exec_environment_variables,
+            "project_id": self.project_id,
+            "template_id": self.template_id,
+            "base_template_id": self.base_template_id,
         }
 
         return self.__pydantic_model__(**state)

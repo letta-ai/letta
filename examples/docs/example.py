@@ -2,9 +2,11 @@ from letta_client import CreateBlock, Letta, MessageCreate
 
 """
 Make sure you run the Letta server before running this example.
-```
-letta server
-```
+See: https://docs.letta.com/quickstart
+
+If you're using Letta Cloud, replace 'baseURL' with 'token'
+See: https://docs.letta.com/api-reference/overview
+
 Execute this script using `poetry run python3 example.py`
 """
 client = Letta(
@@ -39,9 +41,11 @@ print(f"Sent message to agent {agent.name}: {message_text}")
 print(f"Agent thoughts: {response.messages[0].reasoning}")
 print(f"Agent response: {response.messages[1].content}")
 
+
 def secret_message():
     """Return a secret message."""
     return "Hello world!"
+
 
 tool = client.tools.upsert_from_function(
     func=secret_message,

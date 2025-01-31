@@ -152,6 +152,15 @@ def package_function_response(was_success, response_string, timestamp=None):
 
 
 def package_system_message(system_message, message_type="system_alert", time=None):
+    # error handling for recursive packaging
+    try:
+        message_json = json.loads(system_message)
+        if "type" in message_json and message_json["type"] == message_type:
+            warnings.warn(f"Attempted to pack a system message that is already packed. Not packing: '{system_message}'")
+            return system_message
+    except:
+        pass  # do nothing, expected behavior that the message is not JSON
+
     formatted_time = time if time else get_local_time()
     packaged_message = {
         "type": message_type,
@@ -214,7 +223,7 @@ def unpack_message(packed_message) -> str:
     try:
         message_json = json.loads(packed_message)
     except:
-        warnings.warn(f"Was unable to load message as JSON to unpack: ''{packed_message}")
+        warnings.warn(f"Was unable to load message as JSON to unpack: '{packed_message}'")
         return packed_message
 
     if "message" not in message_json:
@@ -224,4 +233,8 @@ def unpack_message(packed_message) -> str:
         warnings.warn(f"Was unable to find 'message' field in packed message object: '{packed_message}'")
         return packed_message
     else:
+        message_type = message_json["type"]
+        if message_type != "user_message":
+            warnings.warn(f"Expected type to be 'user_message', but was '{message_type}', so not unpacking: '{packed_message}'")
+            return packed_message
         return message_json.get("message")

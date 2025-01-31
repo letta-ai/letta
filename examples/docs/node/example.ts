@@ -8,9 +8,11 @@ import {
 
 /**
  * Make sure you run the Letta server before running this example.
- * ```
- * letta server
- * ```
+ * See https://docs.letta.com/quickstart
+ *
+ * If you're using Letta Cloud, replace 'baseURL' with 'token'
+ * See https://docs.letta.com/api-reference/overview
+ *
  * Execute this script using `npm run example`
  */
 const client = new LettaClient({

@@ -10,6 +10,7 @@ def adjust_menu_prices(percentage: float) -> str:
     import cowsay
     from core.menu import Menu, MenuItem  # Import a class from the codebase
     from core.utils import format_currency  # Use a utility function to test imports
+    from tqdm import tqdm
 
     if not isinstance(percentage, (int, float)):
         raise TypeError("percentage must be a number")
@@ -22,7 +23,7 @@ def adjust_menu_prices(percentage: float) -> str:
 
     # Make adjustments and record
     adjustments = []
-    for item in menu.items:
+    for item in tqdm(menu.items):
         old_price = item.price
         item.price += item.price * (percentage / 100)
         adjustments.append(f"{item.name}: {format_currency(old_price)} -> {format_currency(item.price)}")
