@@ -6,5 +6,5 @@ AZURE_MODEL_TO_CONTEXT_LENGTH = {
     "gpt-35-turbo-0125": 16385,
     "gpt-4-0613": 8192,
     "gpt-4o-mini-2024-07-18": 128000,
-    "gpt-4o-2024-08-06": 128000,
+    "gpt-4o": 128000,
 }
