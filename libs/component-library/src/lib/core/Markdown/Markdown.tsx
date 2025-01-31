@@ -63,7 +63,7 @@ export function Markdown(props: MarkdownProps) {
 
           return (
             <a
-              className="text-accent underline"
+              className="text-content underline"
               href={href as string}
               target="_blank"
               rel="noopener noreferrer"
