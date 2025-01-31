@@ -121,6 +121,7 @@
     "postgres": "^3.4.5",
     "prismjs": "^1.29.0",
     "promise-worker": "^2.0.1",
+    "ps-node": "^0.1.6",
     "pyodide": "^0.26.4",
     "react": "19.0.0",
     "react-dom": "19.0.0",
