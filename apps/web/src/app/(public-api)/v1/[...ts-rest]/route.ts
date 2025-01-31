@@ -11,6 +11,7 @@ import * as Sentry from '@sentry/node';
 import { makeRequestToSDK } from '$web/sdk';
 import { sdkRouter } from '$web/sdk/router';
 import { sdkContracts } from '@letta-cloud/letta-agents-api';
+import { getAPIStabilityTestingUser } from '$web/server/lib/getAPIStabilityTestingUser/getAPIStabilityTestingUser';
 
 const handler = createNextHandler(sdkContracts, sdkRouter, {
   basePath: '',
@@ -19,6 +20,25 @@ const handler = createNextHandler(sdkContracts, sdkRouter, {
   handlerType: 'app-router',
   requestMiddleware: [
     tsr.middleware<RequestMiddlewareType>(async (req) => {
+      if (process.env.IS_API_STABILITY_TEST === 'yes') {
+        const user = await getAPIStabilityTestingUser();
+
+        if (!user) {
+          return TsRestResponse.fromJson(
+            {
+              message: 'Something went wrong',
+            },
+            { status: 500 },
+          );
+        }
+
+        req.source = 'api';
+        req.organizationId = user.activeOrganizationId || '';
+        req.lettaAgentsUserId = user.lettaAgentsId;
+        req.userId = user.id;
+        return;
+      }
+
       const apiKey = req.headers.get('Authorization')?.replace('Bearer ', '');
 
       const middlewareData: RequestMiddlewareType = {

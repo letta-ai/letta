@@ -1,0 +1,209 @@
+name: 🦸️ Migration API Stability
+
+
+permissions:
+  actions: read
+  contents: read
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+jobs:
+  changed-files:
+    runs-on: ubuntu-latest
+    name: changed-files
+    outputs:
+      all_changed_files: ${{ steps.changed-files.outputs.all_changed_files }}
+      any_changed: ${{ steps.changed-files.outputs.any_changed }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Get changed files
+        id: changed-files
+        uses: tj-actions/changed-files@v44
+        with:
+          files: |
+            .github/workflows/migration-api-stability.yml
+  migration-api-stability:
+    env:
+      IS_API_STABILITY_TEST: yes
+    needs: [changed-files]
+    permissions:
+      actions: read
+      contents: read
+      id-token: write
+    if: ${{ needs.changed-files.outputs.any_changed == 'true' }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+    services:
+      redis:
+        image: redis
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+      postgres-web:
+        image: postgres
+        ports:
+          - 5433:5432
+        env:
+          POSTGRES_DB: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_USER: postgres
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+      postgres-core:
+        image: pgvector/pgvector:pg17
+        ports:
+          - 5432:5432
+        env:
+          POSTGRES_HOST_AUTH_METHOD: trust
+          POSTGRES_DB: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_USER: postgres
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          path: branch-code
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          path: main-code
+      - name: Set up python 3.12
+        id: setup-python
+        uses: actions/setup-python@v5
+        with:
+          python-version: 3.12
+      - name: Install Poetry
+        uses: snok/install-poetry@v1
+        with:
+          version: ${{ inputs.poetry-version }}
+          virtualenvs-create: true
+          virtualenvs-in-project: true
+      - name: Install poetry dependencies on main branch
+        if: steps.cached-poetry-dependencies.outputs.cache-hit != 'true'
+        shell: bash
+        working-directory: main-code/apps/core
+        run: poetry install --no-interaction --no-root ${{ inputs.install-args || '-E dev -E postgres -E external-tools -E tests -E cloud-tool-sandbox' }}
+      - name: Migrate database on main branch
+        working-directory: main-code/apps/core
+        env:
+          LETTA_PG_PORT: 5432
+          LETTA_PG_USER: postgres
+          LETTA_PG_PASSWORD: postgres
+          LETTA_PG_DB: postgres
+          LETTA_PG_HOST: localhost
+        run: |
+          psql -h localhost -U postgres -d postgres -c 'CREATE EXTENSION vector'
+          poetry run alembic upgrade head
+      - name: Install poetry dependencies on branch code
+        if: steps.cached-poetry-dependencies.outputs.cache-hit != 'true'
+        shell: bash
+        working-directory: branch-code/apps/core
+        run: poetry install --no-interaction --no-root ${{ inputs.install-args || '-E dev -E postgres -E external-tools -E tests -E cloud-tool-sandbox' }}
+      - name: Turn on Letta agents on main branch
+        working-directory: main-code/apps/core
+        env:
+          LETTA_PG_PORT: 5432
+          LETTA_PG_USER: postgres
+          LETTA_PG_PASSWORD: postgres
+          LETTA_PG_DB: postgres
+          LETTA_PG_HOST: localhost
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        run: poetry run letta server &
+      - name: Install Dependencies on branch code
+        if: steps.cache-nodemodules.outputs.cache-hit != 'true'
+        run: npm ci
+        working-directory: branch-code
+      - name: Install Dependencies on main branch
+        if: steps.cache-nodemodules.outputs.cache-hit != 'true'
+        run: npm ci
+        working-directory: main-code
+      - name: Build and migrate web on main branch
+        working-directory: main-code/apps/web
+        run: npm run build:e2e
+        env:
+          DATABASE_URL: postgres://postgres:postgres@localhost:5433/postgres
+      - name: Turn on letta web on main branch
+        working-directory: main-code/apps/web
+        run: npm run start:api-stability &
+        env:
+          DATABASE_URL: postgres://postgres:postgres@localhost:5433/postgres
+          REDIS_HOST: localhost
+          REDIS_PORT: 6379
+          LETTA_AGENTS_ENDPOINT: http://localhost:8283
+          NEXT_PUBLIC_CURRENT_HOST: http://localhost:3000
+          IS_API_STABILITY_TEST: yes
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          TEST_STAGE: main
+      - name: Run api stability tests
+        working-directory: branch-code/apps/api-stability-tester
+        run: npm run test:api-stability
+        env:
+          TEST_STAGE: main
+      - name: Kill Letta agents
+        run: kill $(pgrep -f "poetry run letta server")
+      - name: Kill Letta web
+        run: kill $(pgrep -f "npm run start:api-stability")
+      - name: Migrate database on branch code
+        working-directory: branch-code/apps/core
+        env:
+          LETTA_PG_PORT: 5432
+          LETTA_PG_USER: postgres
+          LETTA_PG_PASSWORD: postgres
+          LETTA_PG_DB: postgres
+          LETTA_PG_HOST: localhost
+        run: |
+          psql -h localhost -U postgres -d postgres -c 'CREATE EXTENSION vector'
+          poetry run alembic upgrade head
+      - name: Build and migrate web on branch code
+        working-directory: branch-code/apps/web
+        run: npm run build:e2e
+        env:
+          DATABASE_URL: postgres://postgres:postgres@localhost:5433/postgres
+      - name: Turn on Letta agents on branch code
+        working-directory: branch-code/apps/core
+        env:
+          LETTA_PG_PORT: 5432
+          LETTA_PG_USER: postgres
+          LETTA_PG_PASSWORD: postgres
+          LETTA_PG_DB: postgres
+          LETTA_PG_HOST: localhost
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        # Detach
+        run: poetry run letta server &
+      - name: Turn on letta web on branch code
+        working-directory: branch-code/apps/web
+        run: npm run start:api-stability &
+        env:
+          DATABASE_URL: postgres://postgres:postgres@localhost:5433/postgres
+          REDIS_HOST: localhost
+          REDIS_PORT: 6379
+          LETTA_AGENTS_ENDPOINT: http://localhost:8283
+          NEXT_PUBLIC_CURRENT_HOST: http://localhost:3000
+          IS_API_STABILITY_TEST: yes
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          TEST_STAGE: branch
+      - name: Run api stability tests on branch code
+        working-directory: branch-code/apps/api-stability-tester
+        run: npm run test:api-stability
+        env:
+          TEST_STAGE: branch
