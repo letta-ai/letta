@@ -29,7 +29,10 @@ import {
   useMonthCursor,
 } from '@letta-cloud/helpful-client-utils';
 import type { ColumnDef } from '@tanstack/react-table';
-import type { AdminOrganizationUserType } from '$web/web-api/contracts';
+import type {
+  AdminOrganizationRateLimitItemType,
+  AdminOrganizationUserType,
+} from '$web/web-api/contracts';
 import { useQueryClient } from '@tanstack/react-query';
 import type { contracts } from '$web/web-api/contracts';
 import type { ServerInferResponses } from '@ts-rest/core';
@@ -940,6 +943,381 @@ function CreditSection() {
   );
 }
 
+interface ResetOrganizationRateLimitDialogProps {
+  modelId: string;
+}
+
+function ResetOrganizationRateLimitDialog(
+  props: ResetOrganizationRateLimitDialogProps,
+) {
+  const organization = useCurrentAdminOrganization();
+
+  const { modelId } = props;
+
+  const { mutate, isPending, isError } =
+    webApi.admin.organizations.adminResetOrganizationRateLimitsForModel.useMutation();
+
+  const handleResetOrganizationRateLimit = useCallback(() => {
+    if (!organization) {
+      return;
+    }
+
+    mutate(
+      {
+        params: {
+          modelId,
+          organizationId: organization.id,
+        },
+      },
+      {
+        onSuccess: () => {
+          window.location.reload();
+        },
+      },
+    );
+  }, [organization, mutate, modelId]);
+
+  return (
+    <Dialog
+      title="Reset Organization Rate Limit"
+      trigger={
+        <DropdownMenuItem
+          doNotCloseOnSelect
+          label="Reset Organization Rate Limit"
+        />
+      }
+      isConfirmBusy={isPending}
+      errorMessage={
+        isError ? 'Failed to reset organization rate limit' : undefined
+      }
+      onConfirm={handleResetOrganizationRateLimit}
+    >
+      <p>Are you sure you want to reset the organization rate limit?</p>
+    </Dialog>
+  );
+}
+
+const createOrganizationRateLimitSchema = z.object({
+  modelId: OptionTypeSchemaSingle,
+  maxRequestsPerMinute: z.coerce.number().positive().int(),
+  maxTokensPerMinute: z.coerce.number().positive().int(),
+});
+
+function CreateOrganizationRateLimitDialog() {
+  const organization = useCurrentAdminOrganization();
+
+  const form = useForm<z.infer<typeof createOrganizationRateLimitSchema>>({
+    resolver: zodResolver(createOrganizationRateLimitSchema),
+    defaultValues: {
+      maxRequestsPerMinute: 0,
+      maxTokensPerMinute: 0,
+    },
+  });
+
+  const { mutate, isPending, isError } =
+    webApi.admin.organizations.adminUpdateOrganizationRateLimitsForModel.useMutation();
+
+  const handleCreateOrganizationRateLimit = useCallback(
+    async (values: z.infer<typeof createOrganizationRateLimitSchema>) => {
+      if (!organization) {
+        return;
+      }
+
+      mutate(
+        {
+          params: {
+            modelId: values.modelId.value || '',
+            organizationId: organization.id,
+          },
+          body: {
+            maxInferenceRequestsPerMinute: values.maxRequestsPerMinute,
+            maxInferenceTokensPerMinute: values.maxTokensPerMinute,
+          },
+        },
+        {
+          onSuccess: () => {
+            window.location.reload();
+          },
+        },
+      );
+    },
+    [organization, mutate],
+  );
+
+  const getModels = useCallback(async (inputValue: string) => {
+    const response = await webApi.admin.models.getAdminInferenceModels.query({
+      query: {
+        search: inputValue,
+      },
+    });
+
+    if (response.status !== 200) {
+      return [];
+    }
+
+    return response.body.inferenceModels.map((model) => ({
+      label: model.name,
+      value: model.id,
+    }));
+  }, []);
+
+  return (
+    <FormProvider {...form}>
+      <Dialog
+        title="Create Organization Rate Limit"
+        trigger={<Button label="Create Organization Rate Limit" />}
+        isConfirmBusy={isPending}
+        errorMessage={
+          isError ? 'Failed to create organization rate limit' : undefined
+        }
+        onSubmit={form.handleSubmit(handleCreateOrganizationRateLimit)}
+      >
+        <FormField
+          render={({ field }) => (
+            <AsyncSelect
+              label="Model"
+              {...field}
+              fullWidth
+              loadOptions={getModels}
+              onSelect={(value) => {
+                field.onChange(value);
+              }}
+              value={field.value}
+              placeholder="Start typing a model name..."
+            />
+          )}
+          name="modelId"
+        />
+        <FormField
+          render={({ field }) => (
+            <Input
+              type="number"
+              {...field}
+              fullWidth
+              label="Max Requests Per Minute"
+              placeholder="Enter max requests per minute"
+            />
+          )}
+          name="maxRequestsPerMinute"
+        />
+        <FormField
+          render={({ field }) => (
+            <Input
+              type="number"
+              {...field}
+              fullWidth
+              label="Max Tokens Per Minute"
+              placeholder="Enter max tokens per minute"
+            />
+          )}
+          name="maxTokensPerMinute"
+        />
+      </Dialog>
+    </FormProvider>
+  );
+}
+
+const updateOrganizationRateLimitSchema = z.object({
+  maxRequestsPerMinute: z.coerce.number().positive().int(),
+  maxTokensPerMinute: z.coerce.number().positive().int(),
+});
+
+interface UpdateOrganizationRateLimitDialogProps {
+  modelId: string;
+  defaultValues: z.infer<typeof updateOrganizationRateLimitSchema>;
+}
+
+function UpdateOrganizationRateLimitDialog(
+  props: UpdateOrganizationRateLimitDialogProps,
+) {
+  const { modelId, defaultValues } = props;
+  const organization = useCurrentAdminOrganization();
+
+  const form = useForm<z.infer<typeof updateOrganizationRateLimitSchema>>({
+    resolver: zodResolver(updateOrganizationRateLimitSchema),
+    defaultValues: defaultValues,
+  });
+
+  const { mutate, isPending, isError } =
+    webApi.admin.organizations.adminUpdateOrganizationRateLimitsForModel.useMutation();
+
+  const handleUpdateOrganizationRateLimit = useCallback(
+    async (values: z.infer<typeof updateOrganizationRateLimitSchema>) => {
+      if (!organization) {
+        return;
+      }
+
+      mutate(
+        {
+          params: {
+            modelId,
+            organizationId: organization.id,
+          },
+          body: {
+            maxInferenceRequestsPerMinute: values.maxRequestsPerMinute,
+            maxInferenceTokensPerMinute: values.maxTokensPerMinute,
+          },
+        },
+        {
+          onSuccess: () => {
+            window.location.reload();
+          },
+        },
+      );
+    },
+    [organization, mutate, modelId],
+  );
+
+  return (
+    <FormProvider {...form}>
+      <Dialog
+        title="Update Organization Rate Limit"
+        trigger={
+          <DropdownMenuItem
+            doNotCloseOnSelect
+            label="Update Organization Rate Limit"
+          />
+        }
+        isConfirmBusy={isPending}
+        errorMessage={
+          isError ? 'Failed to update organization rate limit' : undefined
+        }
+        onSubmit={form.handleSubmit(handleUpdateOrganizationRateLimit)}
+      >
+        <FormField
+          render={({ field }) => (
+            <Input
+              type="number"
+              {...field}
+              fullWidth
+              label="Max Requests Per Minute"
+              placeholder="Enter max requests per minute"
+            />
+          )}
+          name="maxRequestsPerMinute"
+        />
+        <FormField
+          render={({ field }) => (
+            <Input
+              type="number"
+              {...field}
+              fullWidth
+              label="Max Tokens Per Minute"
+              placeholder="Enter max tokens per minute"
+            />
+          )}
+          name="maxTokensPerMinute"
+        />
+      </Dialog>
+    </FormProvider>
+  );
+}
+
+function OrganizationLevelRateLimitTable() {
+  const organization = useCurrentAdminOrganization();
+
+  const [search, setSearch] = useState('');
+  const [offset, setOffset] = useState(0);
+
+  const [debouncedSearch] = useDebouncedValue(search, 500);
+
+  const { data, isLoading } =
+    webApi.admin.organizations.adminGetOrganizationRateLimits.useQuery({
+      queryKey:
+        webApiQueryKeys.admin.organizations.adminGetOrganizationRateLimitsWithSearch(
+          organization?.id || '',
+          {
+            search: debouncedSearch,
+            limit: 5,
+            offset,
+          },
+        ),
+      queryData: {
+        params: {
+          organizationId: organization?.id || '',
+        },
+        query: {
+          search: debouncedSearch,
+          limit: 5,
+          offset,
+        },
+      },
+      enabled: !!organization,
+    });
+
+  const { formatNumber } = useNumberFormatter();
+
+  const columns: Array<ColumnDef<AdminOrganizationRateLimitItemType>> =
+    useMemo(() => {
+      return [
+        {
+          header: 'Model',
+          accessorKey: 'modelName',
+        },
+        {
+          header: 'Max Requests Per Minute',
+          accessorKey: 'maxInferenceRequestsPerMinute',
+          cell: ({ row }) =>
+            formatNumber(row.original.maxInferenceRequestsPerMinute),
+        },
+        {
+          header: 'Max Tokens Per Minute',
+          accessorKey: 'maxInferenceTokensPerMinute',
+          cell: ({ row }) =>
+            formatNumber(row.original.maxInferenceTokensPerMinute),
+        },
+        {
+          header: 'Actions',
+          id: 'actions',
+          cell: ({ row }) => (
+            <DropdownMenu
+              triggerAsChild
+              trigger={
+                <Button
+                  label="Actions"
+                  hideLabel
+                  color="tertiary"
+                  preIcon={<DotsHorizontalIcon />}
+                />
+              }
+            >
+              <UpdateOrganizationRateLimitDialog
+                modelId={row.original.modelId}
+                defaultValues={{
+                  maxRequestsPerMinute:
+                    row.original.maxInferenceRequestsPerMinute,
+                  maxTokensPerMinute: row.original.maxInferenceTokensPerMinute,
+                }}
+              />
+              <ResetOrganizationRateLimitDialog
+                modelId={row.original.modelId}
+              />
+            </DropdownMenu>
+          ),
+        },
+      ];
+    }, [formatNumber]);
+
+  return (
+    <DashboardPageSection
+      title="Organization Level Rate Limits"
+      description="These are the rate limits for the organization as a whole. These rate limits will be applied to all models in the organization."
+      actions={<CreateOrganizationRateLimitDialog />}
+    >
+      <DataTable
+        columns={columns}
+        data={data?.body.overrides || []}
+        isLoading={isLoading}
+        searchValue={search}
+        onSearch={setSearch}
+        offset={offset}
+        onSetOffset={setOffset}
+        limit={5}
+      />
+    </DashboardPageSection>
+  );
+}
+
 function UnBanOrganizationDialog() {
   const organization = useCurrentAdminOrganization();
 
@@ -1027,6 +1405,7 @@ function OrganizationPage() {
         </HStack>
       </DashboardPageSection>
       <OrganizationProperties />
+      <OrganizationLevelRateLimitTable />
       <CreditSection />
       <OrganizationMembers />
       <UsageDetails />

@@ -240,6 +240,75 @@ const adminGetOrganizationCreditsContract = c.query({
   },
 });
 
+export const AdminOrganizationRateLimitItemSchema = z.object({
+  modelId: z.string(),
+  modelName: z.string(),
+  maxInferenceTokensPerMinute: z.number(),
+  maxInferenceRequestsPerMinute: z.number(),
+});
+
+export type AdminOrganizationRateLimitItemType = z.infer<
+  typeof AdminOrganizationRateLimitItemSchema
+>;
+
+const AdminOrganizationRateLimitsSchema = z.object({
+  overrides: z.array(
+    z.object({
+      modelId: z.string(),
+      modelName: z.string(),
+      maxInferenceTokensPerMinute: z.number(),
+      maxInferenceRequestsPerMinute: z.number(),
+    }),
+  ),
+});
+
+const adminGetOrganizationRateLimitsContract = c.query({
+  method: 'GET',
+  pathParams: z.object({
+    organizationId: z.string(),
+  }),
+  query: GenericSearchSchema,
+  responses: {
+    200: AdminOrganizationRateLimitsSchema,
+  },
+  path: '/admin/organizations/:organizationId/rate-limits',
+});
+
+const UpdateOrganizationRateLimitsPayloadSchema = z.object({
+  maxInferenceTokensPerMinute: z.number().int().positive(),
+  maxInferenceRequestsPerMinute: z.number().int().positive(),
+});
+
+const adminUpdateOrganizationRateLimitsForModel = c.mutation({
+  path: '/admin/organizations/:organizationId/rate-limits/:modelId',
+  method: 'PUT',
+  pathParams: z.object({
+    modelId: z.string(),
+    organizationId: z.string(),
+  }),
+  body: UpdateOrganizationRateLimitsPayloadSchema,
+  responses: {
+    200: z.object({
+      success: z.boolean(),
+    }),
+  },
+});
+
+const adminResetOrganizationRateLimitsForModel = c.mutation({
+  path: '/admin/organizations/:organizationId/rate-limits/:modelId',
+  method: 'DELETE',
+  pathParams: z.object({
+    modelId: z.string(),
+    organizationId: z.string(),
+  }),
+  body: z.undefined(),
+  responses: {
+    200: z.object({
+      success: z.boolean(),
+    }),
+  },
+});
+
 const AddCreditsToOrganizationPayloadSchema = z.object({
   amount: z.number().positive().int(),
   note: z.string().optional(),
@@ -306,6 +375,9 @@ export const adminOrganizationsContracts = {
   adminBanOrganization: adminBanOrganizationContract,
   adminUnbanOrganization: adminUnbanOrganizationContract,
   adminAddUserToOrganization: adminAddUserToOrganizationContract,
+  adminUpdateOrganizationRateLimitsForModel,
+  adminResetOrganizationRateLimitsForModel,
+  adminGetOrganizationRateLimits: adminGetOrganizationRateLimitsContract,
   adminRemoveUserFromOrganization: adminRemoveUserFromOrganizationContract,
   adminListOrganizationUsers: adminListOrganizationUsersContract,
   adminGetOrganizationStatistics: adminGetOrganizationStatisticsContract,
@@ -368,6 +440,19 @@ export const adminOrganizationsQueryClientKeys = {
     search: GenericSearch,
   ) => [
     ...adminOrganizationsQueryClientKeys.adminListOrganizationCreditTransactions(
+      organizationId,
+    ),
+    search,
+  ],
+  adminGetOrganizationRateLimits: (organizationId: string) => [
+    ...adminOrganizationsQueryClientKeys.getOrganization(organizationId),
+    'rate-limits',
+  ],
+  adminGetOrganizationRateLimitsWithSearch: (
+    organizationId: string,
+    search: GenericSearch,
+  ) => [
+    ...adminOrganizationsQueryClientKeys.adminGetOrganizationRateLimits(
       organizationId,
     ),
     search,

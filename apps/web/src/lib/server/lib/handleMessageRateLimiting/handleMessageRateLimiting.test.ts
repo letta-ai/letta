@@ -16,20 +16,13 @@ describe('getAndSeedOrganizationLimits', () => {
   it.only('should fetch limits from organizationLimits  ', async () => {
     getRedisData.mockImplementation((query, payload) => {
       if (
-        query === 'organizationLimits' &&
-        get(payload, 'organizationId') === '1'
+        query === 'organizationRateLimitsPerModel' &&
+        get(payload, 'organizationId') === '1' &&
+        get(payload, 'modelId') === 'chatgpt'
       ) {
         return {
-          maxRequestsPerMinutePerModel: {
-            data: {
-              chatgpt: 50,
-            },
-          },
-          maxTokensPerMinutePerModel: {
-            data: {
-              chatgpt: 100,
-            },
-          },
+          maxRequestsPerMinutePerModel: 50,
+          maxTokensPerMinutePerModel: 100,
         };
       }
 
@@ -43,7 +36,7 @@ describe('getAndSeedOrganizationLimits', () => {
     });
 
     expect(
-      mockDatabase.query.organizationLimits.findFirst,
+      mockDatabase.query.perModelPerOrganizationRateLimitOverrides.findFirst,
     ).not.toHaveBeenCalled();
     expect(setRedisData).not.toHaveBeenCalled();
     expect(response.maxRequestsPerMinutePerModel).toBe(50);
@@ -55,21 +48,12 @@ describe('getAndSeedOrganizationLimits', () => {
 
     const organizationLimitResponse = {
       organizationId: '1',
-      maxRequestsPerMinutePerModel: {
-        version: '1',
-        data: {
-          chatgpt: 25,
-        },
-      },
-      maxTokensPerMinutePerModel: {
-        version: '1',
-        data: {
-          chatgpt: 95,
-        },
-      },
+      modelId: 'chatgpt',
+      maxRequestsPerMinute: '25',
+      maxTokensPerMinute: '95',
     };
 
-    mockDatabase.query.organizationLimits.findFirst.mockResolvedValue(
+    mockDatabase.query.perModelPerOrganizationRateLimitOverrides.findFirst.mockResolvedValue(
       organizationLimitResponse,
     );
 
@@ -79,15 +63,19 @@ describe('getAndSeedOrganizationLimits', () => {
       type: 'inference',
     });
     expect(setRedisData).toHaveBeenCalledWith(
-      'organizationLimits',
+      'organizationRateLimitsPerModel',
       { organizationId: '1' },
       {
         expiresAt: expect.any(Number),
         data: {
-          maxRequestsPerMinutePerModel:
-            organizationLimitResponse.maxRequestsPerMinutePerModel,
-          maxTokensPerMinutePerModel:
-            organizationLimitResponse.maxTokensPerMinutePerModel,
+          maxRequestsPerMinutePerModel: parseInt(
+            organizationLimitResponse.maxRequestsPerMinute,
+            10,
+          ),
+          maxTokensPerMinutePerModel: parseInt(
+            organizationLimitResponse.maxTokensPerMinute,
+            10,
+          ),
         },
       },
     );
@@ -99,16 +87,13 @@ describe('getAndSeedOrganizationLimits', () => {
   it('should get default limits if no organization limits for a specific model are not found', async () => {
     getRedisData.mockImplementation((query, payload) => {
       if (
-        query === 'organizationLimits' &&
-        get(payload, 'organizationId') === '1'
+        query === 'organizationRateLimitsPerModel' &&
+        get(payload, 'organizationId') === '1' &&
+        get(payload, 'modelId') === 'chatgpt'
       ) {
         return {
-          maxRequestsPerMinutePerModel: {
-            data: {},
-          },
-          maxTokensPerMinutePerModel: {
-            data: {},
-          },
+          maxRequestsPerMinutePerModel: undefined,
+          maxTokensPerMinutePerModel: undefined,
         };
       }
 
@@ -140,7 +125,7 @@ describe('getAndSeedOrganizationLimits', () => {
     });
 
     expect(
-      mockDatabase.query.organizationLimits.findFirst,
+      mockDatabase.query.perModelPerOrganizationRateLimitOverrides.findFirst,
     ).not.toHaveBeenCalled();
     expect(setRedisData).not.toHaveBeenCalled();
     expect(response.maxRequestsPerMinutePerModel).toBe(24);
@@ -150,24 +135,17 @@ describe('getAndSeedOrganizationLimits', () => {
   it('should get default limits from database if not found in redis', async () => {
     getRedisData.mockImplementation((query, payload) => {
       if (
-        query === 'organizationLimits' &&
+        query === 'organizationRateLimitsPerModel' &&
         get(payload, 'modelId') === 'chatgpt' &&
         get(payload, 'organizationId') === '1'
       ) {
-        return {
-          maxRequestsPerMinutePerModel: {
-            data: {},
-          },
-          maxTokensPerMinutePerModel: {
-            data: {},
-          },
-        };
+        return undefined;
       }
 
       return null;
     });
 
-    mockDatabase.query.organizationLimits.findFirst.mockResolvedValue(
+    mockDatabase.query.perModelPerOrganizationRateLimitOverrides.findFirst.mockResolvedValue(
       undefined,
     );
 
@@ -213,7 +191,7 @@ describe('getAndSeedOrganizationLimits', () => {
     );
 
     expect(
-      mockDatabase.query.organizationLimits.findFirst,
+      mockDatabase.query.perModelPerOrganizationRateLimitOverrides.findFirst,
     ).not.toHaveBeenCalled();
     expect(response.maxRequestsPerMinutePerModel).toBe(26);
     expect(response.maxTokensPerMinutePerModel).toBe(98);

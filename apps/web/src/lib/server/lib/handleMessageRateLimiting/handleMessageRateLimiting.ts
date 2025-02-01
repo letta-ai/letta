@@ -3,7 +3,7 @@ import {
   db,
   embeddingModelsMetadata,
   inferenceModelsMetadata,
-  organizationLimits,
+  perModelPerOrganizationRateLimitOverrides,
 } from '@letta-cloud/database';
 import { eq } from 'drizzle-orm';
 
@@ -41,45 +41,54 @@ export async function getAndSeedOrganizationLimits(
   payload: GetAndSeedOrganizationLimitsPayload,
 ): Promise<GetAndSeedOrganizationLimitsResponse> {
   const { modelId, organizationId, type } = payload;
-  const organizationLimit = await getRedisData('organizationLimits', {
-    organizationId,
-  });
+  const organizationLimit = await getRedisData(
+    'organizationRateLimitsPerModel',
+    {
+      organizationId,
+      modelId,
+    },
+  );
 
-  let maxRequestsPerMinuteForModel: number | null | undefined =
-    organizationLimit?.maxRequestsPerMinutePerModel?.data[modelId];
-  let maxTokensPerMinuteForModel: number | null | undefined =
-    organizationLimit?.maxTokensPerMinutePerModel?.data[modelId];
+  let maxRequestsPerMinutePerModel: number | null | undefined =
+    organizationLimit?.maxRequestsPerMinutePerModel;
+  let maxTokensPerMinutePerModel: number | null | undefined =
+    organizationLimit?.maxTokensPerMinutePerModel;
 
   // if organizationLimit exists but a specific model is not present, this most likley means that the organization limit for that model was not set, we do not want to fetch that here
   // we should rely on cache clearing to fetch the updated organization limits either by expiration or manual clearing else where
   if (!organizationLimit) {
-    const response = await db.query.organizationLimits.findFirst({
-      where: eq(organizationLimits.organizationId, organizationId),
-    });
+    const response =
+      await db.query.perModelPerOrganizationRateLimitOverrides.findFirst({
+        where: eq(
+          perModelPerOrganizationRateLimitOverrides.organizationId,
+          organizationId,
+        ),
+      });
 
-    if (!response) {
-      throw new Error('Organization limits not found');
+    if (response) {
+      maxRequestsPerMinutePerModel = parseInt(
+        response.maxRequestsPerMinute,
+        10,
+      );
+      maxTokensPerMinutePerModel = parseInt(response.maxTokensPerMinute, 10);
+
+      if (maxRequestsPerMinutePerModel && maxTokensPerMinutePerModel) {
+        await setRedisData(
+          'organizationRateLimitsPerModel',
+          { organizationId, modelId },
+          {
+            expiresAt: Date.now() + 24 * 60 * 60 * 1000,
+            data: {
+              maxRequestsPerMinutePerModel,
+              maxTokensPerMinutePerModel,
+            },
+          },
+        );
+      }
     }
-
-    maxRequestsPerMinuteForModel =
-      response.maxRequestsPerMinutePerModel?.data[modelId];
-    maxTokensPerMinuteForModel =
-      response.maxTokensPerMinutePerModel?.data[modelId];
-
-    await setRedisData(
-      'organizationLimits',
-      { organizationId },
-      {
-        expiresAt: Date.now() + 24 * 60 * 60 * 1000,
-        data: {
-          maxRequestsPerMinutePerModel: response.maxRequestsPerMinutePerModel,
-          maxTokensPerMinutePerModel: response.maxTokensPerMinutePerModel,
-        },
-      },
-    );
   }
 
-  if (!maxRequestsPerMinuteForModel || !maxTokensPerMinuteForModel) {
+  if (!maxRequestsPerMinutePerModel || !maxTokensPerMinutePerModel) {
     // fetch from root limits
     const [defaultModelRequestPerMinute, defaultModelTokensPerMinute] =
       await Promise.all([
@@ -87,12 +96,12 @@ export async function getAndSeedOrganizationLimits(
         getRedisData('defaultModelTokensPerMinute', { modelId }),
       ]);
 
-    maxRequestsPerMinuteForModel =
+    maxRequestsPerMinutePerModel =
       defaultModelRequestPerMinute?.maxRequestsPerMinute;
-    maxTokensPerMinuteForModel =
+    maxTokensPerMinutePerModel =
       defaultModelTokensPerMinute?.maxTokensPerMinute;
 
-    if (!maxRequestsPerMinuteForModel || !maxTokensPerMinuteForModel) {
+    if (!maxRequestsPerMinutePerModel || !maxTokensPerMinutePerModel) {
       const dbDefault = await (type === 'inference'
         ? db.query.inferenceModelsMetadata.findFirst({
             where: eq(inferenceModelsMetadata.id, modelId),
@@ -109,12 +118,12 @@ export async function getAndSeedOrganizationLimits(
             },
           }));
 
-      maxRequestsPerMinuteForModel =
+      maxRequestsPerMinutePerModel =
         parseInt(
           dbDefault?.defaultRequestsPerMinutePerOrganization || '0',
           10,
         ) || 0;
-      maxTokensPerMinuteForModel =
+      maxTokensPerMinutePerModel =
         parseInt(dbDefault?.defaultTokensPerMinutePerOrganization || '0', 10) ||
         0;
 
@@ -124,7 +133,7 @@ export async function getAndSeedOrganizationLimits(
           { modelId },
           {
             data: {
-              maxRequestsPerMinute: maxRequestsPerMinuteForModel,
+              maxRequestsPerMinute: maxRequestsPerMinutePerModel,
             },
           },
         ),
@@ -133,7 +142,7 @@ export async function getAndSeedOrganizationLimits(
           { modelId },
           {
             data: {
-              maxTokensPerMinute: maxTokensPerMinuteForModel,
+              maxTokensPerMinute: maxTokensPerMinutePerModel,
             },
           },
         ),
@@ -142,8 +151,8 @@ export async function getAndSeedOrganizationLimits(
   }
 
   return {
-    maxRequestsPerMinutePerModel: maxRequestsPerMinuteForModel || 0,
-    maxTokensPerMinutePerModel: maxTokensPerMinuteForModel || 0,
+    maxRequestsPerMinutePerModel: maxRequestsPerMinutePerModel || 0,
+    maxTokensPerMinutePerModel: maxTokensPerMinutePerModel || 0,
   };
 }
 

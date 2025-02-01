@@ -4,11 +4,13 @@ import {
   agentTemplates,
   db,
   deployedAgents,
+  inferenceModelsMetadata,
   lettaAPIKeys,
   organizationCredits,
   organizationCreditTransactions,
   organizations,
   organizationUsers,
+  perModelPerOrganizationRateLimitOverrides,
   users,
 } from '@letta-cloud/database';
 import { and, count, desc, eq, ilike, inArray } from 'drizzle-orm';
@@ -639,6 +641,142 @@ async function adminGetOrganizationCredits(
   };
 }
 
+type AdminUpdateOrganizationRateLimitsRequest = ServerInferRequest<
+  typeof contracts.admin.organizations.adminUpdateOrganizationRateLimitsForModel
+>;
+
+type AdminUpdateOrganizationRateLimitsResponse = ServerInferResponses<
+  typeof contracts.admin.organizations.adminUpdateOrganizationRateLimitsForModel
+>;
+
+async function adminUpdateOrganizationRateLimitsForModel(
+  req: AdminUpdateOrganizationRateLimitsRequest,
+): Promise<AdminUpdateOrganizationRateLimitsResponse> {
+  const { organizationId, modelId } = req.params;
+  const { maxInferenceRequestsPerMinute, maxInferenceTokensPerMinute } =
+    req.body;
+
+  await db
+    .insert(perModelPerOrganizationRateLimitOverrides)
+    .values({
+      maxTokensPerMinute: maxInferenceTokensPerMinute.toString(),
+      maxRequestsPerMinute: maxInferenceRequestsPerMinute.toString(),
+      modelId: modelId,
+      organizationId: organizationId,
+    })
+    .onConflictDoUpdate({
+      target: [
+        perModelPerOrganizationRateLimitOverrides.modelId,
+        perModelPerOrganizationRateLimitOverrides.organizationId,
+      ],
+      set: {
+        maxTokensPerMinute: maxInferenceTokensPerMinute.toString(),
+        maxRequestsPerMinute: maxInferenceRequestsPerMinute.toString(),
+      },
+    });
+
+  return {
+    status: 200,
+    body: {
+      success: true,
+    },
+  };
+}
+
+type ResetOrganizationRateLimitsContract = ServerInferRequest<
+  typeof contracts.admin.organizations.adminResetOrganizationRateLimitsForModel
+>;
+
+type ResetOrganizationRateLimitsResponse = ServerInferResponses<
+  typeof contracts.admin.organizations.adminResetOrganizationRateLimitsForModel
+>;
+
+async function adminResetOrganizationRateLimitsForModel(
+  req: ResetOrganizationRateLimitsContract,
+): Promise<ResetOrganizationRateLimitsResponse> {
+  const { organizationId, modelId } = req.params;
+
+  await db
+    .delete(perModelPerOrganizationRateLimitOverrides)
+    .where(
+      and(
+        eq(
+          perModelPerOrganizationRateLimitOverrides.organizationId,
+          organizationId,
+        ),
+        eq(perModelPerOrganizationRateLimitOverrides.modelId, modelId),
+      ),
+    );
+
+  return {
+    status: 200,
+    body: {
+      success: true,
+    },
+  };
+}
+
+type AdminGetOrganizationRateLimitsRequest = ServerInferRequest<
+  typeof contracts.admin.organizations.adminGetOrganizationRateLimits
+>;
+
+type AdminGetOrganizationRateLimitsResponse = ServerInferResponses<
+  typeof contracts.admin.organizations.adminGetOrganizationRateLimits
+>;
+
+async function adminGetOrganizationRateLimits(
+  req: AdminGetOrganizationRateLimitsRequest,
+): Promise<AdminGetOrganizationRateLimitsResponse> {
+  const { organizationId } = req.params;
+
+  const { search, limit = 5, offset = 0 } = req.query;
+
+  const where = [
+    eq(
+      perModelPerOrganizationRateLimitOverrides.organizationId,
+      organizationId,
+    ),
+  ];
+
+  if (search) {
+    where.push(ilike(inferenceModelsMetadata.name, `%${search}%`));
+  }
+
+  const organizationLimitsData = await db
+    .select()
+    .from(perModelPerOrganizationRateLimitOverrides)
+    .innerJoin(
+      inferenceModelsMetadata,
+      eq(
+        perModelPerOrganizationRateLimitOverrides.modelId,
+        inferenceModelsMetadata.id,
+      ),
+    )
+    .where(and(...where))
+    .limit(limit + 1)
+    .offset(offset);
+
+  return {
+    status: 200,
+    body: {
+      overrides: organizationLimitsData.map((res) => ({
+        modelId: res.inference_models_metadata.id,
+        modelName: res.inference_models_metadata.name,
+        maxInferenceRequestsPerMinute: parseInt(
+          res.per_model_per_organization_rate_limit_overrides
+            .maxRequestsPerMinute,
+          10,
+        ),
+        maxInferenceTokensPerMinute: parseInt(
+          res.per_model_per_organization_rate_limit_overrides
+            .maxTokensPerMinute,
+          10,
+        ),
+      })),
+    },
+  };
+}
+
 type AdminAddCreditsToOrganizationRequest = ServerInferRequest<
   typeof contracts.admin.organizations.adminAddCreditsToOrganization
 >;
@@ -762,4 +900,7 @@ export const adminOrganizationsRouter = {
   adminAddCreditsToOrganization,
   adminRemoveCreditsFromOrganization,
   adminListOrganizationCreditTransactions,
+  adminUpdateOrganizationRateLimitsForModel,
+  adminGetOrganizationRateLimits,
+  adminResetOrganizationRateLimitsForModel,
 };

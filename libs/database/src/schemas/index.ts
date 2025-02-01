@@ -55,46 +55,6 @@ export const orgRelationsTable = relations(organizations, ({ many }) => ({
   organizationDevelopmentServers: many(developmentServers),
 }));
 
-export const MaxRequestsPerMinutePerModelSchema = z.object({
-  version: z.string(),
-  data: z.record(z.number()),
-});
-
-export const MaxTokensPerMinutePerModelSchema = z.object({
-  version: z.string(),
-  data: z.record(z.number()),
-});
-
-type MaxRequestsPerMinutePerModel = z.infer<
-  typeof MaxRequestsPerMinutePerModelSchema
->;
-type MaxTokensPerMinutePerModel = z.infer<
-  typeof MaxTokensPerMinutePerModelSchema
->;
-
-export const organizationLimits = pgTable('organization_limits', {
-  organizationId: text('organization_id')
-    .notNull()
-    .references(() => organizations.id, { onDelete: 'cascade' })
-    .primaryKey(),
-  maxRequestsPerMinutePerModel: json(
-    'max_requests_per_minute_per_model',
-  ).$type<MaxRequestsPerMinutePerModel>(),
-  maxTokensPerMinutePerModel: json(
-    'max_tokens_per_minute_per_model',
-  ).$type<MaxTokensPerMinutePerModel>(),
-});
-
-export const organizationLimitsRelations = relations(
-  organizationLimits,
-  ({ one }) => ({
-    organization: one(organizations, {
-      fields: [organizationLimits.organizationId],
-      references: [organizations.id],
-    }),
-  }),
-);
-
 export const organizationPreferences = pgTable('organization_preferences', {
   id: text('id')
     .primaryKey()
@@ -869,6 +829,39 @@ export const organizationBillingDetailsRelations = relations(
     organization: one(organizations, {
       fields: [organizationBillingDetails.organizationId],
       references: [organizations.id],
+    }),
+  }),
+);
+
+export const perModelPerOrganizationRateLimitOverrides = pgTable(
+  'per_model_per_organization_rate_limit_overrides',
+  {
+    organizationId: text('organization_id')
+      .notNull()
+      .references(() => organizations.id, { onDelete: 'cascade' })
+      .primaryKey(),
+    modelId: text('model_id').notNull(),
+    maxRequestsPerMinute: numeric('max_requests_per_minute').notNull(),
+    maxTokensPerMinute: numeric('max_tokens_per_minute').notNull(),
+  },
+  (self) => ({
+    uniqueModelId: uniqueIndex('unique_model_id').on(
+      self.organizationId,
+      self.modelId,
+    ),
+  }),
+);
+
+export const perModelPerOrganizationRateLimitOverridesRelations = relations(
+  perModelPerOrganizationRateLimitOverrides,
+  ({ one }) => ({
+    organization: one(organizations, {
+      fields: [perModelPerOrganizationRateLimitOverrides.organizationId],
+      references: [organizations.id],
+    }),
+    model: one(inferenceModelsMetadata, {
+      fields: [perModelPerOrganizationRateLimitOverrides.modelId],
+      references: [inferenceModelsMetadata.id],
     }),
   }),
 );

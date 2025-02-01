@@ -3,8 +3,6 @@ import type { ZodType } from 'zod';
 import {
   db,
   inferenceModelsMetadata,
-  MaxRequestsPerMinutePerModelSchema,
-  MaxTokensPerMinutePerModelSchema,
   organizationCredits,
   organizations,
 } from '@letta-cloud/database';
@@ -98,13 +96,13 @@ const organizationToCoreOrganizationDefinition = generateDefinitionSatisfies({
   output: z.object({ coreOrganizationId: z.string() }),
 });
 
-const organizationLimitsDefinition = generateDefinitionSatisfies({
-  baseKey: 'organizationLimits',
-  input: z.object({ organizationId: z.string() }),
-  getKey: (args) => `organizationLimits:${args.organizationId}`,
+const organizationRateLimitsPerModelDefinition = generateDefinitionSatisfies({
+  baseKey: 'organizationRateLimits',
+  input: z.object({ organizationId: z.string(), modelId: z.string() }),
+  getKey: (args) => `organizationLimits:${args.organizationId}:${args.modelId}`,
   output: z.object({
-    maxRequestsPerMinutePerModel: MaxRequestsPerMinutePerModelSchema.nullable(),
-    maxTokensPerMinutePerModel: MaxTokensPerMinutePerModelSchema.nullable(),
+    maxRequestsPerMinutePerModel: z.number(),
+    maxTokensPerMinutePerModel: z.number(),
   }),
 });
 
@@ -169,7 +167,7 @@ const defaultCUPerStepDefinition = generateDefinitionSatisfies({
 
 export const redisDefinitions = {
   userSession: userSessionDefinition,
-  organizationLimits: organizationLimitsDefinition,
+  organizationRateLimitsPerModel: organizationRateLimitsPerModelDefinition,
   defaultModelRequestPerMinute: defaultModelRequestPerMinuteDefinition,
   defaultModelTokensPerMinute: defaultModelTokenPerMinuteDefinition,
   defaultCUPerStep: defaultCUPerStepDefinition,

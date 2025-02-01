@@ -69,7 +69,7 @@ export function DashboardPageSection(props: DashboardPageSectionProps) {
       fullWidth
       borderBottom={borderBottom}
     >
-      {!title || !description ? null : (
+      {!title && !description ? null : (
         <VStack gap={false}>
           {title && (
             <HStack align="center" justify="spaceBetween">
