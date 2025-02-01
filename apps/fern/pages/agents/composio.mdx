@@ -3,6 +3,12 @@ title: Connecting Letta to Composio
 slug: guides/agents/composio
 ---
 
+<Tip>
+If you're getting an error when calling Composio tools that says "*Could not find connection... entity=default*",
+go to [Composio's website](https://app.composio.dev/connections) to check your `ENTITY ID`.
+If it's not `default`, then you need to set a tool variable `COMPOSIO_ENTITY` to your `ENTITY ID` value (see [here](#using-entities-in-composio-tools)).
+</Tip>
+
 [Composio](https://docs.composio.dev) is an external tool service that makes it easy to connect Letta agents to popular services via custom tools.
 For example, you can use Composio tools to connect Letta agents to Google, GitHub, Slack, Cal.com, and [many more services](https://composio.dev/tools).
 
@@ -51,13 +57,14 @@ If we click on the tool execution button in the chat, we can see the exact input
 <img src="../../images/tavily_call_expanded.png" />
 
 ## Using entities in Composio tools
-In multi-user settings (where you have many users all using different agents), you may want to use the concept of [entities](https://docs.composio.dev/patterns/Auth/connected_account#entities) in Composio, which allow you to scope Composio tool execution to specific users.
+<Tip>
+To set a tool variable, click "**Variables**" in the Agent Simulator (center column, top), then click "**Add new tool variable**". Once you've added the variable, click "**Update tool variables**" to save.
+</Tip>
+In Composio tool execution is associated with an `ENTITY ID`.
+By default, this is `default` - you can check what your `ENTITY ID` is by going to [the connections page on Composio's website](https://app.composio.dev/connections).
+In Letta, you can set the `ENTITY ID` in Composio through the use of tool variables - specifically, the variable `COMPOSIO_ENTITY`.
 
-For example, let's say you're using Letta to create an application where users each get their own personal secretary that can schedule their calendar. As a developer, you only have one `COMPOSIO_API_KEY` to manage the connection between Letta and Composio, but you want to make associate each Composio tool call from a specific agent with a specific user.
-
-Composio allows you to do this through **entities**: each **user** on your Composio account will have a unique Composio entity ID, and in Letta each **agent** will be associated with a specific Composio entity ID.
-
-In Letta, you can use **[tool variables](/guides/agents/tool-variables)** to pass the entity ID to the tool. Simply set `COMPOSIO_ENTITY` to be your associated entity ID in the **tool variables** section of the ADE (click the **Variables** button in the Agent Simulator):
+If your `ENTITY ID` is not `default`, then in order for your Composio tools to work in Letta, you need to create a **[tool variable](/guides/agents/tool-variables)** called `COMPOSIO_ENTITY` and set it to be your Composio `ENTITY ID`. If you don't set `COMPOSIO_ENTITY`, Letta will default to assuming it is `default`.
 <img src="../../images/tool_variables.png" />
 
 You can also assign tool variables on agent creation in the API with the `tool_exec_environment_variables` parameter:
@@ -73,6 +80,13 @@ curl -X POST http://localhost:8283/v1/agents/ \
   "memory_blocks": []
 }'
 ```
+
+## Entities in Composio tools for multi-user
+In multi-user settings (where you have many users all using different agents), you may want to use the concept of [entities](https://docs.composio.dev/patterns/Auth/connected_account#entities) in Composio, which allow you to scope Composio tool execution to specific users.
+
+For example, let's say you're using Letta to create an application where users each get their own personal secretary that can schedule their calendar. As a developer, you only have one `COMPOSIO_API_KEY` to manage the connection between Letta and Composio, but you want to make associate each Composio tool call from a specific agent with a specific user.
+
+Composio allows you to do this through **entities**: each **user** on your Composio account will have a unique Composio entity ID, and in Letta each **agent** will be associated with a specific Composio entity ID.
 
 ## Adding Composio tools to agents in the Python SDK
 <Note>
