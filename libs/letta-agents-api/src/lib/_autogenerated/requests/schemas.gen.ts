@@ -6306,6 +6306,7 @@ export const $ToolType = {
     'letta_memory_core',
     'letta_multi_agent_core',
     'external_composio',
+    'external_langchain',
   ],
   title: 'ToolType',
 } as const;

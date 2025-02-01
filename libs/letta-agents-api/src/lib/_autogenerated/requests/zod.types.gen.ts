@@ -369,6 +369,7 @@ export const ToolType = z.union([
   z.literal('letta_memory_core'),
   z.literal('letta_multi_agent_core'),
   z.literal('external_composio'),
+  z.literal('external_langchain'),
 ]);
 
 export type Tool = z.infer<typeof Tool>;

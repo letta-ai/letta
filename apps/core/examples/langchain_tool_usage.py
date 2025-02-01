@@ -73,7 +73,7 @@ def main():
     print(f"Created agent: {agent_state.name} with ID {str(agent_state.id)}")
 
     # Send a message to the agent
-    send_message_response = client.user_message(agent_id=agent_state.id, message="How do you pronounce Albert Einstein's name?")
+    send_message_response = client.user_message(agent_id=agent_state.id, message="Tell me a fun fact about Albert Einstein!")
     for message in send_message_response.messages:
         response_json = json.dumps(message.model_dump(), indent=4)
         print(f"{response_json}\n")
