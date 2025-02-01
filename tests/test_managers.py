@@ -198,7 +198,7 @@ def print_tool(server: SyncServer, default_user, default_organization):
 @pytest.fixture
 def composio_github_star_tool(server, default_user):
     tool_create = ToolCreate.from_composio(action_name="GITHUB_STAR_A_REPOSITORY_FOR_THE_AUTHENTICATED_USER")
-    tool = server.tool_manager.create_or_update_composio_tool(pydantic_tool=PydanticTool(**tool_create.model_dump()), actor=default_user)
+    tool = server.tool_manager.create_or_update_composio_tool(tool_create=tool_create, actor=default_user)
     yield tool
 
 

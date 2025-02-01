@@ -79,7 +79,7 @@ class Tool(BaseTool):
             self.json_schema = get_json_schema_from_module(module_name=LETTA_MULTI_AGENT_TOOL_MODULE_NAME, function_name=self.name)
         elif self.tool_type == ToolType.EXTERNAL_COMPOSIO:
             # If it is a composio tool, we generate both the source code and json schema on the fly here
-            # TODO: This is brittle, need to think long term about how to improve this
+            # TODO: Deriving the composio action name is brittle, need to think long term about how to improve this
             try:
                 composio_action = generate_composio_action_from_func_name(self.name)
                 tool_create = ToolCreate.from_composio(composio_action)

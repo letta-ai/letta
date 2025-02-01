@@ -230,9 +230,7 @@ def generate_imported_tool_instantiation_call_str(obj: Any) -> Optional[str]:
 
 
 def is_base_model(obj: Any):
-    from langchain_core.pydantic_v1 import BaseModel as LangChainBaseModel
-
-    return isinstance(obj, BaseModel) or isinstance(obj, LangChainBaseModel)
+    return isinstance(obj, BaseModel)
 
 
 def generate_import_code(module_attr_map: Optional[dict]):
