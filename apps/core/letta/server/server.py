@@ -189,7 +189,7 @@ def db_error_handler():
 
 
 if settings.letta_pg_uri_no_default:
-    print("Creating postgres engine", settings.letta_pg_uri)
+    print("Creating postgres engine")
     config.recall_storage_type = "postgres"
     config.recall_storage_uri = settings.letta_pg_uri_no_default
     config.archival_storage_type = "postgres"

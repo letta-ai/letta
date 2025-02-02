@@ -279,7 +279,7 @@ class LMStudioOpenAIProvider(OpenAIProvider):
         from letta.llm_api.openai import openai_get_model_list
 
         # For LMStudio, we want to hit 'GET /api/v0/models' instead of 'GET /v1/models'
-        MODEL_ENDPOINT_URL = f"{self.base_url}/api/v0"
+        MODEL_ENDPOINT_URL = f"{self.base_url.strip('/v1')}/api/v0"
         response = openai_get_model_list(MODEL_ENDPOINT_URL)
 
         """

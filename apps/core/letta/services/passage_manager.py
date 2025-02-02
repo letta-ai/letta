@@ -1,6 +1,8 @@
 from datetime import datetime
 from typing import List, Optional
 
+from openai import OpenAI
+
 from letta.embeddings import embedding_model, parse_and_chunk_text
 from letta.orm.errors import NoResultFound
 from letta.orm.passage import AgentPassage, SourcePassage
@@ -86,14 +88,31 @@ class PassageManager:
         """Insert passage(s) into archival memory"""
 
         embedding_chunk_size = agent_state.embedding_config.embedding_chunk_size
-        embed_model = embedding_model(agent_state.embedding_config)
+
+        # TODO eventually migrate off of llama-index for embeddings?
+        # Already causing pain for OpenAI proxy endpoints like LM Studio...
+        if agent_state.embedding_config.embedding_endpoint_type != "openai":
+            embed_model = embedding_model(agent_state.embedding_config)
 
         passages = []
 
         try:
             # breakup string into passages
             for text in parse_and_chunk_text(text, embedding_chunk_size):
-                embedding = embed_model.get_text_embedding(text)
+
+                if agent_state.embedding_config.embedding_endpoint_type != "openai":
+                    embedding = embed_model.get_text_embedding(text)
+                else:
+                    # TODO should have the settings passed in via the server call
+                    from letta.settings import model_settings
+
+                    # Simple OpenAI client code
+                    client = OpenAI(
+                        api_key=model_settings.openai_api_key, base_url=agent_state.embedding_config.embedding_endpoint, max_retries=0
+                    )
+                    response = client.embeddings.create(input=text, model=agent_state.embedding_config.embedding_model)
+                    embedding = response.data[0].embedding
+
                 if isinstance(embedding, dict):
                     try:
                         embedding = embedding["data"][0]["embedding"]
