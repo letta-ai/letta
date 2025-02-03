@@ -3005,6 +3005,42 @@ export const $CreateAgentRequest = {
       title: 'Memory Variables',
       description: 'The variables that should be set for the agent.',
     },
+    project_id: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Project Id',
+      description: 'The id of the project the agent belongs to.',
+    },
+    template_id: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Template Id',
+      description: 'The id of the template the agent belongs to.',
+    },
+    base_template_id: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Base Template Id',
+      description: 'The base template id of the agent.',
+    },
     user_id: {
       anyOf: [
         {
