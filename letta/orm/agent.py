@@ -4,7 +4,6 @@ from typing import TYPE_CHECKING, List, Optional
 from sqlalchemy import JSON, Index, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from letta.constants import MULTI_AGENT_TOOLS
 from letta.orm.block import Block
 from letta.orm.custom_columns import EmbeddingConfigColumn, LLMConfigColumn, ToolRulesColumn
 from letta.orm.message import Message
@@ -121,12 +120,7 @@ class Agent(SqlalchemyBase, OrganizationMixin):
         # add default rule for having send_message be a terminal tool
         tool_rules = self.tool_rules
         if not tool_rules:
-            tool_rules = [
-                TerminalToolRule(tool_name="send_message"),
-            ]
-
-            for tool_name in MULTI_AGENT_TOOLS:
-                tool_rules.append(TerminalToolRule(tool_name=tool_name))
+            tool_rules = [TerminalToolRule(tool_name="send_message"), TerminalToolRule(tool_name="send_message_to_agent_async")]
 
         state = {
             "id": self.id,
