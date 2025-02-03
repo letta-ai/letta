@@ -811,6 +811,8 @@ export const organizationCreditTransactionRelations = relations(
   }),
 );
 
+export const pricingModelEnum = pgEnum('pricing_model_enum', ['prepay', 'cpm']);
+
 export const organizationBillingDetails = pgTable(
   'organization_billing_details',
   {
@@ -820,6 +822,8 @@ export const organizationBillingDetails = pgTable(
       .primaryKey(),
     stripeCustomerId: text('stripe_customer_id'),
     billingTier: text('billing_tier'),
+    pricingModel: pricingModelEnum('pricing_model').notNull(),
+    monthlyCreditAllocation: numeric('monthly_credit_allocation'),
   },
 );
 
@@ -831,6 +835,24 @@ export const organizationBillingDetailsRelations = relations(
       references: [organizations.id],
     }),
   }),
+);
+
+export const organizationBillingDetailsAudit = pgTable(
+  'organization_billing_details_audit',
+  {
+    id: text('id')
+      .notNull()
+      .primaryKey()
+      .default(sql`gen_random_uuid()`),
+    organizationId: text('organization_id')
+      .notNull()
+      .references(() => organizations.id, { onDelete: 'cascade' }),
+    monthlyCreditAllocation: numeric('monthly_credit_allocation'),
+    pricingModel: pricingModelEnum('pricing_model').notNull(),
+    billingTier: text('billing_tier'),
+    updatedBy: text('updated_by').notNull(),
+    createdAt: timestamp('created_at').notNull().defaultNow(),
+  },
 );
 
 export const perModelPerOrganizationRateLimitOverrides = pgTable(

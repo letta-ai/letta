@@ -1,6 +1,7 @@
 import { initContract } from '@ts-rest/core';
 import { z } from 'zod';
 import { type GenericSearch, GenericSearchSchema } from '../shared';
+import { PricingModelEnum } from '@letta-cloud/types';
 
 const c = initContract();
 
@@ -368,6 +369,41 @@ const adminListOrganizationCreditTransactionsContract = c.query({
   },
 });
 
+const adminUpdateOrganizationBillingSettingsBodySchema = z.object({
+  pricingModel: PricingModelEnum,
+  monthlyCreditAllocation: z.number(),
+});
+
+const adminUpdateOrganizationBillingSettingsContract = c.mutation({
+  path: '/admin/organizations/:organizationId/billing-settings',
+  method: 'PUT',
+  pathParams: z.object({
+    organizationId: z.string(),
+  }),
+  body: adminUpdateOrganizationBillingSettingsBodySchema,
+  responses: {
+    200: z.object({
+      success: z.boolean(),
+    }),
+  },
+});
+
+const organizationBillingSettingsSchema = z.object({
+  pricingModel: PricingModelEnum,
+  monthlyCreditAllocation: z.number(),
+});
+
+const adminGetOrganizationBillingSettingsContract = c.query({
+  path: '/admin/organizations/:organizationId/billing-settings',
+  method: 'GET',
+  pathParams: z.object({
+    organizationId: z.string(),
+  }),
+  responses: {
+    200: organizationBillingSettingsSchema,
+  },
+});
+
 export const adminOrganizationsContracts = {
   getOrganizations: getOrganizationsContract,
   getOrganization: getOrganizationContract,
@@ -390,6 +426,10 @@ export const adminOrganizationsContracts = {
     adminRemoveCreditsFromOrganizationContract,
   adminListOrganizationCreditTransactions:
     adminListOrganizationCreditTransactionsContract,
+  adminUpdateOrganizationBillingSettings:
+    adminUpdateOrganizationBillingSettingsContract,
+  adminGetOrganizationBillingSettings:
+    adminGetOrganizationBillingSettingsContract,
 };
 
 export const adminOrganizationsQueryClientKeys = {
@@ -443,6 +483,10 @@ export const adminOrganizationsQueryClientKeys = {
       organizationId,
     ),
     search,
+  ],
+  adminGetOrganizationBillingSettings: (organizationId: string) => [
+    ...adminOrganizationsQueryClientKeys.getOrganization(organizationId),
+    'billing-details',
   ],
   adminGetOrganizationRateLimits: (organizationId: string) => [
     ...adminOrganizationsQueryClientKeys.getOrganization(organizationId),

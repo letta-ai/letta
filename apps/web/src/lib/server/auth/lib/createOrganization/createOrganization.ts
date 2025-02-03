@@ -96,6 +96,7 @@ export async function createOrganization(args: CreateOrganizationArgs) {
       db.insert(organizationBillingDetails).values({
         organizationId: createdOrg.organizationId,
         stripeCustomerId,
+        pricingModel: 'prepay',
       }),
     ]);
 

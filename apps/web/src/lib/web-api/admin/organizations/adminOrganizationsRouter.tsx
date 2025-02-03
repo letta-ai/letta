@@ -6,6 +6,8 @@ import {
   deployedAgents,
   inferenceModelsMetadata,
   lettaAPIKeys,
+  organizationBillingDetails,
+  organizationBillingDetailsAudit,
   organizationCredits,
   organizationCreditTransactions,
   organizations,
@@ -20,6 +22,7 @@ import {
   addCreditsToOrganization,
   removeCreditsFromOrganization,
 } from '@letta-cloud/server-utils';
+import { getUserOrThrow } from '$web/server/auth';
 
 /* Get Organizations */
 type GetOrganizationsResponse = ServerInferResponses<
@@ -884,6 +887,83 @@ async function adminListOrganizationCreditTransactions(
   };
 }
 
+type AdminUpdateOrganizationBillingSettings = ServerInferResponses<
+  typeof contracts.admin.organizations.adminUpdateOrganizationBillingSettings
+>;
+
+type AdminUpdateOrganizationBillingSettingsRequest = ServerInferRequest<
+  typeof contracts.admin.organizations.adminUpdateOrganizationBillingSettings
+>;
+
+async function adminUpdateOrganizationBillingSettings(
+  req: AdminUpdateOrganizationBillingSettingsRequest,
+): Promise<AdminUpdateOrganizationBillingSettings> {
+  const { organizationId } = req.params;
+  const user = await getUserOrThrow();
+  const { monthlyCreditAllocation, pricingModel } = req.body;
+
+  await db
+    .update(organizationBillingDetails)
+    .set({
+      monthlyCreditAllocation: monthlyCreditAllocation.toString(),
+      pricingModel,
+    })
+    .where(eq(organizationBillingDetails.organizationId, organizationId));
+
+  await db.insert(organizationBillingDetailsAudit).values({
+    organizationId,
+    monthlyCreditAllocation: monthlyCreditAllocation.toString(),
+    pricingModel,
+    updatedBy: user.id,
+  });
+
+  return {
+    status: 200,
+    body: {
+      success: true,
+    },
+  };
+}
+
+type AdminGetOrganizationBillingSettings = ServerInferResponses<
+  typeof contracts.admin.organizations.adminGetOrganizationBillingSettings
+>;
+
+type AdminGetOrganizationBillingSettingsRequest = ServerInferRequest<
+  typeof contracts.admin.organizations.adminGetOrganizationBillingSettings
+>;
+
+export async function adminGetOrganizationBillingSettings(
+  req: AdminGetOrganizationBillingSettingsRequest,
+): Promise<AdminGetOrganizationBillingSettings> {
+  const { organizationId } = req.params;
+
+  const organizationBilling =
+    await db.query.organizationBillingDetails.findFirst({
+      where: eq(organizationBillingDetails.organizationId, organizationId),
+    });
+
+  if (!organizationBilling) {
+    return {
+      status: 404,
+      body: {
+        message: 'Organization not found',
+      },
+    };
+  }
+
+  return {
+    status: 200,
+    body: {
+      monthlyCreditAllocation: parseInt(
+        organizationBilling.monthlyCreditAllocation || '0',
+        10,
+      ),
+      pricingModel: organizationBilling.pricingModel,
+    },
+  };
+}
+
 export const adminOrganizationsRouter = {
   getOrganizations,
   getOrganization,
@@ -900,6 +980,8 @@ export const adminOrganizationsRouter = {
   adminAddCreditsToOrganization,
   adminRemoveCreditsFromOrganization,
   adminListOrganizationCreditTransactions,
+  adminUpdateOrganizationBillingSettings,
+  adminGetOrganizationBillingSettings,
   adminUpdateOrganizationRateLimitsForModel,
   adminGetOrganizationRateLimits,
   adminResetOrganizationRateLimitsForModel,

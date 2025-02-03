@@ -1,8 +1,8 @@
 CREATE TABLE "per_model_per_organization_rate_limit_overrides" (
-	"organization_id" text PRIMARY KEY NOT NULL,
-	"model_id" text NOT NULL,
-	"max_requests_per_minute" numeric NOT NULL,
-	"max_tokens_per_minute" numeric NOT NULL
+                                                                 "organization_id" text PRIMARY KEY NOT NULL,
+                                                                 "model_id" text NOT NULL,
+                                                                 "max_requests_per_minute" numeric NOT NULL,
+                                                                 "max_tokens_per_minute" numeric NOT NULL
 );
 --> statement-breakpoint
 DROP TABLE "organization_limits" CASCADE;--> statement-breakpoint

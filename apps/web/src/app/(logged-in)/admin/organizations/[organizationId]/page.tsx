@@ -4,6 +4,7 @@ import {
   AsyncSelect,
   Badge,
   Button,
+  ChipSelect,
   CompanyIcon,
   DashboardPageLayout,
   DashboardPageSection,
@@ -12,11 +13,14 @@ import {
   DotsHorizontalIcon,
   DropdownMenu,
   DropdownMenuItem,
+  Form,
+  FormActions,
   FormField,
   FormProvider,
   HStack,
   Input,
   LoadedTypography,
+  LoadingEmptyStatusComponent,
   OptionTypeSchemaSingle,
   Typography,
   useForm,
@@ -42,6 +46,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useCurrencyFormatter } from '@letta-cloud/helpful-client-utils';
 import { creditsToDollars } from '@letta-cloud/generic-utils';
 import { useNumberFormatter } from '@letta-cloud/helpful-client-utils';
+import { PricingModelEnum } from '@letta-cloud/types';
 
 function EnableCloudAccess() {
   const organization = useCurrentAdminOrganization();
@@ -117,6 +122,132 @@ function DisableCloudAccess() {
         This wont delete any data.
       </p>
     </Dialog>
+  );
+}
+
+const OrganizationBillingSettingsSchema = z.object({
+  pricingModel: PricingModelEnum,
+  monthlyCreditAllocation: z.number(),
+});
+
+type OrganizationBillingSettingsFormValues = z.infer<
+  typeof OrganizationBillingSettingsSchema
+>;
+
+interface OrganizationBillingSettingsFormProps {
+  defaultValues: OrganizationBillingSettingsFormValues;
+}
+
+function OrganizationBillingSettingsForm(
+  props: OrganizationBillingSettingsFormProps,
+) {
+  const { mutate, isPending, isError } =
+    webApi.admin.organizations.adminUpdateOrganizationBillingSettings.useMutation();
+  const organization = useCurrentAdminOrganization();
+
+  const form = useForm<OrganizationBillingSettingsFormValues>({
+    resolver: zodResolver(OrganizationBillingSettingsSchema),
+    defaultValues: props.defaultValues,
+  });
+
+  const handleUpdateBillingSettings = useCallback(
+    (values: OrganizationBillingSettingsFormValues) => {
+      if (!organization) {
+        return;
+      }
+
+      mutate({
+        params: {
+          organizationId: organization.id,
+        },
+        body: values,
+      });
+    },
+    [organization, mutate],
+  );
+
+  return (
+    <FormProvider {...form}>
+      <Form onSubmit={form.handleSubmit(handleUpdateBillingSettings)}>
+        <FormField
+          render={({ field }) => (
+            <ChipSelect
+              onChange={(value) => {
+                const nextValue = value[0];
+
+                field.onChange(nextValue.value);
+              }}
+              value={[
+                {
+                  label:
+                    field.value === 'prepay' ? 'Prepay' : 'Credits Per Month',
+                  value: field.value,
+                },
+              ]}
+              options={[
+                {
+                  label: 'Prepay',
+                  value: 'prepay',
+                },
+                {
+                  label: 'Credits Per Month',
+                  value: 'cpm',
+                },
+              ]}
+              fullWidth
+              label="Pricing Model"
+            />
+          )}
+          name="pricingModel"
+        />
+        <FormField
+          render={({ field }) => (
+            <Input
+              {...field}
+              fullWidth
+              label="Monthly Credit Allocation (only for Credits Per Month)"
+              placeholder="Enter monthly credit allocation"
+            />
+          )}
+          name="monthlyCreditAllocation"
+        />
+        <FormActions
+          errorMessage={
+            isError ? 'Failed to update billing settings' : undefined
+          }
+        >
+          <Button busy={isPending} label="Update Billing Settings" />
+        </FormActions>
+      </Form>
+    </FormProvider>
+  );
+}
+
+function OrganizationBillingSettings() {
+  const organization = useCurrentAdminOrganization();
+
+  const { data } =
+    webApi.admin.organizations.adminGetOrganizationBillingSettings.useQuery({
+      queryKey:
+        webApiQueryKeys.admin.organizations.adminGetOrganizationBillingSettings(
+          organization?.id || '',
+        ),
+      queryData: {
+        params: {
+          organizationId: organization?.id || '',
+        },
+      },
+      enabled: !!organization,
+    });
+
+  return (
+    <DashboardPageSection title="Billing Settings">
+      {!data?.body ? (
+        <LoadingEmptyStatusComponent isLoading />
+      ) : (
+        <OrganizationBillingSettingsForm defaultValues={data.body} />
+      )}
+    </DashboardPageSection>
   );
 }
 
@@ -1405,6 +1536,7 @@ function OrganizationPage() {
         </HStack>
       </DashboardPageSection>
       <OrganizationProperties />
+      <OrganizationBillingSettings />
       <OrganizationLevelRateLimitTable />
       <CreditSection />
       <OrganizationMembers />

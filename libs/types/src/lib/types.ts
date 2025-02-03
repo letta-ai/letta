@@ -27,3 +27,5 @@ export interface ServerLogType {
   message: string;
   timestamp: string;
 }
+
+export const PricingModelEnum = z.enum(['prepay', 'cpm']);
