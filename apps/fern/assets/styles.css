@@ -42,6 +42,15 @@ code:not(.code-block) {
 .fern-accordion {
   border-radius: 0 !important;
 }
+.fern-table-root,
+.fern-table,
+.fern-table thead,
+.fern-table tbody,
+.fern-table tr,
+.fern-table th,
+.fern-table td {
+  border-radius: 0 !important;
+}
 /* [data-radix-scroll-area-viewport] {
   border-radius: 0 !important;
 }

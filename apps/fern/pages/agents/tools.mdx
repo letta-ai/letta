@@ -100,9 +100,20 @@ agent = client.agents.create(
 ```
 Warning: this will create an agent with no tools, so the agent will have no ability to manage memory or search conversation history.
 
-
-
 ## Tool Rules
 Tool rules allow you to define graph-like constrains on your tools, such as requiring that a tool terminate agent execution or be followed by another tool.
 
 Read more about tool rules [here](/guides/agents/tool-rules).
+
+## Accessing Agent State
+If you need to directly access the state of an agent inside a tool, you can use the reserved `agent_state` keyword argument, for example:
+```python
+def get_agent_id(agent_state: "AgentState") -> str:
+    """
+    A custom tool that returns the agent ID
+
+    Returns:
+        str: The agent ID
+    """
+    return agent_state.id
+```
