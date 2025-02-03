@@ -66,7 +66,7 @@ def list_tools(
     try:
         actor = server.user_manager.get_user_or_default(user_id=user_id)
         if name is not None:
-            tool = server.tool_manager.get_tool_by_name(name=name, actor=actor)
+            tool = server.tool_manager.get_tool_by_name(tool_name=name, actor=actor)
             return [tool] if tool else []
         return server.tool_manager.list_tools(actor=actor, after=after, limit=limit)
     except Exception as e:
