@@ -102,5 +102,47 @@ Next, depending on your desired Composio tool, you need to add the necessary aut
 ```bash
 composio add github
 ```
+To attach a Composio tool to an agent, you must first create a Letta tool from composio by specifying the action name: 
+```python
+from composio_langchain import Action
 
-Now, you can include the tool to be used with your agent. See a working example [here](https://github.com/letta-ai/letta/blob/main/examples/composio_tool_usage.py).
+# create a Letta tool object
+tool = client.tools.add_composio_tool(
+  composio_action_name=Action.GITHUB_STAR_A_REPOSITORY_FOR_THE_AUTHENTICATED_USER.name
+)
+```
+Below is a full example of creating a Letta agent that can start a Github repository. 
+```python
+from letta_client import Letta
+from composio_langchain import Action
+
+client = Letta(base_url="http://localhost:8283")
+
+# add a composio tool 
+tool = client.tools.add_composio_tool(composio_action_name=Action.GITHUB_STAR_A_REPOSITORY_FOR_THE_AUTHENTICATED_USER.name)
+
+# create an agent with the tool
+agent = client.agents.create(
+    name="file_editing_agent",
+    memory_blocks=[
+        {"label": "persona", "value": "I am a helpful assistant"}
+    ],
+    model="anthropic/claude-3-5-sonnet-20241022",
+    embedding="openai/text-embedding-ada-002", 
+    tool_ids=[tool.id]
+)
+print("Agent tools", [tool.name for tool in agent.tools])
+
+# message the agent 
+response = client.agents.messages.create(
+    agent_id=agent.id,
+    messages=[
+        {
+            "role": "user",
+            "content": "Star the github repo `letta` by `letta-ai`"
+        }
+    ]
+)
+for message in response.messages:
+    print(message)
+```

@@ -66,3 +66,19 @@ letta server
 ```
 To select the model used by the server, use the dropdown in the ADE or specify a `LLMConfig` object in the Python SDK.
 </Accordion>
+
+## Specifying agent models
+When creating agents, you must specify the LLM and embedding models to use via a *handle*. You can additionally specify a context window limit (which must be less than or equal to the maximum size).
+
+```python
+from letta_client import Letta 
+
+client = Letta(base_url="http://localhost:8283")
+
+ollama_agent = client.agents.create(
+    model="ollama/thewindmom/hermes-3-llama-3.1-8b:latest",
+    embedding="ollama/mxbai-embed-large:latest",
+    # optional configuration
+    context_window_limit=16000,
+)
+```

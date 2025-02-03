@@ -71,84 +71,17 @@ To select the model used by the server, use the dropdown in the ADE or specify a
 </Accordion>
 
 ## Configuring OpenAI models in the Python SDK
-
-When creating agents, you can specify the exactly model configurations to use, such as the model name and context window size (which can be less than the maximum size).
+When creating agents, you must specify the LLM and embedding models to use. You can additionally specify a context window limit (which must be less than or equal to the maximum size).
 
 ```python
-from letta import LLMConfig, EmbeddingConfig
+from letta_client import Letta 
 
-# llm_config specification
-llm_config = LLMConfig(
-    model="gpt-4o-mini",
-    model_endpoint_type="openai",
-    model_endpoint="https://api.openai.com/v1",
-    context_window=128000
-)
+client = Letta(base_url="http://localhost:8283")
 
-# embedding model specification
-embedding_config = EmbeddingConfig(
-    embedding_endpoint_type="openai",
-    embedding_endpoint="https://api.openai.com/v1",
-    embedding_model="text-embedding-ada-002",
-    embedding_dim=1536,
-    embedding_chunk_size=300
-)
-```
-```python
-from letta import create_client, LLMConfig, EmbeddingConfig
-
-client = create_client()
-
-# create an agent with a specific model
-agent_state = client.create_agent(
-    llm_config=LLMConfig(
-        model="gpt-4o-mini",
-        model_endpoint_type="openai",
-        model_endpoint="https://api.openai.com/v1",
-        context_window=128000
-    ),
-    embedding_config=EmbeddingConfig.from_default(model_name="text-embedding-ada-002")
-)
-```
-You can also configure a default `LLMConfig` to use for all agents created by the client.
-```python
-from letta import create_client
-from letta import LLMConfig, EmbeddingConfig
-
-client = create_client()
-
-# use shorthand (llm config)
-client.set_default_llm_config(
-    LLMConfig.from_default(model_name="gpt-4o-mini")
-)
-
-# provide full config (llm config)
-client.set_default_llm_config(
-    LLMConfig(
-        model="gpt-4o-mini",
-        model_endpoint_type="openai",
-        model_endpoint="https://api.openai.com/v1",
-        context_window=128000
-    )
-)
-```
-Similarly, you can override the default embedding config by providing a new `EmbeddingConfig` object to the `set_default_embedding_config` method.
-```python
-from letta import EmbeddingConfig
-
-# use shorthand (embedding config)
-client.set_default_embedding_config(
-    EmbeddingConfig.from_default(model_name="text-embedding-ada-002")
-)
-
-# provide full config (embedding config)
-client.set_default_embedding_config(
-    EmbeddingConfig(
-        embedding_endpoint_type="openai",
-        embedding_endpoint="https://api.openai.com/v1",
-        embedding_model="text-embedding-ada-002",
-        embedding_dim=1536,
-        embedding_chunk_size=300
-    )
+openai_agent = client.agents.create(
+    model="openai/gpt-4o-mini",
+    embedding="openai/text-embedding-3-small", 
+    # optional configuration
+    context_window_limit=16000
 )
 ```
