@@ -14,10 +14,14 @@ By default, agents in Letta are created with the following tools:
 | Tool                       | Description                                          |
 |----------------------------|------------------------------------------------------|
 | `send_message`             | Sends a message to the human user.                   |
-| `conversation_search`      | Search prior conversation history                    |
+| `core_memory_append`       | Append to the contents of a block in core memory.    |
+| `core_memory_replace`      | Replace the contents of a block in core memory.      |
+| `conversation_search`      | Search prior conversation history (recall memory)    |
 | `archival_memory_insert`   | Add a memory to archival memory                      |
 | `archival_memory_search`   | Search archival memory via embedding search          |
 
+Letta also includes a set of pre-made tools designed for multi-agent interaction.
+See [our guide on multi-agent](/guides/agents/multi-agent) for more information.
 
 ## Custom Tools
 You can create custom tools in Letta in Python. When you define the function for the tool, you must make sure to have a properly formatting docstring for Letta to parse the function schema.
@@ -106,6 +110,9 @@ Tool rules allow you to define graph-like constrains on your tools, such as requ
 Read more about tool rules [here](/guides/agents/tool-rules).
 
 ## Accessing Agent State
+<Warning>
+Tools that use `agent_state` currently do not work in the ADE live tool tester (they will error when you press "Run"), however if the tool is correct it will work once you attach it to an agent.
+</Warning>
 If you need to directly access the state of an agent inside a tool, you can use the reserved `agent_state` keyword argument, for example:
 ```python
 def get_agent_id(agent_state: "AgentState") -> str:
