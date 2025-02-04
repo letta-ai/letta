@@ -761,6 +761,9 @@ export class AgentsService {
    * @param data.after Cursor for pagination
    * @param data.limit Limit for pagination
    * @param data.queryText Search agents by name
+   * @param data.projectId Search agents by project id
+   * @param data.templateId Search agents by template id
+   * @param data.baseTemplateId Search agents by base template id
    * @param data.userId
    * @returns AgentState Successful Response
    * @throws ApiError
@@ -780,6 +783,9 @@ export class AgentsService {
         after: data.after,
         limit: data.limit,
         query_text: data.queryText,
+        project_id: data.projectId,
+        template_id: data.templateId,
+        base_template_id: data.baseTemplateId,
       },
       errors: {
         422: 'Validation Error',

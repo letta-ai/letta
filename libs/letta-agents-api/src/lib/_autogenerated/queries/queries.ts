@@ -368,6 +368,9 @@ export const useSourcesServiceListSourceFiles = <
  * @param data.after Cursor for pagination
  * @param data.limit Limit for pagination
  * @param data.queryText Search agents by name
+ * @param data.projectId Search agents by project id
+ * @param data.templateId Search agents by template id
+ * @param data.baseTemplateId Search agents by base template id
  * @param data.userId
  * @returns AgentState Successful Response
  * @throws ApiError
@@ -379,21 +382,27 @@ export const useAgentsServiceListAgents = <
 >(
   {
     after,
+    baseTemplateId,
     before,
     limit,
     matchAllTags,
     name,
+    projectId,
     queryText,
     tags,
+    templateId,
     userId,
   }: {
     after?: string;
+    baseTemplateId?: string;
     before?: string;
     limit?: number;
     matchAllTags?: boolean;
     name?: string;
+    projectId?: string;
     queryText?: string;
     tags?: string[];
+    templateId?: string;
     userId?: string;
   } = {},
   queryKey?: TQueryKey,
@@ -401,18 +410,33 @@ export const useAgentsServiceListAgents = <
 ) =>
   useQuery<TData, TError>({
     queryKey: Common.UseAgentsServiceListAgentsKeyFn(
-      { after, before, limit, matchAllTags, name, queryText, tags, userId },
+      {
+        after,
+        baseTemplateId,
+        before,
+        limit,
+        matchAllTags,
+        name,
+        projectId,
+        queryText,
+        tags,
+        templateId,
+        userId,
+      },
       queryKey,
     ),
     queryFn: () =>
       AgentsService.listAgents({
         after,
+        baseTemplateId,
         before,
         limit,
         matchAllTags,
         name,
+        projectId,
         queryText,
         tags,
+        templateId,
         userId,
       }) as TData,
     ...options,

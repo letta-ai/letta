@@ -2857,6 +2857,10 @@ export type ListAgentsData = {
    */
   after?: string | null;
   /**
+   * Search agents by base template id
+   */
+  baseTemplateId?: string | null;
+  /**
    * Cursor for pagination
    */
   before?: string | null;
@@ -2873,6 +2877,10 @@ export type ListAgentsData = {
    */
   name?: string | null;
   /**
+   * Search agents by project id
+   */
+  projectId?: string | null;
+  /**
    * Search agents by name
    */
   queryText?: string | null;
@@ -2880,6 +2888,10 @@ export type ListAgentsData = {
    * List of tags to filter agents by
    */
   tags?: Array<string> | null;
+  /**
+   * Search agents by template id
+   */
+  templateId?: string | null;
   userId?: string | null;
 };
 

@@ -1093,6 +1093,60 @@
               "title": "Query Text"
             },
             "description": "Search agents by name"
+          },
+          {
+            "name": "project_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Search agents by project id",
+              "title": "Project Id"
+            },
+            "description": "Search agents by project id"
+          },
+          {
+            "name": "template_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Search agents by template id",
+              "title": "Template Id"
+            },
+            "description": "Search agents by template id"
+          },
+          {
+            "name": "base_template_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Search agents by base template id",
+              "title": "Base Template Id"
+            },
+            "description": "Search agents by base template id"
           }
         ],
         "responses": {

@@ -222,28 +222,46 @@ export const useAgentsServiceListAgentsKey = 'AgentsServiceListAgents';
 export const UseAgentsServiceListAgentsKeyFn = (
   {
     after,
+    baseTemplateId,
     before,
     limit,
     matchAllTags,
     name,
+    projectId,
     queryText,
     tags,
+    templateId,
     userId,
   }: {
     after?: string;
+    baseTemplateId?: string;
     before?: string;
     limit?: number;
     matchAllTags?: boolean;
     name?: string;
+    projectId?: string;
     queryText?: string;
     tags?: string[];
+    templateId?: string;
     userId?: string;
   } = {},
   queryKey?: Array<unknown>,
 ) => [
   useAgentsServiceListAgentsKey,
   ...(queryKey ?? [
-    { after, before, limit, matchAllTags, name, queryText, tags, userId },
+    {
+      after,
+      baseTemplateId,
+      before,
+      limit,
+      matchAllTags,
+      name,
+      projectId,
+      queryText,
+      tags,
+      templateId,
+      userId,
+    },
   ]),
 ];
 export type AgentsServiceRetrieveAgentContextWindowDefaultResponse = Awaited<
