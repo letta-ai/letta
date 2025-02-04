@@ -3335,6 +3335,15 @@ export const UpdateAgent = z.object({
   tool_exec_environment_variables: z
     .union([z.unknown(), z.null(), z.array(z.union([z.unknown(), z.null()]))])
     .optional(),
+  project_id: z
+    .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+    .optional(),
+  template_id: z
+    .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+    .optional(),
+  base_template_id: z
+    .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+    .optional(),
 });
 
 export type UsageStatistics = z.infer<typeof UsageStatistics>;

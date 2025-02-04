@@ -2558,6 +2558,18 @@ export type UpdateAgent = {
   tool_exec_environment_variables?: {
     [key: string]: string;
   } | null;
+  /**
+   * The id of the project the agent belongs to.
+   */
+  project_id?: string | null;
+  /**
+   * The id of the template the agent belongs to.
+   */
+  template_id?: string | null;
+  /**
+   * The base template id of the agent.
+   */
+  base_template_id?: string | null;
 };
 
 export type UsageStatistics = {

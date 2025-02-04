@@ -251,7 +251,19 @@ class AgentManager:
             agent = AgentModel.read(db_session=session, identifier=agent_id, actor=actor)
 
             # Update scalar fields directly
-            scalar_fields = {"name", "system", "llm_config", "embedding_config", "message_ids", "tool_rules", "description", "metadata"}
+            scalar_fields = {
+                "name",
+                "system",
+                "llm_config",
+                "embedding_config",
+                "message_ids",
+                "tool_rules",
+                "description",
+                "metadata",
+                "project_id",
+                "template_id",
+                "base_template_id",
+            }
             for field in scalar_fields:
                 value = getattr(agent_update, field, None)
                 if value is not None:
