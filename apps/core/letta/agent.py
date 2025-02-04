@@ -458,6 +458,7 @@ class Agent(BaseAgent):
 
             if not target_letta_tool:
                 error_msg = f"No function named {function_name}"
+                function_response = "None"  # more like "never ran?"
                 messages = self._handle_function_error_response(error_msg, tool_call_id, function_name, function_response, messages)
                 return messages, False, True  # force a heartbeat to allow agent to handle error
 
@@ -467,6 +468,7 @@ class Agent(BaseAgent):
                 function_args = parse_json(raw_function_args)
             except Exception:
                 error_msg = f"Error parsing JSON for function '{function_name}' arguments: {function_call.arguments}"
+                function_response = "None"  # more like "never ran?"
                 messages = self._handle_function_error_response(error_msg, tool_call_id, function_name, function_response, messages)
                 return messages, False, True  # force a heartbeat to allow agent to handle error
 
@@ -538,6 +540,7 @@ class Agent(BaseAgent):
 
             # Step 4: check if function response is an error
             if function_response_string.startswith(ERROR_MESSAGE_PREFIX):
+                error_msg = function_response_string
                 messages = self._handle_function_error_response(
                     error_msg, tool_call_id, function_name, function_response, messages, include_function_failed_message=True
                 )
