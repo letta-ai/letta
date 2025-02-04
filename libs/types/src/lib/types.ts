@@ -29,3 +29,19 @@ export interface ServerLogType {
 }
 
 export const PricingModelEnum = z.enum(['prepay', 'cpm']);
+
+export const stepCostSchemaVersionOneStep = z.object({
+  maxContextWindowSize: z.number(),
+  cost: z.number(),
+});
+
+export type StepCostSchemaVersionOneStep = z.infer<
+  typeof stepCostSchemaVersionOneStep
+>;
+
+export const stepCostVersionOne = z.object({
+  version: z.literal('1'),
+  data: z.array(stepCostSchemaVersionOneStep),
+});
+
+export type StepCostVersionOne = z.infer<typeof stepCostVersionOne>;

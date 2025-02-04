@@ -1,10 +1,10 @@
 import type { ServerInferRequest, ServerInferResponses } from '@ts-rest/core';
 import type { contracts } from '$web/web-api/contracts';
 import {
-  cuChangeAudit,
   db,
   embeddingModelsMetadata,
   inferenceModelsMetadata,
+  stepCostSchemaTable,
 } from '@letta-cloud/database';
 import { and, eq, ilike, isNotNull, isNull } from 'drizzle-orm';
 import {
@@ -14,7 +14,6 @@ import {
 import type { EmbeddingConfig, LLMConfig } from '@letta-cloud/letta-agents-api';
 import { getBrandFromModelName } from '@letta-cloud/generic-utils';
 import { setRedisData } from '@letta-cloud/redis';
-import { getUserOrThrow } from '$web/server/auth';
 
 type GetAdminInferenceModelsResponse = ServerInferResponses<
   typeof contracts.admin.models.getAdminInferenceModels
@@ -120,9 +119,6 @@ async function getAdminInferenceModels(
           model.defaultTokensPerMinutePerOrganization,
           10,
         ),
-        defaultCUPerStep: model.defaultCUPerStep
-          ? parseInt(model.defaultCUPerStep, 10)
-          : null,
         tag: model.tag || '',
         isRecommended: model.isRecommended,
         config: configMap.get(`${model.modelEndpoint}${model.modelName}`),
@@ -167,9 +163,6 @@ async function getAdminInferenceModel(
     status: 200,
     body: {
       id: response.id,
-      defaultCUPerStep: response.defaultCUPerStep
-        ? parseInt(response.defaultCUPerStep, 10)
-        : null,
       name: response.name,
       isRecommended: response.isRecommended,
       defaultRequestsPerMinutePerOrganization: parseInt(
@@ -248,8 +241,15 @@ async function createAdminInferenceModel(
         inferenceModelsMetadata.defaultTokensPerMinutePerOrganization,
       defaultRequestsPerMinutePerOrganization:
         inferenceModelsMetadata.defaultRequestsPerMinutePerOrganization,
-      defaultCUPerStep: inferenceModelsMetadata.defaultCUPerStep,
     });
+
+  await db.insert(stepCostSchemaTable).values({
+    modelId: response.id,
+    stepCostSchema: {
+      data: [],
+      version: '1',
+    },
+  });
 
   return {
     status: 201,
@@ -258,9 +258,6 @@ async function createAdminInferenceModel(
       name: response.name,
       brand: response.brand,
       tag: response.tag || '',
-      defaultCUPerStep: response.defaultCUPerStep
-        ? parseInt(response.defaultCUPerStep, 10)
-        : null,
       defaultTokensPerMinutePerOrganization: parseInt(
         response.defaultTokensPerMinutePerOrganization,
         10,
@@ -291,7 +288,6 @@ interface UpdateAdminInferenceSetterType {
   disabledAt?: Date | null;
   name?: string;
   tag?: string;
-  defaultCUPerStep?: string;
   defaultRequestsPerMinutePerOrganization?: string;
   defaultTokensPerMinutePerOrganization?: string;
   isRecommended?: boolean;
@@ -302,7 +298,6 @@ async function updateAdminInferenceModel(
 ): Promise<UpdateAdminInferenceModelResponse> {
   const { id } = req.params;
   const { brand, disabled, name, isRecommended, tag } = req.body;
-  const user = await getUserOrThrow();
 
   const existingModel = await db.query.inferenceModelsMetadata.findFirst({
     where: eq(inferenceModelsMetadata.id, id),
@@ -342,30 +337,7 @@ async function updateAdminInferenceModel(
   const {
     defaultRequestsPerMinutePerOrganization,
     defaultTokensPerMinutePerOrganization,
-    defaultCUPerStep,
   } = req.body;
-
-  if (defaultCUPerStep) {
-    set.defaultCUPerStep = defaultCUPerStep.toString();
-
-    await db.insert(cuChangeAudit).values({
-      previousCu: existingModel.defaultCUPerStep,
-      newCu: defaultCUPerStep.toString(),
-      reason: 'Admin panel change',
-      changedBy: user.id,
-      modelId: id,
-    });
-
-    await setRedisData(
-      'defaultCUPerStep',
-      { modelId: id },
-      {
-        data: {
-          defaultCUPerStep,
-        },
-      },
-    );
-  }
 
   if (defaultRequestsPerMinutePerOrganization) {
     set.defaultRequestsPerMinutePerOrganization =
@@ -865,6 +837,83 @@ async function deleteAdminEmbeddingModel(
   };
 }
 
+export type GetStepCostsRequest = ServerInferRequest<
+  typeof contracts.admin.models.getStepCosts
+>;
+
+export type GetStepCostsResponse = ServerInferResponses<
+  typeof contracts.admin.models.getStepCosts
+>;
+
+async function getStepCosts(
+  req: GetStepCostsRequest,
+): Promise<GetStepCostsResponse> {
+  const { id: modelId } = req.params;
+
+  const stepCosts = await db.query.stepCostSchemaTable.findFirst({
+    where: eq(stepCostSchemaTable.modelId, modelId),
+  });
+
+  if (!stepCosts) {
+    return {
+      status: 404,
+      body: {
+        error: 'Step costs not found',
+      },
+    };
+  }
+
+  return {
+    status: 200,
+    body: stepCosts.stepCostSchema,
+  };
+}
+
+export type UpdateStepCostsRequest = ServerInferRequest<
+  typeof contracts.admin.models.updateStepCosts
+>;
+
+export type UpdateStepCostsResponse = ServerInferResponses<
+  typeof contracts.admin.models.updateStepCosts
+>;
+
+async function updateStepCosts(
+  req: UpdateStepCostsRequest,
+): Promise<UpdateStepCostsResponse> {
+  const { id: modelId } = req.params;
+  const { version, data } = req.body;
+
+  const [response] = await db
+    .update(stepCostSchemaTable)
+    .set({
+      stepCostSchema: {
+        version,
+        data,
+      },
+    })
+    .where(eq(stepCostSchemaTable.modelId, modelId))
+    .returning({
+      stepCostSchema: stepCostSchemaTable.stepCostSchema,
+    });
+
+  await setRedisData(
+    'stepCostSchema',
+    {
+      modelId,
+    },
+    {
+      data: { version: '1', data: data },
+      // 24 hours
+      expiresAt: Math.floor(Date.now() / 1000) + 86400,
+    },
+  );
+
+  return {
+    status: 200,
+    body: response.stepCostSchema,
+  };
+}
+
 export const adminModelsRouter = {
   getAdminInferenceModels,
   getAdminInferenceModel,
@@ -876,4 +925,6 @@ export const adminModelsRouter = {
   createAdminEmbeddingModel,
   updateAdminEmbeddingModel,
   deleteAdminEmbeddingModel,
+  getStepCosts,
+  updateStepCosts,
 };

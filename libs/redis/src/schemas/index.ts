@@ -2,11 +2,12 @@ import { z } from 'zod';
 import type { ZodType } from 'zod';
 import {
   db,
-  inferenceModelsMetadata,
   organizationCredits,
   organizations,
+  stepCostSchemaTable,
 } from '@letta-cloud/database';
 import { eq } from 'drizzle-orm';
+import { stepCostVersionOne } from '@letta-cloud/types';
 
 interface RedisDefinition<Type extends string, Input, Output extends ZodType> {
   baseKey: Type;
@@ -14,7 +15,7 @@ interface RedisDefinition<Type extends string, Input, Output extends ZodType> {
   getKey: (args: Input) => `${Type}:${string}`;
   populateOnMissFn?: (
     args: Input,
-  ) => Promise<{ expiry: number; data: z.infer<Output> } | null>;
+  ) => Promise<{ expiresAt: number; data: z.infer<Output> } | null>;
   output: Output;
 }
 
@@ -70,7 +71,11 @@ const organizationCreditsDefinition = generateDefinitionSatisfies({
       return null;
     }
 
-    return { expiry: 24 * 60 * 60, data: { credits: result.credits } };
+    // 24 hours
+    return {
+      expiresAt: Date.now() + 24 * 60 * 60 * 1000,
+      data: { credits: result.credits },
+    };
   },
   output: z.object({ credits: z.number() }),
 });
@@ -91,7 +96,7 @@ const organizationToCoreOrganizationDefinition = generateDefinitionSatisfies({
       return null;
     }
 
-    return { expiry: 0, data: { coreOrganizationId: result.lettaAgentsId } };
+    return { expiresAt: 0, data: { coreOrganizationId: result.lettaAgentsId } };
   },
   output: z.object({ coreOrganizationId: z.string() }),
 });
@@ -144,25 +149,23 @@ const tpmWindowDefinition = generateDefinitionSatisfies({
   output: z.object({ data: z.number() }),
 });
 
-const defaultCUPerStepDefinition = generateDefinitionSatisfies({
-  baseKey: 'defaultCUPerStep',
+const stepCostSchemaDefinition = generateDefinitionSatisfies({
+  baseKey: 'stepCostSchema',
   input: z.object({ modelId: z.string() }),
-  getKey: (args) => `defaultCUPerStep:${args.modelId}`,
+  getKey: (args) => `stepCostSchema:${args.modelId}`,
+  output: stepCostVersionOne,
   populateOnMissFn: async (args) => {
-    const result = await db.query.inferenceModelsMetadata.findFirst({
-      where: eq(inferenceModelsMetadata.id, args.modelId),
-      columns: {
-        defaultCUPerStep: true,
-      },
+    const schema = await db.query.stepCostSchemaTable.findFirst({
+      where: eq(stepCostSchemaTable.modelId, args.modelId),
     });
 
-    if (!result) {
+    if (!schema) {
       return null;
     }
 
-    return { expiry: 0, data: { data: result.defaultCUPerStep } };
+    // 24 hours
+    return { expiresAt: Date.now() + 24 * 60 * 60 * 1000, data: schema };
   },
-  output: z.object({ defaultCUPerStep: z.number() }),
 });
 
 export const redisDefinitions = {
@@ -170,11 +173,11 @@ export const redisDefinitions = {
   organizationRateLimitsPerModel: organizationRateLimitsPerModelDefinition,
   defaultModelRequestPerMinute: defaultModelRequestPerMinuteDefinition,
   defaultModelTokensPerMinute: defaultModelTokenPerMinuteDefinition,
-  defaultCUPerStep: defaultCUPerStepDefinition,
   rpmWindow: rpmWindowDefinition,
   tpmWindow: tpmWindowDefinition,
   organizationCredits: organizationCreditsDefinition,
   organizationToCoreOrganization: organizationToCoreOrganizationDefinition,
+  stepCostSchema: stepCostSchemaDefinition,
 } satisfies Record<
   string,
   RedisDefinition<

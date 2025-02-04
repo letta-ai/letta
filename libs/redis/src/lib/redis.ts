@@ -69,7 +69,7 @@ export async function getRedisData<Type extends RedisTypes = RedisTypes>(
         // @ts-expect-error - this works, my typings are just bad
         await setRedisData(type, args, {
           data: data.data,
-          expiresAt: data.expiry,
+          expiresAt: data.expiresAt,
         });
 
         // @ts-expect-error - this works, my typings are just bad

@@ -5,6 +5,7 @@ import {
   LLMConfigSchema,
 } from '@letta-cloud/letta-agents-api';
 import { GenericSearchSchema } from '../shared';
+import { stepCostVersionOne } from '@letta-cloud/types';
 
 const c = initContract();
 
@@ -13,7 +14,6 @@ export const InferenceModelSchema = z.object({
   name: z.string(),
   brand: z.string(),
   config: LLMConfigSchema.optional()?.nullable(),
-  defaultCUPerStep: z.number().or(z.null()).optional(),
   defaultRequestsPerMinutePerOrganization: z.number(),
   defaultTokensPerMinutePerOrganization: z.number(),
   isRecommended: z.boolean(),
@@ -79,7 +79,6 @@ const createAdminInferenceModelContract = c.mutation({
 /* Update Inference Model */
 const UpdateInferenceModelRequestBodySchema = z.object({
   brand: z.string().optional(),
-  defaultCUPerStep: z.number().optional(),
   disabled: z.boolean().optional(),
   name: z.string().optional(),
   tag: z.string().optional(),
@@ -207,6 +206,31 @@ const deleteAdminEmbeddingModelContract = c.mutation({
   }),
 });
 
+/* Get step costs for a model */
+const getStepCostsContract = c.query({
+  method: 'GET',
+  path: '/admin/models/inference/:id/step-costs',
+  responses: {
+    200: stepCostVersionOne,
+  },
+  pathParams: z.object({
+    id: z.string(),
+  }),
+});
+
+/* Update step costs for a model */
+const updateStepCostsContract = c.mutation({
+  method: 'PATCH',
+  path: '/admin/models/inference/:id/step-costs',
+  body: stepCostVersionOne,
+  responses: {
+    200: stepCostVersionOne,
+  },
+  pathParams: z.object({
+    id: z.string(),
+  }),
+});
+
 export const adminModelsContracts = {
   getAdminEmbeddingModels: getAdminEmbeddingModelsContract,
   getAdminEmbeddingModel: getAdminEmbeddingModelContract,
@@ -218,6 +242,8 @@ export const adminModelsContracts = {
   createAdminInferenceModel: createAdminInferenceModelContract,
   updateAdminInferenceModel: updateAdminInferenceModelContract,
   deleteAdminInferenceModel: deleteAdminInferenceModelContract,
+  getStepCosts: getStepCostsContract,
+  updateStepCosts: updateStepCostsContract,
 };
 
 export const adminModelsQueryClientKeys = {
@@ -239,4 +265,5 @@ export const adminModelsQueryClientKeys = {
     'getAdminEmbeddingModelById',
     id,
   ],
+  getStepCosts: (modelId: string) => ['getStepCosts', modelId],
 };

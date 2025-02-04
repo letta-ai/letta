@@ -259,14 +259,6 @@ function AdminInferenceModelsPage() {
           cell: ({ row }) => formatDateAndTime(row.original.updatedAt),
         },
         {
-          header: 'CU per Step',
-          accessorKey: 'defaultCUPerStep',
-          cell: ({ row }) =>
-            row.original.defaultCUPerStep
-              ? formatNumber(row.original.defaultCUPerStep)
-              : 'Not set',
-        },
-        {
           header: 'RPM Limit (per Org)',
           accessorKey: 'rpm',
           cell: ({ row }) =>

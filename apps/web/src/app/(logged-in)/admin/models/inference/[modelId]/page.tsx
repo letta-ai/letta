@@ -10,9 +10,11 @@ import {
   FormActions,
   FormField,
   FormProvider,
+  HStack,
   Input,
   LoadingEmptyStatusComponent,
   RawCodeEditor,
+  RawInput,
   Typography,
   useForm,
   VStack,
@@ -24,6 +26,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { queryClientKeys } from '$web/web-api/contracts';
 import { useQueryClient } from '@tanstack/react-query';
 import { useParams } from 'next/navigation';
+import type { StepCostSchemaVersionOneStep } from '@letta-cloud/types';
 
 interface UpdateInferenceModelFormProps {
   model: AdminInferenceModelType;
@@ -33,7 +36,6 @@ const updateInferenceModelSchema = z.object({
   name: z.string(),
   disabled: z.boolean(),
   isRecommended: z.boolean().optional(),
-  defaultCUPerStep: z.coerce.number().positive(),
   defaultRequestsPerMinutePerOrganization: z.coerce.number().positive(),
   defaultTokensPerMinutePerOrganization: z.coerce.number().positive(),
   tag: z.string().optional(),
@@ -66,7 +68,6 @@ function UpdateInferenceModelForm(props: UpdateInferenceModelFormProps) {
     resolver: zodResolver(updateInferenceModelSchema),
     defaultValues: {
       name: model.name,
-      defaultCUPerStep: model.defaultCUPerStep || 0,
       disabled: !!model.disabledAt,
       brand: model.brand,
       defaultRequestsPerMinutePerOrganization:
@@ -83,7 +84,6 @@ function UpdateInferenceModelForm(props: UpdateInferenceModelFormProps) {
           id: model.id,
         },
         body: {
-          defaultCUPerStep: values.defaultCUPerStep,
           defaultRequestsPerMinutePerOrganization:
             values.defaultRequestsPerMinutePerOrganization,
           defaultTokensPerMinutePerOrganization:
@@ -119,12 +119,6 @@ function UpdateInferenceModelForm(props: UpdateInferenceModelFormProps) {
                   label="Tag"
                   {...field}
                 />
-              )}
-            />
-            <FormField
-              name="defaultCUPerStep"
-              render={({ field }) => (
-                <Input fullWidth type="number" label="CU per step" {...field} />
               )}
             />
             <FormField
@@ -199,6 +193,218 @@ function UpdateInferenceModelForm(props: UpdateInferenceModelFormProps) {
   );
 }
 
+const stepItemSchema = z.object({
+  maxContextWindowSize: z.string().regex(/^\d+$/, {
+    message: 'Max Context Window Size must be a positive integer',
+  }),
+  cost: z
+    .string()
+    .regex(/^\d+$/, { message: 'Cost must be a positive integer' }),
+});
+
+type StepItem = z.infer<typeof stepItemSchema>;
+
+interface StepCostsEditorProps {
+  steps: StepItem[];
+  onUpdate: (steps: StepItem[]) => void;
+}
+
+function StepCostsEditor(props: StepCostsEditorProps) {
+  const { steps, onUpdate } = props;
+
+  const formState = useForm();
+
+  const errorMessage = formState.formState.errors?.stepCosts?.message;
+
+  const handleUpdate = useCallback(
+    (index: number, key: keyof StepCostSchemaVersionOneStep, value: string) => {
+      const newSteps = [...steps];
+      newSteps[index] = {
+        ...newSteps[index],
+        [key]: value,
+      };
+      onUpdate(newSteps);
+    },
+    [steps, onUpdate],
+  );
+
+  const handleRemoveStep = useCallback(
+    (index: number) => {
+      onUpdate(steps.filter((_, i) => i !== index));
+    },
+    [steps, onUpdate],
+  );
+
+  const handleAddStep = useCallback(() => {
+    onUpdate([...steps, { maxContextWindowSize: '0', cost: '0' }]);
+  }, [steps, onUpdate]);
+
+  return (
+    <VStack>
+      {steps.map((step, index) => {
+        const error = stepItemSchema.safeParse(step).error;
+
+        return (
+          <VStack key={index}>
+            <HStack align="end">
+              <RawInput
+                fullWidth
+                label="Max Context Window Size"
+                value={step.maxContextWindowSize}
+                onChange={(e) => {
+                  handleUpdate(index, 'maxContextWindowSize', e.target.value);
+                }}
+              />
+              <RawInput
+                fullWidth
+                label="Cost"
+                value={step.cost}
+                onChange={(e) => {
+                  handleUpdate(index, 'cost', e.target.value);
+                }}
+              />
+              <Button
+                label="Remove"
+                color="secondary"
+                onClick={() => {
+                  handleRemoveStep(index);
+                }}
+              />
+            </HStack>
+            {error && (
+              <Typography color="destructive">{error.message}</Typography>
+            )}
+          </VStack>
+        );
+      })}
+      <Button label="Add Step" onClick={handleAddStep} />
+      {typeof errorMessage === 'string' && (
+        <Typography>{errorMessage}</Typography>
+      )}
+    </VStack>
+  );
+}
+
+interface StepCostsFormProps {
+  defaultValues: StepCostSchemaVersionOneStep[];
+}
+
+const stepCostsFormSchema = z.object({
+  steps: z.array(stepItemSchema),
+});
+
+type StepCostsFormValues = z.infer<typeof stepCostsFormSchema>;
+
+function StepCostsForm(props: StepCostsFormProps) {
+  const { modelId } = useParams<{ modelId: string }>();
+
+  const { defaultValues } = props;
+  const form = useForm<StepCostsFormValues>({
+    resolver: zodResolver(stepCostsFormSchema),
+    defaultValues: {
+      steps: defaultValues.map((step) => ({
+        maxContextWindowSize: step.maxContextWindowSize.toString(),
+        cost: step.cost.toString(),
+      })),
+    },
+  });
+  const queryClient = useQueryClient();
+
+  const { mutate, isPending } = webApi.admin.models.updateStepCosts.useMutation(
+    {
+      onSuccess: (nextCosts) => {
+        void queryClient.setQueriesData(
+          {
+            queryKey: queryClientKeys.admin.models.getStepCosts(modelId),
+          },
+          () => nextCosts,
+        );
+      },
+    },
+  );
+
+  const handleSubmit = useCallback(
+    (values: StepCostsFormValues) => {
+      mutate({
+        params: {
+          id: modelId,
+        },
+        body: {
+          version: '1',
+          data: values.steps
+            .toSorted(
+              (a, b) =>
+                parseInt(a.maxContextWindowSize) -
+                parseInt(b.maxContextWindowSize),
+            )
+            .map((step) => ({
+              maxContextWindowSize: parseInt(step.maxContextWindowSize),
+              cost: parseInt(step.cost),
+            })),
+        },
+      });
+    },
+    [modelId, mutate],
+  );
+
+  return (
+    <FormProvider {...form}>
+      <Form onSubmit={form.handleSubmit(handleSubmit)}>
+        <VStack>
+          <VStack paddingBottom borderBottom gap="form">
+            <FormField
+              name="steps"
+              render={({ field }) => {
+                return (
+                  <StepCostsEditor
+                    steps={field.value}
+                    onUpdate={field.onChange}
+                  />
+                );
+              }}
+            />
+            <FormActions>
+              <Button busy={isPending} type="submit" label="Update" />
+            </FormActions>
+          </VStack>
+        </VStack>
+      </Form>
+    </FormProvider>
+  );
+}
+
+function StepCostsManager() {
+  const { modelId } = useParams<{ modelId: string }>();
+
+  const {
+    data: stepCosts,
+    isLoading,
+    isError,
+  } = webApi.admin.models.getStepCosts.useQuery({
+    queryKey: queryClientKeys.admin.models.getStepCosts(modelId),
+    queryData: {
+      params: {
+        id: modelId,
+      },
+    },
+  });
+
+  return (
+    <DashboardPageSection title="Step Costs">
+      {!stepCosts ? (
+        <LoadingEmptyStatusComponent
+          emptyMessage=""
+          isLoading={isLoading}
+          isError={isError}
+          errorMessage="Failed to load step costs"
+        />
+      ) : (
+        <StepCostsForm defaultValues={stepCosts.body.data} />
+      )}
+    </DashboardPageSection>
+  );
+}
+
 function InferenceModelPage() {
   const { modelId } = useParams<{ modelId: string }>();
 
@@ -233,6 +439,7 @@ function InferenceModelPage() {
           <UpdateInferenceModelForm model={model.body} />
         )}
       </DashboardPageSection>
+      <StepCostsManager />
       {model?.body?.config && (
         <DashboardPageSection title="Model Config">
           <Typography>

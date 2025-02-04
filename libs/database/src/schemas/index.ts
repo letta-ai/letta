@@ -11,8 +11,10 @@ import {
   primaryKey,
 } from 'drizzle-orm/pg-core';
 import { sql, relations } from 'drizzle-orm';
-import type { ProviderConfiguration } from '@letta-cloud/types';
-import { z } from 'zod';
+import type {
+  ProviderConfiguration,
+  StepCostVersionOne,
+} from '@letta-cloud/types';
 import type { ApplicationServices } from '@letta-cloud/rbac';
 import type { UserPresetRolesType } from '@letta-cloud/rbac';
 
@@ -615,25 +617,6 @@ export const developmentServerPasswordRelations = relations(
   }),
 );
 
-export const cuChangeAudit = pgTable('cu_change_audit', {
-  id: text('id')
-    .primaryKey()
-    .default(sql`gen_random_uuid()`),
-  modelId: text('model_id').notNull(),
-  previousCu: numeric('previous_cu'),
-  newCu: numeric('new_cu').notNull(),
-  reason: text('reason').notNull(),
-  changedBy: text('changed_by').notNull(),
-  createdAt: timestamp('created_at').notNull().defaultNow(),
-});
-
-const cuChangeAuditRelations = relations(cuChangeAudit, ({ one }) => ({
-  model: one(inferenceModelsMetadata, {
-    fields: [cuChangeAudit.modelId],
-    references: [inferenceModelsMetadata.id],
-  }),
-}));
-
 const DEFAULT_INFERENCE_TOKENS_PER_MINUTE = '1000';
 const DEFAULT_INFERENCE_REQUESTS_PER_MINUTE = '1000';
 
@@ -649,7 +632,6 @@ export const inferenceModelsMetadata = pgTable(
     brand: text('brand').notNull(),
     isRecommended: boolean('is_recommended').notNull().default(false),
     tag: text('tag'),
-    defaultCUPerStep: numeric('default_cu_per_step'),
     defaultRequestsPerMinutePerOrganization: numeric(
       'default_requests_per_minute_per_organization',
     )
@@ -673,6 +655,19 @@ export const inferenceModelsMetadata = pgTable(
       self.modelName,
       self.modelEndpoint,
     ),
+  }),
+);
+
+export const inferenceModelRelations = relations(
+  inferenceModelsMetadata,
+  ({ many, one }) => ({
+    perModelPerOrganizationRateLimitOverrides: many(
+      perModelPerOrganizationRateLimitOverrides,
+    ),
+    stepCostSchema: one(stepCostSchemaTable, {
+      fields: [inferenceModelsMetadata.id],
+      references: [stepCostSchemaTable.modelId],
+    }),
   }),
 );
 
@@ -887,3 +882,38 @@ export const perModelPerOrganizationRateLimitOverridesRelations = relations(
     }),
   }),
 );
+
+export const stepCostSchemaTable = pgTable('step_cost_schema_by_model_id', {
+  modelId: text('model_id')
+    .notNull()
+    .references(() => inferenceModelsMetadata.id, { onDelete: 'cascade' })
+    .primaryKey(),
+  stepCostSchema: json('step_cost_schema')
+    .notNull()
+    .$type<StepCostVersionOne>(),
+});
+
+export const stepCostSchemaByModelIdRelations = relations(
+  stepCostSchemaTable,
+  ({ one }) => ({
+    model: one(inferenceModelsMetadata, {
+      fields: [stepCostSchemaTable.modelId],
+      references: [inferenceModelsMetadata.id],
+    }),
+  }),
+);
+
+export const stepCostSchemaAudit = pgTable('step_cost_schema_audit', {
+  id: text('id')
+    .notNull()
+    .primaryKey()
+    .default(sql`gen_random_uuid()`),
+  modelId: text('model_id')
+    .notNull()
+    .references(() => inferenceModelsMetadata.id, { onDelete: 'cascade' }),
+  stepCostSchema: json('step_cost_schema')
+    .notNull()
+    .$type<StepCostVersionOne>(),
+  updatedBy: text('updated_by').notNull(),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+});
