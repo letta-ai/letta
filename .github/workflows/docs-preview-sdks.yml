@@ -4,9 +4,15 @@ on:
   pull_request:
     branches:
       - main
+  push:
+    branches:
+      - main
+    paths:
+      - 'apps/fern/**'
 
 jobs:
   preview-typescript-sdk:
+    name: Preview TypeScript SDK
     runs-on: ubuntu-latest
     services:
       postgres:
@@ -113,6 +119,7 @@ jobs:
           yarn test tests/custom.test.ts
 
   preview-python-sdk:
+    name: Preview Python SDK
     runs-on: ubuntu-latest
     services:
       postgres:

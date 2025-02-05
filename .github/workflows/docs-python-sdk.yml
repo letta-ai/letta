@@ -7,9 +7,20 @@ on:
         description: "The version of the Python SDK that you would like to release"
         required: true
         type: string
+  workflow_run:
+    workflows: ["Preview Python SDK"]
+    types:
+      - completed
+    branches:
+      - main
 
 jobs:
   release:
+    if: |
+      github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'workflow_run' &&
+       github.event.workflow_run.event == 'push' &&
+       github.event.workflow_run.conclusion == 'success')
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repo
@@ -24,7 +35,11 @@ jobs:
           FERN_TOKEN: ${{ secrets.FERN_TOKEN }}
           PYPI_TOKEN: ${{ secrets.PYPI_TOKEN }}
         run: |
-          fern generate --group python-sdk --version ${{ inputs.version }} --log-level debug
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            fern generate --group python-sdk --version ${{ inputs.version }} --log-level debug
+          else
+            fern generate --group python-sdk --log-level debug
+          fi
 
       - name: Publish Docs
         working-directory: apps
