@@ -315,7 +315,7 @@ class StreamingServerInterface(AgentChunkStreamingInterface):
 
         # extra prints
         self.debug = False
-        self.timeout = 30
+        self.timeout = 10 * 60  # 10 minute timeout
 
     def _reset_inner_thoughts_json_reader(self):
         # A buffer for accumulating function arguments (we want to buffer keys and run checks on each one)
@@ -330,7 +330,7 @@ class StreamingServerInterface(AgentChunkStreamingInterface):
         while self._active:
             try:
                 # Wait until there is an item in the deque or the stream is deactivated
-                await asyncio.wait_for(self._event.wait(), timeout=self.timeout)  # 30 second timeout
+                await asyncio.wait_for(self._event.wait(), timeout=self.timeout)
             except asyncio.TimeoutError:
                 break  # Exit the loop if we timeout
 
