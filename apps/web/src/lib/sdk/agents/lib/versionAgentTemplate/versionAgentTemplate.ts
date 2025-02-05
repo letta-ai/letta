@@ -138,9 +138,14 @@ export async function versionAgentTemplate(
       };
     }
 
-    const deployedAgentsList = await AgentsService.listAgents({
-      baseTemplateId: agentTemplate.id,
-    });
+    const deployedAgentsList = await AgentsService.listAgents(
+      {
+        baseTemplateId: agentTemplate.id,
+      },
+      {
+        user_id: context.request.lettaAgentsUserId,
+      },
+    );
 
     void Promise.all(
       deployedAgentsList.map(async (deployedAgent) => {

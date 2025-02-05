@@ -3,7 +3,7 @@ import { lettaAxiosSDK, TEST_STAGE } from './constant';
 const testAgentName = 'api-test-agent';
 
 async function getAgentByName(name: string) {
-  const agentsList = await lettaAxiosSDK.get(`/v1/agents?search=${name}`);
+  const agentsList = await lettaAxiosSDK.get(`/v1/agents?name=${name}`);
   return agentsList.data[0];
 }
 
