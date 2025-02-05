@@ -51,7 +51,7 @@ async function migrateByChunk(offset = 0, limit = 100) {
           migratedAt: new Date(),
         })
         .where(eq(deployedAgents.id, deployedAgent.id));
-    } catch (e) {
+    } catch (_e) {
       console.error(
         `Agent is not migrated: ${deployedAgent.id} - ${deployedAgent.key}`,
       );
