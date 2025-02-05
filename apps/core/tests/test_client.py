@@ -458,16 +458,16 @@ def test_function_return_limit(client: Union[LocalClient, RESTClient]):
 def test_function_always_error(client: Union[LocalClient, RESTClient]):
     """Test to see if function that errors works correctly"""
 
-    def always_error():
+    def testing_method():
         """
         Always throw an error.
         """
         return 5 / 0
 
-    tool = client.create_or_update_tool(func=always_error)
+    tool = client.create_or_update_tool(func=testing_method)
     agent = client.create_agent(tool_ids=[tool.id])
     # get function response
-    response = client.send_message(agent_id=agent.id, message="call the always_error function", role="user")
+    response = client.send_message(agent_id=agent.id, message="call the testing_method function and tell me the result", role="user")
     print(response.messages)
 
     response_message = None
@@ -480,14 +480,11 @@ def test_function_always_error(client: Union[LocalClient, RESTClient]):
     assert response_message.status == "error"
 
     if isinstance(client, RESTClient):
-        assert (
-            response_message.tool_return.startswith("Error calling function always_error")
-            and "ZeroDivisionError" in response_message.tool_return
-        )
+        assert response_message.tool_return == "Error executing function testing_method: ZeroDivisionError: division by zero"
     else:
         response_json = json.loads(response_message.tool_return)
         assert response_json["status"] == "Failed"
-        assert "Error calling function always_error" in response_json["message"] and "ZeroDivisionError" in response_json["message"]
+        assert response_json["message"] == "Error executing function testing_method: ZeroDivisionError: division by zero"
 
     client.delete_agent(agent_id=agent.id)
 

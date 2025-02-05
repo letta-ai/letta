@@ -410,13 +410,13 @@ def test_function_return_limit(client: LettaSDKClient, agent: AgentState):
 def test_function_always_error(client: LettaSDKClient, agent: AgentState):
     """Test to see if function that errors works correctly"""
 
-    def always_error():
+    def testing_method():
         """
-        Always throw an error.
+        A method that has test functionalit.
         """
         return 5 / 0
 
-    tool = client.tools.upsert_from_function(func=always_error, return_char_limit=1000)
+    tool = client.tools.upsert_from_function(func=testing_method, return_char_limit=1000)
 
     client.agents.tools.attach(agent_id=agent.id, tool_id=tool.id)
 
@@ -426,10 +426,9 @@ def test_function_always_error(client: LettaSDKClient, agent: AgentState):
         messages=[
             MessageCreate(
                 role="user",
-                content="call the always_error function",
+                content="call the testing_method function and tell me the result",
             ),
         ],
-        use_assistant_message=False,
     )
 
     response_message = None
@@ -441,10 +440,7 @@ def test_function_always_error(client: LettaSDKClient, agent: AgentState):
     assert response_message, "ToolReturnMessage message not found in response"
     assert response_message.status == "error"
 
-    # TODO try and get this format back, need to fix e2b return parsing
-    # assert response_message.tool_return == "Error executing function always_error: ZeroDivisionError: division by zero"
-
-    assert response_message.tool_return.startswith("Error calling function always_error")
+    assert response_message.tool_return == "Error executing function testing_method: ZeroDivisionError: division by zero"
     assert "ZeroDivisionError" in response_message.tool_return
 
 
