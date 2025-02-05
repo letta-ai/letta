@@ -1,4 +1,4 @@
-name: Release TypeScript SDK
+name: 🌿 Release TypeScript SDK
 
 on:
   workflow_dispatch:
@@ -8,7 +8,7 @@ on:
         required: true
         type: string
   workflow_run:
-    workflows: ["Preview TypeScript SDK"]
+    workflows: ["🌿 Preview TypeScript SDK"]
     types:
       - completed
     branches:

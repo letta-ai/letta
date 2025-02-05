@@ -1,4 +1,4 @@
-name: Release Python SDK
+name: 🌿 Release Python SDK
 
 on:
   workflow_dispatch:
@@ -8,7 +8,7 @@ on:
         required: true
         type: string
   workflow_run:
-    workflows: ["Preview Python SDK"]
+    workflows: ["🌿 Preview Python SDK"]
     types:
       - completed
     branches:
