@@ -47,6 +47,9 @@ def list_agents(
     after: Optional[str] = Query(None, description="Cursor for pagination"),
     limit: Optional[int] = Query(None, description="Limit for pagination"),
     query_text: Optional[str] = Query(None, description="Search agents by name"),
+    project_id: Optional[str] = Query(None, description="Search agents by project id"),
+    template_id: Optional[str] = Query(None, description="Search agents by template id"),
+    base_template_id: Optional[str] = Query(None, description="Search agents by base template id"),
 ):
     """
     List all agents associated with a given user.
@@ -58,16 +61,25 @@ def list_agents(
     kwargs = {
         key: value
         for key, value in {
-            "tags": tags,
-            "match_all_tags": match_all_tags,
             "name": name,
-            "query_text": query_text,
+            "project_id": project_id,
+            "template_id": template_id,
+            "base_template_id": base_template_id,
         }.items()
         if value is not None
     }
 
     # Call list_agents with the dynamic kwargs
-    agents = server.agent_manager.list_agents(actor=actor, before=before, after=after, limit=limit, **kwargs)
+    agents = server.agent_manager.list_agents(
+        actor=actor,
+        before=before,
+        after=after,
+        limit=limit,
+        query_text=query_text,
+        tags=tags,
+        match_all_tags=match_all_tags,
+        **kwargs,
+    )
     return agents
 
 

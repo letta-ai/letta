@@ -11,7 +11,7 @@ from letta.orm.enums import ToolType
 from letta.orm.errors import NoResultFound
 from letta.orm.tool import Tool as ToolModel
 from letta.schemas.tool import Tool as PydanticTool
-from letta.schemas.tool import ToolUpdate
+from letta.schemas.tool import ToolCreate, ToolUpdate
 from letta.schemas.user import User as PydanticUser
 from letta.utils import enforce_types, printd
 
@@ -57,9 +57,16 @@ class ToolManager:
         return tool
 
     @enforce_types
-    def create_or_update_composio_tool(self, pydantic_tool: PydanticTool, actor: PydanticUser) -> PydanticTool:
-        pydantic_tool.tool_type = ToolType.EXTERNAL_COMPOSIO
-        return self.create_or_update_tool(pydantic_tool, actor)
+    def create_or_update_composio_tool(self, tool_create: ToolCreate, actor: PydanticUser) -> PydanticTool:
+        return self.create_or_update_tool(
+            PydanticTool(tool_type=ToolType.EXTERNAL_COMPOSIO, name=tool_create.json_schema["name"], **tool_create.model_dump()), actor
+        )
+
+    @enforce_types
+    def create_or_update_langchain_tool(self, tool_create: ToolCreate, actor: PydanticUser) -> PydanticTool:
+        return self.create_or_update_tool(
+            PydanticTool(tool_type=ToolType.EXTERNAL_LANGCHAIN, name=tool_create.json_schema["name"], **tool_create.model_dump()), actor
+        )
 
     @enforce_types
     def create_tool(self, pydantic_tool: PydanticTool, actor: PydanticUser) -> PydanticTool:

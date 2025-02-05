@@ -189,7 +189,7 @@ def db_error_handler():
 
 
 if settings.letta_pg_uri_no_default:
-    print("Creating postgres engine", settings.letta_pg_uri)
+    print("Creating postgres engine")
     config.recall_storage_type = "postgres"
     config.recall_storage_uri = settings.letta_pg_uri_no_default
     config.archival_storage_type = "postgres"
@@ -1000,8 +1000,8 @@ class SyncServer(Server):
         return passage_count, document_count
 
     def list_data_source_passages(self, user_id: str, source_id: str) -> List[Passage]:
-        warnings.warn("list_data_source_passages is not yet implemented, returning empty list.", category=UserWarning)
-        return []
+        # TODO: move this query into PassageManager
+        return self.agent_manager.list_passages(actor=self.user_manager.get_user_or_default(user_id=user_id), source_id=source_id)
 
     def list_all_sources(self, actor: User) -> List[Source]:
         """List all sources (w/ extra metadata) belonging to a user"""

@@ -14,7 +14,7 @@ wait_for_postgres() {
 
 # Check if we're configured for external Postgres
 if [ -n "$LETTA_PG_URI" ]; then
-    echo "External Postgres configuration detected, using $LETTA_PG_URI"
+    echo "External Postgres configuration detected, using env var LETTA_PG_URI"
 else
     echo "No external Postgres configuration detected, starting internal PostgreSQL..."
     # Start PostgreSQL using the base image's entrypoint script

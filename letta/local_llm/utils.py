@@ -11,7 +11,10 @@ import letta.local_llm.llm_chat_completion_wrappers.configurable_wrapper as conf
 import letta.local_llm.llm_chat_completion_wrappers.dolphin as dolphin
 import letta.local_llm.llm_chat_completion_wrappers.llama3 as llama3
 import letta.local_llm.llm_chat_completion_wrappers.zephyr as zephyr
+from letta.log import get_logger
 from letta.schemas.openai.chat_completion_request import Tool, ToolCall
+
+logger = get_logger(__name__)
 
 
 def post_json_auth_request(uri, json_payload, auth_type, auth_key):
@@ -126,8 +129,11 @@ def num_tokens_from_functions(functions: List[dict], model: str = "gpt-4"):
                             function_tokens += 2
                             if isinstance(v["items"], dict) and "type" in v["items"]:
                                 function_tokens += len(encoding.encode(v["items"]["type"]))
+                        elif field == "default":
+                            function_tokens += 2
+                            function_tokens += len(encoding.encode(str(v["default"])))
                         else:
-                            warnings.warn(f"num_tokens_from_functions: Unsupported field {field} in function {function}")
+                            logger.warning(f"num_tokens_from_functions: Unsupported field {field} in function {function}")
                 function_tokens += 11
 
         num_tokens += function_tokens

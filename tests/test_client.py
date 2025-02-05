@@ -480,11 +480,14 @@ def test_function_always_error(client: Union[LocalClient, RESTClient]):
     assert response_message.status == "error"
 
     if isinstance(client, RESTClient):
-        assert response_message.tool_return == "Error executing function always_error: ZeroDivisionError: division by zero"
+        assert (
+            response_message.tool_return.startswith("Error calling function always_error")
+            and "ZeroDivisionError" in response_message.tool_return
+        )
     else:
         response_json = json.loads(response_message.tool_return)
         assert response_json["status"] == "Failed"
-        assert response_json["message"] == "Error executing function always_error: ZeroDivisionError: division by zero"
+        assert "Error calling function always_error" in response_json["message"] and "ZeroDivisionError" in response_json["message"]
 
     client.delete_agent(agent_id=agent.id)
 

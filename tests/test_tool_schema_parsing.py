@@ -205,3 +205,31 @@ def test_composio_tool_schema_generation(openai_model: str, structured_output: b
             print(f"Failed to call OpenAI using schema {schema} generated from {action_name}\n\n")
 
             raise
+
+
+@pytest.mark.parametrize("openai_model", ["gpt-4o-mini"])
+@pytest.mark.parametrize("structured_output", [True])
+def test_langchain_tool_schema_generation(openai_model: str, structured_output: bool):
+    """Test that we can generate the schemas for some Langchain tools."""
+    from langchain_community.tools import WikipediaQueryRun
+    from langchain_community.utilities import WikipediaAPIWrapper
+
+    api_wrapper = WikipediaAPIWrapper(top_k_results=1, doc_content_chars_max=500)
+    langchain_tool = WikipediaQueryRun(api_wrapper=api_wrapper)
+
+    tool_create = ToolCreate.from_langchain(
+        langchain_tool=langchain_tool,
+        additional_imports_module_attr_map={"langchain_community.utilities": "WikipediaAPIWrapper"},
+    )
+
+    assert tool_create.json_schema
+    schema = tool_create.json_schema
+    print(f"The schema for {langchain_tool.name}: {json.dumps(schema, indent=4)}\n\n")
+
+    try:
+        _openai_payload(openai_model, schema, structured_output)
+        print(f"Successfully called OpenAI using schema {schema} generated from {langchain_tool.name}\n\n")
+    except:
+        print(f"Failed to call OpenAI using schema {schema} generated from {langchain_tool.name}\n\n")
+
+        raise

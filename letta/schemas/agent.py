@@ -143,6 +143,9 @@ class CreateAgent(BaseModel, validate_assignment=True):  #
         None, description="The environment variables for tool execution specific to this agent."
     )
     memory_variables: Optional[Dict[str, str]] = Field(None, description="The variables that should be set for the agent.")
+    project_id: Optional[str] = Field(None, description="The id of the project the agent belongs to.")
+    template_id: Optional[str] = Field(None, description="The id of the template the agent belongs to.")
+    base_template_id: Optional[str] = Field(None, description="The base template id of the agent.")
 
     @field_validator("name")
     @classmethod
@@ -210,6 +213,9 @@ class UpdateAgent(BaseModel):
     tool_exec_environment_variables: Optional[Dict[str, str]] = Field(
         None, description="The environment variables for tool execution specific to this agent."
     )
+    project_id: Optional[str] = Field(None, description="The id of the project the agent belongs to.")
+    template_id: Optional[str] = Field(None, description="The id of the template the agent belongs to.")
+    base_template_id: Optional[str] = Field(None, description="The base template id of the agent.")
 
     class Config:
         extra = "ignore"  # Ignores extra fields

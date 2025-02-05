@@ -66,7 +66,7 @@ def list_tools(
     try:
         actor = server.user_manager.get_user_or_default(user_id=user_id)
         if name is not None:
-            tool = server.tool_manager.get_tool_by_name(name=name, actor=actor)
+            tool = server.tool_manager.get_tool_by_name(tool_name=name, actor=actor)
             return [tool] if tool else []
         return server.tool_manager.list_tools(actor=actor, after=after, limit=limit)
     except Exception as e:
@@ -231,7 +231,7 @@ def add_composio_tool(
 
     try:
         tool_create = ToolCreate.from_composio(action_name=composio_action_name)
-        return server.tool_manager.create_or_update_composio_tool(pydantic_tool=Tool(**tool_create.model_dump()), actor=actor)
+        return server.tool_manager.create_or_update_composio_tool(tool_create=tool_create, actor=actor)
     except EnumStringNotFound as e:
         raise HTTPException(
             status_code=400,  # Bad Request

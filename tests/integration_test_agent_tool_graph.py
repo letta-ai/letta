@@ -659,3 +659,64 @@ def test_simple_tool_rule(mock_e2b_api_key_none):
     assert tool_calls[flip_coin_call_index + 1].tool_call.name == secret_word, "Fourth secret word should be called after flip_coin"
 
     cleanup(client, agent_uuid=agent_state.id)
+
+
+def test_init_tool_rule_always_fails_one_tool():
+    """
+    Test an init tool rule that always fails when called. The agent has only one tool available.
+
+    Once that tool fails and the agent removes that tool, the agent should have 0 tools available.
+
+    This means that the agent should return from `step` early.
+    """
+    client = create_client()
+    cleanup(client=client, agent_uuid=agent_uuid)
+
+    # Create tools
+    bad_tool = client.create_or_update_tool(auto_error)
+
+    # Create tool rule: InitToolRule
+    tool_rule = InitToolRule(
+        tool_name=bad_tool.name,
+    )
+
+    # Set up agent with the tool rule
+    claude_config = "tests/configs/llm_model_configs/claude-3-sonnet-20240229.json"
+    agent_state = setup_agent(client, claude_config, agent_uuid, tool_rules=[tool_rule], tool_ids=[bad_tool.id], include_base_tools=False)
+
+    # Start conversation
+    response = client.user_message(agent_id=agent_state.id, message="blah blah blah")
+
+    # Verify the tool calls
+    tool_calls = [msg for msg in response.messages if isinstance(msg, ToolCallMessage)]
+    assert len(tool_calls) >= 1  # Should have at least flip_coin and fourth_secret_word calls
+    assert_invoked_function_call(response.messages, bad_tool.name)
+
+
+def test_init_tool_rule_always_fails_multiple_tools():
+    """
+    Test an init tool rule that always fails when called. The agent has only 1+ tools available.
+    Once that tool fails and the agent removes that tool, the agent should have other tools available.
+    """
+    client = create_client()
+    cleanup(client=client, agent_uuid=agent_uuid)
+
+    # Create tools
+    bad_tool = client.create_or_update_tool(auto_error)
+
+    # Create tool rule: InitToolRule
+    tool_rule = InitToolRule(
+        tool_name=bad_tool.name,
+    )
+
+    # Set up agent with the tool rule
+    claude_config = "tests/configs/llm_model_configs/claude-3-sonnet-20240229.json"
+    agent_state = setup_agent(client, claude_config, agent_uuid, tool_rules=[tool_rule], tool_ids=[bad_tool.id], include_base_tools=True)
+
+    # Start conversation
+    response = client.user_message(agent_id=agent_state.id, message="blah blah blah")
+
+    # Verify the tool calls
+    tool_calls = [msg for msg in response.messages if isinstance(msg, ToolCallMessage)]
+    assert len(tool_calls) >= 1  # Should have at least flip_coin and fourth_secret_word calls
+    assert_invoked_function_call(response.messages, bad_tool.name)

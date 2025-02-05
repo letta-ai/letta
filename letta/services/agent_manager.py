@@ -120,6 +120,9 @@ class AgentManager:
             metadata=agent_create.metadata,
             tool_rules=agent_create.tool_rules,
             actor=actor,
+            project_id=agent_create.project_id,
+            template_id=agent_create.template_id,
+            base_template_id=agent_create.base_template_id,
         )
 
         # If there are provided environment variables, add them in
@@ -179,6 +182,9 @@ class AgentManager:
         description: Optional[str] = None,
         metadata: Optional[Dict] = None,
         tool_rules: Optional[List[PydanticToolRule]] = None,
+        project_id: Optional[str] = None,
+        template_id: Optional[str] = None,
+        base_template_id: Optional[str] = None,
     ) -> PydanticAgentState:
         """Create a new agent."""
         with self.session_maker() as session:
@@ -193,6 +199,9 @@ class AgentManager:
                 "description": description,
                 "metadata_": metadata,
                 "tool_rules": tool_rules,
+                "project_id": project_id,
+                "template_id": template_id,
+                "base_template_id": base_template_id,
             }
 
             # Create the new agent using SqlalchemyBase.create
@@ -242,7 +251,19 @@ class AgentManager:
             agent = AgentModel.read(db_session=session, identifier=agent_id, actor=actor)
 
             # Update scalar fields directly
-            scalar_fields = {"name", "system", "llm_config", "embedding_config", "message_ids", "tool_rules", "description", "metadata"}
+            scalar_fields = {
+                "name",
+                "system",
+                "llm_config",
+                "embedding_config",
+                "message_ids",
+                "tool_rules",
+                "description",
+                "metadata",
+                "project_id",
+                "template_id",
+                "base_template_id",
+            }
             for field in scalar_fields:
                 value = getattr(agent_update, field, None)
                 if value is not None:
