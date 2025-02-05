@@ -463,7 +463,7 @@ class RESTClient(AbstractClient):
         if token:
             self.headers = {"accept": "application/json", "Authorization": f"Bearer {token}"}
         elif password:
-            self.headers = {"accept": "application/json", "X-BARE-PASSWORD": f"password {password}"}
+            self.headers = {"accept": "application/json", "Authorization": f"Bearer {password}"}
         else:
             self.headers = {"accept": "application/json"}
         if headers:
