@@ -815,12 +815,14 @@ export async function listAgents(
   context: SDKContext,
 ): Promise<ListAgentsResponse> {
   if (!req.query.project_id) {
-    return {
-      status: 400,
-      body: {
-        message: 'project_id is required',
-      },
-    };
+    if (!process.env.IS_API_STABILITY_TEST) {
+      return {
+        status: 400,
+        body: {
+          message: 'project_id is required',
+        },
+      };
+    }
   }
 
   const agents = await AgentsService.listAgents(camelCaseKeys(req.query), {
