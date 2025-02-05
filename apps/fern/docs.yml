@@ -133,8 +133,11 @@ navigation:
                 path: pages/models/lmstudio.mdx
               - page: vLLM
                 path: pages/models/vllm.mdx
-          - page: Remote Hosting
-            path: pages/deployment/railway.mdx
+          - section: Remote Hosting
+            path: pages/deployment/remote.mdx
+            contents:
+              - page: Deploy on Railway
+                path: pages/deployment/railway.mdx
           - section: Alternate Install Methods
             contents:
             - page: Using pip
