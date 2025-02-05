@@ -8,7 +8,8 @@ on:
     branches:
       - main
     paths:
-      - 'apps/fern/**'
+      - 'apps/fern/openapi.json'
+      - 'apps/fern/openapi-overrides.yml'
 
 jobs:
   preview-typescript-sdk:
