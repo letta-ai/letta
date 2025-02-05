@@ -59,6 +59,9 @@ export function LettaAgentsAPIWrapper({
       if (password) {
         // eslint-disable-next-line @typescript-eslint/ban-ts-comment
         // @ts-expect-error
+        config.headers['Authorization'] = `Bearer ${password}`;
+        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+        // @ts-expect-error
         config.headers['X-BARE-PASSWORD'] = `password ${password}`;
       }
 

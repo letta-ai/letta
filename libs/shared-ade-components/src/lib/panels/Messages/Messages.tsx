@@ -228,6 +228,7 @@ export function Messages(props: MessagesProps) {
         headers: {
           ...(developmentServerConfig?.password
             ? {
+                Authorization: `Bearer ${developmentServerConfig.password}`,
                 'X-BARE-PASSWORD': `password ${developmentServerConfig.password}`,
               }
             : {}),

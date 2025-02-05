@@ -43,7 +43,10 @@ export function useCurrentAPIHostConfig(
       url: config?.url || 'http://localhost:8283/',
       headers: {
         ...(config?.password
-          ? { 'X-BARE-PASSWORD': `password ${config.password}` }
+          ? {
+              Authorization: `Bearer ${config.password}`,
+              'X-BARE-PASSWORD': `password ${config.password}`,
+            }
           : ''),
       },
     };

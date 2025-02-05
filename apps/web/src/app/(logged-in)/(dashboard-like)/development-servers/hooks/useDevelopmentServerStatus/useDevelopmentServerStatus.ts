@@ -25,6 +25,7 @@ export function useDevelopmentServerStatus(
             'Content-Type': 'application/json',
             ...(config?.password
               ? {
+                  Authorization: `Bearer ${config.password}`,
                   'X-BARE-PASSWORD': `password ${config.password}`,
                 }
               : {}),

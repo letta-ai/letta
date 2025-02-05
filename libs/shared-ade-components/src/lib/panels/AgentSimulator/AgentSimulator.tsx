@@ -149,7 +149,12 @@ function useSendMessage(agentId: string, options: UseSendMessageOptions = {}) {
           headers: {
             'Content-Type': 'application/json',
             Accept: 'text/event-stream',
-            ...(password ? { 'X-BARE-PASSWORD': `password ${password}` } : {}),
+            ...(password
+              ? {
+                  Authorization: `Bearer ${password}`,
+                  'X-BARE-PASSWORD': `password ${password}`,
+                }
+              : {}),
           },
           body: JSON.stringify({
             // extra config to turn off the AssistantMessage parsing for the ADE
