@@ -3122,6 +3122,14 @@ export const Step = z.object({
       z.undefined(),
     ])
     .optional(),
+  model_endpoint: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
   context_window_limit: z
     .union([
       z.number(),

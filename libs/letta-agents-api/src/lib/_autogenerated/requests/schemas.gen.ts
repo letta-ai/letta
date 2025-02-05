@@ -5707,6 +5707,18 @@ export const $Step = {
       title: 'Model',
       description: 'The name of the model used for this step.',
     },
+    model_endpoint: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Model Endpoint',
+      description: 'The model endpoint url used for this step.',
+    },
     context_window_limit: {
       anyOf: [
         {

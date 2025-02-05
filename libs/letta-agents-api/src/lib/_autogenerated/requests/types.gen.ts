@@ -2217,6 +2217,10 @@ export type Step = {
    */
   model?: string | null;
   /**
+   * The model endpoint url used for this step.
+   */
+  model_endpoint?: string | null;
+  /**
    * The context window limit configured for this step.
    */
   context_window_limit?: number | null;
