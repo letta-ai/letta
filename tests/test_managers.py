@@ -3128,6 +3128,7 @@ def test_job_usage_stats_add_and_get(server: SyncServer, default_job, default_us
     step_manager.log_step(
         provider_name="openai",
         model="gpt-4",
+        model_endpoint="https://api.openai.com/v1",
         context_window_limit=8192,
         job_id=default_job.id,
         usage=UsageStatistics(
@@ -3169,6 +3170,7 @@ def test_job_usage_stats_add_multiple(server: SyncServer, default_job, default_u
     step_manager.log_step(
         provider_name="openai",
         model="gpt-4",
+        model_endpoint="https://api.openai.com/v1",
         context_window_limit=8192,
         job_id=default_job.id,
         usage=UsageStatistics(
@@ -3183,6 +3185,7 @@ def test_job_usage_stats_add_multiple(server: SyncServer, default_job, default_u
     step_manager.log_step(
         provider_name="openai",
         model="gpt-4",
+        model_endpoint="https://api.openai.com/v1",
         context_window_limit=8192,
         job_id=default_job.id,
         usage=UsageStatistics(
@@ -3219,6 +3222,7 @@ def test_job_usage_stats_add_nonexistent_job(server: SyncServer, default_user):
         step_manager.log_step(
             provider_name="openai",
             model="gpt-4",
+            model_endpoint="https://api.openai.com/v1",
             context_window_limit=8192,
             job_id="nonexistent_job",
             usage=UsageStatistics(
