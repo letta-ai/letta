@@ -1152,11 +1152,11 @@ async function searchDeployedAgents(
         },
       });
 
-      if (!template) {
+      if (!template?.agentTemplate?.name) {
         return agent;
       }
 
-      const version = `${template.agentTemplate.name}:${template.version}`;
+      const version = `${template.agentTemplate.name || 'unknown'}:${template.version}`;
 
       idToTemplateCache.set(templateId, version);
 

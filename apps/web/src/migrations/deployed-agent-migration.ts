@@ -2,7 +2,7 @@ import { db, deployedAgents, users } from '@letta-cloud/database';
 import { and, eq, isNotNull, isNull } from 'drizzle-orm';
 import { AgentsService } from '@letta-cloud/letta-agents-api';
 
-async function migrateByChunk(offset = 0, limit = 100) {
+async function migrateByChunk(offset = 0, limit = 10000) {
   console.log(`Migrating deployed agents from ${offset} to ${offset + limit}`);
   const allDeployedAgents = await db.query.deployedAgents.findMany({
     where: and(
@@ -15,6 +15,8 @@ async function migrateByChunk(offset = 0, limit = 100) {
       organization: true,
     },
   });
+
+  console.log('Found agents:', allDeployedAgents.length);
 
   if (allDeployedAgents.length === 0) {
     return;
