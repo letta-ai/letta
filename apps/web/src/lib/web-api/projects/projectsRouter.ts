@@ -1,14 +1,13 @@
 import type { ServerInferRequest, ServerInferResponses } from '@ts-rest/core';
 import {
   db,
-  deployedAgents,
   projects,
   deployedAgentTemplates,
   agentTemplates,
   organizationPreferences,
 } from '@letta-cloud/database';
 import { getUserActiveOrganizationIdOrThrow } from '$web/server/auth';
-import { eq, and, desc, count, isNull, ilike } from 'drizzle-orm';
+import { eq, and, count, isNull, ilike } from 'drizzle-orm';
 import type { contracts, projectsContract } from '$web/web-api/contracts';
 import { generateSlug } from '$web/server';
 
@@ -241,69 +240,6 @@ export async function getProjectDeployedAgentTemplates(
   };
 }
 
-type GetProjectDeployedAgentsRequest = ServerInferRequest<
-  typeof contracts.projects.getDeployedAgents
->;
-
-type GetProjectDeployedAgentsResponse = ServerInferResponses<
-  typeof contracts.projects.getDeployedAgents
->;
-
-export async function getDeployedAgents(
-  req: GetProjectDeployedAgentsRequest,
-): Promise<GetProjectDeployedAgentsResponse> {
-  const organizationId = await getUserActiveOrganizationIdOrThrow();
-  const { projectId } = req.params;
-  const { search, offset, limit = 10, deployedAgentTemplateId } = req.query;
-
-  const where = [
-    isNull(deployedAgentTemplates.deletedAt),
-    eq(deployedAgents.organizationId, organizationId),
-    eq(deployedAgents.projectId, projectId),
-  ];
-
-  if (deployedAgentTemplateId) {
-    where.push(
-      eq(deployedAgents.deployedAgentTemplateId, deployedAgentTemplateId),
-    );
-  }
-
-  if (search) {
-    where.push(ilike(deployedAgents.key, `%${search}%`));
-  }
-
-  const existingDeployedAgentTemplateCount =
-    await db.query.deployedAgents.findMany({
-      where: and(...where),
-      limit: limit + 1,
-      offset,
-      columns: {
-        id: true,
-        key: true,
-        deployedAgentTemplateId: true,
-        createdAt: true,
-        updatedAt: true,
-      },
-      orderBy: [desc(deployedAgents.createdAt)],
-    });
-
-  return {
-    status: 200,
-    body: {
-      agents: existingDeployedAgentTemplateCount
-        .slice(0, limit)
-        .map((agent) => ({
-          id: agent.id,
-          key: agent.key,
-          deployedAgentTemplateId: agent.deployedAgentTemplateId,
-          createdAt: agent.createdAt.toISOString(),
-          updatedAt: agent.updatedAt.toISOString(),
-        })),
-      hasNextPage: existingDeployedAgentTemplateCount.length === limit + 1,
-    },
-  };
-}
-
 type UpdateProjectRequest = ServerInferRequest<
   typeof contracts.projects.updateProject
 >;
@@ -432,43 +368,9 @@ export async function deleteProject(
   }
 
   const operations = [];
-  // operations.push(
-  //   db
-  //     .update(projects)
-  //     .set({ deletedAt: new Date() })
-  //     .where(eq(projects.id, projectId)),
-  // );
-  //
-  // // delete all deployed agents
-  // operations.push(
-  //   db
-  //     .update(deployedAgents)
-  //     .set({ deletedAt: new Date() })
-  //     .where(eq(deployedAgents.projectId, projectId)),
-  // );
-  //
-  // // delete all deployed agent templates
-  // operations.push(
-  //   db
-  //     .update(deployedAgentTemplates)
-  //     .set({ deletedAt: new Date() })
-  //     .where(eq(deployedAgentTemplates.projectId, projectId)),
-  // );
-  //
-  // // delete all templates
-  // operations.push(
-  //   db
-  //     .update(agentTemplates)
-  //     .set({ deletedAt: new Date() })
-  //     .where(eq(agentTemplates.projectId, projectId)),
-  // );
 
   // hard delete for now
   operations.push(db.delete(projects).where(eq(projects.id, projectId)));
-
-  operations.push(
-    db.delete(deployedAgents).where(eq(deployedAgents.projectId, projectId)),
-  );
 
   operations.push(
     db
@@ -497,5 +399,4 @@ export const projectsRouter = {
   getProjectDeployedAgentTemplates,
   updateProject,
   deleteProject,
-  getDeployedAgents,
 };

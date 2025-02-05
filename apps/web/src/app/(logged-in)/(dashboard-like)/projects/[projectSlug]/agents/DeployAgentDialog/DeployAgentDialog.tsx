@@ -24,9 +24,9 @@ import { useTranslations } from '@letta-cloud/translations';
 import { useCurrentProject } from '../../hooks';
 import { webApi, webApiQueryKeys, webOriginSDKApi } from '$web/client';
 import { useRouter } from 'next/navigation';
-import { useAgentsServiceRetrieveAgent } from '@letta-cloud/letta-agents-api';
 import { findMemoryBlockVariables } from '@letta-cloud/generic-utils';
 import { STARTER_KITS } from '@letta-cloud/agent-starter-kits';
+import type { AgentState } from '@letta-cloud/letta-agents-api';
 
 const elementWidth = '204px';
 const elementHeight = '166px';
@@ -220,9 +220,24 @@ function SelectedTemplateStateWrapper(
   props: SelectedTemplateStateWrapperProps,
 ) {
   const { selectedTemplate, onReset, onCreating, onErrored } = props;
-  const { data: agent } = useAgentsServiceRetrieveAgent({
-    agentId: selectedTemplate.id,
+
+  const { data } = webApi.agentTemplates.getAgentTemplateById.useQuery({
+    queryKey: webApiQueryKeys.agentTemplates.getAgentTemplateById(
+      selectedTemplate.id,
+    ),
+    queryData: {
+      params: {
+        id: selectedTemplate.id,
+      },
+      query: {
+        includeState: true,
+      },
+    },
   });
+
+  const agent = useMemo(() => {
+    return data?.body.agentState;
+  }, [data]);
 
   const t = useTranslations(
     'projects/(projectSlug)/agents/page/DeployAgentDialog',
@@ -233,7 +248,7 @@ function SelectedTemplateStateWrapper(
       return null;
     }
 
-    return findMemoryBlockVariables(agent);
+    return findMemoryBlockVariables(agent as AgentState);
   }, [agent]);
 
   const toolVariablesInTemplate = useMemo(() => {

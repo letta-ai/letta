@@ -8,6 +8,7 @@ import { and, desc, eq, isNull } from 'drizzle-orm';
 export async function getDeployedTemplateByVersion(
   versionString: string,
   organizationId: string,
+  projectId?: string,
 ): Promise<ReturnType<typeof db.query.deployedAgentTemplates.findFirst>> {
   const split = versionString.split(':');
   const templateName = split[0];
@@ -19,9 +20,12 @@ export async function getDeployedTemplateByVersion(
 
   const rootAgentTemplate = await db.query.agentTemplates.findFirst({
     where: and(
-      eq(agentTemplates.organizationId, organizationId),
-      eq(agentTemplates.name, templateName),
-      isNull(agentTemplates.deletedAt),
+      ...[
+        eq(agentTemplates.organizationId, organizationId),
+        eq(agentTemplates.name, templateName),
+        isNull(agentTemplates.deletedAt),
+        ...(projectId ? [eq(agentTemplates.projectId, projectId)] : []),
+      ],
     ),
   });
 

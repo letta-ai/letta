@@ -13,8 +13,8 @@ import {
 } from '@letta-cloud/database';
 import { copyAgentById, agentsRouter, updateAgentFromAgentId } from '$web/sdk';
 import { AgentsService } from '@letta-cloud/letta-agents-api';
-import { getDeployedTemplateByVersion } from '$web/server/lib/getDeployedTemplateByVersion/getDeployedTemplateByVersion';
 import type { AgentState } from '@letta-cloud/letta-agents-api';
+import { getDeployedTemplateByVersion } from '@letta-cloud/server-utils';
 
 function randomThreeDigitNumber() {
   return Math.floor(Math.random() * 1000);
@@ -42,6 +42,7 @@ export async function listAgentTemplates(
     includeAgentState,
     limit = 10,
     projectId,
+    name,
   } = req.query;
 
   const { activeOrganizationId: organizationId, lettaAgentsId } =
@@ -65,6 +66,10 @@ export async function listAgentTemplates(
 
   if (search) {
     where.push(ilike(agentTemplates.name, `%${search}%`));
+  }
+
+  if (name) {
+    where.push(eq(agentTemplates.name, name));
   }
 
   const agentTemplatesResponse = await db.query.agentTemplates.findMany({
@@ -123,10 +128,7 @@ export async function listAgentTemplates(
             updatedAt: agentTemplate.updatedAt.toISOString(),
             ...(includeAgentState
               ? {
-                  agentState: {
-                    description:
-                      agentStateMap.get(agentTemplate.id)?.description || '',
-                  },
+                  agentState: agentStateMap.get(agentTemplate.id),
                 }
               : {}),
             ...(includeLatestDeployedVersion
@@ -139,6 +141,57 @@ export async function listAgentTemplates(
           };
         }),
       hasNextPage,
+    },
+  };
+}
+
+type GetAgentTemplateByIdRequest = ServerInferRequest<
+  typeof contracts.agentTemplates.getAgentTemplateById
+>;
+
+type GetAgentTemplateByIdResponse = ServerInferResponses<
+  typeof contracts.agentTemplates.getAgentTemplateById
+>;
+
+export async function getAgentTemplateById(
+  req: GetAgentTemplateByIdRequest,
+): Promise<GetAgentTemplateByIdResponse> {
+  const { id } = req.params;
+  const { includeState } = req.query;
+  const { activeOrganizationId, lettaAgentsId } =
+    await getUserWithActiveOrganizationIdOrThrow();
+
+  const agentTemplate = await db.query.agentTemplates.findFirst({
+    where: and(
+      eq(agentTemplates.organizationId, activeOrganizationId),
+      eq(agentTemplates.id, id),
+      isNull(agentTemplates.deletedAt),
+    ),
+  });
+
+  if (!agentTemplate) {
+    return {
+      status: 404,
+      body: {},
+    };
+  }
+
+  return {
+    status: 200,
+    body: {
+      agentState: includeState
+        ? await AgentsService.retrieveAgent(
+            {
+              agentId: agentTemplate.id,
+            },
+            {
+              user_id: lettaAgentsId,
+            },
+          )
+        : undefined,
+      name: agentTemplate.name,
+      id: agentTemplate.id,
+      updatedAt: agentTemplate.updatedAt.toISOString(),
     },
   };
 }
@@ -651,6 +704,58 @@ async function getAgentTemplateByVersion(
   };
 }
 
+type GetDeployedAgentTemplateByIdRequest = ServerInferRequest<
+  typeof contracts.agentTemplates.getDeployedAgentTemplateById
+>;
+
+type GetDeployedAgentTemplateByIdResponse = ServerInferResponses<
+  typeof contracts.agentTemplates.getDeployedAgentTemplateById
+>;
+
+export async function getDeployedAgentTemplateById(
+  req: GetDeployedAgentTemplateByIdRequest,
+): Promise<GetDeployedAgentTemplateByIdResponse> {
+  const { id } = req.params;
+  const { activeOrganizationId } =
+    await getUserWithActiveOrganizationIdOrThrow();
+
+  const deployedAgentTemplate = await db.query.deployedAgentTemplates.findFirst(
+    {
+      where: and(
+        eq(deployedAgentTemplates.organizationId, activeOrganizationId),
+        eq(deployedAgentTemplates.id, id),
+        isNull(deployedAgentTemplates.deletedAt),
+      ),
+      with: {
+        agentTemplate: {
+          columns: {
+            name: true,
+          },
+        },
+      },
+    },
+  );
+
+  if (!deployedAgentTemplate) {
+    return {
+      status: 404,
+      body: {},
+    };
+  }
+
+  return {
+    status: 200,
+    body: {
+      fullVersion: `${deployedAgentTemplate.agentTemplate.name}:${deployedAgentTemplate.version}`,
+      agentTemplateId: deployedAgentTemplate.agentTemplateId,
+      id: deployedAgentTemplate.id,
+      projectId: deployedAgentTemplate.projectId,
+      createdAt: deployedAgentTemplate.createdAt.toISOString(),
+      templateName: deployedAgentTemplate.agentTemplate.name,
+    },
+  };
+}
+
 export const agentTemplateRoutes = {
   listAgentTemplates,
   getAgentTemplateByVersion,
@@ -659,4 +764,6 @@ export const agentTemplateRoutes = {
   createAgentTemplateSimulatorSession,
   getAgentTemplateSimulatorSession,
   refreshAgentTemplateSimulatorSession,
+  getAgentTemplateById,
+  getDeployedAgentTemplateById,
 };

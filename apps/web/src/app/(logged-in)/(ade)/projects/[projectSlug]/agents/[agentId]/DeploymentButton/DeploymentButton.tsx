@@ -29,21 +29,25 @@ import React, { useCallback, useMemo, useState } from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { webApi, webApiQueryKeys, webOriginSDKApi } from '$web/client';
 import { CLOUD_UPSELL_URL } from '$web/constants';
-import { isAgentState } from '@letta-cloud/letta-agents-api';
-import { useCurrentAgentMetaData } from '../hooks/useCurrentAgentMetaData/useCurrentAgentMetaData';
+import {
+  isAgentState,
+  useAgentsServiceListAgents,
+} from '@letta-cloud/letta-agents-api';
 import { useCurrentUser } from '$web/client/hooks';
 import type { ServerInferResponses } from '@ts-rest/core';
 import type { contracts } from '@letta-cloud/web-api-client';
 import { atom, useSetAtom } from 'jotai';
 import { get } from 'lodash-es';
 import { compareAgentStates } from '@letta-cloud/generic-utils';
+import { useCurrentAgentMetaData } from '@letta-cloud/shared-ade-components';
 
 interface DeployAgentDialogProps {
   isAtLatestVersion: boolean;
+  deployedTemplateId: string;
 }
 
 function DeployAgentDialog(props: DeployAgentDialogProps) {
-  const { isAtLatestVersion } = props;
+  const { isAtLatestVersion, deployedTemplateId } = props;
   const { name } = useCurrentAgent();
   const { id: projectId } = useCurrentProject();
   const t = useTranslations(
@@ -66,6 +70,7 @@ function DeployAgentDialog(props: DeployAgentDialogProps) {
       hideConfirm
     >
       <DeployAgentUsageInstructions
+        deployedTemplateId={deployedTemplateId}
         versionKey={`${name}:latest`}
         projectId={projectId}
       />
@@ -245,28 +250,13 @@ function useHasDeployedAgents(args: UseHasDeployedAgentsArgs) {
 
   const { deployedAgentTemplateId = '' } = args;
 
-  const { data: deployedAgents } = webApi.projects.getDeployedAgents.useQuery({
-    queryKey: webApiQueryKeys.projects.getDeployedAgentsWithSearch(
-      currentProjectId,
-      {
-        deployedAgentTemplateId: deployedAgentTemplateId,
-        limit: 1,
-      },
-    ),
-    queryData: {
-      params: {
-        projectId: currentProjectId,
-      },
-      query: {
-        deployedAgentTemplateId: deployedAgentTemplateId,
-        limit: 1,
-      },
-    },
-    refetchInterval: 5000,
-    enabled: !!deployedAgentTemplateId,
+  const { data: deployedAgents } = useAgentsServiceListAgents({
+    limit: 1,
+    projectId: currentProjectId,
+    templateId: deployedAgentTemplateId,
   });
 
-  return deployedAgents?.body.agents && deployedAgents.body.agents.length > 0;
+  return deployedAgents && deployedAgents?.length > 0;
 }
 
 function useLatestAgentTemplate() {
@@ -406,7 +396,10 @@ function TemplateVersionDisplay() {
           </VStack>
           <VStack gap="small">
             {!isAtLatestVersion && <VersionAgentDialog />}
-            <DeployAgentDialog isAtLatestVersion={isAtLatestVersion} />
+            <DeployAgentDialog
+              deployedTemplateId={deployedAgentTemplate?.id || ''}
+              isAtLatestVersion={isAtLatestVersion}
+            />
             {hasDeployedAgents && (
               <Button
                 fullWidth

@@ -55,8 +55,9 @@ function AgentTemplatesList(props: AgentTemplatesListProps) {
             <Avatar size="xxlarge" name={agent.name.replace('-', ' ')} />
           }
           description={
-            agent.agentState?.description ||
-            t('agentTemplatesList.noDescription')
+            typeof agent.agentState?.description === 'string'
+              ? agent.agentState.description
+              : t('agentTemplatesList.noDescription')
           }
           title={agent.name}
           key={agent.id}

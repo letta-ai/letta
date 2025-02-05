@@ -1,8 +1,8 @@
 import type { ServerInferResponses } from '@ts-rest/core';
 import { initContract } from '@ts-rest/core';
 import { z } from 'zod';
-import { VersionedTemplateType } from '@letta-cloud/letta-agents-api';
-import type { AgentState } from '@letta-cloud/letta-agents-api';
+import { VersionedTemplateType, zodTypes } from '@letta-cloud/letta-agents-api';
+import type { AgentState as AgentStateType } from '@letta-cloud/letta-agents-api';
 
 import { ProjectAgentTemplateSchema } from './projectContracts';
 
@@ -14,12 +14,7 @@ export const AgentTemplateSchema = z.object({
   latestDeployedVersion: z.string().optional(),
   latestDeployedId: z.string().optional(),
   updatedAt: z.string(),
-  agentState: z
-    .object({
-      description: z.string(),
-    })
-    .optional()
-    .nullable(),
+  agentState: zodTypes.AgentState.optional().nullable(),
 });
 
 export const AgentTemplatesSchema = z.array(AgentTemplateSchema);
@@ -40,6 +35,7 @@ export const ListAgentTemplatesQuerySchema = z.object({
   limit: z.number().optional(),
   offset: z.number().optional(),
   search: z.string().optional(),
+  name: z.string().optional(),
   projectId: z.string().optional(),
   includeLatestDeployedVersion: z.boolean().optional(),
   includeAgentState: z.boolean().optional(),
@@ -88,7 +84,7 @@ export const GetAgentTemplateSessionResponseSchema = c.type<{
   agentId: string;
   memoryVariables: Record<string, string>;
   toolVariables: Record<string, string>;
-  agent: AgentState;
+  agent: AgentStateType;
 }>();
 
 const getAgentTemplateSimulatorSessionContract = c.query({
@@ -115,7 +111,7 @@ export const CreateAgentTemplateSessionResponseSchema = c.type<{
   agentId: string;
   memoryVariables: Record<string, string>;
   toolVariables: Record<string, string>;
-  agent: AgentState;
+  agent: AgentStateType;
 }>();
 
 export const CreateAgentTemplateSessionBodySchema = z.object({
@@ -178,6 +174,40 @@ const getAgentTemplateByVersionContract = c.query({
   },
 });
 
+const getAgentTemplateByIdContract = c.query({
+  method: 'GET',
+  path: '/agent-templates/:id',
+  pathParams: z.object({
+    id: z.string(),
+  }),
+  query: z.object({
+    includeState: z.boolean().optional(),
+  }),
+  responses: {
+    200: AgentTemplateSchema,
+  },
+});
+
+const DeployedAgentTemplateSchema = z.object({
+  id: z.string(),
+  fullVersion: z.string(),
+  agentTemplateId: z.string(),
+  templateName: z.string(),
+  projectId: z.string(),
+  createdAt: z.string(),
+});
+
+const getDeployedAgentTemplateByIdContract = c.query({
+  path: '/deployed-agent-templates/:id',
+  method: 'GET',
+  pathParams: z.object({
+    id: z.string(),
+  }),
+  responses: {
+    200: DeployedAgentTemplateSchema,
+  },
+});
+
 export const agentTemplatesContracts = c.router({
   listAgentTemplates: listAgentTemplatesContract,
   forkAgentTemplate: forkAgentTemplateContract,
@@ -189,6 +219,8 @@ export const agentTemplatesContracts = c.router({
   deleteAgentTemplateSimulatorSession:
     deleteAgentTemplateSimulatorSessionContract,
   getAgentTemplateByVersion: getAgentTemplateByVersionContract,
+  getAgentTemplateById: getAgentTemplateByIdContract,
+  getDeployedAgentTemplateById: getDeployedAgentTemplateByIdContract,
 });
 
 export const agentTemplatesQueryClientKeys = {
@@ -204,5 +236,10 @@ export const agentTemplatesQueryClientKeys = {
   getAgentTemplateByVersion: (slug: string) => [
     'getAgentTemplateByVersion',
     { slug },
+  ],
+  getAgentTemplateById: (id: string) => ['getAgentTemplateById', { id }],
+  getDeployedAgentTemplateById: (id: string) => [
+    'getDeployedAgentTemplateById',
+    { id },
   ],
 };

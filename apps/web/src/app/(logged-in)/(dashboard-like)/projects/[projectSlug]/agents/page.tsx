@@ -1,11 +1,5 @@
 'use client';
-import React, {
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { InfoTooltip } from '@letta-cloud/component-library';
 import type {
   FieldDefinitions,
@@ -45,7 +39,10 @@ import {
 import { useCurrentProject } from '../hooks';
 import { useSearchParams } from 'next/navigation';
 import type { ColumnDef } from '@tanstack/react-table';
-import type { AgentState } from '@letta-cloud/letta-agents-api';
+import type {
+  AgentState,
+  ExtendedAgentState,
+} from '@letta-cloud/letta-agents-api';
 
 import {
   TagService,
@@ -56,10 +53,11 @@ import { useTranslations } from '@letta-cloud/translations';
 import { DeployAgentDialog } from './DeployAgentDialog/DeployAgentDialog';
 import { useDateFormatter } from '@letta-cloud/helpful-client-utils';
 import { SearchDeployedAgentsSchema } from '@letta-cloud/letta-agents-api';
-import { useQuery } from '@tanstack/react-query';
+import { useInfiniteQuery } from '@tanstack/react-query';
 import type { sdkContracts } from '@letta-cloud/letta-agents-api';
 import type { ServerInferResponses } from '@ts-rest/core';
 import { Messages } from '@letta-cloud/shared-ade-components';
+import type { InfiniteData } from '@tanstack/query-core';
 
 interface AgentMessagesListProps {
   agentId: string;
@@ -294,12 +292,6 @@ function useQueryDefinition() {
                   ),
                   value: 'eq',
                 },
-                {
-                  label: t(
-                    'useQueryDefinition.agentName.operator.operators.notEquals',
-                  ),
-                  value: 'neq',
-                },
               ],
             },
           },
@@ -493,10 +485,10 @@ function DeployedAgentsPage() {
   }, [draftQuery]);
 
   const [limit, setLimit] = useState(0);
+  const [page, setPage] = useState<number>(0);
 
   const [selectedAgent, setSelectedAgent] = useState<AgentState>();
 
-  const [offset, setOffset] = useState(0);
   const { id: currentProjectId } = useCurrentProject();
 
   const compiledQuery = useMemo(() => {
@@ -527,7 +519,6 @@ function DeployedAgentsPage() {
           }, {}),
         };
       }),
-      offset,
       limit,
       project_id: currentProjectId,
       combinator: query.root.combinator,
@@ -538,16 +529,28 @@ function DeployedAgentsPage() {
     }
 
     return {};
-  }, [currentProjectId, query, limit, offset]);
+  }, [currentProjectId, query, limit]);
 
-  const { data } = useQuery<
-    ServerInferResponses<typeof sdkContracts.agents.searchDeployedAgents, 200>
+  const { data, isFetchingNextPage, fetchNextPage } = useInfiniteQuery<
+    ServerInferResponses<typeof sdkContracts.agents.searchDeployedAgents, 200>,
+    unknown,
+    InfiniteData<
+      ServerInferResponses<typeof sdkContracts.agents.searchDeployedAgents, 200>
+    >,
+    unknown[],
+    { after?: string | null }
   >({
-    queryKey: webOriginSDKQueryKeys.agents.searchDeployedAgents(compiledQuery),
-    queryFn: async () => {
+    queryKey: [
+      'infinite',
+      ...webOriginSDKQueryKeys.agents.searchDeployedAgents(compiledQuery),
+    ],
+    queryFn: async ({ pageParam }) => {
       const response = await webOriginSDKApi.agents.searchDeployedAgents.mutate(
         {
-          body: compiledQuery,
+          body: {
+            ...compiledQuery,
+            after: pageParam?.after,
+          },
         },
       );
 
@@ -557,20 +560,47 @@ function DeployedAgentsPage() {
 
       return response;
     },
+    initialPageParam: { after: null },
+    getNextPageParam: (lastPage) => {
+      if (lastPage.body.nextCursor) {
+        return {
+          after: lastPage.body.nextCursor,
+        };
+      }
+
+      return undefined;
+    },
   });
 
-  const mounted = useRef(false);
+  useEffect(() => {
+    if (!data?.pages) {
+      return;
+    }
+
+    if (page === data.pages.length) {
+      void fetchNextPage();
+    }
+  }, [page, data, fetchNextPage]);
 
   useEffect(() => {
-    if (limit === 0) {
-      return;
-    }
-    if (mounted.current) {
-      return;
+    setPage(0);
+  }, [compiledQuery]);
+
+  const isLoadingPage = useMemo(() => {
+    if (!data) {
+      return true;
     }
 
-    mounted.current = true;
-  }, [currentProjectId, limit, offset, query]);
+    if (isFetchingNextPage && !data.pages[page]) {
+      return true;
+    }
+
+    return false;
+  }, [data, isFetchingNextPage, page]);
+
+  const hasNextPage = useMemo(() => {
+    return !!data?.pages?.[page]?.body.nextCursor;
+  }, [data, page]);
 
   const filterByVersion = useCallback(
     (version: string) => {
@@ -610,16 +640,14 @@ function DeployedAgentsPage() {
     ],
   );
 
-  const agents = data?.body.agents || [];
-  const hasNextPage = data?.body.hasNextPage || false;
-  const totalCount = data?.body.totalCount;
+  const agents = useMemo(() => {
+    return data?.pages[page]?.body?.agents || [];
+  }, [data, page]);
 
   const { slug: currentProjectSlug } = useCurrentProject();
   const { formatDateAndTime } = useDateFormatter();
 
-  const DeployedAgentColumns: Array<
-    ColumnDef<AgentState & { version?: string }>
-  > = useMemo(
+  const DeployedAgentColumns: Array<ColumnDef<ExtendedAgentState>> = useMemo(
     () => [
       {
         id: 'name',
@@ -628,13 +656,13 @@ function DeployedAgentsPage() {
           return (
             <HStack>
               <Typography>{row.original.name}</Typography>
-              {row.original.version && (
+              {row.original.template && (
                 <button
                   onClick={() => {
-                    filterByVersion(row.original.version || '');
+                    filterByVersion(row.original.template || '');
                   }}
                 >
-                  <Badge size="small" content={row.original.version} />
+                  <Badge size="small" content={row.original.template} />
                 </button>
               )}
             </HStack>
@@ -672,7 +700,14 @@ function DeployedAgentsPage() {
         id: 'createdAt',
         header: t('table.columns.lastUpdatedAt'),
         cell: ({ row }) => {
-          return formatDateAndTime(row.original?.created_at || '');
+          if (
+            !row.original?.created_at ||
+            Array.isArray(row.original?.created_at)
+          ) {
+            return '';
+          }
+
+          return formatDateAndTime(row.original.created_at || '');
         },
       },
       {
@@ -694,7 +729,7 @@ function DeployedAgentsPage() {
             />
             <Button
               onClick={() => {
-                setSelectedAgent(row.original);
+                setSelectedAgent(row.original as AgentState);
               }}
               color="secondary"
               label={t('table.preview')}
@@ -762,32 +797,27 @@ function DeployedAgentsPage() {
               limit={limit}
               onLimitChange={setLimit}
               bottomLeftContent={
-                data?.body && (
+                agents &&
+                agents.length > 0 && (
                   <>
-                    {typeof totalCount === 'number' ? (
+                    <HStack align="center">
                       <Typography variant="body2" color="muted">
-                        {t('table.totalResults', { count: totalCount })}
+                        {t('table.wipResults')}
                       </Typography>
-                    ) : (
-                      <HStack align="center">
-                        <Typography variant="body2" color="muted">
-                          {t('table.wipResults')}
-                        </Typography>
-                        <InfoTooltip text={t('table.wipResultsInfo')} />
-                      </HStack>
-                    )}
+                      <InfoTooltip text={t('table.wipResultsInfo')} />
+                    </HStack>
                   </>
                 )
               }
+              onSetPage={setPage}
               hasNextPage={hasNextPage}
               showPagination
-              offset={offset}
-              onSetOffset={setOffset}
+              page={page}
               loadingText={t('table.loading')}
               noResultsText={t('table.noResults')}
               columns={DeployedAgentColumns}
               data={agents}
-              isLoading={!data}
+              isLoading={isLoadingPage}
             />
             {selectedAgent && (
               <DeployedAgentView

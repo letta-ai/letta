@@ -349,10 +349,7 @@ export const deployedAgentTemplatesRelations = relations(
 );
 
 export const deployedAgentVariables = pgTable('deployed_agent_variables', {
-  deployedAgentId: text('deployed_agent_id')
-    .notNull()
-    .references(() => deployedAgents.id, { onDelete: 'cascade' })
-    .primaryKey(),
+  deployedAgentId: text('deployed_agent_id').notNull().primaryKey(),
   organizationId: text('organization_id').notNull(),
   value: json('value').notNull().$type<Record<string, string>>(),
   createdAt: timestamp('created_at').notNull().defaultNow(),
@@ -361,16 +358,6 @@ export const deployedAgentVariables = pgTable('deployed_agent_variables', {
     .notNull()
     .$onUpdate(() => new Date()),
 });
-
-export const deployedAgentVariablesRelations = relations(
-  deployedAgentVariables,
-  ({ one }) => ({
-    deployedAgent: one(deployedAgents, {
-      fields: [deployedAgentVariables.deployedAgentId],
-      references: [deployedAgents.id],
-    }),
-  }),
-);
 
 export const deployedAgents = pgTable(
   'deployed_agents',
@@ -391,6 +378,7 @@ export const deployedAgents = pgTable(
       .notNull()
       .references(() => organizations.id, { onDelete: 'cascade' })
       .notNull(),
+    migratedAt: timestamp('migrated_at'),
     createdAt: timestamp('created_at').notNull().defaultNow(),
     deletedAt: timestamp('deleted_at'),
     updatedAt: timestamp('updated_at')
@@ -831,6 +819,11 @@ export const organizationBillingDetailsRelations = relations(
     }),
   }),
 );
+
+export const functionalMigrations = pgTable('functional_migrations', {
+  singleId: text('single_id').notNull().primaryKey(),
+  version: text('version').notNull(),
+});
 
 export const organizationBillingDetailsAudit = pgTable(
   'organization_billing_details_audit',

@@ -34,12 +34,11 @@ import {
   REMOTE_DEVELOPMENT_ID,
   useCurrentProject,
 } from '../../../../../(dashboard-like)/projects/[projectSlug]/hooks';
-import { webApi } from '@letta-cloud/web-api-client';
+import { webApi, webApiQueryKeys } from '@letta-cloud/web-api-client';
 import { useRouter } from 'next/navigation';
 import { useCurrentUser } from '$web/client/hooks';
 import { ProjectSelector } from '$web/client/components';
 import './AgentPage.scss';
-import { useCurrentAgentMetaData } from './hooks/useCurrentAgentMetaData/useCurrentAgentMetaData';
 import { useCurrentAgent } from './hooks';
 import {
   useAgentsServiceDeleteAgent,
@@ -61,7 +60,10 @@ import {
   isAgentConvertingToTemplateAtom,
 } from './DeploymentButton/DeploymentButton';
 import { useAtomValue } from 'jotai';
-import { ADELayout } from '@letta-cloud/shared-ade-components';
+import {
+  ADELayout,
+  useCurrentAgentMetaData,
+} from '@letta-cloud/shared-ade-components';
 
 interface ADEHeaderProps {
   children?: React.ReactNode;
@@ -102,8 +104,23 @@ function LogoContainer() {
 function ADEHeader(props: ADEHeaderProps) {
   const { agent } = props;
   const { name: agentName } = agent;
-  const { parentTemplateName } = useCurrentAgentMetaData();
+
   const { name: projectName, id, slug: projectSlug } = useCurrentProject();
+
+  const { template_id } = useCurrentAgent();
+
+  const { data: agentTemplate } =
+    webApi.agentTemplates.getDeployedAgentTemplateById.useQuery({
+      queryKey: webApiQueryKeys.agentTemplates.getDeployedAgentTemplateById(
+        template_id || '',
+      ),
+      queryData: {
+        params: {
+          id: template_id || '',
+        },
+      },
+      enabled: !!template_id,
+    });
 
   const projectUrl =
     id === REMOTE_DEVELOPMENT_ID ? projectSlug : `/projects/${projectSlug}`;
@@ -134,11 +151,11 @@ function ADEHeader(props: ADEHeaderProps) {
                 label: projectName,
                 href: projectUrl,
               },
-              ...(parentTemplateName
+              ...(agentTemplate?.body.fullVersion
                 ? [
                     {
-                      label: parentTemplateName,
-                      href: `${projectUrl}/templates/${parentTemplateName.split(':')[0]}`,
+                      label: agentTemplate?.body.fullVersion,
+                      href: `${projectUrl}/templates/${agentTemplate?.body.templateName}`,
                     },
                   ]
                 : []),

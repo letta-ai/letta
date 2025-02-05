@@ -162,35 +162,6 @@ const AgentSchema = z.object({
 const AgentsSchema = z.array(AgentSchema);
 
 export type AgentType = z.infer<typeof AgentSchema>;
-export type DeployedAgentsType = z.infer<typeof AgentsSchema>;
-const GetDeployedAgentsQuerySchema = z.object({
-  search: z.preprocess(String, z.string()).optional(),
-  offset: z.number().optional(),
-  limit: z.number().optional(),
-  deployedAgentTemplateId: z.string().optional(),
-  deployedAgentTemplateVersion: z.string().optional(),
-});
-
-export const GetDeployedAgentsContractResponseSchema = z.object({
-  agents: AgentsSchema,
-  hasNextPage: z.boolean(),
-});
-
-export type GetDeployedAgentsQueryType = z.infer<
-  typeof GetDeployedAgentsQuerySchema
->;
-
-const getDeployedAgentsContract = c.query({
-  method: 'GET',
-  path: '/projects/:projectId/deployed-agents',
-  pathParams: z.object({
-    projectId: z.string(),
-  }),
-  query: GetDeployedAgentsQuerySchema,
-  responses: {
-    200: GetDeployedAgentsContractResponseSchema,
-  },
-});
 
 /* Get Project By Id */
 const getProjectByIdOrSlugContract = c.query({
@@ -224,7 +195,6 @@ export const projectsContract = c.router({
   getProjectByIdOrSlug: getProjectByIdOrSlugContract,
   createProject: createProjectContract,
   getProjectDeployedAgentTemplates: getProjectDeployedAgentTemplatesContract,
-  getDeployedAgents: getDeployedAgentsContract,
   updateProject: updateProjectContract,
   deleteProject: deleteProjectContract,
 });
@@ -248,13 +218,4 @@ export const projectsQueryClientKeys = {
     ...projectsQueryClientKeys.getProjectDeployedAgentTemplates(projectId),
     search,
   ],
-  getDeployedAgents: (projectId: string) => [
-    'project',
-    projectId,
-    'deployed-agents',
-  ],
-  getDeployedAgentsWithSearch: (
-    projectId: string,
-    search: GetDeployedAgentsQueryType,
-  ) => ['project', projectId, 'deployed-agents', search],
 };

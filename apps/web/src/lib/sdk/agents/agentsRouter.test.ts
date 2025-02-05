@@ -175,7 +175,7 @@ describe('agentsRouter', () => {
         createdAgent,
       );
 
-      const { valuesFn, returningFn } = mockDatabaseInsert();
+      const { returningFn } = mockDatabaseInsert();
 
       returningFn.mockReturnValue([
         {
@@ -220,15 +220,6 @@ describe('agentsRouter', () => {
         },
       );
 
-      expect(valuesFn).toHaveBeenCalledWith({
-        deployedAgentTemplateId: '',
-        id: 'test-agent-id',
-        key: expect.any(String),
-        internalAgentCountId: 0,
-        organizationId: 'test-org-id',
-        projectId: 'new-project-id',
-      });
-
       expect(versionAgentTemplate).not.toHaveBeenCalled();
     });
 
@@ -248,42 +239,6 @@ describe('agentsRouter', () => {
             name: 'test-agent',
             project: 'test-project-slug',
             template: true,
-          },
-        },
-        {
-          request: {
-            userId: 'test-id',
-            organizationId: 'test-org-id',
-            lettaAgentsUserId: 'test-id',
-          },
-        },
-      );
-
-      expect(response).toEqual({
-        status: 409,
-        body: {
-          message: 'An agent with the same name already exists',
-        },
-      });
-    });
-    //
-    it('should throw an error if user is creating an agent with a name that already exists in the project', async () => {
-      mockDatabase.query.deployedAgents.findFirst.mockResolvedValue({
-        projectId: 'test-project-id',
-        key: 'test-agent',
-        id: 'test-agent-id',
-        organizationId: 'test-org-id',
-        createdAt: new Date(),
-        updatedAt: new Date(),
-        internalAgentCountId: 0,
-        deployedAgentTemplateId: '',
-      });
-
-      const response = await createAgent(
-        {
-          body: {
-            name: 'test-agent',
-            project: 'test-project-slug',
           },
         },
         {
@@ -358,7 +313,7 @@ describe('agentsRouter', () => {
               template: true,
               from_template: 'personalAssistant',
               project: 'test-project-slug',
-              name: 'test',
+              name: 'test-agent',
             },
           },
           {
@@ -402,7 +357,7 @@ describe('agentsRouter', () => {
 
         expect(valuesFn).toHaveBeenCalledWith({
           organizationId: 'test-org-id',
-          name: 'test',
+          name: 'test-agent',
           id: 'test-agent-id',
           projectId: 'test-project-id',
         });
@@ -411,7 +366,7 @@ describe('agentsRouter', () => {
           status: 201,
           body: {
             ...createdAgent,
-            name: 'test',
+            name: 'test-agent',
           },
         });
 
@@ -421,10 +376,7 @@ describe('agentsRouter', () => {
       it('should create an agent from a starter kit', async () => {
         const createdAgent = {
           id: 'test-agent-id',
-          name: 'test-agent',
-          metadata: {
-            project: 'test-project-slug',
-          },
+          name: 'test',
           agent_type: 'memgpt_agent',
           created_at: new Date().toISOString(),
           system: '',
@@ -435,7 +387,7 @@ describe('agentsRouter', () => {
           createdAgent,
         );
 
-        const { valuesFn, returningFn } = mockDatabaseInsert();
+        const { returningFn } = mockDatabaseInsert();
 
         returningFn.mockReturnValue([
           {
@@ -490,15 +442,6 @@ describe('agentsRouter', () => {
             user_id: 'letta-test-id',
           },
         );
-
-        expect(valuesFn).toHaveBeenCalledWith({
-          deployedAgentTemplateId: '',
-          id: 'test-agent-id',
-          internalAgentCountId: 0,
-          key: 'test',
-          organizationId: 'test-org-id',
-          projectId: 'test-project-id',
-        });
 
         expect(response).toEqual({
           status: 201,
@@ -672,7 +615,7 @@ describe('agentsRouter', () => {
         name: 'next-test',
       });
 
-      const { valuesFn, returningFn } = mockDatabaseInsert();
+      const { returningFn } = mockDatabaseInsert();
 
       returningFn.mockReturnValue([
         {
@@ -744,26 +687,13 @@ describe('agentsRouter', () => {
         },
       );
 
-      expect(valuesFn).toHaveBeenCalledWith({
-        organizationId: 'test-org-id',
-        id: 'test-agent-id',
-        projectId: 'test-project-id',
-        rootAgentTemplateId: 'test-template-id',
-        deployedAgentTemplateId: 'deployed-test-template-id',
-        key: expect.any(String),
-        internalAgentCountId: 1,
-      });
-
       expect(response).toEqual({
         status: 201,
         body: {
           ...premadeTemplate,
-          metadata: {
-            project: 'test-project-slug',
-          },
           system: 'test',
           agent_type: 'memgpt_agent',
-          name: valuesFn.mock.calls[0][0].key,
+          name: expect.any(String),
           id: 'test-agent-id',
         },
       });
@@ -829,9 +759,6 @@ describe('agentsRouter', () => {
       const createdAgent: AgentState = {
         id: 'test-agent-id',
         name: 'test',
-        metadata: {
-          project: 'test-project-slug',
-        },
         created_at: new Date().toISOString(),
         memory: GetAgentResolvedValue.memory,
       };
@@ -867,6 +794,14 @@ describe('agentsRouter', () => {
           },
         },
       );
+      expect(response).toEqual({
+        status: 201,
+        body: {
+          ...createdAgent,
+          name: 'test',
+          id: 'test-agent-id',
+        },
+      });
 
       expect(
         lettaAgentAPIMock.AgentsService.retrieveAgent,
@@ -918,15 +853,6 @@ describe('agentsRouter', () => {
         id: 'test-agent-id',
         projectId: 'test-project-id',
         name: expect.any(String),
-      });
-
-      expect(response).toEqual({
-        status: 201,
-        body: {
-          ...createdAgent,
-          name: valuesFn.mock.calls[0][0].name,
-          id: 'test-agent-id',
-        },
       });
 
       expect(versionAgentTemplate).toHaveBeenCalled();
@@ -1080,10 +1006,7 @@ describe('agentsRouter', () => {
         status: 201,
         body: {
           ...premadeTemplate,
-          metadata: {
-            project: 'test-project-slug',
-          },
-          name: valuesFn.mock.calls[0][0].name,
+          name: expect.any(String),
           id: 'test-agent-id',
         },
       });
@@ -1094,10 +1017,7 @@ describe('agentsRouter', () => {
     it('should create an agent template', async () => {
       const createdAgent = {
         id: 'test-agent-id',
-        name: 'test-agent',
-        metadata: {
-          project: 'test-project-slug',
-        },
+        name: 'test',
         created_at: new Date().toISOString(),
         ...premadeTemplate,
         system: '',
@@ -1159,10 +1079,7 @@ describe('agentsRouter', () => {
     it('should create a deployed agent', async () => {
       const createdAgent = {
         id: 'test-agent-id',
-        name: 'test-agent',
-        metadata: {
-          project: 'test-project-slug',
-        },
+        name: 'test',
         created_at: new Date().toISOString(),
         system: '',
         ...premadeTemplate,
@@ -1172,7 +1089,7 @@ describe('agentsRouter', () => {
         createdAgent,
       );
 
-      const { valuesFn, returningFn } = mockDatabaseInsert();
+      const { returningFn } = mockDatabaseInsert();
 
       returningFn.mockReturnValue([
         {
@@ -1210,15 +1127,6 @@ describe('agentsRouter', () => {
         },
       );
 
-      expect(valuesFn).toHaveBeenCalledWith({
-        organizationId: 'test-org-id',
-        key: 'test',
-        internalAgentCountId: 0,
-        deployedAgentTemplateId: '',
-        id: 'test-agent-id',
-        projectId: 'test-project-id',
-      });
-
       expect(response).toEqual({
         status: 201,
         body: {
@@ -1240,9 +1148,6 @@ describe('agentsRouter', () => {
       const createdAgent = {
         id: 'test-agent-id',
         name: 'test-agent',
-        metadata: {
-          project: 'test-project-slug',
-        },
         created_at: new Date().toISOString(),
         system: '',
         ...premadeTemplate,
@@ -1261,7 +1166,7 @@ describe('agentsRouter', () => {
         createdAgent,
       );
 
-      const { valuesFn, returningFn } = mockDatabaseInsert();
+      const { returningFn } = mockDatabaseInsert();
 
       returningFn.mockReturnValue([
         {
@@ -1304,15 +1209,6 @@ describe('agentsRouter', () => {
           user_id: 'letta-test-id',
         },
       );
-
-      expect(valuesFn).toHaveBeenCalledWith({
-        deployedAgentTemplateId: '',
-        id: 'test-agent-id',
-        key: expect.any(String),
-        internalAgentCountId: 0,
-        organizationId: 'test-org-id',
-        projectId: 'new-project-id',
-      });
     });
 
     expect(versionAgentTemplate).not.toHaveBeenCalled();
@@ -1328,9 +1224,6 @@ describe('agentsRouter', () => {
     const createdAgent = {
       id: 'test-agent-id',
       name: 'test-agent',
-      metadata: {
-        project: 'test-project-slug',
-      },
       created_at: new Date().toISOString(),
       system: '',
       memory: {

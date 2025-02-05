@@ -836,8 +836,7 @@
         "operator": {
           "operators": {
             "equals": "equals",
-            "contains": "contains",
-            "notEquals": "not"
+            "contains": "contains"
           },
           "label": "Operator"
         },

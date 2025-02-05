@@ -36,7 +36,6 @@ import { isAgentState } from '@letta-cloud/letta-agents-api';
 import { ErrorMessageSchema } from '@letta-cloud/letta-agents-api';
 import { useLettaAgentsAPI } from '@letta-cloud/letta-agents-api';
 import { getIsAgentState } from '@letta-cloud/letta-agents-api';
-import { AgentsService } from '@letta-cloud/letta-agents-api';
 import { useAgentsServiceListAgentSources } from '@letta-cloud/letta-agents-api';
 import {
   AgentMessageSchema,
@@ -50,7 +49,6 @@ import { z } from 'zod';
 import { useTranslations } from '@letta-cloud/translations';
 import { useDebouncedCallback, useLocalStorage } from '@mantine/hooks';
 import { webApi, webApiQueryKeys } from '@letta-cloud/web-api-client';
-import { webOriginSDKApi } from '@letta-cloud/letta-agents-api';
 import {
   compareAgentStates,
   findMemoryBlockVariables,
@@ -546,37 +544,6 @@ function AgentFlushButton() {
 function AgentSimulatorOptionsMenu() {
   const t = useTranslations('ADE/AgentSimulator');
 
-  const { id: agentId } = useCurrentSimulatedAgent();
-
-  const handlePrintDebug = useCallback(async () => {
-    if (!agentId) {
-      toast.error(t('AgentSimulatorOptionsMenu.options.printDebug.notReady'));
-
-      return;
-    }
-
-    const [agentState, sources] = await Promise.all([
-      webOriginSDKApi.agents.getAgentById.query({
-        params: {
-          agent_id: agentId,
-        },
-        query: {
-          all: true,
-        },
-      }),
-      AgentsService.listAgentSources({
-        agentId: agentId,
-      }),
-    ]);
-
-    console.table({
-      agentState,
-      sources,
-    });
-
-    toast.success(t('AgentSimulatorOptionsMenu.options.printDebug.success'));
-  }, [agentId, t]);
-
   return (
     <>
       <DropdownMenu
@@ -592,10 +559,6 @@ function AgentSimulatorOptionsMenu() {
           />
         }
       >
-        <DropdownMenuItem
-          onClick={handlePrintDebug}
-          label={t('AgentSimulatorOptionsMenu.options.printDebug.title')}
-        />
         <AgentResetMessagesDialog />
       </DropdownMenu>
     </>

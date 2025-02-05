@@ -54,9 +54,6 @@ async function AgentsAgentPage(context: AgentsAgentPageProps) {
       params: {
         agent_id: agentId,
       },
-      query: {
-        template: false,
-      },
     },
     {
       request: {
@@ -73,7 +70,7 @@ async function AgentsAgentPage(context: AgentsAgentPageProps) {
     return;
   }
 
-  if (project.body.id !== deployedAgent.body.metadata?.projectId) {
+  if (project.body.id !== deployedAgent.body.project_id) {
     redirect(`/projects/${projectSlug}/agents`);
     return;
   }

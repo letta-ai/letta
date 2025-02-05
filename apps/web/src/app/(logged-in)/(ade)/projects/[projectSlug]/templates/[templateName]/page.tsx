@@ -11,7 +11,7 @@ import React from 'react';
 import { db, agentTemplates } from '@letta-cloud/database';
 import { and, eq, isNull } from 'drizzle-orm';
 import { redirect } from 'next/navigation';
-import { webApiQueryKeys, webOriginSDKQueryKeys } from '$web/client';
+import { webApiQueryKeys } from '$web/client';
 import { getProjectByIdOrSlug } from '$web/web-api/router';
 import { AgentPage } from '../../agents/[agentId]/AgentPage';
 import { getUserOrRedirect } from '$web/server/auth';
@@ -87,12 +87,13 @@ async function AgentsAgentPage(context: AgentsAgentPageProps) {
       }),
     }),
     queryClient.prefetchQuery({
-      queryKey: webOriginSDKQueryKeys.agents.listAgentsWithSearch({
+      queryKey: webApiQueryKeys.agentTemplates.listAgentTemplatesWithSearch({
         name: agentTemplate.name,
-        template: true,
       }),
       queryFn: () => ({
-        body: [agentTemplate],
+        body: {
+          agentTemplates: [agentTemplate],
+        },
       }),
     }),
   ];

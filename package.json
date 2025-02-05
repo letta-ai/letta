@@ -112,6 +112,7 @@
     "jsonrepair": "^3.11.2",
     "jwt-decode": "^4.0.0",
     "libsodium": "^0.7.15",
+    "lru-cache": "^11.0.2",
     "mixpanel": "^0.18.0",
     "mixpanel-browser": "^2.58.0",
     "nanoid": "^5.0.9",

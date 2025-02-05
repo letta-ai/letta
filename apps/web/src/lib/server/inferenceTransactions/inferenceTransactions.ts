@@ -1,9 +1,4 @@
-import {
-  db,
-  deployedAgents,
-  inferenceTransactions,
-  users,
-} from '@letta-cloud/database';
+import { db, inferenceTransactions, users } from '@letta-cloud/database';
 import { AgentsService } from '@letta-cloud/letta-agents-api';
 import { eq } from 'drizzle-orm';
 import { trackServerSideEvent } from '@letta-cloud/analytics/server';
@@ -52,28 +47,21 @@ export async function createInferenceTransaction(
     return;
   }
 
-  const [agent, maybeDeployedAgent] = await Promise.all([
-    AgentsService.retrieveAgent(
-      {
-        agentId,
-      },
-      {
-        user_id: user.lettaAgentsId,
-      },
-    ),
-    db.query.deployedAgents
-      .findFirst({
-        where: eq(deployedAgents.id, agentId),
-      })
-      .catch(() => null),
-  ]);
+  const agent = await AgentsService.retrieveAgent(
+    {
+      agentId,
+    },
+    {
+      user_id: user.lettaAgentsId,
+    },
+  );
 
   await db.insert(inferenceTransactions).values({
     referenceId,
     agentId,
     organizationId,
     source,
-    projectId: maybeDeployedAgent?.projectId,
+    projectId: agent.project_id,
     inputTokens: inputTokens.toString(),
     outputTokens: outputTokens.toString(),
     totalTokens: totalTokens.toString(),

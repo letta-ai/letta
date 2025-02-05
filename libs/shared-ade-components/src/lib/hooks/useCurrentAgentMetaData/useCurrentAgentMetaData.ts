@@ -5,8 +5,8 @@ import {
 } from '@letta-cloud/letta-agents-api';
 import { useParams, usePathname } from 'next/navigation';
 import { useAgentsServiceRetrieveAgent } from '@letta-cloud/letta-agents-api';
-import { get } from 'lodash-es';
 import { CURRENT_RUNTIME } from '@letta-cloud/runtime';
+import { webApi, webApiQueryKeys } from '@letta-cloud/web-api-client';
 
 interface UseCurrentAgentMetaDataResponse {
   agentId: string;
@@ -57,24 +57,23 @@ export function useCurrentAgentMetaData(): UseCurrentAgentMetaDataResponse {
   if (templateName) {
     isTemplate = true;
 
-    const { data: agentTemplate } = webOriginSDKApi.agents.listAgents.useQuery({
-      queryKey: webOriginSDKQueryKeys.agents.listAgentsWithSearch({
-        name: templateName,
-        template: true,
-      }),
-      queryData: {
-        query: {
+    const { data: agentTemplate } =
+      webApi.agentTemplates.listAgentTemplates.useQuery({
+        queryKey: webApiQueryKeys.agentTemplates.listAgentTemplatesWithSearch({
           name: templateName,
-          template: true,
+        }),
+        queryData: {
+          query: {
+            name: templateName,
+          },
         },
-      },
-      refetchOnWindowFocus: false,
-      refetchOnReconnect: false,
-      refetchOnMount: false,
-    });
+        refetchOnWindowFocus: false,
+        refetchOnReconnect: false,
+        refetchOnMount: false,
+      });
 
-    agentId = agentTemplate?.body[0]?.id || '';
-    agentName = agentTemplate?.body[0]?.name || '';
+    agentId = agentTemplate?.body.agentTemplates[0]?.id || '';
+    agentName = agentTemplate?.body.agentTemplates[0]?.name || '';
   } else {
     const { data: deployedAgent } =
       webOriginSDKApi.agents.getAgentById.useQuery({
@@ -91,7 +90,7 @@ export function useCurrentAgentMetaData(): UseCurrentAgentMetaDataResponse {
 
     agentId = deployedAgent?.body.id || '';
     agentName = deployedAgent?.body.name || '';
-    isFromTemplate = !!get(deployedAgent?.body.metadata, 'parentTemplateId');
+    isFromTemplate = !!deployedAgent?.body.base_template_id;
   }
 
   return {

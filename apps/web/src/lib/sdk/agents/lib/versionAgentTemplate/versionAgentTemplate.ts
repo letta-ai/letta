@@ -1,10 +1,10 @@
 import type { ServerInferRequest, ServerInferResponses } from '@ts-rest/core';
+import { AgentsService } from '@letta-cloud/letta-agents-api';
 import type { sdkContracts } from '@letta-cloud/letta-agents-api';
 import type { SDKContext } from '$web/sdk/shared';
 import {
   agentTemplates,
   db,
-  deployedAgents,
   deployedAgentTemplates,
   deployedAgentVariables,
 } from '@letta-cloud/database';
@@ -138,8 +138,8 @@ export async function versionAgentTemplate(
       };
     }
 
-    const deployedAgentsList = await db.query.deployedAgents.findMany({
-      where: eq(deployedAgents.rootAgentTemplateId, agentTemplate.id),
+    const deployedAgentsList = await AgentsService.listAgents({
+      baseTemplateId: agentTemplate.id,
     });
 
     void Promise.all(

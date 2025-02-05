@@ -14,50 +14,46 @@ import {
   ACCESS_TOKEN_PLACEHOLDER,
   CodeWithAPIKeyInjection,
 } from '$web/client/components';
-import { webApi, webApiQueryKeys } from '$web/client';
 
 import { useCurrentAgent } from '../../../app/(logged-in)/(ade)/projects/[projectSlug]/agents/[agentId]/hooks';
-import { getIsAgentState } from '@letta-cloud/letta-agents-api';
+import {
+  getIsAgentState,
+  useAgentsServiceListAgents,
+} from '@letta-cloud/letta-agents-api';
 import { findMemoryBlockVariables } from '@letta-cloud/generic-utils';
 
 interface DeployAgentInstructionsCurlProps {
   projectId: string;
+  deployedTemplateId: string;
   versionKey: string;
 }
 
 function DeployAgentInstructionsCurl(props: DeployAgentInstructionsCurlProps) {
-  const { projectId, versionKey } = props;
-  const [deploymentAgentHasLoaded, setDeploymentAgentHasLoaded] =
-    useState(false);
+  const { projectId, versionKey, deployedTemplateId } = props;
   const [showPartTwo, setShowPartTwo] = useState(false);
   const [useDeploymentAgentId, setUseDeploymentAgentId] =
     useState<boolean>(true);
-  const { data } = webApi.projects.getDeployedAgents.useQuery({
-    queryKey: webApiQueryKeys.projects.getDeployedAgentsWithSearch(projectId, {
-      deployedAgentTemplateVersion: versionKey,
+
+  const { data } = useAgentsServiceListAgents(
+    {
+      projectId,
       limit: 1,
-    }),
-    refetchInterval: !deploymentAgentHasLoaded ? 5000 : false,
-    queryData: {
-      query: {
-        deployedAgentTemplateVersion: versionKey,
-        limit: 1,
-      },
-      params: {
-        projectId: projectId,
-      },
+      templateId: deployedTemplateId,
     },
-  });
+    undefined,
+    {
+      enabled: !!deployedTemplateId,
+    },
+  );
 
   const agent = useCurrentAgent();
 
   const deploymentAgent = useMemo(() => {
-    return data?.body?.agents[0];
+    return data?.[0];
   }, [data]);
 
   useEffect(() => {
     if (deploymentAgent) {
-      setDeploymentAgentHasLoaded(true);
       setShowPartTwo(true);
     }
   }, [deploymentAgent]);
@@ -174,14 +170,16 @@ interface RenderInstructionsProps {
   language: SupportedLanguages;
   versionKey: string;
   projectId: string;
+  deployedTemplateId: string;
 }
 
 function RenderInstructions(props: RenderInstructionsProps) {
-  const { language, versionKey, projectId } = props;
+  const { language, versionKey, deployedTemplateId, projectId } = props;
 
   if (language === 'bash') {
     return (
       <DeployAgentInstructionsCurl
+        deployedTemplateId={deployedTemplateId}
         projectId={projectId}
         versionKey={versionKey}
       />
@@ -193,13 +191,14 @@ function RenderInstructions(props: RenderInstructionsProps) {
 
 interface DeployAgentUsageInstructionsProps {
   versionKey: string;
+  deployedTemplateId: string;
   projectId: string;
 }
 
 export function DeployAgentUsageInstructions(
   props: DeployAgentUsageInstructionsProps,
 ) {
-  const { versionKey, projectId } = props;
+  const { versionKey, deployedTemplateId, projectId } = props;
   const [language, setLanguage] = useState<SupportedLanguages>('bash');
 
   return (
@@ -224,6 +223,7 @@ export function DeployAgentUsageInstructions(
         />
       </HStack>
       <RenderInstructions
+        deployedTemplateId={deployedTemplateId}
         projectId={projectId}
         versionKey={versionKey}
         language={language}

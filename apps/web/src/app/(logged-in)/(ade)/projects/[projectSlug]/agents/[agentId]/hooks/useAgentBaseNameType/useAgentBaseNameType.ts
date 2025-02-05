@@ -1,5 +1,5 @@
-import { useCurrentAgentMetaData } from '../useCurrentAgentMetaData/useCurrentAgentMetaData';
 import { useTranslations } from '@letta-cloud/translations';
+import { useCurrentAgentMetaData } from '@letta-cloud/shared-ade-components';
 
 export function useAgentBaseTypeName() {
   const { isTemplate } = useCurrentAgentMetaData();

@@ -1,14 +1,10 @@
 import type { ServerInferRequest, ServerInferResponses } from '@ts-rest/core';
 import type { sdkContracts } from '@letta-cloud/letta-agents-api';
 import type { SDKContext } from '$web/sdk/shared';
-import { getDeployedTemplateByVersion } from '$web/server/lib/getDeployedTemplateByVersion/getDeployedTemplateByVersion';
-import {
-  db,
-  deployedAgents,
-  deployedAgentVariables,
-} from '@letta-cloud/database';
+import { db, deployedAgentVariables } from '@letta-cloud/database';
 import { eq } from 'drizzle-orm';
 import { updateAgentFromAgentId } from '$web/sdk';
+import { getDeployedTemplateByVersion } from '@letta-cloud/server-utils';
 
 type MigrateAgentRequest = ServerInferRequest<
   typeof sdkContracts.agents.migrateAgent
@@ -78,15 +74,9 @@ export async function migrateAgent(
     agentToUpdateId: agentIdToMigrate,
     lettaAgentsUserId,
     preserveCoreMemories: preserve_core_memories,
+    baseTemplateId: deployedAgentTemplate.agentTemplateId,
+    templateId: deployedAgentTemplate.id,
   });
-
-  // update deployedAgentTemplateId
-  await db
-    .update(deployedAgents)
-    .set({
-      deployedAgentTemplateId: deployedAgentTemplate.id,
-    })
-    .where(eq(deployedAgents.id, agentIdToMigrate));
 
   return {
     status: 200,
