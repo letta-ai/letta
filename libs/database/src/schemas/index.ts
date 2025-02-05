@@ -9,6 +9,7 @@ import {
   json,
   numeric,
   primaryKey,
+  unique,
 } from 'drizzle-orm/pg-core';
 import { sql, relations } from 'drizzle-orm';
 import type {
@@ -55,6 +56,8 @@ export const orgRelationsTable = relations(organizations, ({ many }) => ({
   organizationPreferences: many(organizationPreferences),
   organizationInvitedUsers: many(organizationInvitedUsers),
   organizationDevelopmentServers: many(developmentServers),
+  organizationVerifiedDomains: many(organizationVerifiedDomains),
+  organizationInviteRules: many(organizationInviteRules),
 }));
 
 export const organizationPreferences = pgTable('organization_preferences', {
@@ -910,3 +913,63 @@ export const stepCostSchemaAudit = pgTable('step_cost_schema_audit', {
   updatedBy: text('updated_by').notNull(),
   createdAt: timestamp('created_at').notNull().defaultNow(),
 });
+
+export const organizationVerifiedDomains = pgTable(
+  'organization_verified_domains',
+  {
+    id: text('id')
+      .notNull()
+      .primaryKey()
+      .default(sql`gen_random_uuid()`),
+    organizationId: text('organization_id')
+      .references(() => organizations.id, { onDelete: 'cascade' })
+      .notNull(),
+    domain: text('domain').notNull(),
+    createdAt: timestamp('created_at').notNull().defaultNow(),
+    updatedAt: timestamp('updated_at')
+      .notNull()
+      .$onUpdate(() => new Date()),
+  },
+  (self) => ({
+    uniqueDomain: unique().on(self.domain, self.organizationId),
+  }),
+);
+
+export const organizationVerifiedDomainsRelations = relations(
+  organizationVerifiedDomains,
+  ({ one }) => ({
+    organization: one(organizations, {
+      fields: [organizationVerifiedDomains.organizationId],
+      references: [organizations.id],
+    }),
+  }),
+);
+
+export const organizationInviteRules = pgTable('organization_invite_rules', {
+  id: text('id')
+    .notNull()
+    .primaryKey()
+    .default(sql`gen_random_uuid()`),
+  organizationId: text('organization_id')
+    .references(() => organizations.id, { onDelete: 'cascade' })
+    .notNull(),
+  verifiedDomain: text('verified_domain')
+    .notNull()
+    .references(() => organizationVerifiedDomains.id, { onDelete: 'cascade' }),
+  role: text('role').notNull().$type<UserPresetRolesType>().notNull(),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+});
+
+export const organizationInviteRulesRelations = relations(
+  organizationInviteRules,
+  ({ one }) => ({
+    organization: one(organizations, {
+      fields: [organizationInviteRules.organizationId],
+      references: [organizations.id],
+    }),
+    domain: one(organizationVerifiedDomains, {
+      fields: [organizationInviteRules.verifiedDomain],
+      references: [organizationVerifiedDomains.id],
+    }),
+  }),
+);

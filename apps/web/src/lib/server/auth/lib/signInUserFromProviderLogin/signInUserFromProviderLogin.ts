@@ -3,9 +3,11 @@ import {
   db,
   emailWhitelist,
   organizationInvitedUsers,
+  organizationInviteRules,
   organizationPreferences,
   organizations,
   organizationUsers,
+  organizationVerifiedDomains,
   projects,
   users,
 } from '@letta-cloud/database';
@@ -25,6 +27,7 @@ import { cookies } from 'next/headers';
 import { setRedisData } from '@letta-cloud/redis';
 import { generateAPIKey } from '$web/server/auth/lib/generateApiKey/generateApiKey';
 import { createOrganization } from '$web/server/auth/lib/createOrganization/createOrganization';
+import type { UserPresetRolesType } from '@letta-cloud/rbac';
 
 function isLettaEmail(email: string) {
   return email.endsWith('@letta.com') || email.endsWith('@memgpt.ai');
@@ -73,6 +76,7 @@ async function createUserAndOrganization(
 ): Promise<CreateUserAndOrganizationResponse> {
   let organizationId = '';
   let lettaOrganizationId = '';
+  let role: UserPresetRolesType | undefined = undefined;
 
   const invitedUserList = await db.query.organizationInvitedUsers.findMany({
     where: eq(organizationInvitedUsers.email, userData.email),
@@ -103,6 +107,44 @@ async function createUserAndOrganization(
     );
   }
 
+  const domain = userData.email.split('@')[1].toLowerCase();
+
+  if (domain) {
+    const authorizedDomains = await db
+      .select()
+      .from(organizationVerifiedDomains)
+      .where(eq(organizationVerifiedDomains.domain, domain))
+      .leftJoin(
+        organizationInviteRules,
+        eq(
+          organizationInviteRules.verifiedDomain,
+          organizationVerifiedDomains.id,
+        ),
+      );
+
+    await Promise.all(
+      authorizedDomains.map(async (authorizedDomain) => {
+        if (!authorizedDomain.organization_invite_rules) {
+          return;
+        }
+
+        const { organization_invite_rules } = authorizedDomain;
+        role = organization_invite_rules.role;
+        organizationId = organization_invite_rules.organizationId;
+
+        const organization = await db.query.organizations.findFirst({
+          where: eq(organizations.id, organizationId),
+        });
+
+        if (!organization) {
+          return;
+        } else {
+          lettaOrganizationId = organization.lettaAgentsId;
+        }
+      }),
+    );
+  }
+
   if (!organizationId) {
     isNewOrganization = true;
     const organizationName = `${userData.name}'s organization`;
@@ -115,6 +157,10 @@ async function createUserAndOrganization(
 
     lettaOrganizationId = createdOrg.lettaOrganizationId;
     organizationId = createdOrg.organizationId;
+
+    role = 'admin';
+  } else {
+    role = role || 'editor';
   }
 
   const lettaAgentsUser = await AdminService.createUser({
@@ -175,7 +221,7 @@ async function createUserAndOrganization(
       .where(eq(users.id, createdUser.userId)),
     db.insert(organizationUsers).values({
       userId: createdUser.userId,
-      role: 'admin',
+      role: role,
       organizationId,
     }),
   ]);

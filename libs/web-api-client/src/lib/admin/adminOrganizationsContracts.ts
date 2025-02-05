@@ -2,6 +2,7 @@ import { initContract } from '@ts-rest/core';
 import { z } from 'zod';
 import { type GenericSearch, GenericSearchSchema } from '../shared';
 import { PricingModelEnum } from '@letta-cloud/types';
+import { organizationVerifiedDomains } from '@letta-cloud/database';
 
 const c = initContract();
 
@@ -404,6 +405,61 @@ const adminGetOrganizationBillingSettingsContract = c.query({
   },
 });
 
+export const AdminOrganizationVerifiedDomainSchema = z.object({
+  domain: z.string(),
+});
+
+export type AdminOrganizationVerifiedDomainType = z.infer<
+  typeof AdminOrganizationVerifiedDomainSchema
+>;
+
+const OrganizationVerifiedDomainsSchema = z.object({
+  domains: AdminOrganizationVerifiedDomainSchema.array(),
+});
+
+const adminGetOrganizationVerifiedDomainsContract = c.query({
+  path: '/admin/organizations/:organizationId/verified-domains',
+  method: 'GET',
+  pathParams: z.object({
+    organizationId: z.string(),
+  }),
+  responses: {
+    200: OrganizationVerifiedDomainsSchema,
+  },
+});
+
+const AdminDeleteOrganizationVerifiedDomainBodySchema = z.object({
+  domain: z.string(),
+});
+
+const adminDeleteOrganizationVerifiedDomainContract = c.mutation({
+  path: '/admin/organizations/:organizationId/verified-domains',
+  method: 'DELETE',
+  pathParams: z.object({
+    organizationId: z.string(),
+  }),
+  body: AdminDeleteOrganizationVerifiedDomainBodySchema,
+  responses: {
+    200: z.object({
+      success: z.boolean(),
+    }),
+  },
+});
+
+const adminAddVerifiedDomainContract = c.mutation({
+  path: '/admin/organizations/:organizationId/verified-domains',
+  method: 'POST',
+  pathParams: z.object({
+    organizationId: z.string(),
+  }),
+  body: AdminDeleteOrganizationVerifiedDomainBodySchema,
+  responses: {
+    200: z.object({
+      success: z.boolean(),
+    }),
+  },
+});
+
 export const adminOrganizationsContracts = {
   getOrganizations: getOrganizationsContract,
   getOrganization: getOrganizationContract,
@@ -430,6 +486,11 @@ export const adminOrganizationsContracts = {
     adminUpdateOrganizationBillingSettingsContract,
   adminGetOrganizationBillingSettings:
     adminGetOrganizationBillingSettingsContract,
+  adminGetOrganizationVerifiedDomains:
+    adminGetOrganizationVerifiedDomainsContract,
+  adminDeleteOrganizationVerifiedDomain:
+    adminDeleteOrganizationVerifiedDomainContract,
+  adminAddVerifiedDomain: adminAddVerifiedDomainContract,
 };
 
 export const adminOrganizationsQueryClientKeys = {
@@ -500,5 +561,9 @@ export const adminOrganizationsQueryClientKeys = {
       organizationId,
     ),
     search,
+  ],
+  adminGetOrganizationVerifiedDomains: (organizationId: string) => [
+    ...adminOrganizationsQueryClientKeys.getOrganization(organizationId),
+    'verified-domains',
   ],
 };

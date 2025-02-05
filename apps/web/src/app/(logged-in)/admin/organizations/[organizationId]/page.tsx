@@ -36,6 +36,7 @@ import type { ColumnDef } from '@tanstack/react-table';
 import type {
   AdminOrganizationRateLimitItemType,
   AdminOrganizationUserType,
+  AdminOrganizationVerifiedDomainType,
 } from '$web/web-api/contracts';
 import { useQueryClient } from '@tanstack/react-query';
 import type { contracts } from '$web/web-api/contracts';
@@ -220,6 +221,256 @@ function OrganizationBillingSettingsForm(
         </FormActions>
       </Form>
     </FormProvider>
+  );
+}
+
+const verifiedDomainsSchema = z.object({
+  domain: z.string(),
+});
+
+function AddVerifiedDomainDialog() {
+  const [open, setOpen] = useState(false);
+
+  const organization = useCurrentAdminOrganization();
+  const queryClient = useQueryClient();
+
+  const form = useForm<z.infer<typeof verifiedDomainsSchema>>({
+    resolver: zodResolver(verifiedDomainsSchema),
+    defaultValues: {
+      domain: '',
+    },
+  });
+
+  const {
+    mutate: addDomain,
+    isPending: isAddPending,
+    isError: isAddError,
+    reset,
+  } = webApi.admin.organizations.adminAddVerifiedDomain.useMutation({
+    onSuccess: () => {
+      queryClient.setQueriesData<
+        | ServerInferResponses<
+            typeof contracts.admin.organizations.adminGetOrganizationVerifiedDomains,
+            200
+          >
+        | undefined
+      >(
+        {
+          queryKey:
+            webApiQueryKeys.admin.organizations.adminGetOrganizationVerifiedDomains(
+              organization?.id || '',
+            ),
+          exact: false,
+        },
+        (oldData) => {
+          if (!oldData) {
+            return;
+          }
+
+          return {
+            ...oldData,
+            body: {
+              domains: [
+                ...oldData.body.domains,
+                {
+                  domain: form.getValues().domain,
+                },
+              ],
+            },
+          };
+        },
+      );
+
+      reset();
+      form.reset();
+
+      setOpen(false);
+    },
+  });
+
+  const handleAddDomain = useCallback(
+    async (values: z.infer<typeof verifiedDomainsSchema>) => {
+      if (!organization) {
+        return;
+      }
+
+      addDomain({
+        params: {
+          organizationId: organization.id,
+        },
+        body: {
+          domain: values.domain,
+        },
+      });
+    },
+    [organization, addDomain],
+  );
+
+  return (
+    <FormProvider {...form}>
+      <Dialog
+        title="Add Verified Domain"
+        isOpen={open}
+        onOpenChange={setOpen}
+        trigger={<Button label="Add Verified Domain" />}
+        isConfirmBusy={isAddPending}
+        errorMessage={isAddError ? 'Failed to add domain' : undefined}
+        onSubmit={form.handleSubmit(handleAddDomain)}
+      >
+        <FormField
+          render={({ field }) => (
+            <Input
+              {...field}
+              fullWidth
+              label="Domain"
+              placeholder="Enter domain"
+            />
+          )}
+          name="domain"
+        />
+      </Dialog>
+    </FormProvider>
+  );
+}
+
+interface DeleteVerifiedDomainDialogProps {
+  domain: string;
+}
+
+function DeleteVerifiedDomainDialog(props: DeleteVerifiedDomainDialogProps) {
+  const { domain } = props;
+  const organization = useCurrentAdminOrganization();
+  const [open, setOpen] = useState(false);
+
+  const queryClient = useQueryClient();
+
+  const { mutate, isPending, isError, reset } =
+    webApi.admin.organizations.adminDeleteOrganizationVerifiedDomain.useMutation(
+      {
+        onSuccess: () => {
+          queryClient.setQueriesData<
+            | ServerInferResponses<
+                typeof contracts.admin.organizations.adminGetOrganizationVerifiedDomains,
+                200
+              >
+            | undefined
+          >(
+            {
+              queryKey:
+                webApiQueryKeys.admin.organizations.adminGetOrganizationVerifiedDomains(
+                  organization?.id || '',
+                ),
+              exact: false,
+            },
+            (oldData) => {
+              if (!oldData) {
+                return;
+              }
+
+              return {
+                ...oldData,
+                body: {
+                  domains: oldData.body.domains.filter(
+                    (d: AdminOrganizationVerifiedDomainType) =>
+                      d.domain !== domain,
+                  ),
+                },
+              };
+            },
+          );
+
+          reset();
+          setOpen(false);
+        },
+      },
+    );
+
+  const handleDeleteDomain = useCallback(
+    (domain: string) => {
+      if (!organization) {
+        return;
+      }
+
+      mutate({
+        params: {
+          organizationId: organization.id,
+        },
+        body: {
+          domain,
+        },
+      });
+    },
+    [organization, mutate],
+  );
+
+  return (
+    <Dialog
+      isOpen={open}
+      onOpenChange={setOpen}
+      title="Delete Domain"
+      trigger={<Button size="small" label="Delete" color="destructive" />}
+      isConfirmBusy={isPending}
+      errorMessage={isError ? 'Failed to delete domain' : undefined}
+      onConfirm={() => {
+        handleDeleteDomain(domain);
+      }}
+    >
+      <p>Are you sure you want to delete this domain?</p>
+    </Dialog>
+  );
+}
+
+function VerifiedDomains() {
+  const organization = useCurrentAdminOrganization();
+
+  const { data, isLoading } =
+    webApi.admin.organizations.adminGetOrganizationVerifiedDomains.useQuery({
+      queryKey:
+        webApiQueryKeys.admin.organizations.adminGetOrganizationVerifiedDomains(
+          organization?.id || '',
+        ),
+      queryData: {
+        params: {
+          organizationId: organization?.id || '',
+        },
+      },
+      enabled: !!organization,
+    });
+
+  const columns: Array<ColumnDef<AdminOrganizationVerifiedDomainType>> =
+    useMemo(() => {
+      return [
+        {
+          header: 'Domain',
+          accessorKey: 'domain',
+        },
+        {
+          header: 'Actions',
+          meta: {
+            style: {
+              columnAlign: 'right',
+            },
+          },
+          id: 'actions',
+          cell: ({ row }) => (
+            <DeleteVerifiedDomainDialog domain={row.original.domain} />
+          ),
+        },
+      ];
+    }, []);
+
+  return (
+    <DashboardPageSection
+      title="Verified Domains"
+      actions={<AddVerifiedDomainDialog />}
+    >
+      <DataTable
+        columns={columns}
+        data={data?.body.domains || []}
+        isLoading={isLoading}
+        limit={5}
+      />
+    </DashboardPageSection>
   );
 }
 
@@ -1538,6 +1789,7 @@ function OrganizationPage() {
       <OrganizationProperties />
       <OrganizationBillingSettings />
       <OrganizationLevelRateLimitTable />
+      <VerifiedDomains />
       <CreditSection />
       <OrganizationMembers />
       <UsageDetails />

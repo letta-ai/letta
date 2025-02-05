@@ -11,6 +11,7 @@ import {
   organizationCreditTransactions,
   organizations,
   organizationUsers,
+  organizationVerifiedDomains,
   perModelPerOrganizationRateLimitOverrides,
   users,
 } from '@letta-cloud/database';
@@ -956,6 +957,105 @@ export async function adminGetOrganizationBillingSettings(
   };
 }
 
+type AdminGetOrganizationVerifiedDomains = ServerInferResponses<
+  typeof contracts.admin.organizations.adminGetOrganizationVerifiedDomains
+>;
+
+type AdminGetOrganizationVerifiedDomainsRequest = ServerInferRequest<
+  typeof contracts.admin.organizations.adminGetOrganizationVerifiedDomains
+>;
+
+export async function adminGetOrganizationVerifiedDomains(
+  req: AdminGetOrganizationVerifiedDomainsRequest,
+): Promise<AdminGetOrganizationVerifiedDomains> {
+  const { organizationId } = req.params;
+
+  const organization = await db.query.organizations.findFirst({
+    where: eq(organizations.id, organizationId),
+    with: {
+      organizationVerifiedDomains: true,
+    },
+  });
+
+  if (!organization) {
+    return {
+      status: 404,
+      body: {
+        message: 'Organization not found',
+      },
+    };
+  }
+
+  return {
+    status: 200,
+    body: {
+      domains: organization.organizationVerifiedDomains.map((domain) => {
+        return {
+          domain: domain.domain,
+        };
+      }),
+    },
+  };
+}
+
+type AdminDeleteOrganizationVerifiedDomain = ServerInferResponses<
+  typeof contracts.admin.organizations.adminDeleteOrganizationVerifiedDomain
+>;
+
+type AdminDeleteOrganizationVerifiedDomainRequest = ServerInferRequest<
+  typeof contracts.admin.organizations.adminDeleteOrganizationVerifiedDomain
+>;
+
+export async function adminDeleteOrganizationVerifiedDomain(
+  req: AdminDeleteOrganizationVerifiedDomainRequest,
+): Promise<AdminDeleteOrganizationVerifiedDomain> {
+  const { organizationId } = req.params;
+  const { domain } = req.body;
+
+  await db
+    .delete(organizationVerifiedDomains)
+    .where(
+      and(
+        eq(organizationVerifiedDomains.organizationId, organizationId),
+        eq(organizationVerifiedDomains.domain, domain),
+      ),
+    );
+
+  return {
+    status: 200,
+    body: {
+      success: true,
+    },
+  };
+}
+
+type AdminAddVerifiedDomain = ServerInferResponses<
+  typeof contracts.admin.organizations.adminAddVerifiedDomain
+>;
+
+type AdminAddVerifiedDomainRequest = ServerInferRequest<
+  typeof contracts.admin.organizations.adminAddVerifiedDomain
+>;
+
+export async function adminAddVerifiedDomain(
+  req: AdminAddVerifiedDomainRequest,
+): Promise<AdminAddVerifiedDomain> {
+  const { organizationId } = req.params;
+  const { domain } = req.body;
+
+  await db.insert(organizationVerifiedDomains).values({
+    organizationId,
+    domain: domain.toLowerCase(),
+  });
+
+  return {
+    status: 200,
+    body: {
+      success: true,
+    },
+  };
+}
+
 export const adminOrganizationsRouter = {
   getOrganizations,
   getOrganization,
@@ -977,4 +1077,7 @@ export const adminOrganizationsRouter = {
   adminUpdateOrganizationRateLimitsForModel,
   adminGetOrganizationRateLimits,
   adminResetOrganizationRateLimitsForModel,
+  adminDeleteOrganizationVerifiedDomain,
+  adminGetOrganizationVerifiedDomains,
+  adminAddVerifiedDomain,
 };
