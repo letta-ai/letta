@@ -1,11 +1,13 @@
 import asyncio
 from typing import TYPE_CHECKING, List
 
-from letta.constants import MULTI_AGENT_SEND_MESSAGE_MAX_RETRIES, MULTI_AGENT_SEND_MESSAGE_TIMEOUT
-from letta.functions.helpers import async_send_message_with_retries, execute_send_message_to_agent, fire_and_forget_send_to_agent
+from letta.functions.helpers import (
+    _send_message_to_agents_matching_all_tags_async,
+    execute_send_message_to_agent,
+    fire_and_forget_send_to_agent,
+)
 from letta.schemas.enums import MessageRole
 from letta.schemas.message import MessageCreate
-from letta.server.rest_api.utils import get_letta_server
 
 if TYPE_CHECKING:
     from letta.agent import Agent
@@ -22,12 +24,13 @@ def send_message_to_agent_and_wait_for_reply(self: "Agent", message: str, other_
     Returns:
         str: The response from the target agent.
     """
-    message = (
+    augmented_message = (
         f"[Incoming message from agent with ID '{self.agent_state.id}' - to reply to this message, "
         f"make sure to use the 'send_message' at the end, and the system will notify the sender of your response] "
         f"{message}"
     )
-    messages = [MessageCreate(role=MessageRole.system, content=message, name=self.agent_state.name)]
+    messages = [MessageCreate(role=MessageRole.system, content=augmented_message, name=self.agent_state.name)]
+
     return execute_send_message_to_agent(
         sender_agent=self,
         messages=messages,
@@ -81,33 +84,4 @@ def send_message_to_agents_matching_all_tags(self: "Agent", message: str, tags: 
         have an entry in the returned list.
     """
 
-    server = get_letta_server()
-
-    message = (
-        f"[Incoming message from agent with ID '{self.agent_state.id}' - to reply to this message, "
-        f"make sure to use the 'send_message' at the end, and the system will notify the sender of your response] "
-        f"{message}"
-    )
-
-    # Retrieve agents that match ALL specified tags
-    matching_agents = server.agent_manager.list_agents(actor=self.user, tags=tags, match_all_tags=True, limit=100)
-    messages = [MessageCreate(role=MessageRole.system, content=message, name=self.agent_state.name)]
-
-    async def send_messages_to_all_agents():
-        tasks = [
-            async_send_message_with_retries(
-                server=server,
-                sender_agent=self,
-                target_agent_id=agent_state.id,
-                messages=messages,
-                max_retries=MULTI_AGENT_SEND_MESSAGE_MAX_RETRIES,
-                timeout=MULTI_AGENT_SEND_MESSAGE_TIMEOUT,
-                logging_prefix="[send_message_to_agents_matching_all_tags]",
-            )
-            for agent_state in matching_agents
-        ]
-        # Run all tasks in parallel
-        return await asyncio.gather(*tasks)
-
-    # Run the async function and return results
-    return asyncio.run(send_messages_to_all_agents())
+    return asyncio.run(_send_message_to_agents_matching_all_tags_async(self, message, tags))

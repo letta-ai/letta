@@ -505,8 +505,9 @@ class Agent(BaseAgent):
                 function_response, sandbox_run_result = self.execute_tool_and_persist_state(function_name, function_args, target_letta_tool)
 
                 if sandbox_run_result and sandbox_run_result.status == "error":
-                    error_msg = f"Error calling function {function_name} with args {function_args}: {sandbox_run_result.stderr}"
-                    messages = self._handle_function_error_response(error_msg, tool_call_id, function_name, function_response, messages)
+                    messages = self._handle_function_error_response(
+                        function_response, tool_call_id, function_name, function_response, messages
+                    )
                     return messages, False, True  # force a heartbeat to allow agent to handle error
 
                 # handle trunction
@@ -790,6 +791,7 @@ class Agent(BaseAgent):
                 actor=self.user,
                 provider_name=self.agent_state.llm_config.model_endpoint_type,
                 model=self.agent_state.llm_config.model,
+                model_endpoint=self.agent_state.llm_config.model_endpoint,
                 context_window_limit=self.agent_state.llm_config.context_window,
                 usage=response.usage,
                 # TODO(@caren): Add full provider support - this line is a workaround for v0 BYOK feature
