@@ -173,7 +173,7 @@ def test_send_message_to_agent(client, agent_obj, other_agent_obj):
     # Search the sender agent for the response from another agent
     in_context_messages = agent_obj.agent_manager.get_in_context_messages(agent_id=agent_obj.agent_state.id, actor=agent_obj.user)
     found = False
-    target_snippet = f"Agent {other_agent_obj.agent_state.id} said:"
+    target_snippet = f"{other_agent_obj.agent_state.id} said:"
 
     for m in in_context_messages:
         if target_snippet in m.text:
