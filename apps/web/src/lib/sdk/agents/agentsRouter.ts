@@ -225,12 +225,44 @@ export async function createAgent(
     template,
     memory_variables,
     name: preName,
+    project_id,
     tool_exec_environment_variables,
     ...agent
   } = req.body;
 
   let name = preName;
-  let projectId: string | undefined = undefined;
+  let projectId: string | null | undefined = project_id;
+
+  if (project && project_id) {
+    return {
+      status: 400,
+      body: {
+        message: 'project and project_id cannot be used together',
+      },
+    };
+  }
+
+  if (projectId) {
+    if (context.request.source !== 'web') {
+      // find project id
+      const project = await db.query.projects.findFirst({
+        where: and(
+          eq(projects.organizationId, organizationId),
+          eq(projects.id, projectId),
+          isNull(projects.deletedAt),
+        ),
+      });
+
+      if (!project) {
+        return {
+          status: 404,
+          body: {
+            message: `Project with id ${projectId} not found, be sure to use the project id instead of the slug`,
+          },
+        };
+      }
+    }
+  }
 
   if (project) {
     const res = await db.query.projects.findFirst({
@@ -499,7 +531,7 @@ export async function createAgent(
         })
       : copyAgentById(agentTemplateIdToCopy, lettaAgentsUserId, {
           name,
-          tags: [],
+          tags: agent.tags || [],
           templateVersionId: agentTemplateIdToCopy,
           projectId,
           baseTemplateId: agentTemplate.id,
