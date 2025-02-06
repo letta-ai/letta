@@ -1067,7 +1067,7 @@ export async function updateAgent(
   const response = await AgentsService.modifyAgent(
     {
       agentId,
-      requestBody: camelCaseKeys(req.body),
+      requestBody: req.body,
     },
     {
       user_id: context.request.lettaAgentsUserId,
