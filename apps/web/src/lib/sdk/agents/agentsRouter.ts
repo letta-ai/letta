@@ -251,6 +251,15 @@ export async function createAgent(
 
   if (name) {
     if (template) {
+      if (!/^[a-zA-Z0-9_-]+$/.test(name)) {
+        return {
+          status: 400,
+          body: {
+            message: 'Name must be alphanumeric, with underscores or dashes',
+          },
+        };
+      }
+
       const exists = await db.query.agentTemplates.findFirst({
         where: and(
           eq(agentTemplates.organizationId, organizationId),
@@ -801,7 +810,6 @@ export async function updateAgentFromAgentId(options: UpdateAgentFromAgentId) {
     source_ids: agentTemplateData.sources.map((source) => source.id || ''),
   };
 
-  console.log('a', requestBody);
   const agent = await AgentsService.modifyAgent(
     {
       agentId: agentToUpdateId,
