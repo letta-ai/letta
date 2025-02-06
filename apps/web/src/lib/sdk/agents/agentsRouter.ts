@@ -798,6 +798,7 @@ export async function updateAgentFromAgentId(options: UpdateAgentFromAgentId) {
     source_ids: agentTemplateData.sources.map((source) => source.id || ''),
   };
 
+  console.log('a', requestBody);
   const agent = await AgentsService.modifyAgent(
     {
       agentId: agentToUpdateId,
