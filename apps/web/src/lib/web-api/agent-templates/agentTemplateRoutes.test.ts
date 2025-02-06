@@ -64,6 +64,7 @@ describe('agentTemplateRoutes', () => {
       const response = await router.agentTemplates.forkAgentTemplate({
         params: {
           agentTemplateId: 'testing-agent-id',
+          projectId: '123',
         },
       });
 

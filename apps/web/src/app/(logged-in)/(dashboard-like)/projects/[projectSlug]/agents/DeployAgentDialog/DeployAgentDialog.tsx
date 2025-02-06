@@ -151,7 +151,7 @@ function FromStarterKit(props: FromStarterKitProps) {
     'projects/(projectSlug)/agents/page/DeployAgentDialog',
   );
 
-  const { slug } = useCurrentProject();
+  const { slug, id: projectId } = useCurrentProject();
 
   const starterKits = useMemo(() => {
     return Object.entries(STARTER_KITS);
@@ -159,13 +159,13 @@ function FromStarterKit(props: FromStarterKitProps) {
 
   const { push } = useRouter();
 
-  const { mutate } = webOriginSDKApi.agents.createAgent.useMutation({
+  const { mutate } = webApi.starterKits.createAgentFromStarterKit.useMutation({
     onError: () => {
       onIsCreating(false);
       onError();
     },
     onSuccess: (data) => {
-      push(`/projects/${slug}/agents/${data.body.id}`);
+      push(`/projects/${slug}/agents/${data.body.agentId}`);
     },
   });
 
@@ -174,14 +174,15 @@ function FromStarterKit(props: FromStarterKitProps) {
       onIsCreating(true);
 
       mutate({
+        params: {
+          starterKitId,
+        },
         body: {
-          template: false,
-          from_template: starterKitId,
-          project: slug,
+          projectId,
         },
       });
     },
-    [mutate, onIsCreating, slug],
+    [mutate, onIsCreating, projectId],
   );
 
   return (

@@ -20,6 +20,10 @@ const createAgentsFromTemplate = c.mutation({
     }),
   }),
   body: z.object({
+    tags: z
+      .array(z.string())
+      .optional()
+      .openapi({ description: 'The tags to assign to the agent' }),
     agent_name: z.string().optional().openapi({
       description:
         'The name of the agent, optional otherwise a random one will be assigned',

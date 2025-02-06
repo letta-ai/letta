@@ -16,6 +16,7 @@ import { usageRouter } from '$web/web-api/usage/usageRouter';
 import { adminToolMetadataRouter } from '$web/web-api/admin/tool-metadata/adminToolMetadataRouter';
 import { toolMetadataRouter } from '$web/web-api/tool-metadata/toolMetadataRouter';
 import { adminUsageRouter } from '$web/web-api/admin/usage/adminUsageRouter';
+import { starterKitsRouter } from '$web/web-api/starter-kits/starterKitsRoutes';
 
 export const router = {
   user: userRouter,
@@ -29,6 +30,7 @@ export const router = {
   environmentVariables: environmentVariablesRouter,
   usage: usageRouter,
   toolMetadata: toolMetadataRouter,
+  starterKits: starterKitsRouter,
   admin: {
     usage: adminUsageRouter,
     toolMetadata: adminToolMetadataRouter,

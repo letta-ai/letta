@@ -21,23 +21,6 @@ const c = initContract();
 
 const CreateAgentResponseSchema = c.type<AgentStateType>();
 
-const CreateAgentResponseErrorSchema = c.type<HTTPValidationError>();
-
-const CreateAgentResponse404ErrorSchema = z.object({
-  message: z
-    .literal('Template not found')
-    .or(z.string())
-    .or(z.literal('Project not found')),
-});
-
-const FailedToCreateAgentErrorSchema = z.object({
-  message: z.literal('Failed to create agent'),
-});
-
-const UniqueIdentifierConflictResponseSchema = z.object({
-  message: z.literal('An agent with the same name already exists'),
-});
-
 const createAgentContract = c.mutation({
   method: 'POST',
   path: '/v1/agents',
@@ -46,10 +29,6 @@ const createAgentContract = c.mutation({
   body: c.type<CreateAgentRequest>(),
   responses: {
     201: CreateAgentResponseSchema,
-    404: CreateAgentResponse404ErrorSchema,
-    409: UniqueIdentifierConflictResponseSchema,
-    422: CreateAgentResponseErrorSchema,
-    500: FailedToCreateAgentErrorSchema,
   },
 });
 
@@ -285,8 +264,10 @@ const createTemplateFromAgentContract = c.mutation({
     project: z.string().optional(),
   }),
   responses: {
-    201: CreateAgentResponseSchema,
-    404: AgentNotFoundResponseSchema,
+    201: z.object({
+      templateName: z.string(),
+      templateId: z.string(),
+    }),
     500: FailedToCreateAgentTemplateErrorSchema,
   },
 });

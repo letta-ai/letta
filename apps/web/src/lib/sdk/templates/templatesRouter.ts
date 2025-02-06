@@ -1,11 +1,12 @@
 import type { ServerInferRequest, ServerInferResponses } from '@ts-rest/core';
 
 import type { sdkContracts } from '@letta-cloud/letta-agents-api';
-import { db, deployedAgentVariables, projects } from '@letta-cloud/database';
-import { eq } from 'drizzle-orm';
-import { copyAgentById } from '$web/sdk';
+import { db, deployedAgentVariables } from '@letta-cloud/database';
 import type { SDKContext } from '$web/sdk/shared';
-import { getDeployedTemplateByVersion } from '@letta-cloud/server-utils';
+import {
+  copyAgentById,
+  getDeployedTemplateByVersion,
+} from '@letta-cloud/server-utils';
 
 type CreateAgentsFromTemplateRequest = ServerInferRequest<
   typeof sdkContracts.templates.createAgentsFromTemplate
@@ -19,21 +20,22 @@ async function createAgentsFromTemplate(
   context: SDKContext,
 ): Promise<CreateAgentsFromTemplateResponse> {
   const { organizationId, lettaAgentsUserId } = context.request;
-  const { project: projectSlug, template_version } = req.params;
-  const { memory_variables, tool_variables, agent_name } = req.body;
+  const { template_version } = req.params;
+  const { memory_variables, tool_variables, agent_name, tags } = req.body;
 
-  const project = await db.query.projects.findFirst({
-    where: eq(projects.slug, projectSlug),
-  });
-
-  if (!project) {
-    return {
-      status: 404,
-      body: {
-        message: 'Project not found',
-      },
-    };
-  }
+  // when template creation on agents is deprecated, we can remove this
+  // const project = await db.query.projects.findFirst({
+  //   where: eq(projects.slug, projectSlug),
+  // });
+  //
+  // if (!project) {
+  //   return {
+  //     status: 404,
+  //     body: {
+  //       message: 'Project not found',
+  //     },
+  //   };
+  // }
 
   const deployedAgentTemplate = await getDeployedTemplateByVersion(
     template_version,
@@ -55,9 +57,10 @@ async function createAgentsFromTemplate(
     lettaAgentsUserId,
     {
       name: agent_name,
+      tags,
       memoryVariables: memory_variables,
       toolVariables: tool_variables,
-      projectId: project.id,
+      projectId: deployedAgentTemplate.projectId,
       templateVersionId: deployedAgentTemplate.id,
       baseTemplateId: deployedAgentTemplate.agentTemplateId,
     },

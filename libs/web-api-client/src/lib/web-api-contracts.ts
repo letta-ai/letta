@@ -55,6 +55,7 @@ import {
   adminUsageContracts,
   adminUsageQueryKeys,
 } from './admin/adminUsageContracts';
+import { starterKitsContracts } from './public/starterKitsContracts';
 
 export const contracts = {
   user: userContract,
@@ -68,6 +69,7 @@ export const contracts = {
   environmentVariables: environmentVariablesContracts,
   usage: usageContracts,
   toolMetadata: toolMetadataContracts,
+  starterKits: starterKitsContracts,
   admin: {
     usage: adminUsageContracts,
     toolMetadata: adminToolMetadataContracts,

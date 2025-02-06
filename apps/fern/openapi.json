@@ -6460,21 +6460,20 @@
         },
         "responses": {
           "201": {
-            "description": "201"
-          },
-          "404": {
-            "description": "404",
+            "description": "201",
             "content": {
               "application/json": {
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "message": {
-                      "type": "string",
-                      "enum": ["Agent not found"]
+                    "templateName": {
+                      "type": "string"
+                    },
+                    "templateId": {
+                      "type": "string"
                     }
                   },
-                  "required": ["message"]
+                  "required": ["templateName", "templateId"]
                 }
               }
             }
@@ -6588,6 +6587,13 @@
               "schema": {
                 "type": "object",
                 "properties": {
+                  "tags": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    },
+                    "description": "The tags to assign to the agent"
+                  },
                   "agent_name": {
                     "type": "string",
                     "description": "The name of the agent, optional otherwise a random one will be assigned"

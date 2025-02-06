@@ -11,10 +11,14 @@ import {
   db,
   deployedAgentTemplates,
 } from '@letta-cloud/database';
-import { copyAgentById, agentsRouter, updateAgentFromAgentId } from '$web/sdk';
 import { AgentsService } from '@letta-cloud/letta-agents-api';
 import type { AgentState } from '@letta-cloud/letta-agents-api';
-import { getDeployedTemplateByVersion } from '@letta-cloud/server-utils';
+import {
+  copyAgentById,
+  getDeployedTemplateByVersion,
+  updateAgentFromAgentId,
+} from '@letta-cloud/server-utils';
+import { createTemplate } from '$web/server/lib/createTemplate/createTemplate';
 
 function randomThreeDigitNumber() {
   return Math.floor(Math.random() * 1000);
@@ -241,51 +245,34 @@ export async function forkAgentTemplate(
 
   const name = `forked-${testingAgent.name}-${getDateAsAlphanumericString(new Date())}`;
 
-  const copiedAgent = await agentsRouter.createAgent(
-    {
-      body: {
-        name,
-        // project_id: projectId,
-        llm_config: agentDetails.llm_config,
-        embedding_config: agentDetails.embedding_config,
-        system: agentDetails.system,
-        tool_ids: agentDetails.tools
-          .map((tool) => tool.id)
-          .filter(Boolean) as string[],
-        memory_blocks: agentDetails.memory.blocks.map((block) => {
-          return {
-            limit: block.limit,
-            label: block.label || '',
-            value: block.value,
-          };
-        }),
-        template: true,
-      },
+  const copiedTemplate = await createTemplate({
+    projectId,
+    organizationId: activeOrganizationId,
+    lettaAgentsId,
+    userId,
+    name,
+    createAgentState: {
+      llm_config: agentDetails.llm_config,
+      embedding_config: agentDetails.embedding_config,
+      system: agentDetails.system,
+      tool_ids: agentDetails.tools
+        .map((tool) => tool.id)
+        .filter(Boolean) as string[],
+      memory_blocks: agentDetails.memory.blocks.map((block) => {
+        return {
+          limit: block.limit,
+          label: block.label || '',
+          value: block.value,
+        };
+      }),
     },
-    {
-      request: {
-        organizationId: activeOrganizationId,
-        userId,
-        lettaAgentsUserId: lettaAgentsId,
-        source: 'api',
-      },
-    },
-  );
-
-  if (copiedAgent.status !== 201) {
-    return {
-      status: 500,
-      body: {
-        message: 'Failed to copy agent',
-      },
-    };
-  }
+  });
 
   return {
     status: 201,
     body: {
-      id: copiedAgent.body.id,
-      name,
+      id: copiedTemplate.templateId,
+      name: copiedTemplate.templateName,
       updatedAt: new Date().toISOString(),
     },
   };

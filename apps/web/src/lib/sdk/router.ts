@@ -1,7 +1,7 @@
 import { agentsRouter } from './agents/agentsRouter';
-import { healthRouter } from '$web/sdk/health/healthRouter';
-import { modelsRouter } from '$web/sdk/models/modelRoutes';
-import { templatesRouter } from '$web/sdk/templates/templatesRouter';
+import { healthRouter } from './health/healthRouter';
+import { modelsRouter } from './models/modelRoutes';
+import { templatesRouter } from './templates/templatesRouter';
 
 export const sdkRouter = {
   agents: agentsRouter,

@@ -15,75 +15,6 @@
         "responses": {
           "201": {
             "description": "201"
-          },
-          "404": {
-            "description": "404",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "message": {
-                      "oneOf": [
-                        {
-                          "oneOf": [
-                            {
-                              "type": "string",
-                              "enum": ["Template not found"]
-                            },
-                            {
-                              "type": "string"
-                            }
-                          ]
-                        },
-                        {
-                          "type": "string",
-                          "enum": ["Project not found"]
-                        }
-                      ]
-                    }
-                  },
-                  "required": ["message"]
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "409",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "message": {
-                      "type": "string",
-                      "enum": ["An agent with the same name already exists"]
-                    }
-                  },
-                  "required": ["message"]
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "422"
-          },
-          "500": {
-            "description": "500",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "message": {
-                      "type": "string",
-                      "enum": ["Failed to create agent"]
-                    }
-                  },
-                  "required": ["message"]
-                }
-              }
-            }
           }
         }
       },
@@ -5305,21 +5236,20 @@
         },
         "responses": {
           "201": {
-            "description": "201"
-          },
-          "404": {
-            "description": "404",
+            "description": "201",
             "content": {
               "application/json": {
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "message": {
-                      "type": "string",
-                      "enum": ["Agent not found"]
+                    "templateName": {
+                      "type": "string"
+                    },
+                    "templateId": {
+                      "type": "string"
                     }
                   },
-                  "required": ["message"]
+                  "required": ["templateName", "templateId"]
                 }
               }
             }
@@ -5633,6 +5563,13 @@
               "schema": {
                 "type": "object",
                 "properties": {
+                  "tags": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    },
+                    "description": "The tags to assign to the agent"
+                  },
                   "agent_name": {
                     "type": "string",
                     "description": "The name of the agent, optional otherwise a random one will be assigned"

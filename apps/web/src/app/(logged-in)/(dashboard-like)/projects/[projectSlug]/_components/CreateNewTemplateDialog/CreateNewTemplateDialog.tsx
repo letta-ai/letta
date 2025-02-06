@@ -1,7 +1,7 @@
 import React, { useCallback, useMemo } from 'react';
 import { useTranslations } from '@letta-cloud/translations';
 import { useCurrentProject } from '../../hooks';
-import { webApiQueryKeys, webOriginSDKApi } from '$web/client';
+import { webApi, webApiQueryKeys } from '$web/client';
 import { useRouter } from 'next/navigation';
 import {
   Alert,
@@ -24,7 +24,7 @@ export function CreateNewTemplateDialog(props: CreateNewTemplateDialogProps) {
   const t = useTranslations(
     'projects/(projectSlug)/components/CreateNewTemplateDialog',
   );
-  const { slug } = useCurrentProject();
+  const { slug, id: projectId } = useCurrentProject();
 
   const starterKits = useMemo(() => {
     return Object.entries(STARTER_KITS);
@@ -33,7 +33,7 @@ export function CreateNewTemplateDialog(props: CreateNewTemplateDialogProps) {
   const { push } = useRouter();
 
   const { mutate, isPending, isSuccess, isError } =
-    webOriginSDKApi.agents.createAgent.useMutation();
+    webApi.starterKits.createTemplateFromStarterKit.useMutation();
 
   const queryClient = useQueryClient();
 
@@ -41,10 +41,11 @@ export function CreateNewTemplateDialog(props: CreateNewTemplateDialogProps) {
     (starterKitId: string) => {
       mutate(
         {
+          params: {
+            starterKitId,
+          },
           body: {
-            template: true,
-            from_template: starterKitId,
-            project: slug,
+            projectId: projectId,
           },
         },
         {
@@ -54,12 +55,12 @@ export function CreateNewTemplateDialog(props: CreateNewTemplateDialogProps) {
               exact: false,
             });
 
-            push(`/projects/${slug}/templates/${data.body.name}`);
+            push(`/projects/${slug}/templates/${data.body.templateName}`);
           },
         },
       );
     },
-    [mutate, queryClient, push, slug],
+    [mutate, queryClient, push, slug, projectId],
   );
 
   return (

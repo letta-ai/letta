@@ -3,8 +3,10 @@ import type { sdkContracts } from '@letta-cloud/letta-agents-api';
 import type { SDKContext } from '$web/sdk/shared';
 import { db, deployedAgentVariables } from '@letta-cloud/database';
 import { eq } from 'drizzle-orm';
-import { updateAgentFromAgentId } from '$web/sdk';
-import { getDeployedTemplateByVersion } from '@letta-cloud/server-utils';
+import {
+  getDeployedTemplateByVersion,
+  updateAgentFromAgentId,
+} from '@letta-cloud/server-utils';
 
 type MigrateAgentRequest = ServerInferRequest<
   typeof sdkContracts.agents.migrateAgent

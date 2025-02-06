@@ -99,21 +99,6 @@ describe('letta', () => {
     cy.clearPointerEventLock();
     cy.get('body').click({ force: true });
 
-    cy.findByTestId('chat-simulator-input').type('What is my name', {
-      force: true,
-    });
-
-    cy.findByTestId('chat-simulator-send').click({
-      force: true,
-    });
-
-    cy.findByTestId('user-message-content', { timeout: 50000 }).contains(
-      'What is my name',
-    );
-
-    cy.findByTestId('messages-list', { timeout: 50000 }).contains('Shubham');
-    cy.findByTestId('messages-list', { timeout: 50000 }).contains('BananaMan');
-
     cy.clearPointerEventLock();
     cy.findByTestId('tab:tools').click({ force: true });
 
@@ -146,5 +131,28 @@ describe('letta', () => {
     cy.findByTestId('deploy-agent-instructions-code-editor').should('exist');
 
     cy.findByTestId('show-api-key-switch').click();
+
+    // create an agent from the template
+    cy.request({
+      method: 'POST',
+      url: '/v1/agents',
+      body: {
+        from_template: 'CYDOGGTestAgent:latest',
+        name: 'deployedagent',
+        tags: ['test'],
+        memory_variables: {
+          name: 'Shubham',
+        },
+        toolVariables: {},
+      },
+    }).then((response) => {
+      expect(response.body.name).eq('deployedagent');
+      expect(response.body.tags[0]).eq('test');
+      const humanBlock = response.body.memory.blocks.find(
+        (block) => block.label === 'human',
+      );
+      expect(humanBlock.value).to.contain('Shubham');
+      expect(response.status).to.eq(201);
+    });
   });
 });

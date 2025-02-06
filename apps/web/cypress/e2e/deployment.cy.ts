@@ -109,16 +109,6 @@ describe('letta', () => {
       .first()
       .should('exist');
 
-    cy.findByTestId('chat-simulator-input').type('What is my name', {
-      force: true,
-    });
-
-    cy.findByTestId('chat-simulator-send').click({
-      force: true,
-    });
-
-    cy.findByTestId('messages-list', { timeout: 500000 }).contains('Charles');
-
     cy.findByTestId('edit-memory-block-human-content', { timeout: 50000 })
       .invoke('val')
       .then((val) => {

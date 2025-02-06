@@ -426,10 +426,10 @@ function CreateTemplateButton() {
   const { mutate, isPending, isSuccess } =
     webOriginSDKApi.agents.createTemplateFromAgent.useMutation({
       onSuccess: (body) => {
-        const { name } = body.body;
+        const { templateName } = body.body;
 
         // do not use next/link here as we need to force a full page reload
-        window.location.href = `/projects/${slug}/templates/${name}`;
+        window.location.href = `/projects/${slug}/templates/${templateName}`;
       },
       onError: () => {
         setConvertingAtom(false);

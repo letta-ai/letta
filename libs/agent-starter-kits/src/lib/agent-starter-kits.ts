@@ -5,10 +5,13 @@ import personalAssistant from './personal_assistant.webp';
 import scratch from './scratch.webp';
 import customerSupport from './customer_support.webp';
 import { useTranslations } from '@letta-cloud/translations';
-import type { CreateAgentRequest } from '@letta-cloud/letta-agents-api';
+import type {
+  AgentState,
+  CreateAgentRequest,
+} from '@letta-cloud/letta-agents-api';
 import type { StaticImport } from 'next/dist/shared/lib/get-img-props';
 
-interface StarterKitTool {
+export interface StarterKitTool {
   name: string;
   code: string;
 }
@@ -22,7 +25,26 @@ export interface StarterKit {
   tools?: StarterKitTool[];
 }
 
-export function isTemplateNameAStarterKitId(
+export const defaultLLMConfig = {
+  model: 'gpt-4o-mini',
+  model_endpoint_type: 'openai',
+  model_endpoint: 'https://api.openai.com/v1',
+  model_wrapper: null,
+  context_window: 128000,
+} satisfies AgentState['llm_config'];
+
+export const defaultEmbeddingConfig = {
+  embedding_endpoint_type: 'openai',
+  embedding_endpoint: 'https://api.openai.com/v1',
+  embedding_model: 'text-embedding-3-small',
+  embedding_dim: 1536,
+  embedding_chunk_size: 300,
+  azure_endpoint: null,
+  azure_version: null,
+  azure_deployment: null,
+} satisfies AgentState['embedding_config'];
+
+export function isAStarterKitName(
   templateName: string,
 ): templateName is keyof typeof STARTER_KITS {
   return Object.keys(STARTER_KITS).includes(templateName);

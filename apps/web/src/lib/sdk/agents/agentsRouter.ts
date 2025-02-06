@@ -4,11 +4,9 @@ import type {
   sdkContracts,
 } from '@letta-cloud/letta-agents-api';
 import * as Sentry from '@sentry/node';
-import { BlocksService } from '@letta-cloud/letta-agents-api';
 import type { SDKContext } from '$web/sdk/shared';
 import type { AgentState } from '@letta-cloud/letta-agents-api';
-import { ToolsService } from '@letta-cloud/letta-agents-api';
-import { AgentsService, type UpdateAgent } from '@letta-cloud/letta-agents-api';
+import { AgentsService } from '@letta-cloud/letta-agents-api';
 import {
   agentTemplates,
   db,
@@ -17,169 +15,14 @@ import {
   organizationPreferences,
   projects,
 } from '@letta-cloud/database';
-import { and, desc, eq, isNull } from 'drizzle-orm';
+import { and, eq, isNull } from 'drizzle-orm';
 import { versionAgentTemplate } from './lib/versionAgentTemplate/versionAgentTemplate';
-import {
-  isTemplateNameAStarterKitId,
-  STARTER_KITS,
-} from '@letta-cloud/agent-starter-kits';
-import { omit } from 'lodash';
 import { migrateAgent } from '$web/sdk/agents/lib/migrateAgent/migrateAgent';
 import { getDeployedTemplateByVersion } from '@letta-cloud/server-utils';
-import { findUniqueAgentTemplateName } from '$web/server';
 import { LRUCache } from 'lru-cache';
 import { camelCaseKeys } from '@letta-cloud/generic-utils';
-import {
-  adjectives,
-  animals,
-  colors,
-  uniqueNamesGenerator,
-} from 'unique-names-generator';
-
-export function attachVariablesToTemplates(
-  agentTemplate: AgentState,
-  name?: string,
-  variables?: CreateAgentRequest['body']['memory_variables'],
-) {
-  const memoryBlockValues = agentTemplate.memory.blocks.map((block) => {
-    if (variables && typeof block.value === 'string') {
-      return {
-        ...block,
-        value: block.value.replace(/{{(.*?)}}/g, (_m, p1) => {
-          return variables?.[p1] || '';
-        }),
-      };
-    }
-
-    return block;
-  }, []);
-
-  return {
-    tool_ids:
-      agentTemplate.tools?.map((tool) => tool.id || '').filter(Boolean) || [],
-    name:
-      name ||
-      uniqueNamesGenerator({
-        dictionaries: [adjectives, colors, animals],
-        length: 3,
-        separator: '-',
-      }),
-    memory_blocks: memoryBlockValues,
-  };
-}
-
-interface CopyAgentByIdOptions {
-  memoryVariables?: Record<string, string>;
-  toolVariables?: Record<string, string>;
-  tags?: string[];
-  templateVersionId?: string;
-  baseTemplateId?: string;
-  projectId?: string;
-  name?: string;
-}
-
-export async function copyAgentById(
-  baseAgentId: string,
-  lettaAgentsUserId: string,
-  options: CopyAgentByIdOptions = {},
-) {
-  const {
-    memoryVariables,
-    tags,
-    name,
-    toolVariables,
-    projectId,
-    templateVersionId,
-    baseTemplateId,
-  } = options;
-
-  const [baseAgent, agentSources] = await Promise.all([
-    AgentsService.retrieveAgent(
-      {
-        agentId: baseAgentId,
-      },
-      {
-        user_id: lettaAgentsUserId,
-      },
-    ),
-    AgentsService.listAgentSources(
-      {
-        agentId: baseAgentId,
-      },
-      {
-        user_id: lettaAgentsUserId,
-      },
-    ),
-  ]);
-
-  const agentBody = attachVariablesToTemplates(
-    baseAgent,
-    name,
-    memoryVariables,
-  );
-
-  const nextToolVariables = baseAgent.tool_exec_environment_variables?.reduce(
-    (acc, tool) => {
-      acc[tool.key] = toolVariables?.[tool.key] || '';
-
-      return acc;
-    },
-    {} as Record<string, string>,
-  );
-
-  const nextAgent = await AgentsService.createAgent(
-    {
-      requestBody: {
-        ...omit(baseAgent, omittedFieldsOnCopy),
-        project_id: projectId,
-        template_id: templateVersionId,
-        base_template_id: baseTemplateId,
-        tool_ids: agentBody.tool_ids,
-        name: agentBody.name,
-        // merge base tool variables as well as the tool variables passed in
-        tool_exec_environment_variables: {
-          ...nextToolVariables,
-          ...toolVariables,
-        },
-        tags,
-        memory_blocks: agentBody.memory_blocks.map((block) => {
-          return {
-            limit: block.limit,
-            label: block.label || '',
-            value: block.value,
-          };
-        }),
-      },
-    },
-    {
-      user_id: lettaAgentsUserId,
-    },
-  );
-
-  if (!nextAgent?.id) {
-    throw new Error('Failed to clone agent');
-  }
-
-  await Promise.all(
-    agentSources.map(async (source) => {
-      if (!source.id || !baseAgent.id) {
-        return;
-      }
-
-      await AgentsService.attachSourceToAgent(
-        {
-          agentId: nextAgent.id || '',
-          sourceId: source.id,
-        },
-        {
-          user_id: lettaAgentsUserId,
-        },
-      );
-    }),
-  );
-
-  return nextAgent;
-}
+import { sdkRouter } from '$web/sdk/router';
+import { createTemplate } from '$web/server/lib/createTemplate/createTemplate';
 
 type CreateAgentRequest = ServerInferRequest<
   typeof sdkContracts.agents.createAgent
@@ -214,7 +57,7 @@ async function getCatchAllProjectId(args: GetCatchAllProjectId) {
   return orgPrefResponse.defaultProjectId;
 }
 
-export async function createAgent(
+async function createAgent(
   req: CreateAgentRequest,
   context: SDKContext,
 ): Promise<CreateAgentResponse> {
@@ -223,15 +66,20 @@ export async function createAgent(
     project,
     from_template,
     template,
-    memory_variables,
-    name: preName,
     project_id,
-    tool_exec_environment_variables,
+    memory_variables,
     ...agent
   } = req.body;
 
-  let name = preName;
-  let projectId: string | null | undefined = project_id;
+  if (template) {
+    return {
+      status: 400,
+      body: {
+        message:
+          'Programmatic creation of agents from templates is not supported',
+      },
+    };
+  }
 
   if (project && project_id) {
     return {
@@ -242,633 +90,102 @@ export async function createAgent(
     };
   }
 
-  if (projectId) {
-    if (context.request.source !== 'web') {
-      // find project id
-      const project = await db.query.projects.findFirst({
+  // identify the project id
+  let projectId = project_id;
+
+  if (!projectId) {
+    // if no project_id is specified, lets check for project, which uses the project slug
+    if (project) {
+      const foundProject = await db.query.projects.findFirst({
         where: and(
           eq(projects.organizationId, organizationId),
-          eq(projects.id, projectId),
+          eq(projects.slug, project),
           isNull(projects.deletedAt),
         ),
       });
 
-      if (!project) {
+      if (!foundProject) {
         return {
           status: 404,
           body: {
-            message: `Project with id ${projectId} not found, be sure to use the project id instead of the slug`,
+            message: `Project ${project} not found`,
           },
         };
       }
+
+      projectId = foundProject.id;
     }
-  }
-
-  if (project) {
-    const res = await db.query.projects.findFirst({
-      where: and(
-        eq(projects.organizationId, organizationId),
-        eq(projects.slug, project),
-        isNull(projects.deletedAt),
-      ),
-      columns: {
-        id: true,
-      },
-    });
-
-    if (!res?.id) {
-      return {
-        status: 404,
-        body: {
-          message:
-            'Project slug is not associated with any known project in your organization',
-        },
-      };
-    }
-
-    projectId = res.id;
-  }
-
-  if (!projectId) {
+  } else {
+    // if no project_id or project is specified, we will use the catch all project
     projectId = await getCatchAllProjectId({ organizationId });
   }
 
-  if (name) {
-    if (template) {
-      if (!/^[a-zA-Z0-9_-]+$/.test(name)) {
-        return {
-          status: 400,
-          body: {
-            message: 'Name must be alphanumeric, with underscores or dashes',
-          },
-        };
-      }
-
-      const exists = await db.query.agentTemplates.findFirst({
-        where: and(
-          eq(agentTemplates.organizationId, organizationId),
-          eq(agentTemplates.projectId, projectId),
-          eq(agentTemplates.name, name),
-          isNull(agentTemplates.deletedAt),
-        ),
-      });
-
-      if (exists) {
-        return {
-          status: 409,
-          body: {
-            message: 'An agent with the same name already exists',
-          },
-        };
-      }
-    }
-  } else {
-    name = await findUniqueAgentTemplateName();
-  }
-
-  if (from_template) {
-    const [templateName, version] = from_template.split(':');
-
-    if (isTemplateNameAStarterKitId(templateName)) {
-      const starterKit = STARTER_KITS[templateName];
-
-      if (!starterKit) {
-        throw new Error('Starter kit not found');
-      }
-
-      let toolIdsToAttach: string[] = [];
-
-      if ('tools' in starterKit) {
-        const existingTools = await ToolsService.listTools(
-          {},
-          {
-            user_id: lettaAgentsUserId,
-          },
-        );
-
-        const toolNameMap = (existingTools || []).reduce((acc, tool) => {
-          acc.add(tool.name || '');
-
-          return acc;
-        }, new Set<string>());
-
-        const toolsToCreate = starterKit.tools.filter((tool) => {
-          return !toolNameMap.has(tool.name);
-        });
-
-        const toolResponse = await Promise.all(
-          toolsToCreate.map((tool) => {
-            return ToolsService.createTool(
-              {
-                requestBody: {
-                  source_code: tool.code,
-                  description: 'A custom tool',
-                },
-              },
-              {
-                user_id: lettaAgentsUserId,
-              },
-            );
-          }),
-        );
-
-        toolIdsToAttach = toolResponse.map((tool) => tool.id || '');
-
-        toolIdsToAttach = [
-          ...toolIdsToAttach,
-          ...(starterKit.tools || []).map((tool) => {
-            const existingTool = existingTools?.find(
-              (existingTool) => existingTool.name === tool.name,
-            );
-
-            return existingTool?.id || '';
-          }),
-        ].filter(Boolean);
-      }
-
-      const response = await AgentsService.createAgent(
-        {
-          requestBody: {
-            ...starterKit.agentState,
-            ...agent,
-            name,
-            project_id: template ? 'templates' : projectId,
-            tool_ids: toolIdsToAttach,
-            llm_config: {
-              model: 'gpt-4o-mini',
-              model_endpoint_type: 'openai',
-              model_endpoint: 'https://api.openai.com/v1',
-              model_wrapper: null,
-              context_window: 128000,
-            },
-            embedding_config: {
-              embedding_endpoint_type: 'openai',
-              embedding_endpoint: 'https://api.openai.com/v1',
-              embedding_model: 'text-embedding-3-small',
-              embedding_dim: 1536,
-              embedding_chunk_size: 300,
-              azure_endpoint: null,
-              azure_version: null,
-              azure_deployment: null,
-            },
-          },
+  if (!from_template) {
+    // standard agent creation route, this should just pipe
+    // the request to the agents service
+    const response = await AgentsService.createAgent(
+      {
+        requestBody: {
+          project_id: projectId,
+          ...agent,
         },
-        {
-          user_id: lettaAgentsUserId,
-        },
-      );
-
-      if (!response?.id) {
-        return {
-          status: 500,
-          body: {
-            message: 'Failed to create agent',
-          },
-        };
-      }
-
-      if (!template) {
-        await db.insert(deployedAgentVariables).values({
-          deployedAgentId: response.id,
-          value: memory_variables || {},
-          organizationId,
-        });
-
-        return {
-          status: 201,
-          body: response,
-        };
-      }
-
-      await db.insert(agentTemplates).values({
-        organizationId,
-        name: name,
-        id: response.id,
-        projectId: projectId,
-      });
-
-      await versionAgentTemplate(
-        {
-          params: {
-            agent_id: response.id,
-          },
-          body: {},
-          query: {},
-        },
-        context,
-      );
-
-      return {
-        status: 201,
-        body: response,
-      };
-    }
-
-    const agentTemplate = await db.query.agentTemplates.findFirst({
-      where: and(
-        eq(agentTemplates.organizationId, organizationId),
-        eq(agentTemplates.name, templateName),
-        isNull(agentTemplates.deletedAt),
-      ),
-    });
-
-    if (!agentTemplate) {
-      return {
-        status: 404,
-        body: {
-          message: 'Template not found',
-        },
-      };
-    }
-
-    const isLatest = version === 'latest';
-    const hasVersion = !!version;
-    let agentTemplateIdToCopy = agentTemplate.id;
-
-    const deployedTemplateQuery = [
-      eq(deployedAgentTemplates.organizationId, organizationId),
-      eq(deployedAgentTemplates.agentTemplateId, agentTemplate.id),
-      isNull(deployedAgentTemplates.deletedAt),
-    ];
-
-    if (!isLatest) {
-      deployedTemplateQuery.push(eq(deployedAgentTemplates.version, version));
-    }
-
-    if (hasVersion) {
-      const deployedTemplate = await db.query.deployedAgentTemplates.findFirst({
-        where: and(...deployedTemplateQuery),
-        orderBy: [desc(deployedAgentTemplates.createdAt)],
-      });
-
-      if (!deployedTemplate) {
-        return {
-          status: 404,
-          body: {
-            message: `${version} of template ${templateName} not found`,
-          },
-        };
-      }
-
-      agentTemplateIdToCopy = deployedTemplate.id;
-    } else {
-      if (!template) {
-        return {
-          status: 400,
-          body: {
-            message:
-              'You can only create a new agent from a specific version of a template or latest. Format <template-name>:<version>',
-          },
-        };
-      }
-    }
-
-    const copiedAgent = await (template
-      ? copyAgentById(agentTemplateIdToCopy, lettaAgentsUserId, {
-          name,
-          tags: [],
-          projectId: 'templates',
-        })
-      : copyAgentById(agentTemplateIdToCopy, lettaAgentsUserId, {
-          name,
-          tags: agent.tags || [],
-          templateVersionId: agentTemplateIdToCopy,
-          projectId,
-          baseTemplateId: agentTemplate.id,
-          memoryVariables: memory_variables || {},
-          toolVariables: tool_exec_environment_variables || {},
-        }));
-
-    if (!copiedAgent?.id) {
-      return {
-        status: 500,
-        body: {
-          message: 'Failed to create agent',
-        },
-      };
-    }
-
-    if (template) {
-      if (!copiedAgent?.id) {
-        return {
-          status: 500,
-          body: {
-            message: 'Failed to create agent',
-          },
-        };
-      }
-
-      if (!projectId) {
-        return {
-          status: 400,
-          body: {
-            message:
-              'project_id is required when creating an agent from a template',
-          },
-        };
-      }
-
-      await db.insert(agentTemplates).values({
-        organizationId,
-        name: name,
-        id: copiedAgent.id,
-        projectId: projectId,
-      });
-
-      await versionAgentTemplate(
-        {
-          params: {
-            agent_id: copiedAgent.id,
-          },
-          body: {},
-          query: {},
-        },
-        context,
-      );
-
-      return {
-        status: 201,
-        body: copiedAgent,
-      };
-    }
-
-    await db.insert(deployedAgentVariables).values({
-      deployedAgentId: copiedAgent.id,
-      value: memory_variables || {},
-      organizationId,
-    });
+      },
+      {
+        user_id: lettaAgentsUserId,
+      },
+    );
 
     return {
       status: 201,
-      body: copiedAgent,
+      body: response,
     };
   }
 
-  const response = await AgentsService.createAgent(
-    {
-      requestBody: {
-        project_id: template ? 'templates' : projectId,
-        ...agent,
-        memory_blocks: agent.memory_blocks || [],
-        name,
-        tool_exec_environment_variables: tool_exec_environment_variables,
-      },
-    },
-    {
-      user_id: lettaAgentsUserId,
-    },
-  );
-
-  if (!response?.id) {
+  // logic for creating agents from templates
+  if (project_id || project) {
     return {
-      status: 500,
+      status: 400,
       body: {
-        message: 'Failed to create agent',
+        message:
+          "Do not specify project or project_id when creating an agent from a template, agents created from a template will use the template's project",
       },
     };
   }
 
-  if (template) {
-    await db.insert(agentTemplates).values({
-      organizationId,
-      name,
-      id: response.id,
-      projectId,
-    });
-
-    await versionAgentTemplate(
+  const deployedAgentTemplate =
+    await sdkRouter.templates.createAgentsFromTemplate(
       {
         params: {
-          agent_id: response.id,
+          project: project || '',
+          template_version: from_template,
         },
-        body: {},
-        query: {},
+        body: {
+          tags: agent.tags || [],
+          agent_name: agent.name,
+          memory_variables: memory_variables || {},
+          tool_variables: agent.tool_exec_environment_variables || {},
+        },
       },
       context,
     );
-  } else {
-    await db.insert(deployedAgentVariables).values({
-      deployedAgentId: response.id,
-      value: memory_variables || {},
-      organizationId,
-    });
+
+  if (deployedAgentTemplate.status !== 201) {
+    return deployedAgentTemplate;
+  }
+
+  if (!deployedAgentTemplate.body.agents[0]) {
+    return {
+      status: 500,
+      body: {
+        message: 'Failed to create agent from template',
+      },
+    };
   }
 
   return {
     status: 201,
-    body: response,
+    body: deployedAgentTemplate.body.agents[0] as AgentState,
   };
-}
-
-interface UpdateAgentFromAgentId {
-  preserveCoreMemories?: boolean;
-  memoryVariables: Record<string, string>;
-  baseAgentId: string;
-  agentToUpdateId: string;
-  toolVariables?: Record<string, string>;
-  lettaAgentsUserId: string;
-  baseTemplateId?: string;
-  templateId?: string;
-}
-
-export const omittedFieldsOnCopy: Array<Partial<keyof AgentState>> = [
-  'message_ids',
-  'id',
-  'tools',
-  'created_at',
-  'tool_rules',
-  'updated_at',
-  'created_by_id',
-  'description',
-  'organization_id',
-  'last_updated_by_id',
-  'metadata',
-  'memory',
-];
-
-export async function updateAgentFromAgentId(options: UpdateAgentFromAgentId) {
-  const {
-    preserveCoreMemories = false,
-    memoryVariables,
-    baseAgentId,
-    agentToUpdateId,
-    toolVariables,
-    lettaAgentsUserId,
-    baseTemplateId,
-    templateId,
-  } = options;
-
-  const [agentTemplateData, existingAgent] = await Promise.all([
-    AgentsService.retrieveAgent(
-      {
-        agentId: baseAgentId,
-      },
-      {
-        user_id: lettaAgentsUserId,
-      },
-    ),
-    AgentsService.retrieveAgent(
-      {
-        agentId: agentToUpdateId,
-      },
-      {
-        user_id: lettaAgentsUserId,
-      },
-    ),
-  ]);
-
-  let requestBody: UpdateAgent = {
-    ...omit(agentTemplateData, omittedFieldsOnCopy),
-    tool_ids: agentTemplateData.tools
-      .map((tool) => tool.id || '')
-      .filter(Boolean),
-    tool_exec_environment_variables:
-      agentTemplateData.tool_exec_environment_variables?.reduce(
-        (acc, tool) => {
-          acc[tool.key] = tool.value;
-
-          return acc;
-        },
-        {} as Record<string, string>,
-      ) || {},
-  };
-
-  if (!preserveCoreMemories) {
-    const { memory_blocks, ...rest } = attachVariablesToTemplates(
-      agentTemplateData,
-      existingAgent.name,
-      memoryVariables,
-    );
-
-    requestBody = {
-      ...requestBody,
-      ...rest,
-    };
-
-    if (memory_blocks) {
-      const existingMemoryBlocks = existingAgent.memory.blocks;
-
-      const memoryBlocksToDelete = existingMemoryBlocks.filter((block) => {
-        return !memory_blocks.some(
-          (newBlock) => newBlock.label === block.label,
-        );
-      }, []);
-
-      const memoryBlocksToAdd = memory_blocks.filter((block) => {
-        return !existingMemoryBlocks.some(
-          (existingBlock) => existingBlock.label === block.label,
-        );
-      });
-
-      const memoryBlocksToUpdate = memory_blocks.filter((block) => {
-        return existingMemoryBlocks.some(
-          (existingBlock) => existingBlock.label === block.label,
-        );
-      }, []);
-
-      await Promise.all([
-        ...memoryBlocksToDelete.map(async (block) => {
-          return BlocksService.deleteBlock(
-            {
-              blockId: block.id || '',
-            },
-            {
-              user_id: lettaAgentsUserId,
-            },
-          );
-        }),
-        ...memoryBlocksToAdd.map(async (block) => {
-          if (!block.label) {
-            return;
-          }
-
-          const createdBlock = await BlocksService.createBlock(
-            {
-              requestBody: {
-                label: block.label,
-                value: block.value,
-                limit: block.limit,
-              },
-            },
-            {
-              user_id: lettaAgentsUserId,
-            },
-          );
-
-          if (!createdBlock?.id) {
-            throw new Error('Failed to create memory block');
-          }
-
-          return AgentsService.attachCoreMemoryBlock(
-            {
-              agentId: agentToUpdateId,
-              blockId: createdBlock.id,
-            },
-            {
-              user_id: lettaAgentsUserId,
-            },
-          );
-        }),
-        ...memoryBlocksToUpdate.map(async (block) => {
-          if (!block.label) {
-            return;
-          }
-
-          return AgentsService.modifyCoreMemoryBlock(
-            {
-              agentId: agentToUpdateId,
-              blockLabel: block.label,
-              requestBody: {
-                value: block.value,
-                limit: block.limit,
-              },
-            },
-            {
-              user_id: lettaAgentsUserId,
-            },
-          );
-        }),
-      ]);
-    }
-  }
-
-  if (toolVariables) {
-    requestBody = {
-      ...requestBody,
-      tool_exec_environment_variables: toolVariables,
-    };
-  }
-
-  if (baseTemplateId) {
-    requestBody = {
-      ...requestBody,
-      base_template_id: baseTemplateId,
-    };
-  }
-
-  if (templateId) {
-    requestBody = {
-      ...requestBody,
-      template_id: templateId,
-    };
-  }
-
-  requestBody = {
-    ...requestBody,
-    source_ids: agentTemplateData.sources.map((source) => source.id || ''),
-  };
-
-  const agent = await AgentsService.modifyAgent(
-    {
-      agentId: agentToUpdateId,
-      requestBody,
-    },
-    {
-      user_id: lettaAgentsUserId,
-    },
-  );
-
-  return agent;
 }
 
 type ListAgentsRequest = ServerInferRequest<
@@ -879,7 +196,7 @@ type ListAgentsResponse = ServerInferResponses<
   typeof sdkContracts.agents.listAgents
 >;
 
-export async function listAgents(
+async function listAgents(
   req: ListAgentsRequest,
   context: SDKContext,
 ): Promise<ListAgentsResponse> {
@@ -957,7 +274,7 @@ type DeleteAgentResponse = ServerInferResponses<
   typeof sdkContracts.agents.deleteAgent
 >;
 
-export async function deleteAgent(
+async function deleteAgent(
   req: DeleteAgentRequest,
   context: SDKContext,
 ): Promise<DeleteAgentResponse> {
@@ -1025,7 +342,7 @@ type UpdateAgentResponse = ServerInferResponses<
   typeof sdkContracts.agents.updateAgent
 >;
 
-export async function updateAgent(
+async function updateAgent(
   req: UpdateAgentRequest,
   context: SDKContext,
 ): Promise<UpdateAgentResponse> {
@@ -1258,8 +575,25 @@ async function createTemplateFromAgent(
   context: SDKContext,
 ): Promise<CreateTemplateFromAgentResponse> {
   const { agent_id: agentId } = request.params;
-  const { lettaAgentsUserId } = context.request;
+  const { lettaAgentsUserId, organizationId, userId } = context.request;
   const { project } = request.body;
+
+  const foundProject = await db.query.projects.findFirst({
+    where: and(
+      eq(projects.organizationId, context.request.organizationId),
+      eq(projects.slug, project || ''),
+      isNull(projects.deletedAt),
+    ),
+  });
+
+  if (!foundProject) {
+    return {
+      status: 404,
+      body: {
+        message: `Project ${project} not found`,
+      },
+    };
+  }
 
   const agent = await AgentsService.retrieveAgent(
     {
@@ -1279,39 +613,29 @@ async function createTemplateFromAgent(
     };
   }
 
-  const response = await createAgent(
-    {
-      body: {
-        project,
-        llm_config: agent.llm_config,
-        embedding_config: agent.embedding_config,
-        system: agent.system,
-        tool_ids: agent.tools.map((tool) => tool.id || '').filter(Boolean),
-        memory_blocks: agent.memory.blocks.map((block) => {
-          return {
-            limit: block.limit,
-            label: block.label || '',
-            value: block.value,
-          };
-        }),
-        template: true,
-      },
+  const response = await createTemplate({
+    projectId: foundProject.id,
+    organizationId,
+    userId,
+    lettaAgentsId: lettaAgentsUserId,
+    createAgentState: {
+      llm_config: agent.llm_config,
+      embedding_config: agent.embedding_config,
+      system: agent.system,
+      tool_ids: agent.tools.map((tool) => tool.id || '').filter(Boolean),
+      memory_blocks: agent.memory.blocks.map((block) => {
+        return {
+          limit: block.limit,
+          label: block.label || '',
+          value: block.value,
+        };
+      }),
     },
-    context,
-  );
-
-  if (response.status !== 201) {
-    return {
-      status: 500,
-      body: {
-        message: 'Failed to create agent template',
-      },
-    };
-  }
+  });
 
   return {
     status: 201,
-    body: response.body,
+    body: response,
   };
 }
 
