@@ -26,6 +26,11 @@ export const featureFlags = {
     expiryDate: '2024-01-31',
     flagValue: z.boolean(),
   },
+  TOOL_RULES: {
+    description: 'Tool rules',
+    expiryDate: '2024-01-31',
+    flagValue: z.boolean(),
+  }
 } satisfies Record<string, FlagProperties>;
 
 export type Flag = keyof typeof featureFlags;

@@ -8,6 +8,7 @@ import { Slot } from '@radix-ui/react-slot';
 import Link from 'next/link';
 import { Typography } from '../Typography/Typography';
 import { HStack } from '../../framing/HStack/HStack';
+import { VStack } from '../../framing/VStack/VStack';
 
 const DropdownMenuBase = DropdownMenuPrimitive.Root;
 
@@ -105,6 +106,57 @@ function MaybeLink(props: MaybeLinkProps) {
   }
 
   return children;
+}
+
+interface DetailedDropdownMenuItemProps {
+  label: string;
+  doNotCloseOnSelect?: boolean;
+  href?: string;
+  onClick?: () => void;
+  target?: string;
+  preIcon?: React.ReactNode;
+  description: string;
+  ref?: React.Ref<HTMLDivElement>;
+}
+
+function DropdownDetailedMenuItem(props: DetailedDropdownMenuItemProps) {
+  const {
+    label,
+    doNotCloseOnSelect,
+    href,
+    target,
+    preIcon,
+    description,
+    ...rest
+  } = props;
+
+  return (
+    <DropdownMenuPrimitive.Item
+      onSelect={(event) => {
+        if (doNotCloseOnSelect) {
+          event.preventDefault();
+        }
+      }}
+      className={cn(
+        'relative flex gap-2  cursor-pointer select-none items-center px-2 py-1.5 text-sm outline-none transition-colors focus:bg-accent focus:text-accent-content data-[disabled]:pointer-events-none data-[disabled]:opacity-50',
+      )}
+      {...rest}
+    >
+      <MaybeLink target={target} href={href}>
+        <HStack align="center">
+          {preIcon && <Slot className="w-3">{preIcon}</Slot>}
+          <VStack gap={false} align="start">
+            <Typography align="left" variant="body2" bold>
+              {label}
+            </Typography>
+            <Typography align="left" variant="body2" color="lighter">
+              {description}
+            </Typography>
+          </VStack>
+        </HStack>
+      </MaybeLink>
+    </DropdownMenuPrimitive.Item>
+  );
 }
 
 const DropdownMenuItem = React.forwardRef<
@@ -293,4 +345,5 @@ export {
   DropdownMenuSubContent,
   DropdownMenuSubTrigger,
   DropdownMenuRadioGroup,
+  DropdownDetailedMenuItem,
 };

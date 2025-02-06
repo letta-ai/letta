@@ -1,5 +1,6 @@
 'use client';
 import React, { useCallback, useMemo, useState } from 'react';
+import { HStack } from '@letta-cloud/component-library';
 import type { FileTreeContentsType } from '@letta-cloud/component-library';
 import { VStack } from '@letta-cloud/component-library';
 import { brandKeyToLogo, isBrandKey } from '@letta-cloud/component-library';
@@ -29,6 +30,8 @@ import {
   ToolsExplorer,
   useToolsExplorerState,
 } from '../ToolsExplorer/ToolsExplorer';
+import { ToolRulesEditor } from '../ToolRules/ToolRules';
+import { useFeatureFlag } from '@letta-cloud/web-api-client';
 
 interface RemoveToolPayload {
   toolName: string;
@@ -243,6 +246,9 @@ export function ToolsPanel() {
   const [search, setSearch] = useState('');
   const t = useTranslations('ADE/Tools');
   const { openToolExplorer } = useToolsExplorerState();
+  const { isLoading, data } = useFeatureFlag('TOOL_RULES');
+
+  const isToolRulesEnabled = !isLoading && data;
 
   return (
     <VStack overflow="hidden" gap={false}>
@@ -253,16 +259,19 @@ export function ToolsPanel() {
           setSearch(value);
         }}
         actions={
-          <Button
-            label={t('ToolsListPage.openExplorer')}
-            color="secondary"
-            data-testid="open-tool-explorer"
-            hideLabel
-            onClick={() => {
-              openToolExplorer();
-            }}
-            preIcon={<PlusIcon />}
-          />
+          <HStack>
+            {isToolRulesEnabled && <ToolRulesEditor />}
+            <Button
+              label={t('ToolsListPage.openExplorer')}
+              color="secondary"
+              data-testid="open-tool-explorer"
+              hideLabel
+              onClick={() => {
+                openToolExplorer();
+              }}
+              preIcon={<PlusIcon />}
+            />
+          </HStack>
         }
       />
       <ToolsList search={search} />

@@ -32,6 +32,52 @@
     "more": "More panels",
     "less": "Less panels"
   },
+  "ADE/ToolRules": {
+    "appName": "Tool Rules",
+    "title": "Tool Rule Editor",
+    "trigger": "Edit tool rules",
+    "confirmLeave": {
+      "title": "Are you sure you want to leave?",
+      "description": "You are about to leave the tool rules editor, any unsaved changes will be lost."
+    },
+    "ToolRuleList": {
+      "search": "Search rules by tool name",
+      "newRule": "New rule",
+      "error": "There was an error saving your rules, please try again or contact support, resetting to last saved state."
+    },
+    "ToolRuleItemWrapper": {
+      "invalid": "Invalid rule",
+      "dirty": "Edited",
+      "save": "Save",
+      "confirmRemove": {
+        "title": "Are you sure you want to remove this rule?",
+        "description": "This action cannot be undone."
+      }
+    },
+    "ExitLoopToolEditor": {
+      "sentence": "<tool></tool> must be the last tool in the inference",
+      "toolName": "Tool name",
+      "save": "Save"
+    },
+    "toolTypes": {
+      "runFirst": {
+        "title": "Start constraint",
+        "description": "Make sure a tool runs first before any other tool"
+      },
+      "exitLoop": {
+        "title": "Exit loop",
+        "description": "Make sure a tool is always the last tool in an inference"
+      },
+      "constrainChildTools": {
+        "title": "Constrain child tools",
+        "description": "Select tools that must run after this tool"
+      },
+      "conditional": {
+        "title": "Conditional",
+        "description": "Run a tool based on a condition from another tool"
+      }
+    }
+  },
   "ADE/AgentVariablesModal": {
     "noVariablesInDeployedAgent": "No variables in this agent",
     "noVariablesInDeployedAgentWithNoTemplate": "Variables allow you to programatically define parts of an agent's memory that can be customized per-user on agent creation. Variables are only available in templates - to use variables, click 'Create template' in the top right.",

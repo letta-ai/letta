@@ -29,7 +29,7 @@ interface DialogContextState {
   isInDialog: boolean;
 }
 
-const DialogContext = React.createContext<DialogContextState>({
+export const DialogContext = React.createContext<DialogContextState>({
   isInDialog: false,
 });
 
