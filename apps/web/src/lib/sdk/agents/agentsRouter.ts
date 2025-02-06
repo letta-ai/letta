@@ -348,6 +348,7 @@ export async function createAgent(
             ...starterKit.agentState,
             ...agent,
             name,
+            project_id: projectId,
             tool_ids: toolIdsToAttach,
             llm_config: {
               model: 'gpt-4o-mini',
@@ -478,19 +479,21 @@ export async function createAgent(
       }
     }
 
-    const copiedAgent = await copyAgentById(
-      agentTemplateIdToCopy,
-      lettaAgentsUserId,
-      {
-        name,
-        tags: [],
-        templateVersionId: agentTemplateIdToCopy,
-        projectId,
-        baseTemplateId: agentTemplate.id,
-        memoryVariables: memory_variables || {},
-        toolVariables: tool_exec_environment_variables || {},
-      },
-    );
+    const copiedAgent = await (template
+      ? copyAgentById(agentTemplateIdToCopy, lettaAgentsUserId, {
+          name,
+          tags: [],
+          projectId: 'templates',
+        })
+      : copyAgentById(agentTemplateIdToCopy, lettaAgentsUserId, {
+          name,
+          tags: [],
+          templateVersionId: agentTemplateIdToCopy,
+          projectId,
+          baseTemplateId: agentTemplate.id,
+          memoryVariables: memory_variables || {},
+          toolVariables: tool_exec_environment_variables || {},
+        }));
 
     if (!copiedAgent?.id) {
       return {
@@ -560,6 +563,7 @@ export async function createAgent(
   const response = await AgentsService.createAgent(
     {
       requestBody: {
+        project_id: template ? 'templates' : projectId,
         ...agent,
         memory_blocks: agent.memory_blocks || [],
         name,

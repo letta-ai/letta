@@ -213,6 +213,7 @@ describe('agentsRouter', () => {
             system: 'swag',
             memory_blocks: [],
             name: expect.any(String),
+            project_id: 'new-project-id',
           },
         },
         {
@@ -330,6 +331,7 @@ describe('agentsRouter', () => {
         ).toHaveBeenCalledWith(
           {
             requestBody: {
+              project_id: 'test-project-id',
               description:
                 'Act as a personal assistant to help users with tasks and answer questions.',
               memory_blocks: [
@@ -418,6 +420,7 @@ describe('agentsRouter', () => {
         ).toHaveBeenCalledWith(
           {
             requestBody: {
+              project_id: 'test-project-id',
               description:
                 'Act as a personal assistant to help users with tasks and answer questions.',
               memory_blocks: [
@@ -662,6 +665,9 @@ describe('agentsRouter', () => {
             tool_ids: ['tool-name'],
             tool_exec_environment_variables: {},
             system: 'test',
+            base_template_id: 'test-template-id',
+            template_id: 'deployed-test-template-id',
+            project_id: 'test-project-id',
             tags: [],
             name: expect.any(String),
             memory_blocks: premadeTemplate.memory_blocks.map((v) => {
@@ -821,6 +827,9 @@ describe('agentsRouter', () => {
           requestBody: {
             ...rest,
             tool_ids: ['tool-name'],
+            base_template_id: undefined,
+            template_id: undefined,
+            project_id: 'templates',
             system: 'test',
             tags: [],
             tool_exec_environment_variables: {},
@@ -831,7 +840,7 @@ describe('agentsRouter', () => {
                   label: 'human',
                   limit: 2000,
                   value:
-                    "The human has not provided any information about themselves. But they are looking for help with a customer support issue. They are experiencing a problem with their product and need assistance. They are looking for a quick resolution to their issue. The human's name is Timber",
+                    "The human has not provided any information about themselves. But they are looking for help with a customer support issue. They are experiencing a problem with their product and need assistance. They are looking for a quick resolution to their issue. The human's name is {{name}}",
                 };
               }
 
@@ -872,7 +881,7 @@ describe('agentsRouter', () => {
         organizationId: 'test-org-id',
         projectId: 'test-project-id',
         agentTemplateId: 'test-template-id',
-        id: 'test-template-id',
+        id: 'deployed-test-template-id',
         version: '23',
         createdAt: new Date(),
         updatedAt: new Date(),
@@ -965,13 +974,16 @@ describe('agentsRouter', () => {
             tags: [],
             tool_exec_environment_variables: {},
             name: expect.any(String),
+            template_id: undefined,
+            base_template_id: undefined,
+            project_id: 'templates',
             memory_blocks: premadeTemplate.memory_blocks.map((v) => {
               if (v.label === 'human') {
                 return {
                   label: 'human',
                   limit: 2000,
                   value:
-                    "The human has not provided any information about themselves. But they are looking for help with a customer support issue. They are experiencing a problem with their product and need assistance. They are looking for a quick resolution to their issue. The human's name is Timber",
+                    "The human has not provided any information about themselves. But they are looking for help with a customer support issue. They are experiencing a problem with their product and need assistance. They are looking for a quick resolution to their issue. The human's name is {{name}}",
                 };
               }
 
@@ -1053,6 +1065,7 @@ describe('agentsRouter', () => {
             system: 'swag',
             memory_blocks: [],
             name: expect.any(String),
+            project_id: 'templates',
           },
         },
         {
@@ -1120,6 +1133,7 @@ describe('agentsRouter', () => {
             system: 'swag',
             memory_blocks: [],
             name: expect.any(String),
+            project_id: 'test-project-id',
           },
         },
         {
@@ -1203,6 +1217,7 @@ describe('agentsRouter', () => {
             system: 'swag',
             memory_blocks: [],
             name: expect.any(String),
+            project_id: 'new-project-id',
           },
         },
         {
@@ -1278,6 +1293,7 @@ describe('agentsRouter', () => {
           system: 'swag',
           name: expect.any(String),
           memory_blocks: [],
+          project_id: 'templates',
         },
       },
       {
