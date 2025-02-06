@@ -1048,6 +1048,7 @@ describe('agentsRouter', () => {
             project: 'test-project-slug',
             name: 'test',
             system: 'swag',
+            tags: ['abc'],
           },
         },
         {
@@ -1065,6 +1066,7 @@ describe('agentsRouter', () => {
             system: 'swag',
             memory_blocks: [],
             name: expect.any(String),
+            tags: ['abc'],
             project_id: 'templates',
           },
         },
