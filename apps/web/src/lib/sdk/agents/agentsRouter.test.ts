@@ -331,7 +331,7 @@ describe('agentsRouter', () => {
         ).toHaveBeenCalledWith(
           {
             requestBody: {
-              project_id: 'test-project-id',
+              project_id: 'templates',
               description:
                 'Act as a personal assistant to help users with tasks and answer questions.',
               memory_blocks: [

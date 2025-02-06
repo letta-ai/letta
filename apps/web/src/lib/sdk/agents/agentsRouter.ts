@@ -29,6 +29,12 @@ import { getDeployedTemplateByVersion } from '@letta-cloud/server-utils';
 import { findUniqueAgentTemplateName } from '$web/server';
 import { LRUCache } from 'lru-cache';
 import { camelCaseKeys } from '@letta-cloud/generic-utils';
+import {
+  adjectives,
+  animals,
+  colors,
+  uniqueNamesGenerator,
+} from 'unique-names-generator';
 
 export function attachVariablesToTemplates(
   agentTemplate: AgentState,
@@ -51,7 +57,13 @@ export function attachVariablesToTemplates(
   return {
     tool_ids:
       agentTemplate.tools?.map((tool) => tool.id || '').filter(Boolean) || [],
-    name: name || `name-${crypto.randomUUID()}`,
+    name:
+      name ||
+      uniqueNamesGenerator({
+        dictionaries: [adjectives, colors, animals],
+        length: 3,
+        separator: '-',
+      }),
     memory_blocks: memoryBlockValues,
   };
 }
@@ -348,7 +360,7 @@ export async function createAgent(
             ...starterKit.agentState,
             ...agent,
             name,
-            project_id: projectId,
+            project_id: template ? 'templates' : projectId,
             tool_ids: toolIdsToAttach,
             llm_config: {
               model: 'gpt-4o-mini',
