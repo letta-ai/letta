@@ -51,9 +51,6 @@ BASE_TOOLS = ["send_message", "conversation_search", "archival_memory_insert", "
 BASE_MEMORY_TOOLS = ["core_memory_append", "core_memory_replace"]
 # Multi agent tools
 MULTI_AGENT_TOOLS = ["send_message_to_agent_and_wait_for_reply", "send_message_to_agents_matching_all_tags", "send_message_to_agent_async"]
-MULTI_AGENT_SEND_MESSAGE_MAX_RETRIES = 3
-MULTI_AGENT_SEND_MESSAGE_TIMEOUT = 20 * 60
-MULTI_AGENT_CONCURRENT_SENDS = 15
 
 # The name of the tool used to send message to the user
 # May not be relevant in cases where the agent has multiple ways to message to user (send_imessage, send_discord_mesasge, ...)
