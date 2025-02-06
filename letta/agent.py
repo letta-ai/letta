@@ -260,6 +260,7 @@ class Agent(BaseAgent):
         error_msg: str,
         tool_call_id: str,
         function_name: str,
+        function_args: str,
         function_response: str,
         messages: List[Message],
         include_function_failed_message: bool = False,
@@ -543,7 +544,7 @@ class Agent(BaseAgent):
             if function_response_string.startswith(ERROR_MESSAGE_PREFIX):
                 error_msg = function_response_string
                 messages = self._handle_function_error_response(
-                    error_msg, tool_call_id, function_name, function_response, messages, include_function_failed_message=True
+                    error_msg, tool_call_id, function_name, function_args, function_response, messages, include_function_failed_message=True
                 )
                 return messages, False, True  # force a heartbeat to allow agent to handle error
 

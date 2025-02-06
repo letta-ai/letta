@@ -85,7 +85,7 @@ class ModelSettings(BaseSettings):
 
     # google ai
     gemini_api_key: Optional[str] = None
-
+    gemini_base_url: str = "https://generativelanguage.googleapis.com/"
     # together
     together_api_key: Optional[str] = None
 
