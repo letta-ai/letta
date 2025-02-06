@@ -1,0 +1,42 @@
+### Query tools by name
+
+The `List Tools` API now supports querying by tool name.
+
+```python
+send_message_tool_id = client.agents.tools.list(tool_name="secret_message")[0].id
+```
+
+### Authorization header now supports password
+
+For self-deployed instances of Letta that are password-protected, the `Authorization` header now supports parsing passwords in addition to API keys. `X-BARE-PASSWORD` will still be supported as legacy, but will be deprecated in a future release.
+
+#### Before:
+```sh
+curl --request POST \
+  --url https://MYSERVER.up.railway.app/v1/agents/ \
+  --header 'X-BARE-PASSWORD: password banana' \
+  --header 'Content-Type: application/json' \
+  --data '{
+    ...
+  }'
+```
+
+#### After:
+```sh
+curl --request POST \
+  --url https://MYSERVER.up.railway.app/v1/agents/ \
+  --header 'AUTHORIZATION: Bearer banana' \
+  --header 'Content-Type: application/json' \
+  --data '{
+    ...
+  }'
+```
+
+Password can now be passed via the `token` field when initializing the Letta client:
+
+```python
+client = LettaClient(
+    base_url="https://MYSERVER.up.railway.app",
+    token="banana",
+)
+```
