@@ -330,7 +330,8 @@ async function getAgentTemplateSimulatorSession(
 
   if (!simulatorSession) {
     const newAgent = await copyAgentById(agentTemplate.id, lettaAgentsId, {
-      name: `simulated-agent-for-${agentTemplate.id}`,
+      name: `sa-${agentTemplate.id}`,
+      projectId: 'simulated-agents',
     });
 
     agentId = newAgent.id;
@@ -505,7 +506,7 @@ async function createAgentTemplateSimulatorSession(
   const newAgent = await copyAgentById(agentTemplate.id, lettaAgentsId, {
     memoryVariables,
     toolVariables,
-    name: `simulated-agent-for-${agentTemplate.id}`,
+    name: `sa-${agentTemplate.id}`,
   });
 
   if (!newAgent?.id) {
