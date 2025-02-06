@@ -690,7 +690,7 @@ export async function updateAgentFromAgentId(options: UpdateAgentFromAgentId) {
   };
 
   if (!preserveCoreMemories) {
-    const { memory_blocks, name, ...rest } = attachVariablesToTemplates(
+    const { memory_blocks, ...rest } = attachVariablesToTemplates(
       agentTemplateData,
       existingAgent.name,
       memoryVariables,
