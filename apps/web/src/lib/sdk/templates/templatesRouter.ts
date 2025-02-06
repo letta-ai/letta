@@ -20,7 +20,7 @@ async function createAgentsFromTemplate(
 ): Promise<CreateAgentsFromTemplateResponse> {
   const { organizationId, lettaAgentsUserId } = context.request;
   const { project: projectSlug, template_version } = req.params;
-  const { memory_variables, tool_variables } = req.body;
+  const { memory_variables, tool_variables, agent_name } = req.body;
 
   const project = await db.query.projects.findFirst({
     where: eq(projects.slug, projectSlug),
@@ -54,6 +54,7 @@ async function createAgentsFromTemplate(
     deployedAgentTemplate.id,
     lettaAgentsUserId,
     {
+      name: agent_name,
       memoryVariables: memory_variables,
       toolVariables: tool_variables,
       projectId: project.id,

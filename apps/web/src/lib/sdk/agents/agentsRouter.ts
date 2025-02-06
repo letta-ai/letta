@@ -32,6 +32,7 @@ import { camelCaseKeys } from '@letta-cloud/generic-utils';
 
 export function attachVariablesToTemplates(
   agentTemplate: AgentState,
+  name?: string,
   variables?: CreateAgentRequest['body']['memory_variables'],
 ) {
   const memoryBlockValues = agentTemplate.memory.blocks.map((block) => {
@@ -50,7 +51,7 @@ export function attachVariablesToTemplates(
   return {
     tool_ids:
       agentTemplate.tools?.map((tool) => tool.id || '').filter(Boolean) || [],
-    name: `name-${crypto.randomUUID()}`,
+    name: name || `name-${crypto.randomUUID()}`,
     memory_blocks: memoryBlockValues,
   };
 }
@@ -62,6 +63,7 @@ interface CopyAgentByIdOptions {
   templateVersionId?: string;
   baseTemplateId?: string;
   projectId?: string;
+  name?: string;
 }
 
 export async function copyAgentById(
@@ -72,6 +74,7 @@ export async function copyAgentById(
   const {
     memoryVariables,
     tags,
+    name,
     toolVariables,
     projectId,
     templateVersionId,
@@ -97,7 +100,11 @@ export async function copyAgentById(
     ),
   ]);
 
-  const agentBody = attachVariablesToTemplates(baseAgent, memoryVariables);
+  const agentBody = attachVariablesToTemplates(
+    baseAgent,
+    name,
+    memoryVariables,
+  );
 
   const nextToolVariables = baseAgent.tool_exec_environment_variables?.reduce(
     (acc, tool) => {
@@ -466,6 +473,7 @@ export async function createAgent(
       agentTemplateIdToCopy,
       lettaAgentsUserId,
       {
+        name,
         tags: [],
         memoryVariables: memory_variables || {},
         toolVariables: tool_exec_environment_variables || {},
@@ -666,8 +674,9 @@ export async function updateAgentFromAgentId(options: UpdateAgentFromAgentId) {
   };
 
   if (!preserveCoreMemories) {
-    const { memory_blocks, ...rest } = attachVariablesToTemplates(
+    const { memory_blocks, name, ...rest } = attachVariablesToTemplates(
       agentTemplateData,
+      existingAgent.name,
       memoryVariables,
     );
 
