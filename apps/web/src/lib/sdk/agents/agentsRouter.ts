@@ -475,6 +475,9 @@ export async function createAgent(
       {
         name,
         tags: [],
+        templateVersionId: agentTemplateIdToCopy,
+        projectId,
+        baseTemplateId: agentTemplate.id,
         memoryVariables: memory_variables || {},
         toolVariables: tool_exec_environment_variables || {},
       },
