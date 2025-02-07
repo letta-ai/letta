@@ -17,6 +17,7 @@ import { adminToolMetadataRouter } from '$web/web-api/admin/tool-metadata/adminT
 import { toolMetadataRouter } from '$web/web-api/tool-metadata/toolMetadataRouter';
 import { adminUsageRouter } from '$web/web-api/admin/usage/adminUsageRouter';
 import { starterKitsRouter } from '$web/web-api/starter-kits/starterKitsRoutes';
+import { rateLimitsRoutes } from '$web/web-api/rate-limits/rateLimitsRoutes';
 
 export const router = {
   user: userRouter,
@@ -31,6 +32,7 @@ export const router = {
   usage: usageRouter,
   toolMetadata: toolMetadataRouter,
   starterKits: starterKitsRouter,
+  rateLimits: rateLimitsRoutes,
   admin: {
     usage: adminUsageRouter,
     toolMetadata: adminToolMetadataRouter,

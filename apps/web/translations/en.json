@@ -276,7 +276,8 @@
       "usage": "Usage",
       "integrations": "Integrations",
       "environmentVariables": "Environment variables",
-      "modelProviders": "Model providers"
+      "modelProviders": "Model providers",
+      "rateLimits": "Rate limits"
     }
   },
   "data-sources/page": {
@@ -454,6 +455,19 @@
         "ruleAlreadyExists": "This rule already exists, please choose another domain",
         "domainNotFound": "Domain not found, please enter a valid domain"
       }
+    }
+  },
+  "organization/rate-limits": {
+    "title": "Rate limits",
+    "tabs": {
+      "inference": "Inference",
+      "embeddings": "Embeddings"
+    },
+    "description": "Below are the rate limits for your organization. These limits are applied to all agents in the organization. To increase these limits, please contact support.",
+    "columns": {
+      "name": "Model Name",
+      "tokensPerMinute": "Tokens per minute",
+      "requestsPerMinute": "Requests per minute"
     }
   },
   "organization/settings": {

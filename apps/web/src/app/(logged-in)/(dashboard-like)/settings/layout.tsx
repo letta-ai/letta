@@ -92,9 +92,14 @@ function SettingsLayout(props: SettingsLayoutProps) {
                     href: '/settings/organization/integrations',
                   },
                   {
-                    id: 'billing',
+                    id: 'environemnt-variables',
                     label: t('organization.environmentVariables'),
                     href: '/settings/organization/environment-variables',
+                  },
+                  {
+                    id: 'rate-limits',
+                    label: t('organization.rateLimits'),
+                    href: '/settings/organization/rate-limits',
                   },
                   ...(showModelProviders
                     ? [

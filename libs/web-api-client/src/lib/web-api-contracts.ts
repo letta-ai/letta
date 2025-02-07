@@ -56,6 +56,10 @@ import {
   adminUsageQueryKeys,
 } from './admin/adminUsageContracts';
 import { starterKitsContracts } from './public/starterKitsContracts';
+import {
+  rateLimitQueryClientKeys,
+  rateLimitsContracts,
+} from './public/rateLimitsContracts';
 
 export const contracts = {
   user: userContract,
@@ -70,6 +74,7 @@ export const contracts = {
   usage: usageContracts,
   toolMetadata: toolMetadataContracts,
   starterKits: starterKitsContracts,
+  rateLimits: rateLimitsContracts,
   admin: {
     usage: adminUsageContracts,
     toolMetadata: adminToolMetadataContracts,
@@ -93,6 +98,7 @@ export const queryClientKeys = {
   environmentVariables: environmentVariablesQueryKeys,
   usage: usageQueryKeys,
   toolMetadata: toolMetadataQueryClientKeys,
+  rateLimits: rateLimitQueryClientKeys,
   admin: {
     usage: adminUsageQueryKeys,
     users: adminUsersQueryClientKeys,
@@ -120,3 +126,4 @@ export type * from './admin/adminToolMetadataContracts';
 export type * from './admin/adminOrganizationsContracts';
 export type * from './admin/adminModelsContracts';
 export type * from './admin/flushLayoutsContracts';
+export * from './public/rateLimitsContracts';
