@@ -1,9 +1,9 @@
 // @ts-expect-error - we know that parsedData is valid
 import { createEnv } from '@t3-oss/env-nextjs';
 import { z } from 'zod';
+
 import { config } from 'dotenv';
 import { resolve } from 'path';
-
 config({ path: resolve(__dirname, '.env') });
 
 /* eslint-disable @typescript-eslint/naming-convention */

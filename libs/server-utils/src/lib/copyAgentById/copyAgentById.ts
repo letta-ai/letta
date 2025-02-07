@@ -1,6 +1,6 @@
 import { AgentsService } from '@letta-cloud/letta-agents-api';
 import { omittedFieldsOnCopy } from '../updateAgentFromAgentId/updateAgentFromAgentId';
-import { omit } from 'lodash';
+import * as lodash from 'lodash';
 import { attachVariablesToTemplates } from '../../utils/attachVariablesToTemplates/attachVariablesToTemplates';
 import {
   adjectives,
@@ -67,7 +67,7 @@ export async function copyAgentById(
   const nextAgent = await AgentsService.createAgent(
     {
       requestBody: {
-        ...omit(baseAgent, omittedFieldsOnCopy),
+        ...lodash.omit(baseAgent, omittedFieldsOnCopy),
         project_id: projectId,
         template_id: templateVersionId,
         base_template_id: baseTemplateId,

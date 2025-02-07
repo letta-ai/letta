@@ -1,6 +1,6 @@
 import { AgentsService, BlocksService } from '@letta-cloud/letta-agents-api';
 import type { AgentState, UpdateAgent } from '@letta-cloud/letta-agents-api';
-import { omit } from 'lodash';
+import * as lodash from 'lodash';
 import { attachVariablesToTemplates } from '../../utils/attachVariablesToTemplates/attachVariablesToTemplates';
 
 interface UpdateAgentFromAgentId {
@@ -62,7 +62,7 @@ export async function updateAgentFromAgentId(options: UpdateAgentFromAgentId) {
   ]);
 
   let requestBody: UpdateAgent = {
-    ...omit(agentTemplateData, omittedFieldsOnCopy),
+    ...lodash.omit(agentTemplateData, omittedFieldsOnCopy),
     tool_ids: agentTemplateData.tools
       .map((tool) => tool.id || '')
       .filter(Boolean),

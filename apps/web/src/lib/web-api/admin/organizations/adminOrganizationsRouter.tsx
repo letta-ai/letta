@@ -839,7 +839,7 @@ async function adminRemoveCreditsFromOrganization(
   return {
     status: 200,
     body: {
-      credits: parseInt(response.credits, 10),
+      credits: parseInt(response.newCredits, 10),
     },
   };
 }

@@ -3,18 +3,24 @@
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
-    "build": "esbuild src/main.ts --bundle --platform=node --outdir=dist"
+    "start": "node ./dist/main.js",
+    "build": "esbuild src/main.ts --tsconfig=tsconfig.app.json --bundle --platform=node --outdir=dist --format=cjs --sourcemap --external:pg --external:postgres --external:ioredis --external:zod --external:@sentry/node --external:dotenv --external:drizzle-orm"
   },
   "author": "",
   "license": "ISC",
   "description": "",
   "devDependencies": {
-    "esbuild": "^0.24.2"
+    "esbuild": "^0.24.2",
+    "esbuild-node-externals": "^1.16.0"
   },
   "dependencies": {
     "@sentry/node": "^8.52.0",
-    "@sentry/profiling-node": "^8.52.0",
+    "@t3-oss/env-nextjs": "^0.12.0",
     "dotenv": "^16.4.7",
-    "pg": "^8.13.1"
+    "drizzle-orm": "^0.39.1",
+    "ioredis": "^5.4.2",
+    "pg": "^8.13.1",
+    "postgres": "^3.4.5",
+    "zod": "^3.24.1"
   }
 }

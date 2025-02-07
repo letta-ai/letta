@@ -1,11 +1,11 @@
 import type { PostgresJsDatabase } from 'drizzle-orm/postgres-js';
 import { drizzle } from 'drizzle-orm/postgres-js';
-import { config } from 'dotenv';
-import { resolve } from 'path';
 
 import * as schema from '../schemas';
 import postgres from 'postgres';
 
+import { config } from 'dotenv';
+import { resolve } from 'path';
 config({ path: resolve(__dirname, '.env') });
 
 let db: PostgresJsDatabase<typeof schema>;

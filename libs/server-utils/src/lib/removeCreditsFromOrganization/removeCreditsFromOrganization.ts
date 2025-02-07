@@ -67,12 +67,14 @@ export async function removeCreditsFromOrganization(
     );
   }
 
-  await db.insert(organizationCreditTransactions).values({
+  const [txn] = await db.insert(organizationCreditTransactions).values({
     amount: amount.toString(),
     organizationId: org.id,
     source,
     note,
     transactionType: 'subtraction',
+  }).returning({
+    id: organizationCreditTransactions.id,
   });
 
   const [res] = await db
@@ -85,5 +87,8 @@ export async function removeCreditsFromOrganization(
       credits: organizationCredits.credits,
     });
 
-  return res;
+  return {
+    newCredits: res.credits,
+    transactionId: txn.id,
+  };
 }
