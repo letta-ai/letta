@@ -295,7 +295,7 @@ function StepCostsEditor(props: StepCostsEditorProps) {
           </VStack>
         );
       })}
-      <Button label="Add Step" onClick={handleAddStep} />
+      <Button type="button" label="Add Step" onClick={handleAddStep} />
       {typeof errorMessage === 'string' && (
         <Typography>{errorMessage}</Typography>
       )}
