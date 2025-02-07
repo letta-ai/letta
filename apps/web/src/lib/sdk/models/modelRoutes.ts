@@ -41,6 +41,8 @@ async function listLLMBackends(
           ...(extended
             ? {
                 brand: model.brand,
+                context_window:
+                  model.defaultContextWindow || model.config!.context_window,
                 isRecommended: model.isRecommended,
                 tag: model.tag,
                 displayName: model.name,

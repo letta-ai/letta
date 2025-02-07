@@ -119,6 +119,9 @@ async function getAdminInferenceModels(
           model.defaultTokensPerMinutePerOrganization,
           10,
         ),
+        defaultContextWindow: model.defaultContextWindow
+          ? parseInt(model.defaultContextWindow, 10)
+          : undefined,
         tag: model.tag || '',
         isRecommended: model.isRecommended,
         config: configMap.get(`${model.modelEndpoint}${model.modelName}`),
@@ -173,6 +176,10 @@ async function getAdminInferenceModel(
         response.defaultTokensPerMinutePerOrganization,
         10,
       ),
+      defaultContextWindow:
+        typeof response.defaultContextWindow === 'string'
+          ? parseInt(response.defaultContextWindow, 10)
+          : undefined,
       tag: response.tag || '',
       brand: response.brand,
       config: inferenceModels.find(
@@ -236,6 +243,7 @@ async function createAdminInferenceModel(
       modelName: inferenceModelsMetadata.modelName,
       disabledAt: inferenceModelsMetadata.disabledAt,
       createdAt: inferenceModelsMetadata.createdAt,
+      defaultContextWindow: inferenceModelsMetadata.defaultContextWindow,
       updatedAt: inferenceModelsMetadata.updatedAt,
       defaultTokensPerMinutePerOrganization:
         inferenceModelsMetadata.defaultTokensPerMinutePerOrganization,
@@ -266,6 +274,10 @@ async function createAdminInferenceModel(
         response.defaultRequestsPerMinutePerOrganization,
         10,
       ),
+      defaultContextWindow:
+        typeof response.defaultContextWindow === 'string'
+          ? parseInt(response.defaultContextWindow, 10)
+          : undefined,
       isRecommended: response.isRecommended,
       config: null,
       disabledAt: response.disabledAt?.toISOString(),
@@ -290,6 +302,7 @@ interface UpdateAdminInferenceSetterType {
   tag?: string;
   defaultRequestsPerMinutePerOrganization?: string;
   defaultTokensPerMinutePerOrganization?: string;
+  defaultContextWindow?: string;
   isRecommended?: boolean;
 }
 
@@ -297,7 +310,8 @@ async function updateAdminInferenceModel(
   req: UpdateAdminInferenceModelRequest,
 ): Promise<UpdateAdminInferenceModelResponse> {
   const { id } = req.params;
-  const { brand, disabled, name, isRecommended, tag } = req.body;
+  const { brand, disabled, name, defaultContextWindow, isRecommended, tag } =
+    req.body;
 
   const existingModel = await db.query.inferenceModelsMetadata.findFirst({
     where: eq(inferenceModelsMetadata.id, id),
@@ -332,6 +346,10 @@ async function updateAdminInferenceModel(
 
   if (typeof isRecommended === 'boolean') {
     set.isRecommended = isRecommended;
+  }
+
+  if (typeof defaultContextWindow === 'number') {
+    set.defaultContextWindow = defaultContextWindow.toString();
   }
 
   const {
@@ -386,6 +404,7 @@ async function updateAdminInferenceModel(
       id: inferenceModelsMetadata.id,
       name: inferenceModelsMetadata.name,
       brand: inferenceModelsMetadata.brand,
+      defaultContextWindow: inferenceModelsMetadata.defaultContextWindow,
       modelEndpoint: inferenceModelsMetadata.modelEndpoint,
       isRecommended: inferenceModelsMetadata.isRecommended,
       tag: inferenceModelsMetadata.tag,
@@ -405,6 +424,10 @@ async function updateAdminInferenceModel(
       id: response.id,
       name: response.name,
       brand: response.brand,
+      defaultContextWindow:
+        typeof response.defaultContextWindow === 'string'
+          ? parseInt(response.defaultContextWindow, 10)
+          : undefined,
       defaultRequestsPerMinutePerOrganization: parseInt(
         response.defaultTokensPerMinutePerOrganization,
         10,

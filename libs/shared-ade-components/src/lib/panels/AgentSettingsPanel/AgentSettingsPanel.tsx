@@ -190,10 +190,14 @@ function ModelSelector(props: ModelSelectorProps) {
     }
 
     if (debouncedModelState.value !== llmConfig.model) {
+      const selectedLLMConfig = modelsList.find(
+        (model) => model.model === debouncedModelState.value,
+      );
+
+      console.log(selectedLLMConfig);
+
       syncUpdateCurrentAgent(() => ({
-        llm_config: modelsList.find(
-          (model) => model.model === debouncedModelState.value,
-        ),
+        llm_config: selectedLLMConfig,
       }));
     }
   }, [

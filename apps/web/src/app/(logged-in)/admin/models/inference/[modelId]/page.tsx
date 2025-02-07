@@ -27,6 +27,7 @@ import { queryClientKeys } from '$web/web-api/contracts';
 import { useQueryClient } from '@tanstack/react-query';
 import { useParams } from 'next/navigation';
 import type { StepCostSchemaVersionOneStep } from '@letta-cloud/types';
+import { parseInt } from 'lodash-es';
 
 interface UpdateInferenceModelFormProps {
   model: AdminInferenceModelType;
@@ -38,6 +39,9 @@ const updateInferenceModelSchema = z.object({
   isRecommended: z.boolean().optional(),
   defaultRequestsPerMinutePerOrganization: z.coerce.number().positive(),
   defaultTokensPerMinutePerOrganization: z.coerce.number().positive(),
+  defaultContextWindow: z.string().regex(/^\d+$/, {
+    message: 'Context Window must be a positive integer',
+  }),
   tag: z.string().optional(),
   brand: z.string(),
 });
@@ -74,6 +78,9 @@ function UpdateInferenceModelForm(props: UpdateInferenceModelFormProps) {
         model.defaultRequestsPerMinutePerOrganization,
       defaultTokensPerMinutePerOrganization:
         model.defaultTokensPerMinutePerOrganization,
+      defaultContextWindow: model.defaultContextWindow
+        ? model.defaultContextWindow.toString()
+        : '',
     },
   });
 
@@ -88,6 +95,7 @@ function UpdateInferenceModelForm(props: UpdateInferenceModelFormProps) {
             values.defaultRequestsPerMinutePerOrganization,
           defaultTokensPerMinutePerOrganization:
             values.defaultTokensPerMinutePerOrganization,
+          defaultContextWindow: parseInt(values.defaultContextWindow, 10),
           name: values.name,
           disabled: values.disabled,
           brand: values.brand,
@@ -139,6 +147,16 @@ function UpdateInferenceModelForm(props: UpdateInferenceModelFormProps) {
                   fullWidth
                   type="number"
                   label="TPM Limit (per Org)"
+                  {...field}
+                />
+              )}
+            />
+            <FormField
+              name="defaultContextWindow"
+              render={({ field }) => (
+                <Input
+                  fullWidth
+                  label="Default Context Window Size"
                   {...field}
                 />
               )}

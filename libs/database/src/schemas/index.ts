@@ -623,6 +623,7 @@ export const inferenceModelsMetadata = pgTable(
     brand: text('brand').notNull(),
     isRecommended: boolean('is_recommended').notNull().default(false),
     tag: text('tag'),
+    defaultContextWindow: numeric('default_context_window'),
     defaultRequestsPerMinutePerOrganization: numeric(
       'default_requests_per_minute_per_organization',
     )
