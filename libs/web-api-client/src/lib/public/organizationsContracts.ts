@@ -384,6 +384,73 @@ const updateOrganizationUserRoleContract = c.mutation({
   },
 });
 
+export const VerifyDomainSchema = z.object({
+  domain: z.string(),
+  id: z.string(),
+});
+
+const listVerifiedDomainsContract = c.query({
+  path: '/organizations/self/verified-domains',
+  method: 'GET',
+  responses: {
+    200: z.object({
+      domains: VerifyDomainSchema.array(),
+    }),
+  },
+});
+
+const createInviteRuleContract = c.mutation({
+  path: '/organizations/self/invite-rules',
+  method: 'POST',
+  body: z.object({
+    domainId: z.string(),
+    role: UserPresetRoles,
+  }),
+  responses: {
+    201: z.object({
+      id: z.string(),
+      role: UserPresetRoles,
+      domain: z.string(),
+    }),
+    400: z.object({
+      message: z.string(),
+      errorCode: z.enum(['domainNotFound', 'ruleAlreadyExists']),
+    }),
+  },
+});
+
+export const InviteRuleSchema = z.object({
+  id: z.string(),
+  domain: z.string(),
+  role: UserPresetRoles,
+});
+
+export type InviteRuleType = z.infer<typeof InviteRuleSchema>;
+
+const listInviteRulesContract = c.query({
+  path: '/organizations/self/invite-rules',
+  method: 'GET',
+  responses: {
+    200: z.object({
+      rules: InviteRuleSchema.array(),
+    }),
+  },
+});
+
+const deleteInviteRuleContract = c.mutation({
+  path: '/organizations/self/invite-rules/:ruleId',
+  method: 'DELETE',
+  pathParams: z.object({
+    ruleId: z.string(),
+  }),
+  body: z.undefined(),
+  responses: {
+    200: z.object({
+      success: z.boolean(),
+    }),
+  },
+});
+
 export const organizationsContract = c.router({
   getCurrentOrganization: getCurrentOrganizationContract,
   getCurrentOrganizationPreferences: getCurrentOrganizationPreferencesContract,
@@ -404,6 +471,10 @@ export const organizationsContract = c.router({
   removeOrganizationBillingMethod: removeOrganizationBillingMethodContract,
   setDefaultOrganizationBillingMethod:
     setDefaultOrganizationBillingMethodContract,
+  listVerifiedDomains: listVerifiedDomainsContract,
+  createInviteRule: createInviteRuleContract,
+  listInviteRules: listInviteRulesContract,
+  deleteInviteRule: deleteInviteRuleContract,
 });
 
 export const organizationsQueryClientKeys = {
@@ -424,4 +495,6 @@ export const organizationsQueryClientKeys = {
   getInviteByCode: (inviteCode: string) => ['invites', inviteCode],
   getCurrentOrganizationBillingInfo: ['organizations', 'self', 'billing-info'],
   startSetupIntent: ['organizations', 'self', 'setup-intent'],
+  listVerifiedDomains: ['organizations', 'self', 'verified-domains'],
+  listInviteRules: ['organizations', 'self', 'invite-rules'],
 };

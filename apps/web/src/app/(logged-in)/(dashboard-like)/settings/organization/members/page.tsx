@@ -23,7 +23,6 @@ import {
   NiceGridDisplay,
   RawInput,
   SearchIcon,
-  Select,
   toast,
   Typography,
   CloseIcon,
@@ -54,6 +53,10 @@ import {
   UserPresetRoles,
 } from '@letta-cloud/rbac';
 import type { UserPresetRolesType } from '@letta-cloud/rbac';
+import {
+  RoleSelect,
+  useGetLabelForRole,
+} from '$web/client/components/RoleSelect/RoleSelect';
 
 const inviteMemberDialogFormSchema = z.object({
   email: z.string().email(),
@@ -392,15 +395,6 @@ function UpdateMemberRoleDialog(props: UpdateMemberRoleDialogProps) {
     },
   });
 
-  const roleOptions = useMemo(() => {
-    return Object.values(UserPresetRoles.Enum)
-      .map((role) => ({
-        value: role,
-        label: getLabelForRole(role),
-      }))
-      .filter((role) => role.value !== 'custom');
-  }, [getLabelForRole]);
-
   const queryClient = useQueryClient();
 
   const { mutate, isPending, isError } =
@@ -481,10 +475,8 @@ function UpdateMemberRoleDialog(props: UpdateMemberRoleDialogProps) {
           render={({ field }) => {
             return (
               <VStack>
-                <Select
-                  labelVariant="simple"
+                <RoleSelect
                   label={t('UpdateMemberRoleDialog.select.label')}
-                  options={roleOptions}
                   onSelect={(value) => {
                     if (isMultiValue(value)) {
                       return;
@@ -569,26 +561,6 @@ function DeleteMemberDialog(props: DeleteMemberDialogProps) {
         email,
       })}
     </Dialog>
-  );
-}
-
-function useGetLabelForRole() {
-  const t = useTranslations('organization/members');
-
-  return useCallback(
-    (role: string) => {
-      switch (role) {
-        case 'admin':
-          return t('roles.admin');
-        case 'editor':
-          return t('roles.editor');
-        case 'custom':
-          return t('roles.custom');
-        default:
-          return role;
-      }
-    },
-    [t],
   );
 }
 

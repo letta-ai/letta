@@ -3,9 +3,11 @@ import {
   organizationBillingDetails,
   organizationCredits,
   organizationInvitedUsers,
+  organizationInviteRules,
   organizationPreferences,
   organizations,
   organizationUsers,
+  organizationVerifiedDomains,
   users,
 } from '@letta-cloud/database';
 import {
@@ -936,6 +938,200 @@ export async function updateOrganizationUserRole(
   };
 }
 
+type ListVerifiedDomainsResponse = ServerInferResponses<
+  typeof contracts.organizations.listVerifiedDomains
+>;
+
+export async function listVerifiedDomains(): Promise<ListVerifiedDomainsResponse> {
+  const { activeOrganizationId, permissions } =
+    await getUserWithActiveOrganizationIdOrThrow();
+
+  if (!permissions.has(ApplicationServices.UPDATE_ORGANIZATION)) {
+    return {
+      status: 403,
+      body: {
+        message: 'Permission denied',
+      },
+    };
+  }
+
+  const organization = await db.query.organizations.findFirst({
+    where: eq(organizations.id, activeOrganizationId),
+    with: {
+      organizationVerifiedDomains: true,
+    },
+  });
+
+  if (!organization) {
+    throw new Error('Organization not found');
+  }
+
+  return {
+    status: 200,
+    body: {
+      domains: organization.organizationVerifiedDomains.map((domain) => ({
+        id: domain.id,
+        domain: domain.domain,
+      })),
+    },
+  };
+}
+
+type CreateInviteRuleRequest = ServerInferRequest<
+  typeof contracts.organizations.createInviteRule
+>;
+
+type CreateInviteRuleResponse = ServerInferResponses<
+  typeof contracts.organizations.createInviteRule
+>;
+
+export async function createInviteRule(
+  req: CreateInviteRuleRequest,
+): Promise<CreateInviteRuleResponse> {
+  const { activeOrganizationId, permissions } =
+    await getUserWithActiveOrganizationIdOrThrow();
+
+  if (!permissions.has(ApplicationServices.UPDATE_ORGANIZATION)) {
+    return {
+      status: 403,
+      body: {
+        message: 'Permission denied',
+      },
+    };
+  }
+
+  const { domainId, role } = req.body;
+
+  // check if domain exists
+  const domain = await db.query.organizationVerifiedDomains.findFirst({
+    where: eq(organizationVerifiedDomains.id, domainId),
+  });
+
+  if (!domain) {
+    return {
+      status: 404,
+      body: {
+        message: 'Domain not found',
+        errorCode: 'domainNotFound',
+      },
+    };
+  }
+
+  // check if rule already exists
+  const rule = await db.query.organizationInviteRules.findFirst({
+    where: and(
+      eq(organizationInviteRules.verifiedDomain, domainId),
+      eq(organizationInviteRules.organizationId, activeOrganizationId),
+    ),
+  });
+
+  if (rule) {
+    return {
+      status: 400,
+      body: {
+        message: 'Rule already exists',
+        errorCode: 'ruleAlreadyExists',
+      },
+    };
+  }
+
+  const [res] = await db
+    .insert(organizationInviteRules)
+    .values({
+      verifiedDomain: domainId,
+      role,
+      organizationId: activeOrganizationId,
+    })
+    .returning({ id: organizationVerifiedDomains.id });
+
+  return {
+    status: 201,
+    body: {
+      id: res.id,
+      role: role,
+      domain: domain.domain,
+    },
+  };
+}
+
+type ListInviteRulesResponse = ServerInferResponses<
+  typeof contracts.organizations.listInviteRules
+>;
+
+export async function listInviteRules(): Promise<ListInviteRulesResponse> {
+  const { activeOrganizationId, permissions } =
+    await getUserWithActiveOrganizationIdOrThrow();
+
+  if (!permissions.has(ApplicationServices.UPDATE_ORGANIZATION)) {
+    return {
+      status: 403,
+      body: {
+        message: 'Permission denied',
+      },
+    };
+  }
+
+  const rules = await db.query.organizationInviteRules.findMany({
+    where: eq(organizationInviteRules.organizationId, activeOrganizationId),
+    with: {
+      domain: true,
+    },
+  });
+
+  return {
+    status: 200,
+    body: {
+      rules: rules.map((rule) => ({
+        id: rule.id,
+        domain: rule.domain.domain,
+        role: rule.role,
+      })),
+    },
+  };
+}
+
+type DeleteInviteRuleRequest = ServerInferRequest<
+  typeof contracts.organizations.deleteInviteRule
+>;
+
+type DeleteInviteRuleResponse = ServerInferResponses<
+  typeof contracts.organizations.deleteInviteRule
+>;
+
+export async function deleteInviteRule(
+  req: DeleteInviteRuleRequest,
+): Promise<DeleteInviteRuleResponse> {
+  const { activeOrganizationId, permissions } =
+    await getUserWithActiveOrganizationIdOrThrow();
+
+  if (!permissions.has(ApplicationServices.UPDATE_ORGANIZATION)) {
+    return {
+      status: 403,
+      body: {
+        message: 'Permission denied',
+      },
+    };
+  }
+
+  const { ruleId } = req.params;
+
+  await db
+    .delete(organizationInviteRules)
+    .where(
+      and(
+        eq(organizationInviteRules.id, ruleId),
+        eq(organizationInviteRules.organizationId, activeOrganizationId),
+      ),
+    );
+
+  return {
+    status: 200,
+    body: {
+      success: true,
+    },
+  };
+}
+
 export const organizationsRouter = {
   getCurrentOrganization,
   getCurrentOrganizationPreferences,
@@ -955,4 +1151,8 @@ export const organizationsRouter = {
   updateOrganizationUserRole,
   removeOrganizationBillingMethod,
   setDefaultOrganizationBillingMethod,
+  listVerifiedDomains,
+  createInviteRule,
+  listInviteRules,
+  deleteInviteRule,
 };

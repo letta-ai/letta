@@ -42,6 +42,7 @@ type SectionProps = PropsWithChildren<
     fullHeight?: boolean;
     borderBottom?: boolean;
     title?: string;
+    icon?: React.ReactNode;
     description?: string;
   }
 >;
@@ -52,6 +53,7 @@ export function Section(props: SectionProps) {
     actions,
     fullHeight,
     title,
+    icon,
     description,
     borderBottom,
     searchPlaceholder,
@@ -68,18 +70,21 @@ export function Section(props: SectionProps) {
       borderBottom={borderBottom}
     >
       <HStack align="center" justify="spaceBetween">
-        <VStack gap={false}>
-          {title && (
-            <Typography align="left" noWrap bold variant="body">
-              {title}
-            </Typography>
-          )}
-          {description && (
-            <Typography align="left" color="lighter" variant="body">
-              {description}
-            </Typography>
-          )}
-        </VStack>
+        <HStack>
+          {icon && <VStack>{icon}</VStack>}
+          <VStack gap={false}>
+            {title && (
+              <Typography align="left" noWrap bold variant="body">
+                {title}
+              </Typography>
+            )}
+            {description && (
+              <Typography align="left" color="lighter" variant="body">
+                {description}
+              </Typography>
+            )}
+          </VStack>
+        </HStack>
         <HiddenOnMobile>
           <HStack>{actions}</HStack>
         </HiddenOnMobile>

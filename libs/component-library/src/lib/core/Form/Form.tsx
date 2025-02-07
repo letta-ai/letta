@@ -342,7 +342,7 @@ export function RawInputContainer(props: RawInputContainerProps) {
   );
 }
 
-type MakeInputProps<T> = InputContainerProps & T;
+export type MakeInputProps<T> = InputContainerProps & T;
 type MakeRawInputProps<T> = RawInputContainerProps & T;
 
 export type MakeInputOptionsContainerType = (

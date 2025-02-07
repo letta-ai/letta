@@ -7,9 +7,10 @@ import {
   FormActions,
   FormField,
   FormProvider,
+  HR,
   Input,
   LoadingEmptyStatusComponent,
-  Typography,
+  Section,
   useForm,
   VStack,
 } from '@letta-cloud/component-library';
@@ -89,8 +90,8 @@ function EditOrganizationSettings(props: EditOrganizationSettingsProps) {
   return (
     <DashboardPageSection>
       <FormProvider {...form}>
-        <Form onSubmit={form.handleSubmit(handleSubmit)} variant="contained">
-          <VStack gap="form" borderBottom paddingBottom>
+        <Form onSubmit={form.handleSubmit(handleSubmit)}>
+          <VStack gap="form">
             <FormField
               render={({ field }) => {
                 return (
@@ -124,20 +125,32 @@ function EditOrganizationSettings(props: EditOrganizationSettingsProps) {
   );
 }
 
+function MembershipRules() {
+  const t = useTranslations('organization/settings');
+
+  return (
+    <Section
+      title={t('MembershipRules.title')}
+      description={t('MembershipRules.description')}
+      actions={
+        <Button
+          color="secondary"
+          label={t('MembershipRules.actions')}
+          href="/settings/organization/members/invite-rules"
+        />
+      }
+    ></Section>
+  );
+}
+
 function DeleteOrganizationSettings() {
   const t = useTranslations('organization/settings');
 
   return (
-    <DashboardPageSection>
-      <VStack width="contained" gap="large">
-        <Typography variant="heading5" bold>
-          {t('DeleteOrganizationSettings.title')}
-        </Typography>
-        <Typography variant="body">
-          {t('DeleteOrganizationSettings.description')}
-        </Typography>
-      </VStack>
-    </DashboardPageSection>
+    <Section
+      title={t('DeleteOrganizationSettings.title')}
+      description={t('DeleteOrganizationSettings.description')}
+    ></Section>
   );
 }
 
@@ -147,14 +160,23 @@ function OrganizationSettingsPage() {
 
   return (
     <DashboardPageLayout title={t('title')}>
-      {!organization ? (
-        <LoadingEmptyStatusComponent emptyMessage="" isLoading />
-      ) : (
-        <>
-          <EditOrganizationSettings name={organization.name} />
-          <DeleteOrganizationSettings />
-        </>
-      )}
+      <VStack width="largeContained">
+        {!organization ? (
+          <LoadingEmptyStatusComponent emptyMessage="" isLoading />
+        ) : (
+          <>
+            <EditOrganizationSettings name={organization.name} />
+            <HR />
+            <DashboardPageSection>
+              <MembershipRules />
+            </DashboardPageSection>
+            <HR />
+            <DashboardPageSection>
+              <DeleteOrganizationSettings />
+            </DashboardPageSection>
+          </>
+        )}
+      </VStack>
     </DashboardPageLayout>
   );
 }

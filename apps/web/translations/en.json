@@ -420,8 +420,49 @@
       }
     }
   },
+  "organization/members/invite-rules": {
+    "title": "Membership invite rules",
+    "description": "Automatically add new members to the organizations based on their email domain",
+    "columns": {
+      "rule": "Rule",
+      "ruleSentence": "Automatically add new Letta users with email domain <bold>{domain}</bold> to this organization with role <bold>{role}</bold>",
+      "actions": "Actions"
+    },
+    "DeleteInviteRuleDialog": {
+      "title": "Delete invite rule",
+      "trigger": "Delete invite rule",
+      "description": "Are you sure you want to delete this invite rule? This is permanent and cannot be undone.",
+      "error": "There was an error deleting the invite rule, please try again or contact support."
+    },
+    "AddInviteRuleDialog": {
+      "title": "Add invite rule",
+      "trigger": "Add invite rule",
+      "confirm": "Add rule",
+      "cancel": "Cancel",
+      "domain": {
+        "label": "Email domain",
+        "placeholder": "my-domain.com",
+        "description": "Domain must be verified before it can be used, please contact support to verify your domain."
+      },
+      "role": {
+        "label": "Role",
+        "placeholder": "Select a role"
+      },
+
+      "errors": {
+        "default": "There was an error adding the invite rule, please try again or contact support.",
+        "ruleAlreadyExists": "This rule already exists, please choose another domain",
+        "domainNotFound": "Domain not found, please enter a valid domain"
+      }
+    }
+  },
   "organization/settings": {
     "title": "Organization settings",
+    "MembershipRules": {
+      "title": "Automatic Organization Membership",
+      "description": "Automatically add new members to the organizations based on their email domain",
+      "actions": "Manage membership invite rules"
+    },
     "EditOrganizationSettings": {
       "name": {
         "label": "Organization name"
@@ -448,6 +489,11 @@
   "organization/layout": {
     "members": "Members",
     "settings": "Settings"
+  },
+  "roles": {
+    "admin": "Admin",
+    "editor": "Editor",
+    "custom": "Custom"
   },
   "organization/members": {
     "PermissionGrantView": {
@@ -477,11 +523,7 @@
         "read": "View API keys"
       }
     },
-    "roles": {
-      "admin": "Admin",
-      "editor": "Editor",
-      "custom": "Custom"
-    },
+
     "UpdateMemberRoleDialog": {
       "trigger": "Update role",
       "title": "Update member role",
