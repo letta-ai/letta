@@ -1,7 +1,7 @@
 import { AgentsService, BlocksService } from '@letta-cloud/letta-agents-api';
 import type { AgentState, UpdateAgent } from '@letta-cloud/letta-agents-api';
 import * as lodash from 'lodash';
-import { attachVariablesToTemplates } from '../../utils/attachVariablesToTemplates/attachVariablesToTemplates';
+import { attachVariablesToTemplates } from '../attachVariablesToTemplates/attachVariablesToTemplates';
 
 interface UpdateAgentFromAgentId {
   preserveCoreMemories?: boolean;

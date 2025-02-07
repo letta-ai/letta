@@ -3,10 +3,8 @@ import type { ServerInferRequest, ServerInferResponses } from '@ts-rest/core';
 import type { sdkContracts } from '@letta-cloud/letta-agents-api';
 import { db, deployedAgentVariables } from '@letta-cloud/database';
 import type { SDKContext } from '$web/sdk/shared';
-import {
-  copyAgentById,
-  getDeployedTemplateByVersion,
-} from '@letta-cloud/server-utils';
+import { getDeployedTemplateByVersion } from '@letta-cloud/server-utils';
+import { copyAgentById } from '$web/server/lib/copyAgentById/copyAgentById';
 
 type CreateAgentsFromTemplateRequest = ServerInferRequest<
   typeof sdkContracts.templates.createAgentsFromTemplate

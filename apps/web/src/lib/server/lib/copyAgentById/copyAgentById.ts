@@ -1,13 +1,13 @@
 import { AgentsService } from '@letta-cloud/letta-agents-api';
 import { omittedFieldsOnCopy } from '../updateAgentFromAgentId/updateAgentFromAgentId';
 import * as lodash from 'lodash';
-import { attachVariablesToTemplates } from '../../utils/attachVariablesToTemplates/attachVariablesToTemplates';
 import {
   adjectives,
   animals,
   colors,
   uniqueNamesGenerator,
 } from 'unique-names-generator';
+import { attachVariablesToTemplates } from '$web/server/lib/attachVariablesToTemplates/attachVariablesToTemplates';
 
 interface CopyAgentByIdOptions {
   memoryVariables?: Record<string, string>;

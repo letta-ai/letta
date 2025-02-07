@@ -12,7 +12,7 @@ import { eq } from 'drizzle-orm';
 import * as Sentry from '@sentry/node';
 import { findUniqueAgentTemplateName } from '$web/server';
 import { migrateAgent } from '../migrateAgent/migrateAgent';
-import { copyAgentById } from '@letta-cloud/server-utils';
+import { copyAgentById } from '$web/server/lib/copyAgentById/copyAgentById';
 
 type DeployAgentTemplateRequest = ServerInferRequest<
   typeof sdkContracts.agents.versionAgentTemplate
