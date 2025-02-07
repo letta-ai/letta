@@ -101,6 +101,11 @@ function SettingsLayout(props: SettingsLayoutProps) {
                     label: t('organization.rateLimits'),
                     href: '/settings/organization/rate-limits',
                   },
+                  {
+                    id: 'cost-explorer',
+                    label: t('organization.costExplorer'),
+                    href: '/settings/organization/cost-explorer',
+                  },
                   ...(showModelProviders
                     ? [
                         {

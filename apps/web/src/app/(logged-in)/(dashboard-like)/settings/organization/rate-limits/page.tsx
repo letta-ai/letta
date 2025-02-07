@@ -121,6 +121,7 @@ function RateLimitsPage() {
           limit={limit}
           onSetOffset={setOffset}
           onLimitChange={setLimit}
+          hasNextPage={rateLimit?.body.hasNextPage}
           columns={columns}
           data={rateLimit?.body.rateLimits || []}
           isLoading={!rateLimit?.body.rateLimits}

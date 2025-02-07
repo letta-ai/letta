@@ -277,8 +277,19 @@
       "integrations": "Integrations",
       "environmentVariables": "Environment variables",
       "modelProviders": "Model providers",
-      "rateLimits": "Rate limits"
+      "rateLimits": "Rate limits",
+      "costExplorer": "Cost Explorer"
     }
+  },
+  "organization/costs": {
+    "sameAsPrevious": "Same as previous",
+    "title": "Cost Explorer",
+    "description": "Costs are demarked in credits per request by the context window size. The context window size is the number of tokens in the context window of the agent. If a model is not listed, it means it won't be available for use at this time.",
+    "columns": {
+      "name": "Model name",
+      "tokens": "<={tokens} tokens"
+    },
+    "credits": "{credits} credits"
   },
   "data-sources/page": {
     "CreateDataSourceDialog": {

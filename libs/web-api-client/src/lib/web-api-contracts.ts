@@ -60,6 +60,7 @@ import {
   rateLimitQueryClientKeys,
   rateLimitsContracts,
 } from './public/rateLimitsContracts';
+import { costsContract, costsQueryKeys } from './public/costsContract';
 
 export const contracts = {
   user: userContract,
@@ -74,6 +75,7 @@ export const contracts = {
   usage: usageContracts,
   toolMetadata: toolMetadataContracts,
   starterKits: starterKitsContracts,
+  costs: costsContract,
   rateLimits: rateLimitsContracts,
   admin: {
     usage: adminUsageContracts,
@@ -92,6 +94,7 @@ export const queryClientKeys = {
   organizations: organizationsQueryClientKeys,
   apiKeys: apiKeysQueryKeys,
   featureFlags: featureFlagsQueryClientKeys,
+  costs: costsQueryKeys,
   agentTemplates: agentTemplatesQueryClientKeys,
   adePreferences: adePreferencesQueryClientKeys,
   developmentServers: developmentServerQueryClientKeys,
@@ -127,3 +130,4 @@ export type * from './admin/adminOrganizationsContracts';
 export type * from './admin/adminModelsContracts';
 export type * from './admin/flushLayoutsContracts';
 export * from './public/rateLimitsContracts';
+export * from './public/costsContract';

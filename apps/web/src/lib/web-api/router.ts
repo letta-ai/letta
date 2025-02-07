@@ -18,6 +18,7 @@ import { toolMetadataRouter } from '$web/web-api/tool-metadata/toolMetadataRoute
 import { adminUsageRouter } from '$web/web-api/admin/usage/adminUsageRouter';
 import { starterKitsRouter } from '$web/web-api/starter-kits/starterKitsRoutes';
 import { rateLimitsRoutes } from '$web/web-api/rate-limits/rateLimitsRoutes';
+import { costsRoutes } from '$web/web-api/costs/costsRoutes';
 
 export const router = {
   user: userRouter,
@@ -27,6 +28,7 @@ export const router = {
   organizations: organizationsRouter,
   agentTemplates: agentTemplateRoutes,
   adePreferences: adePreferencesRouter,
+  costs: costsRoutes,
   developmentServers: developmentServersRouter,
   environmentVariables: environmentVariablesRouter,
   usage: usageRouter,
