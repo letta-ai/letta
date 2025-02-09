@@ -260,6 +260,7 @@ class Agent(BaseAgent):
         error_msg: str,
         tool_call_id: str,
         function_name: str,
+        function_args: str,
         function_response: str,
         messages: List[Message],
         include_function_failed_message: bool = False,
@@ -394,6 +395,7 @@ class Agent(BaseAgent):
 
         messages = []  # append these to the history when done
         function_name = None
+        function_args = {}
 
         # Step 2: check if LLM wanted to call a function
         if response_message.function_call or (response_message.tool_calls is not None and len(response_message.tool_calls) > 0):
@@ -459,7 +461,7 @@ class Agent(BaseAgent):
             if not target_letta_tool:
                 error_msg = f"No function named {function_name}"
                 function_response = "None"  # more like "never ran?"
-                messages = self._handle_function_error_response(error_msg, tool_call_id, function_name, function_response, messages)
+                messages = self._handle_function_error_response(error_msg, tool_call_id, function_name, function_args, function_response, messages)
                 return messages, False, True  # force a heartbeat to allow agent to handle error
 
             # Failure case 2: function name is OK, but function args are bad JSON
@@ -469,7 +471,7 @@ class Agent(BaseAgent):
             except Exception:
                 error_msg = f"Error parsing JSON for function '{function_name}' arguments: {function_call.arguments}"
                 function_response = "None"  # more like "never ran?"
-                messages = self._handle_function_error_response(error_msg, tool_call_id, function_name, function_response, messages)
+                messages = self._handle_function_error_response(error_msg, tool_call_id, function_name, function_args, function_response, messages)
                 return messages, False, True  # force a heartbeat to allow agent to handle error
 
             # Check if inner thoughts is in the function call arguments (possible apparently if you are using Azure)
@@ -506,7 +508,7 @@ class Agent(BaseAgent):
 
                 if sandbox_run_result and sandbox_run_result.status == "error":
                     messages = self._handle_function_error_response(
-                        function_response, tool_call_id, function_name, function_response, messages
+                        function_response, tool_call_id, function_name, function_args, function_response, messages
                     )
                     return messages, False, True  # force a heartbeat to allow agent to handle error
 
@@ -535,7 +537,7 @@ class Agent(BaseAgent):
                 error_msg_user = f"{error_msg}\n{traceback.format_exc()}"
                 self.logger.error(error_msg_user)
                 messages = self._handle_function_error_response(
-                    error_msg, tool_call_id, function_name, function_response, messages, include_function_failed_message=True
+                    error_msg, tool_call_id, function_name, function_args, function_response, messages, include_function_failed_message=True
                 )
                 return messages, False, True  # force a heartbeat to allow agent to handle error
 
@@ -543,7 +545,7 @@ class Agent(BaseAgent):
             if function_response_string.startswith(ERROR_MESSAGE_PREFIX):
                 error_msg = function_response_string
                 messages = self._handle_function_error_response(
-                    error_msg, tool_call_id, function_name, function_response, messages, include_function_failed_message=True
+                    error_msg, tool_call_id, function_name, function_args, function_response, messages, include_function_failed_message=True
                 )
                 return messages, False, True  # force a heartbeat to allow agent to handle error
 
