@@ -184,7 +184,7 @@ build-undertaker:
 
 @deploy-undertaker: push-undertaker
     @echo "🚧 Deploying Helm chart..."
-    helm upgrade --install undertaker {{HELM_CHARTS_DIR}}/undertaker \
+    helm upgrade --install credit-undertaker {{HELM_CHARTS_DIR}}/credit-undertaker \
         --set image.repository={{DOCKER_REGISTRY}}/undertaker \
         --set image.tag={{TAG}} \
         --set-string "podAnnotations.kubectl\.kubernetes\.io/restartedAt"="$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
@@ -193,8 +193,9 @@ build-undertaker:
         --set env.LETTA_PG_DB=${LETTA_PG_DB} \
         --set env.LETTA_PG_HOST=${LETTA_PG_HOST} \
         --set env.LETTA_PG_PORT=${LETTA_PG_PORT} \
-        --set env.UNDERTAKER_SENTRY_DSN=${UNDERTAKER_SENTRY_DSN} \
-        --set env.DATABASE_URL=${DATABASE_URL}
+        --set env.REDIS_HOST="${REDIS_HOST}"
+
+    npm run slack-bot-says "Successfully deployed credit undertaker service with tag: {{TAG}}."
 
 # Build all Docker images for GitHub Actions with cache management
 build-web-images:
@@ -372,3 +373,14 @@ env:
 undertaker:
     @echo "🚧 Running the undertaker..."
     npm run undertaker:dev
+
+# Trigger the undertaker deployment workflow (defaults to current branch if none specified)
+trigger-undertaker-deploy branch="" deploy_message="":
+    #!/usr/bin/env bash
+    if [ -z "{{branch}}" ]; then
+        BRANCH=$(git branch --show-current)
+    else
+        BRANCH="{{branch}}"
+    fi
+    echo "🚀 Triggering undertaker deployment workflow on branch: $BRANCH"
+    gh workflow run "🕸🚀 Deploy Undertaker" --ref $BRANCH

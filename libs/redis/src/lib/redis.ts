@@ -53,6 +53,16 @@ function createRedisInstance() {
   }
 }
 
+export async function testRedisConnection() {
+  console.log(
+    `[Redis] Testing connection... at ${environment.REDIS_HOST}:${environment.REDIS_PORT}`,
+  );
+
+  const redis = createRedisInstance();
+
+  await redis.ping();
+}
+
 export async function getRedisData<Type extends RedisTypes = RedisTypes>(
   type: Type,
   args: z.infer<(typeof redisDefinitions)[Type]['input']>,

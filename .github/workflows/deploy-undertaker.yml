@@ -19,6 +19,7 @@ env:
   LETTA_PG_DB: ${{ secrets.LETTA_PG_DB }}
   LETTA_PG_HOST: ${{ secrets.LETTA_PG_HOST }}
   LETTA_PG_PORT: ${{ secrets.LETTA_PG_PORT }}
+  SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
   UNDERTAKER_SENTRY_DSN: ${{ secrets.UNDERTAKER_SENTRY_DSN }}
   REDIS_HOST: "10.167.199.148"
   REDIS_PORT: "6379"
@@ -107,7 +108,7 @@ jobs:
         uses: docker/setup-buildx-action@v3
 
       - name: Build
-        run: just build-web-images
+        run: just build-undertaker
 
       - name: Update deployment status to in_progress
         uses: chrnorm/deployment-status@v2
@@ -118,7 +119,7 @@ jobs:
 
       - name: Deploy
         id: deploy
-        run: just deploy-web
+        run: just deploy-undertaker
 
       - name: Update deployment status to success
         if: success()

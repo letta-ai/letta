@@ -67,15 +67,18 @@ export async function removeCreditsFromOrganization(
     );
   }
 
-  const [txn] = await db.insert(organizationCreditTransactions).values({
-    amount: amount.toString(),
-    organizationId: org.id,
-    source,
-    note,
-    transactionType: 'subtraction',
-  }).returning({
-    id: organizationCreditTransactions.id,
-  });
+  const [txn] = await db
+    .insert(organizationCreditTransactions)
+    .values({
+      amount: amount.toString(),
+      organizationId: org.id,
+      source,
+      note,
+      transactionType: 'subtraction',
+    })
+    .returning({
+      id: organizationCreditTransactions.id,
+    });
 
   const [res] = await db
     .update(organizationCredits)

@@ -17,7 +17,6 @@ export async function deductCreditsFromStep(step: Step) {
       note: `Deducted ${creditCost} credits for model ${step.model}`,
     });
 
-
     return response;
   } catch (e) {
     console.error(
