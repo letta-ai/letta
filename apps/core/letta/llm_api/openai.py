@@ -7,6 +7,7 @@ from openai import OpenAI
 from letta.llm_api.helpers import add_inner_thoughts_to_functions, convert_to_structured_output, make_post_request
 from letta.local_llm.constants import INNER_THOUGHTS_KWARG, INNER_THOUGHTS_KWARG_DESCRIPTION, INNER_THOUGHTS_KWARG_DESCRIPTION_GO_FIRST
 from letta.local_llm.utils import num_tokens_from_functions, num_tokens_from_messages
+from letta.log import get_logger
 from letta.schemas.llm_config import LLMConfig
 from letta.schemas.message import Message as _Message
 from letta.schemas.message import MessageRole as _MessageRole
@@ -26,7 +27,7 @@ from letta.schemas.openai.embedding_response import EmbeddingResponse
 from letta.streaming_interface import AgentChunkStreamingInterface, AgentRefreshStreamingInterface
 from letta.utils import get_tool_call_id, smart_urljoin
 
-OPENAI_SSE_DONE = "[DONE]"
+logger = get_logger(__name__)
 
 
 def openai_get_model_list(
@@ -354,9 +355,10 @@ def openai_chat_completions_process_stream(
     except Exception as e:
         if stream_interface:
             stream_interface.stream_end()
-        print(f"Parsing ChatCompletion stream failed with error:\n{str(e)}")
+        logger.error(f"Parsing ChatCompletion stream failed with error:\n{str(e)}")
         raise e
     finally:
+        logger.info(f"Finally ending streaming interface.")
         if stream_interface:
             stream_interface.stream_end()
 

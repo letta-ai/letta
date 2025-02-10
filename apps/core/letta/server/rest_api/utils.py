@@ -9,6 +9,7 @@ from fastapi import Header
 from pydantic import BaseModel
 
 from letta.errors import ContextWindowExceededError, RateLimitExceededError
+from letta.log import get_logger
 from letta.schemas.usage import LettaUsageStatistics
 from letta.server.rest_api.interface import StreamingServerInterface
 
@@ -24,10 +25,14 @@ SSE_FINISH_MSG = "[DONE]"  # mimic openai
 SSE_ARTIFICIAL_DELAY = 0.1
 
 
+logger = get_logger(__name__)
+
+
 def sse_formatter(data: Union[dict, str]) -> str:
     """Prefix with 'data: ', and always include double newlines"""
     assert type(data) in [dict, str], f"Expected type dict or str, got type {type(data)}"
     data_str = json.dumps(data, separators=(",", ":")) if isinstance(data, dict) else data
+    # print(f"data: {data_str}\n\n")
     return f"data: {data_str}\n\n"
 
 
@@ -62,23 +67,29 @@ async def sse_async_generator(
                 usage = await usage_task
                 # Double-check the type
                 if not isinstance(usage, LettaUsageStatistics):
-                    raise ValueError(f"Expected LettaUsageStatistics, got {type(usage)}")
+                    err_msg = f"Expected LettaUsageStatistics, got {type(usage)}"
+                    logger.error(err_msg)
+                    raise ValueError(err_msg)
                 yield sse_formatter(usage.model_dump())
 
             except ContextWindowExceededError as e:
                 log_error_to_sentry(e)
+                logger.error(f"ContextWindowExceededError error: {e}")
                 yield sse_formatter({"error": f"Stream failed: {e}", "code": str(e.code.value) if e.code else None})
 
             except RateLimitExceededError as e:
                 log_error_to_sentry(e)
+                logger.error(f"RateLimitExceededError error: {e}")
                 yield sse_formatter({"error": f"Stream failed: {e}", "code": str(e.code.value) if e.code else None})
 
             except Exception as e:
                 log_error_to_sentry(e)
-                yield sse_formatter({"error": f"Stream failed (internal error occured)"})
+                logger.error(f"Caught unexpected Exception: {e}")
+                yield sse_formatter({"error": f"Stream failed (internal error occurred)"})
 
     except Exception as e:
         log_error_to_sentry(e)
+        logger.error(f"Caught unexpected Exception: {e}")
         yield sse_formatter({"error": "Stream failed (decoder encountered an error)"})
 
     finally:
