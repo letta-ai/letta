@@ -117,9 +117,39 @@ app.get('/health', (_req, res) => {
   res.send('ok');
 });
 
+async function testClientDatabase() {
+  console.log('[Undertaker] Testing client database connection');
+  const client = new pg.Client({
+    connectionString: CORE_DATABASE_URL,
+  });
+
+  await client.connect();
+
+  await client.end();
+
+  console.log('[Undertaker] Client database connection successful');
+}
+
+async function testWebDatabaseConnection() {
+  console.log('[Undertaker] Testing web database connection');
+  const client = new pg.Client({
+    connectionString: process.env.DATABASE_URL,
+  });
+
+  await client.connect();
+
+  await client.end();
+
+  console.log('[Undertaker] Web database connection successful');
+}
+
 const port = process.env.PORT || 3009;
 
-testRedisConnection()
+Promise.all([
+  testClientDatabase(),
+  testWebDatabaseConnection(),
+  testRedisConnection(),
+])
   .then(() => {
     serve().catch((e) => {
       Sentry.captureException(e);

@@ -47,6 +47,8 @@ spec:
               value: {{ .Values.env.LETTA_PG_DB | quote }}
             - name: REDIS_HOST
               value: {{ .Values.env.REDIS_HOST | quote }}
+            - name: DATABASE_URL
+              value: {{ .Values.env.DATABASE_URL | quote }}
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
           {{- with .Values.volumeMounts }}

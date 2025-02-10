@@ -83,3 +83,4 @@ env:
   LETTA_PG_HOST: ""
   LETTA_PG_PORT: ""
   LETTA_PG_DB: ""
+  DATABASE_URL: ""
