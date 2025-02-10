@@ -297,6 +297,10 @@ package-desktop:
     @echo "Packaging the desktop app..."
     npx nx package desktop-electron
 
+package-desktop-test:
+    @echo "Packaging the desktop app..."
+    npx nx package-smoke desktop-electron
+
 
 setup-pg-vector:
     @echo "Setting up pg-vector..."

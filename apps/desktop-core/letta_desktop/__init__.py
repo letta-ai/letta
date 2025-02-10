@@ -2,6 +2,7 @@ from dotenv import load_dotenv
 from pathlib import Path
 from os.path import join
 letta_dir = Path.home() / ".letta"
+from threading import Thread
 
 dotenv_path = join(letta_dir, "env")
 
@@ -69,6 +70,22 @@ def upgrade_db():
   print('Database upgraded')
 
 
+def check_if_web_server_running():
+  # ping localhost:8285 every 5 seconds, if its down kill this process
+  import requests
+  import time
+  print("Checking if web server is running...")
+
+  while True:
+    try:
+      print("Pinging localhost:8285")
+      res = requests.get('http://localhost:8285/health', timeout=5)
+      res.raise_for_status()
+      time.sleep(5)
+    except Exception as e:
+      print("Web server is down, exiting...")
+      sys.exit(1)
+
 
 if __name__ == "__main__":
   initialize_database()
@@ -78,4 +95,8 @@ if __name__ == "__main__":
 
   print("Starting server...")
 
-  start_server()
+  # start the server in a separate thread
+  server_thread = Thread(target=start_server)
+  server_thread.start()
+
+  check_if_web_server_running()

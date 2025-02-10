@@ -11,6 +11,7 @@ import type { ServerLogType } from '@letta-cloud/types';
 import * as todesktop from '@todesktop/runtime';
 import * as os from 'os';
 import * as ps from 'ps-node';
+import { createWebServer } from './web-server';
 todesktop.init();
 
 let lettaServer: ReturnType<typeof execFile> | null = null;
@@ -303,6 +304,7 @@ export default class App {
       await App.killLettaServer();
 
       App.startLettaServer();
+      createWebServer();
 
       App.initMainWindow();
       App.loadMainWindow();

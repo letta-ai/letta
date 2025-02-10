@@ -40,6 +40,13 @@
         "cwd": "apps/desktop-electron"
       }
     },
+    "package-smoke": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "todesktop build --async --code-sign=false",
+        "cwd": "apps/desktop-electron"
+      }
+    },
     "type-check": {
       "executor": "nx:run-commands",
       "options": {
