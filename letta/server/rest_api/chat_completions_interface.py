@@ -41,7 +41,7 @@ class ChatCompletionsStreamingInterface(AgentChunkStreamingInterface):
     def __init__(
         self,
         multi_step: bool = True,
-        timeout: int = 150,
+        timeout: int = 3 * 60,
         # The following are placeholders for potential expansions; they
         # remain if you need to differentiate between actual "assistant messages"
         # vs. tool calls. By default, they are set for the "send_message" tool usage.
@@ -55,6 +55,7 @@ class ChatCompletionsStreamingInterface(AgentChunkStreamingInterface):
         # Parsing state for incremental function-call data
         self.current_function_name = ""
         self.current_function_arguments = []
+        self.current_json_parse_result = {}
 
         # Internal chunk buffer and event for async notification
         self._chunks = deque()
@@ -85,6 +86,7 @@ class ChatCompletionsStreamingInterface(AgentChunkStreamingInterface):
             try:
                 await asyncio.wait_for(self._event.wait(), timeout=self.timeout)
             except asyncio.TimeoutError:
+                logger.warning("Chat completions interface timed out! Please check that this is intended.")
                 break
 
             while self._chunks:
@@ -105,7 +107,7 @@ class ChatCompletionsStreamingInterface(AgentChunkStreamingInterface):
         self,
         item: ChatCompletionChunk,
     ):
-        """
+        """m
         Add an item (a LettaMessage, status marker, or partial chunk)
         to the queue and signal waiting consumers.
         """
@@ -156,6 +158,7 @@ class ChatCompletionsStreamingInterface(AgentChunkStreamingInterface):
         Called externally with a ChatCompletionChunkResponse. Transforms
         it if necessary, then enqueues partial messages for streaming back.
         """
+        # print("RECEIVED CHUNK...")
         processed_chunk = self._process_chunk_to_openai_style(chunk)
         if processed_chunk is not None:
             self._push_to_buffer(processed_chunk)
@@ -216,37 +219,43 @@ class ChatCompletionsStreamingInterface(AgentChunkStreamingInterface):
                 combined_args = "".join(self.current_function_arguments)
                 parsed_args = OptimisticJSONParser().parse(combined_args)
 
-                # If we can see a "message" field, return it as partial content
-                if self.assistant_message_tool_kwarg in parsed_args and parsed_args[self.assistant_message_tool_kwarg]:
-                    return ChatCompletionChunk(
-                        id=chunk.id,
-                        object=chunk.object,
-                        created=chunk.created.timestamp(),
-                        model=chunk.model,
-                        choices=[
-                            Choice(
-                                index=choice.index,
-                                delta=ChoiceDelta(content=self.current_function_arguments[-1], role=self.ASSISTANT_STR),
-                                finish_reason=None,
-                            )
-                        ],
-                    )
+                # If the parsed result is different
+                # This is an edge case we need to consider. E.g. if the last streamed token is '}', we shouldn't stream that out
+                if parsed_args != self.current_json_parse_result:
+                    self.current_json_parse_result = parsed_args
+                    # If we can see a "message" field, return it as partial content
+                    if self.assistant_message_tool_kwarg in parsed_args and parsed_args[self.assistant_message_tool_kwarg]:
+                        return ChatCompletionChunk(
+                            id=chunk.id,
+                            object=chunk.object,
+                            created=chunk.created.timestamp(),
+                            model=chunk.model,
+                            choices=[
+                                Choice(
+                                    index=choice.index,
+                                    delta=ChoiceDelta(content=self.current_function_arguments[-1], role=self.ASSISTANT_STR),
+                                    finish_reason=None,
+                                )
+                            ],
+                        )
 
         # If there's a finish reason, pass that along
         if choice.finish_reason is not None:
-            return ChatCompletionChunk(
-                id=chunk.id,
-                object=chunk.object,
-                created=chunk.created.timestamp(),
-                model=chunk.model,
-                choices=[
-                    Choice(
-                        index=choice.index,
-                        delta=ChoiceDelta(),
-                        finish_reason=self.FINISH_REASON_STR,
-                    )
-                ],
-            )
+            # only emit a final chunk if finish_reason == "stop"
+            if choice.finish_reason == "stop":
+                return ChatCompletionChunk(
+                    id=chunk.id,
+                    object=chunk.object,
+                    created=chunk.created.timestamp(),
+                    model=chunk.model,
+                    choices=[
+                        Choice(
+                            index=choice.index,
+                            delta=ChoiceDelta(),  # no partial text here
+                            finish_reason="stop",
+                        )
+                    ],
+                )
 
         return None
 
