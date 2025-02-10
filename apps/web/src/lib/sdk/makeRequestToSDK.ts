@@ -249,7 +249,10 @@ export async function makeRequestToSDK(
     });
   }
 
-  if (isCreateMessageRequest(options)) {
+  if (
+    isCreateMessageRequest(options) &&
+    process.env.IS_API_STABILITY_TEST !== 'yes'
+  ) {
     const check = await handleMessageRateLimiting({
       organizationId,
       agentId: pathname.split('/')[3],
@@ -274,7 +277,6 @@ export async function makeRequestToSDK(
       );
     }
   }
-
 
   if (
     isStreamMessageRequest(options) ||

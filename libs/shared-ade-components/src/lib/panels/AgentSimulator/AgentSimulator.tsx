@@ -82,7 +82,9 @@ interface UseSendMessageOptions {
   onFailedToSendMessage?: (existingMessage: string) => void;
 }
 
-function errorHasResponseAndStatus(e: unknown): e is { response: { status: number } } {
+function errorHasResponseAndStatus(
+  e: unknown,
+): e is { response: { status: number } } {
   return Object.prototype.hasOwnProperty.call(e, 'response');
 }
 
@@ -105,7 +107,6 @@ function useSendMessage(agentId: string, options: UseSendMessageOptions = {}) {
       }
     };
   }, [setMessagesInFlightCache]);
-
 
   const sendMessage: SendMessageType = useCallback(
     (payload: SendMessagePayload) => {
@@ -143,11 +144,6 @@ function useSendMessage(agentId: string, options: UseSendMessageOptions = {}) {
       }
 
       abortController.current = new AbortController();
-
-
-
-
-
 
       const eventsource = new EventSource(
         `${baseUrl}/v1/agents/${agentId}/messages/stream`,
@@ -198,12 +194,12 @@ function useSendMessage(agentId: string, options: UseSendMessageOptions = {}) {
           }
         }
 
-        setIsPending(false);
-        setFailedToSendMessage(true);
-        setErrorCode('INTERNAL_SERVER_ERROR');
-        options?.onFailedToSendMessage?.(message);
+        // temp disable, I dont think this is working properly
+        // setIsPending(false);
+        // setFailedToSendMessage(true);
+        // setErrorCode('INTERNAL_SERVER_ERROR');
+        // options?.onFailedToSendMessage?.(message);
       });
-
 
       eventsource.onmessage = (e: MessageEvent) => {
         if (abortController.current?.signal.aborted) {
