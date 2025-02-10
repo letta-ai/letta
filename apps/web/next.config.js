@@ -69,6 +69,9 @@ nextConfig = withSentryConfig(nextConfig, {
   // https://docs.sentry.io/product/crons/
   // https://vercel.com/docs/cron-jobs
   automaticVercelMonitors: false,
+  unstable_sentryWebpackPluginOptions: {
+    applicationKey: 'letta-web-ui',
+  },
 });
 
 module.exports = composePlugins(...plugins)(nextConfig);

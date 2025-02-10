@@ -10,7 +10,13 @@ Sentry.init({
   enabled: process.env.NODE_ENV === 'production',
 
   // Add optional integrations for additional features
-  integrations: [Sentry.replayIntegration()],
+  integrations: [
+    Sentry.replayIntegration(),
+    Sentry.thirdPartyErrorFilterIntegration({
+      filterKeys: ['letta-web-ui'],
+      behaviour: 'drop-error-if-contains-third-party-frames',
+    }),
+  ],
 
   authToken: process.env.SENTRY_AUTH_TOKEN,
   release: process.env.TAG,
