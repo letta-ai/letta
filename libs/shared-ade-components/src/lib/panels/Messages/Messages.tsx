@@ -125,7 +125,9 @@ function MessageGroup({ group }: MessageGroupType) {
   }, [name]);
 
   return (
-    <HStack gap="medium">
+    <HStack
+      data-testid="message-group"
+      gap="medium">
       <IconAvatar
         textColor={textColor}
         backgroundColor={backgroundColor}

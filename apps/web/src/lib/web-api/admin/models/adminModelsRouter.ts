@@ -224,6 +224,23 @@ async function createAdminInferenceModel(
     };
   }
 
+  // check if the model already exists
+  const existingModel = await db.query.inferenceModelsMetadata.findFirst({
+    where: and(
+      eq(inferenceModelsMetadata.modelName, selectedModel.model),
+      eq(inferenceModelsMetadata.modelEndpoint, selectedModel.model_endpoint),
+    ),
+  });
+
+  if (existingModel) {
+    return {
+      status: 400,
+      body: {
+        error: 'Model already exists',
+      },
+    };
+  }
+
   const [response] = await db
     .insert(inferenceModelsMetadata)
     .values({
@@ -357,7 +374,7 @@ async function updateAdminInferenceModel(
     defaultTokensPerMinutePerOrganization,
   } = req.body;
 
-  if (defaultRequestsPerMinutePerOrganization) {
+  if (typeof defaultRequestsPerMinutePerOrganization === 'number') {
     set.defaultRequestsPerMinutePerOrganization =
       defaultRequestsPerMinutePerOrganization.toString();
 
@@ -372,7 +389,7 @@ async function updateAdminInferenceModel(
     );
   }
 
-  if (defaultTokensPerMinutePerOrganization) {
+  if (typeof defaultTokensPerMinutePerOrganization === 'number') {
     set.defaultTokensPerMinutePerOrganization =
       defaultTokensPerMinutePerOrganization.toString();
 
@@ -735,6 +752,21 @@ async function updateAdminEmbeddingModel(
 ): Promise<UpdateAdminEmbeddingModelResponse> {
   const { id } = req.params;
   const { brand, disabled, name } = req.body;
+
+  // check if model exists
+
+  const existingModel = await db.query.embeddingModelsMetadata.findFirst({
+    where: eq(embeddingModelsMetadata.id, id),
+  });
+
+  if (!existingModel) {
+    return {
+      status: 404,
+      body: {
+        error: 'Embedding model not found',
+      },
+    };
+  }
 
   const set: Partial<UpdateAdminEmbeddingSetterType> = {};
 

@@ -120,10 +120,12 @@ function UpdateEmbeddingModelForm(props: UpdateEmbeddingModelFormProps) {
               name="defaultRequestsPerMinutePerOrganization"
               render={({ field }) => (
                 <Input
+                  {...field}
+
                   fullWidth
                   type="number"
+                  data-testid="rpm-limit"
                   label="RPM Limit (per Org)"
-                  {...field}
                 />
               )}
             />
@@ -131,10 +133,12 @@ function UpdateEmbeddingModelForm(props: UpdateEmbeddingModelFormProps) {
               name="defaultTokensPerMinutePerOrganization"
               render={({ field }) => (
                 <Input
+                  {...field}
+
                   fullWidth
                   type="number"
+                  data-testid="tpm-limit"
                   label="TPM Limit (per Org)"
-                  {...field}
                 />
               )}
             />
@@ -153,7 +157,9 @@ function UpdateEmbeddingModelForm(props: UpdateEmbeddingModelFormProps) {
               />
             </VStack>
             <FormActions>
-              <Button busy={isPending} type="submit" label="Update" />
+              <Button
+                data-testid="save-model"
+                busy={isPending} type="submit" label="Update" />
             </FormActions>
           </VStack>
         </VStack>

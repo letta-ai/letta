@@ -82,6 +82,10 @@ interface UseSendMessageOptions {
   onFailedToSendMessage?: (existingMessage: string) => void;
 }
 
+function errorHasResponseAndStatus(e: unknown): e is { response: { status: number } } {
+  return Object.prototype.hasOwnProperty.call(e, 'response');
+}
+
 function useSendMessage(agentId: string, options: UseSendMessageOptions = {}) {
   const [isPending, setIsPending] = useAtom(isSendingMessageAtom);
   const abortController = useRef<AbortController>(undefined);
@@ -101,6 +105,7 @@ function useSendMessage(agentId: string, options: UseSendMessageOptions = {}) {
       }
     };
   }, [setMessagesInFlightCache]);
+
 
   const sendMessage: SendMessageType = useCallback(
     (payload: SendMessagePayload) => {
@@ -139,6 +144,11 @@ function useSendMessage(agentId: string, options: UseSendMessageOptions = {}) {
 
       abortController.current = new AbortController();
 
+
+
+
+
+
       const eventsource = new EventSource(
         `${baseUrl}/v1/agents/${agentId}/messages/stream`,
         {
@@ -173,6 +183,27 @@ function useSendMessage(agentId: string, options: UseSendMessageOptions = {}) {
           }),
         },
       );
+
+      eventsource.addEventListener('error', (e) => {
+        e.stopPropagation();
+        e.preventDefault();
+
+        if (errorHasResponseAndStatus(e)) {
+          if (e.response.status === 429) {
+            setIsPending(false);
+            setFailedToSendMessage(true);
+            setErrorCode('RATE_LIMIT_EXCEEDED');
+            options?.onFailedToSendMessage?.(message);
+            return;
+          }
+        }
+
+        setIsPending(false);
+        setFailedToSendMessage(true);
+        setErrorCode('INTERNAL_SERVER_ERROR');
+        options?.onFailedToSendMessage?.(message);
+      });
+
 
       eventsource.onmessage = (e: MessageEvent) => {
         if (abortController.current?.signal.aborted) {

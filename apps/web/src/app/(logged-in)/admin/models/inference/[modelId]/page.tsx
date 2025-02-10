@@ -133,10 +133,11 @@ function UpdateInferenceModelForm(props: UpdateInferenceModelFormProps) {
               name="defaultRequestsPerMinutePerOrganization"
               render={({ field }) => (
                 <Input
+                  {...field}
                   fullWidth
                   type="number"
                   label="RPM Limit (per Org)"
-                  {...field}
+                  data-testid="rpm-limit"
                 />
               )}
             />
@@ -144,10 +145,11 @@ function UpdateInferenceModelForm(props: UpdateInferenceModelFormProps) {
               name="defaultTokensPerMinutePerOrganization"
               render={({ field }) => (
                 <Input
+                  {...field}
                   fullWidth
                   type="number"
                   label="TPM Limit (per Org)"
-                  {...field}
+                  data-testid="tpm-limit"
                 />
               )}
             />
@@ -202,7 +204,9 @@ function UpdateInferenceModelForm(props: UpdateInferenceModelFormProps) {
               />
             </VStack>
             <FormActions>
-              <Button busy={isPending} type="submit" label="Update" />
+              <Button
+                data-testid="save-model"
+                busy={isPending} type="submit" label="Update" />
             </FormActions>
           </VStack>
         </VStack>

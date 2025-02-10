@@ -17,7 +17,7 @@ describe('letta', () => {
     cy.location('pathname').should('eq', '/login');
 
     cy.googleLogin();
-
+    cy.importModels();
     cy.get('h1').contains(/Projects/);
 
     // creates a project

@@ -5,15 +5,19 @@ import {
   inferenceModelsMetadata,
   perModelPerOrganizationRateLimitOverrides,
 } from '@letta-cloud/database';
-import { eq } from 'drizzle-orm';
+import { and, eq } from 'drizzle-orm';
+import { AgentsService } from '@letta-cloud/letta-agents-api';
+import type { LettaStreamingRequest } from '@letta-cloud/letta-agents-api';
+import { getTikTokenEncoder } from '@letta-cloud/generic-utils';
 
 type ModelType = 'embedding' | 'inference';
 
 interface IsRateLimitedForCreatingMessagesPayload {
   organizationId: string;
-  inputTokens: string;
-  modelId: string;
+  input: LettaStreamingRequest;
+  agentId: string;
   type: ModelType;
+  lettaAgentsUserId: string;
 }
 
 interface GetAndSeedOrganizationLimitsResponse {
@@ -54,6 +58,7 @@ export async function getAndSeedOrganizationLimits(
   let maxTokensPerMinutePerModel: number | null | undefined =
     organizationLimit?.maxTokensPerMinutePerModel;
 
+  console.log('a', organizationLimit);
   // if organizationLimit exists but a specific model is not present, this most likley means that the organization limit for that model was not set, we do not want to fetch that here
   // we should rely on cache clearing to fetch the updated organization limits either by expiration or manual clearing else where
   if (!organizationLimit) {
@@ -165,7 +170,7 @@ export async function getAndSeedOrganizationLimits(
 
   If the number of requests or tokens exceeds the rate limit, we return a response indicating that the request is rate limited.
  */
-export type RateLimitReason = 'requests' | 'tokens';
+export type RateLimitReason = 'model-unknown' | 'requests' | 'tokens';
 
 function isANumberSafe(num: any) {
   return typeof num === 'number' && !isNaN(num) && isFinite(num);
@@ -174,8 +179,60 @@ function isANumberSafe(num: any) {
 export async function handleMessageRateLimiting(
   payload: IsRateLimitedForCreatingMessagesPayload,
 ) {
-  const { organizationId, inputTokens, modelId, type } = payload;
+  const { organizationId, input, agentId, type, lettaAgentsUserId } = payload;
 
+  const agent = await AgentsService.retrieveAgent(
+    {
+      agentId,
+    },
+    {
+      user_id: lettaAgentsUserId,
+    },
+  );
+
+  if (!agent) {
+    return {
+      isRateLimited: true,
+      reasons: ['model-unknown'],
+    };
+  }
+
+  const metaData = await db.query.inferenceModelsMetadata.findFirst({
+    where: and(
+      eq(inferenceModelsMetadata.modelName, agent.llm_config.model),
+      eq(
+        inferenceModelsMetadata.modelEndpoint,
+        agent.llm_config.model_endpoint || '',
+      ),
+    ),
+  });
+
+  if (!metaData) {
+    return {
+      isRateLimited: true,
+      reasons: ['model-unknown'],
+    };
+  }
+
+  const encoding = getTikTokenEncoder(agent.llm_config.model);
+
+  const inputTokens = input.messages.reduce((acc, message) => {
+    let text = '';
+
+    if (Array.isArray(message.content)) {
+      text = message.content.map((c) => c.text).join(' ');
+    } else {
+      text = message.content;
+    }
+
+    const tokenLength = encoding.encode(text).length;
+
+    return acc + tokenLength;
+  }, 0);
+
+  const modelId = metaData.id;
+
+  console.log('a', modelId);
   const currentMinute = Math.floor(Date.now() / 60000);
 
   const { maxRequestsPerMinutePerModel, maxTokensPerMinutePerModel } =
@@ -201,11 +258,11 @@ export async function handleMessageRateLimiting(
 
   const rateLimitThresholds: RateLimitReason[] = [];
 
-  if (currentRequests >= maxRequestsPerMinutePerModel) {
+  if (currentRequests + 1 >= maxRequestsPerMinutePerModel) {
     rateLimitThresholds.push('requests');
   }
 
-  if (currentTokens >= maxTokensPerMinutePerModel) {
+  if (currentTokens + inputTokens >= maxTokensPerMinutePerModel) {
     rateLimitThresholds.push('tokens');
   }
 
@@ -232,7 +289,7 @@ export async function handleMessageRateLimiting(
       {
         // expires in 3 minutes
         expiresAt: Date.now() + 3 * 60000,
-        data: { data: currentTokens + inputTokens.length },
+        data: { data: currentTokens + inputTokens },
       },
     ),
   ]);

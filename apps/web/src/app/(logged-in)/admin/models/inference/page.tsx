@@ -284,6 +284,7 @@ function AdminInferenceModelsPage() {
               size="small"
               href={`/admin/models/inference/${row.original.id}`}
               color="primary"
+              data-testid={`view-model:${row.original.name}`}
               label="View"
             />
           ),

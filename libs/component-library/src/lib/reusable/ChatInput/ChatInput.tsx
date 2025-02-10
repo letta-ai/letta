@@ -228,7 +228,7 @@ export const ChatInput = forwardRef<ChatInputRef, ChatInputProps>(
               className="z-[1]"
               color="destructive"
             >
-              <Typography variant="body3" bold>
+              <Typography variant="body3" bold data-testid="chat-simulator-error">
                 {hasFailedToSendMessageText}
               </Typography>
             </VStack>

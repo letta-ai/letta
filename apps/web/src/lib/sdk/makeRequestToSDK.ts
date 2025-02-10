@@ -6,6 +6,7 @@ import { RESTRICTED_ROUTE_BASE_PATHS } from '@letta-cloud/letta-agents-api';
 import { createInferenceTransaction } from '$web/server/inferenceTransactions/inferenceTransactions';
 import * as Sentry from '@sentry/nextjs';
 import { z } from 'zod';
+import { handleMessageRateLimiting } from '$web/server';
 
 interface RequestOptions {
   pathname: string;
@@ -247,6 +248,33 @@ export async function makeRequestToSDK(
       },
     });
   }
+
+  if (isCreateMessageRequest(options)) {
+    const check = await handleMessageRateLimiting({
+      organizationId,
+      agentId: pathname.split('/')[3],
+      type: 'inference',
+      input: body,
+      lettaAgentsUserId,
+    });
+
+    if (check.isRateLimited) {
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: 'Rate limited',
+          reasons: check.reasons,
+        }),
+        {
+          status: 429,
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        },
+      );
+    }
+  }
+
 
   if (
     isStreamMessageRequest(options) ||

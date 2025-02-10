@@ -13,6 +13,7 @@ describe('letta', () => {
   it('deploy agents', () => {
     Cypress.config('defaultCommandTimeout', 50000);
     cy.googleLogin();
+    cy.importModels();
 
     cy.visit('/projects');
 

@@ -25,10 +25,31 @@ Cypress.Commands.add('googleLogin', () => {
   });
 });
 
+Cypress.Commands.add('importModels', () => {
+  cy.request({
+    method: 'POST',
+    url: '/aia/import-models',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+  });
+});
+
 Cypress.Commands.add('clearPointerEventLock', () => {
   cy.get('body').invoke('css', 'user-select', 'auto');
   cy.get('body').invoke('css', 'cursor', 'auto');
   cy.get('body').invoke('css', 'pointer-events', 'auto');
+});
+
+
+Cypress.Commands.add('grantAdminAccess', () => {
+  cy.request({
+    method: 'POST',
+    url: '/aia/grant-admin-access',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+  });
 });
 
 Cypress.Commands.add('deleteProjectsWithName', (name: string) => {
