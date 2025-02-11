@@ -216,6 +216,14 @@ export const LLMConfig = z.object({
     ])
     .optional(),
   temperature: z.union([z.number(), z.undefined()]).optional(),
+  max_tokens: z
+    .union([
+      z.number(),
+      z.null(),
+      z.array(z.union([z.number(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
 });
 
 export type EmbeddingConfig = z.infer<typeof EmbeddingConfig>;

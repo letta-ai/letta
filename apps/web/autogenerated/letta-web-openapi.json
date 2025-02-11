@@ -956,6 +956,36 @@
                               },
                               {}
                             ]
+                          },
+                          "max_tokens": {
+                            "oneOf": [
+                              {
+                                "type": "number"
+                              },
+                              {
+                                "type": "string",
+                                "format": "null",
+                                "nullable": true
+                              },
+                              {
+                                "type": "array",
+                                "items": {
+                                  "oneOf": [
+                                    {
+                                      "type": "number"
+                                    },
+                                    {
+                                      "type": "string",
+                                      "format": "null",
+                                      "nullable": true
+                                    }
+                                  ],
+                                  "nullable": true
+                                }
+                              },
+                              {}
+                            ],
+                            "nullable": true
                           }
                         },
                         "required": [
@@ -3290,6 +3320,36 @@
                                   },
                                   {}
                                 ]
+                              },
+                              "max_tokens": {
+                                "oneOf": [
+                                  {
+                                    "type": "number"
+                                  },
+                                  {
+                                    "type": "string",
+                                    "format": "null",
+                                    "nullable": true
+                                  },
+                                  {
+                                    "type": "array",
+                                    "items": {
+                                      "oneOf": [
+                                        {
+                                          "type": "number"
+                                        },
+                                        {
+                                          "type": "string",
+                                          "format": "null",
+                                          "nullable": true
+                                        }
+                                      ],
+                                      "nullable": true
+                                    }
+                                  },
+                                  {}
+                                ],
+                                "nullable": true
                               }
                             },
                             "required": [
@@ -6220,6 +6280,36 @@
                                   },
                                   {}
                                 ]
+                              },
+                              "max_tokens": {
+                                "oneOf": [
+                                  {
+                                    "type": "number"
+                                  },
+                                  {
+                                    "type": "string",
+                                    "format": "null",
+                                    "nullable": true
+                                  },
+                                  {
+                                    "type": "array",
+                                    "items": {
+                                      "oneOf": [
+                                        {
+                                          "type": "number"
+                                        },
+                                        {
+                                          "type": "string",
+                                          "format": "null",
+                                          "nullable": true
+                                        }
+                                      ],
+                                      "nullable": true
+                                    }
+                                  },
+                                  {}
+                                ],
+                                "nullable": true
                               }
                             },
                             "required": [
