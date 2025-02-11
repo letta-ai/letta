@@ -94,7 +94,6 @@ def build_openai_chat_completions_request(
     functions: Optional[list],
     function_call: Optional[str],
     use_tool_naming: bool,
-    max_tokens: Optional[int],
 ) -> ChatCompletionRequest:
     if functions and llm_config.put_inner_thoughts_in_kwargs:
         # Special case for LM Studio backend since it needs extra guidance to force out the thoughts first
@@ -131,7 +130,7 @@ def build_openai_chat_completions_request(
             tools=[Tool(type="function", function=f) for f in functions] if functions else None,
             tool_choice=tool_choice,
             user=str(user_id),
-            max_completion_tokens=max_tokens,
+            max_completion_tokens=llm_config.max_tokens,
             temperature=llm_config.temperature,
         )
     else:
@@ -141,7 +140,7 @@ def build_openai_chat_completions_request(
             functions=functions,
             function_call=function_call,
             user=str(user_id),
-            max_completion_tokens=max_tokens,
+            max_completion_tokens=llm_config.max_tokens,
             temperature=llm_config.temperature,
         )
         # https://platform.openai.com/docs/guides/text-generation/json-mode
