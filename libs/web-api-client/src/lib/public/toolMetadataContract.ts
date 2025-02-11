@@ -64,7 +64,11 @@ const ListToolGroupsResponse = z.object({
 const listToolGroupMetadataContract = c.query({
   method: 'GET',
   path: '/tool-group-metadata',
-  query: GenericSearchSchema,
+  query: z.object({
+    search: z.string().optional(),
+    offset: z.number().optional(),
+    limit: z.number().max(400).optional(),
+  }),
   responses: {
     200: ListToolGroupsResponse,
   },

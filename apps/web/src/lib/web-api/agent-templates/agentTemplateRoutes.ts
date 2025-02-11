@@ -17,6 +17,7 @@ import { getDeployedTemplateByVersion } from '@letta-cloud/server-utils';
 import { createTemplate } from '$web/server/lib/createTemplate/createTemplate';
 import { copyAgentById } from '$web/server/lib/copyAgentById/copyAgentById';
 import { updateAgentFromAgentId } from '$web/server/lib/updateAgentFromAgentId/updateAgentFromAgentId';
+import { ApplicationServices } from '@letta-cloud/rbac';
 
 function randomThreeDigitNumber() {
   return Math.floor(Math.random() * 1000);
@@ -47,8 +48,18 @@ export async function listAgentTemplates(
     name,
   } = req.query;
 
-  const { activeOrganizationId: organizationId, lettaAgentsId } =
-    await getUserOrThrow();
+  const {
+    activeOrganizationId: organizationId,
+    permissions,
+    lettaAgentsId,
+  } = await getUserOrThrow();
+
+  if (!permissions.has(ApplicationServices.READ_TEMPLATES)) {
+    return {
+      status: 403,
+      body: {},
+    };
+  }
 
   if (!organizationId) {
     return {
@@ -160,8 +171,22 @@ export async function getAgentTemplateById(
 ): Promise<GetAgentTemplateByIdResponse> {
   const { id } = req.params;
   const { includeState } = req.query;
-  const { activeOrganizationId, lettaAgentsId } =
-    await getUserWithActiveOrganizationIdOrThrow();
+  const { activeOrganizationId, permissions, lettaAgentsId } =
+    await getUserOrThrow();
+
+  if (!activeOrganizationId) {
+    return {
+      status: 404,
+      body: {},
+    };
+  }
+
+  if (!permissions.has(ApplicationServices.READ_TEMPLATES)) {
+    return {
+      status: 403,
+      body: {},
+    };
+  }
 
   const agentTemplate = await db.query.agentTemplates.findFirst({
     where: and(
@@ -213,8 +238,16 @@ export async function forkAgentTemplate(
   const {
     activeOrganizationId,
     lettaAgentsId,
+    permissions,
     id: userId,
   } = await getUserWithActiveOrganizationIdOrThrow();
+
+  if (!permissions.has(ApplicationServices.CREATE_UPDATE_DELETE_TEMPLATES)) {
+    return {
+      status: 403,
+      body: {},
+    };
+  }
 
   const testingAgent = await db.query.agentTemplates.findFirst({
     where: and(
@@ -288,8 +321,23 @@ async function getAgentTemplateSimulatorSession(
   req: GetAgentTemplateSimulatorSessionRequest,
 ): Promise<GetAgentTemplateSimulatorSessionResponse> {
   const { agentTemplateId } = req.params;
-  const { activeOrganizationId, lettaAgentsId } =
-    await getUserWithActiveOrganizationIdOrThrow();
+
+  const { activeOrganizationId, permissions, lettaAgentsId } =
+    await getUserOrThrow();
+
+  if (!activeOrganizationId) {
+    return {
+      status: 404,
+      body: {},
+    };
+  }
+
+  if (!permissions.has(ApplicationServices.READ_TEMPLATES)) {
+    return {
+      status: 403,
+      body: {},
+    };
+  }
 
   const agentTemplate = await db.query.agentTemplates.findFirst({
     where: and(
@@ -408,8 +456,17 @@ async function createAgentTemplateSimulatorSession(
 ): Promise<CreateAgentTemplateSimulatorSessionResponse> {
   const { agentTemplateId } = req.params;
   const { memoryVariables, toolVariables } = req.body;
-  const { activeOrganizationId, lettaAgentsId } =
+
+  const { activeOrganizationId, permissions, lettaAgentsId } =
     await getUserWithActiveOrganizationIdOrThrow();
+
+  /* This is READ_TEMPLATES permission because simulated agents are not real agents, they are just a copy of the agent template and used for visualization */
+  if (!permissions.has(ApplicationServices.READ_TEMPLATES)) {
+    return {
+      status: 403,
+      body: {},
+    };
+  }
 
   const agentTemplate = await db.query.agentTemplates.findFirst({
     where: and(
@@ -541,8 +598,16 @@ async function refreshAgentTemplateSimulatorSession(
   req: RefreshAgentTemplateSimulatorSessionRequest,
 ): Promise<RefreshAgentTemplateSimulatorSessionResponse> {
   const { agentTemplateId, agentSessionId } = req.params;
-  const { activeOrganizationId, lettaAgentsId } =
+
+  const { activeOrganizationId, permissions, lettaAgentsId } =
     await getUserWithActiveOrganizationIdOrThrow();
+
+  if (!permissions.has(ApplicationServices.READ_TEMPLATES)) {
+    return {
+      status: 403,
+      body: {},
+    };
+  }
 
   const agentTemplate = await db.query.agentTemplates.findFirst({
     where: and(
@@ -612,8 +677,16 @@ async function deleteAgentTemplateSimulatorSession(
   req: DeleteAgentTemplateSimulatorSessionRequest,
 ): Promise<DeleteAgentTemplateSimulatorSessionResponse> {
   const { agentSessionId } = req.params;
-  const { activeOrganizationId } =
+
+  const { activeOrganizationId, permissions, lettaAgentsId } =
     await getUserWithActiveOrganizationIdOrThrow();
+
+  if (!permissions.has(ApplicationServices.READ_TEMPLATES)) {
+    return {
+      status: 403,
+      body: {},
+    };
+  }
 
   const simulatorSession = await db.query.agentSimulatorSessions.findFirst({
     where: and(
@@ -631,9 +704,19 @@ async function deleteAgentTemplateSimulatorSession(
     };
   }
 
-  await db
-    .delete(agentSimulatorSessions)
-    .where(eq(agentSimulatorSessions.id, agentSessionId));
+  await Promise.all([
+    db
+      .delete(agentSimulatorSessions)
+      .where(eq(agentSimulatorSessions.id, agentSessionId)),
+    AgentsService.deleteAgent(
+      {
+        agentId: simulatorSession.agentId,
+      },
+      {
+        user_id: lettaAgentsId,
+      },
+    ),
+  ]);
 
   return {
     status: 200,
@@ -655,8 +738,15 @@ async function getAgentTemplateByVersion(
   req: GetAgentTemplateByVersion,
 ): Promise<GetAgentTemplateByVersionResponse> {
   const { slug } = req.params;
-  const { lettaAgentsId, activeOrganizationId } =
+  const { lettaAgentsId, permissions, activeOrganizationId } =
     await getUserWithActiveOrganizationIdOrThrow();
+
+  if (!permissions.has(ApplicationServices.READ_TEMPLATES)) {
+    return {
+      status: 403,
+      body: {},
+    };
+  }
 
   const [versionName] = slug.split(':');
   const deployedAgentTemplate = await getDeployedTemplateByVersion(
@@ -705,8 +795,15 @@ export async function getDeployedAgentTemplateById(
   req: GetDeployedAgentTemplateByIdRequest,
 ): Promise<GetDeployedAgentTemplateByIdResponse> {
   const { id } = req.params;
-  const { activeOrganizationId } =
+  const { activeOrganizationId, permissions } =
     await getUserWithActiveOrganizationIdOrThrow();
+
+  if (!permissions.has(ApplicationServices.READ_TEMPLATES)) {
+    return {
+      status: 403,
+      body: {},
+    };
+  }
 
   const deployedAgentTemplate = await db.query.deployedAgentTemplates.findFirst(
     {

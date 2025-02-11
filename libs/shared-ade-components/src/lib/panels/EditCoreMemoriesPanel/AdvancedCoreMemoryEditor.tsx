@@ -40,6 +40,8 @@ import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useQueryClient } from '@tanstack/react-query';
 import { useSortedMemories } from '@letta-cloud/helpful-client-utils';
+import { useADEPermissions } from '../../hooks/useADEPermissions/useADEPermissions';
+import { ApplicationServices } from '@letta-cloud/rbac';
 
 interface CurrentAdvancedCoreMemoryState {
   selectedMemoryBlockLabel: string;
@@ -101,6 +103,8 @@ function AdvancedMemoryEditorForm(props: AdvancedMemoryEditorProps) {
 
   const agent = useCurrentAgent();
 
+  const [canUpdateAgent] = useADEPermissions(ApplicationServices.UPDATE_AGENT);
+
   const memoryUpdateSchema = useMemo(() => {
     return z.object({
       label: z
@@ -136,6 +140,10 @@ function AdvancedMemoryEditorForm(props: AdvancedMemoryEditorProps) {
 
   const handleUpdate = useCallback(
     async (values: MemoryUpdatePayload) => {
+      if (!canUpdateAgent) {
+        return;
+      }
+
       try {
         setIsPending(true);
         setIsError(false);
@@ -193,7 +201,14 @@ function AdvancedMemoryEditorForm(props: AdvancedMemoryEditorProps) {
         setIsPending(false);
       }
     },
-    [agent.id, isPending, memory.label, queryClient, updateAgentMemoryByLabel],
+    [
+      agent.id,
+      canUpdateAgent,
+      isPending,
+      memory.label,
+      queryClient,
+      updateAgentMemoryByLabel,
+    ],
   );
 
   return (
@@ -232,6 +247,7 @@ function AdvancedMemoryEditorForm(props: AdvancedMemoryEditorProps) {
               <Input
                 fullWidth
                 type="number"
+                disabled={!canUpdateAgent}
                 label={t('AdvancedMemoryEditorForm.maxCharacters.label')}
                 {...field}
               />
@@ -244,6 +260,7 @@ function AdvancedMemoryEditorForm(props: AdvancedMemoryEditorProps) {
                 rightOfLabelContent={<CharacterCounter value={field.value} />}
                 autosize={false}
                 fullHeight
+                disabled={!canUpdateAgent}
                 data-testid="advanced-memory-editor-value"
                 fullWidth
                 label={t('AdvancedMemoryEditorForm.value.label')}
@@ -252,17 +269,19 @@ function AdvancedMemoryEditorForm(props: AdvancedMemoryEditorProps) {
             )}
           />
 
-          <FormActions
-            errorMessage={
-              isError ? t('AdvancedMemoryEditorForm.error') : undefined
-            }
-          >
-            <Button
-              label={t('AdvancedMemoryEditorForm.update')}
-              busy={isPending}
-              data-testid="advanced-memory-editor-update"
-            />
-          </FormActions>
+          {canUpdateAgent && (
+            <FormActions
+              errorMessage={
+                isError ? t('AdvancedMemoryEditorForm.error') : undefined
+              }
+            >
+              <Button
+                label={t('AdvancedMemoryEditorForm.update')}
+                busy={isPending}
+                data-testid="advanced-memory-editor-update"
+              />
+            </FormActions>
+          )}
         </Form>
       </FormProvider>
     </VStack>
@@ -497,6 +516,12 @@ function DeleteMemoryBlockDialog(props: DeleteMemoryBlockDialogProps) {
     resetDeleting,
   ]);
 
+  const [canUpdateAgent] = useADEPermissions(ApplicationServices.UPDATE_AGENT);
+
+  if (!canUpdateAgent) {
+    return null;
+  }
+
   return (
     <Dialog
       errorMessage={
@@ -561,6 +586,8 @@ function CoreMemorySidebar() {
     [setIsAdvancedCoreMemoryEditorOpen],
   );
 
+  const [canUpdateAgent] = useADEPermissions(ApplicationServices.UPDATE_AGENT);
+
   return (
     <VStack minWidth="sidebar" gap={false} borderRight width="sidebar">
       <HStack align="center" padding="small" fullWidth>
@@ -578,13 +605,15 @@ function CoreMemorySidebar() {
         />
         <CreateNewMemoryBlockForm
           trigger={
-            <Button
-              hideLabel
-              preIcon={<PlusIcon />}
-              data-testid="create-new-memory-block-item"
-              color="secondary"
-              label={t('CoreMemorySidebar.create')}
-            />
+            canUpdateAgent && (
+              <Button
+                hideLabel
+                preIcon={<PlusIcon />}
+                data-testid="create-new-memory-block-item"
+                color="secondary"
+                label={t('CoreMemorySidebar.create')}
+              />
+            )
           }
         />
       </HStack>

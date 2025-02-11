@@ -317,13 +317,15 @@ function UnmountedSelect(props: UnmountedSelectProps) {
 
 export interface SelectProps extends BaseSelectProps {
   options: OptionType[];
+  disabled?: boolean;
   hideIconsOnOptions?: boolean;
   fullWidth?: boolean;
   __use_rarely_className?: string;
 }
 
 function SelectPrimitive(_props: SelectProps) {
-  const { hideIconsOnOptions, __use_rarely_className, ...props } = _props;
+  const { hideIconsOnOptions, disabled, __use_rarely_className, ...props } =
+    _props;
   const styles = useStyles(props.styleConfig || {});
   const { isInDialog } = useDialogContext();
   const [open, setOpen] = React.useState(false);
@@ -373,6 +375,7 @@ function SelectPrimitive(_props: SelectProps) {
       )}
       <ReactSelect
         unstyled
+        isDisabled={disabled}
         className={__use_rarely_className}
         // menuIsOpen
         menuPortalTarget={menuPortalTarget}

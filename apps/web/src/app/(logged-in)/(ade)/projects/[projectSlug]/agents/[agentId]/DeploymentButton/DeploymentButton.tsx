@@ -11,16 +11,16 @@ import {
   FormField,
   FormProvider,
   HStack,
+  LettaLoader,
   Popover,
   RocketIcon,
   TemplateIcon,
   toast,
+  Tooltip,
   Typography,
-  WarningIcon,
   useForm,
   VStack,
-  Tooltip,
-  LettaLoader,
+  WarningIcon,
 } from '@letta-cloud/component-library';
 import { DeployAgentUsageInstructions } from '$web/client/code-reference/DeployAgentUsageInstructions';
 import { z } from 'zod';
@@ -33,13 +33,14 @@ import {
   isAgentState,
   useAgentsServiceListAgents,
 } from '@letta-cloud/letta-agents-api';
-import { useCurrentUser } from '$web/client/hooks';
+import { useCurrentUser, useUserHasPermission } from '$web/client/hooks';
 import type { ServerInferResponses } from '@ts-rest/core';
 import type { contracts } from '@letta-cloud/web-api-client';
 import { atom, useSetAtom } from 'jotai';
 import { get } from 'lodash-es';
 import { compareAgentStates } from '@letta-cloud/generic-utils';
 import { useCurrentAgentMetaData } from '@letta-cloud/shared-ade-components';
+import { ApplicationServices } from '@letta-cloud/rbac';
 
 interface DeployAgentDialogProps {
   isAtLatestVersion: boolean;
@@ -293,6 +294,9 @@ function TemplateVersionDisplay() {
     'projects/(projectSlug)/agents/(agentId)/AgentPage',
   );
 
+  const [canUpdateTemplate] = useUserHasPermission(
+    ApplicationServices.CREATE_UPDATE_DELETE_TEMPLATES,
+  );
   const isAtLatestVersion = useMemo(() => {
     if (notFoundError) {
       return false;
@@ -326,6 +330,19 @@ function TemplateVersionDisplay() {
           preIcon={<WarningIcon size="small" />}
         />
       </Tooltip>
+    );
+  }
+
+  if (!canUpdateTemplate) {
+    return (
+      <Button
+        size="small"
+        color="primary"
+        disabled
+        label={t('DeploymentButton.readyToDeploy.trigger', {
+          version: versionNumber,
+        })}
+      />
     );
   }
 

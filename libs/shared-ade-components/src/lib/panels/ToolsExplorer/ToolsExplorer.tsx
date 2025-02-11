@@ -1,42 +1,46 @@
 import type { ToolMetadataPreviewType } from '@letta-cloud/web-api-client';
-import React, { useCallback, useMemo, useState } from 'react';
+import {
+  COMPOSIO_KEY_NAME,
+  webApi,
+  webApiQueryKeys,
+} from '@letta-cloud/web-api-client';
 import type { HTMLProps } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import { useTranslations } from '@letta-cloud/translations';
-import { useCurrentAgent } from '../../hooks';
+import { useCurrentAgent, useCurrentAgentMetaData } from '../../hooks';
 import type { AgentState, Tool } from '@letta-cloud/letta-agents-api';
-import { isLettaTool } from '@letta-cloud/letta-agents-api';
-
-import { useToolsServiceDeleteTool } from '@letta-cloud/letta-agents-api';
 import {
-  type RetrieveToolResponse,
   isAPIError,
-  useToolsServiceAddComposioTool,
-  useToolsServiceCreateTool,
-  UseToolsServiceRetrieveToolKeyFn,
-  UseToolsServiceListToolsKeyFn,
-  useToolsServiceRunToolFromSource,
-  useToolsServiceModifyTool,
-} from '@letta-cloud/letta-agents-api';
-import {
+  isLettaTool,
+  type RetrieveToolResponse,
   useAgentsServiceAttachTool,
   UseAgentsServiceRetrieveAgentKeyFn,
-  useToolsServiceRetrieveTool,
+  useToolsServiceAddComposioTool,
+  useToolsServiceCreateTool,
+  useToolsServiceDeleteTool,
   useToolsServiceListComposioApps,
   useToolsServiceListTools,
+  UseToolsServiceListToolsKeyFn,
+  useToolsServiceModifyTool,
+  useToolsServiceRetrieveTool,
+  UseToolsServiceRetrieveToolKeyFn,
+  useToolsServiceRunToolFromSource,
 } from '@letta-cloud/letta-agents-api';
 import { useQueryClient } from '@tanstack/react-query';
 import {
   ActionCard,
   Alert,
+  brandKeyToLogo,
   brandKeyToName,
   Breadcrumb,
   Button,
   ChevronLeftIcon,
-  CodeBlocksIcon,
   CloseIcon,
   CloseMiniApp,
   Code,
+  CodeBlocksIcon,
   CodeIcon,
+  ComposioLockupDynamic,
   Debugger,
   Dialog,
   ExploreIcon,
@@ -51,27 +55,22 @@ import {
   ListIcon,
   LoadedTypography,
   LoadingEmptyStatusComponent,
+  Logo,
   MiniApp,
   NiceGridDisplay,
   PlusIcon,
   RawCodeEditor,
   RawInput,
   SearchIcon,
+  Section,
+  TabGroup,
   TerminalIcon,
   toast,
   ToolsIcon,
   Typography,
   useForm,
   VStack,
-  Section,
-  ComposioLockupDynamic,
-  TabGroup,
-  Logo,
-  brandKeyToLogo,
 } from '@letta-cloud/component-library';
-import { webApi, webApiQueryKeys } from '@letta-cloud/web-api-client';
-import { useCurrentAgentMetaData } from '../../hooks';
-import { COMPOSIO_KEY_NAME } from '@letta-cloud/web-api-client';
 import { atom, useAtom } from 'jotai';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -79,6 +78,8 @@ import { isAxiosError } from 'axios';
 import { useDebouncedValue } from '@mantine/hooks';
 import { get } from 'lodash-es';
 import { Slot } from '@radix-ui/react-slot';
+import { useADEPermissions } from '../../hooks/useADEPermissions/useADEPermissions';
+import { ApplicationServices } from '@letta-cloud/rbac';
 
 type ToolViewerState = 'edit' | 'view';
 
@@ -440,13 +441,19 @@ function AddToolToAgentButton(props: AddToolToAgentButtonProps) {
     return (tools || []).some((aTool) => aTool.id === tool.id);
   }, [isComposioTool, tool, tools]);
 
+  const [canUpdateAgent] = useADEPermissions(ApplicationServices.UPDATE_AGENT);
+
   const disableAttach = useMemo(() => {
+    if (!canUpdateAgent) {
+      return true;
+    }
+
     if (isComposioTool) {
       return !isComposioConnected;
     }
 
     return isToolInAgent;
-  }, [isComposioConnected, isComposioTool, isToolInAgent]);
+  }, [isComposioConnected, isComposioTool, isToolInAgent, canUpdateAgent]);
 
   if (isToolInAgent) {
     return (
@@ -591,6 +598,7 @@ function ViewTool(props: ViewToolProps) {
 
     return isComposioTool && !isComposioConnected;
   }, [isComposioConnected, isComposioConnectedLoading, isComposioTool]);
+  const [canUpdateTool] = useADEPermissions(ApplicationServices.UPDATE_TOOL);
 
   return (
     <VStack overflowY="auto" paddingX paddingBottom fullHeight flex>
@@ -638,7 +646,7 @@ function ViewTool(props: ViewToolProps) {
             </VStack>
             <HStack>
               {showAddToolToAgent && <AddToolToAgentButton tool={tool} />}
-              {isEditable && <EditToolButton />}
+              {canUpdateTool && isEditable && <EditToolButton />}
               {composioViewUrl && (
                 <Button
                   target="_blank"
@@ -871,6 +879,8 @@ function ViewCategoryTools(props: ViewCategoryToolsProps) {
 
   const t = useTranslations('ADE/Tools');
 
+  const [canCreateTool] = useADEPermissions(ApplicationServices.CREATE_TOOL);
+
   return (
     <VStack overflow="hidden" gap="large" fullHeight fullWidth>
       <HStack
@@ -893,14 +903,16 @@ function ViewCategoryTools(props: ViewCategoryToolsProps) {
             }}
           />
         </VStack>
-        <Button
-          label={t('ViewCategoryTools.create')}
-          color="primary"
-          data-testid="start-create-tool"
-          onClick={() => {
-            startCreateTool();
-          }}
-        />
+        {canCreateTool && (
+          <Button
+            label={t('ViewCategoryTools.create')}
+            color="primary"
+            data-testid="start-create-tool"
+            onClick={() => {
+              startCreateTool();
+            }}
+          />
+        )}
       </HStack>
       <VStack paddingX overflowY="auto">
         {!isLoading ? (

@@ -48,6 +48,8 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { getBrandFromModelName } from '@letta-cloud/generic-utils';
 import { UpdateNameDialog } from '../../shared/UpdateAgentNameDialog/UpdateAgentNameDialog';
 import { webApiQueryKeys } from '@letta-cloud/web-api-client';
+import { useADEPermissions } from '../../hooks/useADEPermissions/useADEPermissions';
+import { ApplicationServices } from '@letta-cloud/rbac';
 
 interface SelectedModelType {
   icon: React.ReactNode;
@@ -207,12 +209,15 @@ function ModelSelector(props: ModelSelectorProps) {
     syncUpdateCurrentAgent,
   ]);
 
+  const [canUpdateAgent] = useADEPermissions(ApplicationServices.UPDATE_AGENT);
+
   const { base: baseName } = useAgentBaseTypeName();
 
   return (
     <>
       {error && <Alert title={t('error')} variant="destructive" />}
       <RawSelect
+        disabled={!canUpdateAgent}
         fullWidth
         infoTooltip={{
           text: t('modelInput.tooltip', { baseName }),
@@ -261,6 +266,8 @@ function SystemPromptEditorDialog(props: SystemPromptEditorDialogProps) {
     },
   });
 
+  const [canUpdateAgent] = useADEPermissions(ApplicationServices.UPDATE_AGENT);
+
   const handleSubmit = useCallback(
     (data: SystemPromptEditorFormType) => {
       mutate(
@@ -306,6 +313,7 @@ function SystemPromptEditorDialog(props: SystemPromptEditorDialogProps) {
         confirmText={t('SystemPromptEditor.dialog.save')}
         onSubmit={form.handleSubmit(handleSubmit)}
         onOpenChange={setIsExpanded}
+        hideFooter={!canUpdateAgent}
         errorMessage={isError ? t('SystemPromptEditor.error') : ''}
         title={t('SystemPromptEditor.dialog.title')}
       >
@@ -336,6 +344,7 @@ function SystemPromptEditorDialog(props: SystemPromptEditorDialogProps) {
                     fullWidth
                     flex
                     fullHeight
+                    disabled={!canUpdateAgent}
                     autosize={false}
                     hideLabel
                     label={t('SystemPromptEditor.label')}
@@ -405,6 +414,8 @@ function SystemPromptEditor() {
     }
   }, [localValue, currentAgent.system]);
 
+  const [canUpdateAgent] = useADEPermissions(ApplicationServices.UPDATE_AGENT);
+
   return (
     <>
       {isExpanded && (
@@ -419,6 +430,7 @@ function SystemPromptEditor() {
           fullWidth
           key="system"
           variant="secondary"
+          disabled={!canUpdateAgent}
           infoTooltip={{
             text: t('SystemPromptEditor.tooltip'),
           }}
@@ -536,11 +548,16 @@ function TemplateDescription() {
     [debouncedMutation, agentId, queryClient],
   );
 
+  const [canUpdateTemplate] = useADEPermissions(
+    ApplicationServices.CREATE_UPDATE_DELETE_TEMPLATES,
+  );
+
   return (
     <RawTextArea
       onChange={(e) => {
         void handleUpdate(e.target.value);
       }}
+      disabled={!canUpdateTemplate}
       rightOfLabelContent={isPending ? <Spinner size="xsmall" /> : null}
       placeholder={t('TemplateDescription.placeholder')}
       rows={3}

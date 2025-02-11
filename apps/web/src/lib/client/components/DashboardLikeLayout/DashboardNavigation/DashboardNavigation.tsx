@@ -36,7 +36,7 @@ import {
   ChevronLeftIcon,
   LaptopIcon,
 } from '@letta-cloud/component-library';
-import { useCurrentUser } from '$web/client/hooks';
+import { useCurrentUser, useUserHasPermission } from '$web/client/hooks';
 import { usePathname } from 'next/navigation';
 import { webApi, webApiQueryKeys } from '$web/client';
 import { CurrentUserDetailsBlock } from '$web/client/components';
@@ -48,6 +48,7 @@ import { LocaleSelector } from '$web/client/components/LocaleSelector/LocaleSele
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as Sentry from '@sentry/browser';
+import { ApplicationServices } from '@letta-cloud/rbac';
 
 interface NavButtonProps {
   href: string;
@@ -156,6 +157,10 @@ function MainNavigationItems(props: MainNavigationItemsProps) {
 
   const pathroot = pathname.split('/')[1];
 
+  const [canReadAPIKeys] = useUserHasPermission(
+    ApplicationServices.READ_API_KEYS,
+  );
+
   const baseNavItems = useMemo(() => {
     return [
       {
@@ -170,12 +175,16 @@ function MainNavigationItems(props: MainNavigationItemsProps) {
         id: 'data-sources',
         icon: <DatabaseIcon />,
       },
-      {
-        label: t('nav.apiKeys'),
-        href: '/api-keys',
-        id: 'api-keys',
-        icon: <KeyIcon />,
-      },
+      ...(canReadAPIKeys
+        ? [
+            {
+              label: t('nav.apiKeys'),
+              href: '/api-keys',
+              id: 'api-keys',
+              icon: <KeyIcon />,
+            },
+          ]
+        : []),
       {
         borderTop: true,
         label: t('nav.localDev'),
@@ -199,7 +208,7 @@ function MainNavigationItems(props: MainNavigationItemsProps) {
 
       return hasCloudAccess;
     });
-  }, [t, hasCloudAccess]);
+  }, [t, hasCloudAccess, canReadAPIKeys]);
 
   const isBaseNav = useMemo(() => {
     const isBase = baseNavItems.some((item) => item.href === pathname);

@@ -11,6 +11,7 @@ import {
   UseSourcesServiceRetrieveSourceKeyFn,
 } from '@letta-cloud/letta-agents-api';
 import { DataSourceClientLayout } from './_components/DataSourceClientLayout/DataSourceClientLayout';
+import { getUser } from '$web/server/auth';
 
 interface ProjectPageWrapperProps {
   params: Promise<{
@@ -22,10 +23,21 @@ interface ProjectPageWrapperProps {
 async function DataSourcePageLayout(props: ProjectPageWrapperProps) {
   const { dataSourceId } = await props.params;
   const queryClient = new QueryClient();
+  const user = await getUser();
 
-  const dataSource = await SourcesService.retrieveSource({
-    sourceId: dataSourceId,
-  });
+  if (!user?.lettaAgentsId) {
+    redirect('/login');
+    return;
+  }
+
+  const dataSource = await SourcesService.retrieveSource(
+    {
+      sourceId: dataSourceId,
+    },
+    {
+      user_id: user.lettaAgentsId,
+    },
+  );
 
   if (!dataSource) {
     redirect('/data-sources');

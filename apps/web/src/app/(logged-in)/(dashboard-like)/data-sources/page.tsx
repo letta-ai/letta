@@ -33,6 +33,8 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 import { useTranslations } from '@letta-cloud/translations';
+import { useUserHasPermission } from '$web/client/hooks';
+import { ApplicationServices } from '@letta-cloud/rbac';
 
 const createDataSourceSchema = z.object({
   name: z.string().min(3),
@@ -117,6 +119,14 @@ function CreateDataSourceDialog() {
     },
     [embeddingModels, mutate],
   );
+
+  const [canCreateDataSource] = useUserHasPermission(
+    ApplicationServices.CREATE_DATA_SOURCE,
+  );
+
+  if (!canCreateDataSource) {
+    return null;
+  }
 
   return (
     <FormProvider {...form}>

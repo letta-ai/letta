@@ -14,6 +14,8 @@ import {
 } from '@letta-cloud/component-library';
 import { STARTER_KITS } from '@letta-cloud/agent-starter-kits';
 import { useQueryClient } from '@tanstack/react-query';
+import { useUserHasPermission } from '$web/client/hooks';
+import { ApplicationServices } from '@letta-cloud/rbac';
 
 interface CreateNewTemplateDialogProps {
   trigger: React.ReactNode;
@@ -62,6 +64,14 @@ export function CreateNewTemplateDialog(props: CreateNewTemplateDialogProps) {
     },
     [mutate, queryClient, push, slug, projectId],
   );
+
+  const [canCreateTemplate] = useUserHasPermission(
+    ApplicationServices.CREATE_UPDATE_DELETE_TEMPLATES,
+  );
+
+  if (!canCreateTemplate) {
+    return null;
+  }
 
   return (
     <Dialog

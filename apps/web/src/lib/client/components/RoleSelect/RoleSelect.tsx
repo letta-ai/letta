@@ -17,6 +17,8 @@ export function useGetLabelForRole() {
           return t('admin');
         case 'editor':
           return t('editor');
+        case 'analyst':
+          return t('analyst');
         case 'custom':
           return t('custom');
         default:

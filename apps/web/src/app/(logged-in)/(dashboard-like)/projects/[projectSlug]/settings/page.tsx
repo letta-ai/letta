@@ -27,6 +27,8 @@ import type {
 } from '$web/web-api/contracts';
 import { useTranslations } from '@letta-cloud/translations';
 import { useErrorTranslationMessage } from '@letta-cloud/helpful-client-utils';
+import { useUserHasPermission } from '$web/client/hooks';
+import { ApplicationServices } from '@letta-cloud/rbac';
 
 const DeleteProjectSchema = z.object({
   name: z.string(),
@@ -309,6 +311,22 @@ function EditSettingsSection(props: EditSettingsSectionProps) {
 function SettingsPage() {
   const t = useTranslations('project/[projectId]/settings');
   const { name, slug } = useCurrentProject();
+  const [canCRDProjects] = useUserHasPermission(
+    ApplicationServices.CREATE_UPDATE_DELETE_PROJECTS,
+  );
+
+  if (!canCRDProjects) {
+    return (
+      <DashboardPageLayout encapsulatedFullHeight>
+        <VStack fullHeight fullWidth align="center" justify="center">
+          <LoadingEmptyStatusComponent
+            emptyMessage={t('noPermissions')}
+            noMinHeight
+          />
+        </VStack>
+      </DashboardPageLayout>
+    );
+  }
 
   if (!slug) {
     return (

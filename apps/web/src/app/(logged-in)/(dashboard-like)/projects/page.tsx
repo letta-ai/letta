@@ -3,21 +3,21 @@ import React, { useCallback } from 'react';
 import {
   Avatar,
   Button,
-  LoadingEmptyStatusComponent,
-  DashboardPageLayout,
-  HStack,
-  PlusIcon,
-  Typography,
-  Dialog,
-  VStack,
-  useForm,
-  FormField,
-  Input,
-  FormProvider,
-  DashboardPageSection,
-  NiceGridDisplay,
   Card,
+  DashboardPageLayout,
+  DashboardPageSection,
+  Dialog,
+  FormField,
+  FormProvider,
+  HStack,
+  Input,
+  LoadingEmptyStatusComponent,
+  NiceGridDisplay,
+  PlusIcon,
   Tooltip,
+  Typography,
+  useForm,
+  VStack,
 } from '@letta-cloud/component-library';
 import { webApi, webApiQueryKeys } from '$web/client';
 import { useDebouncedValue } from '@mantine/hooks';
@@ -28,6 +28,8 @@ import { useQueryClient } from '@tanstack/react-query';
 import { useTranslations } from '@letta-cloud/translations';
 import { useDateFormatter } from '@letta-cloud/helpful-client-utils';
 import Link from 'next/link';
+import { useUserHasPermission } from '$web/client/hooks';
+import { ApplicationServices } from '@letta-cloud/rbac';
 
 interface ProjectsListProps {
   search: string;
@@ -70,6 +72,14 @@ function CreateProjectDialog() {
     },
     [mutate],
   );
+
+  const [canCRDProjects] = useUserHasPermission(
+    ApplicationServices.CREATE_UPDATE_DELETE_PROJECTS,
+  );
+
+  if (!canCRDProjects) {
+    return null;
+  }
 
   return (
     <FormProvider {...form}>

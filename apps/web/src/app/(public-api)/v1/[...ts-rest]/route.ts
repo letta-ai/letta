@@ -12,6 +12,8 @@ import { makeRequestToSDK } from '$web/sdk';
 import { sdkRouter } from '$web/sdk/router';
 import { sdkContracts } from '@letta-cloud/letta-agents-api';
 import { getAPIStabilityTestingUser } from '$web/server/lib/getAPIStabilityTestingUser/getAPIStabilityTestingUser';
+import { getPermissionForSDKPath } from '$web/server/lib/getPermissionForSDKPath/getPermissionForSDKPath';
+import type { MethodType } from '$web/server/lib/getPermissionForSDKPath/getPermissionForSDKPath';
 
 const handler = createNextHandler(sdkContracts, sdkRouter, {
   basePath: '',
@@ -60,6 +62,20 @@ const handler = createNextHandler(sdkContracts, sdkRouter, {
         const user = await getUser();
 
         if (!user?.hasCloudAccess) {
+          return new Response(JSON.stringify({ message: 'Unauthorized' }), {
+            status: 401,
+            headers: {
+              'Content-Type': 'application/json',
+            },
+          });
+        }
+
+        const permission = getPermissionForSDKPath(
+          req.url,
+          req.method as MethodType,
+        );
+
+        if (!permission || !user.permissions.has(permission)) {
           return new Response(JSON.stringify({ message: 'Unauthorized' }), {
             status: 401,
             headers: {

@@ -1,15 +1,16 @@
 import type { ServerInferRequest, ServerInferResponses } from '@ts-rest/core';
 import {
-  db,
-  projects,
-  deployedAgentTemplates,
   agentTemplates,
+  db,
+  deployedAgentTemplates,
   organizationPreferences,
+  projects,
 } from '@letta-cloud/database';
-import { getUserActiveOrganizationIdOrThrow } from '$web/server/auth';
-import { eq, and, count, isNull, ilike } from 'drizzle-orm';
+import { getUserWithActiveOrganizationIdOrThrow } from '$web/server/auth';
+import { and, count, eq, ilike, isNull } from 'drizzle-orm';
 import type { contracts, projectsContract } from '$web/web-api/contracts';
 import { generateSlug } from '$web/server';
+import { ApplicationServices } from '@letta-cloud/rbac';
 
 type ResponseShapes = ServerInferResponses<typeof projectsContract>;
 type GetProjectsRequest = ServerInferRequest<
@@ -21,11 +22,20 @@ export async function getProjects(
 ): Promise<ResponseShapes['getProjects']> {
   const { search, offset, limit } = req.query;
 
-  const organizationId = await getUserActiveOrganizationIdOrThrow();
+  const user = await getUserWithActiveOrganizationIdOrThrow();
+
+  const { activeOrganizationId, permissions } = user;
+
+  if (!permissions.has(ApplicationServices.READ_PROJECTS)) {
+    return {
+      status: 403,
+      body: {},
+    };
+  }
 
   const where = [
     isNull(projects.deletedAt),
-    eq(projects.organizationId, organizationId),
+    eq(projects.organizationId, activeOrganizationId),
   ];
 
   if (search) {
@@ -70,7 +80,16 @@ export async function getProjectByIdOrSlug(
   const { projectId } = req.params;
   const { lookupBy } = req.query;
 
-  const organizationId = await getUserActiveOrganizationIdOrThrow();
+  const user = await getUserWithActiveOrganizationIdOrThrow();
+
+  const organizationId = user.activeOrganizationId;
+
+  if (!user.permissions.has(ApplicationServices.READ_PROJECTS)) {
+    return {
+      status: 403,
+      body: {},
+    };
+  }
 
   const query = [
     isNull(projects.deletedAt),
@@ -122,8 +141,18 @@ export async function createProject(
   req: CreateProjectRequest,
 ): Promise<CreateProjectResponse> {
   const { name } = req.body;
+  const user = await getUserWithActiveOrganizationIdOrThrow();
 
-  const organizationId = await getUserActiveOrganizationIdOrThrow();
+  const organizationId = user.activeOrganizationId;
+
+  if (
+    !user.permissions.has(ApplicationServices.CREATE_UPDATE_DELETE_PROJECTS)
+  ) {
+    return {
+      status: 403,
+      body: {},
+    };
+  }
 
   let projectSlug = generateSlug(name);
 
@@ -177,7 +206,19 @@ type GetProjectDeployedAgentTemplatesResponse = ServerInferResponses<
 export async function getProjectDeployedAgentTemplates(
   req: GetProjectDeployedAgentTemplatesRequest,
 ): Promise<GetProjectDeployedAgentTemplatesResponse> {
-  const organizationId = await getUserActiveOrganizationIdOrThrow();
+  const user = await getUserWithActiveOrganizationIdOrThrow();
+
+  const organizationId = user.activeOrganizationId;
+
+  if (
+    !user.permissions.has(ApplicationServices.CREATE_UPDATE_DELETE_TEMPLATES)
+  ) {
+    return {
+      status: 403,
+      body: {},
+    };
+  }
+
   const { projectId } = req.params;
   const { search, offset = 0, agentTemplateId, limit = 10 } = req.query;
 
@@ -252,8 +293,20 @@ export async function updateProject(
   req: UpdateProjectRequest,
 ): Promise<UpdateProjectResponse> {
   const { projectId } = req.params;
-  const organizationId = await getUserActiveOrganizationIdOrThrow();
   const { name, slug } = req.body;
+
+  const user = await getUserWithActiveOrganizationIdOrThrow();
+
+  const organizationId = user.activeOrganizationId;
+
+  if (
+    !user.permissions.has(ApplicationServices.CREATE_UPDATE_DELETE_PROJECTS)
+  ) {
+    return {
+      status: 403,
+      body: {},
+    };
+  }
 
   if (Object.values(req.body).filter(Boolean).length === 0) {
     return {
@@ -329,7 +382,18 @@ export async function deleteProject(
   req: DeleteProjectRequest,
 ): Promise<DeleteProjectResponse> {
   const { projectId } = req.params;
-  const organizationId = await getUserActiveOrganizationIdOrThrow();
+  const user = await getUserWithActiveOrganizationIdOrThrow();
+
+  const organizationId = user.activeOrganizationId;
+
+  if (
+    !user.permissions.has(ApplicationServices.CREATE_UPDATE_DELETE_PROJECTS)
+  ) {
+    return {
+      status: 403,
+      body: {},
+    };
+  }
 
   const organizationPreferenceRes =
     await db.query.organizationPreferences.findFirst({

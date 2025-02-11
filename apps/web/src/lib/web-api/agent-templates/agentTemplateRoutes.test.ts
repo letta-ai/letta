@@ -5,6 +5,7 @@ import {
 } from '@letta-cloud/database-testing';
 import { lettaAgentAPIMock } from '@letta-cloud/letta-agents-api-testing';
 import { router } from '../router';
+import { ApplicationServices } from '@letta-cloud/rbac';
 
 jest.mock('@letta-cloud/database', () => ({
   __esModule: true,
@@ -18,6 +19,7 @@ jest.mock('$web/server/auth', () => ({
   getUserWithActiveOrganizationIdOrThrow: jest.fn(() => ({
     activeOrganizationId: '123',
     lettaAgentsId: '456',
+    permissions: new Set([ApplicationServices.CREATE_UPDATE_DELETE_TEMPLATES]),
   })),
 }));
 

@@ -36,7 +36,7 @@ import {
 } from '../../../../../(dashboard-like)/projects/[projectSlug]/hooks';
 import { webApi, webApiQueryKeys } from '@letta-cloud/web-api-client';
 import { useRouter } from 'next/navigation';
-import { useCurrentUser } from '$web/client/hooks';
+import { useCurrentUser, useUserHasPermission } from '$web/client/hooks';
 import { ProjectSelector } from '$web/client/components';
 import './AgentPage.scss';
 import { useCurrentAgent } from './hooks';
@@ -64,6 +64,7 @@ import {
   ADELayout,
   useCurrentAgentMetaData,
 } from '@letta-cloud/shared-ade-components';
+import { ApplicationServices } from '@letta-cloud/rbac';
 
 interface ADEHeaderProps {
   children?: React.ReactNode;
@@ -409,6 +410,14 @@ function AgentSettingsDropdown(props: AgentSettingsDropdownProps) {
   }, []);
 
   const agentBaseType = useAgentBaseTypeName();
+
+  const [canUpdateAgent] = useUserHasPermission(
+    ApplicationServices.UPDATE_AGENT,
+  );
+
+  if (!canUpdateAgent) {
+    return null;
+  }
 
   return (
     <>

@@ -1,52 +1,56 @@
 import { z } from 'zod';
 import type { DialogTableItem } from '@letta-cloud/component-library';
-import { Badge, Tooltip, WarningIcon } from '@letta-cloud/component-library';
-import { StatusIndicatorOnIcon } from '@letta-cloud/component-library';
 import {
   ActionCard,
   Alert,
+  Badge,
+  Button,
+  DatabaseIcon,
+  DatabaseUploadIcon,
+  Dialog,
+  DialogTable,
   FileIcon,
-  UploadIcon,
   FileTree,
   FormField,
   FormProvider,
+  HStack,
   LettaLoader,
   LoadingEmptyStatusComponent,
+  PanelBar,
   PanelMainContent,
   PlusIcon,
+  RawInput,
+  SearchIcon,
   SingleFileUpload,
+  StatusIndicatorOnIcon,
+  Tooltip,
   TrashIcon,
   Typography,
-  SearchIcon,
+  UploadIcon,
   useForm,
+  VStack,
+  WarningIcon,
 } from '@letta-cloud/component-library';
-import { Dialog, DialogTable, RawInput } from '@letta-cloud/component-library';
-import { Button, HStack, PanelBar } from '@letta-cloud/component-library';
-import { VStack } from '@letta-cloud/component-library';
 import { useTranslations } from '@letta-cloud/translations';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import type { AgentState, Source } from '@letta-cloud/letta-agents-api';
-import { UseAgentsServiceRetrieveAgentKeyFn } from '@letta-cloud/letta-agents-api';
-import { useSourcesServiceModifySource } from '@letta-cloud/letta-agents-api';
 import {
   type ListSourceFilesResponse,
+  useAgentsServiceAttachSourceToAgent,
+  useAgentsServiceDetachSourceFromAgent,
+  UseAgentsServiceRetrieveAgentKeyFn,
   useJobsServiceListActiveJobs,
   UseJobsServiceListActiveJobsKeyFn,
-  useAgentsServiceAttachSourceToAgent,
   useSourcesServiceCreateSource,
   useSourcesServiceDeleteFileFromSource,
-  useAgentsServiceDetachSourceFromAgent,
   useSourcesServiceListSourceFiles,
   UseSourcesServiceListSourceFilesKeyFn,
   useSourcesServiceListSources,
+  useSourcesServiceModifySource,
   useSourcesServiceUploadFileToSource,
 } from '@letta-cloud/letta-agents-api';
-import { useCurrentAgent } from '../../hooks';
+import { useCurrentAgent, useCurrentAgentMetaData } from '../../hooks';
 import { useQueryClient } from '@tanstack/react-query';
-import {
-  DatabaseIcon,
-  DatabaseUploadIcon,
-} from '@letta-cloud/component-library';
 import {
   adjectives,
   animals,
@@ -57,7 +61,8 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { get, isEqual } from 'lodash-es';
 import { trackClientSideEvent } from '@letta-cloud/analytics/client';
 import { AnalyticsEvent } from '@letta-cloud/analytics';
-import { useCurrentAgentMetaData } from '../../hooks';
+import { useADEPermissions } from '../../hooks/useADEPermissions/useADEPermissions';
+import { ApplicationServices } from '@letta-cloud/rbac';
 
 interface AttachDataSourceActionProps {
   source: Source;
@@ -1116,13 +1121,14 @@ function EditDataSourcesContent(props: EditDataSourcesContentProps) {
 
 export function EditDataSourcesPanel() {
   const [search, setSearch] = useState('');
+  const [canUpdateAgent] = useADEPermissions(ApplicationServices.UPDATE_AGENT);
 
   return (
     <VStack fullHeight gap={false}>
       <PanelBar
         searchValue={search}
         onSearch={setSearch}
-        actions={<CreateDataSourceDialog />}
+        actions={canUpdateAgent && <CreateDataSourceDialog />}
       ></PanelBar>
       <PanelMainContent>
         <EditDataSourcesContent search={search} />

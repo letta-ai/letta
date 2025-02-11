@@ -16,6 +16,8 @@ import { useAgentBaseTypeName } from '../../hooks';
 import { useCurrentAgent } from '../../hooks';
 import { useCurrentBasePathname } from '../../hooks';
 import { useCurrentAgentMetaData } from '../../hooks';
+import { useADEPermissions } from '../../hooks/useADEPermissions/useADEPermissions';
+import { ApplicationServices } from '@letta-cloud/rbac';
 
 interface UpdateNameDialogProps {
   trigger: React.ReactNode;
@@ -119,6 +121,12 @@ export function UpdateNameDialog(props: UpdateNameDialogProps) {
       });
     }
   }, [t, error, form, agentBaseType.base]);
+
+  const [canUpdateAgent] = useADEPermissions(ApplicationServices.UPDATE_AGENT);
+
+  if (!canUpdateAgent) {
+    return null;
+  }
 
   return (
     <FormProvider {...form}>

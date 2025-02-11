@@ -32,6 +32,8 @@ import {
 } from '../ToolsExplorer/ToolsExplorer';
 import { ToolRulesEditor } from '../ToolRules/ToolRules';
 import { useFeatureFlag } from '@letta-cloud/web-api-client';
+import { ApplicationServices } from '@letta-cloud/rbac';
+import { useADEPermissions } from '../../hooks/useADEPermissions/useADEPermissions';
 
 interface RemoveToolPayload {
   toolName: string;
@@ -110,6 +112,7 @@ function ToolsList(props: ToolsProps) {
   const { search } = props;
   const { tools: currentTools } = useCurrentAgent();
   const { openToolExplorer } = useToolsExplorerState();
+  const [canUpdateAgent] = useADEPermissions(ApplicationServices.UPDATE_AGENT);
 
   const t = useTranslations('ADE/Tools');
 
@@ -160,18 +163,20 @@ function ToolsList(props: ToolsProps) {
                 },
               });
             },
-            actions: [
-              {
-                id: 'remove-tool',
-                label: t('ToolsList.removeTool'),
-                onClick: () => {
-                  setRemoveToolPayload({
-                    toolName: tool.name || '',
-                    toolId: tool.id || '',
-                  });
-                },
-              },
-            ],
+            actions: canUpdateAgent
+              ? [
+                  {
+                    id: 'remove-tool',
+                    label: t('ToolsList.removeTool'),
+                    onClick: () => {
+                      setRemoveToolPayload({
+                        toolName: tool.name || '',
+                        toolId: tool.id || '',
+                      });
+                    },
+                  },
+                ]
+              : undefined,
             icon: <Logo size="small" />,
           });
         }
@@ -196,18 +201,20 @@ function ToolsList(props: ToolsProps) {
               });
             },
             icon: isBrandKey(creator) ? brandKeyToLogo(creator) : <ToolsIcon />,
-            actions: [
-              {
-                id: 'remove-tool',
-                label: t('ToolsList.removeTool'),
-                onClick: () => {
-                  setRemoveToolPayload({
-                    toolName: tool.name || '',
-                    toolId: tool.id || '',
-                  });
-                },
-              },
-            ],
+            actions: canUpdateAgent
+              ? [
+                  {
+                    id: 'remove-tool',
+                    label: t('ToolsList.removeTool'),
+                    onClick: () => {
+                      setRemoveToolPayload({
+                        toolName: tool.name || '',
+                        toolId: tool.id || '',
+                      });
+                    },
+                  },
+                ]
+              : undefined,
           });
         }
       }
@@ -224,7 +231,7 @@ function ToolsList(props: ToolsProps) {
     });
 
     return fileTreeTools;
-  }, [currentTools, openToolExplorer, search, t]);
+  }, [currentTools, openToolExplorer, search, canUpdateAgent, t]);
 
   return (
     <PanelMainContent>
@@ -247,6 +254,7 @@ export function ToolsPanel() {
   const t = useTranslations('ADE/Tools');
   const { openToolExplorer } = useToolsExplorerState();
   const { isLoading, data } = useFeatureFlag('TOOL_RULES');
+  const [canUpdateAgent] = useADEPermissions(ApplicationServices.UPDATE_AGENT);
 
   const isToolRulesEnabled = !isLoading && data;
 
@@ -259,19 +267,21 @@ export function ToolsPanel() {
           setSearch(value);
         }}
         actions={
-          <HStack>
-            {isToolRulesEnabled && <ToolRulesEditor />}
-            <Button
-              label={t('ToolsListPage.openExplorer')}
-              color="secondary"
-              data-testid="open-tool-explorer"
-              hideLabel
-              onClick={() => {
-                openToolExplorer();
-              }}
-              preIcon={<PlusIcon />}
-            />
-          </HStack>
+          canUpdateAgent && (
+            <HStack>
+              {isToolRulesEnabled && <ToolRulesEditor />}
+              <Button
+                label={t('ToolsListPage.openExplorer')}
+                color="secondary"
+                data-testid="open-tool-explorer"
+                hideLabel
+                onClick={() => {
+                  openToolExplorer();
+                }}
+                preIcon={<PlusIcon />}
+              />
+            </HStack>
+          )
         }
       />
       <ToolsList search={search} />

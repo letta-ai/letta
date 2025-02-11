@@ -21,6 +21,8 @@ import {
   AdvancedCoreMemoryEditor,
   useAdvancedCoreMemoryEditor,
 } from './AdvancedCoreMemoryEditor';
+import { useADEPermissions } from '../../hooks/useADEPermissions/useADEPermissions';
+import { ApplicationServices } from '@letta-cloud/rbac';
 
 interface AdvancedEditorPayload {
   label: string;
@@ -39,11 +41,14 @@ function EditMemoryForm(props: EditMemoryFormProps) {
     label,
   });
 
+  const [canUpdateAgent] = useADEPermissions(ApplicationServices.UPDATE_AGENT);
+
   return (
     <>
       <VStack flex fullHeight>
         <VStack fullWidth fullHeight>
           <RawTextArea
+            disabled={!canUpdateAgent}
             variant="secondary"
             rightOfLabelContent={
               isUpdating ? (

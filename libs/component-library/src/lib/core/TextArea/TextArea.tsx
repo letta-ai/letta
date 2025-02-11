@@ -15,7 +15,7 @@ import { Skeleton } from '../Skeleton/Skeleton';
 import { VStack } from '../../framing/VStack/VStack';
 
 const defaultClass =
-  'text-base flex min-h-[40px] w-full border border-input bg-background px-3 py-2 pr-[10px] ring-offset-background placeholder:text-muted-foreground  disabled:cursor-not-allowed disabled:opacity-50';
+  'text-base flex min-h-[40px] w-full border border-input bg-background px-3 py-2 pr-[10px] ring-offset-background placeholder:text-muted-foreground  disabled:cursor-not-allowed disabled:opacity-90';
 
 const textareaVariants = cva(defaultClass, {
   variants: {

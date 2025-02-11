@@ -21,6 +21,8 @@ import { DashboardCard, Tutorials } from '$web/client/components';
 import { useWelcomeText } from '$web/client/hooks/useWelcomeText/useWelcomeText';
 import { CreateNewTemplateDialog } from './_components/CreateNewTemplateDialog/CreateNewTemplateDialog';
 import type { ServerInferResponseBody } from '@ts-rest/core';
+import { useUserHasPermission } from '$web/client/hooks';
+import { ApplicationServices } from '@letta-cloud/rbac';
 
 interface AgentTemplatesListProps {
   agents?: ServerInferResponseBody<
@@ -114,6 +116,10 @@ function QuickActions() {
   const t = useTranslations('projects/(projectSlug)/page');
   const { slug: projectSlug } = useCurrentProject();
 
+  const [canCRDTemplates] = useUserHasPermission(
+    ApplicationServices.CREATE_UPDATE_DELETE_TEMPLATES,
+  );
+
   return (
     <DashboardPageSection
       title={t('QuickActions.title')}
@@ -152,26 +158,28 @@ function QuickActions() {
           title={t('QuickActions.viewTemplates.title')}
           description={t('QuickActions.viewTemplates.description')}
         />
-        <CreateNewTemplateDialog
-          trigger={
-            <DashboardCard
-              testId="create-agent-template-button"
-              largeImage={
-                <VStack
-                  fullHeight
-                  fullWidth
-                  align="center"
-                  justify="center"
-                  color="background-grey"
-                >
-                  <PlusIcon color="primary" size="xxlarge" />
-                </VStack>
-              }
-              title={t('QuickActions.createTemplate.title')}
-              description={t('QuickActions.createTemplate.description')}
-            />
-          }
-        />
+        {canCRDTemplates && (
+          <CreateNewTemplateDialog
+            trigger={
+              <DashboardCard
+                testId="create-agent-template-button"
+                largeImage={
+                  <VStack
+                    fullHeight
+                    fullWidth
+                    align="center"
+                    justify="center"
+                    color="background-grey"
+                  >
+                    <PlusIcon color="primary" size="xxlarge" />
+                  </VStack>
+                }
+                title={t('QuickActions.createTemplate.title')}
+                description={t('QuickActions.createTemplate.description')}
+              />
+            }
+          />
+        )}
       </NiceGridDisplay>
     </DashboardPageSection>
   );

@@ -32,6 +32,8 @@ import {
   CompanyIcon,
   KeyIcon,
   LettaInvaderIcon,
+  ProjectsIcon,
+  TemplateIcon,
 } from '@letta-cloud/component-library';
 import React, { useCallback, useMemo, useState } from 'react';
 import type { ColumnDef } from '@tanstack/react-table';
@@ -368,6 +370,38 @@ function PermissionReferenceSheet(props: PermissionReferenceSheetProps) {
           {
             service: t('permissions.agents.message'),
             hasAccess: permissions.has(ApplicationServices.MESSAGE_AGENT),
+          },
+        ]}
+      />
+      <PermissionCategoryView
+        title={t('permissions.projects.title')}
+        icon={<ProjectsIcon />}
+        permissions={[
+          {
+            service: t('permissions.projects.crd'),
+            hasAccess: permissions.has(
+              ApplicationServices.CREATE_UPDATE_DELETE_PROJECTS,
+            ),
+          },
+          {
+            service: t('permissions.projects.read'),
+            hasAccess: permissions.has(ApplicationServices.READ_PROJECTS),
+          },
+        ]}
+      />
+      <PermissionCategoryView
+        title={t('permissions.templates.title')}
+        icon={<TemplateIcon />}
+        permissions={[
+          {
+            service: t('permissions.templates.crd'),
+            hasAccess: permissions.has(
+              ApplicationServices.CREATE_UPDATE_DELETE_PROJECTS,
+            ),
+          },
+          {
+            service: t('permissions.templates.read'),
+            hasAccess: permissions.has(ApplicationServices.READ_PROJECTS),
           },
         ]}
       />

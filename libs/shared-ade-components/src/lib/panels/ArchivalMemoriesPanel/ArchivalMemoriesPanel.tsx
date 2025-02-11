@@ -38,6 +38,8 @@ import { useTranslations } from '@letta-cloud/translations';
 import { useDateFormatter } from '@letta-cloud/helpful-client-utils';
 import { useCurrentSimulatedAgent } from '../../hooks/useCurrentSimulatedAgent/useCurrentSimulatedAgent';
 import { useCurrentAgentMetaData } from '../../hooks';
+import { useADEPermissions } from '../../hooks/useADEPermissions/useADEPermissions';
+import { ApplicationServices } from '@letta-cloud/rbac';
 
 interface ViewArchivalMemoryDialogProps {
   memory: Passage;
@@ -129,6 +131,8 @@ function MemoryItem(props: MemoryItemProps) {
     [currentAgentId, deleteMemory],
   );
 
+  const [canUpdateAgent] = useADEPermissions(ApplicationServices.UPDATE_AGENT);
+
   return (
     <ActionCard
       key={memory.id}
@@ -143,29 +147,31 @@ function MemoryItem(props: MemoryItemProps) {
             copyButtonText={t('MemoryItem.copyText')}
             textToCopy={memory.text}
           />
-          <Dialog
-            onOpenChange={setOpen}
-            isOpen={open}
-            trigger={
-              <Button
-                label={t('MemoryItem.deleteMemory')}
-                color="secondary"
-                preIcon={<TrashIcon />}
-                hideLabel
-                type="button"
-                size="small"
-              />
-            }
-            isConfirmBusy={isDeletingMemory}
-            onConfirm={() => {
-              handleRemoveMemory(memory.id || '');
-            }}
-            confirmText={t('MemoryItem.deleteConfirm')}
-            cancelText="Cancel"
-            title="Delete Memory"
-          >
-            {t('MemoryItem.deleteConfirmation')}
-          </Dialog>
+          {canUpdateAgent && (
+            <Dialog
+              onOpenChange={setOpen}
+              isOpen={open}
+              trigger={
+                <Button
+                  label={t('MemoryItem.deleteMemory')}
+                  color="secondary"
+                  preIcon={<TrashIcon />}
+                  hideLabel
+                  type="button"
+                  size="small"
+                />
+              }
+              isConfirmBusy={isDeletingMemory}
+              onConfirm={() => {
+                handleRemoveMemory(memory.id || '');
+              }}
+              confirmText={t('MemoryItem.deleteConfirm')}
+              cancelText="Cancel"
+              title="Delete Memory"
+            >
+              {t('MemoryItem.deleteConfirmation')}
+            </Dialog>
+          )}
         </HStack>
       }
     >
@@ -230,6 +236,7 @@ function MemoriesList(props: MemoriesListProps) {
 
 export function ArchivalMemoriesPanel() {
   const [search, setSearch] = useState('');
+  const [canUpdateAgent] = useADEPermissions(ApplicationServices.UPDATE_AGENT);
 
   return (
     <>
@@ -239,9 +246,11 @@ export function ArchivalMemoriesPanel() {
           setSearch(value);
         }}
         actions={
-          <>
-            <CreateMemoryDialog />
-          </>
+          canUpdateAgent && (
+            <>
+              <CreateMemoryDialog />
+            </>
+          )
         }
       />
       <MemoriesList search={search} />

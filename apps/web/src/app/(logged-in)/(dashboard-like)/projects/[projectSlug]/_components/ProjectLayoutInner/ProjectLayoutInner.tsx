@@ -13,12 +13,17 @@ import { useTranslations } from '@letta-cloud/translations';
 import type { PropsWithChildren } from 'react';
 import React from 'react';
 import { useCurrentProject } from '../../hooks';
+import { useUserHasPermission } from '$web/client/hooks';
+import { ApplicationServices } from '@letta-cloud/rbac';
 
 type ProjectLayoutInnerProps = PropsWithChildren;
 
 export function ProjectLayoutInner(props: ProjectLayoutInnerProps) {
   const t = useTranslations('projects/(projectSlug)/layout');
   const { slug: projectSlug, name } = useCurrentProject();
+  const [canCRDProjects] = useUserHasPermission(
+    ApplicationServices.CREATE_UPDATE_DELETE_PROJECTS,
+  );
 
   return (
     <DashboardWithSidebarWrapper
@@ -53,12 +58,16 @@ export function ProjectLayoutInner(props: ProjectLayoutInnerProps) {
           label: t('nav.templates'),
           href: `/projects/${projectSlug}/templates`,
         },
-        {
-          id: 'settings',
-          icon: <InstantMixIcon />,
-          label: t('nav.settings'),
-          href: `/projects/${projectSlug}/settings`,
-        },
+        ...(canCRDProjects
+          ? [
+              {
+                id: 'settings',
+                icon: <InstantMixIcon />,
+                label: t('nav.settings'),
+                href: `/projects/${projectSlug}/settings`,
+              },
+            ]
+          : []),
       ]}
     >
       {props.children}

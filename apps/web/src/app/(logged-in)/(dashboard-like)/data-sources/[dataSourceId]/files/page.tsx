@@ -30,6 +30,8 @@ import { useQueryClient } from '@tanstack/react-query';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { DeleteFileDialog } from '@letta-cloud/shared-ade-components';
 import type { DeleteFilePayload } from '@letta-cloud/shared-ade-components';
+import { useUserHasPermission } from '$web/client/hooks';
+import { ApplicationServices } from '@letta-cloud/rbac';
 
 const uploadToFormValuesSchema = z.object({
   file: z.custom<File>((v) => v instanceof File),
@@ -84,6 +86,14 @@ function UploadFileDialog({ limit }: UploadFileDialogProps) {
     },
     [dataSourceId, mutate],
   );
+
+  const [canUpdateDataSource] = useUserHasPermission(
+    ApplicationServices.UPDATE_DATA_SOURCE,
+  );
+
+  if (!canUpdateDataSource) {
+    return null;
+  }
 
   return (
     <FormProvider {...form}>
@@ -194,8 +204,9 @@ function DataSourceFilesPage() {
       <DashboardPageLayout
         actions={<UploadFileDialog limit={limit} />}
         title={t('title')}
+        encapsulatedFullHeight
       >
-        <DashboardPageSection>
+        <DashboardPageSection fullHeight>
           <DataTable
             columns={fileTableColumns}
             data={files || []}
@@ -203,6 +214,7 @@ function DataSourceFilesPage() {
             autofitHeight
             onSetCursor={setCursor}
             onLimitChange={setLimit}
+            noResultsText={t('emptyMessage')}
             errorMessage={isError ? t('emptyMessage') : ''}
           />
         </DashboardPageSection>

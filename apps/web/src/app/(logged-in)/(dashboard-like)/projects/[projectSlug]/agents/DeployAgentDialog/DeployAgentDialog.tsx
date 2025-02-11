@@ -27,6 +27,8 @@ import { useRouter } from 'next/navigation';
 import { findMemoryBlockVariables } from '@letta-cloud/generic-utils';
 import { STARTER_KITS } from '@letta-cloud/agent-starter-kits';
 import type { AgentState } from '@letta-cloud/letta-agents-api';
+import { useUserHasPermission } from '$web/client/hooks';
+import { ApplicationServices } from '@letta-cloud/rbac';
 
 const elementWidth = '204px';
 const elementHeight = '166px';
@@ -522,6 +524,14 @@ export function DeployAgentDialog() {
   const t = useTranslations(
     'projects/(projectSlug)/agents/page/DeployAgentDialog',
   );
+
+  const [canCreateAgents] = useUserHasPermission(
+    ApplicationServices.CREATE_AGENT,
+  );
+
+  if (!canCreateAgents) {
+    return null;
+  }
 
   return (
     <Dialog

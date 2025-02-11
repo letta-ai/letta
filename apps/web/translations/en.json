@@ -324,6 +324,7 @@
     "submit": "Create Organization"
   },
   "project/[projectId]/settings": {
+    "noPermissions": "You do not have permission to access this page, contact your team's administrator for access.",
     "DeleteProjectSettings": {
       "title": "Delete project",
       "cannotDeleteDefault": "You cannot delete the default project, please contact support for assistance.",
@@ -518,6 +519,7 @@
   "roles": {
     "admin": "Admin",
     "editor": "Editor",
+    "analyst": "Analyst",
     "custom": "Custom"
   },
   "organization/members": {
@@ -540,6 +542,16 @@
         "read": "View agents",
         "message": "Send messages to agents",
         "update": "Update agents"
+      },
+      "projects": {
+        "title": "Projects",
+        "crd": "Create, modify and delete projects",
+        "read": "View projects"
+      },
+      "templates": {
+        "title": "Templates",
+        "crd": "Create, modify and delete templates",
+        "read": "View templates"
       },
       "apiKeys": {
         "title": "API Keys",
