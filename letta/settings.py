@@ -146,6 +146,11 @@ class Settings(BaseSettings):
     pg_pool_recycle: int = 1800  # When to recycle connections
     pg_echo: bool = False  # Logging
 
+    # multi agent settings
+    multi_agent_send_message_max_retries: int = 3
+    multi_agent_send_message_timeout: int = 20 * 60
+    multi_agent_concurrent_sends: int = 15
+
     @property
     def letta_pg_uri(self) -> str:
         if self.pg_uri:
