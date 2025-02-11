@@ -167,6 +167,27 @@ class OllamaEmbeddings:
         return response_json["embedding"]
 
 
+class GoogleEmbeddings:
+    def __init__(self, api_key: str, model: str, base_url: str):
+        self.api_key = api_key
+        self.model = model
+        self.base_url = base_url  # Expected to be "https://generativelanguage.googleapis.com"
+
+    def get_text_embedding(self, text: str):
+        import httpx
+
+        headers = {"Content-Type": "application/json"}
+        # Build the URL based on the provided base_url, model, and API key.
+        url = f"{self.base_url}/v1beta/models/{self.model}:embedContent?key={self.api_key}"
+        payload = {"model": self.model, "content": {"parts": [{"text": text}]}}
+        with httpx.Client() as client:
+            response = client.post(url, headers=headers, json=payload)
+        # Raise an error for non-success HTTP status codes.
+        response.raise_for_status()
+        response_json = response.json()
+        return response_json["embedding"]["values"]
+
+
 def query_embedding(embedding_model, query_text: str):
     """Generate padded embedding for querying database"""
     query_vec = embedding_model.get_text_embedding(query_text)
@@ -234,6 +255,15 @@ def embedding_model(config: EmbeddingConfig, user_id: Optional[uuid.UUID] = None
             model=config.embedding_model,
             base_url=config.embedding_endpoint,
             ollama_additional_kwargs={},
+        )
+        return model
+
+    elif endpoint_type == "google_ai":
+        assert all([model_settings.gemini_api_key is not None, model_settings.gemini_base_url is not None])
+        model = GoogleEmbeddings(
+            model=config.embedding_model,
+            api_key=model_settings.gemini_api_key,
+            base_url=model_settings.gemini_base_url,
         )
         return model
 

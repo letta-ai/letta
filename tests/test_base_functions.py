@@ -180,7 +180,9 @@ def test_send_message_to_agent(client, agent_obj, other_agent_obj):
             found = True
             break
 
-    print(f"In context messages of the sender agent (without system):\n\n{"\n".join([m.text for m in in_context_messages[1:]])}")
+    # Compute the joined string first
+    joined_messages = "\n".join([m.text for m in in_context_messages[1:]])
+    print(f"In context messages of the sender agent (without system):\n\n{joined_messages}")
     if not found:
         raise Exception(f"Was not able to find an instance of the target snippet: {target_snippet}")
 
