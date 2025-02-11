@@ -260,7 +260,7 @@ class Agent(BaseAgent):
         error_msg: str,
         tool_call_id: str,
         function_name: str,
-        function_args: str,
+        function_args: dict,
         function_response: str,
         messages: List[Message],
         include_function_failed_message: bool = False,
