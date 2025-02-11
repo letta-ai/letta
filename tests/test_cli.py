@@ -1,4 +1,5 @@
 import os
+import re
 import shutil
 import sys
 
@@ -74,3 +75,16 @@ def test_letta_run_create_new_agent(swap_letta_config):
     # Count occurrences of assistant messages
     robot = full_output.count(ASSISTANT_MESSAGE_CLI_SYMBOL)
     assert robot == 1, f"It appears that there are multiple instances of assistant messages outputted."
+
+
+def test_letta_version_prints_only_version(swap_letta_config):
+    # Start the letta version command
+    output = pexpect.run("poetry run letta version", encoding="utf-8")
+
+    # Remove ANSI escape sequences and whitespace
+    output = re.sub(r"\x1b\[[0-9;]*[mK]", "", output).strip()
+
+    from letta import __version__
+
+    # Get the full output and verify it contains only the version
+    assert output == __version__, f"Expected only '{__version__}', but got '{repr(output)}'"

@@ -15,7 +15,6 @@ from letta.local_llm.constants import ASSISTANT_MESSAGE_CLI_SYMBOL
 from letta.log import get_logger
 from letta.schemas.enums import OptionState
 from letta.schemas.memory import ChatMemory, Memory
-from letta.server.server import logger as server_logger
 
 # from letta.interface import CLIInterface as interface  # for printing to terminal
 from letta.streaming_interface import StreamingRefreshCLIInterface as interface  # for printing to terminal
@@ -118,6 +117,8 @@ def run(
     # TODO: remove Utils Debug after global logging is complete.
     utils.DEBUG = debug
     # TODO: add logging command line options for runtime log level
+
+    from letta.server.server import logger as server_logger
 
     if debug:
         logger.setLevel(logging.DEBUG)
@@ -360,4 +361,4 @@ def delete_agent(
 def version() -> str:
     import letta
 
-    return letta.__version__
+    print(letta.__version__)
