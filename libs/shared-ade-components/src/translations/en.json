@@ -55,7 +55,29 @@
       }
     },
     "ExitLoopToolEditor": {
-      "sentence": "<tool></tool> must be the last tool in the inference",
+      "sentence": "<tool></tool> will always be the last tool used in the response if its needed",
+      "toolName": "Tool name",
+      "save": "Save"
+    },
+    "ChildToolRuleEditor": {
+      "sentence": "<tool></tool> will run the following tools after it:",
+      "toolName": "Tool name",
+      "parentToolName": "Parent tool name",
+      "children": "Child tools",
+      "save": "Save"
+    },
+    "ConditionalToolEditor": {
+      "sentence1": "If <tool></tool> returns the following data:",
+      "sentence2": "run the following tool: <tool></tool>",
+      "childOutputMapping": "Child output mapping",
+      "toolName": "Tool name",
+      "condition": "Condition",
+      "requireOutputMapping": "Require output mapping",
+      "defaultChild": "Tool to run",
+      "save": "Save"
+    },
+    "StartConstraintToolEditor": {
+      "sentence": "<tool></tool> will always be the first tool used in the response if its needed",
       "toolName": "Tool name",
       "save": "Save"
     },

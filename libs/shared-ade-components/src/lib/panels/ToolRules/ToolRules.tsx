@@ -3,6 +3,7 @@ import { useTranslations } from '@letta-cloud/translations';
 import {
   Badge,
   Button,
+  Checkbox,
   ChildNodesIcon,
   CloseIcon,
   CloseMiniApp,
@@ -14,6 +15,7 @@ import {
   FormField,
   HStack,
   isMultiValue,
+  KeyValueEditor,
   LoadingEmptyStatusComponent,
   MiniApp,
   PlusIcon,
@@ -178,7 +180,6 @@ function ToolRuleItemWrapper(props: ToolRuleItemWrapperProps) {
                 preIcon={<TrashIcon />}
                 color="secondary"
                 size="small"
-                onClick={onRemove}
                 hideLabel
               />
             }
@@ -202,6 +203,403 @@ function ToolRuleItemWrapper(props: ToolRuleItemWrapperProps) {
 interface ToolEditorDefaultProps {
   onSubmit: (data: SupportedToolRuleTypes) => void;
   onRemove: () => void;
+}
+
+interface StartConstraintToolEditorProps extends ToolEditorDefaultProps {
+  defaultRule: InitToolRule;
+}
+
+const startConstraintToolRuleSchema = z.object({
+  toolName: z.string(),
+  type: z.literal('run_first'),
+});
+
+type StartConstraintToolRule = z.infer<typeof startConstraintToolRuleSchema>;
+
+function StartConstraintToolEditor(props: StartConstraintToolEditorProps) {
+  const { defaultRule, onRemove, onSubmit } = props;
+
+  const form = useForm<StartConstraintToolRule>({
+    resolver: zodResolver(startConstraintToolRuleSchema),
+    defaultValues: {
+      toolName: defaultRule.tool_name,
+      type: 'run_first',
+    },
+  });
+
+  const { tools } = useCurrentAgent();
+
+  const t = useTranslations('ADE/ToolRules');
+
+  const handleSubmit = useCallback(
+    (data: StartConstraintToolRule) => {
+      onSubmit({
+        tool_name: data.toolName,
+        type: 'run_first',
+      });
+      form.reset({
+        toolName: data.toolName,
+        type: 'run_first',
+      });
+    },
+    [form, onSubmit],
+  );
+
+  return (
+    <FormProvider {...form}>
+      <form onSubmit={form.handleSubmit(handleSubmit)}>
+        <ToolRuleItemWrapper
+          isValid={form.formState.isValid}
+          isDirty={form.formState.isDirty}
+          type="run_first"
+          onRemove={onRemove}
+        >
+          <FormField
+            name="toolName"
+            render={({ field }) => (
+              <HStack align="center">
+                {t.rich('StartConstraintToolEditor.sentence', {
+                  tool: () => (
+                    <Select
+                      label={t('StartConstraintToolEditor.toolName')}
+                      value={
+                        field.value
+                          ? {
+                              value: field.value,
+                              label: field.value,
+                            }
+                          : undefined
+                      }
+                      inline
+                      hideLabel
+                      placeholder={t('StartConstraintToolEditor.toolName')}
+                      options={(tools || []).map((tool) => ({
+                        value: tool.name || '',
+                        label: tool.name || '',
+                      }))}
+                      onSelect={(value) => {
+                        if (isMultiValue(value)) {
+                          return;
+                        }
+
+                        field.onChange(value?.value);
+                      }}
+                    />
+                  ),
+                })}
+              </HStack>
+            )}
+          />
+        </ToolRuleItemWrapper>
+      </form>
+    </FormProvider>
+  );
+}
+
+interface ChildToolRuleEditorProps extends ToolEditorDefaultProps {
+  defaultRule: ChildToolRule;
+}
+
+const childToolRuleSchema = z.object({
+  toolName: z.string(),
+  type: z.literal('constrain_child_tools'),
+  children: z.array(z.string()),
+});
+
+type ChildToolRuleType = z.infer<typeof childToolRuleSchema>;
+
+function ChildToolRuleEditor(props: ChildToolRuleEditorProps) {
+  const { defaultRule, onRemove, onSubmit } = props;
+
+  const form = useForm<ChildToolRuleType>({
+    resolver: zodResolver(childToolRuleSchema),
+    defaultValues: {
+      toolName: defaultRule.tool_name,
+      type: 'constrain_child_tools',
+      children: defaultRule.children,
+    },
+  });
+
+  const { tools } = useCurrentAgent();
+
+  const t = useTranslations('ADE/ToolRules');
+
+  const handleSubmit = useCallback(
+    (data: ChildToolRuleType) => {
+      onSubmit({
+        tool_name: data.toolName,
+        type: 'constrain_child_tools',
+        children: data.children,
+      });
+      form.reset({
+        toolName: data.toolName,
+        type: 'constrain_child_tools',
+        children: data.children,
+      });
+    },
+    [form, onSubmit],
+  );
+
+  return (
+    <FormProvider {...form}>
+      <form onSubmit={form.handleSubmit(handleSubmit)}>
+        <ToolRuleItemWrapper
+          isValid={form.formState.isValid}
+          isDirty={form.formState.isDirty}
+          type="constrain_child_tools"
+          onRemove={onRemove}
+        >
+          <FormField
+            name="toolName"
+            render={({ field }) => (
+              <HStack align="center">
+                {t.rich('ChildToolRuleEditor.sentence', {
+                  tool: () => (
+                    <Select
+                      label={t('ChildToolRuleEditor.toolName')}
+                      value={
+                        field.value
+                          ? {
+                              value: field.value,
+                              label: field.value,
+                            }
+                          : undefined
+                      }
+                      inline
+                      hideLabel
+                      placeholder={t('ChildToolRuleEditor.toolName')}
+                      options={(tools || []).map((tool) => ({
+                        value: tool.name || '',
+                        label: tool.name || '',
+                      }))}
+                      onSelect={(value) => {
+                        if (isMultiValue(value)) {
+                          return;
+                        }
+
+                        field.onChange(value?.value);
+                      }}
+                    />
+                  ),
+                })}
+              </HStack>
+            )}
+          />
+          <FormField
+            name="children"
+            render={({ field }) => (
+              <HStack fullWidth align="center">
+                <Select
+                  fullWidth
+                  label={t('ChildToolRuleEditor.children')}
+                  value={(field.value as ChildToolRuleType['children']).map(
+                    (value) => ({
+                      value,
+                      label: value,
+                    }),
+                  )}
+                  isMulti
+                  inline
+                  hideLabel
+                  placeholder={t('ChildToolRuleEditor.children')}
+                  options={(tools || []).map((tool) => ({
+                    value: tool.name || '',
+                    label: tool.name || '',
+                  }))}
+                  onSelect={(value) => {
+                    if (isMultiValue(value)) {
+                      field.onChange(value.map((v) => v.value));
+                      return;
+                    }
+
+                    return;
+                  }}
+                />
+              </HStack>
+            )}
+          />
+        </ToolRuleItemWrapper>
+      </form>
+    </FormProvider>
+  );
+}
+
+interface ConditionalToolEditorProps extends ToolEditorDefaultProps {
+  defaultRule: ConditionalToolRule;
+}
+
+const conditionalToolRuleSchema = z.object({
+  toolName: z.string(),
+  type: z.literal('conditional'),
+  defaultChild: z.string(),
+  requireOutputMapping: z.boolean(),
+  childOutputMapping: z.record(z.string()),
+});
+
+type ConditionalToolRuleFormType = z.infer<typeof conditionalToolRuleSchema>;
+
+function ConditionalToolEditor(props: ConditionalToolEditorProps) {
+  const { defaultRule, onRemove, onSubmit } = props;
+
+  const form = useForm<ConditionalToolRuleFormType>({
+    resolver: zodResolver(conditionalToolRuleSchema),
+    defaultValues: {
+      toolName: defaultRule.tool_name,
+      type: 'conditional',
+      defaultChild: defaultRule.default_child || '',
+      requireOutputMapping: defaultRule.require_output_mapping,
+      childOutputMapping: defaultRule.child_output_mapping,
+    },
+  });
+
+  const { tools } = useCurrentAgent();
+
+  const t = useTranslations('ADE/ToolRules');
+
+  const handleSubmit = useCallback(
+    (data: ConditionalToolRuleFormType) => {
+      onSubmit({
+        tool_name: data.toolName,
+        type: 'conditional',
+        default_child: data.defaultChild,
+        require_output_mapping: data.requireOutputMapping,
+        child_output_mapping: data.childOutputMapping,
+      });
+      form.reset({
+        toolName: data.toolName,
+        type: 'conditional',
+        defaultChild: data.defaultChild,
+        requireOutputMapping: data.requireOutputMapping,
+        childOutputMapping: data.childOutputMapping,
+      });
+    },
+    [form, onSubmit],
+  );
+
+  return (
+    <FormProvider {...form}>
+      <form onSubmit={form.handleSubmit(handleSubmit)}>
+        <ToolRuleItemWrapper
+          isValid={form.formState.isValid}
+          isDirty={form.formState.isDirty}
+          type="conditional"
+          onRemove={onRemove}
+        >
+          <FormField
+            name="toolName"
+            render={({ field }) => (
+              <HStack align="center">
+                {t.rich('ConditionalToolEditor.sentence1', {
+                  tool: () => (
+                    <Select
+                      label={t('ConditionalToolEditor.toolName')}
+                      value={
+                        field.value
+                          ? {
+                              value: field.value,
+                              label: field.value,
+                            }
+                          : undefined
+                      }
+                      inline
+                      hideLabel
+                      placeholder={t('ConditionalToolEditor.toolName')}
+                      options={(tools || []).map((tool) => ({
+                        value: tool.name || '',
+                        label: tool.name || '',
+                      }))}
+                      onSelect={(value) => {
+                        if (isMultiValue(value)) {
+                          return;
+                        }
+
+                        field.onChange(value?.value);
+                      }}
+                    />
+                  ),
+                })}
+              </HStack>
+            )}
+          />
+          <FormField
+            name="childOutputMapping"
+            render={({ field }) => (
+              <VStack fullWidth>
+                <KeyValueEditor
+                  hideLabel
+                  label={t('ConditionalToolEditor.childOutputMapping')}
+                  value={Object.entries(field.value).map(([key, value]) => ({
+                    key,
+                    value: value as string,
+                  }))}
+                  onValueChange={(value) => {
+                    field.onChange(
+                      value.reduce(
+                        (acc, { key, value }) => {
+                          acc[key] = value;
+                          return acc;
+                        },
+                        {} as Record<string, string>,
+                      ),
+                    );
+                  }}
+                />
+              </VStack>
+            )}
+          />
+          <FormField
+            name="defaultChild"
+            render={({ field }) => (
+              <HStack align="center">
+                {t.rich('ConditionalToolEditor.sentence2', {
+                  tool: () => (
+                    <Select
+                      label={t('ConditionalToolEditor.defaultChild')}
+                      value={
+                        field.value
+                          ? {
+                              value: field.value,
+                              label: field.value,
+                            }
+                          : undefined
+                      }
+                      inline
+                      hideLabel
+                      placeholder={t('ConditionalToolEditor.defaultChild')}
+                      options={(tools || []).map((tool) => ({
+                        value: tool.name || '',
+                        label: tool.name || '',
+                      }))}
+                      onSelect={(value) => {
+                        if (isMultiValue(value)) {
+                          return;
+                        }
+
+                        field.onChange(value?.value);
+                      }}
+                    />
+                  ),
+                })}
+              </HStack>
+            )}
+          />
+          <FormField
+            name="requireOutputMapping"
+            render={({ field }) => (
+              <HStack align="center">
+                <Checkbox
+                  labelVariant="simple"
+                  label={t('ConditionalToolEditor.requireOutputMapping')}
+                  onCheckedChange={field.onChange}
+                  checked={field.value}
+                />
+              </HStack>
+            )}
+          />
+        </ToolRuleItemWrapper>
+      </form>
+    </FormProvider>
+  );
 }
 
 interface ExitLoopToolEditorProps extends ToolEditorDefaultProps {
@@ -370,14 +768,14 @@ function NewToolRuleButton(props: NewToolRuleButtonProps) {
         description={t('toolTypes.constrainChildTools.description')}
         icon={<ChildNodesIcon />}
       />
-      <NewRuleButton
-        onSelect={() => {
-          onSelect('conditional');
-        }}
-        title={t('toolTypes.conditional.title')}
-        description={t('toolTypes.conditional.description')}
-        icon={<ConditionalIcon />}
-      />
+      {/*<NewRuleButton*/}
+      {/*  onSelect={() => {*/}
+      {/*    onSelect('conditional');*/}
+      {/*  }}*/}
+      {/*  title={t('toolTypes.conditional.title')}*/}
+      {/*  description={t('toolTypes.conditional.description')}*/}
+      {/*  icon={<ConditionalIcon />}*/}
+      {/*/>*/}
     </DropdownMenu>
   );
 }
@@ -524,6 +922,51 @@ function ToolRuleList(props: ToolRuleListProps) {
             if (rule.type === 'exit_loop') {
               return (
                 <ExitLoopToolEditor
+                  onRemove={() => {
+                    handleRemoveRule(index);
+                  }}
+                  key={index}
+                  onSubmit={(data) => {
+                    handleSaveRule(index, data);
+                  }}
+                  defaultRule={rule}
+                />
+              );
+            }
+
+            if (rule.type === 'constrain_child_tools') {
+              return (
+                <ChildToolRuleEditor
+                  onRemove={() => {
+                    handleRemoveRule(index);
+                  }}
+                  key={index}
+                  onSubmit={(data) => {
+                    handleSaveRule(index, data);
+                  }}
+                  defaultRule={rule}
+                />
+              );
+            }
+
+            if (rule.type === 'conditional') {
+              return (
+                <ConditionalToolEditor
+                  onRemove={() => {
+                    handleRemoveRule(index);
+                  }}
+                  key={index}
+                  onSubmit={(data) => {
+                    handleSaveRule(index, data);
+                  }}
+                  defaultRule={rule}
+                />
+              );
+            }
+
+            if (rule.type === 'run_first') {
+              return (
+                <StartConstraintToolEditor
                   onRemove={() => {
                     handleRemoveRule(index);
                   }}
