@@ -542,7 +542,11 @@ class Message(BaseMessage):
 
         return openai_message
 
-    def to_anthropic_dict(self, inner_thoughts_xml_tag="thinking") -> dict:
+    def to_anthropic_dict(
+        self,
+        inner_thoughts_xml_tag="thinking",
+        put_inner_thoughts_in_kwargs: bool = False,
+    ) -> dict:
         """
         Convert to an Anthropic message dictionary
 
@@ -586,26 +590,38 @@ class Message(BaseMessage):
                 "role": self.role,
             }
             content = []
-            if self.text is not None:
+            # COT / reasoning / thinking
+            if self.text is not None and not put_inner_thoughts_in_kwargs:
                 content.append(
                     {
                         "type": "text",
                         "text": add_xml_tag(string=self.text, xml_tag=inner_thoughts_xml_tag),
                     }
                 )
+            # Tool calling
             if self.tool_calls is not None:
                 for tool_call in self.tool_calls:
+
+                    if put_inner_thoughts_in_kwargs:
+                        tool_call_input = add_inner_thoughts_to_tool_call(
+                            tool_call,
+                            inner_thoughts=self.text,
+                            inner_thoughts_key=INNER_THOUGHTS_KWARG,
+                        ).model_dump()
+                    else:
+                        tool_call_input = json.loads(tool_call.function.arguments)
+
                     content.append(
                         {
                             "type": "tool_use",
                             "id": tool_call.id,
                             "name": tool_call.function.name,
-                            "input": json.loads(tool_call.function.arguments),
+                            "input": tool_call_input,
                         }
                     )
 
             # If the only content was text, unpack it back into a singleton
-            # TODO
+            # TODO support multi-modal
             anthropic_message["content"] = content
 
             # Optional fields, do not include if null

@@ -19,6 +19,8 @@ from anthropic.types.beta import (
 
 from letta.errors import BedrockError, BedrockPermissionError
 from letta.llm_api.aws_bedrock import get_bedrock_client
+from letta.llm_api.helpers import add_inner_thoughts_to_functions
+from letta.local_llm.constants import INNER_THOUGHTS_KWARG, INNER_THOUGHTS_KWARG_DESCRIPTION
 from letta.local_llm.utils import num_tokens_from_functions, num_tokens_from_messages
 from letta.schemas.message import Message as _Message
 from letta.schemas.message import MessageRole as _MessageRole
@@ -513,9 +515,23 @@ def convert_anthropic_stream_event_to_chatcompletion(
 def _prepare_anthropic_request(
     data: ChatCompletionRequest,
     inner_thoughts_xml_tag: Optional[str] = "thinking",
+    # if true, prefix fill the generation with the thinking tag
+    prefix_fill: bool = True,
+    # if true, put COT inside the tool calls instead of inside the content
+    put_inner_thoughts_in_kwargs: bool = False,
 ) -> dict:
     """Prepare the request data for Anthropic API format."""
-    # convert the tools
+
+    # if needed, put inner thoughts as a kwarg for all tools
+    if data.tools and put_inner_thoughts_in_kwargs:
+        functions = add_inner_thoughts_to_functions(
+            functions=[t.function.model_dump() for t in data.tools],
+            inner_thoughts_key=INNER_THOUGHTS_KWARG,
+            inner_thoughts_description=INNER_THOUGHTS_KWARG_DESCRIPTION,
+        )
+        data.tools = [Tool(function=f) for f in functions]
+
+    # convert the tools to Anthropic's payload format
     anthropic_tools = None if data.tools is None else convert_tools_to_anthropic_format(data.tools)
 
     # pydantic -> dict
@@ -529,11 +545,25 @@ def _prepare_anthropic_request(
         data.pop("tools")
         data.pop("tool_choice", None)
     elif anthropic_tools is not None:
+        # TODO eventually enable parallel tool use
         data["tools"] = anthropic_tools
-        if len(anthropic_tools) == 1:
+
+        # tool_choice_type other than "auto" only plays nice if thinking goes inside the tool calls
+        if put_inner_thoughts_in_kwargs:
+            if len(anthropic_tools) == 1:
+                data["tool_choice"] = {
+                    "type": "tool",
+                    "name": anthropic_tools[0]["name"],
+                    "disable_parallel_tool_use": True,
+                }
+            else:
+                data["tool_choice"] = {
+                    "type": "any",
+                    "disable_parallel_tool_use": True,
+                }
+        else:
             data["tool_choice"] = {
-                "type": "tool",
-                "name": anthropic_tools[0]["name"],
+                "type": "auto",
                 "disable_parallel_tool_use": True,
             }
 
@@ -548,8 +578,21 @@ def _prepare_anthropic_request(
             message["content"] = None
 
     # Convert to Anthropic format
-    msg_objs = [_Message.dict_to_message(user_id=None, agent_id=None, openai_message_dict=m) for m in data["messages"]]
-    data["messages"] = [m.to_anthropic_dict(inner_thoughts_xml_tag=inner_thoughts_xml_tag) for m in msg_objs]
+    msg_objs = [
+        _Message.dict_to_message(
+            user_id=None,
+            agent_id=None,
+            openai_message_dict=m,
+        )
+        for m in data["messages"]
+    ]
+    data["messages"] = [
+        m.to_anthropic_dict(
+            inner_thoughts_xml_tag=inner_thoughts_xml_tag,
+            put_inner_thoughts_in_kwargs=put_inner_thoughts_in_kwargs,
+        )
+        for m in msg_objs
+    ]
 
     # Ensure first message is user
     if data["messages"][0]["role"] != "user":
@@ -557,6 +600,16 @@ def _prepare_anthropic_request(
 
     # Handle alternating messages
     data["messages"] = merge_tool_results_into_user_messages(data["messages"])
+
+    # Handle prefix fill (not compatible with inner-thouguhts-in-kwargs)
+    # https://docs.anthropic.com/en/api/messages#body-messages
+    # NOTE: cannot prefill with tools for opus:
+    # Your API request included an `assistant` message in the final position, which would pre-fill the `assistant` response. When using tools with "claude-3-opus-20240229"
+    if prefix_fill and not put_inner_thoughts_in_kwargs and "opus" not in data["model"]:
+        data["messages"].append(
+            # Start the thinking process for the assistant
+            {"role": "assistant", "content": f"<{inner_thoughts_xml_tag}>"},
+        )
 
     # Validate max_tokens
     assert "max_tokens" in data, data
@@ -571,6 +624,7 @@ def _prepare_anthropic_request(
 def anthropic_chat_completions_request(
     data: ChatCompletionRequest,
     inner_thoughts_xml_tag: Optional[str] = "thinking",
+    put_inner_thoughts_in_kwargs: bool = False,
     betas: List[str] = ["tools-2024-04-04"],
 ) -> ChatCompletionResponse:
     """https://docs.anthropic.com/claude/docs/tool-use"""
@@ -580,7 +634,11 @@ def anthropic_chat_completions_request(
         anthropic_client = anthropic.Anthropic(api_key=anthropic_override_key)
     elif model_settings.anthropic_api_key:
         anthropic_client = anthropic.Anthropic()
-    data = _prepare_anthropic_request(data, inner_thoughts_xml_tag)
+    data = _prepare_anthropic_request(
+        data=data,
+        inner_thoughts_xml_tag=inner_thoughts_xml_tag,
+        put_inner_thoughts_in_kwargs=put_inner_thoughts_in_kwargs,
+    )
     response = anthropic_client.beta.messages.create(
         **data,
         betas=betas,
@@ -611,6 +669,7 @@ def anthropic_bedrock_chat_completions_request(
 def anthropic_chat_completions_request_stream(
     data: ChatCompletionRequest,
     inner_thoughts_xml_tag: Optional[str] = "thinking",
+    put_inner_thoughts_in_kwargs: bool = False,
     betas: List[str] = ["tools-2024-04-04"],
 ) -> Generator[ChatCompletionChunkResponse, None, None]:
     """Stream chat completions from Anthropic API.
@@ -618,7 +677,11 @@ def anthropic_chat_completions_request_stream(
     Similar to OpenAI's streaming, but using Anthropic's native streaming support.
     See: https://docs.anthropic.com/claude/reference/messages-streaming
     """
-    data = _prepare_anthropic_request(data, inner_thoughts_xml_tag)
+    data = _prepare_anthropic_request(
+        data=data,
+        inner_thoughts_xml_tag=inner_thoughts_xml_tag,
+        put_inner_thoughts_in_kwargs=put_inner_thoughts_in_kwargs,
+    )
 
     anthropic_override_key = ProviderManager().get_anthropic_override_key()
     if anthropic_override_key:
@@ -666,6 +729,7 @@ def anthropic_chat_completions_process_stream(
     chat_completion_request: ChatCompletionRequest,
     stream_interface: Optional[Union[AgentChunkStreamingInterface, AgentRefreshStreamingInterface]] = None,
     inner_thoughts_xml_tag: Optional[str] = "thinking",
+    put_inner_thoughts_in_kwargs: bool = False,
     create_message_id: bool = True,
     create_message_datetime: bool = True,
     betas: List[str] = ["tools-2024-04-04"],
@@ -743,6 +807,7 @@ def anthropic_chat_completions_process_stream(
             anthropic_chat_completions_request_stream(
                 data=chat_completion_request,
                 inner_thoughts_xml_tag=inner_thoughts_xml_tag,
+                put_inner_thoughts_in_kwargs=put_inner_thoughts_in_kwargs,
                 betas=betas,
             )
         ):

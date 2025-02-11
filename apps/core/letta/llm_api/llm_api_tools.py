@@ -278,14 +278,21 @@ def create(
 
             response = anthropic_chat_completions_process_stream(
                 chat_completion_request=chat_completion_request,
+                put_inner_thoughts_in_kwargs=llm_config.put_inner_thoughts_in_kwargs,
                 stream_interface=stream_interface,
             )
-            return response
 
-        # Client did not request token streaming (expect a blocking backend response)
-        return anthropic_chat_completions_request(
-            data=chat_completion_request,
-        )
+        else:
+            # Client did not request token streaming (expect a blocking backend response)
+            response = anthropic_chat_completions_request(
+                data=chat_completion_request,
+                put_inner_thoughts_in_kwargs=llm_config.put_inner_thoughts_in_kwargs,
+            )
+
+        if llm_config.put_inner_thoughts_in_kwargs:
+            response = unpack_all_inner_thoughts_from_kwargs(response=response, inner_thoughts_key=INNER_THOUGHTS_KWARG)
+
+        return response
 
     # elif llm_config.model_endpoint_type == "cohere":
     #     if stream:

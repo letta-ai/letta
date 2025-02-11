@@ -347,6 +347,15 @@ class AnthropicProvider(Provider):
 
         configs = []
         for model in models:
+
+            # We set this to false by default, because Anthropic can
+            # natively support <thinking> tags inside of content fields
+            # However, putting COT inside of tool calls can make it more
+            # reliable for tool calling (no chance of a non-tool call step)
+            # Since tool_choice_type 'any' doesn't work with in-content COT
+            # NOTE For Haiku, it can be flaky if we don't enable this by default
+            inner_thoughts_in_kwargs = True if "haiku" in model["name"] else False
+
             configs.append(
                 LLMConfig(
                     model=model["name"],
@@ -354,6 +363,7 @@ class AnthropicProvider(Provider):
                     model_endpoint=self.base_url,
                     context_window=model["context_window"],
                     handle=self.get_handle(model["name"]),
+                    put_inner_thoughts_in_kwargs=inner_thoughts_in_kwargs,
                 )
             )
         return configs
