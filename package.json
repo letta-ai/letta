@@ -43,6 +43,7 @@
     "type-check": "nx run-many --all --skip-nx-cache --parallel --targets=type-check",
     "undertaker:dev": "nx dev credit-undertaker",
     "undertaker:build": "esbuild apps/credit-undertaker/src/main.ts --bundle --platform=node --outfile=dist/apps/credit-undertaker/main.js",
+    "undertaker:serve": "node dist/apps/credit-undertaker/main.js",
     "web:dev": "nx dev web",
     "web:lint": "npx nx run-many --all --exclude=core --skip-nx-cache --parallel --targets=lint",
     "web:generate-web-only-openapi-spec": "nx generate-openapi web",

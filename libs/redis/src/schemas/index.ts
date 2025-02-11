@@ -2,11 +2,12 @@ import { z } from 'zod';
 import type { ZodType } from 'zod';
 import {
   db,
+  inferenceModelsMetadata,
   organizationCredits,
   organizations,
   stepCostSchemaTable,
 } from '@letta-cloud/database';
-import { eq } from 'drizzle-orm';
+import { and, eq } from 'drizzle-orm';
 import { stepCostVersionOne } from '@letta-cloud/types';
 
 interface RedisDefinition<Type extends string, Input, Output extends ZodType> {
@@ -168,6 +169,28 @@ const stepCostSchemaDefinition = generateDefinitionSatisfies({
   },
 });
 
+const modelNameAndEndpointToIdMapDefinition = generateDefinitionSatisfies({
+  baseKey: 'modelNameAndEndpointToIdMap',
+  input: z.object({ modelName: z.string(), modelEndpoint: z.string() }),
+  getKey: (args) =>
+    `modelNameAndEndpointToIdMap:${args.modelName}:${args.modelEndpoint}`,
+  output: z.object({ modelId: z.string() }),
+  populateOnMissFn: async (args) => {
+    const model = await db.query.inferenceModelsMetadata.findFirst({
+      where: and(
+        eq(inferenceModelsMetadata.modelName, args.modelName),
+        eq(inferenceModelsMetadata.modelEndpoint, args.modelEndpoint),
+      ),
+    });
+
+    if (!model) {
+      return null;
+    }
+
+    return { expiresAt: 0, data: { modelId: model.id } };
+  },
+});
+
 export const redisDefinitions = {
   userSession: userSessionDefinition,
   organizationRateLimitsPerModel: organizationRateLimitsPerModelDefinition,
@@ -178,6 +201,7 @@ export const redisDefinitions = {
   organizationCredits: organizationCreditsDefinition,
   organizationToCoreOrganization: organizationToCoreOrganizationDefinition,
   stepCostSchema: stepCostSchemaDefinition,
+  modelNameAndEndpointToIdMap: modelNameAndEndpointToIdMapDefinition,
 } satisfies Record<
   string,
   RedisDefinition<

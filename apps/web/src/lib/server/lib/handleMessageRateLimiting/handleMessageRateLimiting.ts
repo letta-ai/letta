@@ -58,7 +58,6 @@ export async function getAndSeedOrganizationLimits(
   let maxTokensPerMinutePerModel: number | null | undefined =
     organizationLimit?.maxTokensPerMinutePerModel;
 
-  console.log('a', organizationLimit);
   // if organizationLimit exists but a specific model is not present, this most likley means that the organization limit for that model was not set, we do not want to fetch that here
   // we should rely on cache clearing to fetch the updated organization limits either by expiration or manual clearing else where
   if (!organizationLimit) {
@@ -232,7 +231,6 @@ export async function handleMessageRateLimiting(
 
   const modelId = metaData.id;
 
-  console.log('a', modelId);
   const currentMinute = Math.floor(Date.now() / 60000);
 
   const { maxRequestsPerMinutePerModel, maxTokensPerMinutePerModel } =

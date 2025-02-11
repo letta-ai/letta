@@ -3,13 +3,29 @@ import { getCreditCostPerModel } from '../getCreditCostPerModel/getCreditCostPer
 import { removeCreditsFromOrganization } from '../removeCreditsFromOrganization/removeCreditsFromOrganization';
 
 export async function deductCreditsFromStep(step: Step) {
-  if (!step.model || !step.organization_id) {
+  if (
+    !step.model ||
+    !step.model_endpoint ||
+    !step.context_window_limit ||
+    !step.organization_id
+  ) {
     return;
   }
 
-  const creditCost = await getCreditCostPerModel(step.model);
+  const creditCost = await getCreditCostPerModel({
+    modelName: step.model,
+    modelEndpoint: step.model_endpoint,
+    contextWindowSize: step.context_window_limit,
+  });
 
   try {
+    if (creditCost === 0) {
+      console.warn(
+        `Model ${step.model} [${step.model_endpoint}] has a cost of 0 credits`,
+      );
+      return;
+    }
+
     const response = await removeCreditsFromOrganization({
       amount: creditCost,
       coreOrganizationId: step.organization_id,

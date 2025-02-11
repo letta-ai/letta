@@ -396,6 +396,7 @@ function BillingOverview(props: BillingOverviewProps) {
                 /* eslint-disable-next-line react/forbid-component-props */
                 className="leading-none"
                 bold
+                data-testid="total-credits"
               >
                 {formatNumber(data.body.totalCredits)}
               </Typography>

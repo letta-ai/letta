@@ -69,7 +69,7 @@ END;$$;
 
     await Promise.all(
       filteredSteps.map(async (row) => {
-        console.log('[Undertaker] Received new step', row.id);
+        console.log('[Undertaker] Found existing step', row.id);
         const transaction = await deductCreditsFromStep(row);
 
         if (!transaction) {
@@ -95,8 +95,17 @@ END;$$;
         const transaction = await deductCreditsFromStep(parsedPayload);
 
         if (!transaction) {
+          console.log(
+            '[Undertaker] No transaction found for step',
+            parsedPayload.id,
+          );
           return;
         }
+
+        console.log(
+          '[Undertaker] Deducted credits from step',
+          transaction.transactionId,
+        );
 
         // set tid column of the step to the current transaction id
         await client.query('UPDATE steps SET tid = $1 WHERE id = $2', [
