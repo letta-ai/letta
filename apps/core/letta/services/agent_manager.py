@@ -477,39 +477,39 @@ class AgentManager:
             )
             message = self.message_manager.create_message(message, actor=actor)
             message_ids = [message.id] + agent_state.message_ids[1:]  # swap index 0 (system)
-            return self.set_in_context_messages(agent_id=agent_id, message_ids=message_ids, actor=actor)
+            return self._set_in_context_messages(agent_id=agent_id, message_ids=message_ids, actor=actor)
         else:
             return agent_state
 
     @enforce_types
-    def set_in_context_messages(self, agent_id: str, message_ids: List[str], actor: PydanticUser) -> PydanticAgentState:
+    def _set_in_context_messages(self, agent_id: str, message_ids: List[str], actor: PydanticUser) -> PydanticAgentState:
         return self.update_agent(agent_id=agent_id, agent_update=UpdateAgent(message_ids=message_ids), actor=actor)
 
     @enforce_types
     def trim_older_in_context_messages(self, num: int, agent_id: str, actor: PydanticUser) -> PydanticAgentState:
         message_ids = self.get_agent_by_id(agent_id=agent_id, actor=actor).message_ids
         new_messages = [message_ids[0]] + message_ids[num:]  # 0 is system message
-        return self.set_in_context_messages(agent_id=agent_id, message_ids=new_messages, actor=actor)
+        return self._set_in_context_messages(agent_id=agent_id, message_ids=new_messages, actor=actor)
 
     @enforce_types
     def trim_all_in_context_messages_except_system(self, agent_id: str, actor: PydanticUser) -> PydanticAgentState:
         message_ids = self.get_agent_by_id(agent_id=agent_id, actor=actor).message_ids
         new_messages = [message_ids[0]]  # 0 is system message
-        return self.set_in_context_messages(agent_id=agent_id, message_ids=new_messages, actor=actor)
+        return self._set_in_context_messages(agent_id=agent_id, message_ids=new_messages, actor=actor)
 
     @enforce_types
     def prepend_to_in_context_messages(self, messages: List[PydanticMessage], agent_id: str, actor: PydanticUser) -> PydanticAgentState:
         message_ids = self.get_agent_by_id(agent_id=agent_id, actor=actor).message_ids
         new_messages = self.message_manager.create_many_messages(messages, actor=actor)
         message_ids = [message_ids[0]] + [m.id for m in new_messages] + message_ids[1:]
-        return self.set_in_context_messages(agent_id=agent_id, message_ids=message_ids, actor=actor)
+        return self._set_in_context_messages(agent_id=agent_id, message_ids=message_ids, actor=actor)
 
     @enforce_types
     def append_to_in_context_messages(self, messages: List[PydanticMessage], agent_id: str, actor: PydanticUser) -> PydanticAgentState:
         messages = self.message_manager.create_many_messages(messages, actor=actor)
         message_ids = self.get_agent_by_id(agent_id=agent_id, actor=actor).message_ids or []
         message_ids += [m.id for m in messages]
-        return self.set_in_context_messages(agent_id=agent_id, message_ids=message_ids, actor=actor)
+        return self._set_in_context_messages(agent_id=agent_id, message_ids=message_ids, actor=actor)
 
     @enforce_types
     def reset_messages(self, agent_id: str, actor: PydanticUser, add_default_initial_messages: bool = False) -> PydanticAgentState:

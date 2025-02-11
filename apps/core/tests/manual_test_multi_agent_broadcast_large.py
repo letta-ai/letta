@@ -54,7 +54,8 @@ def roll_dice_tool(client):
     yield tool
 
 
-def test_multi_agent_large(client, roll_dice_tool):
+@pytest.mark.parametrize("num_workers", [50])
+def test_multi_agent_large(client, roll_dice_tool, num_workers):
     manager_tags = ["manager"]
     worker_tags = ["helpers"]
 
@@ -72,7 +73,6 @@ def test_multi_agent_large(client, roll_dice_tool):
 
     # Create 3 worker agents
     worker_agents = []
-    num_workers = 50
     for idx in tqdm(range(num_workers)):
         worker_agent_state = client.create_agent(
             name=f"worker-{idx}", include_multi_agent_tools=False, tags=worker_tags, tool_ids=[roll_dice_tool.id]
