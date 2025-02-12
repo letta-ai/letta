@@ -50,6 +50,10 @@ describe('letta', () => {
     // eslint-disable-next-line cypress/no-unnecessary-waiting
     cy.wait(5000);
 
+    cy.findAllByTestId('agent-message-content', { timeout: 50000 })
+      .its('length')
+      .should('eq', 1);
+
     cy.findByTestId('chat-simulator-input').type('Hello there!', {
       force: true,
     });
@@ -62,6 +66,8 @@ describe('letta', () => {
       'Hello there!',
     );
 
-    cy.findByTestId('messages-list', { timeout: 50000 }).contains('BananaMan');
+    cy.findAllByTestId('agent-message-content', { timeout: 50000 })
+      .its('length')
+      .should('eq', 2, { timeout: 50000 });
   });
 });

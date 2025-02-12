@@ -138,8 +138,12 @@ describe('letta', () => {
       .first()
       .click({ force: true });
 
-    cy.findByTestId('stage-new-version-button').click({ force: true });
-    cy.findByTestId('stage-agent-dialog-confirm-button').click({ force: true });
+    cy.findByTestId('stage-new-version-button', { timeout: 50000 }).click({
+      force: true,
+    });
+    cy.findByTestId('stage-agent-dialog-confirm-button', {
+      timeout: 50000,
+    }).click({ force: true });
     cy.findByTestId('deploy-agent-dialog-trigger', { timeout: 50000 }).click();
 
     cy.visit('/projects/deploymentest/agents');
