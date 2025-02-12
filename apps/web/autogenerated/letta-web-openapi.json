@@ -5416,6 +5416,10 @@
                       "model": {
                         "type": "string"
                       },
+                      "handle": {
+                        "type": "string",
+                        "nullable": true
+                      },
                       "model_endpoint_type": {
                         "type": "string",
                         "enum": [

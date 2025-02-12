@@ -151,6 +151,14 @@
       },
       "label": "Context window size"
     },
+    "ContextWindowSlider": {
+      "error": "Invalid context window size, minimum value is 4000",
+      "label": "Context window"
+    },
+    "TemperatureSlider": {
+      "label": "Temperature",
+      "error": "Invalid temperature value, must be between 0 and 1"
+    },
     "AdvancedSettingsPanel": {
       "embeddingDimensions": {
         "label": "Embedding dimensions"

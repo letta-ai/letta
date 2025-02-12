@@ -4,7 +4,7 @@ import * as React from 'react';
 import * as SliderPrimitive from '@radix-ui/react-slider';
 import { cn } from '@letta-cloud/core-style-config';
 import { HStack } from '../../framing/HStack/HStack';
-import { useEffect, useMemo } from 'react';
+import { useMemo } from 'react';
 import { useCallback, useState } from 'react';
 import { makeInput, makeRawInput } from '../Form/Form';
 
@@ -28,47 +28,39 @@ const SliderRoot = React.forwardRef<
 ));
 SliderRoot.displayName = SliderPrimitive.Root.displayName;
 
-type SliderProps = React.ComponentProps<typeof SliderRoot> & {
+type SliderProps = Omit<
+  React.ComponentProps<typeof SliderRoot>,
+  'onValueChange' | 'value'
+> & {
   fullWidth?: boolean;
+  value: string;
+  onValueChange?: (value: string) => void;
 };
 
 function SliderInput(props: SliderProps) {
   const { value, onValueChange, fullWidth, ...sliderProps } = props;
 
-  const [sliderNumericValue, setSliderNumericValue] = useState<number>(
-    value?.[0] || 0,
-  );
-  const [sliderValue, setSliderValue] = useState<string>(
-    value?.[0].toString() || '',
-  );
+  const [sliderValue, setSliderValue] = useState<string>(value);
 
   const handleSliderValueChange = useCallback(
     (value: string) => {
-      if (!isNaN(Number(value))) {
-        onValueChange?.([Number(value)]);
-        setSliderNumericValue(Number(value));
-      } else {
-        setSliderNumericValue(0);
-      }
-
+      onValueChange?.(value);
       setSliderValue(value);
     },
     [onValueChange],
   );
 
   const controlledValue = useMemo(() => {
-    if (Array.isArray(value)) {
-      return value;
+    if (typeof value !== 'undefined') {
+      return [Number(value)];
     }
 
-    return [sliderNumericValue];
-  }, [value, sliderNumericValue]);
+    return [Number(sliderValue)];
+  }, [value, sliderValue]);
 
-  useEffect(() => {
-    if (controlledValue[0].toString() !== sliderValue) {
-      setSliderValue(controlledValue[0].toString());
-    }
-  }, [controlledValue, sliderValue]);
+  const isSliderValueValid = useMemo(() => {
+    return tryParseSliderNumber(sliderValue) !== false;
+  }, [sliderValue]);
 
   return (
     <HStack className="min-w-[250px]" fullWidth={fullWidth}>
@@ -81,7 +73,10 @@ function SliderInput(props: SliderProps) {
         {...sliderProps}
       />
       <input
-        className="w-[75px] bg-background border px-1 py-1 rounded-sm"
+        className={cn(
+          'w-[75px] bg-background border px-1 py-1 rounded-sm',
+          !isSliderValueValid && 'border-destructive',
+        )}
         value={sliderValue}
         onChange={(e) => {
           handleSliderValueChange(e.target.value);
@@ -89,6 +84,18 @@ function SliderInput(props: SliderProps) {
       />
     </HStack>
   );
+}
+
+export function tryParseSliderNumber(
+  value: string,
+  defaultValue?: number,
+): number | false {
+  const parsed = Number(value);
+  if (isNaN(parsed)) {
+    return defaultValue || false;
+  }
+
+  return parsed;
 }
 
 export const Slider = makeInput(SliderInput, 'Slider');

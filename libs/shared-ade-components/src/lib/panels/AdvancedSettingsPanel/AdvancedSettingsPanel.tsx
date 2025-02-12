@@ -7,6 +7,7 @@ import {
 import {
   RawCreatableAsyncSelect,
   Spinner,
+  tryParseSliderNumber,
 } from '@letta-cloud/component-library';
 import type { OptionType } from '@letta-cloud/component-library';
 
@@ -208,37 +209,97 @@ function AgentTags() {
   );
 }
 
-const MIN_CONTEXT_WINDOW = 4000;
+interface TemperatureSliderProps {
+  defaultTemperature: number;
+}
 
-export function AdvancedSettingsPanel() {
-  const { isTemplate } = useCurrentAgentMetaData();
+function TemperatureSlider(props: TemperatureSliderProps) {
+  const { defaultTemperature } = props;
   const currentAgent = useCurrentAgent();
-  const { data: modelsList } = useModelsServiceListModels();
+  const { syncUpdateCurrentAgent } = useSyncUpdateCurrentAgent();
   const t = useTranslations('ADE/AdvancedSettings');
 
-  const { syncUpdateCurrentAgent } = useSyncUpdateCurrentAgent();
-
-  const [draftContextWindow, setDraftContextWindow] = useState<number>(
-    currentAgent.llm_config?.context_window || MIN_CONTEXT_WINDOW,
+  const [draftTemperature, setDraftTemperature] = useState<string>(
+    `${defaultTemperature || 0}`,
   );
 
-  const currentBaseModel = useMemo(() => {
-    if (!currentAgent.llm_config?.model) {
-      return null;
-    }
-
-    return modelsList?.find(
-      (val) => val.model === currentAgent.llm_config?.model,
-    );
-  }, [currentAgent.llm_config, modelsList]);
-
-  const handleContextWindowChange = useCallback(
+  const handleTemperatureChange = useCallback(
     (value: number) => {
       if (!currentAgent.llm_config) {
         return;
       }
 
-      if (MIN_CONTEXT_WINDOW > value) {
+      syncUpdateCurrentAgent((existing) => ({
+        llm_config: {
+          ...existing.llm_config,
+          temperature: value,
+        },
+      }));
+    },
+    [currentAgent.llm_config, syncUpdateCurrentAgent],
+  );
+
+  const parsedDraftTemperature = useMemo(() => {
+    const sliderNumber = tryParseSliderNumber(draftTemperature);
+
+    if (sliderNumber === false) {
+      return false;
+    }
+
+    if (sliderNumber < 0 || sliderNumber > 1) {
+      return false;
+    }
+
+    return sliderNumber;
+  }, [draftTemperature]);
+
+  return (
+    <RawSlider
+      fullWidth
+      label={t('TemperatureSlider.label')}
+      value={draftTemperature}
+      errorMessage={
+        parsedDraftTemperature === false
+          ? t('TemperatureSlider.error')
+          : undefined
+      }
+      onValueChange={(value) => {
+        setDraftTemperature(value);
+
+        const parsedNumber = tryParseSliderNumber(value);
+
+        if (parsedNumber) {
+          handleTemperatureChange(parsedNumber);
+        }
+      }}
+      min={0}
+      max={1}
+      step={0.01}
+    />
+  );
+}
+
+interface ContextWindowSliderProps {
+  defaultContextWindow: number;
+  maxContextWindow: number;
+}
+
+const MIN_CONTEXT_WINDOW = 4000;
+
+function ContextWindowSlider(props: ContextWindowSliderProps) {
+  const { defaultContextWindow, maxContextWindow } = props;
+  const currentAgent = useCurrentAgent();
+  const { syncUpdateCurrentAgent } = useSyncUpdateCurrentAgent();
+
+  const [draftContextWindow, setDraftContextWindow] = useState<string>(
+    `${defaultContextWindow || 0}`,
+  );
+
+  const t = useTranslations('ADE/AdvancedSettings');
+
+  const handleContextWindowChange = useCallback(
+    (value: number) => {
+      if (!currentAgent.llm_config) {
         return;
       }
 
@@ -251,19 +312,51 @@ export function AdvancedSettingsPanel() {
     },
     [currentAgent.llm_config, syncUpdateCurrentAgent],
   );
+  const parsedDraftContextWindow = useMemo(() => {
+    return tryParseSliderNumber(draftContextWindow);
+  }, [draftContextWindow]);
 
-  useEffect(() => {
-    if (!currentBaseModel || !currentAgent.llm_config) {
-      return;
+  return (
+    <RawSlider
+      fullWidth
+      label={t('ContextWindowSlider.label')}
+      errorMessage={
+        parsedDraftContextWindow === false
+          ? t('ContextWindowSlider.error')
+          : undefined
+      }
+      value={draftContextWindow}
+      onValueChange={(value) => {
+        setDraftContextWindow(value);
+
+        const parsedNumber = tryParseSliderNumber(value);
+        if (parsedNumber !== false) {
+          if (parsedNumber >= MIN_CONTEXT_WINDOW) {
+            handleContextWindowChange(parsedNumber);
+          }
+        }
+      }}
+      min={MIN_CONTEXT_WINDOW}
+      max={maxContextWindow}
+    />
+  );
+}
+
+export function AdvancedSettingsPanel() {
+  const { isTemplate } = useCurrentAgentMetaData();
+  const currentAgent = useCurrentAgent();
+  const { data: modelsList } = useModelsServiceListModels();
+  const t = useTranslations('ADE/AdvancedSettings');
+
+  const currentBaseModel = useMemo(() => {
+    if (!currentAgent.llm_config?.model) {
+      return null;
     }
 
-    if (
-      currentBaseModel.context_window < currentAgent.llm_config.context_window
-    ) {
-      setDraftContextWindow(currentBaseModel.context_window);
-      handleContextWindowChange(currentBaseModel.context_window);
-    }
-  }, [currentAgent.llm_config, currentBaseModel, handleContextWindowChange]);
+    return modelsList?.find(
+      (val) => val.model === currentAgent.llm_config?.model,
+    );
+  }, [currentAgent.llm_config, modelsList]);
 
   if (!currentAgent.llm_config || !modelsList) {
     return (
@@ -279,28 +372,17 @@ export function AdvancedSettingsPanel() {
     <PanelMainContent>
       <VStack fullWidth paddingTop="small" gap="form" justify="start">
         {!isTemplate && <AgentTags />}
-
-        <RawSlider
-          fullWidth
-          label={t('contextWindowController.label')}
-          value={[draftContextWindow]}
-          errorMessage={
-            draftContextWindow < MIN_CONTEXT_WINDOW
-              ? t('contextWindowController.errors.tooSmall')
-              : ''
-          }
-          onValueChange={([value]) => {
-            setDraftContextWindow(value);
-
-            if (value < MIN_CONTEXT_WINDOW) {
-              return;
-            }
-
-            handleContextWindowChange(value);
-          }}
-          min={MIN_CONTEXT_WINDOW}
-          max={currentBaseModel?.context_window || 10000}
+        <TemperatureSlider
+          defaultTemperature={currentAgent.llm_config.temperature || 1}
         />
+        {currentBaseModel && (
+          <ContextWindowSlider
+            maxContextWindow={currentBaseModel.context_window}
+            defaultContextWindow={
+              currentAgent.llm_config.context_window || MIN_CONTEXT_WINDOW
+            }
+          />
+        )}
         <EmbeddingSelector embeddingConfig={currentAgent.embedding_config} />
         <RawInput
           fullWidth
