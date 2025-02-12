@@ -1,4 +1,4 @@
-import { Spinner, TabGroup } from '@letta-cloud/component-library';
+import { Button, Spinner, TabGroup } from '@letta-cloud/component-library';
 import { InfoTooltip } from '@letta-cloud/component-library';
 import { LettaLoaderPanel } from '@letta-cloud/component-library';
 import {
@@ -124,13 +124,8 @@ function SimulatedMemory() {
     return <LettaLoaderPanel />;
   }
 
-  return memories.map((block, index) => (
-    <VStack
-      paddingTop="small"
-      fullHeight
-      borderBottom={index !== memories.length - 1}
-      key={block.label || ''}
-    >
+  return memories.map((block) => (
+    <VStack fullHeight key={block.label || ''}>
       <VStack fullHeight flex paddingBottom="small">
         <RawTextArea
           autosize={false}
@@ -160,6 +155,12 @@ type MemoryType = 'simulated' | 'templated';
 export function EditMemory() {
   const { isTemplate } = useCurrentAgentMetaData();
   const [memoryType, setMemoryType] = useState<MemoryType>('templated');
+  const { open } = useAdvancedCoreMemoryEditor();
+  const { memory } = useCurrentAgent();
+
+  const firstLabel = useMemo(() => {
+    return memory?.blocks?.[0]?.label;
+  }, [memory]);
 
   const t = useTranslations('ADE/EditCoreMemoriesPanel');
 
@@ -167,9 +168,22 @@ export function EditMemory() {
     <PanelMainContent variant="noPadding">
       <VStack fullHeight gap={false}>
         <VStack paddingX="small">
-          {isTemplate && (
+          <HStack align="end">
             <TabGroup
-              fullWidth
+              extendBorder
+              rightContent={
+                firstLabel && (
+                  <Button
+                    color="tertiary"
+                    size="small"
+                    label={t('advancedEditor')}
+                    onClick={() => {
+                      open(firstLabel);
+                    }}
+                  />
+                )
+              }
+              size="small"
               value={memoryType}
               onValueChange={(value) => {
                 if (!value) {
@@ -178,30 +192,50 @@ export function EditMemory() {
 
                 setMemoryType(value as MemoryType);
               }}
-              items={[
-                {
-                  label: t('toggleMemoryType.templated.label'),
-                  value: 'templated',
-                  postIcon: (
-                    <InfoTooltip
-                      text={t('toggleMemoryType.templated.tooltip')}
-                    />
-                  ),
-                },
-                {
-                  label: t('toggleMemoryType.simulated.label'),
-                  value: 'simulated',
-                  postIcon: (
-                    <InfoTooltip
-                      text={t('toggleMemoryType.simulated.tooltip')}
-                    />
-                  ),
-                },
-              ]}
+              items={
+                isTemplate
+                  ? [
+                      {
+                        label: t('toggleMemoryType.templated.label'),
+                        value: 'templated',
+                        postIcon: (
+                          <InfoTooltip
+                            text={t('toggleMemoryType.templated.tooltip')}
+                          />
+                        ),
+                      },
+                      {
+                        label: t('toggleMemoryType.simulated.label'),
+                        value: 'simulated',
+                        postIcon: (
+                          <InfoTooltip
+                            text={t('toggleMemoryType.simulated.tooltip')}
+                          />
+                        ),
+                      },
+                    ]
+                  : [
+                      {
+                        label: t('toggleMemoryType.agent.label'),
+                        value: 'templated',
+                        postIcon: (
+                          <InfoTooltip
+                            text={t('toggleMemoryType.agent.tooltip')}
+                          />
+                        ),
+                      },
+                    ]
+              }
             />
-          )}
+          </HStack>
         </VStack>
-        <VStack fullHeight gap="small" paddingX="large" paddingBottom="small">
+        <VStack
+          paddingTop="small"
+          fullHeight
+          gap="small"
+          paddingX="large"
+          paddingBottom="small"
+        >
           {memoryType === 'templated' ? <DefaultMemory /> : <SimulatedMemory />}
         </VStack>
       </VStack>

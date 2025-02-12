@@ -375,12 +375,17 @@
     }
   },
   "ADE/EditCoreMemoriesPanel": {
+    "advancedEditor": "Advanced",
     "SimulatedMemory": {
       "error": "There was an error while reading the simulated memory block, please try again or contact support.",
       "characterCount": "{count} CHARS"
     },
     "toggleMemoryType": {
       "label": "Toggle Memory Type",
+      "agent": {
+        "label": "Agent",
+        "tooltip": "The agent core memory is the memory state of the agent that is unique to this agent"
+      },
       "templated": {
         "label": "Template",
         "tooltip": "The template memory is the initial memory state for any new deployed agents that use this template"

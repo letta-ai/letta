@@ -596,7 +596,7 @@ function Billing() {
             onValueChange={(value) => {
               setSelectedTab(value as Tabs);
             }}
-            variant="more-spacing"
+            size="small"
             value={selectedTab}
             items={[
               {
