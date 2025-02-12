@@ -451,6 +451,46 @@ const deleteInviteRuleContract = c.mutation({
   },
 });
 
+const PaymentMethodSchema = z.object({
+  id: z.string().nullable(),
+  last4: z.string().nullable(),
+  expMonth: z.number().nullable(),
+  expYear: z.number().nullable(),
+  brand: z.string().nullable(),
+});
+
+const BillingHistorySchema = z.object({
+  id: z.string(),
+  amount: z.number(),
+  createdAt: z.string(),
+  description: z.string(),
+  receiptLink: z.string(),
+  paymentMethod: PaymentMethodSchema,
+});
+
+export type BillingHistorySchemaType = z.infer<typeof BillingHistorySchema>;
+
+const BillingHistoryQueryParams = z.object({
+  cursor: z.string().optional(),
+  limit: z.number().optional(),
+});
+
+type BillingHistoryQueryParamsType = z.infer<typeof BillingHistoryQueryParams>;
+
+const BillingHistoryResponse = z.object({
+  nextCursor: z.string().optional(),
+  history: BillingHistorySchema.array(),
+});
+
+const getOrganizationBillingHistoryContract = c.query({
+  path: '/organizations/self/billing-history',
+  method: 'GET',
+  query: BillingHistoryQueryParams,
+  responses: {
+    200: BillingHistoryResponse,
+  },
+});
+
 export const organizationsContract = c.router({
   getCurrentOrganization: getCurrentOrganizationContract,
   getCurrentOrganizationPreferences: getCurrentOrganizationPreferencesContract,
@@ -475,6 +515,7 @@ export const organizationsContract = c.router({
   createInviteRule: createInviteRuleContract,
   listInviteRules: listInviteRulesContract,
   deleteInviteRule: deleteInviteRuleContract,
+  getOrganizationBillingHistory: getOrganizationBillingHistoryContract,
 });
 
 export const organizationsQueryClientKeys = {
@@ -497,4 +538,8 @@ export const organizationsQueryClientKeys = {
   startSetupIntent: ['organizations', 'self', 'setup-intent'],
   listVerifiedDomains: ['organizations', 'self', 'verified-domains'],
   listInviteRules: ['organizations', 'self', 'invite-rules'],
+  getOrganizationBillingHistory: ['organizations', 'self', 'billing-history'],
+  getOrganizationBillingHistoryWithSearch: (
+    search: BillingHistoryQueryParamsType,
+  ) => [...organizationsQueryClientKeys.getOrganizationBillingHistory, search],
 };

@@ -18,7 +18,7 @@ interface TabGroupProps extends Tabs.TabsProps {
   upperCase?: boolean;
   extendBorder?: boolean;
   noBottomBorder?: boolean;
-  variant?: 'border' | 'bordered-background';
+  variant?: 'border' | 'bordered-background' | 'more-spacing';
 }
 
 export function TabGroup(props: TabGroupProps) {
@@ -51,6 +51,9 @@ export function TabGroup(props: TabGroupProps) {
               variant === 'bordered-background'
                 ? 'data-[state=active]:bg-background-grey2 data-[state=active]:border data-[state=active]:border-b-0 data-[state=active]:text-background-grey2-content'
                 : '',
+              variant === 'more-spacing'
+                ? 'border-b-2 pb-2 data-[state=active]:border-content'
+                : '',
               fullWidth ? 'flex-1 justify-center' : '',
             )}
             key={item.value}
@@ -59,7 +62,7 @@ export function TabGroup(props: TabGroupProps) {
           >
             <Slot className="w-4 h-4">{item.icon}</Slot>
             <Typography
-              bold
+              bold={variant !== 'more-spacing'}
               variant="body2"
               uppercase={upperCase}
               className="whitespace-nowrap"

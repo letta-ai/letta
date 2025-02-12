@@ -23,10 +23,13 @@ import {
   createPayment,
   createSetupIntent,
   getPaymentCustomer,
+  getPaymentMethodDetails,
   listCreditCards,
   removePaymentMethod,
+  setDefaultPaymentMethod,
+  listPaymentIntents,
+  getPaymentCharge,
 } from '@letta-cloud/payments';
-import { setDefaultPaymentMethod } from '@letta-cloud/payments';
 import { ApplicationServices } from '@letta-cloud/rbac';
 import { addCreditsToOrganization } from '@letta-cloud/server-utils';
 import { creditsToDollars } from '@letta-cloud/generic-utils';
@@ -1132,6 +1135,76 @@ export async function deleteInviteRule(
   };
 }
 
+type GetOrganizationBillingHistoryResponse = ServerInferResponses<
+  typeof contracts.organizations.getOrganizationBillingHistory
+>;
+
+type GetOrganizationBillingHistoryRequest = ServerInferRequest<
+  typeof contracts.organizations.getOrganizationBillingHistory
+>;
+
+export async function getOrganizationBillingHistory(
+  req: GetOrganizationBillingHistoryRequest,
+): Promise<GetOrganizationBillingHistoryResponse> {
+  const { cursor, limit } = req.query;
+
+  const { activeOrganizationId, permissions } =
+    await getUserWithActiveOrganizationIdOrThrow();
+
+  if (!permissions.has(ApplicationServices.MANAGE_BILLING)) {
+    return {
+      status: 403,
+      body: {},
+    };
+  }
+
+  const paymentHistory = await listPaymentIntents({
+    cursor,
+    limit,
+    organizationId: activeOrganizationId,
+  });
+
+  return {
+    status: 200,
+    body: {
+      nextCursor: paymentHistory.nextCursor || undefined,
+      history: await Promise.all(
+        paymentHistory.history.map(async (history) => {
+          const paymentMethod =
+            typeof history.payment_method === 'string'
+              ? await getPaymentMethodDetails(
+                  typeof history.customer === 'string'
+                    ? history.customer
+                    : history.customer?.id || '',
+                  history.payment_method || '',
+                )
+              : history.payment_method;
+
+          const recentCharge =
+            typeof history.latest_charge === 'string'
+              ? await getPaymentCharge(history.latest_charge || '')
+              : history.latest_charge;
+
+          return {
+            id: history.id,
+            amount: history.amount / 100,
+            createdAt: new Date(history.created * 1000).toISOString(),
+            description: history.description || '',
+            receiptLink: recentCharge?.receipt_url || '',
+            paymentMethod: {
+              id: paymentMethod?.id || '',
+              last4: paymentMethod?.card?.last4 || '',
+              expMonth: paymentMethod?.card?.exp_month || 0,
+              expYear: paymentMethod?.card?.exp_year || 0,
+              brand: paymentMethod?.card?.brand || '',
+            },
+          };
+        }),
+      ),
+    },
+  };
+}
+
 export const organizationsRouter = {
   getCurrentOrganization,
   getCurrentOrganizationPreferences,
@@ -1155,4 +1228,5 @@ export const organizationsRouter = {
   createInviteRule,
   listInviteRules,
   deleteInviteRule,
+  getOrganizationBillingHistory,
 };

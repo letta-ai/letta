@@ -5,9 +5,9 @@ import {
   AmexCardIcon,
   Badge,
   Button,
-  CreditCardIcon,
   DashboardPageLayout,
   DashboardPageSection,
+  DataTable,
   Dialog,
   DiscoverCardIcon,
   HStack,
@@ -19,16 +19,24 @@ import {
   Section,
   StripeCardIcon,
   TabGroup,
+  TollIcon,
   TrashIcon,
   Typography,
   VisaCardIcon,
   VStack,
-  WalletIcon,
 } from '@letta-cloud/component-library';
-import React, { useCallback } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { webApi, webApiQueryKeys } from '$web/client';
-import type { contracts, CreditCardType } from '$web/web-api/contracts';
-import { useNumberFormatter } from '@letta-cloud/helpful-client-utils';
+import type {
+  BillingHistorySchemaType,
+  contracts,
+  CreditCardType,
+} from '$web/web-api/contracts';
+import {
+  useCurrencyFormatter,
+  useDateFormatter,
+  useNumberFormatter,
+} from '@letta-cloud/helpful-client-utils';
 import { AddCreditCardDialog } from '$web/client/components/AddCreditCardDialog/AddCreditCardDialog';
 import { useQueryClient } from '@tanstack/react-query';
 import type { ServerInferResponses } from '@ts-rest/core';
@@ -36,6 +44,7 @@ import { Slot } from '@radix-ui/react-slot';
 import { useUserHasPermission } from '$web/client/hooks';
 import { ApplicationServices } from '@letta-cloud/rbac';
 import { PurchaseCreditsDialog } from '$web/client/components/PurchaseCreditsDialog/PurchaseCreditsDialog';
+import type { ColumnDef } from '@tanstack/react-table';
 
 interface RemoveCreditCardDialogProps {
   paymentMethodId: string;
@@ -295,7 +304,6 @@ function PaymentMethods() {
                 preIcon={<PlusIcon />}
                 label={t('PaymentMethods.addPaymentMethod')}
                 color="primary"
-                size="small"
               />
             }
           />
@@ -335,7 +343,7 @@ function PaymentMethods() {
   );
 }
 
-type Tabs = 'overview' | 'payment-methods';
+type Tabs = 'billing-history' | 'overview' | 'payment-methods';
 
 interface BillingOverviewProps {
   changeTab: (tab: Tabs) => void;
@@ -383,41 +391,39 @@ function BillingOverview(props: BillingOverviewProps) {
           }
         />
       )}
-      <Section
-        title={t('BillingOverview.Credits.title')}
-        description={t('BillingOverview.Credits.description')}
-      >
-        <VStack>
+      <Section title={t('BillingOverview.Credits.title')}>
+        <VStack color="background-grey" border padding>
           <VStack paddingY="small" align="start">
-            <HStack align="center">
-              <LettaCoinIcon size="large" />
+            <HStack align="end">
+              <HStack align="center">
+                <LettaCoinIcon size="large" />
+                <Typography
+                  variant="heading2"
+                  /* eslint-disable-next-line react/forbid-component-props */
+                  className="leading-none"
+                  data-testid="total-credits"
+                  bold
+                >
+                  {formatNumber(data.body.totalCredits)}
+                </Typography>
+              </HStack>
               <Typography
-                variant="heading2"
                 /* eslint-disable-next-line react/forbid-component-props */
-                className="leading-none"
-                bold
-                data-testid="total-credits"
+                className="leading-none pb-[3px]"
+                variant="body2"
+                color="lighter"
               >
-                {formatNumber(data.body.totalCredits)}
+                {t('BillingOverview.Credits.available')}
               </Typography>
             </HStack>
-            <Typography
-              /* eslint-disable-next-line react/forbid-component-props */
-              className="leading-none"
-              variant="body2"
-              color="lighter"
-            >
-              {t('BillingOverview.Credits.available')}
-            </Typography>
           </VStack>
           <HStack>
             <PurchaseCreditsDialog
               trigger={
                 <Button
-                  preIcon={<PlusIcon />}
+                  preIcon={<TollIcon />}
                   label={t('BillingOverview.Credits.add')}
                   color="primary"
-                  size="small"
                 />
               }
             />
@@ -451,6 +457,124 @@ function BillingOverview(props: BillingOverviewProps) {
   );
 }
 
+const limit = 10;
+
+function BillingHistory() {
+  const t = useTranslations('organization/billing');
+
+  const { data, isFetchingNextPage, fetchNextPage, hasNextPage } =
+    webApi.organizations.getOrganizationBillingHistory.useInfiniteQuery({
+      queryKey:
+        webApiQueryKeys.organizations.getOrganizationBillingHistoryWithSearch({
+          limit,
+        }),
+      queryData: ({ pageParam }) => ({
+        query: {
+          cursor: pageParam?.cursor,
+          limit,
+        },
+      }),
+      initialPageParam: { cursor: '' },
+      getNextPageParam: (lastPage) => {
+        if (!lastPage.body.nextCursor) {
+          return undefined;
+        }
+
+        return {
+          cursor: lastPage.body.nextCursor,
+        };
+      },
+    });
+
+  const { formatDate } = useDateFormatter();
+  const { formatCurrency } = useCurrencyFormatter();
+
+  const columns: Array<ColumnDef<BillingHistorySchemaType>> = useMemo(() => {
+    return [
+      {
+        header: t('BillingHistory.columns.date'),
+        accessorKey: 'createdAt',
+        cell: ({ row }) => formatDate(row.original.createdAt),
+      },
+      {
+        header: t('BillingHistory.columns.description'),
+        accessorKey: 'description',
+      },
+      {
+        header: t('BillingHistory.columns.amount'),
+        accessorKey: 'amount',
+        cell: ({ row }) =>
+          formatCurrency(row.original.amount, {
+            maximumFractionDigits: 2,
+            minimumFractionDigits: 2,
+          }),
+      },
+      {
+        header: t('BillingHistory.columns.receipt'),
+        accessorKey: 'receipt',
+        meta: {
+          style: {
+            columnAlign: 'right',
+          },
+        },
+        cell: ({ row }) => (
+          <Button
+            label={t('BillingHistory.viewReceipt')}
+            color="secondary"
+            href={row.original.receiptLink}
+            target="_blank"
+            size="small"
+          />
+        ),
+      },
+    ];
+  }, [t, formatCurrency, formatDate]);
+
+  const [page, setPage] = useState(0);
+
+  useEffect(() => {
+    if (!data?.pages) {
+      return;
+    }
+
+    if (page === data.pages.length) {
+      void fetchNextPage();
+    }
+  }, [page, data, fetchNextPage]);
+
+  const currentPage = useMemo(
+    () => data?.pages[page].body.history || [],
+    [data, page],
+  );
+
+  const isLoadingPage = useMemo(() => {
+    if (!data) {
+      return true;
+    }
+
+    if (isFetchingNextPage && !data.pages[page]) {
+      return true;
+    }
+
+    return false;
+  }, [data, isFetchingNextPage, page]);
+
+  return (
+    <DataTable
+      columns={columns}
+      data={currentPage}
+      page={page}
+      onSetPage={setPage}
+      loadingText={t('BillingHistory.loading')}
+      noResultsText={t('BillingHistory.noBillingHistory')}
+      isLoading={isLoadingPage}
+      hasNextPage={hasNextPage}
+      showPagination
+      limit={limit}
+    />
+  );
+}
+
 function Billing() {
   const t = useTranslations('organization/billing');
   const [selectedTab, setSelectedTab] = React.useState<Tabs>('overview');
@@ -472,15 +596,18 @@ function Billing() {
             onValueChange={(value) => {
               setSelectedTab(value as Tabs);
             }}
+            variant="more-spacing"
             value={selectedTab}
             items={[
               {
-                icon: <WalletIcon />,
                 label: t('Overview.title'),
                 value: 'overview',
               },
               {
-                icon: <CreditCardIcon />,
+                label: t('BillingHistory.title'),
+                value: 'billing-history',
+              },
+              {
                 label: t('PaymentMethods.title'),
                 value: 'payment-methods',
               },
@@ -489,6 +616,7 @@ function Billing() {
           {selectedTab === 'overview' && (
             <BillingOverview changeTab={setSelectedTab} />
           )}
+          {selectedTab === 'billing-history' && <BillingHistory />}
           {selectedTab === 'payment-methods' && <PaymentMethods />}
         </DashboardPageSection>
       </VStack>

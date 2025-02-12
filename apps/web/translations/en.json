@@ -376,10 +376,23 @@
   },
   "organization/billing": {
     "noPermission": "You do not have permission to view billing information for this organization, please contact your organization's administrator.",
-    "title": "Billing Information",
+    "title": "Billing",
     "description": "You are currently using a managed enterprise plan. If you have any questions or need help, please contact support.",
     "Overview": {
       "title": "Overview"
+    },
+    "BillingHistory": {
+      "loading": "Loading billing history...",
+      "title": "Billing history",
+      "transactionAt": "Transaction at {date}",
+      "noBillingHistory": "We could not find any billing statements",
+      "columns": {
+        "date": "Date",
+        "description": "Description",
+        "amount": "Amount",
+        "receipt": "Receipt"
+      },
+      "viewReceipt": "View receipt"
     },
     "RemoveCreditCardDialog": {
       "title": "Remove credit card",
@@ -413,8 +426,8 @@
       "Credits": {
         "title": "Credit balance",
         "description": "Credits are used to pay for agent usage. You can purchase more credits below.",
-        "add": "Purchase credits",
-        "available": "Credits available",
+        "add": "Buy credits",
+        "available": "credits",
         "used": "of {total} credits used"
       },
       "Preferences": {
