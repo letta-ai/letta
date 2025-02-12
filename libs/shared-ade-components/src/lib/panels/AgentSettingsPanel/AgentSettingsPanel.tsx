@@ -504,22 +504,24 @@ function TemplateDescription() {
   const { agentId } = useCurrentAgentMetaData();
 
   const { description } = useCurrentAgent();
+  const [localDescription, setLocalDescription] = useState(description || '');
 
   const t = useTranslations('ADE/AgentSettingsPanel');
 
   const { mutate, isPending } = useAgentsServiceModifyAgent();
 
-  const debouncedMutation = useDebouncedCallback(mutate, 500);
+  const debouncedMutation = useDebouncedCallback((args) => {
+    mutate(args);
+    void queryClient.invalidateQueries({
+      queryKey: webApiQueryKeys.agentTemplates.listAgentTemplates,
+      exact: false,
+    });
+  }, 500);
 
   const queryClient = useQueryClient();
 
   const handleUpdate = useCallback(
     async (description: string) => {
-      void queryClient.invalidateQueries({
-        queryKey: webApiQueryKeys.agentTemplates.listAgentTemplates,
-        exact: false,
-      });
-
       queryClient.setQueriesData<AgentState | undefined>(
         {
           queryKey: UseAgentsServiceRetrieveAgentKeyFn({
@@ -555,13 +557,14 @@ function TemplateDescription() {
   return (
     <RawTextArea
       onChange={(e) => {
+        setLocalDescription(e.target.value);
         void handleUpdate(e.target.value);
       }}
       disabled={!canUpdateTemplate}
       rightOfLabelContent={isPending ? <Spinner size="xsmall" /> : null}
       placeholder={t('TemplateDescription.placeholder')}
       rows={3}
-      value={description || ''}
+      value={localDescription || ''}
       fullWidth
       variant="secondary"
       resize="none"
