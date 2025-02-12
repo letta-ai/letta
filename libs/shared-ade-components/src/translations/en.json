@@ -55,12 +55,12 @@
       }
     },
     "ExitLoopToolEditor": {
-      "sentence": "<tool></tool> will always be the last tool used in the response if its needed",
+      "sentence": "<tool></tool> will stop the agent's execution loop after being called.",
       "toolName": "Tool name",
       "save": "Save"
     },
     "ChildToolRuleEditor": {
-      "sentence": "<tool></tool> will run the following tools after it:",
+      "sentence": "<tool></tool> must be followed by calling the tool:",
       "toolName": "Tool name",
       "parentToolName": "Parent tool name",
       "children": "Child tools",
@@ -77,22 +77,22 @@
       "save": "Save"
     },
     "StartConstraintToolEditor": {
-      "sentence": "<tool></tool> will always be the first tool used in the response if its needed",
+      "sentence": "<tool></tool> will be called before the agent does anything else when the agent is invoked",
       "toolName": "Tool name",
       "save": "Save"
     },
     "toolTypes": {
       "runFirst": {
         "title": "Start constraint",
-        "description": "Make sure a tool runs first before any other tool"
+        "description": "Specify the first tool called on each agent invocation"
       },
       "exitLoop": {
         "title": "Exit loop",
-        "description": "Make sure a tool is always the last tool in an inference"
+        "description": "Force the agent to stop executing"
       },
       "constrainChildTools": {
         "title": "Constrain child tools",
-        "description": "Select tools that must run after this tool"
+        "description": "Require one tool to follow another tool"
       },
       "conditional": {
         "title": "Conditional",
