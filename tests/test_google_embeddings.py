@@ -1,21 +1,18 @@
-import pytest
 import httpx
+import pytest
+from dotenv import load_dotenv
 
 from letta.embeddings import GoogleEmbeddings  # Adjust the import based on your module structure
-from dotenv import load_dotenv
 
 load_dotenv()
 import os
-
-import pytest
-
+import threading
 import time
-import uuid
+
 import pytest
 from letta_client import CreateBlock
 from letta_client import Letta as LettaSDKClient
 from letta_client import MessageCreate
-import threading
 
 SERVER_PORT = 8283
 
@@ -93,7 +90,6 @@ def test_archival_insert_text_embedding_004(client: LettaSDKClient):
     )
     print(res.messages)
 
-
     # Retrieve the archival messages through the agent messaging API.
     archived_messages = client.agents.messages.create(
         agent_id=agent.id,
@@ -102,8 +98,8 @@ def test_archival_insert_text_embedding_004(client: LettaSDKClient):
 
     print(archived_messages.messages)
     # Assert that the archival message is present.
-    assert (
-        any(message.status == "success" for message in archived_messages.messages if message.message_type == "tool_return_message")
+    assert any(
+        message.status == "success" for message in archived_messages.messages if message.message_type == "tool_return_message"
     ), f"Archival message '{archival_message}' not found. Archived messages: {archived_messages}"
 
     # Cleanup: Delete the agent.
@@ -141,7 +137,6 @@ def test_archival_insert_embedding_001(client: LettaSDKClient):
         messages=[MessageCreate(role="user", content=f"archive : {archival_message}")],
     )
 
-
     # Retrieve the archival messages through the agent messaging API.
     archived_messages = client.agents.messages.create(
         agent_id=agent.id,
@@ -149,8 +144,8 @@ def test_archival_insert_embedding_001(client: LettaSDKClient):
     )
 
     # Assert that the archival message is present.
-    assert(
-        any(message.status == "success" for message in archived_messages.messages if message.message_type == "tool_return_message")
+    assert any(
+        message.status == "success" for message in archived_messages.messages if message.message_type == "tool_return_message"
     ), f"Archival message '{archival_message}' not found. Archived messages: {archived_messages}"
 
     # Cleanup: Delete the agent.

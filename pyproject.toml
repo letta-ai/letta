@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "letta"
-version = "0.6.23"
+version = "0.6.24"
 packages = [
     {include = "letta"},
 ]
@@ -79,6 +79,7 @@ e2b-code-interpreter = {version = "^1.0.3", optional = true}
 anthropic = "^0.43.0"
 letta_client = "^0.1.23"
 openai = "^1.60.0"
+faker = "^36.1.0"
 colorama = "^0.4.6"
 
 

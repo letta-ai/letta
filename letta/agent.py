@@ -447,8 +447,6 @@ class Agent(BaseAgent):
             function_call = (
                 response_message.function_call if response_message.function_call is not None else response_message.tool_calls[0].function
             )
-
-            # Get the name of the function
             function_name = function_call.name
             self.logger.info(f"Request to call function {function_name} with tool_call_id: {tool_call_id}")
 
@@ -461,7 +459,9 @@ class Agent(BaseAgent):
             if not target_letta_tool:
                 error_msg = f"No function named {function_name}"
                 function_response = "None"  # more like "never ran?"
-                messages = self._handle_function_error_response(error_msg, tool_call_id, function_name, function_args, function_response, messages)
+                messages = self._handle_function_error_response(
+                    error_msg, tool_call_id, function_name, function_args, function_response, messages
+                )
                 return messages, False, True  # force a heartbeat to allow agent to handle error
 
             # Failure case 2: function name is OK, but function args are bad JSON
@@ -471,7 +471,9 @@ class Agent(BaseAgent):
             except Exception:
                 error_msg = f"Error parsing JSON for function '{function_name}' arguments: {function_call.arguments}"
                 function_response = "None"  # more like "never ran?"
-                messages = self._handle_function_error_response(error_msg, tool_call_id, function_name, function_args, function_response, messages)
+                messages = self._handle_function_error_response(
+                    error_msg, tool_call_id, function_name, function_args, function_response, messages
+                )
                 return messages, False, True  # force a heartbeat to allow agent to handle error
 
             # Check if inner thoughts is in the function call arguments (possible apparently if you are using Azure)
