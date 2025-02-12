@@ -2,7 +2,7 @@ from typing import TYPE_CHECKING
 
 from fastapi import APIRouter
 
-from letta.cli.cli import version
+from letta import __version__
 from letta.schemas.health import Health
 
 if TYPE_CHECKING:
@@ -15,6 +15,6 @@ router = APIRouter(prefix="/health", tags=["health"])
 @router.get("/", response_model=Health, operation_id="health_check")
 def health_check():
     return Health(
-        version=version(),
+        version=__version__,
         status="ok",
     )
