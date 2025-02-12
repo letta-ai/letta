@@ -2576,13 +2576,13 @@ pytest = ["pytest (>=7.0.0)", "rich (>=13.9.4,<14.0.0)"]
 
 [[package]]
 name = "letta-client"
-version = "0.1.27"
+version = "0.1.28"
 description = ""
 optional = false
 python-versions = "<4.0,>=3.8"
 files = [
-    {file = "letta_client-0.1.27-py3-none-any.whl", hash = "sha256:dbd8ac70993f8b2776bf2203e46e6d637a216a7b85974217534b3cf29479fabf"},
-    {file = "letta_client-0.1.27.tar.gz", hash = "sha256:191b29810c02e4b4818542affca41da4a2f2de97d05aac04fdab32b5b52a5da5"},
+    {file = "letta_client-0.1.28-py3-none-any.whl", hash = "sha256:ace0c95a7429d2335ff7221aacaef9db7220ab5a4e5d87c6af7d6adbb86362aa"},
+    {file = "letta_client-0.1.28.tar.gz", hash = "sha256:bdb41aa9a6def43f0e7a8c1ccc3b48d6028f332ee73804d59330596b7f96c4a9"},
 ]
 
 [package.dependencies]
@@ -2610,13 +2610,13 @@ pydantic = ">=1.10"
 
 [[package]]
 name = "llama-cloud-services"
-version = "0.6.0"
+version = "0.6.1"
 description = "Tailored SDK clients for LlamaCloud services."
 optional = false
 python-versions = "<4.0,>=3.9"
 files = [
-    {file = "llama_cloud_services-0.6.0-py3-none-any.whl", hash = "sha256:b9647e236ba4e13d0b04bf336ed4023e422a2a48d363258924056ef9eb8f688d"},
-    {file = "llama_cloud_services-0.6.0.tar.gz", hash = "sha256:9c1ed2849f8ba7374df16bdfda69bed145eb4a425b546048f5e751c48efe293a"},
+    {file = "llama_cloud_services-0.6.1-py3-none-any.whl", hash = "sha256:0427c98284bbfedbdf1686d29729d04b13e13f72017e184057892c8583c2b195"},
+    {file = "llama_cloud_services-0.6.1.tar.gz", hash = "sha256:92c7ee4fcc80adaa60f26c0da805182fa56d771fff11e9abb873f9ddb11b5e37"},
 ]
 
 [package.dependencies]
@@ -2628,19 +2628,19 @@ python-dotenv = ">=1.0.1,<2.0.0"
 
 [[package]]
 name = "llama-index"
-version = "0.12.16"
+version = "0.12.17"
 description = "Interface between LLMs and your data"
 optional = false
 python-versions = "<4.0,>=3.9"
 files = [
-    {file = "llama_index-0.12.16-py3-none-any.whl", hash = "sha256:c94d0cf6735219d97d91e2eca5bcfac89ec1583990917f934b075d5a45686cf6"},
-    {file = "llama_index-0.12.16.tar.gz", hash = "sha256:4fd5f5b94eb3f8dd470bb8cc0e1b985d931e8f31473266ef69855488fd8ae3f2"},
+    {file = "llama_index-0.12.17-py3-none-any.whl", hash = "sha256:d8938e5e6e5ff78b6865f7890a01d1a40818a5df798555ee6eb7f2c5ab65aeb0"},
+    {file = "llama_index-0.12.17.tar.gz", hash = "sha256:761a2dad3eb74bd5242ecf8fd28337c0c8745fc8d39d2f9f9b18bf733ad679f4"},
 ]
 
 [package.dependencies]
 llama-index-agent-openai = ">=0.4.0,<0.5.0"
 llama-index-cli = ">=0.4.0,<0.5.0"
-llama-index-core = ">=0.12.16,<0.13.0"
+llama-index-core = ">=0.12.17,<0.13.0"
 llama-index-embeddings-openai = ">=0.3.0,<0.4.0"
 llama-index-indices-managed-llama-cloud = ">=0.4.0"
 llama-index-llms-openai = ">=0.3.0,<0.4.0"
@@ -2735,32 +2735,32 @@ openai = ">=1.1.0"
 
 [[package]]
 name = "llama-index-indices-managed-llama-cloud"
-version = "0.6.3"
+version = "0.6.4"
 description = "llama-index indices llama-cloud integration"
 optional = false
 python-versions = "<4.0,>=3.9"
 files = [
-    {file = "llama_index_indices_managed_llama_cloud-0.6.3-py3-none-any.whl", hash = "sha256:7f125602f624a2d321b6a4130cd98df35eb8c15818a159390755b2c13068f4ce"},
-    {file = "llama_index_indices_managed_llama_cloud-0.6.3.tar.gz", hash = "sha256:f09e4182cbc2a2bd75ae85cebb1681075247f0d91b931b094cac4315386ce87a"},
+    {file = "llama_index_indices_managed_llama_cloud-0.6.4-py3-none-any.whl", hash = "sha256:d7e85844a2e343dacebdef424decab3f5fd6361e25b3ff2bdcfb18607c1a49c5"},
+    {file = "llama_index_indices_managed_llama_cloud-0.6.4.tar.gz", hash = "sha256:0b45973cb2dc9702122006019bfb556dcabba31b0bdf79afc7b376ca8143df03"},
 ]
 
 [package.dependencies]
-llama-cloud = ">=0.1.5"
+llama-cloud = ">=0.1.8,<0.2.0"
 llama-index-core = ">=0.12.0,<0.13.0"
 
 [[package]]
 name = "llama-index-llms-openai"
-version = "0.3.18"
+version = "0.3.19"
 description = "llama-index llms openai integration"
 optional = false
 python-versions = "<4.0,>=3.9"
 files = [
-    {file = "llama_index_llms_openai-0.3.18-py3-none-any.whl", hash = "sha256:e2e78ab94fafda8ac99fbfea1b19c5ba4e49d292557d2bdd9c7cc4b445f8745f"},
-    {file = "llama_index_llms_openai-0.3.18.tar.gz", hash = "sha256:81807ba318bac28aca67873228c55242c5fe55f8beba35d23828af6e03b1b234"},
+    {file = "llama_index_llms_openai-0.3.19-py3-none-any.whl", hash = "sha256:ad3c4a8c86aef181eba6b34cfff995a7c288d6bd5b99207438e25c051d80532d"},
+    {file = "llama_index_llms_openai-0.3.19.tar.gz", hash = "sha256:2e2dad70e7a9cb7a1519be1af4ba60c651a0039bc88888332a17922be00b0299"},
 ]
 
 [package.dependencies]
-llama-index-core = ">=0.12.4,<0.13.0"
+llama-index-core = ">=0.12.17,<0.13.0"
 openai = ">=1.58.1,<2.0.0"
 
 [[package]]
@@ -2848,17 +2848,17 @@ llama-parse = ">=0.5.0"
 
 [[package]]
 name = "llama-parse"
-version = "0.6.0"
+version = "0.6.1"
 description = "Parse files into RAG-Optimized formats."
 optional = false
 python-versions = "<4.0,>=3.9"
 files = [
-    {file = "llama_parse-0.6.0-py3-none-any.whl", hash = "sha256:786f3b5cb0afdb784cd3d4b8b03489573b56d7d574212cc88a2eda508965121d"},
-    {file = "llama_parse-0.6.0.tar.gz", hash = "sha256:ac54ce4a43929b401a3ae4643e02ba4214e14814efb06062586263e13996ec54"},
+    {file = "llama_parse-0.6.1-py3-none-any.whl", hash = "sha256:5f96c2951bc3ad514b67bb6886c99224f567d08290fc016e5c8de22c2df60e90"},
+    {file = "llama_parse-0.6.1.tar.gz", hash = "sha256:bd848d3ab7460f70f9e9acaef057fb14ae45f976bdf91830db86a8c40883ef34"},
 ]
 
 [package.dependencies]
-llama-cloud-services = "*"
+llama-cloud-services = ">=0.6.1"
 
 [[package]]
 name = "locust"
@@ -6498,4 +6498,4 @@ tests = ["wikipedia"]
 [metadata]
 lock-version = "2.0"
 python-versions = "<3.14,>=3.10"
-content-hash = "1cb8ed2407a871e0753b46cd32454b0c78fb166fe60624b12265f800430e6d28"
+content-hash = "c7fc4c28d463efcb2c555d3592a4dce11e36cd179513376ee23087b7784682e4"
