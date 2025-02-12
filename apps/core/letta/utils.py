@@ -16,6 +16,7 @@ import uuid
 from contextlib import contextmanager
 from datetime import datetime, timedelta, timezone
 from functools import wraps
+from logging import Logger
 from typing import Any, Coroutine, List, Union, _GenericAlias, get_args, get_origin, get_type_hints
 from urllib.parse import urljoin, urlparse
 
@@ -1150,3 +1151,19 @@ def run_async_task(coro: Coroutine[Any, Any, Any]) -> Any:
     except RuntimeError:
         # If no event loop is running, create a new one
         return asyncio.run(coro)
+
+
+def log_telemetry(logger: Logger, event: str, **kwargs):
+    """
+    Logs telemetry events with a timestamp.
+
+    :param logger: A logger
+    :param event: A string describing the event.
+    :param kwargs: Additional key-value pairs for logging metadata.
+    """
+    from letta.settings import settings
+
+    if settings.verbose_telemetry_logging:
+        timestamp = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S,%f UTC")  # More readable timestamp
+        extra_data = " | ".join(f"{key}={value}" for key, value in kwargs.items() if value is not None)
+        logger.info(f"[{timestamp}] EVENT: {event} | {extra_data}")

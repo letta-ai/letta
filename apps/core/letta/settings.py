@@ -151,6 +151,9 @@ class Settings(BaseSettings):
     multi_agent_send_message_timeout: int = 20 * 60
     multi_agent_concurrent_sends: int = 15
 
+    # telemetry logging
+    verbose_telemetry_logging: bool = False
+
     @property
     def letta_pg_uri(self) -> str:
         if self.pg_uri:
