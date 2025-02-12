@@ -164,7 +164,7 @@ def wait_for_incoming_message(
     deadline = time.time() + max_wait_seconds
 
     while time.time() < deadline:
-        messages = client.server.message_manager.list_messages_for_agent(agent_id=agent_id)
+        messages = client.server.message_manager.list_messages_for_agent(agent_id=agent_id, actor=client.user)
         # Check for the system message containing `substring`
         if any(message.role == MessageRole.system and substring in (message.text or "") for message in messages):
             return True

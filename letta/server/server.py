@@ -875,14 +875,12 @@ class SyncServer(Server):
         # TODO: Thread actor directly through this function, since the top level caller most likely already retrieved the user
 
         actor = self.user_manager.get_user_or_default(user_id=user_id)
-        start_date = self.message_manager.get_message_by_id(after, actor=actor).created_at if after else None
-        end_date = self.message_manager.get_message_by_id(before, actor=actor).created_at if before else None
 
         records = self.message_manager.list_messages_for_agent(
             agent_id=agent_id,
             actor=actor,
-            start_date=start_date,
-            end_date=end_date,
+            after=after,
+            before=before,
             limit=limit,
             ascending=not reverse,
         )
