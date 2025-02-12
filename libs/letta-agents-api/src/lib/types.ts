@@ -136,6 +136,7 @@ const modelEndpointTypesSchema = z.enum([
 // matches LLMConfig but enum is broken with ToZod
 export const LLMConfigSchema = z.object({
   model: z.string(),
+  handle: z.string().optional().nullable(),
   model_endpoint_type: modelEndpointTypesSchema,
   model_endpoint: z.string().optional().nullable(),
   model_wrapper: z.string().nullable().optional(),

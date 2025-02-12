@@ -270,7 +270,11 @@ function DeleteAgentDialog(props: DeleteAgentDialogProps) {
           {t.rich('DeleteAgentDialog.confirmText', {
             templateName: name,
             agentBaseType: agentBaseType.base,
-            strong: (chunks) => <Typography bold>{chunks}</Typography>,
+            strong: (chunks) => (
+              <Typography overrideEl="span" bold>
+                {chunks}
+              </Typography>
+            ),
           })}
         </Typography>
         <FormField

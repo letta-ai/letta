@@ -71,7 +71,7 @@ function ModelSelector(props: ModelSelectorProps) {
     enabled: isLocal,
   });
 
-  const { data: serverModlesList } =
+  const { data: serverModelsList } =
     webOriginSDKApi.models.listLLMBackends.useQuery({
       queryKey: webOriginSDKQueryKeys.models.listEmbeddingBackendsWithSearch({
         extended: true,
@@ -85,8 +85,8 @@ function ModelSelector(props: ModelSelectorProps) {
     });
 
   const modelsList = useMemo(() => {
-    return isLocal ? localModelsList : serverModlesList?.body;
-  }, [isLocal, localModelsList, serverModlesList]);
+    return isLocal ? localModelsList : serverModelsList?.body;
+  }, [isLocal, localModelsList, serverModelsList]);
 
   const formattedModelsList = useMemo(() => {
     if (!modelsList) {
@@ -95,8 +95,8 @@ function ModelSelector(props: ModelSelectorProps) {
 
     return modelsList
       .map((value) => {
-        const { model } = value;
-        let modelName = model;
+        const { model, handle } = value;
+        let modelName = handle || model;
         let brand = 'llama';
         let isRecommended = false;
         let badge = '';
@@ -136,7 +136,7 @@ function ModelSelector(props: ModelSelectorProps) {
 
   const [modelState, setModelState] = useState<SelectedModelType>({
     icon: '',
-    label: llmConfig.model,
+    label: llmConfig.handle || llmConfig.model,
     value: llmConfig.model,
   });
 
@@ -195,8 +195,6 @@ function ModelSelector(props: ModelSelectorProps) {
       const selectedLLMConfig = modelsList.find(
         (model) => model.model === debouncedModelState.value,
       );
-
-      console.log(selectedLLMConfig);
 
       syncUpdateCurrentAgent(() => ({
         llm_config: selectedLLMConfig,
