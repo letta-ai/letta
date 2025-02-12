@@ -61,6 +61,7 @@ from letta.utils import (
     get_utc_time,
     json_dumps,
     json_loads,
+    log_telemetry,
     parse_json,
     printd,
     validate_function_response,
@@ -306,7 +307,7 @@ class Agent(BaseAgent):
         last_function_failed: bool = False,
     ) -> ChatCompletionResponse:
         """Get response from LLM API with robust retry mechanism."""
-
+        log_telemetry(self.logger, "_get_ai_reply start")
         allowed_tool_names = self.tool_rules_solver.get_allowed_tool_names(last_function_response=self.last_function_response)
         agent_state_tool_jsons = [t.json_schema for t in self.agent_state.tools]
 
@@ -337,6 +338,7 @@ class Agent(BaseAgent):
 
         for attempt in range(1, empty_response_retry_limit + 1):
             try:
+                log_telemetry(self.logger, "_get_ai_reply create start")
                 response = create(
                     llm_config=self.agent_state.llm_config,
                     messages=message_sequence,
@@ -349,6 +351,7 @@ class Agent(BaseAgent):
                     stream=stream,
                     stream_interface=self.interface,
                 )
+                log_telemetry(self.logger, "_get_ai_reply create finish")
 
                 # These bottom two are retryable
                 if len(response.choices) == 0 or response.choices[0] is None:
@@ -360,12 +363,13 @@ class Agent(BaseAgent):
                         raise RuntimeError("Finish reason was length (maximum context length)")
                     else:
                         raise ValueError(f"Bad finish reason from API: {response.choices[0].finish_reason}")
-
+                log_telemetry(self.logger, "_handle_ai_response finish")
                 return response
 
             except ValueError as ve:
                 if attempt >= empty_response_retry_limit:
                     warnings.warn(f"Retry limit reached. Final error: {ve}")
+                    log_telemetry(self.logger, "_handle_ai_response finish ValueError")
                     raise Exception(f"Retries exhausted and no valid response received. Final error: {ve}")
                 else:
                     delay = min(backoff_factor * (2 ** (attempt - 1)), max_delay)
@@ -374,8 +378,10 @@ class Agent(BaseAgent):
 
             except Exception as e:
                 # For non-retryable errors, exit immediately
+                log_telemetry(self.logger, "_handle_ai_response finish generic Exception")
                 raise e
 
+        log_telemetry(self.logger, "_handle_ai_response finish catch-all exception")
         raise Exception("Retries exhausted and no valid response received.")
 
     def _handle_ai_response(
@@ -388,7 +394,7 @@ class Agent(BaseAgent):
         response_message_id: Optional[str] = None,
     ) -> Tuple[List[Message], bool, bool]:
         """Handles parsing and function execution"""
-
+        log_telemetry(self.logger, "_handle_ai_response start")
         # Hacky failsafe for now to make sure we didn't implement the streaming Message ID creation incorrectly
         if response_message_id is not None:
             assert response_message_id.startswith("message-"), response_message_id
@@ -506,7 +512,13 @@ class Agent(BaseAgent):
             self.interface.function_message(f"Running {function_name}({function_args})", msg_obj=messages[-1])
             try:
                 # handle tool execution (sandbox) and state updates
+                log_telemetry(
+                    self.logger, "_handle_ai_response execute tool start", function_name=function_name, function_args=function_args
+                )
                 function_response, sandbox_run_result = self.execute_tool_and_persist_state(function_name, function_args, target_letta_tool)
+                log_telemetry(
+                    self.logger, "_handle_ai_response execute tool finish", function_name=function_name, function_args=function_args
+                )
 
                 if sandbox_run_result and sandbox_run_result.status == "error":
                     messages = self._handle_function_error_response(
@@ -597,6 +609,7 @@ class Agent(BaseAgent):
         elif self.tool_rules_solver.is_terminal_tool(function_name):
             heartbeat_request = False
 
+        log_telemetry(self.logger, "_handle_ai_response finish")
         return messages, heartbeat_request, function_failed
 
     def step(

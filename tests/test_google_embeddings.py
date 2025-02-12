@@ -8,7 +8,6 @@ load_dotenv()
 import os
 import threading
 import time
-import uuid
 
 import pytest
 from letta_client import CreateBlock
