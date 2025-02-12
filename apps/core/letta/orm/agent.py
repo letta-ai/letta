@@ -1,7 +1,7 @@
 import uuid
 from typing import TYPE_CHECKING, List, Optional
 
-from sqlalchemy import JSON, Index, String
+from sqlalchemy import JSON, Boolean, Index, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from letta.orm.block import Block
@@ -61,6 +61,11 @@ class Agent(SqlalchemyBase, OrganizationMixin):
 
     # Tool rules
     tool_rules: Mapped[Optional[List[ToolRule]]] = mapped_column(ToolRulesColumn, doc="the tool rules for this agent.")
+
+    # Stateless
+    message_buffer_autoclear: Mapped[bool] = mapped_column(
+        Boolean, doc="If set to True, the agent will not remember previous messages. Not recommended unless you have an advanced use case."
+    )
 
     # relationships
     organization: Mapped["Organization"] = relationship("Organization", back_populates="agents")
@@ -146,6 +151,7 @@ class Agent(SqlalchemyBase, OrganizationMixin):
             "project_id": self.project_id,
             "template_id": self.template_id,
             "base_template_id": self.base_template_id,
+            "message_buffer_autoclear": self.message_buffer_autoclear,
         }
 
         return self.__pydantic_model__(**state)

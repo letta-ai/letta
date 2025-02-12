@@ -123,6 +123,7 @@ class AgentManager:
             project_id=agent_create.project_id,
             template_id=agent_create.template_id,
             base_template_id=agent_create.base_template_id,
+            message_buffer_autoclear=agent_create.message_buffer_autoclear,
         )
 
         # If there are provided environment variables, add them in
@@ -185,6 +186,7 @@ class AgentManager:
         project_id: Optional[str] = None,
         template_id: Optional[str] = None,
         base_template_id: Optional[str] = None,
+        message_buffer_autoclear: bool = False,
     ) -> PydanticAgentState:
         """Create a new agent."""
         with self.session_maker() as session:
@@ -202,6 +204,7 @@ class AgentManager:
                 "project_id": project_id,
                 "template_id": template_id,
                 "base_template_id": base_template_id,
+                "message_buffer_autoclear": message_buffer_autoclear,
             }
 
             # Create the new agent using SqlalchemyBase.create
@@ -263,6 +266,7 @@ class AgentManager:
                 "project_id",
                 "template_id",
                 "base_template_id",
+                "message_buffer_autoclear",
             }
             for field in scalar_fields:
                 value = getattr(agent_update, field, None)

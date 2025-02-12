@@ -2581,6 +2581,14 @@
                           {}
                         ],
                         "nullable": true
+                      },
+                      "message_buffer_autoclear": {
+                        "oneOf": [
+                          {
+                            "type": "boolean"
+                          },
+                          {}
+                        ]
                       }
                     },
                     "required": [
@@ -4945,6 +4953,14 @@
                               {}
                             ],
                             "nullable": true
+                          },
+                          "message_buffer_autoclear": {
+                            "oneOf": [
+                              {
+                                "type": "boolean"
+                              },
+                              {}
+                            ]
                           },
                           "template": {
                             "type": "string"
@@ -7909,6 +7925,14 @@
                               {}
                             ],
                             "nullable": true
+                          },
+                          "message_buffer_autoclear": {
+                            "oneOf": [
+                              {
+                                "type": "boolean"
+                              },
+                              {}
+                            ]
                           }
                         },
                         "required": [

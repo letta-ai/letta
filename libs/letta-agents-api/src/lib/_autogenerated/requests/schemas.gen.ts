@@ -503,6 +503,13 @@ export const $AgentState = {
       title: 'Base Template Id',
       description: 'The base template id of the agent.',
     },
+    message_buffer_autoclear: {
+      type: 'boolean',
+      title: 'Message Buffer Autoclear',
+      description:
+        'If set to True, the agent will not remember previous messages (though the agent will still retain state via core memory blocks and archival/recall memory). Not recommended unless you have an advanced use case.',
+      default: false,
+    },
   },
   additionalProperties: false,
   type: 'object',
@@ -3044,6 +3051,13 @@ export const $CreateAgentRequest = {
       ],
       title: 'Base Template Id',
       description: 'The base template id of the agent.',
+    },
+    message_buffer_autoclear: {
+      type: 'boolean',
+      title: 'Message Buffer Autoclear',
+      description:
+        'If set to True, the agent will not remember previous messages (though the agent will still retain state via core memory blocks and archival/recall memory). Not recommended unless you have an advanced use case.',
+      default: false,
     },
     user_id: {
       anyOf: [
@@ -6696,6 +6710,19 @@ export const $UpdateAgent = {
       ],
       title: 'Base Template Id',
       description: 'The base template id of the agent.',
+    },
+    message_buffer_autoclear: {
+      anyOf: [
+        {
+          type: 'boolean',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Message Buffer Autoclear',
+      description:
+        'If set to True, the agent will not remember previous messages (though the agent will still retain state via core memory blocks and archival/recall memory). Not recommended unless you have an advanced use case.',
     },
   },
   type: 'object',

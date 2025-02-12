@@ -196,6 +196,10 @@ export type AgentState = {
    * The base template id of the agent.
    */
   base_template_id?: string | null;
+  /**
+   * If set to True, the agent will not remember previous messages (though the agent will still retain state via core memory blocks and archival/recall memory). Not recommended unless you have an advanced use case.
+   */
+  message_buffer_autoclear?: boolean;
 };
 
 /**
@@ -1008,6 +1012,10 @@ export type CreateAgentRequest = {
    * The base template id of the agent.
    */
   base_template_id?: string | null;
+  /**
+   * If set to True, the agent will not remember previous messages (though the agent will still retain state via core memory blocks and archival/recall memory). Not recommended unless you have an advanced use case.
+   */
+  message_buffer_autoclear?: boolean;
   user_id?: string | null;
 };
 
@@ -2583,6 +2591,10 @@ export type UpdateAgent = {
    * The base template id of the agent.
    */
   base_template_id?: string | null;
+  /**
+   * If set to True, the agent will not remember previous messages (though the agent will still retain state via core memory blocks and archival/recall memory). Not recommended unless you have an advanced use case.
+   */
+  message_buffer_autoclear?: boolean | null;
 };
 
 export type UsageStatistics = {

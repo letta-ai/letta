@@ -605,6 +605,7 @@ export const AgentState = z.object({
       z.undefined(),
     ])
     .optional(),
+  message_buffer_autoclear: z.union([z.boolean(), z.undefined()]).optional(),
 });
 
 export type AuthSchemeField = z.infer<typeof AuthSchemeField>;
@@ -2334,6 +2335,7 @@ export const CreateAgentRequest = z.object({
   base_template_id: z
     .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
     .optional(),
+  message_buffer_autoclear: z.boolean().optional(),
   user_id: z
     .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
     .optional(),
@@ -3367,6 +3369,9 @@ export const UpdateAgent = z.object({
     .optional(),
   base_template_id: z
     .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+    .optional(),
+  message_buffer_autoclear: z
+    .union([z.boolean(), z.null(), z.array(z.union([z.boolean(), z.null()]))])
     .optional(),
 });
 
