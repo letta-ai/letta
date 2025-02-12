@@ -1754,6 +1754,8 @@ export const $CompletionCreateParamsNonStreaming = {
         {
           type: 'string',
           enum: [
+            'o3-mini',
+            'o3-mini-2025-01-31',
             'o1',
             'o1-2024-12-17',
             'o1-preview',
@@ -2139,6 +2141,8 @@ export const $CompletionCreateParamsStreaming = {
         {
           type: 'string',
           enum: [
+            'o3-mini',
+            'o3-mini-2025-01-31',
             'o1',
             'o1-2024-12-17',
             'o1-preview',

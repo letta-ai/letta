@@ -1312,6 +1312,8 @@ export const CompletionCreateParamsNonStreaming = z.object({
   ),
   model: z.union([
     z.string(),
+    z.literal('o3-mini'),
+    z.literal('o3-mini-2025-01-31'),
     z.literal('o1'),
     z.literal('o1-2024-12-17'),
     z.literal('o1-preview'),
@@ -1352,6 +1354,8 @@ export const CompletionCreateParamsNonStreaming = z.object({
     z.array(
       z.union([
         z.string(),
+        z.literal('o3-mini'),
+        z.literal('o3-mini-2025-01-31'),
         z.literal('o1'),
         z.literal('o1-2024-12-17'),
         z.literal('o1-preview'),
@@ -1651,6 +1655,8 @@ export const CompletionCreateParamsStreaming = z.object({
   ),
   model: z.union([
     z.string(),
+    z.literal('o3-mini'),
+    z.literal('o3-mini-2025-01-31'),
     z.literal('o1'),
     z.literal('o1-2024-12-17'),
     z.literal('o1-preview'),
@@ -1691,6 +1697,8 @@ export const CompletionCreateParamsStreaming = z.object({
     z.array(
       z.union([
         z.string(),
+        z.literal('o3-mini'),
+        z.literal('o3-mini-2025-01-31'),
         z.literal('o1'),
         z.literal('o1-2024-12-17'),
         z.literal('o1-preview'),
