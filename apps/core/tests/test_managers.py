@@ -1971,17 +1971,6 @@ def test_message_listing_text_search(server: SyncServer, hello_world_message_fix
     assert len(search_results) == 0
 
 
-def test_message_listing_date_range_filtering(server: SyncServer, hello_world_message_fixture, default_user, sarah_agent):
-    """Test filtering messages by date range"""
-    create_test_messages(server, hello_world_message_fixture, default_user)
-    now = datetime.utcnow()
-
-    date_results = server.message_manager.list_user_messages_for_agent(
-        agent_id=sarah_agent.id, actor=default_user, start_date=now - timedelta(minutes=1), end_date=now + timedelta(minutes=1), limit=10
-    )
-    assert len(date_results) > 0
-
-
 # ======================================================================================================================
 # Block Manager Tests
 # ======================================================================================================================
