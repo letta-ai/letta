@@ -124,6 +124,10 @@ def upsert_tool(
         # Log the error and raise a conflict exception
         print(f"Unique constraint violation occurred: {e}")
         raise HTTPException(status_code=409, detail=str(e))
+    except LettaToolCreateError as e:
+        # HTTP 400 == Bad Request
+        print(f"Error occurred during tool upsert: {e}")
+        raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
         # Catch other unexpected errors and raise an internal server error
         print(f"Unexpected error occurred: {e}")
@@ -140,8 +144,17 @@ def modify_tool(
     """
     Update an existing tool
     """
-    actor = server.user_manager.get_user_or_default(user_id=user_id)
-    return server.tool_manager.update_tool_by_id(tool_id=tool_id, tool_update=request, actor=actor)
+    try:
+        actor = server.user_manager.get_user_or_default(user_id=user_id)
+        return server.tool_manager.update_tool_by_id(tool_id=tool_id, tool_update=request, actor=actor)
+    except LettaToolCreateError as e:
+        # HTTP 400 == Bad Request
+        print(f"Error occurred during tool update: {e}")
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        # Catch other unexpected errors and raise an internal server error
+        print(f"Unexpected error occurred: {e}")
+        raise HTTPException(status_code=500, detail=f"An unexpected error occurred: {str(e)}")
 
 
 @router.post("/add-base-tools", response_model=List[Tool], operation_id="add_base_tools")
