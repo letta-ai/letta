@@ -95,7 +95,7 @@ jobs:
           path: ~/.npm
           key: ${{ runner.os }}-${{ env.cache-name }}
       - name: Bump version
-        run: just bump-version --version ${{ github.event.inputs.app_version }}
+        run: npm version ${{ github.event.inputs.app_version }}
         working-directory: apps/desktop-electron
       - name: Install toDesktop
         run: npm install --location=global @todesktop/cli
