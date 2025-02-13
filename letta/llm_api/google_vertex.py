@@ -1,7 +1,5 @@
 import uuid
-from typing import List, Optional, Tuple
-
-import requests
+from typing import List, Optional
 
 from letta.constants import NON_USER_MSG_PREFIX
 from letta.local_llm.json_parser import clean_json_string_extra_backslash
