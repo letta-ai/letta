@@ -11,6 +11,8 @@ import { ToolsService } from '@letta-cloud/letta-agents-api';
 import { getUserWithActiveOrganizationIdOrThrow } from '$web/server/auth';
 import { sdkRouter } from '$web/sdk/router';
 import { createTemplate } from '$web/server/lib/createTemplate/createTemplate';
+import { db, projects } from '@letta-cloud/database';
+import { and, eq } from 'drizzle-orm';
 
 type CreateAgentFromStarterKitsRequest = ServerInferRequest<
   typeof contracts.starterKits.createAgentFromStarterKit
@@ -100,6 +102,23 @@ async function createAgentFromStarterKit(
     };
   }
 
+  // lookup projectId
+  const project = await db.query.projects.findFirst({
+    where: and(
+      eq(projects.id, projectId),
+      eq(projects.organizationId, activeOrganizationId),
+    ),
+  });
+
+  if (!project) {
+    return {
+      status: 404,
+      body: {
+        message: 'Project not found',
+      },
+    };
+  }
+
   const toolIds =
     'tools' in starterKit
       ? await createToolsInStarterKit(starterKit.tools, lettaAgentsId)
@@ -113,7 +132,7 @@ async function createAgentFromStarterKit(
         llm_config: defaultLLMConfig,
         embedding_config: defaultEmbeddingConfig,
         tool_ids: toolIds,
-        project_id: projectId,
+        project_id: project.id,
       },
     },
     {

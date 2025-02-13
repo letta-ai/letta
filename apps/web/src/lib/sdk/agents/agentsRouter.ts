@@ -114,10 +114,10 @@ async function createAgent(
       }
 
       projectId = foundProject.id;
+    } else {
+      // if no project_id or project is specified, we will use the catch all project
+      projectId = await getCatchAllProjectId({ organizationId });
     }
-  } else {
-    // if no project_id or project is specified, we will use the catch all project
-    projectId = await getCatchAllProjectId({ organizationId });
   }
 
   if (!from_template) {
