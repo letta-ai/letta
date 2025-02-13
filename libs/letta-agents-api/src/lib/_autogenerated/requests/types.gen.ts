@@ -667,7 +667,7 @@ export type CompletionCreateParamsNonStreaming = {
   parallel_tool_calls?: boolean;
   prediction?: ChatCompletionPredictionContentParam | null;
   presence_penalty?: number | null;
-  reasoning_effort?: 'low' | 'medium' | 'high';
+  reasoning_effort?: 'low' | 'medium' | 'high' | null;
   response_format?:
     | ResponseFormatText
     | ResponseFormatJSONObject
@@ -689,8 +689,6 @@ export type CompletionCreateParamsNonStreaming = {
   user?: string;
   stream?: false | null;
 };
-
-export type reasoning_effort = 'low' | 'medium' | 'high';
 
 export type CompletionCreateParamsStreaming = {
   messages: Array<
@@ -760,7 +758,7 @@ export type CompletionCreateParamsStreaming = {
   parallel_tool_calls?: boolean;
   prediction?: ChatCompletionPredictionContentParam | null;
   presence_penalty?: number | null;
-  reasoning_effort?: 'low' | 'medium' | 'high';
+  reasoning_effort?: 'low' | 'medium' | 'high' | null;
   response_format?:
     | ResponseFormatText
     | ResponseFormatJSONObject
@@ -1097,6 +1095,7 @@ export type EmbeddingConfig = {
     | 'bedrock'
     | 'cohere'
     | 'google_ai'
+    | 'google_vertex'
     | 'azure'
     | 'groq'
     | 'ollama'
@@ -1153,6 +1152,7 @@ export type embedding_endpoint_type =
   | 'bedrock'
   | 'cohere'
   | 'google_ai'
+  | 'google_vertex'
   | 'azure'
   | 'groq'
   | 'ollama'
@@ -1398,6 +1398,7 @@ export type LLMConfig = {
     | 'anthropic'
     | 'cohere'
     | 'google_ai'
+    | 'google_vertex'
     | 'azure'
     | 'groq'
     | 'ollama'
@@ -1450,6 +1451,7 @@ export type model_endpoint_type =
   | 'anthropic'
   | 'cohere'
   | 'google_ai'
+  | 'google_vertex'
   | 'azure'
   | 'groq'
   | 'ollama'

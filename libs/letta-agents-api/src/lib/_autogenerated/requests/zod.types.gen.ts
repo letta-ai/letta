@@ -167,6 +167,7 @@ export const LLMConfig = z.object({
     z.literal('anthropic'),
     z.literal('cohere'),
     z.literal('google_ai'),
+    z.literal('google_vertex'),
     z.literal('azure'),
     z.literal('groq'),
     z.literal('ollama'),
@@ -234,6 +235,7 @@ export const EmbeddingConfig = z.object({
     z.literal('bedrock'),
     z.literal('cohere'),
     z.literal('google_ai'),
+    z.literal('google_vertex'),
     z.literal('azure'),
     z.literal('groq'),
     z.literal('ollama'),
@@ -1517,6 +1519,15 @@ export const CompletionCreateParamsNonStreaming = z.object({
       z.literal('low'),
       z.literal('medium'),
       z.literal('high'),
+      z.null(),
+      z.array(
+        z.union([
+          z.literal('low'),
+          z.literal('medium'),
+          z.literal('high'),
+          z.null(),
+        ]),
+      ),
       z.undefined(),
     ])
     .optional(),
@@ -1860,6 +1871,15 @@ export const CompletionCreateParamsStreaming = z.object({
       z.literal('low'),
       z.literal('medium'),
       z.literal('high'),
+      z.null(),
+      z.array(
+        z.union([
+          z.literal('low'),
+          z.literal('medium'),
+          z.literal('high'),
+          z.null(),
+        ]),
+      ),
       z.undefined(),
     ])
     .optional(),

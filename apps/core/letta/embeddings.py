@@ -188,6 +188,19 @@ class GoogleEmbeddings:
         return response_json["embedding"]["values"]
 
 
+class GoogleVertexEmbeddings:
+
+    def __init__(self, model: str, project_id: str, region: str):
+        from google import genai
+
+        self.client = genai.Client(vertexai=True, project=project_id, location=region, http_options={"api_version": "v1"})
+        self.model = model
+
+    def get_text_embedding(self, text: str):
+        response = self.client.generate_embeddings(content=text, model=self.model)
+        return response.embeddings[0].embedding
+
+
 def query_embedding(embedding_model, query_text: str):
     """Generate padded embedding for querying database"""
     query_vec = embedding_model.get_text_embedding(query_text)
@@ -261,6 +274,14 @@ def embedding_model(config: EmbeddingConfig, user_id: Optional[uuid.UUID] = None
     elif endpoint_type == "google_ai":
         assert all([model_settings.gemini_api_key is not None, model_settings.gemini_base_url is not None])
         model = GoogleEmbeddings(
+            model=config.embedding_model,
+            api_key=model_settings.gemini_api_key,
+            base_url=model_settings.gemini_base_url,
+        )
+        return model
+
+    elif endpoint_type == "google_vertex":
+        model = GoogleVertexEmbeddings(
             model=config.embedding_model,
             api_key=model_settings.gemini_api_key,
             base_url=model_settings.gemini_base_url,

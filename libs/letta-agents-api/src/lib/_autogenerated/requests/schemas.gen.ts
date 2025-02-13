@@ -1958,8 +1958,15 @@ export const $CompletionCreateParamsNonStreaming = {
       title: 'Presence Penalty',
     },
     reasoning_effort: {
-      type: 'string',
-      enum: ['low', 'medium', 'high'],
+      anyOf: [
+        {
+          type: 'string',
+          enum: ['low', 'medium', 'high'],
+        },
+        {
+          type: 'null',
+        },
+      ],
       title: 'Reasoning Effort',
     },
     response_format: {
@@ -2345,8 +2352,15 @@ export const $CompletionCreateParamsStreaming = {
       title: 'Presence Penalty',
     },
     reasoning_effort: {
-      type: 'string',
-      enum: ['low', 'medium', 'high'],
+      anyOf: [
+        {
+          type: 'string',
+          enum: ['low', 'medium', 'high'],
+        },
+        {
+          type: 'null',
+        },
+      ],
       title: 'Reasoning Effort',
     },
     response_format: {
@@ -3207,6 +3221,7 @@ export const $EmbeddingConfig = {
         'bedrock',
         'cohere',
         'google_ai',
+        'google_vertex',
         'azure',
         'groq',
         'ollama',
@@ -3859,6 +3874,7 @@ export const $LLMConfig = {
         'anthropic',
         'cohere',
         'google_ai',
+        'google_vertex',
         'azure',
         'groq',
         'ollama',

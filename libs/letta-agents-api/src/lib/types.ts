@@ -117,6 +117,7 @@ const modelEndpointTypesSchema = z.enum([
   'anthropic',
   'cohere',
   'google_ai',
+  'google_vertex',
   'azure',
   'groq',
   'ollama',

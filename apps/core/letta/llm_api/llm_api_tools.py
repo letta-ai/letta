@@ -252,6 +252,32 @@ def create(
             inner_thoughts_in_kwargs=llm_config.put_inner_thoughts_in_kwargs,
         )
 
+    elif llm_config.model_endpoint_type == "google_vertex":
+        from letta.llm_api.google_vertex import google_vertex_chat_completions_request
+
+        if stream:
+            raise NotImplementedError(f"Streaming not yet implemented for {llm_config.model_endpoint_type}")
+        if not use_tool_naming:
+            raise NotImplementedError("Only tool calling supported on Google Vertex AI API requests")
+
+        if functions is not None:
+            tools = [{"type": "function", "function": f} for f in functions]
+            tools = [Tool(**t) for t in tools]
+            tools = convert_tools_to_google_ai_format(tools, inner_thoughts_in_kwargs=llm_config.put_inner_thoughts_in_kwargs)
+        else:
+            tools = None
+
+        config = {"tools": tools, "temperature": llm_config.temperature, "max_output_tokens": llm_config.max_tokens}
+
+        return google_vertex_chat_completions_request(
+            model=llm_config.model,
+            project_id=model_settings.google_cloud_project,
+            region=model_settings.google_cloud_location,
+            contents=[m.to_google_ai_dict() for m in messages],
+            config=config,
+            inner_thoughts_in_kwargs=llm_config.put_inner_thoughts_in_kwargs,
+        )
+
     elif llm_config.model_endpoint_type == "anthropic":
         if not use_tool_naming:
             raise NotImplementedError("Only tool calling supported on Anthropic API requests")

@@ -25,6 +25,7 @@ class LLMConfig(BaseModel):
         "anthropic",
         "cohere",
         "google_ai",
+        "google_vertex",
         "azure",
         "groq",
         "ollama",

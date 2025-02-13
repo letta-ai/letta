@@ -4455,6 +4455,7 @@
                                   "anthropic",
                                   "cohere",
                                   "google_ai",
+                                  "google_vertex",
                                   "azure",
                                   "groq",
                                   "ollama",
@@ -4650,6 +4651,7 @@
                                   "bedrock",
                                   "cohere",
                                   "google_ai",
+                                  "google_vertex",
                                   "azure",
                                   "groq",
                                   "ollama",
@@ -5528,6 +5530,7 @@
                                         "bedrock",
                                         "cohere",
                                         "google_ai",
+                                        "google_vertex",
                                         "azure",
                                         "groq",
                                         "ollama",
@@ -7136,6 +7139,7 @@
                                   "anthropic",
                                   "cohere",
                                   "google_ai",
+                                  "google_vertex",
                                   "azure",
                                   "groq",
                                   "ollama",
@@ -7331,6 +7335,7 @@
                                   "bedrock",
                                   "cohere",
                                   "google_ai",
+                                  "google_vertex",
                                   "azure",
                                   "groq",
                                   "ollama",
@@ -8209,6 +8214,7 @@
                                         "bedrock",
                                         "cohere",
                                         "google_ai",
+                                        "google_vertex",
                                         "azure",
                                         "groq",
                                         "ollama",
@@ -10804,8 +10810,15 @@
             "title": "Presence Penalty"
           },
           "reasoning_effort": {
-            "type": "string",
-            "enum": ["low", "medium", "high"],
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": ["low", "medium", "high"]
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Reasoning Effort"
           },
           "response_format": {
@@ -11190,8 +11203,15 @@
             "title": "Presence Penalty"
           },
           "reasoning_effort": {
-            "type": "string",
-            "enum": ["low", "medium", "high"],
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": ["low", "medium", "high"]
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Reasoning Effort"
           },
           "response_format": {
@@ -12019,6 +12039,7 @@
               "bedrock",
               "cohere",
               "google_ai",
+              "google_vertex",
               "azure",
               "groq",
               "ollama",
@@ -12614,6 +12635,7 @@
               "anthropic",
               "cohere",
               "google_ai",
+              "google_vertex",
               "azure",
               "groq",
               "ollama",

@@ -304,6 +304,18 @@ def test_gemini_pro_15_edit_core_memory():
 
 
 # ======================================================================================================================
+# GOOGLE VERTEX TESTS
+# ======================================================================================================================
+@pytest.mark.vertex_basic
+@retry_until_success(max_attempts=1, sleep_time_seconds=2)
+def test_vertex_gemini_pro_20_returns_valid_first_message():
+    filename = os.path.join(llm_config_dir, "gemini-vertex.json")
+    response = check_first_response_is_valid_for_llm_endpoint(filename)
+    # Log out successful response
+    print(f"Got successful response from client: \n\n{response}")
+
+
+# ======================================================================================================================
 # TOGETHER TESTS
 # ======================================================================================================================
 def test_together_llama_3_70b_returns_valid_first_message():

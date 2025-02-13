@@ -125,6 +125,8 @@ navigation:
                 path: pages/models/together.mdx
               - page: Google AI / Gemini
                 path: pages/models/google.mdx
+              - page: Google Vertex
+                path: pages/models/google_vertex.mdx
               - page: Azure OpenAI
                 path: pages/models/azure.mdx
               - page: Ollama
@@ -272,6 +274,8 @@ redirects:
     destination: "/guides/server/providers/together"
   - source: "/models/google"
     destination: "/guides/server/providers/google"
+  - source: "/models/google_vertex"
+    destination: "/guides/server/providers/google_vertex"
   - source: "/models/ollama"
     destination: "/guides/server/providers/ollama"
   - source: "/models/vllm"

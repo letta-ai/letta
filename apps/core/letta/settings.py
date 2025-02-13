@@ -86,6 +86,11 @@ class ModelSettings(BaseSettings):
     # google ai
     gemini_api_key: Optional[str] = None
     gemini_base_url: str = "https://generativelanguage.googleapis.com/"
+
+    # google vertex
+    google_cloud_project: Optional[str] = None
+    google_cloud_location: Optional[str] = None
+
     # together
     together_api_key: Optional[str] = None
 
