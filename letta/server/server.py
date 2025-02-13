@@ -1112,6 +1112,8 @@ class SyncServer(Server):
             if context_window_limit > llm_config.context_window:
                 raise ValueError(f"Context window limit ({context_window_limit}) is greater than maximum of ({llm_config.context_window})")
             llm_config.context_window = context_window_limit
+        else:
+            llm_config.context_window = min(llm_config.context_window, constants.DEFAULT_CONTEXT_WINDOW_SIZE)
 
         return llm_config
 
