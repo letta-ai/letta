@@ -51,11 +51,14 @@ function AddRemoteDevelopmentServer() {
         return;
       }
 
+      // remove trailing slash from url before submitting
+      const url = values.url.replace(/\/$/, '');
+
       mutate(
         {
           body: {
             name: values.name,
-            url: values.url,
+            url,
             password: values.password,
           },
         },

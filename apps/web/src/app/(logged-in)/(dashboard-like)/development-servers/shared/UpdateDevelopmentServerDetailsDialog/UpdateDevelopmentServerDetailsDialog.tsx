@@ -148,6 +148,8 @@ export function UpdateDevelopmentServerDetailsDialog(
         return;
       }
 
+      const url = values.url.replace(/\/$/, '');
+
       mutate({
         params: {
           developmentServerId: rest.id || '',
@@ -155,7 +157,7 @@ export function UpdateDevelopmentServerDetailsDialog(
         body: {
           name: values.name,
           password: values.password,
-          url: values.url,
+          url,
         },
       });
     },
