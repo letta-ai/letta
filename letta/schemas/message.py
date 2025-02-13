@@ -570,19 +570,12 @@ class Message(BaseMessage):
                 "role": "user",
             }
 
-            # Optional field, do not include if null
-            if self.name is not None:
-                anthropic_message["name"] = self.name
-
         elif self.role == "user":
             assert all([v is not None for v in [self.text, self.role]]), vars(self)
             anthropic_message = {
                 "content": self.text,
                 "role": self.role,
             }
-            # Optional field, do not include if null
-            if self.name is not None:
-                anthropic_message["name"] = self.name
 
         elif self.role == "assistant":
             assert self.tool_calls is not None or self.text is not None
@@ -623,10 +616,6 @@ class Message(BaseMessage):
             # If the only content was text, unpack it back into a singleton
             # TODO support multi-modal
             anthropic_message["content"] = content
-
-            # Optional fields, do not include if null
-            if self.name is not None:
-                anthropic_message["name"] = self.name
 
         elif self.role == "tool":
             # NOTE: Anthropic uses role "user" for "tool" responses

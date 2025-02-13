@@ -447,6 +447,7 @@ def comprehensive_test_agent_fixture(server: SyncServer, default_user, print_too
         tool_rules=[InitToolRule(tool_name=print_tool.name)],
         initial_message_sequence=[MessageCreate(role=MessageRole.user, content="hello world")],
         tool_exec_environment_variables={"test_env_var_key_a": "test_env_var_value_a", "test_env_var_key_b": "test_env_var_value_b"},
+        message_buffer_autoclear=True,
     )
     created_agent = server.agent_manager.create_agent(
         create_agent_request,
@@ -601,6 +602,7 @@ def test_update_agent(server: SyncServer, comprehensive_test_agent_fixture, othe
         message_ids=["10", "20"],
         metadata={"train_key": "train_value"},
         tool_exec_environment_variables={"test_env_var_key_a": "a", "new_tool_exec_key": "n"},
+        message_buffer_autoclear=False,
     )
 
     last_updated_timestamp = agent.updated_at
@@ -1969,17 +1971,6 @@ def test_message_listing_text_search(server: SyncServer, hello_world_message_fix
         agent_id=sarah_agent.id, actor=default_user, query_text="Letta", limit=10
     )
     assert len(search_results) == 0
-
-
-def test_message_listing_date_range_filtering(server: SyncServer, hello_world_message_fixture, default_user, sarah_agent):
-    """Test filtering messages by date range"""
-    create_test_messages(server, hello_world_message_fixture, default_user)
-    now = datetime.utcnow()
-
-    date_results = server.message_manager.list_user_messages_for_agent(
-        agent_id=sarah_agent.id, actor=default_user, start_date=now - timedelta(minutes=1), end_date=now + timedelta(minutes=1), limit=10
-    )
-    assert len(date_results) > 0
 
 
 # ======================================================================================================================

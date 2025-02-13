@@ -151,3 +151,7 @@ def comprehensive_agent_checks(agent: AgentState, request: Union[CreateAgent, Up
         assert all(
             any(rule.tool_name == req_rule.tool_name for rule in agent.tool_rules) for req_rule in request.tool_rules
         ), f"Tool rules mismatch: {agent.tool_rules} != {request.tool_rules}"
+
+    # Assert message_buffer_autoclear
+    if not request.message_buffer_autoclear is None:
+        assert agent.message_buffer_autoclear == request.message_buffer_autoclear

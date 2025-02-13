@@ -123,6 +123,7 @@ class AgentManager:
             project_id=agent_create.project_id,
             template_id=agent_create.template_id,
             base_template_id=agent_create.base_template_id,
+            message_buffer_autoclear=agent_create.message_buffer_autoclear,
         )
 
         # If there are provided environment variables, add them in
@@ -185,6 +186,7 @@ class AgentManager:
         project_id: Optional[str] = None,
         template_id: Optional[str] = None,
         base_template_id: Optional[str] = None,
+        message_buffer_autoclear: bool = False,
     ) -> PydanticAgentState:
         """Create a new agent."""
         with self.session_maker() as session:
@@ -202,6 +204,7 @@ class AgentManager:
                 "project_id": project_id,
                 "template_id": template_id,
                 "base_template_id": base_template_id,
+                "message_buffer_autoclear": message_buffer_autoclear,
             }
 
             # Create the new agent using SqlalchemyBase.create
@@ -263,6 +266,7 @@ class AgentManager:
                 "project_id",
                 "template_id",
                 "base_template_id",
+                "message_buffer_autoclear",
             }
             for field in scalar_fields:
                 value = getattr(agent_update, field, None)
@@ -494,6 +498,7 @@ class AgentManager:
     @enforce_types
     def trim_all_in_context_messages_except_system(self, agent_id: str, actor: PydanticUser) -> PydanticAgentState:
         message_ids = self.get_agent_by_id(agent_id=agent_id, actor=actor).message_ids
+        # TODO: How do we know this?
         new_messages = [message_ids[0]]  # 0 is system message
         return self._set_in_context_messages(agent_id=agent_id, message_ids=new_messages, actor=actor)
 

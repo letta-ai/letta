@@ -73,6 +73,7 @@ class AbstractClient(object):
         metadata: Optional[Dict] = {"human:": DEFAULT_HUMAN, "persona": DEFAULT_PERSONA},
         description: Optional[str] = None,
         tags: Optional[List[str]] = None,
+        message_buffer_autoclear: bool = False,
     ) -> AgentState:
         raise NotImplementedError
 
@@ -540,6 +541,7 @@ class RESTClient(AbstractClient):
         description: Optional[str] = None,
         initial_message_sequence: Optional[List[Message]] = None,
         tags: Optional[List[str]] = None,
+        message_buffer_autoclear: bool = False,
     ) -> AgentState:
         """Create an agent
 
@@ -600,6 +602,7 @@ class RESTClient(AbstractClient):
             "initial_message_sequence": initial_message_sequence,
             "tags": tags,
             "include_base_tools": include_base_tools,
+            "message_buffer_autoclear": message_buffer_autoclear,
         }
 
         # Only add name if it's not None
@@ -2353,6 +2356,7 @@ class LocalClient(AbstractClient):
         description: Optional[str] = None,
         initial_message_sequence: Optional[List[Message]] = None,
         tags: Optional[List[str]] = None,
+        message_buffer_autoclear: bool = False,
     ) -> AgentState:
         """Create an agent
 
@@ -2404,6 +2408,7 @@ class LocalClient(AbstractClient):
             "embedding_config": embedding_config if embedding_config else self._default_embedding_config,
             "initial_message_sequence": initial_message_sequence,
             "tags": tags,
+            "message_buffer_autoclear": message_buffer_autoclear,
         }
 
         # Only add name if it's not None

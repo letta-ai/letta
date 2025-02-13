@@ -17,6 +17,7 @@ from letta.schemas.message import Message, MessageCreate
 from letta.schemas.user import User
 from letta.server.rest_api.utils import get_letta_server
 from letta.settings import settings
+from letta.utils import log_telemetry
 
 
 # TODO: This is kind of hacky, as this is used to search up the action later on composio's side
@@ -341,10 +342,16 @@ async def async_send_message_with_retries(
     timeout: int,
     logging_prefix: Optional[str] = None,
 ) -> str:
-
     logging_prefix = logging_prefix or "[async_send_message_with_retries]"
+    log_telemetry(sender_agent.logger, f"async_send_message_with_retries start", target_agent_id=target_agent_id)
+
     for attempt in range(1, max_retries + 1):
         try:
+            log_telemetry(
+                sender_agent.logger,
+                f"async_send_message_with_retries -> asyncio wait for send_message_to_agent_no_stream start",
+                target_agent_id=target_agent_id,
+            )
             response = await asyncio.wait_for(
                 send_message_to_agent_no_stream(
                     server=server,
@@ -354,15 +361,24 @@ async def async_send_message_with_retries(
                 ),
                 timeout=timeout,
             )
+            log_telemetry(
+                sender_agent.logger,
+                f"async_send_message_with_retries -> asyncio wait for send_message_to_agent_no_stream finish",
+                target_agent_id=target_agent_id,
+            )
 
             # Then parse out the assistant message
             assistant_message = parse_letta_response_for_assistant_message(target_agent_id, response)
             if assistant_message:
                 sender_agent.logger.info(f"{logging_prefix} - {assistant_message}")
+                log_telemetry(
+                    sender_agent.logger, f"async_send_message_with_retries finish with assistant message", target_agent_id=target_agent_id
+                )
                 return assistant_message
             else:
                 msg = f"(No response from agent {target_agent_id})"
                 sender_agent.logger.info(f"{logging_prefix} - {msg}")
+                log_telemetry(sender_agent.logger, f"async_send_message_with_retries finish no response", target_agent_id=target_agent_id)
                 return msg
 
         except asyncio.TimeoutError:
@@ -380,6 +396,12 @@ async def async_send_message_with_retries(
             await asyncio.sleep(backoff)
         else:
             sender_agent.logger.error(f"{logging_prefix} - Fatal error: {error_msg}")
+            log_telemetry(
+                sender_agent.logger,
+                f"async_send_message_with_retries finish fatal error",
+                target_agent_id=target_agent_id,
+                error_msg=error_msg,
+            )
             raise Exception(error_msg)
 
 
@@ -468,6 +490,7 @@ def fire_and_forget_send_to_agent(
 
 
 async def _send_message_to_agents_matching_all_tags_async(sender_agent: "Agent", message: str, tags: List[str]) -> List[str]:
+    log_telemetry(sender_agent.logger, "_send_message_to_agents_matching_all_tags_async start", message=message, tags=tags)
     server = get_letta_server()
 
     augmented_message = (
@@ -477,7 +500,9 @@ async def _send_message_to_agents_matching_all_tags_async(sender_agent: "Agent",
     )
 
     # Retrieve up to 100 matching agents
+    log_telemetry(sender_agent.logger, "_send_message_to_agents_matching_all_tags_async listing agents start", message=message, tags=tags)
     matching_agents = server.agent_manager.list_agents(actor=sender_agent.user, tags=tags, match_all_tags=True, limit=100)
+    log_telemetry(sender_agent.logger, "_send_message_to_agents_matching_all_tags_async  listing agents finish", message=message, tags=tags)
 
     # Create a system message
     messages = [MessageCreate(role=MessageRole.system, content=augmented_message, name=sender_agent.agent_state.name)]
@@ -504,4 +529,6 @@ async def _send_message_to_agents_matching_all_tags_async(sender_agent: "Agent",
             final.append(str(r))
         else:
             final.append(r)
+
+    log_telemetry(sender_agent.logger, "_send_message_to_agents_matching_all_tags_async finish", message=message, tags=tags)
     return final

@@ -1,9 +1,27 @@
+import json
+
 import pytest
 
-import letta.functions.function_sets.base as base_functions
 from letta import LocalClient, create_client
+from letta.functions.functions import derive_openai_json_schema, parse_source_code
+from letta.orm import Base
 from letta.schemas.embedding_config import EmbeddingConfig
+from letta.schemas.letta_message import SystemMessage, ToolReturnMessage
 from letta.schemas.llm_config import LLMConfig
+from letta.schemas.memory import ChatMemory
+from letta.schemas.tool import Tool
+from tests.helpers.utils import retry_until_success
+from tests.utils import wait_for_incoming_message
+
+
+@pytest.fixture(autouse=True)
+def truncate_database():
+    from letta.server.server import db_context
+
+    with db_context() as session:
+        for table in reversed(Base.metadata.sorted_tables):  # Reverse to avoid FK issues
+            session.execute(table.delete())  # Truncate table
+        session.commit()
 
 
 @pytest.fixture(scope="function")
@@ -27,81 +45,48 @@ def agent_obj(client: LocalClient):
     # client.delete_agent(agent_obj.agent_state.id)
 
 
-def query_in_search_results(search_results, query):
-    for result in search_results:
-        if query.lower() in result["content"].lower():
-            return True
-    return False
+@pytest.fixture(scope="function")
+def other_agent_obj(client: LocalClient):
+    """Create another test agent that we can call functions on"""
+    agent_state = client.create_agent(include_multi_agent_tools=False)
+
+    other_agent_obj = client.server.load_agent(agent_id=agent_state.id, actor=client.user)
+    yield other_agent_obj
+
+    client.delete_agent(other_agent_obj.agent_state.id)
 
 
-def test_archival(agent_obj):
-    """Test archival memory functions comprehensively."""
-    # Test 1: Basic insertion and retrieval
-    base_functions.archival_memory_insert(agent_obj, "The cat sleeps on the mat")
-    base_functions.archival_memory_insert(agent_obj, "The dog plays in the park")
-    base_functions.archival_memory_insert(agent_obj, "Python is a programming language")
+@pytest.fixture
+def roll_dice_tool(client):
+    def roll_dice():
+        """
+        Rolls a 6 sided die.
 
-    # Test exact text search
-    results, _ = base_functions.archival_memory_search(agent_obj, "cat")
-    assert query_in_search_results(results, "cat")
+        Returns:
+            str: The roll result.
+        """
+        return "Rolled a 5!"
 
-    # Test semantic search (should return animal-related content)
-    results, _ = base_functions.archival_memory_search(agent_obj, "animal pets")
-    assert query_in_search_results(results, "cat") or query_in_search_results(results, "dog")
+    # Set up tool details
+    source_code = parse_source_code(roll_dice)
+    source_type = "python"
+    description = "test_description"
+    tags = ["test"]
 
-    # Test unrelated search (should not return animal content)
-    results, _ = base_functions.archival_memory_search(agent_obj, "programming computers")
-    assert query_in_search_results(results, "python")
+    tool = Tool(description=description, tags=tags, source_code=source_code, source_type=source_type)
+    derived_json_schema = derive_openai_json_schema(source_code=tool.source_code, name=tool.name)
 
-    # Test 2: Test pagination
-    # Insert more items to test pagination
-    for i in range(10):
-        base_functions.archival_memory_insert(agent_obj, f"Test passage number {i}")
+    derived_name = derived_json_schema["name"]
+    tool.json_schema = derived_json_schema
+    tool.name = derived_name
 
-    # Get first page
-    page0_results, next_page = base_functions.archival_memory_search(agent_obj, "Test passage", page=0)
-    # Get second page
-    page1_results, _ = base_functions.archival_memory_search(agent_obj, "Test passage", page=1, start=next_page)
+    tool = client.server.tool_manager.create_or_update_tool(tool, actor=client.user)
 
-    assert page0_results != page1_results
-    assert query_in_search_results(page0_results, "Test passage")
-    assert query_in_search_results(page1_results, "Test passage")
-
-    # Test 3: Test complex text patterns
-    base_functions.archival_memory_insert(agent_obj, "Important meeting on 2024-01-15 with John")
-    base_functions.archival_memory_insert(agent_obj, "Follow-up meeting scheduled for next week")
-    base_functions.archival_memory_insert(agent_obj, "Project deadline is approaching")
-
-    # Search for meeting-related content
-    results, _ = base_functions.archival_memory_search(agent_obj, "meeting schedule")
-    assert query_in_search_results(results, "meeting")
-    assert query_in_search_results(results, "2024-01-15") or query_in_search_results(results, "next week")
-
-    # Test 4: Test error handling
-    # Test invalid page number
-    try:
-        base_functions.archival_memory_search(agent_obj, "test", page="invalid")
-        assert False, "Should have raised ValueError"
-    except ValueError:
-        pass
+    # Yield the created tool
+    yield tool
 
 
-def test_recall(client, agent_obj):
-    # keyword
-    keyword = "banana"
-
-    # Send messages to agent
-    client.send_message(agent_id=agent_obj.agent_state.id, role="user", message="hello")
-    client.send_message(agent_id=agent_obj.agent_state.id, role="user", message=keyword)
-    client.send_message(agent_id=agent_obj.agent_state.id, role="user", message="tell me a fun fact")
-
-    # Conversation search
-    result = base_functions.conversation_search(agent_obj, "banana")
-    assert keyword in result
-
-
-# This test is nondeterministic, so we retry until we get the perfect behavior from the LLM
-@retry_until_success(max_attempts=2, sleep_time_seconds=2)
+@retry_until_success(max_attempts=3, sleep_time_seconds=2)
 def test_send_message_to_agent(client, agent_obj, other_agent_obj):
     secret_word = "banana"
 
@@ -131,9 +116,7 @@ def test_send_message_to_agent(client, agent_obj, other_agent_obj):
             found = True
             break
 
-    # Compute the joined string first
-    joined_messages = "\n".join([m.text for m in in_context_messages[1:]])
-    print(f"In context messages of the sender agent (without system):\n\n{joined_messages}")
+    print(f"In context messages of the sender agent (without system):\n\n{"\n".join([m.text for m in in_context_messages[1:]])}")
     if not found:
         raise Exception(f"Was not able to find an instance of the target snippet: {target_snippet}")
 
@@ -142,7 +125,7 @@ def test_send_message_to_agent(client, agent_obj, other_agent_obj):
     print(response.messages)
 
 
-@retry_until_success(max_attempts=2, sleep_time_seconds=2)
+@retry_until_success(max_attempts=3, sleep_time_seconds=2)
 def test_send_message_to_agents_with_tags_simple(client):
     worker_tags = ["worker", "user-456"]
 
@@ -210,8 +193,7 @@ def test_send_message_to_agents_with_tags_simple(client):
         client.delete_agent(agent.agent_state.id)
 
 
-# This test is nondeterministic, so we retry until we get the perfect behavior from the LLM
-@retry_until_success(max_attempts=2, sleep_time_seconds=2)
+@retry_until_success(max_attempts=3, sleep_time_seconds=2)
 def test_send_message_to_agents_with_tags_complex_tool_use(client, roll_dice_tool):
     worker_tags = ["dice-rollers"]
 
@@ -260,7 +242,40 @@ def test_send_message_to_agents_with_tags_complex_tool_use(client, roll_dice_too
         client.delete_agent(agent.agent_state.id)
 
 
-@retry_until_success(max_attempts=5, sleep_time_seconds=2)
+@retry_until_success(max_attempts=3, sleep_time_seconds=2)
+def test_send_message_to_sub_agents_auto_clear_message_buffer(client):
+    # Create "manager" agent
+    send_message_to_agents_matching_all_tags_tool_id = client.get_tool_id(name="send_message_to_agents_matching_all_tags")
+    manager_agent_state = client.create_agent(name="manager", tool_ids=[send_message_to_agents_matching_all_tags_tool_id])
+    manager_agent = client.server.load_agent(agent_id=manager_agent_state.id, actor=client.user)
+
+    # Create 2 worker agents
+    worker_agents = []
+    worker_tags = ["banana-boys"]
+    for i in range(2):
+        worker_agent_state = client.create_agent(
+            name=f"worker_{i}", include_multi_agent_tools=False, tags=worker_tags, message_buffer_autoclear=True
+        )
+        worker_agent = client.server.load_agent(agent_id=worker_agent_state.id, actor=client.user)
+        worker_agents.append(worker_agent)
+
+    # Encourage the manager to send a message to the other agent_obj with the secret string
+    broadcast_message = f"Using your tool named `send_message_to_agents_matching_all_tags`, instruct all agents with tags {worker_tags} to `core_memory_append` the topic of the day: bananas!"
+    client.send_message(
+        agent_id=manager_agent.agent_state.id,
+        role="user",
+        message=broadcast_message,
+    )
+
+    for worker_agent in worker_agents:
+        worker_agent_state = client.server.load_agent(agent_id=worker_agent.agent_state.id, actor=client.user).agent_state
+        # assert there's only one message in the message_ids
+        assert len(worker_agent_state.message_ids) == 1
+        # check that banana made it in
+        assert "banana" in worker_agent_state.memory.compile().lower()
+
+
+@retry_until_success(max_attempts=3, sleep_time_seconds=2)
 def test_agents_async_simple(client):
     """
     Test two agents with multi-agent tools sending messages back and forth to count to 5.

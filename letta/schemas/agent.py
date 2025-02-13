@@ -43,7 +43,6 @@ class AgentState(OrmMetadataBase, validate_assignment=True):
         system (str): The system prompt used by the agent.
         llm_config (LLMConfig): The LLM configuration used by the agent.
         embedding_config (EmbeddingConfig): The embedding configuration used by the agent.
-
     """
 
     __id_prefix__ = "agent"
@@ -84,6 +83,12 @@ class AgentState(OrmMetadataBase, validate_assignment=True):
     project_id: Optional[str] = Field(None, description="The id of the project the agent belongs to.")
     template_id: Optional[str] = Field(None, description="The id of the template the agent belongs to.")
     base_template_id: Optional[str] = Field(None, description="The base template id of the agent.")
+
+    # An advanced configuration that makes it so this agent does not remember any previous messages
+    message_buffer_autoclear: bool = Field(
+        False,
+        description="If set to True, the agent will not remember previous messages (though the agent will still retain state via core memory blocks and archival/recall memory). Not recommended unless you have an advanced use case.",
+    )
 
     def get_agent_env_vars_as_dict(self) -> Dict[str, str]:
         # Get environment variables for this agent specifically
@@ -146,6 +151,10 @@ class CreateAgent(BaseModel, validate_assignment=True):  #
     project_id: Optional[str] = Field(None, description="The id of the project the agent belongs to.")
     template_id: Optional[str] = Field(None, description="The id of the template the agent belongs to.")
     base_template_id: Optional[str] = Field(None, description="The base template id of the agent.")
+    message_buffer_autoclear: bool = Field(
+        False,
+        description="If set to True, the agent will not remember previous messages (though the agent will still retain state via core memory blocks and archival/recall memory). Not recommended unless you have an advanced use case.",
+    )
 
     @field_validator("name")
     @classmethod
@@ -216,6 +225,10 @@ class UpdateAgent(BaseModel):
     project_id: Optional[str] = Field(None, description="The id of the project the agent belongs to.")
     template_id: Optional[str] = Field(None, description="The id of the template the agent belongs to.")
     base_template_id: Optional[str] = Field(None, description="The base template id of the agent.")
+    message_buffer_autoclear: Optional[bool] = Field(
+        None,
+        description="If set to True, the agent will not remember previous messages (though the agent will still retain state via core memory blocks and archival/recall memory). Not recommended unless you have an advanced use case.",
+    )
 
     class Config:
         extra = "ignore"  # Ignores extra fields
