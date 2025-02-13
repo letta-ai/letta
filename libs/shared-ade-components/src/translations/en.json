@@ -748,6 +748,7 @@
       "alreadyAdded": "This tool is already added"
     },
     "EditTool": {
+      "couldNotSave": "We could not save your tool, see the error below for more details.",
       "error": "There was an error updating your tool, see above for details.",
       "close": "Close",
       "name": {

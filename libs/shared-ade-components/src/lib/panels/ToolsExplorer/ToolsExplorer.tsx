@@ -1790,7 +1790,7 @@ interface EditToolProps {
 function EditTool(props: EditToolProps) {
   const { tool } = props;
 
-  const [open, setOpen] = useState(false);
+  const [confirmUpdateTool, setConfirmUpdateTool] = useState(false);
   const queryClient = useQueryClient();
 
   const [settings, setSettings] = useState<EditableToolSettings>({
@@ -1802,9 +1802,20 @@ function EditTool(props: EditToolProps) {
   const [sourceCode, setSourceCode] = useState(tool.source_code || '');
 
   const [localError, setLocalError] = useState<string | null>(null);
-  const { mutate, isPending, error } = useToolsServiceModifyTool();
+  const { mutate, isPending, reset, error } = useToolsServiceModifyTool();
 
   const t = useTranslations('ADE/Tools');
+
+  const handleConfirmUpdateToolVisibility = useCallback(
+    (visibility: boolean) => {
+      if (!visibility) {
+        reset();
+      }
+
+      setConfirmUpdateTool(visibility);
+    },
+    [reset],
+  );
 
   const handleUpdateCode = useCallback(() => {
     setLocalError(null);
@@ -1823,6 +1834,9 @@ function EditTool(props: EditToolProps) {
         },
       },
       {
+        onError: () => {
+          setConfirmUpdateTool(false);
+        },
         onSuccess: () => {
           queryClient.setQueriesData<RetrieveToolResponse | undefined>(
             {
@@ -1844,7 +1858,7 @@ function EditTool(props: EditToolProps) {
           );
 
           switchToolState('view');
-          setOpen(false);
+          handleConfirmUpdateToolVisibility(false);
         },
       },
     );
@@ -1853,6 +1867,7 @@ function EditTool(props: EditToolProps) {
     queryClient,
     t,
     switchToolState,
+    handleConfirmUpdateToolVisibility,
     settings.returnCharLimit,
     sourceCode,
     tool.id,
@@ -1876,8 +1891,19 @@ function EditTool(props: EditToolProps) {
     return JSON.stringify(message || error, null, 2);
   }, [error, localError]);
 
+  console.log(errorMessage);
+
   return (
     <VStack collapseHeight paddingX paddingBottom flex gap="form">
+      {errorMessage && (
+        <ErrorMessageAlert
+          message={errorMessage}
+          onDismiss={() => {
+            setLocalError(null);
+            reset();
+          }}
+        />
+      )}
       <ToolEditor
         toolSettings={settings}
         onUpdateSettings={setSettings}
@@ -1898,10 +1924,9 @@ function EditTool(props: EditToolProps) {
               setLocalError(null);
             }
 
-            setOpen(open);
+            setConfirmUpdateTool(open);
           }}
-          isOpen={open}
-          errorMessage={errorMessage}
+          isOpen={confirmUpdateTool}
           isConfirmBusy={isPending}
           trigger={
             <Button
