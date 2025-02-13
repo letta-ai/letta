@@ -5,6 +5,7 @@ from letta.schemas.providers import (
     AnthropicProvider,
     AzureProvider,
     GoogleAIProvider,
+    GoogleVertexProvider,
     GroqProvider,
     MistralProvider,
     OllamaProvider,
@@ -64,6 +65,16 @@ def test_googleai():
     print(models)
 
     provider.list_embedding_models()
+
+
+def test_google_vertex():
+    provider = GoogleVertexProvider(google_cloud_project=os.getenv("GCP_PROJECT_ID"), google_cloud_location=os.getenv("GCP_REGION"))
+    models = provider.list_llm_models()
+    print(models)
+    print([m.model for m in models])
+
+    embedding_models = provider.list_embedding_models()
+    print([m.embedding_model for m in embedding_models])
 
 
 def test_mistral():

@@ -327,7 +327,7 @@ class LMStudioOpenAIProvider(OpenAIProvider):
                     embedding_endpoint_type="openai",
                     embedding_endpoint=self.base_url,
                     embedding_dim=context_window_size,
-                    embedding_chunk_size=300,
+                    embedding_chunk_size=300,  # NOTE: max is 2048
                     handle=self.get_handle(model_name),
                 ),
             )
@@ -737,6 +737,45 @@ class GoogleAIProvider(Provider):
         return google_ai_get_model_context_window(self.base_url, self.api_key, model_name)
 
 
+class GoogleVertexProvider(Provider):
+    name: str = "google_vertex"
+    google_cloud_project: str = Field(..., description="GCP project ID for the Google Vertex API.")
+    google_cloud_location: str = Field(..., description="GCP region for the Google Vertex API.")
+
+    def list_llm_models(self) -> List[LLMConfig]:
+        from letta.llm_api.google_constants import GOOGLE_MODEL_TO_CONTEXT_LENGTH
+
+        configs = []
+        for model, context_length in GOOGLE_MODEL_TO_CONTEXT_LENGTH.items():
+            configs.append(
+                LLMConfig(
+                    model=model,
+                    model_endpoint_type="google_vertex",
+                    model_endpoint=f"https://{self.google_cloud_location}-aiplatform.googleapis.com/v1/projects/{self.google_cloud_project}/locations/{self.google_cloud_location}",
+                    context_window=context_length,
+                    handle=self.get_handle(model),
+                )
+            )
+        return configs
+
+    def list_embedding_models(self) -> List[EmbeddingConfig]:
+        from letta.llm_api.google_constants import GOOGLE_EMBEDING_MODEL_TO_DIM
+
+        configs = []
+        for model, dim in GOOGLE_EMBEDING_MODEL_TO_DIM.items():
+            configs.append(
+                EmbeddingConfig(
+                    embedding_model=model,
+                    embedding_endpoint_type="google_vertex",
+                    embedding_endpoint=f"https://{self.google_cloud_location}-aiplatform.googleapis.com/v1/projects/{self.google_cloud_project}/locations/{self.google_cloud_location}",
+                    embedding_dim=dim,
+                    embedding_chunk_size=300,  # NOTE: max is 2048
+                    handle=self.get_handle(model, is_embedding=True),
+                )
+            )
+        return configs
+
+
 class AzureProvider(Provider):
     name: str = "azure"
     latest_api_version: str = "2024-09-01-preview"  # https://learn.microsoft.com/en-us/azure/ai-services/openai/api-version-deprecation
@@ -792,8 +831,8 @@ class AzureProvider(Provider):
                     embedding_endpoint=model_endpoint,
                     embedding_dim=768,
                     embedding_chunk_size=300,  # NOTE: max is 2048
-                    handle=self.get_handle(model_name, is_embedding=True),
-                )
+                    handle=self.get_handle(model_name),
+                ),
             )
         return configs
 

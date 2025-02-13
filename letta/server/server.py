@@ -47,6 +47,7 @@ from letta.schemas.providers import (
     AnthropicProvider,
     AzureProvider,
     GoogleAIProvider,
+    GoogleVertexProvider,
     GroqProvider,
     LettaProvider,
     LMStudioOpenAIProvider,
@@ -350,6 +351,13 @@ class SyncServer(Server):
             self._enabled_providers.append(
                 GoogleAIProvider(
                     api_key=model_settings.gemini_api_key,
+                )
+            )
+        if model_settings.google_cloud_location and model_settings.google_cloud_project:
+            self._enabled_providers.append(
+                GoogleVertexProvider(
+                    google_cloud_project=model_settings.google_cloud_project,
+                    google_cloud_location=model_settings.google_cloud_location,
                 )
             )
         if model_settings.azure_api_key and model_settings.azure_base_url:
