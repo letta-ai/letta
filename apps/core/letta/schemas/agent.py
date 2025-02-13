@@ -43,7 +43,6 @@ class AgentState(OrmMetadataBase, validate_assignment=True):
         system (str): The system prompt used by the agent.
         llm_config (LLMConfig): The LLM configuration used by the agent.
         embedding_config (EmbeddingConfig): The embedding configuration used by the agent.
-
     """
 
     __id_prefix__ = "agent"

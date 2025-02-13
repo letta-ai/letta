@@ -50,6 +50,7 @@ jobs:
           - "integration_test_agent_tool_graph.py"
           - "integration_test_composio.py"
           - "integration_test_chat_completions.py"
+          - "integration_test_multi_agent.py"
     services:
       qdrant:
         image: qdrant/qdrant
