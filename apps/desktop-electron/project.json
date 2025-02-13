@@ -40,6 +40,13 @@
         "cwd": "apps/desktop-electron"
       }
     },
+    "release": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "todesktop release --latest --force",
+        "cwd": "apps/desktop-electron"
+      }
+    },
     "package-smoke": {
       "executor": "nx:run-commands",
       "options": {

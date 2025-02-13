@@ -298,6 +298,10 @@ package-desktop:
     @echo "Packaging the desktop app..."
     npx nx package desktop-electron
 
+release-desktop:
+    @echo "Packaging the desktop app..."
+    npx nx release desktop-electron
+
 package-desktop-test:
     @echo "Packaging the desktop app..."
     npx nx package-smoke desktop-electron
