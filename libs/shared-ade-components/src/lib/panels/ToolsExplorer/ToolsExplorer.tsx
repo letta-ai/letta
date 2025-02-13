@@ -4,6 +4,7 @@ import {
   webApi,
   webApiQueryKeys,
 } from '@letta-cloud/web-api-client';
+import { useEffect } from 'react';
 import type { HTMLProps } from 'react';
 import React, { useCallback, useMemo, useState } from 'react';
 import { useTranslations } from '@letta-cloud/translations';
@@ -80,6 +81,8 @@ import { get } from 'lodash-es';
 import { Slot } from '@radix-ui/react-slot';
 import { useADEPermissions } from '../../hooks/useADEPermissions/useADEPermissions';
 import { ApplicationServices } from '@letta-cloud/rbac';
+import { usePythonValidator } from '@letta-cloud/helpful-client-utils';
+import type { PythonValidatorError } from '@letta-cloud/helpful-client-utils';
 
 type ToolViewerState = 'edit' | 'view';
 
@@ -1488,6 +1491,33 @@ function ToolEditor(props: ToolEditorProps) {
 
   const [mode, setMode] = useState<ToolEditorEditModes>('source-code');
 
+  const { validatePython } = usePythonValidator();
+
+  const [debouncedCode] = useDebouncedValue(code, 500);
+  const [validationErrors, setValidationErrors] = useState<
+    PythonValidatorError[]
+  >([]);
+  useEffect(() => {
+    if (validatePython) {
+      void validatePython(debouncedCode).then(({ errors }) => {
+        setValidationErrors(errors);
+      });
+    }
+  }, [debouncedCode, validatePython]);
+
+  const validationErrorsToLineNumberMap = useMemo(() => {
+    return validationErrors.reduce((acc, error) => {
+      if (!error.line) {
+        return acc;
+      }
+
+      return {
+        ...acc,
+        [error.line]: error.message,
+      };
+    }, {});
+  }, [validationErrors]);
+
   return (
     <HStack gap="small" flex overflow="hidden" fullWidth>
       <VStack overflow="hidden" fullWidth fullHeight gap={false}>
@@ -1515,6 +1545,7 @@ function ToolEditor(props: ToolEditorProps) {
             collapseHeight
             fullWidth
             flex
+            lineNumberError={validationErrorsToLineNumberMap}
             fullHeight
             language="python"
             // errorResponse={{

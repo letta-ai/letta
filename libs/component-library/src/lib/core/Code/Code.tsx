@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useId, useMemo } from 'react';
+import React, { useEffect, useId, useMemo, useRef } from 'react';
 import Editor from 'react-simple-code-editor';
 import { highlight, languages } from 'prismjs';
 import 'prismjs/components/prism-clike';
@@ -21,6 +21,7 @@ import { cva } from 'class-variance-authority';
 import { cn } from '@letta-cloud/core-style-config';
 import { VStack } from '../../framing/VStack/VStack';
 import type { FrameProps } from '../../framing/Frame/Frame';
+import { Tooltip } from '../Tooltip/Tooltip';
 
 export type SupportedLangauges =
   | 'bash'
@@ -74,6 +75,7 @@ export interface CodeProps extends VariantProps<typeof codeVariants> {
   fullHeight?: boolean;
   toolbarPosition?: 'bottom' | 'top';
   inline?: boolean;
+  lineNumberError?: Record<number, string>;
   color?: FrameProps['color'];
 }
 
@@ -91,6 +93,59 @@ const languageToTypeOverrideMap: Partial<Record<SupportedLangauges, string>> = {
   xml: 'markup',
 };
 
+interface LineNumberErrorProps {
+  lineNumber: number;
+  message: string;
+  id: string;
+}
+
+function LineNumberError(props: LineNumberErrorProps) {
+  const ref = useRef<HTMLButtonElement>(null);
+
+  const { id, lineNumber, message } = props;
+
+  useEffect(() => {
+    // position the error message next to the line number
+    const errorEl = ref.current;
+
+    if (!errorEl) {
+      return;
+    }
+
+    const lineNumberEl = document.getElementById(
+      `${id}-line-number-${lineNumber}`,
+    );
+
+    const codeEditorEl = document.getElementById(`code-editor-${id}`);
+
+    if (!lineNumberEl || !codeEditorEl) {
+      return;
+    }
+
+    const lineNumberRect = lineNumberEl.getBoundingClientRect();
+    const codeEditorRect = codeEditorEl.getBoundingClientRect();
+
+    errorEl.style.position = 'absolute';
+    errorEl.style.display = 'block';
+    errorEl.style.left = `${lineNumberRect.left - codeEditorRect.left + lineNumberRect.width}px`;
+    errorEl.style.top = `${lineNumberRect.top - codeEditorRect.top + 2}px`;
+
+    return () => {
+      errorEl.style.position = '';
+      errorEl.style.left = '';
+      errorEl.style.top = '';
+    };
+  }, [lineNumber, message, id]);
+
+  return (
+    <span ref={ref} className="z-tooltip hidden absolute">
+      <Tooltip content={message}>
+        <div className="w-[12px] h-[12px] cursor-pointer  rounded-full bg-destructive"></div>
+      </Tooltip>
+    </span>
+  );
+}
+
 export function Code(props: CodeProps) {
   const {
     language,
@@ -107,6 +162,7 @@ export function Code(props: CodeProps) {
     fullHeight,
     flex,
     toolbarAction,
+    lineNumberError,
   } = props;
 
   const id = useId();
@@ -145,6 +201,7 @@ export function Code(props: CodeProps) {
   return (
     <VStack
       gap={false}
+      id={`code-editor-${id}`}
       className={cn(codeVariants({ variant, fontSize }))}
       fullHeight={fullHeight}
       flex={flex}
@@ -152,6 +209,16 @@ export function Code(props: CodeProps) {
       overflow="hidden"
       fullWidth
     >
+      {lineNumberError &&
+        Object.entries(lineNumberError).map(([lineNumber, message]) => (
+          <LineNumberError
+            key={lineNumber}
+            lineNumber={+lineNumber}
+            message={message}
+            id={id}
+          />
+        ))}
+
       <div className="hidden" data-testid={`${testId}-raw-code`}>
         {code}
       </div>
@@ -196,7 +263,7 @@ export function Code(props: CodeProps) {
                   .split('\n')
                   .map(
                     (line, i) =>
-                      `<span class='editorLineNumber'>${i + 1}</span>${line}`,
+                      `<span class='editorLineNumber' id="${id}-line-number-${i + 1}">${i + 1}</span>${line}`,
                   )
                   .join('\n');
               }

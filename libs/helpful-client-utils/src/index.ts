@@ -10,3 +10,5 @@ export * from './useCurrentAPIHostConfig/useCurrentAPIHostConfig';
 export * from './useCurrencyFormatter/useCurrencyFormatter';
 export * from './useNumberFormatter/useNumberFormatter';
 export * from './useSortedMemories/useSortedMemories';
+export * from './usePythonValidator/usePythonValidator';
+export * from './usePythonValidator/types';

@@ -463,6 +463,9 @@ pre > code.diff-highlight .token.token.inserted:not(.prefix) *::selection {
   padding-left: calc(var(--editor-lineNumber-gutter-width) + 20px) !important;
 }
 
+
+
+
 .editor.line-numbers .editorLineNumber {
   position: absolute;
   left: 0;
