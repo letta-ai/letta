@@ -114,12 +114,17 @@ const migrateAgentContract = c.mutation({
   },
 });
 
+const AgentHeaderSchema = z.object({
+  project: z.string().optional(),
+});
+
 /* List Agents */
 
 const listAgentsContract = c.query({
   method: 'GET',
   summary: 'List Agents',
   path: '/v1/agents',
+  headers: AgentHeaderSchema,
   description:
     'List all agents associated with a given user. This endpoint retrieves a list of all agents and their configurations associated with the specified user ID',
   query: get_List_agents.parameters.shape.query,

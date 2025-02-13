@@ -188,6 +188,59 @@ async function createAgent(
   };
 }
 
+interface GetValidProjectIdFromPayload {
+  organizationId: string;
+  projectId?: string | undefined;
+  projectSlug?: string;
+}
+
+function getValidProjectIdFromPayload(payload: GetValidProjectIdFromPayload) {
+  const { organizationId, projectId, projectSlug } = payload;
+  if (projectId) {
+    return db.query.projects
+      .findFirst({
+        where: and(
+          eq(projects.organizationId, organizationId),
+          eq(projects.id, projectId),
+          isNull(projects.deletedAt),
+        ),
+        columns: {
+          id: true,
+        },
+      })
+      .then((project) => {
+        if (!project) {
+          return null;
+        }
+
+        return project.id;
+      });
+  }
+
+  if (projectSlug) {
+    return db.query.projects
+      .findFirst({
+        where: and(
+          eq(projects.organizationId, organizationId),
+          eq(projects.slug, projectSlug),
+          isNull(projects.deletedAt),
+        ),
+        columns: {
+          id: true,
+        },
+      })
+      .then((project) => {
+        if (!project) {
+          return null;
+        }
+
+        return project.id;
+      });
+  }
+
+  return getCatchAllProjectId({ organizationId });
+}
+
 type ListAgentsRequest = ServerInferRequest<
   typeof sdkContracts.agents.listAgents
 >;
@@ -200,20 +253,33 @@ async function listAgents(
   req: ListAgentsRequest,
   context: SDKContext,
 ): Promise<ListAgentsResponse> {
-  if (!req.query.project_id) {
-    if (!process.env.IS_API_STABILITY_TEST) {
-      return {
-        status: 400,
-        body: {
-          message: 'project_id is required',
-        },
-      };
-    }
+  const projectId = await getValidProjectIdFromPayload({
+    organizationId: context.request.organizationId,
+    projectId:
+      typeof req.query.project_id === 'string'
+        ? req.query.project_id
+        : undefined,
+    projectSlug: req.headers.project,
+  });
+
+  if (!projectId) {
+    return {
+      status: 404,
+      body: {
+        message: 'Project not found',
+      },
+    };
   }
 
-  const agents = await AgentsService.listAgents(camelCaseKeys(req.query), {
-    user_id: context.request.lettaAgentsUserId,
-  });
+  const agents = await AgentsService.listAgents(
+    {
+      ...camelCaseKeys(req.query),
+      projectId,
+    },
+    {
+      user_id: context.request.lettaAgentsUserId,
+    },
+  );
 
   return {
     status: 200,

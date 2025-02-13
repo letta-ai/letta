@@ -24,6 +24,13 @@
         "tags": ["agents"],
         "parameters": [
           {
+            "name": "project",
+            "in": "header",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
             "name": "name",
             "in": "query",
             "schema": {
