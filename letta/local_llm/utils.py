@@ -249,10 +249,7 @@ def num_tokens_from_messages(messages: List[dict], model: str = "gpt-4") -> int:
                     # num_tokens += len(encoding.encode(value["arguments"]))
 
                 else:
-                    if value is None:
-                        # raise ValueError(f"Message has null value: {key} with value: {value} - message={message}")
-                        warnings.warn(f"Message has null value: {key} with value: {value} - message={message}")
-                    else:
+                    if value is not None:
                         if not isinstance(value, str):
                             raise ValueError(f"Message has non-string value: {key} with value: {value} - message={message}")
                         num_tokens += len(encoding.encode(value))
