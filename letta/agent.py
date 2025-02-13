@@ -697,6 +697,9 @@ class Agent(BaseAgent):
             else:
                 break
 
+        if self.agent_state.message_buffer_autoclear:
+            self.agent_manager.trim_all_in_context_messages_except_system(self.agent_state.id, actor=self.user)
+
         return LettaUsageStatistics(**total_usage.model_dump(), step_count=step_count)
 
     def inner_step(
