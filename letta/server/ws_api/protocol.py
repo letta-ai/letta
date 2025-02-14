@@ -1,4 +1,4 @@
-from letta.utils import json_dumps
+from letta.helpers.json_helpers import json_dumps
 
 # Server -> client
 

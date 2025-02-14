@@ -6,6 +6,8 @@ import requests
 
 from letta.constants import CLI_WARNING_PREFIX
 from letta.errors import LocalLLMConnectionError, LocalLLMError
+from letta.helpers.datetime_helpers import get_utc_time
+from letta.helpers.json_helpers import json_dumps
 from letta.local_llm.constants import DEFAULT_WRAPPER
 from letta.local_llm.function_parser import patch_function
 from letta.local_llm.grammars.gbnf_grammar_generator import create_dynamic_model_from_function, generate_gbnf_grammar_and_documentation
@@ -20,7 +22,7 @@ from letta.local_llm.webui.api import get_webui_completion
 from letta.local_llm.webui.legacy_api import get_webui_completion as get_webui_completion_legacy
 from letta.prompts.gpt_summarize import SYSTEM as SUMMARIZE_SYSTEM_MESSAGE
 from letta.schemas.openai.chat_completion_response import ChatCompletionResponse, Choice, Message, ToolCall, UsageStatistics
-from letta.utils import get_tool_call_id, get_utc_time, json_dumps
+from letta.utils import get_tool_call_id
 
 has_shown_warning = False
 grammar_supported_backends = ["koboldcpp", "llamacpp", "webui", "webui-legacy"]

@@ -62,7 +62,7 @@ class ToolExecutionSandbox:
                     f"Agent attempted to invoke tool {self.tool_name} that does not exist for organization {self.user.organization_id}"
                 )
 
-        self.sandbox_config_manager = SandboxConfigManager(tool_settings)
+        self.sandbox_config_manager = SandboxConfigManager()
         self.force_recreate = force_recreate
         self.force_recreate_venv = force_recreate_venv
 

@@ -12,6 +12,7 @@ from sqlalchemy import delete
 from letta import create_client
 from letta.client.client import LocalClient, RESTClient
 from letta.constants import BASE_MEMORY_TOOLS, BASE_TOOLS, DEFAULT_PRESET, MULTI_AGENT_TOOLS
+from letta.helpers.datetime_helpers import get_utc_time
 from letta.orm import FileMetadata, Source
 from letta.schemas.agent import AgentState
 from letta.schemas.embedding_config import EmbeddingConfig
@@ -33,7 +34,6 @@ from letta.services.helpers.agent_manager_helper import initialize_message_seque
 from letta.services.organization_manager import OrganizationManager
 from letta.services.user_manager import UserManager
 from letta.settings import model_settings
-from letta.utils import get_utc_time
 from tests.helpers.client_helper import upload_file_using_client
 
 # from tests.utils import create_config

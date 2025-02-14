@@ -33,7 +33,7 @@ def conversation_search(self: "Agent", query: str, page: Optional[int] = 0) -> O
     import math
 
     from letta.constants import RETRIEVAL_QUERY_DEFAULT_PAGE_SIZE
-    from letta.utils import json_dumps
+    from letta.helpers.json_helpers import json_dumps
 
     if page is None or (isinstance(page, str) and page.lower().strip() == "none"):
         page = 0

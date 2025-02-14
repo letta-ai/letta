@@ -1,9 +1,15 @@
 import pytest
 from fastapi.testclient import TestClient
 
+from letta.config import LettaConfig
+from letta.constants import COMPOSIO_ENTITY_ENV_VAR_KEY
 from letta.log import get_logger
+from letta.schemas.agent import CreateAgent, UpdateAgent
+from letta.schemas.embedding_config import EmbeddingConfig
+from letta.schemas.llm_config import LLMConfig
+from letta.schemas.tool import ToolCreate
 from letta.server.rest_api.app import app
-from letta.settings import tool_settings
+from letta.server.server import SyncServer
 
 logger = get_logger(__name__)
 
@@ -11,6 +17,24 @@ logger = get_logger(__name__)
 @pytest.fixture
 def fastapi_client():
     return TestClient(app)
+
+
+@pytest.fixture(scope="module")
+def server():
+    config = LettaConfig.load()
+    print("CONFIG PATH", config.config_path)
+
+    config.save()
+
+    server = SyncServer()
+    return server
+
+
+@pytest.fixture
+def composio_gmail_get_profile_tool(server, default_user):
+    tool_create = ToolCreate.from_composio(action_name="GMAIL_GET_PROFILE")
+    tool = server.tool_manager.create_or_update_composio_tool(tool_create=tool_create, actor=default_user)
+    yield tool
 
 
 def test_list_composio_apps(fastapi_client):
@@ -32,28 +56,26 @@ def test_add_composio_tool(fastapi_client):
     assert "name" in response.json()
 
 
-def test_composio_version_on_e2b_matches_server(check_e2b_key_is_set):
-    import composio
-    from e2b_code_interpreter import Sandbox
-    from packaging.version import Version
-
-    sbx = Sandbox(tool_settings.e2b_sandbox_template_id)
-    result = sbx.run_code(
-        """
-        import composio
-        print(str(composio.__version__))
-    """
+def test_composio_tool_execution_e2e(check_composio_key_set, composio_gmail_get_profile_tool, server: SyncServer, default_user):
+    agent_state = server.agent_manager.create_agent(
+        agent_create=CreateAgent(
+            name="sarah_agent",
+            memory_blocks=[],
+            llm_config=LLMConfig.default_config("gpt-4o-mini"),
+            embedding_config=EmbeddingConfig.default_config(provider="openai"),
+        ),
+        actor=default_user,
     )
-    e2b_composio_version = result.logs.stdout[0].strip()
-    composio_version = str(composio.__version__)
+    agent = server.load_agent(agent_state.id, actor=default_user)
+    response = agent.execute_tool_and_persist_state(composio_gmail_get_profile_tool.name, {}, composio_gmail_get_profile_tool)
+    assert response[0]["response_data"]["emailAddress"] == "sarah@letta.com"
 
-    # Compare versions
-    if Version(composio_version) > Version(e2b_composio_version):
-        raise AssertionError(f"Local composio version {composio_version} is greater than server version {e2b_composio_version}")
-    elif Version(composio_version) < Version(e2b_composio_version):
-        logger.warning(
-            f"Local version of composio {composio_version} is less than the E2B version: {e2b_composio_version}. Please upgrade your local composio version."
-        )
-
-    # Print concise summary
-    logger.info(f"Server version: {composio_version}, E2B version: {e2b_composio_version}")
+    # Add agent variable changing the entity ID
+    agent_state = server.agent_manager.update_agent(
+        agent_id=agent_state.id,
+        agent_update=UpdateAgent(tool_exec_environment_variables={COMPOSIO_ENTITY_ENV_VAR_KEY: "matt"}),
+        actor=default_user,
+    )
+    agent = server.load_agent(agent_state.id, actor=default_user)
+    response = agent.execute_tool_and_persist_state(composio_gmail_get_profile_tool.name, {}, composio_gmail_get_profile_tool)
+    assert response[0]["response_data"]["emailAddress"] == "matt@letta.com"

@@ -4,7 +4,7 @@ from copy import deepcopy
 from enum import Enum
 from typing import Optional, Tuple, Union
 
-from letta.utils import json_dumps
+from letta.helpers.json_helpers import json_dumps
 
 api_requestor = None
 api_resources = None

@@ -6,6 +6,7 @@ from sqlalchemy import Select, and_, func, literal, or_, select, union_all
 
 from letta.constants import BASE_MEMORY_TOOLS, BASE_TOOLS, MAX_EMBEDDING_DIM, MULTI_AGENT_TOOLS
 from letta.embeddings import embedding_model
+from letta.helpers.datetime_helpers import get_utc_time
 from letta.log import get_logger
 from letta.orm import Agent as AgentModel
 from letta.orm import AgentPassage, AgentsTags
@@ -42,7 +43,7 @@ from letta.services.message_manager import MessageManager
 from letta.services.source_manager import SourceManager
 from letta.services.tool_manager import ToolManager
 from letta.settings import settings
-from letta.utils import enforce_types, get_utc_time, united_diff
+from letta.utils import enforce_types, united_diff
 
 logger = get_logger(__name__)
 

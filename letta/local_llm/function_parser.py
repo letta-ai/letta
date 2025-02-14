@@ -1,7 +1,7 @@
 import copy
 import json
 
-from letta.utils import json_dumps, json_loads
+from letta.helpers.json_helpers import json_dumps, json_loads
 
 NO_HEARTBEAT_FUNCS = ["send_message"]
 

@@ -10,7 +10,7 @@ from typing import Any, Callable, List, Optional, Tuple, Type, Union, _GenericAl
 from docstring_parser import parse
 from pydantic import BaseModel, create_model
 
-from letta.utils import json_dumps
+from letta.helpers.json_helpers import json_dumps
 
 
 class PydanticDataType(Enum):

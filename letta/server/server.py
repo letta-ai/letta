@@ -19,6 +19,8 @@ import letta.system as system
 from letta.agent import Agent, save_agent
 from letta.chat_only_agent import ChatOnlyAgent
 from letta.data_sources.connectors import DataConnector, load_data
+from letta.helpers.datetime_helpers import get_utc_time
+from letta.helpers.json_helpers import json_dumps, json_loads
 
 # TODO use custom interface
 from letta.interface import AgentInterface  # abstract
@@ -80,7 +82,7 @@ from letta.services.step_manager import StepManager
 from letta.services.tool_execution_sandbox import ToolExecutionSandbox
 from letta.services.tool_manager import ToolManager
 from letta.services.user_manager import UserManager
-from letta.utils import get_friendly_error_msg, get_utc_time, json_dumps, json_loads
+from letta.utils import get_friendly_error_msg
 
 logger = get_logger(__name__)
 
@@ -296,7 +298,7 @@ class SyncServer(Server):
         self.tool_manager = ToolManager()
         self.block_manager = BlockManager()
         self.source_manager = SourceManager()
-        self.sandbox_config_manager = SandboxConfigManager(tool_settings)
+        self.sandbox_config_manager = SandboxConfigManager()
         self.message_manager = MessageManager()
         self.job_manager = JobManager()
         self.agent_manager = AgentManager()
@@ -315,7 +317,7 @@ class SyncServer(Server):
 
             # Add composio keys to the tool sandbox env vars of the org
             if tool_settings.composio_api_key:
-                manager = SandboxConfigManager(tool_settings)
+                manager = SandboxConfigManager()
                 sandbox_config = manager.get_or_create_default_sandbox_config(sandbox_type=SandboxType.LOCAL, actor=self.default_user)
 
                 manager.create_sandbox_env_var(
@@ -1112,6 +1114,8 @@ class SyncServer(Server):
             if context_window_limit > llm_config.context_window:
                 raise ValueError(f"Context window limit ({context_window_limit}) is greater than maximum of ({llm_config.context_window})")
             llm_config.context_window = context_window_limit
+        else:
+            llm_config.context_window = min(llm_config.context_window, constants.DEFAULT_CONTEXT_WINDOW_SIZE)
 
         return llm_config
 

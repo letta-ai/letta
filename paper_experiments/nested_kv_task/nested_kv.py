@@ -31,6 +31,7 @@ import openai
 from icml_experiments.utils import get_experiment_config, load_gzipped_file
 from tqdm import tqdm
 
+import letta.helpers.json_helpers
 from letta import utils
 from letta.cli.cli_config import delete
 from letta.config import LettaConfig
@@ -70,7 +71,7 @@ def archival_memory_text_search(self, query: str, page: Optional[int] = 0) -> Op
     else:
         results_pref = f"Showing {len(results)} of {total} results (page {page}/{num_pages}):"
         results_formatted = [f"memory: {d.text}" for d in results]
-        results_str = f"{results_pref} {utils.json_dumps(results_formatted)}"
+        results_str = f"{results_pref} {letta.helpers.json_helpers.json_dumps(results_formatted)}"
     return results_str
 
 

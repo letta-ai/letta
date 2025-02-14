@@ -52,24 +52,53 @@ def generate_composio_tool_wrapper(action_name: str) -> tuple[str, str]:
     # Generate func name
     func_name = generate_func_name_from_composio_action(action_name)
 
-    wrapper_function_str = f"""
+    wrapper_function_str = f"""\
 def {func_name}(**kwargs):
-    from composio_langchain import ComposioToolSet
-    import os
-
-    entity_id = os.getenv('{COMPOSIO_ENTITY_ENV_VAR_KEY}', '{DEFAULT_ENTITY_ID}')
-    composio_toolset = ComposioToolSet(entity_id=entity_id)
-    response = composio_toolset.execute_action(action='{action_name}', params=kwargs)
-
-    if response["error"]:
-        raise RuntimeError(response["error"])
-    return response["data"]
-    """
+    raise RuntimeError("Something went wrong - we should never be using the persisted source code for Composio. Please reach out to Letta team")
+"""
 
     # Compile safety check
-    assert_code_gen_compilable(wrapper_function_str)
+    assert_code_gen_compilable(wrapper_function_str.strip())
 
-    return func_name, wrapper_function_str
+    return func_name, wrapper_function_str.strip()
+
+
+def execute_composio_action(
+    action_name: str, args: dict, api_key: Optional[str] = None, entity_id: Optional[str] = None
+) -> tuple[str, str]:
+    import os
+
+    from composio.exceptions import (
+        ApiKeyNotProvidedError,
+        ComposioSDKError,
+        ConnectedAccountNotFoundError,
+        EnumMetadataNotFound,
+        EnumStringNotFound,
+    )
+    from composio_langchain import ComposioToolSet
+
+    entity_id = entity_id or os.getenv(COMPOSIO_ENTITY_ENV_VAR_KEY, DEFAULT_ENTITY_ID)
+    try:
+        composio_toolset = ComposioToolSet(api_key=api_key, entity_id=entity_id)
+        response = composio_toolset.execute_action(action=action_name, params=args)
+    except ApiKeyNotProvidedError:
+        raise RuntimeError(
+            f"Composio API key is missing for action '{action_name}'. "
+            "Please set the sandbox environment variables either through the ADE or the API."
+        )
+    except ConnectedAccountNotFoundError:
+        raise RuntimeError(f"No connected account was found for action '{action_name}'. " "Please link an account and try again.")
+    except EnumStringNotFound as e:
+        raise RuntimeError(f"Invalid value provided for action '{action_name}': " + str(e) + ". Please check the action parameters.")
+    except EnumMetadataNotFound as e:
+        raise RuntimeError(f"Invalid value provided for action '{action_name}': " + str(e) + ". Please check the action parameters.")
+    except ComposioSDKError as e:
+        raise RuntimeError(f"An unexpected error occurred in Composio SDK while executing action '{action_name}': " + str(e))
+
+    if response["error"]:
+        raise RuntimeError(f"Error while executing action '{action_name}': " + str(response["error"]))
+
+    return response["data"]
 
 
 def generate_langchain_tool_wrapper(

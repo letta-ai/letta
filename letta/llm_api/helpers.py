@@ -7,10 +7,11 @@ from typing import Any, List, Union
 import requests
 
 from letta.constants import OPENAI_CONTEXT_WINDOW_ERROR_SUBSTRING
+from letta.helpers.json_helpers import json_dumps
 from letta.schemas.message import Message
 from letta.schemas.openai.chat_completion_response import ChatCompletionResponse, Choice
 from letta.settings import summarizer_settings
-from letta.utils import count_tokens, json_dumps, printd
+from letta.utils import count_tokens, printd
 
 
 def _convert_to_structured_output_helper(property: dict) -> dict:
