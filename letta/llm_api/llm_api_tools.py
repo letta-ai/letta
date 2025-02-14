@@ -151,7 +151,8 @@ def create(
         if function_call is None and functions is not None and len(functions) > 0:
             # force function calling for reliability, see https://platform.openai.com/docs/api-reference/chat/create#chat-create-tool_choice
             # TODO(matt) move into LLMConfig
-            if llm_config.model_endpoint == "https://inference.memgpt.ai":
+            # TODO: This vllm checking is very brittle and is a patch at most
+            if llm_config.model_endpoint == "https://inference.memgpt.ai" or (llm_config.handle and "vllm" in llm_config.handle):
                 function_call = "auto"  # TODO change to "required" once proxy supports it
             else:
                 function_call = "required"
