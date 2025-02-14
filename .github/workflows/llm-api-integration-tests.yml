@@ -7,6 +7,8 @@ env:
   AZURE_BASE_URL: ${{ secrets.AZURE_BASE_URL }}
   GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
   COMPOSIO_API_KEY: ${{ secrets.COMPOSIO_API_KEY }}
+  GOOGLE_CLOUD_PROJECT: ${{ secrets.GOOGLE_CLOUD_PROJECT}}
+  GOOGLE_CLOUD_LOCATION: ${{ secrets.GOOGLE_CLOUD_LOCATION}}
 
 on:
   push:
@@ -92,7 +94,7 @@ jobs:
         if: steps.cached-poetry-dependencies.outputs.cache-hit != 'true'
         shell: bash
         working-directory: apps/core
-        run: poetry install --no-interaction --no-root ${{ inputs.install-args || '-E dev -E postgres -E external-tools -E tests -E cloud-tool-sandbox' }}
+        run: poetry install --no-interaction --no-root ${{ inputs.install-args || '-E dev -E postgres -E external-tools -E tests -E cloud-tool-sandbox -E google' }}
       - name: Migrate database
         working-directory: apps/core
         env:
@@ -104,6 +106,14 @@ jobs:
         run: |
           psql -h localhost -U postgres -d postgres -c 'CREATE EXTENSION vector'
           poetry run alembic upgrade head
+
+      - name: Test Google Vertex Basic
+        working-directory: apps/core
+        run: |
+          echo "${{ secrets.GOOGLE_SERVICE_ACCOUNT_JSON }}" > gcp_service_account_secrets.json
+          export GOOGLE_APPLICATION_CREDENTIALS=gcp_service_account_secrets.json
+          poetry run pytest -s -vv tests/test_model_letta_performance.py -m vertex_basic 
+
       - name: Test OpenAI Basic
         working-directory: apps/core
         run: |
@@ -123,3 +133,5 @@ jobs:
         working-directory: apps/core
         run: |
           poetry run pytest -s -vv tests/test_model_letta_performance.py -m gemini_basic
+
+
