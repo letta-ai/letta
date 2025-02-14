@@ -4,6 +4,7 @@ from typing import List, Literal, Optional
 from letta import system
 from letta.constants import IN_CONTEXT_MEMORY_KEYWORD, STRUCTURED_OUTPUT_MODELS
 from letta.helpers import ToolRulesSolver
+from letta.helpers.datetime_helpers import get_local_time
 from letta.orm.agent import Agent as AgentModel
 from letta.orm.agents_tags import AgentsTags
 from letta.orm.errors import NoResultFound
@@ -15,7 +16,6 @@ from letta.schemas.message import Message, MessageCreate, TextContent
 from letta.schemas.tool_rule import ToolRule
 from letta.schemas.user import User
 from letta.system import get_initial_boot_messages, get_login_event
-from letta.utils import get_local_time
 
 
 # Static methods

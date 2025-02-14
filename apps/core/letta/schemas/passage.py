@@ -4,9 +4,9 @@ from typing import Dict, List, Optional
 from pydantic import Field, field_validator
 
 from letta.constants import MAX_EMBEDDING_DIM
+from letta.helpers.datetime_helpers import get_utc_time
 from letta.schemas.embedding_config import EmbeddingConfig
 from letta.schemas.letta_base import OrmMetadataBase
-from letta.utils import get_utc_time
 
 
 class PassageBase(OrmMetadataBase):

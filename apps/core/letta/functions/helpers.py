@@ -72,6 +72,22 @@ def {func_name}(**kwargs):
     return func_name, wrapper_function_str
 
 
+def execute_composio_action(
+    action_name: str, args: dict, api_key: Optional[str] = None, entity_id: Optional[str] = None
+) -> tuple[str, str]:
+    import os
+
+    from composio_langchain import ComposioToolSet
+
+    entity_id = entity_id or os.getenv(COMPOSIO_ENTITY_ENV_VAR_KEY, DEFAULT_ENTITY_ID)
+    composio_toolset = ComposioToolSet(api_key=api_key, entity_id=entity_id)
+    response = composio_toolset.execute_action(action=action_name, params=args)
+
+    if response["error"]:
+        raise RuntimeError(response["error"])
+    return response["data"]
+
+
 def generate_langchain_tool_wrapper(
     tool: "LangChainBaseTool", additional_imports_module_attr_map: dict[str, str] = None
 ) -> tuple[str, str]:

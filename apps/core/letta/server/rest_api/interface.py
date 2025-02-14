@@ -7,6 +7,7 @@ from datetime import datetime
 from typing import AsyncGenerator, Literal, Optional, Union
 
 from letta.constants import DEFAULT_MESSAGE_TOOL, DEFAULT_MESSAGE_TOOL_KWARG
+from letta.helpers.datetime_helpers import is_utc_datetime
 from letta.interface import AgentInterface
 from letta.local_llm.constants import INNER_THOUGHTS_KWARG
 from letta.schemas.enums import MessageStreamStatus
@@ -25,7 +26,6 @@ from letta.schemas.message import Message
 from letta.schemas.openai.chat_completion_response import ChatCompletionChunkResponse
 from letta.streaming_interface import AgentChunkStreamingInterface
 from letta.streaming_utils import FunctionArgumentsStreamHandler, JSONInnerThoughtsExtractor
-from letta.utils import is_utc_datetime
 
 
 # TODO strip from code / deprecate

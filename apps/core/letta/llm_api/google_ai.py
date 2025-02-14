@@ -4,12 +4,14 @@ from typing import List, Optional, Tuple
 import requests
 
 from letta.constants import NON_USER_MSG_PREFIX
+from letta.helpers.datetime_helpers import get_utc_time
+from letta.helpers.json_helpers import json_dumps
 from letta.llm_api.helpers import make_post_request
 from letta.local_llm.json_parser import clean_json_string_extra_backslash
 from letta.local_llm.utils import count_tokens
 from letta.schemas.openai.chat_completion_request import Tool
 from letta.schemas.openai.chat_completion_response import ChatCompletionResponse, Choice, FunctionCall, Message, ToolCall, UsageStatistics
-from letta.utils import get_tool_call_id, get_utc_time, json_dumps
+from letta.utils import get_tool_call_id
 
 
 def get_gemini_endpoint_and_headers(

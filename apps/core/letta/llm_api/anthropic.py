@@ -18,6 +18,7 @@ from anthropic.types.beta import (
 )
 
 from letta.errors import BedrockError, BedrockPermissionError
+from letta.helpers.datetime_helpers import get_utc_time
 from letta.llm_api.aws_bedrock import get_bedrock_client
 from letta.llm_api.helpers import add_inner_thoughts_to_functions
 from letta.local_llm.constants import INNER_THOUGHTS_KWARG, INNER_THOUGHTS_KWARG_DESCRIPTION
@@ -39,7 +40,6 @@ from letta.schemas.openai.chat_completion_response import MessageDelta, ToolCall
 from letta.services.provider_manager import ProviderManager
 from letta.settings import model_settings
 from letta.streaming_interface import AgentChunkStreamingInterface, AgentRefreshStreamingInterface
-from letta.utils import get_utc_time
 
 BASE_URL = "https://api.anthropic.com/v1"
 

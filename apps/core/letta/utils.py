@@ -4,7 +4,6 @@ import difflib
 import hashlib
 import inspect
 import io
-import json
 import os
 import pickle
 import platform
@@ -14,14 +13,13 @@ import subprocess
 import sys
 import uuid
 from contextlib import contextmanager
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timezone
 from functools import wraps
 from logging import Logger
 from typing import Any, Coroutine, List, Union, _GenericAlias, get_args, get_origin, get_type_hints
 from urllib.parse import urljoin, urlparse
 
 import demjson3 as demjson
-import pytz
 import tiktoken
 from pathvalidate import sanitize_filename as pathvalidate_sanitize_filename
 
@@ -35,6 +33,7 @@ from letta.constants import (
     MAX_FILENAME_LENGTH,
     TOOL_CALL_ID_MAX_LEN,
 )
+from letta.helpers.json_helpers import json_dumps, json_loads
 from letta.schemas.openai.chat_completion_response import ChatCompletionResponse
 
 DEBUG = False
@@ -487,10 +486,6 @@ def smart_urljoin(base_url: str, relative_url: str) -> str:
     return urljoin(base_url, relative_url)
 
 
-def is_utc_datetime(dt: datetime) -> bool:
-    return dt.tzinfo is not None and dt.tzinfo.utcoffset(dt) == timedelta(0)
-
-
 def get_tool_call_id() -> str:
     # TODO(sarah) make this a slug-style string?
     # e.g. OpenAI: "call_xlIfzR1HqAW7xJPa3ExJSg3C"
@@ -824,72 +819,6 @@ def united_diff(str1, str2):
     return "".join(diff)
 
 
-def parse_formatted_time(formatted_time):
-    # parse times returned by letta.utils.get_formatted_time()
-    return datetime.strptime(formatted_time, "%Y-%m-%d %I:%M:%S %p %Z%z")
-
-
-def datetime_to_timestamp(dt):
-    # convert datetime object to integer timestamp
-    return int(dt.timestamp())
-
-
-def timestamp_to_datetime(ts):
-    # convert integer timestamp to datetime object
-    return datetime.fromtimestamp(ts)
-
-
-def get_local_time_military():
-    # Get the current time in UTC
-    current_time_utc = datetime.now(pytz.utc)
-
-    # Convert to San Francisco's time zone (PST/PDT)
-    sf_time_zone = pytz.timezone("America/Los_Angeles")
-    local_time = current_time_utc.astimezone(sf_time_zone)
-
-    # You may format it as you desire
-    formatted_time = local_time.strftime("%Y-%m-%d %H:%M:%S %Z%z")
-
-    return formatted_time
-
-
-def get_local_time_timezone(timezone="America/Los_Angeles"):
-    # Get the current time in UTC
-    current_time_utc = datetime.now(pytz.utc)
-
-    # Convert to San Francisco's time zone (PST/PDT)
-    sf_time_zone = pytz.timezone(timezone)
-    local_time = current_time_utc.astimezone(sf_time_zone)
-
-    # You may format it as you desire, including AM/PM
-    formatted_time = local_time.strftime("%Y-%m-%d %I:%M:%S %p %Z%z")
-
-    return formatted_time
-
-
-def get_local_time(timezone=None):
-    if timezone is not None:
-        time_str = get_local_time_timezone(timezone)
-    else:
-        # Get the current time, which will be in the local timezone of the computer
-        local_time = datetime.now().astimezone()
-
-        # You may format it as you desire, including AM/PM
-        time_str = local_time.strftime("%Y-%m-%d %I:%M:%S %p %Z%z")
-
-    return time_str.strip()
-
-
-def get_utc_time() -> datetime:
-    """Get the current UTC time"""
-    # return datetime.now(pytz.utc)
-    return datetime.now(timezone.utc)
-
-
-def format_datetime(dt):
-    return dt.strftime("%Y-%m-%d %I:%M:%S %p %Z%z")
-
-
 def parse_json(string) -> dict:
     """Parse JSON string into JSON with both json and demjson"""
     result = None
@@ -1046,23 +975,6 @@ def get_schema_diff(schema_a, schema_b):
     return "".join(difference)
 
 
-# datetime related
-def validate_date_format(date_str):
-    """Validate the given date string in the format 'YYYY-MM-DD'."""
-    try:
-        datetime.strptime(date_str, "%Y-%m-%d")
-        return True
-    except (ValueError, TypeError):
-        return False
-
-
-def extract_date_from_timestamp(timestamp):
-    """Extracts and returns the date from the given timestamp."""
-    # Extracts the date (ignoring the time and timezone)
-    match = re.match(r"(\d{4}-\d{2}-\d{2})", timestamp)
-    return match.group(1) if match else None
-
-
 def create_uuid_from_string(val: str):
     """
     Generate consistent UUID from a string
@@ -1070,19 +982,6 @@ def create_uuid_from_string(val: str):
     """
     hex_string = hashlib.md5(val.encode("UTF-8")).hexdigest()
     return uuid.UUID(hex=hex_string)
-
-
-def json_dumps(data, indent=2):
-    def safe_serializer(obj):
-        if isinstance(obj, datetime):
-            return obj.isoformat()
-        raise TypeError(f"Type {type(obj)} not serializable")
-
-    return json.dumps(data, indent=indent, default=safe_serializer, ensure_ascii=False)
-
-
-def json_loads(data):
-    return json.loads(data, strict=False)
 
 
 def sanitize_filename(filename: str) -> str:

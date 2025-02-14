@@ -3,12 +3,13 @@ import time
 import traceback
 import warnings
 from abc import ABC, abstractmethod
-from typing import List, Optional, Tuple, Union
+from typing import Any, List, Optional, Tuple, Union
 
 from openai.types.beta.function_tool import FunctionTool as OpenAITool
 
 from letta.constants import (
     CLI_WARNING_PREFIX,
+    COMPOSIO_ENTITY_ENV_VAR_KEY,
     ERROR_MESSAGE_PREFIX,
     FIRST_MESSAGE_ATTEMPTS,
     FUNC_FAILED_HEARTBEAT_MESSAGE,
@@ -20,7 +21,11 @@ from letta.constants import (
 from letta.errors import ContextWindowExceededError
 from letta.functions.ast_parsers import coerce_dict_args_by_annotations, get_function_annotations_from_source
 from letta.functions.functions import get_function_from_module
+from letta.functions.helpers import execute_composio_action, generate_composio_action_from_func_name
 from letta.helpers import ToolRulesSolver
+from letta.helpers.composio_helpers import get_composio_api_key
+from letta.helpers.datetime_helpers import get_utc_time
+from letta.helpers.json_helpers import json_dumps, json_loads
 from letta.interface import AgentInterface
 from letta.llm_api.helpers import calculate_summarizer_cutoff, get_token_counts_for_messages, is_context_overflow_error
 from letta.llm_api.llm_api_tools import create
@@ -51,6 +56,7 @@ from letta.services.passage_manager import PassageManager
 from letta.services.provider_manager import ProviderManager
 from letta.services.step_manager import StepManager
 from letta.services.tool_execution_sandbox import ToolExecutionSandbox
+from letta.services.tool_manager import ToolManager
 from letta.settings import summarizer_settings
 from letta.streaming_interface import StreamingRefreshCLIInterface
 from letta.system import get_heartbeat, get_token_limit_warning, package_function_response, package_summarize_message, package_user_message
@@ -58,9 +64,6 @@ from letta.utils import (
     count_tokens,
     get_friendly_error_msg,
     get_tool_call_id,
-    get_utc_time,
-    json_dumps,
-    json_loads,
     log_telemetry,
     parse_json,
     printd,
@@ -202,7 +205,7 @@ class Agent(BaseAgent):
 
     def execute_tool_and_persist_state(
         self, function_name: str, function_args: dict, target_letta_tool: Tool
-    ) -> tuple[str, Optional[SandboxRunResult]]:
+    ) -> tuple[Any, Optional[SandboxRunResult]]:
         """
         Execute tool modifications and persist the state of the agent.
         Note: only some agent state modifications will be persisted, such as data in the AgentState ORM and block data
@@ -228,6 +231,18 @@ class Agent(BaseAgent):
                 function_args["agent_state"] = agent_state_copy  # need to attach self to arg since it's dynamically linked
                 function_response = callable_func(**function_args)
                 self.update_memory_if_changed(agent_state_copy.memory)
+            elif target_letta_tool.tool_type == ToolType.EXTERNAL_COMPOSIO:
+                action_name = generate_composio_action_from_func_name(target_letta_tool.name)
+                # Get entity ID from the agent_state
+                entity_id = None
+                for env_var in self.agent_state.tool_exec_environment_variables:
+                    if env_var.key == COMPOSIO_ENTITY_ENV_VAR_KEY:
+                        entity_id = env_var.value
+                # Get composio_api_key
+                composio_api_key = get_composio_api_key(actor=self.user, logger=self.logger)
+                function_response = execute_composio_action(
+                    action_name=action_name, args=function_args, api_key=composio_api_key, entity_id=entity_id
+                )
             else:
                 # Parse the source code to extract function annotations
                 annotations = get_function_annotations_from_source(target_letta_tool.source_code, function_name)
@@ -460,7 +475,10 @@ class Agent(BaseAgent):
             target_letta_tool = None
             for t in self.agent_state.tools:
                 if t.name == function_name:
-                    target_letta_tool = t
+                    # This force refreshes the target_letta_tool from the database
+                    # We only do this on name match to confirm that the agent state contains a specific tool with the right name
+                    target_letta_tool = ToolManager().get_tool_by_name(tool_name=function_name, actor=self.user)
+                    break
 
             if not target_letta_tool:
                 error_msg = f"No function named {function_name}"

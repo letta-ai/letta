@@ -1,7 +1,7 @@
 from letta.errors import LLMJSONParsingError
+from letta.helpers.json_helpers import json_dumps, json_loads
 from letta.local_llm.json_parser import clean_json
 from letta.local_llm.llm_chat_completion_wrappers.wrapper_base import LLMChatCompletionWrapper
-from letta.utils import json_dumps, json_loads
 
 PREFIX_HINT = """# Reminders:
 # Important information about yourself and the user is stored in (limited) core memory

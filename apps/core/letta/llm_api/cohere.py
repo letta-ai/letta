@@ -4,6 +4,8 @@ from typing import List, Optional, Union
 
 import requests
 
+from letta.helpers.datetime_helpers import get_utc_time
+from letta.helpers.json_helpers import json_dumps
 from letta.local_llm.utils import count_tokens
 from letta.schemas.message import Message
 from letta.schemas.openai.chat_completion_request import ChatCompletionRequest, Tool
@@ -12,7 +14,7 @@ from letta.schemas.openai.chat_completion_response import (
     Message as ChoiceMessage,  # NOTE: avoid conflict with our own Letta Message datatype
 )
 from letta.schemas.openai.chat_completion_response import ToolCall, UsageStatistics
-from letta.utils import get_tool_call_id, get_utc_time, json_dumps, smart_urljoin
+from letta.utils import get_tool_call_id, smart_urljoin
 
 BASE_URL = "https://api.cohere.ai/v1"
 

@@ -5,10 +5,10 @@ from typing import List, Union
 
 from pydantic import BaseModel, Field
 
+from letta.helpers.json_helpers import json_dumps
 from letta.schemas.enums import MessageStreamStatus
 from letta.schemas.letta_message import LettaMessage, LettaMessageUnion
 from letta.schemas.usage import LettaUsageStatistics
-from letta.utils import json_dumps
 
 # TODO: consider moving into own file
 

@@ -2,7 +2,7 @@ import json
 import re
 
 from letta.errors import LLMJSONParsingError
-from letta.utils import json_loads
+from letta.helpers.json_helpers import json_loads
 
 
 def clean_json_string_extra_backslash(s):
