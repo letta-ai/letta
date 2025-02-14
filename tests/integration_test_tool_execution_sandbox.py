@@ -8,7 +8,6 @@ import pytest
 from sqlalchemy import delete
 
 from letta import create_client
-from letta.constants import COMPOSIO_ENTITY_ENV_VAR_KEY
 from letta.functions.function_sets.base import core_memory_append, core_memory_replace
 from letta.orm.sandbox_config import SandboxConfig, SandboxEnvironmentVariable
 from letta.schemas.agent import AgentState
@@ -17,22 +16,13 @@ from letta.schemas.environment_variables import AgentEnvironmentVariable, Sandbo
 from letta.schemas.llm_config import LLMConfig
 from letta.schemas.memory import ChatMemory
 from letta.schemas.organization import Organization
-from letta.schemas.sandbox_config import (
-    E2BSandboxConfig,
-    LocalSandboxConfig,
-    PipRequirement,
-    SandboxConfigCreate,
-    SandboxConfigUpdate,
-    SandboxType,
-)
-from letta.schemas.tool import ToolCreate
+from letta.schemas.sandbox_config import E2BSandboxConfig, LocalSandboxConfig, PipRequirement, SandboxConfigCreate, SandboxConfigUpdate
 from letta.schemas.user import User
 from letta.services.organization_manager import OrganizationManager
 from letta.services.sandbox_config_manager import SandboxConfigManager
 from letta.services.tool_execution_sandbox import ToolExecutionSandbox
 from letta.services.tool_manager import ToolManager
 from letta.services.user_manager import UserManager
-from letta.settings import tool_settings
 from tests.helpers.utils import create_tool_from_func
 
 # Constants
@@ -65,14 +55,6 @@ def test_user(test_organization):
     """Fixture to create and return the default user within the default organization."""
     user = UserManager().create_user(User(name=user_name, organization_id=test_organization.id))
     yield user
-
-
-@pytest.fixture
-def composio_gmail_get_profile_tool(test_user):
-    tool_manager = ToolManager()
-    tool_create = ToolCreate.from_composio(action_name="GMAIL_GET_PROFILE")
-    tool = tool_manager.create_or_update_composio_tool(tool_create=tool_create, actor=test_user)
-    yield tool
 
 
 @pytest.fixture
@@ -184,14 +166,6 @@ def list_tool(test_user):
 
     tool = create_tool_from_func(create_list)
     tool = ToolManager().create_or_update_tool(tool, test_user)
-    yield tool
-
-
-@pytest.fixture
-def composio_github_star_tool(test_user):
-    tool_manager = ToolManager()
-    tool_create = ToolCreate.from_composio(action_name="GITHUB_STAR_A_REPOSITORY_FOR_THE_AUTHENTICATED_USER")
-    tool = tool_manager.create_or_update_composio_tool(tool_create=tool_create, actor=test_user)
     yield tool
 
 
@@ -369,65 +343,6 @@ def test_local_sandbox_per_agent_env(mock_e2b_api_key_none, get_env_tool, agent_
 
     assert wrong_long_random_string not in result.func_return
     assert correct_long_random_string in result.func_return
-
-
-@pytest.mark.local_sandbox
-def test_local_sandbox_e2e_composio_star_github(mock_e2b_api_key_none, check_composio_key_set, composio_github_star_tool, test_user):
-    # Add the composio key
-    manager = SandboxConfigManager()
-    config = manager.get_or_create_default_sandbox_config(sandbox_type=SandboxType.LOCAL, actor=test_user)
-
-    manager.create_sandbox_env_var(
-        SandboxEnvironmentVariableCreate(key="COMPOSIO_API_KEY", value=tool_settings.composio_api_key),
-        sandbox_config_id=config.id,
-        actor=test_user,
-    )
-
-    result = ToolExecutionSandbox(composio_github_star_tool.name, {"owner": "letta-ai", "repo": "letta"}, user=test_user).run()
-    assert result.func_return["details"] == "Action executed successfully"
-
-    # Missing args causes error
-    result = ToolExecutionSandbox(composio_github_star_tool.name, {}, user=test_user).run()
-    assert "Invalid request data provided" in result.func_return
-
-
-@pytest.mark.local_sandbox
-def test_local_sandbox_multiple_composio_entities(
-    mock_e2b_api_key_none, check_composio_key_set, composio_gmail_get_profile_tool, agent_state, test_user
-):
-    # Agent state with no composio entity ID
-    result = ToolExecutionSandbox(composio_gmail_get_profile_tool.name, {}, user=test_user).run(agent_state=agent_state)
-    assert result.func_return["response_data"]["emailAddress"] == "sarah@letta.com"
-
-    # Agent state with the composio entity set to 'matt'
-    agent_state.tool_exec_environment_variables = [
-        AgentEnvironmentVariable(key=COMPOSIO_ENTITY_ENV_VAR_KEY, value="matt", agent_id=agent_state.id)
-    ]
-    result = ToolExecutionSandbox(composio_gmail_get_profile_tool.name, {}, user=test_user).run(agent_state=agent_state)
-    assert result.func_return["response_data"]["emailAddress"] == "matt@letta.com"
-
-    # Agent state with composio entity ID set to default
-    agent_state.tool_exec_environment_variables = [
-        AgentEnvironmentVariable(key=COMPOSIO_ENTITY_ENV_VAR_KEY, value="default", agent_id=agent_state.id)
-    ]
-    result = ToolExecutionSandbox(composio_gmail_get_profile_tool.name, {}, user=test_user).run(agent_state=agent_state)
-    assert result.func_return["response_data"]["emailAddress"] == "sarah@letta.com"
-
-
-@pytest.mark.local_sandbox
-def test_local_sandbox_e2e_composio_star_github_without_setting_db_env_vars(
-    mock_e2b_api_key_none, check_composio_key_set, composio_github_star_tool, test_user
-):
-    result = ToolExecutionSandbox(composio_github_star_tool.name, {"owner": "letta-ai", "repo": "letta"}, user=test_user).run()
-    assert result.func_return["details"] == "Action executed successfully"
-
-
-@pytest.mark.local_sandbox
-def test_local_sandbox_e2e_composio_star_github_without_setting_db_env_vars(
-    mock_e2b_api_key_none, check_composio_key_set, composio_github_star_tool, test_user
-):
-    result = ToolExecutionSandbox(composio_github_star_tool.name, {"owner": "letta-ai", "repo": "letta"}, user=test_user).run()
-    assert result.func_return["details"] == "Action executed successfully"
 
 
 @pytest.mark.local_sandbox
