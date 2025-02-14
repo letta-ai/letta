@@ -9061,6 +9061,18 @@
               }
             ],
             "title": "Required"
+          },
+          "examples": {
+            "anyOf": [
+              {
+                "items": {},
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Examples"
           }
         },
         "type": "object",
@@ -9095,6 +9107,18 @@
               }
             ],
             "title": "Required"
+          },
+          "examples": {
+            "anyOf": [
+              {
+                "items": {},
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Examples"
           }
         },
         "type": "object",
@@ -9470,7 +9494,8 @@
               "API_KEY",
               "BASIC",
               "BEARER_TOKEN",
-              "BASIC_WITH_JWT"
+              "BASIC_WITH_JWT",
+              "NO_AUTH"
             ],
             "title": "Auth Mode"
           },

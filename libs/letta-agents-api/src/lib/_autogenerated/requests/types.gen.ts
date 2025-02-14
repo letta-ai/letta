@@ -28,6 +28,7 @@ export type ActionParametersModel = {
   title: string;
   type: string;
   required?: Array<string> | null;
+  examples?: Array<unknown> | null;
 };
 
 /**
@@ -40,6 +41,7 @@ export type ActionResponseModel = {
   title: string;
   type: string;
   required?: Array<string> | null;
+  examples?: Array<unknown> | null;
 };
 
 export type AgentEnvironmentVariable = {
@@ -222,7 +224,8 @@ export type AppAuthScheme = {
     | 'API_KEY'
     | 'BASIC'
     | 'BEARER_TOKEN'
-    | 'BASIC_WITH_JWT';
+    | 'BASIC_WITH_JWT'
+    | 'NO_AUTH';
   fields: Array<AuthSchemeField>;
   proxy?: {
     [key: string]: unknown;
@@ -241,7 +244,8 @@ export type auth_mode =
   | 'API_KEY'
   | 'BASIC'
   | 'BEARER_TOKEN'
-  | 'BASIC_WITH_JWT';
+  | 'BASIC_WITH_JWT'
+  | 'NO_AUTH';
 
 /**
  * App data model.

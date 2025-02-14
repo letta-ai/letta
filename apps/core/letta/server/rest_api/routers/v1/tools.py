@@ -2,9 +2,13 @@ from typing import List, Optional
 
 from composio.client import ComposioClientError, HTTPError, NoItemsFound
 from composio.client.collections import ActionModel, AppModel
-from composio.client.enums.base import EnumStringNotFound
-from composio.exceptions import ApiKeyNotProvidedError, ComposioSDKError
-from composio.tools.base.abs import InvalidClassDefinition
+from composio.exceptions import (
+    ApiKeyNotProvidedError,
+    ComposioSDKError,
+    ConnectedAccountNotFoundError,
+    EnumMetadataNotFound,
+    EnumStringNotFound,
+)
 from fastapi import APIRouter, Body, Depends, Header, HTTPException
 
 from letta.errors import LettaToolCreateError
@@ -252,11 +256,29 @@ def add_composio_tool(
     try:
         tool_create = ToolCreate.from_composio(action_name=composio_action_name)
         return server.tool_manager.create_or_update_composio_tool(tool_create=tool_create, actor=actor)
+    except ConnectedAccountNotFoundError as e:
+        raise HTTPException(
+            status_code=400,  # Bad Request
+            detail={
+                "code": "ConnectedAccountNotFoundError",
+                "message": str(e),
+                "composio_action_name": composio_action_name,
+            },
+        )
     except EnumStringNotFound as e:
         raise HTTPException(
             status_code=400,  # Bad Request
             detail={
                 "code": "EnumStringNotFound",
+                "message": str(e),
+                "composio_action_name": composio_action_name,
+            },
+        )
+    except EnumMetadataNotFound as e:
+        raise HTTPException(
+            status_code=400,  # Bad Request
+            detail={
+                "code": "EnumMetadataNotFound",
                 "message": str(e),
                 "composio_action_name": composio_action_name,
             },
@@ -293,15 +315,6 @@ def add_composio_tool(
             status_code=400,  # Bad Request
             detail={
                 "code": "ApiKeyNotProvidedError",
-                "message": str(e),
-                "composio_action_name": composio_action_name,
-            },
-        )
-    except InvalidClassDefinition as e:
-        raise HTTPException(
-            status_code=400,  # Bad Request
-            detail={
-                "code": "InvalidClassDefinition",
                 "message": str(e),
                 "composio_action_name": composio_action_name,
             },

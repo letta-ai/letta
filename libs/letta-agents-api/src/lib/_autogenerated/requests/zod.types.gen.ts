@@ -13,6 +13,14 @@ export const ActionParametersModel = z.object({
       z.undefined(),
     ])
     .optional(),
+  examples: z
+    .union([
+      z.array(z.unknown()),
+      z.null(),
+      z.array(z.union([z.array(z.unknown()), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
 });
 
 export type ActionResponseModel = z.infer<typeof ActionResponseModel>;
@@ -25,6 +33,14 @@ export const ActionResponseModel = z.object({
       z.array(z.string()),
       z.null(),
       z.array(z.union([z.array(z.string()), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  examples: z
+    .union([
+      z.array(z.unknown()),
+      z.null(),
+      z.array(z.union([z.array(z.unknown()), z.null()])),
       z.undefined(),
     ])
     .optional(),
@@ -653,6 +669,7 @@ export const AppAuthScheme = z.object({
     z.literal('BASIC'),
     z.literal('BEARER_TOKEN'),
     z.literal('BASIC_WITH_JWT'),
+    z.literal('NO_AUTH'),
   ]),
   fields: z.array(AuthSchemeField),
   proxy: z

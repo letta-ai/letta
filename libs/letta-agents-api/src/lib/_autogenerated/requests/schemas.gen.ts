@@ -114,6 +114,18 @@ export const $ActionParametersModel = {
       ],
       title: 'Required',
     },
+    examples: {
+      anyOf: [
+        {
+          items: {},
+          type: 'array',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Examples',
+    },
   },
   type: 'object',
   required: ['properties', 'title', 'type'],
@@ -148,6 +160,18 @@ export const $ActionResponseModel = {
         },
       ],
       title: 'Required',
+    },
+    examples: {
+      anyOf: [
+        {
+          items: {},
+          type: 'array',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Examples',
     },
   },
   type: 'object',
@@ -567,6 +591,7 @@ export const $AppAuthScheme = {
         'BASIC',
         'BEARER_TOKEN',
         'BASIC_WITH_JWT',
+        'NO_AUTH',
       ],
       title: 'Auth Mode',
     },
