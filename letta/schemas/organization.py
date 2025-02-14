@@ -3,8 +3,9 @@ from typing import Optional
 
 from pydantic import Field
 
+from letta.helpers.datetime_helpers import get_utc_time
 from letta.schemas.letta_base import LettaBase
-from letta.utils import create_random_username, get_utc_time
+from letta.utils import create_random_username
 
 
 class OrganizationBase(LettaBase):

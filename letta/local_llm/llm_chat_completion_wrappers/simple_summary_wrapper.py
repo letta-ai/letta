@@ -1,5 +1,4 @@
-from letta.utils import json_dumps, json_loads
-
+from ...helpers.json_helpers import json_dumps, json_loads
 from .wrapper_base import LLMChatCompletionWrapper
 
 

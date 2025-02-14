@@ -19,7 +19,7 @@ logger = get_logger(__name__)
 class SandboxConfigManager:
     """Manager class to handle business logic related to SandboxConfig and SandboxEnvironmentVariable."""
 
-    def __init__(self, settings):
+    def __init__(self):
         from letta.server.server import db_context
 
         self.session_maker = db_context

@@ -9,7 +9,6 @@ from letta.schemas.llm_config import LLMConfig
 from letta.schemas.memory import ChatMemory
 from letta.schemas.sandbox_config import SandboxType
 from letta.services.sandbox_config_manager import SandboxConfigManager
-from letta.settings import tool_settings
 
 """
 Setup here.
@@ -31,7 +30,7 @@ for agent_state in client.list_agents():
 
 
 # Add sandbox env
-manager = SandboxConfigManager(tool_settings)
+manager = SandboxConfigManager()
 # Ensure you have e2b key set
 sandbox_config = manager.get_or_create_default_sandbox_config(sandbox_type=SandboxType.E2B, actor=client.user)
 manager.create_sandbox_env_var(

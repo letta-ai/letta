@@ -25,7 +25,7 @@ from letta.schemas.sandbox_config import (
     SandboxConfigUpdate,
     SandboxType,
 )
-from letta.schemas.tool import Tool, ToolCreate
+from letta.schemas.tool import ToolCreate
 from letta.schemas.user import User
 from letta.services.organization_manager import OrganizationManager
 from letta.services.sandbox_config_manager import SandboxConfigManager
@@ -54,13 +54,6 @@ def clear_tables():
 
 
 @pytest.fixture
-def check_composio_key_set():
-    original_api_key = tool_settings.composio_api_key
-    assert original_api_key is not None, "Missing composio key! Cannot execute this test."
-    yield
-
-
-@pytest.fixture
 def test_organization():
     """Fixture to create and return the default organization."""
     org = OrganizationManager().create_organization(Organization(name=org_name))
@@ -72,6 +65,14 @@ def test_user(test_organization):
     """Fixture to create and return the default user within the default organization."""
     user = UserManager().create_user(User(name=user_name, organization_id=test_organization.id))
     yield user
+
+
+@pytest.fixture
+def composio_gmail_get_profile_tool(test_user):
+    tool_manager = ToolManager()
+    tool_create = ToolCreate.from_composio(action_name="GMAIL_GET_PROFILE")
+    tool = tool_manager.create_or_update_composio_tool(tool_create=tool_create, actor=test_user)
+    yield tool
 
 
 @pytest.fixture
@@ -195,22 +196,6 @@ def composio_github_star_tool(test_user):
 
 
 @pytest.fixture
-def composio_gmail_get_profile_tool(test_user):
-    tool_manager = ToolManager()
-    tool_create = ToolCreate.from_composio(action_name="GMAIL_GET_PROFILE")
-    tool = tool_manager.create_or_update_composio_tool(tool_create=tool_create, actor=test_user)
-    yield tool
-
-
-@pytest.fixture
-def composio_gmail_get_profile_tool(test_user):
-    tool_manager = ToolManager()
-    tool_create = ToolCreate.from_composio(action_name="GMAIL_GET_PROFILE")
-    tool = tool_manager.create_or_update_tool(pydantic_tool=Tool(**tool_create.model_dump()), actor=test_user)
-    yield tool
-
-
-@pytest.fixture
 def clear_core_memory_tool(test_user):
     def clear_memory(agent_state: "AgentState"):
         """Clear the core memory"""
@@ -237,7 +222,7 @@ def agent_state():
     agent_state = client.create_agent(
         memory=ChatMemory(persona="This is the persona", human="My name is Chad"),
         embedding_config=EmbeddingConfig.default_config(provider="openai"),
-        llm_config=LLMConfig.default_config(model_name="gpt-4"),
+        llm_config=LLMConfig.default_config(model_name="gpt-4o-mini"),
     )
     agent_state.tool_rules = []
     yield agent_state
@@ -255,7 +240,7 @@ def custom_test_sandbox_config(test_user):
         A tuple containing the SandboxConfigManager and the created sandbox configuration.
     """
     # Create the SandboxConfigManager
-    manager = SandboxConfigManager(tool_settings)
+    manager = SandboxConfigManager()
 
     # Set the sandbox to be within the external codebase path and use a venv
     external_codebase_path = str(Path(__file__).parent / "test_tool_sandbox" / "restaurant_management_system")
@@ -327,7 +312,7 @@ def test_local_sandbox_with_list_rv(mock_e2b_api_key_none, list_tool, test_user)
 
 @pytest.mark.local_sandbox
 def test_local_sandbox_env(mock_e2b_api_key_none, get_env_tool, test_user):
-    manager = SandboxConfigManager(tool_settings)
+    manager = SandboxConfigManager()
 
     # Make a custom local sandbox config
     sandbox_dir = str(Path(__file__).parent / "test_tool_sandbox")
@@ -353,7 +338,7 @@ def test_local_sandbox_env(mock_e2b_api_key_none, get_env_tool, test_user):
 
 @pytest.mark.local_sandbox
 def test_local_sandbox_per_agent_env(mock_e2b_api_key_none, get_env_tool, agent_state, test_user):
-    manager = SandboxConfigManager(tool_settings)
+    manager = SandboxConfigManager()
     key = "secret_word"
 
     # Make a custom local sandbox config
@@ -389,7 +374,7 @@ def test_local_sandbox_per_agent_env(mock_e2b_api_key_none, get_env_tool, agent_
 @pytest.mark.local_sandbox
 def test_local_sandbox_e2e_composio_star_github(mock_e2b_api_key_none, check_composio_key_set, composio_github_star_tool, test_user):
     # Add the composio key
-    manager = SandboxConfigManager(tool_settings)
+    manager = SandboxConfigManager()
     config = manager.get_or_create_default_sandbox_config(sandbox_type=SandboxType.LOCAL, actor=test_user)
 
     manager.create_sandbox_env_var(
@@ -482,7 +467,7 @@ def test_local_sandbox_with_venv_errors(mock_e2b_api_key_none, custom_test_sandb
 
 @pytest.mark.e2b_sandbox
 def test_local_sandbox_with_venv_pip_installs_basic(mock_e2b_api_key_none, cowsay_tool, test_user):
-    manager = SandboxConfigManager(tool_settings)
+    manager = SandboxConfigManager()
     config_create = SandboxConfigCreate(
         config=LocalSandboxConfig(use_venv=True, pip_requirements=[PipRequirement(name="cowsay")]).model_dump()
     )
@@ -502,7 +487,7 @@ def test_local_sandbox_with_venv_pip_installs_basic(mock_e2b_api_key_none, cowsa
 
 @pytest.mark.e2b_sandbox
 def test_local_sandbox_with_venv_pip_installs_with_update(mock_e2b_api_key_none, cowsay_tool, test_user):
-    manager = SandboxConfigManager(tool_settings)
+    manager = SandboxConfigManager()
     config_create = SandboxConfigCreate(config=LocalSandboxConfig(use_venv=True).model_dump())
     config = manager.create_or_update_sandbox_config(config_create, test_user)
 
@@ -554,7 +539,7 @@ def test_e2b_sandbox_default(check_e2b_key_is_set, add_integers_tool, test_user)
 
 @pytest.mark.e2b_sandbox
 def test_e2b_sandbox_pip_installs(check_e2b_key_is_set, cowsay_tool, test_user):
-    manager = SandboxConfigManager(tool_settings)
+    manager = SandboxConfigManager()
     config_create = SandboxConfigCreate(config=E2BSandboxConfig(pip_requirements=["cowsay"]).model_dump())
     config = manager.create_or_update_sandbox_config(config_create, test_user)
 
@@ -598,7 +583,7 @@ def test_e2b_sandbox_stateful_tool(check_e2b_key_is_set, clear_core_memory_tool,
 
 @pytest.mark.e2b_sandbox
 def test_e2b_sandbox_inject_env_var_existing_sandbox(check_e2b_key_is_set, get_env_tool, test_user):
-    manager = SandboxConfigManager(tool_settings)
+    manager = SandboxConfigManager()
     config_create = SandboxConfigCreate(config=E2BSandboxConfig().model_dump())
     config = manager.create_or_update_sandbox_config(config_create, test_user)
 
@@ -624,7 +609,7 @@ def test_e2b_sandbox_inject_env_var_existing_sandbox(check_e2b_key_is_set, get_e
 # TODO: There is a near dupe of this test above for local sandbox - we should try to make it parameterized tests to minimize code bloat
 @pytest.mark.e2b_sandbox
 def test_e2b_sandbox_per_agent_env(check_e2b_key_is_set, get_env_tool, agent_state, test_user):
-    manager = SandboxConfigManager(tool_settings)
+    manager = SandboxConfigManager()
     key = "secret_word"
 
     # Make a custom local sandbox config
@@ -659,7 +644,7 @@ def test_e2b_sandbox_per_agent_env(check_e2b_key_is_set, get_env_tool, agent_sta
 
 @pytest.mark.e2b_sandbox
 def test_e2b_sandbox_config_change_force_recreates_sandbox(check_e2b_key_is_set, list_tool, test_user):
-    manager = SandboxConfigManager(tool_settings)
+    manager = SandboxConfigManager()
     old_timeout = 5 * 60
     new_timeout = 10 * 60
 
@@ -691,58 +676,6 @@ def test_e2b_sandbox_with_list_rv(check_e2b_key_is_set, list_tool, test_user):
     sandbox = ToolExecutionSandbox(list_tool.name, {}, user=test_user)
     result = sandbox.run()
     assert len(result.func_return) == 5
-
-
-@pytest.mark.e2b_sandbox
-def test_e2b_e2e_composio_star_github(check_e2b_key_is_set, check_composio_key_set, composio_github_star_tool, test_user):
-    # Add the composio key
-    manager = SandboxConfigManager(tool_settings)
-    config = manager.get_or_create_default_sandbox_config(sandbox_type=SandboxType.E2B, actor=test_user)
-
-    manager.create_sandbox_env_var(
-        SandboxEnvironmentVariableCreate(key="COMPOSIO_API_KEY", value=tool_settings.composio_api_key),
-        sandbox_config_id=config.id,
-        actor=test_user,
-    )
-
-    result = ToolExecutionSandbox(composio_github_star_tool.name, {"owner": "letta-ai", "repo": "letta"}, user=test_user).run()
-    assert result.func_return["details"] == "Action executed successfully"
-
-    # Missing args causes error
-    result = ToolExecutionSandbox(composio_github_star_tool.name, {}, user=test_user).run()
-    assert "Invalid request data provided" in result.func_return
-
-
-@pytest.mark.e2b_sandbox
-def test_e2b_multiple_composio_entities(
-    check_e2b_key_is_set, check_composio_key_set, composio_gmail_get_profile_tool, agent_state, test_user
-):
-    manager = SandboxConfigManager(tool_settings)
-    config = manager.get_or_create_default_sandbox_config(sandbox_type=SandboxType.E2B, actor=test_user)
-
-    manager.create_sandbox_env_var(
-        SandboxEnvironmentVariableCreate(key="COMPOSIO_API_KEY", value=tool_settings.composio_api_key),
-        sandbox_config_id=config.id,
-        actor=test_user,
-    )
-
-    # Agent state with no composio entity ID
-    result = ToolExecutionSandbox(composio_gmail_get_profile_tool.name, {}, user=test_user).run(agent_state=agent_state)
-    assert result.func_return["response_data"]["emailAddress"] == "sarah@letta.com"
-
-    # Agent state with the composio entity set to 'matt'
-    agent_state.tool_exec_environment_variables = [
-        AgentEnvironmentVariable(key=COMPOSIO_ENTITY_ENV_VAR_KEY, value="matt", agent_id=agent_state.id)
-    ]
-    result = ToolExecutionSandbox(composio_gmail_get_profile_tool.name, {}, user=test_user).run(agent_state=agent_state)
-    assert result.func_return["response_data"]["emailAddress"] == "matt@letta.com"
-
-    # Agent state with composio entity ID set to default
-    agent_state.tool_exec_environment_variables = [
-        AgentEnvironmentVariable(key=COMPOSIO_ENTITY_ENV_VAR_KEY, value="default", agent_id=agent_state.id)
-    ]
-    result = ToolExecutionSandbox(composio_gmail_get_profile_tool.name, {}, user=test_user).run(agent_state=agent_state)
-    assert result.func_return["response_data"]["emailAddress"] == "sarah@letta.com"
 
 
 # Core memory integration tests

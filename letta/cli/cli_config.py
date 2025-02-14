@@ -8,7 +8,7 @@ import typer
 from prettytable.colortable import ColorTable, Themes
 from tqdm import tqdm
 
-from letta import utils
+import letta.helpers.datetime_helpers
 
 app = typer.Typer()
 
@@ -51,7 +51,7 @@ def list(arg: Annotated[ListChoice, typer.Argument]):
                     agent.memory.get_block("persona").value[:100] + "...",
                     agent.memory.get_block("human").value[:100] + "...",
                     ",".join(source_names),
-                    utils.format_datetime(agent.created_at),
+                    letta.helpers.datetime_helpers.format_datetime(agent.created_at),
                 ]
             )
         print(table)
@@ -84,7 +84,7 @@ def list(arg: Annotated[ListChoice, typer.Argument]):
                     source.description,
                     source.embedding_config.embedding_model,
                     source.embedding_config.embedding_dim,
-                    utils.format_datetime(source.created_at),
+                    letta.helpers.datetime_helpers.format_datetime(source.created_at),
                 ]
             )
 
