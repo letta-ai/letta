@@ -1,3 +1,5 @@
+import * as en from './translations/en.json';
+
 export * from './lib/core/Typography/Typography';
 export * from './lib/marketing/MarketingButton/MarketingButton';
 export * from './lib/core/Button/Button';
@@ -164,3 +166,7 @@ export * from './lib/reusable/StarterKitItem/StarterKitItem';
 export * from './lib/core/KeyValueEditor/KeyValueEditor';
 
 export * from './lib/core/VerticalDelineatedTextChunker/VerticalDelineatedTextChunker';
+
+export * from './lib/reusable/AgentStateViewer/AgentStateViewer';
+
+export { en as componentTranslations };

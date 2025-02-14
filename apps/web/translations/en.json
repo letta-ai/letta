@@ -1193,10 +1193,11 @@
       "title": "Deploy agent instructions"
     },
     "VersionAgentDialog": {
-      "title": "Version agent",
-      "trigger": "Save new template version",
+      "title": "Template Version Manager",
+      "trigger": "Version manager",
       "deployedAgents": "Deployed agents",
-      "confirm": "Version agent",
+      "confirm": "Save new version",
+      "current": "Edited version",
       "description": "Versioning an agent creates a new version of the agent that is immutable and can be used to deploy agents. Are you sure you want to proceed?",
       "migrate": "Migrate all deployed agents to this version",
       "migrateDescription": "Selecting this option will migrate all deployed agents to this version, to programmatically migrate agents, visit the <link>API documentation</link>."

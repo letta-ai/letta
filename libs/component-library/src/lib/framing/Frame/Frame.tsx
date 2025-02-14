@@ -43,6 +43,7 @@ const frameVariants = cva('', {
       'background-grey': 'bg-background-grey text-background-grey-content',
       'background-grey2': 'bg-background-grey2 text-background-grey2-content',
       'background-black': 'bg-background-black text-background-black-content',
+      'brand-light': 'bg-brand-light text-brand-light-content',
       tertiary: 'bg-secondary text-tertiary-content',
       success: 'bg-background-success text-background-success-content',
       destructive:
@@ -148,6 +149,7 @@ const frameVariants = cva('', {
       xlarge: 'pl-6',
     },
     paddingRight: {
+      none: 'pr-0',
       xxsmall: 'pr-1',
       small: 'pr-2.5',
       medium: 'pr-3',

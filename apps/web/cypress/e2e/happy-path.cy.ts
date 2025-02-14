@@ -117,20 +117,10 @@ describe('letta', () => {
 
     cy.get('body').click({ force: true });
 
-    cy.findAllByTestId('version-template-trigger')
-      .first()
-      .click({ force: true });
-
     cy.findByTestId('stage-new-version-button').click({ force: true });
-    cy.findByTestId('stage-agent-dialog-confirm-button').click({ force: true });
     cy.findByTestId('deploy-agent-dialog-trigger', { timeout: 50000 }).click();
 
     cy.clearPointerEventLock();
-
-    // deploy the agent
-    cy.findByTestId('deploy-agent-instructions-code-editor').should('exist');
-
-    cy.findByTestId('show-api-key-switch').click();
 
     // create an agent from the template
     cy.request({

@@ -1,0 +1,32 @@
+{
+  "components/AgentStateViewer": {
+    "ToolVariableViewer": {
+      "toolVariables": "Tool Variables",
+      "noToolVariables": "No tool variables in this agent"
+    },
+    "MemoryBlockViewer": {
+      "title": "Memory Blocks",
+      "noMemoryBlocks": "No memory blocks in this agent",
+      "limit": "{limit} chars"
+    },
+    "LLMConfig": {
+      "title": "LLM Config"
+    },
+    "EmbeddingConfig": {
+      "title": "Embedding Config"
+    },
+    "SystemPrompt": {
+      "title": "System Prompt"
+    },
+    "PromptTemplate": {
+      "title": "Prompt Template"
+    },
+    "ToolsViewer": {
+      "title": "Tools"
+    },
+    "SourceViewer": {
+      "noSources": "No sources in this agent",
+      "title": "Source"
+    }
+  }
+}

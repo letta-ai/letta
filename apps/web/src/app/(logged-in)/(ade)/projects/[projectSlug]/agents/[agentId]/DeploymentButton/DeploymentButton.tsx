@@ -2,16 +2,21 @@ import { useCurrentAgent } from '../hooks';
 import { useCurrentProject } from '../../../../../../(dashboard-like)/projects/[projectSlug]/hooks';
 import { useTranslations } from '@letta-cloud/translations';
 import {
+  AgentStateViewer,
   Badge,
   Button,
   Card,
   Checkbox,
+  CloseIcon,
+  CloseMiniApp,
   Dialog,
   ExternalLink,
+  FormActions,
   FormField,
   FormProvider,
   HStack,
   LettaLoader,
+  MiniApp,
   Popover,
   RocketIcon,
   TemplateIcon,
@@ -29,10 +34,8 @@ import React, { useCallback, useMemo, useState } from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { webApi, webApiQueryKeys, webOriginSDKApi } from '$web/client';
 import { CLOUD_UPSELL_URL } from '$web/constants';
-import {
-  isAgentState,
-  useAgentsServiceListAgents,
-} from '@letta-cloud/letta-agents-api';
+import type { AgentState } from '@letta-cloud/letta-agents-api';
+import { isAgentState } from '@letta-cloud/letta-agents-api';
 import { useCurrentUser, useUserHasPermission } from '$web/client/hooks';
 import type { ServerInferResponses } from '@ts-rest/core';
 import type { contracts } from '@letta-cloud/web-api-client';
@@ -85,8 +88,15 @@ const versionAgentFormSchema = z.object({
 
 type VersionAgentFormValues = z.infer<typeof versionAgentFormSchema>;
 
-function VersionAgentDialog() {
+interface VersionAgentDialogProps {
+  currentAgentState: AgentState;
+  versionedAgentState: AgentState;
+  latestVersion: string;
+}
+
+function VersionAgentDialog(props: VersionAgentDialogProps) {
   const { name } = useCurrentAgent();
+  const { currentAgentState, versionedAgentState, latestVersion } = props;
   const { id: agentTemplateId } = useCurrentAgent();
   const queryClient = useQueryClient();
   const [open, setOpen] = useState(false);
@@ -149,57 +159,118 @@ function VersionAgentDialog() {
 
   return (
     <FormProvider {...form}>
-      <Dialog
+      <MiniApp
+        appName={t('VersionAgentDialog.title')}
         onOpenChange={setOpen}
         isOpen={open}
-        testId="stage-agent-dialog"
-        title={t('VersionAgentDialog.title')}
-        onConfirm={form.handleSubmit(handleVersionNewAgent)}
-        isConfirmBusy={isPending}
         trigger={
           <Button
+            size="small"
+            preIcon={<WarningIcon />}
             data-testid="stage-new-version-button"
             color="primary"
             fullWidth
-            label={t('VersionAgentDialog.trigger')}
+            label={
+              latestVersion
+                ? t('DeploymentButton.updateAvailable.trigger', {
+                    version: latestVersion,
+                  })
+                : t('DeploymentButton.updateAvailable.triggerNoVersion')
+            }
           />
         }
       >
-        <VStack gap="form">
-          <Typography>{t('VersionAgentDialog.description')}</Typography>
-          <Card>
-            <FormField
-              render={({ field }) => {
-                return (
-                  <Checkbox
-                    checked={field.value}
-                    description={t.rich(
-                      'VersionAgentDialog.migrateDescription',
-                      {
-                        link: (chunks) => (
-                          <ExternalLink href="https://docs.letta.com/api-reference/agents/migrate-agent">
-                            {chunks}
-                          </ExternalLink>
-                        ),
-                      },
-                    )}
-                    label={t('VersionAgentDialog.migrate')}
-                    onCheckedChange={(value) => {
-                      field.onChange({
-                        target: {
-                          value: value,
-                          name: field.name,
-                        },
-                      });
-                    }}
+        <form
+          className="contents"
+          onSubmit={form.handleSubmit(handleVersionNewAgent)}
+        >
+          <VStack overflow="hidden" fullHeight gap={false}>
+            <HStack
+              height="header"
+              align="center"
+              justify="spaceBetween"
+              borderBottom
+              paddingX
+              fullWidth
+            >
+              <HStack>
+                <RocketIcon />
+                <Typography bold>{t('VersionAgentDialog.title')}</Typography>
+              </HStack>
+              <CloseMiniApp data-testid="close-advanced-core-memory-editor">
+                <HStack>
+                  <CloseIcon />
+                </HStack>
+              </CloseMiniApp>
+            </HStack>
+            <VStack padding fullHeight overflow="hidden">
+              <VStack flex collapseHeight>
+                <HStack border gap={false}>
+                  <VStack
+                    flex
+                    fullWidth
+                    borderRight
+                    paddingRight="none"
+                    padding="small"
+                  >
+                    <Typography bold>{`${name}:${latestVersion}`}</Typography>
+                  </VStack>
+                  <VStack flex fullWidth padding="small" color="brand-light">
+                    <Typography bold>
+                      {t('VersionAgentDialog.current')}
+                    </Typography>
+                  </VStack>
+                </HStack>
+                <VStack border flex collapseHeight overflowY="auto">
+                  <AgentStateViewer
+                    baseState={versionedAgentState}
+                    comparedState={currentAgentState}
                   />
-                );
-              }}
-              name="migrate"
-            />
-          </Card>
-        </VStack>
-      </Dialog>
+                </VStack>
+              </VStack>
+              <Card>
+                <FormField
+                  render={({ field }) => {
+                    return (
+                      <Checkbox
+                        checked={field.value}
+                        description={t.rich(
+                          'VersionAgentDialog.migrateDescription',
+                          {
+                            link: (chunks) => (
+                              <ExternalLink href="https://docs.letta.com/api-reference/agents/migrate-agent">
+                                {chunks}
+                              </ExternalLink>
+                            ),
+                          },
+                        )}
+                        label={t('VersionAgentDialog.migrate')}
+                        onCheckedChange={(value) => {
+                          field.onChange({
+                            target: {
+                              value: value,
+                              name: field.name,
+                            },
+                          });
+                        }}
+                      />
+                    );
+                  }}
+                  name="migrate"
+                />
+              </Card>
+              <FormActions>
+                <Button
+                  data-testid="deploy-agent-dialog-trigger"
+                  color="primary"
+                  busy={isPending}
+                  label={t('VersionAgentDialog.confirm')}
+                />
+              </FormActions>
+            </VStack>
+          </VStack>
+        </form>
+      </MiniApp>
     </FormProvider>
   );
 }
@@ -242,24 +313,6 @@ function CloudUpsellDeploy() {
   );
 }
 
-interface UseHasDeployedAgentsArgs {
-  deployedAgentTemplateId?: string;
-}
-
-function useHasDeployedAgents(args: UseHasDeployedAgentsArgs) {
-  const { id: currentProjectId } = useCurrentProject();
-
-  const { deployedAgentTemplateId = '' } = args;
-
-  const { data: deployedAgents } = useAgentsServiceListAgents({
-    limit: 1,
-    projectId: currentProjectId,
-    templateId: deployedAgentTemplateId,
-  });
-
-  return deployedAgents && deployedAgents?.length > 0;
-}
-
 function useLatestAgentTemplate() {
   const { name } = useCurrentAgent();
 
@@ -289,7 +342,6 @@ function TemplateVersionDisplay() {
   const agentState = useCurrentAgent();
   const { deployedAgentTemplate, notFoundError, otherError } =
     useLatestAgentTemplate();
-  const { slug: projectSlug } = useCurrentProject();
   const t = useTranslations(
     'projects/(projectSlug)/agents/(agentId)/AgentPage',
   );
@@ -297,6 +349,7 @@ function TemplateVersionDisplay() {
   const [canUpdateTemplate] = useUserHasPermission(
     ApplicationServices.CREATE_UPDATE_DELETE_TEMPLATES,
   );
+
   const isAtLatestVersion = useMemo(() => {
     if (notFoundError) {
       return false;
@@ -308,10 +361,6 @@ function TemplateVersionDisplay() {
 
     return compareAgentStates(agentState, deployedAgentTemplate.state);
   }, [deployedAgentTemplate, notFoundError, agentState]);
-
-  const hasDeployedAgents = useHasDeployedAgents({
-    deployedAgentTemplateId: deployedAgentTemplate?.id,
-  });
 
   const versionNumber = deployedAgentTemplate?.version;
 
@@ -346,91 +395,87 @@ function TemplateVersionDisplay() {
     );
   }
 
-  return (
-    <Popover
-      triggerAsChild
-      trigger={
-        <Button
-          busy={isLoading}
-          size="small"
-          color="primary"
-          data-testid="version-template-trigger"
-          label={
-            isAtLatestVersion
-              ? versionNumber
+  if (isAtLatestVersion || isLoading) {
+    return (
+      <Popover
+        triggerAsChild
+        trigger={
+          <Button
+            busy={isLoading}
+            size="small"
+            color="primary"
+            data-testid="version-template-trigger"
+            label={
+              versionNumber
                 ? t('DeploymentButton.readyToDeploy.trigger', {
                     version: versionNumber,
                   })
                 : t('DeploymentButton.readyToDeploy.triggerNoVersion')
-              : versionNumber
-                ? t('DeploymentButton.updateAvailable.trigger', {
-                    version: versionNumber,
-                  })
-                : t('DeploymentButton.updateAvailable.triggerNoVersion')
-          }
-          preIcon={
-            isAtLatestVersion ? (
-              <RocketIcon size="small" />
-            ) : (
-              <WarningIcon size="small" />
-            )
-          }
-        />
-      }
-      align="end"
-    >
-      {isLoading ? (
-        <VStack align="center" justify="center" padding>
-          <LettaLoader variant="grower" />
-          <Typography>{t('DeploymentButton.loading')}</Typography>
-        </VStack>
-      ) : (
-        <VStack padding="medium" gap="large">
-          <VStack>
-            {deployedAgentTemplate?.version && (
-              <HStack>
-                <Badge
-                  content={t('DeploymentButton.version', {
-                    version: deployedAgentTemplate?.version,
-                  })}
-                />
-              </HStack>
-            )}
-            <Typography variant="heading5" bold>
-              {isAtLatestVersion
-                ? t('DeploymentButton.readyToDeploy.heading')
-                : t('DeploymentButton.updateAvailable.heading')}
-            </Typography>
-            <Typography>
-              {isAtLatestVersion
-                ? t('DeploymentButton.readyToDeploy.copy')
-                : versionNumber
-                  ? t('DeploymentButton.updateAvailable.copy', {
-                      version: versionNumber,
-                    })
-                  : t('DeploymentButton.updateAvailable.copyNoVersion')}
-            </Typography>
+            }
+            preIcon={
+              isAtLatestVersion ? (
+                <RocketIcon size="small" />
+              ) : (
+                <WarningIcon size="small" />
+              )
+            }
+          />
+        }
+        align="end"
+      >
+        {isLoading ? (
+          <VStack align="center" justify="center" padding>
+            <LettaLoader variant="grower" />
+            <Typography>{t('DeploymentButton.loading')}</Typography>
           </VStack>
-          <VStack gap="small">
-            {!isAtLatestVersion && <VersionAgentDialog />}
-            <DeployAgentDialog
-              deployedTemplateId={deployedAgentTemplate?.id || ''}
-              isAtLatestVersion={isAtLatestVersion}
-            />
-            {hasDeployedAgents && (
-              <Button
-                fullWidth
-                data-testid="view-deployed-agents"
-                target="_blank"
-                color="tertiary"
-                label={t('VersionAgentDialog.deployedAgents')}
-                href={`/projects/${projectSlug}/agents?template=${deployedAgentTemplate?.fullVersion}`}
+        ) : (
+          <VStack padding="medium" gap="large">
+            <VStack>
+              {deployedAgentTemplate?.version && (
+                <HStack>
+                  <Badge
+                    content={t('DeploymentButton.version', {
+                      version: deployedAgentTemplate?.version,
+                    })}
+                  />
+                </HStack>
+              )}
+              <Typography variant="heading5" bold>
+                {isAtLatestVersion
+                  ? t('DeploymentButton.readyToDeploy.heading')
+                  : t('DeploymentButton.updateAvailable.heading')}
+              </Typography>
+              <Typography>
+                {isAtLatestVersion
+                  ? t('DeploymentButton.readyToDeploy.copy')
+                  : versionNumber
+                    ? t('DeploymentButton.updateAvailable.copy', {
+                        version: versionNumber,
+                      })
+                    : t('DeploymentButton.updateAvailable.copyNoVersion')}
+              </Typography>
+            </VStack>
+            <VStack gap="small">
+              <DeployAgentDialog
+                deployedTemplateId={deployedAgentTemplate?.id || ''}
+                isAtLatestVersion={isAtLatestVersion}
               />
-            )}
+            </VStack>
           </VStack>
-        </VStack>
-      )}
-    </Popover>
+        )}
+      </Popover>
+    );
+  }
+
+  return (
+    deployedAgentTemplate?.state &&
+    isAgentState(agentState) && (
+      <VersionAgentDialog
+        latestVersion={versionNumber || ''}
+        versionedAgentState={deployedAgentTemplate.state}
+        currentAgentState={agentState}
+      />
+    )
   );
 }
 

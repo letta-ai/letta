@@ -15,6 +15,7 @@ import {
   Source,
 } from '@storybook/blocks';
 import { NextIntlClientProvider } from 'next-intl';
+import componentTranslations from '../src/translations/en.json';
 
 export const parameters: Preview = {
   decorators: [
@@ -27,7 +28,12 @@ export const parameters: Preview = {
     }),
     (Story) => (
       <div className="sb-make-dark">
-        <NextIntlClientProvider locale="en" messages={{}}>
+        <NextIntlClientProvider
+          locale="en"
+          messages={{
+            ...componentTranslations,
+          }}
+        >
           <Story />
         </NextIntlClientProvider>
       </div>
