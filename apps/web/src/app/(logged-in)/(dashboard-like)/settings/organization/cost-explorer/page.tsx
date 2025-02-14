@@ -118,6 +118,7 @@ function CostExplorer() {
           searchValue={search}
           showPagination
           onSearch={setSearch}
+          hasNextPage={costs?.body.hasNextPage}
           offset={offset}
           limit={limit}
           onSetOffset={setOffset}

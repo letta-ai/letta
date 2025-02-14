@@ -32,7 +32,7 @@ export async function listPaymentIntents(
   const paymentIntents = await stripeClient.paymentIntents.search({
     query: `status:"succeeded" AND customer:"${customer.id}"`,
     limit,
-    page: cursor,
+    ...(cursor ? { page: cursor } : {}),
   });
 
   return {
