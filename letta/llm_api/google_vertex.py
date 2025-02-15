@@ -307,15 +307,27 @@ def google_vertex_chat_completions_request(
     """
 
     from google import genai
+    from google.genai.types import FunctionCallingConfig, FunctionCallingConfigMode, ToolConfig
 
     client = genai.Client(vertexai=True, project=project_id, location=region, http_options={"api_version": "v1"})
     # add dummy model messages to the end of the input
     if add_postfunc_model_messages:
         contents = add_dummy_model_messages(contents)
 
+    tool_config = ToolConfig(
+        function_calling_config=FunctionCallingConfig(
+            # ANY mode forces the model to predict only function calls
+            mode=FunctionCallingConfigMode.ANY,
+        )
+    )
+    config["tool_config"] = tool_config.model_dump()
+
     # make request to client
-    response = client.models.generate_content(model=model, contents=contents, config=config)
-    print(response)
+    response = client.models.generate_content(
+        model=model,
+        contents=contents,
+        config=config,
+    )
 
     # convert back response
     try:
