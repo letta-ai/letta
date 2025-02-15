@@ -12,7 +12,7 @@ You can also write your own agent communication tools by using the Letta API and
 Since Letta runs as a service, you can make request to the server from a custom tool to send messages to other agents via API calls.
 
 Here's a simple example of a tool that sends a message to a specific agent:
-```python
+```python title="python"
 def custom_send_message_to_agent(target_agent_id: str, message_contents: str):
     """
     Send a message to a specific Letta agent.
@@ -34,7 +34,7 @@ def custom_send_message_to_agent(target_agent_id: str, message_contents: str):
 ```
 
 Below is an example of a tool that triggers agents tagged with `worker` to start their tasks:
-```python
+```python title="python"
 def trigger_worker_agents():
     """
     Trigger worker agents to start their tasks, without waiting for a response.

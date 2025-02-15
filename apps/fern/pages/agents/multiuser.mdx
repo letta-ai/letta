@@ -25,8 +25,7 @@ curl -X POST https://app.letta.com/v1/agents/ \
   "tags": ["user_1"]
 }'
 ```
-
-```python title="Python SDK"
+```python title="python"
 # assumes that you already instantiated a client
 agent = client.agents.create(
     memory_blocks=[],
@@ -37,7 +36,7 @@ agent = client.agents.create(
 )
 ```
 
-```typescript title="TypeScript SDK"
+```typescript title="node.js"
 // assumes that you already instantiated a client
 await client.agents.create({
     memory_blocks: [],
@@ -55,15 +54,13 @@ Then, if I wanted to search for agents associated with a specific user (e.g. cal
 curl -X GET "https://app.letta.com/v1/agents/?tags=user_1" \
   -H "Accept: application/json"
 ```
-
-```python title="Python SDK"
+```python title="python"
 # assumes that you already instantiated a client
 user_agents = client.agents.list(
     tags=["user_1"]
 )
 ```
-
-```typescript title="TypeScript SDK"
+```typescript title="node.js"
 // assumes that you already instantiated a client
 await client.agents.list({
     tags: ["user_1"]
@@ -75,7 +72,7 @@ await client.agents.list({
 In this example we'll create an agent with a (user) tag, then search for all agents with that tag.
 This example assumes that you have a self-hosted Letta Server running on localhost (for example, by running [`docker run ...`](/guides/server/docker)).
 <Accordion title="View example Python SDK code">
-```python
+```python title="python"
 from letta_client import Letta
 
 # in this example we'll connect to a self-hosted Letta Server

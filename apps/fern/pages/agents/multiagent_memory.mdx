@@ -24,7 +24,7 @@ graph TD
 
 In the example code below, we create a shared memory block and attach it to a supervisor agent and a worker agent.
 Because the memory block is shared, when one agent writes to it, the other agent can read the updates immediately.
-```python maxLines=50
+```python title="python" maxLines=50
 from letta_client import Letta
 
 client = Letta(base_url="http://127.0.0.1:8283")

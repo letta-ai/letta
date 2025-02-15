@@ -24,11 +24,17 @@ Letta also includes a set of pre-made tools designed for multi-agent interaction
 See [our guide on multi-agent](/guides/agents/multi-agent) for more information.
 
 ## Custom Tools
-You can create custom tools in Letta in Python. When you define the function for the tool, you must make sure to have a properly formatting docstring for Letta to parse the function schema.
-```python
-from letta import Letta
+You can create custom tools in Letta using the Python SDK, as well as via the [ADE tool builder](/guides/ade/usage#tools).
 
-client = Letta(token="LETTA_API_KEY")
+When you define the function for the tool, you must make sure to have a properly formatting docstring so the Letta Server can parse the function schema:
+```python title="python" maxLines=50
+# install letta_client with `pip install letta-client`
+from letta_client import Letta
+
+# create a client to connect to your local Letta Server
+client = Letta(
+  base_url="http://localhost:8283"
+)
 
 # define a function with a docstring
 def roll_dice() -> str:
@@ -47,17 +53,17 @@ def roll_dice() -> str:
     output_string = f"You rolled a {dice_role_outcome}"
     return output_string
 
-
 # create the tool
 tool = client.tools.create_from_function(
     func=roll_dice
 )
+
 print(f"Created tool {tool.name}")
 ```
 
 ### Adding tools to agents in the Python SDK
 Once the tool is created, you can add it to an agent by passing the tool name to the `tools` parameter in the agent creation.
-```python
+```python title="python" {9}
 # create a new agent
 agent = client.agents.create(
     memory_blocks=[
@@ -65,7 +71,7 @@ agent = client.agents.create(
         {"label": "persona", "limit": 2000, "value": "You are a friendly agent"}
     ],
     model="openai/gpt-4o-mini",
-    embedding="openai/text-embedding-ada-002",
+    embedding="openai/text-embedding-3-small",
     tool_ids=[tool.id]
 )
 ```
@@ -75,17 +81,19 @@ You can set agent-scoped environment variables for your tools.
 These environment variables will be accessible in the sandboxed environment that any of the agent tools are run in.
 
 For example, if you define a custom tool that requires an API key to run (e.g. `EXAMPLE_TOOL_API_KEY`), you can set the variable at time of agent creation by using the `tool_exec_environment_variables` parameter:
-```sh
-curl -X POST http://localhost:8283/v1/agents/ \
-     -H "Content-Type: application/json" \
-     -d '{
-  "llm":"openai/gpt-4o-mini",
-  "embedding":"openai/text-embedding-ada-002",
-  "tool_exec_environment_variables": {
-      "EXAMPLE_TOOL_API_KEY": "banana"
-    },
-  "memory_blocks": []
-}'
+```python title="python" {9-11}
+# create an agent with no tools
+agent = client.agents.create(
+    memory_blocks=[
+        {"label": "human", "limit": 2000, "value": "Name: Bob"},
+        {"label": "persona", "limit": 2000, "value": "You are a friendly agent"}
+    ],
+    model="openai/gpt-4o-mini",
+    embedding="openai/text-embedding-3-small",
+    tool_exec_environment_variables={
+        "EXAMPLE_TOOL_API_KEY": "banana"
+    }
+)
 ```
 
 ## External Tool Libraries
@@ -95,11 +103,17 @@ This integrations works by converting the external library tools into Letta tool
 For more information on setting up Composio tools, see our [Composio guide](/guides/agents/composio).
 
 ## Excluding Default Tools
-To skip adding default tools when creating a new agent, you can add in `include_default_tools=False` to the agent creation:
-```python
+To skip adding default tools when creating a new agent, you can add in `include_base_tools=False` to the agent creation:
+```python title="python" {9}
 # create an agent with no tools
 agent = client.agents.create(
-    include_default_tools=False
+    memory_blocks=[
+        {"label": "human", "limit": 2000, "value": "Name: Bob"},
+        {"label": "persona", "limit": 2000, "value": "You are a friendly agent"}
+    ],
+    model="openai/gpt-4o-mini",
+    embedding="openai/text-embedding-3-small",
+    include_base_tools=False
 )
 ```
 Warning: this will create an agent with no tools, so the agent will have no ability to manage memory or search conversation history.
@@ -114,7 +128,7 @@ Read more about tool rules [here](/guides/agents/tool-rules).
 Tools that use `agent_state` currently do not work in the ADE live tool tester (they will error when you press "Run"), however if the tool is correct it will work once you attach it to an agent.
 </Warning>
 If you need to directly access the state of an agent inside a tool, you can use the reserved `agent_state` keyword argument, for example:
-```python
+```python title="python"
 def get_agent_id(agent_state: "AgentState") -> str:
     """
     A custom tool that returns the agent ID

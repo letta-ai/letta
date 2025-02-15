@@ -67,19 +67,7 @@ In Letta, you can set the `ENTITY ID` in Composio through the use of tool variab
 If your `ENTITY ID` is not `default`, then in order for your Composio tools to work in Letta, you need to create a **[tool variable](/guides/agents/tool-variables)** called `COMPOSIO_ENTITY` and set it to be your Composio `ENTITY ID`. If you don't set `COMPOSIO_ENTITY`, Letta will default to assuming it is `default`.
 <img src="../../images/tool_variables.png" />
 
-You can also assign tool variables on agent creation in the API with the `tool_exec_environment_variables` parameter:
-```sh
-curl -X POST http://localhost:8283/v1/agents/ \
-     -H "Content-Type: application/json" \
-     -d '{
-  "llm":"openai/gpt-4o-mini",
-  "embedding":"openai/text-embedding-ada-002",
-  "tool_exec_environment_variables": {
-      "COMPOSIO_ENTITY": "banana"
-    },
-  "memory_blocks": []
-}'
-```
+You can also assign tool variables on agent creation in the API with the `tool_exec_environment_variables` parameter (see [examples here](/guides/agents/tool-variables)).
 
 ## Entities in Composio tools for multi-user
 In multi-user settings (where you have many users all using different agents), you may want to use the concept of [entities](https://docs.composio.dev/patterns/Auth/connected_account#entities) in Composio, which allow you to scope Composio tool execution to specific users.
@@ -94,16 +82,16 @@ Adding Composio tools to agents is supported in the Python SDK, but not the Type
 </Note>
 
 To use Letta with [Composio](https://docs.composio.dev) tools, make sure you install dependencies with `pip install 'letta[external-tools]`. Then, make sure you log in to Composio:
-```bash
+```bash title="shell"
 composio login
 ```
 
 Next, depending on your desired Composio tool, you need to add the necessary authentication via `composio add` (for example, to connect GitHub tools):
-```bash
+```bash title="shell"
 composio add github
 ```
-To attach a Composio tool to an agent, you must first create a Letta tool from composio by specifying the action name: 
-```python
+To attach a Composio tool to an agent, you must first create a Letta tool from composio by specifying the action name:
+```python title="python"
 from composio_langchain import Action
 
 # create a Letta tool object
@@ -111,14 +99,14 @@ tool = client.tools.add_composio_tool(
   composio_action_name=Action.GITHUB_STAR_A_REPOSITORY_FOR_THE_AUTHENTICATED_USER.name
 )
 ```
-Below is a full example of creating a Letta agent that can start a Github repository. 
-```python
+Below is a full example of creating a Letta agent that can start a Github repository.
+```python title="python" maxLines=50
 from letta_client import Letta
 from composio_langchain import Action
 
 client = Letta(base_url="http://localhost:8283")
 
-# add a composio tool 
+# add a composio tool
 tool = client.tools.add_composio_tool(composio_action_name=Action.GITHUB_STAR_A_REPOSITORY_FOR_THE_AUTHENTICATED_USER.name)
 
 # create an agent with the tool
@@ -128,12 +116,12 @@ agent = client.agents.create(
         {"label": "persona", "value": "I am a helpful assistant"}
     ],
     model="anthropic/claude-3-5-sonnet-20241022",
-    embedding="openai/text-embedding-ada-002", 
+    embedding="openai/text-embedding-ada-002",
     tool_ids=[tool.id]
 )
 print("Agent tools", [tool.name for tool in agent.tools])
 
-# message the agent 
+# message the agent
 response = client.agents.messages.create(
     agent_id=agent.id,
     messages=[

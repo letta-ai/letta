@@ -7,27 +7,42 @@ Data sources allow you to load files into an agent's archival memory. Agents' ar
 
 # Creating a data source
 To create a data source, you will need to specify a unique `name` as well as an `EmbeddingConfig`:
-```python
+<CodeGroup>
+```python title="python"
 # get an available embedding_config
 embedding_configs = client.models.list_embedding_models()
 embedding_config = embedding_configs[0]
 
 # create the source
 source = client.sources.create(
-    name="my_source", 
+    name="my_source",
     embedding_config=embedding_config
 )
 ```
-Now that you've created the source, you can start loading data into the source. 
+```typescript title="node.js"
+// get an available embedding_config
+const embeddingConfigs = await client.models.listEmbeddingModels();
+const embeddingConfig = embeddingConfigs[0];
+
+// create the source
+const source = await client.sources.create({
+    name: "my_source",
+    embeddingConfig: embeddingConfig
+});
+```
+</CodeGroup>
+Now that you've created the source, you can start loading data into the source.
 
 ## Uploading a file into a data source
-Uploading a file to a source will create an async job for processing the file, which will split the file into chunks and embed them. 
-```python
+Uploading a file to a source will create an async job for processing the file, which will split the file into chunks and embed them.
+<CodeGroup>
+```python title="python"
 # upload a file into the source
 job = client.sources.files.upload(
-    source_id=source.id, 
+    source_id=source.id,
     file=open("my_file.txt", "rb")
 )
+
 # wait until the job is completed
 while True:
     job = client.jobs.retrieve(job.id)
@@ -38,8 +53,30 @@ while True:
     print(f"Job status: {job.status}")
     time.sleep(1)
 ```
-Once the job is completed, you can list the files and the generated passages in the source: 
-```python
+```typescript title="node.js"
+// upload a file into the source
+const uploadJob = await client.sources.files.upload(
+    createReadStream("my_file.txt"),
+    source.id,
+);
+console.log("file uploaded")
+
+// wait until the job is completed
+while (true) {
+    const job = await client.jobs.retrieve(uploadJob.id);
+    if (job.status === "completed") {
+        break;
+    } else if (job.status === "failed") {
+        throw new Error(`Job failed: ${job.metadata}`);
+    }
+    console.log(`Job status: ${job.status}`);
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+}
+```
+</CodeGroup>
+Once the job is completed, you can list the files and the generated passages in the source:
+<CodeGroup>
+```python title="python"
 # list files in the source
 files = client.sources.files.list(source_id=source.id)
 print(f"Files in source: {files}")
@@ -48,26 +85,52 @@ print(f"Files in source: {files}")
 passages = client.sources.passages.list(source_id=source.id)
 print(f"Passages in source: {passages}")
 ```
+```typescript title="node.js"
+// list files in the source
+const files = await client.sources.files.list(source.id);
+console.log(`Files in source: ${files}`);
 
-## Listing available data sources 
-You can view available data sources by listing them: 
-```python
+// list passages in the source
+const passages = await client.sources.passages.list(source.id);
+console.log(`Passages in source: ${passages}`);
+```
+</CodeGroup>
+
+## Listing available data sources
+You can view available data sources by listing them:
+<CodeGroup>
+```python title="python"
 # list sources
 sources = client.sources.list()
 ```
+```typescript title="node.js"
+// list sources
+const sources = await client.sources.list();
+```
+</CodeGroup>
 
 # Connecting a data source to an agent
 When you attach a data source to an agent, the passages in that data source will be copied into the agent's archival memory. Note that if you load new data into your data source, it will *not* be copied into the agent's archival memory unless you re-attach the data sources (detach then attach it again)
 
-## Attaching the data source 
-You can attach a source to an agent by specifying both the source and agent IDs: 
-```python
+## Attaching the data source
+You can attach a source to an agent by specifying both the source and agent IDs:
+<CodeGroup>
+```python title="python"
 client.agents.sources.attach(agent_id=agent.id, source_id=source.id)
 ```
-Note that your agent and source must be configured with the same embedding model, to ensure that the agent is able to search accross a common embedding space for archival memory. 
+```typescript title="node.js"
+await client.agents.sources.attach(agent.id, source.id);
+```
+</CodeGroup>
+Note that your agent and source must be configured with the same embedding model, to ensure that the agent is able to search accross a common embedding space for archival memory.
 
 ## Detaching the data source
-Detaching a data source will remove the passages in an agent's archival memory that was loaded from that source: 
-```python
+Detaching a data source will remove the passages in an agent's archival memory that was loaded from that source:
+<CodeGroup>
+```python title="python"
 client.agents.sources.detach(agent_id=agent.id, source_id=source.id)
 ```
+```typescript title="node.js"
+await client.agents.sources.detach(agent.id, source.id);
+```
+</CodeGroup>

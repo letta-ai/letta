@@ -3,9 +3,9 @@ title: Creating Tool Rules
 slug: guides/agents/tool-rules
 ---
 
-Tool rules allows developer to define constrains on their tools, such as requiring that a tool terminate agent execution or be followed by another tool. We added the following tool rules: 
-*  `TerminalToolRule(tool_name=...)` - If the tool is called, the agent ends execution 
-* `InitToolRule(tool_name=...)` - The tool must be called first when an agent is run 
+Tool rules allows developer to define constrains on their tools, such as requiring that a tool terminate agent execution or be followed by another tool. We added the following tool rules:
+*  `TerminalToolRule(tool_name=...)` - If the tool is called, the agent ends execution
+* `InitToolRule(tool_name=...)` - The tool must be called first when an agent is run
 * `ToolRule(tool_name=..., children=[...])` - If the tool is called, it must be followed by one of the tools specified in `children`
 
 <Note> By default, the `send_message` tool is marked with `TerminalToolRule`, since you usually do not want to agent to continue executing after it has send message to the user. </Note>
@@ -39,7 +39,7 @@ flowchart LR
 </Frame>
 
 For example, you can ensure that the agent will stop execution if either the `send_message` or `roll_d20` tool is called by specifying tool rules in the agent creation:
-```python Python
+```python title="python" {6-11}
 # create a new agent
 agent_state = client.create_agent(
     # create the agent with an additional tool
@@ -47,13 +47,13 @@ agent_state = client.create_agent(
     # add tool rules that terminate execution after specific tools
     tool_rules=[
         # exit after roll_d20 is called
-        TerminalToolRule(tool_name=tool.name),
+        TerminalToolRule(tool_name=tool.name, type="exit_loop"),
         # exit after send_message is called (default behavior)
-        TerminalToolRule(tool_name="send_message"),
+        TerminalToolRule(tool_name="send_message", type="exit_loop"),
     ],
 )
-print(f"Created agent with name {agent_state.name} with tools {agent_state.tools}")
 
+print(f"Created agent with name {agent_state.name} with tools {agent_state.tools}")
 ```
 
 You can see a full working example of tool rules [here](https://github.com/letta-ai/letta/blob/0.5.2/examples/tool_rule_usage.py).
