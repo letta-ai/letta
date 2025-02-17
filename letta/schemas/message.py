@@ -647,7 +647,7 @@ class Message(BaseMessage):
         #     role: str ('user' or 'model')
 
         if self.role != "tool" and self.name is not None:
-            raise UserWarning(f"Using Google AI with non-null 'name' field ({self.name}) not yet supported.")
+            warnings.warn(f"Using Google AI with non-null 'name' field ({self.name}) not yet supported.")
 
         if self.role == "system":
             # NOTE: Gemini API doesn't have a 'system' role, use 'user' instead
