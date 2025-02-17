@@ -9,6 +9,8 @@ import {
   DashboardPageLayout,
   DashboardPageSection,
   DataTable,
+  HStack,
+  LettaCoinIcon,
 } from '@letta-cloud/component-library';
 
 function CostExplorer() {
@@ -82,16 +84,17 @@ function CostExplorer() {
               if (nextAvailableWindowSize) {
                 creditAmount = costMap[nextAvailableWindowSize];
               } else {
-                // largest window size
-                const largestAvailableWindowSize = Object.keys(
-                  row.original.costMap,
-                ).sort((a, b) => parseInt(b, 10) - parseInt(a, 10))[0];
-
-                creditAmount = costMap[largestAvailableWindowSize];
+                // else credit is not supported
+                return t('notSupported');
               }
             }
 
-            return t('credits', { credits: creditAmount });
+            return (
+              <HStack gap="small" align="center">
+                <LettaCoinIcon size="xsmall" />
+                {creditAmount}
+              </HStack>
+            );
           },
         };
       }),
@@ -110,7 +113,9 @@ function CostExplorer() {
     <DashboardPageLayout
       title={t('title')}
       encapsulatedFullHeight
-      subtitle={t('description')}
+      subtitle={t.rich('description', {
+        credit: () => <LettaCoinIcon size="small" />,
+      })}
     >
       <DashboardPageSection fullHeight>
         <DataTable

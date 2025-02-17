@@ -291,12 +291,12 @@
   "organization/costs": {
     "sameAsPrevious": "Same as previous",
     "title": "Cost Explorer",
-    "description": "Costs are demarked in credits per request by the context window size. The context window size is the number of tokens in the context window of the agent. If a model is not listed, it means it won't be available for use at this time.",
+    "description": "Costs are demarked in credits per request by the context window size. The context window size is the number of tokens in the context window of the agent. If a model is not listed, it means it won't be available for use at this time. All costs are denoted in <credit></credit> credits.",
     "columns": {
       "name": "Model name",
       "tokens": "<={tokens} tokens"
     },
-    "credits": "{credits} credits"
+    "notSupported": "Not supported"
   },
   "data-sources/page": {
     "CreateDataSourceDialog": {
