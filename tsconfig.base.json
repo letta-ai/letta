@@ -38,6 +38,7 @@
       "@letta-cloud/desktop-builders": [
         "scripts/desktop-builders/src/index.ts"
       ],
+      "@letta-cloud/email": ["libs/email/src/index.ts"],
       "@letta-cloud/environmental-variables": [
         "libs/environmental-variables/src/index.ts"
       ],

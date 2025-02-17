@@ -1,7 +1,7 @@
 /* eslint-disable */
 import type { Config } from 'jest';
 import nextJest from 'next/jest.js';
-import { pathsToModuleNameMapper } from 'ts-jest';
+
 const createJestConfig = nextJest({
   dir: __dirname,
 });

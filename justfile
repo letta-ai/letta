@@ -77,6 +77,7 @@ configure-kubectl:
         --set env.NEXT_PUBLIC_CURRENT_HOST="${NEXT_PUBLIC_CURRENT_HOST}" \
         --set env.REDIS_HOST="${REDIS_HOST}" \
         --set env.HUBSPOT_API_KEY="${HUBSPOT_API_KEY}" \
+        --set env.RESEND_API_KEY="${RESEND_API_KEY}" \
         --set env.COMPOSIO_API_KEY="${COMPOSIO_API_KEY}" \
         --set env.E2B_API_KEY="${E2B_API_KEY}" \
         --set env.E2B_SANDBOX_TEMPLATE_ID="${E2B_SANDBOX_TEMPLATE_ID}" \
@@ -393,3 +394,7 @@ trigger-undertaker-deploy branch="" deploy_message="":
     fi
     echo "🚀 Triggering undertaker deployment workflow on branch: $BRANCH"
     gh workflow run "🕸🚀 Deploy Undertaker" --ref $BRANCH
+
+emails:
+    @echo "🚧 Running the email viewer..."
+    npm run emails:dev

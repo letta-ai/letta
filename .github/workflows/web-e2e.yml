@@ -181,6 +181,9 @@ jobs:
       - name: Install Dependencies
         if: steps.cache-nodemodules.outputs.cache-hit != 'true'
         run: npm ci
+      - name: Install undertaker dependencies
+        run: npm ci
+        working-directory: apps/credit-undertaker
       - name: Build undertaker
         run: npm run undertaker:build
       - name: Run undertake detached

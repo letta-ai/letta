@@ -637,7 +637,7 @@
       "trigger": "Invite member",
       "confirm": "Invite",
       "title": "Invite member",
-      "description": "Invite a new member to your organization. If they already have an account at Letta, they will be immediately be added to your organization. If they have yet to create an account, they can sign in via a provider or using the invite link generated in the next step. <bold>We do not send emails to invited members.</bold>"
+      "description": "Invite a new member to your organization. If they already have an account at Letta, they will be immediately be added to your organization. If they have yet to create an account, they can sign in via a provider or using the invite link generated in the next step."
     },
     "title": "Organization members",
     "table": {

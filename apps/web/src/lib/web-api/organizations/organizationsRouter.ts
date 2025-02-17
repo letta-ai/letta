@@ -18,7 +18,11 @@ import {
 import type { ServerInferRequest, ServerInferResponses } from '@ts-rest/core';
 import type { contracts } from '$web/web-api/contracts';
 import { and, eq, gt, ilike } from 'drizzle-orm';
-import { generateInviteCode, parseInviteCode } from '$web/utils';
+import {
+  generateInviteCode,
+  generateInviteCodeLink,
+  parseInviteCode,
+} from '$web/utils';
 import {
   createPayment,
   createSetupIntent,
@@ -33,6 +37,7 @@ import {
 import { ApplicationServices } from '@letta-cloud/rbac';
 import { addCreditsToOrganization } from '@letta-cloud/server-utils';
 import { creditsToDollars } from '@letta-cloud/generic-utils';
+import { sendEmail } from '@letta-cloud/email';
 
 type GetCurrentOrganizationResponse = ServerInferResponses<
   typeof contracts.organizations.getCurrentOrganization
@@ -141,6 +146,9 @@ async function regenerateInviteCode(
 
   const invitedMember = await db.query.organizationInvitedUsers.findFirst({
     where: eq(organizationInvitedUsers.id, memberId),
+    with: {
+      organization: true,
+    },
   });
 
   if (!invitedMember) {
@@ -168,6 +176,16 @@ async function regenerateInviteCode(
         eq(organizationInvitedUsers.organizationId, activeOrganizationId),
       ),
     );
+
+  void sendEmail({
+    to: invitedMember.email,
+    type: 'invite',
+    options: {
+      inviteUrl: generateInviteCodeLink(inviteCode),
+      organizationName: invitedMember.organization.name,
+      locale: 'en',
+    },
+  });
 
   return {
     status: 200,
@@ -292,6 +310,22 @@ async function inviteNewTeamMember(
       invitedBy: userId,
     })
     .returning({ id: organizationInvitedUsers.id });
+
+  const organization = await db.query.organizations.findFirst({
+    where: eq(organizations.id, activeOrganizationId),
+  });
+
+  if (organization) {
+    void sendEmail({
+      to: email,
+      type: 'invite',
+      options: {
+        inviteUrl: generateInviteCodeLink(inviteCode),
+        organizationName: organization.name,
+        locale: 'en',
+      },
+    });
+  }
 
   return {
     status: 201,

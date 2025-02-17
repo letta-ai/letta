@@ -15,6 +15,7 @@ let nextConfig = {
     // See: https://github.com/gregberge/svgr
     svgr: false,
   },
+  serverExternalPackages: ['@react-email/components', '@react-email/tailwind'],
   experimental: {
     swcPlugins: [['@swc-jotai/react-refresh', {}]],
   },

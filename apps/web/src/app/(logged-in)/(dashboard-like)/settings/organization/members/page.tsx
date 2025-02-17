@@ -47,8 +47,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useErrorTranslationMessage } from '@letta-cloud/helpful-client-utils';
-import { environment } from '@letta-cloud/environmental-variables';
-import { parseInviteCode } from '$web/utils';
+import { generateInviteCodeLink, parseInviteCode } from '$web/utils';
 import {
   ApplicationServices,
   roleToServicesMap,
@@ -779,10 +778,6 @@ function DisInviteMemberButton(props: DisInviteMemberButtonProps) {
       label={t('DisInviteMemberButton.dismiss')}
     />
   );
-}
-
-function generateInviteCodeLink(code: string) {
-  return `${environment.NEXT_PUBLIC_CURRENT_HOST}/signup-via-invite?code=${code}`;
 }
 
 interface RegenerateInviteLinkButtonProps {

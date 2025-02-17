@@ -1,0 +1,8 @@
+{
+  "invite": {
+    "heading": "Hello",
+    "content": "You have been invited to join {{team}} on Letta. Click the link below to join the team.",
+    "linkName": "Join {{team}}",
+    "subject": "You have been invited to join {{team}} on Letta"
+  }
+}
