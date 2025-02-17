@@ -125,7 +125,7 @@ describe('letta', () => {
 
     cy.waitUntil(() =>
       cy
-        .findAllByTestId('deploy-agent-dialog-trigger')
+        .get('[data-testid="deploy-agent-dialog-trigger"]')
         .then(($el) => $el.length === 0),
     );
 
