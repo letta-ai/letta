@@ -53,7 +53,8 @@ ENV LETTA_ENVIRONMENT=${LETTA_ENVIRONMENT} \
     PATH="/app/.venv/bin:$PATH" \
     POSTGRES_USER=letta \
     POSTGRES_PASSWORD=letta \
-    POSTGRES_DB=letta
+    POSTGRES_DB=letta \
+    COMPOSIO_DISABLE_VERSION_CHECK=true
 
 WORKDIR /app
 
