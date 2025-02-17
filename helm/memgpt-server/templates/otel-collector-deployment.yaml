@@ -1,0 +1,30 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "memgpt-server.fullname" . }}-otel-collector
+  labels:
+    {{- include "memgpt-server.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.otelCollector.replicas }}
+  selector:
+    matchLabels:
+      {{- include "memgpt-server.selectorLabels" . | nindent 6 }}
+      component: otel-collector
+  template:
+    metadata:
+      labels:
+        {{- include "memgpt-server.selectorLabels" . | nindent 8 }}
+        component: otel-collector
+    spec:
+      containers:
+      - name: otel-collector
+        image: otel/opentelemetry-collector-contrib:latest
+        args:
+        - --config=/conf/config.yaml
+        volumeMounts:
+        - name: config
+          mountPath: /conf
+      volumes:
+      - name: config
+        configMap:
+          name: {{ .Release.Name }}-otel-collector-config

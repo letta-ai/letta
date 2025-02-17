@@ -125,3 +125,18 @@ secrets:
   E2B_SANDBOX_TEMPLATE_ID: ""
   E2B_API_KEY: ""
   SENTRY_DSN: ""
+
+otelCollector:
+  enabled: true
+  replicas: 1
+  clickhouse:
+    endpoint: "http://10.128.0.31:8123"
+    database: "otel"
+    username: "default"
+  resources:
+    limits:
+      cpu: 500m
+      memory: 512Mi
+    requests:
+      cpu: 200m
+      memory: 256Mi
