@@ -11,7 +11,7 @@ import type { ServerLogType } from '@letta-cloud/types';
 import * as todesktop from '@todesktop/runtime';
 import * as os from 'os';
 import * as ps from 'ps-node';
-import { createWebServer } from './web-server';
+import { createWebServer, setServerId } from './web-server';
 todesktop.init();
 
 let lettaServer: ReturnType<typeof execFile> | null = null;
@@ -200,6 +200,7 @@ export default class App {
 
       lettaServer.kill();
 
+      setServerId(null);
       await App.killLettaServer();
     }
   }
@@ -220,7 +221,12 @@ export default class App {
 
     let lettaServerPath = path.join(homeDir || '/', '.letta', 'bin', 'letta');
     lettaServer = null;
-    lettaServer = execFile(lettaServerPath, ['--use-file-pg-uri']);
+    const serverId = Math.random().toString(36).substring(7);
+    setServerId(serverId);
+    lettaServer = execFile(lettaServerPath, [
+      '--use-file-pg-uri',
+      `--look-for-server-id=${serverId}`,
+    ]);
 
     if (lettaServer.stdout) {
       lettaServer.stdout.on('data', (data) => {

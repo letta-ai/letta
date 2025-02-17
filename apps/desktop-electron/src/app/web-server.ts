@@ -6,9 +6,26 @@
 
 import { createServer } from 'http';
 
+let serverId: string | null;
+
+export function getServerId() {
+  return serverId;
+}
+
+export function setServerId(id: string | null) {
+  serverId = id;
+}
+
 export function createWebServer() {
   const server = createServer((req, res) => {
     if (req.url === '/health') {
+      // send server id if it is set
+      if (serverId) {
+        res.writeHead(200, { 'Content-Type': 'text/plain' });
+        res.end(serverId);
+        return;
+      }
+
       res.writeHead(200);
       res.end();
       return;

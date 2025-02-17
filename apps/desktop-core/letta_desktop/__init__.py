@@ -3,6 +3,7 @@ from pathlib import Path
 from os.path import join
 letta_dir = Path.home() / ".letta"
 from threading import Thread
+from argparse import ArgumentParser
 
 dotenv_path = join(letta_dir, "env")
 
@@ -70,6 +71,11 @@ def upgrade_db():
   print('Database upgraded')
 
 
+argparser = ArgumentParser()
+
+argparser.add_argument('--look-for-server-id', type=str, help='Look for server id')
+
+
 def check_if_web_server_running():
   # ping localhost:8285 every 5 seconds, if its down kill this process
   import requests
@@ -81,6 +87,22 @@ def check_if_web_server_running():
       print("Pinging localhost:8285")
       res = requests.get('http://localhost:8285/health', timeout=5)
       res.raise_for_status()
+
+      # extract server id from args --look-for-server-id={value}
+      args = argparser.parse_args()
+
+      if args.look_for_server_id:
+        # get response text
+        response_text = res.text
+
+        print(response_text, args.look_for_server_id)
+
+
+        # if the response text does not contain the server id, kill the process, throw an error
+        if args.look_for_server_id not in response_text:
+          print("Server id not found in response text, exiting...")
+          sys.exit(1)
+
       time.sleep(5)
     except Exception as e:
       print("Web server is down, exiting...")
