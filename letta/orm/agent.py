@@ -1,7 +1,7 @@
 import uuid
 from typing import TYPE_CHECKING, List, Optional
 
-from sqlalchemy import JSON, Boolean, Index, String
+from sqlalchemy import JSON, Boolean, ForeignKey, Index, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from letta.orm.block import Block
@@ -19,6 +19,7 @@ from letta.schemas.tool_rule import TerminalToolRule, ToolRule
 
 if TYPE_CHECKING:
     from letta.orm.agents_tags import AgentsTags
+    from letta.orm.identity import Identity
     from letta.orm.organization import Organization
     from letta.orm.source import Source
     from letta.orm.tool import Tool
@@ -58,6 +59,11 @@ class Agent(SqlalchemyBase, OrganizationMixin):
     project_id: Mapped[Optional[str]] = mapped_column(String, nullable=True, doc="The id of the project the agent belongs to.")
     template_id: Mapped[Optional[str]] = mapped_column(String, nullable=True, doc="The id of the template the agent belongs to.")
     base_template_id: Mapped[Optional[str]] = mapped_column(String, nullable=True, doc="The base template id of the agent.")
+
+    # Identity
+    identity_id: Mapped[Optional[str]] = mapped_column(
+        String, ForeignKey("identities.id", ondelete="CASCADE"), nullable=True, doc="The id of the identity the agent belongs to."
+    )
 
     # Tool rules
     tool_rules: Mapped[Optional[List[ToolRule]]] = mapped_column(ToolRulesColumn, doc="the tool rules for this agent.")
@@ -119,6 +125,7 @@ class Agent(SqlalchemyBase, OrganizationMixin):
         viewonly=True,  # Ensures SQLAlchemy doesn't attempt to manage this relationship
         doc="All passages derived created by this agent.",
     )
+    identity: Mapped[Optional["Identity"]] = relationship("Identity", back_populates="agents")
 
     def to_pydantic(self) -> PydanticAgentState:
         """converts to the basic pydantic model counterpart"""
