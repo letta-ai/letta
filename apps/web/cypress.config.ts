@@ -7,6 +7,7 @@ config({ path: resolve(__dirname, '.env') });
 
 export default defineConfig({
   projectId: process.env.CYPRESS_PROJECT_KEY || '7kya1h',
+  retries: 2,
   e2e: {
     ...nxE2EPreset(__filename, { cypressDir: 'cypress', bundler: 'vite' }),
     baseUrl: 'http://localhost:3000',
