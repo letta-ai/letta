@@ -35,6 +35,13 @@
     "skip": "Skip",
     "submit": "Start using Letta"
   },
+  "chat": {
+    "sendingMessage": "Sending message...",
+    "role": {
+      "user": "User"
+    },
+    "hasFailedToSendMessage": "Failed to send message, please try again or contact the person that has shared this chat with you."
+  },
   "components/DashboardLikeLayout/DashboardNavigation": {
     "back": "Back",
     "nav": {

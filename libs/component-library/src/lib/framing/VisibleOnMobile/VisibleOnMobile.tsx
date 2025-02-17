@@ -15,11 +15,11 @@ export function VisibleOnMobile(props: VisibleOnMobileProps) {
   const [debouncedWidth] = useDebouncedValue(width, 100);
 
   if (checkWithJs) {
-    if (debouncedWidth > 640) {
-      return;
+    if (debouncedWidth < 640) {
+      return props.children;
     }
 
-    return props.children;
+    return null;
   }
 
   return (

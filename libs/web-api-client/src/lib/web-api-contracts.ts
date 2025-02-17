@@ -61,6 +61,10 @@ import {
   rateLimitsContracts,
 } from './public/rateLimitsContracts';
 import { costsContract, costsQueryKeys } from './public/costsContract';
+import {
+  sharedAgentChatQueryClientKeys,
+  sharedAgentChatsContracts,
+} from './public/sharedAgentChatsContracts';
 
 export const contracts = {
   user: userContract,
@@ -77,6 +81,7 @@ export const contracts = {
   starterKits: starterKitsContracts,
   costs: costsContract,
   rateLimits: rateLimitsContracts,
+  sharedAgentChats: sharedAgentChatsContracts,
   admin: {
     usage: adminUsageContracts,
     toolMetadata: adminToolMetadataContracts,
@@ -102,6 +107,7 @@ export const queryClientKeys = {
   usage: usageQueryKeys,
   toolMetadata: toolMetadataQueryClientKeys,
   rateLimits: rateLimitQueryClientKeys,
+  sharedAgentChats: sharedAgentChatQueryClientKeys,
   admin: {
     usage: adminUsageQueryKeys,
     users: adminUsersQueryClientKeys,
@@ -131,3 +137,4 @@ export type * from './admin/adminModelsContracts';
 export type * from './admin/flushLayoutsContracts';
 export * from './public/rateLimitsContracts';
 export * from './public/costsContract';
+export * from './public/sharedAgentChatsContracts';

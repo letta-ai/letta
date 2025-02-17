@@ -19,6 +19,7 @@ const nonCloudWhitelist = [
   new RegExp('/api/user/self(.+)?'),
   new RegExp('/api/development-servers(.+)?'),
   new RegExp('/api/feature-flags(.+)?'),
+  new RegExp('/api/chat(.+)?'),
 ];
 
 const publicApis = [

@@ -36,6 +36,7 @@ export const organizations = pgTable('organizations', {
     .default(sql`gen_random_uuid()`),
   name: text('name').notNull(),
   lettaAgentsId: text('letta_agents_id').notNull().unique(),
+  lettaServiceAccountId: text('letta_service_account_id'),
   isAdmin: boolean('is_admin').notNull().default(false),
   enabledCloudAt: timestamp('enabled_cloud_at'),
   createdAt: timestamp('created_at').notNull().defaultNow(),
@@ -46,14 +47,17 @@ export const organizations = pgTable('organizations', {
     .$onUpdate(() => new Date()),
 });
 
-export const orgRelationsTable = relations(organizations, ({ many }) => ({
+export const orgRelationsTable = relations(organizations, ({ many, one }) => ({
   apiKeys: many(lettaAPIKeys),
   projects: many(projects),
   testingAgents: many(agentTemplates),
   sourceAgents: many(deployedAgentTemplates),
   deployedAgents: many(deployedAgents),
   organizationUsers: many(organizationUsers),
-  organizationPreferences: many(organizationPreferences),
+  organizationPreferences: one(organizationPreferences, {
+    fields: [organizations.id],
+    references: [organizationPreferences.organizationId],
+  }),
   organizationInvitedUsers: many(organizationInvitedUsers),
   organizationDevelopmentServers: many(developmentServers),
   organizationVerifiedDomains: many(organizationVerifiedDomains),
@@ -971,6 +975,45 @@ export const organizationInviteRulesRelations = relations(
     domain: one(organizationVerifiedDomains, {
       fields: [organizationInviteRules.verifiedDomain],
       references: [organizationVerifiedDomains.id],
+    }),
+  }),
+);
+
+export const chatAccessEnum = pgEnum('chat_access', [
+  'restricted',
+  'organization',
+  'logged-in',
+  'everyone',
+]);
+
+export const sharedAgentChatConfigurations = pgTable(
+  'shared_agent_chat_configurations',
+  {
+    organizationId: text('organization_id')
+      .notNull()
+      .references(() => organizations.id, { onDelete: 'cascade' })
+      .notNull(),
+    agentId: text('agent_id').notNull().unique().primaryKey(),
+    projectId: text('project_id')
+      .notNull()
+      .references(() => projects.id, {
+        onDelete: 'cascade',
+      }),
+    accessLevel: chatAccessEnum('access_level').notNull(),
+    chatId: text('access_url').notNull().unique(),
+  },
+);
+
+export const sharedAgentChatConfigurationsRelations = relations(
+  sharedAgentChatConfigurations,
+  ({ one }) => ({
+    organization: one(organizations, {
+      fields: [sharedAgentChatConfigurations.organizationId],
+      references: [organizations.id],
+    }),
+    project: one(projects, {
+      fields: [sharedAgentChatConfigurations.projectId],
+      references: [projects.id],
     }),
   }),
 );

@@ -66,6 +66,7 @@ import type { MessagesDisplayMode } from '../Messages/Messages';
 import { useCurrentAPIHostConfig } from '@letta-cloud/helpful-client-utils';
 import { AgentVariablesModal } from './AgentVariablesModal/AgentVariablesModal';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { ShareAgentDialog } from './ShareAgentDialog/ShareAgentDialog';
 
 const isSendingMessageAtom = atom(false);
 
@@ -88,7 +89,10 @@ function errorHasResponseAndStatus(
   return Object.prototype.hasOwnProperty.call(e, 'response');
 }
 
-function useSendMessage(agentId: string, options: UseSendMessageOptions = {}) {
+export function useSendMessage(
+  agentId: string,
+  options: UseSendMessageOptions = {},
+) {
   const [isPending, setIsPending] = useAtom(isSendingMessageAtom);
   const abortController = useRef<AbortController>(undefined);
   const queryClient = useQueryClient();
@@ -153,6 +157,7 @@ function useSendMessage(agentId: string, options: UseSendMessageOptions = {}) {
           disableRetry: true,
           keepalive: false,
           headers: {
+            'X-SOURCE-CLIENT': window.location.pathname,
             'Content-Type': 'application/json',
             Accept: 'text/event-stream',
             ...(password
@@ -575,6 +580,7 @@ function AgentFlushButton() {
 
 function AgentSimulatorOptionsMenu() {
   const t = useTranslations('ADE/AgentSimulator');
+  const { isLocal, isTemplate } = useCurrentAgentMetaData();
 
   return (
     <>
@@ -592,6 +598,7 @@ function AgentSimulatorOptionsMenu() {
         }
       >
         <AgentResetMessagesDialog />
+        {!isLocal && !isTemplate && <ShareAgentDialog />}
       </DropdownMenu>
     </>
   );

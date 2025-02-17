@@ -562,6 +562,38 @@
     }
   },
   "ADE/AgentSimulator": {
+    "ShareAgentDialog": {
+      "title": "Share agent chat",
+      "loading": "Loading share settings",
+      "trigger": "Share agent chat",
+      "description": "Share your agent with others by providing them with a link to this chat",
+      "chatId": "Access URL",
+      "copyLink": "Copy link",
+      "close": "Close",
+      "success": "Successfully updated share settings",
+      "error": "There was an error sharing this agent, please try again or contact support.",
+      "generalAccess": {
+        "title": "Access level",
+        "options": {
+          "everyone": {
+            "label": "Everyone",
+            "description": "Anyone with the link can access the agent"
+          },
+          "organization": {
+            "label": "Organization",
+            "description": "Only people in your organization can access the agent"
+          },
+          "loggedIn": {
+            "label": "Logged in",
+            "description": "Only people logged in to Letta can access the agent"
+          },
+          "restricted": {
+            "label": "Restricted",
+            "description": "Only you can access the agent"
+          }
+        }
+      }
+    },
     "loadingMessages": "Preparing agent",
     "role": {
       "user": "User",

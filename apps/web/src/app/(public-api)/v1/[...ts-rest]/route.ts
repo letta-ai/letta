@@ -4,6 +4,7 @@ import {
   TsRestHttpError,
   TsRestResponse,
 } from '@ts-rest/serverless/next';
+import type { TsRestRequest } from '@ts-rest/serverless/next';
 import { getUser, verifyAndReturnAPIKeyDetails } from '$web/server/auth';
 import type { RequestMiddlewareType } from '$web/sdk/shared';
 import { isErrorResponse } from '@ts-rest/core';
@@ -14,6 +15,51 @@ import { sdkContracts } from '@letta-cloud/letta-agents-api';
 import { getAPIStabilityTestingUser } from '$web/server/lib/getAPIStabilityTestingUser/getAPIStabilityTestingUser';
 import { getPermissionForSDKPath } from '$web/server/lib/getPermissionForSDKPath/getPermissionForSDKPath';
 import type { MethodType } from '$web/server/lib/getPermissionForSDKPath/getPermissionForSDKPath';
+import { getSharedChatConfigurationIfUserHasAccess } from '$web/server/lib/getSharedChatConfigurationIfUserHasAccess/getSharedChatConfigurationIfUserHasAccess';
+import { getOrganizationLettaServiceAccountId } from '$web/server/lib/getOrganizationLettaServiceAccountId/getOrganizationLettaServiceAccountId';
+
+const agentUrlRegex = new RegExp('/agents/([A-Za-z0-9-]+)/');
+
+async function handleChatMiddleware(
+  req: RequestMiddlewareType & TsRestRequest,
+) {
+  const path = req.headers.get('X-SOURCE-CLIENT');
+
+  if (!(path?.startsWith('/chat') && agentUrlRegex.test(req.url))) {
+    return false;
+  }
+
+  // get agentId from path
+  const agentId = agentUrlRegex.exec(req.url)?.[1] || '';
+
+  if (!agentId) {
+    return false;
+  }
+
+  const canAccess = await getSharedChatConfigurationIfUserHasAccess({
+    agentId,
+    organizationId: req.organizationId,
+    userId: req.userId,
+  });
+
+  if (!canAccess) {
+    return false;
+  }
+
+  const serviceAccount = await getOrganizationLettaServiceAccountId(
+    canAccess.organizationId,
+  );
+
+  if (!serviceAccount) {
+    return false;
+  }
+
+  req.lettaAgentsUserId = serviceAccount;
+  req.organizationId = canAccess.organizationId;
+  req.userId = '';
+
+  return true;
+}
 
 const handler = createNextHandler(sdkContracts, sdkRouter, {
   basePath: '',
@@ -61,6 +107,15 @@ const handler = createNextHandler(sdkContracts, sdkRouter, {
       } else {
         const user = await getUser();
 
+        middlewareData.source = 'web';
+        middlewareData.organizationId = user?.activeOrganizationId || '';
+        middlewareData.userId = user?.id || '';
+        middlewareData.lettaAgentsUserId = user?.lettaAgentsId || '';
+
+        if (await handleChatMiddleware(req)) {
+          return;
+        }
+
         if (!user?.hasCloudAccess) {
           return new Response(JSON.stringify({ message: 'Unauthorized' }), {
             status: 401,
@@ -83,11 +138,6 @@ const handler = createNextHandler(sdkContracts, sdkRouter, {
             },
           });
         }
-
-        middlewareData.source = 'web';
-        middlewareData.organizationId = user?.activeOrganizationId || '';
-        middlewareData.userId = user?.id || '';
-        middlewareData.lettaAgentsUserId = user?.lettaAgentsId || '';
       }
 
       if (!middlewareData.userId || !middlewareData.organizationId) {

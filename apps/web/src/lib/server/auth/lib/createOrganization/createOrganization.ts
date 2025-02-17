@@ -30,6 +30,8 @@ export async function createOrganization(args: CreateOrganizationArgs) {
     throw new Error('Failed to create organization from Letta Agents Service');
   }
 
+  let lettaServiceAccountId = '';
+
   try {
     const account = await AdminService.createUser({
       requestBody: {
@@ -43,6 +45,8 @@ export async function createOrganization(args: CreateOrganizationArgs) {
         'Failed to create service account from Letta Agents Service',
       );
     }
+
+    lettaServiceAccountId = account.id;
 
     await ToolsService.addBaseTools(
       {
@@ -65,6 +69,7 @@ export async function createOrganization(args: CreateOrganizationArgs) {
     .values({
       name,
       lettaAgentsId: lettaAgentsOrganization.id,
+      lettaServiceAccountId,
       enabledCloudAt: enableCloud ? new Date() : null,
     })
     .returning({ organizationId: organizations.id });

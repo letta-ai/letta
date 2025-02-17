@@ -21,10 +21,13 @@ export function useCurrentAgentMetaData(): UseCurrentAgentMetaDataResponse {
   const pathname = usePathname();
   const { agentId: preAgentId, templateName } = useParams<{
     agentId: string;
+
     templateName: string;
   }>();
 
   let agentId = preAgentId;
+
+  const isChatPage = pathname.startsWith('/chat');
 
   const isLocal =
     pathname.startsWith('/development-servers') ||
@@ -39,6 +42,16 @@ export function useCurrentAgentMetaData(): UseCurrentAgentMetaDataResponse {
       enabled: isLocal,
     },
   );
+
+  if (isChatPage) {
+    return {
+      agentId: agentId,
+      agentName: '',
+      isTemplate: false,
+      isLocal: false,
+      isFromTemplate: false,
+    };
+  }
 
   if (isLocal) {
     return {

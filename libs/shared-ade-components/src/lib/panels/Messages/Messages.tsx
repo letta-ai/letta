@@ -125,9 +125,7 @@ function MessageGroup({ group }: MessageGroupType) {
   }, [name]);
 
   return (
-    <HStack
-      data-testid="message-group"
-      gap="medium">
+    <HStack data-testid="message-group" gap="medium">
       <IconAvatar
         textColor={textColor}
         backgroundColor={backgroundColor}
@@ -228,6 +226,7 @@ export function Messages(props: MessagesProps) {
       const res = (await getMessages({
         url: developmentServerConfig?.url,
         headers: {
+          'X-SOURCE-CLIENT': window.location.pathname,
           ...(developmentServerConfig?.password
             ? {
                 Authorization: `Bearer ${developmentServerConfig.password}`,
