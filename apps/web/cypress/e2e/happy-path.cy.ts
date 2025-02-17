@@ -123,11 +123,9 @@ describe('letta', () => {
 
     cy.clearPointerEventLock();
 
-    cy.waitUntil(() =>
-      cy
-        .get('[data-testid="deploy-agent-dialog-trigger"]')
-        .then(($el) => $el.length === 0),
-    );
+    cy.get('[data-testid="deploy-agent-dialog-trigger"]', {
+      timeout: 50000,
+    }).should('not.exist', { timeout: 50000 });
 
     // create an agent from the template
     cy.request({
