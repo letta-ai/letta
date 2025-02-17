@@ -1,4 +1,5 @@
 import '@testing-library/cypress/add-commands';
+import 'cypress-wait-until';
 
 Cypress.Commands.add('googleLogin', () => {
   cy.log('Logging in to Google');
@@ -40,7 +41,6 @@ Cypress.Commands.add('clearPointerEventLock', () => {
   cy.get('body').invoke('css', 'cursor', 'auto');
   cy.get('body').invoke('css', 'pointer-events', 'auto');
 });
-
 
 Cypress.Commands.add('grantAdminAccess', () => {
   cy.request({

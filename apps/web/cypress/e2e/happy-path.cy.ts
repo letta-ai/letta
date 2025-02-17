@@ -123,6 +123,12 @@ describe('letta', () => {
 
     cy.clearPointerEventLock();
 
+    cy.waitUntil(() =>
+      cy
+        .findAllByTestId('deploy-agent-dialog-trigger')
+        .then(($el) => $el.length === 0),
+    );
+
     // create an agent from the template
     cy.request({
       method: 'POST',
