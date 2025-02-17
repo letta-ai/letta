@@ -3022,7 +3022,9 @@ export const $CreateAgentRequest = {
         },
       ],
       title: 'Project',
-      description: 'The project slug that the agent will be associated with.',
+      description:
+        'Deprecated: Project should now be passed via the project-slug header instead of in the request body. If using the sdk, this can be done via the new project_slug field below.',
+      deprecated: true,
     },
     tool_exec_environment_variables: {
       anyOf: [

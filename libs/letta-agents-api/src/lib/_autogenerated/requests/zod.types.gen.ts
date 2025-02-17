@@ -3917,6 +3917,9 @@ export const post_Create_agent = {
       user_id: z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
+      'project-slug': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
     }),
     body: CreateAgentRequest,
   }),

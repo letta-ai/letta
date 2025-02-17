@@ -143,7 +143,11 @@ class CreateAgent(BaseModel, validate_assignment=True):  #
     embedding_chunk_size: Optional[int] = Field(DEFAULT_EMBEDDING_CHUNK_SIZE, description="The embedding chunk size used by the agent.")
     from_template: Optional[str] = Field(None, description="The template id used to configure the agent")
     template: bool = Field(False, description="Whether the agent is a template")
-    project: Optional[str] = Field(None, description="The project slug that the agent will be associated with.")
+    project: Optional[str] = Field(
+        None,
+        deprecated=True,
+        description="Deprecated: Project should now be passed via the project-slug header instead of in the request body. If using the sdk, this can be done via the new project_slug field below.",
+    )
     tool_exec_environment_variables: Optional[Dict[str, str]] = Field(
         None, description="The environment variables for tool execution specific to this agent."
     )

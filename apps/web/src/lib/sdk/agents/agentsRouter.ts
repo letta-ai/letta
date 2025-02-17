@@ -71,6 +71,8 @@ async function createAgent(
     ...agent
   } = req.body;
 
+  const projectSlug = context.request.projectSlug ?? project;
+
   if (template) {
     return {
       status: 400,
@@ -81,7 +83,7 @@ async function createAgent(
     };
   }
 
-  if (project && project_id) {
+  if (projectSlug && project_id) {
     return {
       status: 400,
       body: {
@@ -95,11 +97,11 @@ async function createAgent(
 
   if (!projectId) {
     // if no project_id is specified, lets check for project, which uses the project slug
-    if (project) {
+    if (projectSlug) {
       const foundProject = await db.query.projects.findFirst({
         where: and(
           eq(projects.organizationId, organizationId),
-          eq(projects.slug, project),
+          eq(projects.slug, projectSlug),
           isNull(projects.deletedAt),
         ),
       });
@@ -108,7 +110,7 @@ async function createAgent(
         return {
           status: 404,
           body: {
-            message: `Project ${project} not found`,
+            message: `Project ${projectSlug} not found`,
           },
         };
       }
@@ -142,7 +144,7 @@ async function createAgent(
   }
 
   // logic for creating agents from templates
-  if (project_id || project) {
+  if (project_id || projectSlug) {
     return {
       status: 400,
       body: {
@@ -156,7 +158,7 @@ async function createAgent(
     await sdkRouter.templates.createAgentsFromTemplate(
       {
         params: {
-          project: project || '',
+          project: projectSlug || '',
           template_version: from_template,
         },
         body: {

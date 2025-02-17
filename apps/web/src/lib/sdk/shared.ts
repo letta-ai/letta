@@ -3,6 +3,7 @@ export interface RequestMiddlewareType {
   userId: string;
   lettaAgentsUserId: string;
   source: 'api' | 'web';
+  projectSlug?: string;
 }
 
 export interface SDKContext {

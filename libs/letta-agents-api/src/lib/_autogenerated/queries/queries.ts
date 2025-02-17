@@ -1932,6 +1932,7 @@ export const useSourcesServiceUploadFileToSource = <
  * @param data The data for the request.
  * @param data.requestBody
  * @param data.userId
+ * @param data.projectSlug
  * @returns AgentState Successful Response
  * @throws ApiError
  */
@@ -1945,6 +1946,7 @@ export const useAgentsServiceCreateAgent = <
       TData,
       TError,
       {
+        projectSlug?: string;
         requestBody: CreateAgentRequest;
         userId?: string;
       },
@@ -1957,13 +1959,15 @@ export const useAgentsServiceCreateAgent = <
     TData,
     TError,
     {
+      projectSlug?: string;
       requestBody: CreateAgentRequest;
       userId?: string;
     },
     TContext
   >({
-    mutationFn: ({ requestBody, userId }) =>
+    mutationFn: ({ projectSlug, requestBody, userId }) =>
       AgentsService.createAgent({
+        projectSlug,
         requestBody,
         userId,
       }) as unknown as Promise<TData>,

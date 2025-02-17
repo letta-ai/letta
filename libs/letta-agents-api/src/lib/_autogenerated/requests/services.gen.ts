@@ -800,6 +800,7 @@ export class AgentsService {
    * @param data The data for the request.
    * @param data.requestBody
    * @param data.userId
+   * @param data.projectSlug
    * @returns AgentState Successful Response
    * @throws ApiError
    */

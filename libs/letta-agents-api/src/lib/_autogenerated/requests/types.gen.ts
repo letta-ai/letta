@@ -987,7 +987,8 @@ export type CreateAgentRequest = {
    */
   template?: boolean;
   /**
-   * The project slug that the agent will be associated with.
+   * Deprecated: Project should now be passed via the project-slug header instead of in the request body. If using the sdk, this can be done via the new project_slug field below.
+   * @deprecated
    */
   project?: string | null;
   /**
@@ -2929,6 +2930,7 @@ export type ListAgentsData = {
 export type ListAgentsResponse = Array<AgentState>;
 
 export type CreateAgentData = {
+  projectSlug?: string | null;
   requestBody: CreateAgentRequest;
   userId?: string | null;
 };
