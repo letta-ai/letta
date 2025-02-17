@@ -1,9 +1,9 @@
-import { useADEUserContext } from '../../UserContext/UserContext';
+import { useADEAppContext } from '../../AppContext/AppContext';
 import { useMemo } from 'react';
 import type { ApplicationServices } from '@letta-cloud/rbac';
 
 export function useADEPermissions(permission: ApplicationServices) {
-  const user = useADEUserContext();
+  const { user } = useADEAppContext();
 
   const userPermissionsSet = useMemo(() => {
     return new Set(user?.permissions ?? []);

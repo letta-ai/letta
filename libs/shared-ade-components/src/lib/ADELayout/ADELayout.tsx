@@ -36,8 +36,8 @@ import {
   ContextWindowPanel,
   ContextWindowSimulator,
 } from '../panels/ContextEditorPanel/ContextEditorPanel';
-import { UserProvider } from '../UserContext/UserContext';
-import type { UserContextData } from '../UserContext/UserContext';
+import { AppContextProvider } from '../AppContext/AppContext';
+import type { UserContextData } from '../AppContext/AppContext';
 
 import {
   EditMemory,
@@ -51,6 +51,7 @@ import React, { useMemo, useState } from 'react';
 
 interface ADELayoutProps {
   user?: UserContextData['user'];
+  projectId?: string;
 }
 
 function useADETitleTranslations() {
@@ -404,10 +405,10 @@ function MobileLayout() {
 }
 
 export function ADELayout(props: ADELayoutProps) {
-  const { user } = props;
+  const { user, projectId } = props;
 
   return (
-    <UserProvider user={user}>
+    <AppContextProvider user={user} projectId={projectId}>
       <Frame position="relative" fullWidth fullHeight zIndex="rightAboveZero">
         <HiddenOnMobile checkWithJs>
           <DesktopLayout />
@@ -426,6 +427,6 @@ export function ADELayout(props: ADELayoutProps) {
       >
         <Logo size="large" color="steel" />
       </VStack>
-    </UserProvider>
+    </AppContextProvider>
   );
 }

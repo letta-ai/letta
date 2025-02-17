@@ -1,6 +1,10 @@
 import type { ServerInferRequest, ServerInferResponses } from '@ts-rest/core';
 import type { contracts } from '@letta-cloud/web-api-client';
-import { db, sharedAgentChatConfigurations } from '@letta-cloud/database';
+import {
+  db,
+  projects,
+  sharedAgentChatConfigurations,
+} from '@letta-cloud/database';
 import { eq } from 'drizzle-orm';
 import {
   getUser,
@@ -31,6 +35,20 @@ async function getSharedChatConfiguration(
       status: 403,
       body: {
         message: 'You do not have permission to access this resource',
+      },
+    };
+  }
+
+  // check if projectId is valid
+  const project = await db.query.projects.findFirst({
+    where: eq(projects.id, projectId),
+  });
+
+  if (!project) {
+    return {
+      status: 404,
+      body: {
+        message: 'Project not found',
       },
     };
   }

@@ -557,6 +557,7 @@ function AgentPageError() {
 export function AgentPage() {
   const { agentName, agentId, isTemplate, isLocal } = useCurrentAgentMetaData();
 
+  const { id: projectId } = useCurrentProject();
   const t = useTranslations(
     'projects/(projectSlug)/agents/(agentId)/AgentPage',
   );
@@ -665,7 +666,7 @@ export function AgentPage() {
               )}
               <Frame overflow="hidden" position="relative" fullWidth fullHeight>
                 <HiddenOnMobile checkWithJs>
-                  <ADELayout user={user} />
+                  <ADELayout user={user} projectId={projectId} />
                 </HiddenOnMobile>
               </Frame>
             </VStack>
@@ -689,7 +690,7 @@ export function AgentPage() {
           >
             <VStack fullHeight fullWidth flex>
               <VisibleOnMobile checkWithJs>
-                <ADELayout user={user} />
+                <ADELayout user={user} projectId={projectId} />
               </VisibleOnMobile>
             </VStack>
           </ADEPage>

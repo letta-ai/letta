@@ -27,12 +27,7 @@ import {
 import { useDebouncedCallback } from '@mantine/hooks';
 import { getShareChatUrl } from '@letta-cloud/generic-utils';
 import { useCurrentAgent } from '../../../hooks';
-
-function useCurrentProject() {
-  return {
-    id: window.location.pathname.split('/')[1] || '',
-  };
-}
+import { useADEAppContext } from '../../../AppContext/AppContext';
 
 interface ShareAgentPermissionsDropdownProps {
   defaultValue: string;
@@ -45,7 +40,7 @@ function ShareAgentPermissionsDropdown(
   const t = useTranslations('ADE/AgentSimulator');
   const queryClient = useQueryClient();
 
-  const { id: projectId } = useCurrentProject();
+  const { projectId } = useADEAppContext();
   const { id: agentId } = useCurrentAgent();
   const { mutate: updateSharedChatConfiguration } =
     webApi.sharedAgentChats.updateSharedChatConfiguration.useMutation({
@@ -151,7 +146,7 @@ function ShareAgentPermissionsDropdown(
 
 export function ShareAgentDialog() {
   const { id: agentId } = useCurrentAgent();
-  const { id: projectId } = useCurrentProject();
+  const { projectId } = useADEAppContext();
 
   const t = useTranslations('ADE/AgentSimulator');
 
