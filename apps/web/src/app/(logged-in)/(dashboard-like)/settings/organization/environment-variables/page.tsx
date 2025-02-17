@@ -35,6 +35,8 @@ import { z } from 'zod';
 import { useQueryClient } from '@tanstack/react-query';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useErrorTranslationMessage } from '@letta-cloud/helpful-client-utils';
+import { useUserHasPermission } from '$web/client/hooks';
+import { ApplicationServices } from '@letta-cloud/rbac';
 
 interface DeleteEnvironmentVariableDialogProps {
   environmentVariableKey: string;
@@ -249,6 +251,9 @@ function UpdateEnvironmentVariableDialog(
 }
 
 function CreateEnvironmentVariableDialog() {
+  const [hasPermission] = useUserHasPermission(
+    ApplicationServices.UPDATE_ORGANIZATION_ENVIRONMENT_VARIABLES,
+  );
   const queryClient = useQueryClient();
   const [open, setOpen] = useState(false);
   const t = useTranslations('organization/environment-variables');
@@ -332,6 +337,10 @@ function CreateEnvironmentVariableDialog() {
     },
     [form, mutate, queryClient, reset],
   );
+
+  if (!hasPermission) {
+    return null;
+  }
 
   return (
     <FormProvider {...form}>
@@ -442,6 +451,9 @@ function EnvironmentVariablesPage() {
         query: {},
       },
     });
+  const [hasPermission] = useUserHasPermission(
+    ApplicationServices.UPDATE_ORGANIZATION_ENVIRONMENT_VARIABLES,
+  );
 
   const environmentVariablesColumns: Array<
     ColumnDef<PublicEnvironmentVariable>
@@ -478,6 +490,10 @@ function EnvironmentVariablesPage() {
         },
         id: 'actions',
         cell: ({ cell }) => {
+          if (!hasPermission) {
+            return null;
+          }
+
           return (
             <DropdownMenu
               trigger={
@@ -504,7 +520,7 @@ function EnvironmentVariablesPage() {
         },
       },
     ],
-    [t],
+    [t, hasPermission],
   );
 
   const environmentVariables = useMemo(() => {
