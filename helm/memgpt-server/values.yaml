@@ -130,7 +130,7 @@ otelCollector:
   enabled: true
   replicas: 1
   clickhouse:
-    endpoint: "http://10.128.0.31:8123"
+    endpoint: "http://ch-logs.us-central1-b.c.memgpt-428419.internal:8123"
     database: "otel"
     username: "default"
   resources:
