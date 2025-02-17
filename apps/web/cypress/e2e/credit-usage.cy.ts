@@ -98,6 +98,10 @@ describe('credit usage', () => {
       force: true,
     });
 
+    // bruh
+    // eslint-disable-next-line cypress/no-unnecessary-waiting
+    cy.wait(1000);
+
     cy.findByTestId('chat-simulator-send').click({
       force: true,
     });

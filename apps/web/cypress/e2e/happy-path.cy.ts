@@ -70,6 +70,7 @@ describe('letta', () => {
     cy.findByTestId('simulated-memory:human', { timeout: 50000 }).should(
       'contain.value',
       'Shubham',
+      { timeout: 50000 },
     );
 
     cy.findByTestId('tab:datasources').click();
