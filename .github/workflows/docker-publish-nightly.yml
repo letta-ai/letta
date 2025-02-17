@@ -23,5 +23,6 @@ jobs:
     - uses: actions/checkout@v3
     - name: Build and push the Docker image (letta)
       run: |
+        cd apps/core
         docker build . --file Dockerfile --tag letta/letta:nightly
         docker push letta/letta:nightly
