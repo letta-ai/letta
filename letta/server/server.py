@@ -48,6 +48,7 @@ from letta.schemas.providers import (
     AnthropicBedrockProvider,
     AnthropicProvider,
     AzureProvider,
+    DeepSeekProvider,
     GoogleAIProvider,
     GoogleVertexProvider,
     GroqProvider,
@@ -305,6 +306,8 @@ class SyncServer(Server):
                 else model_settings.lmstudio_base_url + "/v1"
             )
             self._enabled_providers.append(LMStudioOpenAIProvider(base_url=lmstudio_url))
+        if model_settings.deepseek_api_key:
+            self._enabled_providers.append(DeepSeekProvider(api_key=model_settings.deepseek_api_key))
 
     def load_agent(self, agent_id: str, actor: User, interface: Union[AgentInterface, None] = None) -> Agent:
         """Updated method to load agents from persisted storage"""
@@ -1182,11 +1185,12 @@ class SyncServer(Server):
             # Disable token streaming if not OpenAI or Anthropic
             # TODO: cleanup this logic
             llm_config = letta_agent.agent_state.llm_config
+            supports_token_streaming = ["openai", "anthropic", "deepseek"]
             if stream_tokens and (
-                llm_config.model_endpoint_type not in ["openai", "anthropic"] or "inference.memgpt.ai" in llm_config.model_endpoint
+                llm_config.model_endpoint_type not in supports_token_streaming or "inference.memgpt.ai" in llm_config.model_endpoint
             ):
                 warnings.warn(
-                    f"Token streaming is only supported for models with type 'openai' or 'anthropic' in the model_endpoint: agent has endpoint type {llm_config.model_endpoint_type} and {llm_config.model_endpoint}. Setting stream_tokens to False."
+                    f"Token streaming is only supported for models with type {' or '.join(supports_token_streaming)} in the model_endpoint: agent has endpoint type {llm_config.model_endpoint_type} and {llm_config.model_endpoint}. Setting stream_tokens to False."
                 )
                 stream_tokens = False
 

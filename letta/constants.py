@@ -86,6 +86,8 @@ NON_USER_MSG_PREFIX = "[This is an automated system message hidden from the user
 # The max amount of tokens supported by the underlying model (eg 8k for gpt-4 and Mistral 7B)
 LLM_MAX_TOKENS = {
     "DEFAULT": 8192,
+    "deepseek-chat": 64000,
+    "deepseek-reasoner": 64000,
     ## OpenAI models: https://platform.openai.com/docs/models/overview
     # "o1-preview
     "chatgpt-4o-latest": 128000,

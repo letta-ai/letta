@@ -4,6 +4,7 @@ from letta.schemas.providers import (
     AnthropicBedrockProvider,
     AnthropicProvider,
     AzureProvider,
+    DeepSeekProvider,
     GoogleAIProvider,
     GoogleVertexProvider,
     GroqProvider,
@@ -19,6 +20,14 @@ def test_openai():
     api_key = os.getenv("OPENAI_API_KEY")
     assert api_key is not None
     provider = OpenAIProvider(api_key=api_key, base_url=model_settings.openai_api_base)
+    models = provider.list_llm_models()
+    print(models)
+
+
+def test_deepseek():
+    api_key = os.getenv("DEEPSEEK_API_KEY")
+    assert api_key is not None
+    provider = DeepSeekProvider(api_key=api_key)
     models = provider.list_llm_models()
     print(models)
 

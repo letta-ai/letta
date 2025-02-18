@@ -60,6 +60,9 @@ class ModelSettings(BaseSettings):
     openai_api_key: Optional[str] = None
     openai_api_base: str = "https://api.openai.com/v1"
 
+    # deepseek
+    deepseek_api_key: Optional[str] = None
+
     # groq
     groq_api_key: Optional[str] = None
 
