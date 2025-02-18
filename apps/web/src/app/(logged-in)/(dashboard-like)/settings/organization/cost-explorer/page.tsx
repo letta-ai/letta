@@ -1,26 +1,224 @@
 'use client';
 import { webApi, webApiQueryKeys } from '@letta-cloud/web-api-client';
-import { useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslations } from '@letta-cloud/translations';
 import { useDebouncedValue } from '@mantine/hooks';
 import type { ColumnDef } from '@tanstack/react-table';
 import type { CostItemType } from '@letta-cloud/web-api-client';
 import {
+  Button,
   DashboardPageLayout,
   DashboardPageSection,
   DataTable,
+  Dialog,
   HStack,
+  InfoIcon,
   LettaCoinIcon,
+  RawInput,
+  Typography,
+  VStack,
+  WarningIcon,
 } from '@letta-cloud/component-library';
+import { ModelSelector, useListLLMBackends } from './ModelSelector';
+import {
+  useCurrencyFormatter,
+  useNumberFormatter,
+} from '@letta-cloud/helpful-client-utils';
+import { creditsToDollars } from '@letta-cloud/generic-utils';
+import { useQueryClient } from '@tanstack/react-query';
+
+function CostSimulator() {
+  const t = useTranslations('organization/costs');
+  const [modelId, setModelId] = useState<string | undefined>(undefined);
+  const [estimatedRequests, setEstimatedRequests] = useState<number>(10);
+  const [estimatedContextWindowSize, setEstimatedContextWindowSize] =
+    useState<number>(8000);
+
+  const [estimatedCost, setEstimatedCost] = useState<
+    number | 'not-supported' | undefined
+  >(undefined);
+  const { data: selectedModel, isLoading } =
+    webApi.costs.getStepCostByModelId.useQuery({
+      queryKey: webApiQueryKeys.costs.getStepCostByModelId(modelId || ''),
+      queryData: {
+        params: {
+          modelId: modelId || '',
+        },
+      },
+      enabled: !!modelId,
+    });
+
+  useEffect(() => {
+    setEstimatedCost(undefined);
+  }, [modelId, estimatedRequests, estimatedContextWindowSize]);
+
+  const handleSimulate = useCallback(async () => {
+    if (!modelId) {
+      return;
+    }
+
+    if (!selectedModel) {
+      return;
+    }
+
+    const contextWindowPriceToUse = Object.entries(selectedModel.body.costMap)
+      .sort(([a], [b]) => parseInt(a, 10) - parseInt(b, 10))
+      .find(
+        ([windowSize]) =>
+          parseInt(windowSize, 10) >= estimatedContextWindowSize,
+      );
+
+    if (!contextWindowPriceToUse) {
+      setEstimatedCost('not-supported');
+      return;
+    }
+
+    const [_, cost] = contextWindowPriceToUse;
+
+    setEstimatedCost(cost * estimatedRequests);
+  }, [modelId, selectedModel, estimatedRequests, estimatedContextWindowSize]);
+
+  const { formatNumber } = useNumberFormatter();
+  const { formatCurrency } = useCurrencyFormatter();
+
+  const parsedEstimatedCost = useMemo(() => {
+    if (estimatedCost === 'not-supported') {
+      return t('CostSimulator.notSupported');
+    }
+
+    return formatNumber(estimatedCost || 0);
+  }, [estimatedCost, t, formatNumber]);
+
+  const parsedEstimatedCash = useMemo(() => {
+    if (estimatedCost === 'not-supported') {
+      return t('CostSimulator.notSupported');
+    }
+
+    return formatCurrency(creditsToDollars(estimatedCost || 0), {
+      maximumFractionDigits: 2,
+      minimumFractionDigits: 2,
+      style: 'currency',
+      currency: 'USD',
+    });
+  }, [estimatedCost, t, formatCurrency]);
+
+  return (
+    <Dialog
+      disableForm
+      title={t('CostSimulator.title')}
+      trigger={<Button color="primary" label={t('CostSimulator.trigger')} />}
+      hideFooter
+      size="large"
+      color="background"
+    >
+      <HStack gap="xlarge" paddingBottom>
+        <VStack gap="form" paddingBottom>
+          <ModelSelector
+            currentModelId={modelId || ''}
+            onSelectModelId={(selectedModel) => {
+              setModelId(selectedModel);
+            }}
+          />
+          <HStack align="end">
+            <RawInput
+              labelVariant="simple"
+              label={t('CostSimulator.estimatedRequests.label')}
+              infoTooltip={{
+                text: t('CostSimulator.estimatedRequests.tooltip'),
+              }}
+              placeholder={t('CostSimulator.estimatedRequests.placeholder')}
+              value={estimatedRequests}
+              fullWidth
+              onChange={(e) => {
+                setEstimatedRequests(parseInt(e.target.value, 10));
+              }}
+            />
+            <RawInput
+              labelVariant="simple"
+              label={t('CostSimulator.estimatedContextWindowSize.label')}
+              placeholder={t(
+                'CostSimulator.estimatedContextWindowSize.placeholder',
+              )}
+              infoTooltip={{
+                text: t('CostSimulator.estimatedContextWindowSize.tooltip'),
+              }}
+              value={estimatedContextWindowSize}
+              fullWidth
+              postIcon={t('CostSimulator.tokens')}
+              onChange={(e) => {
+                setEstimatedContextWindowSize(parseInt(e.target.value, 10));
+              }}
+            />
+          </HStack>
+          <Button
+            fullWidth
+            type="button"
+            disabled={isLoading}
+            color="primary"
+            onClick={handleSimulate}
+            size="large"
+            label={t('CostSimulator.simulate')}
+          />
+        </VStack>
+        <VStack
+          color="background-grey"
+          /* eslint-disable-next-line react/forbid-component-props */
+          className="w-full max-w-[33%]"
+          padding
+          align="start"
+          justify="spaceBetween"
+        >
+          {estimatedCost === 'not-supported' && (
+            <VStack align="center">
+              <WarningIcon size="large" />
+              <Typography bold color="lighter">
+                {t('CostSimulator.notSupportedInfo')}
+              </Typography>
+            </VStack>
+          )}
+          {!estimatedCost && (
+            <VStack align="center">
+              <InfoIcon size="medium" />
+              <Typography bold color="lighter">
+                {t('CostSimulator.defaultInfo')}
+              </Typography>
+            </VStack>
+          )}
+          {typeof estimatedCost === 'number' && (
+            <VStack gap={false}>
+              <Typography bold color="lighter">
+                {t('CostSimulator.estimatedCost')}
+              </Typography>
+              <HStack paddingBottom align="start">
+                <Typography bold variant="heading3" overrideEl="span">
+                  <HStack paddingTop="small" align="center" as="span">
+                    <LettaCoinIcon size="small" />
+                    {parsedEstimatedCost}
+                  </HStack>
+                  <Typography variant="heading6">
+                    {parsedEstimatedCash}
+                  </Typography>
+                </Typography>
+              </HStack>
+            </VStack>
+          )}
+        </VStack>
+      </HStack>
+    </Dialog>
+  );
+}
 
 function CostExplorer() {
   const [search, setSearch] = useState('');
   const [offset, setOffset] = useState(0);
   const [limit, setLimit] = useState<number>();
+  useListLLMBackends();
 
   const t = useTranslations('organization/costs');
 
   const [debouncedSearch] = useDebouncedValue(search, 500);
+
+  const queryClient = useQueryClient();
 
   const { data: costs } = webApi.costs.getStepCosts.useQuery({
     queryKey: webApiQueryKeys.costs.getStepCostsWithSearch({
@@ -37,6 +235,22 @@ function CostExplorer() {
     },
     enabled: !!limit,
   });
+
+  useEffect(() => {
+    if (!costs) {
+      return;
+    }
+
+    costs.body.stepCosts.forEach((cost) => {
+      queryClient.setQueryData(
+        webApiQueryKeys.costs.getStepCostByModelId(cost.modelId),
+        {
+          status: 200,
+          body: cost,
+        },
+      );
+    });
+  }, [costs, queryClient]);
 
   const columns: Array<ColumnDef<CostItemType>> = useMemo(() => {
     if (!costs) {
@@ -66,7 +280,6 @@ function CostExplorer() {
     return [
       ...nextColumns,
       ...windowSizesSorted.map((windowSize) => {
-        console.log(windowSize);
         return {
           id: windowSize.toString(),
           header: t('columns.tokens', { tokens: windowSize }),
@@ -113,6 +326,7 @@ function CostExplorer() {
     <DashboardPageLayout
       title={t('title')}
       encapsulatedFullHeight
+      actions={<CostSimulator />}
       subtitle={t.rich('description', {
         credit: () => <LettaCoinIcon size="small" />,
       })}

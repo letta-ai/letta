@@ -27,11 +27,24 @@ const getStepCostsContract = c.query({
   },
 });
 
+const getStepCostByModelIdContract = c.query({
+  method: 'GET',
+  path: '/costs/:modelId',
+  responses: {
+    200: CostItem,
+  },
+  pathParams: z.object({
+    modelId: z.string(),
+  }),
+});
+
 export const costsContract = c.router({
   getStepCosts: getStepCostsContract,
+  getStepCostByModelId: getStepCostByModelIdContract,
 });
 
 export const costsQueryKeys = {
   getStepCosts: ['getStepCosts'],
   getStepCostsWithSearch: (search: GenericSearch) => ['getStepCosts', search],
+  getStepCostByModelId: (modelId: string) => ['getStepCostByModelId', modelId],
 };

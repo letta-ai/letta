@@ -290,6 +290,27 @@
   },
   "organization/costs": {
     "sameAsPrevious": "Same as previous",
+    "CostSimulator": {
+      "notSupported": "Not supported",
+      "simulate": "Simulate",
+      "title": "Cost simulator",
+      "estimatedCost": "Estimated cost",
+      "credits": "<credit></credit> credits",
+      "defaultInfo": "Enter the information on your right to see the estimated cost of using a model with the given context window size",
+      "trigger": "Cost simulator",
+      "notSupportedInfo": "The estimated context window size is too large for this model, please try a smaller context window size or different model",
+      "estimatedRequests": {
+        "label": "Estimated requests",
+        "tooltip": "The amount of requests you will make to POST /messages, /messages/async /messages/stream or made in the UI",
+        "placeholder": "1000"
+      },
+      "estimatedContextWindowSize": {
+        "tooltip": "The average context window size that's being sent to our models",
+        "label": "Estimated average context window size",
+        "placeholder": "10000"
+      },
+      "tokens": "Tokens"
+    },
     "title": "Cost Explorer",
     "description": "Costs are demarked in credits per request by the context window size. The context window size is the number of tokens in the context window of the agent. If a model is not listed, it means it won't be available for use at this time. All costs are denoted in <credit></credit> credits.",
     "columns": {

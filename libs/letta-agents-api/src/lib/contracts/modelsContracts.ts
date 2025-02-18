@@ -15,6 +15,7 @@ export const ExtendedLLMSchema = LLMConfigSchema.extend({
   isRecommended: z.boolean().optional(),
   tag: z.string().optional(),
   displayName: z.string().optional(),
+  id: z.string().optional(),
 });
 
 const listLLMBackendsContract = c.query({

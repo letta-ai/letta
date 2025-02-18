@@ -40,6 +40,7 @@ async function listLLMBackends(
           ...model.config!,
           ...(extended
             ? {
+                id: model.id,
                 brand: model.brand,
                 context_window:
                   model.defaultContextWindow || model.config!.context_window,
