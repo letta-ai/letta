@@ -24,6 +24,7 @@ data:
         endpoint: {{ .Values.otelCollector.clickhouse.endpoint | quote }}
         database: {{ .Values.otelCollector.clickhouse.database | quote }}
         username: {{ .Values.otelCollector.clickhouse.username | quote }}
+        password: ${CLICKHOUSE_PASSWORD}
         timeout: 10s
 
     service:

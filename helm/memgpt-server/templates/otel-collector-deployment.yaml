@@ -21,6 +21,12 @@ spec:
         image: otel/opentelemetry-collector-contrib:latest
         args:
         - --config=/conf/config.yaml
+        env:
+        - name: CLICKHOUSE_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: {{ include "memgpt-server.fullname" . }}-env-secret
+              key: CLICKHOUSE_PASSWORD
         volumeMounts:
         - name: config
           mountPath: /conf
