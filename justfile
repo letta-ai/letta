@@ -150,6 +150,12 @@ describe-web:
         --set secrets.LETTA_LOAD_DEFAULT_EXTERNAL_TOOLS=True \
         --set otelCollector.clickhouse.password=${CLICKHOUSE_PASSWORD}
 
+# Deploy Grafana
+@deploy-grafana:
+    echo "🚧 Deploying Grafana..."
+    helm upgrade --install grafana {{HELM_CHARTS_DIR}}/grafana \
+        --set grafana.adminPassword=${GRAFANA_ADMIN_PASSWORD} \
+        --set 'grafana.datasources."datasources.yaml".datasources[0].secureJsonData.password'=${CLICKHOUSE_PASSWORD}
 
 # Get migration job logs
 web-migration-logs:
@@ -158,6 +164,10 @@ web-migration-logs:
 core-migration-logs:
     kubectl logs job/{{CORE_HELM_CHART_NAME}}-migration
 
+grafana:
+    echo "🚧 Connecting to Grafana..."
+    echo "View Grafana at http://localhost:3002"
+    kubectl port-forward service/grafana 3002:3002
 
 # starts up cool dev environment
 dev:
