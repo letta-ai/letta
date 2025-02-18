@@ -170,3 +170,5 @@ export * from './lib/core/VerticalDelineatedTextChunker/VerticalDelineatedTextCh
 export * from './lib/reusable/AgentStateViewer/AgentStateViewer';
 
 export { en as componentTranslations };
+
+export * from './lib/core/RadioGroup/RadioGroup';

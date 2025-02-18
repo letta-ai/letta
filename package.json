@@ -72,6 +72,7 @@
     "@radix-ui/react-label": "^2.1.1",
     "@radix-ui/react-popover": "^1.1.4",
     "@radix-ui/react-progress": "^1.1.1",
+    "@radix-ui/react-radio-group": "^1.2.3",
     "@radix-ui/react-slider": "^1.2.2",
     "@radix-ui/react-slot": "^1.1.1",
     "@radix-ui/react-switch": "^1.1.2",
