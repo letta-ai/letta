@@ -1,3 +1,4 @@
+import json
 import random
 import time
 from typing import List, Optional, Union
@@ -13,6 +14,7 @@ from letta.llm_api.anthropic import (
 )
 from letta.llm_api.aws_bedrock import has_valid_aws_credentials
 from letta.llm_api.azure_openai import azure_openai_chat_completions_request
+from letta.llm_api.deepseek import build_deepseek_chat_completions_request, convert_deepseek_response_to_chatcompletion
 from letta.llm_api.google_ai import convert_tools_to_google_ai_format, google_ai_chat_completions_request
 from letta.llm_api.helpers import add_inner_thoughts_to_functions, unpack_all_inner_thoughts_from_kwargs
 from letta.llm_api.openai import (
@@ -30,7 +32,7 @@ from letta.schemas.openai.chat_completion_response import ChatCompletionResponse
 from letta.settings import ModelSettings
 from letta.streaming_interface import AgentChunkStreamingInterface, AgentRefreshStreamingInterface
 
-LLM_API_PROVIDER_OPTIONS = ["openai", "azure", "anthropic", "google_ai", "cohere", "local", "groq"]
+LLM_API_PROVIDER_OPTIONS = ["openai", "azure", "anthropic", "google_ai", "cohere", "local", "groq", "deepseek"]
 
 
 def retry_with_exponential_backoff(
@@ -453,10 +455,62 @@ def create(
             ),
         )
 
+    elif llm_config.model_endpoint_type == "deepseek":
+        if model_settings.deepseek_api_key is None and llm_config.model_endpoint == "":
+            # only is a problem if we are *not* using an openai proxy
+            raise LettaConfigurationError(message="DeepSeek key is missing from letta config file", missing_fields=["deepseek_api_key"])
+
+        data = build_deepseek_chat_completions_request(
+            llm_config,
+            messages,
+            user_id,
+            functions,
+            function_call,
+            use_tool_naming,
+            llm_config.max_tokens,
+        )
+        if stream:  # Client requested token streaming
+            data.stream = True
+            assert isinstance(stream_interface, AgentChunkStreamingInterface) or isinstance(
+                stream_interface, AgentRefreshStreamingInterface
+            ), type(stream_interface)
+            response = openai_chat_completions_process_stream(
+                url=llm_config.model_endpoint,
+                api_key=model_settings.deepseek_api_key,
+                chat_completion_request=data,
+                stream_interface=stream_interface,
+            )
+        else:  # Client did not request token streaming (expect a blocking backend response)
+            data.stream = False
+            if isinstance(stream_interface, AgentChunkStreamingInterface):
+                stream_interface.stream_start()
+            try:
+                response = openai_chat_completions_request(
+                    url=llm_config.model_endpoint,
+                    api_key=model_settings.deepseek_api_key,
+                    chat_completion_request=data,
+                )
+            finally:
+                if isinstance(stream_interface, AgentChunkStreamingInterface):
+                    stream_interface.stream_end()
+        """
+        if llm_config.put_inner_thoughts_in_kwargs:
+            response = unpack_all_inner_thoughts_from_kwargs(response=response, inner_thoughts_key=INNER_THOUGHTS_KWARG)
+        """
+        response = convert_deepseek_response_to_chatcompletion(response)
+        return response
+
     # local model
     else:
         if stream:
             raise NotImplementedError(f"Streaming not yet implemented for {llm_config.model_endpoint_type}")
+
+        if "DeepSeek-R1".lower() in llm_config.model.lower():  # TODO: move this to the llm_config.
+            messages[0].content[0].text += f"<available functions> {''.join(json.dumps(f) for f in functions)} </available functions>"
+            messages[0].content[
+                0
+            ].text += f'Select best function to call simply by responding with a single json block with the keys "function" and "params". Use double quotes around the arguments.'
+
         return get_chat_completion(
             model=llm_config.model,
             messages=messages,

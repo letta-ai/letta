@@ -4463,13 +4463,15 @@
                                   "webui-legacy",
                                   "lmstudio",
                                   "lmstudio-legacy",
+                                  "lmstudio-chatcompletions",
                                   "llamacpp",
                                   "koboldcpp",
                                   "vllm",
                                   "hugging-face",
                                   "mistral",
                                   "together",
-                                  "bedrock"
+                                  "bedrock",
+                                  "deepseek"
                                 ]
                               },
                               "model_endpoint": {
@@ -7147,13 +7149,15 @@
                                   "webui-legacy",
                                   "lmstudio",
                                   "lmstudio-legacy",
+                                  "lmstudio-chatcompletions",
                                   "llamacpp",
                                   "koboldcpp",
                                   "vllm",
                                   "hugging-face",
                                   "mistral",
                                   "together",
-                                  "bedrock"
+                                  "bedrock",
+                                  "deepseek"
                                 ]
                               },
                               "model_endpoint": {
@@ -12643,13 +12647,15 @@
               "webui-legacy",
               "lmstudio",
               "lmstudio-legacy",
+              "lmstudio-chatcompletions",
               "llamacpp",
               "koboldcpp",
               "vllm",
               "hugging-face",
               "mistral",
               "together",
-              "bedrock"
+              "bedrock",
+              "deepseek"
             ],
             "title": "Model Endpoint Type",
             "description": "The endpoint type for the model."

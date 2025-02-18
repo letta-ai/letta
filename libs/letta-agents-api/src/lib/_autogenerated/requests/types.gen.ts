@@ -1411,13 +1411,15 @@ export type LLMConfig = {
     | 'webui-legacy'
     | 'lmstudio'
     | 'lmstudio-legacy'
+    | 'lmstudio-chatcompletions'
     | 'llamacpp'
     | 'koboldcpp'
     | 'vllm'
     | 'hugging-face'
     | 'mistral'
     | 'together'
-    | 'bedrock';
+    | 'bedrock'
+    | 'deepseek';
   /**
    * The endpoint for the model.
    */
@@ -1464,13 +1466,15 @@ export type model_endpoint_type =
   | 'webui-legacy'
   | 'lmstudio'
   | 'lmstudio-legacy'
+  | 'lmstudio-chatcompletions'
   | 'llamacpp'
   | 'koboldcpp'
   | 'vllm'
   | 'hugging-face'
   | 'mistral'
   | 'together'
-  | 'bedrock';
+  | 'bedrock'
+  | 'deepseek';
 
 export type LettaRequest = {
   /**

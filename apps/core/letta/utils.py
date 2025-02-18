@@ -824,12 +824,16 @@ def parse_json(string) -> dict:
     result = None
     try:
         result = json_loads(string)
+        if not isinstance(result, dict):
+            raise ValueError(f"JSON from string input ({string}) is not a dictionary (type {type(result)}): {result}")
         return result
     except Exception as e:
         print(f"Error parsing json with json package: {e}")
 
     try:
         result = demjson.decode(string)
+        if not isinstance(result, dict):
+            raise ValueError(f"JSON from string input ({string}) is not a dictionary (type {type(result)}): {result}")
         return result
     except demjson.JSONDecodeError as e:
         print(f"Error parsing json with demjson package: {e}")

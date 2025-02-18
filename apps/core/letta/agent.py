@@ -492,7 +492,10 @@ class Agent(BaseAgent):
             try:
                 raw_function_args = function_call.arguments
                 function_args = parse_json(raw_function_args)
-            except Exception:
+                if not isinstance(function_args, dict):
+                    raise ValueError(f"Function arguments are not a dictionary: {function_args} (raw={raw_function_args})")
+            except Exception as e:
+                print(e)
                 error_msg = f"Error parsing JSON for function '{function_name}' arguments: {function_call.arguments}"
                 function_response = "None"  # more like "never ran?"
                 messages = self._handle_function_error_response(

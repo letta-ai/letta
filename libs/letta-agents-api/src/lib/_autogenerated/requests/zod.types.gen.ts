@@ -191,6 +191,7 @@ export const LLMConfig = z.object({
     z.literal('webui-legacy'),
     z.literal('lmstudio'),
     z.literal('lmstudio-legacy'),
+    z.literal('lmstudio-chatcompletions'),
     z.literal('llamacpp'),
     z.literal('koboldcpp'),
     z.literal('vllm'),
@@ -198,6 +199,7 @@ export const LLMConfig = z.object({
     z.literal('mistral'),
     z.literal('together'),
     z.literal('bedrock'),
+    z.literal('deepseek'),
   ]),
   model_endpoint: z
     .union([
