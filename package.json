@@ -120,7 +120,7 @@
     "mixpanel": "^0.18.0",
     "mixpanel-browser": "^2.58.0",
     "nanoid": "^5.0.9",
-    "next": "15.1.3",
+    "next": "^15.1.7",
     "next-intl": "^3.26.3",
     "next-transition-router": "^0.2.6",
     "nextjs-toploader": "^3.7.15",
@@ -274,11 +274,9 @@
   "overrides": {
     "cypress-dotenv": {
       "cypress": "$cypress"
-
     },
     "@nx/cypress": {
       "cypress": "$cypress"
-
     },
     "@ts-rest/react-query": {
       "react": "$react"
