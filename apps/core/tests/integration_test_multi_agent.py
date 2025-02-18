@@ -15,8 +15,8 @@ from tests.utils import wait_for_incoming_message
 
 
 @pytest.fixture(autouse=True)
-def truncate_database():
-    from letta.server.server import db_context
+def clear_tables():
+    from letta.server.db import db_context
 
     with db_context() as session:
         for table in reversed(Base.metadata.sorted_tables):  # Reverse to avoid FK issues

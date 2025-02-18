@@ -29,6 +29,7 @@ from letta.schemas.source import Source as PydanticSource
 from letta.schemas.tool import Tool as PydanticTool
 from letta.schemas.tool_rule import ToolRule as PydanticToolRule
 from letta.schemas.user import User as PydanticUser
+from letta.serialize_schemas import SerializedAgentSchema
 from letta.services.block_manager import BlockManager
 from letta.services.helpers.agent_manager_helper import (
     _process_relationship,
@@ -53,7 +54,7 @@ class AgentManager:
     """Manager class to handle business logic related to Agents."""
 
     def __init__(self):
-        from letta.server.server import db_context
+        from letta.server.db import db_context
 
         self.session_maker = db_context
         self.block_manager = BlockManager()
@@ -354,6 +355,24 @@ class AgentManager:
             # Retrieve the agent
             agent = AgentModel.read(db_session=session, identifier=agent_id, actor=actor)
             agent.hard_delete(session)
+
+    @enforce_types
+    def serialize(self, agent_id: str, actor: PydanticUser) -> dict:
+        with self.session_maker() as session:
+            # Retrieve the agent
+            agent = AgentModel.read(db_session=session, identifier=agent_id, actor=actor)
+            schema = SerializedAgentSchema(session=session)
+            return schema.dump(agent)
+
+    @enforce_types
+    def deserialize(self, serialized_agent: dict, actor: PydanticUser) -> PydanticAgentState:
+        # TODO: Use actor to override fields
+        with self.session_maker() as session:
+            schema = SerializedAgentSchema(session=session)
+            agent = schema.load(serialized_agent, session=session)
+            agent.organization_id = actor.organization_id
+            agent = agent.create(session, actor=actor)
+            return agent.to_pydantic()
 
     # ======================================================================================================================
     # Per Agent Environment Variable Management

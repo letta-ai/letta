@@ -5,35 +5,13 @@ from datetime import datetime, timedelta
 import pytest
 from openai.types.chat.chat_completion_message_tool_call import ChatCompletionMessageToolCall as OpenAIToolCall
 from openai.types.chat.chat_completion_message_tool_call import Function as OpenAIFunction
-from sqlalchemy import delete
 from sqlalchemy.exc import IntegrityError
 
 from letta.config import LettaConfig
 from letta.constants import BASE_MEMORY_TOOLS, BASE_TOOLS, MULTI_AGENT_TOOLS
 from letta.embeddings import embedding_model
 from letta.functions.functions import derive_openai_json_schema, parse_source_code
-from letta.orm import (
-    Agent,
-    AgentPassage,
-    Block,
-    BlocksAgents,
-    FileMetadata,
-    Job,
-    JobMessage,
-    Message,
-    Organization,
-    Provider,
-    SandboxConfig,
-    SandboxEnvironmentVariable,
-    Source,
-    SourcePassage,
-    SourcesAgents,
-    Step,
-    Tool,
-    ToolsAgents,
-    User,
-)
-from letta.orm.agents_tags import AgentsTags
+from letta.orm import Base
 from letta.orm.enums import JobType, ToolType
 from letta.orm.errors import NoResultFound, UniqueConstraintViolationError
 from letta.schemas.agent import CreateAgent, UpdateAgent
@@ -81,30 +59,13 @@ USING_SQLITE = not bool(os.getenv("LETTA_PG_URI"))
 
 
 @pytest.fixture(autouse=True)
-def clear_tables(server: SyncServer):
-    """Fixture to clear the organization table before each test."""
-    with server.organization_manager.session_maker() as session:
-        session.execute(delete(Message))
-        session.execute(delete(AgentPassage))
-        session.execute(delete(SourcePassage))
-        session.execute(delete(JobMessage))  # Clear JobMessage first
-        session.execute(delete(Job))
-        session.execute(delete(ToolsAgents))  # Clear ToolsAgents first
-        session.execute(delete(BlocksAgents))
-        session.execute(delete(SourcesAgents))
-        session.execute(delete(AgentsTags))
-        session.execute(delete(SandboxEnvironmentVariable))
-        session.execute(delete(SandboxConfig))
-        session.execute(delete(Block))
-        session.execute(delete(FileMetadata))
-        session.execute(delete(Source))
-        session.execute(delete(Tool))  # Clear all records from the Tool table
-        session.execute(delete(Agent))
-        session.execute(delete(User))  # Clear all records from the user table
-        session.execute(delete(Step))
-        session.execute(delete(Provider))
-        session.execute(delete(Organization))  # Clear all records from the organization table
-        session.commit()  # Commit the deletion
+def clear_tables():
+    from letta.server.db import db_context
+
+    with db_context() as session:
+        for table in reversed(Base.metadata.sorted_tables):  # Reverse to avoid FK issues
+            session.execute(table.delete())  # Truncate table
+        session.commit()
 
 
 @pytest.fixture
