@@ -18,6 +18,7 @@ env:
   GOOGLE_REDIRECT_URI: https://app.letta.com/auth/google/callback
   E2B_SANDBOX_TEMPLATE_ID: ${{ secrets.E2B_SANDBOX_TEMPLATE_ID }}
   LETTA_AGENTS_ENDPOINT: http://memgpt-server:8083
+  RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
   MIXPANEL_TOKEN: ${{ secrets.MIXPANEL_TOKEN }}
   NEXT_PUBLIC_MIXPANEL_TOKEN: ${{ secrets.MIXPANEL_TOKEN }}
   NEXT_PUBLIC_STRIPE_PUBLISH_KEY: ${{ secrets.STRIPE_PUBLISH_KEY }}

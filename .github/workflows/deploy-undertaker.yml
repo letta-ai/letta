@@ -17,6 +17,7 @@ env:
   LETTA_PG_PASSWORD: ${{ secrets.LETTA_PG_PASSWORD }}
   LETTA_PG_USER: ${{ secrets.LETTA_PG_USER }}
   LETTA_PG_DB: ${{ secrets.LETTA_PG_DB }}
+  RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
   LETTA_PG_HOST: ${{ secrets.LETTA_PG_HOST }}
   LETTA_PG_PORT: ${{ secrets.LETTA_PG_PORT }}
   SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
