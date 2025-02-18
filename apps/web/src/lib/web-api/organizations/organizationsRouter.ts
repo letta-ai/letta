@@ -4,6 +4,7 @@ import {
   organizationCredits,
   organizationInvitedUsers,
   organizationInviteRules,
+  organizationLowBalanceNotificationLock,
   organizationPreferences,
   organizations,
   organizationUsers,
@@ -802,6 +803,18 @@ type PurchaseCreditsResponse = ServerInferResponses<
   typeof contracts.organizations.purchaseCredits
 >;
 
+async function removeLowBalanceLock(orgId: string) {
+  const lock = await db.query.organizationLowBalanceNotificationLock.findFirst({
+    where: eq(organizationLowBalanceNotificationLock.organizationId, orgId),
+  });
+
+  if (lock) {
+    await db
+      .delete(organizationLowBalanceNotificationLock)
+      .where(eq(organizationLowBalanceNotificationLock.organizationId, orgId));
+  }
+}
+
 export async function purchaseCredits(
   req: PurchaseCreditsRequest,
 ): Promise<PurchaseCreditsResponse> {
@@ -839,6 +852,9 @@ export async function purchaseCredits(
     amount: credits,
     source: 'Purchase',
   });
+
+  // remove the low balance lock if it exists, so users can be notified again if they go below the threshold
+  void removeLowBalanceLock(activeOrganizationId);
 
   return {
     status: 200,

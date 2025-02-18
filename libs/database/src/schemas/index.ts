@@ -1017,3 +1017,15 @@ export const sharedAgentChatConfigurationsRelations = relations(
     }),
   }),
 );
+
+export const organizationLowBalanceNotificationLock = pgTable(
+  'organization_low_balance_notification_lock',
+  {
+    organizationId: text('organization_id')
+      .notNull()
+      .references(() => organizations.id, { onDelete: 'cascade' })
+      .primaryKey(),
+    lockId: text('lock_id').notNull(),
+    lowBalanceNotificationSentAt: timestamp('low_balance_notification_sent_at'),
+  },
+);

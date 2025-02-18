@@ -63,6 +63,16 @@ export async function testRedisConnection() {
   await redis.ping();
 }
 
+function ensureRedisShape(object: string, definition: z.ZodObject<any, any>) {
+  try {
+    definition.parse(JSON.parse(object));
+
+    return true;
+  } catch (_e) {
+    return false;
+  }
+}
+
 export async function getRedisData<Type extends RedisTypes = RedisTypes>(
   type: Type,
   args: z.infer<(typeof redisDefinitions)[Type]['input']>,
@@ -71,7 +81,7 @@ export async function getRedisData<Type extends RedisTypes = RedisTypes>(
 
   const res = await redis.get(redisDefinitions[type].getKey(args));
 
-  if (!res) {
+  if (!res || !ensureRedisShape(res, redisDefinitions[type].output)) {
     if (hasPopulateOnMissFn(redisDefinitions[type])) {
       const data = await redisDefinitions[type].populateOnMissFn(args);
 

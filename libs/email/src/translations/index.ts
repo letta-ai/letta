@@ -1,5 +1,5 @@
 import en from './en.json';
-import { get } from 'lodash';
+import { get } from 'lodash-es';
 
 const allTranslations = {
   en: en,

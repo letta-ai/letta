@@ -2,16 +2,93 @@ import {
   db,
   organizationCredits,
   organizationCreditTransactions,
+  organizationLowBalanceNotificationLock,
   organizations,
 } from '@letta-cloud/database';
 import { eq, sql } from 'drizzle-orm';
 import { getRedisData, setRedisData } from '@letta-cloud/redis';
+import { dollarsToCredits } from '@letta-cloud/generic-utils';
+import * as crypto from 'node:crypto';
+import { getDefaultContactEmails, sendEmail } from '@letta-cloud/email';
+import * as Sentry from '@sentry/node';
 
 interface RemoveCreditsFromOrganizationOptions {
   coreOrganizationId: string;
   amount: number;
   source: string;
   note?: string;
+}
+
+interface CheckLowBalanceOptions {
+  coreOrganizationId: string;
+  organizationId: string;
+}
+
+const LOW_BALANCE_THRESHOLD = 5;
+
+async function checkLowBalance(options: CheckLowBalanceOptions) {
+  try {
+    const { coreOrganizationId, organizationId } = options;
+
+    const credits = await getRedisData('organizationCredits', {
+      coreOrganizationId,
+    });
+
+    // check if credits are below $5
+    if (
+      !(credits && credits.credits < dollarsToCredits(LOW_BALANCE_THRESHOLD))
+    ) {
+      return;
+    }
+
+    // create lock
+    const lockDate = new Date();
+    const lockId = crypto.randomBytes(16).toString('hex');
+
+    const [lock] = await db
+      .insert(organizationLowBalanceNotificationLock)
+      .values({
+        lowBalanceNotificationSentAt: lockDate,
+        organizationId,
+        lockId,
+      })
+      .returning({
+        lockId: organizationLowBalanceNotificationLock.lockId,
+      });
+
+    if (!lock) {
+      return;
+    }
+
+    if (lock.lockId !== lockId) {
+      return;
+    }
+
+    const organization = await db.query.organizations.findFirst({
+      where: eq(organizations.id, organizationId),
+      columns: {
+        name: true,
+      },
+    });
+
+    if (!organization) {
+      return;
+    }
+
+    // send notification
+    await sendEmail({
+      type: 'lowBalance',
+      to: await getDefaultContactEmails({ organizationId }),
+      options: {
+        locale: 'en',
+        organizationName: organization.name,
+        threshold: `${LOW_BALANCE_THRESHOLD}.00`,
+        topUpUrl: `${process.env.NEXT_PUBLIC_CURRENT_HOST || ''}/settings/organization/billing`,
+      },
+    });
+  } catch (_e) {
+    //
+  }
 }
 
 export async function removeCreditsFromOrganization(
@@ -89,6 +166,14 @@ export async function removeCreditsFromOrganization(
     .returning({
       credits: organizationCredits.credits,
     });
+
+  void checkLowBalance({
+    organizationId: org.id,
+    coreOrganizationId,
+  }).catch((e) => {
+    console.error(e);
+    Sentry.captureException(e);
+  });
 
   return {
     newCredits: res.credits,

@@ -3,6 +3,13 @@
  */
 
 import { TextEncoder, TextDecoder } from 'util';
+import * as lodash from 'lodash';
+
+jest.mock('lodash-es', () => {
+  return {
+    ...lodash,
+  };
+});
 
 jest.mock('@letta-cloud/environmental-variables');
 

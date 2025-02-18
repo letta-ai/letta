@@ -1,8 +1,13 @@
 {
   "invite": {
-    "heading": "Hello",
+    "heading": "Hello {{organizationName}},",
     "content": "You have been invited to join {{team}} on Letta. Click the link below to join the team.",
     "linkName": "Join {{team}}",
     "subject": "You have been invited to join {{team}} on Letta"
+  },
+  "lowBalance": {
+    "subject": "Your Letta credit balance is below {{threshold}}",
+    "heading": "Hello {{organizationName}},",
+    "content": "Your Letta credit balance is below {{threshold}}. Please top up your account to avoid any disruptions to your service."
   }
 }

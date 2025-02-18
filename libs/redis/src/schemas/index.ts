@@ -165,7 +165,10 @@ const stepCostSchemaDefinition = generateDefinitionSatisfies({
     }
 
     // 24 hours
-    return { expiresAt: Date.now() + 24 * 60 * 60 * 1000, data: schema };
+    return {
+      expiresAt: Date.now() + 24 * 60 * 60 * 1000,
+      data: schema.stepCostSchema,
+    };
   },
 });
 
