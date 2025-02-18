@@ -801,10 +801,15 @@
       },
       "update": "Update tool"
     },
+    "ErrorMessage": {
+      "title": "Save error",
+      "description": "There was an error saving your tool, see below for details."
+    },
     "ToolEditor": {
       "sourceCode": {
         "label": "Source code"
       },
+      "error": "Update error message",
       "settings": {
         "label": "Settings"
       },

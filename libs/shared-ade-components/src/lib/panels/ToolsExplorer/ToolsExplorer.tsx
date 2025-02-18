@@ -41,6 +41,7 @@ import {
   Code,
   CodeBlocksIcon,
   CodeIcon,
+  CogIcon,
   ComposioLockupDynamic,
   Debugger,
   Dialog,
@@ -71,18 +72,20 @@ import {
   Typography,
   useForm,
   VStack,
+  WarningIcon,
 } from '@letta-cloud/component-library';
 import { atom, useAtom } from 'jotai';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { isAxiosError } from 'axios';
-import { useDebouncedValue } from '@mantine/hooks';
+import { useDebouncedValue, useViewportSize } from '@mantine/hooks';
 import { get } from 'lodash-es';
 import { Slot } from '@radix-ui/react-slot';
 import { useADEPermissions } from '../../hooks/useADEPermissions/useADEPermissions';
 import { ApplicationServices } from '@letta-cloud/rbac';
 import { usePythonValidator } from '@letta-cloud/helpful-client-utils';
 import type { PythonValidatorError } from '@letta-cloud/helpful-client-utils';
+import { atomFamily } from 'jotai/utils';
 
 type ToolViewerState = 'edit' | 'view';
 
@@ -1417,13 +1420,16 @@ function ToolSettings(props: ToolSettingsProps) {
 
 interface ToolEditorProps extends ToolSettingsProps {
   code: string;
+  errorMessage?: string;
   onSetCode: (code: string) => void;
 }
 
-type ToolEditorEditModes = 'settings' | 'source-code';
+type LeftTabs = 'debugger' | 'error-message';
+
+type ToolEditorEditModes = LeftTabs | 'settings' | 'source-code';
 
 function ToolEditor(props: ToolEditorProps) {
-  const { code, onSetCode } = props;
+  const { code, errorMessage, onSetCode } = props;
   const t = useTranslations('ADE/Tools');
   const [completedAt, setCompletedAt] = useState<number | null>(null);
 
@@ -1518,6 +1524,78 @@ function ToolEditor(props: ToolEditorProps) {
     }, {});
   }, [validationErrors]);
 
+  const [leftTabs, setLeftTabs] = useState<LeftTabs>('debugger');
+
+  useEffect(() => {
+    if (errorMessage) {
+      setLeftTabs('error-message');
+    } else {
+      setLeftTabs('debugger');
+    }
+  }, [errorMessage]);
+
+  const debuggerUI = (
+    <Debugger
+      hideLabel
+      preLabelIcon={<TerminalIcon />}
+      isRunning={isPending}
+      onRun={handleRun}
+      output={{
+        status: outputStatus,
+        duration: completedAt ? completedAt - submittedAt : undefined,
+        responses: [
+          {
+            label: t('ToolEditor.outputLabel'),
+            value: 'tool-output',
+            content: outputValue ?? '',
+          },
+          {
+            label: 'stdout',
+            value: 'stdout',
+            content: outputStdout,
+          },
+          {
+            label: 'stderr',
+            value: 'stderr',
+            content: outputStderr,
+          },
+        ],
+      }}
+      inputConfig={inputConfig}
+      label={t('ToolEditor.label')}
+    />
+  );
+
+  const errorMessageUI = (
+    <VStack fullWidth fullHeight padding="small" border>
+      <Typography variant="body2" color="destructive" font="mono">
+        {errorMessage}
+      </Typography>
+    </VStack>
+  );
+
+  const leftTabItems = [
+    {
+      label: t('ToolEditor.label'),
+      value: 'debugger',
+      icon: <TerminalIcon />,
+    },
+    ...(errorMessage
+      ? [
+          {
+            color: 'destructive',
+            icon: <WarningIcon />,
+            label: t('ToolEditor.error'),
+            value: 'error-message',
+          },
+        ]
+      : []),
+  ];
+
+  const { width = 0 } = useViewportSize();
+
+  const [debouncedWidth] = useDebouncedValue(width, 100);
+
   return (
     <HStack gap="small" flex overflow="hidden" fullWidth>
       <VStack overflow="hidden" fullWidth fullHeight gap={false}>
@@ -1534,12 +1612,14 @@ function ToolEditor(props: ToolEditorProps) {
               value: 'source-code',
             },
             {
+              icon: <CogIcon />,
               label: t('ToolEditor.settings.label'),
               value: 'settings',
             },
+            ...(debouncedWidth < 640 ? leftTabItems : []),
           ]}
         />
-        {mode === 'source-code' ? (
+        {mode === 'source-code' && (
           <RawCodeEditor
             preLabelIcon={<CodeIcon />}
             collapseHeight
@@ -1548,69 +1628,34 @@ function ToolEditor(props: ToolEditorProps) {
             lineNumberError={validationErrorsToLineNumberMap}
             fullHeight
             language="python"
-            // errorResponse={{
-            //   title: t('ToolCreator.errorResponse'),
-            //   content: errorMessage,
-            //   onDismiss: () => {
-            //     reset();
-            //   },
-            // }}
             fontSize="small"
             code={code}
             onSetCode={onSetCode}
             hideLabel
             label={t('ToolCreator.sourceCode.label')}
           />
-        ) : (
+        )}
+        {mode === 'settings' && (
           <ToolSettings
             toolSettings={props.toolSettings}
             onUpdateSettings={props.onUpdateSettings}
             toolId={props.toolId}
           />
         )}
+        {mode === 'debugger' && debuggerUI}
+        {mode === 'error-message' && errorMessageUI}
       </VStack>
       <HiddenOnMobile>
         <VStack overflow="hidden" gap={false} fullWidth fullHeight>
           <TabGroup
             variant="bordered-background"
-            value="run"
-            items={[
-              {
-                label: t('ToolEditor.label'),
-                value: 'run',
-                icon: <TerminalIcon />,
-              },
-            ]}
-          />
-          <Debugger
-            hideLabel
-            preLabelIcon={<TerminalIcon />}
-            isRunning={isPending}
-            onRun={handleRun}
-            output={{
-              status: outputStatus,
-              duration: completedAt ? completedAt - submittedAt : undefined,
-              responses: [
-                {
-                  label: t('ToolEditor.outputLabel'),
-                  value: 'tool-output',
-                  content: outputValue ?? '',
-                },
-                {
-                  label: 'stdout',
-                  value: 'stdout',
-                  content: outputStdout,
-                },
-                {
-                  label: 'stderr',
-                  value: 'stderr',
-                  content: outputStderr,
-                },
-              ],
+            value={leftTabs}
+            onValueChange={(val) => {
+              setLeftTabs(val as LeftTabs);
             }}
-            inputConfig={inputConfig}
-            label={t('ToolEditor.label')}
+            items={leftTabItems}
           />
+          {leftTabs === 'debugger' ? debuggerUI : errorMessageUI}
         </VStack>
       </HiddenOnMobile>
     </HStack>
@@ -1818,6 +1863,8 @@ interface EditToolProps {
   tool: Tool;
 }
 
+const sourceCodeAtom = atomFamily((sourceCode: string) => atom(sourceCode));
+
 function EditTool(props: EditToolProps) {
   const { tool } = props;
 
@@ -1830,7 +1877,9 @@ function EditTool(props: EditToolProps) {
 
   const { switchToolState } = useToolsExplorerState();
 
-  const [sourceCode, setSourceCode] = useState(tool.source_code || '');
+  const [sourceCode, setSourceCode] = useAtom(
+    sourceCodeAtom(tool.source_code || ''),
+  );
 
   const [localError, setLocalError] = useState<string | null>(null);
   const { mutate, isPending, reset, error } = useToolsServiceModifyTool();
@@ -1919,23 +1968,16 @@ function EditTool(props: EditToolProps) {
       message = error.response?.data;
     }
 
-    return JSON.stringify(message || error, null, 2);
-  }, [error, localError]);
+    const res = message || error;
+    const response = get(res, 'body.detail', res);
 
-  console.log(errorMessage);
+    return JSON.stringify(response, null, 2);
+  }, [error, localError]);
 
   return (
     <VStack collapseHeight paddingX paddingBottom flex gap="form">
-      {errorMessage && (
-        <ErrorMessageAlert
-          message={errorMessage}
-          onDismiss={() => {
-            setLocalError(null);
-            reset();
-          }}
-        />
-      )}
       <ToolEditor
+        errorMessage={errorMessage}
         toolSettings={settings}
         onUpdateSettings={setSettings}
         toolId={tool.id}

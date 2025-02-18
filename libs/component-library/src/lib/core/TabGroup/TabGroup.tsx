@@ -19,6 +19,7 @@ interface TabGroupProps extends Tabs.TabsProps {
   extendBorder?: boolean;
   noBottomBorder?: boolean;
   size?: 'small' | 'xsmall';
+  color?: 'default' | 'destructive';
   rightContent?: React.ReactNode;
   variant?: 'border' | 'bordered-background';
 }
@@ -53,7 +54,7 @@ export function TabGroup(props: TabGroupProps) {
                 ? 'border-b-2 data-[state=active]:border-content'
                 : '',
               variant === 'bordered-background'
-                ? 'data-[state=active]:bg-background-grey2 data-[state=active]:border data-[state=active]:border-b-0 data-[state=active]:text-background-grey2-content'
+                ? 'data-[state=active]:bg-background-grey2 data-[state=active]:border data-[state=active]:border-b-0'
                 : '',
               size === 'small' ? 'pb-2' : '',
               fullWidth ? 'flex-1 justify-center' : '',
