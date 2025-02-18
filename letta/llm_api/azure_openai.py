@@ -1,8 +1,10 @@
 from collections import defaultdict
 
 import requests
+from openai import AzureOpenAI
 
 from letta.llm_api.helpers import make_post_request
+from letta.llm_api.openai import prepare_openai_payload
 from letta.schemas.llm_config import LLMConfig
 from letta.schemas.openai.chat_completion_response import ChatCompletionResponse
 from letta.schemas.openai.chat_completions import ChatCompletionRequest
@@ -32,19 +34,19 @@ def get_azure_deployment_list_endpoint(base_url: str):
 def azure_openai_get_deployed_model_list(base_url: str, api_key: str, api_version: str) -> list:
     """https://learn.microsoft.com/en-us/rest/api/azureopenai/models/list?view=rest-azureopenai-2023-05-15&tabs=HTTP"""
 
+    client = AzureOpenAI(api_key=api_key, api_version=api_version, azure_endpoint=base_url)
+
+    try:
+        models_list = client.models.list()
+    except requests.RequestException as e:
+        raise RuntimeError(f"Failed to retrieve model list: {e}")
+
+    all_available_models = [model.to_dict() for model in models_list.data]
+
     # https://xxx.openai.azure.com/openai/models?api-version=xxx
     headers = {"Content-Type": "application/json"}
     if api_key is not None:
         headers["api-key"] = f"{api_key}"
-
-    # 1. Get all available models
-    url = get_azure_model_list_endpoint(base_url, api_version)
-    try:
-        response = requests.get(url, headers=headers)
-        response.raise_for_status()
-    except requests.RequestException as e:
-        raise RuntimeError(f"Failed to retrieve model list: {e}")
-    all_available_models = response.json().get("data", [])
 
     # 2. Get all the deployed models
     url = get_azure_deployment_list_endpoint(base_url)
@@ -101,31 +103,21 @@ def azure_openai_get_embeddings_model_list(base_url: str, api_key: str, api_vers
 
 
 def azure_openai_chat_completions_request(
-    model_settings: ModelSettings, llm_config: LLMConfig, api_key: str, chat_completion_request: ChatCompletionRequest
+    model_settings: ModelSettings, llm_config: LLMConfig, chat_completion_request: ChatCompletionRequest
 ) -> ChatCompletionResponse:
     """https://learn.microsoft.com/en-us/azure/ai-services/openai/reference#chat-completions"""
 
-    assert api_key is not None, "Missing required field when calling Azure OpenAI"
+    assert model_settings.azure_api_key is not None, "Missing required api key field when calling Azure OpenAI"
+    assert model_settings.azure_api_version is not None, "Missing required api version field when calling Azure OpenAI"
+    assert model_settings.azure_base_url is not None, "Missing required base url field when calling Azure OpenAI"
 
-    headers = {"Content-Type": "application/json", "api-key": f"{api_key}"}
-    data = chat_completion_request.model_dump(exclude_none=True)
+    data = prepare_openai_payload(chat_completion_request)
+    client = AzureOpenAI(
+        api_key=model_settings.azure_api_key, api_version=model_settings.azure_api_version, azure_endpoint=model_settings.azure_base_url
+    )
+    chat_completion = client.chat.completions.create(**data)
 
-    # If functions == None, strip from the payload
-    if "functions" in data and data["functions"] is None:
-        data.pop("functions")
-        data.pop("function_call", None)  # extra safe,  should exist always (default="auto")
-
-    if "tools" in data and data["tools"] is None:
-        data.pop("tools")
-        data.pop("tool_choice", None)  # extra safe,  should exist always (default="auto")
-
-    url = get_azure_chat_completions_endpoint(model_settings.azure_base_url, llm_config.model, model_settings.azure_api_version)
-    response_json = make_post_request(url, headers, data)
-    # NOTE: azure openai does not include "content" in the response when it is None, so we need to add it
-    if "content" not in response_json["choices"][0].get("message"):
-        response_json["choices"][0]["message"]["content"] = None
-    response = ChatCompletionResponse(**response_json)  # convert to 'dot-dict' style which is the openai python client default
-    return response
+    return ChatCompletionResponse(**chat_completion.model_dump())
 
 
 def azure_openai_embeddings_request(
