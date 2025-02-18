@@ -196,6 +196,7 @@ build-undertaker:
         --set env.LETTA_PG_HOST=${LETTA_PG_HOST} \
         --set env.LETTA_PG_PORT=${LETTA_PG_PORT} \
         --set env.REDIS_HOST="${REDIS_HOST}" \
+        --set env.RESEND_API_KEY="${RESEND_API_KEY}" \
         --set env.DATABASE_URL="${DATABASE_URL}"
 
     npm run slack-bot-says "Successfully deployed credit undertaker service with tag: {{TAG}}."
