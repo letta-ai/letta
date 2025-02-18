@@ -164,7 +164,7 @@
     "@eslint/js": "^9.17.0",
     "@microsoft/fetch-event-source": "^2.0.1",
     "@neondatabase/serverless": "^0.10.4",
-    "@nx/cypress": "20.3.0",
+    "@nx/cypress": "^20.4.4",
     "@nx/devkit": "20.3.0",
     "@nx/esbuild": "20.3.0",
     "@nx/eslint": "20.3.0",
@@ -195,7 +195,7 @@
     "@swc/cli": "~0.5.2",
     "@swc/core": "1.10.2",
     "@swc/helpers": "~0.5.15",
-    "@testing-library/cypress": "^10.0.2",
+    "@testing-library/cypress": "^10.0.3",
     "@testing-library/dom": "^10.4.0",
     "@testing-library/jest-dom": "^6.6.3",
     "@testing-library/react": "^16.1.0",
@@ -218,8 +218,8 @@
     "babel-jest": "^29.7.0",
     "chromatic": "^11.20.2",
     "concurrently": "^9.1.0",
-    "cypress": "^13.17.0",
-    "cypress-dotenv": "^2.0.0",
+    "cypress": "^14.0.3",
+    "cypress-dotenv": "^3.0.1",
     "cypress-wait-until": "^3.0.2",
     "dotenv": "^16.4.7",
     "drizzle-kit": "^0.30.1",
@@ -272,6 +272,14 @@
     "npm": "10.8.2"
   },
   "overrides": {
+    "cypress-dotenv": {
+      "cypress": "$cypress"
+
+    },
+    "@nx/cypress": {
+      "cypress": "$cypress"
+
+    },
     "@ts-rest/react-query": {
       "react": "$react"
     },
