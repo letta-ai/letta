@@ -7,3 +7,4 @@ export * from './ProjectSelector/ProjectSelector';
 export * from './Tutorials/Tutorials';
 export * from './ConnectToLocalServerCommand/ConnectToLocalServerCommand';
 export * from './DashboardCard/DashboardCard';
+export * from './CreditCardSlot/CreditCardSlot';

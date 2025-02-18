@@ -109,10 +109,8 @@ const DialogContent = React.forwardRef<
                   title={errorMessage}
                   children={errorAdditionalMessage}
                   variant="destructive"
-                  className="mb-4"
                 />
               )}
-
               <VStack
                 flex
                 className="max-h-[100%]"
@@ -143,7 +141,6 @@ function DialogHeader({
   return (
     <HStack
       paddingX="xlarge"
-      borderBottom
       className={cn(
         'flex flex-col space-y-1.5 text-center sm:text-left',
         className,

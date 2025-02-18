@@ -98,6 +98,7 @@ export function buildConfig(appDir: string): Config {
           'brand-light': {
             DEFAULT: 'hsl(var(--brand-light))',
             content: 'hsl(var(--brand-light-content))',
+            border: 'hsl(var(--brand-light-border))',
           },
           'background-grey': {
             DEFAULT: 'hsl(var(--background-grey))',

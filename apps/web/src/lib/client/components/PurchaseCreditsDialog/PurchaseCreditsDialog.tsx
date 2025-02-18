@@ -5,11 +5,11 @@ import {
   Button,
   Dialog,
   Form,
-  FormActions,
   FormField,
   FormProvider,
+  HStack,
   LoadingEmptyStatusComponent,
-  Select,
+  RadioGroup,
   Typography,
   useForm,
   VStack,
@@ -27,20 +27,19 @@ import { creditsToDollars } from '@letta-cloud/generic-utils';
 import {
   useCurrencyFormatter,
   useErrorTranslationMessage,
+  useNumberFormatter,
 } from '@letta-cloud/helpful-client-utils';
 import { get } from 'lodash-es';
 import type { ServerInferResponses } from '@ts-rest/core';
+import { useFormContext } from 'react-hook-form';
+import { CreditCardSlot } from '$web/client/components';
 
 interface PurchaseCreditsDialogProps {
   trigger: React.ReactNode;
 }
 
 const purchaseCreditsSchema = z.object({
-  credits: z.object({
-    value: z.string(),
-    label: z.string(),
-    description: z.string().optional(),
-  }),
+  credits: z.string(),
 });
 
 type PurchaseCreditsFormValues = z.infer<typeof purchaseCreditsSchema>;
@@ -60,8 +59,10 @@ function useErrorMessages(error: unknown) {
     contract: webApiContracts.organizations.purchaseCredits,
   });
 }
+
 interface PurchaseCreditsFormProps {
   onComplete: () => void;
+  onClose: () => void;
 }
 
 const options: Intl.NumberFormatOptions = {
@@ -71,9 +72,70 @@ const options: Intl.NumberFormatOptions = {
   currency: 'USD',
 };
 
+function ConfirmationText() {
+  const form = useFormContext();
+
+  const t = useTranslations('components/PurchaseCreditsDialog');
+  const credits = form.watch('credits');
+  const { formatCurrency } = useCurrencyFormatter();
+  const { formatNumber } = useNumberFormatter();
+
+  const { data: billingInfo } =
+    webApi.organizations.getCurrentOrganizationBillingInfo.useQuery({
+      queryKey: webApiQueryKeys.organizations.getCurrentOrganizationBillingInfo,
+    });
+
+  const defaultCard = useMemo(() => {
+    if (!billingInfo?.body.creditCards) {
+      return undefined;
+    }
+
+    return billingInfo.body.creditCards.find((card) => card.isDefault);
+  }, [billingInfo]);
+
+  return (
+    <VStack gap="xlarge">
+      <VStack gap={false}>
+        <Typography variant="body3" bold uppercase>
+          {t('confirmation.order')}
+        </Typography>
+        <VStack gap={false}>
+          <Typography>
+            {t.rich('confirmation.credits', {
+              credits: () => (
+                <Typography overrideEl="span" variant="heading3">
+                  {formatNumber(parseInt(credits, 10))}
+                </Typography>
+              ),
+            })}
+          </Typography>
+          <Typography bold>
+            {formatCurrency(creditsToDollars(credits), options)}
+          </Typography>
+        </VStack>
+      </VStack>
+      <VStack>
+        <Typography variant="body3" bold uppercase>
+          {t('confirmation.paymentMethod')}
+        </Typography>
+        {defaultCard && <CreditCardSlot creditCard={defaultCard} disabled />}
+      </VStack>
+      <VStack paddingBottom="small">
+        <Typography variant="body2">
+          {t('confirmation.details', {
+            credits: formatNumber(credits),
+            price: formatCurrency(creditsToDollars(credits), options),
+            last4: defaultCard?.last4 || '0000',
+          })}
+        </Typography>
+      </VStack>
+    </VStack>
+  );
+}
+
 function PurchaseCreditsForm(props: PurchaseCreditsFormProps) {
   const t = useTranslations('components/PurchaseCreditsDialog');
-  const { onComplete } = props;
+  const { onComplete, onClose } = props;
 
   const queryClient = useQueryClient();
 
@@ -113,52 +175,41 @@ function PurchaseCreditsForm(props: PurchaseCreditsFormProps) {
       },
     });
   const { formatCurrency } = useCurrencyFormatter();
-
-  const renderLabel = useCallback(
-    (credits: number) => {
-      return t('amount.option', {
-        price: formatCurrency(creditsToDollars(credits), options),
-        credits,
-      });
-    },
-    [t, formatCurrency],
-  );
+  const { formatNumber } = useNumberFormatter();
 
   const errorTranslation = useErrorMessages(error);
 
   const renderOption = useCallback(
-    (credits: number) => {
+    (credits: string) => {
       return {
         value: credits.toString(),
-        label: renderLabel(credits),
+        label: t.rich('amount.option', {
+          label: (chunks) => <Typography color="lighter">{chunks}</Typography>,
+          credits: () => (
+            <Typography variant="heading6">
+              {formatNumber(parseInt(credits, 10))}
+            </Typography>
+          ),
+        }),
+        detail: formatCurrency(
+          creditsToDollars(parseInt(credits, 10)),
+          options,
+        ),
       };
     },
-    [renderLabel],
+    [formatCurrency, formatNumber, t],
   );
 
   const form = useForm<PurchaseCreditsFormValues>({
     resolver: zodResolver(purchaseCreditsSchema),
-    defaultValues: { credits: renderOption(10000) },
+    defaultValues: { credits: '10000' },
   });
-
-  const { data: billingInfo } =
-    webApi.organizations.getCurrentOrganizationBillingInfo.useQuery({
-      queryKey: webApiQueryKeys.organizations.getCurrentOrganizationBillingInfo,
-    });
-
-  const defaultCard = useMemo(() => {
-    if (!billingInfo?.body.creditCards) {
-      return undefined;
-    }
-
-    return billingInfo.body.creditCards.find((card) => card.isDefault);
-  }, [billingInfo]);
 
   const handleSubmit = useCallback(
     (values: PurchaseCreditsFormValues) => {
       mutate({
         body: {
-          credits: parseInt(values.credits.value, 10),
+          credits: parseInt(values.credits, 10),
         },
       });
     },
@@ -172,38 +223,57 @@ function PurchaseCreditsForm(props: PurchaseCreditsFormProps) {
           {errorTranslation && (
             <Alert title={errorTranslation.message} variant="destructive" />
           )}
-          <FormField
-            name="credits"
-            render={({ field }) => (
-              <>
-                <Select
-                  labelVariant="simple"
-                  label={t('amount.label')}
-                  {...field}
-                  options={[
-                    renderOption(10000),
-                    renderOption(25000),
-                    renderOption(50000),
-                    renderOption(100000),
-                  ]}
-                />
-                <Typography>
-                  {t('confirmation', {
-                    credits: field.value.value,
-                    price: formatCurrency(
-                      creditsToDollars(field.value.value),
-                      options,
-                    ),
-                    last4: defaultCard?.last4 || '0000',
-                  })}
-                </Typography>
-              </>
-            )}
-          />
-
-          <FormActions>
-            <Button type="submit" busy={isPending} label={t('confirm')} />
-          </FormActions>
+          <HStack gap="xlarge">
+            <VStack fullWidth>
+              <FormField
+                name="credits"
+                render={({ field }) => (
+                  <>
+                    <RadioGroup
+                      labelVariant="simple"
+                      label={t('amount.label')}
+                      fullWidth
+                      value={field.value}
+                      variant="blocky"
+                      onValueChange={(value) => {
+                        field.onChange(value);
+                      }}
+                      items={[
+                        renderOption('10000'),
+                        renderOption('25000'),
+                        renderOption('50000'),
+                        renderOption('100000'),
+                      ]}
+                    />
+                  </>
+                )}
+              />
+            </VStack>
+            <VStack
+              fullWidth
+              /* eslint-disable-next-line react/forbid-component-props */
+              className="max-w-[40%]"
+            >
+              <ConfirmationText />
+              <Button
+                fullWidth
+                type="submit"
+                size="large"
+                busy={isPending}
+                label={t('confirm')}
+              />
+              <Button
+                fullWidth
+                type="button"
+                size="large"
+                color="tertiary"
+                onClick={() => {
+                  onClose();
+                }}
+                label={t('cancel')}
+              />
+            </VStack>
+          </HStack>
         </Form>
       </FormProvider>
     </VStack>
@@ -241,8 +311,10 @@ export function PurchaseCreditsDialog(props: PurchaseCreditsDialogProps) {
       errorMessage={isError ? t('error') : undefined}
       trigger={trigger}
       title={t('title')}
+      size={viewMode === 'hasCreditCard' ? 'xlarge' : 'medium'}
       disableForm
       hideFooter
+      color="background"
     >
       {viewMode === 'loading' && <LoadingEmptyStatusComponent isLoading />}
       {viewMode === 'noCreditCard' && (
@@ -266,6 +338,9 @@ export function PurchaseCreditsDialog(props: PurchaseCreditsDialogProps) {
 
       {viewMode === 'hasCreditCard' && (
         <PurchaseCreditsForm
+          onClose={() => {
+            setIsOpened(false);
+          }}
           onComplete={() => {
             setIsOpened(false);
           }}

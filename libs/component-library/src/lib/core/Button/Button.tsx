@@ -50,7 +50,7 @@ const buttonVariants = cva(
         xsmall:
           'px-2 py-1 h-biHeight-xs min-h-biHeight-xs text-xs font-medium gap-2',
         large:
-          'px-6 py-2 h-biHeight-lg min-h-biHeight-lg text-lg font-medium gap-2',
+          'px-6 py-2 h-biHeight-lg min-h-biHeight-lg text-base font-bold gap-2',
         default:
           'px-4 py-1 h-biHeight min-h-biHeight text-base font-medium gap-2',
         small:

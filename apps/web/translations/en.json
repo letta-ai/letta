@@ -669,12 +669,17 @@
     "trigger": "Purchase credits",
     "error": "There was an error loading the purchase credits form, please try again or contact support.",
     "confirm": "Purchase",
-    "confirmation": "By clicking 'Purchase', you agree to purchase {credits} credits for {price} with the card ending in {last4}.",
+    "confirmation": {
+      "details": "By clicking 'Purchase', you agree to purchase {credits} credits for {price} with your selected payment method.",
+      "order": "Your order",
+      "credits": "<credits></credits> credits",
+      "paymentMethod": "Payment method"
+    },
     "cancel": "Cancel",
     "description": "You can purchase credits to pay for agent usage. Credits are used to pay for agent usage, and are deducted from your balance each time an agent is used. Credits do not expire and are non-refundable.",
     "amount": {
-      "label": "Please enter the amount of credits you would like to purchase",
-      "option": "{credits} credits ({price})"
+      "label": "Select amount",
+      "option": "<credits></credits> <label>credits</label>"
     }
   },
   "settings/profile/page": {
