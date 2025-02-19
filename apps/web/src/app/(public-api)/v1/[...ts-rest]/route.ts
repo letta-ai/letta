@@ -61,7 +61,7 @@ async function handleChatMiddleware(
   return true;
 }
 
-const handler = createNextHandler(sdkContracts, sdkRouter, {
+const publicHandler = createNextHandler(sdkContracts, sdkRouter, {
   basePath: '',
   jsonQuery: true,
   responseValidation: false,
@@ -241,10 +241,10 @@ const handler = createNextHandler(sdkContracts, sdkRouter, {
 });
 
 export {
-  handler as GET,
-  handler as POST,
-  handler as PUT,
-  handler as PATCH,
-  handler as DELETE,
-  handler as OPTIONS,
+  publicHandler as GET,
+  publicHandler as POST,
+  publicHandler as PUT,
+  publicHandler as PATCH,
+  publicHandler as DELETE,
+  publicHandler as OPTIONS,
 };
