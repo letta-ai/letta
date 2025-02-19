@@ -5,3 +5,4 @@ export * from './lib/panels/EditDataSourcesPanel/EditDataSourcesPanel';
 export * from './lib/panels/Messages/Messages';
 export * from './lib/hooks/useCurrentAgentMetaData/useCurrentAgentMetaData';
 export * from './lib/panels/AgentSimulator/AgentSimulator';
+export * from './lib/IdentitiesTable/IdentitiesTable';

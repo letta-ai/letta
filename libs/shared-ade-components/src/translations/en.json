@@ -902,5 +902,8 @@
       "recallMemory": "Recall Memory",
       "archivalMemory": "Archival Memory"
     }
+  },
+  "IdentitiesTable": {
+    "title": "Identities"
   }
 }

@@ -351,6 +351,9 @@
     },
     "submit": "Create Organization"
   },
+  "project/[projectId]/identities": {
+    "title": "Identities"
+  },
   "project/[projectId]/settings": {
     "noPermissions": "You do not have permission to access this page, contact your team's administrator for access.",
     "DeleteProjectSettings": {
@@ -814,6 +817,7 @@
       "home": "Dashboard",
       "templates": "Templates",
       "agents": "Agents",
+      "identities": "Identities",
       "settings": "Settings"
     }
   },

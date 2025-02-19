@@ -21,6 +21,11 @@ export const featureFlags = {
     expiryDate: '2024-01-31',
     flagValue: z.boolean(),
   },
+  IDENTITIES: {
+    description: 'Identities',
+    expiryDate: '2024-03-01',
+    flagValue: z.boolean(),
+  },
   CONTEXT_WINDOW_SIMULATOR: {
     description: 'Context window simulator',
     expiryDate: '2024-01-31',

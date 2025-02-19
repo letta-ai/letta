@@ -8,6 +8,7 @@ import {
   InstantMixIcon,
   SidebarTitle,
   HStack,
+  IdentitiesIcon,
 } from '@letta-cloud/component-library';
 import { useTranslations } from '@letta-cloud/translations';
 import type { PropsWithChildren } from 'react';
@@ -15,6 +16,7 @@ import React from 'react';
 import { useCurrentProject } from '../../hooks';
 import { useUserHasPermission } from '$web/client/hooks';
 import { ApplicationServices } from '@letta-cloud/rbac';
+import { useFeatureFlag } from '@letta-cloud/web-api-client';
 
 type ProjectLayoutInnerProps = PropsWithChildren;
 
@@ -24,6 +26,9 @@ export function ProjectLayoutInner(props: ProjectLayoutInnerProps) {
   const [canCRDProjects] = useUserHasPermission(
     ApplicationServices.CREATE_UPDATE_DELETE_PROJECTS,
   );
+
+  const { isLoading: isLoadingFlag, data: isFlagEnabled } =
+    useFeatureFlag('IDENTITIES');
 
   return (
     <DashboardWithSidebarWrapper
@@ -58,6 +63,16 @@ export function ProjectLayoutInner(props: ProjectLayoutInnerProps) {
           label: t('nav.templates'),
           href: `/projects/${projectSlug}/templates`,
         },
+        ...(isFlagEnabled && !isLoadingFlag
+          ? [
+              {
+                id: 'identities',
+                icon: <IdentitiesIcon />,
+                label: t('nav.identities'),
+                href: `/projects/${projectSlug}/identities`,
+              },
+            ]
+          : []),
         ...(canCRDProjects
           ? [
               {
