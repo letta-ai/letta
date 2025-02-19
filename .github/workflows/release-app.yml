@@ -118,8 +118,3 @@ jobs:
           TODESKTOP_ACCESS_TOKEN: ${{ secrets.TODESKTOP_ACCESS_TOKEN }}
           TODESKTOP_EMAIL: ${{ secrets.TODESKTOP_EMAIL }}
         run: just package-desktop
-      - name: Release
-        env:
-          TODESKTOP_ACCESS_TOKEN: ${{ secrets.TODESKTOP_ACCESS_TOKEN }}
-          TODESKTOP_EMAIL: ${{ secrets.TODESKTOP_EMAIL }}
-        run: just release-desktop
