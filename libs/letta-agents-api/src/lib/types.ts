@@ -83,6 +83,7 @@ const ErrorCodeSchema = z.enum([
   'INTERNAL_SERVER_ERROR',
   'CONTEXT_WINDOW_EXCEEDED',
   'RATE_LIMIT_EXCEEDED',
+  'CREDIT_LIMIT_EXCEEDED',
 ]);
 
 export const ErrorMessageSchema = z.object({

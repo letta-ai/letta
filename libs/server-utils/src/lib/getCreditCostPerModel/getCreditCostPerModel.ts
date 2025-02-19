@@ -8,7 +8,7 @@ interface GetCreditCostPerModelOptions {
 
 export async function getCreditCostPerModel(
   options: GetCreditCostPerModelOptions,
-): Promise<number> {
+): Promise<number | null> {
   const { modelName, modelEndpoint } = options;
 
   const data = await getRedisData('modelNameAndEndpointToIdMap', {
@@ -17,7 +17,7 @@ export async function getCreditCostPerModel(
   });
 
   if (!data) {
-    return 0;
+    return null;
   }
 
   const stepCostDefinition = await getRedisData('stepCostSchema', {
@@ -25,7 +25,7 @@ export async function getCreditCostPerModel(
   });
 
   if (!stepCostDefinition) {
-    return 0;
+    return null;
   }
 
   const costTier =

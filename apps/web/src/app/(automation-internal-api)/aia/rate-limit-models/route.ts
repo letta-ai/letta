@@ -61,7 +61,7 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  await router.admin.models.updateAdminInferenceModel({
+  const response = await router.admin.models.updateAdminInferenceModel({
     params: {
       id: model.id,
     },
@@ -71,15 +71,10 @@ export async function POST(req: NextRequest) {
     },
   });
 
-  return new Response(
-    JSON.stringify({
-      message: 'Projects deleted',
-    }),
-    {
-      status: 200,
-      headers: {
-        'Content-Type': 'application/json',
-      },
+  return new Response(JSON.stringify(response), {
+    status: 200,
+    headers: {
+      'Content-Type': 'application/json',
     },
-  );
+  });
 }

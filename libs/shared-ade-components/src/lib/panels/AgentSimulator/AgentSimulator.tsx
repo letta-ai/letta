@@ -21,6 +21,7 @@ import {
   FormProvider,
   FormField,
   Checkbox,
+  Link,
 } from '@letta-cloud/component-library';
 import type { ChatInputRef } from '@letta-cloud/component-library';
 import { PanelBar } from '@letta-cloud/component-library';
@@ -194,6 +195,14 @@ export function useSendMessage(
             setIsPending(false);
             setFailedToSendMessage(true);
             setErrorCode('RATE_LIMIT_EXCEEDED');
+            options?.onFailedToSendMessage?.(message);
+            return;
+          }
+
+          if (e.response.status === 402) {
+            setIsPending(false);
+            setFailedToSendMessage(true);
+            setErrorCode('CREDIT_LIMIT_EXCEEDED');
             options?.onFailedToSendMessage?.(message);
             return;
           }
@@ -725,6 +734,12 @@ export function AgentSimulator() {
         return t('hasFailedToSendMessageText.contextWindowExceeded');
       case 'RATE_LIMIT_EXCEEDED':
         return t('hasFailedToSendMessageText.rateLimitExceeded');
+      case 'CREDIT_LIMIT_EXCEEDED':
+        return t.rich('hasFailedToSendMessageText.creditLimitExceeded', {
+          link: (chunks) => {
+            return <Link href="/settings/organization/billing">{chunks}</Link>;
+          },
+        });
       case 'INTERNAL_SERVER_ERROR':
       default:
         if (isLocal) {

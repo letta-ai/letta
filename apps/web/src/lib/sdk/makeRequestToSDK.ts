@@ -269,7 +269,9 @@ export async function makeRequestToSDK(
           reasons: check.reasons,
         }),
         {
-          status: 429,
+          status: (check.reasons || []).includes('not-enough-credits')
+            ? 402
+            : 429,
           headers: {
             'Content-Type': 'application/json',
           },

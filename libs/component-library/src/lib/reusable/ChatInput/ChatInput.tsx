@@ -38,7 +38,7 @@ interface ChatInputProps {
   isSendingMessage: boolean;
   disabled?: boolean;
   defaultRole: string;
-  hasFailedToSendMessageText?: string | undefined;
+  hasFailedToSendMessageText?: React.ReactNode;
   roles: RoleOption[];
   getSendSnippet?: (role: string, message: string) => string | undefined;
   sendingMessageText?: string;

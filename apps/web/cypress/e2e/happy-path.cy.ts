@@ -17,6 +17,30 @@ describe('letta', () => {
     cy.location('pathname').should('eq', '/login');
 
     cy.googleLogin();
+
+    cy.request({
+      method: 'POST',
+      url: '/aia/reset-credits',
+      body: {
+        nextCredits: 100,
+      },
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+
+    cy.request({
+      method: 'POST',
+      url: '/aia/step-costs',
+      body: {
+        modelName: 'gpt-4o-mini',
+        stepCost: 5,
+      },
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+
     cy.importModels();
     cy.get('h1').contains(/Projects/);
 

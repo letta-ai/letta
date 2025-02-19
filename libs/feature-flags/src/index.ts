@@ -77,7 +77,7 @@ export async function getOrganizationFeatureFlags(org: OrgDetails) {
 
 export async function getSingleFlag<SingleFlag extends Flag>(
   flag: SingleFlag,
-  org: OrgDetails,
+  orgId: string,
 ): Promise<FlagValue<SingleFlag> | undefined> {
   if (!environment.LAUNCH_DARKLY_SDK_KEY) {
     return undefined;
@@ -89,7 +89,7 @@ export async function getSingleFlag<SingleFlag extends Flag>(
     return ldClient.variation(
       flag,
       {
-        key: org.id,
+        key: orgId,
         kind: 'org',
       },
       false,

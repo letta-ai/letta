@@ -5,10 +5,13 @@ import {
   inferenceModelsMetadata,
   perModelPerOrganizationRateLimitOverrides,
 } from '@letta-cloud/database';
-import { and, eq } from 'drizzle-orm';
+import { eq } from 'drizzle-orm';
 import { AgentsService } from '@letta-cloud/letta-agents-api';
 import type { LettaStreamingRequest } from '@letta-cloud/letta-agents-api';
 import { getTikTokenEncoder } from '@letta-cloud/generic-utils';
+import { getCreditCostPerModel } from '@letta-cloud/server-utils';
+import { getSingleFlag } from '@letta-cloud/feature-flags';
+import process from 'node:process';
 
 type ModelType = 'embedding' | 'inference';
 
@@ -169,7 +172,12 @@ export async function getAndSeedOrganizationLimits(
 
   If the number of requests or tokens exceeds the rate limit, we return a response indicating that the request is rate limited.
  */
-export type RateLimitReason = 'model-unknown' | 'requests' | 'tokens';
+export type RateLimitReason =
+  | 'context-window-size-not-supported'
+  | 'model-unknown'
+  | 'not-enough-credits'
+  | 'requests'
+  | 'tokens';
 
 function isANumberSafe(num: any) {
   return typeof num === 'number' && !isNaN(num) && isFinite(num);
@@ -196,17 +204,17 @@ export async function handleMessageRateLimiting(
     };
   }
 
-  const metaData = await db.query.inferenceModelsMetadata.findFirst({
-    where: and(
-      eq(inferenceModelsMetadata.modelName, agent.llm_config.model),
-      eq(
-        inferenceModelsMetadata.modelEndpoint,
-        agent.llm_config.model_endpoint || '',
-      ),
-    ),
-  });
+  const [modelMetaData, coreOrganization] = await Promise.all([
+    getRedisData('modelNameAndEndpointToIdMap', {
+      modelName: agent.llm_config.model,
+      modelEndpoint: agent.llm_config.model_endpoint || '',
+    }),
+    getRedisData('organizationToCoreOrganization', {
+      organizationId,
+    }),
+  ]);
 
-  if (!metaData) {
+  if (!modelMetaData || !coreOrganization?.coreOrganizationId) {
     return {
       isRateLimited: true,
       reasons: ['model-unknown'],
@@ -229,7 +237,7 @@ export async function handleMessageRateLimiting(
     return acc + tokenLength;
   }, 0);
 
-  const modelId = metaData.id;
+  const modelId = modelMetaData.modelId;
 
   const currentMinute = Math.floor(Date.now() / 60000);
 
@@ -247,14 +255,36 @@ export async function handleMessageRateLimiting(
       organizationId,
       minute: currentMinute,
     }),
+    getRedisData('organizationCredits', {
+      coreOrganizationId: coreOrganization.coreOrganizationId,
+    }),
+    getCreditCostPerModel({
+      modelName: agent.llm_config.model,
+      modelEndpoint: agent.llm_config.model_endpoint || '',
+      contextWindowSize: inputTokens,
+    }),
   ]);
 
   const currentRequests =
     result[0] && isANumberSafe(result[0]?.data) ? result[0].data : 0;
   const currentTokens =
     result[1] && isANumberSafe(result[1]?.data) ? result[1].data : 0;
+  const organizationCredits =
+    result[2] && isANumberSafe(result[2]?.credits) ? result[2].credits : 0;
+  const creditCost = result[3];
 
   const rateLimitThresholds: RateLimitReason[] = [];
+
+  if (
+    process.env.IS_CYPRESS_RUN === 'yes' ||
+    (await getSingleFlag('CREDIT_RATE_LIMITS', organizationId))
+  ) {
+    if (typeof creditCost !== 'number') {
+      rateLimitThresholds.push('context-window-size-not-supported');
+    } else if (organizationCredits - creditCost < 0) {
+      rateLimitThresholds.push('not-enough-credits');
+    }
+  }
 
   if (currentRequests + 1 >= maxRequestsPerMinutePerModel) {
     rateLimitThresholds.push('requests');

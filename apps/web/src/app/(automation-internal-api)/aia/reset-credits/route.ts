@@ -7,6 +7,7 @@ import {
   addCreditsToOrganization,
   removeCreditsFromOrganization,
 } from '@letta-cloud/server-utils';
+import { getRedisData } from '@letta-cloud/redis';
 
 export async function POST(req: NextRequest) {
   const organizationId = await getUserActiveOrganizationIdOrThrow();
@@ -107,7 +108,11 @@ export async function POST(req: NextRequest) {
 
   return new Response(
     JSON.stringify({
-      message: 'Projects deleted',
+      message: 'Credits reset',
+      amount: await getRedisData('organizationCredits', {
+        coreOrganizationId:
+          currentOrganizationCredits.organization.lettaAgentsId,
+      }),
     }),
     {
       status: 200,

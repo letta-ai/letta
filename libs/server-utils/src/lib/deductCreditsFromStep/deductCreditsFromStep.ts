@@ -19,7 +19,7 @@ export async function deductCreditsFromStep(step: Step) {
   });
 
   try {
-    if (creditCost === 0) {
+    if (!creditCost) {
       console.warn(
         `Model ${step.model} [${step.model_endpoint}] has a cost of 0 credits`,
       );

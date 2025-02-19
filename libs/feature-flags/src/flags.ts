@@ -36,6 +36,11 @@ export const featureFlags = {
     expiryDate: '2024-01-31',
     flagValue: z.boolean(),
   },
+  CREDIT_RATE_LIMITS: {
+    description: 'Credit rate limits',
+    expiryDate: '2024-02-31',
+    flagValue: z.boolean(),
+  },
 } satisfies Record<string, FlagProperties>;
 
 export type Flag = keyof typeof featureFlags;
