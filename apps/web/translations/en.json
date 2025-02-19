@@ -1026,6 +1026,7 @@
   "development-servers/layout": {
     "title": "Local Project",
     "nav": {
+      "identities": "Identities",
       "dashboard": "Dashboard",
       "agents": "Agents",
       "local": "Local server",

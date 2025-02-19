@@ -905,6 +905,26 @@
     }
   },
   "IdentitiesTable": {
-    "title": "Identities"
+    "title": "Identities",
+    "table": {
+      "loading": "Loading identities...",
+      "noResults": "No identities found",
+      "error": "There was an error loading identities, please try again or contact support."
+    },
+    "searchInput": {
+      "placeholder": "Search identities",
+      "label": "Search identities"
+    },
+    "description": "Identities are used to identify users, organizations, and other entities that own agents and memory",
+    "columns": {
+      "type": "Type",
+      "name": "Name",
+      "identifierKey": "Unique Identifier"
+    },
+    "identityTypes": {
+      "org": "Organization",
+      "user": "User",
+      "other": "Other"
+    }
   }
 }

@@ -1,3 +1,4 @@
+'use client';
 import { z } from 'zod';
 import type { DialogTableItem } from '@letta-cloud/component-library';
 import {

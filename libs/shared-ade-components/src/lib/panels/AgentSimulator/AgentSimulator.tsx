@@ -1,3 +1,4 @@
+'use client';
 import {
   Button,
   ChatBubbleIcon,
@@ -56,7 +57,7 @@ import {
 } from '@letta-cloud/generic-utils';
 import { useCurrentSimulatedAgent } from '../../hooks/useCurrentSimulatedAgent/useCurrentSimulatedAgent';
 import { useCurrentAgentMetaData } from '../../hooks';
-import { atom, useAtom, useSetAtom } from 'jotai';
+import { useAtom, useSetAtom } from 'jotai';
 import { trackClientSideEvent } from '@letta-cloud/analytics/client';
 import { AnalyticsEvent } from '@letta-cloud/analytics';
 import { jsonToCurl } from '@letta-cloud/generic-utils';
@@ -68,8 +69,7 @@ import { useCurrentAPIHostConfig } from '@letta-cloud/helpful-client-utils';
 import { AgentVariablesModal } from './AgentVariablesModal/AgentVariablesModal';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { ShareAgentDialog } from './ShareAgentDialog/ShareAgentDialog';
-
-const isSendingMessageAtom = atom(false);
+import { isSendingMessageAtom } from './atoms';
 
 type ErrorCode = z.infer<typeof ErrorMessageSchema>['code'];
 
