@@ -625,6 +625,14 @@ export const AgentState = z.object({
       z.undefined(),
     ])
     .optional(),
+  identifier_key: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
   message_buffer_autoclear: z.union([z.boolean(), z.undefined()]).optional(),
 });
 
@@ -2374,6 +2382,9 @@ export const CreateAgentRequest = z.object({
   base_template_id: z
     .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
     .optional(),
+  identifier_key: z
+    .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+    .optional(),
   message_buffer_autoclear: z.boolean().optional(),
   user_id: z
     .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
@@ -3409,6 +3420,9 @@ export const UpdateAgent = z.object({
   base_template_id: z
     .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
     .optional(),
+  identifier_key: z
+    .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+    .optional(),
   message_buffer_autoclear: z
     .union([z.boolean(), z.null(), z.array(z.union([z.boolean(), z.null()]))])
     .optional(),
@@ -3897,6 +3911,9 @@ export const get_List_agents = {
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
       base_template_id: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      identifier_key: z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
     }),

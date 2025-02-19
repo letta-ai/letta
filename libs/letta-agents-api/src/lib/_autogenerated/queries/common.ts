@@ -224,6 +224,7 @@ export const UseAgentsServiceListAgentsKeyFn = (
     after,
     baseTemplateId,
     before,
+    identifierKey,
     limit,
     matchAllTags,
     name,
@@ -236,6 +237,7 @@ export const UseAgentsServiceListAgentsKeyFn = (
     after?: string;
     baseTemplateId?: string;
     before?: string;
+    identifierKey?: string;
     limit?: number;
     matchAllTags?: boolean;
     name?: string;
@@ -253,6 +255,7 @@ export const UseAgentsServiceListAgentsKeyFn = (
       after,
       baseTemplateId,
       before,
+      identifierKey,
       limit,
       matchAllTags,
       name,

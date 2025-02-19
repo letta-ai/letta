@@ -1147,6 +1147,24 @@
               "title": "Base Template Id"
             },
             "description": "Search agents by base template id"
+          },
+          {
+            "name": "identifier_key",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Search agents by identifier key",
+              "title": "Identifier Key"
+            },
+            "description": "Search agents by identifier key"
           }
         ],
         "responses": {
@@ -6232,6 +6250,36 @@
                             ],
                             "nullable": true
                           },
+                          "identifier_key": {
+                            "oneOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "string",
+                                "format": "null",
+                                "nullable": true
+                              },
+                              {
+                                "type": "array",
+                                "items": {
+                                  "oneOf": [
+                                    {
+                                      "type": "string"
+                                    },
+                                    {
+                                      "type": "string",
+                                      "format": "null",
+                                      "nullable": true
+                                    }
+                                  ],
+                                  "nullable": true
+                                }
+                              },
+                              {}
+                            ],
+                            "nullable": true
+                          },
                           "message_buffer_autoclear": {
                             "oneOf": [
                               {
@@ -8918,6 +8966,36 @@
                             ],
                             "nullable": true
                           },
+                          "identifier_key": {
+                            "oneOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "string",
+                                "format": "null",
+                                "nullable": true
+                              },
+                              {
+                                "type": "array",
+                                "items": {
+                                  "oneOf": [
+                                    {
+                                      "type": "string"
+                                    },
+                                    {
+                                      "type": "string",
+                                      "format": "null",
+                                      "nullable": true
+                                    }
+                                  ],
+                                  "nullable": true
+                                }
+                              },
+                              {}
+                            ],
+                            "nullable": true
+                          },
                           "message_buffer_autoclear": {
                             "oneOf": [
                               {
@@ -9424,6 +9502,18 @@
             ],
             "title": "Base Template Id",
             "description": "The base template id of the agent."
+          },
+          "identifier_key": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Identifier Key",
+            "description": "The identifier key belonging to the identity associated with this agent."
           },
           "message_buffer_autoclear": {
             "type": "boolean",
@@ -11904,6 +11994,18 @@
             ],
             "title": "Base Template Id",
             "description": "The base template id of the agent."
+          },
+          "identifier_key": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Identifier Key",
+            "description": "The identifier key belonging to the identity associated with this agent."
           },
           "message_buffer_autoclear": {
             "type": "boolean",
@@ -15209,6 +15311,18 @@
             ],
             "title": "Base Template Id",
             "description": "The base template id of the agent."
+          },
+          "identifier_key": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Identifier Key",
+            "description": "The identifier key belonging to the identity associated with this agent."
           },
           "message_buffer_autoclear": {
             "anyOf": [

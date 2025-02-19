@@ -527,6 +527,19 @@ export const $AgentState = {
       title: 'Base Template Id',
       description: 'The base template id of the agent.',
     },
+    identifier_key: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Identifier Key',
+      description:
+        'The identifier key belonging to the identity associated with this agent.',
+    },
     message_buffer_autoclear: {
       type: 'boolean',
       title: 'Message Buffer Autoclear',
@@ -3092,6 +3105,19 @@ export const $CreateAgentRequest = {
       ],
       title: 'Base Template Id',
       description: 'The base template id of the agent.',
+    },
+    identifier_key: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Identifier Key',
+      description:
+        'The identifier key belonging to the identity associated with this agent.',
     },
     message_buffer_autoclear: {
       type: 'boolean',
@@ -6755,6 +6781,19 @@ export const $UpdateAgent = {
       ],
       title: 'Base Template Id',
       description: 'The base template id of the agent.',
+    },
+    identifier_key: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Identifier Key',
+      description:
+        'The identifier key belonging to the identity associated with this agent.',
     },
     message_buffer_autoclear: {
       anyOf: [

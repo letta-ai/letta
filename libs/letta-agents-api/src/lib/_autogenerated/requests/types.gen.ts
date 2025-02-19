@@ -199,6 +199,10 @@ export type AgentState = {
    */
   base_template_id?: string | null;
   /**
+   * The identifier key belonging to the identity associated with this agent.
+   */
+  identifier_key?: string | null;
+  /**
    * If set to True, the agent will not remember previous messages (though the agent will still retain state via core memory blocks and archival/recall memory). Not recommended unless you have an advanced use case.
    */
   message_buffer_autoclear?: boolean;
@@ -1015,6 +1019,10 @@ export type CreateAgentRequest = {
    * The base template id of the agent.
    */
   base_template_id?: string | null;
+  /**
+   * The identifier key belonging to the identity associated with this agent.
+   */
+  identifier_key?: string | null;
   /**
    * If set to True, the agent will not remember previous messages (though the agent will still retain state via core memory blocks and archival/recall memory). Not recommended unless you have an advanced use case.
    */
@@ -2603,6 +2611,10 @@ export type UpdateAgent = {
    */
   base_template_id?: string | null;
   /**
+   * The identifier key belonging to the identity associated with this agent.
+   */
+  identifier_key?: string | null;
+  /**
    * If set to True, the agent will not remember previous messages (though the agent will still retain state via core memory blocks and archival/recall memory). Not recommended unless you have an advanced use case.
    */
   message_buffer_autoclear?: boolean | null;
@@ -2900,6 +2912,10 @@ export type ListAgentsData = {
    * Cursor for pagination
    */
   before?: string | null;
+  /**
+   * Search agents by identifier key
+   */
+  identifierKey?: string | null;
   /**
    * Limit for pagination
    */

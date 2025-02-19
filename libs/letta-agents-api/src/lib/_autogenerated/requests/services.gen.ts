@@ -764,6 +764,7 @@ export class AgentsService {
    * @param data.projectId Search agents by project id
    * @param data.templateId Search agents by template id
    * @param data.baseTemplateId Search agents by base template id
+   * @param data.identifierKey Search agents by identifier key
    * @param data.userId
    * @returns AgentState Successful Response
    * @throws ApiError
@@ -786,6 +787,7 @@ export class AgentsService {
         project_id: data.projectId,
         template_id: data.templateId,
         base_template_id: data.baseTemplateId,
+        identifier_key: data.identifierKey,
       },
       errors: {
         422: 'Validation Error',

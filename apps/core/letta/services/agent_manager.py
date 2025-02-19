@@ -32,6 +32,7 @@ from letta.schemas.user import User as PydanticUser
 from letta.serialize_schemas import SerializedAgentSchema
 from letta.services.block_manager import BlockManager
 from letta.services.helpers.agent_manager_helper import (
+    _process_identity,
     _process_relationship,
     _process_tags,
     check_supports_structured_output,
@@ -40,6 +41,7 @@ from letta.services.helpers.agent_manager_helper import (
     initialize_message_sequence,
     package_initial_message_sequence,
 )
+from letta.services.identity_manager import IdentityManager
 from letta.services.message_manager import MessageManager
 from letta.services.source_manager import SourceManager
 from letta.services.tool_manager import ToolManager
@@ -61,6 +63,7 @@ class AgentManager:
         self.tool_manager = ToolManager()
         self.source_manager = SourceManager()
         self.message_manager = MessageManager()
+        self.identity_manager = IdentityManager()
 
     # ======================================================================================================================
     # Basic CRUD operations
@@ -125,6 +128,7 @@ class AgentManager:
             project_id=agent_create.project_id,
             template_id=agent_create.template_id,
             base_template_id=agent_create.base_template_id,
+            identifier_key=agent_create.identifier_key,
             message_buffer_autoclear=agent_create.message_buffer_autoclear,
         )
 
@@ -188,6 +192,7 @@ class AgentManager:
         project_id: Optional[str] = None,
         template_id: Optional[str] = None,
         base_template_id: Optional[str] = None,
+        identifier_key: Optional[str] = None,
         message_buffer_autoclear: bool = False,
     ) -> PydanticAgentState:
         """Create a new agent."""
@@ -215,6 +220,10 @@ class AgentManager:
             _process_relationship(session, new_agent, "sources", SourceModel, source_ids, replace=True)
             _process_relationship(session, new_agent, "core_memory", BlockModel, block_ids, replace=True)
             _process_tags(new_agent, tags, replace=True)
+            if identifier_key is not None:
+                identity = self.identity_manager.get_identity_from_identifier_key(identifier_key)
+                _process_identity(new_agent, identifier_key, identity)
+
             new_agent.create(session, actor=actor)
 
             # Convert to PydanticAgentState and return
@@ -287,6 +296,9 @@ class AgentManager:
                 _process_relationship(session, agent, "core_memory", BlockModel, agent_update.block_ids, replace=True)
             if agent_update.tags is not None:
                 _process_tags(agent, agent_update.tags, replace=True)
+            if agent_update.identifier_key is not None:
+                identity = self.identity_manager.get_identity_from_identifier_key(agent_update.identifier_key)
+                _process_identity(agent, agent_update.identifier_key, identity)
 
             # Commit and refresh the agent
             agent.update(session, actor=actor)
