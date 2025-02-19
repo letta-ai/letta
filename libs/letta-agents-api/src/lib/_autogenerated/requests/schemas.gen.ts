@@ -3692,6 +3692,61 @@ export const $Health = {
   description: 'Health check response body',
 } as const;
 
+export const $Identity = {
+  properties: {
+    id: {
+      type: 'string',
+      title: 'Id',
+      description: 'The internal id of the identity.',
+    },
+    identifier_key: {
+      type: 'string',
+      title: 'Identifier Key',
+      description: 'External, user-generated identifier key of the identity.',
+    },
+    name: {
+      type: 'string',
+      title: 'Name',
+      description: 'The name of the identity.',
+    },
+    identity_type: {
+      $ref: '#/components/schemas/IdentityType',
+      description: 'The type of the identity.',
+    },
+    project_id: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Project Id',
+      description: 'The project id of the identity, if applicable.',
+    },
+    agents: {
+      items: {
+        $ref: '#/components/schemas/AgentState',
+      },
+      type: 'array',
+      title: 'Agents',
+      description: 'The ids of the agents associated with the identity.',
+    },
+  },
+  additionalProperties: false,
+  type: 'object',
+  required: ['id', 'identifier_key', 'name', 'identity_type', 'agents'],
+  title: 'Identity',
+} as const;
+
+export const $IdentityType = {
+  type: 'string',
+  enum: ['org', 'user', 'other'],
+  title: 'IdentityType',
+  description: 'Enum to represent the type of the identity.',
+} as const;
+
 export const $ImageURL = {
   properties: {
     url: {

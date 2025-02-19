@@ -6,6 +6,7 @@ import {
   AgentsService,
   BlocksService,
   HealthService,
+  IdentitiesService,
   JobsService,
   LlmsService,
   ModelsService,
@@ -19,7 +20,7 @@ import {
   ToolsService,
   UsersService,
 } from '../requests/services.gen';
-import { MessageRole, SandboxType } from '../requests/types.gen';
+import { IdentityType, MessageRole, SandboxType } from '../requests/types.gen';
 import * as Common from './common';
 /**
  * Retrieve Tool
@@ -762,6 +763,58 @@ export const useAgentsServiceListMessagesSuspense = <
         limit,
         useAssistantMessage,
         userId,
+      }) as TData,
+    ...options,
+  });
+/**
+ * List Identities
+ * Get a list of all identities in the database
+ * @param data The data for the request.
+ * @param data.name
+ * @param data.projectId
+ * @param data.identityType
+ * @param data.before
+ * @param data.after
+ * @param data.limit
+ * @returns Identity Successful Response
+ * @throws ApiError
+ */
+export const useIdentitiesServiceListIdentitiesSuspense = <
+  TData = Common.IdentitiesServiceListIdentitiesDefaultResponse,
+  TError = unknown,
+  TQueryKey extends Array<unknown> = unknown[],
+>(
+  {
+    after,
+    before,
+    identityType,
+    limit,
+    name,
+    projectId,
+  }: {
+    after?: string;
+    before?: string;
+    identityType?: IdentityType;
+    limit?: number;
+    name?: string;
+    projectId?: string;
+  } = {},
+  queryKey?: TQueryKey,
+  options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>,
+) =>
+  useSuspenseQuery<TData, TError>({
+    queryKey: Common.UseIdentitiesServiceListIdentitiesKeyFn(
+      { after, before, identityType, limit, name, projectId },
+      queryKey,
+    ),
+    queryFn: () =>
+      IdentitiesService.listIdentities({
+        after,
+        before,
+        identityType,
+        limit,
+        name,
+        projectId,
       }) as TData,
     ...options,
   });

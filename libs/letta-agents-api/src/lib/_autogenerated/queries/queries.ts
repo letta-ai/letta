@@ -12,6 +12,7 @@ import {
   AuthService,
   BlocksService,
   HealthService,
+  IdentitiesService,
   JobsService,
   LlmsService,
   ModelsService,
@@ -32,6 +33,7 @@ import {
   CreateAgentRequest,
   CreateArchivalMemory,
   CreateBlock,
+  IdentityType,
   LettaRequest,
   LettaStreamingRequest,
   LocalSandboxConfig,
@@ -796,6 +798,58 @@ export const useAgentsServiceListMessages = <
         limit,
         useAssistantMessage,
         userId,
+      }) as TData,
+    ...options,
+  });
+/**
+ * List Identities
+ * Get a list of all identities in the database
+ * @param data The data for the request.
+ * @param data.name
+ * @param data.projectId
+ * @param data.identityType
+ * @param data.before
+ * @param data.after
+ * @param data.limit
+ * @returns Identity Successful Response
+ * @throws ApiError
+ */
+export const useIdentitiesServiceListIdentities = <
+  TData = Common.IdentitiesServiceListIdentitiesDefaultResponse,
+  TError = unknown,
+  TQueryKey extends Array<unknown> = unknown[],
+>(
+  {
+    after,
+    before,
+    identityType,
+    limit,
+    name,
+    projectId,
+  }: {
+    after?: string;
+    before?: string;
+    identityType?: IdentityType;
+    limit?: number;
+    name?: string;
+    projectId?: string;
+  } = {},
+  queryKey?: TQueryKey,
+  options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>,
+) =>
+  useQuery<TData, TError>({
+    queryKey: Common.UseIdentitiesServiceListIdentitiesKeyFn(
+      { after, before, identityType, limit, name, projectId },
+      queryKey,
+    ),
+    queryFn: () =>
+      IdentitiesService.listIdentities({
+        after,
+        before,
+        identityType,
+        limit,
+        name,
+        projectId,
       }) as TData,
     ...options,
   });

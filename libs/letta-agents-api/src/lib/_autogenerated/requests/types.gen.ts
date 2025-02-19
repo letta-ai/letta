@@ -1282,6 +1282,38 @@ export type Health = {
   status: string;
 };
 
+export type Identity = {
+  /**
+   * The internal id of the identity.
+   */
+  id: string;
+  /**
+   * External, user-generated identifier key of the identity.
+   */
+  identifier_key: string;
+  /**
+   * The name of the identity.
+   */
+  name: string;
+  /**
+   * The type of the identity.
+   */
+  identity_type: IdentityType;
+  /**
+   * The project id of the identity, if applicable.
+   */
+  project_id?: string | null;
+  /**
+   * The ids of the agents associated with the identity.
+   */
+  agents: Array<AgentState>;
+};
+
+/**
+ * Enum to represent the type of the identity.
+ */
+export type IdentityType = 'org' | 'user' | 'other';
+
 export type ImageURL = {
   url: string;
   detail?: 'auto' | 'low' | 'high';
@@ -3189,6 +3221,17 @@ export type ResetMessagesData = {
 
 export type ResetMessagesResponse = AgentState;
 
+export type ListIdentitiesData = {
+  after?: string | null;
+  before?: string | null;
+  identityType?: IdentityType | null;
+  limit?: number | null;
+  name?: string | null;
+  projectId?: string | null;
+};
+
+export type ListIdentitiesResponse = Array<Identity>;
+
 export type ListModelsResponse = Array<LLMConfig>;
 
 export type ListEmbeddingModelsResponse = Array<EmbeddingConfig>;
@@ -4289,6 +4332,21 @@ export type $OpenApiTs = {
          * Successful Response
          */
         200: AgentState;
+        /**
+         * Validation Error
+         */
+        422: HTTPValidationError;
+      };
+    };
+  };
+  '/v1/identities/': {
+    get: {
+      req: ListIdentitiesData;
+      res: {
+        /**
+         * Successful Response
+         */
+        200: Array<Identity>;
         /**
          * Validation Error
          */

@@ -7,6 +7,7 @@ import {
   AuthService,
   BlocksService,
   HealthService,
+  IdentitiesService,
   JobsService,
   LlmsService,
   ModelsService,
@@ -20,7 +21,7 @@ import {
   ToolsService,
   UsersService,
 } from '../requests/services.gen';
-import { MessageRole, SandboxType } from '../requests/types.gen';
+import { IdentityType, MessageRole, SandboxType } from '../requests/types.gen';
 export type ToolsServiceRetrieveToolDefaultResponse = Awaited<
   ReturnType<typeof ToolsService.retrieveTool>
 >;
@@ -489,6 +490,36 @@ export const UseAgentsServiceListMessagesKeyFn = (
       userId,
     },
   ]),
+];
+export type IdentitiesServiceListIdentitiesDefaultResponse = Awaited<
+  ReturnType<typeof IdentitiesService.listIdentities>
+>;
+export type IdentitiesServiceListIdentitiesQueryResult<
+  TData = IdentitiesServiceListIdentitiesDefaultResponse,
+  TError = unknown,
+> = UseQueryResult<TData, TError>;
+export const useIdentitiesServiceListIdentitiesKey =
+  'IdentitiesServiceListIdentities';
+export const UseIdentitiesServiceListIdentitiesKeyFn = (
+  {
+    after,
+    before,
+    identityType,
+    limit,
+    name,
+    projectId,
+  }: {
+    after?: string;
+    before?: string;
+    identityType?: IdentityType;
+    limit?: number;
+    name?: string;
+    projectId?: string;
+  } = {},
+  queryKey?: Array<unknown>,
+) => [
+  useIdentitiesServiceListIdentitiesKey,
+  ...(queryKey ?? [{ after, before, identityType, limit, name, projectId }]),
 ];
 export type ModelsServiceListModelsDefaultResponse = Awaited<
   ReturnType<typeof ModelsService.listModels>

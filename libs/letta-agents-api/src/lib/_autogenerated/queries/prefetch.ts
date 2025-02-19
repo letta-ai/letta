@@ -6,6 +6,7 @@ import {
   AgentsService,
   BlocksService,
   HealthService,
+  IdentitiesService,
   JobsService,
   LlmsService,
   ModelsService,
@@ -19,7 +20,7 @@ import {
   ToolsService,
   UsersService,
 } from '../requests/services.gen';
-import { MessageRole, SandboxType } from '../requests/types.gen';
+import { IdentityType, MessageRole, SandboxType } from '../requests/types.gen';
 import * as Common from './common';
 /**
  * Retrieve Tool
@@ -619,6 +620,56 @@ export const prefetchUseAgentsServiceListMessages = (
         limit,
         useAssistantMessage,
         userId,
+      }),
+  });
+/**
+ * List Identities
+ * Get a list of all identities in the database
+ * @param data The data for the request.
+ * @param data.name
+ * @param data.projectId
+ * @param data.identityType
+ * @param data.before
+ * @param data.after
+ * @param data.limit
+ * @returns Identity Successful Response
+ * @throws ApiError
+ */
+export const prefetchUseIdentitiesServiceListIdentities = (
+  queryClient: QueryClient,
+  {
+    after,
+    before,
+    identityType,
+    limit,
+    name,
+    projectId,
+  }: {
+    after?: string;
+    before?: string;
+    identityType?: IdentityType;
+    limit?: number;
+    name?: string;
+    projectId?: string;
+  } = {},
+) =>
+  queryClient.prefetchQuery({
+    queryKey: Common.UseIdentitiesServiceListIdentitiesKeyFn({
+      after,
+      before,
+      identityType,
+      limit,
+      name,
+      projectId,
+    }),
+    queryFn: () =>
+      IdentitiesService.listIdentities({
+        after,
+        before,
+        identityType,
+        limit,
+        name,
+        projectId,
       }),
   });
 /**

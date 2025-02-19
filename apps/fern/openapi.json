@@ -1199,7 +1199,24 @@
         "summary": "Create Agent",
         "description": "Create a new agent with the specified configuration.",
         "operationId": "create_agent",
-        "parameters": [],
+        "parameters": [
+          {
+            "name": "project-slug",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Project-Slug"
+            }
+          }
+        ],
         "requestBody": {
           "required": true,
           "content": {
@@ -2563,6 +2580,139 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/AgentState"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/identities/": {
+      "get": {
+        "tags": ["identities", "identities"],
+        "summary": "List Identities",
+        "description": "Get a list of all identities in the database",
+        "operationId": "list_identities",
+        "parameters": [
+          {
+            "name": "name",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Name"
+            }
+          },
+          {
+            "name": "project_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Project Id"
+            }
+          },
+          {
+            "name": "identity_type",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/IdentityType"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Identity Type"
+            }
+          },
+          {
+            "name": "before",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Before"
+            }
+          },
+          {
+            "name": "after",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "After"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": 50,
+              "title": "Limit"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Identity"
+                  },
+                  "title": "Response List Identities"
                 }
               }
             }
@@ -9143,6 +9293,18 @@
               }
             ],
             "title": "Required"
+          },
+          "examples": {
+            "anyOf": [
+              {
+                "items": {},
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Examples"
           }
         },
         "type": "object",
@@ -9177,6 +9339,18 @@
               }
             ],
             "title": "Required"
+          },
+          "examples": {
+            "anyOf": [
+              {
+                "items": {},
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Examples"
           }
         },
         "type": "object",
@@ -9564,7 +9738,8 @@
               "API_KEY",
               "BASIC",
               "BEARER_TOKEN",
-              "BASIC_WITH_JWT"
+              "BASIC_WITH_JWT",
+              "NO_AUTH"
             ],
             "title": "Auth Mode"
           },
@@ -11927,7 +12102,8 @@
               }
             ],
             "title": "Project",
-            "description": "The project slug that the agent will be associated with."
+            "description": "Deprecated: Project should now be passed via the project-slug header instead of in the request body. If using the sdk, this can be done via the new project_slug field below.",
+            "deprecated": true
           },
           "tool_exec_environment_variables": {
             "anyOf": [
@@ -12532,6 +12708,59 @@
         "required": ["version", "status"],
         "title": "Health",
         "description": "Health check response body"
+      },
+      "Identity": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id",
+            "description": "The internal id of the identity."
+          },
+          "identifier_key": {
+            "type": "string",
+            "title": "Identifier Key",
+            "description": "External, user-generated identifier key of the identity."
+          },
+          "name": {
+            "type": "string",
+            "title": "Name",
+            "description": "The name of the identity."
+          },
+          "identity_type": {
+            "$ref": "#/components/schemas/IdentityType",
+            "description": "The type of the identity."
+          },
+          "project_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Id",
+            "description": "The project id of the identity, if applicable."
+          },
+          "agents": {
+            "items": {
+              "$ref": "#/components/schemas/AgentState"
+            },
+            "type": "array",
+            "title": "Agents",
+            "description": "The ids of the agents associated with the identity."
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": ["id", "identifier_key", "name", "identity_type", "agents"],
+        "title": "Identity"
+      },
+      "IdentityType": {
+        "type": "string",
+        "enum": ["org", "user", "other"],
+        "title": "IdentityType",
+        "description": "Enum to represent the type of the identity."
       },
       "ImageURL": {
         "properties": {

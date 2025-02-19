@@ -100,6 +100,8 @@ import type {
   CreateAgentMessageAsyncResponse,
   ResetMessagesData,
   ResetMessagesResponse,
+  ListIdentitiesData,
+  ListIdentitiesResponse,
   ListModelsResponse,
   ListEmbeddingModelsResponse,
   ListBlocksData,
@@ -1536,6 +1538,43 @@ export class AgentsService {
       },
       query: {
         add_default_initial_messages: data.addDefaultInitialMessages,
+      },
+      errors: {
+        422: 'Validation Error',
+      },
+      headers,
+    });
+  }
+}
+
+export class IdentitiesService {
+  /**
+   * List Identities
+   * Get a list of all identities in the database
+   * @param data The data for the request.
+   * @param data.name
+   * @param data.projectId
+   * @param data.identityType
+   * @param data.before
+   * @param data.after
+   * @param data.limit
+   * @returns Identity Successful Response
+   * @throws ApiError
+   */
+  public static listIdentities(
+    data: ListIdentitiesData = {},
+    headers?: { user_id: string },
+  ): CancelablePromise<ListIdentitiesResponse> {
+    return __request(OpenAPI, {
+      method: 'GET',
+      url: '/v1/identities/',
+      query: {
+        name: data.name,
+        project_id: data.projectId,
+        identity_type: data.identityType,
+        before: data.before,
+        after: data.after,
+        limit: data.limit,
       },
       errors: {
         422: 'Validation Error',

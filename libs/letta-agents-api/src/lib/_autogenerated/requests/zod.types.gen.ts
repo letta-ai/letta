@@ -2514,6 +2514,30 @@ export const Health = z.object({
   status: z.string(),
 });
 
+export type IdentityType = z.infer<typeof IdentityType>;
+export const IdentityType = z.union([
+  z.literal('org'),
+  z.literal('user'),
+  z.literal('other'),
+]);
+
+export type Identity = z.infer<typeof Identity>;
+export const Identity = z.object({
+  id: z.string(),
+  identifier_key: z.string(),
+  name: z.string(),
+  identity_type: IdentityType,
+  project_id: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  agents: z.array(AgentState),
+});
+
 export type JobStatus = z.infer<typeof JobStatus>;
 export const JobStatus = z.union([
   z.literal('created'),
@@ -4447,6 +4471,40 @@ export const patch_Reset_messages = {
   response: AgentState,
 };
 
+export type get_List_identities = typeof get_List_identities;
+export const get_List_identities = {
+  method: z.literal('GET'),
+  path: z.literal('/v1/identities/'),
+  requestFormat: z.literal('json'),
+  parameters: z.object({
+    query: z.object({
+      name: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      project_id: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      identity_type: z
+        .union([
+          IdentityType,
+          z.null(),
+          z.array(z.union([IdentityType, z.null()])),
+        ])
+        .optional(),
+      before: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      after: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      limit: z
+        .union([z.number(), z.null(), z.array(z.union([z.number(), z.null()]))])
+        .optional(),
+    }),
+  }),
+  response: z.array(Identity),
+};
+
 export type get_List_models = typeof get_List_models;
 export const get_List_models = {
   method: z.literal('GET'),
@@ -5381,6 +5439,7 @@ export const EndpointByMethod = {
     '/v1/agents/{agent_id}/core-memory/blocks': get_List_core_memory_blocks,
     '/v1/agents/{agent_id}/archival-memory': get_List_archival_memory,
     '/v1/agents/{agent_id}/messages': get_List_messages,
+    '/v1/identities/': get_List_identities,
     '/v1/models/': get_List_models,
     '/v1/models/embedding': get_List_embedding_models,
     '/v1/blocks/': get_List_blocks,
