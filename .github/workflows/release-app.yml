@@ -99,8 +99,9 @@ jobs:
         working-directory: apps/desktop-electron
       - name: Install toDesktop
         run: npm install --location=global @todesktop/cli
-      - name: Install glob
-        run: npm install -g glob
+      - name: Install dependencies
+        run: npm install
+        working-directory: scripts/desktop-builders
       - name: Prepare desktop
         run: just prepare-desktop
       - name: Build electron
