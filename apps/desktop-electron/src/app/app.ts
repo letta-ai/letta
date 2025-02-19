@@ -10,7 +10,6 @@ import * as path from 'path';
 import type { ServerLogType } from '@letta-cloud/types';
 import * as todesktop from '@todesktop/runtime';
 import * as os from 'os';
-import * as ps from 'ps-node';
 import { createWebServer, setServerId } from './web-server';
 todesktop.init();
 
@@ -268,38 +267,10 @@ export default class App {
   }
 
   static async killLettaServer() {
-    await new Promise((resolve) =>
-      ps.lookup(
-        {
-          command: 'letta',
-          arguments: '--use-file-pg-uri',
-        },
-        (err, resultList) => {
-          if (err) {
-            console.log(err);
-            resolve(true);
-            return;
-          }
-
-          if (resultList.length === 0) {
-            resolve(true);
-            return;
-          }
-
-          Promise.all(
-            resultList.map((process) => {
-              return new Promise((re) => {
-                ps.kill(process.pid, () => {
-                  re(true);
-                });
-              });
-            }),
-          ).then(() => {
-            resolve(true);
-          });
-        },
-      ),
-    );
+    if (lettaServer) {
+      lettaServer.kill();
+      lettaServer = null;
+    }
   }
 
   private static async onReady() {
@@ -444,10 +415,6 @@ export default class App {
 
     electron.app.once('window-all-closed', electron.app.quit);
     electron.app.once('before-quit', async () => {
-      if (lettaServer) {
-        lettaServer.kill();
-      }
-
       await App.killLettaServer();
     });
     App.application.on('window-all-closed', App.onWindowAllClosed); // Quit when all windows are closed.
