@@ -1,8 +1,3 @@
-import React from 'react';
-import { AgentPage } from '../../../../projects/[projectSlug]/agents/[agentId]/AgentPage';
+import { CloudAgentEditor } from '$web/client/components/CloudAgentEditor/CloudAgentEditor';
 
-function LocalProjectAgentPage() {
-  return <AgentPage />;
-}
-
-export default LocalProjectAgentPage;
+export default CloudAgentEditor;

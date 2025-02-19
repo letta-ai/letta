@@ -58,6 +58,7 @@ const buttonVariants = cva(
       },
       active: {
         true: '',
+        brand: 'bg-brand-light text-brand-light-content',
       },
       hideLabel: {
         true: '',

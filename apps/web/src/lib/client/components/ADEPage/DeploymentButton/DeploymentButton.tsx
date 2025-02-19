@@ -1,5 +1,5 @@
-import { useCurrentAgent } from '../hooks';
-import { useCurrentProject } from '../../../../../../(dashboard-like)/projects/[projectSlug]/hooks';
+import { useCurrentAgent } from '../../../../../app/(logged-in)/(ade)/projects/[projectSlug]/agents/[agentId]/hooks';
+import { useCurrentProject } from '../../../../../app/(logged-in)/(dashboard-like)/projects/[projectSlug]/hooks';
 import { useTranslations } from '@letta-cloud/translations';
 import {
   AgentStateViewer,

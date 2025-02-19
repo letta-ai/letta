@@ -36,6 +36,11 @@ export const featureFlags = {
     expiryDate: '2024-01-31',
     flagValue: z.boolean(),
   },
+  TEMPLATE_DISTRIBUTION: {
+    description: 'Template distribution',
+    flagValue: z.boolean(),
+    expiryDate: '2024-03-01',
+  },
   CREDIT_RATE_LIMITS: {
     description: 'Credit rate limits',
     expiryDate: '2024-02-31',

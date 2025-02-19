@@ -1,6 +1,6 @@
 import {
+  AgentsService,
   UseAgentsServiceRetrieveAgentKeyFn,
-  webOriginSDKQueryKeys,
 } from '@letta-cloud/letta-agents-api';
 import {
   dehydrate,
@@ -8,21 +8,23 @@ import {
   QueryClient,
 } from '@tanstack/react-query';
 import React from 'react';
+import { db, agentTemplates } from '@letta-cloud/database';
+import { and, eq, isNull } from 'drizzle-orm';
 import { redirect } from 'next/navigation';
-import { webApiQueryKeys } from '@letta-cloud/web-api-client';
+import { webApiQueryKeys } from '$web/client';
 import { getProjectByIdOrSlug } from '$web/web-api/router';
 import { getUserOrRedirect } from '$web/server/auth';
-import { sdkRouter } from '$web/sdk/router';
-import { CloudAgentEditor } from '$web/client/components/CloudAgentEditor/CloudAgentEditor';
 
-interface AgentsAgentPageProps {
+interface TemplateBaseLayoutProps {
   params: Promise<{
-    agentId: string;
+    templateName: string;
     projectSlug: string;
   }>;
+  children: React.ReactNode;
 }
 
-async function AgentsAgentPage(context: AgentsAgentPageProps) {
+async function TemplateBaseLayout(props: TemplateBaseLayoutProps) {
+  const { children } = props;
   const queryClient = new QueryClient();
   const user = await getUserOrRedirect();
 
@@ -30,12 +32,7 @@ async function AgentsAgentPage(context: AgentsAgentPageProps) {
     return null;
   }
 
-  const { agentId, projectSlug } = await context.params;
-
-  if (projectSlug === 'development-servers') {
-    redirect('/projects');
-    return;
-  }
+  const { templateName, projectSlug } = await props.params;
 
   const project = await getProjectByIdOrSlug({
     params: { projectId: projectSlug },
@@ -49,38 +46,40 @@ async function AgentsAgentPage(context: AgentsAgentPageProps) {
     return;
   }
 
-  const deployedAgent = await sdkRouter.agents.getAgentById(
+  const agentTemplate = await db.query.agentTemplates.findFirst({
+    where: and(
+      eq(agentTemplates.name, templateName),
+      eq(agentTemplates.organizationId, user.activeOrganizationId),
+      isNull(agentTemplates.deletedAt),
+    ),
+    columns: {
+      name: true,
+      id: true,
+    },
+  });
+
+  const agentId = agentTemplate?.id;
+
+  if (!agentId) {
+    redirect(`/projects/${projectSlug}/agents`);
+    return;
+  }
+
+  const agent = await AgentsService.retrieveAgent(
     {
-      params: {
-        agent_id: agentId,
-      },
+      agentId,
     },
     {
-      request: {
-        organizationId: user.activeOrganizationId,
-        userId: user.id,
-        lettaAgentsUserId: user.lettaAgentsId,
-        source: 'web',
-      },
+      user_id: user.lettaAgentsId,
     },
   );
-
-  if (!deployedAgent || deployedAgent.status !== 200) {
-    redirect(`/projects/${projectSlug}/agents`);
-    return;
-  }
-
-  if (project.body.id !== deployedAgent.body.project_id) {
-    redirect(`/projects/${projectSlug}/agents`);
-    return;
-  }
 
   const queries = [
     queryClient.prefetchQuery({
       queryKey: UseAgentsServiceRetrieveAgentKeyFn({
         agentId,
       }),
-      queryFn: () => deployedAgent.body,
+      queryFn: () => agent,
     }),
     queryClient.prefetchQuery({
       queryKey: webApiQueryKeys.projects.getProjectByIdOrSlug(projectSlug),
@@ -89,8 +88,14 @@ async function AgentsAgentPage(context: AgentsAgentPageProps) {
       }),
     }),
     queryClient.prefetchQuery({
-      queryKey: webOriginSDKQueryKeys.agents.getAgentById(agentId),
-      queryFn: () => deployedAgent,
+      queryKey: webApiQueryKeys.agentTemplates.listAgentTemplatesWithSearch({
+        name: agentTemplate.name,
+      }),
+      queryFn: () => ({
+        body: {
+          agentTemplates: [agentTemplate],
+        },
+      }),
     }),
   ];
 
@@ -98,9 +103,9 @@ async function AgentsAgentPage(context: AgentsAgentPageProps) {
 
   return (
     <HydrationBoundary state={dehydrate(queryClient)}>
-      <CloudAgentEditor />
+      {children}
     </HydrationBoundary>
   );
 }
 
-export default AgentsAgentPage;
+export default TemplateBaseLayout;

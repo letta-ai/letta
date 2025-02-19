@@ -1410,5 +1410,11 @@
         "lastModified": "Last modified"
       }
     }
+  },
+  "components/TemplateNavigationSidebar": {
+    "nav": {
+      "templateEditor": "Template Editor",
+      "distribution": "Distribution"
+    }
   }
 }
