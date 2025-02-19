@@ -48,7 +48,15 @@ class TerminalToolRule(BaseToolRule):
     type: Literal[ToolRuleType.exit_loop] = ToolRuleType.exit_loop
 
 
+class ContinueToolRule(BaseToolRule):
+    """
+    Represents a tool rule configuration where if this tool gets called, it must continue the agent loop.
+    """
+
+    type: Literal[ToolRuleType.continue_loop] = ToolRuleType.continue_loop
+
+
 ToolRule = Annotated[
-    Union[ChildToolRule, InitToolRule, TerminalToolRule, ConditionalToolRule],
+    Union[ChildToolRule, InitToolRule, TerminalToolRule, ConditionalToolRule, ContinueToolRule],
     Field(discriminator="type"),
 ]

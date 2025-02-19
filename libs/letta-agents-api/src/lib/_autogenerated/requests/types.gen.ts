@@ -130,7 +130,11 @@ export type AgentState = {
    * The list of tool rules.
    */
   tool_rules?: Array<
-    ChildToolRule | InitToolRule | TerminalToolRule | ConditionalToolRule
+    | ChildToolRule
+    | InitToolRule
+    | TerminalToolRule
+    | ConditionalToolRule
+    | ContinueToolRule
   > | null;
   /**
    * The ids of the messages in the agent's in-context memory.
@@ -891,6 +895,19 @@ export type ContextWindowOverview = {
 };
 
 /**
+ * Represents a tool rule configuration where if this tool gets called, it must continue the agent loop.
+ */
+export type ContinueToolRule = {
+  /**
+   * The name of the tool. Must exist in the database for the user's organization.
+   */
+  tool_name: string;
+  type?: 'continue_loop';
+};
+
+export type type9 = 'continue_loop';
+
+/**
  * CreateAgent model specifically for POST request body, excluding user_id which comes from headers
  */
 export type CreateAgentRequest = {
@@ -922,7 +939,11 @@ export type CreateAgentRequest = {
    * The tool rules governing the agent.
    */
   tool_rules?: Array<
-    ChildToolRule | InitToolRule | TerminalToolRule | ConditionalToolRule
+    | ChildToolRule
+    | InitToolRule
+    | TerminalToolRule
+    | ConditionalToolRule
+    | ContinueToolRule
   > | null;
   /**
    * The tags associated with the agent.
@@ -956,6 +977,10 @@ export type CreateAgentRequest = {
    * If true, attaches the Letta multi-agent tools (e.g. sending a message to another agent).
    */
   include_multi_agent_tools?: boolean;
+  /**
+   * If true, attaches the Letta base tool rules (e.g. deny all tools not explicitly allowed).
+   */
+  include_base_tool_rules?: boolean;
   /**
    * The description of the agent.
    */
@@ -1370,7 +1395,7 @@ export type InitToolRule = {
   type?: 'run_first';
 };
 
-export type type9 = 'run_first';
+export type type10 = 'run_first';
 
 export type InputAudio = {
   data: string;
@@ -1990,14 +2015,14 @@ export type ResponseFormatJSONObject = {
   type: 'json_object';
 };
 
-export type type10 = 'json_object';
+export type type11 = 'json_object';
 
 export type ResponseFormatJSONSchema = {
   json_schema: JSONSchema;
   type: 'json_schema';
 };
 
-export type type11 = 'json_schema';
+export type type12 = 'json_schema';
 
 export type ResponseFormatText = {
   type: 'text';
@@ -2388,7 +2413,7 @@ export type TerminalToolRule = {
   type?: 'exit_loop';
 };
 
-export type type12 = 'exit_loop';
+export type type13 = 'exit_loop';
 
 export type TextContent = {
   /**
@@ -2638,7 +2663,11 @@ export type UpdateAgent = {
    * The tool rules governing the agent.
    */
   tool_rules?: Array<
-    ChildToolRule | InitToolRule | TerminalToolRule | ConditionalToolRule
+    | ChildToolRule
+    | InitToolRule
+    | TerminalToolRule
+    | ConditionalToolRule
+    | ContinueToolRule
   > | null;
   /**
    * The LLM configuration used by the agent.

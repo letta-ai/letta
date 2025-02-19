@@ -4640,6 +4640,24 @@
                                         }
                                       },
                                       "required": ["tool_name"]
+                                    },
+                                    {
+                                      "type": "object",
+                                      "properties": {
+                                        "tool_name": {
+                                          "type": "string"
+                                        },
+                                        "type": {
+                                          "oneOf": [
+                                            {
+                                              "type": "string",
+                                              "enum": ["continue_loop"]
+                                            },
+                                            {}
+                                          ]
+                                        }
+                                      },
+                                      "required": ["tool_name"]
                                     }
                                   ]
                                 }
@@ -4774,6 +4792,24 @@
                                                 "oneOf": [
                                                   {
                                                     "type": "boolean"
+                                                  },
+                                                  {}
+                                                ]
+                                              }
+                                            },
+                                            "required": ["tool_name"]
+                                          },
+                                          {
+                                            "type": "object",
+                                            "properties": {
+                                              "tool_name": {
+                                                "type": "string"
+                                              },
+                                              "type": {
+                                                "oneOf": [
+                                                  {
+                                                    "type": "string",
+                                                    "enum": ["continue_loop"]
                                                   },
                                                   {}
                                                 ]
@@ -7356,6 +7392,24 @@
                                         }
                                       },
                                       "required": ["tool_name"]
+                                    },
+                                    {
+                                      "type": "object",
+                                      "properties": {
+                                        "tool_name": {
+                                          "type": "string"
+                                        },
+                                        "type": {
+                                          "oneOf": [
+                                            {
+                                              "type": "string",
+                                              "enum": ["continue_loop"]
+                                            },
+                                            {}
+                                          ]
+                                        }
+                                      },
+                                      "required": ["tool_name"]
                                     }
                                   ]
                                 }
@@ -7490,6 +7544,24 @@
                                                 "oneOf": [
                                                   {
                                                     "type": "boolean"
+                                                  },
+                                                  {}
+                                                ]
+                                              }
+                                            },
+                                            "required": ["tool_name"]
+                                          },
+                                          {
+                                            "type": "object",
+                                            "properties": {
+                                              "tool_name": {
+                                                "type": "string"
+                                              },
+                                              "type": {
+                                                "oneOf": [
+                                                  {
+                                                    "type": "string",
+                                                    "enum": ["continue_loop"]
                                                   },
                                                   {}
                                                 ]
@@ -9763,6 +9835,9 @@
                     },
                     {
                       "$ref": "#/components/schemas/ConditionalToolRule"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ContinueToolRule"
                     }
                   ],
                   "discriminator": {
@@ -9770,6 +9845,7 @@
                     "mapping": {
                       "conditional": "#/components/schemas/ConditionalToolRule",
                       "constrain_child_tools": "#/components/schemas/ChildToolRule",
+                      "continue_loop": "#/components/schemas/ContinueToolRule",
                       "exit_loop": "#/components/schemas/TerminalToolRule",
                       "run_first": "#/components/schemas/InitToolRule"
                     }
@@ -12037,6 +12113,27 @@
         "title": "ContextWindowOverview",
         "description": "Overview of the context window, including the number of messages and tokens."
       },
+      "ContinueToolRule": {
+        "properties": {
+          "tool_name": {
+            "type": "string",
+            "title": "Tool Name",
+            "description": "The name of the tool. Must exist in the database for the user's organization."
+          },
+          "type": {
+            "type": "string",
+            "enum": ["continue_loop"],
+            "const": "continue_loop",
+            "title": "Type",
+            "default": "continue_loop"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": ["tool_name"],
+        "title": "ContinueToolRule",
+        "description": "Represents a tool rule configuration where if this tool gets called, it must continue the agent loop."
+      },
       "CreateAgentRequest": {
         "properties": {
           "name": {
@@ -12135,6 +12232,9 @@
                     },
                     {
                       "$ref": "#/components/schemas/ConditionalToolRule"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ContinueToolRule"
                     }
                   ],
                   "discriminator": {
@@ -12142,6 +12242,7 @@
                     "mapping": {
                       "conditional": "#/components/schemas/ConditionalToolRule",
                       "constrain_child_tools": "#/components/schemas/ChildToolRule",
+                      "continue_loop": "#/components/schemas/ContinueToolRule",
                       "exit_loop": "#/components/schemas/TerminalToolRule",
                       "run_first": "#/components/schemas/InitToolRule"
                     }
@@ -12235,6 +12336,12 @@
             "title": "Include Multi Agent Tools",
             "description": "If true, attaches the Letta multi-agent tools (e.g. sending a message to another agent).",
             "default": false
+          },
+          "include_base_tool_rules": {
+            "type": "boolean",
+            "title": "Include Base Tool Rules",
+            "description": "If true, attaches the Letta base tool rules (e.g. deny all tools not explicitly allowed).",
+            "default": true
           },
           "description": {
             "anyOf": [
@@ -15737,6 +15844,9 @@
                     },
                     {
                       "$ref": "#/components/schemas/ConditionalToolRule"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ContinueToolRule"
                     }
                   ],
                   "discriminator": {
@@ -15744,6 +15854,7 @@
                     "mapping": {
                       "conditional": "#/components/schemas/ConditionalToolRule",
                       "constrain_child_tools": "#/components/schemas/ChildToolRule",
+                      "continue_loop": "#/components/schemas/ContinueToolRule",
                       "exit_loop": "#/components/schemas/TerminalToolRule",
                       "run_first": "#/components/schemas/InitToolRule"
                     }

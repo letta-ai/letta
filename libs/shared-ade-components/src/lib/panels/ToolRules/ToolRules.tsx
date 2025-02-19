@@ -980,9 +980,7 @@ function ToolRuleList(props: ToolRuleListProps) {
             }
 
             return (
-              <div key={index}>
-                <Typography>{rule.type}</Typography>
-              </div>
+              null
             );
           })}
         </VStack>

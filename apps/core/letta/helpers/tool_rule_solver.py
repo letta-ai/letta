@@ -4,7 +4,7 @@ from typing import List, Optional, Union
 from pydantic import BaseModel, Field
 
 from letta.schemas.enums import ToolRuleType
-from letta.schemas.tool_rule import BaseToolRule, ChildToolRule, ConditionalToolRule, InitToolRule, TerminalToolRule
+from letta.schemas.tool_rule import BaseToolRule, ChildToolRule, ConditionalToolRule, ContinueToolRule, InitToolRule, TerminalToolRule
 
 
 class ToolRuleValidationError(Exception):
@@ -17,6 +17,9 @@ class ToolRuleValidationError(Exception):
 class ToolRulesSolver(BaseModel):
     init_tool_rules: List[InitToolRule] = Field(
         default_factory=list, description="Initial tool rules to be used at the start of tool execution."
+    )
+    continue_tool_rules: List[ContinueToolRule] = Field(
+        default_factory=list, description="Continue tool rules to be used to continue tool execution."
     )
     tool_rules: List[Union[ChildToolRule, ConditionalToolRule]] = Field(
         default_factory=list, description="Standard tool rules for controlling execution sequence and allowed transitions."
@@ -43,6 +46,9 @@ class ToolRulesSolver(BaseModel):
             elif rule.type == ToolRuleType.exit_loop:
                 assert isinstance(rule, TerminalToolRule)
                 self.terminal_tool_rules.append(rule)
+            elif rule.type == ToolRuleType.continue_loop:
+                assert isinstance(rule, ContinueToolRule)
+                self.continue_tool_rules.append(rule)
 
     def update_tool_usage(self, tool_name: str):
         """Update the internal state to track the last tool called."""
@@ -79,6 +85,10 @@ class ToolRulesSolver(BaseModel):
     def has_children_tools(self, tool_name):
         """Check if the tool has children tools"""
         return any(rule.tool_name == tool_name for rule in self.tool_rules)
+
+    def is_continue_tool(self, tool_name):
+        """Check if the tool is defined as a continue tool in the tool rules."""
+        return any(rule.tool_name == tool_name for rule in self.continue_tool_rules)
 
     def validate_conditional_tool(self, rule: ConditionalToolRule):
         """

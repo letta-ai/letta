@@ -2351,6 +2351,7 @@ class LocalClient(AbstractClient):
         tool_rules: Optional[List[BaseToolRule]] = None,
         include_base_tools: Optional[bool] = True,
         include_multi_agent_tools: bool = False,
+        include_base_tool_rules: bool = True,
         # metadata
         metadata: Optional[Dict] = {"human:": DEFAULT_HUMAN, "persona": DEFAULT_PERSONA},
         description: Optional[str] = None,
@@ -2402,6 +2403,7 @@ class LocalClient(AbstractClient):
             "tool_rules": tool_rules,
             "include_base_tools": include_base_tools,
             "include_multi_agent_tools": include_multi_agent_tools,
+            "include_base_tool_rules": include_base_tool_rules,
             "system": system,
             "agent_type": agent_type,
             "llm_config": llm_config if llm_config else self._default_llm_config,

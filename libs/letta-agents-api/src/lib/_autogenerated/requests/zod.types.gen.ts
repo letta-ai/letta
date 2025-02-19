@@ -167,6 +167,12 @@ export const ConditionalToolRule = z.object({
   require_output_mapping: z.union([z.boolean(), z.undefined()]).optional(),
 });
 
+export type ContinueToolRule = z.infer<typeof ContinueToolRule>;
+export const ContinueToolRule = z.object({
+  tool_name: z.string(),
+  type: z.union([z.literal('continue_loop'), z.undefined()]).optional(),
+});
+
 export type AgentType = z.infer<typeof AgentType>;
 export const AgentType = z.union([
   z.literal('memgpt_agent'),
@@ -539,6 +545,7 @@ export const AgentState = z.object({
           InitToolRule,
           TerminalToolRule,
           ConditionalToolRule,
+          ContinueToolRule,
         ]),
       ),
       z.null(),
@@ -550,6 +557,7 @@ export const AgentState = z.object({
               InitToolRule,
               TerminalToolRule,
               ConditionalToolRule,
+              ContinueToolRule,
             ]),
           ),
           z.null(),
@@ -2294,6 +2302,7 @@ export const CreateAgentRequest = z.object({
           InitToolRule,
           TerminalToolRule,
           ConditionalToolRule,
+          ContinueToolRule,
         ]),
       ),
       z.null(),
@@ -2305,6 +2314,7 @@ export const CreateAgentRequest = z.object({
               InitToolRule,
               TerminalToolRule,
               ConditionalToolRule,
+              ContinueToolRule,
             ]),
           ),
           z.null(),
@@ -2342,6 +2352,7 @@ export const CreateAgentRequest = z.object({
     .optional(),
   include_base_tools: z.boolean().optional(),
   include_multi_agent_tools: z.boolean().optional(),
+  include_base_tool_rules: z.boolean().optional(),
   description: z
     .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
     .optional(),
@@ -3431,6 +3442,7 @@ export const UpdateAgent = z.object({
           InitToolRule,
           TerminalToolRule,
           ConditionalToolRule,
+          ContinueToolRule,
         ]),
       ),
       z.null(),
@@ -3442,6 +3454,7 @@ export const UpdateAgent = z.object({
               InitToolRule,
               TerminalToolRule,
               ConditionalToolRule,
+              ContinueToolRule,
             ]),
           ),
           z.null(),

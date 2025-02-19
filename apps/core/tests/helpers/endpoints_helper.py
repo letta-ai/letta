@@ -52,6 +52,7 @@ def setup_agent(
     tool_rules: Optional[List[BaseToolRule]] = None,
     agent_uuid: str = agent_uuid,
     include_base_tools: bool = True,
+    include_base_tool_rules: bool = True,
 ) -> AgentState:
     config_data = json.load(open(filename, "r"))
     llm_config = LLMConfig(**config_data)
@@ -72,6 +73,7 @@ def setup_agent(
         tool_ids=tool_ids,
         tool_rules=tool_rules,
         include_base_tools=include_base_tools,
+        include_base_tool_rules=include_base_tool_rules,
     )
 
     return agent_state

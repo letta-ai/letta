@@ -9,7 +9,7 @@ from sqlalchemy import Dialect
 from letta.schemas.embedding_config import EmbeddingConfig
 from letta.schemas.enums import ToolRuleType
 from letta.schemas.llm_config import LLMConfig
-from letta.schemas.tool_rule import ChildToolRule, ConditionalToolRule, InitToolRule, TerminalToolRule, ToolRule
+from letta.schemas.tool_rule import ChildToolRule, ConditionalToolRule, ContinueToolRule, InitToolRule, TerminalToolRule, ToolRule
 
 # --------------------------
 # LLMConfig Serialization
@@ -74,7 +74,7 @@ def deserialize_tool_rules(data: Optional[List[Dict]]) -> List[Union[ChildToolRu
     return [deserialize_tool_rule(rule_data) for rule_data in data]
 
 
-def deserialize_tool_rule(data: Dict) -> Union[ChildToolRule, InitToolRule, TerminalToolRule, ConditionalToolRule]:
+def deserialize_tool_rule(data: Dict) -> Union[ChildToolRule, InitToolRule, TerminalToolRule, ConditionalToolRule, ContinueToolRule]:
     """Deserialize a dictionary to the appropriate ToolRule subclass based on 'type'."""
     rule_type = ToolRuleType(data.get("type"))
 
@@ -86,7 +86,8 @@ def deserialize_tool_rule(data: Dict) -> Union[ChildToolRule, InitToolRule, Term
         return ChildToolRule(**data)
     elif rule_type == ToolRuleType.conditional:
         return ConditionalToolRule(**data)
-
+    elif rule_type == ToolRuleType.continue_loop:
+        return ContinueToolRule(**data)
     raise ValueError(f"Unknown ToolRule type: {rule_type}")
 
 

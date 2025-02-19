@@ -365,12 +365,16 @@ export const $AgentState = {
               {
                 $ref: '#/components/schemas/ConditionalToolRule',
               },
+              {
+                $ref: '#/components/schemas/ContinueToolRule',
+              },
             ],
             discriminator: {
               propertyName: 'type',
               mapping: {
                 conditional: '#/components/schemas/ConditionalToolRule',
                 constrain_child_tools: '#/components/schemas/ChildToolRule',
+                continue_loop: '#/components/schemas/ContinueToolRule',
                 exit_loop: '#/components/schemas/TerminalToolRule',
                 run_first: '#/components/schemas/InitToolRule',
               },
@@ -2730,6 +2734,30 @@ export const $ContextWindowOverview = {
     'Overview of the context window, including the number of messages and tokens.',
 } as const;
 
+export const $ContinueToolRule = {
+  properties: {
+    tool_name: {
+      type: 'string',
+      title: 'Tool Name',
+      description:
+        "The name of the tool. Must exist in the database for the user's organization.",
+    },
+    type: {
+      type: 'string',
+      enum: ['continue_loop'],
+      const: 'continue_loop',
+      title: 'Type',
+      default: 'continue_loop',
+    },
+  },
+  additionalProperties: false,
+  type: 'object',
+  required: ['tool_name'],
+  title: 'ContinueToolRule',
+  description:
+    'Represents a tool rule configuration where if this tool gets called, it must continue the agent loop.',
+} as const;
+
 export const $CreateAgentRequest = {
   properties: {
     name: {
@@ -2829,12 +2857,16 @@ export const $CreateAgentRequest = {
               {
                 $ref: '#/components/schemas/ConditionalToolRule',
               },
+              {
+                $ref: '#/components/schemas/ContinueToolRule',
+              },
             ],
             discriminator: {
               propertyName: 'type',
               mapping: {
                 conditional: '#/components/schemas/ConditionalToolRule',
                 constrain_child_tools: '#/components/schemas/ChildToolRule',
+                continue_loop: '#/components/schemas/ContinueToolRule',
                 exit_loop: '#/components/schemas/TerminalToolRule',
                 run_first: '#/components/schemas/InitToolRule',
               },
@@ -2931,6 +2963,13 @@ export const $CreateAgentRequest = {
       description:
         'If true, attaches the Letta multi-agent tools (e.g. sending a message to another agent).',
       default: false,
+    },
+    include_base_tool_rules: {
+      type: 'boolean',
+      title: 'Include Base Tool Rules',
+      description:
+        'If true, attaches the Letta base tool rules (e.g. deny all tools not explicitly allowed).',
+      default: true,
     },
     description: {
       anyOf: [
@@ -6800,12 +6839,16 @@ export const $UpdateAgent = {
               {
                 $ref: '#/components/schemas/ConditionalToolRule',
               },
+              {
+                $ref: '#/components/schemas/ContinueToolRule',
+              },
             ],
             discriminator: {
               propertyName: 'type',
               mapping: {
                 conditional: '#/components/schemas/ConditionalToolRule',
                 constrain_child_tools: '#/components/schemas/ChildToolRule',
+                continue_loop: '#/components/schemas/ContinueToolRule',
                 exit_loop: '#/components/schemas/TerminalToolRule',
                 run_first: '#/components/schemas/InitToolRule',
               },
