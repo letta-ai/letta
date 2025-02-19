@@ -12,8 +12,7 @@ from opentelemetry.instrumentation.requests import RequestsInstrumentor
 from opentelemetry.sdk.resources import Resource
 from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export import BatchSpanProcessor
-from opentelemetry.trace import Status, StatusCode
-from opentelemetry.trace.span import Span
+from opentelemetry.trace import Span, Status, StatusCode
 
 # Get a tracer instance - will be no-op until setup_tracing is called
 tracer = trace.get_tracer(__name__)
@@ -129,14 +128,15 @@ def get_trace_id() -> str:
         return ""
 
 
-def request_hook(span, response):
+def request_hook(span: Span, _request_context: Optional[Dict] = None, response: Optional[Any] = None):
     """Hook to update span based on response status code"""
-    status_code = response.status_code
-    if 200 <= status_code < 400:
-        span.set_status(Status(StatusCode.OK))
-    else:
-        span.set_status(Status(StatusCode.ERROR))
-        span.set_attribute("error.message", f"HTTP {status_code}: {response.reason}")
+    if response is not None:
+        if hasattr(response, "status_code"):
+            span.set_attribute("http.status_code", response.status_code)
+            if response.status_code >= 400:
+                span.set_status(Status(StatusCode.ERROR))
+            elif 200 <= response.status_code < 300:
+                span.set_status(Status(StatusCode.OK))
 
 
 def setup_tracing(endpoint: str, service_name: str = "memgpt-server") -> None:
