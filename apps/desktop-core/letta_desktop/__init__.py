@@ -23,6 +23,7 @@ from tiktoken_ext import openai_public # noqa
 import tiktoken_ext # noqa
 import tiktoken # noqa
 import pydantic.deprecated.decorator # noqa
+import opentelemetry # noqa
 
 # read first argument
 
