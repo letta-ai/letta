@@ -231,6 +231,14 @@ def create_application() -> "FastAPI":
         allow_headers=["*"],
     )
 
+    # Set up OpenTelemetry tracing
+    endpoint = os.getenv("OTEL_EXPORTER_OTLP_ENDPOINT")
+    if endpoint:
+        print(f"▶ Using OTLP tracing with endpoint: {endpoint}")
+        from letta.tracing import setup_tracing
+
+        setup_tracing(endpoint=endpoint, service_name="memgpt-server")
+
     for route in v1_routes:
         app.include_router(route, prefix=API_PREFIX)
         # this gives undocumented routes for "latest" and bare api calls.

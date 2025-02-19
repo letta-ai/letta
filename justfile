@@ -148,7 +148,8 @@ describe-web:
         --set secrets.E2B_API_KEY=${E2B_API_KEY} \
         --set secrets.E2B_SANDBOX_TEMPLATE_ID=${E2B_SANDBOX_TEMPLATE_ID} \
         --set secrets.LETTA_LOAD_DEFAULT_EXTERNAL_TOOLS=True \
-        --set otelCollector.clickhouse.password=${CLICKHOUSE_PASSWORD}
+        --set otelCollector.clickhouse.password=${CLICKHOUSE_PASSWORD} \
+        --set otelCollector.clickhouse.endpoint=${OTEL_EXPORTER_OTLP_ENDPOINT}
 
 # Deploy Grafana
 @deploy-grafana:

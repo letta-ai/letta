@@ -31,6 +31,7 @@ from letta.schemas.openai.chat_completion_request import ChatCompletionRequest, 
 from letta.schemas.openai.chat_completion_response import ChatCompletionResponse
 from letta.settings import ModelSettings
 from letta.streaming_interface import AgentChunkStreamingInterface, AgentRefreshStreamingInterface
+from letta.tracing import log_event, trace_method
 
 LLM_API_PROVIDER_OPTIONS = ["openai", "azure", "anthropic", "google_ai", "cohere", "local", "groq", "deepseek"]
 
@@ -70,9 +71,28 @@ def retry_with_exponential_backoff(
                 if http_err.response.status_code in error_codes:
                     # Increment retries
                     num_retries += 1
+                    log_event(
+                        "llm_retry_attempt",
+                        {
+                            "attempt": num_retries,
+                            "delay": delay,
+                            "status_code": http_err.response.status_code,
+                            "error_type": type(http_err).__name__,
+                            "error": str(http_err),
+                        },
+                    )
 
                     # Check if max retries has been reached
                     if num_retries > max_retries:
+                        log_event(
+                            "llm_max_retries_exceeded",
+                            {
+                                "max_retries": max_retries,
+                                "status_code": http_err.response.status_code,
+                                "error_type": type(http_err).__name__,
+                                "error": str(http_err),
+                            },
+                        )
                         raise RateLimitExceededError("Maximum number of retries exceeded", max_retries=max_retries)
 
                     # Increment the delay
@@ -86,15 +106,21 @@ def retry_with_exponential_backoff(
                     time.sleep(delay)
                 else:
                     # For other HTTP errors, re-raise the exception
+                    log_event(
+                        "llm_non_retryable_error",
+                        {"status_code": http_err.response.status_code, "error_type": type(http_err).__name__, "error": str(http_err)},
+                    )
                     raise
 
             # Raise exceptions for any errors not specified
             except Exception as e:
+                log_event("llm_unexpected_error", {"error_type": type(e).__name__, "error": str(e)})
                 raise e
 
     return wrapper
 
 
+@trace_method("LLM Request")
 @retry_with_exponential_backoff
 def create(
     # agent_state: AgentState,

@@ -206,7 +206,10 @@ function UpdateInferenceModelForm(props: UpdateInferenceModelFormProps) {
             <FormActions>
               <Button
                 data-testid="save-model"
-                busy={isPending} type="submit" label="Update" />
+                busy={isPending}
+                type="submit"
+                label="Update"
+              />
             </FormActions>
           </VStack>
         </VStack>

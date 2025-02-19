@@ -121,7 +121,6 @@ function UpdateEmbeddingModelForm(props: UpdateEmbeddingModelFormProps) {
               render={({ field }) => (
                 <Input
                   {...field}
-
                   fullWidth
                   type="number"
                   data-testid="rpm-limit"
@@ -134,7 +133,6 @@ function UpdateEmbeddingModelForm(props: UpdateEmbeddingModelFormProps) {
               render={({ field }) => (
                 <Input
                   {...field}
-
                   fullWidth
                   type="number"
                   data-testid="tpm-limit"
@@ -159,7 +157,10 @@ function UpdateEmbeddingModelForm(props: UpdateEmbeddingModelFormProps) {
             <FormActions>
               <Button
                 data-testid="save-model"
-                busy={isPending} type="submit" label="Update" />
+                busy={isPending}
+                type="submit"
+                label="Update"
+              />
             </FormActions>
           </VStack>
         </VStack>

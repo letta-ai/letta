@@ -38,11 +38,9 @@ export async function POST() {
     );
   }
 
-  await db
-    .update(organizations)
-    .set({
-      isAdmin: true,
-    })
+  await db.update(organizations).set({
+    isAdmin: true,
+  });
 
   return new Response(
     JSON.stringify({

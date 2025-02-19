@@ -17,13 +17,9 @@ describe('letta', () => {
     });
     cy.deleteProjectsWithName('CYDOGGRATELIMIT');
     cy.visit('/signout');
-
-
   });
 
   afterEach(() => {
-
-
     cy.googleLogin();
 
     cy.request({
@@ -49,7 +45,6 @@ describe('letta', () => {
     cy.location('pathname').should('eq', '/login');
 
     cy.googleLogin();
-
 
     cy.get('h1').contains(/Projects/);
 
@@ -85,7 +80,6 @@ describe('letta', () => {
       },
     });
 
-
     cy.findByTestId('chat-simulator-input').type('What is my name', {
       force: true,
     });
@@ -94,6 +88,8 @@ describe('letta', () => {
       force: true,
     });
 
-    cy.findByTestId('chat-simulator-error', { timeout: 50000 }).contains('Rate limit reached, please wait a few moments before trying again.');
+    cy.findByTestId('chat-simulator-error', { timeout: 50000 }).contains(
+      'Rate limit reached, please wait a few moments before trying again.',
+    );
   });
 });
