@@ -3266,6 +3266,7 @@ export type ListIdentitiesData = {
   limit?: number | null;
   name?: string | null;
   projectId?: string | null;
+  userId?: string | null;
 };
 
 export type ListIdentitiesResponse = Array<Identity>;

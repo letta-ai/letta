@@ -632,6 +632,7 @@ export const prefetchUseAgentsServiceListMessages = (
  * @param data.before
  * @param data.after
  * @param data.limit
+ * @param data.userId
  * @returns Identity Successful Response
  * @throws ApiError
  */
@@ -644,6 +645,7 @@ export const prefetchUseIdentitiesServiceListIdentities = (
     limit,
     name,
     projectId,
+    userId,
   }: {
     after?: string;
     before?: string;
@@ -651,6 +653,7 @@ export const prefetchUseIdentitiesServiceListIdentities = (
     limit?: number;
     name?: string;
     projectId?: string;
+    userId?: string;
   } = {},
 ) =>
   queryClient.prefetchQuery({
@@ -661,6 +664,7 @@ export const prefetchUseIdentitiesServiceListIdentities = (
       limit,
       name,
       projectId,
+      userId,
     }),
     queryFn: () =>
       IdentitiesService.listIdentities({
@@ -670,6 +674,7 @@ export const prefetchUseIdentitiesServiceListIdentities = (
         limit,
         name,
         projectId,
+        userId,
       }),
   });
 /**

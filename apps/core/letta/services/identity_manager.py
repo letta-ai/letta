@@ -27,6 +27,7 @@ class IdentityManager:
         before: Optional[str] = None,
         after: Optional[str] = None,
         limit: Optional[int] = 50,
+        actor: PydanticUser = None,
     ) -> list[PydanticIdentity]:
         with self.session_maker() as session:
             filters = {"organization_id": actor.organization_id}

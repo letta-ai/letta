@@ -4541,6 +4541,11 @@ export const get_List_identities = {
         .union([z.number(), z.null(), z.array(z.union([z.number(), z.null()]))])
         .optional(),
     }),
+    header: z.object({
+      user_id: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+    }),
   }),
   response: z.array(Identity),
 };

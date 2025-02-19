@@ -813,6 +813,7 @@ export const useAgentsServiceListMessages = <
  * @param data.before
  * @param data.after
  * @param data.limit
+ * @param data.userId
  * @returns Identity Successful Response
  * @throws ApiError
  */
@@ -828,6 +829,7 @@ export const useIdentitiesServiceListIdentities = <
     limit,
     name,
     projectId,
+    userId,
   }: {
     after?: string;
     before?: string;
@@ -835,13 +837,14 @@ export const useIdentitiesServiceListIdentities = <
     limit?: number;
     name?: string;
     projectId?: string;
+    userId?: string;
   } = {},
   queryKey?: TQueryKey,
   options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>,
 ) =>
   useQuery<TData, TError>({
     queryKey: Common.UseIdentitiesServiceListIdentitiesKeyFn(
-      { after, before, identityType, limit, name, projectId },
+      { after, before, identityType, limit, name, projectId, userId },
       queryKey,
     ),
     queryFn: () =>
@@ -852,6 +855,7 @@ export const useIdentitiesServiceListIdentities = <
         limit,
         name,
         projectId,
+        userId,
       }) as TData,
     ...options,
   });

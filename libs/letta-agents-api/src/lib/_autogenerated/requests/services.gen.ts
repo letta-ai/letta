@@ -1568,6 +1568,7 @@ export class IdentitiesService {
    * @param data.before
    * @param data.after
    * @param data.limit
+   * @param data.userId
    * @returns Identity Successful Response
    * @throws ApiError
    */

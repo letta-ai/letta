@@ -508,6 +508,7 @@ export const UseIdentitiesServiceListIdentitiesKeyFn = (
     limit,
     name,
     projectId,
+    userId,
   }: {
     after?: string;
     before?: string;
@@ -515,11 +516,14 @@ export const UseIdentitiesServiceListIdentitiesKeyFn = (
     limit?: number;
     name?: string;
     projectId?: string;
+    userId?: string;
   } = {},
   queryKey?: Array<unknown>,
 ) => [
   useIdentitiesServiceListIdentitiesKey,
-  ...(queryKey ?? [{ after, before, identityType, limit, name, projectId }]),
+  ...(queryKey ?? [
+    { after, before, identityType, limit, name, projectId, userId },
+  ]),
 ];
 export type IdentitiesServiceGetIdentityFromIdentifierKeyDefaultResponse =
   Awaited<ReturnType<typeof IdentitiesService.getIdentityFromIdentifierKey>>;
