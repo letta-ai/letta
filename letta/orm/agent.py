@@ -6,6 +6,7 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from letta.orm.block import Block
 from letta.orm.custom_columns import EmbeddingConfigColumn, LLMConfigColumn, ToolRulesColumn
+from letta.orm.identity import Identity
 from letta.orm.message import Message
 from letta.orm.mixins import OrganizationMixin
 from letta.orm.organization import Organization
@@ -64,6 +65,9 @@ class Agent(SqlalchemyBase, OrganizationMixin):
     identity_id: Mapped[Optional[str]] = mapped_column(
         String, ForeignKey("identities.id", ondelete="CASCADE"), nullable=True, doc="The id of the identity the agent belongs to."
     )
+    identifier_key: Mapped[Optional[str]] = mapped_column(
+        String, nullable=True, doc="The identifier key of the identity the agent belongs to."
+    )
 
     # Tool rules
     tool_rules: Mapped[Optional[List[ToolRule]]] = mapped_column(ToolRulesColumn, doc="the tool rules for this agent.")
@@ -75,6 +79,7 @@ class Agent(SqlalchemyBase, OrganizationMixin):
 
     # relationships
     organization: Mapped["Organization"] = relationship("Organization", back_populates="agents")
+    identity: Mapped["Identity"] = relationship("Identity", back_populates="agents")
     tool_exec_environment_variables: Mapped[List["AgentEnvironmentVariable"]] = relationship(
         "AgentEnvironmentVariable",
         back_populates="agent",

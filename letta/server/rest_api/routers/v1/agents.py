@@ -50,6 +50,7 @@ def list_agents(
     project_id: Optional[str] = Query(None, description="Search agents by project id"),
     template_id: Optional[str] = Query(None, description="Search agents by template id"),
     base_template_id: Optional[str] = Query(None, description="Search agents by base template id"),
+    identifier_key: Optional[str] = Query(None, description="Search agents by identifier key"),
 ):
     """
     List all agents associated with a given user.
@@ -65,6 +66,7 @@ def list_agents(
             "project_id": project_id,
             "template_id": template_id,
             "base_template_id": base_template_id,
+            "identifier_key": identifier_key,
         }.items()
         if value is not None
     }

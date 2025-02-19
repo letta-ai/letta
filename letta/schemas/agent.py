@@ -84,6 +84,9 @@ class AgentState(OrmMetadataBase, validate_assignment=True):
     template_id: Optional[str] = Field(None, description="The id of the template the agent belongs to.")
     base_template_id: Optional[str] = Field(None, description="The base template id of the agent.")
 
+    # Identity
+    identifier_key: Optional[str] = Field(None, description="The identifier key belonging to the identity associated with this agent.")
+
     # An advanced configuration that makes it so this agent does not remember any previous messages
     message_buffer_autoclear: bool = Field(
         False,
@@ -155,6 +158,7 @@ class CreateAgent(BaseModel, validate_assignment=True):  #
     project_id: Optional[str] = Field(None, description="The id of the project the agent belongs to.")
     template_id: Optional[str] = Field(None, description="The id of the template the agent belongs to.")
     base_template_id: Optional[str] = Field(None, description="The base template id of the agent.")
+    identifier_key: Optional[str] = Field(None, description="The identifier key belonging to the identity associated with this agent.")
     message_buffer_autoclear: bool = Field(
         False,
         description="If set to True, the agent will not remember previous messages (though the agent will still retain state via core memory blocks and archival/recall memory). Not recommended unless you have an advanced use case.",
@@ -229,6 +233,7 @@ class UpdateAgent(BaseModel):
     project_id: Optional[str] = Field(None, description="The id of the project the agent belongs to.")
     template_id: Optional[str] = Field(None, description="The id of the template the agent belongs to.")
     base_template_id: Optional[str] = Field(None, description="The base template id of the agent.")
+    identifier_key: Optional[str] = Field(None, description="The identifier key belonging to the identity associated with this agent.")
     message_buffer_autoclear: Optional[bool] = Field(
         None,
         description="If set to True, the agent will not remember previous messages (though the agent will still retain state via core memory blocks and archival/recall memory). Not recommended unless you have an advanced use case.",
