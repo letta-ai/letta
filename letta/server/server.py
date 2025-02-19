@@ -85,6 +85,7 @@ from letta.services.tool_execution_sandbox import ToolExecutionSandbox
 from letta.services.tool_manager import ToolManager
 from letta.services.user_manager import UserManager
 from letta.settings import model_settings, settings, tool_settings
+from letta.tracing import trace_method
 from letta.utils import get_friendly_error_msg
 
 config = LettaConfig.load()
@@ -1151,6 +1152,7 @@ class SyncServer(Server):
         actions = self.get_composio_client(api_key=api_key).actions.get(apps=[composio_app_name])
         return actions
 
+    @trace_method("Send Message")
     async def send_message_to_agent(
         self,
         agent_id: str,
@@ -1168,7 +1170,6 @@ class SyncServer(Server):
         metadata: Optional[dict] = None,
     ) -> Union[StreamingResponse, LettaResponse]:
         """Split off into a separate function so that it can be imported in the /chat/completion proxy."""
-
         # TODO: @charles is this the correct way to handle?
         include_final_message = True
 

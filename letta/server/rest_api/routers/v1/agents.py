@@ -23,6 +23,7 @@ from letta.schemas.tool import Tool
 from letta.schemas.user import User
 from letta.server.rest_api.utils import get_letta_server
 from letta.server.server import SyncServer
+from letta.tracing import trace_method
 
 # These can be forward refs, but because Fastapi needs them at runtime the must be imported normally
 
@@ -463,6 +464,7 @@ def modify_message(
     response_model=LettaResponse,
     operation_id="send_message",
 )
+@trace_method("POST /v1/agents/{agent_id}/messages")
 async def send_message(
     agent_id: str,
     server: SyncServer = Depends(get_letta_server),
@@ -501,6 +503,7 @@ async def send_message(
         }
     },
 )
+@trace_method("POST /v1/agents/{agent_id}/messages/stream")
 async def send_message_streaming(
     agent_id: str,
     server: SyncServer = Depends(get_letta_server),
@@ -512,7 +515,6 @@ async def send_message_streaming(
     This endpoint accepts a message from a user and processes it through the agent.
     It will stream the steps of the response always, and stream the tokens if 'stream_tokens' is set to True.
     """
-
     actor = server.user_manager.get_user_or_default(user_id=user_id)
     result = await server.send_message_to_agent(
         agent_id=agent_id,
@@ -577,6 +579,7 @@ async def process_message_background(
     response_model=Run,
     operation_id="create_agent_message_async",
 )
+@trace_method("POST /v1/agents/{agent_id}/messages/async")
 async def send_message_async(
     agent_id: str,
     background_tasks: BackgroundTasks,
