@@ -71,6 +71,7 @@ from letta.server.rest_api.interface import StreamingServerInterface
 from letta.server.rest_api.utils import sse_async_generator
 from letta.services.agent_manager import AgentManager
 from letta.services.block_manager import BlockManager
+from letta.services.identity_manager import IdentityManager
 from letta.services.job_manager import JobManager
 from letta.services.message_manager import MessageManager
 from letta.services.organization_manager import OrganizationManager
@@ -195,6 +196,7 @@ class SyncServer(Server):
         self.agent_manager = AgentManager()
         self.provider_manager = ProviderManager()
         self.step_manager = StepManager()
+        self.identity_manager = IdentityManager()
 
         # Managers that interface with parallelism
         self.per_agent_lock_manager = PerAgentLockManager()
