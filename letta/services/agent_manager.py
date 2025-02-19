@@ -27,6 +27,8 @@ from letta.schemas.message import MessageCreate
 from letta.schemas.passage import Passage as PydanticPassage
 from letta.schemas.source import Source as PydanticSource
 from letta.schemas.tool import Tool as PydanticTool
+from letta.schemas.tool_rule import ContinueToolRule as PydanticContinueToolRule
+from letta.schemas.tool_rule import TerminalToolRule as PydanticTerminalToolRule
 from letta.schemas.tool_rule import ToolRule as PydanticToolRule
 from letta.schemas.user import User as PydanticUser
 from letta.serialize_schemas import SerializedAgentSchema
@@ -79,10 +81,6 @@ class AgentManager:
         if not agent_create.llm_config or not agent_create.embedding_config:
             raise ValueError("llm_config and embedding_config are required")
 
-        # Check tool rules are valid
-        if agent_create.tool_rules:
-            check_supports_structured_output(model=agent_create.llm_config.model, tool_rules=agent_create.tool_rules)
-
         # create blocks (note: cannot be linked into the agent_id is created)
         block_ids = list(agent_create.block_ids or [])  # Create a local copy to avoid modifying the original
         if agent_create.memory_blocks:
@@ -101,6 +99,25 @@ class AgentManager:
             tool_names.extend(agent_create.tools)
         # Remove duplicates
         tool_names = list(set(tool_names))
+
+        # add default tool rules
+        if agent_create.include_base_tool_rules:
+            if not agent_create.tool_rules:
+                tool_rules = []
+            else:
+                tool_rules = agent_create.tool_rules
+
+            # apply default tool rules
+            for tool_name in tool_names:
+                if tool_name == "send_message" or tool_name == "send_message_to_agent_async":
+                    tool_rules.append(PydanticTerminalToolRule(tool_name=tool_name))
+                elif tool_name in BASE_TOOLS:
+                    tool_rules.append(PydanticContinueToolRule(tool_name=tool_name))
+        else:
+            tool_rules = agent_create.tool_rules
+        # Check tool rules are valid
+        if agent_create.tool_rules:
+            check_supports_structured_output(model=agent_create.llm_config.model, tool_rules=agent_create.tool_rules)
 
         tool_ids = agent_create.tool_ids or []
         for tool_name in tool_names:
@@ -123,7 +140,7 @@ class AgentManager:
             tags=agent_create.tags or [],
             description=agent_create.description,
             metadata=agent_create.metadata,
-            tool_rules=agent_create.tool_rules,
+            tool_rules=tool_rules,
             actor=actor,
             project_id=agent_create.project_id,
             template_id=agent_create.template_id,

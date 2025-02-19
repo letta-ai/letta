@@ -132,6 +132,9 @@ class CreateAgent(BaseModel, validate_assignment=True):  #
     include_multi_agent_tools: bool = Field(
         False, description="If true, attaches the Letta multi-agent tools (e.g. sending a message to another agent)."
     )
+    include_base_tool_rules: bool = Field(
+        True, description="If true, attaches the Letta base tool rules (e.g. deny all tools not explicitly allowed)."
+    )
     description: Optional[str] = Field(None, description="The description of the agent.")
     metadata: Optional[Dict] = Field(None, description="The metadata of the agent.")
     model: Optional[str] = Field(

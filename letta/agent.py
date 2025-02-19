@@ -633,6 +633,11 @@ class Agent(BaseAgent):
         elif self.tool_rules_solver.is_terminal_tool(function_name):
             heartbeat_request = False
 
+        # if continue tool rule, then  must request a heartbeat
+        # TODO: dont even include heartbeats in the args
+        if self.tool_rules_solver.is_continue_tool(function_name):
+            heartbeat_request = True
+
         log_telemetry(self.logger, "_handle_ai_response finish")
         return messages, heartbeat_request, function_failed
 

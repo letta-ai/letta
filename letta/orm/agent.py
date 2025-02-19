@@ -136,9 +136,6 @@ class Agent(SqlalchemyBase, OrganizationMixin):
         """converts to the basic pydantic model counterpart"""
         # add default rule for having send_message be a terminal tool
         tool_rules = self.tool_rules
-        if not tool_rules:
-            tool_rules = [TerminalToolRule(tool_name="send_message"), TerminalToolRule(tool_name="send_message_to_agent_async")]
-
         state = {
             "id": self.id,
             "organization_id": self.organization_id,
