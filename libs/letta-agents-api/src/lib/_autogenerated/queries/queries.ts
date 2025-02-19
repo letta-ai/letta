@@ -33,7 +33,9 @@ import {
   CreateAgentRequest,
   CreateArchivalMemory,
   CreateBlock,
+  IdentityCreate,
   IdentityType,
+  IdentityUpdate,
   LettaRequest,
   LettaStreamingRequest,
   LocalSandboxConfig,
@@ -850,6 +852,37 @@ export const useIdentitiesServiceListIdentities = <
         limit,
         name,
         projectId,
+      }) as TData,
+    ...options,
+  });
+/**
+ * Retrieve Identity
+ * @param data The data for the request.
+ * @param data.identifierKey
+ * @returns Identity Successful Response
+ * @throws ApiError
+ */
+export const useIdentitiesServiceGetIdentityFromIdentifierKey = <
+  TData = Common.IdentitiesServiceGetIdentityFromIdentifierKeyDefaultResponse,
+  TError = unknown,
+  TQueryKey extends Array<unknown> = unknown[],
+>(
+  {
+    identifierKey,
+  }: {
+    identifierKey: string;
+  },
+  queryKey?: TQueryKey,
+  options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>,
+) =>
+  useQuery<TData, TError>({
+    queryKey: Common.UseIdentitiesServiceGetIdentityFromIdentifierKeyKeyFn(
+      { identifierKey },
+      queryKey,
+    ),
+    queryFn: () =>
+      IdentitiesService.getIdentityFromIdentifierKey({
+        identifierKey,
       }) as TData,
     ...options,
   });
@@ -2225,6 +2258,52 @@ export const useAgentsServiceCreateAgentMessageAsync = <
     ...options,
   });
 /**
+ * Create Identity
+ * @param data The data for the request.
+ * @param data.requestBody
+ * @param data.userId
+ * @param data.projectSlug
+ * @returns Identity Successful Response
+ * @throws ApiError
+ */
+export const useIdentitiesServiceCreateIdentity = <
+  TData = Common.IdentitiesServiceCreateIdentityMutationResult,
+  TError = unknown,
+  TContext = unknown,
+>(
+  options?: Omit<
+    UseMutationOptions<
+      TData,
+      TError,
+      {
+        projectSlug?: string;
+        requestBody: IdentityCreate;
+        userId?: string;
+      },
+      TContext
+    >,
+    'mutationFn'
+  >,
+) =>
+  useMutation<
+    TData,
+    TError,
+    {
+      projectSlug?: string;
+      requestBody: IdentityCreate;
+      userId?: string;
+    },
+    TContext
+  >({
+    mutationFn: ({ projectSlug, requestBody, userId }) =>
+      IdentitiesService.createIdentity({
+        projectSlug,
+        requestBody,
+        userId,
+      }) as unknown as Promise<TData>,
+    ...options,
+  });
+/**
  * Create Block
  * @param data The data for the request.
  * @param data.requestBody
@@ -2789,6 +2868,52 @@ export const useToolsServiceUpsertTool = <
   >({
     mutationFn: ({ requestBody, userId }) =>
       ToolsService.upsertTool({
+        requestBody,
+        userId,
+      }) as unknown as Promise<TData>,
+    ...options,
+  });
+/**
+ * Upsert Identity
+ * @param data The data for the request.
+ * @param data.requestBody
+ * @param data.userId
+ * @param data.projectSlug
+ * @returns Identity Successful Response
+ * @throws ApiError
+ */
+export const useIdentitiesServiceUpsertIdentity = <
+  TData = Common.IdentitiesServiceUpsertIdentityMutationResult,
+  TError = unknown,
+  TContext = unknown,
+>(
+  options?: Omit<
+    UseMutationOptions<
+      TData,
+      TError,
+      {
+        projectSlug?: string;
+        requestBody: IdentityCreate;
+        userId?: string;
+      },
+      TContext
+    >,
+    'mutationFn'
+  >,
+) =>
+  useMutation<
+    TData,
+    TError,
+    {
+      projectSlug?: string;
+      requestBody: IdentityCreate;
+      userId?: string;
+    },
+    TContext
+  >({
+    mutationFn: ({ projectSlug, requestBody, userId }) =>
+      IdentitiesService.upsertIdentity({
+        projectSlug,
         requestBody,
         userId,
       }) as unknown as Promise<TData>,
@@ -3441,6 +3566,52 @@ export const useAgentsServiceResetMessages = <
     ...options,
   });
 /**
+ * Modify Identity
+ * @param data The data for the request.
+ * @param data.identifierKey
+ * @param data.requestBody
+ * @param data.userId
+ * @returns Identity Successful Response
+ * @throws ApiError
+ */
+export const useIdentitiesServiceUpdateIdentity = <
+  TData = Common.IdentitiesServiceUpdateIdentityMutationResult,
+  TError = unknown,
+  TContext = unknown,
+>(
+  options?: Omit<
+    UseMutationOptions<
+      TData,
+      TError,
+      {
+        identifierKey: string;
+        requestBody: IdentityUpdate;
+        userId?: string;
+      },
+      TContext
+    >,
+    'mutationFn'
+  >,
+) =>
+  useMutation<
+    TData,
+    TError,
+    {
+      identifierKey: string;
+      requestBody: IdentityUpdate;
+      userId?: string;
+    },
+    TContext
+  >({
+    mutationFn: ({ identifierKey, requestBody, userId }) =>
+      IdentitiesService.updateIdentity({
+        identifierKey,
+        requestBody,
+        userId,
+      }) as unknown as Promise<TData>,
+    ...options,
+  });
+/**
  * Modify Block
  * @param data The data for the request.
  * @param data.blockId
@@ -3878,6 +4049,49 @@ export const useAgentsServiceDeleteArchivalMemory = <
       AgentsService.deleteArchivalMemory({
         agentId,
         memoryId,
+        userId,
+      }) as unknown as Promise<TData>,
+    ...options,
+  });
+/**
+ * Delete Identity
+ * Delete an identity by its identifier key
+ * @param data The data for the request.
+ * @param data.identifierKey
+ * @param data.userId
+ * @returns unknown Successful Response
+ * @throws ApiError
+ */
+export const useIdentitiesServiceDeleteIdentity = <
+  TData = Common.IdentitiesServiceDeleteIdentityMutationResult,
+  TError = unknown,
+  TContext = unknown,
+>(
+  options?: Omit<
+    UseMutationOptions<
+      TData,
+      TError,
+      {
+        identifierKey: string;
+        userId?: string;
+      },
+      TContext
+    >,
+    'mutationFn'
+  >,
+) =>
+  useMutation<
+    TData,
+    TError,
+    {
+      identifierKey: string;
+      userId?: string;
+    },
+    TContext
+  >({
+    mutationFn: ({ identifierKey, userId }) =>
+      IdentitiesService.deleteIdentity({
+        identifierKey,
         userId,
       }) as unknown as Promise<TData>,
     ...options,

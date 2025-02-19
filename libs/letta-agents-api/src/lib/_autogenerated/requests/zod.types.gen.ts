@@ -2538,6 +2538,46 @@ export const Identity = z.object({
   agents: z.array(AgentState),
 });
 
+export type IdentityCreate = z.infer<typeof IdentityCreate>;
+export const IdentityCreate = z.object({
+  identifier_key: z.string(),
+  name: z.string(),
+  identity_type: IdentityType,
+  project_id: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  agent_ids: z
+    .union([
+      z.array(z.string()),
+      z.null(),
+      z.array(z.union([z.array(z.string()), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+});
+
+export type IdentityUpdate = z.infer<typeof IdentityUpdate>;
+export const IdentityUpdate = z.object({
+  name: z
+    .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+    .optional(),
+  identity_type: z
+    .union([IdentityType, z.null(), z.array(z.union([IdentityType, z.null()]))])
+    .optional(),
+  agent_ids: z
+    .union([
+      z.array(z.string()),
+      z.null(),
+      z.array(z.union([z.array(z.string()), z.null()])),
+    ])
+    .optional(),
+});
+
 export type JobStatus = z.infer<typeof JobStatus>;
 export const JobStatus = z.union([
   z.literal('created'),
@@ -4505,6 +4545,95 @@ export const get_List_identities = {
   response: z.array(Identity),
 };
 
+export type post_Create_identity = typeof post_Create_identity;
+export const post_Create_identity = {
+  method: z.literal('POST'),
+  path: z.literal('/v1/identities/'),
+  requestFormat: z.literal('json'),
+  parameters: z.object({
+    header: z.object({
+      user_id: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'project-slug': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+    }),
+    body: IdentityCreate,
+  }),
+  response: Identity,
+};
+
+export type put_Upsert_identity = typeof put_Upsert_identity;
+export const put_Upsert_identity = {
+  method: z.literal('PUT'),
+  path: z.literal('/v1/identities/'),
+  requestFormat: z.literal('json'),
+  parameters: z.object({
+    header: z.object({
+      user_id: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'project-slug': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+    }),
+    body: IdentityCreate,
+  }),
+  response: Identity,
+};
+
+export type get_Get_identity_from_identifier_key =
+  typeof get_Get_identity_from_identifier_key;
+export const get_Get_identity_from_identifier_key = {
+  method: z.literal('GET'),
+  path: z.literal('/v1/identities/{identifier_key}'),
+  requestFormat: z.literal('json'),
+  parameters: z.object({
+    path: z.object({
+      identifier_key: z.string(),
+    }),
+  }),
+  response: Identity,
+};
+
+export type patch_Update_identity = typeof patch_Update_identity;
+export const patch_Update_identity = {
+  method: z.literal('PATCH'),
+  path: z.literal('/v1/identities/{identifier_key}'),
+  requestFormat: z.literal('json'),
+  parameters: z.object({
+    path: z.object({
+      identifier_key: z.string(),
+    }),
+    header: z.object({
+      user_id: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+    }),
+    body: IdentityUpdate,
+  }),
+  response: Identity,
+};
+
+export type delete_Delete_identity = typeof delete_Delete_identity;
+export const delete_Delete_identity = {
+  method: z.literal('DELETE'),
+  path: z.literal('/v1/identities/{identifier_key}'),
+  requestFormat: z.literal('json'),
+  parameters: z.object({
+    path: z.object({
+      identifier_key: z.string(),
+    }),
+    header: z.object({
+      user_id: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+    }),
+  }),
+  response: z.unknown(),
+};
+
 export type get_List_models = typeof get_List_models;
 export const get_List_models = {
   method: z.literal('GET'),
@@ -5406,6 +5535,7 @@ export const EndpointByMethod = {
     '/v1/agents/{agent_id}': delete_Delete_agent,
     '/v1/agents/{agent_id}/archival-memory/{memory_id}':
       delete_Delete_archival_memory,
+    '/v1/identities/{identifier_key}': delete_Delete_identity,
     '/v1/blocks/{block_id}': delete_Delete_block,
     '/v1/jobs/{job_id}': delete_Delete_job,
     '/v1/sandbox-config/{sandbox_config_id}':
@@ -5440,6 +5570,7 @@ export const EndpointByMethod = {
     '/v1/agents/{agent_id}/archival-memory': get_List_archival_memory,
     '/v1/agents/{agent_id}/messages': get_List_messages,
     '/v1/identities/': get_List_identities,
+    '/v1/identities/{identifier_key}': get_Get_identity_from_identifier_key,
     '/v1/models/': get_List_models,
     '/v1/models/embedding': get_List_embedding_models,
     '/v1/blocks/': get_List_blocks,
@@ -5482,6 +5613,7 @@ export const EndpointByMethod = {
       patch_Detach_core_memory_block,
     '/v1/agents/{agent_id}/messages/{message_id}': patch_Modify_message,
     '/v1/agents/{agent_id}/reset-messages': patch_Reset_messages,
+    '/v1/identities/{identifier_key}': patch_Update_identity,
     '/v1/blocks/{block_id}': patch_Modify_block,
     '/v1/sandbox-config/{sandbox_config_id}':
       patch_Update_sandbox_config_v1_sandbox_config__sandbox_config_id__patch,
@@ -5503,6 +5635,7 @@ export const EndpointByMethod = {
     '/v1/agents/{agent_id}/messages': post_Send_message,
     '/v1/agents/{agent_id}/messages/stream': post_Create_agent_message_stream,
     '/v1/agents/{agent_id}/messages/async': post_Create_agent_message_async,
+    '/v1/identities/': post_Create_identity,
     '/v1/blocks/': post_Create_block,
     '/v1/sandbox-config/': post_Create_sandbox_config_v1_sandbox_config__post,
     '/v1/sandbox-config/e2b/default':
@@ -5522,6 +5655,7 @@ export const EndpointByMethod = {
   },
   put: {
     '/v1/tools/': put_Upsert_tool,
+    '/v1/identities/': put_Upsert_identity,
     '/v1/admin/users/': put_Update_user,
   },
 };

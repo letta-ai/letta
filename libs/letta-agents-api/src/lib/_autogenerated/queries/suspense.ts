@@ -819,6 +819,37 @@ export const useIdentitiesServiceListIdentitiesSuspense = <
     ...options,
   });
 /**
+ * Retrieve Identity
+ * @param data The data for the request.
+ * @param data.identifierKey
+ * @returns Identity Successful Response
+ * @throws ApiError
+ */
+export const useIdentitiesServiceGetIdentityFromIdentifierKeySuspense = <
+  TData = Common.IdentitiesServiceGetIdentityFromIdentifierKeyDefaultResponse,
+  TError = unknown,
+  TQueryKey extends Array<unknown> = unknown[],
+>(
+  {
+    identifierKey,
+  }: {
+    identifierKey: string;
+  },
+  queryKey?: TQueryKey,
+  options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>,
+) =>
+  useSuspenseQuery<TData, TError>({
+    queryKey: Common.UseIdentitiesServiceGetIdentityFromIdentifierKeyKeyFn(
+      { identifierKey },
+      queryKey,
+    ),
+    queryFn: () =>
+      IdentitiesService.getIdentityFromIdentifierKey({
+        identifierKey,
+      }) as TData,
+    ...options,
+  });
+/**
  * List Llm Backends
  * @returns LLMConfig Successful Response
  * @throws ApiError

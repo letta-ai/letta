@@ -3731,7 +3731,7 @@ export const $Identity = {
       },
       type: 'array',
       title: 'Agents',
-      description: 'The ids of the agents associated with the identity.',
+      description: 'The agents associated with the identity.',
     },
   },
   additionalProperties: false,
@@ -3740,11 +3740,107 @@ export const $Identity = {
   title: 'Identity',
 } as const;
 
+export const $IdentityCreate = {
+  properties: {
+    identifier_key: {
+      type: 'string',
+      title: 'Identifier Key',
+      description: 'External, user-generated identifier key of the identity.',
+    },
+    name: {
+      type: 'string',
+      title: 'Name',
+      description: 'The name of the identity.',
+    },
+    identity_type: {
+      $ref: '#/components/schemas/IdentityType',
+      description: 'The type of the identity.',
+    },
+    project_id: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Project Id',
+      description: 'The project id of the identity, if applicable.',
+    },
+    agent_ids: {
+      anyOf: [
+        {
+          items: {
+            type: 'string',
+          },
+          type: 'array',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Agent Ids',
+      description: 'The agent ids that are associated with the identity.',
+    },
+  },
+  additionalProperties: false,
+  type: 'object',
+  required: ['identifier_key', 'name', 'identity_type'],
+  title: 'IdentityCreate',
+} as const;
+
 export const $IdentityType = {
   type: 'string',
   enum: ['org', 'user', 'other'],
   title: 'IdentityType',
   description: 'Enum to represent the type of the identity.',
+} as const;
+
+export const $IdentityUpdate = {
+  properties: {
+    name: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Name',
+      description: 'The name of the identity.',
+    },
+    identity_type: {
+      anyOf: [
+        {
+          $ref: '#/components/schemas/IdentityType',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      description: 'The type of the identity.',
+    },
+    agent_ids: {
+      anyOf: [
+        {
+          items: {
+            type: 'string',
+          },
+          type: 'array',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Agent Ids',
+      description: 'The agent ids that are associated with the identity.',
+    },
+  },
+  additionalProperties: false,
+  type: 'object',
+  title: 'IdentityUpdate',
 } as const;
 
 export const $ImageURL = {

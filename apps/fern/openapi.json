@@ -2728,6 +2728,241 @@
             }
           }
         }
+      },
+      "post": {
+        "tags": ["identities", "identities"],
+        "summary": "Create Identity",
+        "operationId": "create_identity",
+        "parameters": [
+          {
+            "name": "project-slug",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Project-Slug"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/IdentityCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Identity"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": ["identities", "identities"],
+        "summary": "Upsert Identity",
+        "operationId": "upsert_identity",
+        "parameters": [
+          {
+            "name": "project-slug",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Project-Slug"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/IdentityCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Identity"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/identities/{identifier_key}": {
+      "get": {
+        "tags": ["identities", "identities"],
+        "summary": "Retrieve Identity",
+        "operationId": "get_identity_from_identifier_key",
+        "parameters": [
+          {
+            "name": "identifier_key",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Identifier Key"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Identity"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "tags": ["identities", "identities"],
+        "summary": "Modify Identity",
+        "operationId": "update_identity",
+        "parameters": [
+          {
+            "name": "identifier_key",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Identifier Key"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/IdentityUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Identity"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": ["identities", "identities"],
+        "summary": "Delete Identity",
+        "description": "Delete an identity by its identifier key",
+        "operationId": "delete_identity",
+        "parameters": [
+          {
+            "name": "identifier_key",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Identifier Key"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
       }
     },
     "/v1/models/": {
@@ -12748,7 +12983,7 @@
             },
             "type": "array",
             "title": "Agents",
-            "description": "The ids of the agents associated with the identity."
+            "description": "The agents associated with the identity."
           }
         },
         "additionalProperties": false,
@@ -12756,11 +12991,105 @@
         "required": ["id", "identifier_key", "name", "identity_type", "agents"],
         "title": "Identity"
       },
+      "IdentityCreate": {
+        "properties": {
+          "identifier_key": {
+            "type": "string",
+            "title": "Identifier Key",
+            "description": "External, user-generated identifier key of the identity."
+          },
+          "name": {
+            "type": "string",
+            "title": "Name",
+            "description": "The name of the identity."
+          },
+          "identity_type": {
+            "$ref": "#/components/schemas/IdentityType",
+            "description": "The type of the identity."
+          },
+          "project_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Id",
+            "description": "The project id of the identity, if applicable."
+          },
+          "agent_ids": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Agent Ids",
+            "description": "The agent ids that are associated with the identity."
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": ["identifier_key", "name", "identity_type"],
+        "title": "IdentityCreate"
+      },
       "IdentityType": {
         "type": "string",
         "enum": ["org", "user", "other"],
         "title": "IdentityType",
         "description": "Enum to represent the type of the identity."
+      },
+      "IdentityUpdate": {
+        "properties": {
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name",
+            "description": "The name of the identity."
+          },
+          "identity_type": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/IdentityType"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The type of the identity."
+          },
+          "agent_ids": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Agent Ids",
+            "description": "The agent ids that are associated with the identity."
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "IdentityUpdate"
       },
       "ImageURL": {
         "properties": {

@@ -673,6 +673,28 @@ export const prefetchUseIdentitiesServiceListIdentities = (
       }),
   });
 /**
+ * Retrieve Identity
+ * @param data The data for the request.
+ * @param data.identifierKey
+ * @returns Identity Successful Response
+ * @throws ApiError
+ */
+export const prefetchUseIdentitiesServiceGetIdentityFromIdentifierKey = (
+  queryClient: QueryClient,
+  {
+    identifierKey,
+  }: {
+    identifierKey: string;
+  },
+) =>
+  queryClient.prefetchQuery({
+    queryKey: Common.UseIdentitiesServiceGetIdentityFromIdentifierKeyKeyFn({
+      identifierKey,
+    }),
+    queryFn: () =>
+      IdentitiesService.getIdentityFromIdentifierKey({ identifierKey }),
+  });
+/**
  * List Llm Backends
  * @returns LLMConfig Successful Response
  * @throws ApiError

@@ -102,6 +102,16 @@ import type {
   ResetMessagesResponse,
   ListIdentitiesData,
   ListIdentitiesResponse,
+  CreateIdentityData,
+  CreateIdentityResponse,
+  UpsertIdentityData,
+  UpsertIdentityResponse,
+  GetIdentityFromIdentifierKeyData,
+  GetIdentityFromIdentifierKeyResponse,
+  UpdateIdentityData,
+  UpdateIdentityResponse,
+  DeleteIdentityData,
+  DeleteIdentityResponse,
   ListModelsResponse,
   ListEmbeddingModelsResponse,
   ListBlocksData,
@@ -1575,6 +1585,134 @@ export class IdentitiesService {
         before: data.before,
         after: data.after,
         limit: data.limit,
+      },
+      errors: {
+        422: 'Validation Error',
+      },
+      headers,
+    });
+  }
+
+  /**
+   * Create Identity
+   * @param data The data for the request.
+   * @param data.requestBody
+   * @param data.userId
+   * @param data.projectSlug
+   * @returns Identity Successful Response
+   * @throws ApiError
+   */
+  public static createIdentity(
+    data: CreateIdentityData,
+    headers?: { user_id: string },
+  ): CancelablePromise<CreateIdentityResponse> {
+    return __request(OpenAPI, {
+      method: 'POST',
+      url: '/v1/identities/',
+      body: data.requestBody,
+      mediaType: 'application/json',
+      errors: {
+        422: 'Validation Error',
+      },
+      headers,
+    });
+  }
+
+  /**
+   * Upsert Identity
+   * @param data The data for the request.
+   * @param data.requestBody
+   * @param data.userId
+   * @param data.projectSlug
+   * @returns Identity Successful Response
+   * @throws ApiError
+   */
+  public static upsertIdentity(
+    data: UpsertIdentityData,
+    headers?: { user_id: string },
+  ): CancelablePromise<UpsertIdentityResponse> {
+    return __request(OpenAPI, {
+      method: 'PUT',
+      url: '/v1/identities/',
+      body: data.requestBody,
+      mediaType: 'application/json',
+      errors: {
+        422: 'Validation Error',
+      },
+      headers,
+    });
+  }
+
+  /**
+   * Retrieve Identity
+   * @param data The data for the request.
+   * @param data.identifierKey
+   * @returns Identity Successful Response
+   * @throws ApiError
+   */
+  public static getIdentityFromIdentifierKey(
+    data: GetIdentityFromIdentifierKeyData,
+    headers?: { user_id: string },
+  ): CancelablePromise<GetIdentityFromIdentifierKeyResponse> {
+    return __request(OpenAPI, {
+      method: 'GET',
+      url: '/v1/identities/{identifier_key}',
+      path: {
+        identifier_key: data.identifierKey,
+      },
+      errors: {
+        422: 'Validation Error',
+      },
+      headers,
+    });
+  }
+
+  /**
+   * Modify Identity
+   * @param data The data for the request.
+   * @param data.identifierKey
+   * @param data.requestBody
+   * @param data.userId
+   * @returns Identity Successful Response
+   * @throws ApiError
+   */
+  public static updateIdentity(
+    data: UpdateIdentityData,
+    headers?: { user_id: string },
+  ): CancelablePromise<UpdateIdentityResponse> {
+    return __request(OpenAPI, {
+      method: 'PATCH',
+      url: '/v1/identities/{identifier_key}',
+      path: {
+        identifier_key: data.identifierKey,
+      },
+      body: data.requestBody,
+      mediaType: 'application/json',
+      errors: {
+        422: 'Validation Error',
+      },
+      headers,
+    });
+  }
+
+  /**
+   * Delete Identity
+   * Delete an identity by its identifier key
+   * @param data The data for the request.
+   * @param data.identifierKey
+   * @param data.userId
+   * @returns unknown Successful Response
+   * @throws ApiError
+   */
+  public static deleteIdentity(
+    data: DeleteIdentityData,
+    headers?: { user_id: string },
+  ): CancelablePromise<DeleteIdentityResponse> {
+    return __request(OpenAPI, {
+      method: 'DELETE',
+      url: '/v1/identities/{identifier_key}',
+      path: {
+        identifier_key: data.identifierKey,
       },
       errors: {
         422: 'Validation Error',

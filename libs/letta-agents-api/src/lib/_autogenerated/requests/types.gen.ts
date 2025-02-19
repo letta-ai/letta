@@ -1304,15 +1304,53 @@ export type Identity = {
    */
   project_id?: string | null;
   /**
-   * The ids of the agents associated with the identity.
+   * The agents associated with the identity.
    */
   agents: Array<AgentState>;
+};
+
+export type IdentityCreate = {
+  /**
+   * External, user-generated identifier key of the identity.
+   */
+  identifier_key: string;
+  /**
+   * The name of the identity.
+   */
+  name: string;
+  /**
+   * The type of the identity.
+   */
+  identity_type: IdentityType;
+  /**
+   * The project id of the identity, if applicable.
+   */
+  project_id?: string | null;
+  /**
+   * The agent ids that are associated with the identity.
+   */
+  agent_ids?: Array<string> | null;
 };
 
 /**
  * Enum to represent the type of the identity.
  */
 export type IdentityType = 'org' | 'user' | 'other';
+
+export type IdentityUpdate = {
+  /**
+   * The name of the identity.
+   */
+  name?: string | null;
+  /**
+   * The type of the identity.
+   */
+  identity_type?: IdentityType | null;
+  /**
+   * The agent ids that are associated with the identity.
+   */
+  agent_ids?: Array<string> | null;
+};
 
 export type ImageURL = {
   url: string;
@@ -3232,6 +3270,43 @@ export type ListIdentitiesData = {
 
 export type ListIdentitiesResponse = Array<Identity>;
 
+export type CreateIdentityData = {
+  projectSlug?: string | null;
+  requestBody: IdentityCreate;
+  userId?: string | null;
+};
+
+export type CreateIdentityResponse = Identity;
+
+export type UpsertIdentityData = {
+  projectSlug?: string | null;
+  requestBody: IdentityCreate;
+  userId?: string | null;
+};
+
+export type UpsertIdentityResponse = Identity;
+
+export type GetIdentityFromIdentifierKeyData = {
+  identifierKey: string;
+};
+
+export type GetIdentityFromIdentifierKeyResponse = Identity;
+
+export type UpdateIdentityData = {
+  identifierKey: string;
+  requestBody: IdentityUpdate;
+  userId?: string | null;
+};
+
+export type UpdateIdentityResponse = Identity;
+
+export type DeleteIdentityData = {
+  identifierKey: string;
+  userId?: string | null;
+};
+
+export type DeleteIdentityResponse = unknown;
+
 export type ListModelsResponse = Array<LLMConfig>;
 
 export type ListEmbeddingModelsResponse = Array<EmbeddingConfig>;
@@ -4347,6 +4422,73 @@ export type $OpenApiTs = {
          * Successful Response
          */
         200: Array<Identity>;
+        /**
+         * Validation Error
+         */
+        422: HTTPValidationError;
+      };
+    };
+    post: {
+      req: CreateIdentityData;
+      res: {
+        /**
+         * Successful Response
+         */
+        200: Identity;
+        /**
+         * Validation Error
+         */
+        422: HTTPValidationError;
+      };
+    };
+    put: {
+      req: UpsertIdentityData;
+      res: {
+        /**
+         * Successful Response
+         */
+        200: Identity;
+        /**
+         * Validation Error
+         */
+        422: HTTPValidationError;
+      };
+    };
+  };
+  '/v1/identities/{identifier_key}': {
+    get: {
+      req: GetIdentityFromIdentifierKeyData;
+      res: {
+        /**
+         * Successful Response
+         */
+        200: Identity;
+        /**
+         * Validation Error
+         */
+        422: HTTPValidationError;
+      };
+    };
+    patch: {
+      req: UpdateIdentityData;
+      res: {
+        /**
+         * Successful Response
+         */
+        200: Identity;
+        /**
+         * Validation Error
+         */
+        422: HTTPValidationError;
+      };
+    };
+    delete: {
+      req: DeleteIdentityData;
+      res: {
+        /**
+         * Successful Response
+         */
+        200: unknown;
         /**
          * Validation Error
          */

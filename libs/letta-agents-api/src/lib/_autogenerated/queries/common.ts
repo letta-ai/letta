@@ -521,6 +521,25 @@ export const UseIdentitiesServiceListIdentitiesKeyFn = (
   useIdentitiesServiceListIdentitiesKey,
   ...(queryKey ?? [{ after, before, identityType, limit, name, projectId }]),
 ];
+export type IdentitiesServiceGetIdentityFromIdentifierKeyDefaultResponse =
+  Awaited<ReturnType<typeof IdentitiesService.getIdentityFromIdentifierKey>>;
+export type IdentitiesServiceGetIdentityFromIdentifierKeyQueryResult<
+  TData = IdentitiesServiceGetIdentityFromIdentifierKeyDefaultResponse,
+  TError = unknown,
+> = UseQueryResult<TData, TError>;
+export const useIdentitiesServiceGetIdentityFromIdentifierKeyKey =
+  'IdentitiesServiceGetIdentityFromIdentifierKey';
+export const UseIdentitiesServiceGetIdentityFromIdentifierKeyKeyFn = (
+  {
+    identifierKey,
+  }: {
+    identifierKey: string;
+  },
+  queryKey?: Array<unknown>,
+) => [
+  useIdentitiesServiceGetIdentityFromIdentifierKeyKey,
+  ...(queryKey ?? [{ identifierKey }]),
+];
 export type ModelsServiceListModelsDefaultResponse = Awaited<
   ReturnType<typeof ModelsService.listModels>
 >;
@@ -1082,6 +1101,9 @@ export type AgentsServiceCreateAgentMessageStreamMutationResult = Awaited<
 export type AgentsServiceCreateAgentMessageAsyncMutationResult = Awaited<
   ReturnType<typeof AgentsService.createAgentMessageAsync>
 >;
+export type IdentitiesServiceCreateIdentityMutationResult = Awaited<
+  ReturnType<typeof IdentitiesService.createIdentity>
+>;
 export type BlocksServiceCreateBlockMutationResult = Awaited<
   ReturnType<typeof BlocksService.createBlock>
 >;
@@ -1142,6 +1164,9 @@ export type AuthServiceAuthenticateUserV1AuthPostMutationResult = Awaited<
 export type ToolsServiceUpsertToolMutationResult = Awaited<
   ReturnType<typeof ToolsService.upsertTool>
 >;
+export type IdentitiesServiceUpsertIdentityMutationResult = Awaited<
+  ReturnType<typeof IdentitiesService.upsertIdentity>
+>;
 export type AdminServiceUpdateUserMutationResult = Awaited<
   ReturnType<typeof AdminService.updateUser>
 >;
@@ -1184,6 +1209,9 @@ export type AgentsServiceModifyMessageMutationResult = Awaited<
 export type AgentsServiceResetMessagesMutationResult = Awaited<
   ReturnType<typeof AgentsService.resetMessages>
 >;
+export type IdentitiesServiceUpdateIdentityMutationResult = Awaited<
+  ReturnType<typeof IdentitiesService.updateIdentity>
+>;
 export type BlocksServiceModifyBlockMutationResult = Awaited<
   ReturnType<typeof BlocksService.modifyBlock>
 >;
@@ -1219,6 +1247,9 @@ export type AgentsServiceDeleteAgentMutationResult = Awaited<
 >;
 export type AgentsServiceDeleteArchivalMemoryMutationResult = Awaited<
   ReturnType<typeof AgentsService.deleteArchivalMemory>
+>;
+export type IdentitiesServiceDeleteIdentityMutationResult = Awaited<
+  ReturnType<typeof IdentitiesService.deleteIdentity>
 >;
 export type BlocksServiceDeleteBlockMutationResult = Awaited<
   ReturnType<typeof BlocksService.deleteBlock>
