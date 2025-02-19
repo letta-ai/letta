@@ -20,13 +20,16 @@ def list_identities(
     after: Optional[str] = Query(None),
     limit: Optional[int] = Query(50),
     server: "SyncServer" = Depends(get_letta_server),
+    user_id: Optional[str] = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
 ):
     """
     Get a list of all identities in the database
     """
     try:
+        actor = server.user_manager.get_user_or_default(user_id=user_id)
+
         identities = server.identity_manager.list_identities(
-            name=name, project_id=project_id, identity_type=identity_type, before=before, after=after, limit=limit
+            name=name, project_id=project_id, identity_type=identity_type, before=before, after=after, limit=limit, actor=actor
         )
     except HTTPException:
         raise
