@@ -1,7 +1,10 @@
 import { EventSource } from 'extended-eventsource';
 import { environment } from '@letta-cloud/environmental-variables';
 import axios, { isAxiosError } from 'axios';
-import type { LettaResponse } from '@letta-cloud/letta-agents-api';
+import type {
+  LettaResponse,
+  MessageCreate,
+} from '@letta-cloud/letta-agents-api';
 import { RESTRICTED_ROUTE_BASE_PATHS } from '@letta-cloud/letta-agents-api';
 import { createInferenceTransaction } from '$web/server/inferenceTransactions/inferenceTransactions';
 import * as Sentry from '@sentry/nextjs';
@@ -196,18 +199,37 @@ async function handleMultipartFileUpload(options: RequestOptions) {
   });
 }
 
+function isOpenAIChatCompletionRequest(options: RequestOptions) {
+  // / openai/v1/chat/completions
+
+  const regex = /\/openai\/v1\/chat\/completions\/?/;
+
+  if (options.method !== 'POST') {
+    return false;
+  }
+
+  return regex.test(options.pathname);
+}
+
 function isCreateMessageRequest(options: RequestOptions) {
   // pathname must conform with /v1/agents/{agent-id}/messages
   const regex = /\/v1\/agents\/[a-zA-Z0-9-]+\/messages\/?/;
   // or /v1/agents/{agent-id}/messages/{message-id}/messages/stream
   const regex2 =
     /\/v1\/agents\/[a-zA-Z0-9-]+\/messages\/[a-zA-Z0-9-]+\/messages\/stream\/?/;
+  // or /v1/agents/{agent-id}/messages/{message-id}/messages/async
+  const regex3 =
+    /\/v1\/agents\/[a-zA-Z0-9-]+\/messages\/[a-zA-Z0-9-]+\/messages\/async\/?/;
 
   if (options.method !== 'POST') {
     return false;
   }
 
-  return regex.test(options.pathname) || regex2.test(options.pathname);
+  return (
+    regex.test(options.pathname) ||
+    regex2.test(options.pathname) ||
+    regex3.test(options.pathname)
+  );
 }
 
 function isStreamMessageRequest(options: RequestOptions) {
@@ -249,6 +271,34 @@ export async function makeRequestToSDK(
     });
   }
 
+  if (isOpenAIChatCompletionRequest(options)) {
+    const check = await handleMessageRateLimiting({
+      organizationId,
+      agentId: body.user,
+      type: 'inference',
+      messages: body.messages,
+      lettaAgentsUserId,
+    });
+
+    if (check.isRateLimited) {
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: 'Rate limited',
+          reasons: check.reasons,
+        }),
+        {
+          status: (check.reasons || []).includes('not-enough-credits')
+            ? 402
+            : 429,
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        },
+      );
+    }
+  }
+
   if (
     isCreateMessageRequest(options) &&
     process.env.IS_API_STABILITY_TEST !== 'yes'
@@ -257,7 +307,7 @@ export async function makeRequestToSDK(
       organizationId,
       agentId: pathname.split('/')[3],
       type: 'inference',
-      input: body,
+      messages: body.messages as MessageCreate[],
       lettaAgentsUserId,
     });
 

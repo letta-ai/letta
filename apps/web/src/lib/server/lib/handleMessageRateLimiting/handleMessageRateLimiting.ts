@@ -7,7 +7,6 @@ import {
 } from '@letta-cloud/database';
 import { eq } from 'drizzle-orm';
 import { AgentsService } from '@letta-cloud/letta-agents-api';
-import type { LettaStreamingRequest } from '@letta-cloud/letta-agents-api';
 import { getTikTokenEncoder } from '@letta-cloud/generic-utils';
 import { getCreditCostPerModel } from '@letta-cloud/server-utils';
 import { getSingleFlag } from '@letta-cloud/feature-flags';
@@ -15,9 +14,13 @@ import process from 'node:process';
 
 type ModelType = 'embedding' | 'inference';
 
+interface Message {
+  content: Array<{ text: string }> | string;
+}
+
 interface IsRateLimitedForCreatingMessagesPayload {
   organizationId: string;
-  input: LettaStreamingRequest;
+  messages: Message[];
   agentId: string;
   type: ModelType;
   lettaAgentsUserId: string;
@@ -186,7 +189,8 @@ function isANumberSafe(num: any) {
 export async function handleMessageRateLimiting(
   payload: IsRateLimitedForCreatingMessagesPayload,
 ) {
-  const { organizationId, input, agentId, type, lettaAgentsUserId } = payload;
+  const { organizationId, messages, agentId, type, lettaAgentsUserId } =
+    payload;
 
   const agent = await AgentsService.retrieveAgent(
     {
@@ -223,7 +227,7 @@ export async function handleMessageRateLimiting(
 
   const encoding = getTikTokenEncoder(agent.llm_config.model);
 
-  const inputTokens = input.messages.reduce((acc, message) => {
+  const inputTokens = messages.reduce((acc, message) => {
     let text = '';
 
     if (Array.isArray(message.content)) {
