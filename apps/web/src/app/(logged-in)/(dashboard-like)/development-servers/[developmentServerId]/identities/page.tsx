@@ -1,3 +1,5 @@
 import { IdentitiesTable } from '@letta-cloud/shared-ade-components';
 
-export default IdentitiesTable;
+export default function IdentitiesPage() {
+  return <IdentitiesTable />;
+}

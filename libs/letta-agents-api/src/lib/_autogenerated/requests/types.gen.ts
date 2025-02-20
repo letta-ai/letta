@@ -1309,9 +1309,9 @@ export type Health = {
 
 export type Identity = {
   /**
-   * The internal id of the identity.
+   * The human-friendly ID of the Identity
    */
-  id: string;
+  id?: string;
   /**
    * External, user-generated identifier key of the identity.
    */

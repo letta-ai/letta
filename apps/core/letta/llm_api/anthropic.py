@@ -519,7 +519,7 @@ def _prepare_anthropic_request(
     prefix_fill: bool = True,
     # if true, put COT inside the tool calls instead of inside the content
     put_inner_thoughts_in_kwargs: bool = False,
-    bedrock: bool = False
+    bedrock: bool = False,
 ) -> dict:
     """Prepare the request data for Anthropic API format."""
 
@@ -607,7 +607,7 @@ def _prepare_anthropic_request(
     # NOTE: cannot prefill with tools for opus:
     # Your API request included an `assistant` message in the final position, which would pre-fill the `assistant` response. When using tools with "claude-3-opus-20240229"
     if prefix_fill and not put_inner_thoughts_in_kwargs and "opus" not in data["model"]:
-        if not bedrock: # not support for bedrock
+        if not bedrock:  # not support for bedrock
             data["messages"].append(
                 # Start the thinking process for the assistant
                 {"role": "assistant", "content": f"<{inner_thoughts_xml_tag}>"},

@@ -1,10 +1,7 @@
 'use client';
 import { useTranslations } from '@letta-cloud/translations';
 import type { ColumnDef } from '@tanstack/react-table';
-import {
-  IdentitiesService,
-  UseIdentitiesServiceListIdentitiesKeyFn,
-} from '@letta-cloud/letta-agents-api';
+import { IdentitiesService } from '@letta-cloud/letta-agents-api';
 import type {
   Identity,
   IdentityType,
@@ -13,27 +10,20 @@ import type {
 import React, { useEffect, useMemo, useState } from 'react';
 import {
   Badge,
+  Button,
   DashboardPageLayout,
   DashboardPageSection,
   DataTable,
-  HStack,
 } from '@letta-cloud/component-library';
 import { useInfiniteQuery } from '@tanstack/react-query';
 import type { InfiniteData } from '@tanstack/query-core';
 import { useDebouncedValue } from '@mantine/hooks';
+import { UseInfiniteIdentitiesQueryFn } from './constants';
+import { CreateIdentityDialog } from './CreateIdentityDialog/CreateIdentityDialog';
+import { useIdentityTypeToTranslationMap } from './hooks/useIdentityTypeToTranslationMap';
 
 interface IdentityTypeCellProps {
   type: IdentityType;
-}
-
-function useIdentityTypeToTranslationMap() {
-  const t = useTranslations('IdentitiesTable');
-
-  return {
-    org: t('identityTypes.org'),
-    user: t('identityTypes.user'),
-    other: t('identityTypes.other'),
-  };
 }
 
 function IdentityTypeCell(props: IdentityTypeCellProps) {
@@ -42,7 +32,12 @@ function IdentityTypeCell(props: IdentityTypeCellProps) {
   return <Badge content={identityTypeToTranslationMap[props.type]} />;
 }
 
-export function IdentitiesTable() {
+interface IdentitiesTableProps {
+  currentProjectId?: string;
+}
+
+export function IdentitiesTable(props: IdentitiesTableProps) {
+  const { currentProjectId } = props;
   const t = useTranslations('IdentitiesTable');
 
   const [search, setSearch] = useState<string>('');
@@ -59,18 +54,18 @@ export function IdentitiesTable() {
     unknown[],
     { after?: string | null }
   >({
-    queryKey: [
-      'infinite',
-      ...UseIdentitiesServiceListIdentitiesKeyFn({
+    queryKey: UseInfiniteIdentitiesQueryFn([
+      {
         name: debouncedSearch,
         limit: limit + 1,
-      }),
-    ],
+      },
+    ]),
     queryFn: ({ pageParam }) => {
       return IdentitiesService.listIdentities({
         name: debouncedSearch,
         limit: limit + 1,
         after: pageParam?.after,
+        projectId: currentProjectId,
       });
     },
     initialPageParam: { after: null },
@@ -155,7 +150,12 @@ export function IdentitiesTable() {
     <DashboardPageLayout
       subtitle={t('description')}
       title={t('title')}
-      actions={<HStack></HStack>}
+      actions={
+        <CreateIdentityDialog
+          currentProjectId={currentProjectId}
+          trigger={<Button label={t('createIdentity')} color="primary" />}
+        />
+      }
       encapsulatedFullHeight
     >
       <DashboardPageSection

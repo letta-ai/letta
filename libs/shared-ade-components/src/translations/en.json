@@ -921,10 +921,24 @@
       "name": "Name",
       "identifierKey": "Unique Identifier"
     },
+    "createIdentity": "Create identity",
     "identityTypes": {
       "org": "Organization",
       "user": "User",
       "other": "Other"
+    }
+  },
+  "CreateIdentityDialog": {
+    "title": "Create Identity",
+    "identityType": {
+      "label": "Identity Type"
+    },
+    "name": {
+      "label": "Name"
+    },
+    "uniqueIdentifier": {
+      "label": "Unique Identifier",
+      "description": "The unique identifier is a unique string that can be used to look up this identity, usually this should be your user or organization ID on your platform."
     }
   }
 }

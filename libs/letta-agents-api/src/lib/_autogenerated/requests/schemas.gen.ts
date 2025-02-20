@@ -3735,8 +3735,10 @@ export const $Identity = {
   properties: {
     id: {
       type: 'string',
+      pattern: '^identity-[a-fA-F0-9]{8}',
       title: 'Id',
-      description: 'The internal id of the identity.',
+      description: 'The human-friendly ID of the Identity',
+      examples: ['identity-123e4567-e89b-12d3-a456-426614174000'],
     },
     identifier_key: {
       type: 'string',
@@ -3775,7 +3777,7 @@ export const $Identity = {
   },
   additionalProperties: false,
   type: 'object',
-  required: ['id', 'identifier_key', 'name', 'identity_type', 'agents'],
+  required: ['identifier_key', 'name', 'identity_type', 'agents'],
   title: 'Identity',
 } as const;
 

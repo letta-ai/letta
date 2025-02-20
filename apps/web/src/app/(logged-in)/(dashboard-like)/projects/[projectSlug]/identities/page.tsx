@@ -1,7 +1,9 @@
 'use client';
 
 import { IdentitiesTable } from '@letta-cloud/shared-ade-components';
+import { useCurrentProject } from '../hooks';
 
 export default function IdentitiesPage() {
-  return <IdentitiesTable />;
+  const { id } = useCurrentProject();
+  return <IdentitiesTable currentProjectId={id} />;
 }

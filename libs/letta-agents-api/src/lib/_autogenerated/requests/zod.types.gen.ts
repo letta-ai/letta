@@ -2534,7 +2534,7 @@ export const IdentityType = z.union([
 
 export type Identity = z.infer<typeof Identity>;
 export const Identity = z.object({
-  id: z.string(),
+  id: z.union([z.string(), z.undefined()]).optional(),
   identifier_key: z.string(),
   name: z.string(),
   identity_type: IdentityType,
