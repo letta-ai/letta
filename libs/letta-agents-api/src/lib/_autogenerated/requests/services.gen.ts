@@ -814,7 +814,7 @@ export class AgentsService {
    * @param data The data for the request.
    * @param data.requestBody
    * @param data.userId
-   * @param data.projectSlug
+   * @param data.xProject
    * @returns AgentState Successful Response
    * @throws ApiError
    */
@@ -1599,7 +1599,7 @@ export class IdentitiesService {
    * @param data The data for the request.
    * @param data.requestBody
    * @param data.userId
-   * @param data.projectSlug
+   * @param data.xProject
    * @returns Identity Successful Response
    * @throws ApiError
    */
@@ -1624,7 +1624,7 @@ export class IdentitiesService {
    * @param data The data for the request.
    * @param data.requestBody
    * @param data.userId
-   * @param data.projectSlug
+   * @param data.xProject
    * @returns Identity Successful Response
    * @throws ApiError
    */

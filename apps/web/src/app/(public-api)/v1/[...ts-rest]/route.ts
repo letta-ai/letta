@@ -153,6 +153,10 @@ const publicHandler = createNextHandler(sdkContracts, sdkRouter, {
       req.organizationId = middlewareData.organizationId;
       req.lettaAgentsUserId = middlewareData.lettaAgentsUserId;
       req.userId = middlewareData.userId;
+      const projectHeader = req.headers.get('X-Project');
+      if (projectHeader) {
+        req.headers['x-project'] = projectHeader;
+      }
 
       if (!req.lettaAgentsUserId) {
         return new Response(JSON.stringify({ message: 'Unauthorized' }), {

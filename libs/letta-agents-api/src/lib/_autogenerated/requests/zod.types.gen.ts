@@ -4013,7 +4013,7 @@ export const post_Create_agent = {
       user_id: z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
-      'project-slug': z
+      'X-Project': z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
     }),
@@ -4573,7 +4573,7 @@ export const post_Create_identity = {
       user_id: z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
-      'project-slug': z
+      'X-Project': z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
     }),
@@ -4592,7 +4592,7 @@ export const put_Upsert_identity = {
       user_id: z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
-      'project-slug': z
+      'X-Project': z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
     }),

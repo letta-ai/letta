@@ -2028,7 +2028,7 @@ export const useSourcesServiceUploadFileToSource = <
  * @param data The data for the request.
  * @param data.requestBody
  * @param data.userId
- * @param data.projectSlug
+ * @param data.xProject
  * @returns AgentState Successful Response
  * @throws ApiError
  */
@@ -2042,9 +2042,9 @@ export const useAgentsServiceCreateAgent = <
       TData,
       TError,
       {
-        projectSlug?: string;
         requestBody: CreateAgentRequest;
         userId?: string;
+        xProject?: string;
       },
       TContext
     >,
@@ -2055,17 +2055,17 @@ export const useAgentsServiceCreateAgent = <
     TData,
     TError,
     {
-      projectSlug?: string;
       requestBody: CreateAgentRequest;
       userId?: string;
+      xProject?: string;
     },
     TContext
   >({
-    mutationFn: ({ projectSlug, requestBody, userId }) =>
+    mutationFn: ({ requestBody, userId, xProject }) =>
       AgentsService.createAgent({
-        projectSlug,
         requestBody,
         userId,
+        xProject,
       }) as unknown as Promise<TData>,
     ...options,
   });
@@ -2266,7 +2266,7 @@ export const useAgentsServiceCreateAgentMessageAsync = <
  * @param data The data for the request.
  * @param data.requestBody
  * @param data.userId
- * @param data.projectSlug
+ * @param data.xProject
  * @returns Identity Successful Response
  * @throws ApiError
  */
@@ -2280,9 +2280,9 @@ export const useIdentitiesServiceCreateIdentity = <
       TData,
       TError,
       {
-        projectSlug?: string;
         requestBody: IdentityCreate;
         userId?: string;
+        xProject?: string;
       },
       TContext
     >,
@@ -2293,17 +2293,17 @@ export const useIdentitiesServiceCreateIdentity = <
     TData,
     TError,
     {
-      projectSlug?: string;
       requestBody: IdentityCreate;
       userId?: string;
+      xProject?: string;
     },
     TContext
   >({
-    mutationFn: ({ projectSlug, requestBody, userId }) =>
+    mutationFn: ({ requestBody, userId, xProject }) =>
       IdentitiesService.createIdentity({
-        projectSlug,
         requestBody,
         userId,
+        xProject,
       }) as unknown as Promise<TData>,
     ...options,
   });
@@ -2882,7 +2882,7 @@ export const useToolsServiceUpsertTool = <
  * @param data The data for the request.
  * @param data.requestBody
  * @param data.userId
- * @param data.projectSlug
+ * @param data.xProject
  * @returns Identity Successful Response
  * @throws ApiError
  */
@@ -2896,9 +2896,9 @@ export const useIdentitiesServiceUpsertIdentity = <
       TData,
       TError,
       {
-        projectSlug?: string;
         requestBody: IdentityCreate;
         userId?: string;
+        xProject?: string;
       },
       TContext
     >,
@@ -2909,17 +2909,17 @@ export const useIdentitiesServiceUpsertIdentity = <
     TData,
     TError,
     {
-      projectSlug?: string;
       requestBody: IdentityCreate;
       userId?: string;
+      xProject?: string;
     },
     TContext
   >({
-    mutationFn: ({ projectSlug, requestBody, userId }) =>
+    mutationFn: ({ requestBody, userId, xProject }) =>
       IdentitiesService.upsertIdentity({
-        projectSlug,
         requestBody,
         userId,
+        xProject,
       }) as unknown as Promise<TData>,
     ...options,
   });

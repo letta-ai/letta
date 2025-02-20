@@ -1016,7 +1016,7 @@ export type CreateAgentRequest = {
    */
   template?: boolean;
   /**
-   * Deprecated: Project should now be passed via the project-slug header instead of in the request body. If using the sdk, this can be done via the new project_slug field below.
+   * Deprecated: Project should now be passed via the X-Project header instead of in the request body. If using the sdk, this can be done via the new x_project field below.
    * @deprecated
    */
   project?: string | null;
@@ -3049,9 +3049,9 @@ export type ListAgentsData = {
 export type ListAgentsResponse = Array<AgentState>;
 
 export type CreateAgentData = {
-  projectSlug?: string | null;
   requestBody: CreateAgentRequest;
   userId?: string | null;
+  xProject?: string | null;
 };
 
 export type CreateAgentResponse = AgentState;
@@ -3301,17 +3301,17 @@ export type ListIdentitiesData = {
 export type ListIdentitiesResponse = Array<Identity>;
 
 export type CreateIdentityData = {
-  projectSlug?: string | null;
   requestBody: IdentityCreate;
   userId?: string | null;
+  xProject?: string | null;
 };
 
 export type CreateIdentityResponse = Identity;
 
 export type UpsertIdentityData = {
-  projectSlug?: string | null;
   requestBody: IdentityCreate;
   userId?: string | null;
+  xProject?: string | null;
 };
 
 export type UpsertIdentityResponse = Identity;

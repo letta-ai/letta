@@ -1,4 +1,5 @@
 export interface RequestMiddlewareType {
+  headers?: any;
   organizationId: string;
   userId: string;
   lettaAgentsUserId: string;
