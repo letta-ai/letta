@@ -1,3 +1,4 @@
+import json
 from urllib.parse import urljoin
 
 from letta.local_llm.settings.settings import get_completions_settings
@@ -6,6 +7,73 @@ from letta.utils import count_tokens
 
 LMSTUDIO_API_CHAT_SUFFIX = "/v1/chat/completions"
 LMSTUDIO_API_COMPLETIONS_SUFFIX = "/v1/completions"
+LMSTUDIO_API_CHAT_COMPLETIONS_SUFFIX = "/v1/chat/completions"
+
+
+def get_lmstudio_completion_chatcompletions(endpoint, auth_type, auth_key, model, messages):
+    """
+    This is the request we need to send
+
+    {
+    "model": "deepseek-r1-distill-qwen-7b",
+    "messages": [
+      { "role": "system", "content": "Always answer in rhymes. Today is Thursday" },
+      { "role": "user", "content": "What day is it today?" },
+      { "role": "user", "content": "What day is it today?" }],
+    "temperature": 0.7,
+    "max_tokens": -1,
+    "stream": false
+    """
+    from letta.utils import printd
+
+    URI = endpoint + LMSTUDIO_API_CHAT_COMPLETIONS_SUFFIX
+    request = {"model": model, "messages": messages}
+
+    response = post_json_auth_request(uri=URI, json_payload=request, auth_type=auth_type, auth_key=auth_key)
+
+    # Get the reasoning from the model
+    if response.status_code == 200:
+        result_full = response.json()
+        result_reasoning = result_full["choices"][0]["message"].get("reasoning_content")
+        result = result_full["choices"][0]["message"]["content"]
+        usage = result_full["usage"]
+
+    # See if result is json
+    try:
+        function_call = json.loads(result)
+        if "function" in function_call and "params" in function_call:
+            return result, usage, result_reasoning
+        else:
+            print("Did not get json on without json constraint, attempting with json decoding")
+    except Exception as e:
+        print(f"Did not get json on without json constraint, attempting with json decoding: {e}")
+
+    request["messages"].append({"role": "assistant", "content": result_reasoning})
+    request["messages"].append({"role": "user", "content": ""})  # last message must be user
+    # Now run with json decoding to get the function
+    request["response_format"] = {
+        "type": "json_schema",
+        "json_schema": {
+            "name": "function_call",
+            "strict": "true",
+            "schema": {
+                "type": "object",
+                "properties": {"function": {"type": "string"}, "params": {"type": "object"}},
+                "required": ["function", "params"],
+            },
+        },
+    }
+
+    response = post_json_auth_request(uri=URI, json_payload=request, auth_type=auth_type, auth_key=auth_key)
+    if response.status_code == 200:
+        result_full = response.json()
+        printd(f"JSON API response:\n{result_full}")
+        result = result_full["choices"][0]["message"]["content"]
+        # add usage with previous call, merge with prev usage
+        for key, value in result_full["usage"].items():
+            usage[key] += value
+
+    return result, usage, result_reasoning
 
 
 def get_lmstudio_completion(endpoint, auth_type, auth_key, prompt, context_window, api="completions"):
@@ -24,7 +92,8 @@ def get_lmstudio_completion(endpoint, auth_type, auth_key, prompt, context_windo
             # This controls how LM studio handles context overflow
             # In Letta we handle this ourselves, so this should be disabled
             # "context_overflow_policy": 0,
-            "lmstudio": {"context_overflow_policy": 0},  # 0 = stop at limit
+            # "lmstudio": {"context_overflow_policy": 0},  # 0 = stop at limit
+            # "lmstudio": {"context_overflow_policy": "stopAtLimit"}, # https://github.com/letta-ai/letta/issues/1782
             "stream": False,
             "model": "local model",
         }
@@ -72,6 +141,11 @@ def get_lmstudio_completion(endpoint, auth_type, auth_key, prompt, context_windo
             elif api == "completions":
                 result = result_full["choices"][0]["text"]
                 usage = result_full.get("usage", None)
+            elif api == "chat/completions":
+                result = result_full["choices"][0]["content"]
+                result_full["choices"][0]["reasoning_content"]
+                usage = result_full.get("usage", None)
+
         else:
             # Example error: msg={"error":"Context length exceeded. Tokens in context: 8000, Context length: 8000"}
             if "context length" in str(response.text).lower():

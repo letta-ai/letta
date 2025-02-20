@@ -60,6 +60,7 @@ from letta.services.tool_manager import ToolManager
 from letta.settings import summarizer_settings
 from letta.streaming_interface import StreamingRefreshCLIInterface
 from letta.system import get_heartbeat, get_token_limit_warning, package_function_response, package_summarize_message, package_user_message
+from letta.tracing import trace_method
 from letta.utils import (
     count_tokens,
     get_friendly_error_msg,
@@ -309,6 +310,7 @@ class Agent(BaseAgent):
         # Return updated messages
         return messages
 
+    @trace_method("Get AI Reply")
     def _get_ai_reply(
         self,
         message_sequence: List[Message],
@@ -399,6 +401,7 @@ class Agent(BaseAgent):
         log_telemetry(self.logger, "_handle_ai_response finish catch-all exception")
         raise Exception("Retries exhausted and no valid response received.")
 
+    @trace_method("Handle AI Response")
     def _handle_ai_response(
         self,
         response_message: ChatCompletionMessage,  # TODO should we eventually move the Message creation outside of this function?
@@ -492,7 +495,10 @@ class Agent(BaseAgent):
             try:
                 raw_function_args = function_call.arguments
                 function_args = parse_json(raw_function_args)
-            except Exception:
+                if not isinstance(function_args, dict):
+                    raise ValueError(f"Function arguments are not a dictionary: {function_args} (raw={raw_function_args})")
+            except Exception as e:
+                print(e)
                 error_msg = f"Error parsing JSON for function '{function_name}' arguments: {function_call.arguments}"
                 function_response = "None"  # more like "never ran?"
                 messages = self._handle_function_error_response(
@@ -627,9 +633,15 @@ class Agent(BaseAgent):
         elif self.tool_rules_solver.is_terminal_tool(function_name):
             heartbeat_request = False
 
+        # if continue tool rule, then  must request a heartbeat
+        # TODO: dont even include heartbeats in the args
+        if self.tool_rules_solver.is_continue_tool(function_name):
+            heartbeat_request = True
+
         log_telemetry(self.logger, "_handle_ai_response finish")
         return messages, heartbeat_request, function_failed
 
+    @trace_method("Agent Step")
     def step(
         self,
         messages: Union[Message, List[Message]],

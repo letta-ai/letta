@@ -39,6 +39,7 @@ class Message(BaseModel):
     tool_calls: Optional[List[ToolCall]] = None
     role: str
     function_call: Optional[FunctionCall] = None  # Deprecated
+    reasoning_content: Optional[str] = None  # Used in newer reasoning APIs
 
 
 class Choice(BaseModel):
@@ -115,6 +116,7 @@ class MessageDelta(BaseModel):
     """
 
     content: Optional[str] = None
+    reasoning_content: Optional[str] = None
     tool_calls: Optional[List[ToolCallDelta]] = None
     role: Optional[str] = None
     function_call: Optional[FunctionCallDelta] = None  # Deprecated

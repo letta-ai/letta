@@ -1,11 +1,12 @@
 import uuid
 from typing import TYPE_CHECKING, List, Optional
 
-from sqlalchemy import JSON, Boolean, Index, String
+from sqlalchemy import JSON, Boolean, ForeignKey, Index, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from letta.orm.block import Block
 from letta.orm.custom_columns import EmbeddingConfigColumn, LLMConfigColumn, ToolRulesColumn
+from letta.orm.identity import Identity
 from letta.orm.message import Message
 from letta.orm.mixins import OrganizationMixin
 from letta.orm.organization import Organization
@@ -15,10 +16,11 @@ from letta.schemas.agent import AgentType
 from letta.schemas.embedding_config import EmbeddingConfig
 from letta.schemas.llm_config import LLMConfig
 from letta.schemas.memory import Memory
-from letta.schemas.tool_rule import TerminalToolRule, ToolRule
+from letta.schemas.tool_rule import ToolRule
 
 if TYPE_CHECKING:
     from letta.orm.agents_tags import AgentsTags
+    from letta.orm.identity import Identity
     from letta.orm.organization import Organization
     from letta.orm.source import Source
     from letta.orm.tool import Tool
@@ -59,6 +61,14 @@ class Agent(SqlalchemyBase, OrganizationMixin):
     template_id: Mapped[Optional[str]] = mapped_column(String, nullable=True, doc="The id of the template the agent belongs to.")
     base_template_id: Mapped[Optional[str]] = mapped_column(String, nullable=True, doc="The base template id of the agent.")
 
+    # Identity
+    identity_id: Mapped[Optional[str]] = mapped_column(
+        String, ForeignKey("identities.id", ondelete="CASCADE"), nullable=True, doc="The id of the identity the agent belongs to."
+    )
+    identifier_key: Mapped[Optional[str]] = mapped_column(
+        String, nullable=True, doc="The identifier key of the identity the agent belongs to."
+    )
+
     # Tool rules
     tool_rules: Mapped[Optional[List[ToolRule]]] = mapped_column(ToolRulesColumn, doc="the tool rules for this agent.")
 
@@ -69,6 +79,7 @@ class Agent(SqlalchemyBase, OrganizationMixin):
 
     # relationships
     organization: Mapped["Organization"] = relationship("Organization", back_populates="agents")
+    identity: Mapped["Identity"] = relationship("Identity", back_populates="agents")
     tool_exec_environment_variables: Mapped[List["AgentEnvironmentVariable"]] = relationship(
         "AgentEnvironmentVariable",
         back_populates="agent",
@@ -119,14 +130,12 @@ class Agent(SqlalchemyBase, OrganizationMixin):
         viewonly=True,  # Ensures SQLAlchemy doesn't attempt to manage this relationship
         doc="All passages derived created by this agent.",
     )
+    identity: Mapped[Optional["Identity"]] = relationship("Identity", back_populates="agents")
 
     def to_pydantic(self) -> PydanticAgentState:
         """converts to the basic pydantic model counterpart"""
         # add default rule for having send_message be a terminal tool
         tool_rules = self.tool_rules
-        if not tool_rules:
-            tool_rules = [TerminalToolRule(tool_name="send_message"), TerminalToolRule(tool_name="send_message_to_agent_async")]
-
         state = {
             "id": self.id,
             "organization_id": self.organization_id,

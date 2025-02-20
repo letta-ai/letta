@@ -84,6 +84,9 @@ class AgentState(OrmMetadataBase, validate_assignment=True):
     template_id: Optional[str] = Field(None, description="The id of the template the agent belongs to.")
     base_template_id: Optional[str] = Field(None, description="The base template id of the agent.")
 
+    # Identity
+    identifier_key: Optional[str] = Field(None, description="The identifier key belonging to the identity associated with this agent.")
+
     # An advanced configuration that makes it so this agent does not remember any previous messages
     message_buffer_autoclear: bool = Field(
         False,
@@ -129,6 +132,9 @@ class CreateAgent(BaseModel, validate_assignment=True):  #
     include_multi_agent_tools: bool = Field(
         False, description="If true, attaches the Letta multi-agent tools (e.g. sending a message to another agent)."
     )
+    include_base_tool_rules: bool = Field(
+        True, description="If true, attaches the Letta base tool rules (e.g. deny all tools not explicitly allowed)."
+    )
     description: Optional[str] = Field(None, description="The description of the agent.")
     metadata: Optional[Dict] = Field(None, description="The metadata of the agent.")
     model: Optional[str] = Field(
@@ -143,7 +149,11 @@ class CreateAgent(BaseModel, validate_assignment=True):  #
     embedding_chunk_size: Optional[int] = Field(DEFAULT_EMBEDDING_CHUNK_SIZE, description="The embedding chunk size used by the agent.")
     from_template: Optional[str] = Field(None, description="The template id used to configure the agent")
     template: bool = Field(False, description="Whether the agent is a template")
-    project: Optional[str] = Field(None, description="The project slug that the agent will be associated with.")
+    project: Optional[str] = Field(
+        None,
+        deprecated=True,
+        description="Deprecated: Project should now be passed via the X-Project header instead of in the request body. If using the sdk, this can be done via the new x_project field below.",
+    )
     tool_exec_environment_variables: Optional[Dict[str, str]] = Field(
         None, description="The environment variables for tool execution specific to this agent."
     )
@@ -151,6 +161,7 @@ class CreateAgent(BaseModel, validate_assignment=True):  #
     project_id: Optional[str] = Field(None, description="The id of the project the agent belongs to.")
     template_id: Optional[str] = Field(None, description="The id of the template the agent belongs to.")
     base_template_id: Optional[str] = Field(None, description="The base template id of the agent.")
+    identifier_key: Optional[str] = Field(None, description="The identifier key belonging to the identity associated with this agent.")
     message_buffer_autoclear: bool = Field(
         False,
         description="If set to True, the agent will not remember previous messages (though the agent will still retain state via core memory blocks and archival/recall memory). Not recommended unless you have an advanced use case.",
@@ -225,6 +236,7 @@ class UpdateAgent(BaseModel):
     project_id: Optional[str] = Field(None, description="The id of the project the agent belongs to.")
     template_id: Optional[str] = Field(None, description="The id of the template the agent belongs to.")
     base_template_id: Optional[str] = Field(None, description="The base template id of the agent.")
+    identifier_key: Optional[str] = Field(None, description="The identifier key belonging to the identity associated with this agent.")
     message_buffer_autoclear: Optional[bool] = Field(
         None,
         description="If set to True, the agent will not remember previous messages (though the agent will still retain state via core memory blocks and archival/recall memory). Not recommended unless you have an advanced use case.",

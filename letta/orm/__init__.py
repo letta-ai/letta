@@ -4,6 +4,7 @@ from letta.orm.base import Base
 from letta.orm.block import Block
 from letta.orm.blocks_agents import BlocksAgents
 from letta.orm.file import FileMetadata
+from letta.orm.identity import Identity
 from letta.orm.job import Job
 from letta.orm.job_messages import JobMessage
 from letta.orm.message import Message

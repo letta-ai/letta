@@ -52,6 +52,7 @@ def setup_agent(
     tool_rules: Optional[List[BaseToolRule]] = None,
     agent_uuid: str = agent_uuid,
     include_base_tools: bool = True,
+    include_base_tool_rules: bool = True,
 ) -> AgentState:
     config_data = json.load(open(filename, "r"))
     llm_config = LLMConfig(**config_data)
@@ -72,6 +73,7 @@ def setup_agent(
         tool_ids=tool_ids,
         tool_rules=tool_rules,
         include_base_tools=include_base_tools,
+        include_base_tool_rules=include_base_tool_rules,
     )
 
     return agent_state
@@ -83,7 +85,7 @@ def setup_agent(
 # ======================================================================================================================
 
 
-def check_first_response_is_valid_for_llm_endpoint(filename: str) -> ChatCompletionResponse:
+def check_first_response_is_valid_for_llm_endpoint(filename: str, validate_inner_monologue_contents: bool = True) -> ChatCompletionResponse:
     """
     Checks that the first response is valid:
 
@@ -126,7 +128,11 @@ def check_first_response_is_valid_for_llm_endpoint(filename: str) -> ChatComplet
     assert_contains_valid_function_call(choice.message, validator_func)
 
     # Assert that the message has an inner monologue
-    assert_contains_correct_inner_monologue(choice, agent_state.llm_config.put_inner_thoughts_in_kwargs)
+    assert_contains_correct_inner_monologue(
+        choice,
+        agent_state.llm_config.put_inner_thoughts_in_kwargs,
+        validate_inner_monologue_contents=validate_inner_monologue_contents,
+    )
 
     return response
 
@@ -470,7 +476,11 @@ def assert_inner_monologue_is_valid(message: Message) -> None:
             raise InvalidInnerMonologueError(messages=[message], explanation=f"{phrase} is in monologue")
 
 
-def assert_contains_correct_inner_monologue(choice: Choice, inner_thoughts_in_kwargs: bool) -> None:
+def assert_contains_correct_inner_monologue(
+    choice: Choice,
+    inner_thoughts_in_kwargs: bool,
+    validate_inner_monologue_contents: bool = True,
+) -> None:
     """
     Helper function to check that the inner monologue exists and is valid.
     """
@@ -483,4 +493,5 @@ def assert_contains_correct_inner_monologue(choice: Choice, inner_thoughts_in_kw
     if not monologue or monologue is None or monologue == "":
         raise MissingInnerMonologueError(messages=[message])
 
-    assert_inner_monologue_is_valid(message)
+    if validate_inner_monologue_contents:
+        assert_inner_monologue_is_valid(message)

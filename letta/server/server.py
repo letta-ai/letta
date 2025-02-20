@@ -18,6 +18,7 @@ import letta.server.utils as server_utils
 import letta.system as system
 from letta.agent import Agent, save_agent
 from letta.chat_only_agent import ChatOnlyAgent
+from letta.config import LettaConfig
 from letta.data_sources.connectors import DataConnector, load_data
 from letta.helpers.datetime_helpers import get_utc_time
 from letta.helpers.json_helpers import json_dumps, json_loads
@@ -27,7 +28,6 @@ from letta.interface import AgentInterface  # abstract
 from letta.interface import CLIInterface  # for printing to terminal
 from letta.log import get_logger
 from letta.offline_memory_agent import OfflineMemoryAgent
-from letta.orm import Base
 from letta.orm.errors import NoResultFound
 from letta.schemas.agent import AgentState, AgentType, CreateAgent
 from letta.schemas.block import BlockUpdate
@@ -48,6 +48,7 @@ from letta.schemas.providers import (
     AnthropicBedrockProvider,
     AnthropicProvider,
     AzureProvider,
+    DeepSeekProvider,
     GoogleAIProvider,
     GoogleVertexProvider,
     GroqProvider,
@@ -70,6 +71,7 @@ from letta.server.rest_api.interface import StreamingServerInterface
 from letta.server.rest_api.utils import sse_async_generator
 from letta.services.agent_manager import AgentManager
 from letta.services.block_manager import BlockManager
+from letta.services.identity_manager import IdentityManager
 from letta.services.job_manager import JobManager
 from letta.services.message_manager import MessageManager
 from letta.services.organization_manager import OrganizationManager
@@ -82,8 +84,11 @@ from letta.services.step_manager import StepManager
 from letta.services.tool_execution_sandbox import ToolExecutionSandbox
 from letta.services.tool_manager import ToolManager
 from letta.services.user_manager import UserManager
+from letta.settings import model_settings, settings, tool_settings
+from letta.tracing import trace_method
 from letta.utils import get_friendly_error_msg
 
+config = LettaConfig.load()
 logger = get_logger(__name__)
 
 
@@ -145,118 +150,6 @@ class Server(object):
         raise NotImplementedError
 
 
-from contextlib import contextmanager
-
-from rich.console import Console
-from rich.panel import Panel
-from rich.text import Text
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
-
-from letta.config import LettaConfig
-
-# NOTE: hack to see if single session management works
-from letta.settings import model_settings, settings, tool_settings
-
-config = LettaConfig.load()
-
-
-def print_sqlite_schema_error():
-    """Print a formatted error message for SQLite schema issues"""
-    console = Console()
-    error_text = Text()
-    error_text.append("Existing SQLite DB schema is invalid, and schema migrations are not supported for SQLite. ", style="bold red")
-    error_text.append("To have migrations supported between Letta versions, please run Letta with Docker (", style="white")
-    error_text.append("https://docs.letta.com/server/docker", style="blue underline")
-    error_text.append(") or use Postgres by setting ", style="white")
-    error_text.append("LETTA_PG_URI", style="yellow")
-    error_text.append(".\n\n", style="white")
-    error_text.append("If you wish to keep using SQLite, you can reset your database by removing the DB file with ", style="white")
-    error_text.append("rm ~/.letta/sqlite.db", style="yellow")
-    error_text.append(" or downgrade to your previous version of Letta.", style="white")
-
-    console.print(Panel(error_text, border_style="red"))
-
-
-@contextmanager
-def db_error_handler():
-    """Context manager for handling database errors"""
-    try:
-        yield
-    except Exception as e:
-        # Handle other SQLAlchemy errors
-        print(e)
-        print_sqlite_schema_error()
-        # raise ValueError(f"SQLite DB error: {str(e)}")
-        exit(1)
-
-
-if settings.letta_pg_uri_no_default:
-    print("Creating postgres engine")
-    config.recall_storage_type = "postgres"
-    config.recall_storage_uri = settings.letta_pg_uri_no_default
-    config.archival_storage_type = "postgres"
-    config.archival_storage_uri = settings.letta_pg_uri_no_default
-
-    # create engine
-    engine = create_engine(
-        settings.letta_pg_uri,
-        pool_size=settings.pg_pool_size,
-        max_overflow=settings.pg_max_overflow,
-        pool_timeout=settings.pg_pool_timeout,
-        pool_recycle=settings.pg_pool_recycle,
-        echo=settings.pg_echo,
-    )
-else:
-    # TODO: don't rely on config storage
-    engine_path = "sqlite:///" + os.path.join(config.recall_storage_path, "sqlite.db")
-    logger.info("Creating sqlite engine " + engine_path)
-
-    engine = create_engine(engine_path)
-
-    # Store the original connect method
-    original_connect = engine.connect
-
-    def wrapped_connect(*args, **kwargs):
-        with db_error_handler():
-            # Get the connection
-            connection = original_connect(*args, **kwargs)
-
-            # Store the original execution method
-            original_execute = connection.execute
-
-            # Wrap the execute method of the connection
-            def wrapped_execute(*args, **kwargs):
-                with db_error_handler():
-                    return original_execute(*args, **kwargs)
-
-            # Replace the connection's execute method
-            connection.execute = wrapped_execute
-
-            return connection
-
-    # Replace the engine's connect method
-    engine.connect = wrapped_connect
-
-    Base.metadata.create_all(bind=engine)
-
-SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-
-
-# Dependency
-def get_db():
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
-
-
-from contextlib import contextmanager
-
-db_context = contextmanager(get_db)
-
-
 class SyncServer(Server):
     """Simple single-threaded / blocking server process"""
 
@@ -304,6 +197,7 @@ class SyncServer(Server):
         self.agent_manager = AgentManager()
         self.provider_manager = ProviderManager()
         self.step_manager = StepManager()
+        self.identity_manager = IdentityManager()
 
         # Managers that interface with parallelism
         self.per_agent_lock_manager = PerAgentLockManager()
@@ -415,6 +309,8 @@ class SyncServer(Server):
                 else model_settings.lmstudio_base_url + "/v1"
             )
             self._enabled_providers.append(LMStudioOpenAIProvider(base_url=lmstudio_url))
+        if model_settings.deepseek_api_key:
+            self._enabled_providers.append(DeepSeekProvider(api_key=model_settings.deepseek_api_key))
 
     def load_agent(self, agent_id: str, actor: User, interface: Union[AgentInterface, None] = None) -> Agent:
         """Updated method to load agents from persisted storage"""
@@ -1256,6 +1152,7 @@ class SyncServer(Server):
         actions = self.get_composio_client(api_key=api_key).actions.get(apps=[composio_app_name])
         return actions
 
+    @trace_method("Send Message")
     async def send_message_to_agent(
         self,
         agent_id: str,
@@ -1273,7 +1170,6 @@ class SyncServer(Server):
         metadata: Optional[dict] = None,
     ) -> Union[StreamingResponse, LettaResponse]:
         """Split off into a separate function so that it can be imported in the /chat/completion proxy."""
-
         # TODO: @charles is this the correct way to handle?
         include_final_message = True
 
@@ -1292,11 +1188,12 @@ class SyncServer(Server):
             # Disable token streaming if not OpenAI or Anthropic
             # TODO: cleanup this logic
             llm_config = letta_agent.agent_state.llm_config
+            supports_token_streaming = ["openai", "anthropic", "deepseek"]
             if stream_tokens and (
-                llm_config.model_endpoint_type not in ["openai", "anthropic"] or "inference.memgpt.ai" in llm_config.model_endpoint
+                llm_config.model_endpoint_type not in supports_token_streaming or "inference.memgpt.ai" in llm_config.model_endpoint
             ):
                 warnings.warn(
-                    f"Token streaming is only supported for models with type 'openai' or 'anthropic' in the model_endpoint: agent has endpoint type {llm_config.model_endpoint_type} and {llm_config.model_endpoint}. Setting stream_tokens to False."
+                    f"Token streaming is only supported for models with type {' or '.join(supports_token_streaming)} in the model_endpoint: agent has endpoint type {llm_config.model_endpoint_type} and {llm_config.model_endpoint}. Setting stream_tokens to False."
                 )
                 stream_tokens = False
 

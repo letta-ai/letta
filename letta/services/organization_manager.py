@@ -16,7 +16,7 @@ class OrganizationManager:
         # TODO: Please refactor this out
         # I am currently working on a ORM refactor and would like to make a more minimal set of changes
         # - Matt
-        from letta.server.server import db_context
+        from letta.server.db import db_context
 
         self.session_maker = db_context
 

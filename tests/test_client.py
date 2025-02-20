@@ -104,7 +104,7 @@ def search_agent_two(client: Union[LocalClient, RESTClient]):
 @pytest.fixture(autouse=True)
 def clear_tables():
     """Clear the sandbox tables before each test."""
-    from letta.server.server import db_context
+    from letta.server.db import db_context
 
     with db_context() as session:
         session.execute(delete(SandboxEnvironmentVariable))

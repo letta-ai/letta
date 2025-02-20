@@ -3,7 +3,7 @@ repos:
     rev: v2.3.0
     hooks:
       - id: check-yaml
-        exclude: 'docs/.*|tests/data/.*|configs/.*'
+        exclude: 'docs/.*|tests/data/.*|configs/.*|helm/.*'
       - id: end-of-file-fixer
         exclude: 'docs/.*|tests/data/.*|letta/server/static_files/.*'
       - id: trailing-whitespace

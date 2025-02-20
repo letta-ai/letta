@@ -23,6 +23,7 @@ from letta.schemas.tool import Tool
 from letta.schemas.user import User
 from letta.server.rest_api.utils import get_letta_server
 from letta.server.server import SyncServer
+from letta.tracing import trace_method
 
 # These can be forward refs, but because Fastapi needs them at runtime the must be imported normally
 
@@ -50,6 +51,7 @@ def list_agents(
     project_id: Optional[str] = Query(None, description="Search agents by project id"),
     template_id: Optional[str] = Query(None, description="Search agents by template id"),
     base_template_id: Optional[str] = Query(None, description="Search agents by base template id"),
+    identifier_key: Optional[str] = Query(None, description="Search agents by identifier key"),
 ):
     """
     List all agents associated with a given user.
@@ -65,6 +67,7 @@ def list_agents(
             "project_id": project_id,
             "template_id": template_id,
             "base_template_id": base_template_id,
+            "identifier_key": identifier_key,
         }.items()
         if value is not None
     }
@@ -111,6 +114,7 @@ def create_agent(
     agent: CreateAgentRequest = Body(...),
     server: "SyncServer" = Depends(get_letta_server),
     user_id: Optional[str] = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
+    x_project: Optional[str] = Header(None, alias="X-Project"),  # Only handled by next js middleware
 ):
     """
     Create a new agent with the specified configuration.
@@ -460,6 +464,7 @@ def modify_message(
     response_model=LettaResponse,
     operation_id="send_message",
 )
+@trace_method("POST /v1/agents/{agent_id}/messages")
 async def send_message(
     agent_id: str,
     server: SyncServer = Depends(get_letta_server),
@@ -498,6 +503,7 @@ async def send_message(
         }
     },
 )
+@trace_method("POST /v1/agents/{agent_id}/messages/stream")
 async def send_message_streaming(
     agent_id: str,
     server: SyncServer = Depends(get_letta_server),
@@ -509,7 +515,6 @@ async def send_message_streaming(
     This endpoint accepts a message from a user and processes it through the agent.
     It will stream the steps of the response always, and stream the tokens if 'stream_tokens' is set to True.
     """
-
     actor = server.user_manager.get_user_or_default(user_id=user_id)
     result = await server.send_message_to_agent(
         agent_id=agent_id,
@@ -574,6 +579,7 @@ async def process_message_background(
     response_model=Run,
     operation_id="create_agent_message_async",
 )
+@trace_method("POST /v1/agents/{agent_id}/messages/async")
 async def send_message_async(
     agent_id: str,
     background_tasks: BackgroundTasks,
