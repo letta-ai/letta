@@ -120,9 +120,16 @@ def test_chat_completions_streaming(mock_e2b_api_key_none, client, agent, messag
         f"{client.base_url}/openai/{client.api_prefix}/chat/completions", request.model_dump(exclude_none=True), client.headers
     )
 
-    chunks = list(response)
-    for idx, chunk in enumerate(chunks):
-        _assert_valid_chunk(chunk, idx, chunks)
+    try:
+        chunks = list(response)
+        assert len(chunks) > 1, "Streaming response did not return enough chunks (may have failed silently)."
+
+        for idx, chunk in enumerate(chunks):
+            assert chunk, f"Empty chunk received at index {idx}."
+            print(chunk)
+            _assert_valid_chunk(chunk, idx, chunks)
+    except Exception as e:
+        pytest.fail(f"Streaming failed with exception: {e}")
 
 
 @pytest.mark.asyncio
@@ -134,10 +141,15 @@ async def test_chat_completions_streaming_async(client, agent, message):
     async_client = AsyncOpenAI(base_url=f"{client.base_url}/openai/{client.api_prefix}", max_retries=0)
     stream = await async_client.chat.completions.create(**request.model_dump(exclude_none=True))
 
-    async with stream:
-        async for chunk in stream:
-            if isinstance(chunk, ChatCompletionChunk):
+    received_chunks = 0
+    try:
+        async with stream:
+            async for chunk in stream:
+                assert isinstance(chunk, ChatCompletionChunk), f"Unexpected chunk type: {type(chunk)}"
                 assert chunk.choices, "Each ChatCompletionChunk should have at least one choice."
                 assert chunk.choices[0].delta.content, f"Chunk at index 0 has no content: {chunk.model_dump_json(indent=4)}"
-            else:
-                pytest.fail(f"Unexpected chunk type: {chunk}")
+                received_chunks += 1
+    except Exception as e:
+        pytest.fail(f"Streaming failed with exception: {e}")
+
+    assert received_chunks > 1, "No valid streaming chunks were received."

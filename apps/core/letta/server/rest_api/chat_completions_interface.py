@@ -153,7 +153,9 @@ class ChatCompletionsStreamingInterface(AgentChunkStreamingInterface):
         """No-op retained for interface compatibility."""
         return
 
-    def process_chunk(self, chunk: ChatCompletionChunkResponse, message_id: str, message_date: datetime) -> None:
+    def process_chunk(
+        self, chunk: ChatCompletionChunkResponse, message_id: str, message_date: datetime, expect_reasoning_content: bool = False
+    ) -> None:
         """
         Called externally with a ChatCompletionChunkResponse. Transforms
         it if necessary, then enqueues partial messages for streaming back.
