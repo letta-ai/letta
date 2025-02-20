@@ -14,6 +14,7 @@
     "esbuild-node-externals": "^1.16.0"
   },
   "dependencies": {
+    "@react-email/components": "^0.0.33",
     "@sentry/node": "^8.52.0",
     "@t3-oss/env-nextjs": "^0.12.0",
     "dotenv": "^16.4.7",
@@ -21,6 +22,7 @@
     "express": "^4.21.2",
     "ioredis": "^5.4.2",
     "js-tiktoken": "^1.0.19",
+    "lodash-es": "^4.17.21",
     "pg": "^8.13.3",
     "postgres": "^3.4.5",
     "react": "^19.0.0",
