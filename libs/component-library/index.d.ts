@@ -57,8 +57,9 @@ declare module '@tanstack/react-table' {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   interface ColumnMeta<TData extends RowData, TValue> {
     style: {
-      columnAlign: 'center' | 'left' | 'right';
+      columnAlign?: 'center' | 'left' | 'right';
       sticky?: 'left' | 'right';
+      width?: string;
     };
   }
 }

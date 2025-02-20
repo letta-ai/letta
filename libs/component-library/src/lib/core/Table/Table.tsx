@@ -88,10 +88,10 @@ TableHead.displayName = 'TableHead';
 const TableCell = React.forwardRef<
   HTMLTableCellElement,
   React.TdHTMLAttributes<HTMLTableCellElement>
->(({ className, ...props }, ref) => (
+>(({ className, style, ...props }, ref) => (
   <td
     ref={ref}
-    style={{ height: TABLE_ROW_HEIGHT }}
+    style={{ ...style, height: TABLE_ROW_HEIGHT }}
     className={cn(
       'px-4 whitespace-nowrap align-middle [&:has([role=checkbox])]:pr-0',
       className,

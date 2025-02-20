@@ -1,26 +1,143 @@
 'use client';
 import { useTranslations } from '@letta-cloud/translations';
 import type { ColumnDef } from '@tanstack/react-table';
-import { IdentitiesService } from '@letta-cloud/letta-agents-api';
+import {
+  IdentitiesService,
+  useIdentitiesServiceDeleteIdentity,
+} from '@letta-cloud/letta-agents-api';
 import type {
   Identity,
   IdentityType,
   ListIdentitiesResponse,
 } from '@letta-cloud/letta-agents-api';
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
+  Alert,
   Badge,
   Button,
+  CopyButton,
   DashboardPageLayout,
   DashboardPageSection,
   DataTable,
+  Dialog,
+  DotsHorizontalIcon,
+  DropdownMenu,
+  DropdownMenuItem,
+  FormField,
+  FormProvider,
+  HStack,
+  InfoTooltip,
+  Input,
+  MiddleTruncate,
+  TrashIcon,
+  Typography,
+  useForm,
+  VStack,
 } from '@letta-cloud/component-library';
-import { useInfiniteQuery } from '@tanstack/react-query';
+import { useInfiniteQuery, useQueryClient } from '@tanstack/react-query';
 import type { InfiniteData } from '@tanstack/query-core';
 import { useDebouncedValue } from '@mantine/hooks';
 import { UseInfiniteIdentitiesQueryFn } from './constants';
 import { CreateIdentityDialog } from './CreateIdentityDialog/CreateIdentityDialog';
 import { useIdentityTypeToTranslationMap } from './hooks/useIdentityTypeToTranslationMap';
+import { z } from 'zod';
+import { zodResolver } from '@hookform/resolvers/zod';
+
+interface DeleteIdentityDialogProps {
+  id: string;
+  name: string;
+  trigger: React.ReactNode;
+}
+
+function DeleteIdentityDialog(props: DeleteIdentityDialogProps) {
+  const t = useTranslations('IdentitiesTable');
+  const { id, name, trigger } = props;
+  const queryClient = useQueryClient();
+  const [open, setOpen] = useState(false);
+
+  const confirmDeleteSchema = z.object({
+    name: z.literal(name, {
+      message: t('DeleteIdentityDialog.confirmText.error'),
+    }),
+  });
+
+  type ConfirmDeleteValues = z.infer<typeof confirmDeleteSchema>;
+
+  const form = useForm<ConfirmDeleteValues>({
+    resolver: zodResolver(confirmDeleteSchema),
+    defaultValues: {
+      name: '',
+    },
+  });
+
+  const { mutate, isPending, isError } = useIdentitiesServiceDeleteIdentity();
+
+  const handleSubmit = useCallback(() => {
+    mutate(
+      {
+        identifierKey: id,
+      },
+      {
+        onSuccess: () => {
+          setOpen(false);
+          queryClient.setQueriesData<
+            InfiniteData<ListIdentitiesResponse> | undefined
+          >(
+            {
+              queryKey: UseInfiniteIdentitiesQueryFn([]).slice(0, 1),
+              exact: false,
+            },
+            (data) => {
+              if (!data) {
+                return data;
+              }
+
+              return {
+                ...data,
+                pages: data.pages.map((page) => {
+                  return page.filter((identity) => identity.id !== id);
+                }),
+              };
+            },
+          );
+        },
+      },
+    );
+  }, [mutate, queryClient, id]);
+
+  return (
+    <FormProvider {...form}>
+      <Dialog
+        onSubmit={form.handleSubmit(handleSubmit)}
+        title={t('DeleteIdentityDialog.title')}
+        errorMessage={isError ? t('DeleteIdentityDialog.error') : undefined}
+        isConfirmBusy={isPending}
+        onOpenChange={setOpen}
+        trigger={trigger}
+        isOpen={open}
+      >
+        <VStack gap="form">
+          <Alert
+            variant="destructive"
+            title={t('DeleteIdentityDialog.description')}
+          ></Alert>
+          <FormField
+            name="name"
+            render={({ field }) => (
+              <Input
+                labelVariant="simple"
+                placeholder={name}
+                fullWidth
+                {...field}
+                label={t('DeleteIdentityDialog.confirmText.label')}
+              />
+            )}
+          />
+        </VStack>
+      </Dialog>
+    </FormProvider>
+  );
+}
 
 interface IdentityTypeCellProps {
   type: IdentityType;
@@ -126,22 +243,93 @@ export function IdentitiesTable(props: IdentitiesTableProps) {
   const columns: Array<ColumnDef<Identity>> = useMemo(() => {
     return [
       {
-        id: 'name',
-        header: t('columns.name'),
-        accessorKey: 'identifier_key',
+        id: 'id',
+        header: () => (
+          <HStack align="center">
+            {t('columns.id.label')}
+            <InfoTooltip text={t('columns.id.tooltip')} />
+          </HStack>
+        ),
+        accessorFn: (row) => row.id,
+        cell: ({ row }) => {
+          return (
+            <HStack align="center">
+              <MiddleTruncate visibleStart={4} visibleEnd={4}>
+                {row.original.id || ''}
+              </MiddleTruncate>
+              <CopyButton
+                copyButtonText={t('columns.copyId')}
+                color="tertiary"
+                size="small"
+                hideLabel
+                textToCopy={row.original.id || ''}
+              />
+            </HStack>
+          );
+        },
       },
       {
-        id: 'type',
-        header: t('columns.type'),
-        accessorKey: 'identity_type',
+        id: 'name',
+        header: t('columns.name'),
+        meta: {
+          style: {
+            width: '50%',
+          },
+        },
+        accessorFn: (row) => row.name,
         cell: ({ row }) => (
-          <IdentityTypeCell type={row.original.identity_type} />
+          <HStack align="center">
+            <Typography>{row.original.name}</Typography>
+            <IdentityTypeCell type={row.original.identity_type} />
+          </HStack>
         ),
       },
       {
+        meta: {
+          style: {
+            width: '50%',
+          },
+        },
+        accessorFn: (row) => row.identifier_key,
         id: 'identifierKey',
-        header: t('columns.identifierKey'),
-        accessorKey: 'identifier_key',
+        header: () => (
+          <HStack align="center">
+            {t('columns.identifierKey.label')}
+            <InfoTooltip text={t('columns.identifierKey.tooltip')} />
+          </HStack>
+        ),
+      },
+      {
+        id: 'actions',
+        header: '',
+        cell: ({ row }) => {
+          return (
+            <DropdownMenu
+              trigger={
+                <Button
+                  color="tertiary"
+                  label={t('columns.actions')}
+                  preIcon={<DotsHorizontalIcon />}
+                  size="small"
+                  hideLabel
+                />
+              }
+              triggerAsChild
+            >
+              <DeleteIdentityDialog
+                trigger={
+                  <DropdownMenuItem
+                    doNotCloseOnSelect
+                    label={t('DeleteIdentityDialog.trigger')}
+                    preIcon={<TrashIcon />}
+                  />
+                }
+                id={row.original.id || ''}
+                name={row.original.name}
+              />
+            </DropdownMenu>
+          );
+        },
       },
     ];
   }, [t]);

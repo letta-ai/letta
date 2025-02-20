@@ -88,15 +88,18 @@ function TableBodyContent<Data>(props: TableBodyContentProps<Data>) {
           >
             {row.getVisibleCells().map((cell) => (
               <TableCell
-                align={cell.column.columnDef.meta?.style.columnAlign}
+                align={cell.column.columnDef.meta?.style?.columnAlign}
                 className={cn(
-                  cell.column.columnDef.meta?.style.sticky === 'left' &&
+                  cell.column.columnDef.meta?.style?.sticky === 'left' &&
                     'sticky left-0',
-                  cell.column.columnDef.meta?.style.sticky === 'right' &&
+                  cell.column.columnDef.meta?.style?.sticky === 'right' &&
                     'sticky right-0',
-                  cell.column.columnDef.meta?.style.sticky &&
+                  cell.column.columnDef.meta?.style?.sticky &&
                     'linear-gradient-background',
                 )}
+                style={{
+                  width: cell.column.columnDef.meta?.style?.width,
+                }}
                 key={cell.id}
               >
                 {flexRender(cell.column.columnDef.cell, cell.getContext())}
@@ -324,8 +327,19 @@ export function DataTable<TData, TValue>(props: DataTableProps<TData, TValue>) {
                 {headerGroup.headers.map((header) => {
                   return (
                     <TableHead
-                      align={header.column.columnDef.meta?.style.columnAlign}
                       key={header.id}
+                      align={header.column.columnDef.meta?.style.columnAlign}
+                      className={cn(
+                        header.column.columnDef.meta?.style.sticky === 'left' &&
+                          'sticky left-0',
+                        header.column.columnDef.meta?.style.sticky ===
+                          'right' && 'sticky right-0',
+                        header.column.columnDef.meta?.style.sticky &&
+                          'linear-gradient-background',
+                      )}
+                      style={{
+                        width: header.column.columnDef.meta?.style.width,
+                      }}
                     >
                       {header.isPlaceholder
                         ? null

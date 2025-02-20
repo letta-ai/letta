@@ -905,6 +905,16 @@
     }
   },
   "IdentitiesTable": {
+    "DeleteIdentityDialog": {
+      "title": "Delete identity",
+      "description": "Deleting an identity is permanent and cannot be undone. This will not delete any agents or memory associated with this identity.",
+      "trigger": "Delete identity",
+      "error": "There was an error deleting this identity, please try again or contact support.",
+      "confirmText": {
+        "label": "Type the name of the identity to confirm",
+        "error": "The name you entered does not match the identity name"
+      }
+    },
     "title": "Identities",
     "table": {
       "loading": "Loading identities...",
@@ -919,7 +929,16 @@
     "columns": {
       "type": "Type",
       "name": "Name",
-      "identifierKey": "Unique Identifier"
+      "actions": "Actions",
+      "id": {
+        "label": "ID",
+        "tooltip": "The identity id is unique across your whole organization"
+      },
+      "copyId": "Copy ID",
+      "identifierKey": {
+        "label": "Unique Key",
+        "tooltip": "The unique identifier is a unique string that can be used to look up this identity, usually this should be your user or organization ID on your platform, it is unique per project"
+      }
     },
     "createIdentity": "Create identity",
     "identityTypes": {
