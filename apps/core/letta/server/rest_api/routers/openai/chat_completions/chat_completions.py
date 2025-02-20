@@ -138,6 +138,7 @@ async def send_message_to_agent_chat_completions(
                 agent_id=letta_agent.agent_state.id,
                 messages=messages,
                 interface=streaming_interface,
+                put_inner_thoughts_first=False,
             )
         )
 

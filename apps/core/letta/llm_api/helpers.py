@@ -202,21 +202,29 @@ def add_inner_thoughts_to_functions(
     inner_thoughts_key: str,
     inner_thoughts_description: str,
     inner_thoughts_required: bool = True,
+    put_inner_thoughts_first: bool = True,
 ) -> List[dict]:
     """Add an inner_thoughts kwarg to every function in the provided list, ensuring it's the first parameter"""
     new_functions = []
     for function_object in functions:
         new_function_object = copy.deepcopy(function_object)
-
-        # Create a new OrderedDict with inner_thoughts as the first item
         new_properties = OrderedDict()
-        new_properties[inner_thoughts_key] = {
-            "type": "string",
-            "description": inner_thoughts_description,
-        }
 
-        # Add the rest of the properties
-        new_properties.update(function_object["parameters"]["properties"])
+        # For chat completions, we want inner thoughts to come later
+        if put_inner_thoughts_first:
+            # Create with inner_thoughts as the first item
+            new_properties[inner_thoughts_key] = {
+                "type": "string",
+                "description": inner_thoughts_description,
+            }
+            # Add the rest of the properties
+            new_properties.update(function_object["parameters"]["properties"])
+        else:
+            new_properties.update(function_object["parameters"]["properties"])
+            new_properties[inner_thoughts_key] = {
+                "type": "string",
+                "description": inner_thoughts_description,
+            }
 
         # Cast OrderedDict back to a regular dict
         new_function_object["parameters"]["properties"] = dict(new_properties)
@@ -225,9 +233,11 @@ def add_inner_thoughts_to_functions(
         if inner_thoughts_required:
             required_params = new_function_object["parameters"].get("required", [])
             if inner_thoughts_key not in required_params:
-                required_params.insert(0, inner_thoughts_key)
+                if put_inner_thoughts_first:
+                    required_params.insert(0, inner_thoughts_key)
+                else:
+                    required_params.append(inner_thoughts_key)
                 new_function_object["parameters"]["required"] = required_params
-
         new_functions.append(new_function_object)
 
     return new_functions

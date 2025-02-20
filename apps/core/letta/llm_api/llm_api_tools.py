@@ -140,6 +140,7 @@ def create(
     stream: bool = False,
     stream_interface: Optional[Union[AgentRefreshStreamingInterface, AgentChunkStreamingInterface]] = None,
     model_settings: Optional[dict] = None,  # TODO: eventually pass from server
+    put_inner_thoughts_first: bool = True,
 ) -> ChatCompletionResponse:
     """Return response to chat completion with backoff"""
     from letta.utils import printd
@@ -185,7 +186,9 @@ def create(
             else:
                 function_call = "required"
 
-        data = build_openai_chat_completions_request(llm_config, messages, user_id, functions, function_call, use_tool_naming)
+        data = build_openai_chat_completions_request(
+            llm_config, messages, user_id, functions, function_call, use_tool_naming, put_inner_thoughts_first=put_inner_thoughts_first
+        )
         if stream:  # Client requested token streaming
             data.stream = True
             assert isinstance(stream_interface, AgentChunkStreamingInterface) or isinstance(

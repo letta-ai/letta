@@ -94,6 +94,7 @@ def build_openai_chat_completions_request(
     functions: Optional[list],
     function_call: Optional[str],
     use_tool_naming: bool,
+    put_inner_thoughts_first: bool = True,
 ) -> ChatCompletionRequest:
     if functions and llm_config.put_inner_thoughts_in_kwargs:
         # Special case for LM Studio backend since it needs extra guidance to force out the thoughts first
@@ -105,6 +106,7 @@ def build_openai_chat_completions_request(
             functions=functions,
             inner_thoughts_key=INNER_THOUGHTS_KWARG,
             inner_thoughts_description=inner_thoughts_desc,
+            put_inner_thoughts_first=put_inner_thoughts_first,
         )
 
     openai_message_list = [

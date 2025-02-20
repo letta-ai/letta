@@ -322,6 +322,7 @@ class Agent(BaseAgent):
         max_delay: float = 10.0,  # max delay between retries
         step_count: Optional[int] = None,
         last_function_failed: bool = False,
+        put_inner_thoughts_first: bool = True,
     ) -> ChatCompletionResponse:
         """Get response from LLM API with robust retry mechanism."""
         log_telemetry(self.logger, "_get_ai_reply start")
@@ -367,6 +368,7 @@ class Agent(BaseAgent):
                     force_tool_call=force_tool_call,
                     stream=stream,
                     stream_interface=self.interface,
+                    put_inner_thoughts_first=put_inner_thoughts_first,
                 )
                 log_telemetry(self.logger, "_get_ai_reply create finish")
 
@@ -648,6 +650,7 @@ class Agent(BaseAgent):
         # additional args
         chaining: bool = True,
         max_chaining_steps: Optional[int] = None,
+        put_inner_thoughts_first: bool = True,
         **kwargs,
     ) -> LettaUsageStatistics:
         """Run Agent.step in a loop, handling chaining via heartbeat requests and function failures"""
@@ -662,6 +665,7 @@ class Agent(BaseAgent):
             kwargs["last_function_failed"] = function_failed
             step_response = self.inner_step(
                 messages=next_input_message,
+                put_inner_thoughts_first=put_inner_thoughts_first,
                 **kwargs,
             )
 
@@ -743,6 +747,7 @@ class Agent(BaseAgent):
         metadata: Optional[dict] = None,
         summarize_attempt_count: int = 0,
         last_function_failed: bool = False,
+        put_inner_thoughts_first: bool = True,
     ) -> AgentStepResponse:
         """Runs a single step in the agent loop (generates at most one LLM call)"""
 
@@ -778,6 +783,7 @@ class Agent(BaseAgent):
                 stream=stream,
                 step_count=step_count,
                 last_function_failed=last_function_failed,
+                put_inner_thoughts_first=put_inner_thoughts_first,
             )
             if not response:
                 # EDGE CASE: Function call failed AND there's no tools left for agent to call -> return early
