@@ -834,13 +834,13 @@ test = ["pytest"]
 
 [[package]]
 name = "composio-core"
-version = "0.7.2"
+version = "0.7.4"
 description = "Core package to act as a bridge between composio platform and other services."
 optional = false
 python-versions = "<4,>=3.9"
 files = [
-    {file = "composio_core-0.7.2-py3-none-any.whl", hash = "sha256:b44a9078b44337f39c5236ef8a2f59624f1d7d07b1ac0ad29e9aedbecfce5065"},
-    {file = "composio_core-0.7.2.tar.gz", hash = "sha256:0775661b11ff6cb0ed946c2695046009e6ac0e14678adb1a665c00538bb03ad3"},
+    {file = "composio_core-0.7.4-py3-none-any.whl", hash = "sha256:fcd0e50b2aff5b932491d532cc63d28d3b1018aeb633ae8ea96002ba75b307e7"},
+    {file = "composio_core-0.7.4.tar.gz", hash = "sha256:e09f80a9dfcbd187d73174bd5fb83e25a5935347149e63d62294f0646b931bc2"},
 ]
 
 [package.dependencies]
@@ -871,13 +871,13 @@ tools = ["diskcache", "flake8", "networkx", "pathspec", "pygments", "ruff", "tra
 
 [[package]]
 name = "composio-langchain"
-version = "0.7.2"
+version = "0.7.4"
 description = "Use Composio to get an array of tools with your LangChain agent."
 optional = false
 python-versions = "<4,>=3.9"
 files = [
-    {file = "composio_langchain-0.7.2-py3-none-any.whl", hash = "sha256:b25341f41df533834c914fe4bd8ee623f5b439d8eff96f992a24976e8b2bf60f"},
-    {file = "composio_langchain-0.7.2.tar.gz", hash = "sha256:5088283a4a9295634e6272dafd8e478338c942bad305689bef9265bdf3685b48"},
+    {file = "composio_langchain-0.7.4-py3-none-any.whl", hash = "sha256:21a730214b33e63714991a0c4e14d58218fd164e3bee1e8a0ff974f5859d6e41"},
+    {file = "composio_langchain-0.7.4.tar.gz", hash = "sha256:801ec3ae8c73bca75087d2524cdd24dde7a8cc7729b251bee8ca021b08f1b323"},
 ]
 
 [package.dependencies]
@@ -1700,7 +1700,7 @@ websockets = ">=13.0,<15.0dev"
 name = "googleapis-common-protos"
 version = "1.67.0"
 description = "Common protobufs used in Google APIs"
-optional = false
+optional = true
 python-versions = ">=3.7"
 files = [
     {file = "googleapis_common_protos-1.67.0-py2.py3-none-any.whl", hash = "sha256:579de760800d13616f51cf8be00c876f00a9f146d3e6510e19d1f4111758b741"},
@@ -2042,13 +2042,13 @@ files = [
 
 [[package]]
 name = "huggingface-hub"
-version = "0.29.0"
+version = "0.29.1"
 description = "Client library to download and publish models, datasets and other repos on the huggingface.co hub"
 optional = true
 python-versions = ">=3.8.0"
 files = [
-    {file = "huggingface_hub-0.29.0-py3-none-any.whl", hash = "sha256:c02daa0b6bafbdacb1320fdfd1dc7151d0940825c88c4ef89837fdb1f6ea0afe"},
-    {file = "huggingface_hub-0.29.0.tar.gz", hash = "sha256:64034c852be270cac16c5743fe1f659b14515a9de6342d6f42cbb2ede191fc80"},
+    {file = "huggingface_hub-0.29.1-py3-none-any.whl", hash = "sha256:352f69caf16566c7b6de84b54a822f6238e17ddd8ae3da4f8f2272aea5b198d5"},
+    {file = "huggingface_hub-0.29.1.tar.gz", hash = "sha256:9524eae42077b8ff4fc459ceb7a514eca1c1232b775276b009709fe2a084f250"},
 ]
 
 [package.dependencies]
@@ -2695,13 +2695,13 @@ pytest = ["pytest (>=7.0.0)", "rich (>=13.9.4,<14.0.0)"]
 
 [[package]]
 name = "letta-client"
-version = "0.1.39"
+version = "0.1.40"
 description = ""
 optional = false
 python-versions = "<4.0,>=3.8"
 files = [
-    {file = "letta_client-0.1.39-py3-none-any.whl", hash = "sha256:0644643031f45ca6306e9690f9c75c8077e1d66a9b0247cbf45e018e13313312"},
-    {file = "letta_client-0.1.39.tar.gz", hash = "sha256:d4ac3aef4c6b33a6281df3751a2b9279c91448ebd75f55f0304c605317aa938a"},
+    {file = "letta_client-0.1.40-py3-none-any.whl", hash = "sha256:8585bdc7cbb736590105a8e27692842c0987350c24a9bb5f74a165a5e66b7bfd"},
+    {file = "letta_client-0.1.40.tar.gz", hash = "sha256:c1d2afaeb5519a36b622675e14b548d388a82d8e4b1eb470bb2a641a11d471ed"},
 ]
 
 [package.dependencies]
@@ -2854,17 +2854,17 @@ openai = ">=1.1.0"
 
 [[package]]
 name = "llama-index-indices-managed-llama-cloud"
-version = "0.6.7"
+version = "0.6.8"
 description = "llama-index indices llama-cloud integration"
 optional = false
 python-versions = "<4.0,>=3.9"
 files = [
-    {file = "llama_index_indices_managed_llama_cloud-0.6.7-py3-none-any.whl", hash = "sha256:7cbe280ab03407f07a9ac034acf3bf2627a95d3868245f07c6242ce7ede264a8"},
-    {file = "llama_index_indices_managed_llama_cloud-0.6.7.tar.gz", hash = "sha256:b2a9020352b08e992327b25a3a9a056cb0d9397bc037aa498e5cfe451a0f07d9"},
+    {file = "llama_index_indices_managed_llama_cloud-0.6.8-py3-none-any.whl", hash = "sha256:b741fa3c286fb91600d8e54a4c62084b5e230ea624c2a778a202ed4abf6a8e9b"},
+    {file = "llama_index_indices_managed_llama_cloud-0.6.8.tar.gz", hash = "sha256:6581a1a4e966c80d108706880dc39a12e38634eddff9e859f2cc0d4bb11c6483"},
 ]
 
 [package.dependencies]
-llama-cloud = ">=0.1.8,<0.2.0"
+llama-cloud = ">=0.1.13,<0.2.0"
 llama-index-core = ">=0.12.0,<0.13.0"
 
 [[package]]
@@ -3539,7 +3539,7 @@ realtime = ["websockets (>=13,<15)"]
 name = "opentelemetry-api"
 version = "1.30.0"
 description = "OpenTelemetry Python API"
-optional = false
+optional = true
 python-versions = ">=3.8"
 files = [
     {file = "opentelemetry_api-1.30.0-py3-none-any.whl", hash = "sha256:d5f5284890d73fdf47f843dda3210edf37a38d66f44f2b5aedc1e89ed455dc09"},
@@ -3554,7 +3554,7 @@ importlib-metadata = ">=6.0,<=8.5.0"
 name = "opentelemetry-exporter-otlp"
 version = "1.30.0"
 description = "OpenTelemetry Collector Exporters"
-optional = false
+optional = true
 python-versions = ">=3.8"
 files = [
     {file = "opentelemetry_exporter_otlp-1.30.0-py3-none-any.whl", hash = "sha256:44e11054ec571ccfed73a83c6429dee5d334d061d0e0572e3160d6de97156dbc"},
@@ -3569,7 +3569,7 @@ opentelemetry-exporter-otlp-proto-http = "1.30.0"
 name = "opentelemetry-exporter-otlp-proto-common"
 version = "1.30.0"
 description = "OpenTelemetry Protobuf encoding"
-optional = false
+optional = true
 python-versions = ">=3.8"
 files = [
     {file = "opentelemetry_exporter_otlp_proto_common-1.30.0-py3-none-any.whl", hash = "sha256:5468007c81aa9c44dc961ab2cf368a29d3475977df83b4e30aeed42aa7bc3b38"},
@@ -3583,7 +3583,7 @@ opentelemetry-proto = "1.30.0"
 name = "opentelemetry-exporter-otlp-proto-grpc"
 version = "1.30.0"
 description = "OpenTelemetry Collector Protobuf over gRPC Exporter"
-optional = false
+optional = true
 python-versions = ">=3.8"
 files = [
     {file = "opentelemetry_exporter_otlp_proto_grpc-1.30.0-py3-none-any.whl", hash = "sha256:2906bcae3d80acc54fd1ffcb9e44d324e8631058b502ebe4643ca71d1ff30830"},
@@ -3603,7 +3603,7 @@ opentelemetry-sdk = ">=1.30.0,<1.31.0"
 name = "opentelemetry-exporter-otlp-proto-http"
 version = "1.30.0"
 description = "OpenTelemetry Collector Protobuf over HTTP Exporter"
-optional = false
+optional = true
 python-versions = ">=3.8"
 files = [
     {file = "opentelemetry_exporter_otlp_proto_http-1.30.0-py3-none-any.whl", hash = "sha256:9578e790e579931c5ffd50f1e6975cbdefb6a0a0a5dea127a6ae87df10e0a589"},
@@ -3623,7 +3623,7 @@ requests = ">=2.7,<3.0"
 name = "opentelemetry-instrumentation"
 version = "0.51b0"
 description = "Instrumentation Tools & Auto Instrumentation for OpenTelemetry Python"
-optional = false
+optional = true
 python-versions = ">=3.8"
 files = [
     {file = "opentelemetry_instrumentation-0.51b0-py3-none-any.whl", hash = "sha256:c6de8bd26b75ec8b0e54dff59e198946e29de6a10ec65488c357d4b34aa5bdcf"},
@@ -3640,7 +3640,7 @@ wrapt = ">=1.0.0,<2.0.0"
 name = "opentelemetry-instrumentation-requests"
 version = "0.51b0"
 description = "OpenTelemetry requests instrumentation"
-optional = false
+optional = true
 python-versions = ">=3.8"
 files = [
     {file = "opentelemetry_instrumentation_requests-0.51b0-py3-none-any.whl", hash = "sha256:0723aaafaeb2a825723f31c0bf644f9642377046063d1a52fc86571ced87feac"},
@@ -3660,7 +3660,7 @@ instruments = ["requests (>=2.0,<3.0)"]
 name = "opentelemetry-proto"
 version = "1.30.0"
 description = "OpenTelemetry Python Proto"
-optional = false
+optional = true
 python-versions = ">=3.8"
 files = [
     {file = "opentelemetry_proto-1.30.0-py3-none-any.whl", hash = "sha256:c6290958ff3ddacc826ca5abbeb377a31c2334387352a259ba0df37c243adc11"},
@@ -3674,7 +3674,7 @@ protobuf = ">=5.0,<6.0"
 name = "opentelemetry-sdk"
 version = "1.30.0"
 description = "OpenTelemetry Python SDK"
-optional = false
+optional = true
 python-versions = ">=3.8"
 files = [
     {file = "opentelemetry_sdk-1.30.0-py3-none-any.whl", hash = "sha256:14fe7afc090caad881addb6926cec967129bd9260c4d33ae6a217359f6b61091"},
@@ -3690,7 +3690,7 @@ typing-extensions = ">=3.7.4"
 name = "opentelemetry-semantic-conventions"
 version = "0.51b0"
 description = "OpenTelemetry Semantic Conventions"
-optional = false
+optional = true
 python-versions = ">=3.8"
 files = [
     {file = "opentelemetry_semantic_conventions-0.51b0-py3-none-any.whl", hash = "sha256:fdc777359418e8d06c86012c3dc92c88a6453ba662e941593adb062e48c2eeae"},
@@ -3705,7 +3705,7 @@ opentelemetry-api = "1.30.0"
 name = "opentelemetry-util-http"
 version = "0.51b0"
 description = "Web util for OpenTelemetry"
-optional = false
+optional = true
 python-versions = ">=3.8"
 files = [
     {file = "opentelemetry_util_http-0.51b0-py3-none-any.whl", hash = "sha256:0561d7a6e9c422b9ef9ae6e77eafcfcd32a2ab689f5e801475cbb67f189efa20"},
@@ -6066,27 +6066,20 @@ test = ["argcomplete (>=3.0.3)", "mypy (>=1.7.0)", "pre-commit", "pytest (>=7.0,
 
 [[package]]
 name = "typer"
-version = "0.9.4"
+version = "0.15.1"
 description = "Typer, build great CLIs. Easy to code. Based on Python type hints."
 optional = false
-python-versions = ">=3.6"
+python-versions = ">=3.7"
 files = [
-    {file = "typer-0.9.4-py3-none-any.whl", hash = "sha256:aa6c4a4e2329d868b80ecbaf16f807f2b54e192209d7ac9dd42691d63f7a54eb"},
-    {file = "typer-0.9.4.tar.gz", hash = "sha256:f714c2d90afae3a7929fcd72a3abb08df305e1ff61719381384211c4070af57f"},
+    {file = "typer-0.15.1-py3-none-any.whl", hash = "sha256:7994fb7b8155b64d3402518560648446072864beefd44aa2dc36972a5972e847"},
+    {file = "typer-0.15.1.tar.gz", hash = "sha256:a0588c0a7fa68a1978a069818657778f86abe6ff5ea6abf472f940a08bfe4f0a"},
 ]
 
 [package.dependencies]
-click = ">=7.1.1,<9.0.0"
-colorama = {version = ">=0.4.3,<0.5.0", optional = true, markers = "extra == \"all\""}
-rich = {version = ">=10.11.0,<14.0.0", optional = true, markers = "extra == \"all\""}
-shellingham = {version = ">=1.3.0,<2.0.0", optional = true, markers = "extra == \"all\""}
+click = ">=8.0.0"
+rich = ">=10.11.0"
+shellingham = ">=1.3.0"
 typing-extensions = ">=3.7.4.3"
-
-[package.extras]
-all = ["colorama (>=0.4.3,<0.5.0)", "rich (>=10.11.0,<14.0.0)", "shellingham (>=1.3.0,<2.0.0)"]
-dev = ["autoflake (>=1.3.1,<2.0.0)", "flake8 (>=3.8.3,<4.0.0)", "pre-commit (>=2.17.0,<3.0.0)"]
-doc = ["cairosvg (>=2.5.2,<3.0.0)", "mdx-include (>=1.4.1,<2.0.0)", "mkdocs (>=1.1.2,<2.0.0)", "mkdocs-material (>=8.1.4,<9.0.0)", "pillow (>=9.3.0,<10.0.0)"]
-test = ["black (>=22.3.0,<23.0.0)", "coverage (>=6.2,<7.0)", "isort (>=5.0.6,<6.0.0)", "mypy (==0.971)", "pytest (>=4.4.0,<8.0.0)", "pytest-cov (>=2.10.0,<5.0.0)", "pytest-sugar (>=0.9.4,<0.10.0)", "pytest-xdist (>=1.32.0,<4.0.0)", "rich (>=10.11.0,<14.0.0)", "shellingham (>=1.3.0,<2.0.0)"]
 
 [[package]]
 name = "types-requests"
@@ -6851,7 +6844,7 @@ cffi = {version = ">=1.11", markers = "platform_python_implementation == \"PyPy\
 cffi = ["cffi (>=1.11)"]
 
 [extras]
-all = ["autoflake", "black", "datasets", "docker", "fastapi", "isort", "langchain", "langchain-community", "locust", "pexpect", "pg8000", "pgvector", "pre-commit", "psycopg2", "psycopg2-binary", "pyright", "pytest-asyncio", "pytest-order", "uvicorn", "wikipedia"]
+all = ["autoflake", "black", "boto3", "datasets", "docker", "fastapi", "google-genai", "isort", "langchain", "langchain-community", "locust", "opentelemetry-api", "opentelemetry-exporter-otlp", "opentelemetry-instrumentation-requests", "opentelemetry-sdk", "pexpect", "pg8000", "pgvector", "pre-commit", "psycopg2", "psycopg2-binary", "pyright", "pytest-asyncio", "pytest-order", "uvicorn", "wikipedia"]
 bedrock = ["boto3"]
 cloud-tool-sandbox = ["e2b-code-interpreter"]
 dev = ["autoflake", "black", "datasets", "isort", "locust", "pexpect", "pre-commit", "pyright", "pytest-asyncio", "pytest-order"]
@@ -6860,9 +6853,10 @@ google = ["google-genai"]
 postgres = ["pg8000", "pgvector", "psycopg2", "psycopg2-binary"]
 qdrant = ["qdrant-client"]
 server = ["fastapi", "uvicorn"]
+telemetry = ["opentelemetry-api", "opentelemetry-exporter-otlp", "opentelemetry-instrumentation-requests", "opentelemetry-sdk"]
 tests = ["wikipedia"]
 
 [metadata]
 lock-version = "2.0"
 python-versions = "<3.14,>=3.10"
-content-hash = "55cce79796d9e1265865b8bfc9a5b4aaa959705401054553b8bf39fe2f5c27f9"
+content-hash = "eeca4050161bf468417f9ed7934e1e03b9ed6d79fc85038ad7b2c770f2be7f26"
