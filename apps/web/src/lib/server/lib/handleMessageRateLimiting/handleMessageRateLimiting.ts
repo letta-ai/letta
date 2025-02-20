@@ -12,8 +12,6 @@ import {
   getCreditCostPerModel,
   getOrganizationCredits,
 } from '@letta-cloud/server-utils';
-import { getSingleFlag } from '@letta-cloud/feature-flags';
-import process from 'node:process';
 
 type ModelType = 'embedding' | 'inference';
 
@@ -280,15 +278,10 @@ export async function handleMessageRateLimiting(
 
   const rateLimitThresholds: RateLimitReason[] = [];
 
-  if (
-    process.env.IS_CYPRESS_RUN === 'yes' ||
-    (await getSingleFlag('CREDIT_RATE_LIMITS', organizationId))
-  ) {
-    if (typeof creditCost !== 'number') {
-      rateLimitThresholds.push('context-window-size-not-supported');
-    } else if (organizationCredits - creditCost < 0) {
-      rateLimitThresholds.push('not-enough-credits');
-    }
+  if (typeof creditCost !== 'number') {
+    rateLimitThresholds.push('context-window-size-not-supported');
+  } else if (organizationCredits - creditCost < 0) {
+    rateLimitThresholds.push('not-enough-credits');
   }
 
   if (currentRequests + 1 >= maxRequestsPerMinutePerModel) {
