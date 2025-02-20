@@ -119,6 +119,8 @@ navigation:
                 path: pages/models/openai_proxy.mdx
               - page: Anthropic
                 path: pages/models/anthropic.mdx
+              - page: AWS Bedrock
+                path: pages/models/aws_bedrock.mdx
               - page: Groq
                 path: pages/models/groq.mdx
               - page: Together
@@ -268,6 +270,8 @@ redirects:
     destination: "/guides/server/providers/openai-proxy"
   - source: "/models/anthropic"
     destination: "/guides/server/providers/anthropic"
+  - source: "/models/aws_bedrock"
+    destination: "/guides/server/providers/aws_bedrock"
   - source: "/models/groq"
     destination: "/guides/server/providers/groq"
   - source: "/models/together"

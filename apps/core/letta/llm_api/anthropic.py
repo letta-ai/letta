@@ -519,6 +519,7 @@ def _prepare_anthropic_request(
     prefix_fill: bool = True,
     # if true, put COT inside the tool calls instead of inside the content
     put_inner_thoughts_in_kwargs: bool = False,
+    bedrock: bool = False
 ) -> dict:
     """Prepare the request data for Anthropic API format."""
 
@@ -606,10 +607,11 @@ def _prepare_anthropic_request(
     # NOTE: cannot prefill with tools for opus:
     # Your API request included an `assistant` message in the final position, which would pre-fill the `assistant` response. When using tools with "claude-3-opus-20240229"
     if prefix_fill and not put_inner_thoughts_in_kwargs and "opus" not in data["model"]:
-        data["messages"].append(
-            # Start the thinking process for the assistant
-            {"role": "assistant", "content": f"<{inner_thoughts_xml_tag}>"},
-        )
+        if not bedrock: # not support for bedrock
+            data["messages"].append(
+                # Start the thinking process for the assistant
+                {"role": "assistant", "content": f"<{inner_thoughts_xml_tag}>"},
+            )
 
     # Validate max_tokens
     assert "max_tokens" in data, data
@@ -651,13 +653,16 @@ def anthropic_bedrock_chat_completions_request(
     inner_thoughts_xml_tag: Optional[str] = "thinking",
 ) -> ChatCompletionResponse:
     """Make a chat completion request to Anthropic via AWS Bedrock."""
-    data = _prepare_anthropic_request(data, inner_thoughts_xml_tag)
+    data = _prepare_anthropic_request(data, inner_thoughts_xml_tag, bedrock=True)
 
     # Get the client
     client = get_bedrock_client()
 
     # Make the request
     try:
+        # bedrock does not support certain args
+        data["tool_choice"] = {"type": "any"}
+
         response = client.messages.create(**data)
         return convert_anthropic_response_to_chatcompletion(response=response, inner_thoughts_xml_tag=inner_thoughts_xml_tag)
     except PermissionDeniedError:
