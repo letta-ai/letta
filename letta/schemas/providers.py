@@ -1014,4 +1014,6 @@ class AnthropicBedrockProvider(Provider):
         return bedrock_get_model_context_window(model_name)
 
     def get_handle(self, model_name: str) -> str:
-        return f"anthropic/{model_name}"
+        print(model_name)
+        model = model_name.split(".")[-1]
+        return f"bedrock/{model}"
