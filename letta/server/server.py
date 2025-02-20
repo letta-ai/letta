@@ -336,6 +336,7 @@ class SyncServer(Server):
         agent_id: str,
         input_messages: Union[Message, List[Message]],
         interface: Union[AgentInterface, None] = None,  # needed to getting responses
+        put_inner_thoughts_first: bool = True,
         # timestamp: Optional[datetime],
     ) -> LettaUsageStatistics:
         """Send the input message through the agent"""
@@ -368,6 +369,7 @@ class SyncServer(Server):
                 stream=token_streaming,
                 skip_verify=True,
                 metadata=metadata,
+                put_inner_thoughts_first=put_inner_thoughts_first,
             )
 
         except Exception as e:
@@ -625,6 +627,7 @@ class SyncServer(Server):
         wrap_system_message: bool = True,
         interface: Union[AgentInterface, ChatCompletionsStreamingInterface, None] = None,  # needed to getting responses
         metadata: Optional[dict] = None,  # Pass through metadata to interface
+        put_inner_thoughts_first: bool = True,
     ) -> LettaUsageStatistics:
         """Send a list of messages to the agent
 
@@ -675,7 +678,13 @@ class SyncServer(Server):
             interface.metadata = metadata
 
         # Run the agent state forward
-        return self._step(actor=actor, agent_id=agent_id, input_messages=message_objects, interface=interface)
+        return self._step(
+            actor=actor,
+            agent_id=agent_id,
+            input_messages=message_objects,
+            interface=interface,
+            put_inner_thoughts_first=put_inner_thoughts_first,
+        )
 
     # @LockingServer.agent_lock_decorator
     def run_command(self, user_id: str, agent_id: str, command: str) -> LettaUsageStatistics:
