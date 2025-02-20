@@ -114,7 +114,7 @@ def create_agent(
     agent: CreateAgentRequest = Body(...),
     server: "SyncServer" = Depends(get_letta_server),
     user_id: Optional[str] = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
-    project_slug: Optional[str] = Header(None, alias="project-slug"),  # Only handled by next js middleware
+    x_project: Optional[str] = Header(None, alias="X-Project"),  # Only handled by next js middleware
 ):
     """
     Create a new agent with the specified configuration.

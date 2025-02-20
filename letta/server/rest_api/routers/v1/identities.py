@@ -55,7 +55,7 @@ def create_identity(
     identity: IdentityCreate = Body(...),
     server: "SyncServer" = Depends(get_letta_server),
     user_id: Optional[str] = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
-    project_slug: Optional[str] = Header(None, alias="project-slug"),  # Only handled by next js middleware
+    x_project: Optional[str] = Header(None, alias="X-Project"),  # Only handled by next js middleware
 ):
     try:
         actor = server.user_manager.get_user_or_default(user_id=user_id)
@@ -71,7 +71,7 @@ def upsert_identity(
     identity: IdentityCreate = Body(...),
     server: "SyncServer" = Depends(get_letta_server),
     user_id: Optional[str] = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
-    project_slug: Optional[str] = Header(None, alias="project-slug"),  # Only handled by next js middleware
+    x_project: Optional[str] = Header(None, alias="X-Project"),  # Only handled by next js middleware
 ):
     try:
         actor = server.user_manager.get_user_or_default(user_id=user_id)
