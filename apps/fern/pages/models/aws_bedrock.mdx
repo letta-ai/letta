@@ -1,11 +1,11 @@
 ---
 title: AWS Bedrock
-slug: guides/server/providers/aws_bedrock
+slug: guides/server/providers/aws-bedrock
 ---
 We support Anthropic models provided via AWS Bedrock.
 
-<Warning> 
-To use a model with AWS Bedrock, you must ensure it is enabled in the your AWS Model Catalog. Letta will list all available Anthropic models on Bedrock, even if you do not have access to them via AWS. 
+<Warning>
+To use a model with AWS Bedrock, you must ensure it is enabled in the your AWS Model Catalog. Letta will list all available Anthropic models on Bedrock, even if you do not have access to them via AWS.
 </Warning>
 
 ## Enabling AWS Bedrock models
@@ -18,7 +18,7 @@ export AWS_REGION=us-east-1
 # Optional: specify API version (default is bedrock-2023-05-31)
 export BEDROCK_ANTHROPIC_VERSION="bedrock-2023-05-31"
 ```
-Now, AWS Bedrock models will be enabled with you run the Letta server. 
+Now, AWS Bedrock models will be enabled with you run the Letta server.
 
 ### Using the `docker run` server with AWS Bedrock
 To enable AWS Bedrock models, simply set your `AWS_ACCESS_KEY`, `AWS_SECRET_ACCESS_KEY`, and `AWS_REGION` as environment variables:
