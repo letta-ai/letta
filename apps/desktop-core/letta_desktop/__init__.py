@@ -2,7 +2,7 @@ from dotenv import load_dotenv
 from pathlib import Path
 from os.path import join
 letta_dir = Path.home() / ".letta"
-from threading import Thread
+import threading
 from argparse import ArgumentParser
 
 dotenv_path = join(letta_dir, "env")
@@ -78,6 +78,34 @@ argparser.add_argument('--look-for-server-id', type=str, help='Look for server i
 argparser.add_argument('--use-file-pg-uri', action='store_true')
 
 
+
+
+class CustomThread(threading.Thread):
+  def __init__(self, *args, **kwargs):
+    super(CustomThread, self).__init__(*args, **kwargs)
+    self._stopper = threading.Event()
+
+  def stop(self):
+    self._stopper.set()
+
+  def stopped(self):
+    return self._stopper.isSet()
+
+  def run(self):
+    while not self.stopped():
+     start_server()
+
+
+server_thread = None
+
+def kill_app():
+  if server_thread:
+    server_thread.stop()
+    print("Server stopped")
+
+  sys.exit(1)
+
+
 def check_if_web_server_running():
   # ping localhost:8285 every 5 seconds, if its down kill this process
   import requests
@@ -116,7 +144,6 @@ if __name__ == "__main__":
   print("Starting server...")
 
   # start the server in a separate thread
-  server_thread = Thread(target=start_server)
-  server_thread.start()
+  server_thread = CustomThread()
 
   check_if_web_server_running()
