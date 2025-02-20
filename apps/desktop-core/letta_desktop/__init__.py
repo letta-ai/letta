@@ -75,6 +75,7 @@ def upgrade_db():
 argparser = ArgumentParser()
 
 argparser.add_argument('--look-for-server-id', type=str, help='Look for server id')
+argparser.add_argument('--use-file-pg-uri', action='store_true')
 
 
 def check_if_web_server_running():
@@ -85,7 +86,6 @@ def check_if_web_server_running():
 
   while True:
     try:
-      print("Pinging localhost:8285")
       res = requests.get('http://localhost:8285/health', timeout=5)
       res.raise_for_status()
 
@@ -95,9 +95,6 @@ def check_if_web_server_running():
       if args.look_for_server_id:
         # get response text
         response_text = res.text
-
-        print(response_text, args.look_for_server_id)
-
 
         # if the response text does not contain the server id, kill the process, throw an error
         if args.look_for_server_id not in response_text:

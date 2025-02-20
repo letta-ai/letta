@@ -244,7 +244,7 @@ export default class App {
         console.error(`stderr: ${data}`);
 
         lettaServerLogs.addLog({
-          type: 'error',
+          type: 'info',
           message: data.toString(),
           timestamp: new Date().toISOString(),
         });
