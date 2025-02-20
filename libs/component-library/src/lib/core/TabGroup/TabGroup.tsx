@@ -4,6 +4,8 @@ import * as Tabs from '@radix-ui/react-tabs';
 import { cn } from '@letta-cloud/core-style-config';
 import { Slot } from '@radix-ui/react-slot';
 import { Typography } from '../Typography/Typography';
+import { cva } from 'class-variance-authority';
+import type { VariantProps } from 'class-variance-authority';
 
 interface TabItemType {
   label: string;
@@ -12,16 +14,34 @@ interface TabItemType {
   postIcon?: React.ReactNode;
 }
 
-interface TabGroupProps extends Tabs.TabsProps {
+const listVariant = cva('px-4 h-[28px] flex items-center gap-2 flex-row', {
+  variants: {
+    variant: {
+      border: 'border-b-2 data-[state=active]:border-content',
+      'bordered-background':
+        'data-[state=active]:bg-background-grey2 data-[state=active]:border data-[state=active]:border-b-0',
+      chips:
+        'data-[state=active]:bg-brand-light data-[state=active]:text-brand-light-content font-medium',
+    },
+    size: {
+      small: 'pb-2',
+      xsmall: '',
+    },
+    fullWidth: {
+      true: 'flex-1 justify-center',
+    },
+  },
+});
+
+type TabAggregate = Tabs.TabsProps & VariantProps<typeof listVariant>;
+
+interface TabGroupProps extends TabAggregate {
   items: TabItemType[];
   fullWidth?: boolean;
   upperCase?: boolean;
   extendBorder?: boolean;
   noBottomBorder?: boolean;
-  size?: 'small' | 'xsmall';
-  color?: 'default' | 'destructive';
   rightContent?: React.ReactNode;
-  variant?: 'border' | 'bordered-background';
 }
 
 export function TabGroup(props: TabGroupProps) {
@@ -50,14 +70,7 @@ export function TabGroup(props: TabGroupProps) {
           <Tabs.Trigger
             className={cn(
               'px-4 h-[28px] flex items-center gap-2 flex-row ',
-              variant === 'border'
-                ? 'border-b-2 data-[state=active]:border-content'
-                : '',
-              variant === 'bordered-background'
-                ? 'data-[state=active]:bg-background-grey2 data-[state=active]:border data-[state=active]:border-b-0'
-                : '',
-              size === 'small' ? 'pb-2' : '',
-              fullWidth ? 'flex-1 justify-center' : '',
+              listVariant({ variant, size, fullWidth }),
             )}
             key={item.value}
             value={item.value}
@@ -65,7 +78,7 @@ export function TabGroup(props: TabGroupProps) {
           >
             <Slot className="w-4 h-4">{item.icon}</Slot>
             <Typography
-              variant="body2"
+              variant={size === 'xsmall' ? 'body3' : 'body2'}
               uppercase={upperCase}
               className="whitespace-nowrap"
             >

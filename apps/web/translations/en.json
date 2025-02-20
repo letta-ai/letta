@@ -3,6 +3,24 @@
     "emptyMessage": "This is not the page you're looking for",
     "emptyAction": "Go home"
   },
+  "pages/distribution": {
+    "DeploymentInstructions": {
+      "title": "Agent Distribution"
+    },
+    "RecentAgents": {
+      "title": "Recently deployed agents",
+      "addAgent": "Deploy agent"
+    },
+    "VersionList": {
+      "title": "Version History"
+    },
+    "LettaLaunchView": {
+      "title": "Let Letta manage your UI",
+      "description": "With Letta Launch, you can deploy agents without writing any code. Letta will manage the UI for you, users can start using your agent with just a link that creates a unique agent instance for them.",
+      "cta": "Create a Launch Link"
+    },
+    "copy": "Copy"
+  },
   "WelcomeOverlay": {
     "welcomeMessage": "Welcome to Letta",
     "question": "Thank you for trying us out, we have a few questions to help us understand your needs better.",

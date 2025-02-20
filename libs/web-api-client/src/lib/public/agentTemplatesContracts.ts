@@ -208,6 +208,37 @@ const getDeployedAgentTemplateByIdContract = c.query({
   },
 });
 
+const ListTemplateVersionsQuerySchema = z.object({
+  limit: z.number().optional(),
+  offset: z.number().optional(),
+});
+
+export type ListTemplateVersionsQuery = z.infer<
+  typeof ListTemplateVersionsQuerySchema
+>;
+
+const ShortVersionedTemplateType = z.object({
+  id: z.string(),
+  version: z.string(),
+  agentTemplateId: z.string(),
+  createdAt: z.string(),
+});
+
+const listTemplateVersionsContract = c.query({
+  method: 'GET',
+  path: '/agent-templates/:agentTemplateId/versions',
+  pathParams: z.object({
+    agentTemplateId: z.string(),
+  }),
+  query: ListTemplateVersionsQuerySchema,
+  responses: {
+    200: z.object({
+      versions: z.array(ShortVersionedTemplateType),
+      hasNextPage: z.boolean(),
+    }),
+  },
+});
+
 export const agentTemplatesContracts = c.router({
   listAgentTemplates: listAgentTemplatesContract,
   forkAgentTemplate: forkAgentTemplateContract,
@@ -221,6 +252,7 @@ export const agentTemplatesContracts = c.router({
   getAgentTemplateByVersion: getAgentTemplateByVersionContract,
   getAgentTemplateById: getAgentTemplateByIdContract,
   getDeployedAgentTemplateById: getDeployedAgentTemplateByIdContract,
+  listTemplateVersions: listTemplateVersionsContract,
 });
 
 export const agentTemplatesQueryClientKeys = {

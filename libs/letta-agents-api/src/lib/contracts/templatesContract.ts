@@ -10,8 +10,8 @@ const c = initContract();
 const createAgentsFromTemplate = c.mutation({
   method: 'POST',
   path: '/v1/templates/:project/:template_version/agents',
-  description: 'Creates agents given a template',
-  summary: 'Create Agents from Template',
+  description: 'Creates an Agent or multiple Agents from a template',
+  summary: 'Create agents from a template',
   pathParams: z.object({
     project: z.string().openapi({ description: 'The project slug' }),
     template_version: z.string().openapi({

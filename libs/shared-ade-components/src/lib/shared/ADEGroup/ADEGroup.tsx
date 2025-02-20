@@ -1,3 +1,4 @@
+'use client';
 import { useState } from 'react';
 import { HStack, Typography, VStack } from '@letta-cloud/component-library';
 

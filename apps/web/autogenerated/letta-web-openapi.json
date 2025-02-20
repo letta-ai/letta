@@ -5803,8 +5803,8 @@
     },
     "/v1/templates/{project}/{template_version}/agents": {
       "post": {
-        "description": "Creates agents given a template",
-        "summary": "Create Agents from Template",
+        "description": "Creates an Agent or multiple Agents from a template",
+        "summary": "Create agents from a template",
         "tags": ["templates"],
         "parameters": [
           {

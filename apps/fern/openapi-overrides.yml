@@ -1608,3 +1608,27 @@ paths:
                   token="YOUR_TOKEN",
               )
               client.health.check()
+  /v1/templates/{project}/{template_version}/agents:
+    post:
+      x-fern-sdk-group-name:
+        - templates
+      x-fern-sdk-method-name: create_agents
+      x-fern-examples:
+        - code-samples:
+            - sdk: typescript
+              code: |
+                import { LettaClient } from "@letta-ai/letta-client";
+
+                const client = new LettaClient({ token: "YOUR_TOKEN" });
+                await client.templates.createAgents("project", "template_version");
+            - sdk: python
+              code: |
+                from letta_client import Letta
+
+                client = Letta(
+                    token="YOUR_TOKEN",
+                )
+                client.templates.create_agents(
+                    project="project",
+                    template_version="template_version",
+                )

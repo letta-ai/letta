@@ -842,6 +842,43 @@ export async function getDeployedAgentTemplateById(
   };
 }
 
+type ListTemplateVersions = ServerInferRequest<
+  typeof contracts.agentTemplates.listTemplateVersions
+>;
+
+type ListTemplateVersionsResponse = ServerInferResponses<
+  typeof contracts.agentTemplates.listTemplateVersions
+>;
+
+async function listTemplateVersions(
+  req: ListTemplateVersions,
+): Promise<ListTemplateVersionsResponse> {
+  const { agentTemplateId } = req.params;
+  const { limit = 5, offset } = req.query;
+
+  const response = await db.query.deployedAgentTemplates.findMany({
+    where: eq(deployedAgentTemplates.agentTemplateId, agentTemplateId),
+    limit: limit + 1,
+    offset,
+    orderBy: [desc(deployedAgentTemplates.createdAt)],
+  });
+
+  return {
+    status: 200,
+    body: {
+      versions: response.slice(0, limit).map((version) => {
+        return {
+          id: version.id,
+          version: version.version,
+          agentTemplateId: version.agentTemplateId,
+          createdAt: version.createdAt.toISOString(),
+        };
+      }),
+      hasNextPage: response.length > limit,
+    },
+  };
+}
+
 export const agentTemplateRoutes = {
   listAgentTemplates,
   getAgentTemplateByVersion,
@@ -852,4 +889,5 @@ export const agentTemplateRoutes = {
   refreshAgentTemplateSimulatorSession,
   getAgentTemplateById,
   getDeployedAgentTemplateById,
+  listTemplateVersions,
 };
