@@ -171,8 +171,8 @@
     }
   },
   "organization/environment-variables": {
-    "title": "Environment variables",
-    "description": "Manage environment variables for your organization. All environment variables are scoped to the organization and are available to all agents in the organization via tools. Keys cannot be read after being set.",
+    "title": "Tool environment variables",
+    "description": "Manage tool environment variables scoped to your organization. These environment variables are available to all agents in the organization via tools. Values cannot be read after being set.",
     "environmentVariablesColumns": {
       "key": "Key",
       "lastUpdated": "Last Updated",
@@ -290,7 +290,7 @@
     }
   },
   "settings/layout": {
-    "personal": "Personal",
+    "personal": "Settings",
     "profile": "Profile",
     "account": "Account",
     "organization": {
@@ -300,10 +300,10 @@
       "billing": "Billing",
       "usage": "Usage",
       "integrations": "Integrations",
-      "environmentVariables": "Environment variables",
+      "environmentVariables": "Tool variables",
       "modelProviders": "Model providers",
       "rateLimits": "Rate limits",
-      "costExplorer": "Cost Explorer"
+      "costExplorer": "Cost explorer"
     }
   },
   "organization/costs": {
@@ -329,7 +329,7 @@
       },
       "tokens": "Tokens"
     },
-    "title": "Cost Explorer",
+    "title": "Cost explorer",
     "description": "Costs are demarked in credits per request by the context window size. The context window size is the number of tokens in the context window of the agent. If a model is not listed, it means it won't be available for use at this time. All costs are denoted in <credit></credit> credits.",
     "columns": {
       "name": "Model name",
@@ -534,8 +534,8 @@
   "organization/rate-limits": {
     "title": "Rate limits",
     "tabs": {
-      "inference": "Inference",
-      "embeddings": "Embeddings"
+      "inference": "Models",
+      "embeddings": "Embedding models"
     },
     "description": "Below are the rate limits for your organization. These limits are applied to all agents in the organization. To increase these limits, please contact support.",
     "columns": {

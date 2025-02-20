@@ -82,11 +82,6 @@ function SettingsLayout(props: SettingsLayoutProps) {
                       ]
                     : []),
                   {
-                    id: 'usage',
-                    label: t('organization.usage'),
-                    href: '/settings/organization/usage',
-                  },
-                  {
                     id: 'integrations',
                     label: t('organization.integrations'),
                     href: '/settings/organization/integrations',
@@ -95,6 +90,11 @@ function SettingsLayout(props: SettingsLayoutProps) {
                     id: 'environemnt-variables',
                     label: t('organization.environmentVariables'),
                     href: '/settings/organization/environment-variables',
+                  },
+                  {
+                    id: 'usage',
+                    label: t('organization.usage'),
+                    href: '/settings/organization/usage',
                   },
                   {
                     id: 'rate-limits',

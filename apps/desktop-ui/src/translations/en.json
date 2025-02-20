@@ -68,9 +68,9 @@
     }
   },
   "NotConnectedOverlay": {
-    "connecting": "Connecting to the letta server...",
-    "details": "We are attempting to connect to your server. Please wait a moment, you can view connection details below.",
-    "action": "View connection details"
+    "connecting": "Booting up your Letta Server...",
+    "details": "This should only take 5-10 seconds.",
+    "action": "View server logs"
   },
   "CreateLocalAgentDialog": {
     "serverOffline": "Your server is offline, please start it to create a new agent.",

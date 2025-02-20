@@ -248,7 +248,7 @@
     "detach": "Detach Data Source",
     "loading": "Loading data sources...",
     "error": "There was an error loading data sources, please try again or contact support.",
-    "noDataSources": "You have no data sources attached to this agent yet. Click the button in the top right to attach a data source.",
+    "noDataSources": "You have no data sources attached to this agent. Click the + button to attach a data source.",
     "CreateDataSourceDialog": {
       "titles": "Add New Data Source",
       "trigger": "Create source",
