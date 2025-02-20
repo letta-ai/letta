@@ -2,7 +2,7 @@
   "name": "letta-desktop",
   "version": "0.0.0",
   "productName": "Letta Desktop",
-  "homepage": "https://letta.com",
+  "homepage": "https://www.letta.com",
   "author": "Letta <support@letta.com>",
   "description": "Letta let's you build agents that learn",
   "dependencies": {
