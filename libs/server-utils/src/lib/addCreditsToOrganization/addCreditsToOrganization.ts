@@ -5,7 +5,7 @@ import {
   organizations,
 } from '@letta-cloud/database';
 import { eq, sql } from 'drizzle-orm';
-import { getRedisData, setRedisData } from '@letta-cloud/redis';
+import { incrementRedisOrganizationCredits } from '../redisOrganizationCredits/redisOrganizationCredits';
 
 interface AddCreditsToOrganizationOptions {
   organizationId: string;
@@ -44,16 +44,6 @@ export async function addCreditsToOrganization(
     throw new Error('Amount must be a whole number');
   }
 
-  const currentCredits = await getRedisData('organizationCredits', {
-    coreOrganizationId: org.lettaAgentsId,
-  });
-
-  if (!currentCredits) {
-    throw new Error(
-      `Could not find credits for organization ${org.lettaAgentsId}`,
-    );
-  }
-
   await db.insert(organizationCreditTransactions).values({
     amount: amount.toString(),
     source,
@@ -62,17 +52,7 @@ export async function addCreditsToOrganization(
     transactionType: 'addition',
   });
 
-  await setRedisData(
-    'organizationCredits',
-    {
-      coreOrganizationId: org.lettaAgentsId,
-    },
-    {
-      data: {
-        credits: currentCredits.credits + amount,
-      },
-    },
-  );
+  await incrementRedisOrganizationCredits(org.id, amount);
 
   const [res] = await db
     .update(organizationCredits)

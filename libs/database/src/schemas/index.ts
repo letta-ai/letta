@@ -784,6 +784,7 @@ export const organizationCreditTransactions = pgTable(
       .notNull()
       .references(() => organizations.id, { onDelete: 'cascade' })
       .notNull(),
+    stepId: text('step_id').unique(),
     source: text('source').notNull(),
     amount: numeric('amount').notNull(),
     transactionType: transactionTypesEnum('transaction_type').notNull(),

@@ -37,7 +37,7 @@ if (environment.REDIS_PASSWORD) {
 
 type GetArgsType<T> = T extends (...args: infer Args) => unknown ? Args : never;
 
-function createRedisInstance() {
+export function createRedisInstance() {
   try {
     if (!redisInstance) {
       redisInstance = new Redis(options);
@@ -86,13 +86,11 @@ export async function getRedisData<Type extends RedisTypes = RedisTypes>(
       const data = await redisDefinitions[type].populateOnMissFn(args);
 
       if (data) {
-        // @ts-expect-error - this works, my typings are just bad
         await setRedisData(type, args, {
           data: data.data,
           expiresAt: data.expiresAt,
         });
 
-        // @ts-expect-error - this works, my typings are just bad
         return data.data;
       }
     }
@@ -105,6 +103,31 @@ export async function getRedisData<Type extends RedisTypes = RedisTypes>(
   } catch (_) {
     return null;
   }
+}
+
+// eslint-disable-next-line @typescript-eslint/max-params
+export async function createUniqueRedisProperty<
+  Type extends RedisTypes = RedisTypes,
+>(
+  type: Type,
+  args: z.infer<(typeof redisDefinitions)[Type]['input']>,
+  field: string,
+  options: SetRedisDataOptions<
+    z.infer<(typeof redisDefinitions)[Type]['output']>
+  >,
+) {
+  const { data, expiresAt } = options;
+  const redis = createRedisInstance();
+
+  const keyName = redisDefinitions[type].getKey(args);
+
+  const res = await redis.hsetnx(keyName, field, JSON.stringify(data));
+
+  if (expiresAt) {
+    await redis.expireat(keyName, expiresAt);
+  }
+
+  return res === 1;
 }
 
 interface SetRedisDataOptions<Data> {

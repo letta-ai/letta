@@ -45,42 +45,6 @@ const userSessionDefinition = generateDefinitionSatisfies({
   }),
 });
 
-const organizationCreditsDefinition = generateDefinitionSatisfies({
-  baseKey: 'organizationCredits',
-  input: z.object({ coreOrganizationId: z.string() }),
-  getKey: (args) => `organizationCredits:${args.coreOrganizationId}`,
-  populateOnMissFn: async (args) => {
-    const org = await db.query.organizations.findFirst({
-      where: eq(organizations.lettaAgentsId, args.coreOrganizationId),
-      columns: {
-        id: true,
-      },
-    });
-
-    if (!org) {
-      return null;
-    }
-
-    const result = await db.query.organizationCredits.findFirst({
-      where: eq(organizationCredits.organizationId, org.id),
-      columns: {
-        credits: true,
-      },
-    });
-
-    if (!result) {
-      return null;
-    }
-
-    // 24 hours
-    return {
-      expiresAt: Date.now() + 24 * 60 * 60 * 1000,
-      data: { credits: result.credits },
-    };
-  },
-  output: z.object({ credits: z.number() }),
-});
-
 const organizationToCoreOrganizationDefinition = generateDefinitionSatisfies({
   baseKey: 'organizationToCoreOrganization',
   input: z.object({ organizationId: z.string() }),
@@ -194,17 +158,49 @@ const modelNameAndEndpointToIdMapDefinition = generateDefinitionSatisfies({
   },
 });
 
+const transactionLockDefinition = generateDefinitionSatisfies({
+  baseKey: 'transactionLock',
+  input: z.object({}),
+  getKey: () => 'transactionLock:lock',
+  output: z.object({ lockedAt: z.number() }),
+});
+
+const coreOrganizationIdToOrganizationIdDefinition =
+  generateDefinitionSatisfies({
+    baseKey: 'coreOrganizationIdToOrganizationId',
+    input: z.object({ coreOrganizationId: z.string() }),
+    getKey: (args) =>
+      `coreOrganizationIdToOrganizationId:${args.coreOrganizationId}`,
+    populateOnMissFn: async (args) => {
+      const result = await db.query.organizations.findFirst({
+        where: eq(organizations.lettaAgentsId, args.coreOrganizationId),
+        columns: {
+          id: true,
+        },
+      });
+
+      if (!result) {
+        return null;
+      }
+
+      return { expiresAt: 0, data: { organizationId: result.id } };
+    },
+    output: z.object({ organizationId: z.string() }),
+  });
+
 export const redisDefinitions = {
   userSession: userSessionDefinition,
   organizationRateLimitsPerModel: organizationRateLimitsPerModelDefinition,
   defaultModelRequestPerMinute: defaultModelRequestPerMinuteDefinition,
   defaultModelTokensPerMinute: defaultModelTokenPerMinuteDefinition,
+  coreOrganizationIdToOrganizationId:
+    coreOrganizationIdToOrganizationIdDefinition,
   rpmWindow: rpmWindowDefinition,
   tpmWindow: tpmWindowDefinition,
-  organizationCredits: organizationCreditsDefinition,
   organizationToCoreOrganization: organizationToCoreOrganizationDefinition,
   stepCostSchema: stepCostSchemaDefinition,
   modelNameAndEndpointToIdMap: modelNameAndEndpointToIdMapDefinition,
+  transactionLock: transactionLockDefinition,
 } satisfies Record<
   string,
   RedisDefinition<

@@ -8,7 +8,10 @@ import {
 import { eq } from 'drizzle-orm';
 import { AgentsService } from '@letta-cloud/letta-agents-api';
 import { getTikTokenEncoder } from '@letta-cloud/generic-utils';
-import { getCreditCostPerModel } from '@letta-cloud/server-utils';
+import {
+  getCreditCostPerModel,
+  getOrganizationCredits,
+} from '@letta-cloud/server-utils';
 import { getSingleFlag } from '@letta-cloud/feature-flags';
 import process from 'node:process';
 
@@ -259,9 +262,7 @@ export async function handleMessageRateLimiting(
       organizationId,
       minute: currentMinute,
     }),
-    getRedisData('organizationCredits', {
-      coreOrganizationId: coreOrganization.coreOrganizationId,
-    }),
+    getOrganizationCredits(organizationId),
     getCreditCostPerModel({
       modelName: agent.llm_config.model,
       modelEndpoint: agent.llm_config.model_endpoint || '',
@@ -274,7 +275,7 @@ export async function handleMessageRateLimiting(
   const currentTokens =
     result[1] && isANumberSafe(result[1]?.data) ? result[1].data : 0;
   const organizationCredits =
-    result[2] && isANumberSafe(result[2]?.credits) ? result[2].credits : 0;
+    result[2] && isANumberSafe(result[2]) ? result[2] : 0;
   const creditCost = result[3];
 
   const rateLimitThresholds: RateLimitReason[] = [];

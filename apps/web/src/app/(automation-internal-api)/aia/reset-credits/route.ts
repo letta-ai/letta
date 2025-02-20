@@ -5,9 +5,9 @@ import { db, organizationCredits } from '@letta-cloud/database';
 import { eq } from 'drizzle-orm';
 import {
   addCreditsToOrganization,
+  getOrganizationCredits,
   removeCreditsFromOrganization,
 } from '@letta-cloud/server-utils';
-import { getRedisData } from '@letta-cloud/redis';
 
 export async function POST(req: NextRequest) {
   const organizationId = await getUserActiveOrganizationIdOrThrow();
@@ -109,10 +109,7 @@ export async function POST(req: NextRequest) {
   return new Response(
     JSON.stringify({
       message: 'Credits reset',
-      amount: await getRedisData('organizationCredits', {
-        coreOrganizationId:
-          currentOrganizationCredits.organization.lettaAgentsId,
-      }),
+      amount: getOrganizationCredits(organizationId),
     }),
     {
       status: 200,

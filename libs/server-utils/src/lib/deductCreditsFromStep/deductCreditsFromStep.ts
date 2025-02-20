@@ -1,6 +1,7 @@
 import type { Step } from '@letta-cloud/letta-agents-api';
 import { getCreditCostPerModel } from '../getCreditCostPerModel/getCreditCostPerModel';
 import { removeCreditsFromOrganization } from '../removeCreditsFromOrganization/removeCreditsFromOrganization';
+import { createUniqueRedisProperty } from '@letta-cloud/redis';
 
 export async function deductCreditsFromStep(step: Step) {
   if (
@@ -26,10 +27,29 @@ export async function deductCreditsFromStep(step: Step) {
       return;
     }
 
+    const transactionLock = await createUniqueRedisProperty(
+      'transactionLock',
+      {},
+      step.id,
+      {
+        // expires in 15 minutes
+        expiresAt: Date.now() + 15 * 60 * 1000,
+        data: {
+          lockedAt: Date.now(),
+        },
+      },
+    );
+
+    if (!transactionLock) {
+      console.warn(`Transaction lock already exists for step ${step.id}`);
+      return;
+    }
+
     const response = await removeCreditsFromOrganization({
       amount: creditCost,
       coreOrganizationId: step.organization_id,
       source: 'inference',
+      stepId: step.id,
       note: `Deducted ${creditCost} credits for model ${step.model}`,
     });
 

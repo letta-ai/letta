@@ -6,21 +6,25 @@ import {
   organizations,
 } from '@letta-cloud/database';
 import { eq, sql } from 'drizzle-orm';
-import { getRedisData, setRedisData } from '@letta-cloud/redis';
 import { dollarsToCredits } from '@letta-cloud/generic-utils';
 import * as crypto from 'node:crypto';
 import { getDefaultContactEmails, sendEmail } from '@letta-cloud/email';
 import * as Sentry from '@sentry/node';
+import {
+  decrementRedisOrganizationCredits,
+  getOrganizationCredits,
+} from '../redisOrganizationCredits/redisOrganizationCredits';
+import { getRedisData } from '@letta-cloud/redis';
 
 interface RemoveCreditsFromOrganizationOptions {
-  coreOrganizationId: string;
+  stepId?: string;
   amount: number;
   source: string;
+  coreOrganizationId: string;
   note?: string;
 }
 
 interface CheckLowBalanceOptions {
-  coreOrganizationId: string;
   organizationId: string;
 }
 
@@ -28,16 +32,12 @@ const LOW_BALANCE_THRESHOLD = 5;
 
 async function checkLowBalance(options: CheckLowBalanceOptions) {
   try {
-    const { coreOrganizationId, organizationId } = options;
+    const { organizationId } = options;
 
-    const credits = await getRedisData('organizationCredits', {
-      coreOrganizationId,
-    });
+    const credits = await getOrganizationCredits(organizationId);
 
     // check if credits are below $5
-    if (
-      !(credits && credits.credits < dollarsToCredits(LOW_BALANCE_THRESHOLD))
-    ) {
+    if (!(credits && credits < dollarsToCredits(LOW_BALANCE_THRESHOLD))) {
       return;
     }
 
@@ -94,7 +94,7 @@ async function checkLowBalance(options: CheckLowBalanceOptions) {
 export async function removeCreditsFromOrganization(
   options: RemoveCreditsFromOrganizationOptions,
 ) {
-  const { coreOrganizationId, note, source, amount } = options;
+  const { coreOrganizationId, note, source, stepId, amount } = options;
 
   if (isNaN(amount)) {
     throw new Error('Amount must be a number');
@@ -109,33 +109,8 @@ export async function removeCreditsFromOrganization(
     throw new Error('Amount must be a whole number');
   }
 
-  const currentCredits = await getRedisData('organizationCredits', {
-    coreOrganizationId: coreOrganizationId,
-  });
-
-  if (!currentCredits) {
-    throw new Error(
-      `Could not find credits for organization ${coreOrganizationId}`,
-    );
-  }
-
-  await setRedisData(
-    'organizationCredits',
-    {
-      coreOrganizationId,
-    },
-    {
-      data: {
-        credits: currentCredits.credits - amount,
-      },
-    },
-  );
-
-  const org = await db.query.organizations.findFirst({
-    where: eq(organizations.lettaAgentsId, coreOrganizationId),
-    columns: {
-      id: true,
-    },
+  const org = await getRedisData('coreOrganizationIdToOrganizationId', {
+    coreOrganizationId,
   });
 
   if (!org) {
@@ -144,11 +119,14 @@ export async function removeCreditsFromOrganization(
     );
   }
 
+  const { organizationId } = org;
+
   const [txn] = await db
     .insert(organizationCreditTransactions)
     .values({
       amount: amount.toString(),
-      organizationId: org.id,
+      organizationId,
+      stepId,
       source,
       note,
       transactionType: 'subtraction',
@@ -157,19 +135,20 @@ export async function removeCreditsFromOrganization(
       id: organizationCreditTransactions.id,
     });
 
+  await decrementRedisOrganizationCredits(organizationId, amount);
+
   const [res] = await db
     .update(organizationCredits)
     .set({
       credits: sql`${organizationCredits.credits} - ${amount}`,
     })
-    .where(eq(organizationCredits.organizationId, org.id))
+    .where(eq(organizationCredits.organizationId, organizationId))
     .returning({
       credits: organizationCredits.credits,
     });
 
   void checkLowBalance({
-    organizationId: org.id,
-    coreOrganizationId,
+    organizationId,
   }).catch((e) => {
     console.error(e);
     Sentry.captureException(e);
