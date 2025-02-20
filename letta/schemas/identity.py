@@ -22,7 +22,7 @@ class IdentityBase(LettaBase):
 
 
 class Identity(IdentityBase):
-    id: str = Field(..., description="The internal id of the identity.")
+    id: str = IdentityBase.generate_id_field()
     identifier_key: str = Field(..., description="External, user-generated identifier key of the identity.")
     name: str = Field(..., description="The name of the identity.")
     identity_type: IdentityType = Field(..., description="The type of the identity.")

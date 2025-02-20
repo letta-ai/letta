@@ -2,6 +2,7 @@ from typing import TYPE_CHECKING, List, Optional
 
 from fastapi import APIRouter, Body, Depends, Header, HTTPException, Query
 
+from letta.orm.errors import NoResultFound
 from letta.schemas.identity import Identity, IdentityCreate, IdentityType, IdentityUpdate
 from letta.server.rest_api.utils import get_letta_server
 
@@ -44,7 +45,7 @@ def retrieve_identity(
     server: "SyncServer" = Depends(get_letta_server),
 ):
     try:
-        return server.identity_manager.get_identity_by_identifier_key(identifier_key=identifier_key)
+        return server.identity_manager.get_identity_from_identifier_key(identifier_key=identifier_key)
     except NoResultFound as e:
         raise HTTPException(status_code=404, detail=str(e))
 
@@ -56,8 +57,13 @@ def create_identity(
     user_id: Optional[str] = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
     project_slug: Optional[str] = Header(None, alias="project-slug"),  # Only handled by next js middleware
 ):
-    actor = server.user_manager.get_user_or_default(user_id=user_id)
-    return server.identity_manager.create_identity(identity=identity, actor=actor)
+    try:
+        actor = server.user_manager.get_user_or_default(user_id=user_id)
+        return server.identity_manager.create_identity(identity=identity, actor=actor)
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"{e}")
 
 
 @router.put("/", tags=["identities"], response_model=Identity, operation_id="upsert_identity")
@@ -67,8 +73,13 @@ def upsert_identity(
     user_id: Optional[str] = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
     project_slug: Optional[str] = Header(None, alias="project-slug"),  # Only handled by next js middleware
 ):
-    actor = server.user_manager.get_user_or_default(user_id=user_id)
-    return server.identity_manager.upsert_identity(identity=identity, actor=actor)
+    try:
+        actor = server.user_manager.get_user_or_default(user_id=user_id)
+        return server.identity_manager.upsert_identity(identity=identity, actor=actor)
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"{e}")
 
 
 @router.patch("/{identifier_key}", tags=["identities"], response_model=Identity, operation_id="update_identity")
@@ -78,8 +89,13 @@ def modify_identity(
     server: "SyncServer" = Depends(get_letta_server),
     user_id: Optional[str] = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
 ):
-    actor = server.user_manager.get_user_or_default(user_id=user_id)
-    return server.identity_manager.update_identity_by_key(identifier_key=identifier_key, identity=identity, actor=actor)
+    try:
+        actor = server.user_manager.get_user_or_default(user_id=user_id)
+        return server.identity_manager.update_identity_by_key(identifier_key=identifier_key, identity=identity, actor=actor)
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"{e}")
 
 
 @router.delete("/{identifier_key}", tags=["identities"], operation_id="delete_identity")
