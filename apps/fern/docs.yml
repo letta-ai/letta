@@ -119,6 +119,8 @@ navigation:
                 path: pages/models/openai_proxy.mdx
               - page: Anthropic
                 path: pages/models/anthropic.mdx
+              - page: DeepSeek
+                path: pages/models/deepseek.mdx
               - page: AWS Bedrock
                 path: pages/models/aws_bedrock.mdx
               - page: Groq
@@ -280,6 +282,8 @@ redirects:
     destination: "/guides/server/providers/google"
   - source: "/models/google_vertex"
     destination: "/guides/server/providers/google_vertex"
+  - source: "/models/deepseek"
+    destination: "/guides/server/providers/deepseek"
   - source: "/models/ollama"
     destination: "/guides/server/providers/ollama"
   - source: "/models/vllm"
