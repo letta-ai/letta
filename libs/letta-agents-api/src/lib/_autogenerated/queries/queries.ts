@@ -876,6 +876,7 @@ export const useIdentitiesServiceListIdentities = <
  * Retrieve Identity
  * @param data The data for the request.
  * @param data.identityId
+ * @param data.userId
  * @returns Identity Successful Response
  * @throws ApiError
  */
@@ -886,18 +887,21 @@ export const useIdentitiesServiceRetrieveIdentity = <
 >(
   {
     identityId,
+    userId,
   }: {
     identityId: string;
+    userId?: string;
   },
   queryKey?: TQueryKey,
   options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>,
 ) =>
   useQuery<TData, TError>({
     queryKey: Common.UseIdentitiesServiceRetrieveIdentityKeyFn(
-      { identityId },
+      { identityId, userId },
       queryKey,
     ),
-    queryFn: () => IdentitiesService.retrieveIdentity({ identityId }) as TData,
+    queryFn: () =>
+      IdentitiesService.retrieveIdentity({ identityId, userId }) as TData,
     ...options,
   });
 /**

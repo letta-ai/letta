@@ -4669,6 +4669,11 @@ export const get_Retrieve_identity = {
     path: z.object({
       identity_id: z.string(),
     }),
+    header: z.object({
+      user_id: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+    }),
   }),
   response: Identity,
 };

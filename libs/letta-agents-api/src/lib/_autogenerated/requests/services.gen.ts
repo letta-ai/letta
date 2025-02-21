@@ -1650,6 +1650,7 @@ export class IdentitiesService {
    * Retrieve Identity
    * @param data The data for the request.
    * @param data.identityId
+   * @param data.userId
    * @returns Identity Successful Response
    * @throws ApiError
    */

@@ -686,6 +686,7 @@ export const prefetchUseIdentitiesServiceListIdentities = (
  * Retrieve Identity
  * @param data The data for the request.
  * @param data.identityId
+ * @param data.userId
  * @returns Identity Successful Response
  * @throws ApiError
  */
@@ -693,13 +694,18 @@ export const prefetchUseIdentitiesServiceRetrieveIdentity = (
   queryClient: QueryClient,
   {
     identityId,
+    userId,
   }: {
     identityId: string;
+    userId?: string;
   },
 ) =>
   queryClient.prefetchQuery({
-    queryKey: Common.UseIdentitiesServiceRetrieveIdentityKeyFn({ identityId }),
-    queryFn: () => IdentitiesService.retrieveIdentity({ identityId }),
+    queryKey: Common.UseIdentitiesServiceRetrieveIdentityKeyFn({
+      identityId,
+      userId,
+    }),
+    queryFn: () => IdentitiesService.retrieveIdentity({ identityId, userId }),
   });
 /**
  * List Llm Backends

@@ -548,13 +548,15 @@ export const useIdentitiesServiceRetrieveIdentityKey =
 export const UseIdentitiesServiceRetrieveIdentityKeyFn = (
   {
     identityId,
+    userId,
   }: {
     identityId: string;
+    userId?: string;
   },
   queryKey?: Array<unknown>,
 ) => [
   useIdentitiesServiceRetrieveIdentityKey,
-  ...(queryKey ?? [{ identityId }]),
+  ...(queryKey ?? [{ identityId, userId }]),
 ];
 export type ModelsServiceListModelsDefaultResponse = Awaited<
   ReturnType<typeof ModelsService.listModels>

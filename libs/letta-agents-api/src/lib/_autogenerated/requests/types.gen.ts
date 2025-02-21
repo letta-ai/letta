@@ -3368,6 +3368,7 @@ export type UpsertIdentityResponse = Identity;
 
 export type RetrieveIdentityData = {
   identityId: string;
+  userId?: string | null;
 };
 
 export type RetrieveIdentityResponse = Identity;
