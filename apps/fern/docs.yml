@@ -99,7 +99,7 @@ navigation:
               path: pages/agents/multiagent_custom.mdx
             - page: Multi-Agent Shared Memory
               path: pages/agents/multiagent_memory.mdx
-          - page: Multi-User Setup
+          - page: Multi-User (Identities)
             path: pages/agents/multiuser.mdx
       - section: ADE Guide
         contents:
