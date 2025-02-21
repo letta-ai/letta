@@ -1,0 +1,83 @@
+## Project Slug Moved to Request Header
+
+<Note> Projects are only available for Letta Cloud. </Note>
+
+Project slug can now be specified via request header `project-slug` for agent creation. The existing `project` parameter will soon be deprecated.
+
+#### Before
+Rest API:
+```bash
+curl -X POST https://app.letta.com/v1/agents \
+  -H 'Content-Type: application/json' \
+  -H 'Authorization: Bearer YOUR_API_KEY' \
+  -d '{
+    "project":"YOUR_PROJECT_SLUG"
+    "model":"gpt-4o-mini",
+    "embedding":"openai/text-embedding-ada-002"
+    "memory_blocks": [
+      {
+        "label": "human",
+        "value": "name: Caren"
+      }
+    ],
+  }'
+```
+SDK:
+```python
+from letta_client import CreateBlock, Letta, LettaEnvironment
+
+client = Letta(
+  token="YOUR_API_KEY",
+  environment=LettaEnvironment.LETTA_CLOUD,
+)
+agent = client.agents.create(
+  project="YOUR_PROJECT_SLUG",
+  model="gpt-4o-mini",
+  embedding="openai/text-embedding-ada-002"
+  memory_blocks=[
+    CreateBlock(
+      "label": "human",
+      "value": "name: Caren"
+    ),
+  ],
+)
+```
+
+#### After
+Rest API:
+```bash
+curl -X POST https://app.letta.com/v1/agents \
+  -H 'Content-Type: application/json' \
+  -H 'Authorization: Bearer YOUR_API_KEY' \
+  -H 'X-Project: YOUR_PROJECT_SLUG' \
+  -d '{
+    "model":"gpt-4o-mini",
+    "embedding":"openai/text-embedding-ada-002"
+    "memory_blocks": [
+      {
+        "label": "human",
+        "value": "name: Caren"
+      }
+    ],
+  }'
+```
+SDK:
+```python
+from letta_client import CreateBlock, Letta, LettaEnvironment
+
+client = Letta(
+  token="YOUR_API_KEY",
+  environment=LettaEnvironment.LETTA_CLOUD,
+)
+agent = client.agents.create(
+  x_project="YOUR_PROJECT_SLUG",
+  model="gpt-4o-mini",
+  embedding="openai/text-embedding-ada-002"
+  memory_blocks=[
+    CreateBlock(
+      "label": "human",
+      "value": "name: Caren"
+    ),
+  ],
+)
+```
