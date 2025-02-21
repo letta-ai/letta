@@ -11,6 +11,7 @@ from letta.log import get_logger
 from letta.orm import Agent as AgentModel
 from letta.orm import AgentPassage, AgentsTags
 from letta.orm import Block as BlockModel
+from letta.orm import Identity as IdentityModel
 from letta.orm import Source as SourceModel
 from letta.orm import SourcePassage, SourcesAgents
 from letta.orm import Tool as ToolModel
@@ -34,7 +35,6 @@ from letta.schemas.user import User as PydanticUser
 from letta.serialize_schemas import SerializedAgentSchema
 from letta.services.block_manager import BlockManager
 from letta.services.helpers.agent_manager_helper import (
-    _process_identity,
     _process_relationship,
     _process_tags,
     check_supports_structured_output,
@@ -138,6 +138,7 @@ class AgentManager:
             tool_ids=tool_ids,
             source_ids=agent_create.source_ids or [],
             tags=agent_create.tags or [],
+            identity_ids=agent_create.identity_ids or [],
             description=agent_create.description,
             metadata=agent_create.metadata,
             tool_rules=tool_rules,
@@ -145,7 +146,6 @@ class AgentManager:
             project_id=agent_create.project_id,
             template_id=agent_create.template_id,
             base_template_id=agent_create.base_template_id,
-            identifier_key=agent_create.identifier_key,
             message_buffer_autoclear=agent_create.message_buffer_autoclear,
         )
 
@@ -203,13 +203,13 @@ class AgentManager:
         tool_ids: List[str],
         source_ids: List[str],
         tags: List[str],
+        identity_ids: List[str],
         description: Optional[str] = None,
         metadata: Optional[Dict] = None,
         tool_rules: Optional[List[PydanticToolRule]] = None,
         project_id: Optional[str] = None,
         template_id: Optional[str] = None,
         base_template_id: Optional[str] = None,
-        identifier_key: Optional[str] = None,
         message_buffer_autoclear: bool = False,
     ) -> PydanticAgentState:
         """Create a new agent."""
@@ -237,9 +237,7 @@ class AgentManager:
             _process_relationship(session, new_agent, "sources", SourceModel, source_ids, replace=True)
             _process_relationship(session, new_agent, "core_memory", BlockModel, block_ids, replace=True)
             _process_tags(new_agent, tags, replace=True)
-            if identifier_key is not None:
-                identity = self.identity_manager.get_identity_from_identifier_key(identifier_key)
-                _process_identity(new_agent, identifier_key, identity)
+            _process_relationship(session, new_agent, "identities", IdentityModel, identity_ids, replace=True)
 
             new_agent.create(session, actor=actor)
 
@@ -313,9 +311,8 @@ class AgentManager:
                 _process_relationship(session, agent, "core_memory", BlockModel, agent_update.block_ids, replace=True)
             if agent_update.tags is not None:
                 _process_tags(agent, agent_update.tags, replace=True)
-            if agent_update.identifier_key is not None:
-                identity = self.identity_manager.get_identity_from_identifier_key(agent_update.identifier_key)
-                _process_identity(agent, agent_update.identifier_key, identity)
+            if agent_update.identity_ids is not None:
+                _process_relationship(session, agent, "identities", IdentityModel, agent_update.identity_ids, replace=True)
 
             # Commit and refresh the agent
             agent.update(session, actor=actor)
@@ -333,6 +330,7 @@ class AgentManager:
         tags: Optional[List[str]] = None,
         match_all_tags: bool = False,
         query_text: Optional[str] = None,
+        identifier_keys: Optional[List[str]] = None,
         **kwargs,
     ) -> List[PydanticAgentState]:
         """
@@ -348,6 +346,7 @@ class AgentManager:
                 match_all_tags=match_all_tags,
                 organization_id=actor.organization_id if actor else None,
                 query_text=query_text,
+                identifier_keys=identifier_keys,
                 **kwargs,
             )
 

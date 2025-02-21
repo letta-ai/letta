@@ -56,6 +56,7 @@ class ChatCompletionsStreamingInterface(AgentChunkStreamingInterface):
         self.current_function_name = ""
         self.current_function_arguments = []
         self.current_json_parse_result = {}
+        self._found_message_tool_kwarg = False
 
         # Internal chunk buffer and event for async notification
         self._chunks = deque()
@@ -153,12 +154,13 @@ class ChatCompletionsStreamingInterface(AgentChunkStreamingInterface):
         """No-op retained for interface compatibility."""
         return
 
-    def process_chunk(self, chunk: ChatCompletionChunkResponse, message_id: str, message_date: datetime) -> None:
+    def process_chunk(
+        self, chunk: ChatCompletionChunkResponse, message_id: str, message_date: datetime, expect_reasoning_content: bool = False
+    ) -> None:
         """
         Called externally with a ChatCompletionChunkResponse. Transforms
         it if necessary, then enqueues partial messages for streaming back.
         """
-        # print("RECEIVED CHUNK...")
         processed_chunk = self._process_chunk_to_openai_style(chunk)
         if processed_chunk is not None:
             self._push_to_buffer(processed_chunk)
@@ -197,6 +199,10 @@ class ChatCompletionsStreamingInterface(AgentChunkStreamingInterface):
         content (especially from a 'send_message' tool) is exposed as text
         deltas in 'content'. Otherwise, pass through or yield finish reasons.
         """
+        # If we've already sent the final chunk, ignore everything.
+        if self._found_message_tool_kwarg:
+            return None
+
         choice = chunk.choices[0]
         delta = choice.delta
 
@@ -219,25 +225,43 @@ class ChatCompletionsStreamingInterface(AgentChunkStreamingInterface):
                 combined_args = "".join(self.current_function_arguments)
                 parsed_args = OptimisticJSONParser().parse(combined_args)
 
-                # If the parsed result is different
-                # This is an edge case we need to consider. E.g. if the last streamed token is '}', we shouldn't stream that out
-                if parsed_args != self.current_json_parse_result:
-                    self.current_json_parse_result = parsed_args
-                    # If we can see a "message" field, return it as partial content
-                    if self.assistant_message_tool_kwarg in parsed_args and parsed_args[self.assistant_message_tool_kwarg]:
-                        return ChatCompletionChunk(
-                            id=chunk.id,
-                            object=chunk.object,
-                            created=chunk.created.timestamp(),
-                            model=chunk.model,
-                            choices=[
-                                Choice(
-                                    index=choice.index,
-                                    delta=ChoiceDelta(content=self.current_function_arguments[-1], role=self.ASSISTANT_STR),
-                                    finish_reason=None,
-                                )
-                            ],
-                        )
+                # TODO: Make this less brittle! This depends on `message` coming first!
+                # This is a heuristic we use to know if we're done with the `message` part of `send_message`
+                if len(parsed_args.keys()) > 1:
+                    self._found_message_tool_kwarg = True
+                    return ChatCompletionChunk(
+                        id=chunk.id,
+                        object=chunk.object,
+                        created=chunk.created.timestamp(),
+                        model=chunk.model,
+                        choices=[
+                            Choice(
+                                index=choice.index,
+                                delta=ChoiceDelta(),
+                                finish_reason="stop",
+                            )
+                        ],
+                    )
+                else:
+                    # If the parsed result is different
+                    # This is an edge case we need to consider. E.g. if the last streamed token is '}', we shouldn't stream that out
+                    if parsed_args != self.current_json_parse_result:
+                        self.current_json_parse_result = parsed_args
+                        # If we can see a "message" field, return it as partial content
+                        if self.assistant_message_tool_kwarg in parsed_args and parsed_args[self.assistant_message_tool_kwarg]:
+                            return ChatCompletionChunk(
+                                id=chunk.id,
+                                object=chunk.object,
+                                created=chunk.created.timestamp(),
+                                model=chunk.model,
+                                choices=[
+                                    Choice(
+                                        index=choice.index,
+                                        delta=ChoiceDelta(content=self.current_function_arguments[-1], role=self.ASSISTANT_STR),
+                                        finish_reason=None,
+                                    )
+                                ],
+                            )
 
         # If there's a finish reason, pass that along
         if choice.finish_reason is not None:

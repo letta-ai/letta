@@ -68,6 +68,7 @@ class SqlalchemyBase(CommonSqlalchemyMetaMixins, Base):
         access_type: AccessType = AccessType.ORGANIZATION,
         join_model: Optional[Base] = None,
         join_conditions: Optional[Union[Tuple, List]] = None,
+        identifier_keys: Optional[List[str]] = None,
         **kwargs,
     ) -> List["SqlalchemyBase"]:
         """
@@ -142,6 +143,9 @@ class SqlalchemyBase(CommonSqlalchemyMetaMixins, Base):
 
                 # Group by primary key and all necessary columns to avoid JSON comparison
                 query = query.group_by(cls.id)
+
+            if identifier_keys and hasattr(cls, "identities"):
+                query = query.join(cls.identities).filter(cls.identities.property.mapper.class_.identifier_key.in_(identifier_keys))
 
             # Apply filtering logic from kwargs
             for key, value in kwargs.items():

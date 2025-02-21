@@ -1,6 +1,7 @@
 from typing import List, Optional
 
 from fastapi import HTTPException
+from sqlalchemy.exc import NoResultFound
 from sqlalchemy.orm import Session
 
 from letta.orm.agent import Agent as AgentModel
@@ -23,6 +24,7 @@ class IdentityManager:
         self,
         name: Optional[str] = None,
         project_id: Optional[str] = None,
+        identifier_key: Optional[str] = None,
         identity_type: Optional[IdentityType] = None,
         before: Optional[str] = None,
         after: Optional[str] = None,
@@ -33,6 +35,8 @@ class IdentityManager:
             filters = {"organization_id": actor.organization_id}
             if project_id:
                 filters["project_id"] = project_id
+            if identifier_key:
+                filters["identifier_key"] = identifier_key
             if identity_type:
                 filters["identity_type"] = identity_type
             identities = IdentityModel.list(
@@ -46,9 +50,9 @@ class IdentityManager:
             return [identity.to_pydantic() for identity in identities]
 
     @enforce_types
-    def get_identity_from_identifier_key(self, identifier_key: str) -> PydanticIdentity:
+    def get_identity(self, identity_id: str, actor: PydanticUser) -> PydanticIdentity:
         with self.session_maker() as session:
-            identity = IdentityModel.read(db_session=session, identifier_key=identifier_key)
+            identity = IdentityModel.read(db_session=session, identifier=identity_id, actor=actor)
             return identity.to_pydantic()
 
     @enforce_types
@@ -68,44 +72,56 @@ class IdentityManager:
                 identifier_key=identity.identifier_key,
                 project_id=identity.project_id,
                 organization_id=actor.organization_id,
+                actor=actor,
             )
 
         if existing_identity is None:
             return self.create_identity(identity=identity, actor=actor)
         else:
-            if existing_identity.identifier_key != identity.identifier_key:
-                raise HTTPException(status_code=400, detail="Identifier key is an immutable field")
-            if existing_identity.project_id != identity.project_id:
-                raise HTTPException(status_code=400, detail="Project id is an immutable field")
             identity_update = IdentityUpdate(name=identity.name, identity_type=identity.identity_type, agent_ids=identity.agent_ids)
-            return self.update_identity_by_key(identity.identifier_key, identity_update, actor, replace=True)
+            return self._update_identity(
+                session=session, existing_identity=existing_identity, identity=identity_update, actor=actor, replace=True
+            )
 
     @enforce_types
-    def update_identity_by_key(
-        self, identifier_key: str, identity: IdentityUpdate, actor: PydanticUser, replace: bool = False
-    ) -> PydanticIdentity:
+    def update_identity(self, identity_id: str, identity: IdentityUpdate, actor: PydanticUser, replace: bool = False) -> PydanticIdentity:
         with self.session_maker() as session:
             try:
-                existing_identity = IdentityModel.read(db_session=session, identifier_key=identifier_key)
+                existing_identity = IdentityModel.read(db_session=session, identifier=identity_id, actor=actor)
             except NoResultFound:
                 raise HTTPException(status_code=404, detail="Identity not found")
             if existing_identity.organization_id != actor.organization_id:
                 raise HTTPException(status_code=403, detail="Forbidden")
 
-            existing_identity.name = identity.name if identity.name is not None else existing_identity.name
-            existing_identity.identity_type = (
-                identity.identity_type if identity.identity_type is not None else existing_identity.identity_type
+            return self._update_identity(
+                session=session, existing_identity=existing_identity, identity=identity, actor=actor, replace=replace
             )
-            self._process_agent_relationship(
-                session=session, identity=existing_identity, agent_ids=identity.agent_ids, allow_partial=False, replace=replace
-            )
-            existing_identity.update(session, actor=actor)
-            return existing_identity.to_pydantic()
+
+    def _update_identity(
+        self,
+        session: Session,
+        existing_identity: IdentityModel,
+        identity: IdentityUpdate,
+        actor: PydanticUser,
+        replace: bool = False,
+    ) -> PydanticIdentity:
+        if identity.identifier_key is not None:
+            existing_identity.identifier_key = identity.identifier_key
+        if identity.name is not None:
+            existing_identity.name = identity.name
+        if identity.identity_type is not None:
+            existing_identity.identity_type = identity.identity_type
+
+        self._process_agent_relationship(
+            session=session, identity=existing_identity, agent_ids=identity.agent_ids, allow_partial=False, replace=replace
+        )
+        existing_identity.update(session, actor=actor)
+        return existing_identity.to_pydantic()
 
     @enforce_types
-    def delete_identity_by_key(self, identifier_key: str, actor: PydanticUser) -> None:
+    def delete_identity(self, identity_id: str, actor: PydanticUser) -> None:
         with self.session_maker() as session:
-            identity = IdentityModel.read(db_session=session, identifier_key=identifier_key)
+            identity = IdentityModel.read(db_session=session, identifier=identity_id)
             if identity is None:
                 raise HTTPException(status_code=404, detail="Identity not found")
             if identity.organization_id != actor.organization_id:

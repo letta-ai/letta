@@ -112,17 +112,23 @@ def _assert_valid_chunk(chunk, idx, chunks):
 
 
 @pytest.mark.parametrize("message", ["Tell me something interesting about bananas."])
-def test_chat_completions_streaming(mock_e2b_api_key_none, client, agent, message):
+@pytest.mark.parametrize("endpoint", ["chat/completions", "fast/chat/completions"])
+def test_chat_completions_streaming(mock_e2b_api_key_none, client, agent, message, endpoint):
     """Tests chat completion streaming via SSE."""
     request = _get_chat_request(agent.id, message)
 
-    response = _sse_post(
-        f"{client.base_url}/openai/{client.api_prefix}/chat/completions", request.model_dump(exclude_none=True), client.headers
-    )
+    response = _sse_post(f"{client.base_url}/openai/{client.api_prefix}/{endpoint}", request.model_dump(exclude_none=True), client.headers)
 
-    chunks = list(response)
-    for idx, chunk in enumerate(chunks):
-        _assert_valid_chunk(chunk, idx, chunks)
+    try:
+        chunks = list(response)
+        assert len(chunks) > 5, "Streaming response did not return enough chunks (may have failed silently)."
+
+        for idx, chunk in enumerate(chunks):
+            assert chunk, f"Empty chunk received at index {idx}."
+            print(chunk)
+            _assert_valid_chunk(chunk, idx, chunks)
+    except Exception as e:
+        pytest.fail(f"Streaming failed with exception: {e}")
 
 
 @pytest.mark.asyncio
@@ -134,10 +140,35 @@ async def test_chat_completions_streaming_async(client, agent, message):
     async_client = AsyncOpenAI(base_url=f"{client.base_url}/openai/{client.api_prefix}", max_retries=0)
     stream = await async_client.chat.completions.create(**request.model_dump(exclude_none=True))
 
-    async with stream:
-        async for chunk in stream:
-            if isinstance(chunk, ChatCompletionChunk):
+    received_chunks = 0
+    stop_chunk_count = 0
+    last_chunk = None
+
+    try:
+        async with stream:
+            async for chunk in stream:
+                print(chunk)
+                assert isinstance(chunk, ChatCompletionChunk), f"Unexpected chunk type: {type(chunk)}"
                 assert chunk.choices, "Each ChatCompletionChunk should have at least one choice."
-                assert chunk.choices[0].delta.content, f"Chunk at index 0 has no content: {chunk.model_dump_json(indent=4)}"
-            else:
-                pytest.fail(f"Unexpected chunk type: {chunk}")
+
+                # Track last chunk for final verification
+                last_chunk = chunk
+
+                # If this chunk has a finish reason of "stop", track it
+                if chunk.choices[0].finish_reason == "stop":
+                    stop_chunk_count += 1
+                    # Fail early if more than one stop chunk is sent
+                    assert stop_chunk_count == 1, f"Multiple stop chunks detected: {chunk.model_dump_json(indent=4)}"
+                    continue
+
+                # Validate regular content chunks
+                assert chunk.choices[0].delta.content, f"Chunk at index {received_chunks} has no content: {chunk.model_dump_json(indent=4)}"
+                received_chunks += 1
+    except Exception as e:
+        pytest.fail(f"Streaming failed with exception: {e}")
+
+    assert received_chunks > 0, "No valid streaming chunks were received."
+
+    # Ensure the last chunk is the expected stop chunk
+    assert last_chunk is not None, "No last chunk received."
+    assert last_chunk.choices[0].finish_reason == "stop", f"Last chunk did not indicate stop: {last_chunk.model_dump_json(indent=4)}"

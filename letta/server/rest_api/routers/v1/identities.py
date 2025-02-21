@@ -16,6 +16,7 @@ router = APIRouter(prefix="/identities", tags=["identities"])
 def list_identities(
     name: Optional[str] = Query(None),
     project_id: Optional[str] = Query(None),
+    identifier_key: Optional[str] = Query(None),
     identity_type: Optional[IdentityType] = Query(None),
     before: Optional[str] = Query(None),
     after: Optional[str] = Query(None),
@@ -30,7 +31,14 @@ def list_identities(
         actor = server.user_manager.get_user_or_default(user_id=user_id)
 
         identities = server.identity_manager.list_identities(
-            name=name, project_id=project_id, identity_type=identity_type, before=before, after=after, limit=limit, actor=actor
+            name=name,
+            project_id=project_id,
+            identifier_key=identifier_key,
+            identity_type=identity_type,
+            before=before,
+            after=after,
+            limit=limit,
+            actor=actor,
         )
     except HTTPException:
         raise
@@ -39,13 +47,13 @@ def list_identities(
     return identities
 
 
-@router.get("/{identifier_key}", tags=["identities"], response_model=Identity, operation_id="get_identity_from_identifier_key")
+@router.get("/{identity_id}", tags=["identities"], response_model=Identity, operation_id="retrieve_identity")
 def retrieve_identity(
-    identifier_key: str,
+    identity_id: str,
     server: "SyncServer" = Depends(get_letta_server),
 ):
     try:
-        return server.identity_manager.get_identity_from_identifier_key(identifier_key=identifier_key)
+        return server.identity_manager.get_identity(identity_id=identity_id)
     except NoResultFound as e:
         raise HTTPException(status_code=404, detail=str(e))
 
@@ -82,25 +90,25 @@ def upsert_identity(
         raise HTTPException(status_code=500, detail=f"{e}")
 
 
-@router.patch("/{identifier_key}", tags=["identities"], response_model=Identity, operation_id="update_identity")
+@router.patch("/{identity_id}", tags=["identities"], response_model=Identity, operation_id="update_identity")
 def modify_identity(
-    identifier_key: str,
+    identity_id: str,
     identity: IdentityUpdate = Body(...),
     server: "SyncServer" = Depends(get_letta_server),
     user_id: Optional[str] = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
 ):
     try:
         actor = server.user_manager.get_user_or_default(user_id=user_id)
-        return server.identity_manager.update_identity_by_key(identifier_key=identifier_key, identity=identity, actor=actor)
+        return server.identity_manager.update_identity(identity_id=identity_id, identity=identity, actor=actor)
     except HTTPException:
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"{e}")
 
 
-@router.delete("/{identifier_key}", tags=["identities"], operation_id="delete_identity")
+@router.delete("/{identity_id}", tags=["identities"], operation_id="delete_identity")
 def delete_identity(
-    identifier_key: str,
+    identity_id: str,
     server: "SyncServer" = Depends(get_letta_server),
     user_id: Optional[str] = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
 ):
@@ -108,4 +116,4 @@ def delete_identity(
     Delete an identity by its identifier key
     """
     actor = server.user_manager.get_user_or_default(user_id=user_id)
-    server.identity_manager.delete_identity_by_key(identifier_key=identifier_key, actor=actor)
+    server.identity_manager.delete_identity(identity_id=identity_id, actor=actor)
