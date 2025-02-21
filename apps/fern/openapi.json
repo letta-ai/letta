@@ -1149,22 +1149,25 @@
             "description": "Search agents by base template id"
           },
           {
-            "name": "identifier_key",
+            "name": "identifier_keys",
             "in": "query",
             "required": false,
             "schema": {
               "anyOf": [
                 {
-                  "type": "string"
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
                 },
                 {
                   "type": "null"
                 }
               ],
-              "description": "Search agents by identifier key",
-              "title": "Identifier Key"
+              "description": "Search agents by identifier keys",
+              "title": "Identifier Keys"
             },
-            "description": "Search agents by identifier key"
+            "description": "Search agents by identifier keys"
           }
         ],
         "responses": {
@@ -2637,6 +2640,22 @@
             }
           },
           {
+            "name": "identifier_key",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Identifier Key"
+            }
+          },
+          {
             "name": "identity_type",
             "in": "query",
             "required": false,
@@ -2840,19 +2859,19 @@
         }
       }
     },
-    "/v1/identities/{identifier_key}": {
+    "/v1/identities/{identity_id}": {
       "get": {
         "tags": ["identities", "identities"],
         "summary": "Retrieve Identity",
-        "operationId": "get_identity_from_identifier_key",
+        "operationId": "retrieve_identity",
         "parameters": [
           {
-            "name": "identifier_key",
+            "name": "identity_id",
             "in": "path",
             "required": true,
             "schema": {
               "type": "string",
-              "title": "Identifier Key"
+              "title": "Identity Id"
             }
           }
         ],
@@ -2885,12 +2904,12 @@
         "operationId": "update_identity",
         "parameters": [
           {
-            "name": "identifier_key",
+            "name": "identity_id",
             "in": "path",
             "required": true,
             "schema": {
               "type": "string",
-              "title": "Identifier Key"
+              "title": "Identity Id"
             }
           }
         ],
@@ -2934,12 +2953,12 @@
         "operationId": "delete_identity",
         "parameters": [
           {
-            "name": "identifier_key",
+            "name": "identity_id",
             "in": "path",
             "required": true,
             "schema": {
               "type": "string",
-              "title": "Identifier Key"
+              "title": "Identity Id"
             }
           }
         ],
@@ -6671,35 +6690,16 @@
                             ],
                             "nullable": true
                           },
-                          "identifier_key": {
+                          "identity_ids": {
                             "oneOf": [
-                              {
-                                "type": "string"
-                              },
-                              {
-                                "type": "string",
-                                "format": "null",
-                                "nullable": true
-                              },
                               {
                                 "type": "array",
                                 "items": {
-                                  "oneOf": [
-                                    {
-                                      "type": "string"
-                                    },
-                                    {
-                                      "type": "string",
-                                      "format": "null",
-                                      "nullable": true
-                                    }
-                                  ],
-                                  "nullable": true
+                                  "type": "string"
                                 }
                               },
                               {}
-                            ],
-                            "nullable": true
+                            ]
                           },
                           "message_buffer_autoclear": {
                             "oneOf": [
@@ -9423,35 +9423,16 @@
                             ],
                             "nullable": true
                           },
-                          "identifier_key": {
+                          "identity_ids": {
                             "oneOf": [
-                              {
-                                "type": "string"
-                              },
-                              {
-                                "type": "string",
-                                "format": "null",
-                                "nullable": true
-                              },
                               {
                                 "type": "array",
                                 "items": {
-                                  "oneOf": [
-                                    {
-                                      "type": "string"
-                                    },
-                                    {
-                                      "type": "string",
-                                      "format": "null",
-                                      "nullable": true
-                                    }
-                                  ],
-                                  "nullable": true
+                                  "type": "string"
                                 }
                               },
                               {}
-                            ],
-                            "nullable": true
+                            ]
                           },
                           "message_buffer_autoclear": {
                             "oneOf": [
@@ -9988,17 +9969,14 @@
             "title": "Base Template Id",
             "description": "The base template id of the agent."
           },
-          "identifier_key": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Identifier Key",
-            "description": "The identifier key belonging to the identity associated with this agent."
+          "identity_ids": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Identity Ids",
+            "description": "The ids of the identities associated with this agent.",
+            "default": []
           },
           "message_buffer_autoclear": {
             "type": "boolean",
@@ -12513,17 +12491,20 @@
             "title": "Base Template Id",
             "description": "The base template id of the agent."
           },
-          "identifier_key": {
+          "identity_ids": {
             "anyOf": [
               {
-                "type": "string"
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
               },
               {
                 "type": "null"
               }
             ],
-            "title": "Identifier Key",
-            "description": "The identifier key belonging to the identity associated with this agent."
+            "title": "Identity Ids",
+            "description": "The ids of the identities associated with this agent."
           },
           "message_buffer_autoclear": {
             "type": "boolean",
@@ -13086,18 +13067,26 @@
             "title": "Project Id",
             "description": "The project id of the identity, if applicable."
           },
-          "agents": {
+          "agent_ids": {
             "items": {
-              "$ref": "#/components/schemas/AgentState"
+              "type": "string"
             },
             "type": "array",
-            "title": "Agents",
-            "description": "The agents associated with the identity."
+            "title": "Agent Ids",
+            "description": "The IDs of the agents associated with the identity."
+          },
+          "properties": {
+            "items": {
+              "$ref": "#/components/schemas/IdentityProperty"
+            },
+            "type": "array",
+            "title": "Properties",
+            "description": "List of properties associated with the identity"
           }
         },
         "additionalProperties": false,
         "type": "object",
-        "required": ["identifier_key", "name", "identity_type", "agents"],
+        "required": ["identifier_key", "name", "identity_type", "agent_ids"],
         "title": "Identity"
       },
       "IdentityCreate": {
@@ -13142,12 +13131,72 @@
             ],
             "title": "Agent Ids",
             "description": "The agent ids that are associated with the identity."
+          },
+          "properties": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/IdentityProperty"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Properties",
+            "description": "List of properties associated with the identity."
           }
         },
         "additionalProperties": false,
         "type": "object",
         "required": ["identifier_key", "name", "identity_type"],
         "title": "IdentityCreate"
+      },
+      "IdentityProperty": {
+        "properties": {
+          "key": {
+            "type": "string",
+            "title": "Key",
+            "description": "The key of the property"
+          },
+          "value": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "integer"
+              },
+              {
+                "type": "number"
+              },
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "object"
+              }
+            ],
+            "title": "Value",
+            "description": "The value of the property"
+          },
+          "type": {
+            "$ref": "#/components/schemas/IdentityPropertyType",
+            "description": "The type of the property"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": ["key", "value", "type"],
+        "title": "IdentityProperty",
+        "description": "A property of an identity"
+      },
+      "IdentityPropertyType": {
+        "type": "string",
+        "enum": ["string", "number", "boolean", "json"],
+        "title": "IdentityPropertyType",
+        "description": "Enum to represent the type of the identity property."
       },
       "IdentityType": {
         "type": "string",
@@ -13157,6 +13206,18 @@
       },
       "IdentityUpdate": {
         "properties": {
+          "identifier_key": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Identifier Key",
+            "description": "External, user-generated identifier key of the identity."
+          },
           "name": {
             "anyOf": [
               {
@@ -13194,6 +13255,21 @@
             ],
             "title": "Agent Ids",
             "description": "The agent ids that are associated with the identity."
+          },
+          "properties": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/IdentityProperty"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Properties",
+            "description": "List of properties associated with the identity."
           }
         },
         "additionalProperties": false,
@@ -15983,17 +16059,20 @@
             "title": "Base Template Id",
             "description": "The base template id of the agent."
           },
-          "identifier_key": {
+          "identity_ids": {
             "anyOf": [
               {
-                "type": "string"
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
               },
               {
                 "type": "null"
               }
             ],
-            "title": "Identifier Key",
-            "description": "The identifier key belonging to the identity associated with this agent."
+            "title": "Identity Ids",
+            "description": "The ids of the identities associated with this agent."
           },
           "message_buffer_autoclear": {
             "anyOf": [

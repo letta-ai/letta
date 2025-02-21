@@ -338,7 +338,7 @@ export const useSourcesServiceListSourceFilesSuspense = <
  * @param data.projectId Search agents by project id
  * @param data.templateId Search agents by template id
  * @param data.baseTemplateId Search agents by base template id
- * @param data.identifierKey Search agents by identifier key
+ * @param data.identifierKeys Search agents by identifier keys
  * @param data.userId
  * @returns AgentState Successful Response
  * @throws ApiError
@@ -352,7 +352,7 @@ export const useAgentsServiceListAgentsSuspense = <
     after,
     baseTemplateId,
     before,
-    identifierKey,
+    identifierKeys,
     limit,
     matchAllTags,
     name,
@@ -365,7 +365,7 @@ export const useAgentsServiceListAgentsSuspense = <
     after?: string;
     baseTemplateId?: string;
     before?: string;
-    identifierKey?: string;
+    identifierKeys?: string[];
     limit?: number;
     matchAllTags?: boolean;
     name?: string;
@@ -384,7 +384,7 @@ export const useAgentsServiceListAgentsSuspense = <
         after,
         baseTemplateId,
         before,
-        identifierKey,
+        identifierKeys,
         limit,
         matchAllTags,
         name,
@@ -401,7 +401,7 @@ export const useAgentsServiceListAgentsSuspense = <
         after,
         baseTemplateId,
         before,
-        identifierKey,
+        identifierKeys,
         limit,
         matchAllTags,
         name,
@@ -772,6 +772,7 @@ export const useAgentsServiceListMessagesSuspense = <
  * @param data The data for the request.
  * @param data.name
  * @param data.projectId
+ * @param data.identifierKey
  * @param data.identityType
  * @param data.before
  * @param data.after
@@ -788,6 +789,7 @@ export const useIdentitiesServiceListIdentitiesSuspense = <
   {
     after,
     before,
+    identifierKey,
     identityType,
     limit,
     name,
@@ -796,6 +798,7 @@ export const useIdentitiesServiceListIdentitiesSuspense = <
   }: {
     after?: string;
     before?: string;
+    identifierKey?: string;
     identityType?: IdentityType;
     limit?: number;
     name?: string;
@@ -807,13 +810,23 @@ export const useIdentitiesServiceListIdentitiesSuspense = <
 ) =>
   useSuspenseQuery<TData, TError>({
     queryKey: Common.UseIdentitiesServiceListIdentitiesKeyFn(
-      { after, before, identityType, limit, name, projectId, userId },
+      {
+        after,
+        before,
+        identifierKey,
+        identityType,
+        limit,
+        name,
+        projectId,
+        userId,
+      },
       queryKey,
     ),
     queryFn: () =>
       IdentitiesService.listIdentities({
         after,
         before,
+        identifierKey,
         identityType,
         limit,
         name,
@@ -825,32 +838,29 @@ export const useIdentitiesServiceListIdentitiesSuspense = <
 /**
  * Retrieve Identity
  * @param data The data for the request.
- * @param data.identifierKey
+ * @param data.identityId
  * @returns Identity Successful Response
  * @throws ApiError
  */
-export const useIdentitiesServiceGetIdentityFromIdentifierKeySuspense = <
-  TData = Common.IdentitiesServiceGetIdentityFromIdentifierKeyDefaultResponse,
+export const useIdentitiesServiceRetrieveIdentitySuspense = <
+  TData = Common.IdentitiesServiceRetrieveIdentityDefaultResponse,
   TError = unknown,
   TQueryKey extends Array<unknown> = unknown[],
 >(
   {
-    identifierKey,
+    identityId,
   }: {
-    identifierKey: string;
+    identityId: string;
   },
   queryKey?: TQueryKey,
   options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>,
 ) =>
   useSuspenseQuery<TData, TError>({
-    queryKey: Common.UseIdentitiesServiceGetIdentityFromIdentifierKeyKeyFn(
-      { identifierKey },
+    queryKey: Common.UseIdentitiesServiceRetrieveIdentityKeyFn(
+      { identityId },
       queryKey,
     ),
-    queryFn: () =>
-      IdentitiesService.getIdentityFromIdentifierKey({
-        identifierKey,
-      }) as TData,
+    queryFn: () => IdentitiesService.retrieveIdentity({ identityId }) as TData,
     ...options,
   });
 /**

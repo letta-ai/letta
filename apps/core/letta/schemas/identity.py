@@ -1,9 +1,8 @@
 from enum import Enum
-from typing import List, Optional
+from typing import List, Optional, Union
 
 from pydantic import Field
 
-from letta.schemas.agent import AgentState
 from letta.schemas.letta_base import LettaBase
 
 
@@ -17,8 +16,27 @@ class IdentityType(str, Enum):
     other = "other"
 
 
+class IdentityPropertyType(str, Enum):
+    """
+    Enum to represent the type of the identity property.
+    """
+
+    string = "string"
+    number = "number"
+    boolean = "boolean"
+    json = "json"
+
+
 class IdentityBase(LettaBase):
     __id_prefix__ = "identity"
+
+
+class IdentityProperty(LettaBase):
+    """A property of an identity"""
+
+    key: str = Field(..., description="The key of the property")
+    value: Union[str, int, float, bool, dict] = Field(..., description="The value of the property")
+    type: IdentityPropertyType = Field(..., description="The type of the property")
 
 
 class Identity(IdentityBase):
@@ -27,7 +45,9 @@ class Identity(IdentityBase):
     name: str = Field(..., description="The name of the identity.")
     identity_type: IdentityType = Field(..., description="The type of the identity.")
     project_id: Optional[str] = Field(None, description="The project id of the identity, if applicable.")
-    agents: List[AgentState] = Field(..., description="The agents associated with the identity.")
+    agent_ids: List[str] = Field(..., description="The IDs of the agents associated with the identity.")
+    organization_id: Optional[str] = Field(None, description="The organization id of the user")
+    properties: List[IdentityProperty] = Field(default_factory=list, description="List of properties associated with the identity")
 
 
 class IdentityCreate(LettaBase):
@@ -36,9 +56,12 @@ class IdentityCreate(LettaBase):
     identity_type: IdentityType = Field(..., description="The type of the identity.")
     project_id: Optional[str] = Field(None, description="The project id of the identity, if applicable.")
     agent_ids: Optional[List[str]] = Field(None, description="The agent ids that are associated with the identity.")
+    properties: Optional[List[IdentityProperty]] = Field(None, description="List of properties associated with the identity.")
 
 
 class IdentityUpdate(LettaBase):
+    identifier_key: Optional[str] = Field(None, description="External, user-generated identifier key of the identity.")
     name: Optional[str] = Field(None, description="The name of the identity.")
     identity_type: Optional[IdentityType] = Field(None, description="The type of the identity.")
     agent_ids: Optional[List[str]] = Field(None, description="The agent ids that are associated with the identity.")
+    properties: Optional[List[IdentityProperty]] = Field(None, description="List of properties associated with the identity.")

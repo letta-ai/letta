@@ -375,7 +375,7 @@ export const useSourcesServiceListSourceFiles = <
  * @param data.projectId Search agents by project id
  * @param data.templateId Search agents by template id
  * @param data.baseTemplateId Search agents by base template id
- * @param data.identifierKey Search agents by identifier key
+ * @param data.identifierKeys Search agents by identifier keys
  * @param data.userId
  * @returns AgentState Successful Response
  * @throws ApiError
@@ -389,7 +389,7 @@ export const useAgentsServiceListAgents = <
     after,
     baseTemplateId,
     before,
-    identifierKey,
+    identifierKeys,
     limit,
     matchAllTags,
     name,
@@ -402,7 +402,7 @@ export const useAgentsServiceListAgents = <
     after?: string;
     baseTemplateId?: string;
     before?: string;
-    identifierKey?: string;
+    identifierKeys?: string[];
     limit?: number;
     matchAllTags?: boolean;
     name?: string;
@@ -421,7 +421,7 @@ export const useAgentsServiceListAgents = <
         after,
         baseTemplateId,
         before,
-        identifierKey,
+        identifierKeys,
         limit,
         matchAllTags,
         name,
@@ -438,7 +438,7 @@ export const useAgentsServiceListAgents = <
         after,
         baseTemplateId,
         before,
-        identifierKey,
+        identifierKeys,
         limit,
         matchAllTags,
         name,
@@ -809,6 +809,7 @@ export const useAgentsServiceListMessages = <
  * @param data The data for the request.
  * @param data.name
  * @param data.projectId
+ * @param data.identifierKey
  * @param data.identityType
  * @param data.before
  * @param data.after
@@ -825,6 +826,7 @@ export const useIdentitiesServiceListIdentities = <
   {
     after,
     before,
+    identifierKey,
     identityType,
     limit,
     name,
@@ -833,6 +835,7 @@ export const useIdentitiesServiceListIdentities = <
   }: {
     after?: string;
     before?: string;
+    identifierKey?: string;
     identityType?: IdentityType;
     limit?: number;
     name?: string;
@@ -844,13 +847,23 @@ export const useIdentitiesServiceListIdentities = <
 ) =>
   useQuery<TData, TError>({
     queryKey: Common.UseIdentitiesServiceListIdentitiesKeyFn(
-      { after, before, identityType, limit, name, projectId, userId },
+      {
+        after,
+        before,
+        identifierKey,
+        identityType,
+        limit,
+        name,
+        projectId,
+        userId,
+      },
       queryKey,
     ),
     queryFn: () =>
       IdentitiesService.listIdentities({
         after,
         before,
+        identifierKey,
         identityType,
         limit,
         name,
@@ -862,32 +875,29 @@ export const useIdentitiesServiceListIdentities = <
 /**
  * Retrieve Identity
  * @param data The data for the request.
- * @param data.identifierKey
+ * @param data.identityId
  * @returns Identity Successful Response
  * @throws ApiError
  */
-export const useIdentitiesServiceGetIdentityFromIdentifierKey = <
-  TData = Common.IdentitiesServiceGetIdentityFromIdentifierKeyDefaultResponse,
+export const useIdentitiesServiceRetrieveIdentity = <
+  TData = Common.IdentitiesServiceRetrieveIdentityDefaultResponse,
   TError = unknown,
   TQueryKey extends Array<unknown> = unknown[],
 >(
   {
-    identifierKey,
+    identityId,
   }: {
-    identifierKey: string;
+    identityId: string;
   },
   queryKey?: TQueryKey,
   options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>,
 ) =>
   useQuery<TData, TError>({
-    queryKey: Common.UseIdentitiesServiceGetIdentityFromIdentifierKeyKeyFn(
-      { identifierKey },
+    queryKey: Common.UseIdentitiesServiceRetrieveIdentityKeyFn(
+      { identityId },
       queryKey,
     ),
-    queryFn: () =>
-      IdentitiesService.getIdentityFromIdentifierKey({
-        identifierKey,
-      }) as TData,
+    queryFn: () => IdentitiesService.retrieveIdentity({ identityId }) as TData,
     ...options,
   });
 /**
@@ -3572,7 +3582,7 @@ export const useAgentsServiceResetMessages = <
 /**
  * Modify Identity
  * @param data The data for the request.
- * @param data.identifierKey
+ * @param data.identityId
  * @param data.requestBody
  * @param data.userId
  * @returns Identity Successful Response
@@ -3588,7 +3598,7 @@ export const useIdentitiesServiceUpdateIdentity = <
       TData,
       TError,
       {
-        identifierKey: string;
+        identityId: string;
         requestBody: IdentityUpdate;
         userId?: string;
       },
@@ -3601,15 +3611,15 @@ export const useIdentitiesServiceUpdateIdentity = <
     TData,
     TError,
     {
-      identifierKey: string;
+      identityId: string;
       requestBody: IdentityUpdate;
       userId?: string;
     },
     TContext
   >({
-    mutationFn: ({ identifierKey, requestBody, userId }) =>
+    mutationFn: ({ identityId, requestBody, userId }) =>
       IdentitiesService.updateIdentity({
-        identifierKey,
+        identityId,
         requestBody,
         userId,
       }) as unknown as Promise<TData>,
@@ -4061,7 +4071,7 @@ export const useAgentsServiceDeleteArchivalMemory = <
  * Delete Identity
  * Delete an identity by its identifier key
  * @param data The data for the request.
- * @param data.identifierKey
+ * @param data.identityId
  * @param data.userId
  * @returns unknown Successful Response
  * @throws ApiError
@@ -4076,7 +4086,7 @@ export const useIdentitiesServiceDeleteIdentity = <
       TData,
       TError,
       {
-        identifierKey: string;
+        identityId: string;
         userId?: string;
       },
       TContext
@@ -4088,14 +4098,14 @@ export const useIdentitiesServiceDeleteIdentity = <
     TData,
     TError,
     {
-      identifierKey: string;
+      identityId: string;
       userId?: string;
     },
     TContext
   >({
-    mutationFn: ({ identifierKey, userId }) =>
+    mutationFn: ({ identityId, userId }) =>
       IdentitiesService.deleteIdentity({
-        identifierKey,
+        identityId,
         userId,
       }) as unknown as Promise<TData>,
     ...options,

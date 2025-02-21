@@ -203,9 +203,9 @@ export type AgentState = {
    */
   base_template_id?: string | null;
   /**
-   * The identifier key belonging to the identity associated with this agent.
+   * The ids of the identities associated with this agent.
    */
-  identifier_key?: string | null;
+  identity_ids?: Array<string>;
   /**
    * If set to True, the agent will not remember previous messages (though the agent will still retain state via core memory blocks and archival/recall memory). Not recommended unless you have an advanced use case.
    */
@@ -1045,9 +1045,9 @@ export type CreateAgentRequest = {
    */
   base_template_id?: string | null;
   /**
-   * The identifier key belonging to the identity associated with this agent.
+   * The ids of the identities associated with this agent.
    */
-  identifier_key?: string | null;
+  identity_ids?: Array<string> | null;
   /**
    * If set to True, the agent will not remember previous messages (though the agent will still retain state via core memory blocks and archival/recall memory). Not recommended unless you have an advanced use case.
    */
@@ -1329,9 +1329,17 @@ export type Identity = {
    */
   project_id?: string | null;
   /**
-   * The agents associated with the identity.
+   * The IDs of the agents associated with the identity.
    */
-  agents: Array<AgentState>;
+  agent_ids: Array<string>;
+  /**
+   * The organization id of the user
+   */
+  organization_id?: string | null;
+  /**
+   * List of properties associated with the identity
+   */
+  properties?: Array<IdentityProperty>;
 };
 
 export type IdentityCreate = {
@@ -1355,7 +1363,40 @@ export type IdentityCreate = {
    * The agent ids that are associated with the identity.
    */
   agent_ids?: Array<string> | null;
+  /**
+   * List of properties associated with the identity.
+   */
+  properties?: Array<IdentityProperty> | null;
 };
+
+/**
+ * A property of an identity
+ */
+export type IdentityProperty = {
+  /**
+   * The key of the property
+   */
+  key: string;
+  /**
+   * The value of the property
+   */
+  value:
+    | string
+    | number
+    | boolean
+    | {
+        [key: string]: unknown;
+      };
+  /**
+   * The type of the property
+   */
+  type: IdentityPropertyType;
+};
+
+/**
+ * Enum to represent the type of the identity property.
+ */
+export type IdentityPropertyType = 'string' | 'number' | 'boolean' | 'json';
 
 /**
  * Enum to represent the type of the identity.
@@ -1363,6 +1404,10 @@ export type IdentityCreate = {
 export type IdentityType = 'org' | 'user' | 'other';
 
 export type IdentityUpdate = {
+  /**
+   * External, user-generated identifier key of the identity.
+   */
+  identifier_key?: string | null;
   /**
    * The name of the identity.
    */
@@ -1375,6 +1420,10 @@ export type IdentityUpdate = {
    * The agent ids that are associated with the identity.
    */
   agent_ids?: Array<string> | null;
+  /**
+   * List of properties associated with the identity.
+   */
+  properties?: Array<IdentityProperty> | null;
 };
 
 export type ImageURL = {
@@ -2710,9 +2759,9 @@ export type UpdateAgent = {
    */
   base_template_id?: string | null;
   /**
-   * The identifier key belonging to the identity associated with this agent.
+   * The ids of the identities associated with this agent.
    */
-  identifier_key?: string | null;
+  identity_ids?: Array<string> | null;
   /**
    * If set to True, the agent will not remember previous messages (though the agent will still retain state via core memory blocks and archival/recall memory). Not recommended unless you have an advanced use case.
    */
@@ -3012,9 +3061,9 @@ export type ListAgentsData = {
    */
   before?: string | null;
   /**
-   * Search agents by identifier key
+   * Search agents by identifier keys
    */
-  identifierKey?: string | null;
+  identifierKeys?: Array<string> | null;
   /**
    * Limit for pagination
    */
@@ -3291,6 +3340,7 @@ export type ResetMessagesResponse = AgentState;
 export type ListIdentitiesData = {
   after?: string | null;
   before?: string | null;
+  identifierKey?: string | null;
   identityType?: IdentityType | null;
   limit?: number | null;
   name?: string | null;
@@ -3316,14 +3366,14 @@ export type UpsertIdentityData = {
 
 export type UpsertIdentityResponse = Identity;
 
-export type GetIdentityFromIdentifierKeyData = {
-  identifierKey: string;
+export type RetrieveIdentityData = {
+  identityId: string;
 };
 
-export type GetIdentityFromIdentifierKeyResponse = Identity;
+export type RetrieveIdentityResponse = Identity;
 
 export type UpdateIdentityData = {
-  identifierKey: string;
+  identityId: string;
   requestBody: IdentityUpdate;
   userId?: string | null;
 };
@@ -3331,7 +3381,7 @@ export type UpdateIdentityData = {
 export type UpdateIdentityResponse = Identity;
 
 export type DeleteIdentityData = {
-  identifierKey: string;
+  identityId: string;
   userId?: string | null;
 };
 
@@ -4485,9 +4535,9 @@ export type $OpenApiTs = {
       };
     };
   };
-  '/v1/identities/{identifier_key}': {
+  '/v1/identities/{identity_id}': {
     get: {
-      req: GetIdentityFromIdentifierKeyData;
+      req: RetrieveIdentityData;
       res: {
         /**
          * Successful Response

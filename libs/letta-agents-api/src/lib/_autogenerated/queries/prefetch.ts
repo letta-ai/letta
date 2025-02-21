@@ -271,7 +271,7 @@ export const prefetchUseSourcesServiceListSourceFiles = (
  * @param data.projectId Search agents by project id
  * @param data.templateId Search agents by template id
  * @param data.baseTemplateId Search agents by base template id
- * @param data.identifierKey Search agents by identifier key
+ * @param data.identifierKeys Search agents by identifier keys
  * @param data.userId
  * @returns AgentState Successful Response
  * @throws ApiError
@@ -282,7 +282,7 @@ export const prefetchUseAgentsServiceListAgents = (
     after,
     baseTemplateId,
     before,
-    identifierKey,
+    identifierKeys,
     limit,
     matchAllTags,
     name,
@@ -295,7 +295,7 @@ export const prefetchUseAgentsServiceListAgents = (
     after?: string;
     baseTemplateId?: string;
     before?: string;
-    identifierKey?: string;
+    identifierKeys?: string[];
     limit?: number;
     matchAllTags?: boolean;
     name?: string;
@@ -311,7 +311,7 @@ export const prefetchUseAgentsServiceListAgents = (
       after,
       baseTemplateId,
       before,
-      identifierKey,
+      identifierKeys,
       limit,
       matchAllTags,
       name,
@@ -326,7 +326,7 @@ export const prefetchUseAgentsServiceListAgents = (
         after,
         baseTemplateId,
         before,
-        identifierKey,
+        identifierKeys,
         limit,
         matchAllTags,
         name,
@@ -628,6 +628,7 @@ export const prefetchUseAgentsServiceListMessages = (
  * @param data The data for the request.
  * @param data.name
  * @param data.projectId
+ * @param data.identifierKey
  * @param data.identityType
  * @param data.before
  * @param data.after
@@ -641,6 +642,7 @@ export const prefetchUseIdentitiesServiceListIdentities = (
   {
     after,
     before,
+    identifierKey,
     identityType,
     limit,
     name,
@@ -649,6 +651,7 @@ export const prefetchUseIdentitiesServiceListIdentities = (
   }: {
     after?: string;
     before?: string;
+    identifierKey?: string;
     identityType?: IdentityType;
     limit?: number;
     name?: string;
@@ -660,6 +663,7 @@ export const prefetchUseIdentitiesServiceListIdentities = (
     queryKey: Common.UseIdentitiesServiceListIdentitiesKeyFn({
       after,
       before,
+      identifierKey,
       identityType,
       limit,
       name,
@@ -670,6 +674,7 @@ export const prefetchUseIdentitiesServiceListIdentities = (
       IdentitiesService.listIdentities({
         after,
         before,
+        identifierKey,
         identityType,
         limit,
         name,
@@ -680,24 +685,21 @@ export const prefetchUseIdentitiesServiceListIdentities = (
 /**
  * Retrieve Identity
  * @param data The data for the request.
- * @param data.identifierKey
+ * @param data.identityId
  * @returns Identity Successful Response
  * @throws ApiError
  */
-export const prefetchUseIdentitiesServiceGetIdentityFromIdentifierKey = (
+export const prefetchUseIdentitiesServiceRetrieveIdentity = (
   queryClient: QueryClient,
   {
-    identifierKey,
+    identityId,
   }: {
-    identifierKey: string;
+    identityId: string;
   },
 ) =>
   queryClient.prefetchQuery({
-    queryKey: Common.UseIdentitiesServiceGetIdentityFromIdentifierKeyKeyFn({
-      identifierKey,
-    }),
-    queryFn: () =>
-      IdentitiesService.getIdentityFromIdentifierKey({ identifierKey }),
+    queryKey: Common.UseIdentitiesServiceRetrieveIdentityKeyFn({ identityId }),
+    queryFn: () => IdentitiesService.retrieveIdentity({ identityId }),
   });
 /**
  * List Llm Backends

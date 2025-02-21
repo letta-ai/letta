@@ -633,14 +633,7 @@ export const AgentState = z.object({
       z.undefined(),
     ])
     .optional(),
-  identifier_key: z
-    .union([
-      z.string(),
-      z.null(),
-      z.array(z.union([z.string(), z.null()])),
-      z.undefined(),
-    ])
-    .optional(),
+  identity_ids: z.union([z.array(z.string()), z.undefined()]).optional(),
   message_buffer_autoclear: z.union([z.boolean(), z.undefined()]).optional(),
 });
 
@@ -2393,8 +2386,12 @@ export const CreateAgentRequest = z.object({
   base_template_id: z
     .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
     .optional(),
-  identifier_key: z
-    .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+  identity_ids: z
+    .union([
+      z.array(z.string()),
+      z.null(),
+      z.array(z.union([z.array(z.string()), z.null()])),
+    ])
     .optional(),
   message_buffer_autoclear: z.boolean().optional(),
   user_id: z
@@ -2532,6 +2529,30 @@ export const IdentityType = z.union([
   z.literal('other'),
 ]);
 
+export type IdentityPropertyType = z.infer<typeof IdentityPropertyType>;
+export const IdentityPropertyType = z.union([
+  z.literal('string'),
+  z.literal('number'),
+  z.literal('boolean'),
+  z.literal('json'),
+]);
+
+export type IdentityProperty = z.infer<typeof IdentityProperty>;
+export const IdentityProperty = z.object({
+  key: z.string(),
+  value: z.union([
+    z.string(),
+    z.number(),
+    z.number(),
+    z.boolean(),
+    z.unknown(),
+    z.array(
+      z.union([z.string(), z.number(), z.number(), z.boolean(), z.unknown()]),
+    ),
+  ]),
+  type: IdentityPropertyType,
+});
+
 export type Identity = z.infer<typeof Identity>;
 export const Identity = z.object({
   id: z.union([z.string(), z.undefined()]).optional(),
@@ -2546,7 +2567,16 @@ export const Identity = z.object({
       z.undefined(),
     ])
     .optional(),
-  agents: z.array(AgentState),
+  agent_ids: z.array(z.string()),
+  organization_id: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  properties: z.union([z.array(IdentityProperty), z.undefined()]).optional(),
 });
 
 export type IdentityCreate = z.infer<typeof IdentityCreate>;
@@ -2570,10 +2600,21 @@ export const IdentityCreate = z.object({
       z.undefined(),
     ])
     .optional(),
+  properties: z
+    .union([
+      z.array(IdentityProperty),
+      z.null(),
+      z.array(z.union([z.array(IdentityProperty), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
 });
 
 export type IdentityUpdate = z.infer<typeof IdentityUpdate>;
 export const IdentityUpdate = z.object({
+  identifier_key: z
+    .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+    .optional(),
   name: z
     .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
     .optional(),
@@ -2585,6 +2626,13 @@ export const IdentityUpdate = z.object({
       z.array(z.string()),
       z.null(),
       z.array(z.union([z.array(z.string()), z.null()])),
+    ])
+    .optional(),
+  properties: z
+    .union([
+      z.array(IdentityProperty),
+      z.null(),
+      z.array(z.union([z.array(IdentityProperty), z.null()])),
     ])
     .optional(),
 });
@@ -3497,8 +3545,12 @@ export const UpdateAgent = z.object({
   base_template_id: z
     .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
     .optional(),
-  identifier_key: z
-    .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+  identity_ids: z
+    .union([
+      z.array(z.string()),
+      z.null(),
+      z.array(z.union([z.array(z.string()), z.null()])),
+    ])
     .optional(),
   message_buffer_autoclear: z
     .union([z.boolean(), z.null(), z.array(z.union([z.boolean(), z.null()]))])
@@ -3990,8 +4042,12 @@ export const get_List_agents = {
       base_template_id: z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
-      identifier_key: z
-        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+      identifier_keys: z
+        .union([
+          z.array(z.string()),
+          z.null(),
+          z.array(z.union([z.array(z.string()), z.null()])),
+        ])
         .optional(),
     }),
     header: z.object({
@@ -4537,6 +4593,9 @@ export const get_List_identities = {
       project_id: z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
+      identifier_key: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
       identity_type: z
         .union([
           IdentityType,
@@ -4601,15 +4660,14 @@ export const put_Upsert_identity = {
   response: Identity,
 };
 
-export type get_Get_identity_from_identifier_key =
-  typeof get_Get_identity_from_identifier_key;
-export const get_Get_identity_from_identifier_key = {
+export type get_Retrieve_identity = typeof get_Retrieve_identity;
+export const get_Retrieve_identity = {
   method: z.literal('GET'),
-  path: z.literal('/v1/identities/{identifier_key}'),
+  path: z.literal('/v1/identities/{identity_id}'),
   requestFormat: z.literal('json'),
   parameters: z.object({
     path: z.object({
-      identifier_key: z.string(),
+      identity_id: z.string(),
     }),
   }),
   response: Identity,
@@ -4618,11 +4676,11 @@ export const get_Get_identity_from_identifier_key = {
 export type patch_Update_identity = typeof patch_Update_identity;
 export const patch_Update_identity = {
   method: z.literal('PATCH'),
-  path: z.literal('/v1/identities/{identifier_key}'),
+  path: z.literal('/v1/identities/{identity_id}'),
   requestFormat: z.literal('json'),
   parameters: z.object({
     path: z.object({
-      identifier_key: z.string(),
+      identity_id: z.string(),
     }),
     header: z.object({
       user_id: z
@@ -4637,11 +4695,11 @@ export const patch_Update_identity = {
 export type delete_Delete_identity = typeof delete_Delete_identity;
 export const delete_Delete_identity = {
   method: z.literal('DELETE'),
-  path: z.literal('/v1/identities/{identifier_key}'),
+  path: z.literal('/v1/identities/{identity_id}'),
   requestFormat: z.literal('json'),
   parameters: z.object({
     path: z.object({
-      identifier_key: z.string(),
+      identity_id: z.string(),
     }),
     header: z.object({
       user_id: z
@@ -5553,7 +5611,7 @@ export const EndpointByMethod = {
     '/v1/agents/{agent_id}': delete_Delete_agent,
     '/v1/agents/{agent_id}/archival-memory/{memory_id}':
       delete_Delete_archival_memory,
-    '/v1/identities/{identifier_key}': delete_Delete_identity,
+    '/v1/identities/{identity_id}': delete_Delete_identity,
     '/v1/blocks/{block_id}': delete_Delete_block,
     '/v1/jobs/{job_id}': delete_Delete_job,
     '/v1/sandbox-config/{sandbox_config_id}':
@@ -5588,7 +5646,7 @@ export const EndpointByMethod = {
     '/v1/agents/{agent_id}/archival-memory': get_List_archival_memory,
     '/v1/agents/{agent_id}/messages': get_List_messages,
     '/v1/identities/': get_List_identities,
-    '/v1/identities/{identifier_key}': get_Get_identity_from_identifier_key,
+    '/v1/identities/{identity_id}': get_Retrieve_identity,
     '/v1/models/': get_List_models,
     '/v1/models/embedding': get_List_embedding_models,
     '/v1/blocks/': get_List_blocks,
@@ -5631,7 +5689,7 @@ export const EndpointByMethod = {
       patch_Detach_core_memory_block,
     '/v1/agents/{agent_id}/messages/{message_id}': patch_Modify_message,
     '/v1/agents/{agent_id}/reset-messages': patch_Reset_messages,
-    '/v1/identities/{identifier_key}': patch_Update_identity,
+    '/v1/identities/{identity_id}': patch_Update_identity,
     '/v1/blocks/{block_id}': patch_Modify_block,
     '/v1/sandbox-config/{sandbox_config_id}':
       patch_Update_sandbox_config_v1_sandbox_config__sandbox_config_id__patch,

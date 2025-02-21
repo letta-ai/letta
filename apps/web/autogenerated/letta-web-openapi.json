@@ -341,12 +341,15 @@
             }
           },
           {
-            "name": "identifier_key",
+            "name": "identifier_keys",
             "in": "query",
             "schema": {
               "oneOf": [
                 {
-                  "type": "string"
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
                 },
                 {
                   "type": "string",
@@ -358,7 +361,10 @@
                   "items": {
                     "oneOf": [
                       {
-                        "type": "string"
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        }
                       },
                       {
                         "type": "string",
@@ -2663,35 +2669,16 @@
                         ],
                         "nullable": true
                       },
-                      "identifier_key": {
+                      "identity_ids": {
                         "oneOf": [
-                          {
-                            "type": "string"
-                          },
-                          {
-                            "type": "string",
-                            "format": "null",
-                            "nullable": true
-                          },
                           {
                             "type": "array",
                             "items": {
-                              "oneOf": [
-                                {
-                                  "type": "string"
-                                },
-                                {
-                                  "type": "string",
-                                  "format": "null",
-                                  "nullable": true
-                                }
-                              ],
-                              "nullable": true
+                              "type": "string"
                             }
                           },
                           {}
-                        ],
-                        "nullable": true
+                        ]
                       },
                       "message_buffer_autoclear": {
                         "oneOf": [
@@ -5106,35 +5093,16 @@
                             ],
                             "nullable": true
                           },
-                          "identifier_key": {
+                          "identity_ids": {
                             "oneOf": [
-                              {
-                                "type": "string"
-                              },
-                              {
-                                "type": "string",
-                                "format": "null",
-                                "nullable": true
-                              },
                               {
                                 "type": "array",
                                 "items": {
-                                  "oneOf": [
-                                    {
-                                      "type": "string"
-                                    },
-                                    {
-                                      "type": "string",
-                                      "format": "null",
-                                      "nullable": true
-                                    }
-                                  ],
-                                  "nullable": true
+                                  "type": "string"
                                 }
                               },
                               {}
-                            ],
-                            "nullable": true
+                            ]
                           },
                           "message_buffer_autoclear": {
                             "oneOf": [
@@ -8158,35 +8126,16 @@
                             ],
                             "nullable": true
                           },
-                          "identifier_key": {
+                          "identity_ids": {
                             "oneOf": [
-                              {
-                                "type": "string"
-                              },
-                              {
-                                "type": "string",
-                                "format": "null",
-                                "nullable": true
-                              },
                               {
                                 "type": "array",
                                 "items": {
-                                  "oneOf": [
-                                    {
-                                      "type": "string"
-                                    },
-                                    {
-                                      "type": "string",
-                                      "format": "null",
-                                      "nullable": true
-                                    }
-                                  ],
-                                  "nullable": true
+                                  "type": "string"
                                 }
                               },
                               {}
-                            ],
-                            "nullable": true
+                            ]
                           },
                           "message_buffer_autoclear": {
                             "oneOf": [

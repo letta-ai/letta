@@ -75,7 +75,7 @@ function DeleteIdentityDialog(props: DeleteIdentityDialogProps) {
   const handleSubmit = useCallback(() => {
     mutate(
       {
-        identifierKey: id,
+        identityId: id,
       },
       {
         onSuccess: () => {

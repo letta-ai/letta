@@ -106,8 +106,8 @@ import type {
   CreateIdentityResponse,
   UpsertIdentityData,
   UpsertIdentityResponse,
-  GetIdentityFromIdentifierKeyData,
-  GetIdentityFromIdentifierKeyResponse,
+  RetrieveIdentityData,
+  RetrieveIdentityResponse,
   UpdateIdentityData,
   UpdateIdentityResponse,
   DeleteIdentityData,
@@ -776,7 +776,7 @@ export class AgentsService {
    * @param data.projectId Search agents by project id
    * @param data.templateId Search agents by template id
    * @param data.baseTemplateId Search agents by base template id
-   * @param data.identifierKey Search agents by identifier key
+   * @param data.identifierKeys Search agents by identifier keys
    * @param data.userId
    * @returns AgentState Successful Response
    * @throws ApiError
@@ -799,7 +799,7 @@ export class AgentsService {
         project_id: data.projectId,
         template_id: data.templateId,
         base_template_id: data.baseTemplateId,
-        identifier_key: data.identifierKey,
+        identifier_keys: data.identifierKeys,
       },
       errors: {
         422: 'Validation Error',
@@ -1564,6 +1564,7 @@ export class IdentitiesService {
    * @param data The data for the request.
    * @param data.name
    * @param data.projectId
+   * @param data.identifierKey
    * @param data.identityType
    * @param data.before
    * @param data.after
@@ -1582,6 +1583,7 @@ export class IdentitiesService {
       query: {
         name: data.name,
         project_id: data.projectId,
+        identifier_key: data.identifierKey,
         identity_type: data.identityType,
         before: data.before,
         after: data.after,
@@ -1647,19 +1649,19 @@ export class IdentitiesService {
   /**
    * Retrieve Identity
    * @param data The data for the request.
-   * @param data.identifierKey
+   * @param data.identityId
    * @returns Identity Successful Response
    * @throws ApiError
    */
-  public static getIdentityFromIdentifierKey(
-    data: GetIdentityFromIdentifierKeyData,
+  public static retrieveIdentity(
+    data: RetrieveIdentityData,
     headers?: { user_id: string },
-  ): CancelablePromise<GetIdentityFromIdentifierKeyResponse> {
+  ): CancelablePromise<RetrieveIdentityResponse> {
     return __request(OpenAPI, {
       method: 'GET',
-      url: '/v1/identities/{identifier_key}',
+      url: '/v1/identities/{identity_id}',
       path: {
-        identifier_key: data.identifierKey,
+        identity_id: data.identityId,
       },
       errors: {
         422: 'Validation Error',
@@ -1671,7 +1673,7 @@ export class IdentitiesService {
   /**
    * Modify Identity
    * @param data The data for the request.
-   * @param data.identifierKey
+   * @param data.identityId
    * @param data.requestBody
    * @param data.userId
    * @returns Identity Successful Response
@@ -1683,9 +1685,9 @@ export class IdentitiesService {
   ): CancelablePromise<UpdateIdentityResponse> {
     return __request(OpenAPI, {
       method: 'PATCH',
-      url: '/v1/identities/{identifier_key}',
+      url: '/v1/identities/{identity_id}',
       path: {
-        identifier_key: data.identifierKey,
+        identity_id: data.identityId,
       },
       body: data.requestBody,
       mediaType: 'application/json',
@@ -1700,7 +1702,7 @@ export class IdentitiesService {
    * Delete Identity
    * Delete an identity by its identifier key
    * @param data The data for the request.
-   * @param data.identifierKey
+   * @param data.identityId
    * @param data.userId
    * @returns unknown Successful Response
    * @throws ApiError
@@ -1711,9 +1713,9 @@ export class IdentitiesService {
   ): CancelablePromise<DeleteIdentityResponse> {
     return __request(OpenAPI, {
       method: 'DELETE',
-      url: '/v1/identities/{identifier_key}',
+      url: '/v1/identities/{identity_id}',
       path: {
-        identifier_key: data.identifierKey,
+        identity_id: data.identityId,
       },
       errors: {
         422: 'Validation Error',

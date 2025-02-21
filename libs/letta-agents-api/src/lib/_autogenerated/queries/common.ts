@@ -225,7 +225,7 @@ export const UseAgentsServiceListAgentsKeyFn = (
     after,
     baseTemplateId,
     before,
-    identifierKey,
+    identifierKeys,
     limit,
     matchAllTags,
     name,
@@ -238,7 +238,7 @@ export const UseAgentsServiceListAgentsKeyFn = (
     after?: string;
     baseTemplateId?: string;
     before?: string;
-    identifierKey?: string;
+    identifierKeys?: string[];
     limit?: number;
     matchAllTags?: boolean;
     name?: string;
@@ -256,7 +256,7 @@ export const UseAgentsServiceListAgentsKeyFn = (
       after,
       baseTemplateId,
       before,
-      identifierKey,
+      identifierKeys,
       limit,
       matchAllTags,
       name,
@@ -504,6 +504,7 @@ export const UseIdentitiesServiceListIdentitiesKeyFn = (
   {
     after,
     before,
+    identifierKey,
     identityType,
     limit,
     name,
@@ -512,6 +513,7 @@ export const UseIdentitiesServiceListIdentitiesKeyFn = (
   }: {
     after?: string;
     before?: string;
+    identifierKey?: string;
     identityType?: IdentityType;
     limit?: number;
     name?: string;
@@ -522,27 +524,37 @@ export const UseIdentitiesServiceListIdentitiesKeyFn = (
 ) => [
   useIdentitiesServiceListIdentitiesKey,
   ...(queryKey ?? [
-    { after, before, identityType, limit, name, projectId, userId },
+    {
+      after,
+      before,
+      identifierKey,
+      identityType,
+      limit,
+      name,
+      projectId,
+      userId,
+    },
   ]),
 ];
-export type IdentitiesServiceGetIdentityFromIdentifierKeyDefaultResponse =
-  Awaited<ReturnType<typeof IdentitiesService.getIdentityFromIdentifierKey>>;
-export type IdentitiesServiceGetIdentityFromIdentifierKeyQueryResult<
-  TData = IdentitiesServiceGetIdentityFromIdentifierKeyDefaultResponse,
+export type IdentitiesServiceRetrieveIdentityDefaultResponse = Awaited<
+  ReturnType<typeof IdentitiesService.retrieveIdentity>
+>;
+export type IdentitiesServiceRetrieveIdentityQueryResult<
+  TData = IdentitiesServiceRetrieveIdentityDefaultResponse,
   TError = unknown,
 > = UseQueryResult<TData, TError>;
-export const useIdentitiesServiceGetIdentityFromIdentifierKeyKey =
-  'IdentitiesServiceGetIdentityFromIdentifierKey';
-export const UseIdentitiesServiceGetIdentityFromIdentifierKeyKeyFn = (
+export const useIdentitiesServiceRetrieveIdentityKey =
+  'IdentitiesServiceRetrieveIdentity';
+export const UseIdentitiesServiceRetrieveIdentityKeyFn = (
   {
-    identifierKey,
+    identityId,
   }: {
-    identifierKey: string;
+    identityId: string;
   },
   queryKey?: Array<unknown>,
 ) => [
-  useIdentitiesServiceGetIdentityFromIdentifierKeyKey,
-  ...(queryKey ?? [{ identifierKey }]),
+  useIdentitiesServiceRetrieveIdentityKey,
+  ...(queryKey ?? [{ identityId }]),
 ];
 export type ModelsServiceListModelsDefaultResponse = Awaited<
   ReturnType<typeof ModelsService.listModels>

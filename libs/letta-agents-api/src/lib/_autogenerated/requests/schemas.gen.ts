@@ -531,18 +531,14 @@ export const $AgentState = {
       title: 'Base Template Id',
       description: 'The base template id of the agent.',
     },
-    identifier_key: {
-      anyOf: [
-        {
-          type: 'string',
-        },
-        {
-          type: 'null',
-        },
-      ],
-      title: 'Identifier Key',
-      description:
-        'The identifier key belonging to the identity associated with this agent.',
+    identity_ids: {
+      items: {
+        type: 'string',
+      },
+      type: 'array',
+      title: 'Identity Ids',
+      description: 'The ids of the identities associated with this agent.',
+      default: [],
     },
     message_buffer_autoclear: {
       type: 'boolean',
@@ -3145,18 +3141,20 @@ export const $CreateAgentRequest = {
       title: 'Base Template Id',
       description: 'The base template id of the agent.',
     },
-    identifier_key: {
+    identity_ids: {
       anyOf: [
         {
-          type: 'string',
+          items: {
+            type: 'string',
+          },
+          type: 'array',
         },
         {
           type: 'null',
         },
       ],
-      title: 'Identifier Key',
-      description:
-        'The identifier key belonging to the identity associated with this agent.',
+      title: 'Identity Ids',
+      description: 'The ids of the identities associated with this agent.',
     },
     message_buffer_autoclear: {
       type: 'boolean',
@@ -3766,18 +3764,38 @@ export const $Identity = {
       title: 'Project Id',
       description: 'The project id of the identity, if applicable.',
     },
-    agents: {
+    agent_ids: {
       items: {
-        $ref: '#/components/schemas/AgentState',
+        type: 'string',
       },
       type: 'array',
-      title: 'Agents',
-      description: 'The agents associated with the identity.',
+      title: 'Agent Ids',
+      description: 'The IDs of the agents associated with the identity.',
+    },
+    organization_id: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Organization Id',
+      description: 'The organization id of the user',
+    },
+    properties: {
+      items: {
+        $ref: '#/components/schemas/IdentityProperty',
+      },
+      type: 'array',
+      title: 'Properties',
+      description: 'List of properties associated with the identity',
     },
   },
   additionalProperties: false,
   type: 'object',
-  required: ['identifier_key', 'name', 'identity_type', 'agents'],
+  required: ['identifier_key', 'name', 'identity_type', 'agent_ids'],
   title: 'Identity',
 } as const;
 
@@ -3824,11 +3842,73 @@ export const $IdentityCreate = {
       title: 'Agent Ids',
       description: 'The agent ids that are associated with the identity.',
     },
+    properties: {
+      anyOf: [
+        {
+          items: {
+            $ref: '#/components/schemas/IdentityProperty',
+          },
+          type: 'array',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Properties',
+      description: 'List of properties associated with the identity.',
+    },
   },
   additionalProperties: false,
   type: 'object',
   required: ['identifier_key', 'name', 'identity_type'],
   title: 'IdentityCreate',
+} as const;
+
+export const $IdentityProperty = {
+  properties: {
+    key: {
+      type: 'string',
+      title: 'Key',
+      description: 'The key of the property',
+    },
+    value: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'integer',
+        },
+        {
+          type: 'number',
+        },
+        {
+          type: 'boolean',
+        },
+        {
+          type: 'object',
+        },
+      ],
+      title: 'Value',
+      description: 'The value of the property',
+    },
+    type: {
+      $ref: '#/components/schemas/IdentityPropertyType',
+      description: 'The type of the property',
+    },
+  },
+  additionalProperties: false,
+  type: 'object',
+  required: ['key', 'value', 'type'],
+  title: 'IdentityProperty',
+  description: 'A property of an identity',
+} as const;
+
+export const $IdentityPropertyType = {
+  type: 'string',
+  enum: ['string', 'number', 'boolean', 'json'],
+  title: 'IdentityPropertyType',
+  description: 'Enum to represent the type of the identity property.',
 } as const;
 
 export const $IdentityType = {
@@ -3840,6 +3920,18 @@ export const $IdentityType = {
 
 export const $IdentityUpdate = {
   properties: {
+    identifier_key: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Identifier Key',
+      description: 'External, user-generated identifier key of the identity.',
+    },
     name: {
       anyOf: [
         {
@@ -3877,6 +3969,21 @@ export const $IdentityUpdate = {
       ],
       title: 'Agent Ids',
       description: 'The agent ids that are associated with the identity.',
+    },
+    properties: {
+      anyOf: [
+        {
+          items: {
+            $ref: '#/components/schemas/IdentityProperty',
+          },
+          type: 'array',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Properties',
+      description: 'List of properties associated with the identity.',
     },
   },
   additionalProperties: false,
@@ -6978,18 +7085,20 @@ export const $UpdateAgent = {
       title: 'Base Template Id',
       description: 'The base template id of the agent.',
     },
-    identifier_key: {
+    identity_ids: {
       anyOf: [
         {
-          type: 'string',
+          items: {
+            type: 'string',
+          },
+          type: 'array',
         },
         {
           type: 'null',
         },
       ],
-      title: 'Identifier Key',
-      description:
-        'The identifier key belonging to the identity associated with this agent.',
+      title: 'Identity Ids',
+      description: 'The ids of the identities associated with this agent.',
     },
     message_buffer_autoclear: {
       anyOf: [

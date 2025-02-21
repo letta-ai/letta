@@ -1632,3 +1632,29 @@ paths:
                     project="project",
                     template_version="template_version",
                 )
+  /v1/identities/:
+    get:
+      x-fern-sdk-group-name:
+        - identities
+      x-fern-sdk-method-name: list
+    post:
+      x-fern-sdk-group-name:
+        - identities
+      x-fern-sdk-method-name: create
+    put:
+      x-fern-sdk-group-name:
+        - identities
+      x-fern-sdk-method-name: upsert
+  /v1/identities/{identity_id}:
+    get:
+      x-fern-sdk-group-name:
+        - identities
+      x-fern-sdk-method-name: retrieve
+    patch:
+      x-fern-sdk-group-name:
+        - identities
+      x-fern-sdk-method-name: modify
+    delete:
+      x-fern-sdk-group-name:
+        - identities
+      x-fern-sdk-method-name: delete
