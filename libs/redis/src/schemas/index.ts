@@ -3,6 +3,7 @@ import type { ZodType } from 'zod';
 import {
   db,
   inferenceModelsMetadata,
+  lettaAPIKeys,
   organizationCredits,
   organizations,
   stepCostSchemaTable,
@@ -188,6 +189,54 @@ const coreOrganizationIdToOrganizationIdDefinition =
     output: z.object({ organizationId: z.string() }),
   });
 
+const apiKeysDefinition = generateDefinitionSatisfies({
+  baseKey: 'apiKeys',
+  input: z.object({ apiKey: z.string(), organizationId: z.string() }),
+  getKey: (args) => `apiKeys:${args.apiKey}`,
+  output: z.object({
+    userId: z.string(),
+    organizationId: z.string(),
+    coreUserId: z.string(),
+  }),
+  populateOnMissFn: async (args) => {
+    const key = await db.query.lettaAPIKeys.findFirst({
+      where: and(
+        eq(lettaAPIKeys.apiKey, args.apiKey),
+        eq(lettaAPIKeys.organizationId, args.organizationId),
+      ),
+      columns: {
+        organizationId: true,
+        coreUserId: true,
+        userId: true,
+      },
+      with: {
+        organization: {
+          columns: {
+            enabledCloudAt: true,
+          },
+        },
+      },
+    });
+
+    if (!key) {
+      return null;
+    }
+
+    if (!key.organization.enabledCloudAt) {
+      return null;
+    }
+
+    return {
+      expiresAt: 0,
+      data: {
+        userId: key.userId,
+        organizationId: key.organizationId,
+        coreUserId: key.coreUserId,
+      },
+    };
+  },
+});
+
 export const redisDefinitions = {
   userSession: userSessionDefinition,
   organizationRateLimitsPerModel: organizationRateLimitsPerModelDefinition,
@@ -201,6 +250,7 @@ export const redisDefinitions = {
   stepCostSchema: stepCostSchemaDefinition,
   modelNameAndEndpointToIdMap: modelNameAndEndpointToIdMapDefinition,
   transactionLock: transactionLockDefinition,
+  apiKeys: apiKeysDefinition,
 } satisfies Record<
   string,
   RedisDefinition<

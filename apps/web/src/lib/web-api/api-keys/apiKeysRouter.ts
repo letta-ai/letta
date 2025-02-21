@@ -7,6 +7,7 @@ import type { ServerInferRequest, ServerInferResponses } from '@ts-rest/core';
 import type { contracts } from '$web/web-api/contracts';
 import { and, eq, isNull } from 'drizzle-orm';
 import { ApplicationServices } from '@letta-cloud/rbac';
+import { deleteRedisData } from '@letta-cloud/redis';
 
 type CreateAPIKeyPayload = ServerInferRequest<
   typeof contracts.apiKeys.createAPIKey
@@ -125,6 +126,26 @@ export async function deleteAPIKey(
       body: null,
     };
   }
+
+  const existingKey = await db.query.lettaAPIKeys.findFirst({
+    where: and(
+      eq(lettaAPIKeys.id, apiKeyId),
+      eq(lettaAPIKeys.organizationId, organizationId),
+      isNull(lettaAPIKeys.deletedAt),
+    ),
+  });
+
+  if (!existingKey) {
+    return {
+      status: 404,
+      body: null,
+    };
+  }
+
+  await deleteRedisData('apiKeys', {
+    apiKey: existingKey.apiKey,
+    organizationId,
+  });
 
   await db
     .delete(lettaAPIKeys)

@@ -1,7 +1,6 @@
-import { db, lettaAPIKeys } from '@letta-cloud/database';
-import { and, eq, isNull } from 'drizzle-orm';
 import { parseAccessToken } from '$web/server/auth/lib/parseAccessToken/parseAccessToken';
 import { backfillCoreUserIdToApiKeyFn } from '$web/server/auth';
+import { getRedisData } from '@letta-cloud/redis';
 
 export async function verifyAndReturnAPIKeyDetails(apiKey?: string) {
   if (!apiKey) {
@@ -17,31 +16,12 @@ export async function verifyAndReturnAPIKeyDetails(apiKey?: string) {
     return null;
   }
 
-  const key = await db.query.lettaAPIKeys.findFirst({
-    where: and(
-      eq(lettaAPIKeys.apiKey, apiKey),
-      eq(lettaAPIKeys.organizationId, organizationId),
-      isNull(lettaAPIKeys.deletedAt),
-    ),
-    columns: {
-      organizationId: true,
-      coreUserId: true,
-      userId: true,
-    },
-    with: {
-      organization: {
-        columns: {
-          enabledCloudAt: true,
-        },
-      },
-    },
+  const key = await getRedisData('apiKeys', {
+    apiKey: apiKey,
+    organizationId: organizationId,
   });
 
   if (!key) {
-    return null;
-  }
-
-  if (!key.organization.enabledCloudAt) {
     return null;
   }
 
