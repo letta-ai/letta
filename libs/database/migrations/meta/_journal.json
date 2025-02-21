@@ -414,6 +414,13 @@
       "when": 1740077123943,
       "tag": "0058_rainy_makkari",
       "breakpoints": true
+    },
+    {
+      "idx": 59,
+      "version": "7",
+      "when": 1740090740746,
+      "tag": "0059_colossal_hannibal_king",
+      "breakpoints": true
     }
   ]
 }

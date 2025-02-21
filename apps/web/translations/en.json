@@ -523,7 +523,6 @@
         "label": "Role",
         "placeholder": "Select a role"
       },
-
       "errors": {
         "default": "There was an error adding the invite rule, please try again or contact support.",
         "ruleAlreadyExists": "This rule already exists, please choose another domain",
@@ -622,7 +621,6 @@
         "read": "View API keys"
       }
     },
-
     "UpdateMemberRoleDialog": {
       "trigger": "Update role",
       "title": "Update member role",
@@ -693,7 +691,6 @@
       "emptyError": "There should always be at least one member in the organization (you), please contact support.",
       "loading": "Loading members..."
     },
-
     "DeleteMemberDialog": {
       "error": "There was an error removing this member, please try again or contact support.",
       "title": "Remove member",
@@ -893,7 +890,6 @@
         "new": "New data source",
         "main": "Data sources"
       },
-
       "tools": "Tools",
       "agentSimulator": "Simulator",
       "archivalMemories": "Archival Memories",
@@ -1157,7 +1153,6 @@
     "goodAfternoon": "Good afternoon, {firstName} ☀\uFE0F",
     "goodEvening": "Good evening, {firstName} \uD83C\uDF15"
   },
-
   "projects/hooks": {
     "remoteDevelopment": "Self-hosted"
   },
@@ -1392,11 +1387,57 @@
   },
   "login/LoginComponent": {
     "title": "Sign in to Letta Cloud",
+    "corporateLogin": "Enterprise options:",
+    "loginWithPassword": "Sign in with password",
     "google": "Continue with Google",
     "github": "Continue with GitHub",
     "terms": "By clicking the button above, you agree to our <terms>Terms of Service</terms> and <privacy>Privacy Policy</privacy>."
   },
+  "password-login": {
+    "title": "Sign in to Letta Cloud",
+    "password": {
+      "label": "Password",
+      "placeholder": "···················"
+    },
+    "email": {
+      "label": "Email",
+      "placeholder": "email@email.com"
+    },
+    "submit": "Sign in",
+    "errors": {
+      "default": "There was an error signing in, please try again or contact support",
+      "invalidPassword": "Invalid password"
+    }
+  },
   "signup-via-invite": {
+    "emailSignup": "Sign up with email",
+    "oauthSignup": "Go back",
+    "EmailRegistration": {
+      "name": {
+        "label": "Display name",
+        "placeholder": "Your name"
+      },
+      "errors": {
+        "passwordMismatch": "Passwords do not match",
+        "passwordMinLength": "Password must be at least 6 characters",
+        "invalidInviteCode": "The invite code you are using is invalid, please contact the organization administrator for a new invite link.",
+        "emailAlreadyTaken": "This email is already in use, please contact support if you cannot access your account",
+        "default": "There was an error creating your account, please try again or contact support"
+      },
+      "email": {
+        "label": "Email",
+        "placeholder": "email@email.com"
+      },
+      "password": {
+        "label": "Password",
+        "placeholder": "···················"
+      },
+      "confirmPassword": {
+        "label": "Confirm password",
+        "placeholder": "···················"
+      },
+      "submit": "Create account"
+    },
     "errors": {
       "expired": "This invite link has expired, please contact the organization administrator for a new invite link.",
       "mismatch": "The email address you are using does not match the one on the invite. Please sign in with the correct email address.",

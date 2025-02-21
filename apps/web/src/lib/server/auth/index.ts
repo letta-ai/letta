@@ -12,3 +12,4 @@ export * from './lib/verifyAndReturnAPIKeyDetails/verifyAndReturnAPIKeyDetails';
 
 export * from './lib/signInUserFromProviderLogin/signInUserFromProviderLogin';
 export * from './lib/generateOAuthStateUrl/generateOAuthStateUrl';
+export * from './lib/password/password';

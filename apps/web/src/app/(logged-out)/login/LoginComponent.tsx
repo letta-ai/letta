@@ -1,5 +1,11 @@
 'use client';
-import { Typography, VStack, Logo } from '@letta-cloud/component-library';
+import {
+  Typography,
+  VStack,
+  Logo,
+  Button,
+  KeyIcon,
+} from '@letta-cloud/component-library';
 import { Suspense } from 'react';
 import { useMemo } from 'react';
 import { useCallback, useRef } from 'react';
@@ -74,6 +80,16 @@ export function LoginComponent() {
             </Typography>
           </VStack>
           <OAuthButtons spinOnClick={spinOnClick} searchParams={searchParams} />
+          <VStack paddingX="small">
+            <Typography variant="body3">{t('corporateLogin')}</Typography>
+            <Button
+              label={t('loginWithPassword')}
+              fullWidth
+              preIcon={<KeyIcon />}
+              color="secondary"
+              href="/login/password"
+            />
+          </VStack>
           <Typography variant="body3">
             {t.rich('terms', {
               terms: (chunks) => (

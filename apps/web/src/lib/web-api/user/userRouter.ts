@@ -4,12 +4,21 @@ import type {
   updateActiveOrganizationContract,
   userContract,
 } from '$web/web-api/contracts';
-import { deleteUser, getUser } from '$web/server/auth';
+import {
+  deleteUser,
+  getUser,
+  hashPassword,
+  signInUserFromProviderLogin,
+  signOutUser,
+  verifyPassword,
+} from '$web/server/auth';
 import {
   db,
+  organizationInvitedUsers,
   organizations,
   organizationUsers,
   userMarketingDetails,
+  userPassword,
   users,
 } from '@letta-cloud/database';
 import { and, eq, inArray, isNull } from 'drizzle-orm';
@@ -325,6 +334,151 @@ async function setUserAsOnboarded(
   };
 }
 
+type CreateAccountWithPasswordResponse = ServerInferResponses<
+  typeof contracts.user.createAccountWithPassword
+>;
+
+type CreateAccountWithPasswordRequest = ServerInferRequest<
+  typeof contracts.user.createAccountWithPassword
+>;
+
+async function createAccountWithPassword(
+  req: CreateAccountWithPasswordRequest,
+): Promise<CreateAccountWithPasswordResponse> {
+  const { email, password, name, inviteCode } = req.body;
+
+  const invitedUserList = await db.query.organizationInvitedUsers.findFirst({
+    where: and(
+      eq(organizationInvitedUsers.email, email),
+      eq(organizationInvitedUsers.inviteCode, inviteCode),
+    ),
+  });
+
+  if (!invitedUserList) {
+    return {
+      status: 404,
+      body: {
+        errorCode: 'invalidInviteCode',
+      },
+    };
+  }
+
+  const existingUser = await db.query.users.findFirst({
+    where: eq(users.email, email),
+  });
+
+  if (existingUser) {
+    return {
+      status: 400,
+      body: {
+        errorCode: 'emailAlreadyTaken',
+      },
+    };
+  }
+
+  const { isNewUser, user } = await signInUserFromProviderLogin({
+    name,
+    email,
+    provider: 'email',
+    uniqueId: `${email}-password`,
+    imageUrl: '',
+    skipOnboarding: false,
+  });
+
+  if (!isNewUser) {
+    await signOutUser();
+
+    return {
+      status: 400,
+      body: {
+        errorCode: 'emailAlreadyTaken',
+      },
+    };
+  }
+
+  const { hash, salt } = hashPassword(password);
+
+  await db.insert(userPassword).values({
+    userId: user.id,
+    password: hash,
+    salt,
+  });
+
+  return {
+    status: 200,
+    body: {
+      success: true,
+    },
+  };
+}
+
+type LoginWithPasswordResponse = ServerInferResponses<
+  typeof contracts.user.loginWithPassword
+>;
+
+type LoginWithPasswordRequest = ServerInferRequest<
+  typeof contracts.user.loginWithPassword
+>;
+
+async function loginWithPassword(
+  req: LoginWithPasswordRequest,
+): Promise<LoginWithPasswordResponse> {
+  const { email, password } = req.body;
+
+  const user = await db.query.users.findFirst({
+    where: eq(users.email, email),
+  });
+
+  if (!user) {
+    return {
+      status: 400,
+      body: {
+        errorCode: 'invalidPassword',
+      },
+    };
+  }
+
+  const userPasswordResponse = await db.query.userPassword.findFirst({
+    where: eq(userPassword.userId, user.id),
+  });
+
+  if (!userPasswordResponse) {
+    return {
+      status: 400,
+      body: {
+        errorCode: 'invalidPassword',
+      },
+    };
+  }
+
+  const { password: hash, salt } = userPasswordResponse;
+
+  if (!verifyPassword(password, salt, hash)) {
+    return {
+      status: 400,
+      body: {
+        errorCode: 'invalidPassword',
+      },
+    };
+  }
+
+  await signInUserFromProviderLogin({
+    name: user.name,
+    email: user.email,
+    provider: 'email',
+    uniqueId: `${user.email}-password`,
+    imageUrl: '',
+    skipOnboarding: false,
+  });
+
+  return {
+    status: 200,
+    body: {
+      success: true,
+    },
+  };
+}
+
 export const userRouter = {
   getCurrentUser,
   updateCurrentUser,
@@ -332,4 +486,6 @@ export const userRouter = {
   updateActiveOrganization,
   setUserAsOnboarded,
   deleteCurrentUser,
+  createAccountWithPassword,
+  loginWithPassword,
 };

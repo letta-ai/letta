@@ -328,12 +328,14 @@ async function updateExistingUser(args: UpdateExistingUserArgs) {
 interface FindOrCreateUserAndOrganizationFromProviderLoginResponse {
   user: UserSession;
   newUserDetails: NewUserDetails | undefined;
+  isNewUser: boolean;
 }
 
 async function findOrCreateUserAndOrganizationFromProviderLogin(
   userData: ProviderUserPayload,
 ): Promise<FindOrCreateUserAndOrganizationFromProviderLoginResponse> {
   let newUserDetails: NewUserDetails | undefined;
+  let isNewUser = false;
 
   // normalize email
   userData.email = userData.email.toLowerCase();
@@ -351,8 +353,6 @@ async function findOrCreateUserAndOrganizationFromProviderLogin(
   if (userWithSameEmail && userWithSameEmail.providerId !== userData.uniqueId) {
     throw new Error(LoginErrorsEnum.EMAIL_ALREADY_EXISTS);
   }
-
-  let isNewUser = false;
 
   if (!user) {
     isNewUser = true;
@@ -413,6 +413,7 @@ async function findOrCreateUserAndOrganizationFromProviderLogin(
       name: user.name,
     },
     newUserDetails,
+    isNewUser,
   };
 }
 
@@ -420,13 +421,14 @@ const SESSION_EXPIRY_MS = 31536000000; // one year
 
 interface SignInUserFromProviderLoginResponse {
   newUserDetails: NewUserDetails | undefined;
+  isNewUser: boolean;
   user: UserSession;
 }
 
 export async function signInUserFromProviderLogin(
   userData: ProviderUserPayload,
 ): Promise<SignInUserFromProviderLoginResponse> {
-  const { user, newUserDetails } =
+  const { user, isNewUser, newUserDetails } =
     await findOrCreateUserAndOrganizationFromProviderLogin(userData);
 
   const sessionId = crypto.randomUUID();
@@ -449,6 +451,7 @@ export async function signInUserFromProviderLogin(
   );
 
   return {
+    isNewUser,
     newUserDetails,
     user,
   };

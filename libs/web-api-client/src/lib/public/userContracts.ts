@@ -120,6 +120,46 @@ export const setUserAsOnboardedContract = c.mutation({
   },
 });
 
+const CreateUserWithPasswordSchema = z.object({
+  name: z.string(),
+  email: z.string(),
+  password: z.string(),
+  inviteCode: z.string(),
+});
+
+const createAccountWithPasswordContract = c.mutation({
+  path: '/user/new',
+  method: 'POST',
+  body: CreateUserWithPasswordSchema,
+  responses: {
+    201: z.object({
+      success: z.boolean(),
+    }),
+    400: z.object({
+      errorCode: z.enum(['emailAlreadyTaken', 'invalidInviteCode']),
+    }),
+  },
+});
+
+const LoginWithPasswordSchema = z.object({
+  email: z.string(),
+  password: z.string(),
+});
+
+const loginWithPasswordContract = c.mutation({
+  path: '/user/login',
+  method: 'POST',
+  body: LoginWithPasswordSchema,
+  responses: {
+    200: z.object({
+      success: z.boolean(),
+    }),
+    400: z.object({
+      errorCode: z.enum(['invalidPassword']),
+    }),
+  },
+});
+
 export const userContract = c.router({
   getCurrentUser: getUserContract,
   updateCurrentUser: updateCurrentUserContract,
@@ -127,6 +167,8 @@ export const userContract = c.router({
   updateActiveOrganization: updateActiveOrganizationContract,
   deleteCurrentUser: deleteCurrentUserCurrent,
   setUserAsOnboarded: setUserAsOnboardedContract,
+  createAccountWithPassword: createAccountWithPasswordContract,
+  loginWithPassword: loginWithPasswordContract,
 });
 
 export const userQueryClientKeys = {

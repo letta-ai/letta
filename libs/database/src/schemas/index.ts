@@ -127,6 +127,30 @@ export const userRelations = relations(users, ({ many, one }) => ({
     fields: [users.id],
     references: [userMarketingDetails.userId],
   }),
+  userPassword: one(userPassword, {
+    fields: [users.id],
+    references: [userPassword.userId],
+  }),
+}));
+
+export const userPassword = pgTable('user_password', {
+  userId: text('user_id')
+    .notNull()
+    .references(() => users.id, { onDelete: 'cascade' })
+    .primaryKey(),
+  password: text('password').notNull(),
+  salt: text('salt').notNull(),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  updatedAt: timestamp('updated_at')
+    .notNull()
+    .$onUpdate(() => new Date()),
+});
+
+export const userPasswordRelations = relations(userPassword, ({ one }) => ({
+  user: one(users, {
+    fields: [userPassword.userId],
+    references: [users.id],
+  }),
 }));
 
 export const userMarketingDetails = pgTable('user_marketing_details', {
