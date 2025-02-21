@@ -30,9 +30,9 @@ import { useQueryClient } from '@tanstack/react-query';
 function CostSimulator() {
   const t = useTranslations('organization/costs');
   const [modelId, setModelId] = useState<string | undefined>(undefined);
-  const [estimatedRequests, setEstimatedRequests] = useState<number>(10);
+  const [estimatedRequests, setEstimatedRequests] = useState<string>('10');
   const [estimatedContextWindowSize, setEstimatedContextWindowSize] =
-    useState<number>(8000);
+    useState<string>('8000');
 
   const [estimatedCost, setEstimatedCost] = useState<
     number | 'not-supported' | undefined
@@ -65,7 +65,7 @@ function CostSimulator() {
       .sort(([a], [b]) => parseInt(a, 10) - parseInt(b, 10))
       .find(
         ([windowSize]) =>
-          parseInt(windowSize, 10) >= estimatedContextWindowSize,
+          parseInt(windowSize, 10) >= parseInt(estimatedContextWindowSize, 10),
       );
 
     if (!contextWindowPriceToUse) {
@@ -75,7 +75,7 @@ function CostSimulator() {
 
     const [_, cost] = contextWindowPriceToUse;
 
-    setEstimatedCost(cost * estimatedRequests);
+    setEstimatedCost(cost * parseInt(estimatedRequests, 10));
   }, [modelId, selectedModel, estimatedRequests, estimatedContextWindowSize]);
 
   const { formatNumber } = useNumberFormatter();
@@ -130,7 +130,7 @@ function CostSimulator() {
               value={estimatedRequests}
               fullWidth
               onChange={(e) => {
-                setEstimatedRequests(parseInt(e.target.value, 10));
+                setEstimatedRequests(e.target.value);
               }}
             />
             <RawInput
@@ -146,7 +146,7 @@ function CostSimulator() {
               fullWidth
               postIcon={t('CostSimulator.tokens')}
               onChange={(e) => {
-                setEstimatedContextWindowSize(parseInt(e.target.value, 10));
+                setEstimatedContextWindowSize(e.target.value);
               }}
             />
           </HStack>
