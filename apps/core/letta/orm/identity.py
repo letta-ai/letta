@@ -2,7 +2,7 @@ import uuid
 from typing import List, Optional
 
 from sqlalchemy import String, UniqueConstraint
-from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy.dialects.postgresql import JSON
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from letta.orm.mixins import OrganizationMixin
@@ -21,7 +21,7 @@ class Identity(SqlalchemyBase, OrganizationMixin):
             "identifier_key",
             "project_id",
             "organization_id",
-            name="unique_identifier_without_project",
+            name="unique_identifier_key_project_id_organization_id",
             postgresql_nulls_not_distinct=True,
         ),
     )
@@ -32,7 +32,7 @@ class Identity(SqlalchemyBase, OrganizationMixin):
     identity_type: Mapped[str] = mapped_column(nullable=False, doc="The type of the identity.")
     project_id: Mapped[Optional[str]] = mapped_column(nullable=True, doc="The project id of the identity.")
     properties: Mapped[List["IdentityProperty"]] = mapped_column(
-        JSONB, nullable=False, default=list, doc="List of properties associated with the identity"
+        JSON, nullable=False, default=list, doc="List of properties associated with the identity"
     )
 
     # relationships
