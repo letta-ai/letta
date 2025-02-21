@@ -112,13 +112,12 @@ def _assert_valid_chunk(chunk, idx, chunks):
 
 
 @pytest.mark.parametrize("message", ["Tell me something interesting about bananas."])
-def test_chat_completions_streaming(mock_e2b_api_key_none, client, agent, message):
+@pytest.mark.parametrize("endpoint", ["chat/completions", "fast/chat/completions"])
+def test_chat_completions_streaming(mock_e2b_api_key_none, client, agent, message, endpoint):
     """Tests chat completion streaming via SSE."""
     request = _get_chat_request(agent.id, message)
 
-    response = _sse_post(
-        f"{client.base_url}/openai/{client.api_prefix}/chat/completions", request.model_dump(exclude_none=True), client.headers
-    )
+    response = _sse_post(f"{client.base_url}/openai/{client.api_prefix}/{endpoint}", request.model_dump(exclude_none=True), client.headers)
 
     try:
         chunks = list(response)
