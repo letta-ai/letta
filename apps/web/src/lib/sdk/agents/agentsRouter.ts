@@ -71,7 +71,7 @@ async function createAgent(
     ...agent
   } = req.body;
 
-  const projectSlug = context.request.headers['x-project'] ?? project;
+  const projectSlug = context.request.headers?.['x-project'] ?? project;
 
   if (template) {
     return {
