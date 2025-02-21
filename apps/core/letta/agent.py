@@ -750,7 +750,6 @@ class Agent(BaseAgent):
         put_inner_thoughts_first: bool = True,
     ) -> AgentStepResponse:
         """Runs a single step in the agent loop (generates at most one LLM call)"""
-
         try:
 
             # Extract job_id from metadata if present

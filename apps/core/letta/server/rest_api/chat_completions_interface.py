@@ -161,10 +161,7 @@ class ChatCompletionsStreamingInterface(AgentChunkStreamingInterface):
         Called externally with a ChatCompletionChunkResponse. Transforms
         it if necessary, then enqueues partial messages for streaming back.
         """
-        # print(chunk)
         processed_chunk = self._process_chunk_to_openai_style(chunk)
-        # print(processed_chunk)
-        # print("++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++")
         if processed_chunk is not None:
             self._push_to_buffer(processed_chunk)
 
