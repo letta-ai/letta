@@ -1,7 +1,7 @@
 import uuid
 from typing import TYPE_CHECKING, List, Optional
 
-from sqlalchemy import JSON, Boolean, ForeignKey, Index, String
+from sqlalchemy import JSON, Boolean, Index, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from letta.orm.block import Block
@@ -61,14 +61,6 @@ class Agent(SqlalchemyBase, OrganizationMixin):
     template_id: Mapped[Optional[str]] = mapped_column(String, nullable=True, doc="The id of the template the agent belongs to.")
     base_template_id: Mapped[Optional[str]] = mapped_column(String, nullable=True, doc="The base template id of the agent.")
 
-    # Identity
-    identity_id: Mapped[Optional[str]] = mapped_column(
-        String, ForeignKey("identities.id", ondelete="CASCADE"), nullable=True, doc="The id of the identity the agent belongs to."
-    )
-    identifier_key: Mapped[Optional[str]] = mapped_column(
-        String, nullable=True, doc="The identifier key of the identity the agent belongs to."
-    )
-
     # Tool rules
     tool_rules: Mapped[Optional[List[ToolRule]]] = mapped_column(ToolRulesColumn, doc="the tool rules for this agent.")
 
@@ -79,7 +71,6 @@ class Agent(SqlalchemyBase, OrganizationMixin):
 
     # relationships
     organization: Mapped["Organization"] = relationship("Organization", back_populates="agents")
-    identity: Mapped["Identity"] = relationship("Identity", back_populates="agents")
     tool_exec_environment_variables: Mapped[List["AgentEnvironmentVariable"]] = relationship(
         "AgentEnvironmentVariable",
         back_populates="agent",
@@ -130,7 +121,13 @@ class Agent(SqlalchemyBase, OrganizationMixin):
         viewonly=True,  # Ensures SQLAlchemy doesn't attempt to manage this relationship
         doc="All passages derived created by this agent.",
     )
-    identity: Mapped[Optional["Identity"]] = relationship("Identity", back_populates="agents")
+    identities: Mapped[List["Identity"]] = relationship(
+        "Identity",
+        secondary="identities_agents",
+        lazy="selectin",
+        back_populates="agents",
+        passive_deletes=True,
+    )
 
     def to_pydantic(self) -> PydanticAgentState:
         """converts to the basic pydantic model counterpart"""
@@ -160,6 +157,7 @@ class Agent(SqlalchemyBase, OrganizationMixin):
             "project_id": self.project_id,
             "template_id": self.template_id,
             "base_template_id": self.base_template_id,
+            "identity_ids": [identity.id for identity in self.identities],
             "message_buffer_autoclear": self.message_buffer_autoclear,
         }
 

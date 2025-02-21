@@ -11,7 +11,6 @@ from letta.orm.errors import NoResultFound
 from letta.prompts import gpt_system
 from letta.schemas.agent import AgentState, AgentType
 from letta.schemas.enums import MessageRole
-from letta.schemas.identity import Identity
 from letta.schemas.memory import Memory
 from letta.schemas.message import Message, MessageCreate, TextContent
 from letta.schemas.tool_rule import ToolRule
@@ -83,20 +82,6 @@ def _process_tags(agent: AgentModel, tags: List[str], replace=True):
     else:
         existing_tags = {t.tag for t in agent.tags}
         agent.tags.extend([tag for tag in new_tags if tag.tag not in existing_tags])
-
-
-def _process_identity(agent: AgentModel, identifier_key: str, identity: Identity):
-    """
-    Handles identity for an agent.
-
-    Args:
-        agent: The AgentModel instance.
-        identifier_key: The identifier key of the identity to set or update.
-        identity: The Identity object to set or update.
-    """
-    agent.identifier_key = identifier_key
-    agent.identity = identity
-    agent.identity_id = identity.id
 
 
 def derive_system_message(agent_type: AgentType, system: Optional[str] = None):
