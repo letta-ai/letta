@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "letta"
-version = "0.6.31"
+version = "0.6.32"
 packages = [
     {include = "letta"},
 ]
@@ -78,15 +78,15 @@ e2b-code-interpreter = {version = "^1.0.3", optional = true}
 anthropic = "^0.43.0"
 letta_client = "^0.1.23"
 openai = "^1.60.0"
-opentelemetry-api = "1.30.0"
-opentelemetry-sdk = "1.30.0"
-opentelemetry-instrumentation-requests = "0.51b0"
-opentelemetry-exporter-otlp = "1.30.0"
 google-genai = {version = "^1.1.0", optional = true}
 faker = "^36.1.0"
 colorama = "^0.4.6"
 marshmallow-sqlalchemy = "^1.4.1"
 boto3 = {version = "^1.36.24", optional = true}
+opentelemetry-api = "^1.30.0"
+opentelemetry-sdk = "^1.30.0"
+opentelemetry-instrumentation-requests = "^0.51b0"
+opentelemetry-exporter-otlp = "^1.30.0"
 
 
 [tool.poetry.extras]
@@ -99,8 +99,7 @@ external-tools = ["docker", "langchain", "wikipedia", "langchain-community"]
 tests = ["wikipedia"]
 bedrock = ["boto3"]
 google = ["google-genai"]
-telemetry = ["opentelemetry-api", "opentelemetry-sdk", "opentelemetry-instrumentation-requests", "opentelemetry-exporter-otlp"]
-all = ["pgvector", "pg8000", "psycopg2-binary", "psycopg2", "pytest", "pytest-asyncio", "pexpect", "black", "pre-commit", "datasets", "pyright", "pytest-order", "autoflake", "isort", "websockets", "fastapi", "uvicorn", "docker", "langchain", "wikipedia", "langchain-community", "locust", "boto3", "google-genai", "opentelemetry-api", "opentelemetry-sdk", "opentelemetry-instrumentation-requests", "opentelemetry-exporter-otlp"]
+all = ["pgvector", "pg8000", "psycopg2-binary", "psycopg2", "pytest", "pytest-asyncio", "pexpect", "black", "pre-commit", "datasets", "pyright", "pytest-order", "autoflake", "isort", "websockets", "fastapi", "uvicorn", "docker", "langchain", "wikipedia", "langchain-community", "locust", "boto3", "google-genai"]
 
 [tool.poetry.group.dev.dependencies]
 black = "^24.4.2"

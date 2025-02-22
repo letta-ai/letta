@@ -6860,7 +6860,7 @@ cffi = {version = ">=1.11", markers = "platform_python_implementation == \"PyPy\
 cffi = ["cffi (>=1.11)"]
 
 [extras]
-all = ["autoflake", "black", "boto3", "datasets", "docker", "fastapi", "google-genai", "isort", "langchain", "langchain-community", "locust", "opentelemetry-api", "opentelemetry-exporter-otlp", "opentelemetry-instrumentation-requests", "opentelemetry-sdk", "pexpect", "pg8000", "pgvector", "pre-commit", "psycopg2", "psycopg2-binary", "pyright", "pytest-asyncio", "pytest-order", "uvicorn", "wikipedia"]
+all = ["autoflake", "black", "boto3", "datasets", "docker", "fastapi", "google-genai", "isort", "langchain", "langchain-community", "locust", "pexpect", "pg8000", "pgvector", "pre-commit", "psycopg2", "psycopg2-binary", "pyright", "pytest-asyncio", "pytest-order", "uvicorn", "wikipedia"]
 bedrock = ["boto3"]
 cloud-tool-sandbox = ["e2b-code-interpreter"]
 dev = ["autoflake", "black", "datasets", "isort", "locust", "pexpect", "pre-commit", "pyright", "pytest-asyncio", "pytest-order"]
@@ -6869,10 +6869,9 @@ google = ["google-genai"]
 postgres = ["pg8000", "pgvector", "psycopg2", "psycopg2-binary"]
 qdrant = ["qdrant-client"]
 server = ["fastapi", "uvicorn"]
-telemetry = ["opentelemetry-api", "opentelemetry-exporter-otlp", "opentelemetry-instrumentation-requests", "opentelemetry-sdk"]
 tests = ["wikipedia"]
 
 [metadata]
 lock-version = "2.0"
 python-versions = "<3.14,>=3.10"
-content-hash = "1d5e655c9bbbce15f4bfc5e154c6128936c25bd875c31d7f68bef6842fac5a86"
+content-hash = "5a8ebe43d6b05ce4a2bf5b2fd9aa581e2b16f7bb5779903e06bbaf023d31fd18"
