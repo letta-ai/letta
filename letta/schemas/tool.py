@@ -9,7 +9,7 @@ from letta.constants import (
     LETTA_MULTI_AGENT_TOOL_MODULE_NAME,
 )
 from letta.functions.functions import derive_openai_json_schema, get_json_schema_from_module
-from letta.functions.helpers import generate_composio_action_from_func_name, generate_composio_tool_wrapper, generate_langchain_tool_wrapper
+from letta.functions.helpers import generate_composio_tool_wrapper, generate_langchain_tool_wrapper
 from letta.functions.schema_generator import generate_schema_from_args_schema_v2, generate_tool_schema_for_composio
 from letta.log import get_logger
 from letta.orm.enums import ToolType
@@ -77,18 +77,6 @@ class Tool(BaseTool):
         elif self.tool_type in {ToolType.LETTA_MULTI_AGENT_CORE}:
             # If it's letta multi-agent tool, we also generate the json_schema on the fly here
             self.json_schema = get_json_schema_from_module(module_name=LETTA_MULTI_AGENT_TOOL_MODULE_NAME, function_name=self.name)
-        elif self.tool_type == ToolType.EXTERNAL_COMPOSIO:
-            # If it is a composio tool, we generate both the source code and json schema on the fly here
-            # TODO: Deriving the composio action name is brittle, need to think long term about how to improve this
-            try:
-                composio_action = generate_composio_action_from_func_name(self.name)
-                tool_create = ToolCreate.from_composio(composio_action)
-                self.source_code = tool_create.source_code
-                self.json_schema = tool_create.json_schema
-                self.description = tool_create.description
-                self.tags = tool_create.tags
-            except Exception as e:
-                logger.error(f"Encountered exception while attempting to refresh source_code and json_schema for composio_tool: {e}")
 
         # At this point, we need to validate that at least json_schema is populated
         if not self.json_schema:
