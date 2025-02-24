@@ -708,8 +708,8 @@ paths:
     get:
       x-fern-sdk-group-name:
         - agents
-        - core_memory
-      x-fern-sdk-method-name: list_blocks
+        - blocks
+      x-fern-sdk-method-name: list
       parameters:
         - name: agent_id
           in: path
@@ -723,7 +723,7 @@ paths:
               import { LettaClient } from "@letta-ai/letta-client";
 
               const client = new LettaClient({ token: "YOUR_TOKEN" });
-              await client.agents.coreMemory.listBlocks("agent_id");
+              await client.agents.blocks.list("agent_id");
           - sdk: python
             code: |
               from letta_client import Letta
@@ -731,15 +731,15 @@ paths:
               client = Letta(
                   token="YOUR_TOKEN",
               )
-              client.agents.core_memory.list_blocks(
+              client.agents.blocks.list(
                   agent_id="agent_id",
               )
   /v1/agents/{agent_id}/core-memory/blocks/attach/{block_id}:
     patch:
       x-fern-sdk-group-name:
         - agents
-        - core_memory
-      x-fern-sdk-method-name: attach_block
+        - blocks
+      x-fern-sdk-method-name: attach
       parameters:
         - name: agent_id
           in: path
@@ -758,7 +758,7 @@ paths:
               import { LettaClient } from "@letta-ai/letta-client";
 
               const client = new LettaClient({ token: "YOUR_TOKEN" });
-              await client.agents.coreMemory.attachBlock("agent_id", "block_id");
+              await client.agents.blocks.attach("agent_id", "block_id");
           - sdk: python
             code: |
               from letta_client import Letta
@@ -766,7 +766,7 @@ paths:
               client = Letta(
                   token="YOUR_TOKEN",
               )
-              client.agents.core_memory.attach_block(
+              client.agents.blocks.attach(
                   agent_id="agent_id",
                   block_id="block_id",
               )
@@ -774,8 +774,8 @@ paths:
     patch:
       x-fern-sdk-group-name:
         - agents
-        - core_memory
-      x-fern-sdk-method-name: detach_block
+        - blocks
+      x-fern-sdk-method-name: detach
       parameters:
         - name: agent_id
           in: path
@@ -794,7 +794,7 @@ paths:
               import { LettaClient } from "@letta-ai/letta-client";
 
               const client = new LettaClient({ token: "YOUR_TOKEN" });
-              await client.agents.coreMemory.detachBlock("agent_id", "block_id");
+              await client.agents.blocks.detach("agent_id", "block_id");
           - sdk: python
             code: |
               from letta_client import Letta
@@ -802,7 +802,7 @@ paths:
               client = Letta(
                   token="YOUR_TOKEN",
               )
-              client.agents.core_memory.detach_block(
+              client.agents.blocks.detach(
                   agent_id="agent_id",
                   block_id="block_id",
               )
@@ -810,8 +810,8 @@ paths:
     get:
       x-fern-sdk-group-name:
         - agents
-        - core_memory
-      x-fern-sdk-method-name: retrieve_block
+        - blocks
+      x-fern-sdk-method-name: retrieve
       parameters:
         - name: agent_id
           in: path
@@ -830,7 +830,7 @@ paths:
               import { LettaClient } from "@letta-ai/letta-client";
 
               const client = new LettaClient({ token: "YOUR_TOKEN" });
-              await client.agents.coreMemory.retrieveBlock("agent_id", "block_label");
+              await client.agents.blocks.retrieve("agent_id", "block_label");
           - sdk: python
             code: |
               from letta_client import Letta
@@ -838,15 +838,15 @@ paths:
               client = Letta(
                   token="YOUR_TOKEN",
               )
-              client.agents.core_memory.retrieve_block(
+              client.agents.blocks.retrieve(
                   agent_id="agent_id",
                   block_label="block_label",
               )
     patch:
       x-fern-sdk-group-name:
         - agents
-        - core_memory
-      x-fern-sdk-method-name: modify_block
+        - blocks
+      x-fern-sdk-method-name: modify
       parameters:
         - name: agent_id
           in: path
@@ -865,7 +865,7 @@ paths:
               import { LettaClient, Letta } from "@letta-ai/letta-client";
 
               const client = new LettaClient({ token: "YOUR_TOKEN" });
-              await client.agents.coreMemory.modifyBlock("agent_id", "block_label", {});
+              await client.agents.blocks.modify("agent_id", "block_label", {});
           - sdk: python
             code: |
               from letta_client import Letta
@@ -873,7 +873,7 @@ paths:
               client = Letta(
                   token="YOUR_TOKEN",
               )
-              client.agents.core_memory.modify_block(
+              client.agents.blocks.modify(
                   agent_id="agent_id",
                   block_label="block_label",
               )
@@ -881,7 +881,7 @@ paths:
     get:
       x-fern-sdk-group-name:
         - agents
-        - archival_memory
+        - passages
       x-fern-sdk-method-name: list
       parameters:
         - name: agent_id
@@ -896,7 +896,7 @@ paths:
               import { LettaClient } from "@letta-ai/letta-client";
 
               const client = new LettaClient({ token: "YOUR_TOKEN" });
-              await client.agents.archivalMemory.list("agent_id");
+              await client.agents.passages.list("agent_id");
           - sdk: python
             code: |
               from letta_client import Letta
@@ -904,13 +904,13 @@ paths:
               client = Letta(
                   token="YOUR_TOKEN",
               )
-              client.agents.archival_memory.list(
+              client.agents.passages.list(
                   agent_id="agent_id",
               )
     post:
       x-fern-sdk-group-name:
         - agents
-        - archival_memory
+        - passages
       x-fern-sdk-method-name: create
       parameters:
         - name: agent_id
@@ -925,7 +925,7 @@ paths:
               import { LettaClient } from "@letta-ai/letta-client";
 
               const client = new LettaClient({ token: "YOUR_TOKEN" });
-              await client.agents.archivalMemory.create("agent_id", {
+              await client.agents.passages.create("agent_id", {
                 text: "text"
               });
           - sdk: python
@@ -935,7 +935,7 @@ paths:
               client = Letta(
                   token="YOUR_TOKEN",
               )
-              client.agents.archival_memory.create(
+              client.agents.passages.create(
                   agent_id="agent_id",
                   text="text",
               )
@@ -943,7 +943,7 @@ paths:
     delete:
       x-fern-sdk-group-name:
         - agents
-        - archival_memory
+        - passages
       x-fern-sdk-method-name: delete
       parameters:
         - name: agent_id
@@ -963,7 +963,7 @@ paths:
               import { LettaClient } from "@letta-ai/letta-client";
 
               const client = new LettaClient({ token: "YOUR_TOKEN" });
-              await client.agents.archivalMemory.delete("agent_id", "memory_id");
+              await client.agents.passages.delete("agent_id", "memory_id");
           - sdk: python
             code: |
               from letta_client import Letta
@@ -971,7 +971,7 @@ paths:
               client = Letta(
                   token="YOUR_TOKEN",
               )
-              client.agents.archival_memory.delete(
+              client.agents.passages.delete(
                   agent_id="agent_id",
                   memory_id="memory_id",
               )
