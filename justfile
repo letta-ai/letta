@@ -71,6 +71,8 @@ configure-kubectl:
         --set env.MIXPANEL_TOKEN="${MIXPANEL_TOKEN}" \
         --set env.NEXT_PUBLIC_MIXPANEL_TOKEN="${MIXPANEL_TOKEN}" \
         --set env.STRIPE_SECRET_KEY="${STRIPE_SECRET_KEY}" \
+        --set env.WORKOS_CLIENT_ID="${WORKOS_CLIENT_ID}" \
+        --set env.WORKOS_API_KEY="${WORKOS_API_KEY}" \
         --set env.NEXT_PUBLIC_STRIPE_PUBLISH_KEY="${NEXT_PUBLIC_STRIPE_PUBLISH_KEY}" \
         --set env.LAUNCH_DARKLY_SDK_KEY="${LAUNCH_DARKLY_SDK_KEY}" \
         --set env.SENTRY_AUTH_TOKEN="${SENTRY_AUTH_TOKEN}" \

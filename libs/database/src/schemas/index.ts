@@ -62,6 +62,16 @@ export const orgRelationsTable = relations(organizations, ({ many, one }) => ({
   organizationDevelopmentServers: many(developmentServers),
   organizationVerifiedDomains: many(organizationVerifiedDomains),
   organizationInviteRules: many(organizationInviteRules),
+  organizationCredits: one(organizationCredits, {
+    fields: [organizations.id],
+    references: [organizationCredits.organizationId],
+  }),
+  organizationBillingDetails: one(organizationBillingDetails, {
+    fields: [organizations.id],
+    references: [organizationBillingDetails.organizationId],
+  }),
+  organizationCreditTransactions: many(organizationCreditTransactions),
+  organizationSSOConfiguration: many(organizationSSOConfiguration),
 }));
 
 export const organizationPreferences = pgTable('organization_preferences', {
@@ -93,6 +103,7 @@ export const signupMethodsEnum = pgEnum('signup_methods', [
   'google',
   'email',
   'github',
+  'workos-sso',
 ]);
 
 export const users = pgTable('users', {
@@ -970,6 +981,35 @@ export const organizationVerifiedDomainsRelations = relations(
   ({ one }) => ({
     organization: one(organizations, {
       fields: [organizationVerifiedDomains.organizationId],
+      references: [organizations.id],
+    }),
+  }),
+);
+
+export const organizationSSOConfiguration = pgTable(
+  'organization_sso_configuration',
+  {
+    id: text('id')
+      .notNull()
+      .primaryKey()
+      .default(sql`gen_random_uuid()`),
+    organizationId: text('organization_id')
+      .notNull()
+      .references(() => organizations.id, { onDelete: 'cascade' })
+      .notNull(),
+    domain: text('domain').notNull().unique(),
+    workOSOrganizationId: text('workos_organization_id').notNull(),
+    updatedAt: timestamp('updated_at')
+      .notNull()
+      .$onUpdate(() => new Date()),
+  },
+);
+
+export const organizationSSOConfigurationRelations = relations(
+  organizationSSOConfiguration,
+  ({ one }) => ({
+    organization: one(organizations, {
+      fields: [organizationSSOConfiguration.organizationId],
       references: [organizations.id],
     }),
   }),

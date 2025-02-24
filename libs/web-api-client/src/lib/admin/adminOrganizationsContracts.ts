@@ -460,6 +460,78 @@ const adminAddVerifiedDomainContract = c.mutation({
   },
 });
 
+const SSOConfigurationSchema = z.object({
+  id: z.string(),
+  domain: z.string(),
+  workOSOrganizationId: z.string(),
+});
+
+const SSOCreateConfigurationSchema = z.object({
+  domain: z.string(),
+  workOSOrganizationId: z.string(),
+});
+
+const adminAddSSOConfigurationContract = c.mutation({
+  path: '/admin/organizations/:organizationId/sso-configurations',
+  method: 'POST',
+  pathParams: z.object({
+    organizationId: z.string(),
+  }),
+  body: SSOCreateConfigurationSchema,
+  responses: {
+    200: SSOConfigurationSchema,
+  },
+});
+
+const adminDeleteSSOConfigurationContract = c.mutation({
+  path: '/admin/organizations/:organizationId/sso-configurations/:ssoConfigurationId',
+  method: 'DELETE',
+  pathParams: z.object({
+    organizationId: z.string(),
+    ssoConfigurationId: z.string(),
+  }),
+  body: z.undefined(),
+  responses: {
+    200: z.object({
+      success: z.boolean(),
+    }),
+  },
+});
+
+export const ssoConfigurationSchema = z.object({
+  id: z.string(),
+  domain: z.string(),
+  workOSOrganizationId: z.string(),
+});
+
+export type SSOConfigurationType = z.infer<typeof ssoConfigurationSchema>;
+
+const SSOConfigurationListSchema = z.object({
+  configurations: ssoConfigurationSchema.array(),
+  hasNextPage: z.boolean(),
+});
+
+const AdminListSSOConfigurationsQuerySchema = z.object({
+  limit: z.number().int().positive().optional(),
+  offset: z.number().int().optional(),
+});
+
+type AdminListSSOConfigurationsQuerySchemaType = z.infer<
+  typeof AdminListSSOConfigurationsQuerySchema
+>;
+
+const adminListSSOConfigurationsContract = c.query({
+  path: '/admin/organizations/:organizationId/sso-configurations',
+  method: 'GET',
+  query: AdminListSSOConfigurationsQuerySchema,
+  pathParams: z.object({
+    organizationId: z.string(),
+  }),
+  responses: {
+    200: SSOConfigurationListSchema,
+  },
+});
+
 export const adminOrganizationsContracts = {
   getOrganizations: getOrganizationsContract,
   getOrganization: getOrganizationContract,
@@ -491,6 +563,9 @@ export const adminOrganizationsContracts = {
   adminDeleteOrganizationVerifiedDomain:
     adminDeleteOrganizationVerifiedDomainContract,
   adminAddVerifiedDomain: adminAddVerifiedDomainContract,
+  adminAddSSOConfiguration: adminAddSSOConfigurationContract,
+  adminDeleteSSOConfiguration: adminDeleteSSOConfigurationContract,
+  adminListSSOConfigurations: adminListSSOConfigurationsContract,
 };
 
 export const adminOrganizationsQueryClientKeys = {
@@ -565,5 +640,18 @@ export const adminOrganizationsQueryClientKeys = {
   adminGetOrganizationVerifiedDomains: (organizationId: string) => [
     ...adminOrganizationsQueryClientKeys.getOrganization(organizationId),
     'verified-domains',
+  ],
+  adminListSSOConfigurations: (organizationId: string) => [
+    ...adminOrganizationsQueryClientKeys.getOrganization(organizationId),
+    'sso-configurations',
+  ],
+  adminListSSOConfigurationsWithSearch: (
+    organizationId: string,
+    search: AdminListSSOConfigurationsQuerySchemaType,
+  ) => [
+    ...adminOrganizationsQueryClientKeys.adminListSSOConfigurations(
+      organizationId,
+    ),
+    search,
   ],
 };

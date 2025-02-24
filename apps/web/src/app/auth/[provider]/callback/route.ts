@@ -17,6 +17,9 @@ import {
 import { LoginErrorsEnum } from '$web/errors';
 import * as Sentry from '@sentry/node';
 import { parseInviteCode } from '$web/utils';
+import { WorkOS } from '@workos-inc/node';
+import { db, organizationSSOConfiguration } from '@letta-cloud/database';
+import { eq } from 'drizzle-orm';
 
 interface GoogleAccessTokenResponse {
   access_token: string;
@@ -64,6 +67,41 @@ async function getAccessTokenFromGithub(
   return getGithubUserDetails(accessToken);
 }
 
+async function getDetailsFromWorkOS(
+  code: string,
+): Promise<ProviderUserPayload> {
+  const workos = new WorkOS(process.env.WORKOS_API_KEY);
+
+  const { profile } = await workos.sso.getProfileAndToken({
+    code,
+    clientId: process.env.WORKOS_CLIENT_ID || '',
+  });
+
+  if (!profile.organizationId) {
+    throw new Error('Organization not found');
+  }
+
+  const org = await db.query.organizationSSOConfiguration.findFirst({
+    where: eq(
+      organizationSSOConfiguration.workOSOrganizationId,
+      profile.organizationId,
+    ),
+  });
+
+  if (!org) {
+    throw new Error('Organization not found');
+  }
+
+  return {
+    email: profile.email,
+    uniqueId: `workos-sso-${profile.id}`,
+    name: [profile.firstName, profile.lastName].filter(Boolean).join(' '),
+    imageUrl: '',
+    organizationOverride: org.organizationId,
+    provider: 'workos-sso',
+  };
+}
+
 async function getUserDetailsFromProvider(
   provider: SupportedProviders,
   code: string,
@@ -73,6 +111,8 @@ async function getUserDetailsFromProvider(
       return getAccessTokenFromGoogle(code);
     case 'github':
       return getAccessTokenFromGithub(code);
+    case 'workos-sso':
+      return getDetailsFromWorkOS(code);
     default:
       throw new Error('Unsupported provider');
   }
@@ -83,23 +123,24 @@ export async function GET(
   context: AuthProviderContextSchema,
 ) {
   try {
+    const { provider } = await context.params;
+
     const code = req.nextUrl.searchParams.get('code');
     const state = req.nextUrl.searchParams.get('state');
 
-    if (!state || !isValidCSRFState(state)) {
-      return new Response('Invalid CSRF state', { status: 400 });
+    if (provider !== 'workos-sso') {
+      if (!state || !isValidCSRFState(state)) {
+        return new Response('Invalid CSRF state', { status: 400 });
+      }
     }
 
     if (!code) {
       return new Response('No code provided', { status: 400 });
     }
 
-    const userPayload = await getUserDetailsFromProvider(
-      (await context.params).provider,
-      code,
-    );
+    const userPayload = await getUserDetailsFromProvider(provider, code);
 
-    const inviteCode = getInviteCodeFromState(state);
+    const inviteCode = getInviteCodeFromState(state || '');
 
     if (inviteCode) {
       const { email, isExpired } = parseInviteCode(inviteCode);
@@ -125,7 +166,7 @@ export async function GET(
 
     const { newUserDetails } = await signInUserFromProviderLogin(userPayload);
 
-    const redirectUrl = getRedirectUrlFromState(state);
+    const redirectUrl = getRedirectUrlFromState(state || '');
     return generateRedirectSignatureForLoggedInUser({
       newUserDetails,
       redirectUrl,

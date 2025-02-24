@@ -915,6 +915,7 @@ function OrganizationProperties() {
           </HStack>
         ),
       },
+
       {
         name: 'Total Members',
         value: (
@@ -939,6 +940,16 @@ function OrganizationProperties() {
       {
         name: 'Letta Agents Organization ID',
         value: organization.lettaAgentsId || 'None (Bugged Org)',
+      },
+      {
+        name: 'SSO Configuraton',
+        value: (
+          <Button
+            href={`/admin/organizations/${organization.id}/sso`}
+            label="Configure SSO"
+            size="small"
+          />
+        ),
       },
     ];
   }, [data?.body, isLoading, organization]);

@@ -20,6 +20,7 @@ import { starterKitsRouter } from '$web/web-api/starter-kits/starterKitsRoutes';
 import { rateLimitsRoutes } from '$web/web-api/rate-limits/rateLimitsRoutes';
 import { costsRoutes } from '$web/web-api/costs/costsRoutes';
 import { sharedAgentChatsRoutes } from '$web/web-api/shared-agent-chats/sharedAgentChatsRoutes';
+import { ssoRoutes } from '$web/web-api/sso/ssoRoutes';
 
 export const router = {
   user: userRouter,
@@ -37,6 +38,7 @@ export const router = {
   starterKits: starterKitsRouter,
   rateLimits: rateLimitsRoutes,
   sharedAgentChats: sharedAgentChatsRoutes,
+  sso: ssoRoutes,
   admin: {
     usage: adminUsageRouter,
     toolMetadata: adminToolMetadataRouter,

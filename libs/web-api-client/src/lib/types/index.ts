@@ -1,5 +1,10 @@
 import { z } from 'zod';
-export const supportedProvidersSchema = z.enum(['google', 'github', 'email']);
+export const supportedProvidersSchema = z.enum([
+  'google',
+  'github',
+  'workos-sso',
+  'email',
+]);
 
 export type SupportedProviders = z.infer<typeof supportedProvidersSchema>;
 
@@ -11,6 +16,7 @@ export interface ProviderUserPayload {
   uniqueId: string;
   imageUrl: string;
   provider: SupportedProviders;
+  organizationOverride?: string;
   skipOnboarding?: boolean;
   name: string;
 }

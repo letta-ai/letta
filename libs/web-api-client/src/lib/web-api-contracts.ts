@@ -65,6 +65,7 @@ import {
   sharedAgentChatQueryClientKeys,
   sharedAgentChatsContracts,
 } from './public/sharedAgentChatsContracts';
+import { ssoContracts } from './public/ssoContracts';
 
 export const contracts = {
   user: userContract,
@@ -82,6 +83,7 @@ export const contracts = {
   costs: costsContract,
   rateLimits: rateLimitsContracts,
   sharedAgentChats: sharedAgentChatsContracts,
+  sso: ssoContracts,
   admin: {
     usage: adminUsageContracts,
     toolMetadata: adminToolMetadataContracts,

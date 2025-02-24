@@ -1388,10 +1388,23 @@
   "login/LoginComponent": {
     "title": "Sign in to Letta Cloud",
     "corporateLogin": "Enterprise options:",
+    "loginWithSSO": "Sign in with SSO",
     "loginWithPassword": "Sign in with password",
     "google": "Continue with Google",
     "github": "Continue with GitHub",
     "terms": "By clicking the button above, you agree to our <terms>Terms of Service</terms> and <privacy>Privacy Policy</privacy>."
+  },
+  "sso-login": {
+    "title": "Sign in to Letta via SSO",
+    "email": {
+      "label": "Email",
+      "placeholder": "email@email.com"
+    },
+    "submit": "Sign in",
+    "errors": {
+      "invalidSSO": "Your email domain was not associated with a valid SSO provider, please try again or contact your organization administrator.",
+      "default": "There was an error signing in, please try again or contact support"
+    }
   },
   "password-login": {
     "title": "Sign in to Letta Cloud",

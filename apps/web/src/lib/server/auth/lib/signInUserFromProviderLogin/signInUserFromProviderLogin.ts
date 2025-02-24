@@ -74,75 +74,89 @@ async function createUserAndOrganization(
   userData: ProviderUserPayload,
   options: CreateUserAndOrganizationOptions = {},
 ): Promise<CreateUserAndOrganizationResponse> {
-  let organizationId = '';
+  let organizationId = userData.organizationOverride || '';
   let lettaOrganizationId = '';
+  let isNewOrganization = false;
   let role: UserPresetRolesType | undefined = undefined;
 
-  const invitedUserList = await db.query.organizationInvitedUsers.findMany({
-    where: eq(organizationInvitedUsers.email, userData.email),
-  });
+  if (!organizationId) {
+    // if there is no override, check if the user was invited to an organization
+    const invitedUserList = await db.query.organizationInvitedUsers.findMany({
+      where: eq(organizationInvitedUsers.email, userData.email),
+    });
 
-  let isNewOrganization = false;
+    if (invitedUserList.length > 0) {
+      await Promise.all(
+        invitedUserList.map(async (invitedUser) => {
+          organizationId = invitedUser.organizationId;
 
-  if (invitedUserList.length > 0) {
-    await Promise.all(
-      invitedUserList.map(async (invitedUser) => {
-        organizationId = invitedUser.organizationId;
+          const organization = await db.query.organizations.findFirst({
+            where: eq(organizations.id, organizationId),
+          });
 
-        const organization = await db.query.organizations.findFirst({
-          where: eq(organizations.id, organizationId),
-        });
+          if (!organization) {
+            return;
+          } else {
+            lettaOrganizationId = organization.lettaAgentsId;
+          }
 
-        if (!organization) {
-          return;
-        } else {
-          lettaOrganizationId = organization.lettaAgentsId;
-        }
-
-        // delete the invited user
-        await db
-          .delete(organizationInvitedUsers)
-          .where(eq(organizationInvitedUsers.email, userData.email));
-      }),
-    );
-  }
-
-  const domain = userData.email.split('@')[1].toLowerCase();
-
-  if (domain) {
-    const authorizedDomains = await db
-      .select()
-      .from(organizationVerifiedDomains)
-      .where(eq(organizationVerifiedDomains.domain, domain))
-      .leftJoin(
-        organizationInviteRules,
-        eq(
-          organizationInviteRules.verifiedDomain,
-          organizationVerifiedDomains.id,
-        ),
+          // delete the invited user
+          await db
+            .delete(organizationInvitedUsers)
+            .where(eq(organizationInvitedUsers.email, userData.email));
+        }),
       );
+    } else {
+      // if the user was not invited, check if the domain is authorized
+      const domain = userData.email.split('@')[1].toLowerCase();
 
-    await Promise.all(
-      authorizedDomains.map(async (authorizedDomain) => {
-        if (!authorizedDomain.organization_invite_rules) {
-          return;
-        }
+      if (domain) {
+        const authorizedDomains = await db
+          .select()
+          .from(organizationVerifiedDomains)
+          .where(eq(organizationVerifiedDomains.domain, domain))
+          .leftJoin(
+            organizationInviteRules,
+            eq(
+              organizationInviteRules.verifiedDomain,
+              organizationVerifiedDomains.id,
+            ),
+          );
 
-        const { organization_invite_rules } = authorizedDomain;
-        role = organization_invite_rules.role;
-        organizationId = organization_invite_rules.organizationId;
+        await Promise.all(
+          authorizedDomains.map(async (authorizedDomain) => {
+            if (!authorizedDomain.organization_invite_rules) {
+              return;
+            }
 
-        const organization = await db.query.organizations.findFirst({
-          where: eq(organizations.id, organizationId),
-        });
+            const { organization_invite_rules } = authorizedDomain;
+            role = organization_invite_rules.role;
+            organizationId = organization_invite_rules.organizationId;
 
-        if (!organization) {
-          return;
-        } else {
-          lettaOrganizationId = organization.lettaAgentsId;
-        }
-      }),
-    );
+            const organization = await db.query.organizations.findFirst({
+              where: eq(organizations.id, organizationId),
+            });
+
+            if (!organization) {
+              return;
+            } else {
+              lettaOrganizationId = organization.lettaAgentsId;
+            }
+          }),
+        );
+      }
+    }
+  } else {
+    // if there is an override, check if the organization exists and get the Letta Agents ID
+    const organization = await db.query.organizations.findFirst({
+      where: eq(organizations.id, organizationId),
+    });
+
+    if (!organization) {
+      throw new Error('Organization not found');
+    } else {
+      lettaOrganizationId = organization.lettaAgentsId;
+    }
   }
 
   if (!organizationId) {
@@ -350,7 +364,12 @@ async function findOrCreateUserAndOrganizationFromProviderLogin(
   let user = res[0];
   const userWithSameEmail = res[1];
 
+  // if the user is from SSO, we dont check for conflicting addresses, thus email is not unique
   if (userWithSameEmail && userWithSameEmail.providerId !== userData.uniqueId) {
+    if (userData.provider === 'workos-sso') {
+      throw new Error(LoginErrorsEnum.SSO_USER_EXISTS_AS_NOT_SSO);
+    }
+
     throw new Error(LoginErrorsEnum.EMAIL_ALREADY_EXISTS);
   }
 

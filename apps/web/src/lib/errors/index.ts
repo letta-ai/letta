@@ -2,6 +2,7 @@ export enum LoginErrorsEnum {
   UNKNOWN_ERROR_CONTACT_SUPPORT = 'contact-support',
   USER_NOT_IN_WHITELIST = 'user-not-in-whitelist',
   EMAIL_ALREADY_EXISTS = 'email-already-exists',
+  SSO_USER_EXISTS_AS_NOT_SSO = 'sso-user-exists-as-not-sso',
   BANNED = 'banned',
   EXPIRED_INVITE_CODE = 'expired-invite-code',
   INVALID_INVITE_CODE = 'invalid-invite-code',
@@ -22,6 +23,8 @@ export const LoginErrorsMap: Record<LoginErrorsEnum, string> = {
     'An unknown error occurred signing you in. Please contact support.',
   [LoginErrorsEnum.USER_NOT_IN_WHITELIST]:
     'You are not authorized to sign in. Please contact support.',
+  [LoginErrorsEnum.SSO_USER_EXISTS_AS_NOT_SSO]:
+    "An account with this email already exists but was created outside of your organization's SSO configuration. Please contact your organization's administrator or sign into your existing account and delete it to proceed.",
   [LoginErrorsEnum.BANNED]:
     'Your account has been restricted due to a possible violation of our terms of service. Please contact support.',
   [LoginErrorsEnum.EMAIL_ALREADY_EXISTS]:

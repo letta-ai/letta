@@ -10,6 +10,7 @@ import {
   organizationCredits,
   organizationCreditTransactions,
   organizations,
+  organizationSSOConfiguration,
   organizationUsers,
   organizationVerifiedDomains,
   perModelPerOrganizationRateLimitOverrides,
@@ -1056,6 +1057,100 @@ export async function adminAddVerifiedDomain(
   };
 }
 
+type AdminAddSSOConfigurationRequest = ServerInferRequest<
+  typeof contracts.admin.organizations.adminAddSSOConfiguration
+>;
+
+type AdminAddSSOConfigurationResponse = ServerInferResponses<
+  typeof contracts.admin.organizations.adminAddSSOConfiguration
+>;
+
+async function adminAddSSOConfiguration(
+  req: AdminAddSSOConfigurationRequest,
+): Promise<AdminAddSSOConfigurationResponse> {
+  const { organizationId } = req.params;
+  const { domain, workOSOrganizationId } = req.body;
+
+  await db.insert(organizationSSOConfiguration).values({
+    organizationId,
+    domain,
+    workOSOrganizationId,
+  });
+
+  return {
+    status: 200,
+    body: {
+      id: organizationId,
+      domain,
+      workOSOrganizationId,
+    },
+  };
+}
+
+type AdminDeleteSSOConfigurationRequest = ServerInferRequest<
+  typeof contracts.admin.organizations.adminDeleteSSOConfiguration
+>;
+
+type AdminDeleteSSOConfigurationResponse = ServerInferResponses<
+  typeof contracts.admin.organizations.adminDeleteSSOConfiguration
+>;
+
+async function adminDeleteSSOConfiguration(
+  req: AdminDeleteSSOConfigurationRequest,
+): Promise<AdminDeleteSSOConfigurationResponse> {
+  const { organizationId, ssoConfigurationId } = req.params;
+
+  await db
+    .delete(organizationSSOConfiguration)
+    .where(
+      and(
+        eq(organizationSSOConfiguration.organizationId, organizationId),
+        eq(organizationSSOConfiguration.id, ssoConfigurationId),
+      ),
+    );
+
+  return {
+    status: 200,
+    body: {
+      success: true,
+    },
+  };
+}
+
+type AdminListSSOConfigurationsRequest = ServerInferRequest<
+  typeof contracts.admin.organizations.adminListSSOConfigurations
+>;
+
+type AdminListSSOConfigurationsResponse = ServerInferResponses<
+  typeof contracts.admin.organizations.adminListSSOConfigurations
+>;
+
+async function adminListSSOConfigurations(
+  req: AdminListSSOConfigurationsRequest,
+): Promise<AdminListSSOConfigurationsResponse> {
+  const { organizationId } = req.params;
+  const { limit = 10, offset = 0 } = req.query;
+
+  const ssoConfigurations =
+    await db.query.organizationSSOConfiguration.findMany({
+      where: eq(organizationSSOConfiguration.organizationId, organizationId),
+      limit: limit + 1,
+      offset,
+    });
+
+  return {
+    status: 200,
+    body: {
+      configurations: ssoConfigurations.slice(0, limit).map((config) => ({
+        id: config.id,
+        domain: config.domain,
+        workOSOrganizationId: config.workOSOrganizationId,
+      })),
+      hasNextPage: ssoConfigurations.length > limit,
+    },
+  };
+}
+
 export const adminOrganizationsRouter = {
   getOrganizations,
   getOrganization,
@@ -1080,4 +1175,7 @@ export const adminOrganizationsRouter = {
   adminDeleteOrganizationVerifiedDomain,
   adminGetOrganizationVerifiedDomains,
   adminAddVerifiedDomain,
+  adminAddSSOConfiguration,
+  adminDeleteSSOConfiguration,
+  adminListSSOConfigurations,
 };

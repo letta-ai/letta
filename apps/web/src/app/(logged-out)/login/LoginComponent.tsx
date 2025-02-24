@@ -5,6 +5,7 @@ import {
   Logo,
   Button,
   KeyIcon,
+  OfficesIcon,
 } from '@letta-cloud/component-library';
 import { Suspense } from 'react';
 import { useMemo } from 'react';
@@ -88,6 +89,13 @@ export function LoginComponent() {
               preIcon={<KeyIcon />}
               color="secondary"
               href="/login/password"
+            />
+            <Button
+              label={t('loginWithSSO')}
+              fullWidth
+              preIcon={<OfficesIcon />}
+              color="secondary"
+              href="/login/sso"
             />
           </VStack>
           <Typography variant="body3">

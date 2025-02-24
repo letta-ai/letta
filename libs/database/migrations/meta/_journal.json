@@ -421,6 +421,20 @@
       "when": 1740090740746,
       "tag": "0059_colossal_hannibal_king",
       "breakpoints": true
+    },
+    {
+      "idx": 60,
+      "version": "7",
+      "when": 1740419495171,
+      "tag": "0060_lonely_shotgun",
+      "breakpoints": true
+    },
+    {
+      "idx": 61,
+      "version": "7",
+      "when": 1740429931095,
+      "tag": "0061_clumsy_swordsman",
+      "breakpoints": true
     }
   ]
 }
