@@ -42,6 +42,6 @@ class Source(SqlalchemyBase, OrganizationMixin):
         secondary="sources_agents",
         back_populates="sources",
         lazy="selectin",
-        cascade="all, delete",  # Ensures rows in sources_agents are deleted when the source is deleted
-        passive_deletes=True,  # Allows the database to handle deletion of orphaned rows
+        cascade="save-update",  # Only propagate save and update operations
+        passive_deletes=True,  # Let the database handle deletions
     )

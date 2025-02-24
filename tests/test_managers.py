@@ -2150,6 +2150,30 @@ def test_delete_source(server: SyncServer, default_user):
     assert len(sources) == 0
 
 
+def test_delete_attached_source(server: SyncServer, sarah_agent, default_user):
+    """Test deleting a source."""
+    source_pydantic = PydanticSource(
+        name="To Delete", description="This source will be deleted.", embedding_config=DEFAULT_EMBEDDING_CONFIG
+    )
+    source = server.source_manager.create_source(source=source_pydantic, actor=default_user)
+
+    server.agent_manager.attach_source(agent_id=sarah_agent.id, source_id=source.id, actor=default_user)
+
+    # Delete the source
+    deleted_source = server.source_manager.delete_source(source_id=source.id, actor=default_user)
+
+    # Assertions to verify deletion
+    assert deleted_source.id == source.id
+
+    # Verify that the source no longer appears in list_sources
+    sources = server.source_manager.list_sources(actor=default_user)
+    assert len(sources) == 0
+
+    # Verify that agent is not deleted
+    agent = server.agent_manager.get_agent_by_id(sarah_agent.id, actor=default_user)
+    assert agent is not None
+
+
 def test_list_sources(server: SyncServer, default_user):
     """Test listing sources with pagination."""
     # Create multiple sources
