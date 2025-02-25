@@ -245,10 +245,13 @@ class Agent(BaseAgent):
                     action_name=action_name, args=function_args, api_key=composio_api_key, entity_id=entity_id
                 )
             else:
-                # Parse the source code to extract function annotations
-                annotations = get_function_annotations_from_source(target_letta_tool.source_code, function_name)
-                # Coerce the function arguments to the correct types based on the annotations
-                function_args = coerce_dict_args_by_annotations(function_args, annotations)
+                try:
+                    # Parse the source code to extract function annotations
+                    annotations = get_function_annotations_from_source(target_letta_tool.source_code, function_name)
+                    # Coerce the function arguments to the correct types based on the annotations
+                    function_args = coerce_dict_args_by_annotations(function_args, annotations)
+                except ValueError as e:
+                    self.logger.debug(f"Error coercing function arguments: {e}")
 
                 # execute tool in a sandbox
                 # TODO: allow agent_state to specify which sandbox to execute tools in
@@ -257,7 +260,9 @@ class Agent(BaseAgent):
                 agent_state_copy.tools = []
                 agent_state_copy.tool_rules = []
 
-                sandbox_run_result = ToolExecutionSandbox(function_name, function_args, self.user).run(agent_state=agent_state_copy)
+                sandbox_run_result = ToolExecutionSandbox(function_name, function_args, self.user, tool_object=target_letta_tool).run(
+                    agent_state=agent_state_copy
+                )
                 function_response, updated_agent_state = sandbox_run_result.func_return, sandbox_run_result.agent_state
                 assert orig_memory_str == self.agent_state.memory.compile(), "Memory should not be modified in a sandbox tool"
                 if updated_agent_state is not None:
