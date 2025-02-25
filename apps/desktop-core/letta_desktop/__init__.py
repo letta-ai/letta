@@ -24,6 +24,9 @@ import tiktoken_ext # noqa
 import tiktoken # noqa
 import pydantic.deprecated.decorator # noqa
 import opentelemetry # noqa
+import asyncio
+import uvicorn
+from uvicorn import Config
 
 # read first argument
 
@@ -79,29 +82,31 @@ argparser.add_argument('--use-file-pg-uri', action='store_true')
 
 
 
+class ThreadedUvicorn:
+  def __init__(self, config: Config):
+    self.server = uvicorn.Server(config)
+    self.thread = threading.Thread(daemon=True, target=self.server.run)
 
-class CustomThread(threading.Thread):
-  def __init__(self, *args, **kwargs):
-    super(CustomThread, self).__init__(*args, **kwargs)
-    self._stopper = threading.Event()
+  def start(self):
+    self.thread.start()
+    asyncio.run(self.wait_for_started())
+
+  async def wait_for_started(self):
+    while not self.server.started:
+      await asyncio.sleep(0.1)
 
   def stop(self):
-    self._stopper.set()
-
-  def stopped(self):
-    return self._stopper.isSet()
-
-  def run(self):
-    while not self.stopped():
-     start_server()
+    if self.thread.is_alive():
+      self.server.should_exit = True
+      while self.thread.is_alive():
+        continue
 
 
-server_thread = None
+server = None
 
 def kill_app():
-  if server_thread:
-    server_thread.stop()
-    print("Server stopped")
+  if server:
+    server.stop()
 
   sys.exit(1)
 
@@ -141,13 +146,14 @@ if __name__ == "__main__":
   initialize_database()
   upgrade_db()
 
-  from letta.server.rest_api.app import start_server
+  from letta.server.rest_api.app import app
 
-  print("Starting server...")
+  print("Starting letta server...")
 
   # start the server in a separate thread
-  server_thread = CustomThread()
+  config = Config(app, host="localhost", port=8283)
 
-  server_thread.run()
+  server = ThreadedUvicorn(config)
 
+  server.start();
   check_if_web_server_running()
