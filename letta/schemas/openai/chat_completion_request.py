@@ -99,7 +99,7 @@ class ChatCompletionRequest(BaseModel):
     """https://platform.openai.com/docs/api-reference/chat/create"""
 
     model: str
-    messages: List[ChatMessage]
+    messages: List[Union[ChatMessage, Dict]]
     frequency_penalty: Optional[float] = 0
     logit_bias: Optional[Dict[str, int]] = None
     logprobs: Optional[bool] = False

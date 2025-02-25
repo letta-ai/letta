@@ -52,12 +52,19 @@ BASE_TOOLS = ["send_message", "conversation_search", "archival_memory_insert", "
 BASE_MEMORY_TOOLS = ["core_memory_append", "core_memory_replace"]
 # Multi agent tools
 MULTI_AGENT_TOOLS = ["send_message_to_agent_and_wait_for_reply", "send_message_to_agents_matching_all_tags", "send_message_to_agent_async"]
+# Set of all built-in Letta tools
+LETTA_TOOL_SET = set(BASE_TOOLS + BASE_MEMORY_TOOLS + MULTI_AGENT_TOOLS)
 
 # The name of the tool used to send message to the user
 # May not be relevant in cases where the agent has multiple ways to message to user (send_imessage, send_discord_mesasge, ...)
 # or in cases where the agent has no concept of messaging a user (e.g. a workflow agent)
 DEFAULT_MESSAGE_TOOL = "send_message"
 DEFAULT_MESSAGE_TOOL_KWARG = "message"
+
+PRE_EXECUTION_MESSAGE_ARG = "pre_exec_msg"
+
+REQUEST_HEARTBEAT_PARAM = "request_heartbeat"
+
 
 # Structured output models
 STRUCTURED_OUTPUT_MODELS = {"gpt-4o", "gpt-4o-mini"}

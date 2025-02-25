@@ -7,7 +7,6 @@ from datetime import datetime, timezone
 from enum import Enum
 from typing import TYPE_CHECKING, AsyncGenerator, Dict, Iterable, List, Optional, Union, cast
 
-import pytz
 from fastapi import Header, HTTPException
 from openai.types.chat import ChatCompletionMessageParam
 from openai.types.chat.chat_completion_message_tool_call import ChatCompletionMessageToolCall as OpenAIToolCall
@@ -145,7 +144,7 @@ def create_user_message(input_message: dict, agent_id: str, actor: User) -> Mess
     Converts a user input message into the internal structured format.
     """
     # Generate timestamp in the correct format
-    now = datetime.now(pytz.timezone("US/Pacific")).strftime("%Y-%m-%d %I:%M:%S %p %Z%z")
+    now = datetime.now(timezone.utc).isoformat()
 
     # Format message as structured JSON
     structured_message = {"type": "user_message", "message": input_message["content"], "time": now}
@@ -197,7 +196,7 @@ def create_assistant_message_from_openai_response(
         agent_id=agent_id,
         model=model,
         tool_calls=[tool_call],
-        tool_call_id=None,
+        tool_call_id=tool_call_id,
         created_at=datetime.now(timezone.utc),
     )
 
