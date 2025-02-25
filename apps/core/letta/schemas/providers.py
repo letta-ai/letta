@@ -410,12 +410,51 @@ class AnthropicProvider(Provider):
     base_url: str = "https://api.anthropic.com/v1"
 
     def list_llm_models(self) -> List[LLMConfig]:
-        from letta.llm_api.anthropic import anthropic_get_model_list
+        from letta.llm_api.anthropic import MODEL_LIST, anthropic_get_model_list
 
         models = anthropic_get_model_list(self.base_url, api_key=self.api_key)
 
+        """
+        Example response:
+        {
+          "data": [
+            {
+              "type": "model",
+              "id": "claude-3-5-sonnet-20241022",
+              "display_name": "Claude 3.5 Sonnet (New)",
+              "created_at": "2024-10-22T00:00:00Z"
+            }
+          ],
+          "has_more": true,
+          "first_id": "<string>",
+          "last_id": "<string>"
+        }
+        """
+
         configs = []
         for model in models:
+
+            if model["type"] != "model":
+                continue
+
+            if "id" not in model:
+                continue
+
+            # Don't support 2.0 and 2.1
+            if model["id"].startswith("claude-2"):
+                continue
+
+            # Anthropic doesn't return the context window in their API
+            if "context_window" not in model:
+                # Remap list to name: context_window
+                model_library = {m["name"]: m["context_window"] for m in MODEL_LIST}
+                # Attempt to look it up in a hardcoded list
+                if model["id"] in model_library:
+                    model["context_window"] = model_library[model["id"]]
+                else:
+                    # On fallback, we can set 200k (generally safe), but we should warn the user
+                    warnings.warn(f"Couldn't find context window size for model {model['id']}, defaulting to 200,000")
+                    model["context_window"] = 200000
 
             # We set this to false by default, because Anthropic can
             # natively support <thinking> tags inside of content fields
@@ -423,15 +462,15 @@ class AnthropicProvider(Provider):
             # reliable for tool calling (no chance of a non-tool call step)
             # Since tool_choice_type 'any' doesn't work with in-content COT
             # NOTE For Haiku, it can be flaky if we don't enable this by default
-            inner_thoughts_in_kwargs = True if "haiku" in model["name"] else False
+            inner_thoughts_in_kwargs = True if "haiku" in model["id"] else False
 
             configs.append(
                 LLMConfig(
-                    model=model["name"],
+                    model=model["id"],
                     model_endpoint_type="anthropic",
                     model_endpoint=self.base_url,
                     context_window=model["context_window"],
-                    handle=self.get_handle(model["name"]),
+                    handle=self.get_handle(model["id"]),
                     put_inner_thoughts_in_kwargs=inner_thoughts_in_kwargs,
                 )
             )
