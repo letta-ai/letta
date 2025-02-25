@@ -110,7 +110,9 @@ def check_if_web_server_running():
   # ping localhost:8285 every 5 seconds, if its down kill this process
   import requests
   import time
+
   print("Checking if web server is running...")
+
 
   while True:
     try:
@@ -127,12 +129,12 @@ def check_if_web_server_running():
         # if the response text does not contain the server id, kill the process, throw an error
         if args.look_for_server_id not in response_text:
           print("Server id not found in response text, exiting...")
-          sys.exit(1)
+          kill_app()
 
       time.sleep(5)
     except Exception as e:
       print("Web server is down, exiting...")
-      sys.exit(1)
+      kill_app()
 
 
 if __name__ == "__main__":
@@ -145,5 +147,7 @@ if __name__ == "__main__":
 
   # start the server in a separate thread
   server_thread = CustomThread()
+
+  server_thread.run()
 
   check_if_web_server_running()
