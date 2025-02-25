@@ -806,12 +806,17 @@ export const UseProvidersServiceListProvidersKeyFn = (
   {
     after,
     limit,
+    userId,
   }: {
     after?: string;
     limit?: number;
+    userId?: string;
   } = {},
   queryKey?: Array<unknown>,
-) => [useProvidersServiceListProvidersKey, ...(queryKey ?? [{ after, limit }])];
+) => [
+  useProvidersServiceListProvidersKey,
+  ...(queryKey ?? [{ after, limit, userId }]),
+];
 export type RunsServiceListRunsDefaultResponse = Awaited<
   ReturnType<typeof RunsService.listRuns>
 >;

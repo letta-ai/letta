@@ -1243,6 +1243,7 @@ export const useSandboxConfigServiceListSandboxEnvVarsV1SandboxConfigSandboxConf
  * @param data The data for the request.
  * @param data.after
  * @param data.limit
+ * @param data.userId
  * @returns Provider Successful Response
  * @throws ApiError
  */
@@ -1254,19 +1255,22 @@ export const useProvidersServiceListProvidersSuspense = <
   {
     after,
     limit,
+    userId,
   }: {
     after?: string;
     limit?: number;
+    userId?: string;
   } = {},
   queryKey?: TQueryKey,
   options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>,
 ) =>
   useSuspenseQuery<TData, TError>({
     queryKey: Common.UseProvidersServiceListProvidersKeyFn(
-      { after, limit },
+      { after, limit, userId },
       queryKey,
     ),
-    queryFn: () => ProvidersService.listProviders({ after, limit }) as TData,
+    queryFn: () =>
+      ProvidersService.listProviders({ after, limit, userId }) as TData,
     ...options,
   });
 /**

@@ -1052,7 +1052,7 @@ export type CreateAgentRequest = {
    * If set to True, the agent will not remember previous messages (though the agent will still retain state via core memory blocks and archival/recall memory). Not recommended unless you have an advanced use case.
    */
   message_buffer_autoclear?: boolean;
-  user_id?: string | null;
+  actor_id?: string | null;
 };
 
 export type CreateArchivalMemory = {
@@ -3600,6 +3600,7 @@ export type DeleteSandboxEnvVarV1SandboxConfigEnvironmentVariableEnvVarIdDeleteR
 export type ListProvidersData = {
   after?: string | null;
   limit?: number | null;
+  userId?: string | null;
 };
 
 export type ListProvidersResponse = Array<Provider>;
@@ -3613,6 +3614,7 @@ export type CreateProviderResponse = Provider;
 
 export type ModifyProviderData = {
   requestBody: ProviderUpdate;
+  userId?: string | null;
 };
 
 export type ModifyProviderResponse = Provider;
@@ -3622,6 +3624,7 @@ export type DeleteProviderData = {
    * The provider_id key to be deleted.
    */
   providerId: string;
+  userId?: string | null;
 };
 
 export type DeleteProviderResponse = unknown;

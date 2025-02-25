@@ -63,7 +63,7 @@ lettaWebOpenAPI.paths = Object.fromEntries(
   }),
 );
 
-// go through the paths and remove "user_id" from the headers
+// go through the paths and remove "user_id"/"actor_id" from the headers
 for (const path of Object.keys(lettaAgentsAPI.paths)) {
   for (const method of Object.keys(lettaAgentsAPI.paths[path])) {
     // @ts-expect-error - a
@@ -73,7 +73,8 @@ for (const path of Object.keys(lettaAgentsAPI.paths)) {
         path
       ][method].parameters.filter(
         (param: Record<string, string>) =>
-          param.in !== 'header' || param.name !== 'user_id',
+          param.in !== 'header' ||
+          (param.name !== 'user_id' && param.name !== 'actor_id'),
       );
     }
   }
@@ -153,6 +154,11 @@ function deepOmitPreserveArrays(
 result.output.components = deepOmitPreserveArrays(
   result.output.components,
   'user_id',
+);
+// @ts-ignore
+result.output.components = deepOmitPreserveArrays(
+  result.output.components,
+  'actor_id',
 );
 
 // @ts-ignore

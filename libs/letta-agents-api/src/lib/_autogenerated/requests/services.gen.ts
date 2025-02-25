@@ -2386,6 +2386,7 @@ export class ProvidersService {
    * @param data The data for the request.
    * @param data.after
    * @param data.limit
+   * @param data.userId
    * @returns Provider Successful Response
    * @throws ApiError
    */
@@ -2437,6 +2438,7 @@ export class ProvidersService {
    * Update an existing custom provider
    * @param data The data for the request.
    * @param data.requestBody
+   * @param data.userId
    * @returns Provider Successful Response
    * @throws ApiError
    */
@@ -2461,6 +2463,7 @@ export class ProvidersService {
    * Delete an existing custom provider
    * @param data The data for the request.
    * @param data.providerId The provider_id key to be deleted.
+   * @param data.userId
    * @returns unknown Successful Response
    * @throws ApiError
    */

@@ -989,6 +989,7 @@ export const prefetchUseSandboxConfigServiceListSandboxEnvVarsV1SandboxConfigSan
  * @param data The data for the request.
  * @param data.after
  * @param data.limit
+ * @param data.userId
  * @returns Provider Successful Response
  * @throws ApiError
  */
@@ -997,14 +998,20 @@ export const prefetchUseProvidersServiceListProviders = (
   {
     after,
     limit,
+    userId,
   }: {
     after?: string;
     limit?: number;
+    userId?: string;
   } = {},
 ) =>
   queryClient.prefetchQuery({
-    queryKey: Common.UseProvidersServiceListProvidersKeyFn({ after, limit }),
-    queryFn: () => ProvidersService.listProviders({ after, limit }),
+    queryKey: Common.UseProvidersServiceListProvidersKeyFn({
+      after,
+      limit,
+      userId,
+    }),
+    queryFn: () => ProvidersService.listProviders({ after, limit, userId }),
   });
 /**
  * List Runs

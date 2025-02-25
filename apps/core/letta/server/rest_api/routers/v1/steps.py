@@ -21,13 +21,13 @@ def list_steps(
     end_date: Optional[str] = Query(None, description='Return steps before this ISO datetime (e.g. "2025-01-29T15:01:19-08:00")'),
     model: Optional[str] = Query(None, description="Filter by the name of the model used for the step"),
     server: SyncServer = Depends(get_letta_server),
-    user_id: Optional[str] = Header(None, alias="user_id"),
+    actor_id: Optional[str] = Header(None, alias="user_id"),
 ):
     """
     List steps with optional pagination and date filters.
     Dates should be provided in ISO 8601 format (e.g. 2025-01-29T15:01:19-08:00)
     """
-    actor = server.user_manager.get_user_or_default(user_id=user_id)
+    actor = server.user_manager.get_user_or_default(user_id=actor_id)
 
     # Convert ISO strings to datetime objects if provided
     start_dt = datetime.fromisoformat(start_date) if start_date else None
@@ -48,14 +48,15 @@ def list_steps(
 @router.get("/{step_id}", response_model=Step, operation_id="retrieve_step")
 def retrieve_step(
     step_id: str,
-    user_id: Optional[str] = Header(None, alias="user_id"),
+    actor_id: Optional[str] = Header(None, alias="user_id"),
     server: SyncServer = Depends(get_letta_server),
 ):
     """
     Get a step by ID.
     """
     try:
-        return server.step_manager.get_step(step_id=step_id)
+        actor = server.user_manager.get_user_or_default(user_id=actor_id)
+        return server.step_manager.get_step(step_id=step_id, actor=actor)
     except NoResultFound:
         raise HTTPException(status_code=404, detail="Step not found")
 
@@ -64,15 +65,15 @@ def retrieve_step(
 def update_step_transaction_id(
     step_id: str,
     transaction_id: str,
-    user_id: Optional[str] = Header(None, alias="user_id"),
+    actor_id: Optional[str] = Header(None, alias="user_id"),
     server: SyncServer = Depends(get_letta_server),
 ):
     """
     Update the transaction ID for a step.
     """
-    actor = server.user_manager.get_user_or_default(user_id=user_id)
+    actor = server.user_manager.get_user_or_default(user_id=actor_id)
 
     try:
-        return server.step_manager.update_step_transaction_id(actor, step_id=step_id, transaction_id=transaction_id)
+        return server.step_manager.update_step_transaction_id(actor=actor, step_id=step_id, transaction_id=transaction_id)
     except NoResultFound:
         raise HTTPException(status_code=404, detail="Step not found")

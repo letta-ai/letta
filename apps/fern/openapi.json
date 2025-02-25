@@ -3622,6 +3622,7 @@
         "summary": "Modify Provider",
         "description": "Update an existing custom provider",
         "operationId": "modify_provider",
+        "parameters": [],
         "requestBody": {
           "required": true,
           "content": {

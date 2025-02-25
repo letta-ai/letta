@@ -44,7 +44,7 @@ def list_agents(
         description="If True, only returns agents that match ALL given tags. Otherwise, return agents that have ANY of the passed in tags.",
     ),
     server: "SyncServer" = Depends(get_letta_server),
-    user_id: Optional[str] = Header(None, alias="user_id"),
+    actor_id: Optional[str] = Header(None, alias="user_id"),
     before: Optional[str] = Query(None, description="Cursor for pagination"),
     after: Optional[str] = Query(None, description="Cursor for pagination"),
     limit: Optional[int] = Query(None, description="Limit for pagination"),
@@ -58,7 +58,7 @@ def list_agents(
     List all agents associated with a given user.
     This endpoint retrieves a list of all agents and their configurations associated with the specified user ID.
     """
-    actor = server.user_manager.get_user_or_default(user_id=user_id)
+    actor = server.user_manager.get_user_or_default(user_id=actor_id)
 
     # Use dictionary comprehension to build kwargs dynamically
     kwargs = {
@@ -91,12 +91,12 @@ def list_agents(
 def retrieve_agent_context_window(
     agent_id: str,
     server: "SyncServer" = Depends(get_letta_server),
-    user_id: Optional[str] = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
+    actor_id: Optional[str] = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
 ):
     """
     Retrieve the context window of a specific agent.
     """
-    actor = server.user_manager.get_user_or_default(user_id=user_id)
+    actor = server.user_manager.get_user_or_default(user_id=actor_id)
 
     return server.get_agent_context_window(agent_id=agent_id, actor=actor)
 
@@ -107,21 +107,21 @@ class CreateAgentRequest(CreateAgent):
     """
 
     # Override the user_id field to exclude it from the request body validation
-    user_id: Optional[str] = Field(None, exclude=True)
+    actor_id: Optional[str] = Field(None, exclude=True)
 
 
 @router.post("/", response_model=AgentState, operation_id="create_agent")
 def create_agent(
     agent: CreateAgentRequest = Body(...),
     server: "SyncServer" = Depends(get_letta_server),
-    user_id: Optional[str] = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
+    actor_id: Optional[str] = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
     x_project: Optional[str] = Header(None, alias="X-Project"),  # Only handled by next js middleware
 ):
     """
     Create a new agent with the specified configuration.
     """
     try:
-        actor = server.user_manager.get_user_or_default(user_id=user_id)
+        actor = server.user_manager.get_user_or_default(user_id=actor_id)
         return server.create_agent(agent, actor=actor)
     except Exception as e:
         traceback.print_exc()
@@ -133,10 +133,10 @@ def modify_agent(
     agent_id: str,
     update_agent: UpdateAgent = Body(...),
     server: "SyncServer" = Depends(get_letta_server),
-    user_id: Optional[str] = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
+    actor_id: Optional[str] = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
 ):
     """Update an existing agent"""
-    actor = server.user_manager.get_user_or_default(user_id=user_id)
+    actor = server.user_manager.get_user_or_default(user_id=actor_id)
     return server.agent_manager.update_agent(agent_id=agent_id, agent_update=update_agent, actor=actor)
 
 
@@ -144,10 +144,10 @@ def modify_agent(
 def list_agent_tools(
     agent_id: str,
     server: "SyncServer" = Depends(get_letta_server),
-    user_id: Optional[str] = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
+    actor_id: Optional[str] = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
 ):
     """Get tools from an existing agent"""
-    actor = server.user_manager.get_user_or_default(user_id=user_id)
+    actor = server.user_manager.get_user_or_default(user_id=actor_id)
     return server.agent_manager.list_attached_tools(agent_id=agent_id, actor=actor)
 
 
@@ -156,12 +156,12 @@ def attach_tool(
     agent_id: str,
     tool_id: str,
     server: "SyncServer" = Depends(get_letta_server),
-    user_id: Optional[str] = Header(None, alias="user_id"),
+    actor_id: Optional[str] = Header(None, alias="user_id"),
 ):
     """
     Attach a tool to an agent.
     """
-    actor = server.user_manager.get_user_or_default(user_id=user_id)
+    actor = server.user_manager.get_user_or_default(user_id=actor_id)
     return server.agent_manager.attach_tool(agent_id=agent_id, tool_id=tool_id, actor=actor)
 
 
@@ -170,12 +170,12 @@ def detach_tool(
     agent_id: str,
     tool_id: str,
     server: "SyncServer" = Depends(get_letta_server),
-    user_id: Optional[str] = Header(None, alias="user_id"),
+    actor_id: Optional[str] = Header(None, alias="user_id"),
 ):
     """
     Detach a tool from an agent.
     """
-    actor = server.user_manager.get_user_or_default(user_id=user_id)
+    actor = server.user_manager.get_user_or_default(user_id=actor_id)
     return server.agent_manager.detach_tool(agent_id=agent_id, tool_id=tool_id, actor=actor)
 
 
@@ -184,12 +184,12 @@ def attach_source(
     agent_id: str,
     source_id: str,
     server: "SyncServer" = Depends(get_letta_server),
-    user_id: Optional[str] = Header(None, alias="user_id"),
+    actor_id: Optional[str] = Header(None, alias="user_id"),
 ):
     """
     Attach a source to an agent.
     """
-    actor = server.user_manager.get_user_or_default(user_id=user_id)
+    actor = server.user_manager.get_user_or_default(user_id=actor_id)
     return server.agent_manager.attach_source(agent_id=agent_id, source_id=source_id, actor=actor)
 
 
@@ -198,12 +198,12 @@ def detach_source(
     agent_id: str,
     source_id: str,
     server: "SyncServer" = Depends(get_letta_server),
-    user_id: Optional[str] = Header(None, alias="user_id"),
+    actor_id: Optional[str] = Header(None, alias="user_id"),
 ):
     """
     Detach a source from an agent.
     """
-    actor = server.user_manager.get_user_or_default(user_id=user_id)
+    actor = server.user_manager.get_user_or_default(user_id=actor_id)
     return server.agent_manager.detach_source(agent_id=agent_id, source_id=source_id, actor=actor)
 
 
@@ -211,12 +211,12 @@ def detach_source(
 def retrieve_agent(
     agent_id: str,
     server: "SyncServer" = Depends(get_letta_server),
-    user_id: Optional[str] = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
+    actor_id: Optional[str] = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
 ):
     """
     Get the state of the agent.
     """
-    actor = server.user_manager.get_user_or_default(user_id=user_id)
+    actor = server.user_manager.get_user_or_default(user_id=actor_id)
 
     try:
         return server.agent_manager.get_agent_by_id(agent_id=agent_id, actor=actor)
@@ -228,12 +228,12 @@ def retrieve_agent(
 def delete_agent(
     agent_id: str,
     server: "SyncServer" = Depends(get_letta_server),
-    user_id: Optional[str] = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
+    actor_id: Optional[str] = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
 ):
     """
     Delete an agent.
     """
-    actor = server.user_manager.get_user_or_default(user_id=user_id)
+    actor = server.user_manager.get_user_or_default(user_id=actor_id)
     try:
         server.agent_manager.delete_agent(agent_id=agent_id, actor=actor)
         return JSONResponse(status_code=status.HTTP_200_OK, content={"message": f"Agent id={agent_id} successfully deleted"})
@@ -245,12 +245,12 @@ def delete_agent(
 def list_agent_sources(
     agent_id: str,
     server: "SyncServer" = Depends(get_letta_server),
-    user_id: Optional[str] = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
+    actor_id: Optional[str] = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
 ):
     """
     Get the sources associated with an agent.
     """
-    actor = server.user_manager.get_user_or_default(user_id=user_id)
+    actor = server.user_manager.get_user_or_default(user_id=actor_id)
     return server.agent_manager.list_attached_sources(agent_id=agent_id, actor=actor)
 
 
@@ -259,13 +259,13 @@ def list_agent_sources(
 def retrieve_agent_memory(
     agent_id: str,
     server: "SyncServer" = Depends(get_letta_server),
-    user_id: Optional[str] = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
+    actor_id: Optional[str] = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
 ):
     """
     Retrieve the memory state of a specific agent.
     This endpoint fetches the current memory state of the agent identified by the user ID and agent ID.
     """
-    actor = server.user_manager.get_user_or_default(user_id=user_id)
+    actor = server.user_manager.get_user_or_default(user_id=actor_id)
 
     return server.get_agent_memory(agent_id=agent_id, actor=actor)
 
@@ -275,12 +275,12 @@ def retrieve_core_memory_block(
     agent_id: str,
     block_label: str,
     server: "SyncServer" = Depends(get_letta_server),
-    user_id: Optional[str] = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
+    actor_id: Optional[str] = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
 ):
     """
     Retrieve a memory block from an agent.
     """
-    actor = server.user_manager.get_user_or_default(user_id=user_id)
+    actor = server.user_manager.get_user_or_default(user_id=actor_id)
 
     try:
         return server.agent_manager.get_block_with_label(agent_id=agent_id, block_label=block_label, actor=actor)
@@ -292,12 +292,12 @@ def retrieve_core_memory_block(
 def list_core_memory_blocks(
     agent_id: str,
     server: "SyncServer" = Depends(get_letta_server),
-    user_id: Optional[str] = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
+    actor_id: Optional[str] = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
 ):
     """
     Retrieve the memory blocks of a specific agent.
     """
-    actor = server.user_manager.get_user_or_default(user_id=user_id)
+    actor = server.user_manager.get_user_or_default(user_id=actor_id)
     try:
         agent = server.agent_manager.get_agent_by_id(agent_id, actor=actor)
         return agent.memory.blocks
@@ -311,12 +311,12 @@ def modify_core_memory_block(
     block_label: str,
     block_update: BlockUpdate = Body(...),
     server: "SyncServer" = Depends(get_letta_server),
-    user_id: Optional[str] = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
+    actor_id: Optional[str] = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
 ):
     """
     Updates a memory block of an agent.
     """
-    actor = server.user_manager.get_user_or_default(user_id=user_id)
+    actor = server.user_manager.get_user_or_default(user_id=actor_id)
 
     block = server.agent_manager.get_block_with_label(agent_id=agent_id, block_label=block_label, actor=actor)
     block = server.block_manager.update_block(block.id, block_update=block_update, actor=actor)
@@ -332,12 +332,12 @@ def attach_core_memory_block(
     agent_id: str,
     block_id: str,
     server: "SyncServer" = Depends(get_letta_server),
-    user_id: Optional[str] = Header(None, alias="user_id"),
+    actor_id: Optional[str] = Header(None, alias="user_id"),
 ):
     """
     Attach a block to an agent.
     """
-    actor = server.user_manager.get_user_or_default(user_id=user_id)
+    actor = server.user_manager.get_user_or_default(user_id=actor_id)
     return server.agent_manager.attach_block(agent_id=agent_id, block_id=block_id, actor=actor)
 
 
@@ -346,12 +346,12 @@ def detach_core_memory_block(
     agent_id: str,
     block_id: str,
     server: "SyncServer" = Depends(get_letta_server),
-    user_id: Optional[str] = Header(None, alias="user_id"),
+    actor_id: Optional[str] = Header(None, alias="user_id"),
 ):
     """
     Detach a block from an agent.
     """
-    actor = server.user_manager.get_user_or_default(user_id=user_id)
+    actor = server.user_manager.get_user_or_default(user_id=actor_id)
     return server.agent_manager.detach_block(agent_id=agent_id, block_id=block_id, actor=actor)
 
 
@@ -362,12 +362,12 @@ def list_archival_memory(
     after: Optional[int] = Query(None, description="Unique ID of the memory to start the query range at."),
     before: Optional[int] = Query(None, description="Unique ID of the memory to end the query range at."),
     limit: Optional[int] = Query(None, description="How many results to include in the response."),
-    user_id: Optional[str] = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
+    actor_id: Optional[str] = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
 ):
     """
     Retrieve the memories in an agent's archival memory store (paginated query).
     """
-    actor = server.user_manager.get_user_or_default(user_id=user_id)
+    actor = server.user_manager.get_user_or_default(user_id=actor_id)
 
     return server.get_agent_archival(
         user_id=actor.id,
@@ -383,12 +383,12 @@ def create_archival_memory(
     agent_id: str,
     request: CreateArchivalMemory = Body(...),
     server: "SyncServer" = Depends(get_letta_server),
-    user_id: Optional[str] = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
+    actor_id: Optional[str] = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
 ):
     """
     Insert a memory into an agent's archival memory store.
     """
-    actor = server.user_manager.get_user_or_default(user_id=user_id)
+    actor = server.user_manager.get_user_or_default(user_id=actor_id)
 
     return server.insert_archival_memory(agent_id=agent_id, memory_contents=request.text, actor=actor)
 
@@ -401,12 +401,12 @@ def delete_archival_memory(
     memory_id: str,
     # memory_id: str = Query(..., description="Unique ID of the memory to be deleted."),
     server: "SyncServer" = Depends(get_letta_server),
-    user_id: Optional[str] = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
+    actor_id: Optional[str] = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
 ):
     """
     Delete a memory from an agent's archival memory store.
     """
-    actor = server.user_manager.get_user_or_default(user_id=user_id)
+    actor = server.user_manager.get_user_or_default(user_id=actor_id)
 
     server.delete_archival_memory(memory_id=memory_id, actor=actor)
     return JSONResponse(status_code=status.HTTP_200_OK, content={"message": f"Memory id={memory_id} successfully deleted"})
@@ -427,12 +427,12 @@ def list_messages(
     use_assistant_message: bool = Query(True, description="Whether to use assistant messages"),
     assistant_message_tool_name: str = Query(DEFAULT_MESSAGE_TOOL, description="The name of the designated message tool."),
     assistant_message_tool_kwarg: str = Query(DEFAULT_MESSAGE_TOOL_KWARG, description="The name of the message argument."),
-    user_id: Optional[str] = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
+    actor_id: Optional[str] = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
 ):
     """
     Retrieve message history for an agent.
     """
-    actor = server.user_manager.get_user_or_default(user_id=user_id)
+    actor = server.user_manager.get_user_or_default(user_id=actor_id)
 
     return server.get_agent_recall(
         user_id=actor.id,
@@ -454,13 +454,13 @@ def modify_message(
     message_id: str,
     request: MessageUpdate = Body(...),
     server: "SyncServer" = Depends(get_letta_server),
-    user_id: Optional[str] = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
+    actor_id: Optional[str] = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
 ):
     """
     Update the details of a message associated with an agent.
     """
     # TODO: Get rid of agent_id here, it's not really relevant
-    actor = server.user_manager.get_user_or_default(user_id=user_id)
+    actor = server.user_manager.get_user_or_default(user_id=actor_id)
     return server.message_manager.update_message_by_id(message_id=message_id, message_update=request, actor=actor)
 
 
@@ -474,13 +474,13 @@ async def send_message(
     agent_id: str,
     server: SyncServer = Depends(get_letta_server),
     request: LettaRequest = Body(...),
-    user_id: Optional[str] = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
+    actor_id: Optional[str] = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
 ):
     """
     Process a user message and return the agent's response.
     This endpoint accepts a message from a user and processes it through the agent.
     """
-    actor = server.user_manager.get_user_or_default(user_id=user_id)
+    actor = server.user_manager.get_user_or_default(user_id=actor_id)
     result = await server.send_message_to_agent(
         agent_id=agent_id,
         actor=actor,
@@ -513,14 +513,14 @@ async def send_message_streaming(
     agent_id: str,
     server: SyncServer = Depends(get_letta_server),
     request: LettaStreamingRequest = Body(...),
-    user_id: Optional[str] = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
+    actor_id: Optional[str] = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
 ):
     """
     Process a user message and return the agent's response.
     This endpoint accepts a message from a user and processes it through the agent.
     It will stream the steps of the response always, and stream the tokens if 'stream_tokens' is set to True.
     """
-    actor = server.user_manager.get_user_or_default(user_id=user_id)
+    actor = server.user_manager.get_user_or_default(user_id=actor_id)
     result = await server.send_message_to_agent(
         agent_id=agent_id,
         actor=actor,
@@ -590,13 +590,13 @@ async def send_message_async(
     background_tasks: BackgroundTasks,
     server: SyncServer = Depends(get_letta_server),
     request: LettaRequest = Body(...),
-    user_id: Optional[str] = Header(None, alias="user_id"),
+    actor_id: Optional[str] = Header(None, alias="user_id"),
 ):
     """
     Asynchronously process a user message and return a run object.
     The actual processing happens in the background, and the status can be checked using the run ID.
     """
-    actor = server.user_manager.get_user_or_default(user_id=user_id)
+    actor = server.user_manager.get_user_or_default(user_id=actor_id)
 
     # Create a new job
     run = Run(
@@ -635,8 +635,8 @@ def reset_messages(
     agent_id: str,
     add_default_initial_messages: bool = Query(default=False, description="If true, adds the default initial messages after resetting."),
     server: "SyncServer" = Depends(get_letta_server),
-    user_id: Optional[str] = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
+    actor_id: Optional[str] = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
 ):
     """Resets the messages for an agent"""
-    actor = server.user_manager.get_user_or_default(user_id=user_id)
+    actor = server.user_manager.get_user_or_default(user_id=actor_id)
     return server.agent_manager.reset_messages(agent_id=agent_id, actor=actor, add_default_initial_messages=add_default_initial_messages)

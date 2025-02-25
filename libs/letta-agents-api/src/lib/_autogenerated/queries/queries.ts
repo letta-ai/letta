@@ -1279,6 +1279,7 @@ export const useSandboxConfigServiceListSandboxEnvVarsV1SandboxConfigSandboxConf
  * @param data The data for the request.
  * @param data.after
  * @param data.limit
+ * @param data.userId
  * @returns Provider Successful Response
  * @throws ApiError
  */
@@ -1290,19 +1291,22 @@ export const useProvidersServiceListProviders = <
   {
     after,
     limit,
+    userId,
   }: {
     after?: string;
     limit?: number;
+    userId?: string;
   } = {},
   queryKey?: TQueryKey,
   options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>,
 ) =>
   useQuery<TData, TError>({
     queryKey: Common.UseProvidersServiceListProvidersKeyFn(
-      { after, limit },
+      { after, limit, userId },
       queryKey,
     ),
-    queryFn: () => ProvidersService.listProviders({ after, limit }) as TData,
+    queryFn: () =>
+      ProvidersService.listProviders({ after, limit, userId }) as TData,
     ...options,
   });
 /**
@@ -3770,6 +3774,7 @@ export const useSandboxConfigServiceUpdateSandboxEnvVarV1SandboxConfigEnvironmen
  * Update an existing custom provider
  * @param data The data for the request.
  * @param data.requestBody
+ * @param data.userId
  * @returns Provider Successful Response
  * @throws ApiError
  */
@@ -3784,6 +3789,7 @@ export const useProvidersServiceModifyProvider = <
       TError,
       {
         requestBody: ProviderUpdate;
+        userId?: string;
       },
       TContext
     >,
@@ -3795,12 +3801,14 @@ export const useProvidersServiceModifyProvider = <
     TError,
     {
       requestBody: ProviderUpdate;
+      userId?: string;
     },
     TContext
   >({
-    mutationFn: ({ requestBody }) =>
+    mutationFn: ({ requestBody, userId }) =>
       ProvidersService.modifyProvider({
         requestBody,
+        userId,
       }) as unknown as Promise<TData>,
     ...options,
   });
@@ -4285,6 +4293,7 @@ export const useSandboxConfigServiceDeleteSandboxEnvVarV1SandboxConfigEnvironmen
  * Delete an existing custom provider
  * @param data The data for the request.
  * @param data.providerId The provider_id key to be deleted.
+ * @param data.userId
  * @returns unknown Successful Response
  * @throws ApiError
  */
@@ -4299,6 +4308,7 @@ export const useProvidersServiceDeleteProvider = <
       TError,
       {
         providerId: string;
+        userId?: string;
       },
       TContext
     >,
@@ -4310,12 +4320,14 @@ export const useProvidersServiceDeleteProvider = <
     TError,
     {
       providerId: string;
+      userId?: string;
     },
     TContext
   >({
-    mutationFn: ({ providerId }) =>
+    mutationFn: ({ providerId, userId }) =>
       ProvidersService.deleteProvider({
         providerId,
+        userId,
       }) as unknown as Promise<TData>,
     ...options,
   });

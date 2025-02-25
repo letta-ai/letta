@@ -2394,7 +2394,7 @@ export const CreateAgentRequest = z.object({
     ])
     .optional(),
   message_buffer_autoclear: z.boolean().optional(),
-  user_id: z
+  actor_id: z
     .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
     .optional(),
 });
@@ -5232,6 +5232,11 @@ export const get_List_providers = {
         .union([z.number(), z.null(), z.array(z.union([z.number(), z.null()]))])
         .optional(),
     }),
+    header: z.object({
+      user_id: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+    }),
   }),
   response: z.array(Provider),
 };
@@ -5258,6 +5263,11 @@ export const patch_Modify_provider = {
   path: z.literal('/v1/providers/'),
   requestFormat: z.literal('json'),
   parameters: z.object({
+    header: z.object({
+      user_id: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+    }),
     body: ProviderUpdate,
   }),
   response: Provider,
@@ -5271,6 +5281,11 @@ export const delete_Delete_provider = {
   parameters: z.object({
     query: z.object({
       provider_id: z.string(),
+    }),
+    header: z.object({
+      user_id: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
     }),
   }),
   response: z.unknown(),
