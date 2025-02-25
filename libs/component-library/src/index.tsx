@@ -172,3 +172,5 @@ export * from './lib/reusable/AgentStateViewer/AgentStateViewer';
 export { en as componentTranslations };
 
 export * from './lib/core/RadioGroup/RadioGroup';
+
+export * from './lib/core/SideOverlay/SideOverlay';

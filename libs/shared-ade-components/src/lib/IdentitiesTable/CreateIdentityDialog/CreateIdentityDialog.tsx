@@ -47,9 +47,20 @@ export function CreateIdentityDialog(props: CreateIdentityDialogProps) {
     },
   });
   const queryClient = useQueryClient();
-  const { mutate, isPending } = useIdentitiesServiceCreateIdentity();
+  const { mutate, isPending, reset } = useIdentitiesServiceCreateIdentity();
 
   const t = useTranslations('CreateIdentityDialog');
+
+  const handleOpenChange = useCallback(
+    (nextState: boolean) => {
+      setOpen(nextState);
+      if (!nextState) {
+        form.reset();
+        reset();
+      }
+    },
+    [form, reset],
+  );
 
   const handleSubmit = useCallback(
     (values: IdentityFormValues) => {
@@ -64,7 +75,8 @@ export function CreateIdentityDialog(props: CreateIdentityDialogProps) {
         },
         {
           onSuccess: (response) => {
-            setOpen(false);
+            handleOpenChange(false);
+
             queryClient.setQueriesData<
               InfiniteData<ListIdentitiesResponse> | undefined
             >(
@@ -90,7 +102,7 @@ export function CreateIdentityDialog(props: CreateIdentityDialogProps) {
         },
       );
     },
-    [mutate, queryClient, currentProjectId],
+    [mutate, queryClient, currentProjectId, handleOpenChange],
   );
   const identityTypeToTranslationMap = useIdentityTypeToTranslationMap();
 
@@ -115,7 +127,7 @@ export function CreateIdentityDialog(props: CreateIdentityDialogProps) {
         onSubmit={form.handleSubmit(handleSubmit)}
         title={t('title')}
         isConfirmBusy={isPending}
-        onOpenChange={setOpen}
+        onOpenChange={handleOpenChange}
         trigger={trigger}
         isOpen={open}
       >
