@@ -229,12 +229,24 @@ def pydantic_model_to_json_schema(model: Type[BaseModel]) -> dict:
     """
     schema = model.model_json_schema()
 
-    def clean_property(prop: dict) -> dict:
+    def clean_property(prop: dict, full_schema: dict) -> dict:
         """Clean up a property schema to match desired format"""
 
         if "description" not in prop:
             raise ValueError(f"Property {prop} lacks a 'description' key")
 
+        # Handle the case where the property is a $ref to another model
+        if "$ref" in prop:
+            # Resolve the reference to the nested model
+            ref_schema = resolve_ref(prop["$ref"], full_schema)
+            # Recursively clean the nested model
+            return {
+                "type": "object",
+                **clean_schema(ref_schema, full_schema),
+                "description": prop["description"],
+            }
+
+        # If it's a regular property with a direct type (e.g., string, number)
         return {
             "type": "string" if prop["type"] == "string" else prop["type"],
             "description": prop["description"],
@@ -283,7 +295,7 @@ def pydantic_model_to_json_schema(model: Type[BaseModel]) -> dict:
                         "description": prop["description"],
                     }
                 else:
-                    properties[name] = clean_property(prop)
+                    properties[name] = clean_property(prop, full_schema)
 
             pydantic_model_schema_dict = {
                 "type": "object",
