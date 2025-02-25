@@ -1,7 +1,4 @@
-import {
-  REMOTE_DEVELOPMENT_ID,
-  useCurrentProject,
-} from '../../../../../app/(logged-in)/(dashboard-like)/projects/[projectSlug]/hooks';
+import { useCurrentProject } from '../../../../../app/(logged-in)/(dashboard-like)/projects/[projectSlug]/hooks';
 import { useCurrentAgent } from '../../../../../app/(logged-in)/(ade)/projects/[projectSlug]/agents/[agentId]/hooks';
 import { webApi, webApiQueryKeys } from '@letta-cloud/web-api-client';
 import {
@@ -373,8 +370,7 @@ function DesktopADEHeader(props: DesktopADEHeaderProps) {
       enabled: !!template_id,
     });
 
-  const projectUrl =
-    id === REMOTE_DEVELOPMENT_ID ? projectSlug : `/projects/${projectSlug}`;
+  const projectUrl = !id ? projectSlug : `/projects/${projectSlug}`;
 
   return (
     <HStack

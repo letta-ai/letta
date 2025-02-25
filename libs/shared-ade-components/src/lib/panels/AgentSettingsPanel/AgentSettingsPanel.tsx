@@ -683,7 +683,7 @@ function IdentitiesEditorDialog(props: IdentitiesEditorDialogProps) {
     async (query: string) => {
       const response = await IdentitiesService.listIdentities({
         name: query,
-        projectId,
+        ...(projectId ? { projectId } : {}),
       });
 
       return response.map((identity) => {

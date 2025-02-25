@@ -936,7 +936,55 @@
       "archivalMemory": "Archival Memory"
     }
   },
+  "IdentityAgentsList": {
+    "columns": {
+      "id": "ID",
+      "name": "Name",
+      "view": "View",
+      "copyId": "Copy id"
+    },
+    "error": "There was an error loading agents, please try again or contact support.",
+    "loading": "Loading agents...",
+    "noResults": "There are no agents associated with this identity"
+  },
   "IdentitiesTable": {
+    "BasicDetailsEditor": {
+      "delete": "Delete Identity",
+      "title": "Basic Details",
+      "reset": "Reset",
+      "name": {
+        "label": "Name"
+      },
+
+      "properties": {
+        "label": "Identity Properties",
+        "tooltip": "Identity properties are used to store additional information about the identity"
+      },
+      "identifierKey": {
+        "label": "Unique Key"
+      },
+      "identityType": {
+        "label": "Type"
+      },
+      "save": "Update Identity",
+      "errors": {
+        "uniqueConstraint": "The unique identifier provided is already in use, please choose another unique key",
+        "default": "There was an error updating this identity, please try again or contact support."
+      }
+    },
+    "IdentityItemOverlay": {
+      "agents": "Agents",
+      "trigger": "View/Edit",
+      "title": "Identity Details",
+      "save": {
+        "label": "Save",
+        "error": "There was an error saving this identity, please try again or contact support."
+      },
+      "close": "Close",
+      "breadcrumb": {
+        "main": "Identities"
+      }
+    },
     "DeleteIdentityDialog": {
       "title": "Delete identity",
       "description": "Deleting an identity is permanent and cannot be undone. This will not delete any agents or memory associated with this identity.",
@@ -986,6 +1034,10 @@
     },
     "name": {
       "label": "Name"
+    },
+    "errors": {
+      "uniqueConstraint": "The unique identifier provided is already in use, please choose another unique key",
+      "default": "There was an error creating this identity, please try again or contact support."
     },
     "uniqueIdentifier": {
       "label": "Unique Identifier",

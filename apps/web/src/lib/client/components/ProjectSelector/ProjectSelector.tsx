@@ -1,9 +1,6 @@
 import React, { useCallback, useMemo } from 'react';
 import { webApi, webApiQueryKeys } from '$web/client';
-import {
-  REMOTE_DEVELOPMENT_ID,
-  useCurrentProject,
-} from '../../../../app/(logged-in)/(dashboard-like)/projects/[projectSlug]/hooks';
+import { useCurrentProject } from '../../../../app/(logged-in)/(dashboard-like)/projects/[projectSlug]/hooks';
 import {
   Button,
   Popover,
@@ -25,7 +22,7 @@ interface ProjectItemProps {
 function ProjectItem(props: ProjectItemProps) {
   const { name, id, onClick, isCurrent, slug } = props;
   const href = useMemo(() => {
-    if (id === REMOTE_DEVELOPMENT_ID) {
+    if (!id) {
       return '/development-servers/local/dashboard';
     }
 

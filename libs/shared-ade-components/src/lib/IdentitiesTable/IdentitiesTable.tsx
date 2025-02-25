@@ -3,7 +3,9 @@ import { useTranslations } from '@letta-cloud/translations';
 import type { ColumnDef } from '@tanstack/react-table';
 import {
   IdentitiesService,
+  isAPIError,
   useIdentitiesServiceDeleteIdentity,
+  useIdentitiesServiceUpdateIdentity,
 } from '@letta-cloud/letta-agents-api';
 import type {
   Identity,
@@ -14,6 +16,7 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   Alert,
   Badge,
+  Breadcrumb,
   Button,
   CopyButton,
   DashboardPageLayout,
@@ -23,12 +26,19 @@ import {
   DotsHorizontalIcon,
   DropdownMenu,
   DropdownMenuItem,
+  Form,
   FormField,
   FormProvider,
+  HR,
   HStack,
   InfoTooltip,
   Input,
+  isMultiValue,
+  KeyValueEditor,
   MiddleTruncate,
+  Select,
+  SideOverlay,
+  SideOverlayHeader,
   TrashIcon,
   Typography,
   useForm,
@@ -42,6 +52,8 @@ import { CreateIdentityDialog } from './CreateIdentityDialog/CreateIdentityDialo
 import { useIdentityTypeToTranslationMap } from './hooks/useIdentityTypeToTranslationMap';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { useIdentityOptions } from './hooks/useIdentityOptions/useIdentityOptions';
+import { IdentityAgentsList } from './IdentityAgentsList/IdentityAgentsList';
 
 interface DeleteIdentityDialogProps {
   id: string;
@@ -147,6 +159,278 @@ function IdentityTypeCell(props: IdentityTypeCellProps) {
   const identityTypeToTranslationMap = useIdentityTypeToTranslationMap();
 
   return <Badge content={identityTypeToTranslationMap[props.type]} />;
+}
+
+interface IdentityItemOverlayProps {
+  identity: Identity;
+}
+
+const basicDetailsFormSchema = z.object({
+  name: z.string(),
+  identifierKey: z.string(),
+  identityType: z.enum(['org', 'user', 'other']),
+  properties: z
+    .object({
+      key: z.string(),
+      value: z.string(),
+      type: z.union([
+        z.literal('string'),
+        z.literal('number'),
+        z.literal('boolean'),
+        z.literal('json'),
+      ]),
+    })
+    .array(),
+});
+
+type BasicDetailsFormValues = z.infer<typeof basicDetailsFormSchema>;
+
+interface BasicDetailsEditorProps {
+  identity: Identity;
+}
+
+function BasicDetailsEditor(props: BasicDetailsEditorProps) {
+  const t = useTranslations('IdentitiesTable');
+  const { identityTypeOptions, getOptionFromValue } = useIdentityOptions();
+
+  const { identity } = props;
+  const { mutate, isPending, error } = useIdentitiesServiceUpdateIdentity();
+  const queryClient = useQueryClient();
+  const form = useForm<BasicDetailsFormValues>({
+    resolver: zodResolver(basicDetailsFormSchema),
+    defaultValues: {
+      name: identity.name,
+      identifierKey: identity.identifier_key,
+      identityType: identity.identity_type,
+      properties:
+        (identity.properties || []).map((property) => ({
+          key: property.key,
+          value:
+            typeof property.value === 'string'
+              ? property.value
+              : JSON.stringify(property.value),
+          type: property.type,
+        })) || [],
+    },
+  });
+
+  const handleSubmit = useCallback(
+    (values: BasicDetailsFormValues) => {
+      mutate(
+        {
+          identityId: identity.id || '',
+          requestBody: {
+            identifier_key: values.identifierKey.trim(),
+            identity_type: values.identityType,
+            name: values.name.trim(),
+            properties: values.properties.map((property) => ({
+              key: property.key.trim(),
+              value: property.value.trim(),
+              type: property.type,
+            })),
+          },
+        },
+        {
+          onSuccess: () => {
+            queryClient.setQueriesData<
+              InfiniteData<ListIdentitiesResponse> | undefined
+            >(
+              {
+                queryKey: UseInfiniteIdentitiesQueryFn([]).slice(0, 1),
+                exact: false,
+              },
+              (data) => {
+                if (!data) {
+                  return data;
+                }
+
+                return {
+                  ...data,
+                  pages: data.pages.map((page) => {
+                    return page.map((ide) => {
+                      if (ide.id === identity.id) {
+                        return {
+                          ...identity,
+                          ...values,
+                        };
+                      }
+
+                      return ide;
+                    });
+                  }),
+                };
+              },
+            );
+          },
+        },
+      );
+    },
+    [mutate, queryClient, identity],
+  );
+
+  const errorMessage = useMemo(() => {
+    if (error) {
+      if (isAPIError(error)) {
+        if (error.body?.detail?.includes('unique constraint')) {
+          return t('BasicDetailsEditor.errors.uniqueConstraint');
+        }
+      }
+
+      return t('BasicDetailsEditor.errors.default');
+    }
+
+    return '';
+  }, [error, t]);
+
+  return (
+    <FormProvider {...form}>
+      <Form onSubmit={form.handleSubmit(handleSubmit)}>
+        <VStack padding gap="form">
+          {errorMessage && <Alert title={errorMessage} variant="destructive" />}
+          <Typography variant="heading6" bold>
+            {t('BasicDetailsEditor.title')}
+          </Typography>
+          <FormField
+            name="name"
+            render={({ field }) => (
+              <Input
+                label={t('BasicDetailsEditor.name.label')}
+                fullWidth
+                {...field}
+              />
+            )}
+          />
+          <FormField
+            name="identifierKey"
+            render={({ field }) => (
+              <Input
+                label={t('BasicDetailsEditor.identifierKey.label')}
+                fullWidth
+                {...field}
+              />
+            )}
+          />
+          <FormField
+            name="identityType"
+            render={({ field }) => (
+              <Select
+                fullWidth
+                onSelect={(value) => {
+                  if (isMultiValue(value) || !value) {
+                    return;
+                  }
+
+                  field.onChange(value?.value);
+                }}
+                value={getOptionFromValue(field.value)}
+                label={t('BasicDetailsEditor.identityType.label')}
+                options={identityTypeOptions}
+              />
+            )}
+          />
+          <HR />
+          <FormField
+            render={({ field }) => (
+              <KeyValueEditor
+                fullWidth
+                infoTooltip={{
+                  text: t('BasicDetailsEditor.properties.tooltip'),
+                }}
+                onValueChange={(value) => {
+                  field.onChange(
+                    value.map((property) => ({ ...property, type: 'string' })),
+                  );
+                }}
+                label={t('BasicDetailsEditor.properties.label')}
+                value={field.value}
+              />
+            )}
+            name="properties"
+          />
+          <HR />
+          <HStack fullWidth justify="spaceBetween">
+            <DeleteIdentityDialog
+              id={props.identity.id || ''}
+              name={props.identity.name}
+              trigger={
+                <Button
+                  type="button"
+                  label={t('BasicDetailsEditor.delete')}
+                  color="tertiary"
+                  preIcon={<TrashIcon />}
+                />
+              }
+            />
+            <HStack>
+              {form.formState.isDirty && (
+                <Button
+                  label={t('BasicDetailsEditor.reset')}
+                  color="tertiary"
+                  type="button"
+                  onClick={() => {
+                    form.reset();
+                  }}
+                />
+              )}
+              <Button
+                busy={isPending}
+                label={t('BasicDetailsEditor.save')}
+                color="primary"
+              />
+            </HStack>
+          </HStack>
+        </VStack>
+      </Form>
+    </FormProvider>
+  );
+}
+
+function IdentityItemOverlay(props: IdentityItemOverlayProps) {
+  const { identity } = props;
+  const t = useTranslations('IdentitiesTable');
+  const [open, setOpen] = useState(false);
+
+  return (
+    <SideOverlay
+      isOpen={open}
+      onOpenChange={setOpen}
+      title={t('IdentityItemOverlay.title')}
+      trigger={
+        <Button
+          label={t('IdentityItemOverlay.trigger')}
+          color="tertiary"
+          size="small"
+        />
+      }
+    >
+      <VStack overflow="hidden" gap={false}>
+        <SideOverlayHeader>
+          <Breadcrumb
+            items={[
+              {
+                label: t('IdentityItemOverlay.breadcrumb.main'),
+                onClick: () => {
+                  setOpen(false);
+                },
+              },
+              {
+                label: identity.name,
+              },
+            ]}
+          />
+        </SideOverlayHeader>
+        <VStack flex collapseHeight overflowY="auto">
+          <BasicDetailsEditor identity={identity} />
+          <VStack paddingX>
+            <Typography variant="heading6" bold>
+              {t('IdentityItemOverlay.agents')}
+            </Typography>
+            <IdentityAgentsList identity={identity} />
+          </VStack>
+        </VStack>
+      </VStack>
+    </SideOverlay>
+  );
 }
 
 interface IdentitiesTableProps {
@@ -304,30 +588,33 @@ export function IdentitiesTable(props: IdentitiesTableProps) {
         header: '',
         cell: ({ row }) => {
           return (
-            <DropdownMenu
-              trigger={
-                <Button
-                  color="tertiary"
-                  label={t('columns.actions')}
-                  preIcon={<DotsHorizontalIcon />}
-                  size="small"
-                  hideLabel
-                />
-              }
-              triggerAsChild
-            >
-              <DeleteIdentityDialog
+            <HStack>
+              <IdentityItemOverlay identity={row.original} />
+              <DropdownMenu
                 trigger={
-                  <DropdownMenuItem
-                    doNotCloseOnSelect
-                    label={t('DeleteIdentityDialog.trigger')}
-                    preIcon={<TrashIcon />}
+                  <Button
+                    color="tertiary"
+                    label={t('columns.actions')}
+                    preIcon={<DotsHorizontalIcon />}
+                    size="small"
+                    hideLabel
                   />
                 }
-                id={row.original.id || ''}
-                name={row.original.name}
-              />
-            </DropdownMenu>
+                triggerAsChild
+              >
+                <DeleteIdentityDialog
+                  trigger={
+                    <DropdownMenuItem
+                      doNotCloseOnSelect
+                      label={t('DeleteIdentityDialog.trigger')}
+                      preIcon={<TrashIcon />}
+                    />
+                  }
+                  id={row.original.id || ''}
+                  name={row.original.name}
+                />
+              </DropdownMenu>
+            </HStack>
           );
         },
       },

@@ -20,6 +20,7 @@ import { useDialogContext } from '../Dialog/Dialog';
 import { VStack } from '../../framing/VStack/VStack';
 import { cva } from 'class-variance-authority';
 import type { VariantProps } from 'class-variance-authority';
+import { LettaLoader } from '../LettaLoader/LettaLoader';
 
 interface SelectOptionsContextProps {
   hideIconsOnOptions?: boolean;
@@ -168,6 +169,15 @@ function useSelectComponents(selectProps: BaseSelectProps) {
             </Typography>
           </HStack>
         </components.GroupHeading>
+      ),
+      LoadingMessage: ({ ...props }) => (
+        // @ts-expect-error yest
+        <components.LoadingMessage
+          {...props}
+          className="p-4 flex items-center justify-center"
+        >
+          <LettaLoader variant="flipper" />
+        </components.LoadingMessage>
       ),
       // @ts-expect-error yest
       Option: ({ children, ...props }) => {

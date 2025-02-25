@@ -1,6 +1,7 @@
 import { useTranslations } from '@letta-cloud/translations';
 import React, { useCallback, useMemo } from 'react';
 import {
+  isAPIError,
   type ListIdentitiesResponse,
   useIdentitiesServiceCreateIdentity,
 } from '@letta-cloud/letta-agents-api';
@@ -19,7 +20,7 @@ import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import type { InfiniteData } from '@tanstack/query-core';
 import { UseInfiniteIdentitiesQueryFn } from '../constants';
-import { useIdentityTypeToTranslationMap } from '../hooks/useIdentityTypeToTranslationMap';
+import { useIdentityOptions } from '../hooks/useIdentityOptions/useIdentityOptions';
 
 interface CreateIdentityDialogProps {
   trigger: React.ReactNode;
@@ -47,7 +48,8 @@ export function CreateIdentityDialog(props: CreateIdentityDialogProps) {
     },
   });
   const queryClient = useQueryClient();
-  const { mutate, isPending, reset } = useIdentitiesServiceCreateIdentity();
+  const { mutate, isPending, error, reset } =
+    useIdentitiesServiceCreateIdentity();
 
   const t = useTranslations('CreateIdentityDialog');
 
@@ -62,14 +64,28 @@ export function CreateIdentityDialog(props: CreateIdentityDialogProps) {
     [form, reset],
   );
 
+  const errorMessage = useMemo(() => {
+    if (error) {
+      if (isAPIError(error)) {
+        if (error.body?.detail?.includes('unique constraint')) {
+          return t('errors.uniqueConstraint');
+        }
+      }
+
+      return t('errors.default');
+    }
+
+    return '';
+  }, [error, t]);
+
   const handleSubmit = useCallback(
     (values: IdentityFormValues) => {
       mutate(
         {
           requestBody: {
-            identifier_key: values.uniqueIdentifier,
+            identifier_key: values.uniqueIdentifier.trim(),
             identity_type: values.identityType,
-            name: values.name,
+            name: values.name.trim(),
             project_id: currentProjectId,
           },
         },
@@ -104,28 +120,14 @@ export function CreateIdentityDialog(props: CreateIdentityDialogProps) {
     },
     [mutate, queryClient, currentProjectId, handleOpenChange],
   );
-  const identityTypeToTranslationMap = useIdentityTypeToTranslationMap();
-
-  const identityTypeOptions = useMemo(() => {
-    return [
-      { label: identityTypeToTranslationMap.org, value: 'org' },
-      { label: identityTypeToTranslationMap.user, value: 'user' },
-      { label: identityTypeToTranslationMap.other, value: 'other' },
-    ];
-  }, [identityTypeToTranslationMap]);
-
-  const getOptionFromValue = useCallback(
-    (value: string) => {
-      return identityTypeOptions.find((option) => option.value === value);
-    },
-    [identityTypeOptions],
-  );
+  const { identityTypeOptions, getOptionFromValue } = useIdentityOptions();
 
   return (
     <FormProvider {...form}>
       <Dialog
         onSubmit={form.handleSubmit(handleSubmit)}
         title={t('title')}
+        errorMessage={errorMessage}
         isConfirmBusy={isPending}
         onOpenChange={handleOpenChange}
         trigger={trigger}

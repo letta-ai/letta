@@ -3,6 +3,8 @@ import * as DialogPrimitive from '@radix-ui/react-dialog';
 import { cn } from '@letta-cloud/core-style-config';
 import { DialogTitle } from '@radix-ui/react-dialog';
 import { DialogContext } from '../../core/Dialog/Dialog';
+import { HStack } from '../../framing/HStack/HStack';
+import { CloseIcon } from '../../icons';
 
 interface SideOverlayProps {
   children: React.ReactNode;
@@ -11,7 +13,7 @@ interface SideOverlayProps {
   onOpenChange: (value: boolean) => void;
   trigger?: React.ReactNode;
   confirmOnClose?: boolean;
-  appName: string;
+  title: string;
 }
 
 const DialogRoot = DialogPrimitive.Root;
@@ -22,9 +24,29 @@ const DialogPortal = DialogPrimitive.Portal;
 
 export const CloseSideOverlay = DialogPrimitive.Close;
 
+interface SideOverlayHeaderProps {
+  children: React.ReactNode;
+}
+
+export function SideOverlayHeader(props: SideOverlayHeaderProps) {
+  return (
+    <HStack
+      justify="spaceBetween"
+      paddingX="small"
+      paddingY="small"
+      borderBottom
+    >
+      {props.children}
+
+      <CloseSideOverlay>
+        <CloseIcon />
+      </CloseSideOverlay>
+    </HStack>
+  );
+}
+
 export function SideOverlay(props: SideOverlayProps) {
-  const { children, appName, defaultOpen, isOpen, onOpenChange, trigger } =
-    props;
+  const { children, title, defaultOpen, isOpen, onOpenChange, trigger } = props;
 
   return (
     <DialogRoot
@@ -45,10 +67,10 @@ export function SideOverlay(props: SideOverlayProps) {
             <div id="dialog-dropdown-content" className="z-dropdown" />
             <div
               className={cn(
-                'fixed border flex flex-col max-h-[100dvh] max-w-[450px] w-full  h-full text-base right-0 top-[50%] z-miniApp translate-x-[0] translate-y-[-50%] gap-2 shadow-lg duration-200  bg-background',
+                'fixed border flex flex-col max-h-[100dvh] max-w-[650px] w-full  h-full text-base right-0 top-[50%] z-miniApp translate-x-[0] translate-y-[-50%] gap-2 shadow-lg duration-200  bg-background',
               )}
             >
-              <DialogTitle className="sr-only">{appName}</DialogTitle>
+              <DialogTitle className="sr-only">{title}</DialogTitle>
               {children}
             </div>
           </DialogPrimitive.Content>

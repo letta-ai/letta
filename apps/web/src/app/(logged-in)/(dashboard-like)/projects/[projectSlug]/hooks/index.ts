@@ -4,8 +4,6 @@ import { webApi, webApiQueryKeys } from '$web/client';
 import type { PartialProjectType } from '$web/web-api/contracts';
 import { useTranslations } from '@letta-cloud/translations';
 
-export const REMOTE_DEVELOPMENT_ID = '__remote-development';
-
 export function useCurrentProject(): PartialProjectType {
   const projectSlug = useParams<{ projectSlug: string }>().projectSlug;
   const pathname = usePathname();
@@ -28,7 +26,7 @@ export function useCurrentProject(): PartialProjectType {
   if (pathname.startsWith('/development-servers')) {
     return {
       updatedAt: '',
-      id: REMOTE_DEVELOPMENT_ID,
+      id: '',
       name: t('remoteDevelopment'),
       slug: '/development-servers/local/dashboard',
     };
