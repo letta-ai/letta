@@ -111,6 +111,12 @@ class IdentityManager:
             existing_identity.name = identity.name
         if identity.identity_type is not None:
             existing_identity.identity_type = identity.identity_type
+        if identity.properties is not None:
+            if replace:
+                existing_identity.properties = [prop.model_dump() for prop in identity.properties]
+            else:
+                new_properties = existing_identity.properties + identity.properties
+                existing_identity.properties = [prop.model_dump() for prop in new_properties]
 
         self._process_agent_relationship(
             session=session, identity=existing_identity, agent_ids=identity.agent_ids, allow_partial=False, replace=replace
