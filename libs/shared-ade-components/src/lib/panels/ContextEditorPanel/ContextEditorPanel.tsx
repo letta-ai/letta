@@ -414,9 +414,9 @@ export function ContextWindowPanel() {
       {/* eslint-disable-next-line react/forbid-component-props */}
       <div className="relative">
         <div className="relative z-[1]">
-          <Chart height={35} options={standardChartOptions} />
+          <Chart height={25} options={standardChartOptions} />
         </div>
-        <div className="h-[25px] mt-[5px] w-full absolute z-[0] pointer-events-none top-0 bg-background-grey2" />
+        <div className="h-[15px] mt-[5px] w-full absolute z-[0] pointer-events-none top-0 bg-background-grey2" />
       </div>
     </VStack>
   );
