@@ -12,7 +12,6 @@ import {
   ClipboardIcon,
   EyeOpenIcon,
   EyeClosedIcon,
-  LockClosedIcon,
 } from '../../icons';
 import { useCallback, useMemo } from 'react';
 import { SpinnerPrimitive } from '../../../primitives';
@@ -189,12 +188,8 @@ const InputPrimitive = React.forwardRef<HTMLInputElement, InputPrimitiveProps>(
     }, [showVisibilityControls, visibility, type]);
 
     const postIconRender = useMemo(() => {
-      if (disabled) {
-        return <LockClosedIcon />;
-      }
-
       return postIcon;
-    }, [disabled, postIcon]);
+    }, [postIcon]);
 
     return (
       <VStack

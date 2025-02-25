@@ -269,6 +269,38 @@
     }
   },
   "ADE/AgentSettingsPanel": {
+    "IdentityElement": {
+      "remove": "Remove"
+    },
+    "IdentitiesEditorDialog": {
+      "error": "There was an error updating the identities, please try again or contact support.",
+      "currentIdentities": "Current Identities",
+      "manageIdentities": "Manage all identities",
+      "noIdentities": "This agent has no identities",
+      "identitySelector": {
+        "label": "Search Identities",
+        "placeholder": "Search by name",
+        "noIdentities": "No identities found, please change your search query",
+        "loading": "Loading identities..."
+      },
+      "remove": "Remove",
+      "trigger": "Edit Identities",
+      "save": "Update identities",
+      "title": "Manage Identities for Agent",
+      "info": "You can add multiple identities to your agent, these identities will be used to organize your agents and help you identify them."
+    },
+    "IdentityViewer": {
+      "tooltip": "Identities are entities that can be used to organize and identify your agents. You can add multiple identities to your agent.",
+      "label": {
+        "multiple": "Identities",
+        "singular": "Identity"
+      },
+      "status": {
+        "noIdentities": "None",
+        "multipleIdentities": "{name} and {count} more...",
+        "loading": "Loading identities..."
+      }
+    },
     "TemplateDescription": {
       "placeholder": "Enter a description for this template",
       "label": "Template description"

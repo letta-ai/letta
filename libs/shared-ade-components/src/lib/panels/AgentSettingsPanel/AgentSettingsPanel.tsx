@@ -22,6 +22,12 @@ import {
   FormField,
   TextArea,
   Spinner,
+  GroupIcon,
+  RawAsyncSelect,
+  ActionCard,
+  Avatar,
+  CloseIcon,
+  ExternalLinkIcon,
 } from '@letta-cloud/component-library';
 import {
   useAgentBaseTypeName,
@@ -30,7 +36,12 @@ import {
   useSyncUpdateCurrentAgent,
 } from '../../hooks';
 import { z } from 'zod';
-import type { AgentState } from '@letta-cloud/letta-agents-api';
+import {
+  type AgentState,
+  IdentitiesService,
+  useIdentitiesServiceRetrieveIdentity,
+  UseIdentitiesServiceRetrieveIdentityKeyFn,
+} from '@letta-cloud/letta-agents-api';
 import {
   UseAgentsServiceRetrieveAgentKeyFn,
   useAgentsServiceModifyAgent,
@@ -47,9 +58,11 @@ import { useQueryClient } from '@tanstack/react-query';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { getBrandFromModelName } from '@letta-cloud/generic-utils';
 import { UpdateNameDialog } from '../../shared/UpdateAgentNameDialog/UpdateAgentNameDialog';
-import { webApiQueryKeys } from '@letta-cloud/web-api-client';
+import { useFeatureFlag, webApiQueryKeys } from '@letta-cloud/web-api-client';
 import { useADEPermissions } from '../../hooks/useADEPermissions/useADEPermissions';
 import { ApplicationServices } from '@letta-cloud/rbac';
+import { useADEAppContext } from '../../AppContext/AppContext';
+import { useIdentityTypeToTranslationMap } from '../../IdentitiesTable/hooks/useIdentityTypeToTranslationMap';
 
 interface SelectedModelType {
   icon: React.ReactNode;
@@ -574,6 +587,311 @@ function TemplateDescription() {
   );
 }
 
+interface IdentityElementProps {
+  identityId: string;
+  onRemove: () => void;
+}
+
+function IdentityElement(props: IdentityElementProps) {
+  const { identityId, onRemove } = props;
+
+  const t = useTranslations('ADE/AgentSettingsPanel');
+  const { data } = useIdentitiesServiceRetrieveIdentity({
+    identityId,
+  });
+
+  if (!data) {
+    return <ActionCard title="Loading" isSkeleton />;
+  }
+
+  return (
+    <ActionCard
+      title={data.name}
+      icon={<Avatar name={data.name} />}
+      mainAction={
+        <HStack align="center">
+          {data.identifier_key && (
+            <Typography color="muted" variant="body2">
+              {data.identifier_key}
+            </Typography>
+          )}
+          <Button
+            label={t('IdentityElement.remove')}
+            hideLabel
+            color="tertiary"
+            preIcon={<CloseIcon />}
+            onClick={onRemove}
+          />
+        </HStack>
+      }
+    ></ActionCard>
+  );
+}
+
+interface IdentitiesEditorDialogProps {
+  defaultIdentityIds: string[];
+}
+
+function IdentitiesEditorDialog(props: IdentitiesEditorDialogProps) {
+  const t = useTranslations('ADE/AgentSettingsPanel');
+  const { projectId } = useADEAppContext();
+  const identityTypeToTranslationMap = useIdentityTypeToTranslationMap();
+  const { id: agentId } = useCurrentAgent();
+  const { mutate, isPending, isError } = useAgentsServiceModifyAgent();
+  const [isOpened, setIsOpened] = useState(false);
+
+  const { defaultIdentityIds } = props;
+
+  const queryClient = useQueryClient();
+  const [identityIds, setIdentityIds] = useState<string[]>(defaultIdentityIds);
+
+  const handleMutate = useCallback(() => {
+    mutate(
+      {
+        agentId,
+        requestBody: {
+          identity_ids: identityIds,
+        },
+      },
+      {
+        onSuccess: () => {
+          queryClient.setQueriesData<AgentState | undefined>(
+            {
+              queryKey: UseAgentsServiceRetrieveAgentKeyFn({
+                agentId,
+              }),
+            },
+            (oldData) => {
+              if (!oldData) {
+                return oldData;
+              }
+
+              return {
+                ...oldData,
+                identity_ids: identityIds,
+              };
+            },
+          );
+
+          setIsOpened(false);
+        },
+      },
+    );
+  }, [identityIds, mutate, queryClient, agentId]);
+
+  const searchIdentities = useCallback(
+    async (query: string) => {
+      const response = await IdentitiesService.listIdentities({
+        name: query,
+        projectId,
+      });
+
+      return response.map((identity) => {
+        queryClient.setQueriesData(
+          {
+            queryKey: UseIdentitiesServiceRetrieveIdentityKeyFn({
+              identityId: identity.id || '',
+            }),
+          },
+          identity,
+        );
+
+        return {
+          label: `${identity.name}${identity.identifier_key ? ` (${identity.identifier_key})` : ''}`,
+          icon: <Avatar name={identity.name} />,
+          badge: (
+            <Badge
+              content={identityTypeToTranslationMap[identity.identity_type]}
+            />
+          ),
+          value: identity.id,
+        };
+      });
+    },
+    [projectId, queryClient, identityTypeToTranslationMap],
+  );
+
+  const handleRemove = useCallback(
+    (identityId: string) => {
+      setIdentityIds((existing) => {
+        const set = new Set(existing);
+
+        set.delete(identityId);
+        return Array.from(set);
+      });
+    },
+    [setIdentityIds],
+  );
+
+  const identitiesUrl = useMemo(() => {
+    return window.location.href.split('/agents')[0];
+  }, []);
+
+  return (
+    <Dialog
+      onOpenChange={(isOpen) => {
+        if (!isOpen) {
+          setIdentityIds(defaultIdentityIds);
+        }
+
+        setIsOpened(isOpen);
+      }}
+      isOpen={isOpened}
+      errorMessage={isError ? t('IdentitiesEditorDialog.error') : ''}
+      size="large"
+      onConfirm={handleMutate}
+      isConfirmBusy={isPending}
+      color="background"
+      trigger={
+        <Button
+          hideLabel
+          preIcon={<GroupIcon />}
+          color="secondary"
+          label={t('IdentitiesEditorDialog.trigger')}
+        />
+      }
+      confirmText={t('IdentitiesEditorDialog.save')}
+      title={t('IdentitiesEditorDialog.title')}
+    >
+      <VStack gap="large">
+        <RawAsyncSelect
+          labelVariant="simple"
+          fullWidth
+          value={[]}
+          hideLabel
+          styleConfig={{
+            size: 'large',
+          }}
+          postIcon={<GroupIcon />}
+          label={t('IdentitiesEditorDialog.identitySelector.label')}
+          placeholder={t('IdentitiesEditorDialog.identitySelector.placeholder')}
+          noOptionsMessage={() =>
+            t('IdentitiesEditorDialog.identitySelector.noIdentities')
+          }
+          loadOptions={searchIdentities}
+          onSelect={(value) => {
+            if (isMultiValue(value) || !value?.value) {
+              return;
+            }
+
+            setIdentityIds((existing) => {
+              const set = new Set<string>(existing);
+
+              if (typeof value.value === 'string') {
+                set.add(value.value);
+              }
+
+              return Array.from(set);
+            });
+          }}
+        />
+        <VStack borderTop paddingTop="small">
+          <HStack justify="spaceBetween" align="center" fullWidth>
+            <Typography bold>
+              {t('IdentitiesEditorDialog.currentIdentities')}
+            </Typography>
+            {identitiesUrl && (
+              <Button
+                target="_blank"
+                label={t('IdentitiesEditorDialog.manageIdentities')}
+                href={`${identitiesUrl}/identities`}
+                color="tertiary"
+                postIcon={<ExternalLinkIcon />}
+                size="small"
+              />
+            )}
+          </HStack>
+          <VStack fullWidth gap="small">
+            {identityIds.length === 0 && (
+              <Alert
+                variant="info"
+                title={t('IdentitiesEditorDialog.noIdentities')}
+              ></Alert>
+            )}
+            {identityIds.map((identityId) => (
+              <IdentityElement
+                onRemove={() => {
+                  handleRemove(identityId);
+                }}
+                key={identityId}
+                identityId={identityId}
+              />
+            ))}
+          </VStack>
+        </VStack>
+      </VStack>
+    </Dialog>
+  );
+}
+
+function IdentityViewer() {
+  const currentAgent = useCurrentAgent();
+  const { data: initialIdentity } = useIdentitiesServiceRetrieveIdentity(
+    {
+      identityId: currentAgent?.identity_ids?.[0] || '',
+    },
+    undefined,
+    {
+      enabled: !!currentAgent?.identity_ids?.[0],
+    },
+  );
+
+  const t = useTranslations('ADE/AgentSettingsPanel');
+
+  const identityValue = useMemo(() => {
+    if (!currentAgent) {
+      return '';
+    }
+
+    if (
+      !currentAgent?.identity_ids ||
+      currentAgent?.identity_ids.length === 0
+    ) {
+      return t('IdentityViewer.status.noIdentities');
+    }
+
+    if (!initialIdentity) {
+      return t('IdentityViewer.status.loading');
+    }
+
+    if (currentAgent.identity_ids.length === 1) {
+      return initialIdentity.name;
+    }
+
+    return t('IdentityViewer.status.multipleIdentities', {
+      name: initialIdentity.name,
+      count: currentAgent.identity_ids.length - 1,
+    });
+  }, [initialIdentity, currentAgent, t]);
+
+  const identityLabel = useMemo(() => {
+    if (currentAgent?.identity_ids?.length === 1) {
+      return t('IdentityViewer.label.singular');
+    }
+
+    return t('IdentityViewer.label.multiple');
+  }, [currentAgent?.identity_ids?.length, t]);
+
+  return (
+    <HStack fullWidth align="end">
+      <RawInput
+        infoTooltip={{
+          text: t('IdentityViewer.tooltip'),
+        }}
+        label={identityLabel}
+        value={identityValue}
+        disabled
+        fullWidth
+      />
+      {!!currentAgent && (
+        <IdentitiesEditorDialog
+          defaultIdentityIds={currentAgent.identity_ids || []}
+        />
+      )}
+    </HStack>
+  );
+}
+
 export function AgentSettingsPanel() {
   const currentAgent = useCurrentAgent();
   const { isTemplate } = useCurrentAgentMetaData();
@@ -581,6 +899,11 @@ export function AgentSettingsPanel() {
   const t = useTranslations('ADE/AgentSettingsPanel');
 
   const { capitalized: baseName } = useAgentBaseTypeName();
+
+  const { isLoading: isLoadingFlag, data: isFlagEnabled } =
+    useFeatureFlag('IDENTITIES');
+
+  const isIdentitiesEnabled = isFlagEnabled && !isLoadingFlag;
 
   if (!currentAgent.llm_config) {
     return <LoadingEmptyStatusComponent emptyMessage="" isLoading />;
@@ -612,6 +935,7 @@ export function AgentSettingsPanel() {
       </VStack>
       {isTemplate && <TemplateDescription />}
       <ModelSelector llmConfig={currentAgent.llm_config} />
+      {isIdentitiesEnabled && <IdentityViewer />}
       <SystemPromptEditor />
     </PanelMainContent>
   );

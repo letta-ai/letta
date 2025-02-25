@@ -6,8 +6,10 @@ import AsyncReactSelect from 'react-select/async';
 import AsyncCreatableReactSelect from 'react-select/async-creatable';
 
 import { cn } from '@letta-cloud/core-style-config';
+import { useCallback, useRef } from 'react';
 import type { ReactNode } from 'react';
-import { useEffect } from 'react';
+
+import { useEffect, useMemo } from 'react';
 import { CaretDownIcon, CloseIcon } from '../../icons';
 import { makeInput, makeRawInput } from '../Form/Form';
 import { z } from 'zod';
@@ -16,6 +18,8 @@ import { Slot } from '@radix-ui/react-slot';
 import { Typography } from '../Typography/Typography';
 import { useDialogContext } from '../Dialog/Dialog';
 import { VStack } from '../../framing/VStack/VStack';
+import { cva } from 'class-variance-authority';
+import type { VariantProps } from 'class-variance-authority';
 
 interface SelectOptionsContextProps {
   hideIconsOnOptions?: boolean;
@@ -53,15 +57,18 @@ export function isMultiValue(
 interface UseStylesArgs {
   menuWidth?: number;
   containerWidth?: number;
+  size?: 'default' | 'large' | 'small';
 }
 
-interface BaseSelectProps {
+interface BaseSelectProps extends GetClassNameArgs {
   isMulti?: boolean;
   isClearable?: boolean;
   isSearchable?: boolean;
   'data-testid'?: string;
   placeholder?: string;
   isLoading?: boolean;
+  hideDownCaret?: boolean;
+  postIcon?: ReactNode;
   defaultOptions?: OptionType[];
   isDisabled?: boolean;
   onSelect?: (value: MultiValue<OptionType> | SingleValue<OptionType>) => void;
@@ -73,127 +80,177 @@ interface BaseSelectProps {
 }
 
 /* eslint-disable @typescript-eslint/naming-convention */
-const overridenComponents = {
-  DropdownIndicator: () => <CaretDownIcon className="w-2 h-2" />,
-  ClearIndicator: ({ ...props }) => (
-    // @ts-expect-error yest
-    <components.ClearIndicator {...props}>
-      {props.children}
-      <CloseIcon />
-    </components.ClearIndicator>
-  ),
-  MultiValueRemove: ({ ...props }) => (
-    // @ts-expect-error yest
-    <components.MultiValueRemove {...props}>
-      <HStack align="center" gap="small">
-        {props.data.icon && (
-          <Slot className="max-h-3 w-3">{props.data.icon}</Slot>
-        )}
-        {props.children}
-        <CloseIcon />
-      </HStack>
-    </components.MultiValueRemove>
-  ),
-  // @ts-expect-error yest
-  MultiValueContainer: ({ children, ...props }) => (
-    // @ts-expect-error yest
-    <components.MultiValueContainer {...props}>
-      <HStack
-        color="background-grey2"
-        paddingY="xxsmall"
-        paddingX="xsmall"
-        align="center"
-        gap="small"
-      >
-        {props.data.icon && (
-          <Slot className="max-h-3 w-3">{props.data.icon}</Slot>
-        )}
-        {children}
-      </HStack>
-    </components.MultiValueContainer>
-  ),
-  // @ts-expect-error yest
-  SingleValue: ({ children, ...props }) => (
-    // @ts-expect-error yest
-    <components.SingleValue {...props}>
-      <HStack align="center" gap="medium">
-        <HStack align="center" gap="small" fullWidth>
-          {props.data.icon && (
-            <Slot className="max-h-3 w-3">{props.data.icon}</Slot>
-          )}
-          <Typography align="left" noWrap overflow="ellipsis">
-            {children}
-          </Typography>
-        </HStack>
-        {props.data.badge}
-      </HStack>
-    </components.SingleValue>
-  ),
-  // @ts-expect-error yest
-  GroupHeading: ({ children, ...props }) => (
-    // @ts-expect-error yest
-    <components.GroupHeading {...props} style={{ padding: 0, margin: 0 }}>
-      <HStack
-        align="center"
-        color="background-grey"
-        paddingY="small"
-        paddingX="medium"
-      >
-        {props.data.icon && (
-          <Slot className="max-h-3 w-3">{props.data.icon}</Slot>
-        )}
-        <Typography bold className="mt-[-1px]">
-          {children}
-        </Typography>
-      </HStack>
-    </components.GroupHeading>
-  ),
-  // @ts-expect-error yest
-  Option: ({ children, ...props }) => {
-    const { hideIconsOnOptions } = useSelectOptionsContext();
+function useSelectComponents(selectProps: BaseSelectProps) {
+  const { hideDownCaret, postIcon } = selectProps;
 
-    return (
-      // @ts-expect-error yest
-      <components.Option {...props}>
-        <HStack
-          align="center"
-          data-testid={`select-box-option-${props.data.value}`}
-        >
-          <HStack align="center" fullWidth>
-            {props.data.icon && !hideIconsOnOptions && (
-              <Slot className="max-h-3  w-3">{props.data.icon}</Slot>
+  return useMemo(() => {
+    return {
+      DropdownIndicator: () => {
+        if (hideDownCaret) {
+          return null;
+        }
+
+        if (postIcon) {
+          return <Slot className="w-4 h-4">{postIcon}</Slot>;
+        }
+
+        return <CaretDownIcon className="w-2 h-2" />;
+      },
+      ClearIndicator: ({ ...props }) => (
+        // @ts-expect-error yest
+        <components.ClearIndicator {...props}>
+          {props.children}
+          <CloseIcon />
+        </components.ClearIndicator>
+      ),
+      MultiValueRemove: ({ ...props }) => (
+        // @ts-expect-error yest
+        <components.MultiValueRemove {...props}>
+          <HStack align="center" gap="small">
+            {props.data.icon && (
+              <Slot className="max-h-3 w-3">{props.data.icon}</Slot>
             )}
-            <Typography align="left" noWrap overflow="ellipsis">
+            {props.children}
+            <CloseIcon />
+          </HStack>
+        </components.MultiValueRemove>
+      ),
+      // @ts-expect-error yest
+      MultiValueContainer: ({ children, ...props }) => (
+        // @ts-expect-error yest
+        <components.MultiValueContainer {...props}>
+          <HStack
+            color="background-grey2"
+            paddingY="xxsmall"
+            paddingX="xsmall"
+            align="center"
+            gap="small"
+          >
+            {props.data.icon && (
+              <Slot className="max-h-3 w-3">{props.data.icon}</Slot>
+            )}
+            {children}
+          </HStack>
+        </components.MultiValueContainer>
+      ),
+      // @ts-expect-error yest
+      SingleValue: ({ children, ...props }) => (
+        // @ts-expect-error yest
+        <components.SingleValue {...props}>
+          <HStack align="center" gap="medium">
+            <HStack align="center" gap="small" fullWidth>
+              {props.data.icon && (
+                <Slot className="max-h-3 w-3">{props.data.icon}</Slot>
+              )}
+              <Typography align="left" noWrap overflow="ellipsis">
+                {children}
+              </Typography>
+            </HStack>
+            {props.data.badge}
+          </HStack>
+        </components.SingleValue>
+      ),
+      // @ts-expect-error yest
+      GroupHeading: ({ children, ...props }) => (
+        // @ts-expect-error yest
+        <components.GroupHeading {...props} style={{ padding: 0, margin: 0 }}>
+          <HStack
+            align="center"
+            color="background-grey"
+            paddingY="small"
+            paddingX="medium"
+          >
+            {props.data.icon && (
+              <Slot className="max-h-3 w-3">{props.data.icon}</Slot>
+            )}
+            <Typography bold className="mt-[-1px]">
               {children}
             </Typography>
           </HStack>
-          {props.data.badge}
-        </HStack>
-        {props.data.description && (
-          <div className="text-xs text-muted">{props.data.description}</div>
-        )}
-      </components.Option>
-    );
-  },
-};
-/* eslint-enable @typescript-eslint/naming-convention */
+        </components.GroupHeading>
+      ),
+      // @ts-expect-error yest
+      Option: ({ children, ...props }) => {
+        const { hideIconsOnOptions } = useSelectOptionsContext();
 
-const classNames = {
-  container: () => 'min-w-[200px] w-full',
-  control: () =>
-    cn(
-      'border bg-background border-solid h-[auto] px-2 py-1 min-h-[36px]! w-full text-base',
-      'h-biHeight',
-    ),
-  placeholder: () => cn('text-muted-content'),
-  menu: () => cn('mt-1 bg-background border'),
-  option: () => cn('px-3 py-2  hover:bg-background-hover'),
-  noOptionsMessage: () => cn('py-3 px-3'),
-  valueContainer: () => cn('flex items-center gap-1'),
-  groupHeading: () =>
-    cn('border-b px-3 mt-3 pb-2 text-sm font-medium text-tertiary-content'),
-  multiValue: () => cn('h-[21px] text-sm'),
-};
+        return (
+          // @ts-expect-error yest
+          <components.Option {...props}>
+            <HStack
+              align="center"
+              data-testid={`select-box-option-${props.data.value}`}
+            >
+              <HStack align="center" fullWidth>
+                {props.data.icon && !hideIconsOnOptions && (
+                  <Slot className="max-h-3  w-3">{props.data.icon}</Slot>
+                )}
+                <Typography align="left" noWrap overflow="ellipsis">
+                  {children}
+                </Typography>
+              </HStack>
+              {props.data.badge}
+            </HStack>
+            {props.data.description && (
+              <div className="text-xs text-muted">{props.data.description}</div>
+            )}
+          </components.Option>
+        );
+      },
+    };
+  }, [hideDownCaret, postIcon]);
+}
+
+const controlVariants = cva(
+  'border bg-background border-solid h-[auto] px-2 py-1 w-full text-base',
+  {
+    variants: {},
+    defaultVariants: {},
+  },
+);
+
+type GetClassNameArgs = VariantProps<typeof controlVariants>;
+
+function useDebouncedLoadOptions<Input, Output>(
+  fn: (arg: Input) => Promise<Output>,
+  delay: number,
+): (arg: Input) => Promise<Output> {
+  const timeout = useRef<NodeJS.Timeout | null>(null);
+
+  return useCallback(
+    (arg: Input) => {
+      if (timeout.current) {
+        clearTimeout(timeout.current);
+      }
+
+      return new Promise((resolve) => {
+        timeout.current = setTimeout(async () => {
+          resolve(await fn(arg));
+        }, delay);
+      });
+    },
+    [fn, delay],
+  );
+}
+
+/* eslint-enable @typescript-eslint/naming-convention */
+function getClassNames(props: GetClassNameArgs = {}) {
+  return {
+    container: () => 'min-w-[200px] w-full',
+    control: () =>
+      cn(
+        'border bg-background border-solid h-[auto] px-2 py-1 w-full text-base',
+        controlVariants(props),
+      ),
+    placeholder: () => cn('text-muted-content'),
+    menu: () => cn('mt-1 bg-background border'),
+    option: () => cn('px-3 py-2  hover:bg-background-hover'),
+    noOptionsMessage: () => cn('py-3 px-3'),
+    valueContainer: () => cn('flex items-center gap-1'),
+    groupHeading: () =>
+      cn('border-b px-3 mt-3 pb-2 text-sm font-medium text-tertiary-content'),
+    multiValue: () => cn('h-[21px] text-sm'),
+  };
+}
 
 function useStyles(args: UseStylesArgs) {
   const { menuWidth, containerWidth } = args;
@@ -205,7 +262,14 @@ function useStyles(args: UseStylesArgs) {
         : {}),
     }),
     menuPortal: (base: any) => ({ ...base, zIndex: 11 }),
-    control: (base: any) => ({ ...base, height: 'auto', minHeight: '36px' }),
+    control: (base: any) => ({
+      ...base,
+      height: 'auto',
+      minHeight:
+        args.size === 'large'
+          ? 'var(--button-input-height-lg)'
+          : 'var(--button-input-height)',
+    }),
     option: () => ({ fontSize: 'var(--font-size-base)' }),
     noOptionsMessage: () => ({ fontSize: 'var(--font-size-sm)' }),
     menu: (base: any) => ({
@@ -218,6 +282,7 @@ function useStyles(args: UseStylesArgs) {
 export interface AsyncSelectProps extends BaseSelectProps {
   loadOptions: (inputValue: string) => Promise<OptionType[]>;
   cacheOptions?: boolean;
+  preIcon?: ReactNode;
   hideIconsOnOptions?: boolean;
 }
 
@@ -246,9 +311,13 @@ function AsyncSelectPrimitive(_props: AsyncSelectProps) {
 
   const [mounted, setMounted] = React.useState(false);
 
+  const components = useSelectComponents(props);
+
   useEffect(() => {
     setMounted(true);
   }, []);
+
+  const loadOptions = useDebouncedLoadOptions(props.loadOptions, 300);
 
   if (!mounted) {
     return (
@@ -285,10 +354,11 @@ function AsyncSelectPrimitive(_props: AsyncSelectProps) {
         }}
         value={props.value}
         // @ts-expect-error yest
-        components={overridenComponents}
+        components={components}
         styles={styles}
-        classNames={classNames}
+        classNames={getClassNames()}
         {...props}
+        loadOptions={loadOptions}
       />
     </SelectOptionsProvider>
   );
@@ -353,6 +423,8 @@ function SelectPrimitive(_props: SelectProps) {
     setMounted(true);
   }, []);
 
+  const components = useSelectComponents(props);
+
   if (!mounted) {
     return (
       <UnmountedSelect
@@ -391,9 +463,9 @@ function SelectPrimitive(_props: SelectProps) {
         menuIsOpen={open}
         value={props.value}
         // @ts-expect-error yest
-        components={overridenComponents}
+        components={components}
         styles={styles}
-        classNames={classNames}
+        classNames={getClassNames()}
         {...props}
       />
     </SelectOptionsProvider>
@@ -410,6 +482,7 @@ function CreatableAsyncSelectPrimitive(_props: AsyncSelectProps) {
 
   const [menuPortalTarget, setMenuPortalTarget] =
     React.useState<HTMLElement | null>(null);
+  const components = useSelectComponents(props);
 
   useEffect(() => {
     if (typeof document === 'undefined') {
@@ -428,6 +501,8 @@ function CreatableAsyncSelectPrimitive(_props: AsyncSelectProps) {
   useEffect(() => {
     setMounted(true);
   }, []);
+
+  const loadOptions = useDebouncedLoadOptions(props.loadOptions, 300);
 
   if (!mounted) {
     return (
@@ -464,10 +539,11 @@ function CreatableAsyncSelectPrimitive(_props: AsyncSelectProps) {
         }}
         value={props.value}
         // @ts-expect-error yest
-        components={overridenComponents}
+        components={components}
         styles={styles}
-        classNames={classNames}
+        classNames={getClassNames()}
         {...props}
+        loadOptions={loadOptions}
       />
     </SelectOptionsProvider>
   );

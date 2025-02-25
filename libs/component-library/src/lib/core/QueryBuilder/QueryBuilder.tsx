@@ -18,7 +18,7 @@ import { useCallback } from 'react';
 import { get, set } from 'lodash-es';
 import { Button } from '../Button/Button';
 import { useTranslations } from '@letta-cloud/translations';
-import { CloseIcon, PlusIcon } from '../../icons';
+import { CloseIcon, PlusIcon, SearchIcon } from '../../icons';
 
 const DISABLE_COMBINATOR = true;
 
@@ -144,6 +144,7 @@ function InputConstructor(props: InputConstructorProps) {
       return (
         <RawAsyncSelect
           hideLabel
+          preIcon={<SearchIcon />}
           fullWidth
           {...structure.options}
           value={value}
