@@ -39,6 +39,12 @@ curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.1/install.sh | bash
 brew install just
 ```
 
+- `poetry` - [linky]([https://github.com/casey/just](https://github.com/python-poetry/poetry))
+```sh
+# Install just on mac
+brew install poetry
+```
+
 - `1password-cli` - [linky](https://support.1password.com/command-line-getting-started/)
 ```sh
 # Install 1password-cli on mac
