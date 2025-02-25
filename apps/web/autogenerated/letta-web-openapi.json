@@ -341,6 +341,39 @@
             }
           },
           {
+            "name": "identifier_id",
+            "in": "query",
+            "schema": {
+              "oneOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "string",
+                  "format": "null",
+                  "nullable": true
+                },
+                {
+                  "type": "array",
+                  "items": {
+                    "oneOf": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "string",
+                        "format": "null",
+                        "nullable": true
+                      }
+                    ],
+                    "nullable": true
+                  }
+                }
+              ],
+              "nullable": true
+            }
+          },
+          {
             "name": "identifier_keys",
             "in": "query",
             "schema": {

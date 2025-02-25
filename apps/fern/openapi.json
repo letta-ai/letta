@@ -1149,6 +1149,24 @@
             "description": "Search agents by base template id"
           },
           {
+            "name": "identifier_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Search agents by identifier id",
+              "title": "Identifier Id"
+            },
+            "description": "Search agents by identifier id"
+          },
+          {
             "name": "identifier_keys",
             "in": "query",
             "required": false,

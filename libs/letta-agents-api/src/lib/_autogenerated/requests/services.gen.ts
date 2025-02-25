@@ -776,6 +776,7 @@ export class AgentsService {
    * @param data.projectId Search agents by project id
    * @param data.templateId Search agents by template id
    * @param data.baseTemplateId Search agents by base template id
+   * @param data.identifierId Search agents by identifier id
    * @param data.identifierKeys Search agents by identifier keys
    * @param data.userId
    * @returns AgentState Successful Response
@@ -799,6 +800,7 @@ export class AgentsService {
         project_id: data.projectId,
         template_id: data.templateId,
         base_template_id: data.baseTemplateId,
+        identifier_id: data.identifierId,
         identifier_keys: data.identifierKeys,
       },
       errors: {

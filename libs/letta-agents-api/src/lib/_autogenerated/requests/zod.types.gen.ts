@@ -4042,6 +4042,9 @@ export const get_List_agents = {
       base_template_id: z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
+      identifier_id: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
       identifier_keys: z
         .union([
           z.array(z.string()),

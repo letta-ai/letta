@@ -375,6 +375,7 @@ export const useSourcesServiceListSourceFiles = <
  * @param data.projectId Search agents by project id
  * @param data.templateId Search agents by template id
  * @param data.baseTemplateId Search agents by base template id
+ * @param data.identifierId Search agents by identifier id
  * @param data.identifierKeys Search agents by identifier keys
  * @param data.userId
  * @returns AgentState Successful Response
@@ -389,6 +390,7 @@ export const useAgentsServiceListAgents = <
     after,
     baseTemplateId,
     before,
+    identifierId,
     identifierKeys,
     limit,
     matchAllTags,
@@ -402,6 +404,7 @@ export const useAgentsServiceListAgents = <
     after?: string;
     baseTemplateId?: string;
     before?: string;
+    identifierId?: string;
     identifierKeys?: string[];
     limit?: number;
     matchAllTags?: boolean;
@@ -421,6 +424,7 @@ export const useAgentsServiceListAgents = <
         after,
         baseTemplateId,
         before,
+        identifierId,
         identifierKeys,
         limit,
         matchAllTags,
@@ -438,6 +442,7 @@ export const useAgentsServiceListAgents = <
         after,
         baseTemplateId,
         before,
+        identifierId,
         identifierKeys,
         limit,
         matchAllTags,

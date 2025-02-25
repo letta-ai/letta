@@ -3061,6 +3061,10 @@ export type ListAgentsData = {
    */
   before?: string | null;
   /**
+   * Search agents by identifier id
+   */
+  identifierId?: string | null;
+  /**
    * Search agents by identifier keys
    */
   identifierKeys?: Array<string> | null;
