@@ -36,6 +36,7 @@ jobs:
     env:
       IS_API_STABILITY_TEST: yes
       IS_CYPRESS_RUN: yes
+      NODE_OPTIONS: --max_old_space_size=6144
     needs: [changed-files]
     permissions:
       actions: read
