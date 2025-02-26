@@ -435,6 +435,13 @@
       "when": 1740429931095,
       "tag": "0061_clumsy_swordsman",
       "breakpoints": true
+    },
+    {
+      "idx": 62,
+      "version": "7",
+      "when": 1740594169276,
+      "tag": "0062_volatile_sumo",
+      "breakpoints": true
     }
   ]
 }

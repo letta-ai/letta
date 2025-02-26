@@ -66,6 +66,10 @@ import {
   sharedAgentChatsContracts,
 } from './public/sharedAgentChatsContracts';
 import { ssoContracts } from './public/ssoContracts';
+import {
+  launchLinkContracts,
+  launchLinkQueryKeys,
+} from './public/launchLinkContracts';
 
 export const contracts = {
   user: userContract,
@@ -84,6 +88,7 @@ export const contracts = {
   rateLimits: rateLimitsContracts,
   sharedAgentChats: sharedAgentChatsContracts,
   sso: ssoContracts,
+  launchLinks: launchLinkContracts,
   admin: {
     usage: adminUsageContracts,
     toolMetadata: adminToolMetadataContracts,
@@ -110,6 +115,7 @@ export const queryClientKeys = {
   toolMetadata: toolMetadataQueryClientKeys,
   rateLimits: rateLimitQueryClientKeys,
   sharedAgentChats: sharedAgentChatQueryClientKeys,
+  launchLinks: launchLinkQueryKeys,
   admin: {
     usage: adminUsageQueryKeys,
     users: adminUsersQueryClientKeys,

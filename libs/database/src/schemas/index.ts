@@ -1094,3 +1094,33 @@ export const organizationLowBalanceNotificationLock = pgTable(
     lowBalanceNotificationSentAt: timestamp('low_balance_notification_sent_at'),
   },
 );
+
+export const launchLinkConfigurations = pgTable('launch_link_configurations', {
+  organizationId: text('organization_id')
+    .notNull()
+    .references(() => organizations.id, { onDelete: 'cascade' })
+    .notNull(),
+  agentTemplateId: text('agent_template_id')
+    .notNull()
+    .primaryKey()
+    .unique()
+    .references(() => agentTemplates.id, {
+      onDelete: 'cascade',
+    }),
+  accessLevel: chatAccessEnum('access_policy').notNull(),
+  launchLink: text('launch_link').notNull().unique(),
+});
+
+export const launchLinkConfigurationsRelations = relations(
+  launchLinkConfigurations,
+  ({ one }) => ({
+    organization: one(organizations, {
+      fields: [launchLinkConfigurations.organizationId],
+      references: [organizations.id],
+    }),
+    agentTemplate: one(agentTemplates, {
+      fields: [launchLinkConfigurations.agentTemplateId],
+      references: [agentTemplates.id],
+    }),
+  }),
+);
