@@ -21,8 +21,10 @@ from letta.orm.sqlite_functions import adapt_array
 from letta.schemas.agent import AgentState as PydanticAgentState
 from letta.schemas.agent import AgentType, CreateAgent, UpdateAgent
 from letta.schemas.block import Block as PydanticBlock
+from letta.schemas.block import BlockUpdate
 from letta.schemas.embedding_config import EmbeddingConfig
 from letta.schemas.llm_config import LLMConfig
+from letta.schemas.memory import Memory
 from letta.schemas.message import Message as PydanticMessage
 from letta.schemas.message import MessageCreate
 from letta.schemas.passage import Passage as PydanticPassage
@@ -612,6 +614,40 @@ class AgentManager:
                 openai_message_dict=init_messages[0],
             )
             return self.append_to_in_context_messages([system_message], agent_id=agent_state.id, actor=actor)
+
+    # TODO: I moved this from agent.py - replace all mentions of this with the agent_manager version
+    @enforce_types
+    def update_memory_if_changed(self, agent_id: str, new_memory: Memory, actor: PydanticUser) -> PydanticAgentState:
+        """
+        Update internal memory object and system prompt if there have been modifications.
+
+        Args:
+            new_memory (Memory): the new memory object to compare to the current memory object
+
+        Returns:
+            modified (bool): whether the memory was updated
+        """
+        agent_state = self.get_agent_by_id(agent_id=agent_id, actor=actor)
+        if agent_state.memory.compile() != new_memory.compile():
+            # update the blocks (LRW) in the DB
+            for label in agent_state.memory.list_block_labels():
+                updated_value = new_memory.get_block(label).value
+                if updated_value != agent_state.memory.get_block(label).value:
+                    # update the block if it's changed
+                    block_id = agent_state.memory.get_block(label).id
+                    block = self.block_manager.update_block(block_id=block_id, block_update=BlockUpdate(value=updated_value), actor=actor)
+
+            # refresh memory from DB (using block ids)
+            agent_state.memory = Memory(
+                blocks=[self.block_manager.get_block_by_id(block.id, actor=actor) for block in agent_state.memory.get_blocks()]
+            )
+
+            # NOTE: don't do this since re-buildin the memory is handled at the start of the step
+            # rebuild memory - this records the last edited timestamp of the memory
+            # TODO: pass in update timestamp from block edit time
+            agent_state = self.rebuild_system_prompt(agent_id=agent_id, actor=actor)
+
+        return agent_state
 
     # ======================================================================================================================
     # Source Management

@@ -17,11 +17,11 @@ def list_tags(
     limit: Optional[int] = Query(50),
     server: "SyncServer" = Depends(get_letta_server),
     query_text: Optional[str] = Query(None),
-    user_id: Optional[str] = Header(None, alias="user_id"),
+    actor_id: Optional[str] = Header(None, alias="user_id"),
 ):
     """
     Get a list of all tags in the database
     """
-    actor = server.user_manager.get_user_or_default(user_id=user_id)
+    actor = server.user_manager.get_user_or_default(user_id=actor_id)
     tags = server.agent_manager.list_tags(actor=actor, after=after, limit=limit, query_text=query_text)
     return tags

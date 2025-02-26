@@ -29,12 +29,12 @@ logger = get_logger(__name__)
 def delete_tool(
     tool_id: str,
     server: SyncServer = Depends(get_letta_server),
-    user_id: Optional[str] = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
+    actor_id: Optional[str] = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
 ):
     """
     Delete a tool by name
     """
-    actor = server.user_manager.get_user_or_default(user_id=user_id)
+    actor = server.user_manager.get_user_or_default(user_id=actor_id)
     server.tool_manager.delete_tool_by_id(tool_id=tool_id, actor=actor)
 
 
@@ -42,12 +42,12 @@ def delete_tool(
 def retrieve_tool(
     tool_id: str,
     server: SyncServer = Depends(get_letta_server),
-    user_id: Optional[str] = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
+    actor_id: Optional[str] = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
 ):
     """
     Get a tool by ID
     """
-    actor = server.user_manager.get_user_or_default(user_id=user_id)
+    actor = server.user_manager.get_user_or_default(user_id=actor_id)
     tool = server.tool_manager.get_tool_by_id(tool_id=tool_id, actor=actor)
     if tool is None:
         # return 404 error
@@ -61,13 +61,13 @@ def list_tools(
     limit: Optional[int] = 50,
     name: Optional[str] = None,
     server: SyncServer = Depends(get_letta_server),
-    user_id: Optional[str] = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
+    actor_id: Optional[str] = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
 ):
     """
     Get a list of all tools available to agents belonging to the org of the user
     """
     try:
-        actor = server.user_manager.get_user_or_default(user_id=user_id)
+        actor = server.user_manager.get_user_or_default(user_id=actor_id)
         if name is not None:
             tool = server.tool_manager.get_tool_by_name(tool_name=name, actor=actor)
             return [tool] if tool else []
@@ -82,13 +82,13 @@ def list_tools(
 def create_tool(
     request: ToolCreate = Body(...),
     server: SyncServer = Depends(get_letta_server),
-    user_id: Optional[str] = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
+    actor_id: Optional[str] = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
 ):
     """
     Create a new tool
     """
     try:
-        actor = server.user_manager.get_user_or_default(user_id=user_id)
+        actor = server.user_manager.get_user_or_default(user_id=actor_id)
         tool = Tool(**request.model_dump())
         return server.tool_manager.create_tool(pydantic_tool=tool, actor=actor)
     except UniqueConstraintViolationError as e:
@@ -114,13 +114,13 @@ def create_tool(
 def upsert_tool(
     request: ToolCreate = Body(...),
     server: SyncServer = Depends(get_letta_server),
-    user_id: Optional[str] = Header(None, alias="user_id"),
+    actor_id: Optional[str] = Header(None, alias="user_id"),
 ):
     """
     Create or update a tool
     """
     try:
-        actor = server.user_manager.get_user_or_default(user_id=user_id)
+        actor = server.user_manager.get_user_or_default(user_id=actor_id)
         tool = server.tool_manager.create_or_update_tool(pydantic_tool=Tool(**request.model_dump()), actor=actor)
         return tool
     except UniqueConstraintViolationError as e:
@@ -142,13 +142,13 @@ def modify_tool(
     tool_id: str,
     request: ToolUpdate = Body(...),
     server: SyncServer = Depends(get_letta_server),
-    user_id: Optional[str] = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
+    actor_id: Optional[str] = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
 ):
     """
     Update an existing tool
     """
     try:
-        actor = server.user_manager.get_user_or_default(user_id=user_id)
+        actor = server.user_manager.get_user_or_default(user_id=actor_id)
         return server.tool_manager.update_tool_by_id(tool_id=tool_id, tool_update=request, actor=actor)
     except LettaToolCreateError as e:
         # HTTP 400 == Bad Request
@@ -163,12 +163,12 @@ def modify_tool(
 @router.post("/add-base-tools", response_model=List[Tool], operation_id="add_base_tools")
 def upsert_base_tools(
     server: SyncServer = Depends(get_letta_server),
-    user_id: Optional[str] = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
+    actor_id: Optional[str] = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
 ):
     """
     Upsert base tools
     """
-    actor = server.user_manager.get_user_or_default(user_id=user_id)
+    actor = server.user_manager.get_user_or_default(user_id=actor_id)
     return server.tool_manager.upsert_base_tools(actor=actor)
 
 
@@ -176,12 +176,12 @@ def upsert_base_tools(
 def run_tool_from_source(
     server: SyncServer = Depends(get_letta_server),
     request: ToolRunFromSource = Body(...),
-    user_id: Optional[str] = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
+    actor_id: Optional[str] = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
 ):
     """
     Attempt to build a tool from source, then run it on the provided arguments
     """
-    actor = server.user_manager.get_user_or_default(user_id=user_id)
+    actor = server.user_manager.get_user_or_default(user_id=actor_id)
 
     try:
         return server.run_tool_from_source(
@@ -227,12 +227,12 @@ def list_composio_apps(server: SyncServer = Depends(get_letta_server), user_id: 
 def list_composio_actions_by_app(
     composio_app_name: str,
     server: SyncServer = Depends(get_letta_server),
-    user_id: Optional[str] = Header(None, alias="user_id"),
+    actor_id: Optional[str] = Header(None, alias="user_id"),
 ):
     """
     Get a list of all Composio actions for a specific app
     """
-    actor = server.user_manager.get_user_or_default(user_id=user_id)
+    actor = server.user_manager.get_user_or_default(user_id=actor_id)
     composio_api_key = get_composio_api_key(actor=actor, logger=logger)
     if not composio_api_key:
         raise HTTPException(
@@ -246,12 +246,12 @@ def list_composio_actions_by_app(
 def add_composio_tool(
     composio_action_name: str,
     server: SyncServer = Depends(get_letta_server),
-    user_id: Optional[str] = Header(None, alias="user_id"),
+    actor_id: Optional[str] = Header(None, alias="user_id"),
 ):
     """
     Add a new Composio tool by action name (Composio refers to each tool as an `Action`)
     """
-    actor = server.user_manager.get_user_or_default(user_id=user_id)
+    actor = server.user_manager.get_user_or_default(user_id=actor_id)
 
     try:
         tool_create = ToolCreate.from_composio(action_name=composio_action_name)

@@ -25,9 +25,9 @@ logger = get_logger(__name__)
 def create_sandbox_config(
     config_create: SandboxConfigCreate,
     server: SyncServer = Depends(get_letta_server),
-    user_id: str = Depends(get_user_id),
+    actor_id: str = Depends(get_user_id),
 ):
-    actor = server.user_manager.get_user_or_default(user_id=user_id)
+    actor = server.user_manager.get_user_or_default(user_id=actor_id)
 
     return server.sandbox_config_manager.create_or_update_sandbox_config(config_create, actor)
 
@@ -35,18 +35,18 @@ def create_sandbox_config(
 @router.post("/e2b/default", response_model=PydanticSandboxConfig)
 def create_default_e2b_sandbox_config(
     server: SyncServer = Depends(get_letta_server),
-    user_id: str = Depends(get_user_id),
+    actor_id: str = Depends(get_user_id),
 ):
-    actor = server.user_manager.get_user_or_default(user_id=user_id)
+    actor = server.user_manager.get_user_or_default(user_id=actor_id)
     return server.sandbox_config_manager.get_or_create_default_sandbox_config(sandbox_type=SandboxType.E2B, actor=actor)
 
 
 @router.post("/local/default", response_model=PydanticSandboxConfig)
 def create_default_local_sandbox_config(
     server: SyncServer = Depends(get_letta_server),
-    user_id: str = Depends(get_user_id),
+    actor_id: str = Depends(get_user_id),
 ):
-    actor = server.user_manager.get_user_or_default(user_id=user_id)
+    actor = server.user_manager.get_user_or_default(user_id=actor_id)
     return server.sandbox_config_manager.get_or_create_default_sandbox_config(sandbox_type=SandboxType.LOCAL, actor=actor)
 
 
@@ -54,7 +54,7 @@ def create_default_local_sandbox_config(
 def create_custom_local_sandbox_config(
     local_sandbox_config: LocalSandboxConfig,
     server: SyncServer = Depends(get_letta_server),
-    user_id: str = Depends(get_user_id),
+    actor_id: str = Depends(get_user_id),
 ):
     """
     Create or update a custom LocalSandboxConfig, including pip_requirements.
@@ -67,7 +67,7 @@ def create_custom_local_sandbox_config(
         )
 
     # Retrieve the user (actor)
-    actor = server.user_manager.get_user_or_default(user_id=user_id)
+    actor = server.user_manager.get_user_or_default(user_id=actor_id)
 
     # Wrap the LocalSandboxConfig into a SandboxConfigCreate
     sandbox_config_create = SandboxConfigCreate(config=local_sandbox_config)
@@ -83,9 +83,9 @@ def update_sandbox_config(
     sandbox_config_id: str,
     config_update: SandboxConfigUpdate,
     server: SyncServer = Depends(get_letta_server),
-    user_id: str = Depends(get_user_id),
+    actor_id: str = Depends(get_user_id),
 ):
-    actor = server.user_manager.get_user_or_default(user_id=user_id)
+    actor = server.user_manager.get_user_or_default(user_id=actor_id)
     return server.sandbox_config_manager.update_sandbox_config(sandbox_config_id, config_update, actor)
 
 
@@ -93,9 +93,9 @@ def update_sandbox_config(
 def delete_sandbox_config(
     sandbox_config_id: str,
     server: SyncServer = Depends(get_letta_server),
-    user_id: str = Depends(get_user_id),
+    actor_id: str = Depends(get_user_id),
 ):
-    actor = server.user_manager.get_user_or_default(user_id=user_id)
+    actor = server.user_manager.get_user_or_default(user_id=actor_id)
     server.sandbox_config_manager.delete_sandbox_config(sandbox_config_id, actor)
 
 
@@ -105,22 +105,22 @@ def list_sandbox_configs(
     after: Optional[str] = Query(None, description="Pagination cursor to fetch the next set of results"),
     sandbox_type: Optional[SandboxType] = Query(None, description="Filter for this specific sandbox type"),
     server: SyncServer = Depends(get_letta_server),
-    user_id: str = Depends(get_user_id),
+    actor_id: str = Depends(get_user_id),
 ):
-    actor = server.user_manager.get_user_or_default(user_id=user_id)
+    actor = server.user_manager.get_user_or_default(user_id=actor_id)
     return server.sandbox_config_manager.list_sandbox_configs(actor, limit=limit, after=after, sandbox_type=sandbox_type)
 
 
 @router.post("/local/recreate-venv", response_model=PydanticSandboxConfig)
 def force_recreate_local_sandbox_venv(
     server: SyncServer = Depends(get_letta_server),
-    user_id: str = Depends(get_user_id),
+    actor_id: str = Depends(get_user_id),
 ):
     """
     Forcefully recreate the virtual environment for the local sandbox.
     Deletes and recreates the venv, then reinstalls required dependencies.
     """
-    actor = server.user_manager.get_user_or_default(user_id=user_id)
+    actor = server.user_manager.get_user_or_default(user_id=actor_id)
 
     # Retrieve the local sandbox config
     sbx_config = server.sandbox_config_manager.get_or_create_default_sandbox_config(sandbox_type=SandboxType.LOCAL, actor=actor)
@@ -162,9 +162,9 @@ def create_sandbox_env_var(
     sandbox_config_id: str,
     env_var_create: SandboxEnvironmentVariableCreate,
     server: SyncServer = Depends(get_letta_server),
-    user_id: str = Depends(get_user_id),
+    actor_id: str = Depends(get_user_id),
 ):
-    actor = server.user_manager.get_user_or_default(user_id=user_id)
+    actor = server.user_manager.get_user_or_default(user_id=actor_id)
     return server.sandbox_config_manager.create_sandbox_env_var(env_var_create, sandbox_config_id, actor)
 
 
@@ -173,9 +173,9 @@ def update_sandbox_env_var(
     env_var_id: str,
     env_var_update: SandboxEnvironmentVariableUpdate,
     server: SyncServer = Depends(get_letta_server),
-    user_id: str = Depends(get_user_id),
+    actor_id: str = Depends(get_user_id),
 ):
-    actor = server.user_manager.get_user_or_default(user_id=user_id)
+    actor = server.user_manager.get_user_or_default(user_id=actor_id)
     return server.sandbox_config_manager.update_sandbox_env_var(env_var_id, env_var_update, actor)
 
 
@@ -183,9 +183,9 @@ def update_sandbox_env_var(
 def delete_sandbox_env_var(
     env_var_id: str,
     server: SyncServer = Depends(get_letta_server),
-    user_id: str = Depends(get_user_id),
+    actor_id: str = Depends(get_user_id),
 ):
-    actor = server.user_manager.get_user_or_default(user_id=user_id)
+    actor = server.user_manager.get_user_or_default(user_id=actor_id)
     server.sandbox_config_manager.delete_sandbox_env_var(env_var_id, actor)
 
 
@@ -195,7 +195,7 @@ def list_sandbox_env_vars(
     limit: int = Query(1000, description="Number of results to return"),
     after: Optional[str] = Query(None, description="Pagination cursor to fetch the next set of results"),
     server: SyncServer = Depends(get_letta_server),
-    user_id: str = Depends(get_user_id),
+    actor_id: str = Depends(get_user_id),
 ):
-    actor = server.user_manager.get_user_or_default(user_id=user_id)
+    actor = server.user_manager.get_user_or_default(user_id=actor_id)
     return server.sandbox_config_manager.list_sandbox_env_vars(sandbox_config_id, actor, limit=limit, after=after)
