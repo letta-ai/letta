@@ -115,8 +115,8 @@ class IdentityManager:
             if replace:
                 existing_identity.properties = [prop.model_dump() for prop in identity.properties]
             else:
-                new_properties = existing_identity.properties + identity.properties
-                existing_identity.properties = [prop.model_dump() for prop in new_properties]
+                new_properties = existing_identity.properties + [prop.model_dump() for prop in identity.properties]
+                existing_identity.properties = new_properties
 
         self._process_agent_relationship(
             session=session, identity=existing_identity, agent_ids=identity.agent_ids, allow_partial=False, replace=replace

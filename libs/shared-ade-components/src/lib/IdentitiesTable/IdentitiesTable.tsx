@@ -194,7 +194,9 @@ function BasicDetailsEditor(props: BasicDetailsEditorProps) {
   const { identityTypeOptions, getOptionFromValue } = useIdentityOptions();
 
   const { identity } = props;
-  const { mutate, isPending, error } = useIdentitiesServiceUpdateIdentity();
+
+  const { mutate, reset, isPending, error } =
+    useIdentitiesServiceUpdateIdentity();
   const queryClient = useQueryClient();
   const form = useForm<BasicDetailsFormValues>({
     resolver: zodResolver(basicDetailsFormSchema),
@@ -261,11 +263,19 @@ function BasicDetailsEditor(props: BasicDetailsEditorProps) {
                 };
               },
             );
+
+            form.reset({
+              name: values.name,
+              identifierKey: values.identifierKey,
+              identityType: values.identityType,
+              properties: values.properties,
+            });
+            reset();
           },
         },
       );
     },
-    [mutate, queryClient, identity],
+    [mutate, queryClient, reset, form, identity],
   );
 
   const errorMessage = useMemo(() => {
@@ -349,18 +359,7 @@ function BasicDetailsEditor(props: BasicDetailsEditorProps) {
           />
           <HR />
           <HStack fullWidth justify="spaceBetween">
-            <DeleteIdentityDialog
-              id={props.identity.id || ''}
-              name={props.identity.name}
-              trigger={
-                <Button
-                  type="button"
-                  label={t('BasicDetailsEditor.delete')}
-                  color="tertiary"
-                  preIcon={<TrashIcon />}
-                />
-              }
-            />
+            <div />
             <HStack>
               {form.formState.isDirty && (
                 <Button
@@ -374,6 +373,7 @@ function BasicDetailsEditor(props: BasicDetailsEditorProps) {
               )}
               <Button
                 busy={isPending}
+                disabled={!form.formState.isDirty}
                 label={t('BasicDetailsEditor.save')}
                 color="primary"
               />
@@ -426,6 +426,30 @@ function IdentityItemOverlay(props: IdentityItemOverlayProps) {
               {t('IdentityItemOverlay.agents')}
             </Typography>
             <IdentityAgentsList identity={identity} />
+          </VStack>
+          <VStack paddingX>
+            <Typography variant="heading6" bold>
+              {t('IdentityItemOverlay.advanced')}
+            </Typography>
+            <VStack>
+              <Typography>
+                {t('IdentityItemOverlay.deleteIdentityInfo')}
+              </Typography>
+              <HStack>
+                <DeleteIdentityDialog
+                  id={props.identity.id || ''}
+                  name={props.identity.name}
+                  trigger={
+                    <Button
+                      type="button"
+                      label={t('BasicDetailsEditor.delete')}
+                      color="secondary"
+                      preIcon={<TrashIcon />}
+                    />
+                  }
+                />
+              </HStack>
+            </VStack>
           </VStack>
         </VStack>
       </VStack>

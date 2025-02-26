@@ -46,19 +46,17 @@ export function IdentityAgentsList(props: AgentsListProps) {
     queryKey: [
       'infinite',
       ...UseAgentsServiceListAgentsKeyFn({
-        identifierKeys: [identity.identifier_key],
-        ...(identity.project_id && { projectId: identity.project_id }),
-        name: debouncedSearch,
+        identifierId: identity.id || '',
+        queryText: debouncedSearch,
         limit: limit + 1,
       }),
     ],
     queryFn: ({ pageParam }) => {
       return AgentsService.listAgents({
-        name: debouncedSearch,
+        queryText: debouncedSearch,
         limit: limit + 1,
         after: pageParam?.after,
-        identifierKeys: [identity.identifier_key],
-        ...(identity.project_id && { projectId: identity.project_id }),
+        identifierId: identity.id || '',
       });
     },
     initialPageParam: { after: null },
@@ -143,6 +141,7 @@ export function IdentityAgentsList(props: AgentsListProps) {
             <Button
               label={t('columns.view')}
               color="tertiary"
+              target="_blank"
               size="small"
               href={`${rootUrl}/agents/${row.original.id}`}
             />

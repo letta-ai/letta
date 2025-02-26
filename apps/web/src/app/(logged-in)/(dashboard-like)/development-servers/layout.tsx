@@ -251,7 +251,7 @@ function LocalProjectLayout(props: LocalProjectLayoutProps) {
                 id: 'identities',
                 icon: <IdentitiesIcon />,
                 label: t('nav.identities'),
-                href: `/development-servers/local/identities`,
+                href: `/development-servers/${server.id}/identities`,
               },
             ]
           : []),

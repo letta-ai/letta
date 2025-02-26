@@ -975,7 +975,9 @@
     "IdentityItemOverlay": {
       "agents": "Agents",
       "trigger": "View/Edit",
+      "advanced": "Advanced",
       "title": "Identity Details",
+      "deleteIdentityInfo": "Deleting an identity is permanent and cannot be undone. This will not delete any agents or memory associated with this identity.",
       "save": {
         "label": "Save",
         "error": "There was an error saving this identity, please try again or contact support."
