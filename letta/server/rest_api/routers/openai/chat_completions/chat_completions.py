@@ -38,7 +38,8 @@ from letta.server.rest_api.optimistic_json_parser import OptimisticJSONParser
 # TODO this belongs in a controller!
 from letta.server.rest_api.utils import (
     convert_letta_messages_to_openai,
-    create_assistant_message_from_openai_response,
+    create_assistant_messages_from_openai_response,
+    create_tool_call_messages_from_openai_response,
     create_user_message,
     get_letta_server,
     get_messages_from_completion_request,
@@ -226,10 +227,10 @@ async def create_fast_chat_completions(
                 conversation.append({"role": "assistant", "content": content})
 
                 # Create an assistant message here to persist later
-                assistant_message = create_assistant_message_from_openai_response(
+                assistant_messages = create_assistant_messages_from_openai_response(
                     response_text=content, agent_id=agent_id, model=agent_state.llm_config.model, actor=actor
                 )
-                message_db_queue.append(assistant_message)
+                message_db_queue.extend(assistant_messages)
 
             if tool_call_happened:
                 # Parse the tool call arguments
@@ -267,8 +268,10 @@ async def create_fast_chat_completions(
                         actor=actor,
                         allow_agent_state_modifications=False,
                     )
+                    function_call_success = True
                 except Exception as e:
                     tool_result = f"Failed to call tool. Error: {e}"
+                    function_call_success = False
 
                 # 3) Insert the "tool" message referencing the same tool_call_id
                 tool_message = ToolMessage(content=json.dumps({"result": tool_result}), tool_call_id=tool_call_id)
@@ -284,10 +287,23 @@ async def create_fast_chat_completions(
                 # Now, re-invoke OpenAI with the updated conversation
                 openai_request.messages = conversation
 
+                # Create a tool call message and append to message_db_queue
+                tool_call_messages = create_tool_call_messages_from_openai_response(
+                    agent_id=agent_state.id,
+                    model=agent_state.llm_config.model,
+                    function_name=tool_call_name,
+                    function_arguments=tool_args,
+                    tool_call_id=tool_call_id,
+                    function_call_success=function_call_success,
+                    function_response=tool_result,
+                    actor=actor,
+                    add_heartbeat_request_system_message=True,
+                )
+                message_db_queue.extend(tool_call_messages)
+
                 continue  # Start the while loop again
 
             if finish_reason_stop:
-                # Model is done, no more calls
                 break
 
             # If we reach here, no tool call, no "stop", but we've ended streaming
