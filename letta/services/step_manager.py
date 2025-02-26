@@ -84,9 +84,9 @@ class StepManager:
             return new_step.to_pydantic()
 
     @enforce_types
-    def get_step(self, step_id: str) -> PydanticStep:
+    def get_step(self, step_id: str, actor: PydanticUser) -> PydanticStep:
         with self.session_maker() as session:
-            step = StepModel.read(db_session=session, identifier=step_id)
+            step = StepModel.read(db_session=session, identifier=step_id, actor=actor)
             return step.to_pydantic()
 
     @enforce_types

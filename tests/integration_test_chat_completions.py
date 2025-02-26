@@ -14,7 +14,9 @@ from letta.schemas.embedding_config import EmbeddingConfig
 from letta.schemas.enums import MessageStreamStatus
 from letta.schemas.llm_config import LLMConfig
 from letta.schemas.openai.chat_completion_request import ChatCompletionRequest, UserMessage
+from letta.schemas.tool import ToolCreate
 from letta.schemas.usage import LettaUsageStatistics
+from letta.services.tool_manager import ToolManager
 
 # --- Server Management --- #
 
@@ -69,9 +71,49 @@ def roll_dice_tool(client):
 
 
 @pytest.fixture(scope="function")
-def agent(client, roll_dice_tool):
+def weather_tool(client):
+    def get_weather(location: str) -> str:
+        """
+        Fetches the current weather for a given location.
+
+        Parameters:
+            location (str): The location to get the weather for.
+
+        Returns:
+            str: A formatted string describing the weather in the given location.
+
+        Raises:
+            RuntimeError: If the request to fetch weather data fails.
+        """
+        import requests
+
+        url = f"https://wttr.in/{location}?format=%C+%t"
+
+        response = requests.get(url)
+        if response.status_code == 200:
+            weather_data = response.text
+            return f"The weather in {location} is {weather_data}."
+        else:
+            raise RuntimeError(f"Failed to get weather data, status code: {response.status_code}")
+
+    tool = client.create_or_update_tool(func=get_weather)
+    # Yield the created tool
+    yield tool
+
+
+@pytest.fixture(scope="function")
+def composio_gmail_get_profile_tool(default_user):
+    tool_create = ToolCreate.from_composio(action_name="GMAIL_GET_PROFILE")
+    tool = ToolManager().create_or_update_composio_tool(tool_create=tool_create, actor=default_user)
+    yield tool
+
+
+@pytest.fixture(scope="function")
+def agent(client, roll_dice_tool, weather_tool, composio_gmail_get_profile_tool):
     """Creates an agent and ensures cleanup after tests."""
-    agent_state = client.create_agent(name=f"test_client_{uuid.uuid4()}", tool_ids=[roll_dice_tool.id])
+    agent_state = client.create_agent(
+        name=f"test_compl_{str(uuid.uuid4())[5:]}", tool_ids=[roll_dice_tool.id, weather_tool.id, composio_gmail_get_profile_tool.id]
+    )
     yield agent_state
     client.delete_agent(agent_state.id)
 
@@ -109,6 +151,19 @@ def _assert_valid_chunk(chunk, idx, chunks):
 
 
 # --- Test Cases --- #
+
+
+@pytest.mark.parametrize("message", ["What's the weather in SF?"])
+@pytest.mark.parametrize("endpoint", ["fast/chat/completions"])
+def test_tool_usage_fast_chat_completions(mock_e2b_api_key_none, client, agent, message, endpoint):
+    """Tests chat completion streaming via SSE."""
+    request = _get_chat_request(agent.id, message)
+
+    response = _sse_post(f"{client.base_url}/openai/{client.api_prefix}/{endpoint}", request.model_dump(exclude_none=True), client.headers)
+
+    for chunk in response:
+        if isinstance(chunk, ChatCompletionChunk) and chunk.choices:
+            print(chunk.choices[0].delta.content)
 
 
 @pytest.mark.parametrize("message", ["Tell me something interesting about bananas."])
