@@ -6,3 +6,4 @@ export * from './lib/creditsToDollars/creditsToDollars';
 export * from './lib/getTikTokenEncoder/getTikTokenEncoder';
 export * from './lib/camelCaseKeys/camelCaseKeys';
 export * from './lib/getShareChatUrl/getShareChatUrl';
+export * from './lib/getLaunchLinkUrl/getLaunchLinkUrl';

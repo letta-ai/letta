@@ -4,6 +4,21 @@
     "emptyAction": "Go home"
   },
   "pages/distribution/LaunchLinks": {
+    "title": "Launch Links",
+    "description": "Launch links allow you to deploy agents without writing any code. When a user clicks the link below, they will be able to interact with an agent that is unique to them.",
+    "LaunchLinkConfiguration": {
+      "error": "There was an error updating the Launch Link configuration, please try again or contact support.",
+      "accessLevel": {
+        "label": "Access level",
+        "organization": "Anyone in my Organization",
+        "logged-in": "Anyone logged into Letta",
+        "everyone": "Anyone with the link"
+      }
+    },
+    "link": {
+      "label": "Launch link",
+      "copy": "Copy link"
+    },
     "NotCreatedLinkView": {
       "title": "Let Letta manage your UI",
       "description": "With Letta Launch, you can deploy agents without writing any code. Letta will manage the UI for you, users can start using your agent with just a link that creates a unique agent instance for them.",

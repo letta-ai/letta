@@ -24,9 +24,11 @@ const GetLaunchLinkContract = c.query({
   },
 });
 
-const UpdateLaunchLinkSchema = z.object({
+export const UpdateLaunchLinkSchema = z.object({
   accessLevel: AccessLevelEnumSchema,
 });
+
+export type UpdateLaunchLinkType = z.infer<typeof UpdateLaunchLinkSchema>;
 
 const UpdateLaunchLinkContract = c.mutation({
   method: 'PUT',

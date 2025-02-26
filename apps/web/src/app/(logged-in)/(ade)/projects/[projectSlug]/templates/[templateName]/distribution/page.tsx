@@ -148,9 +148,39 @@ curl -X POST https://app.letta.com/v1/agents/agent_id/messages \\
 }
 
 function DeploymentInstructions() {
-  const [deploymentMethod, setDeploymentMethod] =
-    useState<DeploymentMethods>('typescript');
+  const { agentId: agentTemplateId } = useCurrentAgentMetaData();
+
+  const { data: launchLinkConfig } = webApi.launchLinks.getLaunchLink.useQuery({
+    queryKey: webApiQueryKeys.launchLinks.getLaunchLink(agentTemplateId),
+    queryData: {
+      params: {
+        agentTemplateId,
+      },
+    },
+  });
+
+  const isLaunchLinkConfigured = !!launchLinkConfig?.body?.accessLevel;
+
+  const [deploymentMethod, setDeploymentMethod] = useState<DeploymentMethods>(
+    isLaunchLinkConfigured ? 'letta-launch' : 'typescript',
+  );
   const t = useTranslations('pages/distribution');
+
+  const tabs = useMemo(() => {
+    const launchLinkTab = {
+      icon: <RocketIcon />,
+      label: 'Launch Link',
+      value: 'letta-launch',
+    };
+
+    return [
+      ...(isLaunchLinkConfigured ? [launchLinkTab] : []),
+      { label: 'Node.js', value: 'typescript' },
+      { label: 'Python', value: 'python' },
+      { label: 'cURL', value: 'bash' },
+      ...(isLaunchLinkConfigured ? [] : [launchLinkTab]),
+    ];
+  }, [isLaunchLinkConfigured]);
 
   return (
     <ADEGroup
@@ -175,16 +205,7 @@ function DeploymentInstructions() {
                     onValueChange={(value) => {
                       setDeploymentMethod(value as DeploymentMethods);
                     }}
-                    items={[
-                      { label: 'Node.js', value: 'typescript' },
-                      { label: 'Python', value: 'python' },
-                      { label: 'cURL', value: 'bash' },
-                      {
-                        icon: <RocketIcon />,
-                        label: 'Launch Link',
-                        value: 'letta-launch',
-                      },
-                    ]}
+                    items={tabs}
                   />
                 </HStack>
                 {isCodeSnippetMethod(deploymentMethod) && (

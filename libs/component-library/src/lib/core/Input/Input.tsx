@@ -34,6 +34,9 @@ const inputVariants = cva(
       disabled: {
         true: '',
       },
+      readOnly: {
+        true: 'cursor-not-allowed',
+      },
       warned: {
         true: 'border-warning',
       },
@@ -102,6 +105,7 @@ type InputPrimitiveProps = Omit<
     postIcon?: React.ReactNode;
     bottomContent?: React.ReactNode;
     hideLabel?: boolean;
+    readOnly?: boolean;
     allowCopy?: boolean;
     onNumericValueChange?: (value: number | undefined) => void;
     showVisibilityControls?: boolean;
@@ -145,6 +149,7 @@ const InputPrimitive = React.forwardRef<HTMLInputElement, InputPrimitiveProps>(
       postIcon,
       isUpdating,
       preIcon,
+      readOnly,
       type,
       showVisibilityControls,
       size,
@@ -201,6 +206,7 @@ const InputPrimitive = React.forwardRef<HTMLInputElement, InputPrimitiveProps>(
             width,
             size,
             warned,
+            readOnly,
             fullWidth,
             color,
             className,
@@ -220,7 +226,7 @@ const InputPrimitive = React.forwardRef<HTMLInputElement, InputPrimitiveProps>(
             data-form-type="other"
             {...props}
             onChange={handleOnChange}
-            disabled={disabled}
+            disabled={disabled || readOnly}
             type={typeOverride}
             className="w-full h-full text-base focus:outline-none bg-transparent"
             ref={ref}
