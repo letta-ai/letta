@@ -92,7 +92,7 @@ function DeployAgentInstructionsCurl(props: DeployAgentInstructionsCurlProps) {
   -H 'Authorization: Bearer ${ACCESS_TOKEN_PLACEHOLDER}' \\
   -d '{
     "from_template": "${versionKey}"${
-      variables ? `,\n    "variables": ${JSON.stringify(variables)}` : ''
+      variables ? `,\n    "memory_variables": ${JSON.stringify(variables)}` : ''
     }
   }'`}
         />
@@ -132,7 +132,7 @@ function DeployAgentInstructionsCurl(props: DeployAgentInstructionsCurlProps) {
   -H 'Accept: text/event-stream' \\
   -H 'Authorization: Bearer ${ACCESS_TOKEN_PLACEHOLDER}' \\
   -d '{
-    "messages": [{ "role": "user", "text": "Hello" }],
+    "messages": [{ "role": "user", "content": "Hello" }],
     "stream_steps": true,
     "stream_tokens": true
   }'`}
