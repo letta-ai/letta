@@ -11,6 +11,7 @@ from letta.server.rest_api.routers.v1.sources import router as sources_router
 from letta.server.rest_api.routers.v1.steps import router as steps_router
 from letta.server.rest_api.routers.v1.tags import router as tags_router
 from letta.server.rest_api.routers.v1.tools import router as tools_router
+from letta.server.rest_api.routers.v1.voice import router as voice_router
 
 ROUTERS = [
     tools_router,
@@ -26,4 +27,5 @@ ROUTERS = [
     runs_router,
     steps_router,
     tags_router,
+    voice_router,
 ]

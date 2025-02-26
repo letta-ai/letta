@@ -3803,6 +3803,15 @@ export type DeleteOrganizationByIdData = {
 
 export type DeleteOrganizationByIdResponse = Organization;
 
+export type CreateVoiceChatCompletionsData = {
+  requestBody:
+    | CompletionCreateParamsNonStreaming
+    | CompletionCreateParamsStreaming;
+  userId?: string | null;
+};
+
+export type CreateVoiceChatCompletionsResponse = unknown;
+
 export type AuthenticateUserV1AuthPostData = {
   requestBody: AuthRequest;
 };
@@ -5220,6 +5229,21 @@ export type $OpenApiTs = {
          * Successful Response
          */
         200: Organization;
+        /**
+         * Validation Error
+         */
+        422: HTTPValidationError;
+      };
+    };
+  };
+  '/v1/voice/chat/completions': {
+    post: {
+      req: CreateVoiceChatCompletionsData;
+      res: {
+        /**
+         * Successful response
+         */
+        200: unknown;
         /**
          * Validation Error
          */

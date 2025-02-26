@@ -201,6 +201,8 @@ import type {
   CreateOrganizationResponse,
   DeleteOrganizationByIdData,
   DeleteOrganizationByIdResponse,
+  CreateVoiceChatCompletionsData,
+  CreateVoiceChatCompletionsResponse,
   AuthenticateUserV1AuthPostData,
   AuthenticateUserV1AuthPostResponse,
 } from './types.gen';
@@ -2987,6 +2989,32 @@ export class AdminService {
       query: {
         org_id: data.orgId,
       },
+      errors: {
+        422: 'Validation Error',
+      },
+      headers,
+    });
+  }
+}
+
+export class VoiceService {
+  /**
+   * Create Voice Chat Completions
+   * @param data The data for the request.
+   * @param data.requestBody
+   * @param data.userId
+   * @returns unknown Successful response
+   * @throws ApiError
+   */
+  public static createVoiceChatCompletions(
+    data: CreateVoiceChatCompletionsData,
+    headers?: { user_id: string },
+  ): CancelablePromise<CreateVoiceChatCompletionsResponse> {
+    return __request(OpenAPI, {
+      method: 'POST',
+      url: '/v1/voice/chat/completions',
+      body: data.requestBody,
+      mediaType: 'application/json',
       errors: {
         422: 'Validation Error',
       },

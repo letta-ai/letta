@@ -4325,6 +4325,55 @@
         }
       }
     },
+    "/v1/voice/chat/completions": {
+      "post": {
+        "tags": ["voice"],
+        "summary": "Create Voice Chat Completions",
+        "operationId": "create_voice_chat_completions",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/CompletionCreateParamsNonStreaming"
+                  },
+                  {
+                    "$ref": "#/components/schemas/CompletionCreateParamsStreaming"
+                  }
+                ],
+                "title": "Completion Request"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              },
+              "text/event-stream": {
+                "description": "Server-Sent Events stream"
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/agents/search": {
       "post": {
         "description": "Search deployed agents",

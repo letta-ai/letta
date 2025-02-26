@@ -20,6 +20,7 @@ import {
   TagService,
   ToolsService,
   UsersService,
+  VoiceService,
 } from '../requests/services.gen';
 import { IdentityType, MessageRole, SandboxType } from '../requests/types.gen';
 export type ToolsServiceRetrieveToolDefaultResponse = Awaited<
@@ -1177,6 +1178,9 @@ export type AdminServiceCreateUserMutationResult = Awaited<
 >;
 export type AdminServiceCreateOrganizationMutationResult = Awaited<
   ReturnType<typeof AdminService.createOrganization>
+>;
+export type VoiceServiceCreateVoiceChatCompletionsMutationResult = Awaited<
+  ReturnType<typeof VoiceService.createVoiceChatCompletions>
 >;
 export type UsersServiceCreateUserMutationResult = Awaited<
   ReturnType<typeof UsersService.createUser>

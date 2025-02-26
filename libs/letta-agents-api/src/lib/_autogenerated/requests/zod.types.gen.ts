@@ -5518,6 +5518,32 @@ export const get_List_tags = {
   response: z.array(z.string()),
 };
 
+export type post_Create_voice_chat_completions =
+  typeof post_Create_voice_chat_completions;
+export const post_Create_voice_chat_completions = {
+  method: z.literal('POST'),
+  path: z.literal('/v1/voice/chat/completions'),
+  requestFormat: z.literal('json'),
+  parameters: z.object({
+    header: z.object({
+      user_id: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+    }),
+    body: z.union([
+      CompletionCreateParamsNonStreaming,
+      CompletionCreateParamsStreaming,
+      z.array(
+        z.union([
+          CompletionCreateParamsNonStreaming,
+          CompletionCreateParamsStreaming,
+        ]),
+      ),
+    ]),
+  }),
+  response: z.unknown(),
+};
+
 export type get_List_users = typeof get_List_users;
 export const get_List_users = {
   method: z.literal('GET'),
@@ -5749,6 +5775,7 @@ export const EndpointByMethod = {
     '/v1/sandbox-config/{sandbox_config_id}/environment-variable':
       post_Create_sandbox_env_var_v1_sandbox_config__sandbox_config_id__environment_variable_post,
     '/v1/providers/': post_Create_provider,
+    '/v1/voice/chat/completions': post_Create_voice_chat_completions,
     '/v1/admin/users/': post_Create_user,
     '/v1/admin/orgs/': post_Create_organization,
     '/v1/auth': post_Authenticate_user_v1_auth_post,

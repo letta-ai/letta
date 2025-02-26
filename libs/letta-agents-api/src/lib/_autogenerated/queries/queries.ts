@@ -25,11 +25,14 @@ import {
   TagService,
   ToolsService,
   UsersService,
+  VoiceService,
 } from '../requests/services.gen';
 import {
   AuthRequest,
   BlockUpdate,
   Body_upload_file_to_source,
+  CompletionCreateParamsNonStreaming,
+  CompletionCreateParamsStreaming,
   CreateAgentRequest,
   CreateArchivalMemory,
   CreateBlock,
@@ -2737,6 +2740,52 @@ export const useAdminServiceCreateOrganization = <
     mutationFn: ({ requestBody }) =>
       AdminService.createOrganization({
         requestBody,
+      }) as unknown as Promise<TData>,
+    ...options,
+  });
+/**
+ * Create Voice Chat Completions
+ * @param data The data for the request.
+ * @param data.requestBody
+ * @param data.userId
+ * @returns unknown Successful response
+ * @throws ApiError
+ */
+export const useVoiceServiceCreateVoiceChatCompletions = <
+  TData = Common.VoiceServiceCreateVoiceChatCompletionsMutationResult,
+  TError = unknown,
+  TContext = unknown,
+>(
+  options?: Omit<
+    UseMutationOptions<
+      TData,
+      TError,
+      {
+        requestBody:
+          | CompletionCreateParamsNonStreaming
+          | CompletionCreateParamsStreaming;
+        userId?: string;
+      },
+      TContext
+    >,
+    'mutationFn'
+  >,
+) =>
+  useMutation<
+    TData,
+    TError,
+    {
+      requestBody:
+        | CompletionCreateParamsNonStreaming
+        | CompletionCreateParamsStreaming;
+      userId?: string;
+    },
+    TContext
+  >({
+    mutationFn: ({ requestBody, userId }) =>
+      VoiceService.createVoiceChatCompletions({
+        requestBody,
+        userId,
       }) as unknown as Promise<TData>,
     ...options,
   });
