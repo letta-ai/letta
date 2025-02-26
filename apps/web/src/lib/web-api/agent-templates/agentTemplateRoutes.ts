@@ -854,10 +854,16 @@ async function listTemplateVersions(
   req: ListTemplateVersions,
 ): Promise<ListTemplateVersionsResponse> {
   const { agentTemplateId } = req.params;
-  const { limit = 5, offset } = req.query;
+  const { limit = 5, offset, versionId } = req.query;
 
   const response = await db.query.deployedAgentTemplates.findMany({
-    where: eq(deployedAgentTemplates.agentTemplateId, agentTemplateId),
+    where: and(
+      ...[
+        eq(deployedAgentTemplates.agentTemplateId, agentTemplateId),
+        isNull(deployedAgentTemplates.deletedAt),
+        ...(versionId ? [eq(deployedAgentTemplates.id, versionId)] : []),
+      ],
+    ),
     limit: limit + 1,
     offset,
     orderBy: [desc(deployedAgentTemplates.createdAt)],

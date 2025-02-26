@@ -211,6 +211,7 @@ const getDeployedAgentTemplateByIdContract = c.query({
 const ListTemplateVersionsQuerySchema = z.object({
   limit: z.number().optional(),
   offset: z.number().optional(),
+  versionId: z.string().optional(),
 });
 
 export type ListTemplateVersionsQuery = z.infer<
@@ -273,5 +274,16 @@ export const agentTemplatesQueryClientKeys = {
   getDeployedAgentTemplateById: (id: string) => [
     'getDeployedAgentTemplateById',
     { id },
+  ],
+  listTemplateVersions: (agentTemplateId: string) => [
+    'listTemplateVersions',
+    { agentTemplateId },
+  ],
+  listTemplateVersionsWithSearch: (
+    agentTemplateId: string,
+    query: ListTemplateVersionsQuery,
+  ) => [
+    ...agentTemplatesQueryClientKeys.listTemplateVersions(agentTemplateId),
+    query,
   ],
 };

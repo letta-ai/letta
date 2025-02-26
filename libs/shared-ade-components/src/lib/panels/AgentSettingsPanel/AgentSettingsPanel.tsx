@@ -724,6 +724,10 @@ function IdentitiesEditorDialog(props: IdentitiesEditorDialogProps) {
   );
 
   const identitiesUrl = useMemo(() => {
+    if (typeof window === 'undefined') {
+      return '';
+    }
+
     return window.location.href.split('/agents')[0];
   }, []);
 

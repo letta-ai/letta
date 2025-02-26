@@ -9,7 +9,14 @@
     },
     "RecentAgents": {
       "title": "Recently deployed agents",
-      "addAgent": "Deploy agent"
+      "addAgent": "Deploy agent",
+      "viewInADE": "View in ADE",
+      "loadMore": "Load more",
+      "noAgents": "No agents have been deployed yet",
+      "noResults": "No agents found"
+    },
+    "TemplateVersion": {
+      "version": "Version {version}"
     },
     "VersionList": {
       "title": "Version History"

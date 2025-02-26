@@ -1,11 +1,12 @@
 'use client';
 import { ADEPage } from '$web/client/components/ADEPage/ADEPage';
 import {
+  ActionCard,
   Button,
   CopyIcon,
   HStack,
+  LoadingEmptyStatusComponent,
   PanelBar,
-  PlusIcon,
   RawCodeEditor,
   RocketIcon,
   TabGroup,
@@ -13,12 +14,21 @@ import {
   useCopyToClipboard,
   VStack,
 } from '@letta-cloud/component-library';
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslations } from '@letta-cloud/translations';
 import { useCurrentProject } from '../../../../../../(dashboard-like)/projects/[projectSlug]/hooks';
 import { useCurrentAgentMetaData } from '@letta-cloud/shared-ade-components';
 import { ADEGroup } from '@letta-cloud/shared-ade-components';
 import { Panel, PanelGroup, PanelResizeHandle } from 'react-resizable-panels';
+import { useInfiniteQuery } from '@tanstack/react-query';
+import {
+  AgentsService,
+  UseAgentsServiceListAgentsKeyFn,
+} from '@letta-cloud/letta-agents-api';
+import type { ListAgentsResponse } from '@letta-cloud/letta-agents-api';
+import type { InfiniteData } from '@tanstack/query-core';
+import { useDebouncedValue } from '@mantine/hooks';
+import { webApi, webApiQueryKeys } from '@letta-cloud/web-api-client';
 
 type CodeSnippetMethods = 'bash' | 'python' | 'typescript';
 type DeploymentMethods = CodeSnippetMethods | 'letta-launch';
@@ -210,23 +220,173 @@ function DeploymentInstructions() {
   );
 }
 
+interface TemplateVersionProps {
+  versionId: string;
+}
+
+function TemplateVersion(props: TemplateVersionProps) {
+  const { versionId } = props;
+  const { agentId } = useCurrentAgentMetaData();
+  const t = useTranslations('pages/distribution');
+
+  const { data: version, isLoading } =
+    webApi.agentTemplates.listTemplateVersions.useQuery({
+      queryKey: webApiQueryKeys.agentTemplates.listTemplateVersionsWithSearch(
+        agentId,
+        {
+          versionId,
+          limit: 1,
+        },
+      ),
+      queryData: {
+        query: {
+          limit: 1,
+          versionId,
+        },
+        params: {
+          agentTemplateId: agentId,
+        },
+      },
+    });
+
+  if (isLoading || !version) {
+    return (
+      <VStack gap="small" color="background-grey2">
+        {''}
+      </VStack>
+    );
+  }
+
+  return (
+    <VStack gap="small">
+      <Typography variant="body2">
+        {t('TemplateVersion.version', {
+          version: version.body.versions[0].version || '??',
+        })}
+      </Typography>
+    </VStack>
+  );
+}
+
+const ROW_HEIGHT = 30;
+
 function RecentAgents() {
   const [search, setSearch] = useState('');
   const t = useTranslations('pages/distribution');
-  return (
-    <VStack fullHeight>
-      <PanelBar
-        searchValue={search}
-        onSearch={setSearch}
-        actions={
-          <Button
-            hideLabel
-            color="secondary"
-            preIcon={<PlusIcon />}
-            label={t('RecentAgents.addAgent')}
-          />
+  const { id: projectId, slug } = useCurrentProject();
+  const { agentId } = useCurrentAgentMetaData();
+  const [debouncedSearch] = useDebouncedValue(search, 500);
+  const [limit, setLimit] = useState(0);
+
+  const { data, isFetchingNextPage, fetchNextPage, hasNextPage } =
+    useInfiniteQuery<
+      ListAgentsResponse,
+      unknown,
+      InfiniteData<ListAgentsResponse>,
+      unknown[],
+      { after?: string | null }
+    >({
+      queryKey: [
+        'infinite',
+        ...UseAgentsServiceListAgentsKeyFn({
+          projectId,
+          baseTemplateId: agentId,
+          queryText: debouncedSearch,
+          limit: limit + 1,
+        }),
+      ],
+      queryFn: ({ pageParam }) => {
+        return AgentsService.listAgents({
+          queryText: debouncedSearch,
+          limit: limit + 1,
+          after: pageParam?.after,
+          projectId,
+          baseTemplateId: agentId,
+        });
+      },
+      initialPageParam: { after: null },
+      getNextPageParam: (lastPage) => {
+        if (lastPage.length > limit) {
+          return {
+            after: lastPage[lastPage.length - 2].id,
+          };
         }
-      />
+
+        return undefined;
+      },
+      enabled: !!limit,
+    });
+
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    // infer limit from container height / 30px (height of each row)
+    if (containerRef.current) {
+      const newLimit = Math.ceil(
+        containerRef.current.clientHeight / ROW_HEIGHT,
+      );
+      setLimit(newLimit);
+    }
+  }, []);
+
+  const agents = useMemo(() => {
+    if (!data) {
+      return [];
+    }
+
+    return data.pages?.flat() || [];
+  }, [data]);
+
+  return (
+    <VStack gap="small" fullHeight>
+      <PanelBar searchValue={search} onSearch={setSearch} />
+      <VStack
+        paddingX="small"
+        paddingBottom="small"
+        collapseHeight
+        flex
+        ref={containerRef}
+      >
+        {!data && <LoadingEmptyStatusComponent isLoading />}
+        {Array.isArray(agents) && agents.length === 0 && (
+          <LoadingEmptyStatusComponent
+            emptyMessage={
+              debouncedSearch
+                ? t('RecentAgents.noResults')
+                : t('RecentAgents.noAgents')
+            }
+          />
+        )}
+        {agents.map((agent) => (
+          <ActionCard
+            key={agent.id}
+            title={agent.name}
+            subtitle={<TemplateVersion versionId={agent.template_id || ''} />}
+            mainAction={
+              <HStack>
+                <Button
+                  size="small"
+                  color="secondary"
+                  target="_blank"
+                  label={t('RecentAgents.viewInADE')}
+                  href={`/projects/${slug}/agents/${agent.id}`}
+                />
+              </HStack>
+            }
+          />
+        ))}
+        {hasNextPage && (
+          <Button
+            fullWidth
+            color="secondary"
+            label={t('RecentAgents.loadMore')}
+            onClick={() => {
+              void fetchNextPage();
+            }}
+            disabled={isFetchingNextPage}
+          />
+        )}
+      </VStack>
     </VStack>
   );
 }
@@ -256,7 +416,7 @@ export default function DistributionPage() {
                 {
                   title: t('VersionList.title'),
                   id: 'versions',
-                  content: <RecentAgents />,
+                  content: <div />,
                 },
               ]}
             ></ADEGroup>

@@ -40,7 +40,7 @@ const actionCardVariants = cva('', {
 
 interface ToggleCardProps extends VariantProps<typeof actionCardVariants> {
   title: string;
-  subtitle?: string;
+  subtitle?: React.ReactNode;
   isActive?: boolean;
   icon?: React.ReactNode;
   disableTooltip?: boolean;
@@ -159,7 +159,7 @@ export const ActionCard = forwardRef<HTMLElement, ToggleCardProps>(
                         </Typography>
                       </MaybeTooltip>
                     </HStack>
-                    {props.subtitle && (
+                    {typeof props.subtitle === 'string' && (
                       <Typography
                         fullWidth
                         align="left"
@@ -171,6 +171,7 @@ export const ActionCard = forwardRef<HTMLElement, ToggleCardProps>(
                         {props.subtitle}
                       </Typography>
                     )}
+                    {props.subtitle}
                   </VStack>
                 </HStack>
               </VStack>
