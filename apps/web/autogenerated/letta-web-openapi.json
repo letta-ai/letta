@@ -941,7 +941,8 @@
                               "mistral",
                               "together",
                               "bedrock",
-                              "deepseek"
+                              "deepseek",
+                              "xai"
                             ]
                           },
                           "model_endpoint": {
@@ -3365,7 +3366,8 @@
                                   "mistral",
                                   "together",
                                   "bedrock",
-                                  "deepseek"
+                                  "deepseek",
+                                  "xai"
                                 ]
                               },
                               "model_endpoint": {
@@ -5642,7 +5644,8 @@
                           "mistral",
                           "together",
                           "bedrock",
-                          "deepseek"
+                          "deepseek",
+                          "xai"
                         ]
                       },
                       "model_endpoint": {
@@ -5731,7 +5734,8 @@
                           "mistral",
                           "together",
                           "bedrock",
-                          "deepseek"
+                          "deepseek",
+                          "xai"
                         ]
                       },
                       "embedding_endpoint": {
@@ -6398,7 +6402,8 @@
                                   "mistral",
                                   "together",
                                   "bedrock",
-                                  "deepseek"
+                                  "deepseek",
+                                  "xai"
                                 ]
                               },
                               "model_endpoint": {

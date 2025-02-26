@@ -4948,7 +4948,8 @@
                                   "mistral",
                                   "together",
                                   "bedrock",
-                                  "deepseek"
+                                  "deepseek",
+                                  "xai"
                                 ]
                               },
                               "model_endpoint": {
@@ -7681,7 +7682,8 @@
                                   "mistral",
                                   "together",
                                   "bedrock",
-                                  "deepseek"
+                                  "deepseek",
+                                  "xai"
                                 ]
                               },
                               "model_endpoint": {
@@ -13519,7 +13521,8 @@
               "mistral",
               "together",
               "bedrock",
-              "deepseek"
+              "deepseek",
+              "xai"
             ],
             "title": "Model Endpoint Type",
             "description": "The endpoint type for the model."

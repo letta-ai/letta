@@ -1571,7 +1571,8 @@ export type LLMConfig = {
     | 'mistral'
     | 'together'
     | 'bedrock'
-    | 'deepseek';
+    | 'deepseek'
+    | 'xai';
   /**
    * The endpoint for the model.
    */
@@ -1626,7 +1627,8 @@ export type model_endpoint_type =
   | 'mistral'
   | 'together'
   | 'bedrock'
-  | 'deepseek';
+  | 'deepseek'
+  | 'xai';
 
 export type LettaRequest = {
   /**

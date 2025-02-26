@@ -206,6 +206,7 @@ export const LLMConfig = z.object({
     z.literal('together'),
     z.literal('bedrock'),
     z.literal('deepseek'),
+    z.literal('xai'),
   ]),
   model_endpoint: z
     .union([

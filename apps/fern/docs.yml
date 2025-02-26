@@ -125,6 +125,8 @@ navigation:
                 path: pages/models/aws_bedrock.mdx
               - page: Groq
                 path: pages/models/groq.mdx
+              - page: xAI (Grok)
+                path: pages/models/xai.mdx
               - page: Together
                 path: pages/models/together.mdx
               - page: Google AI / Gemini

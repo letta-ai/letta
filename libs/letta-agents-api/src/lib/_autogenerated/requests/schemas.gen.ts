@@ -4243,6 +4243,7 @@ export const $LLMConfig = {
         'together',
         'bedrock',
         'deepseek',
+        'xai',
       ],
       title: 'Model Endpoint Type',
       description: 'The endpoint type for the model.',

@@ -60,6 +60,7 @@ from letta.schemas.providers import (
     TogetherProvider,
     VLLMChatCompletionsProvider,
     VLLMCompletionsProvider,
+    xAIProvider,
 )
 from letta.schemas.sandbox_config import SandboxType
 from letta.schemas.source import Source
@@ -311,6 +312,8 @@ class SyncServer(Server):
             self._enabled_providers.append(LMStudioOpenAIProvider(base_url=lmstudio_url))
         if model_settings.deepseek_api_key:
             self._enabled_providers.append(DeepSeekProvider(api_key=model_settings.deepseek_api_key))
+        if model_settings.xai_api_key:
+            self._enabled_providers.append(xAIProvider(api_key=model_settings.xai_api_key))
 
     def load_agent(self, agent_id: str, actor: User, interface: Union[AgentInterface, None] = None) -> Agent:
         """Updated method to load agents from persisted storage"""
@@ -1197,7 +1200,8 @@ class SyncServer(Server):
             # Disable token streaming if not OpenAI or Anthropic
             # TODO: cleanup this logic
             llm_config = letta_agent.agent_state.llm_config
-            supports_token_streaming = ["openai", "anthropic", "deepseek"]
+            # supports_token_streaming = ["openai", "anthropic", "xai", "deepseek"]
+            supports_token_streaming = ["openai", "anthropic", "deepseek"]  # TODO re-enable xAI once streaming is patched
             if stream_tokens and (
                 llm_config.model_endpoint_type not in supports_token_streaming or "inference.memgpt.ai" in llm_config.model_endpoint
             ):
