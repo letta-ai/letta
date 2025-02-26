@@ -34,7 +34,7 @@ def resolve_type(annotation: str):
     try:
         if annotation.startswith("list["):
             inner_type = annotation[len("list[") : -1]
-            resolved_type = resolve_type(inner_type)
+            resolve_type(inner_type)
             return list
         elif annotation.startswith("dict["):
             inner_types = annotation[len("dict[") : -1]
@@ -42,7 +42,7 @@ def resolve_type(annotation: str):
             return dict
         elif annotation.startswith("tuple["):
             inner_types = annotation[len("tuple[") : -1]
-            type_list = [resolve_type(t.strip()) for t in inner_types.split(",")]
+            [resolve_type(t.strip()) for t in inner_types.split(",")]
             return tuple
 
         parsed = ast.literal_eval(annotation)
