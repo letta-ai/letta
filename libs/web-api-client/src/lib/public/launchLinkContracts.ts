@@ -18,6 +18,9 @@ const GetLaunchLinkContract = c.query({
   path: '/launch-link/:agentTemplateId',
   responses: {
     200: LaunchLinkSchema,
+    404: z.object({
+      message: z.string(),
+    }),
   },
 });
 
@@ -28,6 +31,9 @@ const UpdateLaunchLinkSchema = z.object({
 const UpdateLaunchLinkContract = c.mutation({
   method: 'PUT',
   path: '/launch-link/:agentTemplateId',
+  pathParams: z.object({
+    agentTemplateId: z.string(),
+  }),
   body: UpdateLaunchLinkSchema,
   responses: {
     200: LaunchLinkSchema,
@@ -37,6 +43,9 @@ const UpdateLaunchLinkContract = c.mutation({
 const CreateLaunchLinkContract = c.mutation({
   method: 'POST',
   path: '/launch-link/:agentTemplateId',
+  pathParams: z.object({
+    agentTemplateId: z.string(),
+  }),
   responses: {
     201: LaunchLinkSchema,
   },

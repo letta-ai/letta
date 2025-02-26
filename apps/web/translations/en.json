@@ -3,6 +3,15 @@
     "emptyMessage": "This is not the page you're looking for",
     "emptyAction": "Go home"
   },
+  "pages/distribution/LaunchLinks": {
+    "NotCreatedLinkView": {
+      "title": "Let Letta manage your UI",
+      "description": "With Letta Launch, you can deploy agents without writing any code. Letta will manage the UI for you, users can start using your agent with just a link that creates a unique agent instance for them.",
+      "cta": "Create a Launch Link",
+      "creating": "Creating Launch Link...",
+      "error": "There was an error creating the Launch Link, please try again or contact support."
+    }
+  },
   "pages/distribution": {
     "DeploymentInstructions": {
       "title": "Agent Distribution"
@@ -20,11 +29,6 @@
     },
     "VersionList": {
       "title": "Version History"
-    },
-    "LettaLaunchView": {
-      "title": "Let Letta manage your UI",
-      "description": "With Letta Launch, you can deploy agents without writing any code. Letta will manage the UI for you, users can start using your agent with just a link that creates a unique agent instance for them.",
-      "cta": "Create a Launch Link"
     },
     "copy": "Copy"
   },

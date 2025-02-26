@@ -52,6 +52,9 @@ async function TemplateBaseLayout(props: TemplateBaseLayoutProps) {
       eq(agentTemplates.organizationId, user.activeOrganizationId),
       isNull(agentTemplates.deletedAt),
     ),
+    with: {
+      launchLinkConfiguration: true,
+    },
     columns: {
       name: true,
       id: true,
@@ -75,6 +78,13 @@ async function TemplateBaseLayout(props: TemplateBaseLayoutProps) {
   );
 
   const queries = [
+    queryClient.prefetchQuery({
+      queryKey: webApiQueryKeys.launchLinks.getLaunchLink(agentTemplate.id),
+      queryFn: () => ({
+        status: agentTemplate.launchLinkConfiguration ? 200 : 404,
+        body: agentTemplate.launchLinkConfiguration,
+      }),
+    }),
     queryClient.prefetchQuery({
       queryKey: UseAgentsServiceRetrieveAgentKeyFn({
         agentId,

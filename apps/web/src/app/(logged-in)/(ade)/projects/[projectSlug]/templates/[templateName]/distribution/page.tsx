@@ -29,6 +29,7 @@ import type { ListAgentsResponse } from '@letta-cloud/letta-agents-api';
 import type { InfiniteData } from '@tanstack/query-core';
 import { useDebouncedValue } from '@mantine/hooks';
 import { webApi, webApiQueryKeys } from '@letta-cloud/web-api-client';
+import { LaunchLinks } from './LaunchLinks/LaunchLinks';
 
 type CodeSnippetMethods = 'bash' | 'python' | 'typescript';
 type DeploymentMethods = CodeSnippetMethods | 'letta-launch';
@@ -39,29 +40,6 @@ interface CodeSnippetViewProps {
 
 function isCodeSnippetMethod(value: string): value is CodeSnippetMethods {
   return ['typescript', 'python', 'bash'].includes(value);
-}
-
-function LettaLaunchView() {
-  const t = useTranslations('pages/distribution');
-
-  return (
-    <VStack
-      color="background-grey"
-      fullHeight
-      justify="center"
-      fullWidth
-      align="center"
-    >
-      <RocketIcon size="xxlarge" />
-      <Typography variant="heading5" bold>
-        {t('LettaLaunchView.title')}
-      </Typography>
-      <div className="max-w-[600px]">
-        <Typography>{t('LettaLaunchView.description')}</Typography>
-      </div>
-      <Button label={t('LettaLaunchView.cta')} color="primary" />
-    </VStack>
-  );
 }
 
 function CodeSnippetView(props: CodeSnippetViewProps) {
@@ -210,7 +188,7 @@ function DeploymentInstructions() {
                 {isCodeSnippetMethod(deploymentMethod) && (
                   <CodeSnippetView deploymentMethod={deploymentMethod} />
                 )}
-                {deploymentMethod === 'letta-launch' && <LettaLaunchView />}
+                {deploymentMethod === 'letta-launch' && <LaunchLinks />}
               </VStack>
             </VStack>
           ),

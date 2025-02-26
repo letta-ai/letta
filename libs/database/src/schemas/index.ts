@@ -338,6 +338,10 @@ export const agentTemplateRelations = relations(
     }),
     deployedAgentTemplates: many(deployedAgentTemplates),
     agentSimulatorSessions: many(agentSimulatorSessions),
+    launchLinkConfiguration: one(launchLinkConfigurations, {
+      fields: [agentTemplates.id],
+      references: [launchLinkConfigurations.agentTemplateId],
+    }),
   }),
 );
 
