@@ -5211,6 +5211,10 @@
                 "properties": {
                   "migrate_deployed_agents": {
                     "type": "boolean"
+                  },
+                  "message": {
+                    "type": "string",
+                    "maxLength": 140
                   }
                 }
               }
