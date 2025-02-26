@@ -222,6 +222,7 @@ const ShortVersionedTemplateType = z.object({
   id: z.string(),
   version: z.string(),
   agentTemplateId: z.string(),
+  message: z.string().optional(),
   createdAt: z.string(),
 });
 

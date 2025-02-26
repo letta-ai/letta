@@ -875,6 +875,7 @@ async function listTemplateVersions(
       versions: response.slice(0, limit).map((version) => {
         return {
           id: version.id,
+          message: version.message || undefined,
           version: version.version,
           agentTemplateId: version.agentTemplateId,
           createdAt: version.createdAt.toISOString(),

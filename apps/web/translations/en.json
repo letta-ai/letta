@@ -16,6 +16,12 @@
     "DeploymentInstructions": {
       "title": "Agent Distribution"
     },
+    "VersionHistory": {
+      "title": "Version History",
+      "noVersions": "No versions found",
+      "loading": "Loading versions...",
+      "noMessage": "No message"
+    },
     "RecentAgents": {
       "title": "Recently deployed agents",
       "addAgent": "Deploy agent",

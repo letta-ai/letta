@@ -122,6 +122,11 @@ function VersionAgentDialog(props: VersionAgentDialogProps) {
   const { mutate, isPending } =
     webOriginSDKApi.agents.versionAgentTemplate.useMutation({
       onSuccess: (response) => {
+        void queryClient.invalidateQueries({
+          queryKey: webApiQueryKeys.agentTemplates.listAgentTemplates,
+          exact: false,
+        });
+
         void queryClient.setQueriesData<
           ServerInferResponses<
             typeof contracts.agentTemplates.getAgentTemplateByVersion,
@@ -158,6 +163,7 @@ function VersionAgentDialog(props: VersionAgentDialogProps) {
         },
         body: {
           migrate_deployed_agents: values.migrate,
+          message: values.message,
         },
         params: { agent_id: agentTemplateId },
       });
