@@ -179,14 +179,22 @@ export function EditMemory() {
               extendBorder
               rightContent={
                 firstLabel && (
-                  <Button
-                    color="tertiary"
-                    size="small"
-                    label={t('advancedEditor')}
-                    onClick={() => {
-                      open(firstLabel);
-                    }}
-                  />
+                  <HStack
+                    fullWidth
+                    fullHeight
+                    align="center"
+                    paddingBottom="xsmall"
+                    justify="end"
+                  >
+                    <Button
+                      color="tertiary"
+                      size="small"
+                      label={t('advancedEditor')}
+                      onClick={() => {
+                        open(firstLabel);
+                      }}
+                    />
+                  </HStack>
                 )
               }
               size="small"
