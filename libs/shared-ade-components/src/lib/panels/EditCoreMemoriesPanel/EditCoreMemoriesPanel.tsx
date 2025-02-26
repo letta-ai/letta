@@ -102,11 +102,13 @@ function DefaultMemory() {
   return (
     <>
       <AdvancedCoreMemoryEditor />
-      {memories.map((block) => (
-        <VStack fullHeight key={block.label || ''}>
-          <EditMemoryForm memory={block} label={block.label || ''} />
-        </VStack>
-      ))}
+      <VStack fullHeight gap="large">
+        {memories.map((block) => (
+          <VStack fullHeight key={block.label || ''}>
+            <EditMemoryForm memory={block} label={block.label || ''} />
+          </VStack>
+        ))}
+      </VStack>
     </>
   );
 }
@@ -124,30 +126,34 @@ function SimulatedMemory() {
     return <LettaLoaderPanel />;
   }
 
-  return memories.map((block) => (
-    <VStack fullHeight key={block.label || ''}>
-      <VStack fullHeight flex paddingBottom="small">
-        <RawTextArea
-          autosize={false}
-          flex
-          fullHeight
-          resize="none"
-          fullWidth
-          data-testid={`simulated-memory:${block.label}`}
-          disabled
-          rightOfLabelContent={
-            <Typography variant="body2" color="muted">
-              {t('SimulatedMemory.characterCount', {
-                count: block.value.length,
-              })}
-            </Typography>
-          }
-          label={block.label || ''}
-          value={block.value}
-        />
-      </VStack>
+  return (
+    <VStack fullHeight gap="large">
+      {memories.map((block) => (
+        <VStack fullHeight key={block.label || ''}>
+          <VStack fullHeight flex>
+            <RawTextArea
+              autosize={false}
+              flex
+              fullHeight
+              resize="none"
+              fullWidth
+              data-testid={`simulated-memory:${block.label}`}
+              disabled
+              rightOfLabelContent={
+                <Typography variant="body2" color="muted">
+                  {t('SimulatedMemory.characterCount', {
+                    count: block.value.length,
+                  })}
+                </Typography>
+              }
+              label={block.label || ''}
+              value={block.value}
+            />
+          </VStack>
+        </VStack>
+      ))}
     </VStack>
-  ));
+  );
 }
 
 type MemoryType = 'simulated' | 'templated';
