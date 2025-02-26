@@ -442,6 +442,13 @@
       "when": 1740594169276,
       "tag": "0062_volatile_sumo",
       "breakpoints": true
+    },
+    {
+      "idx": 63,
+      "version": "7",
+      "when": 1740595976272,
+      "tag": "0063_steep_proudstar",
+      "breakpoints": true
     }
   ]
 }

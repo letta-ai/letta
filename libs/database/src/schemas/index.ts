@@ -356,6 +356,7 @@ export const deployedAgentTemplates = pgTable(
       }),
     agentTemplateId: text('agent_template_id').notNull(),
     version: text('version').notNull(),
+    message: text('message'),
     createdAt: timestamp('created_at').notNull().defaultNow(),
     deletedAt: timestamp('deleted_at'),
     updatedAt: timestamp('updated_at')

@@ -1258,7 +1258,13 @@
       "current": "Edited version",
       "description": "Versioning an agent creates a new version of the agent that is immutable and can be used to deploy agents. Are you sure you want to proceed?",
       "migrate": "Migrate all deployed agents to this version",
-      "migrateDescription": "Selecting this option will migrate all deployed agents to this version, to programmatically migrate agents, visit the <link>API documentation</link>."
+      "migrateDescription": "Selecting this option will migrate all deployed agents to this version, to programmatically migrate agents, visit the <link>API documentation</link>.",
+      "message": {
+        "label": "Version Message",
+        "placeholder": "What's new in this version?",
+        "description": "A description of the changes in this version",
+        "maxChars": "Max 140 characters"
+      }
     },
     "CloudUpsellDeploy": {
       "trigger": "Deploy",

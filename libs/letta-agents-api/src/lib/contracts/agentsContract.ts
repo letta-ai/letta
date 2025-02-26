@@ -48,6 +48,7 @@ const versionAgentTemplateContract = c.mutation({
   description: 'Creates a versioned version of an agent',
   body: z.object({
     migrate_deployed_agents: z.boolean().optional(),
+    message: z.string().max(140).optional(),
   }),
   query: z.object({
     returnAgentState: z.boolean().optional(),

@@ -5,7 +5,6 @@ import {
   AgentStateViewer,
   Badge,
   Button,
-  Card,
   Checkbox,
   CloseIcon,
   CloseMiniApp,
@@ -15,6 +14,7 @@ import {
   FormField,
   FormProvider,
   HStack,
+  Input,
   LettaLoader,
   MiniApp,
   Popover,
@@ -82,12 +82,6 @@ function DeployAgentDialog(props: DeployAgentDialogProps) {
   );
 }
 
-const versionAgentFormSchema = z.object({
-  migrate: z.boolean(),
-});
-
-type VersionAgentFormValues = z.infer<typeof versionAgentFormSchema>;
-
 interface VersionAgentDialogProps {
   currentAgentState: AgentState;
   versionedAgentState: AgentState;
@@ -96,6 +90,7 @@ interface VersionAgentDialogProps {
 
 function VersionAgentDialog(props: VersionAgentDialogProps) {
   const { name } = useCurrentAgent();
+
   const { currentAgentState, versionedAgentState, latestVersion } = props;
   const { id: agentTemplateId } = useCurrentAgent();
   const queryClient = useQueryClient();
@@ -104,13 +99,26 @@ function VersionAgentDialog(props: VersionAgentDialogProps) {
     'projects/(projectSlug)/agents/(agentId)/AgentPage',
   );
 
+  const versionAgentFormSchema = useMemo(
+    () =>
+      z.object({
+        migrate: z.boolean(),
+        message: z.string().max(140, {
+          message: t('VersionAgentDialog.message.maxChars'),
+        }),
+      }),
+    [t],
+  );
+
+  type VersionAgentFormValues = z.infer<typeof versionAgentFormSchema>;
+
   const form = useForm<VersionAgentFormValues>({
     resolver: zodResolver(versionAgentFormSchema),
     defaultValues: {
       migrate: true,
+      message: '',
     },
   });
-
   const { mutate, isPending } =
     webOriginSDKApi.agents.versionAgentTemplate.useMutation({
       onSuccess: (response) => {
@@ -228,45 +236,65 @@ function VersionAgentDialog(props: VersionAgentDialogProps) {
                   />
                 </VStack>
               </VStack>
-              <Card>
-                <FormField
-                  render={({ field }) => {
-                    return (
-                      <Checkbox
-                        checked={field.value}
-                        description={t.rich(
-                          'VersionAgentDialog.migrateDescription',
-                          {
-                            link: (chunks) => (
-                              <ExternalLink href="https://docs.letta.com/api-reference/agents/migrate-agent">
-                                {chunks}
-                              </ExternalLink>
-                            ),
-                          },
-                        )}
-                        label={t('VersionAgentDialog.migrate')}
-                        onCheckedChange={(value) => {
-                          field.onChange({
-                            target: {
-                              value: value,
-                              name: field.name,
+              <VStack border padding>
+                <VStack paddingBottom gap="form">
+                  <FormField
+                    render={({ field }) => {
+                      return (
+                        <Input
+                          {...field}
+                          fullWidth
+                          description={t(
+                            'VersionAgentDialog.message.description',
+                          )}
+                          label={t('VersionAgentDialog.message.label')}
+                          placeholder={t(
+                            'VersionAgentDialog.message.placeholder',
+                          )}
+                        />
+                      );
+                    }}
+                    name="message"
+                  />
+                  <FormField
+                    render={({ field }) => {
+                      return (
+                        <Checkbox
+                          checked={field.value}
+                          description={t.rich(
+                            'VersionAgentDialog.migrateDescription',
+                            {
+                              link: (chunks) => (
+                                <ExternalLink href="https://docs.letta.com/api-reference/agents/migrate-agent">
+                                  {chunks}
+                                </ExternalLink>
+                              ),
                             },
-                          });
-                        }}
-                      />
-                    );
-                  }}
-                  name="migrate"
-                />
-              </Card>
-              <FormActions>
-                <Button
-                  data-testid="deploy-agent-dialog-trigger"
-                  color="primary"
-                  busy={isPending}
-                  label={t('VersionAgentDialog.confirm')}
-                />
-              </FormActions>
+                          )}
+                          label={t('VersionAgentDialog.migrate')}
+                          onCheckedChange={(value) => {
+                            field.onChange({
+                              target: {
+                                value: value,
+                                name: field.name,
+                              },
+                            });
+                          }}
+                        />
+                      );
+                    }}
+                    name="migrate"
+                  />
+                </VStack>
+                <FormActions>
+                  <Button
+                    data-testid="deploy-agent-dialog-trigger"
+                    color="primary"
+                    busy={isPending}
+                    label={t('VersionAgentDialog.confirm')}
+                  />
+                </FormActions>
+              </VStack>
             </VStack>
           </VStack>
         </form>

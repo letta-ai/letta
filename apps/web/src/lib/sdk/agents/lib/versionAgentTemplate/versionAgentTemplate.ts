@@ -28,7 +28,7 @@ export async function versionAgentTemplate(
 ): Promise<DeployAgentTemplateResponse> {
   const { agent_id: agentId } = req.params;
   const { returnAgentState } = req.query;
-  const { migrate_deployed_agents } = req.body;
+  const { migrate_deployed_agents, message } = req.body;
 
   const existingDeployedAgentTemplateCount =
     await db.query.deployedAgentTemplates.findMany({
@@ -123,6 +123,7 @@ export async function versionAgentTemplate(
   await db.insert(deployedAgentTemplates).values({
     id: deployedAgentTemplateId,
     projectId,
+    message,
     organizationId: context.request.organizationId,
     agentTemplateId,
     version,
