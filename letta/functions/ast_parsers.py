@@ -32,6 +32,19 @@ def resolve_type(annotation: str):
         return BUILTIN_TYPES[annotation]
 
     try:
+        if annotation.startswith("list["):
+            inner_type = annotation[len("list[") : -1]
+            resolve_type(inner_type)
+            return list
+        elif annotation.startswith("dict["):
+            inner_types = annotation[len("dict[") : -1]
+            key_type, value_type = inner_types.split(",")
+            return dict
+        elif annotation.startswith("tuple["):
+            inner_types = annotation[len("tuple[") : -1]
+            [resolve_type(t.strip()) for t in inner_types.split(",")]
+            return tuple
+
         parsed = ast.literal_eval(annotation)
         if isinstance(parsed, type):
             return parsed
