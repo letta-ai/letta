@@ -59,18 +59,18 @@ function DeleteAgentDialog(props: DeleteAgentDialogProps) {
   const { isLocal } = useCurrentAgentMetaData();
   const user = useCurrentUser();
 
+  const t = useTranslations(
+    'projects/(projectSlug)/agents/(agentId)/AgentPage',
+  );
+
   const DeleteAgentDialogFormSchema = useMemo(
     () =>
       z.object({
         agentName: z.literal(name, {
-          message: 'Agent name does not match',
+          message: t('DeleteAgentDialog.nameError'),
         }),
       }),
-    [name],
-  );
-
-  const t = useTranslations(
-    'projects/(projectSlug)/agents/(agentId)/AgentPage',
+    [name, t],
   );
 
   const form = useForm<z.infer<typeof DeleteAgentDialogFormSchema>>({
