@@ -182,8 +182,8 @@ export function EditMemory() {
                   <HStack
                     fullWidth
                     fullHeight
+                    paddingBottom="xxsmall"
                     align="center"
-                    paddingBottom="xsmall"
                     justify="end"
                   >
                     <Button

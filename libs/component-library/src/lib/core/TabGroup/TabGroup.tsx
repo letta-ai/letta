@@ -65,7 +65,7 @@ export function TabGroup(props: TabGroupProps) {
       defaultValue={defaultValue}
       onValueChange={onValueChange}
     >
-      <Tabs.List className="flex flex-row">
+      <Tabs.List className="flex items-end flex-row">
         {items.map((item) => (
           <Tabs.Trigger
             className={cn(
