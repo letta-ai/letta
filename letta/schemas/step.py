@@ -26,7 +26,7 @@ class Step(StepBase):
     prompt_tokens: Optional[int] = Field(None, description="The number of tokens in the prompt during this step.")
     total_tokens: Optional[int] = Field(None, description="The total number of tokens processed by the agent during this step.")
     completion_tokens_details: Optional[Dict] = Field(None, description="Metadata for the agent.")
-
     tags: List[str] = Field([], description="Metadata tags.")
     tid: Optional[str] = Field(None, description="The unique identifier of the transaction that processed this step.")
+    trace_id: Optional[str] = Field(None, description="The trace id of the agent step.")
     messages: List[Message] = Field([], description="The messages generated during this step.")
