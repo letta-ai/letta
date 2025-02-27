@@ -832,7 +832,7 @@ class Agent(BaseAgent):
                 )
 
             if current_total_tokens > summarizer_settings.memory_warning_threshold * int(self.agent_state.llm_config.context_window):
-                printd(
+                logger.warning(
                     f"{CLI_WARNING_PREFIX}last response total_tokens ({current_total_tokens}) > {summarizer_settings.memory_warning_threshold * int(self.agent_state.llm_config.context_window)}"
                 )
 
@@ -842,7 +842,7 @@ class Agent(BaseAgent):
                     self.agent_alerted_about_memory_pressure = True  # it's up to the outer loop to handle this
 
             else:
-                printd(
+                logger.info(
                     f"last response total_tokens ({current_total_tokens}) < {summarizer_settings.memory_warning_threshold * int(self.agent_state.llm_config.context_window)}"
                 )
 
@@ -891,6 +891,16 @@ class Agent(BaseAgent):
             # If we got a context alert, try trimming the messages length, then try again
             if is_context_overflow_error(e):
                 in_context_messages = self.agent_manager.get_in_context_messages(agent_id=self.agent_state.id, actor=self.user)
+
+                # TODO: this is a patch to resolve immediate issues, should be removed once the summarizer is fixes
+                if self.agent_state.message_buffer_autoclear:
+                    # no calling the summarizer in this case
+                    logger.error(
+                        f"step() failed with an exception that looks like a context window overflow, but message buffer is set to autoclear, so skipping: '{str(e)}'"
+                    )
+                    raise e
+
+                summarize_attempt_count += 1
 
                 if summarize_attempt_count <= summarizer_settings.max_summarizer_retries:
                     logger.warning(
