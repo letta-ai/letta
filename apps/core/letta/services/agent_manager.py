@@ -529,6 +529,7 @@ class AgentManager:
                 model=agent_state.llm_config.model,
                 openai_message_dict={"role": "system", "content": new_system_message_str},
             )
+            # TODO: This seems kind of silly, why not just update the message?
             message = self.message_manager.create_message(message, actor=actor)
             message_ids = [message.id] + agent_state.message_ids[1:]  # swap index 0 (system)
             return self._set_in_context_messages(agent_id=agent_id, message_ids=message_ids, actor=actor)

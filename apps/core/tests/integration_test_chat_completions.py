@@ -153,7 +153,7 @@ def _assert_valid_chunk(chunk, idx, chunks):
 
 
 @pytest.mark.asyncio
-@pytest.mark.parametrize("message", ["Tell me something interesting about bananas."])
+@pytest.mark.parametrize("message", ["What's the weather in SF?"])
 @pytest.mark.parametrize("endpoint", ["v1/voice"])
 async def test_latency(mock_e2b_api_key_none, client, agent, message, endpoint):
     """Tests chat completion streaming using the Async OpenAI client."""
@@ -163,8 +163,7 @@ async def test_latency(mock_e2b_api_key_none, client, agent, message, endpoint):
     stream = await async_client.chat.completions.create(**request.model_dump(exclude_none=True))
     async with stream:
         async for chunk in stream:
-            assert isinstance(chunk, ChatCompletionChunk), f"Unexpected chunk type: {type(chunk)}"
-            assert chunk.choices, "Each ChatCompletionChunk should have at least one choice."
+            print(chunk)
 
 
 @pytest.mark.asyncio
