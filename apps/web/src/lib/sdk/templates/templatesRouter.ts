@@ -1,7 +1,11 @@
 import type { ServerInferRequest, ServerInferResponses } from '@ts-rest/core';
 
 import type { sdkContracts } from '@letta-cloud/letta-agents-api';
-import { db, deployedAgentVariables } from '@letta-cloud/database';
+import {
+  db,
+  deployedAgentMetadata,
+  deployedAgentVariables,
+} from '@letta-cloud/database';
 import type { SDKContext } from '$web/sdk/shared';
 import { getDeployedTemplateByVersion } from '@letta-cloud/server-utils';
 import { copyAgentById } from '$web/server/lib/copyAgentById/copyAgentById';
@@ -72,6 +76,12 @@ async function createAgentsFromTemplate(
       },
     };
   }
+
+  await db.insert(deployedAgentMetadata).values({
+    agentId: response.id,
+    organizationId,
+    projectId: deployedAgentTemplate.projectId,
+  });
 
   await db.insert(deployedAgentVariables).values({
     deployedAgentId: response.id,

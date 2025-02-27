@@ -10,6 +10,7 @@ import { AgentsService } from '@letta-cloud/letta-agents-api';
 import {
   agentTemplates,
   db,
+  deployedAgentMetadata,
   deployedAgentTemplates,
   deployedAgentVariables,
   organizationPreferences,
@@ -393,6 +394,14 @@ async function deleteAgent(
       user_id: context.request.lettaAgentsUserId,
     },
   );
+
+  try {
+    void db
+      .delete(deployedAgentMetadata)
+      .where(eq(deployedAgentMetadata.agentId, agentId));
+  } catch (_e) {
+    //
+  }
 
   return {
     status: 200,

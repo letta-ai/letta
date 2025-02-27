@@ -52,7 +52,7 @@ export const orgRelationsTable = relations(organizations, ({ many, one }) => ({
   projects: many(projects),
   testingAgents: many(agentTemplates),
   sourceAgents: many(deployedAgentTemplates),
-  deployedAgents: many(deployedAgents),
+  deployedAgentsMetadata: many(deployedAgentMetadata),
   organizationUsers: many(organizationUsers),
   organizationPreferences: one(organizationPreferences, {
     fields: [organizations.id],
@@ -297,7 +297,7 @@ export const projectRelations = relations(projects, ({ one, many }) => ({
   }),
   deployedAgentTemplates: many(deployedAgentTemplates),
   agentTemplates: many(agentTemplates),
-  deployedAgents: many(deployedAgents),
+  deployedAgentsMetadata: many(deployedAgentMetadata),
 }));
 
 export const agentTemplates = pgTable(
@@ -387,7 +387,6 @@ export const deployedAgentTemplatesRelations = relations(
       fields: [deployedAgentTemplates.agentTemplateId],
       references: [agentTemplates.id],
     }),
-    deployedAgents: many(deployedAgents),
     project: one(projects, {
       fields: [deployedAgentTemplates.projectId],
       references: [projects.id],
@@ -396,7 +395,10 @@ export const deployedAgentTemplatesRelations = relations(
 );
 
 export const deployedAgentVariables = pgTable('deployed_agent_variables', {
-  deployedAgentId: text('deployed_agent_id').notNull().primaryKey(),
+  deployedAgentId: text('deployed_agent_id')
+    .notNull()
+    .primaryKey()
+    .references(() => deployedAgentMetadata.agentId, { onDelete: 'cascade' }),
   organizationId: text('organization_id').notNull(),
   value: json('value').notNull().$type<Record<string, string>>(),
   createdAt: timestamp('created_at').notNull().defaultNow(),
@@ -405,64 +407,6 @@ export const deployedAgentVariables = pgTable('deployed_agent_variables', {
     .notNull()
     .$onUpdate(() => new Date()),
 });
-
-export const deployedAgents = pgTable(
-  'deployed_agents',
-  {
-    id: text('id').primaryKey(),
-    key: text('key').notNull(),
-    rootAgentTemplateId: text('root_agent_template_id'),
-    deployedAgentTemplateId: text('deployed_agent_template_id'),
-    projectId: text('project_id')
-      .notNull()
-      .references(() => projects.id, {
-        onDelete: 'cascade',
-      }),
-    internalAgentCountId: bigint('internal_agent_count_id', { mode: 'number' })
-      .notNull()
-      .default(0),
-    organizationId: text('organization_id')
-      .notNull()
-      .references(() => organizations.id, { onDelete: 'cascade' })
-      .notNull(),
-    migratedAt: timestamp('migrated_at'),
-    createdAt: timestamp('created_at').notNull().defaultNow(),
-    deletedAt: timestamp('deleted_at'),
-    updatedAt: timestamp('updated_at')
-      .notNull()
-      .$onUpdate(() => new Date()),
-  },
-  (table) => ({
-    uniqueKey: uniqueIndex('unique_key').on(
-      table.key,
-      table.organizationId,
-      table.projectId,
-    ),
-  }),
-);
-
-export const deployedAgentRelations = relations(deployedAgents, ({ one }) => ({
-  organization: one(organizations, {
-    fields: [deployedAgents.organizationId],
-    references: [organizations.id],
-  }),
-  deployedAgentTemplate: one(deployedAgentTemplates, {
-    fields: [deployedAgents.deployedAgentTemplateId],
-    references: [deployedAgentTemplates.id],
-  }),
-  project: one(projects, {
-    fields: [deployedAgents.projectId],
-    references: [projects.id],
-  }),
-  rootAgentTemplate: one(agentTemplates, {
-    fields: [deployedAgents.rootAgentTemplateId],
-    references: [agentTemplates.id],
-  }),
-  deployedAgentVariables: one(deployedAgentVariables, {
-    fields: [deployedAgents.id],
-    references: [deployedAgentVariables.deployedAgentId],
-  }),
-}));
 
 export const agentSimulatorSessions = pgTable('agent_simulator_sessions', {
   id: text('id')
@@ -1126,6 +1070,34 @@ export const launchLinkConfigurationsRelations = relations(
     agentTemplate: one(agentTemplates, {
       fields: [launchLinkConfigurations.agentTemplateId],
       references: [agentTemplates.id],
+    }),
+  }),
+);
+
+export const deployedAgentMetadata = pgTable('deployed_agent_metadata', {
+  agentId: text('agent_id').primaryKey(),
+  organizationId: text('organization_id')
+    .notNull()
+    .references(() => organizations.id, { onDelete: 'cascade' }),
+  projectId: text('project_id').references(() => projects.id, {
+    onDelete: 'cascade',
+  }),
+});
+
+export const deployedAgentsMetadataRelations = relations(
+  deployedAgentMetadata,
+  ({ one }) => ({
+    organization: one(organizations, {
+      fields: [deployedAgentMetadata.organizationId],
+      references: [organizations.id],
+    }),
+    project: one(projects, {
+      fields: [deployedAgentMetadata.projectId],
+      references: [projects.id],
+    }),
+    deployedAgentVariables: one(deployedAgentVariables, {
+      fields: [deployedAgentMetadata.agentId],
+      references: [deployedAgentVariables.deployedAgentId],
     }),
   }),
 );

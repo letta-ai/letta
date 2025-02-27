@@ -449,6 +449,13 @@
       "when": 1740595976272,
       "tag": "0063_steep_proudstar",
       "breakpoints": true
+    },
+    {
+      "idx": 64,
+      "version": "7",
+      "when": 1740617393327,
+      "tag": "0064_nervous_strong_guy",
+      "breakpoints": true
     }
   ]
 }
