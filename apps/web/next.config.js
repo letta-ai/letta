@@ -22,10 +22,15 @@ let nextConfig = {
   output: 'standalone',
 };
 
+const withBundleAnalyzer = require('@next/bundle-analyzer')({
+  enabled: process.env.ANALYZE === 'true',
+});
+
 const plugins = [
   // Add more Next.js plugins to this list if needed.
   withNx,
   withNextIntl,
+  withBundleAnalyzer,
 ];
 
 const { withSentryConfig } = require('@sentry/nextjs');
