@@ -69,7 +69,7 @@
   },
   "NotConnectedOverlay": {
     "connecting": "Booting up your Letta Server...",
-    "details": "This should only take 5-10 seconds.",
+    "details": "This should only take 10-20 seconds. Once the server is running, you will be able to access the ADE.",
     "action": "View server logs"
   },
   "CreateLocalAgentDialog": {
