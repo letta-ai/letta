@@ -2,7 +2,7 @@ from typing import TYPE_CHECKING, List, Optional
 
 from fastapi import APIRouter, Body, Depends, Header, HTTPException, Query
 
-from letta.orm.errors import NoResultFound
+from letta.orm.errors import NoResultFound, UniqueConstraintViolationError
 from letta.schemas.identity import Identity, IdentityCreate, IdentityType, IdentityUpdate
 from letta.server.rest_api.utils import get_letta_server
 
@@ -72,6 +72,14 @@ def create_identity(
         return server.identity_manager.create_identity(identity=identity, actor=actor)
     except HTTPException:
         raise
+    except UniqueConstraintViolationError:
+        if identity.project_id:
+            raise HTTPException(
+                status_code=400,
+                detail=f"An identity with identifier key {identity.identifier_key} already exists for project {identity.project_id}",
+            )
+        else:
+            raise HTTPException(status_code=400, detail=f"An identity with identifier key {identity.identifier_key} already exists")
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"{e}")
 
