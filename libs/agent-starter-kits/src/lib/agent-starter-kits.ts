@@ -30,7 +30,7 @@ export const defaultLLMConfig = {
   model_endpoint_type: 'openai',
   model_endpoint: 'https://api.openai.com/v1',
   model_wrapper: null,
-  context_window: 128000,
+  context_window: 32000,
 } satisfies AgentState['llm_config'];
 
 export const defaultEmbeddingConfig = {

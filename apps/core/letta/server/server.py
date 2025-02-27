@@ -983,6 +983,10 @@ class SyncServer(Server):
                 warnings.warn(f"An error occurred while listing LLM models for provider {provider}: {e}")
 
         llm_models.extend(self.get_local_llm_configs())
+
+        # respect global maximum
+        for llm_config in llm_models:
+            llm_config.context_window = min(llm_config.context_window, model_settings.global_max_context_window_limit)
         return llm_models
 
     def list_embedding_models(self) -> List[EmbeddingConfig]:
@@ -1028,7 +1032,7 @@ class SyncServer(Server):
                 raise ValueError(f"Context window limit ({context_window_limit}) is greater than maximum of ({llm_config.context_window})")
             llm_config.context_window = context_window_limit
         else:
-            llm_config.context_window = min(llm_config.context_window, constants.DEFAULT_CONTEXT_WINDOW_SIZE)
+            llm_config.context_window = min(llm_config.context_window, model_settings.global_max_context_window_limit)
 
         return llm_config
 
