@@ -27,14 +27,22 @@
       "error": "There was an error creating the Launch Link, please try again or contact support."
     }
   },
+  "pages/distribution/VersionHistory": {
+    "CompareVersionDialog": {
+      "title": "Compare versions",
+      "compare": "Compare"
+    }
+  },
   "pages/distribution": {
     "DeploymentInstructions": {
       "title": "Agent Distribution"
     },
     "VersionHistory": {
       "title": "Version History",
+      "compare": "Compare",
       "noVersions": "No versions found",
       "loading": "Loading versions...",
+      "revert": "Revert to this version",
       "noMessage": "No message"
     },
     "RecentAgents": {
@@ -1281,6 +1289,7 @@
       "deployedAgents": "Deployed agents",
       "confirm": "Save new version",
       "current": "Edited version",
+      "loading": "Loading version information...",
       "description": "Versioning an agent creates a new version of the agent that is immutable and can be used to deploy agents. Are you sure you want to proceed?",
       "migrate": "Migrate all deployed agents to this version",
       "migrateDescription": "Selecting this option will migrate all deployed agents to this version, to programmatically migrate agents, visit the <link>API documentation</link>.",
@@ -1526,5 +1535,8 @@
       "templateEditor": "Template Editor",
       "distribution": "Distribution"
     }
+  },
+  "components/CompareTemplateVersions": {
+    "loading": "Loading versions..."
   }
 }

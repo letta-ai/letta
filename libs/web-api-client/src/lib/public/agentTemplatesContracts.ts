@@ -218,7 +218,7 @@ export type ListTemplateVersionsQuery = z.infer<
   typeof ListTemplateVersionsQuerySchema
 >;
 
-const ShortVersionedTemplateType = z.object({
+export const ShortVersionedTemplateType = z.object({
   id: z.string(),
   version: z.string(),
   agentTemplateId: z.string(),

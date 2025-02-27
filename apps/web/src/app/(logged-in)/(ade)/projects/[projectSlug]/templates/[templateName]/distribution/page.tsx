@@ -2,7 +2,6 @@
 import { ADEPage } from '$web/client/components/ADEPage/ADEPage';
 import {
   ActionCard,
-  Badge,
   Button,
   CopyIcon,
   HStack,
@@ -30,8 +29,8 @@ import type { ListAgentsResponse } from '@letta-cloud/letta-agents-api';
 import type { InfiniteData } from '@tanstack/query-core';
 import { useDebouncedValue } from '@mantine/hooks';
 import { webApi, webApiQueryKeys } from '@letta-cloud/web-api-client';
-import { useDateFormatter } from '@letta-cloud/helpful-client-utils';
 import { LaunchLinks } from './LaunchLinks/LaunchLinks';
+import { VersionHistory } from './VersionHistory/VersionHistory';
 
 type CodeSnippetMethods = 'bash' | 'python' | 'typescript';
 type DeploymentMethods = CodeSnippetMethods | 'letta-launch';
@@ -385,127 +384,6 @@ function RecentAgents() {
               void fetchNextPage();
             }}
             disabled={isFetchingNextPage}
-          />
-        )}
-      </VStack>
-    </VStack>
-  );
-}
-
-const VERSION_HEIGHT = 70;
-
-function VersionHistory() {
-  const [limit, setLimit] = useState(0);
-  const { agentId } = useCurrentAgentMetaData();
-  const containerRef = useRef<HTMLDivElement>(null);
-  const t = useTranslations('pages/distribution');
-
-  const {
-    data: versionData,
-    isLoading,
-    hasNextPage,
-    fetchNextPage,
-  } = webApi.agentTemplates.listTemplateVersions.useInfiniteQuery({
-    queryKey: webApiQueryKeys.agentTemplates.listTemplateVersionsWithSearch(
-      agentId,
-      {
-        limit,
-      },
-    ),
-    queryData: ({ pageParam }) => ({
-      query: {
-        limit: limit + 1,
-        offset: pageParam.offset,
-      },
-      params: {
-        agentTemplateId: agentId,
-      },
-    }),
-    initialPageParam: { offset: 0 },
-    getNextPageParam: (lastPage, allPages) => {
-      if (lastPage.body.versions.length > limit) {
-        return {
-          offset: allPages.length * limit,
-        };
-      }
-
-      return undefined;
-    },
-  });
-
-  useEffect(() => {
-    if (containerRef.current) {
-      const newLimit = Math.ceil(
-        containerRef.current.clientHeight / VERSION_HEIGHT,
-      );
-      setLimit(newLimit);
-    }
-  }, []);
-
-  const versions = useMemo(() => {
-    if (!versionData) {
-      return [];
-    }
-
-    return versionData.pages?.flatMap((v) => v.body.versions) || [];
-  }, [versionData]);
-
-  const { formatDateAndTime } = useDateFormatter();
-
-  return (
-    <VStack gap="small" overflow="hidden" fullHeight>
-      <VStack
-        paddingX="small"
-        paddingBottom="small"
-        overflowY="auto"
-        collapseHeight
-        flex
-        ref={containerRef}
-      >
-        {!versionData && (
-          <LoadingEmptyStatusComponent
-            isLoading
-            loadingMessage={t('VersionHistory.loading')}
-          />
-        )}
-        {!!versionData && versions.length === 0 && (
-          <LoadingEmptyStatusComponent
-            emptyMessage={t('VersionHistory.noVersions')}
-          />
-        )}
-        {versions.map((version) => (
-          <VStack key={version.id} border padding="small" fullWidth>
-            <HStack align="center" fullWidth>
-              <Badge content={version.version} />
-              <Typography
-                align="left"
-                fullWidth
-                overflow="ellipsis"
-                variant="body2"
-              >
-                {version.message || (
-                  <Typography overrideEl="span" italic>
-                    {t('VersionHistory.noMessage')}
-                  </Typography>
-                )}
-              </Typography>
-            </HStack>
-            <HStack>
-              <Typography variant="body2">
-                {formatDateAndTime(version.createdAt)}
-              </Typography>
-            </HStack>
-          </VStack>
-        ))}
-        {hasNextPage && (
-          <Button
-            fullWidth
-            color="secondary"
-            label="Load more versions"
-            onClick={() => {
-              void fetchNextPage();
-            }}
-            disabled={isLoading}
           />
         )}
       </VStack>

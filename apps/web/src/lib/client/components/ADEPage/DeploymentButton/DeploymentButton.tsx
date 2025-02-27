@@ -2,7 +2,6 @@ import { useCurrentAgent } from '../../../../../app/(logged-in)/(ade)/projects/[
 import { useCurrentProject } from '../../../../../app/(logged-in)/(dashboard-like)/projects/[projectSlug]/hooks';
 import { useTranslations } from '@letta-cloud/translations';
 import {
-  AgentStateViewer,
   Badge,
   Button,
   Checkbox,
@@ -32,7 +31,12 @@ import { z } from 'zod';
 import { useQueryClient } from '@tanstack/react-query';
 import React, { useCallback, useMemo, useState } from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { webApi, webApiQueryKeys, webOriginSDKApi } from '$web/client';
+import {
+  webApi,
+  type webApiContracts,
+  webApiQueryKeys,
+  webOriginSDKApi,
+} from '$web/client';
 import { CLOUD_UPSELL_URL } from '$web/constants';
 import type { AgentState } from '@letta-cloud/letta-agents-api';
 import { isAgentState } from '@letta-cloud/letta-agents-api';
@@ -44,6 +48,8 @@ import { get } from 'lodash-es';
 import { compareAgentStates } from '@letta-cloud/generic-utils';
 import { useCurrentAgentMetaData } from '@letta-cloud/shared-ade-components';
 import { ApplicationServices } from '@letta-cloud/rbac';
+import { CompareTemplateVersions } from '$web/client/components';
+import type { InfiniteData } from '@tanstack/query-core';
 
 interface DeployAgentDialogProps {
   isAtLatestVersion: boolean;
@@ -82,16 +88,52 @@ function DeployAgentDialog(props: DeployAgentDialogProps) {
   );
 }
 
-interface VersionAgentDialogProps {
-  currentAgentState: AgentState;
-  versionedAgentState: AgentState;
-  latestVersion: string;
+function CloudUpsellDeploy() {
+  const t = useTranslations(
+    'projects/(projectSlug)/agents/(agentId)/AgentPage',
+  );
+
+  return (
+    <Popover
+      triggerAsChild
+      trigger={
+        <Button
+          size="small"
+          color="primary"
+          preIcon={<RocketIcon size="small" />}
+          data-testid="trigger-cloud-upsell"
+          label={t('CloudUpsellDeploy.trigger')}
+        />
+      }
+      align="end"
+    >
+      <VStack padding="medium" gap="large">
+        <VStack>
+          <Typography variant="heading5" bold>
+            {t('CloudUpsellDeploy.title')}
+          </Typography>
+          <Typography>{t('CloudUpsellDeploy.description')}</Typography>
+          <Button
+            fullWidth
+            label={t('CloudUpsellDeploy.cta')}
+            href={CLOUD_UPSELL_URL}
+            target="_blank"
+            color="primary"
+          />
+        </VStack>
+      </VStack>
+    </Popover>
+  );
 }
 
-function VersionAgentDialog(props: VersionAgentDialogProps) {
-  const { name } = useCurrentAgent();
+interface CreateNewTemplateVersionDialogProps {
+  trigger: React.ReactNode;
+}
 
-  const { currentAgentState, versionedAgentState, latestVersion } = props;
+function CreateNewTemplateVersionDialog(
+  props: CreateNewTemplateVersionDialogProps,
+) {
+  const { trigger } = props;
   const { id: agentTemplateId } = useCurrentAgent();
   const queryClient = useQueryClient();
   const [open, setOpen] = useState(false);
@@ -111,6 +153,7 @@ function VersionAgentDialog(props: VersionAgentDialogProps) {
   );
 
   type VersionAgentFormValues = z.infer<typeof versionAgentFormSchema>;
+  const agentState = useCurrentAgent();
 
   const form = useForm<VersionAgentFormValues>({
     resolver: zodResolver(versionAgentFormSchema),
@@ -121,7 +164,7 @@ function VersionAgentDialog(props: VersionAgentDialogProps) {
   });
   const { mutate, isPending } =
     webOriginSDKApi.agents.versionAgentTemplate.useMutation({
-      onSuccess: (response) => {
+      onSuccess: (response, input) => {
         void queryClient.invalidateQueries({
           queryKey: webApiQueryKeys.agentTemplates.listAgentTemplates,
           exact: false,
@@ -152,6 +195,50 @@ function VersionAgentDialog(props: VersionAgentDialogProps) {
         );
 
         setOpen(false);
+
+        queryClient.setQueriesData<
+          InfiniteData<
+            ServerInferResponses<
+              typeof webApiContracts.agentTemplates.listTemplateVersions,
+              200
+            >
+          >
+        >(
+          {
+            queryKey: webApiQueryKeys.agentTemplates
+              .listTemplateVersionsWithSearch(agentTemplateId, {})
+              .slice(0, -1),
+            exact: false,
+          },
+          (oldData) => {
+            if (!oldData) {
+              return oldData;
+            }
+
+            return {
+              ...oldData,
+              pages: [
+                {
+                  ...oldData.pages[0],
+                  body: {
+                    ...oldData.pages[0].body,
+                    versions: [
+                      {
+                        id: response.body.id,
+                        version: response.body.version,
+                        message: input.body?.message || '',
+                        agentTemplateId: input.params?.agent_id,
+                        createdAt: new Date().toISOString(),
+                      },
+                      ...oldData.pages[0].body.versions,
+                    ],
+                  },
+                },
+                ...oldData.pages.slice(1),
+              ],
+            };
+          },
+        );
       },
     });
 
@@ -170,6 +257,7 @@ function VersionAgentDialog(props: VersionAgentDialogProps) {
     },
     [mutate, agentTemplateId],
   );
+  const { deployedAgentTemplate } = useLatestAgentTemplate();
 
   return (
     <FormProvider {...form}>
@@ -177,22 +265,7 @@ function VersionAgentDialog(props: VersionAgentDialogProps) {
         appName={t('VersionAgentDialog.title')}
         onOpenChange={setOpen}
         isOpen={open}
-        trigger={
-          <Button
-            size="small"
-            preIcon={<WarningIcon />}
-            data-testid="stage-new-version-button"
-            color="primary"
-            fullWidth
-            label={
-              latestVersion
-                ? t('DeploymentButton.updateAvailable.trigger', {
-                    version: latestVersion,
-                  })
-                : t('DeploymentButton.updateAvailable.triggerNoVersion')
-            }
-          />
-        }
+        trigger={trigger}
       >
         <form
           className="contents"
@@ -218,30 +291,12 @@ function VersionAgentDialog(props: VersionAgentDialogProps) {
               </CloseMiniApp>
             </HStack>
             <VStack padding fullHeight overflow="hidden">
-              <VStack flex collapseHeight>
-                <HStack border gap={false}>
-                  <VStack
-                    flex
-                    fullWidth
-                    borderRight
-                    paddingRight="none"
-                    padding="small"
-                  >
-                    <Typography bold>{`${name}:${latestVersion}`}</Typography>
-                  </VStack>
-                  <VStack flex fullWidth padding="small" color="brand-light">
-                    <Typography bold>
-                      {t('VersionAgentDialog.current')}
-                    </Typography>
-                  </VStack>
-                </HStack>
-                <VStack border flex collapseHeight overflowY="auto">
-                  <AgentStateViewer
-                    baseState={versionedAgentState}
-                    comparedState={currentAgentState}
-                  />
-                </VStack>
-              </VStack>
+              <CompareTemplateVersions
+                leftComparisonVersion="latest"
+                rightComparisonVersion="current"
+                defaultRightComparisonState={agentState as AgentState}
+                defaultLeftComparisonState={deployedAgentTemplate?.state}
+              />
               <VStack border padding>
                 <VStack paddingBottom gap="form">
                   <FormField
@@ -306,44 +361,6 @@ function VersionAgentDialog(props: VersionAgentDialogProps) {
         </form>
       </MiniApp>
     </FormProvider>
-  );
-}
-
-function CloudUpsellDeploy() {
-  const t = useTranslations(
-    'projects/(projectSlug)/agents/(agentId)/AgentPage',
-  );
-
-  return (
-    <Popover
-      triggerAsChild
-      trigger={
-        <Button
-          size="small"
-          color="primary"
-          preIcon={<RocketIcon size="small" />}
-          data-testid="trigger-cloud-upsell"
-          label={t('CloudUpsellDeploy.trigger')}
-        />
-      }
-      align="end"
-    >
-      <VStack padding="medium" gap="large">
-        <VStack>
-          <Typography variant="heading5" bold>
-            {t('CloudUpsellDeploy.title')}
-          </Typography>
-          <Typography>{t('CloudUpsellDeploy.description')}</Typography>
-          <Button
-            fullWidth
-            label={t('CloudUpsellDeploy.cta')}
-            href={CLOUD_UPSELL_URL}
-            target="_blank"
-            color="primary"
-          />
-        </VStack>
-      </VStack>
-    </Popover>
   );
 }
 
@@ -504,10 +521,23 @@ function TemplateVersionDisplay() {
   return (
     deployedAgentTemplate?.state &&
     isAgentState(agentState) && (
-      <VersionAgentDialog
-        latestVersion={versionNumber || ''}
-        versionedAgentState={deployedAgentTemplate.state}
-        currentAgentState={agentState}
+      <CreateNewTemplateVersionDialog
+        trigger={
+          <Button
+            size="small"
+            preIcon={<WarningIcon />}
+            data-testid="stage-new-version-button"
+            color="primary"
+            fullWidth
+            label={
+              versionNumber
+                ? t('DeploymentButton.updateAvailable.trigger', {
+                    version: versionNumber,
+                  })
+                : t('DeploymentButton.updateAvailable.triggerNoVersion')
+            }
+          />
+        }
       />
     )
   );
