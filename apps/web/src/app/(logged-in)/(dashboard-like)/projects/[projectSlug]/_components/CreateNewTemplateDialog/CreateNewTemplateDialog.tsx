@@ -1,6 +1,6 @@
 import React, { useCallback, useMemo } from 'react';
 import { useTranslations } from '@letta-cloud/translations';
-import { useCurrentProject } from '../../hooks';
+import { useCurrentProject } from '$web/client/hooks/useCurrentProject/useCurrentProject';
 import { webApi, webApiQueryKeys } from '$web/client';
 import { useRouter } from 'next/navigation';
 import {

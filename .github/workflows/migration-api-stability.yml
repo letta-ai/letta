@@ -134,14 +134,34 @@ jobs:
           LETTA_PG_HOST: localhost
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
         run: poetry run letta server &
+      - name: Cache npm dependencies
+        id: cache-branch
+        uses: actions/cache@v3
+        with:
+          path: ./branch-code/node_modules
+          key: modules-${{ hashFiles('package-lock.json') }}
+      - name: Cache npm dependencies
+        id: cache-main
+        uses: actions/cache@v3
+        with:
+          path: ./main-code/node_modules
+          key: modules-${{ hashFiles('package-lock.json') }}
       - name: Install Dependencies on branch code
-        if: steps.cache-nodemodules.outputs.cache-hit != 'true'
+        if: steps.cache-branch.outputs.cache-hit != 'true'
         run: npm ci
         working-directory: branch-code
       - name: Install Dependencies on main branch
-        if: steps.cache-nodemodules.outputs.cache-hit != 'true'
+        if: steps.cache-main.outputs.cache-hit != 'true'
         run: npm ci
         working-directory: main-code
+      - name: Delete unnecessary files on main branch
+        run: |
+          rm -rf main-code/apps/web/src/app/\(logged-in\)
+          rm -rf main-code/apps/web/src/app/\(logged-out\)
+          rm -rf main-code/apps/web/src/app/\(logged-in-no-org-check\)
+          rm -rf branch-code/apps/web/src/app/\(logged-in\)
+          rm -rf branch-code/apps/web/src/app/\(logged-out\)
+          rm -rf branch-code/apps/web/src/app/\(logged-in-no-org-check\)
       - name: Build and migrate web on main branch
         working-directory: main-code/apps/web
         run: npm run build:e2e

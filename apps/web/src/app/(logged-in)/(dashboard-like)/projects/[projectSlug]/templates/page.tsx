@@ -11,7 +11,7 @@ import {
   RawInput,
 } from '@letta-cloud/component-library';
 import { webApi, webApiQueryKeys } from '$web/client';
-import { useCurrentProject } from '../hooks';
+import { useCurrentProject } from '$web/client/hooks/useCurrentProject/useCurrentProject';
 import { useDebouncedValue } from '@mantine/hooks';
 import { SearchIcon } from '@letta-cloud/component-library';
 import { useTranslations } from '@letta-cloud/translations';

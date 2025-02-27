@@ -36,7 +36,7 @@ import {
   webOriginSDKApi,
   webOriginSDKQueryKeys,
 } from '$web/client';
-import { useCurrentProject } from '../hooks';
+import { useCurrentProject } from '$web/client/hooks/useCurrentProject/useCurrentProject';
 import { useSearchParams } from 'next/navigation';
 import type { ColumnDef } from '@tanstack/react-table';
 import type {

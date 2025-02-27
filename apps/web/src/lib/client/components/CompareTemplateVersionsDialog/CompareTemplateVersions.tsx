@@ -1,5 +1,4 @@
 import type { AgentState } from '@letta-cloud/letta-agents-api';
-import { useCurrentAgent } from '../../../../app/(logged-in)/(ade)/projects/[projectSlug]/agents/[agentId]/hooks';
 import React from 'react';
 import {
   AgentStateViewer,
@@ -10,6 +9,7 @@ import {
 } from '@letta-cloud/component-library';
 import { webApi, webApiQueryKeys } from '@letta-cloud/web-api-client';
 import { useTranslations } from '@letta-cloud/translations';
+import { useCurrentAgent } from '$web/client/hooks/useCurrentAgent/useCurrentAgent';
 
 /* eslint-disable @typescript-eslint/no-redundant-type-constituents */
 type Versions = string | 'current' | 'latest';

@@ -12,7 +12,7 @@ import {
   VStack,
 } from '@letta-cloud/component-library';
 import React, { useMemo } from 'react';
-import { useCurrentProject } from './hooks';
+import { useCurrentProject } from '$web/client/hooks/useCurrentProject/useCurrentProject';
 import type { webApiContracts } from '$web/client';
 
 import { webApi, webApiQueryKeys } from '$web/client';

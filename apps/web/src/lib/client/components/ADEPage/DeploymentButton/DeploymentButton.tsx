@@ -1,5 +1,4 @@
-import { useCurrentAgent } from '../../../../../app/(logged-in)/(ade)/projects/[projectSlug]/agents/[agentId]/hooks';
-import { useCurrentProject } from '../../../../../app/(logged-in)/(dashboard-like)/projects/[projectSlug]/hooks';
+import { useCurrentProject } from '../../../hooks/useCurrentProject/useCurrentProject';
 import { useTranslations } from '@letta-cloud/translations';
 import {
   Badge,
@@ -50,6 +49,7 @@ import { useCurrentAgentMetaData } from '@letta-cloud/shared-ade-components';
 import { ApplicationServices } from '@letta-cloud/rbac';
 import { CompareTemplateVersions } from '$web/client/components';
 import type { InfiniteData } from '@tanstack/query-core';
+import { useCurrentAgent } from '$web/client/hooks/useCurrentAgent/useCurrentAgent';
 
 interface DeployAgentDialogProps {
   isAtLatestVersion: boolean;

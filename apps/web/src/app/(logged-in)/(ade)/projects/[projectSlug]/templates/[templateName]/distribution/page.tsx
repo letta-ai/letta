@@ -16,7 +16,7 @@ import {
 } from '@letta-cloud/component-library';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslations } from '@letta-cloud/translations';
-import { useCurrentProject } from '../../../../../../(dashboard-like)/projects/[projectSlug]/hooks';
+import { useCurrentProject } from '$web/client/hooks/useCurrentProject/useCurrentProject';
 import { useCurrentAgentMetaData } from '@letta-cloud/shared-ade-components';
 import { ADEGroup } from '@letta-cloud/shared-ade-components';
 import { Panel, PanelGroup, PanelResizeHandle } from 'react-resizable-panels';

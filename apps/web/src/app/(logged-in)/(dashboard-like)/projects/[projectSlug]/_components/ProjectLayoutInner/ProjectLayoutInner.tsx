@@ -13,7 +13,7 @@ import {
 import { useTranslations } from '@letta-cloud/translations';
 import type { PropsWithChildren } from 'react';
 import React from 'react';
-import { useCurrentProject } from '../../hooks';
+import { useCurrentProject } from '$web/client/hooks/useCurrentProject/useCurrentProject';
 import { useUserHasPermission } from '$web/client/hooks';
 import { ApplicationServices } from '@letta-cloud/rbac';
 import { useFeatureFlag } from '@letta-cloud/web-api-client';

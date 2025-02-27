@@ -1,6 +1,6 @@
 import React from 'react';
 import { useTranslations } from '@letta-cloud/translations';
-import { useCurrentProject } from '../../../../app/(logged-in)/(dashboard-like)/projects/[projectSlug]/hooks';
+import { useCurrentProject } from '../../hooks/useCurrentProject/useCurrentProject';
 import {
   ActionCard,
   Avatar,

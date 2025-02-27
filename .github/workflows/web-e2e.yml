@@ -108,7 +108,6 @@ jobs:
         with:
           path: node_modules
           key: ${{ runner.os }}-${{ env.cache-name }}-${{ hashFiles('package-lock.json') }}
-
       - name: Restore NPM cache if exist
         id: cache-npm
         uses: actions/cache@v4
@@ -117,7 +116,6 @@ jobs:
         with:
           path: ~/.npm
           key: ${{ runner.os }}-${{ env.cache-name }}
-
       - name: Restore Cypress cache if exist
         uses: actions/cache@v4
         env:

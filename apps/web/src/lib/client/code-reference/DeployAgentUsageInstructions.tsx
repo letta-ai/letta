@@ -15,12 +15,12 @@ import {
   CodeWithAPIKeyInjection,
 } from '$web/client/components';
 
-import { useCurrentAgent } from '../../../app/(logged-in)/(ade)/projects/[projectSlug]/agents/[agentId]/hooks';
 import {
   getIsAgentState,
   useAgentsServiceListAgents,
 } from '@letta-cloud/letta-agents-api';
 import { findMemoryBlockVariables } from '@letta-cloud/generic-utils';
+import { useCurrentAgent } from '$web/client/hooks/useCurrentAgent/useCurrentAgent';
 
 interface DeployAgentInstructionsCurlProps {
   projectId: string;

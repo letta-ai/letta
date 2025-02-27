@@ -21,7 +21,7 @@ import {
 } from '@letta-cloud/component-library';
 import type { KeyValue } from '@letta-cloud/component-library';
 import { useTranslations } from '@letta-cloud/translations';
-import { useCurrentProject } from '../../hooks';
+import { useCurrentProject } from '$web/client/hooks/useCurrentProject/useCurrentProject';
 import { webApi, webApiQueryKeys, webOriginSDKApi } from '$web/client';
 import { useRouter } from 'next/navigation';
 import { findMemoryBlockVariables } from '@letta-cloud/generic-utils';

@@ -1,6 +1,6 @@
 import React, { useCallback, useMemo } from 'react';
 import { webApi, webApiQueryKeys } from '$web/client';
-import { useCurrentProject } from '../../../../app/(logged-in)/(dashboard-like)/projects/[projectSlug]/hooks';
+import { useCurrentProject } from '../../hooks/useCurrentProject/useCurrentProject';
 import {
   Button,
   Popover,

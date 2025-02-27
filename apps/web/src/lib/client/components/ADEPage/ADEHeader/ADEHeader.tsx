@@ -1,5 +1,4 @@
-import { useCurrentProject } from '../../../../../app/(logged-in)/(dashboard-like)/projects/[projectSlug]/hooks';
-import { useCurrentAgent } from '../../../../../app/(logged-in)/(ade)/projects/[projectSlug]/agents/[agentId]/hooks';
+import { useCurrentProject } from '../../../hooks/useCurrentProject/useCurrentProject';
 import { webApi, webApiQueryKeys } from '@letta-cloud/web-api-client';
 import {
   Breadcrumb,
@@ -27,7 +26,7 @@ import { ProjectSelector } from '$web/client/components';
 import React, { useCallback, useMemo, useState } from 'react';
 import { useTranslations } from '@letta-cloud/translations';
 import { useCurrentAgentMetaData } from '@letta-cloud/shared-ade-components';
-import { useAgentBaseTypeName } from '../../../../../app/(logged-in)/(ade)/projects/[projectSlug]/agents/[agentId]/hooks/useAgentBaseNameType/useAgentBaseNameType';
+import { useAgentBaseTypeName } from '$web/client/hooks/useAgentBaseNameType/useAgentBaseNameType';
 import { useCurrentUser, useUserHasPermission } from '$web/client/hooks';
 import { ApplicationServices } from '@letta-cloud/rbac';
 import { z } from 'zod';
@@ -41,6 +40,7 @@ import {
   DashboardHeaderNavigation,
   ProfilePopover,
 } from '$web/client/components/DashboardLikeLayout/DashboardNavigation/DashboardNavigation';
+import { useCurrentAgent } from '$web/client/hooks/useCurrentAgent/useCurrentAgent';
 
 interface DesktopADEHeaderProps {
   name: string;

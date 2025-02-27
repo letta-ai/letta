@@ -12,7 +12,7 @@ import {
   useCurrentAgentMetaData,
 } from '@letta-cloud/shared-ade-components';
 import React, { useMemo, useState } from 'react';
-import { useCurrentProject } from '../../../../app/(logged-in)/(dashboard-like)/projects/[projectSlug]/hooks';
+import { useCurrentProject } from '../../hooks/useCurrentProject/useCurrentProject';
 import { useTranslations } from '@letta-cloud/translations';
 import { useCurrentUser } from '$web/client/hooks';
 

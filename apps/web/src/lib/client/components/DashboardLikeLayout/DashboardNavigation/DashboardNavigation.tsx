@@ -43,7 +43,7 @@ import { CurrentUserDetailsBlock } from '$web/client/components';
 import { cn } from '@letta-cloud/core-style-config';
 import { useTranslations } from '@letta-cloud/translations';
 import { ThemeSelector } from '$web/client/components/ThemeSelector/ThemeSelector';
-import { useCurrentProject } from '../../../../../app/(logged-in)/(dashboard-like)/projects/[projectSlug]/hooks';
+import { useCurrentProject } from '../../../hooks/useCurrentProject/useCurrentProject';
 import { LocaleSelector } from '$web/client/components/LocaleSelector/LocaleSelector';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';

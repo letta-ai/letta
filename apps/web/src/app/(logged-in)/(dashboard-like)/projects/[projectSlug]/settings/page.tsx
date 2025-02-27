@@ -17,7 +17,7 @@ import {
 } from '@letta-cloud/component-library';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useCurrentProject } from '../hooks';
+import { useCurrentProject } from '$web/client/hooks/useCurrentProject/useCurrentProject';
 import { webApi, webApiContracts, webApiQueryKeys } from '$web/client';
 import { useCallback, useMemo } from 'react';
 import { useQueryClient } from '@tanstack/react-query';

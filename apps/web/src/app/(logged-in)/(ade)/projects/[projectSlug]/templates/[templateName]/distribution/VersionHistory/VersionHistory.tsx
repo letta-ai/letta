@@ -16,8 +16,8 @@ import {
   VStack,
 } from '@letta-cloud/component-library';
 import { CompareTemplateVersions } from '$web/client/components';
-import { useCurrentAgent } from '../../../../agents/[agentId]/hooks';
 import type { AgentState } from '@letta-cloud/letta-agents-api';
+import { useCurrentAgent } from '$web/client/hooks/useCurrentAgent/useCurrentAgent';
 
 interface CompareVersionDialogProps {
   version: string;

@@ -30,7 +30,7 @@ import { useRouter } from 'next/navigation';
 import type { ServerInferResponses } from '@ts-rest/core';
 import { useFeatureFlag } from '$web/web-api/contracts';
 import type { developmentServersContracts } from '$web/web-api/contracts';
-import { useDevelopmentServerStatus } from './hooks/useDevelopmentServerStatus/useDevelopmentServerStatus';
+import { useDevelopmentServerStatus } from '$web/client/hooks/useDevelopmentServerStatus/useDevelopmentServerStatus';
 import semver from 'semver/preload';
 import type { DevelopmentServerConfig } from '@letta-cloud/helpful-client-utils';
 
