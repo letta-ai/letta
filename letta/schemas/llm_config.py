@@ -42,6 +42,7 @@ class LLMConfig(BaseModel):
         "together",  # completions endpoint
         "bedrock",
         "deepseek",
+        "xai",
     ] = Field(..., description="The endpoint type for the model.")
     model_endpoint: Optional[str] = Field(None, description="The endpoint for the model.")
     model_wrapper: Optional[str] = Field(None, description="The wrapper for the model.")
@@ -56,7 +57,7 @@ class LLMConfig(BaseModel):
         description="The temperature to use when generating text with the model. A higher temperature will result in more random text.",
     )
     max_tokens: Optional[int] = Field(
-        1024,
+        4096,
         description="The maximum number of tokens to generate. If not set, the model will use its default value.",
     )
 

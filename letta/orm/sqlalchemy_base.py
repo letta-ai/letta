@@ -69,6 +69,7 @@ class SqlalchemyBase(CommonSqlalchemyMetaMixins, Base):
         join_model: Optional[Base] = None,
         join_conditions: Optional[Union[Tuple, List]] = None,
         identifier_keys: Optional[List[str]] = None,
+        identifier_id: Optional[str] = None,
         **kwargs,
     ) -> List["SqlalchemyBase"]:
         """
@@ -146,6 +147,10 @@ class SqlalchemyBase(CommonSqlalchemyMetaMixins, Base):
 
             if identifier_keys and hasattr(cls, "identities"):
                 query = query.join(cls.identities).filter(cls.identities.property.mapper.class_.identifier_key.in_(identifier_keys))
+
+            # given the identifier_id, we can find within the agents table any agents that have the identifier_id in their identity_ids
+            if identifier_id and hasattr(cls, "identities"):
+                query = query.join(cls.identities).filter(cls.identities.property.mapper.class_.id == identifier_id)
 
             # Apply filtering logic from kwargs
             for key, value in kwargs.items():

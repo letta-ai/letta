@@ -225,10 +225,10 @@ class ChatCompletionsStreamingInterface(AgentChunkStreamingInterface):
                 combined_args = "".join(self.current_function_arguments)
                 parsed_args = OptimisticJSONParser().parse(combined_args)
 
-                # TODO: Make this less brittle! This depends on `message` coming first!
-                # This is a heuristic we use to know if we're done with the `message` part of `send_message`
-                if len(parsed_args.keys()) > 1:
-                    self._found_message_tool_kwarg = True
+                if parsed_args.get(self.assistant_message_tool_kwarg) and parsed_args.get(
+                    self.assistant_message_tool_kwarg
+                ) != self.current_json_parse_result.get(self.assistant_message_tool_kwarg):
+                    self.current_json_parse_result = parsed_args
                     return ChatCompletionChunk(
                         id=chunk.id,
                         object=chunk.object,
@@ -237,31 +237,11 @@ class ChatCompletionsStreamingInterface(AgentChunkStreamingInterface):
                         choices=[
                             Choice(
                                 index=choice.index,
-                                delta=ChoiceDelta(),
-                                finish_reason="stop",
+                                delta=ChoiceDelta(content=self.current_function_arguments[-1], role=self.ASSISTANT_STR),
+                                finish_reason=None,
                             )
                         ],
                     )
-                else:
-                    # If the parsed result is different
-                    # This is an edge case we need to consider. E.g. if the last streamed token is '}', we shouldn't stream that out
-                    if parsed_args != self.current_json_parse_result:
-                        self.current_json_parse_result = parsed_args
-                        # If we can see a "message" field, return it as partial content
-                        if self.assistant_message_tool_kwarg in parsed_args and parsed_args[self.assistant_message_tool_kwarg]:
-                            return ChatCompletionChunk(
-                                id=chunk.id,
-                                object=chunk.object,
-                                created=chunk.created.timestamp(),
-                                model=chunk.model,
-                                choices=[
-                                    Choice(
-                                        index=choice.index,
-                                        delta=ChoiceDelta(content=self.current_function_arguments[-1], role=self.ASSISTANT_STR),
-                                        finish_reason=None,
-                                    )
-                                ],
-                            )
 
         # If there's a finish reason, pass that along
         if choice.finish_reason is not None:

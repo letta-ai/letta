@@ -9,7 +9,6 @@ from openai import AsyncOpenAI
 from openai.types.chat.chat_completion_chunk import ChatCompletionChunk
 
 from letta import create_client
-from letta.client.streaming import _sse_post
 from letta.schemas.embedding_config import EmbeddingConfig
 from letta.schemas.enums import MessageStreamStatus
 from letta.schemas.llm_config import LLMConfig
@@ -153,46 +152,29 @@ def _assert_valid_chunk(chunk, idx, chunks):
 # --- Test Cases --- #
 
 
-@pytest.mark.parametrize("message", ["What's the weather in SF?"])
-@pytest.mark.parametrize("endpoint", ["fast/chat/completions"])
-def test_tool_usage_fast_chat_completions(mock_e2b_api_key_none, client, agent, message, endpoint):
-    """Tests chat completion streaming via SSE."""
-    request = _get_chat_request(agent.id, message)
-
-    response = _sse_post(f"{client.base_url}/openai/{client.api_prefix}/{endpoint}", request.model_dump(exclude_none=True), client.headers)
-
-    for chunk in response:
-        if isinstance(chunk, ChatCompletionChunk) and chunk.choices:
-            print(chunk.choices[0].delta.content)
-
-
-@pytest.mark.parametrize("message", ["Tell me something interesting about bananas."])
-@pytest.mark.parametrize("endpoint", ["chat/completions", "fast/chat/completions"])
-def test_chat_completions_streaming(mock_e2b_api_key_none, client, agent, message, endpoint):
-    """Tests chat completion streaming via SSE."""
-    request = _get_chat_request(agent.id, message)
-
-    response = _sse_post(f"{client.base_url}/openai/{client.api_prefix}/{endpoint}", request.model_dump(exclude_none=True), client.headers)
-
-    try:
-        chunks = list(response)
-        assert len(chunks) > 5, "Streaming response did not return enough chunks (may have failed silently)."
-
-        for idx, chunk in enumerate(chunks):
-            assert chunk, f"Empty chunk received at index {idx}."
-            print(chunk)
-            _assert_valid_chunk(chunk, idx, chunks)
-    except Exception as e:
-        pytest.fail(f"Streaming failed with exception: {e}")
-
-
 @pytest.mark.asyncio
-@pytest.mark.parametrize("message", ["Tell me something interesting about bananas.", "Roll a dice!"])
-async def test_chat_completions_streaming_async(client, agent, message):
+@pytest.mark.parametrize("message", ["Tell me something interesting about bananas."])
+@pytest.mark.parametrize("endpoint", ["v1/voice"])
+async def test_latency(mock_e2b_api_key_none, client, agent, message, endpoint):
     """Tests chat completion streaming using the Async OpenAI client."""
     request = _get_chat_request(agent.id, message)
 
-    async_client = AsyncOpenAI(base_url=f"{client.base_url}/openai/{client.api_prefix}", max_retries=0)
+    async_client = AsyncOpenAI(base_url=f"{client.base_url}/{endpoint}", max_retries=0)
+    stream = await async_client.chat.completions.create(**request.model_dump(exclude_none=True))
+    async with stream:
+        async for chunk in stream:
+            assert isinstance(chunk, ChatCompletionChunk), f"Unexpected chunk type: {type(chunk)}"
+            assert chunk.choices, "Each ChatCompletionChunk should have at least one choice."
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("message", ["Tell me something interesting about bananas.", "What's the weather in SF?"])
+@pytest.mark.parametrize("endpoint", ["openai/v1", "v1/voice"])
+async def test_chat_completions_streaming_openai_client(mock_e2b_api_key_none, client, agent, message, endpoint):
+    """Tests chat completion streaming using the Async OpenAI client."""
+    request = _get_chat_request(agent.id, message)
+
+    async_client = AsyncOpenAI(base_url=f"{client.base_url}/{endpoint}", max_retries=0)
     stream = await async_client.chat.completions.create(**request.model_dump(exclude_none=True))
 
     received_chunks = 0
@@ -202,7 +184,6 @@ async def test_chat_completions_streaming_async(client, agent, message):
     try:
         async with stream:
             async for chunk in stream:
-                print(chunk)
                 assert isinstance(chunk, ChatCompletionChunk), f"Unexpected chunk type: {type(chunk)}"
                 assert chunk.choices, "Each ChatCompletionChunk should have at least one choice."
 
@@ -226,4 +207,3 @@ async def test_chat_completions_streaming_async(client, agent, message):
 
     # Ensure the last chunk is the expected stop chunk
     assert last_chunk is not None, "No last chunk received."
-    assert last_chunk.choices[0].finish_reason == "stop", f"Last chunk did not indicate stop: {last_chunk.model_dump_json(indent=4)}"

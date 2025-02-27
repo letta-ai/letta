@@ -211,6 +211,63 @@ class OpenAIProvider(Provider):
             return None
 
 
+class xAIProvider(OpenAIProvider):
+    """https://docs.x.ai/docs/api-reference"""
+
+    name: str = "xai"
+    api_key: str = Field(..., description="API key for the xAI/Grok API.")
+    base_url: str = Field("https://api.x.ai/v1", description="Base URL for the xAI/Grok API.")
+
+    def get_model_context_window_size(self, model_name: str) -> Optional[int]:
+        # xAI doesn't return context window in the model listing,
+        # so these are hardcoded from their website
+        if model_name == "grok-2-1212":
+            return 131072
+        else:
+            return None
+
+    def list_llm_models(self) -> List[LLMConfig]:
+        from letta.llm_api.openai import openai_get_model_list
+
+        response = openai_get_model_list(self.base_url, api_key=self.api_key)
+
+        if "data" in response:
+            data = response["data"]
+        else:
+            data = response
+
+        configs = []
+        for model in data:
+            assert "id" in model, f"xAI/Grok model missing 'id' field: {model}"
+            model_name = model["id"]
+
+            # In case xAI starts supporting it in the future:
+            if "context_length" in model:
+                context_window_size = model["context_length"]
+            else:
+                context_window_size = self.get_model_context_window_size(model_name)
+
+            if not context_window_size:
+                warnings.warn(f"Couldn't find context window size for model {model_name}")
+                continue
+
+            configs.append(
+                LLMConfig(
+                    model=model_name,
+                    model_endpoint_type="xai",
+                    model_endpoint=self.base_url,
+                    context_window=context_window_size,
+                    handle=self.get_handle(model_name),
+                )
+            )
+
+        return configs
+
+    def list_embedding_models(self) -> List[EmbeddingConfig]:
+        # No embeddings supported
+        return []
+
+
 class DeepSeekProvider(OpenAIProvider):
     """
     DeepSeek ChatCompletions API is similar to OpenAI's reasoning API,
@@ -456,6 +513,13 @@ class AnthropicProvider(Provider):
                     warnings.warn(f"Couldn't find context window size for model {model['id']}, defaulting to 200,000")
                     model["context_window"] = 200000
 
+            max_tokens = 8192
+            if "claude-3-opus" in model["id"]:
+                max_tokens = 4096
+            if "claude-3-haiku" in model["id"]:
+                max_tokens = 4096
+            # TODO: set for 3-7 extended thinking mode
+
             # We set this to false by default, because Anthropic can
             # natively support <thinking> tags inside of content fields
             # However, putting COT inside of tool calls can make it more
@@ -472,6 +536,7 @@ class AnthropicProvider(Provider):
                     context_window=model["context_window"],
                     handle=self.get_handle(model["id"]),
                     put_inner_thoughts_in_kwargs=inner_thoughts_in_kwargs,
+                    max_tokens=max_tokens,
                 )
             )
         return configs
@@ -811,6 +876,7 @@ class GoogleAIProvider(Provider):
                     model_endpoint=self.base_url,
                     context_window=self.get_model_context_window(model),
                     handle=self.get_handle(model),
+                    max_tokens=8192,
                 )
             )
         return configs
@@ -862,6 +928,7 @@ class GoogleVertexProvider(Provider):
                     model_endpoint=f"https://{self.google_cloud_location}-aiplatform.googleapis.com/v1/projects/{self.google_cloud_project}/locations/{self.google_cloud_location}",
                     context_window=context_length,
                     handle=self.get_handle(model),
+                    max_tokens=8192,
                 )
             )
         return configs

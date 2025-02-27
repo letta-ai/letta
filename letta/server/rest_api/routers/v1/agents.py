@@ -69,7 +69,6 @@ def list_agents(
             "project_id": project_id,
             "template_id": template_id,
             "base_template_id": base_template_id,
-            "identifier_id": identifier_id,
         }.items()
         if value is not None
     }
@@ -84,6 +83,7 @@ def list_agents(
         tags=tags,
         match_all_tags=match_all_tags,
         identifier_keys=identifier_keys,
+        identifier_id=identifier_id,
         **kwargs,
     )
     return agents
