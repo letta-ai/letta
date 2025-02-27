@@ -2494,6 +2494,10 @@ export type Step = {
    */
   tid?: string | null;
   /**
+   * The trace id of the agent step.
+   */
+  trace_id?: string | null;
+  /**
    * The messages generated during this step.
    */
   messages?: Array<Message>;

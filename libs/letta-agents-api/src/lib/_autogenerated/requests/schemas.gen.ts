@@ -6379,6 +6379,18 @@ export const $Step = {
       description:
         'The unique identifier of the transaction that processed this step.',
     },
+    trace_id: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Trace Id',
+      description: 'The trace id of the agent step.',
+    },
     messages: {
       items: {
         $ref: '#/components/schemas/Message',

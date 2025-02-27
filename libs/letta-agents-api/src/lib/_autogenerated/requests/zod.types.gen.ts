@@ -3473,6 +3473,14 @@ export const Step = z.object({
       z.undefined(),
     ])
     .optional(),
+  trace_id: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
   messages: z.union([z.array(Message), z.undefined()]).optional(),
 });
 
