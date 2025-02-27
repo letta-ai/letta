@@ -26,9 +26,18 @@ jobs:
         with:
           files: |
             .github/workflows/migration-api-stability.yml
-            apps/web/**
+            apps/web/src/app/api/**
+            apps/web/src/lib/server/**
+            apps/web/src/lib/web-api/**
+            apps/web/src/lib/utils/**
+            apps/web/src/lib/sdk/**
             apps/core/**
-            libs/**
+            libs/letta-agents-api/**
+            libs/server-utils/**
+            libs/database/**
+            libs/environmental-variables/**
+            libs/redis/**
+            libs/web-api-client/**
             package.json
             package-lock.json
             tsconfig.json
