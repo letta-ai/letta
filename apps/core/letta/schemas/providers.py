@@ -513,6 +513,13 @@ class AnthropicProvider(Provider):
                     warnings.warn(f"Couldn't find context window size for model {model['id']}, defaulting to 200,000")
                     model["context_window"] = 200000
 
+            max_tokens = 8192
+            if "claude-3-opus" in model["id"]:
+                max_tokens = 4096
+            if "claude-3-haiku" in model["id"]:
+                max_tokens = 4096
+            # TODO: set for 3-7 extended thinking mode
+
             # We set this to false by default, because Anthropic can
             # natively support <thinking> tags inside of content fields
             # However, putting COT inside of tool calls can make it more
@@ -529,6 +536,7 @@ class AnthropicProvider(Provider):
                     context_window=model["context_window"],
                     handle=self.get_handle(model["id"]),
                     put_inner_thoughts_in_kwargs=inner_thoughts_in_kwargs,
+                    max_tokens=max_tokens,
                 )
             )
         return configs
@@ -868,6 +876,7 @@ class GoogleAIProvider(Provider):
                     model_endpoint=self.base_url,
                     context_window=self.get_model_context_window(model),
                     handle=self.get_handle(model),
+                    max_tokens=8192,
                 )
             )
         return configs
@@ -919,6 +928,7 @@ class GoogleVertexProvider(Provider):
                     model_endpoint=f"https://{self.google_cloud_location}-aiplatform.googleapis.com/v1/projects/{self.google_cloud_project}/locations/{self.google_cloud_location}",
                     context_window=context_length,
                     handle=self.get_handle(model),
+                    max_tokens=8192,
                 )
             )
         return configs

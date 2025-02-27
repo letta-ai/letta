@@ -4323,7 +4323,7 @@ export const $LLMConfig = {
       title: 'Max Tokens',
       description:
         'The maximum number of tokens to generate. If not set, the model will use its default value.',
-      default: 1024,
+      default: 4096,
     },
   },
   type: 'object',

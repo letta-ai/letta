@@ -57,7 +57,7 @@ class LLMConfig(BaseModel):
         description="The temperature to use when generating text with the model. A higher temperature will result in more random text.",
     )
     max_tokens: Optional[int] = Field(
-        1024,
+        4096,
         description="The maximum number of tokens to generate. If not set, the model will use its default value.",
     )
 
