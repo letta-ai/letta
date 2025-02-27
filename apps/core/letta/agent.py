@@ -61,15 +61,7 @@ from letta.settings import summarizer_settings
 from letta.streaming_interface import StreamingRefreshCLIInterface
 from letta.system import get_heartbeat, get_token_limit_warning, package_function_response, package_summarize_message, package_user_message
 from letta.tracing import trace_method
-from letta.utils import (
-    count_tokens,
-    get_friendly_error_msg,
-    get_tool_call_id,
-    log_telemetry,
-    parse_json,
-    printd,
-    validate_function_response,
-)
+from letta.utils import count_tokens, get_friendly_error_msg, get_tool_call_id, log_telemetry, parse_json, validate_function_response
 
 logger = get_logger(__name__)
 

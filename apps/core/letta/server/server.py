@@ -43,7 +43,7 @@ from letta.schemas.llm_config import LLMConfig
 from letta.schemas.memory import ArchivalMemorySummary, ContextWindowOverview, Memory, RecallMemorySummary
 from letta.schemas.message import Message, MessageCreate, MessageRole, MessageUpdate, TextContent
 from letta.schemas.organization import Organization
-from letta.schemas.passage import Passage
+from letta.schemas.passage import Passage, PassageUpdate
 from letta.schemas.providers import (
     AnthropicBedrockProvider,
     AnthropicProvider,
@@ -768,6 +768,11 @@ class SyncServer(Server):
         # TODO: @mindy look at moving this to agent_manager to avoid above extra call
         passages = self.passage_manager.insert_passage(agent_state=agent_state, agent_id=agent_id, text=memory_contents, actor=actor)
 
+        return passages
+
+    def modify_archival_memory(self, agent_id: str, memory_id: str, passage: PassageUpdate, actor: User) -> List[Passage]:
+        passage = Passage(**passage.model_dump(exclude_unset=True, exclude_none=True))
+        passages = self.passage_manager.update_passage_by_id(passage_id=memory_id, passage=passage, actor=actor)
         return passages
 
     def delete_archival_memory(self, memory_id: str, actor: User):

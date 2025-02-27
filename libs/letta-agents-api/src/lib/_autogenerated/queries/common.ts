@@ -423,16 +423,15 @@ export const UseAgentsServiceListCoreMemoryBlocksKeyFn = (
   useAgentsServiceListCoreMemoryBlocksKey,
   ...(queryKey ?? [{ agentId, userId }]),
 ];
-export type AgentsServiceListArchivalMemoryDefaultResponse = Awaited<
-  ReturnType<typeof AgentsService.listArchivalMemory>
+export type AgentsServiceListPassagesDefaultResponse = Awaited<
+  ReturnType<typeof AgentsService.listPassages>
 >;
-export type AgentsServiceListArchivalMemoryQueryResult<
-  TData = AgentsServiceListArchivalMemoryDefaultResponse,
+export type AgentsServiceListPassagesQueryResult<
+  TData = AgentsServiceListPassagesDefaultResponse,
   TError = unknown,
 > = UseQueryResult<TData, TError>;
-export const useAgentsServiceListArchivalMemoryKey =
-  'AgentsServiceListArchivalMemory';
-export const UseAgentsServiceListArchivalMemoryKeyFn = (
+export const useAgentsServiceListPassagesKey = 'AgentsServiceListPassages';
+export const UseAgentsServiceListPassagesKeyFn = (
   {
     after,
     agentId,
@@ -448,7 +447,7 @@ export const UseAgentsServiceListArchivalMemoryKeyFn = (
   },
   queryKey?: Array<unknown>,
 ) => [
-  useAgentsServiceListArchivalMemoryKey,
+  useAgentsServiceListPassagesKey,
   ...(queryKey ?? [{ after, agentId, before, limit, userId }]),
 ];
 export type AgentsServiceListMessagesDefaultResponse = Awaited<
@@ -1116,8 +1115,8 @@ export type SourcesServiceUploadFileToSourceMutationResult = Awaited<
 export type AgentsServiceCreateAgentMutationResult = Awaited<
   ReturnType<typeof AgentsService.createAgent>
 >;
-export type AgentsServiceCreateArchivalMemoryMutationResult = Awaited<
-  ReturnType<typeof AgentsService.createArchivalMemory>
+export type AgentsServiceCreatePassageMutationResult = Awaited<
+  ReturnType<typeof AgentsService.createPassage>
 >;
 export type AgentsServiceSendMessageMutationResult = Awaited<
   ReturnType<typeof AgentsService.sendMessage>
@@ -1233,6 +1232,9 @@ export type AgentsServiceAttachCoreMemoryBlockMutationResult = Awaited<
 export type AgentsServiceDetachCoreMemoryBlockMutationResult = Awaited<
   ReturnType<typeof AgentsService.detachCoreMemoryBlock>
 >;
+export type AgentsServiceModifyPassageMutationResult = Awaited<
+  ReturnType<typeof AgentsService.modifyPassage>
+>;
 export type AgentsServiceModifyMessageMutationResult = Awaited<
   ReturnType<typeof AgentsService.modifyMessage>
 >;
@@ -1275,8 +1277,8 @@ export type SourcesServiceDeleteFileFromSourceMutationResult = Awaited<
 export type AgentsServiceDeleteAgentMutationResult = Awaited<
   ReturnType<typeof AgentsService.deleteAgent>
 >;
-export type AgentsServiceDeleteArchivalMemoryMutationResult = Awaited<
-  ReturnType<typeof AgentsService.deleteArchivalMemory>
+export type AgentsServiceDeletePassageMutationResult = Awaited<
+  ReturnType<typeof AgentsService.deletePassage>
 >;
 export type IdentitiesServiceDeleteIdentityMutationResult = Awaited<
   ReturnType<typeof IdentitiesService.deleteIdentity>

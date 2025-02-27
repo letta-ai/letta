@@ -45,6 +45,7 @@ import {
   MessageRole,
   MessageUpdate,
   OrganizationCreate,
+  PassageUpdate,
   ProviderCreate,
   ProviderUpdate,
   SandboxConfigCreate,
@@ -622,8 +623,8 @@ export const useAgentsServiceRetrieveAgentMemory = <
     ...options,
   });
 /**
- * Retrieve Core Memory Block
- * Retrieve a memory block from an agent.
+ * Retrieve Block
+ * Retrieve a core memory block from an agent.
  * @param data The data for the request.
  * @param data.agentId
  * @param data.blockLabel
@@ -662,8 +663,8 @@ export const useAgentsServiceRetrieveCoreMemoryBlock = <
     ...options,
   });
 /**
- * List Core Memory Blocks
- * Retrieve the memory blocks of a specific agent.
+ * List Blocks
+ * Retrieve the core memory blocks of a specific agent.
  * @param data The data for the request.
  * @param data.agentId
  * @param data.userId
@@ -695,7 +696,7 @@ export const useAgentsServiceListCoreMemoryBlocks = <
     ...options,
   });
 /**
- * List Archival Memory
+ * List Passages
  * Retrieve the memories in an agent's archival memory store (paginated query).
  * @param data The data for the request.
  * @param data.agentId
@@ -706,8 +707,8 @@ export const useAgentsServiceListCoreMemoryBlocks = <
  * @returns Passage Successful Response
  * @throws ApiError
  */
-export const useAgentsServiceListArchivalMemory = <
-  TData = Common.AgentsServiceListArchivalMemoryDefaultResponse,
+export const useAgentsServiceListPassages = <
+  TData = Common.AgentsServiceListPassagesDefaultResponse,
   TError = unknown,
   TQueryKey extends Array<unknown> = unknown[],
 >(
@@ -728,12 +729,12 @@ export const useAgentsServiceListArchivalMemory = <
   options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>,
 ) =>
   useQuery<TData, TError>({
-    queryKey: Common.UseAgentsServiceListArchivalMemoryKeyFn(
+    queryKey: Common.UseAgentsServiceListPassagesKeyFn(
       { after, agentId, before, limit, userId },
       queryKey,
     ),
     queryFn: () =>
-      AgentsService.listArchivalMemory({
+      AgentsService.listPassages({
         after,
         agentId,
         before,
@@ -2096,7 +2097,7 @@ export const useAgentsServiceCreateAgent = <
     ...options,
   });
 /**
- * Create Archival Memory
+ * Create Passage
  * Insert a memory into an agent's archival memory store.
  * @param data The data for the request.
  * @param data.agentId
@@ -2105,8 +2106,8 @@ export const useAgentsServiceCreateAgent = <
  * @returns Passage Successful Response
  * @throws ApiError
  */
-export const useAgentsServiceCreateArchivalMemory = <
-  TData = Common.AgentsServiceCreateArchivalMemoryMutationResult,
+export const useAgentsServiceCreatePassage = <
+  TData = Common.AgentsServiceCreatePassageMutationResult,
   TError = unknown,
   TContext = unknown,
 >(
@@ -2135,7 +2136,7 @@ export const useAgentsServiceCreateArchivalMemory = <
     TContext
   >({
     mutationFn: ({ agentId, requestBody, userId }) =>
-      AgentsService.createArchivalMemory({
+      AgentsService.createPassage({
         agentId,
         requestBody,
         userId,
@@ -3399,8 +3400,8 @@ export const useAgentsServiceDetachSourceFromAgent = <
     ...options,
   });
 /**
- * Modify Core Memory Block
- * Updates a memory block of an agent.
+ * Modify Block
+ * Updates a core memory block of an agent.
  * @param data The data for the request.
  * @param data.agentId
  * @param data.blockLabel
@@ -3450,8 +3451,8 @@ export const useAgentsServiceModifyCoreMemoryBlock = <
     ...options,
   });
 /**
- * Attach Core Memory Block
- * Attach a block to an agent.
+ * Attach Block
+ * Attach a core memoryblock to an agent.
  * @param data The data for the request.
  * @param data.agentId
  * @param data.blockId
@@ -3497,8 +3498,8 @@ export const useAgentsServiceAttachCoreMemoryBlock = <
     ...options,
   });
 /**
- * Detach Core Memory Block
- * Detach a block from an agent.
+ * Detach Block
+ * Detach a core memory block from an agent.
  * @param data The data for the request.
  * @param data.agentId
  * @param data.blockId
@@ -3539,6 +3540,57 @@ export const useAgentsServiceDetachCoreMemoryBlock = <
       AgentsService.detachCoreMemoryBlock({
         agentId,
         blockId,
+        userId,
+      }) as unknown as Promise<TData>,
+    ...options,
+  });
+/**
+ * Modify Passage
+ * Modify a memory in the agent's archival memory store.
+ * @param data The data for the request.
+ * @param data.agentId
+ * @param data.memoryId
+ * @param data.requestBody
+ * @param data.userId
+ * @returns Passage Successful Response
+ * @throws ApiError
+ */
+export const useAgentsServiceModifyPassage = <
+  TData = Common.AgentsServiceModifyPassageMutationResult,
+  TError = unknown,
+  TContext = unknown,
+>(
+  options?: Omit<
+    UseMutationOptions<
+      TData,
+      TError,
+      {
+        agentId: string;
+        memoryId: string;
+        requestBody: PassageUpdate;
+        userId?: string;
+      },
+      TContext
+    >,
+    'mutationFn'
+  >,
+) =>
+  useMutation<
+    TData,
+    TError,
+    {
+      agentId: string;
+      memoryId: string;
+      requestBody: PassageUpdate;
+      userId?: string;
+    },
+    TContext
+  >({
+    mutationFn: ({ agentId, memoryId, requestBody, userId }) =>
+      AgentsService.modifyPassage({
+        agentId,
+        memoryId,
+        requestBody,
         userId,
       }) as unknown as Promise<TData>,
     ...options,
@@ -4087,7 +4139,7 @@ export const useAgentsServiceDeleteAgent = <
     ...options,
   });
 /**
- * Delete Archival Memory
+ * Delete Passage
  * Delete a memory from an agent's archival memory store.
  * @param data The data for the request.
  * @param data.agentId
@@ -4096,8 +4148,8 @@ export const useAgentsServiceDeleteAgent = <
  * @returns unknown Successful Response
  * @throws ApiError
  */
-export const useAgentsServiceDeleteArchivalMemory = <
-  TData = Common.AgentsServiceDeleteArchivalMemoryMutationResult,
+export const useAgentsServiceDeletePassage = <
+  TData = Common.AgentsServiceDeletePassageMutationResult,
   TError = unknown,
   TContext = unknown,
 >(
@@ -4126,7 +4178,7 @@ export const useAgentsServiceDeleteArchivalMemory = <
     TContext
   >({
     mutationFn: ({ agentId, memoryId, userId }) =>
-      AgentsService.deleteArchivalMemory({
+      AgentsService.deletePassage({
         agentId,
         memoryId,
         userId,

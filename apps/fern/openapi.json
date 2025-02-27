@@ -1774,8 +1774,8 @@
     "/v1/agents/{agent_id}/core-memory/blocks/{block_label}": {
       "get": {
         "tags": ["agents"],
-        "summary": "Retrieve Core Memory Block",
-        "description": "Retrieve a memory block from an agent.",
+        "summary": "Retrieve Block",
+        "description": "Retrieve a core memory block from an agent.",
         "operationId": "retrieve_core_memory_block",
         "parameters": [
           {
@@ -1822,8 +1822,8 @@
       },
       "patch": {
         "tags": ["agents"],
-        "summary": "Modify Core Memory Block",
-        "description": "Updates a memory block of an agent.",
+        "summary": "Modify Block",
+        "description": "Updates a core memory block of an agent.",
         "operationId": "modify_core_memory_block",
         "parameters": [
           {
@@ -1882,8 +1882,8 @@
     "/v1/agents/{agent_id}/core-memory/blocks": {
       "get": {
         "tags": ["agents"],
-        "summary": "List Core Memory Blocks",
-        "description": "Retrieve the memory blocks of a specific agent.",
+        "summary": "List Blocks",
+        "description": "Retrieve the core memory blocks of a specific agent.",
         "operationId": "list_core_memory_blocks",
         "parameters": [
           {
@@ -1927,8 +1927,8 @@
     "/v1/agents/{agent_id}/core-memory/blocks/attach/{block_id}": {
       "patch": {
         "tags": ["agents"],
-        "summary": "Attach Core Memory Block",
-        "description": "Attach a block to an agent.",
+        "summary": "Attach Block",
+        "description": "Attach a core memoryblock to an agent.",
         "operationId": "attach_core_memory_block",
         "parameters": [
           {
@@ -1977,8 +1977,8 @@
     "/v1/agents/{agent_id}/core-memory/blocks/detach/{block_id}": {
       "patch": {
         "tags": ["agents"],
-        "summary": "Detach Core Memory Block",
-        "description": "Detach a block from an agent.",
+        "summary": "Detach Block",
+        "description": "Detach a core memory block from an agent.",
         "operationId": "detach_core_memory_block",
         "parameters": [
           {
@@ -2027,9 +2027,9 @@
     "/v1/agents/{agent_id}/archival-memory": {
       "get": {
         "tags": ["agents"],
-        "summary": "List Archival Memory",
+        "summary": "List Passages",
         "description": "Retrieve the memories in an agent's archival memory store (paginated query).",
-        "operationId": "list_archival_memory",
+        "operationId": "list_passages",
         "parameters": [
           {
             "name": "agent_id",
@@ -2105,7 +2105,7 @@
                   "items": {
                     "$ref": "#/components/schemas/Passage"
                   },
-                  "title": "Response List Archival Memory"
+                  "title": "Response List Passages"
                 }
               }
             }
@@ -2124,9 +2124,9 @@
       },
       "post": {
         "tags": ["agents"],
-        "summary": "Create Archival Memory",
+        "summary": "Create Passage",
         "description": "Insert a memory into an agent's archival memory store.",
-        "operationId": "create_archival_memory",
+        "operationId": "create_passage",
         "parameters": [
           {
             "name": "agent_id",
@@ -2158,7 +2158,7 @@
                   "items": {
                     "$ref": "#/components/schemas/Passage"
                   },
-                  "title": "Response Create Archival Memory"
+                  "title": "Response Create Passage"
                 }
               }
             }
@@ -2177,11 +2177,73 @@
       }
     },
     "/v1/agents/{agent_id}/archival-memory/{memory_id}": {
+      "patch": {
+        "tags": ["agents"],
+        "summary": "Modify Passage",
+        "description": "Modify a memory in the agent's archival memory store.",
+        "operationId": "modify_passage",
+        "parameters": [
+          {
+            "name": "agent_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Agent Id"
+            }
+          },
+          {
+            "name": "memory_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Memory Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PassageUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Passage"
+                  },
+                  "title": "Response Modify Passage"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
       "delete": {
         "tags": ["agents"],
-        "summary": "Delete Archival Memory",
+        "summary": "Delete Passage",
         "description": "Delete a memory from an agent's archival memory store.",
-        "operationId": "delete_archival_memory",
+        "operationId": "delete_passage",
         "parameters": [
           {
             "name": "agent_id",
@@ -14374,6 +14436,162 @@
         "required": ["text", "embedding", "embedding_config"],
         "title": "Passage",
         "description": "Representation of a passage, which is stored in archival memory.\n\nParameters:\n    text (str): The text of the passage.\n    embedding (List[float]): The embedding of the passage.\n    embedding_config (EmbeddingConfig): The embedding configuration used by the passage.\n    created_at (datetime): The creation date of the passage.\n    user_id (str): The unique identifier of the user associated with the passage.\n    agent_id (str): The unique identifier of the agent associated with the passage.\n    source_id (str): The data source of the passage.\n    file_id (str): The unique identifier of the file associated with the passage."
+      },
+      "PassageUpdate": {
+        "properties": {
+          "created_by_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Created By Id",
+            "description": "The id of the user that made this object."
+          },
+          "last_updated_by_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Updated By Id",
+            "description": "The id of the user that made this object."
+          },
+          "created_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Created At",
+            "description": "The timestamp when the object was created."
+          },
+          "updated_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Updated At",
+            "description": "The timestamp when the object was last updated."
+          },
+          "is_deleted": {
+            "type": "boolean",
+            "title": "Is Deleted",
+            "description": "Whether this passage is deleted or not.",
+            "default": false
+          },
+          "agent_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Agent Id",
+            "description": "The unique identifier of the agent associated with the passage."
+          },
+          "source_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Id",
+            "description": "The data source of the passage."
+          },
+          "file_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "File Id",
+            "description": "The unique identifier of the file associated with the passage."
+          },
+          "metadata_": {
+            "anyOf": [
+              {
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Metadata ",
+            "description": "The metadata of the passage.",
+            "default": {}
+          },
+          "text": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Text",
+            "description": "The text of the passage."
+          },
+          "embedding": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "number"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Embedding",
+            "description": "The embedding of the passage."
+          },
+          "embedding_config": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/EmbeddingConfig"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The embedding configuration used by the passage."
+          },
+          "id": {
+            "type": "string",
+            "title": "Id",
+            "description": "The unique identifier of the passage."
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": ["id"],
+        "title": "PassageUpdate"
       },
       "PipRequirement": {
         "properties": {

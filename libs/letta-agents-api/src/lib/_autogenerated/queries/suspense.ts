@@ -582,8 +582,8 @@ export const useAgentsServiceRetrieveAgentMemorySuspense = <
     ...options,
   });
 /**
- * Retrieve Core Memory Block
- * Retrieve a memory block from an agent.
+ * Retrieve Block
+ * Retrieve a core memory block from an agent.
  * @param data The data for the request.
  * @param data.agentId
  * @param data.blockLabel
@@ -622,8 +622,8 @@ export const useAgentsServiceRetrieveCoreMemoryBlockSuspense = <
     ...options,
   });
 /**
- * List Core Memory Blocks
- * Retrieve the memory blocks of a specific agent.
+ * List Blocks
+ * Retrieve the core memory blocks of a specific agent.
  * @param data The data for the request.
  * @param data.agentId
  * @param data.userId
@@ -655,7 +655,7 @@ export const useAgentsServiceListCoreMemoryBlocksSuspense = <
     ...options,
   });
 /**
- * List Archival Memory
+ * List Passages
  * Retrieve the memories in an agent's archival memory store (paginated query).
  * @param data The data for the request.
  * @param data.agentId
@@ -666,8 +666,8 @@ export const useAgentsServiceListCoreMemoryBlocksSuspense = <
  * @returns Passage Successful Response
  * @throws ApiError
  */
-export const useAgentsServiceListArchivalMemorySuspense = <
-  TData = Common.AgentsServiceListArchivalMemoryDefaultResponse,
+export const useAgentsServiceListPassagesSuspense = <
+  TData = Common.AgentsServiceListPassagesDefaultResponse,
   TError = unknown,
   TQueryKey extends Array<unknown> = unknown[],
 >(
@@ -688,12 +688,12 @@ export const useAgentsServiceListArchivalMemorySuspense = <
   options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>,
 ) =>
   useSuspenseQuery<TData, TError>({
-    queryKey: Common.UseAgentsServiceListArchivalMemoryKeyFn(
+    queryKey: Common.UseAgentsServiceListPassagesKeyFn(
       { after, agentId, before, limit, userId },
       queryKey,
     ),
     queryFn: () =>
-      AgentsService.listArchivalMemory({
+      AgentsService.listPassages({
         after,
         agentId,
         before,

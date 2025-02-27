@@ -17,7 +17,7 @@ from letta.schemas.letta_request import LettaRequest, LettaStreamingRequest
 from letta.schemas.letta_response import LettaResponse
 from letta.schemas.memory import ContextWindowOverview, CreateArchivalMemory, Memory
 from letta.schemas.message import Message, MessageUpdate
-from letta.schemas.passage import Passage
+from letta.schemas.passage import Passage, PassageUpdate
 from letta.schemas.run import Run
 from letta.schemas.source import Source
 from letta.schemas.tool import Tool
@@ -273,14 +273,14 @@ def retrieve_agent_memory(
 
 
 @router.get("/{agent_id}/core-memory/blocks/{block_label}", response_model=Block, operation_id="retrieve_core_memory_block")
-def retrieve_core_memory_block(
+def retrieve_block(
     agent_id: str,
     block_label: str,
     server: "SyncServer" = Depends(get_letta_server),
     actor_id: Optional[str] = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
 ):
     """
-    Retrieve a memory block from an agent.
+    Retrieve a core memory block from an agent.
     """
     actor = server.user_manager.get_user_or_default(user_id=actor_id)
 
@@ -291,13 +291,13 @@ def retrieve_core_memory_block(
 
 
 @router.get("/{agent_id}/core-memory/blocks", response_model=List[Block], operation_id="list_core_memory_blocks")
-def list_core_memory_blocks(
+def list_blocks(
     agent_id: str,
     server: "SyncServer" = Depends(get_letta_server),
     actor_id: Optional[str] = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
 ):
     """
-    Retrieve the memory blocks of a specific agent.
+    Retrieve the core memory blocks of a specific agent.
     """
     actor = server.user_manager.get_user_or_default(user_id=actor_id)
     try:
@@ -308,7 +308,7 @@ def list_core_memory_blocks(
 
 
 @router.patch("/{agent_id}/core-memory/blocks/{block_label}", response_model=Block, operation_id="modify_core_memory_block")
-def modify_core_memory_block(
+def modify_block(
     agent_id: str,
     block_label: str,
     block_update: BlockUpdate = Body(...),
@@ -316,7 +316,7 @@ def modify_core_memory_block(
     actor_id: Optional[str] = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
 ):
     """
-    Updates a memory block of an agent.
+    Updates a core memory block of an agent.
     """
     actor = server.user_manager.get_user_or_default(user_id=actor_id)
 
@@ -330,35 +330,35 @@ def modify_core_memory_block(
 
 
 @router.patch("/{agent_id}/core-memory/blocks/attach/{block_id}", response_model=AgentState, operation_id="attach_core_memory_block")
-def attach_core_memory_block(
+def attach_block(
     agent_id: str,
     block_id: str,
     server: "SyncServer" = Depends(get_letta_server),
     actor_id: Optional[str] = Header(None, alias="user_id"),
 ):
     """
-    Attach a block to an agent.
+    Attach a core memoryblock to an agent.
     """
     actor = server.user_manager.get_user_or_default(user_id=actor_id)
     return server.agent_manager.attach_block(agent_id=agent_id, block_id=block_id, actor=actor)
 
 
 @router.patch("/{agent_id}/core-memory/blocks/detach/{block_id}", response_model=AgentState, operation_id="detach_core_memory_block")
-def detach_core_memory_block(
+def detach_block(
     agent_id: str,
     block_id: str,
     server: "SyncServer" = Depends(get_letta_server),
     actor_id: Optional[str] = Header(None, alias="user_id"),
 ):
     """
-    Detach a block from an agent.
+    Detach a core memory block from an agent.
     """
     actor = server.user_manager.get_user_or_default(user_id=actor_id)
     return server.agent_manager.detach_block(agent_id=agent_id, block_id=block_id, actor=actor)
 
 
-@router.get("/{agent_id}/archival-memory", response_model=List[Passage], operation_id="list_archival_memory")
-def list_archival_memory(
+@router.get("/{agent_id}/archival-memory", response_model=List[Passage], operation_id="list_passages")
+def list_passages(
     agent_id: str,
     server: "SyncServer" = Depends(get_letta_server),
     after: Optional[int] = Query(None, description="Unique ID of the memory to start the query range at."),
@@ -380,8 +380,8 @@ def list_archival_memory(
     )
 
 
-@router.post("/{agent_id}/archival-memory", response_model=List[Passage], operation_id="create_archival_memory")
-def create_archival_memory(
+@router.post("/{agent_id}/archival-memory", response_model=List[Passage], operation_id="create_passage")
+def create_passage(
     agent_id: str,
     request: CreateArchivalMemory = Body(...),
     server: "SyncServer" = Depends(get_letta_server),
@@ -395,10 +395,25 @@ def create_archival_memory(
     return server.insert_archival_memory(agent_id=agent_id, memory_contents=request.text, actor=actor)
 
 
+@router.patch("/{agent_id}/archival-memory/{memory_id}", response_model=List[Passage], operation_id="modify_passage")
+def modify_passage(
+    agent_id: str,
+    memory_id: str,
+    passage: PassageUpdate = Body(...),
+    server: "SyncServer" = Depends(get_letta_server),
+    actor_id: Optional[str] = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
+):
+    """
+    Modify a memory in the agent's archival memory store.
+    """
+    actor = server.user_manager.get_user_or_default(user_id=actor_id)
+    return server.modify_archival_memory(agent_id=agent_id, memory_id=memory_id, passage=passage, actor=actor)
+
+
 # TODO(ethan): query or path parameter for memory_id?
 # @router.delete("/{agent_id}/archival")
-@router.delete("/{agent_id}/archival-memory/{memory_id}", response_model=None, operation_id="delete_archival_memory")
-def delete_archival_memory(
+@router.delete("/{agent_id}/archival-memory/{memory_id}", response_model=None, operation_id="delete_passage")
+def delete_passage(
     agent_id: str,
     memory_id: str,
     # memory_id: str = Query(..., description="Unique ID of the memory to be deleted."),

@@ -82,12 +82,14 @@ import type {
   AttachCoreMemoryBlockResponse,
   DetachCoreMemoryBlockData,
   DetachCoreMemoryBlockResponse,
-  ListArchivalMemoryData,
-  ListArchivalMemoryResponse,
-  CreateArchivalMemoryData,
-  CreateArchivalMemoryResponse,
-  DeleteArchivalMemoryData,
-  DeleteArchivalMemoryResponse,
+  ListPassagesData,
+  ListPassagesResponse,
+  CreatePassageData,
+  CreatePassageResponse,
+  ModifyPassageData,
+  ModifyPassageResponse,
+  DeletePassageData,
+  DeletePassageResponse,
   ListMessagesData,
   ListMessagesResponse,
   SendMessageData,
@@ -1137,8 +1139,8 @@ export class AgentsService {
   }
 
   /**
-   * Retrieve Core Memory Block
-   * Retrieve a memory block from an agent.
+   * Retrieve Block
+   * Retrieve a core memory block from an agent.
    * @param data The data for the request.
    * @param data.agentId
    * @param data.blockLabel
@@ -1165,8 +1167,8 @@ export class AgentsService {
   }
 
   /**
-   * Modify Core Memory Block
-   * Updates a memory block of an agent.
+   * Modify Block
+   * Updates a core memory block of an agent.
    * @param data The data for the request.
    * @param data.agentId
    * @param data.blockLabel
@@ -1196,8 +1198,8 @@ export class AgentsService {
   }
 
   /**
-   * List Core Memory Blocks
-   * Retrieve the memory blocks of a specific agent.
+   * List Blocks
+   * Retrieve the core memory blocks of a specific agent.
    * @param data The data for the request.
    * @param data.agentId
    * @param data.userId
@@ -1222,8 +1224,8 @@ export class AgentsService {
   }
 
   /**
-   * Attach Core Memory Block
-   * Attach a block to an agent.
+   * Attach Block
+   * Attach a core memoryblock to an agent.
    * @param data The data for the request.
    * @param data.agentId
    * @param data.blockId
@@ -1250,8 +1252,8 @@ export class AgentsService {
   }
 
   /**
-   * Detach Core Memory Block
-   * Detach a block from an agent.
+   * Detach Block
+   * Detach a core memory block from an agent.
    * @param data The data for the request.
    * @param data.agentId
    * @param data.blockId
@@ -1278,7 +1280,7 @@ export class AgentsService {
   }
 
   /**
-   * List Archival Memory
+   * List Passages
    * Retrieve the memories in an agent's archival memory store (paginated query).
    * @param data The data for the request.
    * @param data.agentId
@@ -1289,10 +1291,10 @@ export class AgentsService {
    * @returns Passage Successful Response
    * @throws ApiError
    */
-  public static listArchivalMemory(
-    data: ListArchivalMemoryData,
+  public static listPassages(
+    data: ListPassagesData,
     headers?: { user_id: string },
-  ): CancelablePromise<ListArchivalMemoryResponse> {
+  ): CancelablePromise<ListPassagesResponse> {
     return __request(OpenAPI, {
       method: 'GET',
       url: '/v1/agents/{agent_id}/archival-memory',
@@ -1312,7 +1314,7 @@ export class AgentsService {
   }
 
   /**
-   * Create Archival Memory
+   * Create Passage
    * Insert a memory into an agent's archival memory store.
    * @param data The data for the request.
    * @param data.agentId
@@ -1321,10 +1323,10 @@ export class AgentsService {
    * @returns Passage Successful Response
    * @throws ApiError
    */
-  public static createArchivalMemory(
-    data: CreateArchivalMemoryData,
+  public static createPassage(
+    data: CreatePassageData,
     headers?: { user_id: string },
-  ): CancelablePromise<CreateArchivalMemoryResponse> {
+  ): CancelablePromise<CreatePassageResponse> {
     return __request(OpenAPI, {
       method: 'POST',
       url: '/v1/agents/{agent_id}/archival-memory',
@@ -1341,7 +1343,38 @@ export class AgentsService {
   }
 
   /**
-   * Delete Archival Memory
+   * Modify Passage
+   * Modify a memory in the agent's archival memory store.
+   * @param data The data for the request.
+   * @param data.agentId
+   * @param data.memoryId
+   * @param data.requestBody
+   * @param data.userId
+   * @returns Passage Successful Response
+   * @throws ApiError
+   */
+  public static modifyPassage(
+    data: ModifyPassageData,
+    headers?: { user_id: string },
+  ): CancelablePromise<ModifyPassageResponse> {
+    return __request(OpenAPI, {
+      method: 'PATCH',
+      url: '/v1/agents/{agent_id}/archival-memory/{memory_id}',
+      path: {
+        agent_id: data.agentId,
+        memory_id: data.memoryId,
+      },
+      body: data.requestBody,
+      mediaType: 'application/json',
+      errors: {
+        422: 'Validation Error',
+      },
+      headers,
+    });
+  }
+
+  /**
+   * Delete Passage
    * Delete a memory from an agent's archival memory store.
    * @param data The data for the request.
    * @param data.agentId
@@ -1350,10 +1383,10 @@ export class AgentsService {
    * @returns unknown Successful Response
    * @throws ApiError
    */
-  public static deleteArchivalMemory(
-    data: DeleteArchivalMemoryData,
+  public static deletePassage(
+    data: DeletePassageData,
     headers?: { user_id: string },
-  ): CancelablePromise<DeleteArchivalMemoryResponse> {
+  ): CancelablePromise<DeletePassageResponse> {
     return __request(OpenAPI, {
       method: 'DELETE',
       url: '/v1/agents/{agent_id}/archival-memory/{memory_id}',

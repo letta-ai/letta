@@ -2996,6 +2996,108 @@ export const Passage = z.object({
   ]),
 });
 
+export type PassageUpdate = z.infer<typeof PassageUpdate>;
+export const PassageUpdate = z.object({
+  created_by_id: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  last_updated_by_id: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  created_at: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  updated_at: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  is_deleted: z.union([z.boolean(), z.undefined()]).optional(),
+  organization_id: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  agent_id: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  source_id: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  file_id: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  metadata_: z
+    .union([
+      z.unknown(),
+      z.null(),
+      z.array(z.union([z.unknown(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  text: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  embedding: z
+    .union([
+      z.array(z.number()),
+      z.null(),
+      z.array(z.union([z.array(z.number()), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  embedding_config: z
+    .union([
+      EmbeddingConfig,
+      z.null(),
+      z.array(z.union([EmbeddingConfig, z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  id: z.string(),
+});
+
 export type Provider = z.infer<typeof Provider>;
 export const Provider = z.object({
   id: z
@@ -4386,8 +4488,8 @@ export const patch_Detach_core_memory_block = {
   response: AgentState,
 };
 
-export type get_List_archival_memory = typeof get_List_archival_memory;
-export const get_List_archival_memory = {
+export type get_List_passages = typeof get_List_passages;
+export const get_List_passages = {
   method: z.literal('GET'),
   path: z.literal('/v1/agents/{agent_id}/archival-memory'),
   requestFormat: z.literal('json'),
@@ -4415,8 +4517,8 @@ export const get_List_archival_memory = {
   response: z.array(Passage),
 };
 
-export type post_Create_archival_memory = typeof post_Create_archival_memory;
-export const post_Create_archival_memory = {
+export type post_Create_passage = typeof post_Create_passage;
+export const post_Create_passage = {
   method: z.literal('POST'),
   path: z.literal('/v1/agents/{agent_id}/archival-memory'),
   requestFormat: z.literal('json'),
@@ -4434,9 +4536,28 @@ export const post_Create_archival_memory = {
   response: z.array(Passage),
 };
 
-export type delete_Delete_archival_memory =
-  typeof delete_Delete_archival_memory;
-export const delete_Delete_archival_memory = {
+export type patch_Modify_passage = typeof patch_Modify_passage;
+export const patch_Modify_passage = {
+  method: z.literal('PATCH'),
+  path: z.literal('/v1/agents/{agent_id}/archival-memory/{memory_id}'),
+  requestFormat: z.literal('json'),
+  parameters: z.object({
+    path: z.object({
+      agent_id: z.string(),
+      memory_id: z.string(),
+    }),
+    header: z.object({
+      user_id: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+    }),
+    body: PassageUpdate,
+  }),
+  response: z.array(Passage),
+};
+
+export type delete_Delete_passage = typeof delete_Delete_passage;
+export const delete_Delete_passage = {
   method: z.literal('DELETE'),
   path: z.literal('/v1/agents/{agent_id}/archival-memory/{memory_id}'),
   requestFormat: z.literal('json'),
@@ -5659,8 +5780,7 @@ export const EndpointByMethod = {
     '/v1/sources/{source_id}': delete_Delete_source,
     '/v1/sources/{source_id}/{file_id}': delete_Delete_file_from_source,
     '/v1/agents/{agent_id}': delete_Delete_agent,
-    '/v1/agents/{agent_id}/archival-memory/{memory_id}':
-      delete_Delete_archival_memory,
+    '/v1/agents/{agent_id}/archival-memory/{memory_id}': delete_Delete_passage,
     '/v1/identities/{identity_id}': delete_Delete_identity,
     '/v1/blocks/{block_id}': delete_Delete_block,
     '/v1/jobs/{job_id}': delete_Delete_job,
@@ -5693,7 +5813,7 @@ export const EndpointByMethod = {
     '/v1/agents/{agent_id}/core-memory/blocks/{block_label}':
       get_Retrieve_core_memory_block,
     '/v1/agents/{agent_id}/core-memory/blocks': get_List_core_memory_blocks,
-    '/v1/agents/{agent_id}/archival-memory': get_List_archival_memory,
+    '/v1/agents/{agent_id}/archival-memory': get_List_passages,
     '/v1/agents/{agent_id}/messages': get_List_messages,
     '/v1/identities/': get_List_identities,
     '/v1/identities/{identity_id}': get_Retrieve_identity,
@@ -5737,6 +5857,7 @@ export const EndpointByMethod = {
       patch_Attach_core_memory_block,
     '/v1/agents/{agent_id}/core-memory/blocks/detach/{block_id}':
       patch_Detach_core_memory_block,
+    '/v1/agents/{agent_id}/archival-memory/{memory_id}': patch_Modify_passage,
     '/v1/agents/{agent_id}/messages/{message_id}': patch_Modify_message,
     '/v1/agents/{agent_id}/reset-messages': patch_Reset_messages,
     '/v1/identities/{identity_id}': patch_Update_identity,
@@ -5757,7 +5878,7 @@ export const EndpointByMethod = {
     '/v1/sources/': post_Create_source,
     '/v1/sources/{source_id}/upload': post_Upload_file_to_source,
     '/v1/agents/': post_Create_agent,
-    '/v1/agents/{agent_id}/archival-memory': post_Create_archival_memory,
+    '/v1/agents/{agent_id}/archival-memory': post_Create_passage,
     '/v1/agents/{agent_id}/messages': post_Send_message,
     '/v1/agents/{agent_id}/messages/stream': post_Create_agent_message_stream,
     '/v1/agents/{agent_id}/messages/async': post_Create_agent_message_async,

@@ -466,8 +466,8 @@ export const prefetchUseAgentsServiceRetrieveAgentMemory = (
     queryFn: () => AgentsService.retrieveAgentMemory({ agentId, userId }),
   });
 /**
- * Retrieve Core Memory Block
- * Retrieve a memory block from an agent.
+ * Retrieve Block
+ * Retrieve a core memory block from an agent.
  * @param data The data for the request.
  * @param data.agentId
  * @param data.blockLabel
@@ -497,8 +497,8 @@ export const prefetchUseAgentsServiceRetrieveCoreMemoryBlock = (
       AgentsService.retrieveCoreMemoryBlock({ agentId, blockLabel, userId }),
   });
 /**
- * List Core Memory Blocks
- * Retrieve the memory blocks of a specific agent.
+ * List Blocks
+ * Retrieve the core memory blocks of a specific agent.
  * @param data The data for the request.
  * @param data.agentId
  * @param data.userId
@@ -523,7 +523,7 @@ export const prefetchUseAgentsServiceListCoreMemoryBlocks = (
     queryFn: () => AgentsService.listCoreMemoryBlocks({ agentId, userId }),
   });
 /**
- * List Archival Memory
+ * List Passages
  * Retrieve the memories in an agent's archival memory store (paginated query).
  * @param data The data for the request.
  * @param data.agentId
@@ -534,7 +534,7 @@ export const prefetchUseAgentsServiceListCoreMemoryBlocks = (
  * @returns Passage Successful Response
  * @throws ApiError
  */
-export const prefetchUseAgentsServiceListArchivalMemory = (
+export const prefetchUseAgentsServiceListPassages = (
   queryClient: QueryClient,
   {
     after,
@@ -551,7 +551,7 @@ export const prefetchUseAgentsServiceListArchivalMemory = (
   },
 ) =>
   queryClient.prefetchQuery({
-    queryKey: Common.UseAgentsServiceListArchivalMemoryKeyFn({
+    queryKey: Common.UseAgentsServiceListPassagesKeyFn({
       after,
       agentId,
       before,
@@ -559,13 +559,7 @@ export const prefetchUseAgentsServiceListArchivalMemory = (
       userId,
     }),
     queryFn: () =>
-      AgentsService.listArchivalMemory({
-        after,
-        agentId,
-        before,
-        limit,
-        userId,
-      }),
+      AgentsService.listPassages({ after, agentId, before, limit, userId }),
   });
 /**
  * List Messages

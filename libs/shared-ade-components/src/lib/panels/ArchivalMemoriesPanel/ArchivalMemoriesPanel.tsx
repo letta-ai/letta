@@ -23,14 +23,14 @@ import {
 } from '@letta-cloud/component-library';
 import { z } from 'zod';
 import type {
-  ListArchivalMemoryResponse,
+  ListPassagesResponse,
   Passage,
 } from '@letta-cloud/letta-agents-api';
 import {
-  useAgentsServiceCreateArchivalMemory,
-  useAgentsServiceDeleteArchivalMemory,
-  useAgentsServiceListArchivalMemory,
-  UseAgentsServiceListArchivalMemoryKeyFn,
+  useAgentsServiceCreatePassage,
+  useAgentsServiceDeletePassage,
+  useAgentsServiceListPassages,
+  UseAgentsServiceListPassagesKeyFn,
 } from '@letta-cloud/letta-agents-api';
 import { useQueryClient } from '@tanstack/react-query';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -101,12 +101,12 @@ function MemoryItem(props: MemoryItemProps) {
   const { formatDateAndTime } = useDateFormatter();
 
   const { mutate: deleteMemory, isPending: isDeletingMemory } =
-    useAgentsServiceDeleteArchivalMemory({
+    useAgentsServiceDeletePassage({
       onSuccess: async () => {
         setOpen(false);
-        queryClient.setQueriesData<ListArchivalMemoryResponse | undefined>(
+        queryClient.setQueriesData<ListPassagesResponse | undefined>(
           {
-            queryKey: UseAgentsServiceListArchivalMemoryKeyFn({
+            queryKey: UseAgentsServiceListPassagesKeyFn({
               agentId: currentAgentId,
             }),
           },
@@ -195,7 +195,7 @@ function MemoriesList(props: MemoriesListProps) {
   const { search } = props;
   const { id: currentAgentId } = useCurrentSimulatedAgent();
 
-  const { data, isLoading } = useAgentsServiceListArchivalMemory(
+  const { data, isLoading } = useAgentsServiceListPassages(
     {
       agentId: currentAgentId,
     },
@@ -269,11 +269,11 @@ function CreateMemoryDialog() {
   const [open, setOpen] = useState(false);
   const { isTemplate } = useCurrentAgentMetaData();
 
-  const { mutate, isPending } = useAgentsServiceCreateArchivalMemory({
+  const { mutate, isPending } = useAgentsServiceCreatePassage({
     onSuccess: async () => {
       setOpen(false);
       await queryClient.invalidateQueries({
-        queryKey: UseAgentsServiceListArchivalMemoryKeyFn({
+        queryKey: UseAgentsServiceListPassagesKeyFn({
           agentId: currentAgentId,
         }),
       });
@@ -341,7 +341,7 @@ export function useArchivalMemoriesTitle() {
   const t = useTranslations('ADE/ArchivalMemories');
   const { id: currentAgentId } = useCurrentSimulatedAgent();
 
-  const { data, isLoading } = useAgentsServiceListArchivalMemory(
+  const { data, isLoading } = useAgentsServiceListPassages(
     {
       agentId: currentAgentId,
     },
