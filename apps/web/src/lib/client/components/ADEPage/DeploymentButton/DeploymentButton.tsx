@@ -31,7 +31,6 @@ import { useQueryClient } from '@tanstack/react-query';
 import React, { useCallback, useMemo, useState } from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import {
-  webApi,
   type webApiContracts,
   webApiQueryKeys,
   webOriginSDKApi,
@@ -43,13 +42,13 @@ import { useCurrentUser, useUserHasPermission } from '$web/client/hooks';
 import type { ServerInferResponses } from '@ts-rest/core';
 import type { contracts } from '@letta-cloud/web-api-client';
 import { atom, useSetAtom } from 'jotai';
-import { get } from 'lodash-es';
 import { compareAgentStates } from '@letta-cloud/generic-utils';
 import { useCurrentAgentMetaData } from '@letta-cloud/shared-ade-components';
 import { ApplicationServices } from '@letta-cloud/rbac';
 import { CompareTemplateVersions } from '$web/client/components';
 import type { InfiniteData } from '@tanstack/query-core';
 import { useCurrentAgent } from '$web/client/hooks/useCurrentAgent/useCurrentAgent';
+import { useLatestAgentTemplate } from '$web/client/hooks/useLatestAgentTemplate/useLatestAgentTemplate';
 
 interface DeployAgentDialogProps {
   isAtLatestVersion: boolean;
@@ -364,30 +363,6 @@ function CreateNewTemplateVersionDialog(
       </MiniApp>
     </FormProvider>
   );
-}
-
-function useLatestAgentTemplate() {
-  const { name } = useCurrentAgent();
-
-  const {
-    data: deployedAgentTemplate,
-    error,
-    isError,
-  } = webApi.agentTemplates.getAgentTemplateByVersion.useQuery({
-    queryKey: webApiQueryKeys.agentTemplates.getAgentTemplateByVersion(
-      `${name}:latest`,
-    ),
-    queryData: {
-      params: { slug: `${name}:latest` },
-    },
-    retry: false,
-  });
-
-  return {
-    deployedAgentTemplate: deployedAgentTemplate?.body,
-    notFoundError: isError && get(error, 'status') === 404,
-    otherError: isError && get(error, 'status') !== 404,
-  };
 }
 
 function TemplateVersionDisplay() {

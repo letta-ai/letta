@@ -10,7 +10,7 @@ import { cva } from 'class-variance-authority';
 const avatarVariants = cva('relative flex shrink-0 overflow-hidden text-sm', {
   variants: {
     size: {
-      xsmall: 'h-[18px] w-[18px] text-base',
+      xsmall: 'h-[18px] w-[18px] text-[10px]',
       small: 'h-biHeight-sm w-biWidth-sm',
       medium: 'h-[36px] w-[36px]',
       large: 'h-[40px] w-[40px] text-base',

@@ -78,6 +78,7 @@ export function VersionHistory() {
     data: versionData,
     isLoading,
     hasNextPage,
+    isFetchingNextPage,
     fetchNextPage,
   } = webApi.agentTemplates.listTemplateVersions.useInfiniteQuery({
     queryKey: webApiQueryKeys.agentTemplates.listTemplateVersionsWithSearch(
@@ -88,7 +89,7 @@ export function VersionHistory() {
     ),
     queryData: ({ pageParam }) => ({
       query: {
-        limit: limit + 1,
+        limit: limit,
         offset: pageParam.offset,
       },
       params: {
@@ -97,7 +98,7 @@ export function VersionHistory() {
     }),
     initialPageParam: { offset: 0 },
     getNextPageParam: (lastPage, allPages) => {
-      if (lastPage.body.versions.length > limit) {
+      if (lastPage.body.hasNextPage) {
         return {
           offset: allPages.length * limit,
         };
@@ -185,6 +186,7 @@ export function VersionHistory() {
         ))}
         {hasNextPage && (
           <Button
+            busy={isFetchingNextPage}
             fullWidth
             color="secondary"
             label="Load more versions"

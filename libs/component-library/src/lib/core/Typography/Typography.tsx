@@ -70,6 +70,7 @@ const typographyVariants = cva('break-words', {
   defaultVariants: {
     variant: 'body',
     color: 'default',
+    align: 'left',
   },
 });
 

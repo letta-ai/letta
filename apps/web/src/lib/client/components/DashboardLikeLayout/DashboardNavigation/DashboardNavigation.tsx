@@ -498,6 +498,10 @@ export function ProfilePopover(props: ProfilePopoverProps) {
   const user = useCurrentUser();
   const { size } = props;
 
+  if (!user) {
+    return null;
+  }
+
   return (
     <Popover
       align="end"

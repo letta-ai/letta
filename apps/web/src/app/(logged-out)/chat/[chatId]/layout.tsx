@@ -7,6 +7,7 @@ import {
 import { router } from '$web/web-api/router';
 import { redirect } from 'next/navigation';
 import { webApiQueryKeys } from '@letta-cloud/web-api-client';
+import { getUser } from '$web/server/auth';
 
 interface ChatLayoutProps {
   children: React.ReactNode;
@@ -21,11 +22,14 @@ export default async function ChatLayout(props: ChatLayoutProps) {
   const { chatId } = await params;
   const queryClient = new QueryClient();
 
-  const chatDetails = await router.sharedAgentChats.getSharedAgentFromChatId({
-    params: {
-      chatId,
-    },
-  });
+  const [chatDetails, user] = await Promise.all([
+    router.sharedAgentChats.getSharedAgentFromChatId({
+      params: {
+        chatId,
+      },
+    }),
+    getUser(),
+  ]);
 
   if (chatDetails.status !== 200 || !chatDetails.body) {
     redirect('/');
@@ -35,6 +39,13 @@ export default async function ChatLayout(props: ChatLayoutProps) {
   await queryClient.prefetchQuery({
     queryKey: webApiQueryKeys.sharedAgentChats.getSharedAgentFromChatId(chatId),
     queryFn: () => chatDetails,
+  });
+
+  await queryClient.prefetchQuery({
+    queryKey: webApiQueryKeys.user.getCurrentUser,
+    queryFn: () => ({
+      body: user,
+    }),
   });
 
   return (

@@ -16,7 +16,9 @@ export function VisibleOnMobile(props: VisibleOnMobileProps) {
 
   if (checkWithJs) {
     if (debouncedWidth < 640) {
-      return props.children;
+      return (
+        <div className="contents largerThanMobile:hidden">{props.children}</div>
+      );
     }
 
     return null;

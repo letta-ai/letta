@@ -15,6 +15,7 @@ import { Messages } from '@letta-cloud/shared-ade-components';
 import React, { useRef } from 'react';
 import { useSendMessage } from '@letta-cloud/shared-ade-components';
 import { useTranslations } from '@letta-cloud/translations';
+import { ProfilePopover } from '$web/client/components/DashboardLikeLayout/DashboardNavigation/DashboardNavigation';
 
 function useChatId() {
   const params = useParams<{ chatId: string }>();
@@ -58,18 +59,29 @@ export default function ChatPage() {
 
   return (
     <div className="relative w-[100dvw] h-[100dvh] flex flex-col">
-      <HStack padding justify="spaceBetween" position="relative">
+      <HStack
+        color="background-grey"
+        align="center"
+        paddingX
+        paddingY="small"
+        justify="spaceBetween"
+        position="relative"
+      >
         <Link href="/">
           <Logo withText size="small" />
         </Link>
         <div className="absolute w-full left-0 top-0 pointer-events-none flex h-full justify-center items-center">
           <div className="pointer-events-auto">
-            <Typography>{agent?.agentName || ''}</Typography>
+            <Typography bold variant="body2">
+              {agent?.agentName || ''}
+            </Typography>
           </div>
         </div>
-        <HStack></HStack>
+        <HStack>
+          <ProfilePopover />
+        </HStack>
       </HStack>
-      <div className="max-w-[840px] mx-auto px-4 w-full flex-1">
+      <div className="max-w-[840px] mx-auto px-4 pt-4 w-full flex-1">
         <VStack gap="large" fullHeight>
           <VStack collapseHeight position="relative">
             <Messages

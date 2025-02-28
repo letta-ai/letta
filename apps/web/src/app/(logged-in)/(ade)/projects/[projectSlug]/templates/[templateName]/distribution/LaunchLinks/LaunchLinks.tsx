@@ -2,10 +2,10 @@ import { useTranslations } from '@letta-cloud/translations';
 import {
   Alert,
   Button,
-  EarthIcon,
   Form,
   FormField,
   FormProvider,
+  HStack,
   isMultiValue,
   LoadingEmptyStatusComponent,
   LockClosedIcon,
@@ -74,34 +74,36 @@ function NotCreatedLinkView() {
   }
 
   return (
-    <VStack
-      color="background-grey"
-      fullHeight
-      justify="center"
-      fullWidth
-      align="center"
-    >
-      {isError && (
-        <Alert title={t('NotCreatedLinkView.error')} variant="destructive" />
-      )}
-      <RocketIcon size="xxlarge" />
-      <Typography variant="heading5" bold>
-        {t('NotCreatedLinkView.title')}
-      </Typography>
-      <div className="max-w-[600px]">
+    <VStack padding="xlarge" border fullHeight fullWidth>
+      <VStack width="contained" gap="form">
+        <HStack>
+          <RocketIcon size="large" />
+          <Typography variant="heading4" bold>
+            {t('NotCreatedLinkView.title')}
+          </Typography>
+        </HStack>
+        {isError && (
+          <Alert title={t('NotCreatedLinkView.error')} variant="destructive" />
+        )}
+
         <Typography>{t('NotCreatedLinkView.description')}</Typography>
-      </div>
-      <Button
-        onClick={() => {
-          mutate({
-            params: {
-              agentTemplateId,
-            },
-          });
-        }}
-        label={t('NotCreatedLinkView.cta')}
-        color="primary"
-      />
+
+        <div>
+          <Button
+            onClick={() => {
+              mutate({
+                params: {
+                  agentTemplateId,
+                },
+              });
+            }}
+            size="large"
+            label={t('NotCreatedLinkView.cta')}
+            color="primary"
+          />
+        </div>
+        <Alert variant="info" title={t('NotCreatedLinkView.info')} />
+      </VStack>
     </VStack>
   );
 }
@@ -149,11 +151,6 @@ function LaunchLinkConfiguration(props: LaunchLinkConfigurationProps) {
         label: t('LaunchLinkConfiguration.accessLevel.logged-in'),
         value: 'logged-in',
         icon: <LockClosedIcon />,
-      },
-      {
-        label: t('LaunchLinkConfiguration.accessLevel.everyone'),
-        value: 'everyone',
-        icon: <EarthIcon />,
       },
     ];
   }, [t]);
@@ -243,15 +240,8 @@ export function LaunchLinks() {
   }
 
   return (
-    <VStack
-      color="background-grey"
-      fullHeight
-      overflow="hidden"
-      fullWidth
-      align="center"
-      padding
-    >
-      <VStack gap="large">
+    <VStack fullHeight border overflow="hidden" fullWidth>
+      <VStack padding fullHeight width="contained" gap="large">
         <VStack>
           <Typography align="left" bold variant="heading6">
             <RocketIcon /> {t('title')}

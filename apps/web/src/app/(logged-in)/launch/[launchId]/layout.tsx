@@ -7,6 +7,9 @@ import {
 import { router } from '$web/web-api/router';
 import { redirect } from 'next/navigation';
 import { webApiQueryKeys } from '@letta-cloud/web-api-client';
+import { db, shareChatUser } from '@letta-cloud/database';
+import { getUserOrRedirect } from '$web/server/auth';
+import { and, eq } from 'drizzle-orm';
 
 interface ChatLayoutProps {
   children: React.ReactNode;
@@ -17,6 +20,12 @@ interface ChatLayoutProps {
 
 export default async function LaunchLayout(props: ChatLayoutProps) {
   const { children, params } = props;
+  const user = await getUserOrRedirect();
+
+  if (!user) {
+    redirect('/');
+    return null;
+  }
 
   const { launchId } = await params;
   const queryClient = new QueryClient();
@@ -30,6 +39,18 @@ export default async function LaunchLayout(props: ChatLayoutProps) {
 
   if (launchLinkDetails.status !== 200 || !launchLinkDetails.body) {
     redirect('/');
+    return null;
+  }
+
+  const existingShareChat = await db.query.shareChatUser.findFirst({
+    where: and(
+      eq(shareChatUser.userId, user.id),
+      eq(shareChatUser.agentTemplateId, launchLinkDetails.body.agentTemplateId),
+    ),
+  });
+
+  if (existingShareChat) {
+    redirect(`/chat/${existingShareChat.chatId}`);
     return null;
   }
 

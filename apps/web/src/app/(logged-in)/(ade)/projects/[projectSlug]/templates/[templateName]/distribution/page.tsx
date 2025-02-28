@@ -1,14 +1,19 @@
 'use client';
 import { ADEPage } from '$web/client/components/ADEPage/ADEPage';
 import {
-  ActionCard,
+  Avatar,
+  Badge,
   Button,
+  CalendarIcon,
   CopyIcon,
   HStack,
+  LettaInvaderIcon,
   LoadingEmptyStatusComponent,
+  MaskIcon,
   PanelBar,
   RawCodeEditor,
   RocketIcon,
+  Skeleton,
   TabGroup,
   Typography,
   useCopyToClipboard,
@@ -24,6 +29,7 @@ import { useInfiniteQuery } from '@tanstack/react-query';
 import {
   AgentsService,
   UseAgentsServiceListAgentsKeyFn,
+  useIdentitiesServiceRetrieveIdentity,
 } from '@letta-cloud/letta-agents-api';
 import type { ListAgentsResponse } from '@letta-cloud/letta-agents-api';
 import type { InfiniteData } from '@tanstack/query-core';
@@ -31,6 +37,8 @@ import { useDebouncedValue } from '@mantine/hooks';
 import { webApi, webApiQueryKeys } from '@letta-cloud/web-api-client';
 import { LaunchLinks } from './LaunchLinks/LaunchLinks';
 import { VersionHistory } from './VersionHistory/VersionHistory';
+import { useLatestAgentTemplate } from '$web/client/hooks/useLatestAgentTemplate/useLatestAgentTemplate';
+import { useDateFormatter } from '@letta-cloud/helpful-client-utils';
 
 type CodeSnippetMethods = 'bash' | 'python' | 'typescript';
 type DeploymentMethods = CodeSnippetMethods | 'letta-launch';
@@ -220,55 +228,44 @@ function DeploymentInstructions() {
   );
 }
 
-interface TemplateVersionProps {
-  versionId: string;
+const ROW_HEIGHT = 30;
+
+interface AgentIdentityProps {
+  identityIds: string[];
 }
 
-function TemplateVersion(props: TemplateVersionProps) {
-  const { versionId } = props;
-  const { agentId } = useCurrentAgentMetaData();
+function AgentIdentity(props: AgentIdentityProps) {
+  const { identityIds } = props;
+  const [identityId, ...others] = identityIds;
+
   const t = useTranslations('pages/distribution');
+  const hasMoreIdentities = useMemo(() => others.length > 0, [others]);
 
-  const { data: version, isLoading } =
-    webApi.agentTemplates.listTemplateVersions.useQuery({
-      queryKey: webApiQueryKeys.agentTemplates.listTemplateVersionsWithSearch(
-        agentId,
-        {
-          versionId,
-          limit: 1,
-        },
-      ),
-      queryData: {
-        query: {
-          limit: 1,
-          versionId,
-        },
-        params: {
-          agentTemplateId: agentId,
-        },
-      },
-    });
+  const { data } = useIdentitiesServiceRetrieveIdentity({
+    identityId,
+  });
 
-  if (isLoading || !version) {
+  if (!data) {
     return (
-      <VStack gap="small" color="background-grey2">
-        {''}
-      </VStack>
+      <Skeleton
+        /* eslint-disable-next-line react/forbid-component-props */
+        className="w-[150px] h-[20px]"
+      />
     );
   }
 
   return (
-    <VStack gap="small">
-      <Typography variant="body2">
-        {t('TemplateVersion.version', {
-          version: version.body.versions[0].version || '??',
-        })}
-      </Typography>
-    </VStack>
+    <HStack gap="small" align="center">
+      <Avatar name={data.name} size="xsmall" />
+      <Typography variant="body2">{data.name}</Typography>
+      {hasMoreIdentities && (
+        <Typography variant="body2">
+          {t('AgentIdentity.more', { count: others.length })}
+        </Typography>
+      )}
+    </HStack>
   );
 }
-
-const ROW_HEIGHT = 30;
 
 function RecentAgents() {
   const [search, setSearch] = useState('');
@@ -277,6 +274,7 @@ function RecentAgents() {
   const { agentId } = useCurrentAgentMetaData();
   const [debouncedSearch] = useDebouncedValue(search, 500);
   const [limit, setLimit] = useState(0);
+  const { deployedAgentTemplate } = useLatestAgentTemplate();
 
   const { data, isFetchingNextPage, fetchNextPage, hasNextPage } =
     useInfiniteQuery<
@@ -337,6 +335,7 @@ function RecentAgents() {
     return data.pages?.flat() || [];
   }, [data]);
 
+  const { formatDateAndTime } = useDateFormatter();
   return (
     <VStack gap="small" fullHeight>
       <PanelBar searchValue={search} onSearch={setSearch} />
@@ -358,22 +357,61 @@ function RecentAgents() {
           />
         )}
         {agents.map((agent) => (
-          <ActionCard
+          <HStack
+            wrap
+            align="center"
+            border
+            padding="small"
             key={agent.id}
-            title={agent.name}
-            subtitle={<TemplateVersion versionId={agent.template_id || ''} />}
-            mainAction={
-              <HStack>
-                <Button
-                  size="small"
-                  color="secondary"
-                  target="_blank"
-                  label={t('RecentAgents.viewInADE')}
-                  href={`/projects/${slug}/agents/${agent.id}`}
-                />
-              </HStack>
-            }
-          />
+            fullWidth
+            justify="spaceBetween"
+          >
+            <HStack width="contained">
+              <VStack gap="small">
+                <HStack gap="small" align="center">
+                  <LettaInvaderIcon />
+                  <Typography>{agent.name}</Typography>
+                  {deployedAgentTemplate?.id !== agent.template_id && (
+                    <Badge
+                      variant="warning"
+                      content={t('RecentAgents.notAtCurrentVersion')}
+                    />
+                  )}
+                </HStack>
+                <HStack wrap>
+                  {(agent.identity_ids || []).length > 0 ? (
+                    <AgentIdentity identityIds={agent.identity_ids || []} />
+                  ) : (
+                    <HStack>
+                      <HStack gap="small">
+                        <MaskIcon />
+                        <Typography align="left" variant="body2">
+                          {t('RecentAgents.noIdentity')}
+                        </Typography>
+                      </HStack>
+                    </HStack>
+                  )}
+                  <HStack gap="small">
+                    <CalendarIcon />
+                    <Typography align="left" variant="body2">
+                      {t('RecentAgents.lastActiveAt', {
+                        date: formatDateAndTime(agent.updated_at || ''),
+                      })}
+                    </Typography>
+                  </HStack>
+                </HStack>
+              </VStack>
+            </HStack>
+            <HStack align="center">
+              <Button
+                size="small"
+                color="secondary"
+                target="_blank"
+                label={t('RecentAgents.viewInADE')}
+                href={`/projects/${slug}/agents/${agent.id}`}
+              />
+            </HStack>
+          </HStack>
         ))}
         {hasNextPage && (
           <Button

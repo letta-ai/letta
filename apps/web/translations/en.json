@@ -21,7 +21,8 @@
     },
     "NotCreatedLinkView": {
       "title": "Let Letta manage your UI",
-      "description": "With Letta Launch, you can deploy agents without writing any code. Letta will manage the UI for you, users can start using your agent with just a link that creates a unique agent instance for them.",
+      "info": "This feature should be used for quick prototyping and testing, for a more resilient way to work with Agents, check out our SDKs.",
+      "description": "With Launch Links, you can deploy agents without writing any code. Letta will manage the UI for you, users can start using your agent with just a link that creates a unique agent instance for them.",
       "cta": "Create a Launch Link",
       "creating": "Creating Launch Link...",
       "error": "There was an error creating the Launch Link, please try again or contact support."
@@ -53,6 +54,9 @@
     "DeploymentInstructions": {
       "title": "Agent Distribution"
     },
+    "AgentIdentity": {
+      "more": "and {count} more"
+    },
     "VersionHistory": {
       "title": "Version History",
       "compare": "Compare",
@@ -65,9 +69,13 @@
       "title": "Recently deployed agents",
       "addAgent": "Deploy agent",
       "viewInADE": "View in ADE",
+      "noIdentity": "No identity",
       "loadMore": "Load more",
+      "lastActiveAt": "Last active at {date}",
       "noAgents": "No agents have been deployed yet",
-      "noResults": "No agents found"
+      "noResults": "No agents found",
+      "atCurrentVersion": "At latest version",
+      "notAtCurrentVersion": "Needs migration"
     },
     "TemplateVersion": {
       "version": "Version {version}"
@@ -110,6 +118,10 @@
     "submit": "Start using Letta"
   },
   "chat": {
+    "AboutAgent": {
+      "trigger": "Info",
+      "content": "This agent was created by {organizationName}. Please contact them for any questions or issues."
+    },
     "sendingMessage": "Sending message...",
     "role": {
       "user": "User"
