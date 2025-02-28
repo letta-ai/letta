@@ -178,7 +178,6 @@ export const AgentType = z.union([
   z.literal('memgpt_agent'),
   z.literal('split_thread_agent'),
   z.literal('offline_memory_agent'),
-  z.literal('chat_only_agent'),
 ]);
 
 export type LLMConfig = z.infer<typeof LLMConfig>;

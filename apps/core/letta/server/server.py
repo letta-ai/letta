@@ -17,7 +17,6 @@ import letta.constants as constants
 import letta.server.utils as server_utils
 import letta.system as system
 from letta.agent import Agent, save_agent
-from letta.chat_only_agent import ChatOnlyAgent
 from letta.config import LettaConfig
 from letta.data_sources.connectors import DataConnector, load_data
 from letta.helpers.datetime_helpers import get_utc_time
@@ -326,8 +325,6 @@ class SyncServer(Server):
                 agent = Agent(agent_state=agent_state, interface=interface, user=actor)
             elif agent_state.agent_type == AgentType.offline_memory_agent:
                 agent = OfflineMemoryAgent(agent_state=agent_state, interface=interface, user=actor)
-            elif agent_state.agent_type == AgentType.chat_only_agent:
-                agent = ChatOnlyAgent(agent_state=agent_state, interface=interface, user=actor)
             else:
                 raise ValueError(f"Invalid agent type {agent_state.agent_type}")
 

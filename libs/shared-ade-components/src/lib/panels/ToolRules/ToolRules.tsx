@@ -979,9 +979,7 @@ function ToolRuleList(props: ToolRuleListProps) {
               );
             }
 
-            return (
-              null
-            );
+            return null;
           })}
         </VStack>
       </VStack>

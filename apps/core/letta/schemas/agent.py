@@ -26,7 +26,6 @@ class AgentType(str, Enum):
     memgpt_agent = "memgpt_agent"
     split_thread_agent = "split_thread_agent"
     offline_memory_agent = "offline_memory_agent"
-    chat_only_agent = "chat_only_agent"
 
 
 class AgentState(OrmMetadataBase, validate_assignment=True):
