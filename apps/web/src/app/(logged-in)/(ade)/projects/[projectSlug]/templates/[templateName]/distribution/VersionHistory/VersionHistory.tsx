@@ -36,7 +36,7 @@ function CompareVersionDialog(props: CompareVersionDialogProps) {
       isOpen={open}
       trigger={trigger}
     >
-      <VStack gap={false}>
+      <VStack overflow="hidden" gap={false}>
         <HStack
           height="header"
           align="center"
@@ -54,7 +54,7 @@ function CompareVersionDialog(props: CompareVersionDialogProps) {
             </HStack>
           </CloseMiniApp>
         </HStack>
-        <VStack padding="small">
+        <VStack overflowY="auto" flex collapseHeight padding="small">
           <CompareTemplateVersions
             leftComparisonVersion="current"
             rightComparisonVersion={version}

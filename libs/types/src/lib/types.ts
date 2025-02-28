@@ -45,3 +45,18 @@ export const stepCostVersionOne = z.object({
 });
 
 export type StepCostVersionOne = z.infer<typeof stepCostVersionOne>;
+
+export const MemoryVariableVersionOne = z.object({
+  version: z.literal('1'),
+  data: z
+    .object({
+      key: z.string(),
+      type: z.string(),
+      label: z.string(),
+    })
+    .array(),
+});
+
+export type MemoryVariableVersionOneType = z.infer<
+  typeof MemoryVariableVersionOne
+>;

@@ -11,10 +11,10 @@ import {
   getUserWithActiveOrganizationIdOrThrow,
 } from '$web/server/auth';
 import { ApplicationServices } from '@letta-cloud/rbac';
-import crypto from 'crypto';
 import { getSharedChatConfigurationIfUserHasAccess } from '$web/server/lib/getSharedChatConfigurationIfUserHasAccess/getSharedChatConfigurationIfUserHasAccess';
 import { getOrganizationLettaServiceAccountId } from '$web/server/lib/getOrganizationLettaServiceAccountId/getOrganizationLettaServiceAccountId';
 import { AgentsService } from '@letta-cloud/letta-agents-api';
+import { createOrReturnSharedChatConfiguration } from '$web/server/lib/createOrReturnSharedChatConfiguration/createOrReturnSharedChatConfiguration';
 
 type GetSharedChatConfigurationRequest = ServerInferRequest<
   typeof contracts.sharedAgentChats.getSharedChatConfiguration
@@ -29,6 +29,8 @@ async function getSharedChatConfiguration(
   const { agentId, projectId } = req.params;
   const { activeOrganizationId, permissions } =
     await getUserWithActiveOrganizationIdOrThrow();
+
+  const { upsert } = req.query;
 
   if (!permissions.has(ApplicationServices.READ_AGENT)) {
     return {
@@ -53,44 +55,38 @@ async function getSharedChatConfiguration(
     };
   }
 
-  const existingConfiguration =
-    await db.query.sharedAgentChatConfigurations.findFirst({
-      where: eq(sharedAgentChatConfigurations.agentId, agentId),
-    });
+  if (!upsert) {
+    const existingConfiguration =
+      await db.query.sharedAgentChatConfigurations.findFirst({
+        where: eq(sharedAgentChatConfigurations.agentId, agentId),
+        columns: {
+          accessLevel: true,
+          agentId: true,
+          chatId: true,
+          launchLinkId: true,
+        },
+      });
 
-  if (existingConfiguration) {
-    return {
-      status: 200,
-      body: {
-        accessLevel: existingConfiguration.accessLevel,
-        agentId: existingConfiguration.agentId,
-        chatId: existingConfiguration.chatId,
-      },
-    };
+    if (!existingConfiguration) {
+      return {
+        status: 404,
+        body: {
+          message: 'Configuration not found',
+        },
+      };
+    }
   }
 
-  // create a unique access url given a random id + timestamp
-  const chatId = `${crypto.randomBytes(16).toString('hex').slice(0, 10)}${Date.now()}`;
-
-  const [newConfiguration] = await db
-    .insert(sharedAgentChatConfigurations)
-    .values({
-      accessLevel: 'organization',
-      agentId,
-      projectId,
-      chatId,
-      organizationId: activeOrganizationId,
-    })
-    .onConflictDoNothing()
-    .returning({
-      accessLevel: sharedAgentChatConfigurations.accessLevel,
-      agentId: sharedAgentChatConfigurations.agentId,
-      chatId: sharedAgentChatConfigurations.chatId,
-    });
+  const newConfiguration = await createOrReturnSharedChatConfiguration({
+    agentId,
+    organizationId: activeOrganizationId,
+    projectId,
+  });
 
   return {
     status: 200,
     body: {
+      isFromLaunchLink: !!newConfiguration.launchLinkId,
       accessLevel: newConfiguration.accessLevel,
       agentId: newConfiguration.agentId,
       chatId: newConfiguration.chatId,
@@ -148,6 +144,7 @@ async function updateSharedChatConfiguration(
     body: {
       accessLevel,
       agentId,
+      isFromLaunchLink: !!existingConfiguration.launchLinkId,
       chatId: existingConfiguration.chatId,
     },
   };
@@ -190,22 +187,31 @@ async function getSharedAgentFromChatId(
     throw new Error('Service account not found');
   }
 
-  const agent = await AgentsService.retrieveAgent(
-    {
-      agentId: configuration.agentId,
-    },
-    {
-      user_id: serviceAccountId,
-    },
-  );
+  try {
+    const agent = await AgentsService.retrieveAgent(
+      {
+        agentId: configuration.agentId,
+      },
+      {
+        user_id: serviceAccountId,
+      },
+    );
 
-  return {
-    status: 200,
-    body: {
-      agentName: agent?.name || '',
-      agentId: configuration.agentId,
-    },
-  };
+    return {
+      status: 200,
+      body: {
+        agentName: agent?.name || '',
+        agentId: configuration.agentId,
+      },
+    };
+  } catch (_error) {
+    return {
+      status: 404,
+      body: {
+        message: 'Agent not found',
+      },
+    };
+  }
 }
 
 export const sharedAgentChatsRoutes = {

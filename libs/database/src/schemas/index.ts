@@ -15,6 +15,7 @@ import { sql, relations } from 'drizzle-orm';
 import type {
   ProviderConfiguration,
   StepCostVersionOne,
+  MemoryVariableVersionOneType,
 } from '@letta-cloud/types';
 import type { ApplicationServices } from '@letta-cloud/rbac';
 import type { UserPresetRolesType } from '@letta-cloud/rbac';
@@ -360,6 +361,8 @@ export const deployedAgentTemplates = pgTable(
       }),
     agentTemplateId: text('agent_template_id').notNull(),
     version: text('version').notNull(),
+    memoryVariables:
+      json('memory_variables').$type<MemoryVariableVersionOneType>(),
     message: text('message'),
     createdAt: timestamp('created_at').notNull().defaultNow(),
     deletedAt: timestamp('deleted_at'),
@@ -1008,6 +1011,10 @@ export const sharedAgentChatConfigurations = pgTable(
       .references(() => organizations.id, { onDelete: 'cascade' })
       .notNull(),
     agentId: text('agent_id').notNull().unique().primaryKey(),
+    launchLinkId: text('launch_link_id').references(
+      () => launchLinkConfigurations.agentTemplateId,
+      { onDelete: 'cascade' },
+    ),
     projectId: text('project_id')
       .notNull()
       .references(() => projects.id, {
@@ -1028,6 +1035,10 @@ export const sharedAgentChatConfigurationsRelations = relations(
     project: one(projects, {
       fields: [sharedAgentChatConfigurations.projectId],
       references: [projects.id],
+    }),
+    launchLink: one(launchLinkConfigurations, {
+      fields: [sharedAgentChatConfigurations.launchLinkId],
+      references: [launchLinkConfigurations.agentTemplateId],
     }),
   }),
 );
@@ -1101,3 +1112,57 @@ export const deployedAgentsMetadataRelations = relations(
     }),
   }),
 );
+
+export const shareChatIdentity = pgTable('share_chat_identity', {
+  identityId: text('identity_id').primaryKey(),
+  organizationId: text('organization_id')
+    .notNull()
+    .references(() => organizations.id, { onDelete: 'cascade' }),
+  projectId: text('project_id')
+    .notNull()
+    .references(() => projects.id, { onDelete: 'cascade' }),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+});
+
+export const shareChatUser = pgTable(
+  'share_chat_user',
+  {
+    userId: text('user_id').references(() => users.id, { onDelete: 'cascade' }),
+    chatId: text('chat_id')
+      .notNull()
+      .references(() => sharedAgentChatConfigurations.chatId, {
+        onDelete: 'cascade',
+      }),
+    deployedAgentId: text('deployed_agent_id')
+      .notNull()
+      .references(() => deployedAgentMetadata.agentId, { onDelete: 'cascade' }),
+    identityId: text('identity_id')
+      .notNull()
+      .references(() => shareChatIdentity.identityId, { onDelete: 'cascade' }),
+    agentTemplateId: text('agent_template_id').references(
+      () => agentTemplates.id,
+      { onDelete: 'cascade' },
+    ),
+    createdAt: timestamp('created_at').notNull().defaultNow(),
+  },
+  (self) => ({
+    pk: primaryKey({
+      columns: [self.userId, self.chatId, self.deployedAgentId],
+    }),
+  }),
+);
+
+export const shareChatUserRelations = relations(shareChatUser, ({ one }) => ({
+  user: one(users, {
+    fields: [shareChatUser.userId],
+    references: [users.id],
+  }),
+  shareChatConfiguration: one(sharedAgentChatConfigurations, {
+    fields: [shareChatUser.chatId],
+    references: [sharedAgentChatConfigurations.agentId],
+  }),
+  deployedAgentMetadata: one(deployedAgentMetadata, {
+    fields: [shareChatUser.deployedAgentId],
+    references: [deployedAgentMetadata.agentId],
+  }),
+}));

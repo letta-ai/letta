@@ -1,5 +1,9 @@
-import { db, sharedAgentChatConfigurations } from '@letta-cloud/database';
-import { eq } from 'drizzle-orm';
+import {
+  db,
+  shareChatUser,
+  sharedAgentChatConfigurations,
+} from '@letta-cloud/database';
+import { and, eq } from 'drizzle-orm';
 
 type DoesUserHaveAccessToSharedAgentOptions = {
   organizationId?: string;
@@ -9,7 +13,7 @@ type DoesUserHaveAccessToSharedAgentOptions = {
 export async function getSharedChatConfigurationIfUserHasAccess(
   options: DoesUserHaveAccessToSharedAgentOptions,
 ) {
-  const { chatId, agentId } = options;
+  const { chatId, agentId, userId } = options;
   const configuration = await db.query.sharedAgentChatConfigurations.findFirst({
     where: chatId
       ? eq(sharedAgentChatConfigurations.chatId, chatId)
@@ -21,6 +25,27 @@ export async function getSharedChatConfigurationIfUserHasAccess(
   }
 
   const { accessLevel } = configuration;
+
+  if (accessLevel === 'restricted') {
+    if (!userId) {
+      return false;
+    }
+
+    const existingUser = await db.query.shareChatUser.findFirst({
+      where: and(
+        chatId
+          ? eq(shareChatUser.chatId, chatId)
+          : eq(shareChatUser.deployedAgentId, agentId || ''),
+        eq(shareChatUser.userId, userId),
+      ),
+    });
+
+    if (!existingUser) {
+      return false;
+    }
+
+    return configuration;
+  }
 
   if (accessLevel === 'everyone') {
     return configuration;

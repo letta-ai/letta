@@ -2,6 +2,7 @@ import type { ServerInferResponses } from '@ts-rest/core';
 import { initContract } from '@ts-rest/core';
 import { z } from 'zod';
 import { AccessLevelEnumSchema } from './sharedAgentChatsContracts';
+import { MemoryVariableVersionOne } from '@letta-cloud/types';
 
 const c = initContract();
 
@@ -54,12 +55,51 @@ const CreateLaunchLinkContract = c.mutation({
   body: z.undefined(),
 });
 
+const GetLaunchLinkMetadataByLaunchIdContract = c.query({
+  method: 'GET',
+  path: '/launch-link-metadata/:launchId',
+  pathParams: z.object({
+    launchId: z.string(),
+  }),
+  responses: {
+    200: z.object({
+      organizationName: z.string(),
+      memoryVariables: MemoryVariableVersionOne.shape.data,
+      agentTemplateId: z.string(),
+      accessLevel: AccessLevelEnumSchema,
+      launchLink: z.string(),
+    }),
+  },
+});
+
+const createShareChatFromLaunchLinkContract = c.mutation({
+  method: 'POST',
+  path: '/launch-link/:agentTemplateId/share-chat',
+  pathParams: z.object({
+    agentTemplateId: z.string(),
+  }),
+  responses: {
+    201: z.object({
+      chatId: z.string(),
+    }),
+  },
+  body: z.object({
+    memoryVariables: z.record(z.string()),
+  }),
+});
+
 export const launchLinkContracts = {
   getLaunchLink: GetLaunchLinkContract,
   updateLaunchLink: UpdateLaunchLinkContract,
   createLaunchLink: CreateLaunchLinkContract,
+  getLaunchLinkMetadataByLaunchId: GetLaunchLinkMetadataByLaunchIdContract,
+  createShareChatFromLaunchLink: createShareChatFromLaunchLinkContract,
 };
 
 export const launchLinkQueryKeys = {
   getLaunchLink: (agentTemplateId: string) => ['launch-link', agentTemplateId],
+  getLaunchLinkMetadataByLaunchId: (launchId: string) => [
+    'launch-link-metadata',
+    launchId,
+  ],
 };

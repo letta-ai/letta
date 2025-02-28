@@ -152,6 +152,8 @@ function CreateNewTemplateVersionDialog(
     [t],
   );
 
+  const { name } = useCurrentAgent();
+
   type VersionAgentFormValues = z.infer<typeof versionAgentFormSchema>;
   const agentState = useCurrentAgent();
 

@@ -12,11 +12,16 @@ export const AccessLevelEnumSchema = z.enum([
 
 export type AccessLevelEnumSchemaType = z.infer<typeof AccessLevelEnumSchema>;
 
-const GetSharedAgentChatConfigurationSchema = z.object({
+export const GetSharedAgentChatConfigurationSchema = z.object({
   accessLevel: AccessLevelEnumSchema,
   agentId: z.string(),
+  isFromLaunchLink: z.boolean(),
   chatId: z.string(),
 });
+
+export type GetSharedAgentChatConfigurationSchemaType = z.infer<
+  typeof GetSharedAgentChatConfigurationSchema
+>;
 
 const AgentChatParams = z.object({
   projectId: z.string(),
@@ -29,7 +34,9 @@ const GetSharedAgentChatConfiguration = c.query({
   path: '/projects/:projectId/agents/:agentId/shared-chat/configuration',
   method: 'GET',
   pathParams: AgentChatParams,
-  query: GenericSearchSchema,
+  query: z.object({
+    upsert: z.boolean().optional(),
+  }),
   responses: {
     200: GetSharedAgentChatConfigurationSchema,
   },

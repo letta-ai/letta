@@ -376,7 +376,7 @@ async function deleteAgent(
     };
   }
 
-  if (agentTemplate) {
+  if (agentTemplate && context.request.source !== 'web') {
     return {
       status: 400,
       body: {
@@ -396,10 +396,11 @@ async function deleteAgent(
   );
 
   try {
-    void db
+    await db
       .delete(deployedAgentMetadata)
       .where(eq(deployedAgentMetadata.agentId, agentId));
   } catch (_e) {
+    console.log(_e);
     //
   }
 

@@ -1,7 +1,11 @@
 import React, { useCallback, useMemo, useState } from 'react';
 import { useTranslations } from '@letta-cloud/translations';
 import { useQueryClient } from '@tanstack/react-query';
-import { webApi, webApiQueryKeys } from '@letta-cloud/web-api-client';
+import {
+  type GetSharedAgentChatConfigurationSchemaType,
+  webApi,
+  webApiQueryKeys,
+} from '@letta-cloud/web-api-client';
 import type {
   AccessLevelEnumSchemaType,
   webApiContracts,
@@ -144,6 +148,63 @@ function ShareAgentPermissionsDropdown(
   );
 }
 
+interface ShareContentProps {
+  schema: GetSharedAgentChatConfigurationSchemaType;
+  onClose: () => void;
+}
+
+function ShareContent(props: ShareContentProps) {
+  const { schema, onClose } = props;
+
+  const { chatId, accessLevel, isFromLaunchLink } = schema;
+
+  const { copyToClipboard } = useCopyToClipboard({
+    textToCopy: getShareChatUrl(chatId || ''),
+  });
+
+  const t = useTranslations('ADE/AgentSimulator');
+
+  if (isFromLaunchLink) {
+    return (
+      <VStack paddingBottom>
+        <Typography color="lighter">
+          {t('ShareAgentDialog.launchLinkDescription')}
+        </Typography>
+      </VStack>
+    );
+  }
+
+  return (
+    <VStack paddingBottom>
+      <ShareAgentPermissionsDropdown defaultValue={accessLevel} />
+      <Typography color="lighter">
+        {t('ShareAgentDialog.description')}
+      </Typography>
+      <HStack justify="spaceBetween">
+        <Button
+          color="primary"
+          preIcon={<LinkIcon />}
+          type="button"
+          size="small"
+          label={t('ShareAgentDialog.copyLink')}
+          onClick={() => {
+            void copyToClipboard();
+          }}
+        />
+        <Button
+          color="tertiary"
+          size="small"
+          type="button"
+          label={t('ShareAgentDialog.close')}
+          onClick={() => {
+            onClose();
+          }}
+        />
+      </HStack>
+    </VStack>
+  );
+}
+
 export function ShareAgentDialog() {
   const { id: agentId } = useCurrentAgent();
   const { projectId } = useADEAppContext();
@@ -156,6 +217,9 @@ export function ShareAgentDialog() {
       projectId,
     }),
     queryData: {
+      query: {
+        upsert: true,
+      },
       params: {
         agentId,
         projectId,
@@ -164,11 +228,6 @@ export function ShareAgentDialog() {
   });
 
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-
-  const { copyToClipboard } = useCopyToClipboard({
-    textToCopy: getShareChatUrl(data?.body.chatId || ''),
-  });
-
   return (
     <Dialog
       isOpen={isDialogOpen}
@@ -183,33 +242,12 @@ export function ShareAgentDialog() {
       }
     >
       {data ? (
-        <VStack paddingBottom>
-          <ShareAgentPermissionsDropdown defaultValue={data.body.accessLevel} />
-          <Typography color="lighter">
-            {t('ShareAgentDialog.description')}
-          </Typography>
-          <HStack justify="spaceBetween">
-            <Button
-              color="primary"
-              preIcon={<LinkIcon />}
-              type="button"
-              size="small"
-              label={t('ShareAgentDialog.copyLink')}
-              onClick={() => {
-                void copyToClipboard();
-              }}
-            />
-            <Button
-              color="tertiary"
-              size="small"
-              type="button"
-              label={t('ShareAgentDialog.close')}
-              onClick={() => {
-                setIsDialogOpen(false);
-              }}
-            />
-          </HStack>
-        </VStack>
+        <ShareContent
+          schema={data.body}
+          onClose={() => {
+            setIsDialogOpen(false);
+          }}
+        />
       ) : (
         <LoadingEmptyStatusComponent
           isLoading

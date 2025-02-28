@@ -290,6 +290,7 @@
       "info": "You can add multiple identities to your agent, these identities will be used to organize your agents and help you identify them."
     },
     "IdentityViewer": {
+      "launchLink": "This identity is managed by a launch link, and cannot be unlinked from this agent. To remove this identity, please delete the agent itself.",
       "tooltip": "Identities are entities that can be used to organize and identify your agents. You can add multiple identities to your agent.",
       "label": {
         "multiple": "Identities",
@@ -595,6 +596,7 @@
   },
   "ADE/AgentSimulator": {
     "ShareAgentDialog": {
+      "launchLinkDescription": "This agent is managed by a launch link, and cannot be shared.",
       "title": "Share agent chat",
       "loading": "Loading share settings",
       "trigger": "Share agent chat",

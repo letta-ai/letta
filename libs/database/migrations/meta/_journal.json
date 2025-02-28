@@ -456,6 +456,13 @@
       "when": 1740617393327,
       "tag": "0064_nervous_strong_guy",
       "breakpoints": true
+    },
+    {
+      "idx": 65,
+      "version": "7",
+      "when": 1740715104390,
+      "tag": "0065_confused_the_stranger",
+      "breakpoints": true
     }
   ]
 }

@@ -27,6 +27,22 @@
       "error": "There was an error creating the Launch Link, please try again or contact support."
     }
   },
+  "pages/launch": {
+    "loading": "Initializing chat...",
+    "EnterMemoryVariablesView": {
+      "heading": "You're almost there",
+      "title": "Please enter the following information:",
+      "label": "Memory variables",
+      "error": "Please fill out all the fields before continuing",
+      "submit": "Start chatting"
+    },
+    "InitialView": {
+      "title": "You've been invited to chat with an agent on Letta",
+      "description": "{organizationName} has invited you to chat with an agent. Click the button below to start chatting.",
+      "cta": "Start chatting",
+      "terms": "By clicking 'Start chatting', you agree to Letta's <terms>Terms of Service</terms> and <privacy>Privacy Policy</privacy>."
+    }
+  },
   "pages/distribution/VersionHistory": {
     "CompareVersionDialog": {
       "title": "Compare versions",

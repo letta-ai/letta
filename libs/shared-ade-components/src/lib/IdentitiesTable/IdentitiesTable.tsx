@@ -431,7 +431,7 @@ function IdentityItemOverlay(props: IdentityItemOverlayProps) {
             <Typography variant="heading6" bold>
               {t('IdentityItemOverlay.advanced')}
             </Typography>
-            <VStack>
+            <VStack paddingBottom>
               <Typography>
                 {t('IdentityItemOverlay.deleteIdentityInfo')}
               </Typography>

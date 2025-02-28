@@ -13,6 +13,7 @@ import * as Sentry from '@sentry/node';
 import { findUniqueAgentTemplateName } from '$web/server';
 import { migrateAgent } from '../migrateAgent/migrateAgent';
 import { copyAgentById } from '$web/server/lib/copyAgentById/copyAgentById';
+import { findMemoryBlockVariables } from '@letta-cloud/generic-utils';
 
 type DeployAgentTemplateRequest = ServerInferRequest<
   typeof sdkContracts.agents.versionAgentTemplate
@@ -120,10 +121,20 @@ export async function versionAgentTemplate(
     };
   }
 
+  const memoryVariables = findMemoryBlockVariables(createdAgent);
+
   await db.insert(deployedAgentTemplates).values({
     id: deployedAgentTemplateId,
     projectId,
     message,
+    memoryVariables: {
+      version: '1',
+      data: memoryVariables.map((variable) => ({
+        key: variable,
+        type: 'string',
+        label: variable,
+      })),
+    },
     organizationId: context.request.organizationId,
     agentTemplateId,
     version,

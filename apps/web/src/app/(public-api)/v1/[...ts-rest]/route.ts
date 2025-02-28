@@ -17,6 +17,7 @@ import { getPermissionForSDKPath } from '$web/server/lib/getPermissionForSDKPath
 import type { MethodType } from '$web/server/lib/getPermissionForSDKPath/getPermissionForSDKPath';
 import { getSharedChatConfigurationIfUserHasAccess } from '$web/server/lib/getSharedChatConfigurationIfUserHasAccess/getSharedChatConfigurationIfUserHasAccess';
 import { getOrganizationLettaServiceAccountId } from '$web/server/lib/getOrganizationLettaServiceAccountId/getOrganizationLettaServiceAccountId';
+import { postDeleteIdentitySideEffect } from '$web/sdk/utils/postDeleteIdentitySideEffect';
 
 const agentUrlRegex = new RegExp('/agents/([A-Za-z0-9-]+)/');
 
@@ -215,6 +216,8 @@ const publicHandler = createNextHandler(sdkContracts, sdkRouter, {
         // @ts-expect-error - this is a middleware
         organizationId: req.organizationId,
       });
+
+      void postDeleteIdentitySideEffect(url.pathname, req.method);
 
       return response;
     }

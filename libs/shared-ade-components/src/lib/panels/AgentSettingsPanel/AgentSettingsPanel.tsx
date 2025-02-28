@@ -28,6 +28,8 @@ import {
   Avatar,
   CloseIcon,
   ExternalLinkIcon,
+  Tooltip,
+  LockClosedIcon,
 } from '@letta-cloud/component-library';
 import {
   useAgentBaseTypeName,
@@ -58,7 +60,11 @@ import { useQueryClient } from '@tanstack/react-query';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { getBrandFromModelName } from '@letta-cloud/generic-utils';
 import { UpdateNameDialog } from '../../shared/UpdateAgentNameDialog/UpdateAgentNameDialog';
-import { useFeatureFlag, webApiQueryKeys } from '@letta-cloud/web-api-client';
+import {
+  useFeatureFlag,
+  webApi,
+  webApiQueryKeys,
+} from '@letta-cloud/web-api-client';
 import { useADEPermissions } from '../../hooks/useADEPermissions/useADEPermissions';
 import { ApplicationServices } from '@letta-cloud/rbac';
 import { useADEAppContext } from '../../AppContext/AppContext';
@@ -830,6 +836,7 @@ function IdentitiesEditorDialog(props: IdentitiesEditorDialogProps) {
 
 function IdentityViewer() {
   const currentAgent = useCurrentAgent();
+
   const { data: initialIdentity } = useIdentitiesServiceRetrieveIdentity(
     {
       identityId: currentAgent?.identity_ids?.[0] || '',
@@ -840,7 +847,31 @@ function IdentityViewer() {
     },
   );
 
+  const { isFromTemplate } = useCurrentAgentMetaData();
+
+  const { id: agentId } = useCurrentAgent();
+  const { projectId } = useADEAppContext();
+
   const t = useTranslations('ADE/AgentSettingsPanel');
+
+  const { data: sharedAgentInfo } =
+    webApi.sharedAgentChats.getSharedChatConfiguration.useQuery({
+      queryKey: webApiQueryKeys.sharedAgentChats.getSharedChatConfiguration({
+        agentId,
+        projectId,
+      }),
+      queryData: {
+        params: {
+          agentId,
+          projectId,
+        },
+      },
+      enabled: isFromTemplate,
+    });
+
+  const isFromLaunchLink = useMemo(() => {
+    return sharedAgentInfo?.body.isFromLaunchLink;
+  }, [sharedAgentInfo]);
 
   const identityValue = useMemo(() => {
     if (!currentAgent) {
@@ -852,6 +883,10 @@ function IdentityViewer() {
       currentAgent?.identity_ids.length === 0
     ) {
       return t('IdentityViewer.status.noIdentities');
+    }
+
+    if (isFromTemplate && !sharedAgentInfo) {
+      return t('IdentityViewer.status.loading');
     }
 
     if (!initialIdentity) {
@@ -866,7 +901,7 @@ function IdentityViewer() {
       name: initialIdentity.name,
       count: currentAgent.identity_ids.length - 1,
     });
-  }, [initialIdentity, currentAgent, t]);
+  }, [initialIdentity, currentAgent, t, sharedAgentInfo, isFromTemplate]);
 
   const identityLabel = useMemo(() => {
     if (currentAgent?.identity_ids?.length === 1) {
@@ -887,10 +922,23 @@ function IdentityViewer() {
         disabled
         fullWidth
       />
-      {!!currentAgent && (
-        <IdentitiesEditorDialog
-          defaultIdentityIds={currentAgent.identity_ids || []}
-        />
+      {isFromLaunchLink ? (
+        <Tooltip asChild content={t('IdentityViewer.launchLink')}>
+          <Button
+            label={t('IdentityViewer.launchLink')}
+            hideLabel
+            color="secondary"
+            disabled
+            _use_rarely_disableTooltip
+            preIcon={<LockClosedIcon />}
+          />
+        </Tooltip>
+      ) : (
+        !!currentAgent && (
+          <IdentitiesEditorDialog
+            defaultIdentityIds={currentAgent.identity_ids || []}
+          />
+        )
       )}
     </HStack>
   );
@@ -939,7 +987,7 @@ export function AgentSettingsPanel() {
       </VStack>
       {isTemplate && <TemplateDescription />}
       <ModelSelector llmConfig={currentAgent.llm_config} />
-      {isIdentitiesEnabled && <IdentityViewer />}
+      {isIdentitiesEnabled && !isTemplate && <IdentityViewer />}
       <SystemPromptEditor />
     </PanelMainContent>
   );
