@@ -24,6 +24,7 @@ import {
   removeCreditsFromOrganization,
 } from '@letta-cloud/server-utils';
 import { getUserOrThrow } from '$web/server/auth';
+import { getOrganizationLettaServiceAccountId } from '$web/server/lib/getOrganizationLettaServiceAccountId/getOrganizationLettaServiceAccountId';
 
 /* Get Organizations */
 type GetOrganizationsResponse = ServerInferResponses<
@@ -594,10 +595,22 @@ async function adminGetOrganizationInferenceUsage(
   const { organizationId } = req.params;
   const { startDate, endDate } = req.query;
 
+  const serviceAccountId =
+    await getOrganizationLettaServiceAccountId(organizationId);
+
+  if (!serviceAccountId) {
+    return {
+      status: 404,
+      body: {
+        message: 'Organization not found',
+      },
+    };
+  }
+
   return {
     status: 200,
     body: await getUsageByModelSummaryAndOrganizationId({
-      organizationId,
+      lettaAgentsId: serviceAccountId,
       startDate,
       endDate,
     }),

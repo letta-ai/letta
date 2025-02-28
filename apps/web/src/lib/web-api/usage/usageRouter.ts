@@ -1,12 +1,12 @@
 import type { ServerInferRequest, ServerInferResponses } from '@ts-rest/core';
 import type { contracts } from '$web/web-api/contracts';
-import { db, inferenceTransactions } from '@letta-cloud/database';
-import { and, eq, gte, lt } from 'drizzle-orm';
+import { db } from '@letta-cloud/database';
 import type { GetUsageByModelItem } from '$web/web-api/contracts';
-import { getUserActiveOrganizationIdOrThrow } from '$web/server/auth';
+import { getUserWithActiveOrganizationIdOrThrow } from '$web/server/auth';
+import { StepsService } from '@letta-cloud/letta-agents-api';
 
 interface GetUsageByModelSummaryAndOrganizationIdOptions {
-  organizationId: string;
+  lettaAgentsId: string;
   startDate: number;
   endDate: number;
 }
@@ -14,16 +14,19 @@ interface GetUsageByModelSummaryAndOrganizationIdOptions {
 export async function getUsageByModelSummaryAndOrganizationId(
   options: GetUsageByModelSummaryAndOrganizationIdOptions,
 ): Promise<GetUsageByModelItem[]> {
-  const { organizationId, startDate, endDate } = options;
+  const { startDate, endDate, lettaAgentsId } = options;
 
   const [response, models] = await Promise.all([
-    db.query.inferenceTransactions.findMany({
-      where: and(
-        eq(inferenceTransactions.organizationId, organizationId),
-        gte(inferenceTransactions.startedAt, new Date(startDate)),
-        lt(inferenceTransactions.startedAt, new Date(endDate)),
-      ),
-    }),
+    StepsService.listSteps(
+      {
+        startDate: new Date(startDate).toISOString(),
+        endDate: new Date(endDate).toISOString(),
+        order: 'desc',
+      },
+      {
+        user_id: lettaAgentsId,
+      },
+    ),
     db.query.inferenceModelsMetadata.findMany({
       limit: 250,
     }),
@@ -42,13 +45,17 @@ export async function getUsageByModelSummaryAndOrganizationId(
 
   const modelUsage = response.reduce(
     (acc, curr) => {
-      if (!acc[curr.providerModel]) {
-        const { name, brand } = modelNameMap[curr.providerModel] || {
-          name: curr.providerModel,
+      if (!curr.model) {
+        return acc;
+      }
+
+      if (!acc[curr.model]) {
+        const { name, brand } = modelNameMap[curr.model] || {
+          name: curr.model,
           brand: '',
         };
-        acc[curr.providerModel] = {
-          modelKey: curr.providerModel,
+        acc[curr.model] = {
+          modelKey: curr.model,
           brand: brand,
           modelName: name,
           totalTokens: 0,
@@ -60,7 +67,7 @@ export async function getUsageByModelSummaryAndOrganizationId(
       let totalTokens = 0;
 
       try {
-        totalTokens = parseInt(curr.totalTokens);
+        totalTokens = curr.total_tokens || 0;
 
         if (isNaN(totalTokens)) {
           totalTokens = 0;
@@ -69,9 +76,9 @@ export async function getUsageByModelSummaryAndOrganizationId(
         totalTokens = 0;
       }
 
-      acc[curr.providerModel].totalTokens += totalTokens;
-      acc[curr.providerModel].totalCost += 0;
-      acc[curr.providerModel].totalRequests += 1;
+      acc[curr.model].totalTokens += totalTokens;
+      acc[curr.model].totalCost += 0;
+      acc[curr.model].totalRequests += 1;
       return acc;
     },
     {} as Record<string, GetUsageByModelItem>,
@@ -91,12 +98,12 @@ async function getUsageByModelSummary(
   request: GetUsageByModelSummaryRequest,
 ): Promise<GetUsageByModelSummaryResponse> {
   const { startDate, endDate } = request.query;
-  const organizationId = await getUserActiveOrganizationIdOrThrow();
+  const user = await getUserWithActiveOrganizationIdOrThrow();
 
   return {
     status: 200,
     body: await getUsageByModelSummaryAndOrganizationId({
-      organizationId,
+      lettaAgentsId: user.lettaAgentsId,
       startDate,
       endDate,
     }),
