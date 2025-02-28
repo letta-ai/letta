@@ -463,6 +463,13 @@
       "when": 1740715104390,
       "tag": "0065_confused_the_stranger",
       "breakpoints": true
+    },
+    {
+      "idx": 66,
+      "version": "7",
+      "when": 1740784737719,
+      "tag": "0066_right_skaar",
+      "breakpoints": true
     }
   ]
 }
