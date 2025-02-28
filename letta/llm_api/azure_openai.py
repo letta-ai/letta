@@ -126,15 +126,3 @@ def azure_openai_chat_completions_request(
         response_json["choices"][0]["message"]["content"] = None
     response = ChatCompletionResponse(**response_json)  # convert to 'dot-dict' style which is the openai python client default
     return response
-
-
-def azure_openai_embeddings_request(
-    resource_name: str, deployment_id: str, api_version: str, api_key: str, data: dict
-) -> EmbeddingResponse:
-    """https://learn.microsoft.com/en-us/azure/ai-services/openai/reference#embeddings"""
-
-    url = f"https://{resource_name}.openai.azure.com/openai/deployments/{deployment_id}/embeddings?api-version={api_version}"
-    headers = {"Content-Type": "application/json", "api-key": f"{api_key}"}
-
-    response_json = make_post_request(url, headers, data)
-    return EmbeddingResponse(**response_json)
