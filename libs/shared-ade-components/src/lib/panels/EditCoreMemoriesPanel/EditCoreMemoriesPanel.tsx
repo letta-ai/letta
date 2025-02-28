@@ -182,6 +182,7 @@ export function EditMemory() {
                   <HStack
                     fullWidth
                     fullHeight
+                    paddingTop="xxsmall"
                     paddingBottom="xxsmall"
                     align="center"
                     justify="end"

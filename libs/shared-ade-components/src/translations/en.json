@@ -308,11 +308,13 @@
     },
     "tags": {
       "label": "Agent Tags",
+      "tooltip": "Tags are used to organize and identify your agents. You can add multiple tags to your agent.",
       "placeholder": "Enter tags...",
       "noOptions": "No existing tags found, you can create a new tag by typing it in and pressing enter"
     },
     "mobileTitle": "{baseName}",
     "SystemPromptEditor": {
+      "trigger": "Edit System Prompt",
       "characterCount": "{count} CHARS",
       "updatedAt": "Last updated on {date}",
       "tooltip": "Configures the behavior of the agent, and placed in the context window",

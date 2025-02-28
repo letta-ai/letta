@@ -99,20 +99,22 @@ function DesktopLayout() {
           minSize={20}
         >
           <VStack gap="small" fullWidth fullHeight>
-            <ADEGroup
-              items={[
-                {
-                  title: t('settings', { baseName }),
-                  id: 'settings',
-                  content: <AgentSettingsPanel />,
-                },
-                {
-                  title: t('advancedSettings'),
-                  id: 'advanced-settings',
-                  content: <AdvancedSettingsPanel />,
-                },
-              ]}
-            />
+            <div className="h-[380px]">
+              <ADEGroup
+                items={[
+                  {
+                    title: t('settings', { baseName }),
+                    id: 'settings',
+                    content: <AgentSettingsPanel />,
+                  },
+                  {
+                    title: t('advancedSettings'),
+                    id: 'advanced-settings',
+                    content: <AdvancedSettingsPanel />,
+                  },
+                ]}
+              />
+            </div>
             <ADEGroup
               items={[
                 {
@@ -175,10 +177,6 @@ function DesktopLayout() {
                   id: 'core-memories',
                   content: <EditMemory />,
                 },
-              ]}
-            />
-            <ADEGroup
-              items={[
                 {
                   title: archivalMemoriesTitle,
                   id: 'archival-memories',

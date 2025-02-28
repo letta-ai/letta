@@ -1,13 +1,14 @@
 import { useTranslations } from '@letta-cloud/translations';
+import { useCurrentAgent, useSyncUpdateCurrentAgent } from '../../hooks';
 import {
-  useCurrentAgent,
-  useCurrentAgentMetaData,
-  useSyncUpdateCurrentAgent,
-} from '../../hooks';
-import {
-  RawCreatableAsyncSelect,
-  Spinner,
+  Dialog,
+  FormField,
+  FormProvider,
+  HStack,
+  TextArea,
   tryParseSliderNumber,
+  Typography,
+  useForm,
 } from '@letta-cloud/component-library';
 import type { OptionType } from '@letta-cloud/component-library';
 
@@ -21,6 +22,7 @@ import {
   PanelMainContent,
   RawInput,
   RawSelect,
+  Button,
   RawSlider,
   VStack,
 } from '@letta-cloud/component-library';
@@ -32,9 +34,12 @@ import {
   useModelsServiceListEmbeddingModels,
   useModelsServiceListModels,
 } from '@letta-cloud/letta-agents-api';
-import { useDebouncedCallback, useDebouncedValue } from '@mantine/hooks';
+import { useDebouncedValue } from '@mantine/hooks';
 import { useQueryClient } from '@tanstack/react-query';
-import { webApiQueryKeys } from '@letta-cloud/web-api-client';
+import { z } from 'zod';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { useADEPermissions } from '../../hooks/useADEPermissions/useADEPermissions';
+import { ApplicationServices } from '@letta-cloud/rbac';
 
 interface EmbeddingConfig {
   embeddingConfig?: AgentState['embedding_config'];
@@ -130,82 +135,6 @@ export function EmbeddingSelector(props: EmbeddingConfig) {
         options={formattedModelsList}
       />
     </>
-  );
-}
-
-function AgentTags() {
-  const { id: agentId, tags: currentTags } = useCurrentAgent();
-
-  const t = useTranslations('ADE/AgentSettingsPanel');
-
-  const tags = useMemo(() => {
-    return (currentTags || []).map((tag) => ({
-      label: tag,
-      value: tag,
-    }));
-  }, [currentTags]);
-
-  const { mutate, isPending } = useAgentsServiceModifyAgent();
-
-  const debouncedMutation = useDebouncedCallback(mutate, 500);
-
-  const queryClient = useQueryClient();
-
-  const handleUpdate = useCallback(
-    async (tags: string[]) => {
-      void queryClient.invalidateQueries({
-        queryKey: webApiQueryKeys.agentTemplates.listAgentTemplates,
-        exact: false,
-      });
-
-      queryClient.setQueriesData<AgentState | undefined>(
-        {
-          queryKey: UseAgentsServiceRetrieveAgentKeyFn({
-            agentId,
-          }),
-        },
-        (oldData) => {
-          if (!oldData) {
-            return oldData;
-          }
-
-          debouncedMutation({
-            agentId,
-            requestBody: {
-              tags,
-            },
-          });
-
-          return {
-            ...oldData,
-            tags,
-          };
-        },
-      );
-    },
-    [debouncedMutation, agentId, queryClient],
-  );
-
-  return (
-    <RawCreatableAsyncSelect
-      fullWidth
-      rightOfLabelContent={isPending ? <Spinner size="xsmall" /> : null}
-      label={t('tags.label')}
-      placeholder={t('tags.placeholder')}
-      isMulti
-      value={tags}
-      noOptionsMessage={() => t('tags.noOptions')}
-      loadOptions={async () => {
-        return [];
-      }}
-      onSelect={(value) => {
-        if (!isMultiValue(value)) {
-          return;
-        }
-
-        void handleUpdate(value.map((v) => v.value || '').filter((v) => !!v));
-      }}
-    />
   );
 }
 
@@ -342,8 +271,160 @@ function ContextWindowSlider(props: ContextWindowSliderProps) {
   );
 }
 
+const systemPromptEditorForm = z.object({
+  system: z.string(),
+});
+
+type SystemPromptEditorFormType = z.infer<typeof systemPromptEditorForm>;
+
+interface SystemPromptEditorDialogProps {
+  isExpanded: boolean;
+  setIsExpanded: (value: boolean) => void;
+  system: string;
+}
+
+function SystemPromptEditorDialog(props: SystemPromptEditorDialogProps) {
+  const { isExpanded, setIsExpanded, system } = props;
+  const { mutate, isPending, isError } = useAgentsServiceModifyAgent();
+  const queryClient = useQueryClient();
+  const currentAgent = useCurrentAgent();
+  const t = useTranslations('ADE/AgentSettingsPanel');
+  const form = useForm<SystemPromptEditorFormType>({
+    resolver: zodResolver(systemPromptEditorForm),
+    defaultValues: {
+      system,
+    },
+  });
+
+  const [canUpdateAgent] = useADEPermissions(ApplicationServices.UPDATE_AGENT);
+
+  const handleSubmit = useCallback(
+    (data: SystemPromptEditorFormType) => {
+      mutate(
+        {
+          agentId: currentAgent.id,
+          requestBody: {
+            system: data.system,
+          },
+        },
+        {
+          onSuccess: (_r) => {
+            queryClient.setQueriesData<AgentState | undefined>(
+              {
+                queryKey: UseAgentsServiceRetrieveAgentKeyFn({
+                  agentId: currentAgent.id,
+                }),
+              },
+              (oldData) => {
+                if (!oldData) {
+                  return oldData;
+                }
+
+                return {
+                  ...oldData,
+                  system: data.system,
+                };
+              },
+            );
+            setIsExpanded(false);
+          },
+        },
+      );
+    },
+    [currentAgent.id, mutate, queryClient, setIsExpanded],
+  );
+
+  return (
+    <FormProvider {...form}>
+      <Dialog
+        size="full"
+        isOpen={isExpanded}
+        isConfirmBusy={isPending}
+        confirmText={t('SystemPromptEditor.dialog.save')}
+        onSubmit={form.handleSubmit(handleSubmit)}
+        onOpenChange={setIsExpanded}
+        hideFooter={!canUpdateAgent}
+        errorMessage={isError ? t('SystemPromptEditor.error') : ''}
+        title={t('SystemPromptEditor.dialog.title')}
+      >
+        <VStack collapseHeight flex gap="form">
+          <FormField
+            render={({ field }) => {
+              return (
+                <VStack fullHeight>
+                  <HStack gap="xlarge" align="center" justify="spaceBetween">
+                    <div>
+                      <Alert
+                        title={t('SystemPromptEditor.dialog.info')}
+                        variant="info"
+                      />
+                    </div>
+                    <Typography
+                      noWrap
+                      font="mono"
+                      color="muted"
+                      variant="body2"
+                    >
+                      {t('SystemPromptEditor.dialog.characterCount', {
+                        count: field.value.length,
+                      })}
+                    </Typography>
+                  </HStack>
+                  <TextArea
+                    fullWidth
+                    flex
+                    fullHeight
+                    disabled={!canUpdateAgent}
+                    autosize={false}
+                    hideLabel
+                    label={t('SystemPromptEditor.label')}
+                    onChange={(e) => {
+                      field.onChange(e.target.value);
+                    }}
+                    value={field.value}
+                  />
+                </VStack>
+              );
+            }}
+            name="system"
+          />
+        </VStack>
+      </Dialog>
+    </FormProvider>
+  );
+}
+
+function SystemPromptEditor() {
+  const t = useTranslations('ADE/AgentSettingsPanel');
+  const [isExpanded, setIsExpanded] = useState(false);
+
+  const currentAgent = useCurrentAgent();
+
+  const [canUpdateAgent] = useADEPermissions(ApplicationServices.UPDATE_AGENT);
+
+  return (
+    <>
+      {isExpanded && (
+        <SystemPromptEditorDialog
+          system={currentAgent.system || ''}
+          isExpanded={isExpanded}
+          setIsExpanded={setIsExpanded}
+        />
+      )}
+      <Button
+        disabled={!canUpdateAgent}
+        fullWidth
+        onClick={() => {
+          setIsExpanded(true);
+        }}
+        color="secondary"
+        label={t('SystemPromptEditor.trigger')}
+      />
+    </>
+  );
+}
+
 export function AdvancedSettingsPanel() {
-  const { isTemplate } = useCurrentAgentMetaData();
   const currentAgent = useCurrentAgent();
   const { data: modelsList } = useModelsServiceListModels();
   const t = useTranslations('ADE/AdvancedSettings');
@@ -371,7 +452,6 @@ export function AdvancedSettingsPanel() {
   return (
     <PanelMainContent>
       <VStack fullWidth paddingTop="small" gap="form" justify="start">
-        {!isTemplate && <AgentTags />}
         <TemperatureSlider
           defaultTemperature={currentAgent.llm_config.temperature || 1}
         />
@@ -383,6 +463,7 @@ export function AdvancedSettingsPanel() {
             }
           />
         )}
+        <SystemPromptEditor />
         <EmbeddingSelector embeddingConfig={currentAgent.embedding_config} />
         <RawInput
           fullWidth

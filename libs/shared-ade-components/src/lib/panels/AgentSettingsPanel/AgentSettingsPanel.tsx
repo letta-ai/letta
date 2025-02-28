@@ -17,10 +17,6 @@ import {
   RawTextArea,
   Typography,
   VStack,
-  useForm,
-  FormProvider,
-  FormField,
-  TextArea,
   Spinner,
   GroupIcon,
   RawAsyncSelect,
@@ -30,6 +26,7 @@ import {
   ExternalLinkIcon,
   Tooltip,
   LockClosedIcon,
+  RawCreatableAsyncSelect,
 } from '@letta-cloud/component-library';
 import {
   useAgentBaseTypeName,
@@ -37,7 +34,6 @@ import {
   useCurrentAgentMetaData,
   useSyncUpdateCurrentAgent,
 } from '../../hooks';
-import { z } from 'zod';
 import {
   type AgentState,
   IdentitiesService,
@@ -57,8 +53,6 @@ import {
 } from '@letta-cloud/letta-agents-api';
 import { ExtendedLLMSchema } from '@letta-cloud/letta-agents-api';
 import { useQueryClient } from '@tanstack/react-query';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { getBrandFromModelName } from '@letta-cloud/generic-utils';
 import { UpdateNameDialog } from '../../shared/UpdateAgentNameDialog/UpdateAgentNameDialog';
 import {
   useFeatureFlag,
@@ -69,6 +63,7 @@ import { useADEPermissions } from '../../hooks/useADEPermissions/useADEPermissio
 import { ApplicationServices } from '@letta-cloud/rbac';
 import { useADEAppContext } from '../../AppContext/AppContext';
 import { useIdentityTypeToTranslationMap } from '../../IdentitiesTable/hooks/useIdentityTypeToTranslationMap';
+import { getBrandFromModelName } from '@letta-cloud/generic-utils';
 
 interface SelectedModelType {
   icon: React.ReactNode;
@@ -254,226 +249,6 @@ function ModelSelector(props: ModelSelectorProps) {
         label={t('modelInput.label')}
         options={groupedModelsList}
       />
-    </>
-  );
-}
-
-const systemPromptEditorForm = z.object({
-  system: z.string(),
-});
-
-type SystemPromptEditorFormType = z.infer<typeof systemPromptEditorForm>;
-
-interface SystemPromptEditorDialogProps {
-  isExpanded: boolean;
-  setIsExpanded: (value: boolean) => void;
-  system: string;
-}
-
-function SystemPromptEditorDialog(props: SystemPromptEditorDialogProps) {
-  const { isExpanded, setIsExpanded, system } = props;
-  const { mutate, isPending, isError } = useAgentsServiceModifyAgent();
-  const queryClient = useQueryClient();
-  const currentAgent = useCurrentAgent();
-  const t = useTranslations('ADE/AgentSettingsPanel');
-  const form = useForm<SystemPromptEditorFormType>({
-    resolver: zodResolver(systemPromptEditorForm),
-    defaultValues: {
-      system,
-    },
-  });
-
-  const [canUpdateAgent] = useADEPermissions(ApplicationServices.UPDATE_AGENT);
-
-  const handleSubmit = useCallback(
-    (data: SystemPromptEditorFormType) => {
-      mutate(
-        {
-          agentId: currentAgent.id,
-          requestBody: {
-            system: data.system,
-          },
-        },
-        {
-          onSuccess: (_r) => {
-            queryClient.setQueriesData<AgentState | undefined>(
-              {
-                queryKey: UseAgentsServiceRetrieveAgentKeyFn({
-                  agentId: currentAgent.id,
-                }),
-              },
-              (oldData) => {
-                if (!oldData) {
-                  return oldData;
-                }
-
-                return {
-                  ...oldData,
-                  system: data.system,
-                };
-              },
-            );
-            setIsExpanded(false);
-          },
-        },
-      );
-    },
-    [currentAgent.id, mutate, queryClient, setIsExpanded],
-  );
-
-  return (
-    <FormProvider {...form}>
-      <Dialog
-        size="full"
-        isOpen={isExpanded}
-        isConfirmBusy={isPending}
-        confirmText={t('SystemPromptEditor.dialog.save')}
-        onSubmit={form.handleSubmit(handleSubmit)}
-        onOpenChange={setIsExpanded}
-        hideFooter={!canUpdateAgent}
-        errorMessage={isError ? t('SystemPromptEditor.error') : ''}
-        title={t('SystemPromptEditor.dialog.title')}
-      >
-        <VStack collapseHeight flex gap="form">
-          <FormField
-            render={({ field }) => {
-              return (
-                <VStack fullHeight>
-                  <HStack gap="xlarge" align="center" justify="spaceBetween">
-                    <div>
-                      <Alert
-                        title={t('SystemPromptEditor.dialog.info')}
-                        variant="info"
-                      />
-                    </div>
-                    <Typography
-                      noWrap
-                      font="mono"
-                      color="muted"
-                      variant="body2"
-                    >
-                      {t('SystemPromptEditor.dialog.characterCount', {
-                        count: field.value.length,
-                      })}
-                    </Typography>
-                  </HStack>
-                  <TextArea
-                    fullWidth
-                    flex
-                    fullHeight
-                    disabled={!canUpdateAgent}
-                    autosize={false}
-                    hideLabel
-                    label={t('SystemPromptEditor.label')}
-                    onChange={(e) => {
-                      field.onChange(e.target.value);
-                    }}
-                    value={field.value}
-                  />
-                </VStack>
-              );
-            }}
-            name="system"
-          />
-        </VStack>
-      </Dialog>
-    </FormProvider>
-  );
-}
-
-function SystemPromptEditor() {
-  const t = useTranslations('ADE/AgentSettingsPanel');
-  const [isExpanded, setIsExpanded] = useState(false);
-
-  const currentAgent = useCurrentAgent();
-
-  const { mutate } = useAgentsServiceModifyAgent();
-  const queryClient = useQueryClient();
-
-  const debouncedMutation = useDebouncedCallback(mutate, 500);
-  const [localValue, setLocalValue] = useState(currentAgent.system || '');
-
-  const handleChange = useCallback(
-    (value: string) => {
-      setLocalValue(value);
-
-      queryClient.setQueriesData<AgentState | undefined>(
-        {
-          queryKey: UseAgentsServiceRetrieveAgentKeyFn({
-            agentId: currentAgent.id,
-          }),
-        },
-        (oldData) => {
-          if (!oldData) {
-            return oldData;
-          }
-
-          return {
-            ...oldData,
-            system: value,
-          };
-        },
-      );
-
-      debouncedMutation({
-        agentId: currentAgent.id,
-        requestBody: {
-          system: value,
-        },
-      });
-    },
-    [currentAgent.id, debouncedMutation, queryClient],
-  );
-
-  useEffect(() => {
-    if (currentAgent.system !== localValue) {
-      setLocalValue(currentAgent.system || '');
-    }
-  }, [localValue, currentAgent.system]);
-
-  const [canUpdateAgent] = useADEPermissions(ApplicationServices.UPDATE_AGENT);
-
-  return (
-    <>
-      {isExpanded && (
-        <SystemPromptEditorDialog
-          system={currentAgent.system || ''}
-          isExpanded={isExpanded}
-          setIsExpanded={setIsExpanded}
-        />
-      )}
-      <VStack fullHeight gap="small">
-        <RawTextArea
-          fullWidth
-          key="system"
-          variant="secondary"
-          disabled={!canUpdateAgent}
-          infoTooltip={{
-            text: t('SystemPromptEditor.tooltip'),
-          }}
-          rightOfLabelContent={
-            <Typography variant="body2" color="muted">
-              {t('SystemPromptEditor.characterCount', {
-                count: (currentAgent?.system || '').length,
-              })}
-            </Typography>
-          }
-          fullHeight
-          flex
-          autosize={false}
-          label={t('SystemPromptEditor.label')}
-          onChange={(e) => {
-            handleChange(e.target.value);
-          }}
-          value={localValue}
-          expandable={{
-            expandText: t('SystemPromptEditor.expand'),
-            onExpand: () => {
-              setIsExpanded(true);
-            },
-          }}
-        />
-      </VStack>
     </>
   );
 }
@@ -944,6 +719,85 @@ function IdentityViewer() {
   );
 }
 
+function AgentTags() {
+  const { id: agentId, tags: currentTags } = useCurrentAgent();
+
+  const t = useTranslations('ADE/AgentSettingsPanel');
+
+  const tags = useMemo(() => {
+    return (currentTags || []).map((tag) => ({
+      label: tag,
+      value: tag,
+    }));
+  }, [currentTags]);
+
+  const { mutate, isPending } = useAgentsServiceModifyAgent();
+
+  const debouncedMutation = useDebouncedCallback(mutate, 500);
+
+  const queryClient = useQueryClient();
+
+  const handleUpdate = useCallback(
+    async (tags: string[]) => {
+      void queryClient.invalidateQueries({
+        queryKey: webApiQueryKeys.agentTemplates.listAgentTemplates,
+        exact: false,
+      });
+
+      queryClient.setQueriesData<AgentState | undefined>(
+        {
+          queryKey: UseAgentsServiceRetrieveAgentKeyFn({
+            agentId,
+          }),
+        },
+        (oldData) => {
+          if (!oldData) {
+            return oldData;
+          }
+
+          debouncedMutation({
+            agentId,
+            requestBody: {
+              tags,
+            },
+          });
+
+          return {
+            ...oldData,
+            tags,
+          };
+        },
+      );
+    },
+    [debouncedMutation, agentId, queryClient],
+  );
+
+  return (
+    <RawCreatableAsyncSelect
+      fullWidth
+      rightOfLabelContent={isPending ? <Spinner size="xsmall" /> : null}
+      label={t('tags.label')}
+      placeholder={t('tags.placeholder')}
+      isMulti
+      value={tags}
+      infoTooltip={{
+        text: t('tags.tooltip'),
+      }}
+      noOptionsMessage={() => t('tags.noOptions')}
+      loadOptions={async () => {
+        return [];
+      }}
+      onSelect={(value) => {
+        if (!isMultiValue(value)) {
+          return;
+        }
+
+        void handleUpdate(value.map((v) => v.value || '').filter((v) => !!v));
+      }}
+    />
+  );
+}
+
 export function AgentSettingsPanel() {
   const currentAgent = useCurrentAgent();
   const { isTemplate } = useCurrentAgentMetaData();
@@ -985,10 +839,10 @@ export function AgentSettingsPanel() {
         </HStack>
         <AgentIdentifierToCopy />
       </VStack>
-      {isTemplate && <TemplateDescription />}
-      <ModelSelector llmConfig={currentAgent.llm_config} />
       {isIdentitiesEnabled && !isTemplate && <IdentityViewer />}
-      <SystemPromptEditor />
+      {isTemplate && <TemplateDescription />}
+      {!isTemplate && <AgentTags />}
+      <ModelSelector llmConfig={currentAgent.llm_config} />
     </PanelMainContent>
   );
 }
