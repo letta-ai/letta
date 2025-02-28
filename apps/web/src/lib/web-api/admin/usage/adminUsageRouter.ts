@@ -2,7 +2,7 @@ import type { ServerInferRequest, ServerInferResponses } from '@ts-rest/core';
 import type { contracts } from '$web/web-api/contracts';
 import {
   db,
-  inferenceTransactions,
+  organizationCreditTransactions,
   organizations,
 } from '@letta-cloud/database';
 import { and, gte, inArray, lt, sql } from 'drizzle-orm';
@@ -29,17 +29,17 @@ async function getUsageLeaderboard(
 
   const usageAggregation = await db
     .select({
-      organizationId: inferenceTransactions.organizationId,
-      count: sql<number>`cast(count(${inferenceTransactions.id}) as int)`,
+      organizationId: organizationCreditTransactions.organizationId,
+      count: sql<number>`cast(count(${organizationCreditTransactions.id}) as int)`,
     })
-    .from(inferenceTransactions)
+    .from(organizationCreditTransactions)
     .where(
       and(
-        gte(inferenceTransactions.startedAt, new Date(startDate)),
-        lt(inferenceTransactions.startedAt, new Date(endDate)),
+        gte(organizationCreditTransactions.createdAt, new Date(startDate)),
+        lt(organizationCreditTransactions.createdAt, new Date(endDate)),
       ),
     )
-    .groupBy(inferenceTransactions.organizationId)
+    .groupBy(organizationCreditTransactions.organizationId)
     .orderBy(sql`count desc`)
     .offset(offset)
     .limit(limit + 1);
