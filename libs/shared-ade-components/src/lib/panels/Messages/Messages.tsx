@@ -27,7 +27,6 @@ import {
   InnerMonologueIcon,
 } from '@letta-cloud/component-library';
 import type { AgentMessage } from '@letta-cloud/letta-agents-api';
-import { SystemAlertSchema } from '@letta-cloud/letta-agents-api';
 import { SendMessageFunctionCallSchema } from '@letta-cloud/letta-agents-api';
 import {
   type ListMessagesResponse,
@@ -292,7 +291,31 @@ export function Messages(props: MessagesProps) {
       agentMessage: AgentMessage,
       mode: MessagesDisplayMode,
       allMessages: AgentMessage[],
-    ): AgentSimulatorMessageType | null {
+    ): AgentSimulatorMessageType | null | undefined {
+      if (mode === 'debug') {
+        return {
+          id: `${agentMessage.id}-${agentMessage.message_type}`,
+          content: (
+            <MessageWrapper
+              type="code"
+              header={{
+                title: agentMessage.message_type,
+              }}
+            >
+              <Code
+                fontSize="small"
+                variant="minimal"
+                showLineNumbers={false}
+                code={JSON.stringify(agentMessage, null, 2)}
+                language="javascript"
+              ></Code>
+            </MessageWrapper>
+          ),
+          timestamp: new Date(agentMessage.date).toISOString(),
+          name: agentMessage.message_type === 'user_message' ? 'User' : 'Agent',
+        };
+      }
+
       switch (agentMessage.message_type) {
         case 'tool_return_message':
           if (mode === 'simple') {
@@ -559,31 +582,6 @@ export function Messages(props: MessagesProps) {
             timestamp: new Date(agentMessage.date).toISOString(),
             name: 'User',
           };
-        }
-
-        case 'system_message': {
-          if (mode === 'simple') {
-            return null;
-          }
-
-          try {
-            const tryParseResp = SystemAlertSchema.safeParse(
-              JSON.parse(agentMessage.content),
-            );
-
-            if (tryParseResp.success) {
-              return {
-                id: `${agentMessage.id}-${agentMessage.message_type}`,
-                content: <Typography>{tryParseResp.data.message}</Typography>,
-                timestamp: new Date(agentMessage.date).toISOString(),
-                name: 'System',
-              };
-            }
-          } catch (_e) {
-            return null;
-          }
-
-          return null;
         }
       }
     },
