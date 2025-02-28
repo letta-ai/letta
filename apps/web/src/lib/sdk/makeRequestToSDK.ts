@@ -1,14 +1,9 @@
 import { EventSource } from 'extended-eventsource';
 import { environment } from '@letta-cloud/environmental-variables';
 import axios, { isAxiosError } from 'axios';
-import type {
-  LettaResponse,
-  MessageCreate,
-} from '@letta-cloud/letta-agents-api';
+import type { MessageCreate } from '@letta-cloud/letta-agents-api';
 import { RESTRICTED_ROUTE_BASE_PATHS } from '@letta-cloud/letta-agents-api';
-import { createInferenceTransaction } from '$web/server/inferenceTransactions/inferenceTransactions';
 import * as Sentry from '@sentry/nextjs';
-import { z } from 'zod';
 import { handleMessageRateLimiting } from '$web/server';
 
 interface RequestOptions {
@@ -24,58 +19,12 @@ interface RequestOptions {
   organizationId: string;
 }
 
-const usageDetails = z
-  .object({
-    completion_tokens: z.number().optional(),
-    prompt_tokens: z.number().optional(),
-    total_tokens: z.number().optional(),
-    step_count: z.number().optional(),
-    message_type: z.literal('usage_statistics'),
-  })
-  .optional();
-
-interface OnCompletionOptions {
-  usageDetails: LettaResponse['usage'];
-}
-
 async function handleEventStreamRequest(options: RequestOptions) {
-  const {
-    pathname,
-    source,
-    method,
-    signal,
-    body,
-    lettaAgentsUserId,
-    organizationId,
-  } = options;
+  const { pathname, method, signal, body, lettaAgentsUserId } = options;
   const responseStream = new TransformStream();
   const writer = responseStream.writable.getWriter();
 
-  const startTime = new Date();
-  let referenceId = '';
   let closed = false;
-
-  async function recordUsageDetails(opts: OnCompletionOptions) {
-    const { usageDetails } = opts;
-
-    if (isCreateMessageRequest(options)) {
-      const agentId = pathname.split('/')[3];
-
-      await createInferenceTransaction({
-        agentId,
-        startedAt: startTime,
-        source,
-        endedAt: new Date(),
-        organizationId,
-        referenceId,
-        outputTokens: usageDetails?.completion_tokens || 0,
-        inputTokens: usageDetails?.prompt_tokens || 0,
-        stepCount: usageDetails?.step_count || 0,
-        totalTokens: usageDetails?.total_tokens || 0,
-        path: pathname,
-      });
-    }
-  }
 
   signal.onabort = async () => {
     if (closed) {
@@ -115,20 +64,6 @@ async function handleEventStreamRequest(options: RequestOptions) {
 
         if (e.data.includes('DONE_STEP')) {
           return;
-        }
-
-        try {
-          const message = JSON.parse(e.data);
-
-          if (usageDetails.safeParse(message).success) {
-            void recordUsageDetails({ usageDetails: message });
-          }
-
-          if (Object.prototype.hasOwnProperty.call(message, 'id')) {
-            referenceId = message.id;
-          }
-        } catch (_e) {
-          // do nothing
         }
 
         if (closed) {
@@ -253,7 +188,6 @@ export async function makeRequestToSDK(
     headers,
     method,
     body,
-    source,
     lettaAgentsUserId,
     organizationId,
   } = options;
@@ -343,8 +277,6 @@ export async function makeRequestToSDK(
 
   const queryParam = new URLSearchParams(query);
 
-  const startTime = new Date();
-
   try {
     const response = await axios({
       method: method,
@@ -365,30 +297,6 @@ export async function makeRequestToSDK(
 
     let data = response.data;
 
-    if (isCreateMessageRequest(options)) {
-      const agentId = pathname.split('/')[3];
-      try {
-        if (!data.usage) {
-          Sentry.captureException('Usage details not captured', data);
-        } else {
-          await createInferenceTransaction({
-            agentId,
-            startedAt: startTime,
-            endedAt: new Date(),
-            source,
-            organizationId,
-            referenceId: '',
-            outputTokens: data.usage.completion_tokens,
-            inputTokens: data.usage.prompt_tokens,
-            stepCount: data.usage.step_count,
-            totalTokens: data.usage.total_tokens,
-            path: pathname,
-          });
-        }
-      } catch (e) {
-        Sentry.captureException(e);
-      }
-    }
     if (typeof data !== 'string') {
       data = JSON.stringify(data);
     }
