@@ -91,8 +91,6 @@ def derive_system_message(agent_type: AgentType, system: Optional[str] = None):
             system = gpt_system.get_system_text("memgpt_chat")
         elif agent_type == AgentType.offline_memory_agent:
             system = gpt_system.get_system_text("memgpt_offline_memory")
-        elif agent_type == AgentType.chat_only_agent:
-            system = gpt_system.get_system_text("memgpt_convo_only")
         else:
             raise ValueError(f"Invalid agent type: {agent_type}")
 
