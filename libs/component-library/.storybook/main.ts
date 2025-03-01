@@ -27,6 +27,7 @@ const config: StorybookConfig = {
 
     nextConfig.resolve.alias = {
       ...nextConfig.resolve.alias,
+      'next/image': path.resolve(__dirname, '..', 'src', 'stubs', 'Image.tsx'),
       'next/link': path.resolve(__dirname, '..', 'src', 'stubs', 'Link.tsx'),
     };
 

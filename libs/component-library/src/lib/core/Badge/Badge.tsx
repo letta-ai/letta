@@ -13,6 +13,9 @@ const badgeVariants = cva(
         default: 'text-xs  h-[18px] max-h-[16px]',
         small: 'text-[0.625rem]  h-[16px] max-h-[16px] font-semibold',
       },
+      border: {
+        true: 'border',
+      },
       variant: {
         default: 'bg-background-grey2 text-background-grey2-content',
         warning: 'bg-background-warning text-background-warning-content',
@@ -33,18 +36,22 @@ const badgeVariants = cva(
 );
 
 interface BadgeProps extends VariantProps<typeof badgeVariants> {
-  content: string;
+  content: React.ReactNode;
   preIcon?: React.ReactNode;
   className?: string;
   uppercase?: boolean;
 }
 
 export function Badge(props: BadgeProps) {
-  const { size, className, preIcon, variant, uppercase, content } = props;
+  const { size, className, border, preIcon, variant, uppercase, content } =
+    props;
 
   return (
     <HStack
-      className={cn(badgeVariants({ size, uppercase, variant }), className)}
+      className={cn(
+        badgeVariants({ size, border, uppercase, variant }),
+        className,
+      )}
       gap="small"
     >
       {preIcon && <Slot className="w-3 h-3">{preIcon}</Slot>}

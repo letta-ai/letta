@@ -15,6 +15,7 @@ const iconWrapperVariants = cva('inline-flex items-center justify-center', {
       default: 'text-content',
       muted: 'text-muted',
       success: 'text-success',
+      brand: 'text-brand',
       violet: 'text-violet',
     },
     size: {

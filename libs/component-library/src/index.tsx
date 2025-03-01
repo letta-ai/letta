@@ -174,3 +174,9 @@ export { en as componentTranslations };
 export * from './lib/core/RadioGroup/RadioGroup';
 
 export * from './lib/core/SideOverlay/SideOverlay';
+
+export * from './lib/onboarding/OnboardingPrimaryDialog/OnboardingPrimaryDialog';
+
+export * from './lib/onboarding/OnboardingCheckbox/OnboardingCheckbox';
+
+export * from './lib/onboarding/OnboardingRewardElement/OnboardingRewardElement';

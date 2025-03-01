@@ -16,7 +16,7 @@
     "category": {
       "type": "string",
       "description": "The category of the component",
-      "enum": ["core", "reusable", "ade", "framing", "marketing"],
+      "enum": ["core", "reusable", "ade", "framing", "marketing", "onboarding"],
       "default": "core",
       "x-prompt": "What is the category of your component?"
     }
