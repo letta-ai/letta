@@ -42,7 +42,7 @@ class ToolManager:
         tool = self.get_tool_by_name(tool_name=pydantic_tool.name, actor=actor)
         if tool:
             # Put to dict and remove fields that should not be reset
-            update_data = pydantic_tool.model_dump(to_orm=True, exclude_unset=True, exclude_none=True)
+            update_data = pydantic_tool.model_dump(exclude_unset=True, exclude_none=True)
 
             # If there's anything to update
             if update_data:

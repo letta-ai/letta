@@ -190,6 +190,7 @@ def run_tool_from_source(
             tool_args=request.args,
             tool_env_vars=request.env_vars,
             tool_name=request.name,
+            tool_args_json_schema=request.args_json_schema,
             actor=actor,
         )
     except LettaToolCreateError as e:
