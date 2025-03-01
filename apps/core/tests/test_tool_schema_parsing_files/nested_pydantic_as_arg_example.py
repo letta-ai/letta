@@ -25,7 +25,18 @@ class Steps(BaseModel):
     )
 
 
-def create_task_plan(steps: Steps) -> str:
+class ArgsSchema(BaseModel):
+    steps: Steps = Field(
+        ...,
+        description="A list of steps to add to the task plan.",
+    )
+    completed: int = Field(
+        ...,
+        description="The number of steps to add as completed to the task plan.",
+    )
+
+
+def create_task_plan(steps: Steps, completed: int) -> str:
     """
     Creates a task plan for the current task.
     It takes in a list of steps, and updates the task with the new steps provided.
@@ -39,6 +50,7 @@ def create_task_plan(steps: Steps) -> str:
 
     Args:
         steps: List of steps to add to the task plan.
+        completed: The number of steps to add as completed to the task plan.
 
     Returns:
         str: A summary of the updated task plan after deletion

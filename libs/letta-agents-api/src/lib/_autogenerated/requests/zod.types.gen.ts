@@ -429,6 +429,9 @@ export const Tool = z.object({
   json_schema: z
     .union([z.unknown(), z.null(), z.array(z.union([z.unknown(), z.null()]))])
     .optional(),
+  args_json_schema: z
+    .union([z.unknown(), z.null(), z.array(z.union([z.unknown(), z.null()]))])
+    .optional(),
   return_char_limit: z.number().optional(),
   created_by_id: z
     .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
@@ -1351,6 +1354,8 @@ export const CompletionCreateParamsNonStreaming = z.object({
     z.literal('o1-preview-2024-09-12'),
     z.literal('o1-mini'),
     z.literal('o1-mini-2024-09-12'),
+    z.literal('gpt-4.5-preview'),
+    z.literal('gpt-4.5-preview-2025-02-27'),
     z.literal('gpt-4o'),
     z.literal('gpt-4o-2024-11-20'),
     z.literal('gpt-4o-2024-08-06'),
@@ -1393,6 +1398,8 @@ export const CompletionCreateParamsNonStreaming = z.object({
         z.literal('o1-preview-2024-09-12'),
         z.literal('o1-mini'),
         z.literal('o1-mini-2024-09-12'),
+        z.literal('gpt-4.5-preview'),
+        z.literal('gpt-4.5-preview-2025-02-27'),
         z.literal('gpt-4o'),
         z.literal('gpt-4o-2024-11-20'),
         z.literal('gpt-4o-2024-08-06'),
@@ -1703,6 +1710,8 @@ export const CompletionCreateParamsStreaming = z.object({
     z.literal('o1-preview-2024-09-12'),
     z.literal('o1-mini'),
     z.literal('o1-mini-2024-09-12'),
+    z.literal('gpt-4.5-preview'),
+    z.literal('gpt-4.5-preview-2025-02-27'),
     z.literal('gpt-4o'),
     z.literal('gpt-4o-2024-11-20'),
     z.literal('gpt-4o-2024-08-06'),
@@ -1745,6 +1754,8 @@ export const CompletionCreateParamsStreaming = z.object({
         z.literal('o1-preview-2024-09-12'),
         z.literal('o1-mini'),
         z.literal('o1-mini-2024-09-12'),
+        z.literal('gpt-4.5-preview'),
+        z.literal('gpt-4.5-preview-2025-02-27'),
         z.literal('gpt-4o'),
         z.literal('gpt-4o-2024-11-20'),
         z.literal('gpt-4o-2024-08-06'),
@@ -3504,6 +3515,14 @@ export const ToolCreate = z.object({
       z.undefined(),
     ])
     .optional(),
+  args_json_schema: z
+    .union([
+      z.unknown(),
+      z.null(),
+      z.array(z.union([z.unknown(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
   return_char_limit: z.union([z.number(), z.undefined()]).optional(),
 });
 
@@ -3528,6 +3547,14 @@ export const ToolRunFromSource = z.object({
       z.undefined(),
     ])
     .optional(),
+  args_json_schema: z
+    .union([
+      z.unknown(),
+      z.null(),
+      z.array(z.union([z.unknown(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
 });
 
 export type ToolUpdate = z.infer<typeof ToolUpdate>;
@@ -3549,6 +3576,9 @@ export const ToolUpdate = z.object({
     .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
     .optional(),
   json_schema: z
+    .union([z.unknown(), z.null(), z.array(z.union([z.unknown(), z.null()]))])
+    .optional(),
+  args_json_schema: z
     .union([z.unknown(), z.null(), z.array(z.union([z.unknown(), z.null()]))])
     .optional(),
   return_char_limit: z

@@ -6,7 +6,7 @@ import traceback
 import warnings
 from abc import abstractmethod
 from datetime import datetime
-from typing import Callable, Dict, List, Optional, Tuple, Union
+from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 
 from composio.client import Composio
 from composio.client.collections import ActionModel, AppModel
@@ -1104,6 +1104,7 @@ class SyncServer(Server):
         tool_env_vars: Optional[Dict[str, str]] = None,
         tool_source_type: Optional[str] = None,
         tool_name: Optional[str] = None,
+        tool_args_json_schema: Optional[Dict[str, Any]] = None,
     ) -> ToolReturnMessage:
         """Run a tool from source code"""
         if tool_source_type is not None and tool_source_type != "python":
@@ -1113,6 +1114,7 @@ class SyncServer(Server):
         tool = Tool(
             name=tool_name,
             source_code=tool_source,
+            args_json_schema=tool_args_json_schema,
         )
         assert tool.name is not None, "Failed to create tool object"
 

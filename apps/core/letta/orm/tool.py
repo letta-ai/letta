@@ -43,6 +43,6 @@ class Tool(SqlalchemyBase, OrganizationMixin):
     source_type: Mapped[ToolSourceType] = mapped_column(String, doc="The type of the source code.", default=ToolSourceType.json)
     source_code: Mapped[Optional[str]] = mapped_column(String, doc="The source code of the function.")
     json_schema: Mapped[Optional[dict]] = mapped_column(JSON, default=lambda: {}, doc="The OAI compatable JSON schema of the function.")
-
+    args_json_schema: Mapped[Optional[dict]] = mapped_column(JSON, default=lambda: {}, doc="The JSON schema of the function arguments.")
     # relationships
     organization: Mapped["Organization"] = relationship("Organization", back_populates="tools", lazy="selectin")

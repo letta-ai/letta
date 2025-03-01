@@ -1881,6 +1881,35 @@
                               ],
                               "nullable": true
                             },
+                            "args_json_schema": {
+                              "oneOf": [
+                                {
+                                  "nullable": true
+                                },
+                                {
+                                  "type": "string",
+                                  "format": "null",
+                                  "nullable": true
+                                },
+                                {
+                                  "type": "array",
+                                  "items": {
+                                    "oneOf": [
+                                      {
+                                        "nullable": true
+                                      },
+                                      {
+                                        "type": "string",
+                                        "format": "null",
+                                        "nullable": true
+                                      }
+                                    ],
+                                    "nullable": true
+                                  }
+                                }
+                              ],
+                              "nullable": true
+                            },
                             "return_char_limit": {
                               "type": "number"
                             },
@@ -4277,6 +4306,35 @@
                                   "nullable": true
                                 },
                                 "json_schema": {
+                                  "oneOf": [
+                                    {
+                                      "nullable": true
+                                    },
+                                    {
+                                      "type": "string",
+                                      "format": "null",
+                                      "nullable": true
+                                    },
+                                    {
+                                      "type": "array",
+                                      "items": {
+                                        "oneOf": [
+                                          {
+                                            "nullable": true
+                                          },
+                                          {
+                                            "type": "string",
+                                            "format": "null",
+                                            "nullable": true
+                                          }
+                                        ],
+                                        "nullable": true
+                                      }
+                                    }
+                                  ],
+                                  "nullable": true
+                                },
+                                "args_json_schema": {
                                   "oneOf": [
                                     {
                                       "nullable": true
@@ -7316,6 +7374,35 @@
                                   "nullable": true
                                 },
                                 "json_schema": {
+                                  "oneOf": [
+                                    {
+                                      "nullable": true
+                                    },
+                                    {
+                                      "type": "string",
+                                      "format": "null",
+                                      "nullable": true
+                                    },
+                                    {
+                                      "type": "array",
+                                      "items": {
+                                        "oneOf": [
+                                          {
+                                            "nullable": true
+                                          },
+                                          {
+                                            "type": "string",
+                                            "format": "null",
+                                            "nullable": true
+                                          }
+                                        ],
+                                        "nullable": true
+                                      }
+                                    }
+                                  ],
+                                  "nullable": true
+                                },
+                                "args_json_schema": {
                                   "oneOf": [
                                     {
                                       "nullable": true

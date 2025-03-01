@@ -1802,6 +1802,8 @@ export const $CompletionCreateParamsNonStreaming = {
             'o1-preview-2024-09-12',
             'o1-mini',
             'o1-mini-2024-09-12',
+            'gpt-4.5-preview',
+            'gpt-4.5-preview-2025-02-27',
             'gpt-4o',
             'gpt-4o-2024-11-20',
             'gpt-4o-2024-08-06',
@@ -2196,6 +2198,8 @@ export const $CompletionCreateParamsStreaming = {
             'o1-preview-2024-09-12',
             'o1-mini',
             'o1-mini-2024-09-12',
+            'gpt-4.5-preview',
+            'gpt-4.5-preview-2025-02-27',
             'gpt-4o',
             'gpt-4o-2024-11-20',
             'gpt-4o-2024-08-06',
@@ -6597,6 +6601,18 @@ export const $Tool = {
       title: 'Json Schema',
       description: 'The JSON schema of the function.',
     },
+    args_json_schema: {
+      anyOf: [
+        {
+          type: 'object',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Args Json Schema',
+      description: 'The args JSON schema of the function.',
+    },
     return_char_limit: {
       type: 'integer',
       title: 'Return Char Limit',
@@ -6790,6 +6806,18 @@ export const $ToolCreate = {
       description:
         'The JSON schema of the function (auto-generated from source_code if not provided)',
     },
+    args_json_schema: {
+      anyOf: [
+        {
+          type: 'object',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Args Json Schema',
+      description: 'The args JSON schema of the function.',
+    },
     return_char_limit: {
       type: 'integer',
       title: 'Return Char Limit',
@@ -6922,6 +6950,18 @@ export const $ToolRunFromSource = {
       title: 'Source Type',
       description: 'The type of the source code.',
     },
+    args_json_schema: {
+      anyOf: [
+        {
+          type: 'object',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Args Json Schema',
+      description: 'The args JSON schema of the function.',
+    },
   },
   additionalProperties: false,
   type: 'object',
@@ -7007,6 +7047,18 @@ export const $ToolUpdate = {
       title: 'Json Schema',
       description:
         'The JSON schema of the function (auto-generated from source_code if not provided)',
+    },
+    args_json_schema: {
+      anyOf: [
+        {
+          type: 'object',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Args Json Schema',
+      description: 'The args JSON schema of the function.',
     },
     return_char_limit: {
       anyOf: [

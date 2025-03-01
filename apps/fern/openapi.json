@@ -5999,6 +5999,35 @@
                                   ],
                                   "nullable": true
                                 },
+                                "args_json_schema": {
+                                  "oneOf": [
+                                    {
+                                      "nullable": true
+                                    },
+                                    {
+                                      "type": "string",
+                                      "format": "null",
+                                      "nullable": true
+                                    },
+                                    {
+                                      "type": "array",
+                                      "items": {
+                                        "oneOf": [
+                                          {
+                                            "nullable": true
+                                          },
+                                          {
+                                            "type": "string",
+                                            "format": "null",
+                                            "nullable": true
+                                          }
+                                        ],
+                                        "nullable": true
+                                      }
+                                    }
+                                  ],
+                                  "nullable": true
+                                },
                                 "return_char_limit": {
                                   "type": "number"
                                 },
@@ -8736,6 +8765,35 @@
                                   ],
                                   "nullable": true
                                 },
+                                "args_json_schema": {
+                                  "oneOf": [
+                                    {
+                                      "nullable": true
+                                    },
+                                    {
+                                      "type": "string",
+                                      "format": "null",
+                                      "nullable": true
+                                    },
+                                    {
+                                      "type": "array",
+                                      "items": {
+                                        "oneOf": [
+                                          {
+                                            "nullable": true
+                                          },
+                                          {
+                                            "type": "string",
+                                            "format": "null",
+                                            "nullable": true
+                                          }
+                                        ],
+                                        "nullable": true
+                                      }
+                                    }
+                                  ],
+                                  "nullable": true
+                                },
                                 "return_char_limit": {
                                   "type": "number"
                                 },
@@ -11308,6 +11366,8 @@
                   "o1-preview-2024-09-12",
                   "o1-mini",
                   "o1-mini-2024-09-12",
+                  "gpt-4.5-preview",
+                  "gpt-4.5-preview-2025-02-27",
                   "gpt-4o",
                   "gpt-4o-2024-11-20",
                   "gpt-4o-2024-08-06",
@@ -11701,6 +11761,8 @@
                   "o1-preview-2024-09-12",
                   "o1-mini",
                   "o1-mini-2024-09-12",
+                  "gpt-4.5-preview",
+                  "gpt-4.5-preview-2025-02-27",
                   "gpt-4o",
                   "gpt-4o-2024-11-20",
                   "gpt-4o-2024-08-06",
@@ -15722,6 +15784,18 @@
             "title": "Json Schema",
             "description": "The JSON schema of the function."
           },
+          "args_json_schema": {
+            "anyOf": [
+              {
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Args Json Schema",
+            "description": "The args JSON schema of the function."
+          },
           "return_char_limit": {
             "type": "integer",
             "title": "Return Char Limit",
@@ -15898,6 +15972,18 @@
             "title": "Json Schema",
             "description": "The JSON schema of the function (auto-generated from source_code if not provided)"
           },
+          "args_json_schema": {
+            "anyOf": [
+              {
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Args Json Schema",
+            "description": "The args JSON schema of the function."
+          },
           "return_char_limit": {
             "type": "integer",
             "title": "Return Char Limit",
@@ -16018,6 +16104,18 @@
             ],
             "title": "Source Type",
             "description": "The type of the source code."
+          },
+          "args_json_schema": {
+            "anyOf": [
+              {
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Args Json Schema",
+            "description": "The args JSON schema of the function."
           }
         },
         "additionalProperties": false,
@@ -16101,6 +16199,18 @@
             ],
             "title": "Json Schema",
             "description": "The JSON schema of the function (auto-generated from source_code if not provided)"
+          },
+          "args_json_schema": {
+            "anyOf": [
+              {
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Args Json Schema",
+            "description": "The args JSON schema of the function."
           },
           "return_char_limit": {
             "anyOf": [

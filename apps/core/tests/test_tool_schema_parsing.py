@@ -1,11 +1,14 @@
+import importlib.util
+import inspect
 import json
 import os
 
 import pytest
+from pydantic import BaseModel
 
 from letta.functions.functions import derive_openai_json_schema
 from letta.llm_api.helpers import convert_to_structured_output, make_post_request
-from letta.schemas.tool import ToolCreate
+from letta.schemas.tool import Tool, ToolCreate
 
 
 def _clean_diff(d1, d2):
@@ -233,3 +236,53 @@ def test_langchain_tool_schema_generation(openai_model: str, structured_output: 
         print(f"Failed to call OpenAI using schema {schema} generated from {langchain_tool.name}\n\n")
 
         raise
+
+
+@pytest.mark.parametrize("openai_model", ["gpt-4", "gpt-4o"])
+@pytest.mark.parametrize("structured_output", [True, False])
+def test_valid_schemas_with_pydantic_args_schema(openai_model: str, structured_output: bool):
+    """Test that we can send the schemas to OpenAI and get a tool call back."""
+
+    for filename in [
+        "pydantic_as_single_arg_example",
+        "list_of_pydantic_example",
+        "nested_pydantic_as_arg_example",
+        "simple_d20",
+        "all_python_complex",
+        "all_python_complex_nodict",
+    ]:
+        # Import the module dynamically
+        file_path = os.path.join(os.path.dirname(__file__), f"test_tool_schema_parsing_files/{filename}.py")
+        spec = importlib.util.spec_from_file_location(filename, file_path)
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+
+        # Find the function definition and args schema if defined
+        last_function_name, last_function_source, last_model_class = None, None, None
+        for name, obj in inspect.getmembers(module):
+            if inspect.isfunction(obj) and obj.__module__ == module.__name__:
+                last_function_name = name
+                last_function_source = inspect.getsource(obj)  # only import the function, not the whole file
+            if inspect.isclass(obj) and obj.__module__ == module.__name__ and issubclass(obj, BaseModel):
+                last_model_class = obj
+
+        # Get the ArgsSchema if it exists
+        args_schema = None
+        if last_model_class:
+            args_schema = last_model_class.model_json_schema()
+
+        tool = Tool(
+            name=last_function_name,
+            source_code=last_function_source,
+            args_json_schema=args_schema,
+        )
+        schema = tool.json_schema
+
+        print(f"==== TESTING OPENAI PAYLOAD FOR {openai_model} + {filename} ====")
+
+        # We should expect the all_python_complex one to fail when structured_output=True
+        if filename == "all_python_complex" and structured_output:
+            with pytest.raises(ValueError):
+                _openai_payload(openai_model, schema, structured_output)
+        else:
+            _openai_payload(openai_model, schema, structured_output)

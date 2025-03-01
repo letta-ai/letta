@@ -8,8 +8,9 @@ from letta.constants import (
     LETTA_CORE_TOOL_MODULE_NAME,
     LETTA_MULTI_AGENT_TOOL_MODULE_NAME,
 )
+from letta.functions.ast_parsers import get_function_name_and_description
 from letta.functions.functions import derive_openai_json_schema, get_json_schema_from_module
-from letta.functions.helpers import generate_composio_tool_wrapper, generate_langchain_tool_wrapper
+from letta.functions.helpers import generate_composio_tool_wrapper, generate_langchain_tool_wrapper, generate_model_from_args_json_schema
 from letta.functions.schema_generator import generate_schema_from_args_schema_v2, generate_tool_schema_for_composio
 from letta.log import get_logger
 from letta.orm.enums import ToolType
@@ -46,6 +47,7 @@ class Tool(BaseTool):
     # code
     source_code: Optional[str] = Field(None, description="The source code of the function.")
     json_schema: Optional[Dict] = Field(None, description="The JSON schema of the function.")
+    args_json_schema: Optional[Dict] = Field(None, description="The args JSON schema of the function.")
 
     # tool configuration
     return_char_limit: int = Field(FUNCTION_RETURN_CHAR_LIMIT, description="The maximum number of characters in the response.")
@@ -70,7 +72,16 @@ class Tool(BaseTool):
             # TODO: Instead of checking the tag, we should having `COMPOSIO` as a specific ToolType
             # TODO: We skip this for Composio bc composio json schemas are derived differently
             if not (COMPOSIO_TOOL_TAG_NAME in self.tags):
-                self.json_schema = derive_openai_json_schema(source_code=self.source_code)
+                if self.args_json_schema is not None:
+                    name, description = get_function_name_and_description(self.source_code, self.name)
+                    args_schema = generate_model_from_args_json_schema(self.args_json_schema)
+                    self.json_schema = generate_schema_from_args_schema_v2(
+                        args_schema=args_schema,
+                        name=name,
+                        description=description,
+                    )
+                else:
+                    self.json_schema = derive_openai_json_schema(source_code=self.source_code)
         elif self.tool_type in {ToolType.LETTA_CORE, ToolType.LETTA_MEMORY_CORE}:
             # If it's letta core tool, we generate the json_schema on the fly here
             self.json_schema = get_json_schema_from_module(module_name=LETTA_CORE_TOOL_MODULE_NAME, function_name=self.name)
@@ -107,6 +118,7 @@ class ToolCreate(LettaBase):
     json_schema: Optional[Dict] = Field(
         None, description="The JSON schema of the function (auto-generated from source_code if not provided)"
     )
+    args_json_schema: Optional[Dict] = Field(None, description="The args JSON schema of the function.")
     return_char_limit: int = Field(FUNCTION_RETURN_CHAR_LIMIT, description="The maximum number of characters in the response.")
 
     @classmethod
@@ -189,6 +201,7 @@ class ToolUpdate(LettaBase):
     json_schema: Optional[Dict] = Field(
         None, description="The JSON schema of the function (auto-generated from source_code if not provided)"
     )
+    args_json_schema: Optional[Dict] = Field(None, description="The args JSON schema of the function.")
     return_char_limit: Optional[int] = Field(None, description="The maximum number of characters in the response.")
 
     class Config:
@@ -202,3 +215,4 @@ class ToolRunFromSource(LettaBase):
     env_vars: Dict[str, str] = Field(None, description="The environment variables to pass to the tool.")
     name: Optional[str] = Field(None, description="The name of the tool to run.")
     source_type: Optional[str] = Field(None, description="The type of the source code.")
+    args_json_schema: Optional[Dict] = Field(None, description="The args JSON schema of the function.")
