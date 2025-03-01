@@ -1,6 +1,5 @@
 name: 🦸️ End-to-End Tests
 
-
 permissions:
   actions: read
   contents: read
@@ -18,7 +17,8 @@ on:
       - 'tsconfig.json'
   pull_request:
     branches:
-        - main
+      - main
+
 jobs:
   changed-files:
     runs-on: ubuntu-latest
@@ -48,15 +48,7 @@ jobs:
       actions: read
       contents: read
       id-token: write
-    if: ${{ needs.changed-files.outputs.any_changed == 'true' }}
     runs-on: ubuntu-latest
-    # Runs tests in parallel with matrix strategy https://docs.cypress.io/guides/guides/parallelization
-    # https://docs.github.com/en/actions/using-jobs/using-a-matrix-for-your-jobs
-    # Also see warning here https://github.com/cypress-io/github-action#parallel
-    strategy:
-      fail-fast: false
-      matrix:
-        containers: [1]
     services:
       redis:
         image: redis
@@ -108,6 +100,14 @@ jobs:
         with:
           path: node_modules
           key: ${{ runner.os }}-${{ env.cache-name }}-${{ hashFiles('package-lock.json') }}
+      - name: Restore nextjs cache if exist
+        id: cache-nextjs
+        uses: actions/cache@v4
+        env:
+          cache-name: cache-nextjs-${{ env.node-version }}
+        with:
+          path: .next/cache
+          key: ${{ runner.os }}-${{ env.cache-name }}-${{ hashFiles('package-lock.json') }}
       - name: Restore NPM cache if exist
         id: cache-npm
         uses: actions/cache@v4
@@ -144,18 +144,16 @@ jobs:
         id: cached-poetry-dependencies
         uses: actions/cache@v4
         with:
-          path: .venv
-          key: venv-${{ runner.os }}-${{ steps.setup-python.outputs.python-version }}-${{ hashFiles('**/poetry.lock') }}${{ inputs.install-args || '-E dev -E postgres -E external-tools -E tests -E cloud-tool-sandbox' }}
-          # Restore cache with this prefix if not exact match with key
-          # Note cache-hit returns false in this case, so the below step will run
+          path: apps/core/.venv
+          key: venv-${{ runner.os }}-${{ steps.setup-python.outputs.python-version }}-${{ hashFiles('apps/core/**/poetry.lock') }}${{ inputs.install-args || '-E dev -E postgres -E external-tools -E tests -E cloud-tool-sandbox' }}
           restore-keys: |
             venv-${{ runner.os }}-${{ steps.setup-python.outputs.python-version }}-
-      - name: Install dependencies
+      - name: Install python dependencies
         if: steps.cached-poetry-dependencies.outputs.cache-hit != 'true'
         shell: bash
         working-directory: apps/core
         run: poetry install --no-interaction --no-root ${{ inputs.install-args || '-E dev -E postgres -E external-tools -E tests -E cloud-tool-sandbox' }}
-      - name: Migrate database
+      - name: Migrate core database
         working-directory: apps/core
         env:
           LETTA_PG_PORT: 5432
@@ -185,7 +183,6 @@ jobs:
       - name: Build undertaker
         run: npm run undertaker:build
       - name: Run undertake detached
-        # pipe output to a file to allow Cypress to run
         run: node dist/apps/credit-undertaker/main.js > undertaker.log 2>&1 &
         env:
           DATABASE_URL: postgres://postgres:postgres@localhost:5433/postgres
@@ -196,19 +193,21 @@ jobs:
           LETTA_PG_PASSWORD: postgres
           LETTA_PG_DB: postgres
           LETTA_PG_HOST: localhost
+      - name: Migrate web database
+        working-directory: libs/database
+        env:
+          DATABASE_URL: postgres://postgres:postgres@localhost:5433/postgres
+        run: npm run web:database:migrate
       - name: Cypress run
-        # Uses the official Cypress GitHub action https://github.com/cypress-io/github-action
         uses: cypress-io/github-action@v6
         with:
-          build: npm run build:e2e
+          build: npm run build
           start: npm run start:e2e
           install: false
           project: apps/web
-          wait-on: 'http://localhost:3000' # Waits for above
-          # Records to Cypress Cloud
-          # https://docs.cypress.io/guides/cloud/projects#Set-up-a-project-to-record
+          wait-on: 'http://localhost:3000'
           record: true
-          parallel: true # Runs test in parallel using settings above
+          parallel: false
         env:
           CYPRESS_RECORD_KEY: ${{ secrets.CYPRESS_RECORD_KEY }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
