@@ -572,31 +572,25 @@ def generate_model_from_args_json_schema(schema: Dict[str, Any]) -> Type[BaseMod
     Returns:
         A Pydantic model class
     """
-    # First create any nested models from $defs
+    # First create any nested models from $defs in reverse order to handle dependencies
     nested_models = {}
     if "$defs" in schema:
-        for name, model_schema in schema["$defs"].items():
-            # Create field definitions for the nested model
-            fields = {}
-            for field_name, field_schema in model_schema["properties"].items():
-                field_type = _get_field_type(field_schema)
-                required = field_name in model_schema.get("required", [])
-                description = field_schema.get("description", "")  # Get description or empty string
-                fields[field_name] = (field_type, Field(..., description=description) if required else Field(None, description=description))
+        for name, model_schema in reversed(list(schema.get("$defs", {}).items())):
+            nested_models[name] = _create_model_from_schema(name, model_schema, nested_models)
 
-            # Create the nested model
-            nested_models[name] = create_model(name, **fields)
+    # Create and return the main model
+    return _create_model_from_schema(schema.get("title", "DynamicModel"), schema, nested_models)
 
-    # Create the main model fields
+
+def _create_model_from_schema(name: str, model_schema: Dict[str, Any], nested_models: Dict[str, Type[BaseModel]] = None) -> Type[BaseModel]:
     fields = {}
-    for field_name, field_schema in schema["properties"].items():
+    for field_name, field_schema in model_schema["properties"].items():
         field_type = _get_field_type(field_schema, nested_models)
-        required = field_name in schema.get("required", [])
+        required = field_name in model_schema.get("required", [])
         description = field_schema.get("description", "")  # Get description or empty string
         fields[field_name] = (field_type, Field(..., description=description) if required else Field(None, description=description))
 
-    # Create and return the main model
-    return create_model(schema.get("title", "DynamicModel"), **fields)
+    return create_model(name, **fields)
 
 
 def _get_field_type(field_schema: Dict[str, Any], nested_models: Dict[str, Type[BaseModel]] = None) -> Any:
@@ -613,7 +607,7 @@ def _get_field_type(field_schema: Dict[str, Any], nested_models: Dict[str, Type[
         item_type = field_schema["items"].get("$ref", "").split("/")[-1]
         if item_type and nested_models and item_type in nested_models:
             return List[nested_models[item_type]]
-        return List[_get_field_type(field_schema["items"])]
+        return List[_get_field_type(field_schema["items"], nested_models)]
     elif field_schema.get("type") == "object":
         if "$ref" in field_schema:
             ref_type = field_schema["$ref"].split("/")[-1]
