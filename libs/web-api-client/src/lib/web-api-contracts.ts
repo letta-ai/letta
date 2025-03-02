@@ -70,6 +70,7 @@ import {
   launchLinkContracts,
   launchLinkQueryKeys,
 } from './public/launchLinkContracts';
+import { modelContracts, modelQueryClientKeys } from './public/modelsContracts';
 
 export const contracts = {
   user: userContract,
@@ -89,6 +90,7 @@ export const contracts = {
   sharedAgentChats: sharedAgentChatsContracts,
   sso: ssoContracts,
   launchLinks: launchLinkContracts,
+  models: modelContracts,
   admin: {
     usage: adminUsageContracts,
     toolMetadata: adminToolMetadataContracts,
@@ -116,6 +118,7 @@ export const queryClientKeys = {
   rateLimits: rateLimitQueryClientKeys,
   sharedAgentChats: sharedAgentChatQueryClientKeys,
   launchLinks: launchLinkQueryKeys,
+  models: modelQueryClientKeys,
   admin: {
     usage: adminUsageQueryKeys,
     users: adminUsersQueryClientKeys,
@@ -147,3 +150,4 @@ export * from './public/rateLimitsContracts';
 export * from './public/costsContract';
 export * from './public/sharedAgentChatsContracts';
 export * from './public/launchLinkContracts';
+export * from './public/modelsContracts';

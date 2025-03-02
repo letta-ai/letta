@@ -1,19 +1,12 @@
-import type { ServerInferRequest, ServerInferResponses } from '@ts-rest/core';
-import type { sdkContracts } from '@letta-cloud/letta-agents-api';
+import type { ServerInferResponses } from '@ts-rest/core';
 import { router } from '$web/web-api/router';
+import type { contracts } from '@letta-cloud/web-api-client';
 
 type ListLLMBackendsResponseType = ServerInferResponses<
-  typeof sdkContracts.models.listLLMBackends
+  typeof contracts.models.listInferenceModels
 >;
 
-type ListLLMBackendsRequestType = ServerInferRequest<
-  typeof sdkContracts.models.listLLMBackends
->;
-
-async function listLLMBackends(
-  req: ListLLMBackendsRequestType,
-): Promise<ListLLMBackendsResponseType> {
-  const { extended } = req.query;
+async function listInferenceModels(): Promise<ListLLMBackendsResponseType> {
   const llmBackends = await router.admin.models.getAdminInferenceModels({
     query: {
       limit: 250,
@@ -38,35 +31,23 @@ async function listLLMBackends(
         return {
           // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
           ...model.config!,
-          ...(extended
-            ? {
-                id: model.id,
-                brand: model.brand,
-                context_window:
-                  model.defaultContextWindow || model.config!.context_window,
-                isRecommended: model.isRecommended,
-                tag: model.tag,
-                displayName: model.name,
-              }
-            : {}),
+          id: model.id,
+          brand: model.brand,
+          context_window:
+            model.defaultContextWindow || model.config!.context_window,
+          isRecommended: model.isRecommended,
+          tag: model.tag,
+          displayName: model.name,
         };
       }),
   };
 }
 
 type ListEmbeddingBackendsResponseType = ServerInferResponses<
-  typeof sdkContracts.models.listEmbeddingBackends
+  typeof contracts.models.listEmbeddingModels
 >;
 
-type ListEmbeddingBackendsRequestType = ServerInferRequest<
-  typeof sdkContracts.models.listEmbeddingBackends
->;
-
-async function listEmbeddingBackends(
-  req: ListEmbeddingBackendsRequestType,
-): Promise<ListEmbeddingBackendsResponseType> {
-  const { extended } = req.query;
-
+async function listEmbeddingModels(): Promise<ListEmbeddingBackendsResponseType> {
   const embeddingBackends = await router.admin.models.getAdminEmbeddingModels({
     query: {
       limit: 250,
@@ -91,13 +72,13 @@ async function listEmbeddingBackends(
         return {
           // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
           ...model.config!,
-          ...(extended ? { brand: model.brand } : {}),
+          brand: model.brand,
         };
       }),
   };
 }
 
 export const modelsRouter = {
-  listLLMBackends,
-  listEmbeddingBackends,
+  listInferenceModels,
+  listEmbeddingModels,
 };

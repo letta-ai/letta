@@ -19,7 +19,7 @@ import {
   VStack,
   WarningIcon,
 } from '@letta-cloud/component-library';
-import { ModelSelector, useListLLMBackends } from './ModelSelector';
+import { ModelSelector, useInferenceModels } from './ModelSelector';
 import {
   useCurrencyFormatter,
   useNumberFormatter,
@@ -212,7 +212,7 @@ function CostExplorer() {
   const [search, setSearch] = useState('');
   const [offset, setOffset] = useState(0);
   const [limit, setLimit] = useState<number>();
-  useListLLMBackends();
+  useInferenceModels();
 
   const t = useTranslations('organization/costs');
 

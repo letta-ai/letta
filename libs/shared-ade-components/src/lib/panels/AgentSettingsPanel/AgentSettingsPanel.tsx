@@ -44,17 +44,12 @@ import {
   UseAgentsServiceRetrieveAgentKeyFn,
   useAgentsServiceModifyAgent,
 } from '@letta-cloud/letta-agents-api';
-import { useModelsServiceListModels } from '@letta-cloud/letta-agents-api';
 import { useTranslations } from '@letta-cloud/translations';
 import { useDebouncedCallback, useDebouncedValue } from '@mantine/hooks';
-import {
-  webOriginSDKApi,
-  webOriginSDKQueryKeys,
-} from '@letta-cloud/letta-agents-api';
-import { ExtendedLLMSchema } from '@letta-cloud/letta-agents-api';
 import { useQueryClient } from '@tanstack/react-query';
 import { UpdateNameDialog } from '../../shared/UpdateAgentNameDialog/UpdateAgentNameDialog';
 import {
+  ExtendedLLMSchema,
   useFeatureFlag,
   webApi,
   webApiQueryKeys,
@@ -64,6 +59,7 @@ import { ApplicationServices } from '@letta-cloud/rbac';
 import { useADEAppContext } from '../../AppContext/AppContext';
 import { useIdentityTypeToTranslationMap } from '../../IdentitiesTable/hooks/useIdentityTypeToTranslationMap';
 import { getBrandFromModelName } from '@letta-cloud/generic-utils';
+import { useInferenceModels } from '../../hooks/useInferenceModels/useInferenceModels';
 
 interface SelectedModelType {
   icon: React.ReactNode;
@@ -79,28 +75,8 @@ function ModelSelector(props: ModelSelectorProps) {
   const { llmConfig } = props;
   const t = useTranslations('ADE/AgentSettingsPanel');
   const { syncUpdateCurrentAgent, error } = useSyncUpdateCurrentAgent();
-  const { isLocal } = useCurrentAgentMetaData();
 
-  const { data: localModelsList } = useModelsServiceListModels(undefined, {
-    enabled: isLocal,
-  });
-
-  const { data: serverModelsList } =
-    webOriginSDKApi.models.listLLMBackends.useQuery({
-      queryKey: webOriginSDKQueryKeys.models.listEmbeddingBackendsWithSearch({
-        extended: true,
-      }),
-      queryData: {
-        query: {
-          extended: true,
-        },
-      },
-      enabled: !isLocal,
-    });
-
-  const modelsList = useMemo(() => {
-    return isLocal ? localModelsList : serverModelsList?.body;
-  }, [isLocal, localModelsList, serverModelsList]);
+  const modelsList = useInferenceModels();
 
   const formattedModelsList = useMemo(() => {
     if (!modelsList) {
@@ -153,6 +129,8 @@ function ModelSelector(props: ModelSelectorProps) {
     label: llmConfig.handle || llmConfig.model,
     value: llmConfig.model,
   });
+
+  const { isLocal } = useCurrentAgentMetaData();
 
   const [debouncedModelState] = useDebouncedValue(modelState, 500);
 

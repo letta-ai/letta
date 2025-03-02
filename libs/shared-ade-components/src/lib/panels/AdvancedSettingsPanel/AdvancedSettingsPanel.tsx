@@ -31,7 +31,6 @@ import {
   type AgentState,
   UseAgentsServiceRetrieveAgentKeyFn,
   useAgentsServiceModifyAgent,
-  useModelsServiceListEmbeddingModels,
   useModelsServiceListModels,
 } from '@letta-cloud/letta-agents-api';
 import { useDebouncedValue } from '@mantine/hooks';
@@ -40,6 +39,7 @@ import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useADEPermissions } from '../../hooks/useADEPermissions/useADEPermissions';
 import { ApplicationServices } from '@letta-cloud/rbac';
+import { useEmbeddingModels } from '../../hooks/useEmbeddingModels/useEmbeddingModels';
 
 interface EmbeddingConfig {
   embeddingConfig?: AgentState['embedding_config'];
@@ -50,7 +50,7 @@ export function EmbeddingSelector(props: EmbeddingConfig) {
   const t = useTranslations('ADE/AgentSettingsPanel');
   const { syncUpdateCurrentAgent, error } = useSyncUpdateCurrentAgent();
 
-  const { data: embeddingModels } = useModelsServiceListEmbeddingModels();
+  const embeddingModels = useEmbeddingModels();
 
   const formattedModelsList = useMemo(() => {
     if (!embeddingModels) {

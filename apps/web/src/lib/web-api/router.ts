@@ -22,6 +22,7 @@ import { costsRoutes } from '$web/web-api/costs/costsRoutes';
 import { sharedAgentChatsRoutes } from '$web/web-api/shared-agent-chats/sharedAgentChatsRoutes';
 import { ssoRoutes } from '$web/web-api/sso/ssoRoutes';
 import { launchLinkRoutes } from '$web/web-api/launch-links/launchLinksRoutes';
+import { modelsRouter } from '$web/web-api/models/modelRoutes';
 
 export const router = {
   user: userRouter,
@@ -41,6 +42,7 @@ export const router = {
   sharedAgentChats: sharedAgentChatsRoutes,
   sso: ssoRoutes,
   launchLinks: launchLinkRoutes,
+  models: modelsRouter,
   admin: {
     usage: adminUsageRouter,
     toolMetadata: adminToolMetadataRouter,

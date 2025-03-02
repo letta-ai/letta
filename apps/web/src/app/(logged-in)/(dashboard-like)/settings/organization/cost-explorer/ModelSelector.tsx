@@ -1,9 +1,4 @@
 import React, { useMemo } from 'react';
-import {
-  ExtendedLLMSchema,
-  webOriginSDKApi,
-  webOriginSDKQueryKeys,
-} from '@letta-cloud/letta-agents-api';
 import { useTranslations } from '@letta-cloud/translations';
 import { getBrandFromModelName } from '@letta-cloud/generic-utils';
 import {
@@ -13,21 +8,20 @@ import {
   isMultiValue,
   RawSelect,
 } from '@letta-cloud/component-library';
+import {
+  ExtendedLLMSchema,
+  webApi,
+  webApiQueryKeys,
+} from '@letta-cloud/web-api-client';
+
 interface ModelSelectorProps {
   currentModelId: string;
   onSelectModelId: (modelId: string) => void;
 }
 
-export function useListLLMBackends() {
-  return webOriginSDKApi.models.listLLMBackends.useQuery({
-    queryKey: webOriginSDKQueryKeys.models.listEmbeddingBackendsWithSearch({
-      extended: true,
-    }),
-    queryData: {
-      query: {
-        extended: true,
-      },
-    },
+export function useInferenceModels() {
+  return webApi.models.listInferenceModels.useQuery({
+    queryKey: webApiQueryKeys.models.listInferenceModels,
   });
 }
 
@@ -35,7 +29,7 @@ export function ModelSelector(props: ModelSelectorProps) {
   const { onSelectModelId, currentModelId } = props;
   const t = useTranslations('ADE/AgentSettingsPanel');
 
-  const { data: modelsList, isLoading } = useListLLMBackends();
+  const { data: modelsList, isLoading } = useInferenceModels();
 
   const formattedModelsList = useMemo(() => {
     if (!modelsList) {
