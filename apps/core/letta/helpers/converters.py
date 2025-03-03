@@ -78,11 +78,11 @@ def deserialize_tool_rule(data: Dict) -> Union[ChildToolRule, InitToolRule, Term
     """Deserialize a dictionary to the appropriate ToolRule subclass based on 'type'."""
     rule_type = ToolRuleType(data.get("type"))
 
-    if rule_type == ToolRuleType.run_first:
+    if rule_type == ToolRuleType.run_first or rule_type == ToolRuleType.InitToolRule:
         return InitToolRule(**data)
-    elif rule_type == ToolRuleType.exit_loop:
+    elif rule_type == ToolRuleType.exit_loop or rule_type == ToolRuleType.TerminalToolRule:
         return TerminalToolRule(**data)
-    elif rule_type == ToolRuleType.constrain_child_tools:
+    elif rule_type == ToolRuleType.constrain_child_tools or rule_type == ToolRuleType.ToolRule:
         return ChildToolRule(**data)
     elif rule_type == ToolRuleType.conditional:
         return ConditionalToolRule(**data)
