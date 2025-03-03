@@ -1,5 +1,5 @@
-import { db, lettaAPIKeys, organizations } from '@letta-cloud/database';
-import { UsersService } from '@letta-cloud/letta-agents-api';
+import { db, lettaAPIKeys, organizations } from '@letta-cloud/service-database';
+import { UsersService } from '@letta-cloud/sdk-core';
 import { and, eq } from 'drizzle-orm';
 
 interface GenerateAPIKeyOptions {

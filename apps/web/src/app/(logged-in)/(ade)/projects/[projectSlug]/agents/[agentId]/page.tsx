@@ -1,7 +1,7 @@
 import {
   UseAgentsServiceRetrieveAgentKeyFn,
   webOriginSDKQueryKeys,
-} from '@letta-cloud/letta-agents-api';
+} from '@letta-cloud/sdk-core';
 import {
   dehydrate,
   HydrationBoundary,
@@ -9,7 +9,7 @@ import {
 } from '@tanstack/react-query';
 import React from 'react';
 import { redirect } from 'next/navigation';
-import { webApiQueryKeys } from '@letta-cloud/web-api-client';
+import { webApiQueryKeys } from '@letta-cloud/sdk-web';
 import { getProjectByIdOrSlug } from '$web/web-api/router';
 import { getUserOrRedirect } from '$web/server/auth';
 import { sdkRouter } from '$web/sdk/router';

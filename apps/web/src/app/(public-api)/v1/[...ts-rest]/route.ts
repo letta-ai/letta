@@ -11,7 +11,7 @@ import { isErrorResponse } from '@ts-rest/core';
 import * as Sentry from '@sentry/node';
 import { makeRequestToSDK } from '$web/sdk';
 import { sdkRouter } from '$web/sdk/router';
-import { sdkContracts } from '@letta-cloud/letta-agents-api';
+import { sdkContracts } from '@letta-cloud/sdk-core';
 import { getAPIStabilityTestingUser } from '$web/server/lib/getAPIStabilityTestingUser/getAPIStabilityTestingUser';
 import { getPermissionForSDKPath } from '$web/server/lib/getPermissionForSDKPath/getPermissionForSDKPath';
 import type { MethodType } from '$web/server/lib/getPermissionForSDKPath/getPermissionForSDKPath';

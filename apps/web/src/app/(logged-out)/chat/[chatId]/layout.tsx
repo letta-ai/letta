@@ -6,7 +6,7 @@ import {
 } from '@tanstack/react-query';
 import { router } from '$web/web-api/router';
 import { redirect } from 'next/navigation';
-import { webApiQueryKeys } from '@letta-cloud/web-api-client';
+import { webApiQueryKeys } from '@letta-cloud/sdk-web';
 import { getUser } from '$web/server/auth';
 
 interface ChatLayoutProps {

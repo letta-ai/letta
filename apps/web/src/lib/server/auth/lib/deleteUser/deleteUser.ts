@@ -4,7 +4,7 @@ import {
   organizations,
   organizationUsers,
   users,
-} from '@letta-cloud/database';
+} from '@letta-cloud/service-database';
 import { eq } from 'drizzle-orm';
 
 export async function deleteUser(userId: string) {

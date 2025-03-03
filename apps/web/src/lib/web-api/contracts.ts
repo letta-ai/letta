@@ -1,2 +1,2 @@
-export * from '@letta-cloud/web-api-client';
-export type * from '@letta-cloud/web-api-client';
+export * from '@letta-cloud/sdk-web';
+export type * from '@letta-cloud/sdk-web';

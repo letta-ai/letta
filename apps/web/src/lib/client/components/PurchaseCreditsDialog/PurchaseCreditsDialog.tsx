@@ -13,22 +13,18 @@ import {
   Typography,
   useForm,
   VStack,
-} from '@letta-cloud/component-library';
+} from '@letta-cloud/ui-component-library';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
-import {
-  webApi,
-  webApiContracts,
-  webApiQueryKeys,
-} from '@letta-cloud/web-api-client';
+import { webApi, webApiContracts, webApiQueryKeys } from '@letta-cloud/sdk-web';
 import { CreditCardForm } from '$web/client/components/AddCreditCardDialog/AddCreditCardDialog';
 import { useQueryClient } from '@tanstack/react-query';
-import { creditsToDollars } from '@letta-cloud/generic-utils';
+import { creditsToDollars } from '@letta-cloud/utils-shared';
 import {
   useCurrencyFormatter,
   useErrorTranslationMessage,
   useNumberFormatter,
-} from '@letta-cloud/helpful-client-utils';
+} from '@letta-cloud/utils-client';
 import { get } from 'lodash-es';
 import type { ServerInferResponses } from '@ts-rest/core';
 import { useFormContext } from 'react-hook-form';

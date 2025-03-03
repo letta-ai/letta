@@ -15,7 +15,7 @@ import {
   PlusIcon,
   Typography,
   useForm,
-} from '@letta-cloud/component-library';
+} from '@letta-cloud/ui-component-library';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useCallback } from 'react';
 import { webApi } from '$web/client';

@@ -1,6 +1,6 @@
 'use client';
 
-import { IdentitiesTable } from '@letta-cloud/shared-ade-components';
+import { IdentitiesTable } from '@letta-cloud/ui-ade-components';
 import { useCurrentProject } from '$web/client/hooks/useCurrentProject/useCurrentProject';
 
 export default function IdentitiesPage() {

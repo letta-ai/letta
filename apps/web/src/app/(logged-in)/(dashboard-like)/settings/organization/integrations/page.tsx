@@ -9,7 +9,7 @@ import {
   HStack,
   Typography,
   VStack,
-} from '@letta-cloud/component-library';
+} from '@letta-cloud/ui-component-library';
 import { Slot } from '@radix-ui/react-slot';
 
 interface IntegrationItemProps {

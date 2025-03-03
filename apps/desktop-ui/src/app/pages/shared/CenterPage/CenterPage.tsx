@@ -1,4 +1,4 @@
-import { cn } from '@letta-cloud/core-style-config';
+import { cn } from '@letta-cloud/ui-styles';
 
 interface CenterPageProps {
   children: React.ReactNode;

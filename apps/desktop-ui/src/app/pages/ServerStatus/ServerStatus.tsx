@@ -6,7 +6,7 @@ import {
   RefreshIcon,
   Typography,
   VStack,
-} from '@letta-cloud/component-library';
+} from '@letta-cloud/ui-component-library';
 import type { ServerLogType } from '@letta-cloud/types';
 import { useEffect, useRef, useState } from 'react';
 import { useServerStatus } from '../../hooks/useServerStatus/useServerStatus';

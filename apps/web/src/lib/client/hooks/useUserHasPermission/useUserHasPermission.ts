@@ -1,4 +1,4 @@
-import type { ApplicationServices } from '@letta-cloud/rbac';
+import type { ApplicationServices } from '@letta-cloud/service-rbac';
 import { useCurrentUser } from '$web/client/hooks';
 import { useMemo } from 'react';
 

@@ -13,25 +13,25 @@ import {
   SingleFileUpload,
   UploadIcon,
   useForm,
-} from '@letta-cloud/component-library';
+} from '@letta-cloud/ui-component-library';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslations } from '@letta-cloud/translations';
-import type { FileMetadata } from '@letta-cloud/letta-agents-api';
+import type { FileMetadata } from '@letta-cloud/sdk-core';
 import {
   UseJobsServiceListActiveJobsKeyFn,
   UseSourcesServiceListSourceFilesKeyFn,
   useSourcesServiceUploadFileToSource,
-} from '@letta-cloud/letta-agents-api';
-import { useSourcesServiceListSourceFiles } from '@letta-cloud/letta-agents-api';
+} from '@letta-cloud/sdk-core';
+import { useSourcesServiceListSourceFiles } from '@letta-cloud/sdk-core';
 import { useCurrentDataSourceId } from '../hooks';
 import type { ColumnDef } from '@tanstack/react-table';
 import { z } from 'zod';
 import { useQueryClient } from '@tanstack/react-query';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { DeleteFileDialog } from '@letta-cloud/shared-ade-components';
-import type { DeleteFilePayload } from '@letta-cloud/shared-ade-components';
+import { DeleteFileDialog } from '@letta-cloud/ui-ade-components';
+import type { DeleteFilePayload } from '@letta-cloud/ui-ade-components';
 import { useUserHasPermission } from '$web/client/hooks';
-import { ApplicationServices } from '@letta-cloud/rbac';
+import { ApplicationServices } from '@letta-cloud/service-rbac';
 
 const uploadToFormValuesSchema = z.object({
   file: z.custom<File>((v) => v instanceof File),

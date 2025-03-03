@@ -7,9 +7,9 @@ import {
   RawToggleGroup,
   Typography,
   VStack,
-} from '@letta-cloud/component-library';
+} from '@letta-cloud/ui-component-library';
 import React, { useEffect, useMemo, useState } from 'react';
-import { environment } from '@letta-cloud/environmental-variables';
+import { environment } from '@letta-cloud/config-environment-variables';
 import {
   ACCESS_TOKEN_PLACEHOLDER,
   CodeWithAPIKeyInjection,
@@ -18,8 +18,8 @@ import {
 import {
   getIsAgentState,
   useAgentsServiceListAgents,
-} from '@letta-cloud/letta-agents-api';
-import { findMemoryBlockVariables } from '@letta-cloud/generic-utils';
+} from '@letta-cloud/sdk-core';
+import { findMemoryBlockVariables } from '@letta-cloud/utils-shared';
 import { useCurrentAgent } from '$web/client/hooks/useCurrentAgent/useCurrentAgent';
 
 interface DeployAgentInstructionsCurlProps {

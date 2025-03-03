@@ -16,21 +16,21 @@ import {
   Typography,
   VStack,
   PlusIcon,
-} from '@letta-cloud/component-library';
+} from '@letta-cloud/ui-component-library';
 import { useTranslations } from '@letta-cloud/translations';
 import { ConnectToLocalServerCommand, Tutorials } from '$web/client/components';
 import React, { useMemo } from 'react';
 import bannerBlue from './banner_blue.png';
 import bannerOrange from './banner_orange.png';
 import { useCurrentUser } from '$web/client/hooks';
-import { useLocalStorageWithLoadingState } from '@letta-cloud/helpful-client-utils';
+import { useLocalStorageWithLoadingState } from '@letta-cloud/utils-client';
 import {
   CLOUD_UPSELL_URL,
   SUPPORTED_LETTA_AGENTS_VERSIONS,
 } from '$web/constants';
-import { useHealthServiceHealthCheck } from '@letta-cloud/letta-agents-api';
+import { useHealthServiceHealthCheck } from '@letta-cloud/sdk-core';
 import { useWelcomeText } from '$web/client/hooks/useWelcomeText/useWelcomeText';
-import { cn } from '@letta-cloud/core-style-config';
+import { cn } from '@letta-cloud/ui-styles';
 
 import AdBannerTwo from './ad_banner_two.webp';
 import Image from 'next/image';

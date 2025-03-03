@@ -1,8 +1,8 @@
 import '@tanstack/react-table';
 import type { RowData } from '@tanstack/react-table';
 import type en from './translations/en.json';
-import type { en as adeEn } from '@letta-cloud/shared-ade-components/translations';
-import { componentTranslations } from '@letta-cloud/component-library';
+import type { en as adeEn } from '@letta-cloud/ui-ade-components/translations';
+import { componentTranslations } from '@letta-cloud/ui-component-library';
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 declare module '*.svg' {

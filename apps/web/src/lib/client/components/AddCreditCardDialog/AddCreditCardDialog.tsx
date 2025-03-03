@@ -1,4 +1,4 @@
-import { webApi, webApiQueryKeys } from '@letta-cloud/web-api-client';
+import { webApi, webApiQueryKeys } from '@letta-cloud/sdk-web';
 import { useCallback, useEffect, useState } from 'react';
 import type { FormEvent } from 'react';
 import {
@@ -8,14 +8,14 @@ import {
   useStripe,
 } from '@stripe/react-stripe-js';
 import { loadStripe } from '@stripe/stripe-js';
-import { environment } from '@letta-cloud/environmental-variables';
+import { environment } from '@letta-cloud/config-environment-variables';
 import {
   Alert,
   Button,
   Dialog,
   LoadingEmptyStatusComponent,
   VStack,
-} from '@letta-cloud/component-library';
+} from '@letta-cloud/ui-component-library';
 import { useTranslations } from '@letta-cloud/translations';
 
 const stripePromise = loadStripe(environment.NEXT_PUBLIC_STRIPE_PUBLISH_KEY);
@@ -24,7 +24,7 @@ interface AddCreditCardDialogProps {
   trigger: React.ReactNode;
 }
 
-import { cn } from '@letta-cloud/core-style-config';
+import { cn } from '@letta-cloud/ui-styles';
 import { useQueryClient } from '@tanstack/react-query';
 
 interface CreditCardFormInnerProps {

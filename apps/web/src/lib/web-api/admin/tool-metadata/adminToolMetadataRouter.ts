@@ -1,7 +1,7 @@
 import type { ServerInferResponses } from '@ts-rest/core';
 import type { contracts } from '$web/web-api/contracts';
-import { getAllToolsFromComposio } from '@letta-cloud/composio';
-import { db, toolGroupMetadata, toolMetadata } from '@letta-cloud/database';
+import { getAllToolsFromComposio } from '@letta-cloud/service-composio';
+import { db, toolGroupMetadata, toolMetadata } from '@letta-cloud/service-database';
 import { and, eq, inArray } from 'drizzle-orm';
 
 type SyncToolsWithComposioContractResponse = ServerInferResponses<

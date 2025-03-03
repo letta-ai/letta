@@ -1,17 +1,17 @@
 import type { ServerInferRequest, ServerInferResponses } from '@ts-rest/core';
-import type { contracts } from '@letta-cloud/web-api-client';
+import type { contracts } from '@letta-cloud/sdk-web';
 import {
   defaultEmbeddingConfig,
   defaultLLMConfig,
   isAStarterKitName,
   STARTER_KITS,
-} from '@letta-cloud/agent-starter-kits';
-import type { StarterKitTool } from '@letta-cloud/agent-starter-kits';
-import { ToolsService } from '@letta-cloud/letta-agents-api';
+} from '@letta-cloud/config-agent-starter-kits';
+import type { StarterKitTool } from '@letta-cloud/config-agent-starter-kits';
+import { ToolsService } from '@letta-cloud/sdk-core';
 import { getUserWithActiveOrganizationIdOrThrow } from '$web/server/auth';
 import { sdkRouter } from '$web/sdk/router';
 import { createTemplate } from '$web/server/lib/createTemplate/createTemplate';
-import { db, projects } from '@letta-cloud/database';
+import { db, projects } from '@letta-cloud/service-database';
 import { and, eq } from 'drizzle-orm';
 
 type CreateAgentFromStarterKitsRequest = ServerInferRequest<

@@ -1,9 +1,9 @@
 import type { ServerInferRequest, ServerInferResponses } from '@ts-rest/core';
-import type { sdkContracts } from '@letta-cloud/letta-agents-api';
+import type { sdkContracts } from '@letta-cloud/sdk-core';
 import type { SDKContext } from '$web/sdk/shared';
-import { db, deployedAgentVariables } from '@letta-cloud/database';
+import { db, deployedAgentVariables } from '@letta-cloud/service-database';
 import { eq } from 'drizzle-orm';
-import { getDeployedTemplateByVersion } from '@letta-cloud/server-utils';
+import { getDeployedTemplateByVersion } from '@letta-cloud/utils-server';
 import { updateAgentFromAgentId } from '$web/server/lib/updateAgentFromAgentId/updateAgentFromAgentId';
 
 type MigrateAgentRequest = ServerInferRequest<

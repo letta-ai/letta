@@ -1,7 +1,7 @@
 'use client';
 import React, { useMemo, useState } from 'react';
-import type { OptionType } from '@letta-cloud/component-library';
-import { PlusIcon } from '@letta-cloud/component-library';
+import type { OptionType } from '@letta-cloud/ui-component-library';
+import { PlusIcon } from '@letta-cloud/ui-component-library';
 import {
   Button,
   DashboardPageLayout,
@@ -9,11 +9,11 @@ import {
   LoadingEmptyStatusComponent,
   VStack,
   RawInput,
-} from '@letta-cloud/component-library';
+} from '@letta-cloud/ui-component-library';
 import { webApi, webApiQueryKeys } from '$web/client';
 import { useCurrentProject } from '$web/client/hooks/useCurrentProject/useCurrentProject';
 import { useDebouncedValue } from '@mantine/hooks';
-import { SearchIcon } from '@letta-cloud/component-library';
+import { SearchIcon } from '@letta-cloud/ui-component-library';
 import { useTranslations } from '@letta-cloud/translations';
 import { AgentTemplateCard } from '$web/client/components';
 import { CreateNewTemplateDialog } from '../_components/CreateNewTemplateDialog/CreateNewTemplateDialog';

@@ -1,7 +1,7 @@
 import type { NextRequest } from 'next/server';
 import { getUserActiveOrganizationIdOrThrow } from '$web/server/auth';
 import * as process from 'node:process';
-import { db, lettaAPIKeys } from '@letta-cloud/database';
+import { db, lettaAPIKeys } from '@letta-cloud/service-database';
 import { and, eq } from 'drizzle-orm';
 
 export async function POST(req: NextRequest) {

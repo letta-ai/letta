@@ -1,14 +1,14 @@
 import {
   AgentsService,
   UseAgentsServiceRetrieveAgentKeyFn,
-} from '@letta-cloud/letta-agents-api';
+} from '@letta-cloud/sdk-core';
 import {
   dehydrate,
   HydrationBoundary,
   QueryClient,
 } from '@tanstack/react-query';
 import React from 'react';
-import { db, agentTemplates } from '@letta-cloud/database';
+import { db, agentTemplates } from '@letta-cloud/service-database';
 import { and, eq, isNull } from 'drizzle-orm';
 import { redirect } from 'next/navigation';
 import { webApiQueryKeys } from '$web/client';

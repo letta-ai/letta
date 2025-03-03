@@ -1,6 +1,6 @@
 import { LOCAL_PROJECT_SERVER_PORT } from '$web/constants';
-import type { InlineCodeProps } from '@letta-cloud/component-library';
-import { InlineCode } from '@letta-cloud/component-library';
+import type { InlineCodeProps } from '@letta-cloud/ui-component-library';
+import { InlineCode } from '@letta-cloud/ui-component-library';
 import React from 'react';
 
 interface ConnectToLocalServerCommandProps {

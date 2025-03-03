@@ -1,12 +1,12 @@
 import './global.scss';
 import { ClientSideProviders } from './_components/ClientSideProviders/ClientSideProviders';
 import React from 'react';
-import { LoadMixpanelAnalytics } from '@letta-cloud/analytics/client';
+import { LoadMixpanelAnalytics } from '@letta-cloud/service-analytics/client';
 import { getLocale, getMessages } from 'next-intl/server';
 import { NextIntlClientProvider } from 'next-intl';
 import { Body } from './_components/ThemeProvider/Body';
 import { Manrope } from 'next/font/google';
-import { cn } from '@letta-cloud/core-style-config';
+import { cn } from '@letta-cloud/ui-styles';
 import 'array.prototype.tosorted';
 
 export const metadata = {

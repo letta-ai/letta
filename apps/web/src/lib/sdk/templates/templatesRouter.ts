@@ -1,13 +1,13 @@
 import type { ServerInferRequest, ServerInferResponses } from '@ts-rest/core';
 
-import type { sdkContracts } from '@letta-cloud/letta-agents-api';
+import type { sdkContracts } from '@letta-cloud/sdk-core';
 import {
   db,
   deployedAgentMetadata,
   deployedAgentVariables,
-} from '@letta-cloud/database';
+} from '@letta-cloud/service-database';
 import type { SDKContext } from '$web/sdk/shared';
-import { getDeployedTemplateByVersion } from '@letta-cloud/server-utils';
+import { getDeployedTemplateByVersion } from '@letta-cloud/utils-server';
 import { copyAgentById } from '$web/server/lib/copyAgentById/copyAgentById';
 
 type CreateAgentsFromTemplateRequest = ServerInferRequest<

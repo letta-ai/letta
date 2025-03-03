@@ -1,6 +1,6 @@
 import type { ServerInferRequest, ServerInferResponses } from '@ts-rest/core';
 import type { contracts } from '../contracts';
-import { adePreferences, db } from '@letta-cloud/database';
+import { adePreferences, db } from '@letta-cloud/service-database';
 import { getUserIdOrThrow } from '$web/server/auth';
 import { and, eq } from 'drizzle-orm';
 import { generateDefaultADELayout } from '$web/utils';

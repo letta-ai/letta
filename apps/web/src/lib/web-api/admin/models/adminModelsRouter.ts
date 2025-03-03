@@ -5,15 +5,15 @@ import {
   embeddingModelsMetadata,
   inferenceModelsMetadata,
   stepCostSchemaTable,
-} from '@letta-cloud/database';
+} from '@letta-cloud/service-database';
 import { and, eq, ilike, isNotNull, isNull } from 'drizzle-orm';
 import {
   getLettaAgentsEmbeddingModelsSingleton,
   getLettaAgentsInferenceModelsSingleton,
 } from '$web/server';
-import type { EmbeddingConfig, LLMConfig } from '@letta-cloud/letta-agents-api';
-import { getBrandFromModelName } from '@letta-cloud/generic-utils';
-import { setRedisData } from '@letta-cloud/redis';
+import type { EmbeddingConfig, LLMConfig } from '@letta-cloud/sdk-core';
+import { getBrandFromModelName } from '@letta-cloud/utils-shared';
+import { setRedisData } from '@letta-cloud/service-redis';
 
 type GetAdminInferenceModelsResponse = ServerInferResponses<
   typeof contracts.admin.models.getAdminInferenceModels

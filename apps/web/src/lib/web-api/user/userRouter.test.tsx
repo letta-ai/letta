@@ -1,13 +1,13 @@
 import {
   mockDatabase,
   mockDatabaseUpdate,
-} from '@letta-cloud/database-testing';
+} from '@letta-cloud/service-database-testing';
 import { router } from '$web/web-api/router';
-import { lettaAgentAPIMock } from '@letta-cloud/letta-agents-api-testing';
+import { lettaAgentAPIMock } from '@letta-cloud/sdk-core-testing';
 
-jest.mock('@letta-cloud/database', () => ({
+jest.mock('@letta-cloud/service-database', () => ({
   __esModule: true,
-  ...jest.requireActual('@letta-cloud/database'),
+  ...jest.requireActual('@letta-cloud/service-database'),
   db: mockDatabase,
 }));
 

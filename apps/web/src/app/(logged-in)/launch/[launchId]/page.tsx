@@ -1,6 +1,6 @@
 'use client';
 import { useParams } from 'next/navigation';
-import { webApi, webApiQueryKeys } from '@letta-cloud/web-api-client';
+import { webApi, webApiQueryKeys } from '@letta-cloud/sdk-web';
 import {
   Alert,
   Button,
@@ -12,7 +12,7 @@ import {
   RocketIcon,
   Typography,
   VStack,
-} from '@letta-cloud/component-library';
+} from '@letta-cloud/ui-component-library';
 import { useTranslations } from '@letta-cloud/translations';
 import { useCallback, useMemo, useState } from 'react';
 import type { Dispatch, SetStateAction } from 'react';

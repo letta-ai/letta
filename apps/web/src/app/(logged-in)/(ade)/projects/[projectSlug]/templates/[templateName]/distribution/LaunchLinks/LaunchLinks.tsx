@@ -17,19 +17,19 @@ import {
   Typography,
   useForm,
   VStack,
-} from '@letta-cloud/component-library';
+} from '@letta-cloud/ui-component-library';
 import React, { useCallback, useEffect, useMemo } from 'react';
 import {
   UpdateLaunchLinkSchema,
   type UpdateLaunchLinkType,
   webApi,
   webApiQueryKeys,
-} from '@letta-cloud/web-api-client';
-import type { webApiContracts } from '@letta-cloud/web-api-client';
-import { useCurrentAgentMetaData } from '@letta-cloud/shared-ade-components';
+} from '@letta-cloud/sdk-web';
+import type { webApiContracts } from '@letta-cloud/sdk-web';
+import { useCurrentAgentMetaData } from '@letta-cloud/ui-ade-components';
 import { useQueryClient } from '@tanstack/react-query';
 import type { ServerInferResponses } from '@ts-rest/core';
-import { getLaunchLinkUrl } from '@letta-cloud/generic-utils';
+import { getLaunchLinkUrl } from '@letta-cloud/utils-shared';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useDebouncedValue } from '@mantine/hooks';
 

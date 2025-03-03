@@ -16,7 +16,7 @@ import {
   DropdownMenu,
   Dialog,
   IdentitiesIcon,
-} from '@letta-cloud/component-library';
+} from '@letta-cloud/ui-component-library';
 import React, { useCallback, useMemo, useState } from 'react';
 import { useTranslations } from '@letta-cloud/translations';
 import { webApi, webApiQueryKeys } from '$web/client';
@@ -32,7 +32,7 @@ import { useFeatureFlag } from '$web/web-api/contracts';
 import type { developmentServersContracts } from '$web/web-api/contracts';
 import { useDevelopmentServerStatus } from '$web/client/hooks/useDevelopmentServerStatus/useDevelopmentServerStatus';
 import semver from 'semver/preload';
-import type { DevelopmentServerConfig } from '@letta-cloud/helpful-client-utils';
+import type { DevelopmentServerConfig } from '@letta-cloud/utils-client';
 
 interface DeleteDevelopmentServerDialogProps {
   trigger: React.ReactNode;

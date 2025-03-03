@@ -4,12 +4,12 @@ import * as ReactDOM from 'react-dom/client';
 import App from './app/app';
 import './styles.scss';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { OpenAPI } from '@letta-cloud/letta-agents-api';
+import { OpenAPI } from '@letta-cloud/sdk-core';
 import { NextIntlClientProvider } from 'next-intl';
-import { en as adeEn } from '@letta-cloud/shared-ade-components';
+import { en as adeEn } from '@letta-cloud/ui-ade-components';
 import en from './translations/en.json';
 import { ServerStatusProvider } from './app/hooks/useServerStatus/useServerStatus';
-import { componentTranslations, Toaster } from '@letta-cloud/component-library';
+import { componentTranslations, Toaster } from '@letta-cloud/ui-component-library';
 
 const root = ReactDOM.createRoot(document.getElementById('root')!);
 

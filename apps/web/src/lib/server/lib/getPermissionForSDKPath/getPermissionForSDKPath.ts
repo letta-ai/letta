@@ -1,4 +1,4 @@
-import { ApplicationServices } from '@letta-cloud/rbac';
+import { ApplicationServices } from '@letta-cloud/service-rbac';
 
 export type MethodType = 'DELETE' | 'GET' | 'PATCH' | 'POST' | 'PUT';
 

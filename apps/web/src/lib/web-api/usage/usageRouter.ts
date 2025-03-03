@@ -1,9 +1,9 @@
 import type { ServerInferRequest, ServerInferResponses } from '@ts-rest/core';
 import type { contracts } from '$web/web-api/contracts';
-import { db } from '@letta-cloud/database';
+import { db } from '@letta-cloud/service-database';
 import type { GetUsageByModelItem } from '$web/web-api/contracts';
 import { getUserWithActiveOrganizationIdOrThrow } from '$web/server/auth';
-import { StepsService } from '@letta-cloud/letta-agents-api';
+import { StepsService } from '@letta-cloud/sdk-core';
 
 interface GetUsageByModelSummaryAndOrganizationIdOptions {
   lettaAgentsId: string;

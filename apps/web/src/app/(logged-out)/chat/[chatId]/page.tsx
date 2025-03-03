@@ -1,6 +1,6 @@
 'use client';
 import { useParams } from 'next/navigation';
-import { webApi, webApiQueryKeys } from '@letta-cloud/web-api-client';
+import { webApi, webApiQueryKeys } from '@letta-cloud/sdk-web';
 import {
   ChatInput,
   type ChatInputRef,
@@ -10,10 +10,10 @@ import {
   PersonIcon,
   Typography,
   VStack,
-} from '@letta-cloud/component-library';
-import { Messages } from '@letta-cloud/shared-ade-components';
+} from '@letta-cloud/ui-component-library';
+import { Messages } from '@letta-cloud/ui-ade-components';
 import React, { useRef } from 'react';
-import { useSendMessage } from '@letta-cloud/shared-ade-components';
+import { useSendMessage } from '@letta-cloud/ui-ade-components';
 import { useTranslations } from '@letta-cloud/translations';
 import { ProfilePopover } from '$web/client/components/DashboardLikeLayout/DashboardNavigation/DashboardNavigation';
 

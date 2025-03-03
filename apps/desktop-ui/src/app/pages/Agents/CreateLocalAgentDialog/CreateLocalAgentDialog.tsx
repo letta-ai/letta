@@ -6,8 +6,8 @@ import {
   useLlmsServiceListEmbeddingModels,
   useLlmsServiceListModels,
   useToolsServiceListTools,
-} from '@letta-cloud/letta-agents-api';
-import { useCurrentDevelopmentServerConfig } from '@letta-cloud/helpful-client-utils';
+} from '@letta-cloud/sdk-core';
+import { useCurrentDevelopmentServerConfig } from '@letta-cloud/utils-client';
 import { useCallback, useMemo, useState } from 'react';
 import {
   Alert,
@@ -19,10 +19,10 @@ import {
   StarterKitItems,
   toast,
   VStack,
-} from '@letta-cloud/component-library';
+} from '@letta-cloud/ui-component-library';
 import { useNavigate } from 'react-router-dom';
-import { STARTER_KITS } from '@letta-cloud/agent-starter-kits';
-import type { StarterKit } from '@letta-cloud/agent-starter-kits';
+import { STARTER_KITS } from '@letta-cloud/config-agent-starter-kits';
+import type { StarterKit } from '@letta-cloud/config-agent-starter-kits';
 
 interface CreateAgentDialogProps {
   trigger: React.ReactNode;

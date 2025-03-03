@@ -17,7 +17,7 @@ import {
   RawInput,
   Typography,
   VStack,
-} from '@letta-cloud/component-library';
+} from '@letta-cloud/ui-component-library';
 import type { FormEvent } from 'react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Slot } from '@radix-ui/react-slot';

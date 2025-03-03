@@ -5,7 +5,7 @@ import {
   Logo,
   Typography,
   VStack,
-} from '@letta-cloud/component-library';
+} from '@letta-cloud/ui-component-library';
 import { useTranslations } from '@letta-cloud/translations';
 import { ServerStatus } from '../shared/ServerStatus/ServerStatus';
 import { useNavigate } from 'react-router-dom';

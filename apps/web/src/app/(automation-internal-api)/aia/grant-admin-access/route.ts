@@ -1,6 +1,6 @@
 import { getUserActiveOrganizationIdOrThrow } from '$web/server/auth';
 import * as process from 'node:process';
-import { db, organizations } from '@letta-cloud/database';
+import { db, organizations } from '@letta-cloud/service-database';
 
 export async function POST() {
   const organizationId = await getUserActiveOrganizationIdOrThrow();

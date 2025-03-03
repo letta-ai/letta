@@ -1,4 +1,4 @@
-import { db, functionalMigrations } from '@letta-cloud/database';
+import { db, functionalMigrations } from '@letta-cloud/service-database';
 import { eq } from 'drizzle-orm';
 import { myFirstMigration } from './my-first-migration';
 import { deployedAgentMigration } from './deployed-agent-migration';

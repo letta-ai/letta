@@ -1,11 +1,11 @@
 import { getCookie } from '$web/server/cookies';
 import { CookieNames } from '$web/server/cookies/types';
-import { getRedisData } from '@letta-cloud/redis';
-import { db, organizationUsers, users } from '@letta-cloud/database';
+import { getRedisData } from '@letta-cloud/service-redis';
+import { db, organizationUsers, users } from '@letta-cloud/service-database';
 import { and, eq, isNull } from 'drizzle-orm';
 import { redirect } from 'next/navigation';
-import type { ApplicationServices } from '@letta-cloud/rbac';
-import { roleToServicesMap } from '@letta-cloud/rbac';
+import type { ApplicationServices } from '@letta-cloud/service-rbac';
+import { roleToServicesMap } from '@letta-cloud/service-rbac';
 
 export interface GetUserDataResponse {
   activeOrganizationId: string | null;

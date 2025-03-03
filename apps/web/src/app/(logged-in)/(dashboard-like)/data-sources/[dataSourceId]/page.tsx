@@ -8,12 +8,12 @@ import {
   IndeterminateProgress,
   Typography,
   VStack,
-} from '@letta-cloud/component-library';
-import type { Job } from '@letta-cloud/letta-agents-api';
+} from '@letta-cloud/ui-component-library';
+import type { Job } from '@letta-cloud/sdk-core';
 import {
   useJobsServiceListActiveJobs,
   useSourcesServiceRetrieveSource,
-} from '@letta-cloud/letta-agents-api';
+} from '@letta-cloud/sdk-core';
 import { useCurrentDataSourceId } from './hooks';
 import type { ColumnDef } from '@tanstack/react-table';
 import { useCurrentUser } from '$web/client/hooks';

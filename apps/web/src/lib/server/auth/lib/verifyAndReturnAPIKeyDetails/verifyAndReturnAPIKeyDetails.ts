@@ -1,6 +1,6 @@
 import { parseAccessToken } from '$web/server/auth/lib/parseAccessToken/parseAccessToken';
 import { backfillCoreUserIdToApiKeyFn } from '$web/server/auth';
-import { getRedisData } from '@letta-cloud/redis';
+import { getRedisData } from '@letta-cloud/service-redis';
 
 export async function verifyAndReturnAPIKeyDetails(apiKey?: string) {
   if (!apiKey) {

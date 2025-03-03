@@ -1,5 +1,5 @@
 import { useCurrentAgent } from '$web/client/hooks/useCurrentAgent/useCurrentAgent';
-import { webApi, webApiQueryKeys } from '@letta-cloud/web-api-client';
+import { webApi, webApiQueryKeys } from '@letta-cloud/sdk-web';
 import { get } from 'lodash-es';
 
 export function useLatestAgentTemplate() {

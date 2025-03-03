@@ -1,7 +1,4 @@
-import type {
-  AgentState,
-  CreateAgentRequest,
-} from '@letta-cloud/letta-agents-api';
+import type { AgentState, CreateAgentRequest } from '@letta-cloud/sdk-core';
 
 export function attachVariablesToTemplates(
   agentTemplate: AgentState,

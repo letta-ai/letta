@@ -1,5 +1,5 @@
-import type { EmbeddingConfig, LLMConfig } from '@letta-cloud/letta-agents-api';
-import { ModelsService } from '@letta-cloud/letta-agents-api';
+import type { EmbeddingConfig, LLMConfig } from '@letta-cloud/sdk-core';
+import { ModelsService } from '@letta-cloud/sdk-core';
 
 let inferenceModelsList: LLMConfig[] = [];
 

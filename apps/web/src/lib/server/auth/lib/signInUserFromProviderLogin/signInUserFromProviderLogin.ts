@@ -10,24 +10,24 @@ import {
   organizationVerifiedDomains,
   projects,
   users,
-} from '@letta-cloud/database';
+} from '@letta-cloud/service-database';
 import { eq } from 'drizzle-orm';
-import type { UserSession } from '@letta-cloud/web-api-client';
-import type { ProviderUserPayload } from '@letta-cloud/web-api-client';
-import { AdminService } from '@letta-cloud/letta-agents-api';
+import type { UserSession } from '@letta-cloud/sdk-web';
+import type { ProviderUserPayload } from '@letta-cloud/sdk-web';
+import { AdminService } from '@letta-cloud/sdk-core';
 import { LoginErrorsEnum } from '$web/errors';
 import {
   trackServerSideEvent,
   trackUserOnServer,
-} from '@letta-cloud/analytics/server';
-import { AnalyticsEvent } from '@letta-cloud/analytics';
+} from '@letta-cloud/service-analytics/server';
+import { AnalyticsEvent } from '@letta-cloud/service-analytics';
 import { setCookie } from '$web/server/cookies';
 import { CookieNames } from '$web/server/cookies/types';
 import { cookies } from 'next/headers';
-import { setRedisData } from '@letta-cloud/redis';
+import { setRedisData } from '@letta-cloud/service-redis';
 import { generateAPIKey } from '$web/server/auth/lib/generateApiKey/generateApiKey';
 import { createOrganization } from '$web/server/auth/lib/createOrganization/createOrganization';
-import type { UserPresetRolesType } from '@letta-cloud/rbac';
+import type { UserPresetRolesType } from '@letta-cloud/service-rbac';
 
 function isLettaEmail(email: string) {
   return email.endsWith('@letta.com') || email.endsWith('@memgpt.ai');

@@ -4,7 +4,7 @@ import { webApi } from '$web/client';
 import React, { useMemo, useState } from 'react';
 import type { contracts } from '$web/web-api/contracts';
 import { queryClientKeys } from '$web/web-api/contracts';
-import type { DialogTableItem } from '@letta-cloud/component-library';
+import type { DialogTableItem } from '@letta-cloud/ui-component-library';
 import {
   brandKeyToLogo,
   brandKeyToName,
@@ -20,12 +20,12 @@ import {
   IconWrapper,
   isBrandKey,
   Typography,
-} from '@letta-cloud/component-library';
+} from '@letta-cloud/ui-component-library';
 import type { ColumnDef } from '@tanstack/react-table';
 import {
   useDateFormatter,
   useNumberFormatter,
-} from '@letta-cloud/helpful-client-utils';
+} from '@letta-cloud/utils-client';
 import type { AdminEmbeddingModelType } from '$web/web-api/contracts';
 import { useQueryClient } from '@tanstack/react-query';
 import type { ServerInferResponses } from '@ts-rest/core';

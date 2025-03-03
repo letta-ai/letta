@@ -15,7 +15,7 @@ import {
   Typography,
   useForm,
   VStack,
-} from '@letta-cloud/component-library';
+} from '@letta-cloud/ui-component-library';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { webApi, webApiQueryKeys } from '$web/client';

@@ -1,10 +1,10 @@
 import type { ServerInferRequest, ServerInferResponses } from '@ts-rest/core';
-import type { contracts, RateLimit } from '@letta-cloud/web-api-client';
+import type { contracts, RateLimit } from '@letta-cloud/sdk-web';
 import {
   db,
   inferenceModelsMetadata,
   perModelPerOrganizationRateLimitOverrides,
-} from '@letta-cloud/database';
+} from '@letta-cloud/service-database';
 import { and, eq, ilike, inArray, isNull } from 'drizzle-orm';
 import { getUser } from '$web/server/auth';
 

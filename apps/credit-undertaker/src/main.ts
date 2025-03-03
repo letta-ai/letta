@@ -1,17 +1,17 @@
 import pg from 'pg';
 import * as Sentry from '@sentry/node';
 
-import { deductCreditsFromStep } from '@letta-cloud/server-utils';
+import { deductCreditsFromStep } from '@letta-cloud/utils-server';
 
 import './instrumentation';
 
-import type { Step } from '@letta-cloud/letta-agents-api';
+import type { Step } from '@letta-cloud/sdk-core';
 import { config } from 'dotenv';
 import { resolve } from 'path';
 config({ path: resolve(__dirname, '.env') });
 import './instrumentation';
 import express from 'express';
-import { testRedisConnection } from '@letta-cloud/redis';
+import { testRedisConnection } from '@letta-cloud/service-redis';
 
 const CORE_DATABASE_URL = `postgresql://${process.env.LETTA_PG_USER}:${process.env.LETTA_PG_PASSWORD}@${process.env.LETTA_PG_HOST}:${process.env.LETTA_PG_PORT}/${process.env.LETTA_PG_DB}`;
 

@@ -12,26 +12,23 @@ import {
   toast,
   Typography,
   VStack,
-} from '@letta-cloud/component-library';
-import type { StarterKit } from '@letta-cloud/agent-starter-kits';
-import { useCurrentDevelopmentServerConfig } from '@letta-cloud/helpful-client-utils';
+} from '@letta-cloud/ui-component-library';
+import type { StarterKit } from '@letta-cloud/config-agent-starter-kits';
+import { useCurrentDevelopmentServerConfig } from '@letta-cloud/utils-client';
 import { useCallback, useMemo, useState } from 'react';
-import {
-  ToolsService,
-  useToolsServiceListTools,
-} from '@letta-cloud/letta-agents-api';
-import { useHealthServiceHealthCheck } from '@letta-cloud/letta-agents-api';
+import { ToolsService, useToolsServiceListTools } from '@letta-cloud/sdk-core';
+import { useHealthServiceHealthCheck } from '@letta-cloud/sdk-core';
 import {
   useAgentsServiceCreateAgent,
   useLlmsServiceListEmbeddingModels,
   useLlmsServiceListModels,
-} from '@letta-cloud/letta-agents-api';
+} from '@letta-cloud/sdk-core';
 import { useRouter } from 'next/navigation';
-import { trackClientSideEvent } from '@letta-cloud/analytics/client';
-import { AnalyticsEvent } from '@letta-cloud/analytics';
+import { trackClientSideEvent } from '@letta-cloud/service-analytics/client';
+import { AnalyticsEvent } from '@letta-cloud/service-analytics';
 import { useCurrentUser } from '$web/client/hooks';
 import { ConnectToLocalServerCommand } from '$web/client/components';
-import { STARTER_KITS } from '@letta-cloud/agent-starter-kits';
+import { STARTER_KITS } from '@letta-cloud/config-agent-starter-kits';
 
 interface CreateAgentDialogProps {
   trigger: React.ReactNode;

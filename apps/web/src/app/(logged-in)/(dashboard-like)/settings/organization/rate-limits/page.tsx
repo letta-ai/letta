@@ -1,16 +1,16 @@
 'use client';
 import { useEffect, useMemo, useState } from 'react';
-import { webApi, webApiQueryKeys } from '@letta-cloud/web-api-client';
-import type { RateLimit } from '@letta-cloud/web-api-client';
+import { webApi, webApiQueryKeys } from '@letta-cloud/sdk-web';
+import type { RateLimit } from '@letta-cloud/sdk-web';
 import { useTranslations } from '@letta-cloud/translations';
 import {
   DashboardPageLayout,
   DashboardPageSection,
   DataTable,
   TabGroup,
-} from '@letta-cloud/component-library';
+} from '@letta-cloud/ui-component-library';
 import type { ColumnDef } from '@tanstack/react-table';
-import { useNumberFormatter } from '@letta-cloud/helpful-client-utils';
+import { useNumberFormatter } from '@letta-cloud/utils-client';
 import { useDebouncedValue } from '@mantine/hooks';
 
 type Mode = 'embedding' | 'inference';

@@ -1,14 +1,14 @@
 import {
   mockDatabase,
   mockDatabaseDelete,
-} from '@letta-cloud/database-testing';
+} from '@letta-cloud/service-database-testing';
 import { deleteUser } from '$web/server/auth/lib/deleteUser';
 import { eq } from 'drizzle-orm';
-import { organizations, users } from '@letta-cloud/database';
+import { organizations, users } from '@letta-cloud/service-database';
 
-jest.mock('@letta-cloud/database', () => ({
+jest.mock('@letta-cloud/service-database', () => ({
   __esModule: true,
-  ...jest.requireActual('@letta-cloud/database'),
+  ...jest.requireActual('@letta-cloud/service-database'),
   db: mockDatabase,
 }));
 

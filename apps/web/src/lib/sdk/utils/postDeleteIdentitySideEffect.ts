@@ -1,4 +1,4 @@
-import { db, shareChatIdentity } from '@letta-cloud/database';
+import { db, shareChatIdentity } from '@letta-cloud/service-database';
 import { eq } from 'drizzle-orm';
 
 export async function postDeleteIdentitySideEffect(

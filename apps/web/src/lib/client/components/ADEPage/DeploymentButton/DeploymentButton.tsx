@@ -24,7 +24,7 @@ import {
   useForm,
   VStack,
   WarningIcon,
-} from '@letta-cloud/component-library';
+} from '@letta-cloud/ui-component-library';
 import { DeployAgentUsageInstructions } from '$web/client/code-reference/DeployAgentUsageInstructions';
 import { z } from 'zod';
 import { useQueryClient } from '@tanstack/react-query';
@@ -36,15 +36,15 @@ import {
   webOriginSDKApi,
 } from '$web/client';
 import { CLOUD_UPSELL_URL } from '$web/constants';
-import type { AgentState } from '@letta-cloud/letta-agents-api';
-import { isAgentState } from '@letta-cloud/letta-agents-api';
+import type { AgentState } from '@letta-cloud/sdk-core';
+import { isAgentState } from '@letta-cloud/sdk-core';
 import { useCurrentUser, useUserHasPermission } from '$web/client/hooks';
 import type { ServerInferResponses } from '@ts-rest/core';
-import type { contracts } from '@letta-cloud/web-api-client';
+import type { contracts } from '@letta-cloud/sdk-web';
 import { atom, useSetAtom } from 'jotai';
-import { compareAgentStates } from '@letta-cloud/generic-utils';
-import { useCurrentAgentMetaData } from '@letta-cloud/shared-ade-components';
-import { ApplicationServices } from '@letta-cloud/rbac';
+import { compareAgentStates } from '@letta-cloud/utils-shared';
+import { useCurrentAgentMetaData } from '@letta-cloud/ui-ade-components';
+import { ApplicationServices } from '@letta-cloud/service-rbac';
 import { CompareTemplateVersions } from '$web/client/components';
 import type { InfiniteData } from '@tanstack/query-core';
 import { useCurrentAgent } from '$web/client/hooks/useCurrentAgent/useCurrentAgent';

@@ -1,5 +1,5 @@
 'use client';
-import { HStack, VStack } from '@letta-cloud/component-library';
+import { HStack, VStack } from '@letta-cloud/ui-component-library';
 import { LoginComponent } from './LoginComponent';
 
 function LoginPage() {

@@ -21,7 +21,7 @@ import {
   Typography,
   useForm,
   VStack,
-} from '@letta-cloud/component-library';
+} from '@letta-cloud/ui-component-library';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { webApi, webApiQueryKeys } from '$web/client';
@@ -29,7 +29,7 @@ import type { APIKeyType } from '$web/web-api/contracts';
 import type { ColumnDef } from '@tanstack/react-table';
 import { useQueryClient } from '@tanstack/react-query';
 import { useTranslations } from '@letta-cloud/translations';
-import { ApplicationServices } from '@letta-cloud/rbac';
+import { ApplicationServices } from '@letta-cloud/service-rbac';
 import { useUserHasPermission } from '$web/client/hooks';
 
 const CreateAPIKeySchema = z.object({

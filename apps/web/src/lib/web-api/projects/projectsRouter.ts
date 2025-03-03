@@ -5,12 +5,12 @@ import {
   deployedAgentTemplates,
   organizationPreferences,
   projects,
-} from '@letta-cloud/database';
+} from '@letta-cloud/service-database';
 import { getUserWithActiveOrganizationIdOrThrow } from '$web/server/auth';
 import { and, count, eq, ilike, isNull } from 'drizzle-orm';
 import type { contracts, projectsContract } from '$web/web-api/contracts';
 import { generateSlug } from '$web/server';
-import { ApplicationServices } from '@letta-cloud/rbac';
+import { ApplicationServices } from '@letta-cloud/service-rbac';
 
 type ResponseShapes = ServerInferResponses<typeof projectsContract>;
 type GetProjectsRequest = ServerInferRequest<

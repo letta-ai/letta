@@ -194,7 +194,7 @@ jobs:
           LETTA_PG_DB: postgres
           LETTA_PG_HOST: localhost
       - name: Migrate web database
-        working-directory: libs/database
+        working-directory: libs/service-database
         env:
           DATABASE_URL: postgres://postgres:postgres@localhost:5433/postgres
         run: npm run web:database:migrate

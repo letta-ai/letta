@@ -31,7 +31,7 @@ jobs:
         with:
           files: |
             apps/web/**
-            libs/component-library/**
+            libs/ui-component-library/**
             .github/workflows/web-tests.yml
   main:
     needs: [ changed-files ]

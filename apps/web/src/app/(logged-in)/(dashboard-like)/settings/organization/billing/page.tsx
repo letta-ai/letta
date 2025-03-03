@@ -16,7 +16,7 @@ import {
   TollIcon,
   Typography,
   VStack,
-} from '@letta-cloud/component-library';
+} from '@letta-cloud/ui-component-library';
 import React, { useEffect, useMemo, useState } from 'react';
 import { webApi, webApiQueryKeys } from '$web/client';
 import type { BillingHistorySchemaType } from '$web/web-api/contracts';
@@ -24,10 +24,10 @@ import {
   useCurrencyFormatter,
   useDateFormatter,
   useNumberFormatter,
-} from '@letta-cloud/helpful-client-utils';
+} from '@letta-cloud/utils-client';
 import { AddCreditCardDialog } from '$web/client/components/AddCreditCardDialog/AddCreditCardDialog';
 import { useUserHasPermission } from '$web/client/hooks';
-import { ApplicationServices } from '@letta-cloud/rbac';
+import { ApplicationServices } from '@letta-cloud/service-rbac';
 import { PurchaseCreditsDialog } from '$web/client/components/PurchaseCreditsDialog/PurchaseCreditsDialog';
 import type { ColumnDef } from '@tanstack/react-table';
 import { CreditCardSlot } from '$web/client/components';

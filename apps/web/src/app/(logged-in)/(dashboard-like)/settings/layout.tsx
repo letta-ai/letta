@@ -1,9 +1,9 @@
 'use client';
-import { DashboardWithSidebarWrapper } from '@letta-cloud/component-library';
+import { DashboardWithSidebarWrapper } from '@letta-cloud/ui-component-library';
 import { useTranslations } from '@letta-cloud/translations';
 import { useCurrentUser, useUserHasPermission } from '$web/client/hooks';
-import { useFeatureFlag } from '@letta-cloud/web-api-client';
-import { ApplicationServices } from '@letta-cloud/rbac';
+import { useFeatureFlag } from '@letta-cloud/sdk-web';
+import { ApplicationServices } from '@letta-cloud/service-rbac';
 
 interface SettingsLayoutProps {
   children: React.ReactNode;

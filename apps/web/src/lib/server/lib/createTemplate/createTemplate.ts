@@ -1,6 +1,6 @@
-import { AgentsService } from '@letta-cloud/letta-agents-api';
-import type { CreateAgentData } from '@letta-cloud/letta-agents-api';
-import { agentTemplates, db } from '@letta-cloud/database';
+import { AgentsService } from '@letta-cloud/sdk-core';
+import type { CreateAgentData } from '@letta-cloud/sdk-core';
+import { agentTemplates, db } from '@letta-cloud/service-database';
 import { sdkRouter } from '$web/sdk/router';
 import { findUniqueAgentTemplateName } from '$web/server';
 import { and, eq, isNull } from 'drizzle-orm';

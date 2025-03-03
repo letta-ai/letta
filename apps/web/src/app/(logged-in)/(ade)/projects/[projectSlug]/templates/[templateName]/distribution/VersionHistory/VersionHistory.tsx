@@ -1,8 +1,8 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { useCurrentAgentMetaData } from '@letta-cloud/shared-ade-components';
+import { useCurrentAgentMetaData } from '@letta-cloud/ui-ade-components';
 import { useTranslations } from '@letta-cloud/translations';
-import { webApi, webApiQueryKeys } from '@letta-cloud/web-api-client';
-import { useDateFormatter } from '@letta-cloud/helpful-client-utils';
+import { webApi, webApiQueryKeys } from '@letta-cloud/sdk-web';
+import { useDateFormatter } from '@letta-cloud/utils-client';
 import {
   Badge,
   Button,
@@ -14,9 +14,9 @@ import {
   MiniApp,
   Typography,
   VStack,
-} from '@letta-cloud/component-library';
+} from '@letta-cloud/ui-component-library';
 import { CompareTemplateVersions } from '$web/client/components';
-import type { AgentState } from '@letta-cloud/letta-agents-api';
+import type { AgentState } from '@letta-cloud/sdk-core';
 import { useCurrentAgent } from '$web/client/hooks/useCurrentAgent/useCurrentAgent';
 
 interface CompareVersionDialogProps {

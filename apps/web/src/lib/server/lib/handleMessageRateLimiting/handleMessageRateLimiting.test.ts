@@ -1,9 +1,9 @@
 import { getAndSeedOrganizationLimits } from '$web/server';
-import { getRedisData, setRedisData } from '@letta-cloud/redis';
+import { getRedisData, setRedisData } from '@letta-cloud/service-redis';
 import { get } from 'lodash';
-import { mockDatabase } from '@letta-cloud/database-testing';
+import { mockDatabase } from '@letta-cloud/service-database-testing';
 
-jest.mock('@letta-cloud/redis', () => ({
+jest.mock('@letta-cloud/service-redis', () => ({
   getRedisData: jest.fn(),
   setRedisData: jest.fn(),
 }));

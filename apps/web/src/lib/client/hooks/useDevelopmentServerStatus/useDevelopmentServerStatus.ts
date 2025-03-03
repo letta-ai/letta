@@ -1,8 +1,8 @@
 import { atom, useAtom } from 'jotai';
 import { useEffect } from 'react';
 import { useDebouncedCallback } from '@mantine/hooks';
-import type { DevelopmentServerConfig } from '@letta-cloud/helpful-client-utils';
-import type { HealthCheckResponse } from '@letta-cloud/letta-agents-api';
+import type { DevelopmentServerConfig } from '@letta-cloud/utils-client';
+import type { HealthCheckResponse } from '@letta-cloud/sdk-core';
 
 interface Status {
   isHealthy: boolean;

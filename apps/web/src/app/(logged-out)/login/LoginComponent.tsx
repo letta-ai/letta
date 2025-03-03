@@ -6,7 +6,7 @@ import {
   Button,
   KeyIcon,
   OfficesIcon,
-} from '@letta-cloud/component-library';
+} from '@letta-cloud/ui-component-library';
 import { Suspense } from 'react';
 import { useMemo } from 'react';
 import { useCallback, useRef } from 'react';

@@ -7,10 +7,10 @@ import {
   HStack,
   LoadingEmptyStatusComponent,
   VStack,
-} from '@letta-cloud/component-library';
+} from '@letta-cloud/ui-component-library';
 import * as React from 'react';
 import './DashboardTransition.scss';
-import { cn } from '@letta-cloud/core-style-config';
+import { cn } from '@letta-cloud/ui-styles';
 
 function TransitionLoader() {
   // only will appear if element has existed for more than 0.5s

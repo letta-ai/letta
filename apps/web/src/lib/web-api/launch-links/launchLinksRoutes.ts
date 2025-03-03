@@ -1,16 +1,16 @@
 import type { ServerInferRequest, ServerInferResponses } from '@ts-rest/core';
-import type { contracts } from '@letta-cloud/web-api-client';
+import type { contracts } from '@letta-cloud/sdk-web';
 import {
   db,
   deployedAgentTemplates,
   launchLinkConfigurations,
   shareChatIdentity,
   shareChatUser,
-} from '@letta-cloud/database';
+} from '@letta-cloud/service-database';
 import { and, desc, eq } from 'drizzle-orm';
 import { getUserWithActiveOrganizationIdOrThrow } from '$web/server/auth';
-import { ApplicationServices } from '@letta-cloud/rbac';
-import { IdentitiesService } from '@letta-cloud/letta-agents-api';
+import { ApplicationServices } from '@letta-cloud/service-rbac';
+import { IdentitiesService } from '@letta-cloud/sdk-core';
 import { sdkRouter } from '$web/sdk/router';
 import { createOrReturnSharedChatConfiguration } from '$web/server/lib/createOrReturnSharedChatConfiguration/createOrReturnSharedChatConfiguration';
 

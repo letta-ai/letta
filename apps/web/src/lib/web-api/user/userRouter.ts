@@ -20,16 +20,16 @@ import {
   userMarketingDetails,
   userPassword,
   users,
-} from '@letta-cloud/database';
+} from '@letta-cloud/service-database';
 import { and, eq, inArray, isNull } from 'drizzle-orm';
 import { cookies } from 'next/headers';
 import { CookieNames } from '$web/server/cookies/types';
-import { AdminService } from '@letta-cloud/letta-agents-api';
-import { createOrUpdateCRMContact } from '@letta-cloud/crm';
+import { AdminService } from '@letta-cloud/sdk-core';
+import { createOrUpdateCRMContact } from '@@letta-cloud/service-crm';
 import * as Sentry from '@sentry/node';
-import { environment } from '@letta-cloud/environmental-variables';
-import { trackServerSideEvent } from '@letta-cloud/analytics/server';
-import { AnalyticsEvent } from '@letta-cloud/analytics';
+import { environment } from '@letta-cloud/config-environment-variables';
+import { trackServerSideEvent } from '@letta-cloud/service-analytics/server';
+import { AnalyticsEvent } from '@letta-cloud/service-analytics';
 
 type ResponseShapes = ServerInferResponses<typeof userContract>;
 

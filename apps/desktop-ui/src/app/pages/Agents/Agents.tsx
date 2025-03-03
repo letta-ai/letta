@@ -5,14 +5,14 @@ import {
   DataTable,
   LettaInvaderIcon,
   VStack,
-} from '@letta-cloud/component-library';
+} from '@letta-cloud/ui-component-library';
 import {
   type AgentState,
   useAgentsServiceListAgents,
-} from '@letta-cloud/letta-agents-api';
+} from '@letta-cloud/sdk-core';
 import type { ColumnDef } from '@tanstack/react-table';
 import React, { useEffect, useMemo, useState } from 'react';
-import { useDateFormatter } from '@letta-cloud/helpful-client-utils';
+import { useDateFormatter } from '@letta-cloud/utils-client';
 import { useTranslations } from '@letta-cloud/translations';
 import { CreateLocalAgentDialog } from './CreateLocalAgentDialog/CreateLocalAgentDialog';
 import { DesktopPageLayout } from '../shared/DesktopPageLayout/DesktopPageLayout';

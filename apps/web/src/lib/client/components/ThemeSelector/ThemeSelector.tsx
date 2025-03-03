@@ -5,12 +5,12 @@ import {
   DarkModeIcon,
   LightModeIcon,
   RawToggleGroup,
-} from '@letta-cloud/component-library';
+} from '@letta-cloud/ui-component-library';
 import { useTranslations } from '@letta-cloud/translations';
 import { webApi, webApiQueryKeys } from '$web/client';
 import { useQueryClient } from '@tanstack/react-query';
 import type { ServerInferResponses } from '@ts-rest/core';
-import type { contracts } from '@letta-cloud/web-api-client';
+import type { contracts } from '@letta-cloud/sdk-web';
 
 export function ThemeSelector() {
   const t = useTranslations('components/ThemeSelector');

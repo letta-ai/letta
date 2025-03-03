@@ -3,8 +3,8 @@ import { cookies } from 'next/headers';
 import { CookieNames } from '$web/server/cookies/types';
 import { merge } from 'lodash-es';
 import en from '../../translations/en.json';
-import { en as adeEn } from '@letta-cloud/shared-ade-components/translations';
-import { componentTranslations } from '@letta-cloud/component-library';
+import { en as adeEn } from '@letta-cloud/ui-ade-components/translations';
+import { componentTranslations } from '@letta-cloud/ui-component-library';
 
 export default getRequestConfig(async () => {
   // Provide a static locale, fetch a user setting,

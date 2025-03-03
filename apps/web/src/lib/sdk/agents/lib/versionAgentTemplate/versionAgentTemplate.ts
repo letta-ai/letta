@@ -1,19 +1,19 @@
 import type { ServerInferRequest, ServerInferResponses } from '@ts-rest/core';
-import { AgentsService } from '@letta-cloud/letta-agents-api';
-import type { sdkContracts } from '@letta-cloud/letta-agents-api';
+import { AgentsService } from '@letta-cloud/sdk-core';
+import type { sdkContracts } from '@letta-cloud/sdk-core';
 import type { SDKContext } from '$web/sdk/shared';
 import {
   agentTemplates,
   db,
   deployedAgentTemplates,
   deployedAgentVariables,
-} from '@letta-cloud/database';
+} from '@letta-cloud/service-database';
 import { eq } from 'drizzle-orm';
 import * as Sentry from '@sentry/node';
 import { findUniqueAgentTemplateName } from '$web/server';
 import { migrateAgent } from '../migrateAgent/migrateAgent';
 import { copyAgentById } from '$web/server/lib/copyAgentById/copyAgentById';
-import { findMemoryBlockVariables } from '@letta-cloud/generic-utils';
+import { findMemoryBlockVariables } from '@letta-cloud/utils-shared';
 
 type DeployAgentTemplateRequest = ServerInferRequest<
   typeof sdkContracts.agents.versionAgentTemplate

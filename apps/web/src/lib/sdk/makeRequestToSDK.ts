@@ -1,8 +1,8 @@
 import { EventSource } from 'extended-eventsource';
-import { environment } from '@letta-cloud/environmental-variables';
+import { environment } from '@letta-cloud/config-environment-variables';
 import axios, { isAxiosError } from 'axios';
-import type { MessageCreate } from '@letta-cloud/letta-agents-api';
-import { RESTRICTED_ROUTE_BASE_PATHS } from '@letta-cloud/letta-agents-api';
+import type { MessageCreate } from '@letta-cloud/sdk-core';
+import { RESTRICTED_ROUTE_BASE_PATHS } from '@letta-cloud/sdk-core';
 import * as Sentry from '@sentry/nextjs';
 import { handleMessageRateLimiting } from '$web/server';
 

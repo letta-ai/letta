@@ -1,9 +1,0 @@
-{
-  "name": "letta-agents-api-testing",
-  "$schema": "../../node_modules/nx/schemas/project-schema.json",
-  "sourceRoot": "libs/letta-agents-api-testing/src",
-  "projectType": "library",
-  "tags": [],
-  "// targets": "to see all targets run: nx show project letta-agents-api-testing --web",
-  "targets": {}
-}

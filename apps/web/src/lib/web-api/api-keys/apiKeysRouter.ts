@@ -1,4 +1,4 @@
-import { db, lettaAPIKeys } from '@letta-cloud/database';
+import { db, lettaAPIKeys } from '@letta-cloud/service-database';
 import {
   generateAPIKey,
   getUserWithActiveOrganizationIdOrThrow,
@@ -6,8 +6,8 @@ import {
 import type { ServerInferRequest, ServerInferResponses } from '@ts-rest/core';
 import type { contracts } from '$web/web-api/contracts';
 import { and, eq, isNull } from 'drizzle-orm';
-import { ApplicationServices } from '@letta-cloud/rbac';
-import { deleteRedisData } from '@letta-cloud/redis';
+import { ApplicationServices } from '@letta-cloud/service-rbac';
+import { deleteRedisData } from '@letta-cloud/service-redis';
 
 type CreateAPIKeyPayload = ServerInferRequest<
   typeof contracts.apiKeys.createAPIKey

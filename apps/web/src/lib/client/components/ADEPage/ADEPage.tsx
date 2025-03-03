@@ -7,11 +7,11 @@ import {
   LoadingEmptyStatusComponent,
   Typography,
   VStack,
-} from '@letta-cloud/component-library';
+} from '@letta-cloud/ui-component-library';
 import { ADEHeader } from '$web/client/components/ADEPage/ADEHeader/ADEHeader';
 import { ErrorBoundary } from 'react-error-boundary';
-import { useCurrentAgentMetaData } from '@letta-cloud/shared-ade-components';
-import { useAgentsServiceRetrieveAgent } from '@letta-cloud/letta-agents-api';
+import { useCurrentAgentMetaData } from '@letta-cloud/ui-ade-components';
+import { useAgentsServiceRetrieveAgent } from '@letta-cloud/sdk-core';
 import { useTranslations } from '@letta-cloud/translations';
 import { useAtomValue } from 'jotai/index';
 import { isAgentConvertingToTemplateAtom } from './DeploymentButton/DeploymentButton';

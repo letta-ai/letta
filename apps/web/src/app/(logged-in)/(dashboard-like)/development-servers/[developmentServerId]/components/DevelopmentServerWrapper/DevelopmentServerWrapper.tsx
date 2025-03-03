@@ -1,8 +1,8 @@
 'use client';
 import React from 'react';
-import { LettaAgentsAPIWrapper } from '@letta-cloud/letta-agents-api';
-import { useCurrentDevelopmentServerConfig } from '@letta-cloud/helpful-client-utils';
-import { LoadingEmptyStatusComponent } from '@letta-cloud/component-library';
+import { LettaAgentsAPIWrapper } from '@letta-cloud/sdk-core';
+import { useCurrentDevelopmentServerConfig } from '@letta-cloud/utils-client';
+import { LoadingEmptyStatusComponent } from '@letta-cloud/ui-component-library';
 
 interface DevelopmentServerWrapperProps {
   children: React.ReactNode;

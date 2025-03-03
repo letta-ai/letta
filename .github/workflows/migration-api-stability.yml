@@ -32,12 +32,12 @@ jobs:
             apps/web/src/lib/utils/**
             apps/web/src/lib/sdk/**
             apps/core/**
-            libs/letta-agents-api/**
-            libs/server-utils/**
-            libs/database/**
-            libs/environmental-variables/**
-            libs/redis/**
-            libs/web-api-client/**
+            libs/sdk-core/**
+            libs/utils-server/**
+            libs/service-database/**
+            libs/config-environment-variables/**
+            libs/service-redis/**
+            libs/sdk-web/**
             package.json
             package-lock.json
             tsconfig.json

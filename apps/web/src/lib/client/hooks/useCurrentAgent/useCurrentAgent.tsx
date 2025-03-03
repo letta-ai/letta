@@ -1,6 +1,6 @@
 'use client';
-import { useAgentsServiceRetrieveAgent } from '@letta-cloud/letta-agents-api';
-import { useCurrentAgentMetaData } from '@letta-cloud/shared-ade-components';
+import { useAgentsServiceRetrieveAgent } from '@letta-cloud/sdk-core';
+import { useCurrentAgentMetaData } from '@letta-cloud/ui-ade-components';
 
 export function useCurrentAgent() {
   const { agentId, agentName, isLocal } = useCurrentAgentMetaData();

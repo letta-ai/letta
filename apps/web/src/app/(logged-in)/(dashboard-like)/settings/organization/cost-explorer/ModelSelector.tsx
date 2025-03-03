@@ -1,18 +1,18 @@
 import React, { useMemo } from 'react';
 import { useTranslations } from '@letta-cloud/translations';
-import { getBrandFromModelName } from '@letta-cloud/generic-utils';
+import { getBrandFromModelName } from '@letta-cloud/utils-shared';
 import {
   Badge,
   brandKeyToLogo,
   isBrandKey,
   isMultiValue,
   RawSelect,
-} from '@letta-cloud/component-library';
+} from '@letta-cloud/ui-component-library';
 import {
   ExtendedLLMSchema,
   webApi,
   webApiQueryKeys,
-} from '@letta-cloud/web-api-client';
+} from '@letta-cloud/sdk-web';
 
 interface ModelSelectorProps {
   currentModelId: string;

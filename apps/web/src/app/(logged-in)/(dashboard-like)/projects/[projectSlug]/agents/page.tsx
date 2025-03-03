@@ -1,10 +1,10 @@
 'use client';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { InfoTooltip } from '@letta-cloud/component-library';
+import { InfoTooltip } from '@letta-cloud/ui-component-library';
 import type {
   FieldDefinitions,
   QueryBuilderQuery,
-} from '@letta-cloud/component-library';
+} from '@letta-cloud/ui-component-library';
 import {
   Badge,
   Card,
@@ -14,22 +14,22 @@ import {
   MiddleTruncate,
   QueryBuilder,
   SearchIcon,
-} from '@letta-cloud/component-library';
-import { Frame } from '@letta-cloud/component-library';
+} from '@letta-cloud/ui-component-library';
+import { Frame } from '@letta-cloud/ui-component-library';
 import {
   Button,
   CloseIcon,
   LettaLoader,
   Typography,
   VStack,
-} from '@letta-cloud/component-library';
+} from '@letta-cloud/ui-component-library';
 import {
   DashboardPageLayout,
   DashboardPageSection,
   DataTable,
   HStack,
   RawInput,
-} from '@letta-cloud/component-library';
+} from '@letta-cloud/ui-component-library';
 import {
   webApi,
   webApiQueryKeys,
@@ -39,24 +39,18 @@ import {
 import { useCurrentProject } from '$web/client/hooks/useCurrentProject/useCurrentProject';
 import { useSearchParams } from 'next/navigation';
 import type { ColumnDef } from '@tanstack/react-table';
-import type {
-  AgentState,
-  ExtendedAgentState,
-} from '@letta-cloud/letta-agents-api';
+import type { AgentState, ExtendedAgentState } from '@letta-cloud/sdk-core';
 
-import {
-  TagService,
-  useTagServiceListTags,
-} from '@letta-cloud/letta-agents-api';
-import { useAgentsServiceRetrieveAgent } from '@letta-cloud/letta-agents-api';
+import { TagService, useTagServiceListTags } from '@letta-cloud/sdk-core';
+import { useAgentsServiceRetrieveAgent } from '@letta-cloud/sdk-core';
 import { useTranslations } from '@letta-cloud/translations';
 import { DeployAgentDialog } from './DeployAgentDialog/DeployAgentDialog';
-import { useDateFormatter } from '@letta-cloud/helpful-client-utils';
-import { SearchDeployedAgentsSchema } from '@letta-cloud/letta-agents-api';
+import { useDateFormatter } from '@letta-cloud/utils-client';
+import { SearchDeployedAgentsSchema } from '@letta-cloud/sdk-core';
 import { useInfiniteQuery } from '@tanstack/react-query';
-import type { sdkContracts } from '@letta-cloud/letta-agents-api';
+import type { sdkContracts } from '@letta-cloud/sdk-core';
 import type { ServerInferResponses } from '@ts-rest/core';
-import { Messages } from '@letta-cloud/shared-ade-components';
+import { Messages } from '@letta-cloud/ui-ade-components';
 import type { InfiniteData } from '@tanstack/query-core';
 
 interface AgentMessagesListProps {

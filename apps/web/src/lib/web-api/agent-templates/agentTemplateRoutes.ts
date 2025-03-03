@@ -10,14 +10,14 @@ import {
   agentTemplates,
   db,
   deployedAgentTemplates,
-} from '@letta-cloud/database';
-import { AgentsService } from '@letta-cloud/letta-agents-api';
-import type { AgentState } from '@letta-cloud/letta-agents-api';
-import { getDeployedTemplateByVersion } from '@letta-cloud/server-utils';
+} from '@letta-cloud/service-database';
+import { AgentsService } from '@letta-cloud/sdk-core';
+import type { AgentState } from '@letta-cloud/sdk-core';
+import { getDeployedTemplateByVersion } from '@letta-cloud/utils-server';
 import { createTemplate } from '$web/server/lib/createTemplate/createTemplate';
 import { copyAgentById } from '$web/server/lib/copyAgentById/copyAgentById';
 import { updateAgentFromAgentId } from '$web/server/lib/updateAgentFromAgentId/updateAgentFromAgentId';
-import { ApplicationServices } from '@letta-cloud/rbac';
+import { ApplicationServices } from '@letta-cloud/service-rbac';
 
 function randomThreeDigitNumber() {
   return Math.floor(Math.random() * 1000);

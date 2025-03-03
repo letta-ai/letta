@@ -9,7 +9,7 @@ import { redirect } from 'next/navigation';
 import {
   SourcesService,
   UseSourcesServiceRetrieveSourceKeyFn,
-} from '@letta-cloud/letta-agents-api';
+} from '@letta-cloud/sdk-core';
 import { DataSourceClientLayout } from './_components/DataSourceClientLayout/DataSourceClientLayout';
 import { getUser } from '$web/server/auth';
 

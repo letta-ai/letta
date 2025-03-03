@@ -17,7 +17,7 @@ import {
   LettaInvaderIcon,
   TerminalIcon,
   VStack,
-} from '@letta-cloud/component-library';
+} from '@letta-cloud/ui-component-library';
 import { useTranslations } from '@letta-cloud/translations';
 import { ADE } from './pages/ADE/ADE';
 import { Homepage } from './pages/Homepage/Homepage';

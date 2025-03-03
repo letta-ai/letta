@@ -32,11 +32,11 @@ export default defineConfig({
   },
   resolve: {
     alias: {
-      '@letta-cloud/environmental-variables': path.resolve(
+      '@letta-cloud/config-environment-variables': path.resolve(
         __dirname,
-        'src/alias-overrides/environmental-variables',
+        'src/alias-overrides/config-environment-variables',
       ),
-      '@letta-cloud/runtime': path.resolve(
+      '@letta-cloud/config-runtime': path.resolve(
         __dirname,
         'src/alias-overrides/runtime',
       ),

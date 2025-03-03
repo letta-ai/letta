@@ -1,5 +1,5 @@
 import { useCurrentProject } from '../../../hooks/useCurrentProject/useCurrentProject';
-import { webApi, webApiQueryKeys } from '@letta-cloud/web-api-client';
+import { webApi, webApiQueryKeys } from '@letta-cloud/sdk-web';
 import {
   Breadcrumb,
   Button,
@@ -20,20 +20,20 @@ import {
   useForm,
   VerticalDotsIcon,
   VisibleOnMobile,
-} from '@letta-cloud/component-library';
-import type { QueryBuilderQuery } from '@letta-cloud/component-library';
+} from '@letta-cloud/ui-component-library';
+import type { QueryBuilderQuery } from '@letta-cloud/ui-component-library';
 import { ProjectSelector } from '$web/client/components';
 import React, { useCallback, useMemo, useState } from 'react';
 import { useTranslations } from '@letta-cloud/translations';
-import { useCurrentAgentMetaData } from '@letta-cloud/shared-ade-components';
+import { useCurrentAgentMetaData } from '@letta-cloud/ui-ade-components';
 import { useAgentBaseTypeName } from '$web/client/hooks/useAgentBaseNameType/useAgentBaseNameType';
 import { useCurrentUser, useUserHasPermission } from '$web/client/hooks';
-import { ApplicationServices } from '@letta-cloud/rbac';
+import { ApplicationServices } from '@letta-cloud/service-rbac';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useAgentsServiceDeleteAgent } from '@letta-cloud/letta-agents-api';
-import { trackClientSideEvent } from '@letta-cloud/analytics/client';
-import { AnalyticsEvent } from '@letta-cloud/analytics';
+import { useAgentsServiceDeleteAgent } from '@letta-cloud/sdk-core';
+import { trackClientSideEvent } from '@letta-cloud/service-analytics/client';
+import { AnalyticsEvent } from '@letta-cloud/service-analytics';
 import { useRouter } from 'next/navigation';
 import { DeploymentButton } from '$web/client/components/ADEPage/DeploymentButton/DeploymentButton';
 import {

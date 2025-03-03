@@ -1,5 +1,5 @@
 import { signInUserFromProviderLogin } from '$web/server/auth';
-import { db, users } from '@letta-cloud/database';
+import { db, users } from '@letta-cloud/service-database';
 import { and, eq, isNull } from 'drizzle-orm';
 
 export async function getAPIStabilityTestingUser() {

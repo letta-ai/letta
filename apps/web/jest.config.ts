@@ -15,8 +15,8 @@ const config: Config = {
     '^.+\\.[tj]sx?$': ['babel-jest', { presets: ['@nx/next/babel'] }],
   },
   setupFilesAfterEnv: [
-    '../../libs/database-testing/src/index.ts',
-    '../../libs/letta-agents-api-testing/src/index.ts',
+    '../../libs/service-database-testing/src/index.ts',
+    '../../libs/sdk-core-testing/src/index.ts',
     './testing/always-mocks.ts',
   ],
   testEnvironment: 'jsdom',

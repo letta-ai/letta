@@ -20,7 +20,7 @@
     "**/*.tsx",
     "**/*.js",
     "**/*.jsx",
-    "../../libs/component-library/index.d.ts",
+    "../../libs/ui-component-library/index.d.ts",
     "index.d.ts"
   ],
   "exclude": [

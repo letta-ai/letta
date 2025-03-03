@@ -2,7 +2,7 @@ import {
   getPermissionForSDKPath,
   publicAPIPMatchers,
 } from '$web/server/lib/getPermissionForSDKPath/getPermissionForSDKPath';
-import { ApplicationServices } from '@letta-cloud/rbac';
+import { ApplicationServices } from '@letta-cloud/service-rbac';
 
 describe('getPermissionForSDKPath', () => {
   it('should return the correct permission for the path GET /v1/agents ', () => {

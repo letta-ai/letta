@@ -1,5 +1,5 @@
 import axios from 'axios';
-import type { ProviderUserPayload } from '@letta-cloud/web-api-client';
+import type { ProviderUserPayload } from '@letta-cloud/sdk-web';
 import { LoginErrorsEnum } from '$web/errors';
 
 interface GithubUserResponse {

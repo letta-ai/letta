@@ -13,8 +13,8 @@ import {
   TextArea,
   useForm,
   Breadcrumb,
-} from '@letta-cloud/component-library';
-import { HiddenOnMobile } from '@letta-cloud/component-library';
+} from '@letta-cloud/ui-component-library';
+import { HiddenOnMobile } from '@letta-cloud/ui-component-library';
 import {
   Avatar,
   Button,
@@ -35,12 +35,12 @@ import {
   SwitchOrganizationIcon,
   ChevronLeftIcon,
   LaptopIcon,
-} from '@letta-cloud/component-library';
+} from '@letta-cloud/ui-component-library';
 import { useCurrentUser, useUserHasPermission } from '$web/client/hooks';
 import { usePathname } from 'next/navigation';
 import { webApi, webApiQueryKeys } from '$web/client';
 import { CurrentUserDetailsBlock } from '$web/client/components';
-import { cn } from '@letta-cloud/core-style-config';
+import { cn } from '@letta-cloud/ui-styles';
 import { useTranslations } from '@letta-cloud/translations';
 import { ThemeSelector } from '$web/client/components/ThemeSelector/ThemeSelector';
 import { useCurrentProject } from '../../../hooks/useCurrentProject/useCurrentProject';
@@ -48,7 +48,7 @@ import { LocaleSelector } from '$web/client/components/LocaleSelector/LocaleSele
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as Sentry from '@sentry/browser';
-import { ApplicationServices } from '@letta-cloud/rbac';
+import { ApplicationServices } from '@letta-cloud/service-rbac';
 
 interface NavButtonProps {
   href: string;

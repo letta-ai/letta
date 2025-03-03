@@ -3,7 +3,7 @@
 import { QueryClientProviders } from './QueryClientProviders/QueryClientProviders';
 import type { ReactNode } from 'react';
 import { Provider } from 'jotai';
-import { Toaster } from '@letta-cloud/component-library';
+import { Toaster } from '@letta-cloud/ui-component-library';
 
 interface ClientSideProvidersProps {
   children: ReactNode;

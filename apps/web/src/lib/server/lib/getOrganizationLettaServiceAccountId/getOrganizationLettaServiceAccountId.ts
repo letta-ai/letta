@@ -1,6 +1,6 @@
-import { db, organizations } from '@letta-cloud/database';
+import { db, organizations } from '@letta-cloud/service-database';
 import { eq } from 'drizzle-orm';
-import { AdminService } from '@letta-cloud/letta-agents-api';
+import { AdminService } from '@letta-cloud/sdk-core';
 
 export async function getOrganizationLettaServiceAccountId(
   organizationId: string,

@@ -15,20 +15,20 @@ import {
   Typography,
   useForm,
   VStack,
-} from '@letta-cloud/component-library';
+} from '@letta-cloud/ui-component-library';
 import { useTranslations } from '@letta-cloud/translations';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { ThemeSelector } from '$web/client/components/ThemeSelector/ThemeSelector';
 import { LocaleSelector } from '$web/client/components/LocaleSelector/LocaleSelector';
 import WelcomeImage from './welcome-image.webp';
-import { cn } from '@letta-cloud/core-style-config';
+import { cn } from '@letta-cloud/ui-styles';
 import './WelcomeOverlay.scss';
 import { useCurrentUser } from '$web/client/hooks';
 import { useQueryClient } from '@tanstack/react-query';
 import { webApi, webApiQueryKeys } from '$web/client';
 import type { ServerInferResponses } from '@ts-rest/core';
-import type { contracts } from '@letta-cloud/web-api-client';
+import type { contracts } from '@letta-cloud/sdk-web';
 
 const welcomeFormSchema = z.object({
   useCases: OptionTypeSchemaSingle.array(),

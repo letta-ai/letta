@@ -11,25 +11,22 @@ import {
   Typography,
   VStack,
   WarningIcon,
-} from '@letta-cloud/component-library';
+} from '@letta-cloud/ui-component-library';
 import { useTranslations } from '@letta-cloud/translations';
 import {
   AgentsService,
   UseAgentsServiceListAgentsKeyFn,
-} from '@letta-cloud/letta-agents-api';
-import type {
-  AgentState,
-  ListAgentsResponse,
-} from '@letta-cloud/letta-agents-api';
+} from '@letta-cloud/sdk-core';
+import type { AgentState, ListAgentsResponse } from '@letta-cloud/sdk-core';
 import React, { useEffect, useMemo, useState } from 'react';
 import type { ColumnDef } from '@tanstack/react-table';
-import { useDateFormatter } from '@letta-cloud/helpful-client-utils';
-import { useCurrentDevelopmentServerConfig } from '@letta-cloud/helpful-client-utils';
+import { useDateFormatter } from '@letta-cloud/utils-client';
+import { useCurrentDevelopmentServerConfig } from '@letta-cloud/utils-client';
 import { ConnectToLocalServerCommand } from '$web/client/components/ConnectToLocalServerCommand/ConnectToLocalServerCommand';
 import { UpdateDevelopmentServerDetailsDialog } from '../../shared/UpdateDevelopmentServerDetailsDialog/UpdateDevelopmentServerDetailsDialog';
 import { useCurrentUser } from '$web/client/hooks';
-import { trackClientSideEvent } from '@letta-cloud/analytics/client';
-import { AnalyticsEvent } from '@letta-cloud/analytics';
+import { trackClientSideEvent } from '@letta-cloud/service-analytics/client';
+import { AnalyticsEvent } from '@letta-cloud/service-analytics';
 import CreateAgentDialog from '../components/CreateAgentDialog/CreateAgentDialog';
 import { useInfiniteQuery } from '@tanstack/react-query';
 import { useDebouncedValue } from '@mantine/hooks';

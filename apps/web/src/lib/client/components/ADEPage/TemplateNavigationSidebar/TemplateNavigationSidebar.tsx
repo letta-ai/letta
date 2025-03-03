@@ -1,11 +1,11 @@
-import { useFeatureFlag } from '@letta-cloud/web-api-client';
-import { useCurrentAgentMetaData } from '@letta-cloud/shared-ade-components';
+import { useFeatureFlag } from '@letta-cloud/sdk-web';
+import { useCurrentAgentMetaData } from '@letta-cloud/ui-ade-components';
 import {
   Button,
   LettaAlienChatIcon,
   ShippingIcon,
   VStack,
-} from '@letta-cloud/component-library';
+} from '@letta-cloud/ui-component-library';
 import { usePathname } from 'next/navigation';
 import { useTranslations } from '@letta-cloud/translations';
 import { useCurrentProject } from '../../../hooks/useCurrentProject/useCurrentProject';

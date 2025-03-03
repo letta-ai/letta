@@ -1,5 +1,5 @@
 'use client';
-import { Button } from '@letta-cloud/component-library';
+import { Button } from '@letta-cloud/ui-component-library';
 import { useCallback } from 'react';
 import { webApi } from '$web/client';
 

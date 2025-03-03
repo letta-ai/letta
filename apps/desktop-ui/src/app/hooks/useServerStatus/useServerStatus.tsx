@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useRef, useState } from 'react';
-import { HealthService } from '@letta-cloud/letta-agents-api';
+import { HealthService } from '@letta-cloud/sdk-core';
 
 const ServerStatusContext = createContext<boolean>(false);
 

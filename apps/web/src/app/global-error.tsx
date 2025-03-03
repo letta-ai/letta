@@ -6,7 +6,7 @@ import {
   Button,
   LoadingEmptyStatusComponent,
   VStack,
-} from '@letta-cloud/component-library';
+} from '@letta-cloud/ui-component-library';
 
 interface GlobalErrorProps {
   error: Error & { digest?: string };

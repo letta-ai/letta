@@ -18,27 +18,27 @@ import {
   Typography,
   useCopyToClipboard,
   VStack,
-} from '@letta-cloud/component-library';
+} from '@letta-cloud/ui-component-library';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslations } from '@letta-cloud/translations';
 import { useCurrentProject } from '$web/client/hooks/useCurrentProject/useCurrentProject';
-import { useCurrentAgentMetaData } from '@letta-cloud/shared-ade-components';
-import { ADEGroup } from '@letta-cloud/shared-ade-components';
+import { useCurrentAgentMetaData } from '@letta-cloud/ui-ade-components';
+import { ADEGroup } from '@letta-cloud/ui-ade-components';
 import { Panel, PanelGroup, PanelResizeHandle } from 'react-resizable-panels';
 import { useInfiniteQuery } from '@tanstack/react-query';
 import {
   AgentsService,
   UseAgentsServiceListAgentsKeyFn,
   useIdentitiesServiceRetrieveIdentity,
-} from '@letta-cloud/letta-agents-api';
-import type { ListAgentsResponse } from '@letta-cloud/letta-agents-api';
+} from '@letta-cloud/sdk-core';
+import type { ListAgentsResponse } from '@letta-cloud/sdk-core';
 import type { InfiniteData } from '@tanstack/query-core';
 import { useDebouncedValue } from '@mantine/hooks';
-import { webApi, webApiQueryKeys } from '@letta-cloud/web-api-client';
+import { webApi, webApiQueryKeys } from '@letta-cloud/sdk-web';
 import { LaunchLinks } from './LaunchLinks/LaunchLinks';
 import { VersionHistory } from './VersionHistory/VersionHistory';
 import { useLatestAgentTemplate } from '$web/client/hooks/useLatestAgentTemplate/useLatestAgentTemplate';
-import { useDateFormatter } from '@letta-cloud/helpful-client-utils';
+import { useDateFormatter } from '@letta-cloud/utils-client';
 
 type CodeSnippetMethods = 'bash' | 'python' | 'typescript';
 type DeploymentMethods = CodeSnippetMethods | 'letta-launch';

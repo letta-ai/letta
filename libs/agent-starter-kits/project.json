@@ -1,8 +1,0 @@
-{
-  "name": "agent-starter-kits",
-  "$schema": "../../node_modules/nx/schemas/project-schema.json",
-  "sourceRoot": "libs/agent-starter-kits/src",
-  "projectType": "library",
-  "tags": [],
-  "targets": {}
-}

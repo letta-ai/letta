@@ -1,6 +1,6 @@
 import type { ServerInferRequest, ServerInferResponses } from '@ts-rest/core';
-import type { contracts } from '@letta-cloud/web-api-client';
-import { db, inferenceModelsMetadata } from '@letta-cloud/database';
+import type { contracts } from '@letta-cloud/sdk-web';
+import { db, inferenceModelsMetadata } from '@letta-cloud/service-database';
 import { and, eq, ilike, isNull } from 'drizzle-orm';
 
 type GetStepCostsRequest = ServerInferRequest<

@@ -10,7 +10,7 @@ import {
 } from '@tanstack/react-query';
 import { GlobalSessionSettingsProvider } from '$web/client/hooks/session';
 import { queryClientKeys } from '$web/web-api/contracts';
-import { IdentifyUserForMixpanel } from '@letta-cloud/analytics/client';
+import { IdentifyUserForMixpanel } from '@letta-cloud/service-analytics/client';
 import { webApiQueryKeys } from '$web/client';
 import { LoggedInClientSideProviders } from './LoggedInClientSideProviders/LoggedInClientSideProviders';
 import { WelcomeOverlayWrapper } from './WelcomeOverlayWrapper/WelcomeOverlayWrapper';

@@ -1,4 +1,4 @@
-import { ADELayout } from '@letta-cloud/shared-ade-components';
+import { ADELayout } from '@letta-cloud/ui-ade-components';
 import React from 'react';
 
 export function ADE() {

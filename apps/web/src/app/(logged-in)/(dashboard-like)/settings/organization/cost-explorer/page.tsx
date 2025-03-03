@@ -1,10 +1,10 @@
 'use client';
-import { webApi, webApiQueryKeys } from '@letta-cloud/web-api-client';
+import { webApi, webApiQueryKeys } from '@letta-cloud/sdk-web';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslations } from '@letta-cloud/translations';
 import { useDebouncedValue } from '@mantine/hooks';
 import type { ColumnDef } from '@tanstack/react-table';
-import type { CostItemType } from '@letta-cloud/web-api-client';
+import type { CostItemType } from '@letta-cloud/sdk-web';
 import {
   Button,
   DashboardPageLayout,
@@ -18,13 +18,13 @@ import {
   Typography,
   VStack,
   WarningIcon,
-} from '@letta-cloud/component-library';
+} from '@letta-cloud/ui-component-library';
 import { ModelSelector, useInferenceModels } from './ModelSelector';
 import {
   useCurrencyFormatter,
   useNumberFormatter,
-} from '@letta-cloud/helpful-client-utils';
-import { creditsToDollars } from '@letta-cloud/generic-utils';
+} from '@letta-cloud/utils-client';
+import { creditsToDollars } from '@letta-cloud/utils-shared';
 import { useQueryClient } from '@tanstack/react-query';
 
 function CostSimulator() {

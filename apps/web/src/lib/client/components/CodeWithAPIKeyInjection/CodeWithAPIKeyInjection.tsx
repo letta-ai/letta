@@ -1,9 +1,9 @@
 'use client';
 import React, { useMemo } from 'react';
-import type { CodeProps } from '@letta-cloud/component-library';
-import { LettaLoader } from '@letta-cloud/component-library';
-import { RawSwitch } from '@letta-cloud/component-library';
-import { Code } from '@letta-cloud/component-library';
+import type { CodeProps } from '@letta-cloud/ui-component-library';
+import { LettaLoader } from '@letta-cloud/ui-component-library';
+import { RawSwitch } from '@letta-cloud/ui-component-library';
+import { Code } from '@letta-cloud/ui-component-library';
 import { webApi, webApiQueryKeys } from '$web/client';
 import { useGlobalSessionSettings } from '$web/client/hooks/session';
 

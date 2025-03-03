@@ -1,9 +1,5 @@
-import {
-  type contracts,
-  webApi,
-  webApiQueryKeys,
-} from '@letta-cloud/web-api-client';
-import type { CreditCardType } from '@letta-cloud/web-api-client';
+import { type contracts, webApi, webApiQueryKeys } from '@letta-cloud/sdk-web';
+import type { CreditCardType } from '@letta-cloud/sdk-web';
 import { useTranslations } from '@letta-cloud/translations';
 import {
   AmexCardIcon,
@@ -18,7 +14,7 @@ import {
   Typography,
   VisaCardIcon,
   VStack,
-} from '@letta-cloud/component-library';
+} from '@letta-cloud/ui-component-library';
 import React, { useCallback } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import type { ServerInferResponses } from '@ts-rest/core';

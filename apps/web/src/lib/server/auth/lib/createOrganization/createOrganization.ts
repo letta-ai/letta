@@ -1,4 +1,4 @@
-import { AdminService, ToolsService } from '@letta-cloud/letta-agents-api';
+import { AdminService, ToolsService } from '@letta-cloud/sdk-core';
 import {
   db,
   organizationBillingDetails,
@@ -6,8 +6,8 @@ import {
   organizationPreferences,
   organizations,
   projects,
-} from '@letta-cloud/database';
-import { createPaymentCustomer } from '@letta-cloud/payments';
+} from '@letta-cloud/service-database';
+import { createPaymentCustomer } from '@letta-cloud/service-payments';
 import { eq } from 'drizzle-orm';
 
 interface CreateOrganizationArgs {

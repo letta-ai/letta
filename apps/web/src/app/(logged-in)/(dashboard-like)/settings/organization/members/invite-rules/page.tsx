@@ -13,15 +13,11 @@ import {
   TrashIcon,
   Typography,
   useForm,
-} from '@letta-cloud/component-library';
+} from '@letta-cloud/ui-component-library';
 import { zodResolver } from '@hookform/resolvers/zod';
-import type { InviteRuleType } from '@letta-cloud/web-api-client';
-import {
-  webApi,
-  webApiContracts,
-  webApiQueryKeys,
-} from '@letta-cloud/web-api-client';
-import { useErrorTranslationMessage } from '@letta-cloud/helpful-client-utils';
+import type { InviteRuleType } from '@letta-cloud/sdk-web';
+import { webApi, webApiContracts, webApiQueryKeys } from '@letta-cloud/sdk-web';
+import { useErrorTranslationMessage } from '@letta-cloud/utils-client';
 import { z } from 'zod';
 import { useCallback, useMemo, useState } from 'react';
 import {
@@ -31,7 +27,7 @@ import {
 import type { ColumnDef } from '@tanstack/react-table';
 import type { ServerInferResponses } from '@ts-rest/core';
 import { useQueryClient } from '@tanstack/react-query';
-import { UserPresetRoles } from '@letta-cloud/rbac';
+import { UserPresetRoles } from '@letta-cloud/service-rbac';
 
 const InviteRuleSchema = z.object({
   domain: z.object({

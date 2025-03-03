@@ -18,58 +18,61 @@
     "strictNullChecks": true,
     "paths": {
       "$web/*": ["apps/web/src/lib/*"],
-      "@letta-cloud/agent-starter-kits": [
-        "libs/agent-starter-kits/src/index.ts"
+      "@@letta-cloud/service-crm": ["libs/service-crm/src/index.ts"],
+      "@letta-cloud/config-agent-starter-kits": [
+        "libs/config-agent-starter-kits/src/index.ts"
       ],
-      "@letta-cloud/analytics": ["libs/analytics/src/events.ts"],
-      "@letta-cloud/analytics/client": ["libs/analytics/src/client/index.tsx"],
-      "@letta-cloud/analytics/server": ["libs/analytics/src/server/index.ts"],
-      "@letta-cloud/component-library": [
-        "libs/component-library/src/index.tsx"
+      "@letta-cloud/config-environment-variables": [
+        "libs/config-environment-variables/src/index.ts"
       ],
-      "@letta-cloud/component-library/*": ["component-library/src/*"],
-      "@letta-cloud/composio": ["libs/composio/src/index.ts"],
+      "@letta-cloud/config-runtime": ["libs/config-runtime/src/index.ts"],
       "@letta-cloud/configure": ["scripts/configure/src/index.ts"],
-      "@letta-cloud/core-style-config": ["libs/core-style-config/src/index.ts"],
-      "@letta-cloud/core-style-config/*": ["utils/src/*"],
-      "@letta-cloud/crm": ["libs/crm/src/index.ts"],
-      "@letta-cloud/database": ["libs/database/src/index.ts"],
-      "@letta-cloud/database-testing": ["libs/database-testing/src/index.ts"],
       "@letta-cloud/desktop-builders": [
         "scripts/desktop-builders/src/index.ts"
       ],
-      "@letta-cloud/email": ["libs/email/src/index.ts"],
-      "@letta-cloud/environmental-variables": [
-        "libs/environmental-variables/src/index.ts"
-      ],
-      "@letta-cloud/feature-flags": ["libs/feature-flags/src/index.ts"],
-      "@letta-cloud/generic-utils": ["libs/generic-utils/src/index.ts"],
-      "@letta-cloud/helpful-client-utils": [
-        "libs/helpful-client-utils/src/index.ts"
-      ],
-      "@letta-cloud/letta-agents-api": ["libs/letta-agents-api/src/index.ts"],
-      "@letta-cloud/letta-agents-api-testing": [
-        "libs/letta-agents-api-testing/src/index.ts"
-      ],
-      "@letta-cloud/lettuce-client": ["libs/lettuce-client/src/index.ts"],
+      "@letta-cloud/lettuce-client": ["libs/sdk-lettuce/src/index.ts"],
       "@letta-cloud/lettuce-server": [
-        "libs/lettuce-client/src/lib/lettuce-server.ts"
+        "libs/sdk-lettuce/src/lib/lettuce-server.ts"
       ],
-      "@letta-cloud/payments": ["libs/payments/src/index.ts"],
-      "@letta-cloud/rbac": ["libs/rbac/src/index.ts"],
-      "@letta-cloud/redis": ["libs/redis/src/index.ts"],
-      "@letta-cloud/runtime": ["libs/runtime/src/index.ts"],
-      "@letta-cloud/server-utils": ["libs/server-utils/src/index.ts"],
-      "@letta-cloud/shared-ade-components": [
-        "libs/shared-ade-components/src/index.ts"
+      "@letta-cloud/sdk-core": ["libs/sdk-core/src/index.ts"],
+      "@letta-cloud/sdk-core-testing": ["libs/sdk-core-testing/src/index.ts"],
+      "@letta-cloud/sdk-web": ["libs/sdk-web/src/index.ts"],
+      "@letta-cloud/service-analytics": [
+        "libs/service-analytics/src/events.ts"
       ],
-      "@letta-cloud/shared-ade-components/translations": [
-        "libs/shared-ade-components/src/translations/index.ts"
+      "@letta-cloud/service-analytics/client": [
+        "libs/service-analytics/src/client/index.tsx"
       ],
+      "@letta-cloud/service-analytics/server": [
+        "libs/service-analytics/src/server/index.ts"
+      ],
+      "@letta-cloud/service-composio": ["libs/service-composio/src/index.ts"],
+      "@letta-cloud/service-database": ["libs/service-database/src/index.ts"],
+      "@letta-cloud/service-database-testing": [
+        "libs/service-database-testing/src/index.ts"
+      ],
+      "@letta-cloud/service-email": ["libs/service-email/src/index.ts"],
+      "@letta-cloud/service-feature-flags": [
+        "libs/service-feature-flags/src/index.ts"
+      ],
+      "@letta-cloud/service-payments": ["libs/service-payments/src/index.ts"],
+      "@letta-cloud/service-rbac": ["libs/service-rbac/src/index.ts"],
+      "@letta-cloud/service-redis": ["libs/service-redis/src/index.ts"],
       "@letta-cloud/translations": ["libs/translations/src/index.ts"],
-      "@letta-cloud/type-utils": ["libs/type-utils/src/index.ts"],
       "@letta-cloud/types": ["libs/types/src/index.ts"],
-      "@letta-cloud/web-api-client": ["libs/web-api-client/src/index.ts"]
+      "@letta-cloud/ui-ade-components": ["libs/ui-ade-components/src/index.ts"],
+      "@letta-cloud/ui-ade-components/translations": [
+        "libs/ui-ade-components/src/translations/index.ts"
+      ],
+      "@letta-cloud/ui-component-library": [
+        "libs/ui-component-library/src/index.tsx"
+      ],
+      "@letta-cloud/ui-styles": ["libs/ui-styles/src/index.ts"],
+      "@letta-cloud/ui-styles/*": ["utils/src/*"],
+      "@letta-cloud/utils-client": ["libs/utils-client/src/index.ts"],
+      "@letta-cloud/utils-server": ["libs/utils-server/src/index.ts"],
+      "@letta-cloud/utils-shared": ["libs/utils-shared/src/index.ts"],
+      "@letta-cloud/utils-types": ["libs/utils-types/src/index.ts"]
     },
     "jsx": "react"
   },

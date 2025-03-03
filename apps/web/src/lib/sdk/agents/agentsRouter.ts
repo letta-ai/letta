@@ -1,12 +1,9 @@
 import type { ServerInferRequest, ServerInferResponses } from '@ts-rest/core';
-import type {
-  ListAgentsData,
-  sdkContracts,
-} from '@letta-cloud/letta-agents-api';
+import type { ListAgentsData, sdkContracts } from '@letta-cloud/sdk-core';
 import * as Sentry from '@sentry/node';
 import type { SDKContext } from '$web/sdk/shared';
-import type { AgentState } from '@letta-cloud/letta-agents-api';
-import { AgentsService } from '@letta-cloud/letta-agents-api';
+import type { AgentState } from '@letta-cloud/sdk-core';
+import { AgentsService } from '@letta-cloud/sdk-core';
 import {
   agentTemplates,
   db,
@@ -15,13 +12,13 @@ import {
   deployedAgentVariables,
   organizationPreferences,
   projects,
-} from '@letta-cloud/database';
+} from '@letta-cloud/service-database';
 import { and, eq, isNull } from 'drizzle-orm';
 import { versionAgentTemplate } from './lib/versionAgentTemplate/versionAgentTemplate';
 import { migrateAgent } from '$web/sdk/agents/lib/migrateAgent/migrateAgent';
-import { getDeployedTemplateByVersion } from '@letta-cloud/server-utils';
+import { getDeployedTemplateByVersion } from '@letta-cloud/utils-server';
 import { LRUCache } from 'lru-cache';
-import { camelCaseKeys } from '@letta-cloud/generic-utils';
+import { camelCaseKeys } from '@letta-cloud/utils-shared';
 import { sdkRouter } from '$web/sdk/router';
 import { createTemplate } from '$web/server/lib/createTemplate/createTemplate';
 

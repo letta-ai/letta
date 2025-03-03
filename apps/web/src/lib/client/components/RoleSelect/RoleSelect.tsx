@@ -1,11 +1,11 @@
 import React, { useCallback, useMemo } from 'react';
-import { UserPresetRoles } from '@letta-cloud/rbac';
+import { UserPresetRoles } from '@letta-cloud/service-rbac';
 import { useTranslations } from '@letta-cloud/translations';
 import type {
   SelectProps,
   MakeInputProps,
-} from '@letta-cloud/component-library';
-import { Select } from '@letta-cloud/component-library';
+} from '@letta-cloud/ui-component-library';
+import { Select } from '@letta-cloud/ui-component-library';
 
 export function useGetLabelForRole() {
   const t = useTranslations('roles');

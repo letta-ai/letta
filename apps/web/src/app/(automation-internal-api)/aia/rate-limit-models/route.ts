@@ -1,7 +1,7 @@
 import type { NextRequest } from 'next/server';
 import { getUserActiveOrganizationIdOrThrow } from '$web/server/auth';
 import * as process from 'node:process';
-import { db, inferenceModelsMetadata } from '@letta-cloud/database';
+import { db, inferenceModelsMetadata } from '@letta-cloud/service-database';
 import { eq } from 'drizzle-orm';
 import { router } from '$web/web-api/router';
 

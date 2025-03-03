@@ -1,6 +1,6 @@
 import type { ServerInferRequest, ServerInferResponses } from '@ts-rest/core';
 import type { contracts } from '$web/web-api/contracts';
-import { db, emailWhitelist } from '@letta-cloud/database';
+import { db, emailWhitelist } from '@letta-cloud/service-database';
 import { eq, ilike } from 'drizzle-orm';
 
 type GetWhitelistedEmailsResponse = ServerInferResponses<

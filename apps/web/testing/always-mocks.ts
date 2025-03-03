@@ -11,7 +11,7 @@ jest.mock('lodash-es', () => {
   };
 });
 
-jest.mock('@letta-cloud/environmental-variables');
+jest.mock('@letta-cloud/config-environment-variables');
 
 global.TextEncoder = TextEncoder;
 // @ts-expect-error - stub

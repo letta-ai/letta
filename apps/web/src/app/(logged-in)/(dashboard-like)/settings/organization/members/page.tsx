@@ -34,7 +34,7 @@ import {
   LettaInvaderIcon,
   ProjectsIcon,
   TemplateIcon,
-} from '@letta-cloud/component-library';
+} from '@letta-cloud/ui-component-library';
 import React, { useCallback, useMemo, useState } from 'react';
 import type { ColumnDef } from '@tanstack/react-table';
 import type {
@@ -46,14 +46,14 @@ import { webApi, webApiContracts, webApiQueryKeys } from '$web/client';
 import { useQueryClient } from '@tanstack/react-query';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { useErrorTranslationMessage } from '@letta-cloud/helpful-client-utils';
+import { useErrorTranslationMessage } from '@letta-cloud/utils-client';
 import { generateInviteCodeLink, parseInviteCode } from '$web/utils';
 import {
   ApplicationServices,
   roleToServicesMap,
   UserPresetRoles,
-} from '@letta-cloud/rbac';
-import type { UserPresetRolesType } from '@letta-cloud/rbac';
+} from '@letta-cloud/service-rbac';
+import type { UserPresetRolesType } from '@letta-cloud/service-rbac';
 import {
   RoleSelect,
   useGetLabelForRole,

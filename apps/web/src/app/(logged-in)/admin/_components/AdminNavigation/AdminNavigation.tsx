@@ -5,7 +5,7 @@ import {
   HStack,
   VStack,
   Button,
-} from '@letta-cloud/component-library';
+} from '@letta-cloud/ui-component-library';
 import { usePathname } from 'next/navigation';
 import type { AdminNavigationItemProps } from '../../types';
 import { NavigationItems } from '../../constants';

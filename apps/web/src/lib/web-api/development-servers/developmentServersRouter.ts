@@ -6,8 +6,8 @@ import {
   db,
   developmentServerPasswords,
   developmentServers,
-} from '@letta-cloud/database';
-import type { contracts } from '@letta-cloud/web-api-client';
+} from '@letta-cloud/service-database';
+import type { contracts } from '@letta-cloud/sdk-web';
 
 type GetDevelopmentServersRequest = ServerInferRequest<
   typeof contracts.developmentServers.getDevelopmentServers

@@ -1,0 +1,16 @@
+{
+  "name": "email",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "libs/service-email/src",
+  "projectType": "library",
+  "tags": [],
+  "targets": {
+    "dev": {
+      "executor": "nx:run-commands",
+      "options": {
+        "commands": ["email dev --dir src/emails"],
+        "cwd": "libs/service-email"
+      }
+    }
+  }
+}

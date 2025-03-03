@@ -1,9 +1,9 @@
 import type { ServerInferRequest, ServerInferResponses } from '@ts-rest/core';
-import type { contracts } from '@letta-cloud/web-api-client';
-import { db, organizationSSOConfiguration } from '@letta-cloud/database';
+import type { contracts } from '@letta-cloud/sdk-web';
+import { db, organizationSSOConfiguration } from '@letta-cloud/service-database';
 import { eq } from 'drizzle-orm';
 import { WorkOS } from '@workos-inc/node';
-import { environment } from '@letta-cloud/environmental-variables';
+import { environment } from '@letta-cloud/config-environment-variables';
 
 type VerifySSOEmailResponse = ServerInferResponses<
   typeof contracts.sso.verifySSOEmail

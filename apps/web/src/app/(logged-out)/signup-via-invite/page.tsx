@@ -13,21 +13,17 @@ import {
   Typography,
   useForm,
   VStack,
-} from '@letta-cloud/component-library';
+} from '@letta-cloud/ui-component-library';
 import React, { useCallback, useMemo } from 'react';
 import { useTranslations } from '@letta-cloud/translations';
 import { useRouter, useSearchParams } from 'next/navigation';
-import {
-  webApi,
-  webApiContracts,
-  webApiQueryKeys,
-} from '@letta-cloud/web-api-client';
+import { webApi, webApiContracts, webApiQueryKeys } from '@letta-cloud/sdk-web';
 import { isFetchError } from '@ts-rest/react-query/v5';
 import { OAuthButtons } from '../OAuthButtons/OAuthButtons';
 import { LoginErrorsEnum } from '$web/errors';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useErrorTranslationMessage } from '@letta-cloud/helpful-client-utils';
+import { useErrorTranslationMessage } from '@letta-cloud/utils-client';
 
 function RedirectToLogin() {
   const { push } = useRouter();

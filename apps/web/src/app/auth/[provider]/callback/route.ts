@@ -3,7 +3,7 @@ import type { AuthProviderContextSchema } from '../types';
 import type {
   ProviderUserPayload,
   SupportedProviders,
-} from '@letta-cloud/web-api-client';
+} from '@letta-cloud/sdk-web';
 import type { NextRequest } from 'next/server';
 import {
   extractGoogleIdTokenData,
@@ -18,7 +18,7 @@ import { LoginErrorsEnum } from '$web/errors';
 import * as Sentry from '@sentry/node';
 import { parseInviteCode } from '$web/utils';
 import { WorkOS } from '@workos-inc/node';
-import { db, organizationSSOConfiguration } from '@letta-cloud/database';
+import { db, organizationSSOConfiguration } from '@letta-cloud/service-database';
 import { eq } from 'drizzle-orm';
 
 interface GoogleAccessTokenResponse {

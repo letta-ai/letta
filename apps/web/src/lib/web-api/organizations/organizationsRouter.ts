@@ -10,7 +10,7 @@ import {
   organizationUsers,
   organizationVerifiedDomains,
   users,
-} from '@letta-cloud/database';
+} from '@letta-cloud/service-database';
 import {
   createOrganization as authCreateOrganization,
   getUserActiveOrganizationIdOrThrow,
@@ -34,11 +34,11 @@ import {
   setDefaultPaymentMethod,
   listPaymentIntents,
   getPaymentCharge,
-} from '@letta-cloud/payments';
-import { ApplicationServices } from '@letta-cloud/rbac';
-import { addCreditsToOrganization } from '@letta-cloud/server-utils';
-import { creditsToDollars } from '@letta-cloud/generic-utils';
-import { sendEmail } from '@letta-cloud/email';
+} from '@letta-cloud/service-payments';
+import { ApplicationServices } from '@letta-cloud/service-rbac';
+import { addCreditsToOrganization } from '@letta-cloud/utils-server';
+import { creditsToDollars } from '@letta-cloud/utils-shared';
+import { sendEmail } from '@letta-cloud/service-email';
 
 type GetCurrentOrganizationResponse = ServerInferResponses<
   typeof contracts.organizations.getCurrentOrganization

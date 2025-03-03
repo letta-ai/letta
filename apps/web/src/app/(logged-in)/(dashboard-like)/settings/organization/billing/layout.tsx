@@ -4,7 +4,7 @@ import {
   HydrationBoundary,
   QueryClient,
 } from '@tanstack/react-query';
-import { webApiQueryKeys } from '@letta-cloud/web-api-client';
+import { webApiQueryKeys } from '@letta-cloud/sdk-web';
 import { router } from '$web/web-api/router';
 import { redirect } from 'next/navigation';
 

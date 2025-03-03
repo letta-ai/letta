@@ -6,8 +6,8 @@ import {
 } from '@tanstack/react-query';
 import { router } from '$web/web-api/router';
 import { redirect } from 'next/navigation';
-import { webApiQueryKeys } from '@letta-cloud/web-api-client';
-import { db, shareChatUser } from '@letta-cloud/database';
+import { webApiQueryKeys } from '@letta-cloud/sdk-web';
+import { db, shareChatUser } from '@letta-cloud/service-database';
 import { getUserOrRedirect } from '$web/server/auth';
 import { and, eq } from 'drizzle-orm';
 

@@ -5,7 +5,7 @@ import {
   type FlagMap,
   getDefaultFlags,
   getOrganizationFeatureFlags,
-} from '@letta-cloud/feature-flags';
+} from '@letta-cloud/service-feature-flags';
 
 type FeatureFlagsResponse = ServerInferResponses<
   typeof contracts.featureFlags.getFeatureFlags

@@ -25,13 +25,13 @@ import {
   Typography,
   useForm,
   VStack,
-} from '@letta-cloud/component-library';
+} from '@letta-cloud/ui-component-library';
 import { webApi, webApiQueryKeys } from '$web/client';
 import React, { useCallback, useMemo, useState } from 'react';
 import {
   useDateFormatter,
   useMonthCursor,
-} from '@letta-cloud/helpful-client-utils';
+} from '@letta-cloud/utils-client';
 import type { ColumnDef } from '@tanstack/react-table';
 import type {
   AdminOrganizationRateLimitItemType,
@@ -44,9 +44,9 @@ import type { ServerInferResponses } from '@ts-rest/core';
 import { useDebouncedValue } from '@mantine/hooks';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useCurrencyFormatter } from '@letta-cloud/helpful-client-utils';
-import { creditsToDollars } from '@letta-cloud/generic-utils';
-import { useNumberFormatter } from '@letta-cloud/helpful-client-utils';
+import { useCurrencyFormatter } from '@letta-cloud/utils-client';
+import { creditsToDollars } from '@letta-cloud/utils-shared';
+import { useNumberFormatter } from '@letta-cloud/utils-client';
 import { PricingModelEnum } from '@letta-cloud/types';
 
 function EnableCloudAccess() {

@@ -1,5 +1,5 @@
 import type { ServerInferResponses } from '@ts-rest/core';
-import type { sdkContracts } from '@letta-cloud/letta-agents-api';
+import type { sdkContracts } from '@letta-cloud/sdk-core';
 
 type GetHealthResponse = ServerInferResponses<
   typeof sdkContracts.health.getHealth

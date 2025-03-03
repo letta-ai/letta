@@ -10,7 +10,7 @@ import {
   PlusIcon,
   TemplateIcon,
   VStack,
-} from '@letta-cloud/component-library';
+} from '@letta-cloud/ui-component-library';
 import React, { useMemo } from 'react';
 import { useCurrentProject } from '$web/client/hooks/useCurrentProject/useCurrentProject';
 import type { webApiContracts } from '$web/client';
@@ -22,7 +22,7 @@ import { useWelcomeText } from '$web/client/hooks/useWelcomeText/useWelcomeText'
 import { CreateNewTemplateDialog } from './_components/CreateNewTemplateDialog/CreateNewTemplateDialog';
 import type { ServerInferResponseBody } from '@ts-rest/core';
 import { useUserHasPermission } from '$web/client/hooks';
-import { ApplicationServices } from '@letta-cloud/rbac';
+import { ApplicationServices } from '@letta-cloud/service-rbac';
 
 interface AgentTemplatesListProps {
   agents?: ServerInferResponseBody<

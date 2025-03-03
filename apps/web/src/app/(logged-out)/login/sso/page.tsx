@@ -1,6 +1,6 @@
 'use client';
 import { useTranslations } from '@letta-cloud/translations';
-import { webApi, webApiContracts } from '@letta-cloud/web-api-client';
+import { webApi, webApiContracts } from '@letta-cloud/sdk-web';
 import { z } from 'zod';
 import {
   Alert,
@@ -14,10 +14,10 @@ import {
   Typography,
   useForm,
   VStack,
-} from '@letta-cloud/component-library';
+} from '@letta-cloud/ui-component-library';
 import { zodResolver } from '@hookform/resolvers/zod';
 import React, { useCallback } from 'react';
-import { useErrorTranslationMessage } from '@letta-cloud/helpful-client-utils';
+import { useErrorTranslationMessage } from '@letta-cloud/utils-client';
 
 const SSOLoginSchema = z.object({
   email: z.string(),

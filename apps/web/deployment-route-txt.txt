@@ -2,13 +2,13 @@
 // import { NextResponse } from 'next/server';
 // import type { z } from 'zod';
 // import { verifyAndReturnAPIKeyDetails } from '$web/server/auth';
-// import { db, deployedAgents } from '@letta-cloud/database';
+// import { db, deployedAgents } from '@letta-cloud/service-database';
 // import { and, eq } from 'drizzle-orm';
 // import { EventSource } from 'extended-eventsource';
-// import { environment } from '@letta-cloud/environmental-variables';
-// import type { AgentMessage } from '@letta-cloud/letta-agents-api';
-// import { AgentMessageSchema } from '@letta-cloud/letta-agents-api';
-// import { AgentsService } from '@letta-cloud/letta-agents-api';
+// import { environment } from '@letta-cloud/config-environment-variables';
+// import type { AgentMessage } from '@letta-cloud/sdk-core';
+// import { AgentMessageSchema } from '@letta-cloud/sdk-core';
+// import { AgentsService } from '@letta-cloud/sdk-core';
 // import { jsonrepair } from 'jsonrepair';
 // import { validate } from 'uuid';
 // import { streamedArgumentsParserGenerator } from '$web/server';

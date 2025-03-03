@@ -13,7 +13,7 @@ import {
   Section,
   useForm,
   VStack,
-} from '@letta-cloud/component-library';
+} from '@letta-cloud/ui-component-library';
 import { useTranslations } from '@letta-cloud/translations';
 import { z } from 'zod';
 import { useQueryClient } from '@tanstack/react-query';

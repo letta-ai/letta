@@ -2,7 +2,7 @@
 import type { contracts } from '$web/web-api/contracts';
 import type { ServerInferRequest, ServerInferResponses } from '@ts-rest/core';
 import { getUserOrThrow } from '$web/server/auth';
-import { SandboxConfigService } from '@letta-cloud/letta-agents-api';
+import { SandboxConfigService } from '@letta-cloud/sdk-core';
 
 async function getE2BSandboxConfigIdByLettaUserId(lettaUserId: string) {
   let configId = '';

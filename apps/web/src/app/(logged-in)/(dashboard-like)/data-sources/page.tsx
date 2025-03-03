@@ -19,22 +19,22 @@ import {
   brandKeyToName,
   isMultiValue,
   OptionTypeSchemaSingle,
-} from '@letta-cloud/component-library';
+} from '@letta-cloud/ui-component-library';
 import type { ColumnDef } from '@tanstack/react-table';
-import type { Source } from '@letta-cloud/letta-agents-api';
-import { useModelsServiceListEmbeddingModels } from '@letta-cloud/letta-agents-api';
+import type { Source } from '@letta-cloud/sdk-core';
+import { useModelsServiceListEmbeddingModels } from '@letta-cloud/sdk-core';
 import {
   useSourcesServiceCreateSource,
   UseSourcesServiceListSourcesKeyFn,
-} from '@letta-cloud/letta-agents-api';
-import { useSourcesServiceListSources } from '@letta-cloud/letta-agents-api';
+} from '@letta-cloud/sdk-core';
+import { useSourcesServiceListSources } from '@letta-cloud/sdk-core';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 import { useTranslations } from '@letta-cloud/translations';
 import { useUserHasPermission } from '$web/client/hooks';
-import { ApplicationServices } from '@letta-cloud/rbac';
+import { ApplicationServices } from '@letta-cloud/service-rbac';
 
 const createDataSourceSchema = z.object({
   name: z.string().min(3),

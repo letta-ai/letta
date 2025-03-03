@@ -1,6 +1,6 @@
 import type { ServerInferResponses } from '@ts-rest/core';
 import { router } from '$web/web-api/router';
-import type { contracts } from '@letta-cloud/web-api-client';
+import type { contracts } from '@letta-cloud/sdk-web';
 
 type ListLLMBackendsResponseType = ServerInferResponses<
   typeof contracts.models.listInferenceModels

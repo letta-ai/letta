@@ -18,17 +18,17 @@ import {
   StarterKitItems,
   Typography,
   VStack,
-} from '@letta-cloud/component-library';
-import type { KeyValue } from '@letta-cloud/component-library';
+} from '@letta-cloud/ui-component-library';
+import type { KeyValue } from '@letta-cloud/ui-component-library';
 import { useTranslations } from '@letta-cloud/translations';
 import { useCurrentProject } from '$web/client/hooks/useCurrentProject/useCurrentProject';
 import { webApi, webApiQueryKeys, webOriginSDKApi } from '$web/client';
 import { useRouter } from 'next/navigation';
-import { findMemoryBlockVariables } from '@letta-cloud/generic-utils';
-import { STARTER_KITS } from '@letta-cloud/agent-starter-kits';
-import type { AgentState } from '@letta-cloud/letta-agents-api';
+import { findMemoryBlockVariables } from '@letta-cloud/utils-shared';
+import { STARTER_KITS } from '@letta-cloud/config-agent-starter-kits';
+import type { AgentState } from '@letta-cloud/sdk-core';
 import { useUserHasPermission } from '$web/client/hooks';
-import { ApplicationServices } from '@letta-cloud/rbac';
+import { ApplicationServices } from '@letta-cloud/service-rbac';
 
 const elementWidth = '204px';
 const elementHeight = '166px';

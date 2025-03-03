@@ -2,7 +2,7 @@ import {
   Badge,
   DashboardPageSection,
   NiceGridDisplay,
-} from '@letta-cloud/component-library';
+} from '@letta-cloud/ui-component-library';
 import { useTranslations } from '@letta-cloud/translations';
 import memory from './memory.webp';
 import discord from './discord.webp';

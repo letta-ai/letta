@@ -13,7 +13,7 @@ export async function newComponentGenerator(
 
   // add the component to the index.ts file
   const indexContent = tree
-    .read('libs/component-library/src/index.tsx')
+    .read('libs/ui-component-library/src/index.tsx')
     ?.toString();
 
   if (!indexContent) {
@@ -24,7 +24,7 @@ export async function newComponentGenerator(
   if (
     tree.exists(
       path.join(
-        'libs/component-library/src/lib',
+        'libs/ui-component-library/src/lib',
         options.name,
         `${options.name}.tsx`
       )
@@ -36,13 +36,13 @@ export async function newComponentGenerator(
   generateFiles(
     tree,
     path.join(__dirname, 'files'),
-    path.join('libs/component-library/src/lib'),
+    path.join('libs/ui-component-library/src/lib'),
     options
   );
 
   const newContents = `${indexContent}\nexport * from './lib/${options.category}/${options.name}/${options.name}';`;
 
-  tree.write('libs/component-library/src/index.tsx', newContents);
+  tree.write('libs/ui-component-library/src/index.tsx', newContents);
 
   await formatFiles(tree);
 }

@@ -6,11 +6,11 @@ import {
   HiddenOnMobile,
   VisibleOnMobile,
   VStack,
-} from '@letta-cloud/component-library';
+} from '@letta-cloud/ui-component-library';
 import {
   ADELayout,
   useCurrentAgentMetaData,
-} from '@letta-cloud/shared-ade-components';
+} from '@letta-cloud/ui-ade-components';
 import React, { useMemo, useState } from 'react';
 import { useCurrentProject } from '../../hooks/useCurrentProject/useCurrentProject';
 import { useTranslations } from '@letta-cloud/translations';

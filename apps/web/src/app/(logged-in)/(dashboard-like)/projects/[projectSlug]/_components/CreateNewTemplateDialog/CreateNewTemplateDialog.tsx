@@ -11,11 +11,11 @@ import {
   Section,
   StarterKitItems,
   VStack,
-} from '@letta-cloud/component-library';
-import { STARTER_KITS } from '@letta-cloud/agent-starter-kits';
+} from '@letta-cloud/ui-component-library';
+import { STARTER_KITS } from '@letta-cloud/config-agent-starter-kits';
 import { useQueryClient } from '@tanstack/react-query';
 import { useUserHasPermission } from '$web/client/hooks';
-import { ApplicationServices } from '@letta-cloud/rbac';
+import { ApplicationServices } from '@letta-cloud/service-rbac';
 
 interface CreateNewTemplateDialogProps {
   trigger: React.ReactNode;

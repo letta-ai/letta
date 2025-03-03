@@ -9,14 +9,14 @@ import {
   SidebarTitle,
   HStack,
   IdentitiesIcon,
-} from '@letta-cloud/component-library';
+} from '@letta-cloud/ui-component-library';
 import { useTranslations } from '@letta-cloud/translations';
 import type { PropsWithChildren } from 'react';
 import React from 'react';
 import { useCurrentProject } from '$web/client/hooks/useCurrentProject/useCurrentProject';
 import { useUserHasPermission } from '$web/client/hooks';
-import { ApplicationServices } from '@letta-cloud/rbac';
-import { useFeatureFlag } from '@letta-cloud/web-api-client';
+import { ApplicationServices } from '@letta-cloud/service-rbac';
+import { useFeatureFlag } from '@letta-cloud/sdk-web';
 
 type ProjectLayoutInnerProps = PropsWithChildren;
 

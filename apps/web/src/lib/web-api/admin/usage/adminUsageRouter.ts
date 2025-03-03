@@ -4,7 +4,7 @@ import {
   db,
   organizationCreditTransactions,
   organizations,
-} from '@letta-cloud/database';
+} from '@letta-cloud/service-database';
 import { and, gte, inArray, lt, sql } from 'drizzle-orm';
 
 type GetUsageLeaderboardResponse = ServerInferResponses<

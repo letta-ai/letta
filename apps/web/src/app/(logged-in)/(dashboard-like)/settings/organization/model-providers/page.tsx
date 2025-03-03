@@ -22,22 +22,19 @@ import {
   TrashIcon,
   Typography,
   useForm,
-} from '@letta-cloud/component-library';
+} from '@letta-cloud/ui-component-library';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
-import type {
-  ListProvidersResponse,
-  Provider,
-} from '@letta-cloud/letta-agents-api';
+import type { ListProvidersResponse, Provider } from '@letta-cloud/sdk-core';
 import {
   useProvidersServiceCreateProvider,
   useProvidersServiceDeleteProvider,
   useProvidersServiceListProviders,
   UseProvidersServiceListProvidersKeyFn,
   useProvidersServiceModifyProvider,
-} from '@letta-cloud/letta-agents-api';
+} from '@letta-cloud/sdk-core';
 import { useQueryClient } from '@tanstack/react-query';
-import { useDateFormatter } from '@letta-cloud/helpful-client-utils';
+import { useDateFormatter } from '@letta-cloud/utils-client';
 
 const UpdateModelProviderSchema = z.object({
   apiKey: z.string(),

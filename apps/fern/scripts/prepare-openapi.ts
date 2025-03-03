@@ -5,7 +5,7 @@ import { omit } from 'lodash';
 import { execSync } from 'child_process';
 import { merge, isErrorResult } from 'openapi-merge';
 import { Swagger } from 'atlassian-openapi';
-import { RESTRICTED_ROUTE_BASE_PATHS } from '../../../libs/letta-agents-api/src/lib/constants';
+import { RESTRICTED_ROUTE_BASE_PATHS } from '../../../libs/sdk-core/src/lib/constants';
 
 const lettaWebOpenAPIPath = path.join(
   __dirname,
@@ -52,7 +52,7 @@ const lettaAgentsAPIWithNoEndslash = Object.keys(lettaAgentsAPI.paths).reduce(
   {} as Swagger.SwaggerV3['paths'],
 );
 
-// remove duplicate paths, delete from letta-web-openapi if it exists in letta-agents-api
+// remove duplicate paths, delete from letta-web-openapi if it exists in core-ts-sdk
 // some paths will have an extra / at the end, so we need to remove that as well
 lettaWebOpenAPI.paths = Object.fromEntries(
   Object.entries(lettaWebOpenAPI.paths).filter(([path]) => {

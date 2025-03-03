@@ -4,7 +4,7 @@ import {
   animals,
   uniqueNamesGenerator,
 } from 'unique-names-generator';
-import { agentTemplates, db } from '@letta-cloud/database';
+import { agentTemplates, db } from '@letta-cloud/service-database';
 import { eq } from 'drizzle-orm';
 
 export async function findUniqueAgentTemplateName(deep = 0) {

@@ -1,6 +1,6 @@
 import type { ServerInferRequest, ServerInferResponses } from '@ts-rest/core';
 import type { contracts } from '$web/web-api/contracts';
-import { db, toolMetadata } from '@letta-cloud/database';
+import { db, toolMetadata } from '@letta-cloud/service-database';
 import { and, count, eq, ilike, or, sql } from 'drizzle-orm';
 
 type ListToolMetadataRequest = ServerInferRequest<

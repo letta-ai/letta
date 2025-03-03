@@ -2,7 +2,7 @@ import {
   db,
   shareChatUser,
   sharedAgentChatConfigurations,
-} from '@letta-cloud/database';
+} from '@letta-cloud/service-database';
 import { and, eq } from 'drizzle-orm';
 
 type DoesUserHaveAccessToSharedAgentOptions = {

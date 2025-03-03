@@ -1,5 +1,5 @@
-import { AgentsService, BlocksService } from '@letta-cloud/letta-agents-api';
-import type { AgentState, UpdateAgent } from '@letta-cloud/letta-agents-api';
+import { AgentsService, BlocksService } from '@letta-cloud/sdk-core';
+import type { AgentState, UpdateAgent } from '@letta-cloud/sdk-core';
 import * as lodash from 'lodash';
 import { attachVariablesToTemplates } from '../attachVariablesToTemplates/attachVariablesToTemplates';
 

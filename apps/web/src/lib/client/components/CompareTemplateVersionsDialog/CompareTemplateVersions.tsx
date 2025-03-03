@@ -1,4 +1,4 @@
-import type { AgentState } from '@letta-cloud/letta-agents-api';
+import type { AgentState } from '@letta-cloud/sdk-core';
 import React from 'react';
 import {
   AgentStateViewer,
@@ -6,8 +6,8 @@ import {
   LoadingEmptyStatusComponent,
   Typography,
   VStack,
-} from '@letta-cloud/component-library';
-import { webApi, webApiQueryKeys } from '@letta-cloud/web-api-client';
+} from '@letta-cloud/ui-component-library';
+import { webApi, webApiQueryKeys } from '@letta-cloud/sdk-web';
 import { useTranslations } from '@letta-cloud/translations';
 import { useCurrentAgent } from '$web/client/hooks/useCurrentAgent/useCurrentAgent';
 

@@ -8,8 +8,8 @@ import {
   organizationUsers,
   userMarketingDetails,
   users,
-} from '@letta-cloud/database';
-import { createOrUpdateCRMContact } from '@letta-cloud/crm';
+} from '@letta-cloud/service-database';
+import { createOrUpdateCRMContact } from '@@letta-cloud/service-crm';
 import { inArray } from 'drizzle-orm/sql/expressions/conditions';
 
 type AdminGetUsersResponse = ServerInferResponses<

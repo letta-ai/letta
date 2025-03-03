@@ -1,9 +1,0 @@
-{
-  "name": "feature-flags",
-  "$schema": "../../node_modules/nx/schemas/project-schema.json",
-  "sourceRoot": "libs/feature-flags/src",
-  "projectType": "library",
-  "tags": [],
-  "// targets": "to see all targets run: nx show project feature-flags --web",
-  "targets": {}
-}

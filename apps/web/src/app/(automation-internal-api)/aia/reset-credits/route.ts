@@ -1,13 +1,13 @@
 import type { NextRequest } from 'next/server';
 import { getUserActiveOrganizationIdOrThrow } from '$web/server/auth';
 import * as process from 'node:process';
-import { db, organizationCredits } from '@letta-cloud/database';
+import { db, organizationCredits } from '@letta-cloud/service-database';
 import { eq } from 'drizzle-orm';
 import {
   addCreditsToOrganization,
   getOrganizationCredits,
   removeCreditsFromOrganization,
-} from '@letta-cloud/server-utils';
+} from '@letta-cloud/utils-server';
 
 export async function POST(req: NextRequest) {
   const organizationId = await getUserActiveOrganizationIdOrThrow();

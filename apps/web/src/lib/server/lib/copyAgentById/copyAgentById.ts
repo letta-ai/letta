@@ -1,4 +1,4 @@
-import { AgentsService } from '@letta-cloud/letta-agents-api';
+import { AgentsService } from '@letta-cloud/sdk-core';
 import { omittedFieldsOnCopy } from '../updateAgentFromAgentId/updateAgentFromAgentId';
 import * as lodash from 'lodash';
 import {

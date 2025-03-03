@@ -3,7 +3,7 @@ import {
   LettaLoader,
   Typography,
   VStack,
-} from '@letta-cloud/component-library';
+} from '@letta-cloud/ui-component-library';
 import { useTranslations } from '@letta-cloud/translations';
 
 export function Homepage() {

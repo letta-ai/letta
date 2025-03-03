@@ -1,6 +1,6 @@
 'use client';
 import React from 'react';
-import { HStack, Typography, VStack } from '@letta-cloud/component-library';
+import { HStack, Typography, VStack } from '@letta-cloud/ui-component-library';
 
 interface CenteredPageCardProps {
   title: string;
