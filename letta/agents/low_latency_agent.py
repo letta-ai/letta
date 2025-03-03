@@ -1,10 +1,11 @@
 import json
 import uuid
-from typing import Any, AsyncGenerator, Dict, List
+from typing import Any, AsyncGenerator, Dict, List, Tuple
 
 import openai
-from starlette.concurrency import run_in_threadpool
 
+from letta.agents.base_agent import BaseAgent
+from letta.agents.ephemeral_agent import EphemeralAgent
 from letta.constants import NON_USER_MSG_PREFIX
 from letta.helpers.datetime_helpers import get_utc_time
 from letta.helpers.tool_execution_helper import (
@@ -17,6 +18,7 @@ from letta.interfaces.openai_chat_completions_streaming_interface import OpenAIC
 from letta.log import get_logger
 from letta.orm.enums import ToolType
 from letta.schemas.agent import AgentState
+from letta.schemas.block import BlockUpdate
 from letta.schemas.message import Message, MessageUpdate
 from letta.schemas.openai.chat_completion_request import (
     AssistantMessage,
@@ -28,7 +30,6 @@ from letta.schemas.openai.chat_completion_request import (
     UserMessage,
 )
 from letta.schemas.user import User
-from letta.server.rest_api.optimistic_json_parser import OptimisticJSONParser
 from letta.server.rest_api.utils import (
     convert_letta_messages_to_openai,
     create_assistant_messages_from_openai_response,
@@ -36,14 +37,17 @@ from letta.server.rest_api.utils import (
     create_user_message,
 )
 from letta.services.agent_manager import AgentManager
+from letta.services.block_manager import BlockManager
 from letta.services.helpers.agent_manager_helper import compile_system_message
 from letta.services.message_manager import MessageManager
+from letta.services.summarizer.enums import SummarizationMode
+from letta.services.summarizer.summarizer import Summarizer
 from letta.utils import united_diff
 
 logger = get_logger(__name__)
 
 
-class LowLatencyAgent:
+class LowLatencyAgent(BaseAgent):
     """
     A function-calling loop for streaming OpenAI responses with tool execution.
     This agent:
@@ -58,32 +62,53 @@ class LowLatencyAgent:
         openai_client: openai.AsyncClient,
         message_manager: MessageManager,
         agent_manager: AgentManager,
+        block_manager: BlockManager,
         actor: User,
+        summarization_mode: SummarizationMode = SummarizationMode.STATIC_MESSAGE_BUFFER,
+        message_buffer_limit: int = 10,
+        message_buffer_min: int = 4,
     ):
-        self.agent_id = agent_id
-        self.openai_client = openai_client
+        super().__init__(
+            agent_id=agent_id, openai_client=openai_client, message_manager=message_manager, agent_manager=agent_manager, actor=actor
+        )
 
-        # DB access related fields
-        self.message_manager = message_manager
-        self.agent_manager = agent_manager
-        self.actor = actor
+        # TODO: Make this more general, factorable
+        # Summarizer settings
+        self.block_manager = block_manager
+        # TODO: This is not guaranteed to exist!
+        self.summary_block_label = "human"
+        self.summarizer = Summarizer(
+            mode=summarization_mode,
+            summarizer_agent=EphemeralAgent(
+                agent_id=agent_id, openai_client=openai_client, message_manager=message_manager, agent_manager=agent_manager, actor=actor
+            ),
+            message_buffer_limit=message_buffer_limit,
+            message_buffer_min=message_buffer_min,
+        )
+        self.message_buffer_limit = message_buffer_limit
+        self.message_buffer_min = message_buffer_min
 
-        # Internal conversation state
-        self.optimistic_json_parser = OptimisticJSONParser(strict=True)
-        self.current_parsed_json_result: Dict[str, Any] = {}
+    async def step(self, input_message: UserMessage) -> List[Message]:
+        raise NotImplementedError("LowLatencyAgent does not have a synchronous step implemented currently.")
 
-    async def step(self, input_message: Dict[str, str]) -> AsyncGenerator[str, None]:
+    async def step_stream(self, input_message: UserMessage) -> AsyncGenerator[str, None]:
         """
         Async generator that yields partial tokens as SSE events, handles tool calls,
         and streams error messages if OpenAI API failures occur.
         """
+        input_message = self.pre_process_input_message(input_message=input_message)
         agent_state = self.agent_manager.get_agent_by_id(agent_id=self.agent_id, actor=self.actor)
+        in_context_messages = self.message_manager.get_messages_by_ids(message_ids=agent_state.message_ids, actor=self.actor)
         letta_message_db_queue = [create_user_message(input_message=input_message, agent_id=agent_state.id, actor=self.actor)]
         in_memory_message_history = [input_message]
 
         while True:
-            # Build context and request
-            openai_messages = self._build_context_window(in_memory_message_history, agent_state)
+            # Constantly pull down and integrate memory blocks
+            in_context_messages = self._rebuild_memory(in_context_messages=in_context_messages, agent_state=agent_state)
+
+            # Convert Letta messages to OpenAI messages
+            openai_messages = convert_letta_messages_to_openai(in_context_messages)
+            openai_messages.extend(in_memory_message_history)
             request = self._build_openai_request(openai_messages, agent_state)
 
             # Execute the request
@@ -94,24 +119,19 @@ class LowLatencyAgent:
                 yield sse
 
             # Process the AI response (buffered messages, tool execution, etc.)
-            continue_execution = await self.handle_ai_response(
+            continue_execution = await self._handle_ai_response(
                 streaming_interface, agent_state, in_memory_message_history, letta_message_db_queue
             )
 
             if not continue_execution:
                 break
 
-        # Persist messages to the database asynchronously
-        await run_in_threadpool(
-            self.agent_manager.append_to_in_context_messages,
-            letta_message_db_queue,
-            agent_id=agent_state.id,
-            actor=self.actor,
-        )
+        # Rebuild context window
+        await self._rebuild_context_window(in_context_messages, letta_message_db_queue, agent_state)
 
         yield "data: [DONE]\n\n"
 
-    async def handle_ai_response(
+    async def _handle_ai_response(
         self,
         streaming_interface: OpenAIChatCompletionsStreamingInterface,
         agent_state: AgentState,
@@ -194,15 +214,24 @@ class LowLatencyAgent:
         # Exit the loop if finish_reason_stop or no tool call occurred
         return not streaming_interface.finish_reason_stop
 
-    def _build_context_window(self, in_memory_message_history: List[Dict[str, Any]], agent_state: AgentState) -> List[Dict]:
-        # Build in_context_messages
-        in_context_messages = self.message_manager.get_messages_by_ids(message_ids=agent_state.message_ids, actor=self.actor)
-        in_context_messages = self._rebuild_memory(in_context_messages=in_context_messages, agent_state=agent_state)
+    async def _rebuild_context_window(
+        self, in_context_messages: List[Message], letta_message_db_queue: List[Message], agent_state: AgentState
+    ) -> None:
+        new_letta_messages = self.message_manager.create_many_messages(letta_message_db_queue, actor=self.actor)
 
-        # Convert Letta messages to OpenAI messages
-        openai_messages = convert_letta_messages_to_openai(in_context_messages)
-        openai_messages.extend(in_memory_message_history)
-        return openai_messages
+        # TODO: Make this more general and configurable, less brittle
+        target_block = next(b for b in agent_state.memory.blocks if b.label == self.summary_block_label)
+        previous_summary = self.block_manager.get_block_by_id(block_id=target_block.id, actor=self.actor).value
+        new_in_context_messages, summary_str, updated = await self.summarizer.summarize(
+            in_context_messages=in_context_messages, new_letta_messages=new_letta_messages, previous_summary=previous_summary
+        )
+
+        if updated:
+            self.block_manager.update_block(block_id=target_block.id, block_update=BlockUpdate(value=summary_str), actor=self.actor)
+
+        self.agent_manager.set_in_context_messages(
+            agent_id=self.agent_id, message_ids=[m.id for m in new_in_context_messages], actor=self.actor
+        )
 
     def _rebuild_memory(self, in_context_messages: List[Message], agent_state: AgentState) -> List[Message]:
         # TODO: This is a pretty brittle pattern established all over our code, need to get rid of this
@@ -264,7 +293,7 @@ class LowLatencyAgent:
             for t in tools
         ]
 
-    async def _execute_tool(self, tool_name: str, tool_args: dict, agent_state: AgentState) -> (str, bool):
+    async def _execute_tool(self, tool_name: str, tool_args: dict, agent_state: AgentState) -> Tuple[str, bool]:
         """
         Executes a tool and returns (result, success_flag).
         """
