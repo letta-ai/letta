@@ -153,7 +153,7 @@ def _assert_valid_chunk(chunk, idx, chunks):
 
 
 @pytest.mark.asyncio
-@pytest.mark.parametrize("message", ["What's the weather in SF?"])
+@pytest.mark.parametrize("message", ["How are you?"])
 @pytest.mark.parametrize("endpoint", ["v1/voice"])
 async def test_latency(mock_e2b_api_key_none, client, agent, message, endpoint):
     """Tests chat completion streaming using the Async OpenAI client."""

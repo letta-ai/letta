@@ -6,8 +6,9 @@ from fastapi import APIRouter, Body, Depends, Header, HTTPException
 from fastapi.responses import StreamingResponse
 from openai.types.chat.completion_create_params import CompletionCreateParams
 
+from letta.agents.low_latency_agent import LowLatencyAgent
 from letta.log import get_logger
-from letta.low_latency_agent import LowLatencyAgent
+from letta.schemas.openai.chat_completions import UserMessage
 from letta.server.rest_api.utils import get_letta_server, get_messages_from_completion_request
 from letta.settings import model_settings
 
@@ -44,12 +45,8 @@ async def create_voice_chat_completions(
     if agent_id is None:
         raise HTTPException(status_code=400, detail="Must pass agent_id in the 'user' field")
 
-    # agent_state = server.agent_manager.get_agent_by_id(agent_id=agent_id, actor=actor)
-    # if agent_state.llm_config.model_endpoint_type != "openai":
-    #     raise HTTPException(status_code=400, detail="Only OpenAI models are supported by this endpoint.")
-
     # Also parse the user's new input
-    input_message = get_messages_from_completion_request(completion_request)[-1]
+    input_message = UserMessage(**get_messages_from_completion_request(completion_request)[-1])
 
     # Create OpenAI async client
     client = openai.AsyncClient(
@@ -72,8 +69,11 @@ async def create_voice_chat_completions(
         openai_client=client,
         message_manager=server.message_manager,
         agent_manager=server.agent_manager,
+        block_manager=server.block_manager,
         actor=actor,
+        message_buffer_limit=10,
+        message_buffer_min=4,
     )
 
     # Return the streaming generator
-    return StreamingResponse(agent.step(input_message=input_message), media_type="text/event-stream")
+    return StreamingResponse(agent.step_stream(input_message=input_message), media_type="text/event-stream")

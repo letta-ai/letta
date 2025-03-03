@@ -175,7 +175,7 @@ def test_many_messages_performance(client, num_messages):
     message_manager.create_many_messages(all_messages, actor=actor)
     log_event("Inserted messages into the database")
 
-    agent_manager._set_in_context_messages(
+    agent_manager.set_in_context_messages(
         agent_id=agent_state.id, message_ids=agent_state.message_ids + [m.id for m in all_messages], actor=client.user
     )
     log_event("Updated agent context with messages")
