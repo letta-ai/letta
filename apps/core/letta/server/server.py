@@ -1172,7 +1172,7 @@ class SyncServer(Server):
         actions = self.get_composio_client(api_key=api_key).actions.get(apps=[composio_app_name])
         return actions
 
-    @trace_method("Send Message")
+    @trace_method
     async def send_message_to_agent(
         self,
         agent_id: str,

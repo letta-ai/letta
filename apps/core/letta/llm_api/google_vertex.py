@@ -8,6 +8,7 @@ from letta.local_llm.json_parser import clean_json_string_extra_backslash
 from letta.local_llm.utils import count_tokens
 from letta.schemas.openai.chat_completion_request import Tool
 from letta.schemas.openai.chat_completion_response import ChatCompletionResponse, Choice, FunctionCall, Message, ToolCall, UsageStatistics
+from letta.tracing import log_event
 from letta.utils import get_tool_call_id
 
 
@@ -323,6 +324,9 @@ def google_vertex_chat_completions_request(
     config["tool_config"] = tool_config.model_dump()
 
     # make request to client
+    attributes = config if isinstance(config, dict) else {"config": config}
+    attributes.update({"contents": contents})
+    log_event(name="llm_request_sent", attributes={"contents": contents, "config": config})
     response = client.models.generate_content(
         model=model,
         contents=contents,

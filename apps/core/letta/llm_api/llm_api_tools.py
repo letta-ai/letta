@@ -120,7 +120,7 @@ def retry_with_exponential_backoff(
     return wrapper
 
 
-@trace_method("LLM Request")
+@trace_method
 @retry_with_exponential_backoff
 def create(
     # agent_state: AgentState,
