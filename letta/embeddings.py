@@ -225,6 +225,7 @@ def embedding_model(config: EmbeddingConfig, user_id: Optional[uuid.UUID] = None
             api_base=config.embedding_endpoint,
             api_key=model_settings.openai_api_key,
             additional_kwargs=additional_kwargs,
+            model=config.embedding_model,
         )
         return model
 
