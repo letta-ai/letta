@@ -3123,6 +3123,10 @@ def test_job_usage_stats_add_and_get(server: SyncServer, default_job, default_us
     assert usage_stats.prompt_tokens == 50
     assert usage_stats.total_tokens == 150
 
+    # get steps
+    steps = job_manager.get_job_steps(job_id=default_job.id, actor=default_user)
+    assert len(steps) == 1
+
 
 def test_job_usage_stats_get_no_stats(server: SyncServer, default_job, default_user):
     """Test getting usage statistics for a job with no stats."""
@@ -3135,6 +3139,10 @@ def test_job_usage_stats_get_no_stats(server: SyncServer, default_job, default_u
     assert usage_stats.completion_tokens == 0
     assert usage_stats.prompt_tokens == 0
     assert usage_stats.total_tokens == 0
+
+    # get steps
+    steps = job_manager.get_job_steps(job_id=default_job.id, actor=default_user)
+    assert len(steps) == 0
 
 
 def test_job_usage_stats_add_multiple(server: SyncServer, default_job, default_user):
@@ -3180,6 +3188,10 @@ def test_job_usage_stats_add_multiple(server: SyncServer, default_job, default_u
     assert usage_stats.prompt_tokens == 150
     assert usage_stats.total_tokens == 450
     assert usage_stats.step_count == 2
+
+    # get steps
+    steps = job_manager.get_job_steps(job_id=default_job.id, actor=default_user)
+    assert len(steps) == 2
 
 
 def test_job_usage_stats_get_nonexistent_job(server: SyncServer, default_user):

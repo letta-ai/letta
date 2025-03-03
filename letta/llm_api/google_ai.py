@@ -11,6 +11,7 @@ from letta.local_llm.json_parser import clean_json_string_extra_backslash
 from letta.local_llm.utils import count_tokens
 from letta.schemas.openai.chat_completion_request import Tool
 from letta.schemas.openai.chat_completion_response import ChatCompletionResponse, Choice, FunctionCall, Message, ToolCall, UsageStatistics
+from letta.tracing import log_event
 from letta.utils import get_tool_call_id
 
 
@@ -422,7 +423,9 @@ def google_ai_chat_completions_request(
     if add_postfunc_model_messages:
         data["contents"] = add_dummy_model_messages(data["contents"])
 
+    log_event(name="llm_request_sent", attributes=data)
     response_json = make_post_request(url, headers, data)
+    log_event(name="llm_response_received", attributes=response_json)
     try:
         return convert_google_ai_response_to_chatcompletion(
             response_json=response_json,

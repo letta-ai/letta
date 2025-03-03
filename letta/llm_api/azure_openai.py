@@ -8,6 +8,7 @@ from letta.schemas.openai.chat_completion_response import ChatCompletionResponse
 from letta.schemas.openai.chat_completions import ChatCompletionRequest
 from letta.schemas.openai.embedding_response import EmbeddingResponse
 from letta.settings import ModelSettings
+from letta.tracing import log_event
 
 
 def get_azure_chat_completions_endpoint(base_url: str, model: str, api_version: str):
@@ -120,10 +121,12 @@ def azure_openai_chat_completions_request(
         data.pop("tool_choice", None)  # extra safe,  should exist always (default="auto")
 
     url = get_azure_chat_completions_endpoint(model_settings.azure_base_url, llm_config.model, model_settings.azure_api_version)
+    log_event(name="llm_request_sent", attributes=data)
     response_json = make_post_request(url, headers, data)
     # NOTE: azure openai does not include "content" in the response when it is None, so we need to add it
     if "content" not in response_json["choices"][0].get("message"):
         response_json["choices"][0]["message"]["content"] = None
+    log_event(name="llm_response_received", attributes=response_json)
     response = ChatCompletionResponse(**response_json)  # convert to 'dot-dict' style which is the openai python client default
     return response
 

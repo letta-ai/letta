@@ -16,6 +16,13 @@ class Step(BaseModel):
     )
 
 
+class ArgsSchema(BaseModel):
+    step: Step = Field(
+        ...,
+        description="A step to add to the task plan.",
+    )
+
+
 def create_step(step: Step) -> str:
     """
     Creates a step for the current task.

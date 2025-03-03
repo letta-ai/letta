@@ -116,8 +116,8 @@ def test_shared_blocks(client: LettaSDKClient):
         ],
     )
     assert (
-        "charles" in client.agents.core_memory.retrieve_block(agent_id=agent_state2.id, block_label="human").value.lower()
-    ), f"Shared block update failed {client.agents.core_memory.retrieve_block(agent_id=agent_state2.id, block_label='human').value}"
+        "charles" in client.agents.blocks.retrieve(agent_id=agent_state2.id, block_label="human").value.lower()
+    ), f"Shared block update failed {client.agents.blocks.retrieve(agent_id=agent_state2.id, block_label="human").value}"
 
     # cleanup
     client.agents.delete(agent_state1.id)
@@ -254,24 +254,24 @@ def test_agent_tags(client: LettaSDKClient):
 
 def test_update_agent_memory_label(client: LettaSDKClient, agent: AgentState):
     """Test that we can update the label of a block in an agent's memory"""
-    current_labels = [block.label for block in client.agents.core_memory.list_blocks(agent_id=agent.id)]
+    current_labels = [block.label for block in client.agents.blocks.list(agent_id=agent.id)]
     example_label = current_labels[0]
     example_new_label = "example_new_label"
     assert example_new_label not in current_labels
 
-    client.agents.core_memory.modify_block(
+    client.agents.blocks.modify(
         agent_id=agent.id,
         block_label=example_label,
         label=example_new_label,
     )
 
-    updated_block = client.agents.core_memory.retrieve_block(agent_id=agent.id, block_label=example_new_label)
+    updated_block = client.agents.blocks.retrieve(agent_id=agent.id, block_label=example_new_label)
     assert updated_block.label == example_new_label
 
 
 def test_add_remove_agent_memory_block(client: LettaSDKClient, agent: AgentState):
     """Test that we can add and remove a block from an agent's memory"""
-    current_labels = [block.label for block in client.agents.core_memory.list_blocks(agent_id=agent.id)]
+    current_labels = [block.label for block in client.agents.blocks.list(agent_id=agent.id)]
     example_new_label = current_labels[0] + "_v2"
     example_new_value = "example value"
     assert example_new_label not in current_labels
@@ -282,42 +282,42 @@ def test_add_remove_agent_memory_block(client: LettaSDKClient, agent: AgentState
         value=example_new_value,
         limit=1000,
     )
-    client.agents.core_memory.attach_block(
+    client.agents.blocks.attach(
         agent_id=agent.id,
         block_id=block.id,
     )
 
-    updated_block = client.agents.core_memory.retrieve_block(
+    updated_block = client.agents.blocks.retrieve(
         agent_id=agent.id,
         block_label=example_new_label,
     )
     assert updated_block.value == example_new_value
 
     # Now unlink the block
-    client.agents.core_memory.detach_block(
+    client.agents.blocks.detach(
         agent_id=agent.id,
         block_id=block.id,
     )
 
-    current_labels = [block.label for block in client.agents.core_memory.list_blocks(agent_id=agent.id)]
+    current_labels = [block.label for block in client.agents.blocks.list(agent_id=agent.id)]
     assert example_new_label not in current_labels
 
 
 def test_update_agent_memory_limit(client: LettaSDKClient, agent: AgentState):
     """Test that we can update the limit of a block in an agent's memory"""
 
-    current_labels = [block.label for block in client.agents.core_memory.list_blocks(agent_id=agent.id)]
+    current_labels = [block.label for block in client.agents.blocks.list(agent_id=agent.id)]
     example_label = current_labels[0]
     example_new_limit = 1
-    current_block = client.agents.core_memory.retrieve_block(agent_id=agent.id, block_label=example_label)
+    current_block = client.agents.blocks.retrieve(agent_id=agent.id, block_label=example_label)
     current_block_length = len(current_block.value)
 
-    assert example_new_limit != client.agents.core_memory.retrieve_block(agent_id=agent.id, block_label=example_label).limit
+    assert example_new_limit != client.agents.blocks.retrieve(agent_id=agent.id, block_label=example_label).limit
     assert example_new_limit < current_block_length
 
     # We expect this to throw a value error
     with pytest.raises(ApiError):
-        client.agents.core_memory.modify_block(
+        client.agents.blocks.modify(
             agent_id=agent.id,
             block_label=example_label,
             limit=example_new_limit,
@@ -326,13 +326,13 @@ def test_update_agent_memory_limit(client: LettaSDKClient, agent: AgentState):
     # Now try the same thing with a higher limit
     example_new_limit = current_block_length + 10000
     assert example_new_limit > current_block_length
-    client.agents.core_memory.modify_block(
+    client.agents.blocks.modify(
         agent_id=agent.id,
         block_label=example_label,
         limit=example_new_limit,
     )
 
-    assert example_new_limit == client.agents.core_memory.retrieve_block(agent_id=agent.id, block_label=example_label).limit
+    assert example_new_limit == client.agents.blocks.retrieve(agent_id=agent.id, block_label=example_label).limit
 
 
 def test_messages(client: LettaSDKClient, agent: AgentState):
@@ -584,7 +584,7 @@ def test_agent_creation(client: LettaSDKClient):
 
     # Verify all memory blocks are properly attached
     for block in [offline_persona_block, mindy_block, user_preferences_block]:
-        agent_block = client.agents.core_memory.retrieve_block(agent_id=agent.id, block_label=block.label)
+        agent_block = client.agents.blocks.retrieve(agent_id=agent.id, block_label=block.label)
         assert block.value == agent_block.value and block.limit == agent_block.limit
 
     # Verify the tools are properly attached

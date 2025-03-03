@@ -6,7 +6,7 @@ import traceback
 import warnings
 from abc import abstractmethod
 from datetime import datetime
-from typing import Callable, Dict, List, Optional, Tuple, Union
+from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 
 from composio.client import Composio
 from composio.client.collections import ActionModel, AppModel
@@ -17,7 +17,6 @@ import letta.constants as constants
 import letta.server.utils as server_utils
 import letta.system as system
 from letta.agent import Agent, save_agent
-from letta.chat_only_agent import ChatOnlyAgent
 from letta.config import LettaConfig
 from letta.data_sources.connectors import DataConnector, load_data
 from letta.helpers.datetime_helpers import get_utc_time
@@ -43,7 +42,7 @@ from letta.schemas.llm_config import LLMConfig
 from letta.schemas.memory import ArchivalMemorySummary, ContextWindowOverview, Memory, RecallMemorySummary
 from letta.schemas.message import Message, MessageCreate, MessageRole, MessageUpdate, TextContent
 from letta.schemas.organization import Organization
-from letta.schemas.passage import Passage
+from letta.schemas.passage import Passage, PassageUpdate
 from letta.schemas.providers import (
     AnthropicBedrockProvider,
     AnthropicProvider,
@@ -326,8 +325,6 @@ class SyncServer(Server):
                 agent = Agent(agent_state=agent_state, interface=interface, user=actor)
             elif agent_state.agent_type == AgentType.offline_memory_agent:
                 agent = OfflineMemoryAgent(agent_state=agent_state, interface=interface, user=actor)
-            elif agent_state.agent_type == AgentType.chat_only_agent:
-                agent = ChatOnlyAgent(agent_state=agent_state, interface=interface, user=actor)
             else:
                 raise ValueError(f"Invalid agent type {agent_state.agent_type}")
 
@@ -770,6 +767,11 @@ class SyncServer(Server):
 
         return passages
 
+    def modify_archival_memory(self, agent_id: str, memory_id: str, passage: PassageUpdate, actor: User) -> List[Passage]:
+        passage = Passage(**passage.model_dump(exclude_unset=True, exclude_none=True))
+        passages = self.passage_manager.update_passage_by_id(passage_id=memory_id, passage=passage, actor=actor)
+        return passages
+
     def delete_archival_memory(self, memory_id: str, actor: User):
         # TODO check if it exists first, and throw error if not
         # TODO: @mindy make this return the deleted passage instead
@@ -978,6 +980,10 @@ class SyncServer(Server):
                 warnings.warn(f"An error occurred while listing LLM models for provider {provider}: {e}")
 
         llm_models.extend(self.get_local_llm_configs())
+
+        # respect global maximum
+        for llm_config in llm_models:
+            llm_config.context_window = min(llm_config.context_window, model_settings.global_max_context_window_limit)
         return llm_models
 
     def list_embedding_models(self) -> List[EmbeddingConfig]:
@@ -1023,7 +1029,7 @@ class SyncServer(Server):
                 raise ValueError(f"Context window limit ({context_window_limit}) is greater than maximum of ({llm_config.context_window})")
             llm_config.context_window = context_window_limit
         else:
-            llm_config.context_window = min(llm_config.context_window, constants.DEFAULT_CONTEXT_WINDOW_SIZE)
+            llm_config.context_window = min(llm_config.context_window, model_settings.global_max_context_window_limit)
 
         return llm_config
 
@@ -1098,6 +1104,7 @@ class SyncServer(Server):
         tool_env_vars: Optional[Dict[str, str]] = None,
         tool_source_type: Optional[str] = None,
         tool_name: Optional[str] = None,
+        tool_args_json_schema: Optional[Dict[str, Any]] = None,
     ) -> ToolReturnMessage:
         """Run a tool from source code"""
         if tool_source_type is not None and tool_source_type != "python":
@@ -1107,6 +1114,7 @@ class SyncServer(Server):
         tool = Tool(
             name=tool_name,
             source_code=tool_source,
+            args_json_schema=tool_args_json_schema,
         )
         assert tool.name is not None, "Failed to create tool object"
 
@@ -1164,7 +1172,7 @@ class SyncServer(Server):
         actions = self.get_composio_client(api_key=api_key).actions.get(apps=[composio_app_name])
         return actions
 
-    @trace_method("Send Message")
+    @trace_method
     async def send_message_to_agent(
         self,
         agent_id: str,

@@ -78,15 +78,16 @@ e2b-code-interpreter = {version = "^1.0.3", optional = true}
 anthropic = "^0.43.0"
 letta_client = "^0.1.23"
 openai = "^1.60.0"
+opentelemetry-api = "1.30.0"
+opentelemetry-sdk = "1.30.0"
+opentelemetry-instrumentation-requests = "0.51b0"
+opentelemetry-exporter-otlp = "1.30.0"
 google-genai = {version = "^1.1.0", optional = true}
 faker = "^36.1.0"
 colorama = "^0.4.6"
 marshmallow-sqlalchemy = "^1.4.1"
 boto3 = {version = "^1.36.24", optional = true}
-opentelemetry-api = "^1.30.0"
-opentelemetry-sdk = "^1.30.0"
-opentelemetry-instrumentation-requests = "^0.51b0"
-opentelemetry-exporter-otlp = "^1.30.0"
+datamodel-code-generator = {extras = ["http"], version = "^0.25.0"}
 
 
 [tool.poetry.extras]

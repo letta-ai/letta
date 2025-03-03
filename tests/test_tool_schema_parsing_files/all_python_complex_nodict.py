@@ -1,5 +1,30 @@
 from typing import List, Optional
 
+from pydantic import BaseModel, Field
+
+
+class ArgsSchema(BaseModel):
+    order_number: int = Field(
+        ...,
+        description="The order number to check on.",
+    )
+    customer_name: str = Field(
+        ...,
+        description="The customer name to check on.",
+    )
+    related_tickets: List[str] = Field(
+        ...,
+        description="A list of related ticket numbers.",
+    )
+    severity: float = Field(
+        ...,
+        description="The severity of the order.",
+    )
+    metadata: Optional[str] = Field(
+        None,
+        description="Optional metadata about the order.",
+    )
+
 
 def check_order_status(
     order_number: int,

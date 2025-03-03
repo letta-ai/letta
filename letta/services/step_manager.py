@@ -11,6 +11,7 @@ from letta.orm.step import Step as StepModel
 from letta.schemas.openai.chat_completion_response import UsageStatistics
 from letta.schemas.step import Step as PydanticStep
 from letta.schemas.user import User as PydanticUser
+from letta.tracing import get_trace_id
 from letta.utils import enforce_types
 
 
@@ -75,6 +76,7 @@ class StepManager:
             "job_id": job_id,
             "tags": [],
             "tid": None,
+            "trace_id": get_trace_id(),  # Get the current trace ID
         }
         with self.session_maker() as session:
             if job_id:

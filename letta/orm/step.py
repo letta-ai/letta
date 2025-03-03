@@ -45,6 +45,7 @@ class Step(SqlalchemyBase):
     completion_tokens_details: Mapped[Optional[Dict]] = mapped_column(JSON, nullable=True, doc="metadata for the agent.")
     tags: Mapped[Optional[List]] = mapped_column(JSON, doc="Metadata tags.")
     tid: Mapped[Optional[str]] = mapped_column(None, nullable=True, doc="Transaction ID that processed the step.")
+    trace_id: Mapped[Optional[str]] = mapped_column(None, nullable=True, doc="The trace id of the agent step.")
 
     # Relationships (foreign keys)
     organization: Mapped[Optional["Organization"]] = relationship("Organization")

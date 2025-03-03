@@ -27,7 +27,6 @@ TOOL_CALL_ID_MAX_LEN = 29
 
 # minimum context window size
 MIN_CONTEXT_WINDOW = 4096
-DEFAULT_CONTEXT_WINDOW_SIZE = 32000
 
 # embeddings
 MAX_EMBEDDING_DIM = 4096  # maximum supported embeding size - do NOT change or else DBs will need to be reset
@@ -96,6 +95,9 @@ LLM_MAX_TOKENS = {
     "deepseek-chat": 64000,
     "deepseek-reasoner": 64000,
     ## OpenAI models: https://platform.openai.com/docs/models/overview
+    # gpt-4.5-preview
+    "gpt-4.5-preview": 128000,
+    "gpt-4.5-preview-2025-02-27": 128000,
     # "o1-preview
     "chatgpt-4o-latest": 128000,
     # "o1-preview-2024-09-12

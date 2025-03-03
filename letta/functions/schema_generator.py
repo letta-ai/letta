@@ -235,6 +235,9 @@ def pydantic_model_to_json_schema(model: Type[BaseModel]) -> dict:
         if "description" not in prop:
             raise ValueError(f"Property {prop} lacks a 'description' key")
 
+        if "type" not in prop and "$ref" in prop:
+            prop["type"] = "object"
+
         # Handle the case where the property is a $ref to another model
         if "$ref" in prop:
             # Resolve the reference to the nested model
