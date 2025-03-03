@@ -1,205 +1,225 @@
-import asyncio
 import inspect
+import re
 import sys
 import time
 from functools import wraps
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional
 
-from fastapi import Request
+from fastapi import Depends, FastAPI, HTTPException, Request
+from fastapi.exceptions import RequestValidationError
+from fastapi.responses import JSONResponse
 from opentelemetry import trace
-from opentelemetry.exporter.otlp.proto.http.trace_exporter import OTLPSpanExporter
+from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExporter
 from opentelemetry.instrumentation.requests import RequestsInstrumentor
 from opentelemetry.sdk.resources import Resource
 from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export import BatchSpanProcessor
-from opentelemetry.trace import Span, Status, StatusCode
+from opentelemetry.trace import Status, StatusCode
 
-# Get a tracer instance - will be no-op until setup_tracing is called
 tracer = trace.get_tracer(__name__)
-
-# Track if tracing has been initialized
 _is_tracing_initialized = False
+_excluded_v1_endpoints_regex: List[str] = [
+    "^GET /v1/agents/(?P<agent_id>[^/]+)/messages$",
+    "^GET /v1/agents/(?P<agent_id>[^/]+)/context$",
+    "^GET /v1/agents/(?P<agent_id>[^/]+)/archival-memory$",
+    "^GET /v1/agents/(?P<agent_id>[^/]+)/sources$",
+]
 
 
 def is_pytest_environment():
-    """Check if we're running in pytest"""
     return "pytest" in sys.modules
 
 
-def trace_method(name=None):
-    """Decorator to add tracing to a method"""
+async def trace_request_middleware(request: Request, call_next):
+    if not _is_tracing_initialized:
+        return await call_next(request)
+    initial_span_name = f"{request.method} {request.url.path}"
+    if any(re.match(regex, initial_span_name) for regex in _excluded_v1_endpoints_regex):
+        return await call_next(request)
 
-    def decorator(func):
-        @wraps(func)
-        async def async_wrapper(*args, **kwargs):
-            # Skip tracing if not initialized
-            if not _is_tracing_initialized:
-                return await func(*args, **kwargs)
+    with tracer.start_as_current_span(
+        initial_span_name,
+        kind=trace.SpanKind.SERVER,
+    ) as span:
+        try:
+            response = await call_next(request)
+            span.set_attribute("http.status_code", response.status_code)
+            span.set_status(Status(StatusCode.OK if response.status_code < 400 else StatusCode.ERROR))
+            return response
+        except Exception as e:
+            span.set_status(Status(StatusCode.ERROR))
+            span.record_exception(e)
+            raise
 
-            span_name = name or func.__name__
-            with tracer.start_as_current_span(span_name) as span:
-                span.set_attribute("code.namespace", inspect.getmodule(func).__name__)
-                span.set_attribute("code.function", func.__name__)
 
-                if len(args) > 0 and hasattr(args[0], "__class__"):
-                    span.set_attribute("code.class", args[0].__class__.__name__)
+async def update_trace_attributes(request: Request):
+    """Dependency to update trace attributes after FastAPI has processed the request"""
+    if not _is_tracing_initialized:
+        return
 
-                request = _extract_request_info(args, span)
-                if request and len(request) > 0:
-                    span.set_attribute("agent.id", kwargs.get("agent_id"))
-                    span.set_attribute("actor.id", request.get("http.user_id"))
+    span = trace.get_current_span()
+    if not span:
+        return
 
-                try:
-                    result = await func(*args, **kwargs)
-                    span.set_status(Status(StatusCode.OK))
-                    return result
-                except Exception as e:
-                    span.set_status(Status(StatusCode.ERROR))
-                    span.record_exception(e)
-                    raise
+    # Update span name with route pattern
+    route = request.scope.get("route")
+    if route and hasattr(route, "path"):
+        span.update_name(f"{request.method} {route.path}")
 
-        @wraps(func)
-        def sync_wrapper(*args, **kwargs):
-            # Skip tracing if not initialized
-            if not _is_tracing_initialized:
-                return func(*args, **kwargs)
+    # Add request info
+    span.set_attribute("http.method", request.method)
+    span.set_attribute("http.url", str(request.url))
 
-            span_name = name or func.__name__
-            with tracer.start_as_current_span(span_name) as span:
-                span.set_attribute("code.namespace", inspect.getmodule(func).__name__)
-                span.set_attribute("code.function", func.__name__)
+    # Add path params
+    for key, value in request.path_params.items():
+        span.set_attribute(f"http.{key}", value)
 
-                if len(args) > 0 and hasattr(args[0], "__class__"):
-                    span.set_attribute("code.class", args[0].__class__.__name__)
+    # Add request body if available
+    try:
+        body = await request.json()
+        for key, value in body.items():
+            span.set_attribute(f"http.request.body.{key}", str(value))
+    except Exception:
+        pass
 
-                request = _extract_request_info(args, span)
-                if request and len(request) > 0:
-                    span.set_attribute("agent.id", kwargs.get("agent_id"))
-                    span.set_attribute("actor.id", request.get("http.user_id"))
 
-                try:
-                    result = func(*args, **kwargs)
-                    span.set_status(Status(StatusCode.OK))
-                    return result
-                except Exception as e:
-                    span.set_status(Status(StatusCode.ERROR))
-                    span.record_exception(e)
-                    raise
+async def trace_error_handler(_request: Request, exc: Exception) -> JSONResponse:
+    status_code = getattr(exc, "status_code", 500)
+    error_msg = str(exc)
 
-        return async_wrapper if asyncio.iscoroutinefunction(func) else sync_wrapper
+    # Add error details to current span
+    span = trace.get_current_span()
+    if span:
+        span.add_event(
+            name="exception",
+            attributes={
+                "exception.message": error_msg,
+                "exception.type": type(exc).__name__,
+            },
+        )
 
-    return decorator
+    return JSONResponse(status_code=status_code, content={"detail": error_msg, "trace_id": get_trace_id() or ""})
+
+
+def setup_tracing(
+    endpoint: str,
+    app: Optional[FastAPI] = None,
+    service_name: str = "memgpt-server",
+) -> None:
+    if is_pytest_environment():
+        return
+
+    global _is_tracing_initialized
+
+    provider = TracerProvider(resource=Resource.create({"service.name": service_name}))
+    if endpoint:
+        provider.add_span_processor(BatchSpanProcessor(OTLPSpanExporter(endpoint=endpoint)))
+        _is_tracing_initialized = True
+        trace.set_tracer_provider(provider)
+
+        def requests_callback(span: trace.Span, _: Any, response: Any) -> None:
+            if hasattr(response, "status_code"):
+                span.set_status(Status(StatusCode.OK if response.status_code < 400 else StatusCode.ERROR))
+
+        RequestsInstrumentor().instrument(response_hook=requests_callback)
+
+        if app:
+            # Add middleware first
+            app.middleware("http")(trace_request_middleware)
+
+            # Add dependency to v1 routes
+            from letta.server.rest_api.routers.v1 import ROUTERS as v1_routes
+
+            for router in v1_routes:
+                for route in router.routes:
+                    full_path = ((next(iter(route.methods)) + " ") if route.methods else "") + "/v1" + route.path
+                    if not any(re.match(regex, full_path) for regex in _excluded_v1_endpoints_regex):
+                        route.dependencies.append(Depends(update_trace_attributes))
+
+            # Register exception handlers
+            app.exception_handler(HTTPException)(trace_error_handler)
+            app.exception_handler(RequestValidationError)(trace_error_handler)
+            app.exception_handler(Exception)(trace_error_handler)
+
+
+def trace_method(func):
+    """Decorator that traces function execution with OpenTelemetry"""
+
+    def _get_span_name(func, args):
+        if args and hasattr(args[0], "__class__"):
+            class_name = args[0].__class__.__name__
+        else:
+            class_name = func.__module__
+        return f"{class_name}.{func.__name__}"
+
+    def _add_parameters_to_span(span, func, args, kwargs):
+        try:
+            # Add method parameters as span attributes
+            sig = inspect.signature(func)
+            bound_args = sig.bind(*args, **kwargs)
+            bound_args.apply_defaults()
+
+            # Skip 'self' when adding parameters if it exists
+            param_items = list(bound_args.arguments.items())
+            if args and hasattr(args[0], "__class__"):
+                param_items = param_items[1:]
+
+            for name, value in param_items:
+                # Convert value to string to avoid serialization issues
+                span.set_attribute(f"parameter.{name}", str(value))
+        except:
+            pass
+
+    @wraps(func)
+    async def async_wrapper(*args, **kwargs):
+        if not _is_tracing_initialized:
+            return await func(*args, **kwargs)
+
+        with tracer.start_as_current_span(_get_span_name(func, args)) as span:
+            _add_parameters_to_span(span, func, args, kwargs)
+
+            result = await func(*args, **kwargs)
+            span.set_status(Status(StatusCode.OK))
+            return result
+
+    @wraps(func)
+    def sync_wrapper(*args, **kwargs):
+        if not _is_tracing_initialized:
+            return func(*args, **kwargs)
+
+        with tracer.start_as_current_span(_get_span_name(func, args)) as span:
+            _add_parameters_to_span(span, func, args, kwargs)
+
+            result = func(*args, **kwargs)
+            span.set_status(Status(StatusCode.OK))
+            return result
+
+    return async_wrapper if inspect.iscoroutinefunction(func) else sync_wrapper
 
 
 def log_attributes(attributes: Dict[str, Any]) -> None:
-    """
-    Log multiple attributes to the current active span.
-
-    Args:
-        attributes: Dictionary of attribute key-value pairs
-    """
     current_span = trace.get_current_span()
     if current_span:
         current_span.set_attributes(attributes)
 
 
 def log_event(name: str, attributes: Optional[Dict[str, Any]] = None, timestamp: Optional[int] = None) -> None:
-    """
-    Log an event to the current active span.
-
-    Args:
-        name: Name of the event
-        attributes: Optional dictionary of event attributes
-        timestamp: Optional timestamp in nanoseconds
-    """
     current_span = trace.get_current_span()
     if current_span:
         if timestamp is None:
             timestamp = int(time.perf_counter_ns())
 
+        def _safe_convert(v):
+            if isinstance(v, (str, bool, int, float)):
+                return v
+            return str(v)
+
+        attributes = {k: _safe_convert(v) for k, v in attributes.items()} if attributes else None
         current_span.add_event(name=name, attributes=attributes, timestamp=timestamp)
 
 
-def get_trace_id() -> str:
-    current_span = trace.get_current_span()
-    if current_span:
-        return format(current_span.get_span_context().trace_id, "032x")
-    else:
-        return ""
-
-
-def request_hook(span: Span, _request_context: Optional[Dict] = None, response: Optional[Any] = None):
-    """Hook to update span based on response status code"""
-    if response is not None:
-        if hasattr(response, "status_code"):
-            span.set_attribute("http.status_code", response.status_code)
-            if response.status_code >= 400:
-                span.set_status(Status(StatusCode.ERROR))
-            elif 200 <= response.status_code < 300:
-                span.set_status(Status(StatusCode.OK))
-
-
-def setup_tracing(endpoint: str, service_name: str = "memgpt-server") -> None:
-    """
-    Sets up OpenTelemetry tracing with OTLP exporter for specific endpoints
-
-    Args:
-        endpoint: OTLP endpoint URL
-        service_name: Name of the service for tracing
-    """
-    global _is_tracing_initialized
-
-    # Skip tracing in pytest environment
-    if is_pytest_environment():
-        print("ℹ️ Skipping tracing setup in pytest environment")
-        return
-
-    # Create a Resource to identify our service
-    resource = Resource.create({"service.name": service_name, "service.namespace": "default", "deployment.environment": "production"})
-
-    # Initialize the TracerProvider with the resource
-    provider = TracerProvider(resource=resource)
-
-    # Only set up OTLP export if endpoint is provided
-    if endpoint:
-        otlp_exporter = OTLPSpanExporter(endpoint=endpoint)
-        processor = BatchSpanProcessor(otlp_exporter)
-        provider.add_span_processor(processor)
-        _is_tracing_initialized = True
-    else:
-        print("⚠️ Warning: Tracing endpoint not provided, tracing will be disabled")
-
-    # Set the global TracerProvider
-    trace.set_tracer_provider(provider)
-
-    # Initialize automatic instrumentation for the requests library with response hook
-    if _is_tracing_initialized:
-        RequestsInstrumentor().instrument(response_hook=request_hook)
-
-
-def _extract_request_info(args: tuple, span: Span) -> Dict[str, Any]:
-    """
-    Safely extracts request information from function arguments.
-    Works with both FastAPI route handlers and inner functions.
-    """
-    attributes = {}
-
-    # Look for FastAPI Request object in args
-    request = next((arg for arg in args if isinstance(arg, Request)), None)
-
-    if request:
-        attributes.update(
-            {
-                "http.route": request.url.path,
-                "http.method": request.method,
-                "http.scheme": request.url.scheme,
-                "http.target": str(request.url.path),
-                "http.url": str(request.url),
-                "http.flavor": request.scope.get("http_version", ""),
-                "http.client_ip": request.client.host if request.client else None,
-                "http.user_id": request.headers.get("user_id"),
-            }
-        )
-
-    span.set_attributes(attributes)
-    return attributes
+def get_trace_id() -> Optional[str]:
+    span = trace.get_current_span()
+    if span and span.get_span_context().trace_id:
+        return format(span.get_span_context().trace_id, "032x")
+    return None
