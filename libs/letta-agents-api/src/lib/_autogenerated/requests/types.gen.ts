@@ -3796,6 +3796,29 @@ export type RetrieveRunUsageData = {
 
 export type RetrieveRunUsageResponse = UsageStatistics;
 
+export type ListRunStepsData = {
+  /**
+   * Cursor for pagination
+   */
+  after?: string | null;
+  /**
+   * Cursor for pagination
+   */
+  before?: string | null;
+  /**
+   * Maximum number of messages to return
+   */
+  limit?: number | null;
+  /**
+   * Sort order by the created_at timestamp of the objects. asc for ascending order and desc for descending order.
+   */
+  order?: string;
+  runId: string;
+  userId?: string | null;
+};
+
+export type ListRunStepsResponse = Array<Step>;
+
 export type ListStepsData = {
   /**
    * Return steps after this step ID
@@ -5188,6 +5211,21 @@ export type $OpenApiTs = {
          * Successful Response
          */
         200: UsageStatistics;
+        /**
+         * Validation Error
+         */
+        422: HTTPValidationError;
+      };
+    };
+  };
+  '/v1/runs/{run_id}/steps': {
+    get: {
+      req: ListRunStepsData;
+      res: {
+        /**
+         * Successful Response
+         */
+        200: Array<Step>;
         /**
          * Validation Error
          */

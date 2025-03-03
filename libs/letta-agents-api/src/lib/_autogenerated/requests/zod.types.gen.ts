@@ -5574,6 +5574,36 @@ export const get_Retrieve_run_usage = {
   response: UsageStatistics,
 };
 
+export type get_List_run_steps = typeof get_List_run_steps;
+export const get_List_run_steps = {
+  method: z.literal('GET'),
+  path: z.literal('/v1/runs/{run_id}/steps'),
+  requestFormat: z.literal('json'),
+  parameters: z.object({
+    query: z.object({
+      before: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      after: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      limit: z
+        .union([z.number(), z.null(), z.array(z.union([z.number(), z.null()]))])
+        .optional(),
+      order: z.string().optional(),
+    }),
+    path: z.object({
+      run_id: z.string(),
+    }),
+    header: z.object({
+      user_id: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+    }),
+  }),
+  response: z.array(Step),
+};
+
 export type get_List_steps = typeof get_List_steps;
 export const get_List_steps = {
   method: z.literal('GET'),
@@ -5872,6 +5902,7 @@ export const EndpointByMethod = {
     '/v1/runs/{run_id}': get_Retrieve_run,
     '/v1/runs/{run_id}/messages': get_List_run_messages,
     '/v1/runs/{run_id}/usage': get_Retrieve_run_usage,
+    '/v1/runs/{run_id}/steps': get_List_run_steps,
     '/v1/steps': get_List_steps,
     '/v1/steps/{step_id}': get_Retrieve_step,
     '/v1/tags/': get_List_tags,

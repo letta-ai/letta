@@ -919,6 +919,35 @@ export const UseRunsServiceRetrieveRunUsageKeyFn = (
   },
   queryKey?: Array<unknown>,
 ) => [useRunsServiceRetrieveRunUsageKey, ...(queryKey ?? [{ runId, userId }])];
+export type RunsServiceListRunStepsDefaultResponse = Awaited<
+  ReturnType<typeof RunsService.listRunSteps>
+>;
+export type RunsServiceListRunStepsQueryResult<
+  TData = RunsServiceListRunStepsDefaultResponse,
+  TError = unknown,
+> = UseQueryResult<TData, TError>;
+export const useRunsServiceListRunStepsKey = 'RunsServiceListRunSteps';
+export const UseRunsServiceListRunStepsKeyFn = (
+  {
+    after,
+    before,
+    limit,
+    order,
+    runId,
+    userId,
+  }: {
+    after?: string;
+    before?: string;
+    limit?: number;
+    order?: string;
+    runId: string;
+    userId?: string;
+  },
+  queryKey?: Array<unknown>,
+) => [
+  useRunsServiceListRunStepsKey,
+  ...(queryKey ?? [{ after, before, limit, order, runId, userId }]),
+];
 export type StepsServiceListStepsDefaultResponse = Awaited<
   ReturnType<typeof StepsService.listSteps>
 >;

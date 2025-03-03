@@ -1167,6 +1167,59 @@ export const prefetchUseRunsServiceRetrieveRunUsage = (
     queryFn: () => RunsService.retrieveRunUsage({ runId, userId }),
   });
 /**
+ * List Run Steps
+ * Get messages associated with a run with filtering options.
+ *
+ * Args:
+ * run_id: ID of the run
+ * before: A cursor for use in pagination. `before` is an object ID that defines your place in the list. For instance, if you make a list request and receive 100 objects, starting with obj_foo, your subsequent call can include before=obj_foo in order to fetch the previous page of the list.
+ * after: A cursor for use in pagination. `after` is an object ID that defines your place in the list. For instance, if you make a list request and receive 100 objects, ending with obj_foo, your subsequent call can include after=obj_foo in order to fetch the next page of the list.
+ * limit: Maximum number of steps to return
+ * order: Sort order by the created_at timestamp of the objects. asc for ascending order and desc for descending order.
+ *
+ * Returns:
+ * A list of steps associated with the run.
+ * @param data The data for the request.
+ * @param data.runId
+ * @param data.before Cursor for pagination
+ * @param data.after Cursor for pagination
+ * @param data.limit Maximum number of messages to return
+ * @param data.order Sort order by the created_at timestamp of the objects. asc for ascending order and desc for descending order.
+ * @param data.userId
+ * @returns Step Successful Response
+ * @throws ApiError
+ */
+export const prefetchUseRunsServiceListRunSteps = (
+  queryClient: QueryClient,
+  {
+    after,
+    before,
+    limit,
+    order,
+    runId,
+    userId,
+  }: {
+    after?: string;
+    before?: string;
+    limit?: number;
+    order?: string;
+    runId: string;
+    userId?: string;
+  },
+) =>
+  queryClient.prefetchQuery({
+    queryKey: Common.UseRunsServiceListRunStepsKeyFn({
+      after,
+      before,
+      limit,
+      order,
+      runId,
+      userId,
+    }),
+    queryFn: () =>
+      RunsService.listRunSteps({ after, before, limit, order, runId, userId }),
+  });
+/**
  * List Steps
  * List steps with optional pagination and date filters.
  * Dates should be provided in ISO 8601 format (e.g. 2025-01-29T15:01:19-08:00)
