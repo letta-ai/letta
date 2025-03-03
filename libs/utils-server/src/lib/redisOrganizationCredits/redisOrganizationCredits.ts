@@ -1,5 +1,9 @@
 import { createRedisInstance } from '@letta-cloud/service-redis';
-import { db, organizationCredits, organizations } from '@letta-cloud/service-database';
+import {
+  db,
+  organizationCredits,
+  organizations,
+} from '@letta-cloud/service-database';
 import { eq } from 'drizzle-orm';
 
 const ORGANIZATION_CREDITS_REDIS_KEY = 'organizationCredits_1';

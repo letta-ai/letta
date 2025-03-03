@@ -1,6 +1,6 @@
 /* eslint-disable */
 export default {
-  displayName: 'core-ts-sdk',
+  displayName: 'sdk-core',
   preset: '../../jest.preset.js',
   testEnvironment: 'node',
   transform: {

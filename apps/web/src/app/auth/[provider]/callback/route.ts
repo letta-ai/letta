@@ -18,7 +18,10 @@ import { LoginErrorsEnum } from '$web/errors';
 import * as Sentry from '@sentry/node';
 import { parseInviteCode } from '$web/utils';
 import { WorkOS } from '@workos-inc/node';
-import { db, organizationSSOConfiguration } from '@letta-cloud/service-database';
+import {
+  db,
+  organizationSSOConfiguration,
+} from '@letta-cloud/service-database';
 import { eq } from 'drizzle-orm';
 
 interface GoogleAccessTokenResponse {

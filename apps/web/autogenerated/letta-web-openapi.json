@@ -5651,31 +5651,6 @@
         }
       }
     },
-    "/v1/health": {
-      "get": {
-        "tags": ["health"],
-        "parameters": [],
-        "operationId": "health.getHealth",
-        "responses": {
-          "200": {
-            "description": "200",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "status": {
-                      "type": "string"
-                    }
-                  },
-                  "required": ["status"]
-                }
-              }
-            }
-          }
-        }
-      }
-    },
     "/v1/templates/{project}/{template_version}/agents": {
       "post": {
         "description": "Creates an Agent or multiple Agents from a template",

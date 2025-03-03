@@ -1,6 +1,9 @@
 import type { ServerInferRequest, ServerInferResponses } from '@ts-rest/core';
 import type { contracts } from '@letta-cloud/sdk-web';
-import { db, organizationSSOConfiguration } from '@letta-cloud/service-database';
+import {
+  db,
+  organizationSSOConfiguration,
+} from '@letta-cloud/service-database';
 import { eq } from 'drizzle-orm';
 import { WorkOS } from '@workos-inc/node';
 import { environment } from '@letta-cloud/config-environment-variables';

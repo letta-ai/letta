@@ -4,6 +4,6 @@
   "sourceRoot": "libs/sdk-core-testing/src",
   "projectType": "library",
   "tags": [],
-  "// targets": "to see all targets run: nx show project core-ts-sdk-testing --web",
+  "// targets": "to see all targets run: nx show project sdk-core-testing --web",
   "targets": {}
 }

@@ -1,5 +1,8 @@
 import crypto from 'crypto';
-import { db, sharedAgentChatConfigurations } from '@letta-cloud/service-database';
+import {
+  db,
+  sharedAgentChatConfigurations,
+} from '@letta-cloud/service-database';
 import type { AccessLevelEnumSchemaType } from '@letta-cloud/sdk-web';
 import { eq } from 'drizzle-orm';
 

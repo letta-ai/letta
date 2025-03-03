@@ -11,9 +11,7 @@ const config: Config = {
     '^.+\\.[tj]sx?$': ['babel-jest', { presets: ['@nx/next/babel'] }],
   },
   moduleNameMapper: pathsToModuleNameMapper({
-    '@letta-cloud/ui-styles': [
-      '../../libs/ui-styles/src/index.ts',
-    ],
+    '@letta-cloud/ui-styles': ['../../libs/ui-styles/src/index.ts'],
   }),
   testEnvironment: 'jsdom',
   moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx'],

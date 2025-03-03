@@ -1,5 +1,5 @@
 {
-  "name": "core-ts-sdk",
+  "name": "sdk-core",
   "$schema": "../../node_modules/nx/schemas/project-schema.json",
   "sourceRoot": "libs/sdk-core/src",
   "projectType": "library",

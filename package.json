@@ -19,7 +19,7 @@
     "component-libray:generate-icons": "nx g @letta-cloud/configure:generate-icons",
     "component-libray:new": "nx g @letta-cloud/configure:new-component",
     "core:dev": "nx dev core",
-    "core:generate-web-sdk": "nx run core-ts-sdk:generate && nx run core-ts-sdk:monkeypatch",
+    "core:generate-web-sdk": "nx run sdk-core:generate && nx run sdk-core:monkeypatch",
     "core:database:migrate": "nx database:migrate core",
     "core:install": "nx install core",
     "desktop:setup-core": "nx install desktop-core",

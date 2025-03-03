@@ -52,7 +52,7 @@ const lettaAgentsAPIWithNoEndslash = Object.keys(lettaAgentsAPI.paths).reduce(
   {} as Swagger.SwaggerV3['paths'],
 );
 
-// remove duplicate paths, delete from letta-web-openapi if it exists in core-ts-sdk
+// remove duplicate paths, delete from letta-web-openapi if it exists in sdk-core
 // some paths will have an extra / at the end, so we need to remove that as well
 lettaWebOpenAPI.paths = Object.fromEntries(
   Object.entries(lettaWebOpenAPI.paths).filter(([path]) => {

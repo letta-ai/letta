@@ -9,7 +9,10 @@ import { NextIntlClientProvider } from 'next-intl';
 import { en as adeEn } from '@letta-cloud/ui-ade-components';
 import en from './translations/en.json';
 import { ServerStatusProvider } from './app/hooks/useServerStatus/useServerStatus';
-import { componentTranslations, Toaster } from '@letta-cloud/ui-component-library';
+import {
+  componentTranslations,
+  Toaster,
+} from '@letta-cloud/ui-component-library';
 
 const root = ReactDOM.createRoot(document.getElementById('root')!);
 
