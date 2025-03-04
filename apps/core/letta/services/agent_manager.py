@@ -4,7 +4,7 @@ from typing import Dict, List, Optional
 import numpy as np
 from sqlalchemy import Select, and_, func, literal, or_, select, union_all
 
-from letta.constants import BASE_MEMORY_TOOLS, BASE_TOOLS, MAX_EMBEDDING_DIM, MULTI_AGENT_TOOLS
+from letta.constants import BASE_MEMORY_TOOLS, BASE_TOOLS, DATA_SOURCE_ATTACH_ALERT, MAX_EMBEDDING_DIM, MULTI_AGENT_TOOLS
 from letta.embeddings import embedding_model
 from letta.helpers.datetime_helpers import get_utc_time
 from letta.log import get_logger
@@ -670,6 +670,7 @@ class AgentManager:
             ValueError: If either agent or source doesn't exist
             IntegrityError: If the source is already attached to the agent
         """
+
         with self.session_maker() as session:
             # Verify both agent and source exist and user has permission to access them
             agent = AgentModel.read(db_session=session, identifier=agent_id, actor=actor)
@@ -687,7 +688,27 @@ class AgentManager:
 
             # Commit the changes
             agent.update(session, actor=actor)
-            return agent.to_pydantic()
+
+        # Add system messsage alert to agent
+        self.append_system_message(
+            agent_id=agent_id,
+            content=DATA_SOURCE_ATTACH_ALERT,
+            actor=actor,
+        )
+
+        return agent.to_pydantic()
+
+    @enforce_types
+    def append_system_message(self, agent_id: str, content: str, actor: PydanticUser):
+
+        # get the agent
+        agent = self.get_agent_by_id(agent_id=agent_id, actor=actor)
+        message = PydanticMessage.dict_to_message(
+            agent_id=agent.id, user_id=actor.id, model=agent.llm_config.model, openai_message_dict={"role": "system", "content": content}
+        )
+
+        # update agent in-context message IDs
+        self.append_to_in_context_messages(messages=[message], agent_id=agent_id, actor=actor)
 
     @enforce_types
     def list_attached_sources(self, agent_id: str, actor: PydanticUser) -> List[PydanticSource]:
