@@ -23,8 +23,6 @@ import {
   getIsAgentState,
   UseAgentsServiceRetrieveAgentKeyFn,
   useAgentsServiceModifyAgent,
-  webOriginSDKApi,
-  webOriginSDKQueryKeys,
 } from '@letta-cloud/sdk-core';
 import type { AgentState } from '@letta-cloud/sdk-core';
 import { useQueryClient } from '@tanstack/react-query';
@@ -38,12 +36,13 @@ import {
 } from '@letta-cloud/sdk-web';
 import { findMemoryBlockVariables } from '@letta-cloud/utils-shared';
 import { useCurrentSimulatedAgent } from '../../../hooks/useCurrentSimulatedAgent/useCurrentSimulatedAgent';
+import { cloudAPI, cloudQueryKeys } from '@letta-cloud/sdk-cloud-api';
 
 function useAgentVariables() {
   const { isFromTemplate } = useCurrentAgentMetaData();
   const { id: agentId } = useCurrentAgent();
-  return webOriginSDKApi.agents.getAgentVariables.useQuery({
-    queryKey: webOriginSDKQueryKeys.agents.getAgentVariables(agentId),
+  return cloudAPI.agents.getAgentVariables.useQuery({
+    queryKey: cloudQueryKeys.agents.getAgentVariables(agentId),
     queryData: {
       params: {
         agent_id: agentId,

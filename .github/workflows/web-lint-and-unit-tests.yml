@@ -34,6 +34,8 @@ jobs:
             libs/ui-component-library/**
             .github/workflows/web-tests.yml
   main:
+    env:
+      CLOUD_API_ENDPOINT: http://localhost:3006
     needs: [ changed-files ]
     if: ${{ needs.changed-files.outputs.any_changed == 'true' }}
     runs-on: ubuntu-latest

@@ -112,6 +112,4 @@ export function generateSlug(name: string) {
     .replace(/^-+|-+$/g, '');
 }
 
-export * from './lib/findUniqueAgentTemplateName/findUniqueAgentTemplateName';
 export * from '$web/server/lib/getLettaAgentsInferenceModelsSingleton/getLettaAgentsInferenceModelsSingleton';
-export * from './lib/handleMessageRateLimiting/handleMessageRateLimiting';

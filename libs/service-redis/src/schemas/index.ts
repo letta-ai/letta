@@ -43,6 +43,7 @@ const userSessionDefinition = generateDefinitionSatisfies({
     imageUrl: z.string(),
     activeOrganizationId: z.string(),
     id: z.string(),
+    coreUserId: z.string(),
   }),
 });
 

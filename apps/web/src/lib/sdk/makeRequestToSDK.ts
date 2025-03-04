@@ -4,7 +4,7 @@ import axios, { isAxiosError } from 'axios';
 import type { MessageCreate } from '@letta-cloud/sdk-core';
 import { RESTRICTED_ROUTE_BASE_PATHS } from '@letta-cloud/sdk-core';
 import * as Sentry from '@sentry/nextjs';
-import { handleMessageRateLimiting } from '$web/server';
+import { handleMessageRateLimiting } from '@letta-cloud/utils-server';
 
 interface RequestOptions {
   pathname: string;

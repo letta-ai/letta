@@ -11,8 +11,8 @@ import { and, desc, eq } from 'drizzle-orm';
 import { getUserWithActiveOrganizationIdOrThrow } from '$web/server/auth';
 import { ApplicationServices } from '@letta-cloud/service-rbac';
 import { IdentitiesService } from '@letta-cloud/sdk-core';
-import { sdkRouter } from '$web/sdk/router';
 import { createOrReturnSharedChatConfiguration } from '$web/server/lib/createOrReturnSharedChatConfiguration/createOrReturnSharedChatConfiguration';
+import { cloudApiRouter } from 'tmp-cloud-api-router';
 
 type GetLaunchLinkContractRequest = ServerInferRequest<
   typeof contracts.launchLinks.getLaunchLink
@@ -389,7 +389,7 @@ async function createShareChatFromLaunchLink(
     };
   }
 
-  const response = await sdkRouter.templates.createAgentsFromTemplate(
+  const response = await cloudApiRouter.templates.createAgentsFromTemplate(
     {
       params: {
         project: projectSlug || '',

@@ -1,0 +1,101 @@
+import type { NextFunction, Request, Response } from 'express';
+import { getRedisData } from '@letta-cloud/service-redis';
+import { z } from 'zod';
+import type { ActorIdentity } from '../../types';
+import { verifyAndReturnAPIKeyDetails } from '@letta-cloud/utils-server';
+
+const publicRoutes = [new RegExp('/v1/heath')];
+
+const cookieSessionSchema = z.object({
+  sessionId: z.string(),
+  expires: z.number(),
+});
+
+async function verifyIfUserIsLoggedInViaCookies(
+  req: Request,
+): Promise<ActorIdentity | null> {
+  const session = req.cookies?.['__CLOUD_API_SESSION__'];
+
+  if (!session) {
+    return null;
+  }
+
+  const res = cookieSessionSchema.safeParse(session);
+
+  if (!res.success) {
+    return null;
+  }
+
+  const user = await getRedisData('userSession', {
+    sessionId: res.data.sessionId,
+  });
+
+  if (!user) {
+    return null;
+  }
+
+  return {
+    cloudOrganizationId: user.activeOrganizationId,
+    coreUserId: user.coreUserId,
+    cloudUserId: user.id,
+    source: 'web',
+  };
+}
+
+async function verifyIfUserAccessTokenIsValid(
+  req: Request,
+): Promise<ActorIdentity | null> {
+  const authorization = req.header('Authorization');
+
+  if (typeof authorization !== 'string') {
+    return null;
+  }
+
+  const apiKey = authorization.replace('Bearer ', '');
+
+  const apiKeyResponse = await verifyAndReturnAPIKeyDetails(apiKey);
+
+  if (!apiKeyResponse) {
+    return null;
+  }
+
+  return {
+    cloudOrganizationId: apiKeyResponse.organizationId,
+    coreUserId: apiKeyResponse.coreUserId,
+    cloudUserId: apiKeyResponse.userId,
+    source: 'api',
+  };
+}
+
+export async function verifyIdentityMiddleware(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) {
+  const apiKeyData = await verifyIfUserAccessTokenIsValid(req);
+
+  if (apiKeyData) {
+    req.actor = apiKeyData;
+    req.headers['user_id'] = req.actor.coreUserId;
+
+    next();
+    return;
+  }
+
+  const cookieData = await verifyIfUserIsLoggedInViaCookies(req);
+
+  if (cookieData) {
+    req.actor = cookieData;
+    req.headers['user_id'] = req.actor.coreUserId;
+
+    next();
+    return;
+  }
+
+  if (req.path === '/' || publicRoutes.some((route) => route.test(req.path))) {
+    next();
+    return;
+  }
+
+  res.status(401).send('Unauthorized');
+}

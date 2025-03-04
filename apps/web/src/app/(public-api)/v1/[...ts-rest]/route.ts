@@ -5,19 +5,20 @@ import {
   TsRestResponse,
 } from '@ts-rest/serverless/next';
 import type { TsRestRequest } from '@ts-rest/serverless/next';
-import { getUser, verifyAndReturnAPIKeyDetails } from '$web/server/auth';
+import { getUser } from '$web/server/auth';
 import type { RequestMiddlewareType } from '$web/sdk/shared';
 import { isErrorResponse } from '@ts-rest/core';
 import * as Sentry from '@sentry/node';
 import { makeRequestToSDK } from '$web/sdk';
-import { sdkRouter } from '$web/sdk/router';
-import { sdkContracts } from '@letta-cloud/sdk-core';
+import { cloudContracts } from '@letta-cloud/sdk-cloud-api';
 import { getAPIStabilityTestingUser } from '$web/server/lib/getAPIStabilityTestingUser/getAPIStabilityTestingUser';
-import { getPermissionForSDKPath } from '$web/server/lib/getPermissionForSDKPath/getPermissionForSDKPath';
-import type { MethodType } from '$web/server/lib/getPermissionForSDKPath/getPermissionForSDKPath';
+import { getPermissionForSDKPath } from '@letta-cloud/utils-server';
+import type { MethodType } from '@letta-cloud/utils-server';
 import { getSharedChatConfigurationIfUserHasAccess } from '$web/server/lib/getSharedChatConfigurationIfUserHasAccess/getSharedChatConfigurationIfUserHasAccess';
 import { getOrganizationLettaServiceAccountId } from '$web/server/lib/getOrganizationLettaServiceAccountId/getOrganizationLettaServiceAccountId';
 import { postDeleteIdentitySideEffect } from '$web/sdk/utils/postDeleteIdentitySideEffect';
+import { verifyAndReturnAPIKeyDetails } from '@letta-cloud/utils-server';
+import { cloudApiRouter } from 'tmp-cloud-api-router';
 
 const agentUrlRegex = new RegExp('/agents/([A-Za-z0-9-]+)/');
 
@@ -62,7 +63,7 @@ async function handleChatMiddleware(
   return true;
 }
 
-const publicHandler = createNextHandler(sdkContracts, sdkRouter, {
+const publicHandler = createNextHandler(cloudContracts, cloudApiRouter, {
   basePath: '',
   jsonQuery: true,
   responseValidation: false,

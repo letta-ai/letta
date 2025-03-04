@@ -30,11 +30,7 @@ import { z } from 'zod';
 import { useQueryClient } from '@tanstack/react-query';
 import React, { useCallback, useMemo, useState } from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
-import {
-  type webApiContracts,
-  webApiQueryKeys,
-  webOriginSDKApi,
-} from '$web/client';
+import { type webApiContracts, webApiQueryKeys } from '$web/client';
 import { CLOUD_UPSELL_URL } from '$web/constants';
 import type { AgentState } from '@letta-cloud/sdk-core';
 import { isAgentState } from '@letta-cloud/sdk-core';
@@ -49,6 +45,7 @@ import { CompareTemplateVersions } from '$web/client/components';
 import type { InfiniteData } from '@tanstack/query-core';
 import { useCurrentAgent } from '$web/client/hooks/useCurrentAgent/useCurrentAgent';
 import { useLatestAgentTemplate } from '$web/client/hooks/useLatestAgentTemplate/useLatestAgentTemplate';
+import { cloudAPI } from '@letta-cloud/sdk-cloud-api';
 
 interface DeployAgentDialogProps {
   isAtLatestVersion: boolean;
@@ -164,7 +161,7 @@ function CreateNewTemplateVersionDialog(
     },
   });
   const { mutate, isPending } =
-    webOriginSDKApi.agents.versionAgentTemplate.useMutation({
+    cloudAPI.agents.versionAgentTemplate.useMutation({
       onSuccess: (response, input) => {
         void queryClient.invalidateQueries({
           queryKey: webApiQueryKeys.agentTemplates.listAgentTemplates,
@@ -527,7 +524,7 @@ function CreateTemplateButton() {
   const { id: agentId } = useCurrentAgent();
   const setConvertingAtom = useSetAtom(isAgentConvertingToTemplateAtom);
   const { mutate, isPending, isSuccess } =
-    webOriginSDKApi.agents.createTemplateFromAgent.useMutation({
+    cloudAPI.agents.createTemplateFromAgent.useMutation({
       onSuccess: (body) => {
         const { templateName } = body.body;
 

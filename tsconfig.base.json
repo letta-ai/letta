@@ -34,6 +34,7 @@
       "@letta-cloud/lettuce-server": [
         "libs/sdk-lettuce/src/lib/lettuce-server.ts"
       ],
+      "@letta-cloud/sdk-cloud-api": ["libs/sdk-cloud-api/src/index.ts"],
       "@letta-cloud/sdk-core": ["libs/sdk-core/src/index.ts"],
       "@letta-cloud/sdk-core-testing": ["libs/sdk-core-testing/src/index.ts"],
       "@letta-cloud/sdk-web": ["libs/sdk-web/src/index.ts"],
@@ -72,7 +73,8 @@
       "@letta-cloud/utils-client": ["libs/utils-client/src/index.ts"],
       "@letta-cloud/utils-server": ["libs/utils-server/src/index.ts"],
       "@letta-cloud/utils-shared": ["libs/utils-shared/src/index.ts"],
-      "@letta-cloud/utils-types": ["libs/utils-types/src/index.ts"]
+      "@letta-cloud/utils-types": ["libs/utils-types/src/index.ts"],
+      "tmp-cloud-api-router": ["libs/tmp-cloud-api-router/src/index.ts"]
     },
     "jsx": "react"
   },

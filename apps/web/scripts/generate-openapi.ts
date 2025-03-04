@@ -1,12 +1,12 @@
 import { generateOpenApi } from '@ts-rest/open-api';
-import { sdkContracts } from '@letta-cloud/sdk-core';
 import fs from 'fs';
 import path from 'path';
 import { isErrorResult, merge } from 'openapi-merge';
 import { execSync } from 'child_process';
+import { cloudContracts } from '@letta-cloud/sdk-cloud-api';
 
 const openApiDoc = generateOpenApi(
-  sdkContracts,
+  cloudContracts,
   {
     info: {
       title: 'Letta API',

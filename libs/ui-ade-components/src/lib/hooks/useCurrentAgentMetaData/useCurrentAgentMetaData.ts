@@ -1,5 +1,5 @@
 'use client';
-import { webOriginSDKApi, webOriginSDKQueryKeys } from '@letta-cloud/sdk-core';
+import { cloudAPI, cloudQueryKeys } from '@letta-cloud/sdk-cloud-api';
 import { useParams, usePathname } from 'next/navigation';
 import { useAgentsServiceRetrieveAgent } from '@letta-cloud/sdk-core';
 import { CURRENT_RUNTIME } from '@letta-cloud/config-runtime';
@@ -85,18 +85,17 @@ export function useCurrentAgentMetaData(): UseCurrentAgentMetaDataResponse {
     agentId = agentTemplate?.body.agentTemplates[0]?.id || '';
     agentName = agentTemplate?.body.agentTemplates[0]?.name || '';
   } else {
-    const { data: deployedAgent } =
-      webOriginSDKApi.agents.getAgentById.useQuery({
-        queryKey: webOriginSDKQueryKeys.agents.getAgentById(agentId),
-        queryData: {
-          params: {
-            agent_id: agentId,
-          },
+    const { data: deployedAgent } = cloudAPI.agents.getAgentById.useQuery({
+      queryKey: cloudQueryKeys.agents.getAgentById(agentId),
+      queryData: {
+        params: {
+          agent_id: agentId,
         },
-        refetchOnWindowFocus: false,
-        refetchOnReconnect: false,
-        refetchOnMount: false,
-      });
+      },
+      refetchOnWindowFocus: false,
+      refetchOnReconnect: false,
+      refetchOnMount: false,
+    });
 
     agentId = deployedAgent?.body.id || '';
     agentName = deployedAgent?.body.name || '';

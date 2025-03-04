@@ -45,7 +45,7 @@
       "options": {
         "targetName": "test"
       },
-      "exclude": ["apps/lettuce-e2e/**/*"]
+      "exclude": ["apps/lettuce-e2e/**/*", "apps/cloud-api-e2e/**/*"]
     },
     {
       "plugin": "@nx/storybook/plugin",

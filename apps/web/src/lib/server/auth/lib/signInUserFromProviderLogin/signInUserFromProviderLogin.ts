@@ -256,6 +256,7 @@ async function createUserAndOrganization(
       imageUrl: userData.imageUrl,
       id: createdUser.userId,
       activeOrganizationId: organizationId,
+      coreUserId: lettaAgentsUser.id,
     },
     newProjectPayload: firstProjectSlug
       ? {
@@ -287,6 +288,7 @@ async function findExistingUser(
     activeOrganizationId: user.activeOrganizationId || '',
     imageUrl: user.imageUrl,
     name: user.name,
+    coreUserId: user.lettaAgentsId,
   };
 }
 
@@ -430,6 +432,7 @@ async function findOrCreateUserAndOrganizationFromProviderLogin(
       activeOrganizationId: user.activeOrganizationId,
       imageUrl: user.imageUrl,
       name: user.name,
+      coreUserId: user.coreUserId,
     },
     newUserDetails,
     isNewUser,
@@ -454,6 +457,11 @@ export async function signInUserFromProviderLogin(
   const expires = Date.now() + SESSION_EXPIRY_MS;
 
   await setCookie(CookieNames.LETTA_SESSION, {
+    sessionId,
+    expires,
+  });
+
+  await setCookie(CookieNames.CLOUD_API_SESSION, {
     sessionId,
     expires,
   });

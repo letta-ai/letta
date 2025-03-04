@@ -30,28 +30,28 @@ import {
   HStack,
   RawInput,
 } from '@letta-cloud/ui-component-library';
-import {
-  webApi,
-  webApiQueryKeys,
-  webOriginSDKApi,
-  webOriginSDKQueryKeys,
-} from '$web/client';
+import { webApi, webApiQueryKeys } from '$web/client';
 import { useCurrentProject } from '$web/client/hooks/useCurrentProject/useCurrentProject';
 import { useSearchParams } from 'next/navigation';
 import type { ColumnDef } from '@tanstack/react-table';
-import type { AgentState, ExtendedAgentState } from '@letta-cloud/sdk-core';
+import type { AgentState } from '@letta-cloud/sdk-core';
 
 import { TagService, useTagServiceListTags } from '@letta-cloud/sdk-core';
 import { useAgentsServiceRetrieveAgent } from '@letta-cloud/sdk-core';
 import { useTranslations } from '@letta-cloud/translations';
 import { DeployAgentDialog } from './DeployAgentDialog/DeployAgentDialog';
 import { useDateFormatter } from '@letta-cloud/utils-client';
-import { SearchDeployedAgentsSchema } from '@letta-cloud/sdk-core';
 import { useInfiniteQuery } from '@tanstack/react-query';
-import type { sdkContracts } from '@letta-cloud/sdk-core';
 import type { ServerInferResponses } from '@ts-rest/core';
 import { Messages } from '@letta-cloud/ui-ade-components';
 import type { InfiniteData } from '@tanstack/query-core';
+import {
+  type ExtendedAgentState,
+  type cloudContracts,
+  SearchDeployedAgentsSchema,
+  cloudAPI,
+  cloudQueryKeys,
+} from '@letta-cloud/sdk-cloud-api';
 
 interface AgentMessagesListProps {
   agentId: string;
@@ -526,27 +526,31 @@ function DeployedAgentsPage() {
   }, [currentProjectId, query, limit]);
 
   const { data, isFetchingNextPage, fetchNextPage } = useInfiniteQuery<
-    ServerInferResponses<typeof sdkContracts.agents.searchDeployedAgents, 200>,
+    ServerInferResponses<
+      typeof cloudContracts.agents.searchDeployedAgents,
+      200
+    >,
     unknown,
     InfiniteData<
-      ServerInferResponses<typeof sdkContracts.agents.searchDeployedAgents, 200>
+      ServerInferResponses<
+        typeof cloudContracts.agents.searchDeployedAgents,
+        200
+      >
     >,
     unknown[],
     { after?: string | null }
   >({
     queryKey: [
       'infinite',
-      ...webOriginSDKQueryKeys.agents.searchDeployedAgents(compiledQuery),
+      ...cloudQueryKeys.agents.searchDeployedAgents(compiledQuery),
     ],
     queryFn: async ({ pageParam }) => {
-      const response = await webOriginSDKApi.agents.searchDeployedAgents.mutate(
-        {
-          body: {
-            ...compiledQuery,
-            after: pageParam?.after,
-          },
+      const response = await cloudAPI.agents.searchDeployedAgents.mutate({
+        body: {
+          ...compiledQuery,
+          after: pageParam?.after,
         },
-      );
+      });
 
       if (response.status !== 200) {
         throw new Error('Failed to fetch agents');

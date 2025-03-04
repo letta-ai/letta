@@ -9,10 +9,9 @@ import {
 import type { StarterKitTool } from '@letta-cloud/config-agent-starter-kits';
 import { ToolsService } from '@letta-cloud/sdk-core';
 import { getUserWithActiveOrganizationIdOrThrow } from '$web/server/auth';
-import { sdkRouter } from '$web/sdk/router';
-import { createTemplate } from '$web/server/lib/createTemplate/createTemplate';
 import { db, projects } from '@letta-cloud/service-database';
 import { and, eq } from 'drizzle-orm';
+import { cloudApiRouter, createTemplate } from 'tmp-cloud-api-router';
 
 type CreateAgentFromStarterKitsRequest = ServerInferRequest<
   typeof contracts.starterKits.createAgentFromStarterKit
@@ -124,7 +123,7 @@ async function createAgentFromStarterKit(
       ? await createToolsInStarterKit(starterKit.tools, lettaAgentsId)
       : [];
 
-  const agent = await sdkRouter.agents.createAgent(
+  const agent = await cloudApiRouter.agents.createAgent(
     {
       body: {
         ...starterKit.agentState,

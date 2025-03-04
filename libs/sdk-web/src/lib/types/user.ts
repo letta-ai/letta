@@ -7,6 +7,7 @@ export const userSessionSchema = z.object({
   theme: z.string(),
   activeOrganizationId: z.string(),
   id: z.string(),
+  coreUserId: z.string(),
 });
 
 export type UserSession = z.infer<typeof userSessionSchema>;

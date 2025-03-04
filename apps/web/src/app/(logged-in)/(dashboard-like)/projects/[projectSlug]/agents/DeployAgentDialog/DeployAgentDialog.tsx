@@ -22,13 +22,14 @@ import {
 import type { KeyValue } from '@letta-cloud/ui-component-library';
 import { useTranslations } from '@letta-cloud/translations';
 import { useCurrentProject } from '$web/client/hooks/useCurrentProject/useCurrentProject';
-import { webApi, webApiQueryKeys, webOriginSDKApi } from '$web/client';
+import { webApi, webApiQueryKeys } from '$web/client';
 import { useRouter } from 'next/navigation';
 import { findMemoryBlockVariables } from '@letta-cloud/utils-shared';
 import { STARTER_KITS } from '@letta-cloud/config-agent-starter-kits';
 import type { AgentState } from '@letta-cloud/sdk-core';
 import { useUserHasPermission } from '$web/client/hooks';
 import { ApplicationServices } from '@letta-cloud/service-rbac';
+import { cloudAPI } from '@letta-cloud/sdk-cloud-api';
 
 const elementWidth = '204px';
 const elementHeight = '166px';
@@ -310,7 +311,7 @@ function SelectedTemplateState(props: SelectedTemplateStateProps) {
     mutate: createAgent,
     isSuccess,
     isPending,
-  } = webOriginSDKApi.templates.createAgentsFromTemplate.useMutation({
+  } = cloudAPI.templates.createAgentsFromTemplate.useMutation({
     onError: onErrored,
     onSuccess: (data) => {
       push(`/projects/${projectSlug}/agents/${data.body.agents[0].id}`);

@@ -2,13 +2,19 @@
 import { cookies } from 'next/headers';
 import type { CookieTypePayload } from './types';
 import { CookieNames } from './types';
+import { environment } from '@letta-cloud/config-environment-variables';
 
 interface RequestCookieInterface {
   httpOnly: boolean;
   path: string;
   secure: boolean;
+  domain?: string;
   expires?: Date;
 }
+
+const cloudAPIUrl = new URL(
+  environment.CLOUD_API_ENDPOINT || 'http://localhost:3006',
+);
 
 const cookieConfiguration: Record<
   CookieNames,
@@ -23,6 +29,13 @@ const cookieConfiguration: Record<
   [CookieNames.LETTA_SESSION]: {
     httpOnly: true,
     path: '/',
+    // safari does not allow secure cookies for localhost development
+    secure: process.env.NODE_ENV === 'production',
+  },
+  [CookieNames.CLOUD_API_SESSION]: {
+    httpOnly: true,
+    path: '/',
+    domain: `.${cloudAPIUrl.hostname}`,
     // safari does not allow secure cookies for localhost development
     secure: process.env.NODE_ENV === 'production',
   },

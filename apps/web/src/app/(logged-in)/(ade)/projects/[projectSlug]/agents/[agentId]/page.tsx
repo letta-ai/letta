@@ -1,7 +1,4 @@
-import {
-  UseAgentsServiceRetrieveAgentKeyFn,
-  webOriginSDKQueryKeys,
-} from '@letta-cloud/sdk-core';
+import { UseAgentsServiceRetrieveAgentKeyFn } from '@letta-cloud/sdk-core';
 import {
   dehydrate,
   HydrationBoundary,
@@ -12,8 +9,9 @@ import { redirect } from 'next/navigation';
 import { webApiQueryKeys } from '@letta-cloud/sdk-web';
 import { getProjectByIdOrSlug } from '$web/web-api/router';
 import { getUserOrRedirect } from '$web/server/auth';
-import { sdkRouter } from '$web/sdk/router';
 import { CloudAgentEditor } from '$web/client/components/CloudAgentEditor/CloudAgentEditor';
+import { cloudApiRouter } from 'tmp-cloud-api-router';
+import { cloudQueryKeys } from '@letta-cloud/sdk-cloud-api';
 
 interface AgentsAgentPageProps {
   params: Promise<{
@@ -49,7 +47,7 @@ async function AgentsAgentPage(context: AgentsAgentPageProps) {
     return;
   }
 
-  const deployedAgent = await sdkRouter.agents.getAgentById(
+  const deployedAgent = await cloudApiRouter.agents.getAgentById(
     {
       params: {
         agent_id: agentId,
@@ -89,7 +87,7 @@ async function AgentsAgentPage(context: AgentsAgentPageProps) {
       }),
     }),
     queryClient.prefetchQuery({
-      queryKey: webOriginSDKQueryKeys.agents.getAgentById(agentId),
+      queryKey: cloudQueryKeys.agents.getAgentById(agentId),
       queryFn: () => deployedAgent,
     }),
   ];

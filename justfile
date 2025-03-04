@@ -182,6 +182,47 @@ check-github-status:
     @echo "🚧 Checking GitHub status..."
     npm run check-github-status
 
+setup-cloud-api:
+    @echo "🚧 Setting up the cloud API..."
+    cd apps/cloud-api && npm install
+
+cloud-api: setup-cloud-api
+    @echo "🚧 Running the cloud API..."
+    npm run cloud-api:dev
+
+trigger-cloud-api-deploy branch="" deploy_message="":
+    #!/usr/bin/env bash
+    if [ -z "{{branch}}" ]; then
+        BRANCH=$(git branch --show-current)
+    else
+        BRANCH="{{branch}}"
+    fi
+    echo "🚀 Triggering cloud API deployment workflow on branch: $BRANCH"
+    gh workflow run "🕸🚀 Deploy Cloud API" --ref $BRANCH
+
+build-cloud-api:
+    @echo "🚧 Building cloud API Docker image with tag: {{TAG}}..."
+    docker buildx build --platform linux/amd64 --target cloud-api -t {{DOCKER_REGISTRY}}/cloud-api:{{TAG}} . --load --file apps/cloud-api/Dockerfile
+
+deploy-cloud-api:
+    @echo "🚀 Pushing Docker images to registry with tag: {{TAG}}..."
+    docker push {{DOCKER_REGISTRY}}/cloud-api:{{TAG}}
+
+undertaker:
+    @echo "🚧 Running the undertaker..."
+    npm run undertaker:dev
+
+# Trigger the undertaker deployment workflow (defaults to current branch if none specified)
+trigger-undertaker-deploy branch="" deploy_message="":
+    #!/usr/bin/env bash
+    if [ -z "{{branch}}" ]; then
+        BRANCH=$(git branch --show-current)
+    else
+        BRANCH="{{branch}}"
+    fi
+    echo "🚀 Triggering undertaker deployment workflow on branch: $BRANCH"
+    gh workflow run "🕸🚀 Deploy Undertaker" --ref $BRANCH
+
 build-undertaker:
   @echo "🚧 Building web Docker image with tag: {{TAG}}..."
   @mkdir -p /tmp/.buildx-cache
@@ -395,20 +436,6 @@ env:
     @echo "🚧 Setting up the environment..."
     op inject -i .env.template -o .env
 
-undertaker:
-    @echo "🚧 Running the undertaker..."
-    npm run undertaker:dev
-
-# Trigger the undertaker deployment workflow (defaults to current branch if none specified)
-trigger-undertaker-deploy branch="" deploy_message="":
-    #!/usr/bin/env bash
-    if [ -z "{{branch}}" ]; then
-        BRANCH=$(git branch --show-current)
-    else
-        BRANCH="{{branch}}"
-    fi
-    echo "🚀 Triggering undertaker deployment workflow on branch: $BRANCH"
-    gh workflow run "🕸🚀 Deploy Undertaker" --ref $BRANCH
 
 emails:
     @echo "🚧 Running the email viewer..."

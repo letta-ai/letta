@@ -6,9 +6,7 @@ export * from './lib/generateRedirectForSignedInUser/generateRedirectForSignedIn
 export * from './lib/getGithubUserDetails/getGithubUserDetails';
 export * from './lib/getOrganizationFromOrganizationId/getOrganizationFromOrganizationId';
 export * from './lib/getUser/getUser';
-export * from './lib/parseAccessToken/parseAccessToken';
 export * from './lib/signOutUser/signOutUser';
-export * from './lib/verifyAndReturnAPIKeyDetails/verifyAndReturnAPIKeyDetails';
 
 export * from './lib/signInUserFromProviderLogin/signInUserFromProviderLogin';
 export * from './lib/generateOAuthStateUrl/generateOAuthStateUrl';
