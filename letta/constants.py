@@ -146,6 +146,9 @@ MESSAGE_SUMMARY_WARNING_STR = " ".join(
         # "Remember to pass request_heartbeat = true if you would like to send a message immediately after.",
     ]
 )
+DATA_SOURCE_ATTACH_ALERT = (
+    "[ALERT] New data was just uploaded to archival memory. You can view this data by calling the archival_memory_search tool."
+)
 
 # The ackknowledgement message used in the summarize sequence
 MESSAGE_SUMMARY_REQUEST_ACK = "Understood, I will respond with a summary of the message (and only the summary, nothing else) once I receive the conversation history. I'm ready."
