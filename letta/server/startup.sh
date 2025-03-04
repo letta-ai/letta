@@ -38,6 +38,15 @@ if ! alembic upgrade head; then
 fi
 echo "Database migration completed successfully."
 
+# Set permissions for tool execution directory if configured
+if [ -n "$LETTA_SANDBOX_MOUNT_PATH" ]; then
+    if ! chmod 777 "$LETTA_SANDBOX_MOUNT_PATH"; then
+        echo "ERROR: Failed to set permissions for tool execution directory at: $LETTA_SANDBOX_MOUNT_PATH"
+        echo "Please check that the directory exists and is accessible"
+        exit 1
+    fi
+fi
+
 # If ADE is enabled, add the --ade flag to the command
 CMD="letta server --host $HOST --port $PORT"
 if [ "${SECURE:-false}" = "true" ]; then

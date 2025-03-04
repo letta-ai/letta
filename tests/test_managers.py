@@ -8,7 +8,7 @@ from openai.types.chat.chat_completion_message_tool_call import Function as Open
 from sqlalchemy.exc import IntegrityError
 
 from letta.config import LettaConfig
-from letta.constants import BASE_MEMORY_TOOLS, BASE_TOOLS, MULTI_AGENT_TOOLS
+from letta.constants import BASE_MEMORY_TOOLS, BASE_TOOLS, LETTA_TOOL_EXECUTION_DIR, MULTI_AGENT_TOOLS
 from letta.embeddings import embedding_model
 from letta.functions.functions import derive_openai_json_schema, parse_source_code
 from letta.orm import Base
@@ -2340,7 +2340,7 @@ def test_create_local_sandbox_config_defaults(server: SyncServer, default_user):
     # Assertions
     assert created_config.type == SandboxType.LOCAL
     assert created_config.get_local_config() == sandbox_config_create.config
-    assert created_config.get_local_config().sandbox_dir in {"~/.letta", tool_settings.local_sandbox_dir}
+    assert created_config.get_local_config().sandbox_dir in {LETTA_TOOL_EXECUTION_DIR, tool_settings.local_sandbox_dir}
     assert created_config.organization_id == default_user.organization_id
 
 
