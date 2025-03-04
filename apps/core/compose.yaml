@@ -49,9 +49,12 @@ services:
       - VLLM_API_BASE=${VLLM_API_BASE}
       - OPENLLM_AUTH_TYPE=${OPENLLM_AUTH_TYPE}
       - OPENLLM_API_KEY=${OPENLLM_API_KEY}
-    #volumes:
-    #- ./configs/server_config.yaml:/root/.letta/config # config file
-    #- ~/.letta/credentials:/root/.letta/credentials # credentials file
+    # volumes:
+    # - ./configs/server_config.yaml:/root/.letta/config # config file
+    # - ~/.letta/credentials:/root/.letta/credentials # credentials file
+    # Uncomment this line to mount a local directory for tool execution, and specify the mount path
+    # before running docker compose: `export LETTA_SANDBOX_MOUNT_PATH=$PWD/directory`
+    # - ${LETTA_SANDBOX_MOUNT_PATH:?}:/root/.letta/tool_execution_dir # mounted volume for tool execution
   letta_nginx:
     hostname: letta-nginx
     image: nginx:stable-alpine3.17-slim

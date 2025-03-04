@@ -1,6 +1,6 @@
 from typing import Dict, List, Optional
 
-from letta.constants import LETTA_DIR_TOOL_SANDBOX
+from letta.constants import LETTA_TOOL_EXECUTION_DIR
 from letta.log import get_logger
 from letta.orm.errors import NoResultFound
 from letta.orm.sandbox_config import SandboxConfig as SandboxConfigModel
@@ -35,7 +35,7 @@ class SandboxConfigManager:
                 default_config = {}  # Empty
             else:
                 # TODO: May want to move this to environment variables v.s. persisting in database
-                default_local_sandbox_path = LETTA_DIR_TOOL_SANDBOX
+                default_local_sandbox_path = LETTA_TOOL_EXECUTION_DIR
                 default_config = LocalSandboxConfig(sandbox_dir=default_local_sandbox_path).model_dump(exclude_none=True)
 
             sandbox_config = self.create_or_update_sandbox_config(SandboxConfigCreate(config=default_config), actor=actor)
