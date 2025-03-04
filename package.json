@@ -100,6 +100,7 @@
     "@temporalio/workflow": "^1.11.5",
     "@todesktop/runtime": "^2.0.0",
     "@ts-rest/core": "^3.51.0",
+    "@ts-rest/express": "^3.52.1",
     "@ts-rest/react-query": "^3.51.0",
     "@ts-rest/serverless": "^3.51.0",
     "@types/k6": "^0.54.2",
@@ -293,6 +294,9 @@
     },
     "@ts-rest/serverless": {
       "next": "$next"
+    },
+    "@ts-rest/express": {
+      "@ts-rest/core": "$@ts-rest/core"
     },
     "@7nohe/openapi-react-query-codegen": {
       "ts-morph": "$ts-morph"

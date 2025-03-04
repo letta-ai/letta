@@ -303,8 +303,9 @@ web:
 
 ready:
   @echo "🚧 Updating your local environment..."
-  npm run core:install
+  npx nx reset
   npm install
+  npm run core:install
   @echo "Migrating the database..."
   npm run web:database:migrate
   npm run core:database:migrate
