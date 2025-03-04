@@ -1,4 +1,5 @@
 import logging
+import sys
 import time
 from typing import Callable, Dict, Generator, List, Optional, Union
 
@@ -39,6 +40,16 @@ from letta.schemas.tool import Tool, ToolCreate, ToolUpdate
 from letta.schemas.tool_rule import BaseToolRule
 from letta.server.rest_api.interface import QueuingInterface
 from letta.utils import get_human_text, get_persona_text
+
+# Print deprecation notice in yellow when module is imported
+print(
+    "\n\n\033[93m"
+    + "DEPRECATION WARNING: This legacy Python client has been deprecated and will be removed in a future release.\n"
+    + "Please migrate to the new official python SDK by running: pip install letta-client\n"
+    + "For further documentation, visit: https://docs.letta.com/api-reference/overview#python-sdk"
+    + "\033[0m\n\n",
+    file=sys.stderr,
+)
 
 
 def create_client(base_url: Optional[str] = None, token: Optional[str] = None):
