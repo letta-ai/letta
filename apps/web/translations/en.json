@@ -1190,7 +1190,7 @@
     "description": "Not sure where to start? Check out some of our tutorials ",
     "comingSoon": "Coming soon",
     "createChatBotWithMemory": {
-      "title": "Create a chatbot with memory",
+      "title": "Create a chatbot app with memory",
       "description": "Build a chatbot that can adapt over time using long-term memory"
     },
     "buildMultiAgentSystems": {

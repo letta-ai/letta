@@ -39,19 +39,19 @@ export function Tutorials() {
           largeImage={<TutorialImage src={memory} />}
           title={t('createChatBotWithMemory.title')}
           description={t('createChatBotWithMemory.description')}
-          badge={<Badge size="small" content={t('comingSoon')} />}
+          href="https://github.com/letta-ai/letta-chatbot-example"
         />
         <DashboardCard
           largeImage={<TutorialImage src={multiagent} />}
           title={t('buildMultiAgentSystems.title')}
           description={t('buildMultiAgentSystems.description')}
-          badge={<Badge size="small" content={t('comingSoon')} />}
+          href="https://docs.letta.com/cookbooks/multi-agent-async"
         />
         <DashboardCard
           largeImage={<TutorialImage src={discord} />}
           title={t('discord.title')}
           description={t('discord.description')}
-          badge={<Badge size="small" content={t('comingSoon')} />}
+          href="https://github.com/letta-ai/letta-discord-bot-example"
         />
         <DashboardCard
           largeImage={<TutorialImage src={voice} />}
