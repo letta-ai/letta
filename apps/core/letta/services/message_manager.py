@@ -46,7 +46,7 @@ class MessageManager:
 
             # Sort results directly based on message_ids
             result_dict = {msg.id: msg.to_pydantic() for msg in results}
-            return [result_dict[msg_id] for msg_id in message_ids]
+            return list(filter(lambda x: x is not None, [result_dict.get(msg_id, None) for msg_id in message_ids]))
 
     @enforce_types
     def create_message(self, pydantic_msg: PydanticMessage, actor: PydanticUser) -> PydanticMessage:

@@ -35,6 +35,7 @@ from letta.schemas.tool_rule import TerminalToolRule as PydanticTerminalToolRule
 from letta.schemas.tool_rule import ToolRule as PydanticToolRule
 from letta.schemas.user import User as PydanticUser
 from letta.serialize_schemas import SerializedAgentSchema
+from letta.serialize_schemas.tool import SerializedToolSchema
 from letta.services.block_manager import BlockManager
 from letta.services.helpers.agent_manager_helper import (
     _process_relationship,
@@ -394,18 +395,28 @@ class AgentManager:
         with self.session_maker() as session:
             # Retrieve the agent
             agent = AgentModel.read(db_session=session, identifier=agent_id, actor=actor)
-            schema = SerializedAgentSchema(session=session)
+            schema = SerializedAgentSchema(session=session, actor=actor)
             return schema.dump(agent)
 
     @enforce_types
-    def deserialize(self, serialized_agent: dict, actor: PydanticUser) -> PydanticAgentState:
-        # TODO: Use actor to override fields
+    def deserialize(self, serialized_agent: dict, actor: PydanticUser, mark_as_copy: bool = True) -> PydanticAgentState:
+        tool_data_list = serialized_agent.pop("tools", [])
+
         with self.session_maker() as session:
-            schema = SerializedAgentSchema(session=session)
+            schema = SerializedAgentSchema(session=session, actor=actor)
             agent = schema.load(serialized_agent, session=session)
-            agent.organization_id = actor.organization_id
-            agent = agent.create(session, actor=actor)
-            return agent.to_pydantic()
+            if mark_as_copy:
+                agent.name += "_copy"
+            agent.create(session, actor=actor)
+            pydantic_agent = agent.to_pydantic()
+
+        # Need to do this separately as there's some fancy upsert logic that SqlAlchemy cannot handle
+        for tool_data in tool_data_list:
+            pydantic_tool = SerializedToolSchema(actor=actor).load(tool_data, transient=True).to_pydantic()
+            pydantic_tool = self.tool_manager.create_or_update_tool(pydantic_tool, actor=actor)
+            pydantic_agent = self.attach_tool(agent_id=pydantic_agent.id, tool_id=pydantic_tool.id, actor=actor)
+
+        return pydantic_agent
 
     # ======================================================================================================================
     # Per Agent Environment Variable Management
