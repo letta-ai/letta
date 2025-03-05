@@ -461,6 +461,8 @@ class AgentManager:
                             value=value,
                             agent_id=agent_id,
                             organization_id=actor.organization_id,
+                            created_by_id=actor.id,
+                            last_updated_by_id=actor.id,
                         )
                     )
 
