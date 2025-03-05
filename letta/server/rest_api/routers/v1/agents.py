@@ -1,10 +1,13 @@
+import json
 import traceback
 from datetime import datetime
 from typing import Annotated, List, Optional
 
-from fastapi import APIRouter, BackgroundTasks, Body, Depends, Header, HTTPException, Query, status
+from fastapi import APIRouter, BackgroundTasks, Body, Depends, File, Header, HTTPException, Query, UploadFile, status
 from fastapi.responses import JSONResponse
+from marshmallow import ValidationError
 from pydantic import Field
+from sqlalchemy.exc import IntegrityError, OperationalError
 
 from letta.constants import DEFAULT_MESSAGE_TOOL, DEFAULT_MESSAGE_TOOL_KWARG
 from letta.log import get_logger
@@ -86,6 +89,59 @@ def list_agents(
         **kwargs,
     )
     return agents
+
+
+@router.get("/{agent_id}/download", response_model=None, operation_id="download_agent_serialized")
+def download_agent_serialized(
+    agent_id: str,
+    server: "SyncServer" = Depends(get_letta_server),
+    actor_id: Optional[str] = Header(None, alias="user_id"),
+):
+    """
+    Download the serialized JSON representation of an agent.
+    """
+    actor = server.user_manager.get_user_or_default(user_id=actor_id)
+
+    try:
+        serialized_agent = server.agent_manager.serialize(agent_id=agent_id, actor=actor)
+        return JSONResponse(content=serialized_agent, media_type="application/json")
+    except NoResultFound:
+        raise HTTPException(status_code=404, detail=f"Agent with id={agent_id} not found for user_id={actor.id}.")
+
+
+@router.post("/upload", response_model=AgentState, operation_id="upload_agent_serialized")
+async def upload_agent_serialized(
+    file: UploadFile = File(...),
+    server: "SyncServer" = Depends(get_letta_server),
+    actor_id: Optional[str] = Header(None, alias="user_id"),
+    mark_as_copy: bool = Query(True, description="Whether to mark the uploaded agent as a copy"),
+):
+    """
+    Upload a serialized agent JSON file and recreate the agent in the system.
+    """
+    actor = server.user_manager.get_user_or_default(user_id=actor_id)
+
+    try:
+        serialized_data = await file.read()
+        agent_json = json.loads(serialized_data)
+        new_agent = server.agent_manager.deserialize(serialized_agent=agent_json, actor=actor, mark_as_copy=mark_as_copy)
+        return new_agent
+
+    except json.JSONDecodeError:
+        raise HTTPException(status_code=400, detail="Corrupted agent file format.")
+
+    except ValidationError as e:
+        raise HTTPException(status_code=422, detail=f"Invalid agent schema: {str(e)}")
+
+    except IntegrityError as e:
+        raise HTTPException(status_code=409, detail=f"Database integrity error: {str(e)}")
+
+    except OperationalError as e:
+        raise HTTPException(status_code=503, detail=f"Database connection error. Please try again later: {str(e)}")
+
+    except Exception:
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail="An unexpected error occurred while uploading the agent.")
 
 
 @router.get("/{agent_id}/context", response_model=ContextWindowOverview, operation_id="retrieve_agent_context_window")

@@ -1,9 +1,11 @@
 import difflib
 import json
 from datetime import datetime, timezone
+from io import BytesIO
 from typing import Any, Dict, List, Mapping
 
 import pytest
+from fastapi.testclient import TestClient
 from rich.console import Console
 from rich.syntax import Syntax
 
@@ -18,6 +20,7 @@ from letta.schemas.llm_config import LLMConfig
 from letta.schemas.message import MessageCreate
 from letta.schemas.organization import Organization
 from letta.schemas.user import User
+from letta.server.rest_api.app import app
 from letta.server.server import SyncServer
 
 console = Console()
@@ -30,6 +33,12 @@ def _clear_tables():
         for table in reversed(Base.metadata.sorted_tables):  # Reverse to avoid FK issues
             session.execute(table.delete())  # Truncate table
         session.commit()
+
+
+@pytest.fixture
+def fastapi_client():
+    """Fixture to create a FastAPI test client."""
+    return TestClient(app)
 
 
 @pytest.fixture(autouse=True)
@@ -419,3 +428,50 @@ def test_agent_serialize_tool_calls(mock_e2b_api_key_none, local_client, server,
 
     assert original_agent_response.completion_tokens > 0 and original_agent_response.step_count > 0
     assert copy_agent_response.completion_tokens > 0 and copy_agent_response.step_count > 0
+
+
+# FastAPI endpoint tests
+
+
+@pytest.mark.parametrize("mark_as_copy", [True])
+def test_agent_download_upload_flow(fastapi_client, server, serialize_test_agent, default_user, other_user, mark_as_copy):
+    """
+    Test the full E2E serialization and deserialization flow using FastAPI endpoints.
+    """
+    agent_id = serialize_test_agent.id
+
+    # Step 1: Download the serialized agent
+    response = fastapi_client.get(f"/v1/agents/{agent_id}/download", headers={"user_id": default_user.id})
+    assert response.status_code == 200, f"Download failed: {response.text}"
+
+    agent_json = response.json()
+
+    # Step 2: Upload the serialized agent as a copy
+    agent_bytes = BytesIO(json.dumps(agent_json).encode("utf-8"))
+    files = {"file": ("agent.json", agent_bytes, "application/json")}
+    upload_response = fastapi_client.post(
+        "/v1/agents/upload",
+        headers={"user_id": other_user.id},
+        params={"mark_as_copy": mark_as_copy},
+        files=files,
+    )
+    assert upload_response.status_code == 200, f"Upload failed: {upload_response.text}"
+
+    # Sanity checks
+    copied_agent = upload_response.json()
+    copied_agent_id = copied_agent["id"]
+    assert copied_agent_id != agent_id, "Copied agent should have a different ID"
+    assert copied_agent["name"] == serialize_test_agent.name + "_copy", "Copied agent name should have '_copy' suffix"
+
+    # Step 3: Retrieve the copied agent
+    serialize_test_agent = server.agent_manager.get_agent_by_id(agent_id=serialize_test_agent.id, actor=default_user)
+    agent_copy = server.agent_manager.get_agent_by_id(agent_id=copied_agent_id, actor=other_user)
+    print_dict_diff(json.loads(serialize_test_agent.model_dump_json()), json.loads(agent_copy.model_dump_json()))
+    assert compare_agent_state(agent_copy, serialize_test_agent, mark_as_copy=mark_as_copy)
+
+    # Step 4: Ensure copied agent receives messages correctly
+    server.send_messages(
+        actor=other_user,
+        agent_id=copied_agent_id,
+        messages=[MessageCreate(role=MessageRole.user, content="Hello copied agent!")],
+    )
