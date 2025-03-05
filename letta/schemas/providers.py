@@ -27,7 +27,7 @@ class Provider(ProviderBase):
 
     def resolve_identifier(self):
         if not self.id:
-            self.id = ProviderBase._generate_id(prefix=ProviderBase.__id_prefix__)
+            self.id = ProviderBase.generate_id(prefix=ProviderBase.__id_prefix__)
 
     def list_llm_models(self) -> List[LLMConfig]:
         return []

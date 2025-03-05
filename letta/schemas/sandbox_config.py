@@ -6,6 +6,7 @@ from typing import Any, Dict, List, Literal, Optional, Union
 
 from pydantic import BaseModel, Field, model_validator
 
+from letta.constants import LETTA_TOOL_EXECUTION_DIR
 from letta.schemas.agent import AgentState
 from letta.schemas.letta_base import LettaBase, OrmMetadataBase
 from letta.settings import tool_settings
@@ -71,7 +72,7 @@ class LocalSandboxConfig(BaseModel):
             if tool_settings.local_sandbox_dir:
                 data["sandbox_dir"] = tool_settings.local_sandbox_dir
             else:
-                data["sandbox_dir"] = "~/.letta"
+                data["sandbox_dir"] = LETTA_TOOL_EXECUTION_DIR
 
         return data
 

@@ -2,7 +2,7 @@ import os
 from logging import CRITICAL, DEBUG, ERROR, INFO, NOTSET, WARN, WARNING
 
 LETTA_DIR = os.path.join(os.path.expanduser("~"), ".letta")
-LETTA_DIR_TOOL_SANDBOX = os.path.join(LETTA_DIR, "tool_sandbox_dir")
+LETTA_TOOL_EXECUTION_DIR = os.path.join(LETTA_DIR, "tool_execution_dir")
 
 ADMIN_PREFIX = "/v1/admin"
 API_PREFIX = "/v1"
@@ -145,6 +145,9 @@ MESSAGE_SUMMARY_WARNING_STR = " ".join(
         "If there is any important new information or general memories about you or the user that you would like to save, you should save that information immediately by calling function core_memory_append, core_memory_replace, or archival_memory_insert.",
         # "Remember to pass request_heartbeat = true if you would like to send a message immediately after.",
     ]
+)
+DATA_SOURCE_ATTACH_ALERT = (
+    "[ALERT] New data was just uploaded to archival memory. You can view this data by calling the archival_memory_search tool."
 )
 
 # The ackknowledgement message used in the summarize sequence

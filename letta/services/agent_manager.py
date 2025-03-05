@@ -4,7 +4,7 @@ from typing import Dict, List, Optional
 import numpy as np
 from sqlalchemy import Select, and_, func, literal, or_, select, union_all
 
-from letta.constants import BASE_MEMORY_TOOLS, BASE_TOOLS, MAX_EMBEDDING_DIM, MULTI_AGENT_TOOLS
+from letta.constants import BASE_MEMORY_TOOLS, BASE_TOOLS, DATA_SOURCE_ATTACH_ALERT, MAX_EMBEDDING_DIM, MULTI_AGENT_TOOLS
 from letta.embeddings import embedding_model
 from letta.helpers.datetime_helpers import get_utc_time
 from letta.log import get_logger
@@ -35,6 +35,7 @@ from letta.schemas.tool_rule import TerminalToolRule as PydanticTerminalToolRule
 from letta.schemas.tool_rule import ToolRule as PydanticToolRule
 from letta.schemas.user import User as PydanticUser
 from letta.serialize_schemas import SerializedAgentSchema
+from letta.serialize_schemas.tool import SerializedToolSchema
 from letta.services.block_manager import BlockManager
 from letta.services.helpers.agent_manager_helper import (
     _process_relationship,
@@ -394,18 +395,28 @@ class AgentManager:
         with self.session_maker() as session:
             # Retrieve the agent
             agent = AgentModel.read(db_session=session, identifier=agent_id, actor=actor)
-            schema = SerializedAgentSchema(session=session)
+            schema = SerializedAgentSchema(session=session, actor=actor)
             return schema.dump(agent)
 
     @enforce_types
-    def deserialize(self, serialized_agent: dict, actor: PydanticUser) -> PydanticAgentState:
-        # TODO: Use actor to override fields
+    def deserialize(self, serialized_agent: dict, actor: PydanticUser, mark_as_copy: bool = True) -> PydanticAgentState:
+        tool_data_list = serialized_agent.pop("tools", [])
+
         with self.session_maker() as session:
-            schema = SerializedAgentSchema(session=session)
+            schema = SerializedAgentSchema(session=session, actor=actor)
             agent = schema.load(serialized_agent, session=session)
-            agent.organization_id = actor.organization_id
-            agent = agent.create(session, actor=actor)
-            return agent.to_pydantic()
+            if mark_as_copy:
+                agent.name += "_copy"
+            agent.create(session, actor=actor)
+            pydantic_agent = agent.to_pydantic()
+
+        # Need to do this separately as there's some fancy upsert logic that SqlAlchemy cannot handle
+        for tool_data in tool_data_list:
+            pydantic_tool = SerializedToolSchema(actor=actor).load(tool_data, transient=True).to_pydantic()
+            pydantic_tool = self.tool_manager.create_or_update_tool(pydantic_tool, actor=actor)
+            pydantic_agent = self.attach_tool(agent_id=pydantic_agent.id, tool_id=pydantic_tool.id, actor=actor)
+
+        return pydantic_agent
 
     # ======================================================================================================================
     # Per Agent Environment Variable Management
@@ -670,6 +681,7 @@ class AgentManager:
             ValueError: If either agent or source doesn't exist
             IntegrityError: If the source is already attached to the agent
         """
+
         with self.session_maker() as session:
             # Verify both agent and source exist and user has permission to access them
             agent = AgentModel.read(db_session=session, identifier=agent_id, actor=actor)
@@ -687,7 +699,27 @@ class AgentManager:
 
             # Commit the changes
             agent.update(session, actor=actor)
-            return agent.to_pydantic()
+
+        # Add system messsage alert to agent
+        self.append_system_message(
+            agent_id=agent_id,
+            content=DATA_SOURCE_ATTACH_ALERT,
+            actor=actor,
+        )
+
+        return agent.to_pydantic()
+
+    @enforce_types
+    def append_system_message(self, agent_id: str, content: str, actor: PydanticUser):
+
+        # get the agent
+        agent = self.get_agent_by_id(agent_id=agent_id, actor=actor)
+        message = PydanticMessage.dict_to_message(
+            agent_id=agent.id, user_id=actor.id, model=agent.llm_config.model, openai_message_dict={"role": "system", "content": content}
+        )
+
+        # update agent in-context message IDs
+        self.append_to_in_context_messages(messages=[message], agent_id=agent_id, actor=actor)
 
     @enforce_types
     def list_attached_sources(self, agent_id: str, actor: PydanticUser) -> List[PydanticSource]:
