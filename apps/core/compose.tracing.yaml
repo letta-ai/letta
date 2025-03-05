@@ -1,6 +1,7 @@
 services:
   letta_server:
     environment:
+      - ENV_NAME=${ENV_NAME} # optional service name
       - OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4317
 
   otel-collector:
