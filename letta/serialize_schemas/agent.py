@@ -10,6 +10,7 @@ from letta.serialize_schemas.base import BaseSchema
 from letta.serialize_schemas.block import SerializedBlockSchema
 from letta.serialize_schemas.custom_fields import EmbeddingConfigField, LLMConfigField, ToolRulesField
 from letta.serialize_schemas.message import SerializedMessageSchema
+from letta.serialize_schemas.tag import SerializedAgentTagSchema
 from letta.serialize_schemas.tool import SerializedToolSchema
 from letta.server.db import SessionLocal
 
@@ -30,6 +31,7 @@ class SerializedAgentSchema(BaseSchema):
     core_memory = fields.List(fields.Nested(SerializedBlockSchema))
     tools = fields.List(fields.Nested(SerializedToolSchema))
     tool_exec_environment_variables = fields.List(fields.Nested(SerializedAgentEnvironmentVariableSchema))
+    tags = fields.List(fields.Nested(SerializedAgentTagSchema))
 
     def __init__(self, *args, session: SessionLocal, actor: User, **kwargs):
         super().__init__(*args, actor=actor, **kwargs)
@@ -68,4 +70,4 @@ class SerializedAgentSchema(BaseSchema):
     class Meta(BaseSchema.Meta):
         model = Agent
         # TODO: Serialize these as well...
-        exclude = BaseSchema.Meta.exclude + ("sources", "tags", "source_passages", "agent_passages")
+        exclude = BaseSchema.Meta.exclude + ("sources", "source_passages", "agent_passages")

@@ -22,12 +22,20 @@ class BaseSchema(SQLAlchemyAutoSchema):
         super().__init__(*args, **kwargs)
         self.actor = actor
 
-    def generate_id(self) -> str:
-        return self.__pydantic_model__.generate_id()
+    def generate_id(self) -> Optional[str]:
+        if self.__pydantic_model__:
+            return self.__pydantic_model__.generate_id()
+
+        return None
 
     @post_dump
     def sanitize_ids(self, data: Dict, **kwargs) -> Dict:
-        data["id"] = self.generate_id()
+        if self.Meta.model:
+            mapper = inspect(self.Meta.model)
+            if "id" in mapper.columns:
+                generated_id = self.generate_id()
+                if generated_id:
+                    data["id"] = generated_id
 
         for sensitive_id in BaseSchema.sensitive_ids.union(BaseSchema.sensitive_relationships):
             if sensitive_id in data:
