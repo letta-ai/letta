@@ -175,11 +175,6 @@ class CreateAgent(BaseModel, validate_assignment=True):  #
             # don't check if not provided
             return name
 
-        # TODO: this check should also be added to other model (e.g. User.name)
-        # Length check
-        if not (1 <= len(name) <= 50):
-            raise ValueError("Name length must be between 1 and 50 characters.")
-
         # Regex for allowed characters (alphanumeric, spaces, hyphens, underscores)
         if not re.match("^[A-Za-z0-9 _-]+$", name):
             raise ValueError("Name contains invalid characters.")
