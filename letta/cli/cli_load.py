@@ -20,7 +20,7 @@ from letta.data_sources.connectors import DirectoryConnector
 app = typer.Typer()
 
 
-default_extensions = ".txt,.md,.pdf"
+default_extensions = "txt,md,pdf"
 
 
 @app.command("directory")
