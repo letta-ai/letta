@@ -272,6 +272,28 @@ export const UseAgentsServiceListAgentsKeyFn = (
     },
   ]),
 ];
+export type AgentsServiceDownloadAgentSerializedDefaultResponse = Awaited<
+  ReturnType<typeof AgentsService.downloadAgentSerialized>
+>;
+export type AgentsServiceDownloadAgentSerializedQueryResult<
+  TData = AgentsServiceDownloadAgentSerializedDefaultResponse,
+  TError = unknown,
+> = UseQueryResult<TData, TError>;
+export const useAgentsServiceDownloadAgentSerializedKey =
+  'AgentsServiceDownloadAgentSerialized';
+export const UseAgentsServiceDownloadAgentSerializedKeyFn = (
+  {
+    agentId,
+    userId,
+  }: {
+    agentId: string;
+    userId?: string;
+  },
+  queryKey?: Array<unknown>,
+) => [
+  useAgentsServiceDownloadAgentSerializedKey,
+  ...(queryKey ?? [{ agentId, userId }]),
+];
 export type AgentsServiceRetrieveAgentContextWindowDefaultResponse = Awaited<
   ReturnType<typeof AgentsService.retrieveAgentContextWindow>
 >;
@@ -1143,6 +1165,9 @@ export type SourcesServiceUploadFileToSourceMutationResult = Awaited<
 >;
 export type AgentsServiceCreateAgentMutationResult = Awaited<
   ReturnType<typeof AgentsService.createAgent>
+>;
+export type AgentsServiceUploadAgentSerializedMutationResult = Awaited<
+  ReturnType<typeof AgentsService.uploadAgentSerialized>
 >;
 export type AgentsServiceCreatePassageMutationResult = Awaited<
   ReturnType<typeof AgentsService.createPassage>

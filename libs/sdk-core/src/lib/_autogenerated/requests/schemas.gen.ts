@@ -1220,6 +1220,19 @@ export const $BlockUpdate = {
   description: 'Update a block',
 } as const;
 
+export const $Body_upload_agent_serialized = {
+  properties: {
+    file: {
+      type: 'string',
+      format: 'binary',
+      title: 'File',
+    },
+  },
+  type: 'object',
+  required: ['file'],
+  title: 'Body_upload_agent_serialized',
+} as const;
+
 export const $Body_upload_file_to_source = {
   properties: {
     file: {

@@ -886,6 +886,13 @@ export const BlockUpdate = z.object({
     .optional(),
 });
 
+export type Body_upload_agent_serialized = z.infer<
+  typeof Body_upload_agent_serialized
+>;
+export const Body_upload_agent_serialized = z.object({
+  file: z.string(),
+});
+
 export type Body_upload_file_to_source = z.infer<
   typeof Body_upload_file_to_source
 >;
@@ -4221,6 +4228,44 @@ export const post_Create_agent = {
   response: AgentState,
 };
 
+export type get_Download_agent_serialized =
+  typeof get_Download_agent_serialized;
+export const get_Download_agent_serialized = {
+  method: z.literal('GET'),
+  path: z.literal('/v1/agents/{agent_id}/download'),
+  requestFormat: z.literal('json'),
+  parameters: z.object({
+    path: z.object({
+      agent_id: z.string(),
+    }),
+    header: z.object({
+      user_id: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+    }),
+  }),
+  response: z.unknown(),
+};
+
+export type post_Upload_agent_serialized = typeof post_Upload_agent_serialized;
+export const post_Upload_agent_serialized = {
+  method: z.literal('POST'),
+  path: z.literal('/v1/agents/upload'),
+  requestFormat: z.literal('form-data'),
+  parameters: z.object({
+    query: z.object({
+      mark_as_copy: z.boolean().optional(),
+    }),
+    header: z.object({
+      user_id: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+    }),
+    body: Body_upload_agent_serialized,
+  }),
+  response: AgentState,
+};
+
 export type get_Retrieve_agent_context_window =
   typeof get_Retrieve_agent_context_window;
 export const get_Retrieve_agent_context_window = {
@@ -5872,6 +5917,7 @@ export const EndpointByMethod = {
     '/v1/sources/{source_id}/passages': get_List_source_passages,
     '/v1/sources/{source_id}/files': get_List_source_files,
     '/v1/agents/': get_List_agents,
+    '/v1/agents/{agent_id}/download': get_Download_agent_serialized,
     '/v1/agents/{agent_id}/context': get_Retrieve_agent_context_window,
     '/v1/agents/{agent_id}': get_Retrieve_agent,
     '/v1/agents/{agent_id}/tools': get_List_agent_tools,
@@ -5946,6 +5992,7 @@ export const EndpointByMethod = {
     '/v1/sources/': post_Create_source,
     '/v1/sources/{source_id}/upload': post_Upload_file_to_source,
     '/v1/agents/': post_Create_agent,
+    '/v1/agents/upload': post_Upload_agent_serialized,
     '/v1/agents/{agent_id}/archival-memory': post_Create_passage,
     '/v1/agents/{agent_id}/messages': post_Send_message,
     '/v1/agents/{agent_id}/messages/stream': post_Create_agent_message_stream,

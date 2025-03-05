@@ -422,6 +422,10 @@ export type BlockUpdate = {
   } | null;
 };
 
+export type Body_upload_agent_serialized = {
+  file: Blob | File;
+};
+
 export type Body_upload_file_to_source = {
   file: Blob | File;
 };
@@ -3203,6 +3207,24 @@ export type CreateAgentData = {
 
 export type CreateAgentResponse = AgentState;
 
+export type DownloadAgentSerializedData = {
+  agentId: string;
+  userId?: string | null;
+};
+
+export type DownloadAgentSerializedResponse = unknown;
+
+export type UploadAgentSerializedData = {
+  formData: Body_upload_agent_serialized;
+  /**
+   * Whether to mark the uploaded agent as a copy
+   */
+  markAsCopy?: boolean;
+  userId?: string | null;
+};
+
+export type UploadAgentSerializedResponse = AgentState;
+
 export type RetrieveAgentContextWindowData = {
   agentId: string;
   userId?: string | null;
@@ -4260,6 +4282,36 @@ export type $OpenApiTs = {
     };
     post: {
       req: CreateAgentData;
+      res: {
+        /**
+         * Successful Response
+         */
+        200: AgentState;
+        /**
+         * Validation Error
+         */
+        422: HTTPValidationError;
+      };
+    };
+  };
+  '/v1/agents/{agent_id}/download': {
+    get: {
+      req: DownloadAgentSerializedData;
+      res: {
+        /**
+         * Successful Response
+         */
+        200: unknown;
+        /**
+         * Validation Error
+         */
+        422: HTTPValidationError;
+      };
+    };
+  };
+  '/v1/agents/upload': {
+    post: {
+      req: UploadAgentSerializedData;
       res: {
         /**
          * Successful Response

@@ -1272,6 +1272,99 @@
         }
       }
     },
+    "/v1/agents/{agent_id}/download": {
+      "get": {
+        "tags": ["agents"],
+        "summary": "Download Agent Serialized",
+        "description": "Download the serialized JSON representation of an agent.",
+        "operationId": "download_agent_serialized",
+        "parameters": [
+          {
+            "name": "agent_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Agent Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/agents/upload": {
+      "post": {
+        "tags": ["agents"],
+        "summary": "Upload Agent Serialized",
+        "description": "Upload a serialized agent JSON file and recreate the agent in the system.",
+        "operationId": "upload_agent_serialized",
+        "parameters": [
+          {
+            "name": "mark_as_copy",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "description": "Whether to mark the uploaded agent as a copy",
+              "default": true,
+              "title": "Mark As Copy"
+            },
+            "description": "Whether to mark the uploaded agent as a copy"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_upload_agent_serialized"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentState"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/agents/{agent_id}/context": {
       "get": {
         "tags": ["agents"],
@@ -10917,6 +11010,18 @@
         "type": "object",
         "title": "BlockUpdate",
         "description": "Update a block"
+      },
+      "Body_upload_agent_serialized": {
+        "properties": {
+          "file": {
+            "type": "string",
+            "format": "binary",
+            "title": "File"
+          }
+        },
+        "type": "object",
+        "required": ["file"],
+        "title": "Body_upload_agent_serialized"
       },
       "Body_upload_file_to_source": {
         "properties": {

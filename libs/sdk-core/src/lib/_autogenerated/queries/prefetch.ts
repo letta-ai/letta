@@ -343,6 +343,32 @@ export const prefetchUseAgentsServiceListAgents = (
       }),
   });
 /**
+ * Download Agent Serialized
+ * Download the serialized JSON representation of an agent.
+ * @param data The data for the request.
+ * @param data.agentId
+ * @param data.userId
+ * @returns unknown Successful Response
+ * @throws ApiError
+ */
+export const prefetchUseAgentsServiceDownloadAgentSerialized = (
+  queryClient: QueryClient,
+  {
+    agentId,
+    userId,
+  }: {
+    agentId: string;
+    userId?: string;
+  },
+) =>
+  queryClient.prefetchQuery({
+    queryKey: Common.UseAgentsServiceDownloadAgentSerializedKeyFn({
+      agentId,
+      userId,
+    }),
+    queryFn: () => AgentsService.downloadAgentSerialized({ agentId, userId }),
+  });
+/**
  * Retrieve Agent Context Window
  * Retrieve the context window of a specific agent.
  * @param data The data for the request.

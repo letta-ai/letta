@@ -50,6 +50,10 @@ import type {
   ListAgentsResponse,
   CreateAgentData,
   CreateAgentResponse,
+  DownloadAgentSerializedData,
+  DownloadAgentSerializedResponse,
+  UploadAgentSerializedData,
+  UploadAgentSerializedResponse,
   RetrieveAgentContextWindowData,
   RetrieveAgentContextWindowResponse,
   ModifyAgentData,
@@ -835,6 +839,61 @@ export class AgentsService {
       url: '/v1/agents/',
       body: data.requestBody,
       mediaType: 'application/json',
+      errors: {
+        422: 'Validation Error',
+      },
+      headers,
+    });
+  }
+
+  /**
+   * Download Agent Serialized
+   * Download the serialized JSON representation of an agent.
+   * @param data The data for the request.
+   * @param data.agentId
+   * @param data.userId
+   * @returns unknown Successful Response
+   * @throws ApiError
+   */
+  public static downloadAgentSerialized(
+    data: DownloadAgentSerializedData,
+    headers?: { user_id: string },
+  ): CancelablePromise<DownloadAgentSerializedResponse> {
+    return __request(OpenAPI, {
+      method: 'GET',
+      url: '/v1/agents/{agent_id}/download',
+      path: {
+        agent_id: data.agentId,
+      },
+      errors: {
+        422: 'Validation Error',
+      },
+      headers,
+    });
+  }
+
+  /**
+   * Upload Agent Serialized
+   * Upload a serialized agent JSON file and recreate the agent in the system.
+   * @param data The data for the request.
+   * @param data.formData
+   * @param data.markAsCopy Whether to mark the uploaded agent as a copy
+   * @param data.userId
+   * @returns AgentState Successful Response
+   * @throws ApiError
+   */
+  public static uploadAgentSerialized(
+    data: UploadAgentSerializedData,
+    headers?: { user_id: string },
+  ): CancelablePromise<UploadAgentSerializedResponse> {
+    return __request(OpenAPI, {
+      method: 'POST',
+      url: '/v1/agents/upload',
+      query: {
+        mark_as_copy: data.markAsCopy,
+      },
+      formData: data.formData,
+      mediaType: 'multipart/form-data',
       errors: {
         422: 'Validation Error',
       },

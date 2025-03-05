@@ -419,6 +419,39 @@ export const useAgentsServiceListAgentsSuspense = <
     ...options,
   });
 /**
+ * Download Agent Serialized
+ * Download the serialized JSON representation of an agent.
+ * @param data The data for the request.
+ * @param data.agentId
+ * @param data.userId
+ * @returns unknown Successful Response
+ * @throws ApiError
+ */
+export const useAgentsServiceDownloadAgentSerializedSuspense = <
+  TData = Common.AgentsServiceDownloadAgentSerializedDefaultResponse,
+  TError = unknown,
+  TQueryKey extends Array<unknown> = unknown[],
+>(
+  {
+    agentId,
+    userId,
+  }: {
+    agentId: string;
+    userId?: string;
+  },
+  queryKey?: TQueryKey,
+  options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>,
+) =>
+  useSuspenseQuery<TData, TError>({
+    queryKey: Common.UseAgentsServiceDownloadAgentSerializedKeyFn(
+      { agentId, userId },
+      queryKey,
+    ),
+    queryFn: () =>
+      AgentsService.downloadAgentSerialized({ agentId, userId }) as TData,
+    ...options,
+  });
+/**
  * Retrieve Agent Context Window
  * Retrieve the context window of a specific agent.
  * @param data The data for the request.

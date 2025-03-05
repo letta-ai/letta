@@ -30,6 +30,7 @@ import {
 import {
   AuthRequest,
   BlockUpdate,
+  Body_upload_agent_serialized,
   Body_upload_file_to_source,
   CompletionCreateParamsNonStreaming,
   CompletionCreateParamsStreaming,
@@ -457,6 +458,39 @@ export const useAgentsServiceListAgents = <
         templateId,
         userId,
       }) as TData,
+    ...options,
+  });
+/**
+ * Download Agent Serialized
+ * Download the serialized JSON representation of an agent.
+ * @param data The data for the request.
+ * @param data.agentId
+ * @param data.userId
+ * @returns unknown Successful Response
+ * @throws ApiError
+ */
+export const useAgentsServiceDownloadAgentSerialized = <
+  TData = Common.AgentsServiceDownloadAgentSerializedDefaultResponse,
+  TError = unknown,
+  TQueryKey extends Array<unknown> = unknown[],
+>(
+  {
+    agentId,
+    userId,
+  }: {
+    agentId: string;
+    userId?: string;
+  },
+  queryKey?: TQueryKey,
+  options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>,
+) =>
+  useQuery<TData, TError>({
+    queryKey: Common.UseAgentsServiceDownloadAgentSerializedKeyFn(
+      { agentId, userId },
+      queryKey,
+    ),
+    queryFn: () =>
+      AgentsService.downloadAgentSerialized({ agentId, userId }) as TData,
     ...options,
   });
 /**
@@ -2155,6 +2189,53 @@ export const useAgentsServiceCreateAgent = <
         requestBody,
         userId,
         xProject,
+      }) as unknown as Promise<TData>,
+    ...options,
+  });
+/**
+ * Upload Agent Serialized
+ * Upload a serialized agent JSON file and recreate the agent in the system.
+ * @param data The data for the request.
+ * @param data.formData
+ * @param data.markAsCopy Whether to mark the uploaded agent as a copy
+ * @param data.userId
+ * @returns AgentState Successful Response
+ * @throws ApiError
+ */
+export const useAgentsServiceUploadAgentSerialized = <
+  TData = Common.AgentsServiceUploadAgentSerializedMutationResult,
+  TError = unknown,
+  TContext = unknown,
+>(
+  options?: Omit<
+    UseMutationOptions<
+      TData,
+      TError,
+      {
+        formData: Body_upload_agent_serialized;
+        markAsCopy?: boolean;
+        userId?: string;
+      },
+      TContext
+    >,
+    'mutationFn'
+  >,
+) =>
+  useMutation<
+    TData,
+    TError,
+    {
+      formData: Body_upload_agent_serialized;
+      markAsCopy?: boolean;
+      userId?: string;
+    },
+    TContext
+  >({
+    mutationFn: ({ formData, markAsCopy, userId }) =>
+      AgentsService.uploadAgentSerialized({
+        formData,
+        markAsCopy,
+        userId,
       }) as unknown as Promise<TData>,
     ...options,
   });
