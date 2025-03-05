@@ -22,9 +22,12 @@ class BaseSchema(SQLAlchemyAutoSchema):
         super().__init__(*args, **kwargs)
         self.actor = actor
 
+    def generate_id(self) -> str:
+        return self.__pydantic_model__.generate_id()
+
     @post_dump
-    def sanitize_ids(self, data: Dict, **kwargs):
-        data["id"] = self.__pydantic_model__.generate_id()
+    def sanitize_ids(self, data: Dict, **kwargs) -> Dict:
+        data["id"] = self.generate_id()
 
         for sensitive_id in BaseSchema.sensitive_ids.union(BaseSchema.sensitive_relationships):
             if sensitive_id in data:
@@ -33,7 +36,7 @@ class BaseSchema(SQLAlchemyAutoSchema):
         return data
 
     @pre_load
-    def regenerate_ids(self, data: Dict, **kwargs):
+    def regenerate_ids(self, data: Dict, **kwargs) -> Dict:
         if self.Meta.model:
             mapper = inspect(self.Meta.model)
             for sensitive_id in BaseSchema.sensitive_ids:

@@ -11,7 +11,7 @@ from letta import create_client
 from letta.config import LettaConfig
 from letta.orm import Base
 from letta.schemas.agent import AgentState, CreateAgent
-from letta.schemas.block import CreateBlock
+from letta.schemas.block import Block, CreateBlock
 from letta.schemas.embedding_config import EmbeddingConfig
 from letta.schemas.enums import MessageRole
 from letta.schemas.llm_config import LLMConfig
@@ -84,26 +84,51 @@ def other_user(server: SyncServer, other_organization):
 
 
 @pytest.fixture
-def serialize_test_agent(server: SyncServer, default_user, default_organization):
+def weather_tool(local_client, weather_tool_func):
+    weather_tool = local_client.create_or_update_tool(func=weather_tool_func)
+    yield weather_tool
+
+
+@pytest.fixture
+def default_block(server: SyncServer, default_user):
+    """Fixture to create and return a default block."""
+    block_data = Block(
+        label="default_label",
+        value="Default Block Content",
+        description="A default test block",
+        limit=1000,
+        metadata={"type": "test"},
+    )
+    block = server.block_manager.create_or_update_block(block_data, actor=default_user)
+    yield block
+
+
+@pytest.fixture
+def serialize_test_agent(server: SyncServer, default_user, default_organization, default_block, weather_tool):
     """Fixture to create and return a sample agent within the default organization."""
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    agent_name = f"serialize_test_agent_{timestamp}"
+    f"serialize_test_agent_{timestamp}"
 
     server.tool_manager.upsert_base_tools(actor=default_user)
 
+    memory_blocks = [CreateBlock(label="human", value="BananaBoy"), CreateBlock(label="persona", value="I am a helpful assistant")]
+    create_agent_request = CreateAgent(
+        system="test system",
+        memory_blocks=memory_blocks,
+        llm_config=LLMConfig.default_config("gpt-4"),
+        embedding_config=EmbeddingConfig.default_config(provider="openai"),
+        block_ids=[default_block.id],
+        tool_ids=[weather_tool.id],
+        # tags=["a", "b"],
+        description="test_description",
+        metadata={"test_key": "test_value"},
+        initial_message_sequence=[MessageCreate(role=MessageRole.user, content="hello world")],
+        tool_exec_environment_variables={"test_env_var_key_a": "test_env_var_value_a", "test_env_var_key_b": "test_env_var_value_b"},
+        message_buffer_autoclear=True,
+    )
+
     agent_state = server.agent_manager.create_agent(
-        agent_create=CreateAgent(
-            name=agent_name,
-            memory_blocks=[
-                CreateBlock(
-                    value="Name: Caren",
-                    label="human",
-                ),
-            ],
-            llm_config=LLMConfig.default_config("gpt-4o-mini"),
-            embedding_config=EmbeddingConfig.default_config(provider="openai"),
-            include_base_tools=True,
-        ),
+        agent_create=create_agent_request,
         actor=default_user,
     )
     yield agent_state
@@ -188,7 +213,7 @@ def _compare_agent_state_model_dump(d1: Dict[str, Any], d2: Dict[str, Any], log:
     - Datetime fields are ignored.
     - Order-independent comparison for lists of dicts.
     """
-    ignore_prefix_fields = {"id", "last_updated_by_id", "organization_id", "created_by_id"}
+    ignore_prefix_fields = {"id", "last_updated_by_id", "organization_id", "created_by_id", "agent_id"}
 
     # Remove datetime fields upfront
     d1 = strip_datetime_fields(d1)
@@ -360,13 +385,8 @@ def test_agent_serialize_with_user_messages(local_client, server, serialize_test
     )
 
 
-def test_agent_serialize_tool_calls(
-    mock_e2b_api_key_none, local_client, server, serialize_test_agent, default_user, other_user, weather_tool_func
-):
+def test_agent_serialize_tool_calls(mock_e2b_api_key_none, local_client, server, serialize_test_agent, default_user, other_user):
     """Test deserializing JSON into an Agent instance."""
-    weather_tool = local_client.create_or_update_tool(func=weather_tool_func)
-    server.agent_manager.attach_tool(agent_id=serialize_test_agent.id, tool_id=weather_tool.id, actor=default_user)
-
     mark_as_copy = False
     server.send_messages(
         actor=default_user,
