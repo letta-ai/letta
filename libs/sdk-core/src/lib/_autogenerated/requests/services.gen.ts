@@ -877,7 +877,8 @@ export class AgentsService {
    * Upload a serialized agent JSON file and recreate the agent in the system.
    * @param data The data for the request.
    * @param data.formData
-   * @param data.markAsCopy Whether to mark the uploaded agent as a copy
+   * @param data.appendCopySuffix If set to True, appends "_copy" to the end of the agent name.
+   * @param data.overrideExistingTools If set to True, existing tools can get their source code overwritten by the uploaded tool definitions. Note that Letta core tools can never be updated externally.
    * @param data.userId
    * @returns AgentState Successful Response
    * @throws ApiError
@@ -890,7 +891,8 @@ export class AgentsService {
       method: 'POST',
       url: '/v1/agents/upload',
       query: {
-        mark_as_copy: data.markAsCopy,
+        append_copy_suffix: data.appendCopySuffix,
+        override_existing_tools: data.overrideExistingTools,
       },
       formData: data.formData,
       mediaType: 'multipart/form-data',

@@ -60,7 +60,7 @@ def check_composio_key_set():
     yield
 
 
-@pytest.fixture()
+@pytest.fixture
 def weather_tool_func():
     def get_weather(location: str) -> str:
         """
@@ -87,3 +87,21 @@ def weather_tool_func():
             raise RuntimeError(f"Failed to get weather data, status code: {response.status_code}")
 
     yield get_weather
+
+
+@pytest.fixture
+def print_tool_func():
+    """Fixture to create a tool with default settings and clean up after the test."""
+
+    def print_tool(message: str):
+        """
+        Args:
+            message (str): The message to print.
+
+        Returns:
+            str: The message that was printed.
+        """
+        print(message)
+        return message
+
+    yield print_tool

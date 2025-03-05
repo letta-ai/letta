@@ -1319,16 +1319,28 @@
         "operationId": "upload_agent_serialized",
         "parameters": [
           {
-            "name": "mark_as_copy",
+            "name": "append_copy_suffix",
             "in": "query",
             "required": false,
             "schema": {
               "type": "boolean",
-              "description": "Whether to mark the uploaded agent as a copy",
+              "description": "If set to True, appends \"_copy\" to the end of the agent name.",
               "default": true,
-              "title": "Mark As Copy"
+              "title": "Append Copy Suffix"
             },
-            "description": "Whether to mark the uploaded agent as a copy"
+            "description": "If set to True, appends \"_copy\" to the end of the agent name."
+          },
+          {
+            "name": "override_existing_tools",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "description": "If set to True, existing tools can get their source code overwritten by the uploaded tool definitions. Note that Letta core tools can never be updated externally.",
+              "default": true,
+              "title": "Override Existing Tools"
+            },
+            "description": "If set to True, existing tools can get their source code overwritten by the uploaded tool definitions. Note that Letta core tools can never be updated externally."
           }
         ],
         "requestBody": {

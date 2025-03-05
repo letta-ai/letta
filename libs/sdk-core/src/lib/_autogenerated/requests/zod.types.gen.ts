@@ -4291,7 +4291,8 @@ export const post_Upload_agent_serialized = {
   requestFormat: z.literal('form-data'),
   parameters: z.object({
     query: z.object({
-      mark_as_copy: z.boolean().optional(),
+      append_copy_suffix: z.boolean().optional(),
+      override_existing_tools: z.boolean().optional(),
     }),
     header: z.object({
       user_id: z
