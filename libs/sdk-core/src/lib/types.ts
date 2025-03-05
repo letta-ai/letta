@@ -72,6 +72,8 @@ export const ToolReturnMessageSchema = z.object({
   status: z.string(),
   date: z.string(),
   id: z.string(),
+  stdout: z.array(z.string()).optional(),
+  stderr: z.array(z.string()).optional(),
 });
 
 export const AgentMessageSchema = z.discriminatedUnion('message_type', [

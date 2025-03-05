@@ -2088,6 +2088,27 @@ export const MessageRole = z.union([
   z.literal('system'),
 ]);
 
+export type ToolReturn = z.infer<typeof ToolReturn>;
+export const ToolReturn = z.object({
+  status: z.union([z.literal('success'), z.literal('error')]),
+  stdout: z
+    .union([
+      z.array(z.string()),
+      z.null(),
+      z.array(z.union([z.array(z.string()), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  stderr: z
+    .union([
+      z.array(z.string()),
+      z.null(),
+      z.array(z.union([z.array(z.string()), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+});
+
 export type Message = z.infer<typeof Message>;
 export const Message = z.object({
   created_by_id: z
@@ -2180,6 +2201,22 @@ export const Message = z.object({
       z.string(),
       z.null(),
       z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  otid: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  tool_returns: z
+    .union([
+      z.array(ToolReturn),
+      z.null(),
+      z.array(z.union([z.array(ToolReturn), z.null()])),
       z.undefined(),
     ])
     .optional(),

@@ -1169,8 +1169,10 @@ class StreamingServerInterface(AgentChunkStreamingInterface):
                     id=msg_obj.id,
                     date=msg_obj.created_at,
                     tool_return=msg,
-                    status="success",
+                    status=msg_obj.tool_returns[0].status if msg_obj.tool_returns else "success",
                     tool_call_id=msg_obj.tool_call_id,
+                    stdout=msg_obj.tool_returns[0].stdout if msg_obj.tool_returns else None,
+                    stderr=msg_obj.tool_returns[0].stderr if msg_obj.tool_returns else None,
                 )
 
         elif msg.startswith("Error: "):
@@ -1181,8 +1183,10 @@ class StreamingServerInterface(AgentChunkStreamingInterface):
                 id=msg_obj.id,
                 date=msg_obj.created_at,
                 tool_return=msg,
-                status="error",
+                status=msg_obj.tool_returns[0].status if msg_obj.tool_returns else "error",
                 tool_call_id=msg_obj.tool_call_id,
+                stdout=msg_obj.tool_returns[0].stdout if msg_obj.tool_returns else None,
+                stderr=msg_obj.tool_returns[0].stderr if msg_obj.tool_returns else None,
             )
 
         else:

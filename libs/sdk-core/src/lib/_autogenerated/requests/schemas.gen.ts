@@ -4769,6 +4769,33 @@ export const $Message = {
       title: 'Step Id',
       description: 'The id of the step that this message was created in.',
     },
+    otid: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Otid',
+      description: 'The offline threading id associated with this message',
+    },
+    tool_returns: {
+      anyOf: [
+        {
+          items: {
+            $ref: '#/components/schemas/ToolReturn',
+          },
+          type: 'array',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Tool Returns',
+      description: 'Tool execution return information for prior tool calls',
+    },
   },
   additionalProperties: false,
   type: 'object',
@@ -6842,6 +6869,51 @@ export const $ToolCreate = {
   type: 'object',
   required: ['source_code'],
   title: 'ToolCreate',
+} as const;
+
+export const $ToolReturn = {
+  properties: {
+    status: {
+      type: 'string',
+      enum: ['success', 'error'],
+      title: 'Status',
+      description: 'The status of the tool call',
+    },
+    stdout: {
+      anyOf: [
+        {
+          items: {
+            type: 'string',
+          },
+          type: 'array',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Stdout',
+      description:
+        'Captured stdout (e.g. prints, logs) from the tool invocation',
+    },
+    stderr: {
+      anyOf: [
+        {
+          items: {
+            type: 'string',
+          },
+          type: 'array',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Stderr',
+      description: 'Captured stderr from the tool invocation',
+    },
+  },
+  type: 'object',
+  required: ['status'],
+  title: 'ToolReturn',
 } as const;
 
 export const $ToolReturnMessage = {

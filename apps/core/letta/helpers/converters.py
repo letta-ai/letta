@@ -9,6 +9,7 @@ from sqlalchemy import Dialect
 from letta.schemas.embedding_config import EmbeddingConfig
 from letta.schemas.enums import ToolRuleType
 from letta.schemas.llm_config import LLMConfig
+from letta.schemas.message import ToolReturn
 from letta.schemas.tool_rule import ChildToolRule, ConditionalToolRule, ContinueToolRule, InitToolRule, TerminalToolRule, ToolRule
 
 # --------------------------
@@ -125,6 +126,41 @@ def deserialize_tool_calls(data: Optional[List[Dict]]) -> List[OpenAIToolCall]:
         calls.append(OpenAIToolCall(function=tool_call_function, **item))
 
     return calls
+
+
+# --------------------------
+# ToolReturn Serialization
+# --------------------------
+
+
+def serialize_tool_returns(tool_returns: Optional[List[Union[ToolReturn, dict]]]) -> List[Dict]:
+    """Convert a list of ToolReturn objects into JSON-serializable format."""
+    if not tool_returns:
+        return []
+
+    serialized_tool_returns = []
+    for tool_return in tool_returns:
+        if isinstance(tool_return, ToolReturn):
+            serialized_tool_returns.append(tool_return.model_dump())
+        elif isinstance(tool_return, dict):
+            serialized_tool_returns.append(tool_return)  # Already a dictionary, leave it as-is
+        else:
+            raise TypeError(f"Unexpected tool return type: {type(tool_return)}")
+
+    return serialized_tool_returns
+
+
+def deserialize_tool_returns(data: Optional[List[Dict]]) -> List[ToolReturn]:
+    """Convert a JSON list back into ToolReturn objects."""
+    if not data:
+        return []
+
+    tool_returns = []
+    for item in data:
+        tool_return = ToolReturn(**item)
+        tool_returns.append(tool_return)
+
+    return tool_returns
 
 
 # --------------------------

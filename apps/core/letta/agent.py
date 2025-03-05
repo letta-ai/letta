@@ -39,7 +39,7 @@ from letta.schemas.block import BlockUpdate
 from letta.schemas.embedding_config import EmbeddingConfig
 from letta.schemas.enums import MessageRole
 from letta.schemas.memory import ContextWindowOverview, Memory
-from letta.schemas.message import Message
+from letta.schemas.message import Message, ToolReturn
 from letta.schemas.openai.chat_completion_response import ChatCompletionResponse
 from letta.schemas.openai.chat_completion_response import Message as ChatCompletionMessage
 from letta.schemas.openai.chat_completion_response import UsageStatistics
@@ -277,6 +277,7 @@ class Agent(BaseAgent):
         function_args: dict,
         function_response: str,
         messages: List[Message],
+        tool_returns: Optional[List[ToolReturn]] = None,
         include_function_failed_message: bool = False,
     ) -> List[Message]:
         """
@@ -298,6 +299,7 @@ class Agent(BaseAgent):
                 "content": function_response,
                 "tool_call_id": tool_call_id,
             },
+            tool_returns=tool_returns,
         )
         messages.append(new_message)
         self.interface.function_message(f"Error: {error_msg}", msg_obj=new_message)
@@ -561,8 +563,17 @@ class Agent(BaseAgent):
                 )
 
                 if sandbox_run_result and sandbox_run_result.status == "error":
+                    tool_return = ToolReturn(
+                        status=sandbox_run_result.status, stdout=sandbox_run_result.stdout, stderr=sandbox_run_result.stderr
+                    )
                     messages = self._handle_function_error_response(
-                        function_response, tool_call_id, function_name, function_args, function_response, messages
+                        function_response,
+                        tool_call_id,
+                        function_name,
+                        function_args,
+                        function_response,
+                        messages,
+                        [tool_return],
                     )
                     return messages, False, True  # force a heartbeat to allow agent to handle error
 
@@ -591,20 +602,52 @@ class Agent(BaseAgent):
                 error_msg_user = f"{error_msg}\n{traceback.format_exc()}"
                 self.logger.error(error_msg_user)
                 messages = self._handle_function_error_response(
-                    error_msg, tool_call_id, function_name, function_args, function_response, messages, include_function_failed_message=True
+                    error_msg,
+                    tool_call_id,
+                    function_name,
+                    function_args,
+                    function_response,
+                    messages,
+                    [ToolReturn(status="error", stderr=[error_msg_user])],
+                    include_function_failed_message=True,
                 )
                 return messages, False, True  # force a heartbeat to allow agent to handle error
 
             # Step 4: check if function response is an error
             if function_response_string.startswith(ERROR_MESSAGE_PREFIX):
                 error_msg = function_response_string
+                tool_return = (
+                    ToolReturn(
+                        status=sandbox_run_result.status,
+                        stdout=sandbox_run_result.stdout,
+                        stderr=sandbox_run_result.stderr,
+                    )
+                    if sandbox_run_result
+                    else None
+                )
                 messages = self._handle_function_error_response(
-                    error_msg, tool_call_id, function_name, function_args, function_response, messages, include_function_failed_message=True
+                    error_msg,
+                    tool_call_id,
+                    function_name,
+                    function_args,
+                    function_response,
+                    messages,
+                    [tool_return] if tool_return else None,
+                    include_function_failed_message=True,
                 )
                 return messages, False, True  # force a heartbeat to allow agent to handle error
 
             # If no failures happened along the way: ...
             # Step 5: send the info on the function call and function response to GPT
+            tool_return = (
+                ToolReturn(
+                    status=sandbox_run_result.status,
+                    stdout=sandbox_run_result.stdout,
+                    stderr=sandbox_run_result.stderr,
+                )
+                if sandbox_run_result
+                else None
+            )
             messages.append(
                 Message.dict_to_message(
                     agent_id=self.agent_state.id,
@@ -616,6 +659,7 @@ class Agent(BaseAgent):
                         "content": function_response,
                         "tool_call_id": tool_call_id,
                     },
+                    tool_returns=[tool_return] if tool_return else None,
                 )
             )  # extend conversation with function response
             self.interface.function_message(f"Ran {function_name}({function_args})", msg_obj=messages[-1])

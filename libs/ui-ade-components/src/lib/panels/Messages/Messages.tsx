@@ -354,7 +354,7 @@ export function Messages(props: MessagesProps) {
                   code={JSON.stringify(
                     {
                       ...agentMessage,
-                      function_return: tryFallbackParseJson(
+                      tool_return: tryFallbackParseJson(
                         agentMessage.tool_return,
                       ),
                     },

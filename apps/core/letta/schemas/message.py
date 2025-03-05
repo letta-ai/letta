@@ -124,9 +124,11 @@ class Message(BaseMessage):
     agent_id: Optional[str] = Field(None, description="The unique identifier of the agent.")
     model: Optional[str] = Field(None, description="The model used to make the function call.")
     name: Optional[str] = Field(None, description="The name of the participant.")
-    tool_calls: Optional[List[OpenAIToolCall,]] = Field(None, description="The list of tool calls requested.")
+    tool_calls: Optional[List[OpenAIToolCall]] = Field(None, description="The list of tool calls requested.")
     tool_call_id: Optional[str] = Field(None, description="The id of the tool call.")
     step_id: Optional[str] = Field(None, description="The id of the step that this message was created in.")
+    otid: Optional[str] = Field(None, description="The offline threading id associated with this message")
+    tool_returns: Optional[List[ToolReturn]] = Field(None, description="Tool execution return information for prior tool calls")
 
     # This overrides the optional base orm schema, created_at MUST exist on all messages objects
     created_at: datetime = Field(default_factory=get_utc_time, description="The timestamp when the object was created.")
@@ -299,8 +301,10 @@ class Message(BaseMessage):
                     id=self.id,
                     date=self.created_at,
                     tool_return=self.text,
-                    status=status_enum,
+                    status=self.tool_returns[0].status if self.tool_returns else status_enum,
                     tool_call_id=self.tool_call_id,
+                    stdout=self.tool_returns[0].stdout if self.tool_returns else None,
+                    stderr=self.tool_returns[0].stderr if self.tool_returns else None,
                 )
             )
         elif self.role == MessageRole.user:
@@ -338,6 +342,7 @@ class Message(BaseMessage):
         allow_functions_style: bool = False,  # allow deprecated functions style?
         created_at: Optional[datetime] = None,
         id: Optional[str] = None,
+        tool_returns: Optional[List[ToolReturn]] = None,
     ):
         """Convert a ChatCompletion message object into a Message object (synced to DB)"""
         if not created_at:
@@ -366,6 +371,7 @@ class Message(BaseMessage):
                     tool_call_id=openai_message_dict["tool_call_id"] if "tool_call_id" in openai_message_dict else None,
                     created_at=created_at,
                     id=str(id),
+                    tool_returns=tool_returns,
                 )
             else:
                 return Message(
@@ -378,6 +384,7 @@ class Message(BaseMessage):
                     tool_calls=openai_message_dict["tool_calls"] if "tool_calls" in openai_message_dict else None,
                     tool_call_id=openai_message_dict["tool_call_id"] if "tool_call_id" in openai_message_dict else None,
                     created_at=created_at,
+                    tool_returns=tool_returns,
                 )
 
         elif "function_call" in openai_message_dict and openai_message_dict["function_call"] is not None:
@@ -411,6 +418,7 @@ class Message(BaseMessage):
                     tool_call_id=None,  # NOTE: None, since this field is only non-null for role=='tool'
                     created_at=created_at,
                     id=str(id),
+                    tool_returns=tool_returns,
                 )
             else:
                 return Message(
@@ -423,6 +431,7 @@ class Message(BaseMessage):
                     tool_calls=tool_calls,
                     tool_call_id=None,  # NOTE: None, since this field is only non-null for role=='tool'
                     created_at=created_at,
+                    tool_returns=tool_returns,
                 )
 
         else:
@@ -456,6 +465,7 @@ class Message(BaseMessage):
                     tool_call_id=openai_message_dict["tool_call_id"] if "tool_call_id" in openai_message_dict else None,
                     created_at=created_at,
                     id=str(id),
+                    tool_returns=tool_returns,
                 )
             else:
                 return Message(
@@ -468,6 +478,7 @@ class Message(BaseMessage):
                     tool_calls=tool_calls,
                     tool_call_id=openai_message_dict["tool_call_id"] if "tool_call_id" in openai_message_dict else None,
                     created_at=created_at,
+                    tool_returns=tool_returns,
                 )
 
     def to_openai_dict_search_results(self, max_tool_id_length: int = TOOL_CALL_ID_MAX_LEN) -> dict:
@@ -844,3 +855,9 @@ class Message(BaseMessage):
             raise ValueError(self.role)
 
         return cohere_message
+
+
+class ToolReturn(BaseModel):
+    status: Literal["success", "error"] = Field(..., description="The status of the tool call")
+    stdout: Optional[List[str]] = Field(None, description="Captured stdout (e.g. prints, logs) from the tool invocation")
+    stderr: Optional[List[str]] = Field(None, description="Captured stderr from the tool invocation")
