@@ -358,3 +358,44 @@ def test_agent_serialize_with_user_messages(local_client, server, serialize_test
     server.send_messages(
         actor=other_user, agent_id=agent_copy.id, messages=[MessageCreate(role=MessageRole.user, content="and hello again")]
     )
+
+
+def test_agent_serialize_tool_calls(
+    mock_e2b_api_key_none, local_client, server, serialize_test_agent, default_user, other_user, weather_tool_func
+):
+    """Test deserializing JSON into an Agent instance."""
+    weather_tool = local_client.create_or_update_tool(func=weather_tool_func)
+    server.agent_manager.attach_tool(agent_id=serialize_test_agent.id, tool_id=weather_tool.id, actor=default_user)
+
+    mark_as_copy = False
+    server.send_messages(
+        actor=default_user,
+        agent_id=serialize_test_agent.id,
+        messages=[MessageCreate(role=MessageRole.user, content="What's the weather like in San Francisco?")],
+    )
+    result = server.agent_manager.serialize(agent_id=serialize_test_agent.id, actor=default_user)
+
+    # Deserialize the agent
+    agent_copy = server.agent_manager.deserialize(serialized_agent=result, actor=other_user, mark_as_copy=mark_as_copy)
+
+    # Get most recent original agent instance
+    serialize_test_agent = server.agent_manager.get_agent_by_id(agent_id=serialize_test_agent.id, actor=default_user)
+
+    # Compare serialized representations to check for exact match
+    print_dict_diff(json.loads(serialize_test_agent.model_dump_json()), json.loads(agent_copy.model_dump_json()))
+    assert compare_agent_state(agent_copy, serialize_test_agent, mark_as_copy=mark_as_copy)
+
+    # Make sure both agents can receive messages after
+    original_agent_response = server.send_messages(
+        actor=default_user,
+        agent_id=serialize_test_agent.id,
+        messages=[MessageCreate(role=MessageRole.user, content="What's the weather like in Seattle?")],
+    )
+    copy_agent_response = server.send_messages(
+        actor=other_user,
+        agent_id=agent_copy.id,
+        messages=[MessageCreate(role=MessageRole.user, content="What's the weather like in Seattle?")],
+    )
+
+    assert original_agent_response.completion_tokens > 0 and original_agent_response.step_count > 0
+    assert copy_agent_response.completion_tokens > 0 and copy_agent_response.step_count > 0

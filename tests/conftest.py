@@ -58,3 +58,32 @@ def check_composio_key_set():
     original_api_key = tool_settings.composio_api_key
     assert original_api_key is not None, "Missing composio key! Cannot execute this test."
     yield
+
+
+@pytest.fixture()
+def weather_tool_func():
+    def get_weather(location: str) -> str:
+        """
+        Fetches the current weather for a given location.
+
+        Parameters:
+            location (str): The location to get the weather for.
+
+        Returns:
+            str: A formatted string describing the weather in the given location.
+
+        Raises:
+            RuntimeError: If the request to fetch weather data fails.
+        """
+        import requests
+
+        url = f"https://wttr.in/{location}?format=%C+%t"
+
+        response = requests.get(url)
+        if response.status_code == 200:
+            weather_data = response.text
+            return f"The weather in {location} is {weather_data}."
+        else:
+            raise RuntimeError(f"Failed to get weather data, status code: {response.status_code}")
+
+    yield get_weather
