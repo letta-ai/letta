@@ -91,7 +91,7 @@ def list_agents(
     return agents
 
 
-@router.get("/{agent_id}/download", response_model=None, operation_id="download_agent_serialized")
+@router.get("/{agent_id}/download", operation_id="download_agent_serialized")
 def download_agent_serialized(
     agent_id: str,
     server: "SyncServer" = Depends(get_letta_server),
@@ -114,7 +114,11 @@ async def upload_agent_serialized(
     file: UploadFile = File(...),
     server: "SyncServer" = Depends(get_letta_server),
     actor_id: Optional[str] = Header(None, alias="user_id"),
-    mark_as_copy: bool = Query(True, description="Whether to mark the uploaded agent as a copy"),
+    append_copy_suffix: bool = Query(True, description='If set to True, appends "_copy" to the end of the agent name.'),
+    override_existing_tools: bool = Query(
+        True,
+        description="If set to True, existing tools can get their source code overwritten by the uploaded tool definitions. Note that Letta core tools can never be updated externally.",
+    ),
 ):
     """
     Upload a serialized agent JSON file and recreate the agent in the system.
@@ -124,7 +128,9 @@ async def upload_agent_serialized(
     try:
         serialized_data = await file.read()
         agent_json = json.loads(serialized_data)
-        new_agent = server.agent_manager.deserialize(serialized_agent=agent_json, actor=actor, mark_as_copy=mark_as_copy)
+        new_agent = server.agent_manager.deserialize(
+            serialized_agent=agent_json, actor=actor, append_copy_suffix=append_copy_suffix, override_existing_tools=override_existing_tools
+        )
         return new_agent
 
     except json.JSONDecodeError:
