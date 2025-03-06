@@ -1,3 +1,4 @@
+import os
 from pathlib import Path
 from typing import Optional
 
@@ -116,13 +117,20 @@ class ModelSettings(BaseSettings):
     disable_schema_generation: bool = False
 
 
-cors_origins = [
-    "http://letta.localhost",
-    "http://localhost:8283",
-    "http://localhost:8083",
-    "http://localhost:3000",
-    "http://localhost:4200",
-]
+env_cors_origins = os.getenv("ACCEPTABLE_ORIGINS")
+
+cors_origins = (
+    [
+        "http://letta.localhost",
+        "http://localhost:8283",
+        "http://localhost:8083",
+        "http://localhost:3000",
+        "http://localhost:4200",
+    ]
+    + [env_cors_origins]
+    if env_cors_origins
+    else []
+)
 
 # read pg_uri from ~/.letta/pg_uri or set to none, this is to support Letta Desktop
 default_pg_uri = None

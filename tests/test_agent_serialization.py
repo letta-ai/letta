@@ -1,23 +1,27 @@
 import difflib
 import json
 from datetime import datetime, timezone
+from io import BytesIO
 from typing import Any, Dict, List, Mapping
 
 import pytest
+from fastapi.testclient import TestClient
 from rich.console import Console
 from rich.syntax import Syntax
 
 from letta import create_client
 from letta.config import LettaConfig
 from letta.orm import Base
+from letta.orm.enums import ToolType
 from letta.schemas.agent import AgentState, CreateAgent
-from letta.schemas.block import CreateBlock
+from letta.schemas.block import Block, CreateBlock
 from letta.schemas.embedding_config import EmbeddingConfig
 from letta.schemas.enums import MessageRole
 from letta.schemas.llm_config import LLMConfig
 from letta.schemas.message import MessageCreate
 from letta.schemas.organization import Organization
 from letta.schemas.user import User
+from letta.server.rest_api.app import app
 from letta.server.server import SyncServer
 
 console = Console()
@@ -30,6 +34,12 @@ def _clear_tables():
         for table in reversed(Base.metadata.sorted_tables):  # Reverse to avoid FK issues
             session.execute(table.delete())  # Truncate table
         session.commit()
+
+
+@pytest.fixture
+def fastapi_client():
+    """Fixture to create a FastAPI test client."""
+    return TestClient(app)
 
 
 @pytest.fixture(autouse=True)
@@ -84,26 +94,57 @@ def other_user(server: SyncServer, other_organization):
 
 
 @pytest.fixture
-def serialize_test_agent(server: SyncServer, default_user, default_organization):
+def weather_tool(local_client, weather_tool_func):
+    weather_tool = local_client.create_or_update_tool(func=weather_tool_func)
+    yield weather_tool
+
+
+@pytest.fixture
+def print_tool(local_client, print_tool_func):
+    print_tool = local_client.create_or_update_tool(func=print_tool_func)
+    yield print_tool
+
+
+@pytest.fixture
+def default_block(server: SyncServer, default_user):
+    """Fixture to create and return a default block."""
+    block_data = Block(
+        label="default_label",
+        value="Default Block Content",
+        description="A default test block",
+        limit=1000,
+        metadata={"type": "test"},
+    )
+    block = server.block_manager.create_or_update_block(block_data, actor=default_user)
+    yield block
+
+
+@pytest.fixture
+def serialize_test_agent(server: SyncServer, default_user, default_organization, default_block, weather_tool):
     """Fixture to create and return a sample agent within the default organization."""
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    agent_name = f"serialize_test_agent_{timestamp}"
+    f"serialize_test_agent_{timestamp}"
 
     server.tool_manager.upsert_base_tools(actor=default_user)
 
+    memory_blocks = [CreateBlock(label="human", value="BananaBoy"), CreateBlock(label="persona", value="I am a helpful assistant")]
+    create_agent_request = CreateAgent(
+        system="test system",
+        memory_blocks=memory_blocks,
+        llm_config=LLMConfig.default_config("gpt-4o-mini"),
+        embedding_config=EmbeddingConfig.default_config(provider="openai"),
+        block_ids=[default_block.id],
+        tool_ids=[weather_tool.id],
+        tags=["a", "b"],
+        description="test_description",
+        metadata={"test_key": "test_value"},
+        initial_message_sequence=[MessageCreate(role=MessageRole.user, content="hello world")],
+        tool_exec_environment_variables={"test_env_var_key_a": "test_env_var_value_a", "test_env_var_key_b": "test_env_var_value_b"},
+        message_buffer_autoclear=True,
+    )
+
     agent_state = server.agent_manager.create_agent(
-        agent_create=CreateAgent(
-            name=agent_name,
-            memory_blocks=[
-                CreateBlock(
-                    value="Name: Caren",
-                    label="human",
-                ),
-            ],
-            llm_config=LLMConfig.default_config("gpt-4o-mini"),
-            embedding_config=EmbeddingConfig.default_config(provider="openai"),
-            include_base_tools=True,
-        ),
+        agent_create=create_agent_request,
         actor=default_user,
     )
     yield agent_state
@@ -188,7 +229,7 @@ def _compare_agent_state_model_dump(d1: Dict[str, Any], d2: Dict[str, Any], log:
     - Datetime fields are ignored.
     - Order-independent comparison for lists of dicts.
     """
-    ignore_prefix_fields = {"id", "last_updated_by_id", "organization_id", "created_by_id"}
+    ignore_prefix_fields = {"id", "last_updated_by_id", "organization_id", "created_by_id", "agent_id"}
 
     # Remove datetime fields upfront
     d1 = strip_datetime_fields(d1)
@@ -224,9 +265,9 @@ def _compare_agent_state_model_dump(d1: Dict[str, Any], d2: Dict[str, Any], log:
     return True
 
 
-def compare_agent_state(original: AgentState, copy: AgentState, mark_as_copy: bool) -> bool:
+def compare_agent_state(original: AgentState, copy: AgentState, append_copy_suffix: bool) -> bool:
     """Wrapper function that provides a default set of ignored prefix fields."""
-    if not mark_as_copy:
+    if not append_copy_suffix:
         assert original.name == copy.name
 
     return _compare_agent_state_model_dump(original.model_dump(exclude="name"), copy.model_dump(exclude="name"))
@@ -304,17 +345,53 @@ def test_sanity_datetime_mismatch():
 # Agent serialize/deserialize tests
 
 
-@pytest.mark.parametrize("mark_as_copy", [True, False])
-def test_mark_as_copy_simple(local_client, server, serialize_test_agent, default_user, other_user, mark_as_copy):
+@pytest.mark.parametrize("append_copy_suffix", [True, False])
+def test_append_copy_suffix_simple(local_client, server, serialize_test_agent, default_user, other_user, append_copy_suffix):
     """Test deserializing JSON into an Agent instance."""
     result = server.agent_manager.serialize(agent_id=serialize_test_agent.id, actor=default_user)
 
     # Deserialize the agent
-    agent_copy = server.agent_manager.deserialize(serialized_agent=result, actor=other_user, mark_as_copy=mark_as_copy)
+    agent_copy = server.agent_manager.deserialize(serialized_agent=result, actor=other_user, append_copy_suffix=append_copy_suffix)
 
     # Compare serialized representations to check for exact match
     print_dict_diff(json.loads(serialize_test_agent.model_dump_json()), json.loads(agent_copy.model_dump_json()))
-    assert compare_agent_state(agent_copy, serialize_test_agent, mark_as_copy=mark_as_copy)
+    assert compare_agent_state(agent_copy, serialize_test_agent, append_copy_suffix=append_copy_suffix)
+
+
+@pytest.mark.parametrize("override_existing_tools", [True, False])
+def test_deserialize_override_existing_tools(
+    local_client, server, serialize_test_agent, default_user, weather_tool, print_tool, override_existing_tools
+):
+    """
+    Test deserializing an agent with tools and ensure correct behavior for overriding existing tools.
+    """
+    append_copy_suffix = False
+    result = server.agent_manager.serialize(agent_id=serialize_test_agent.id, actor=default_user)
+
+    # Extract tools before upload
+    tool_data_list = result.get("tools", [])
+    tool_names = {tool["name"]: tool for tool in tool_data_list}
+
+    # Rewrite all the tool source code to the print_tool source code
+    for tool in result["tools"]:
+        tool["source_code"] = print_tool.source_code
+
+    # Deserialize the agent with different override settings
+    server.agent_manager.deserialize(
+        serialized_agent=result, actor=default_user, append_copy_suffix=append_copy_suffix, override_existing_tools=override_existing_tools
+    )
+
+    # Verify tool behavior
+    for tool_name, expected_tool_data in tool_names.items():
+        existing_tool = server.tool_manager.get_tool_by_name(tool_name, actor=default_user)
+
+        if existing_tool.tool_type in {ToolType.LETTA_CORE, ToolType.LETTA_MULTI_AGENT_CORE, ToolType.LETTA_MEMORY_CORE}:
+            assert existing_tool.source_code != print_tool.source_code
+        elif override_existing_tools:
+            if existing_tool.name == weather_tool.name:
+                assert existing_tool.source_code == print_tool.source_code, f"Tool {tool_name} should be overridden"
+            else:
+                assert existing_tool.source_code == weather_tool.source_code, f"Tool {tool_name} should NOT be overridden"
 
 
 def test_in_context_message_id_remapping(local_client, server, serialize_test_agent, default_user, other_user):
@@ -335,21 +412,21 @@ def test_in_context_message_id_remapping(local_client, server, serialize_test_ag
 
 def test_agent_serialize_with_user_messages(local_client, server, serialize_test_agent, default_user, other_user):
     """Test deserializing JSON into an Agent instance."""
-    mark_as_copy = False
+    append_copy_suffix = False
     server.send_messages(
         actor=default_user, agent_id=serialize_test_agent.id, messages=[MessageCreate(role=MessageRole.user, content="hello")]
     )
     result = server.agent_manager.serialize(agent_id=serialize_test_agent.id, actor=default_user)
 
     # Deserialize the agent
-    agent_copy = server.agent_manager.deserialize(serialized_agent=result, actor=other_user, mark_as_copy=mark_as_copy)
+    agent_copy = server.agent_manager.deserialize(serialized_agent=result, actor=other_user, append_copy_suffix=append_copy_suffix)
 
     # Get most recent original agent instance
     serialize_test_agent = server.agent_manager.get_agent_by_id(agent_id=serialize_test_agent.id, actor=default_user)
 
     # Compare serialized representations to check for exact match
     print_dict_diff(json.loads(serialize_test_agent.model_dump_json()), json.loads(agent_copy.model_dump_json()))
-    assert compare_agent_state(agent_copy, serialize_test_agent, mark_as_copy=mark_as_copy)
+    assert compare_agent_state(agent_copy, serialize_test_agent, append_copy_suffix=append_copy_suffix)
 
     # Make sure both agents can receive messages after
     server.send_messages(
@@ -357,4 +434,87 @@ def test_agent_serialize_with_user_messages(local_client, server, serialize_test
     )
     server.send_messages(
         actor=other_user, agent_id=agent_copy.id, messages=[MessageCreate(role=MessageRole.user, content="and hello again")]
+    )
+
+
+def test_agent_serialize_tool_calls(mock_e2b_api_key_none, local_client, server, serialize_test_agent, default_user, other_user):
+    """Test deserializing JSON into an Agent instance."""
+    append_copy_suffix = False
+    server.send_messages(
+        actor=default_user,
+        agent_id=serialize_test_agent.id,
+        messages=[MessageCreate(role=MessageRole.user, content="What's the weather like in San Francisco?")],
+    )
+    result = server.agent_manager.serialize(agent_id=serialize_test_agent.id, actor=default_user)
+
+    # Deserialize the agent
+    agent_copy = server.agent_manager.deserialize(serialized_agent=result, actor=other_user, append_copy_suffix=append_copy_suffix)
+
+    # Get most recent original agent instance
+    serialize_test_agent = server.agent_manager.get_agent_by_id(agent_id=serialize_test_agent.id, actor=default_user)
+
+    # Compare serialized representations to check for exact match
+    print_dict_diff(json.loads(serialize_test_agent.model_dump_json()), json.loads(agent_copy.model_dump_json()))
+    assert compare_agent_state(agent_copy, serialize_test_agent, append_copy_suffix=append_copy_suffix)
+
+    # Make sure both agents can receive messages after
+    original_agent_response = server.send_messages(
+        actor=default_user,
+        agent_id=serialize_test_agent.id,
+        messages=[MessageCreate(role=MessageRole.user, content="What's the weather like in Seattle?")],
+    )
+    copy_agent_response = server.send_messages(
+        actor=other_user,
+        agent_id=agent_copy.id,
+        messages=[MessageCreate(role=MessageRole.user, content="What's the weather like in Seattle?")],
+    )
+
+    assert original_agent_response.completion_tokens > 0 and original_agent_response.step_count > 0
+    assert copy_agent_response.completion_tokens > 0 and copy_agent_response.step_count > 0
+
+
+# FastAPI endpoint tests
+
+
+@pytest.mark.parametrize("append_copy_suffix", [True])
+def test_agent_download_upload_flow(fastapi_client, server, serialize_test_agent, default_user, other_user, append_copy_suffix):
+    """
+    Test the full E2E serialization and deserialization flow using FastAPI endpoints.
+    """
+    agent_id = serialize_test_agent.id
+
+    # Step 1: Download the serialized agent
+    response = fastapi_client.get(f"/v1/agents/{agent_id}/download", headers={"user_id": default_user.id})
+    assert response.status_code == 200, f"Download failed: {response.text}"
+
+    agent_json = response.json()
+
+    # Step 2: Upload the serialized agent as a copy
+    agent_bytes = BytesIO(json.dumps(agent_json).encode("utf-8"))
+    files = {"file": ("agent.json", agent_bytes, "application/json")}
+    upload_response = fastapi_client.post(
+        "/v1/agents/upload",
+        headers={"user_id": other_user.id},
+        params={"append_copy_suffix": append_copy_suffix, "override_existing_tools": False},
+        files=files,
+    )
+    assert upload_response.status_code == 200, f"Upload failed: {upload_response.text}"
+
+    # Sanity checks
+    copied_agent = upload_response.json()
+    copied_agent_id = copied_agent["id"]
+    assert copied_agent_id != agent_id, "Copied agent should have a different ID"
+    assert copied_agent["name"] == serialize_test_agent.name + "_copy", "Copied agent name should have '_copy' suffix"
+
+    # Step 3: Retrieve the copied agent
+    serialize_test_agent = server.agent_manager.get_agent_by_id(agent_id=serialize_test_agent.id, actor=default_user)
+    agent_copy = server.agent_manager.get_agent_by_id(agent_id=copied_agent_id, actor=other_user)
+    print_dict_diff(json.loads(serialize_test_agent.model_dump_json()), json.loads(agent_copy.model_dump_json()))
+    assert compare_agent_state(agent_copy, serialize_test_agent, append_copy_suffix=append_copy_suffix)
+
+    # Step 4: Ensure copied agent receives messages correctly
+    server.send_messages(
+        actor=other_user,
+        agent_id=copied_agent_id,
+        messages=[MessageCreate(role=MessageRole.user, content="Hello copied agent!")],
     )

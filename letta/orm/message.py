@@ -1,14 +1,15 @@
-from typing import Optional
+from typing import List, Optional
 
 from openai.types.chat.chat_completion_message_tool_call import ChatCompletionMessageToolCall as OpenAIToolCall
 from sqlalchemy import ForeignKey, Index
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from letta.orm.custom_columns import ToolCallColumn
+from letta.orm.custom_columns import ToolCallColumn, ToolReturnColumn
 from letta.orm.mixins import AgentMixin, OrganizationMixin
 from letta.orm.sqlalchemy_base import SqlalchemyBase
 from letta.schemas.message import Message as PydanticMessage
 from letta.schemas.message import TextContent as PydanticTextContent
+from letta.schemas.message import ToolReturn
 
 
 class Message(SqlalchemyBase, OrganizationMixin, AgentMixin):
@@ -26,10 +27,14 @@ class Message(SqlalchemyBase, OrganizationMixin, AgentMixin):
     text: Mapped[Optional[str]] = mapped_column(nullable=True, doc="Message content")
     model: Mapped[Optional[str]] = mapped_column(nullable=True, doc="LLM model used")
     name: Mapped[Optional[str]] = mapped_column(nullable=True, doc="Name for multi-agent scenarios")
-    tool_calls: Mapped[OpenAIToolCall] = mapped_column(ToolCallColumn, doc="Tool call information")
+    tool_calls: Mapped[List[OpenAIToolCall]] = mapped_column(ToolCallColumn, doc="Tool call information")
     tool_call_id: Mapped[Optional[str]] = mapped_column(nullable=True, doc="ID of the tool call")
     step_id: Mapped[Optional[str]] = mapped_column(
         ForeignKey("steps.id", ondelete="SET NULL"), nullable=True, doc="ID of the step that this message belongs to"
+    )
+    otid: Mapped[Optional[str]] = mapped_column(nullable=True, doc="The offline threading ID associated with this message")
+    tool_returns: Mapped[List[ToolReturn]] = mapped_column(
+        ToolReturnColumn, nullable=True, doc="Tool execution return information for prior tool calls"
     )
 
     # Relationships

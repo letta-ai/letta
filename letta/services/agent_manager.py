@@ -15,6 +15,7 @@ from letta.orm import Identity as IdentityModel
 from letta.orm import Source as SourceModel
 from letta.orm import SourcePassage, SourcesAgents
 from letta.orm import Tool as ToolModel
+from letta.orm.enums import ToolType
 from letta.orm.errors import NoResultFound
 from letta.orm.sandbox_config import AgentEnvironmentVariable as AgentEnvironmentVariableModel
 from letta.orm.sqlite_functions import adapt_array
@@ -399,13 +400,15 @@ class AgentManager:
             return schema.dump(agent)
 
     @enforce_types
-    def deserialize(self, serialized_agent: dict, actor: PydanticUser, mark_as_copy: bool = True) -> PydanticAgentState:
+    def deserialize(
+        self, serialized_agent: dict, actor: PydanticUser, append_copy_suffix: bool = True, override_existing_tools: bool = True
+    ) -> PydanticAgentState:
         tool_data_list = serialized_agent.pop("tools", [])
 
         with self.session_maker() as session:
             schema = SerializedAgentSchema(session=session, actor=actor)
             agent = schema.load(serialized_agent, session=session)
-            if mark_as_copy:
+            if append_copy_suffix:
                 agent.name += "_copy"
             agent.create(session, actor=actor)
             pydantic_agent = agent.to_pydantic()
@@ -413,7 +416,20 @@ class AgentManager:
         # Need to do this separately as there's some fancy upsert logic that SqlAlchemy cannot handle
         for tool_data in tool_data_list:
             pydantic_tool = SerializedToolSchema(actor=actor).load(tool_data, transient=True).to_pydantic()
-            pydantic_tool = self.tool_manager.create_or_update_tool(pydantic_tool, actor=actor)
+
+            existing_pydantic_tool = self.tool_manager.get_tool_by_name(pydantic_tool.name, actor=actor)
+            # If the tool exists
+            # AND EITHER:
+            # 1) override_existing_tools is set to False
+            # 2) existing_pydantic_tool is NOT any type of Letta core tool
+            if existing_pydantic_tool and (
+                existing_pydantic_tool.tool_type in {ToolType.LETTA_CORE, ToolType.LETTA_MULTI_AGENT_CORE, ToolType.LETTA_MEMORY_CORE}
+                or not override_existing_tools
+            ):
+                pydantic_tool = existing_pydantic_tool
+            else:
+                pydantic_tool = self.tool_manager.create_or_update_tool(pydantic_tool, actor=actor)
+
             pydantic_agent = self.attach_tool(agent_id=pydantic_agent.id, tool_id=pydantic_tool.id, actor=actor)
 
         return pydantic_agent
@@ -461,6 +477,8 @@ class AgentManager:
                             value=value,
                             agent_id=agent_id,
                             organization_id=actor.organization_id,
+                            created_by_id=actor.id,
+                            last_updated_by_id=actor.id,
                         )
                     )
 
