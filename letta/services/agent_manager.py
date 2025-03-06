@@ -444,7 +444,12 @@ class AgentManager:
 
     @enforce_types
     def deserialize(
-        self, serialized_agent: dict, actor: PydanticUser, append_copy_suffix: bool = True, override_existing_tools: bool = True
+        self,
+        serialized_agent: dict,
+        actor: PydanticUser,
+        append_copy_suffix: bool = True,
+        override_existing_tools: bool = True,
+        project_id: Optional[str] = None,
     ) -> PydanticAgentState:
         tool_data_list = serialized_agent.pop("tools", [])
 
@@ -453,7 +458,9 @@ class AgentManager:
             agent = schema.load(serialized_agent, session=session)
             if append_copy_suffix:
                 agent.name += "_copy"
-            agent.create(session, actor=actor)
+            if project_id:
+                agent.project_id = project_id
+            agent = agent.create(session, actor=actor)
             pydantic_agent = agent.to_pydantic()
 
         # Need to do this separately as there's some fancy upsert logic that SqlAlchemy cannot handle
