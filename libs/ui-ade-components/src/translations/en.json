@@ -368,8 +368,8 @@
       "title": "View Memory",
       "label": "Memory Text"
     },
-    "title": "Archival Memories ({count})",
-    "mobileTitle": "Archival Memories",
+    "title": "Archival Memory ({count})",
+    "mobileTitle": "Archival Memory",
     "MemoryItem": {
       "copyText": "Copy Memory Text",
       "removeMemory": "Remove Memory",
@@ -405,8 +405,8 @@
       "datasources": "Datasources",
       "agentSimulator": "Simulator",
       "contextWindow": "Context Window",
-      "coreMemories": "Core Memories",
-      "archivalMemories": "Archival Memories"
+      "coreMemories": "Core Memory",
+      "archivalMemories": "Archival Memory"
     }
   },
   "ADE/EditCoreMemoriesPanel": {
@@ -430,12 +430,12 @@
         "tooltip": "The memory state of the simulated agent (reset when you flush the simulator)"
       }
     },
-    "mobileTitle": "Core Memories",
+    "mobileTitle": "Core Memory",
     "EditMemoryForm": {
       "characterLimit": "{count}/{limit} CHARS"
     },
     "AdvancedEditMemory": {
-      "title": "Update Core Memories",
+      "title": "Update Core Memory",
       "newMemory": "Add memory block"
     },
     "systemPrompt": "System Prompt",
