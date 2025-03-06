@@ -201,6 +201,32 @@ class GoogleVertexEmbeddings:
         return response.embeddings[0].embedding
 
 
+class VoyageAIEmbeddings:
+    BASE_URL = "https://api.voyageai.com"
+
+    def __init__(self, model: str, api_key: str, additional_kwargs: dict):
+        self.model = model
+        self.api_key = api_key
+        self.additional_kwargs = additional_kwargs
+
+    def get_text_embedding(self, text: str):
+        import httpx
+
+        headers = {"Content-Type": "application/json", "Authorization": f"Bearer {self.api_key}"}
+        json_data = {"model": self.model, "input": [text]}
+        json_data.update(self.additional_kwargs)
+
+        with httpx.Client() as client:
+            response = client.post(
+                f"{self.BASE_URL}/v1/embeddings",
+                headers=headers,
+                json=json_data,
+            )
+
+        response_json = response.json()
+        return response_json["data"][0]["embedding"]
+
+
 def query_embedding(embedding_model, query_text: str):
     """Generate padded embedding for querying database"""
     query_vec = embedding_model.get_text_embedding(query_text)
@@ -285,6 +311,14 @@ def embedding_model(config: EmbeddingConfig, user_id: Optional[uuid.UUID] = None
             model=config.embedding_model,
             api_key=model_settings.gemini_api_key,
             base_url=model_settings.gemini_base_url,
+        )
+        return model
+
+    elif endpoint_type == "voyageai":
+        model = VoyageAIEmbeddings(
+            model=config.embedding_model,
+            api_key=model_settings.voyage_api_key,
+            additional_kwargs={},
         )
         return model
 
