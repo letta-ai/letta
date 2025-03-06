@@ -518,8 +518,16 @@ def fire_and_forget_send_to_agent(
         run_in_background_thread(background_task())
 
 
-async def _send_message_to_agents_matching_all_tags_async(sender_agent: "Agent", message: str, tags: List[str]) -> List[str]:
-    log_telemetry(sender_agent.logger, "_send_message_to_agents_matching_all_tags_async start", message=message, tags=tags)
+async def _send_message_to_agents_matching_tags_async(
+    sender_agent: "Agent", message: str, match_all: List[str], match_some: List[str]
+) -> List[str]:
+    log_telemetry(
+        sender_agent.logger,
+        "_send_message_to_agents_matching_tags_async start",
+        message=message,
+        match_all=match_all,
+        match_some=match_some,
+    )
     server = get_letta_server()
 
     augmented_message = (
@@ -529,9 +537,22 @@ async def _send_message_to_agents_matching_all_tags_async(sender_agent: "Agent",
     )
 
     # Retrieve up to 100 matching agents
-    log_telemetry(sender_agent.logger, "_send_message_to_agents_matching_all_tags_async listing agents start", message=message, tags=tags)
-    matching_agents = server.agent_manager.list_agents(actor=sender_agent.user, tags=tags, match_all_tags=True, limit=100)
-    log_telemetry(sender_agent.logger, "_send_message_to_agents_matching_all_tags_async  listing agents finish", message=message, tags=tags)
+    log_telemetry(
+        sender_agent.logger,
+        "_send_message_to_agents_matching_tags_async listing agents start",
+        message=message,
+        match_all=match_all,
+        match_some=match_some,
+    )
+    matching_agents = server.agent_manager.list_agents_matching_tags(actor=sender_agent.user, match_all=match_all, match_some=match_some)
+
+    log_telemetry(
+        sender_agent.logger,
+        "_send_message_to_agents_matching_tags_async  listing agents finish",
+        message=message,
+        match_all=match_all,
+        match_some=match_some,
+    )
 
     # Create a system message
     messages = [MessageCreate(role=MessageRole.system, content=augmented_message, name=sender_agent.agent_state.name)]
@@ -559,7 +580,13 @@ async def _send_message_to_agents_matching_all_tags_async(sender_agent: "Agent",
         else:
             final.append(r)
 
-    log_telemetry(sender_agent.logger, "_send_message_to_agents_matching_all_tags_async finish", message=message, tags=tags)
+    log_telemetry(
+        sender_agent.logger,
+        "_send_message_to_agents_matching_tags_async finish",
+        message=message,
+        match_all=match_all,
+        match_some=match_some,
+    )
     return final
 
 
