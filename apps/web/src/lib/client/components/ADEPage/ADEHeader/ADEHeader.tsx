@@ -5,6 +5,7 @@ import {
   Button,
   Dialog,
   DotsHorizontalIcon,
+  DownloadIcon,
   DropdownMenu,
   DropdownMenuItem,
   ForkIcon,
@@ -41,6 +42,8 @@ import {
   ProfilePopover,
 } from '$web/client/components/DashboardLikeLayout/DashboardNavigation/DashboardNavigation';
 import { useCurrentAgent } from '$web/client/hooks/useCurrentAgent/useCurrentAgent';
+import { useCurrentDevelopmentServerConfig } from '@letta-cloud/utils-client';
+import axios from 'axios';
 
 interface DesktopADEHeaderProps {
   name: string;
@@ -240,6 +243,43 @@ function ForkAgentDialog(props: ForkAgentDialogProps) {
 
 type Dialogs = 'deleteAgent' | 'forkAgent' | 'renameAgent';
 
+function DownloadAgentButton() {
+  const t = useTranslations(
+    'projects/(projectSlug)/agents/(agentId)/AgentPage',
+  );
+
+  const { id: agentId, name } = useCurrentAgent();
+  const config = useCurrentDevelopmentServerConfig();
+
+  const handleAsyncDownload = useCallback(async () => {
+    const response = await axios.get(
+      `${config?.url}/v1/agents/${agentId}/download`,
+      {
+        responseType: 'blob',
+      },
+    );
+
+    const url = window.URL.createObjectURL(new Blob([response.data]));
+
+    const link = document.createElement('a');
+
+    link.href = url;
+    link.setAttribute('download', `${name}.af`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    window.URL.revokeObjectURL(url);
+  }, [agentId, name, config]);
+
+  return (
+    <DropdownMenuItem
+      onClick={handleAsyncDownload}
+      preIcon={<DownloadIcon />}
+      label={t('AgentSettingsDropdown.download')}
+    />
+  );
+}
+
 interface AgentSettingsDropdownProps {
   icon: React.ReactNode;
 }
@@ -290,6 +330,7 @@ function AgentSettingsDropdown(props: AgentSettingsDropdownProps) {
           />
         }
       >
+        {!isTemplate && <DownloadAgentButton />}
         {isTemplate && (
           <DropdownMenuItem
             onClick={() => {

@@ -55,6 +55,7 @@
   "Agents": {
     "title": "Agents",
     "subtitle": "View and manage your agents below.",
+    "importAgent": "Import Agent",
     "createAgent": "Create Agent",
     "table": {
       "loading": "Loading...",

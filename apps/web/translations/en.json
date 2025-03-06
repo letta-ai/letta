@@ -1264,6 +1264,7 @@
     "title": "Local agents",
     "description": "View your available agents running inside the Letta server",
     "createAgent": "Create a new agent",
+    "importAgent": "Import agent",
     "searchInput": {
       "placeholder": "Search agents"
     },
@@ -1305,7 +1306,8 @@
     "error": "There was a severe error in this application, please refresh this page. If the error persists, please contact support in the top right corner.",
     "AgentSettingsDropdown": {
       "trigger": "{agentBaseType} settings",
-      "returnToProject": "Return to project"
+      "returnToProject": "Return to project",
+      "download": "Export Agent"
     },
     "DeployAgentDialog": {
       "trigger": "Create an agent from template",

@@ -3,6 +3,7 @@ import {
   Button,
   DashboardPageSection,
   DataTable,
+  HStack,
   LettaInvaderIcon,
   VStack,
 } from '@letta-cloud/ui-component-library';
@@ -17,6 +18,7 @@ import { useTranslations } from '@letta-cloud/translations';
 import { CreateLocalAgentDialog } from './CreateLocalAgentDialog/CreateLocalAgentDialog';
 import { DesktopPageLayout } from '../shared/DesktopPageLayout/DesktopPageLayout';
 import { useServerStatus } from '../../hooks/useServerStatus/useServerStatus';
+import { ImportAgentsDialog } from '@letta-cloud/ui-ade-components';
 
 const LIMIT = 10;
 
@@ -105,11 +107,18 @@ export function Agents() {
       icon={<LettaInvaderIcon />}
       subtitle={t('subtitle')}
       actions={
-        <CreateLocalAgentDialog
-          trigger={
-            <Button size="small" color="primary" label={t('createAgent')} />
-          }
-        />
+        <HStack>
+          <ImportAgentsDialog
+            trigger={
+              <Button size="small" color="tertiary" label={t('importAgent')} />
+            }
+          />
+          <CreateLocalAgentDialog
+            trigger={
+              <Button size="small" color="primary" label={t('createAgent')} />
+            }
+          />
+        </HStack>
       }
       title={t('title')}
     >

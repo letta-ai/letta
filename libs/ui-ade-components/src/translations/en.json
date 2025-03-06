@@ -1049,5 +1049,16 @@
       "label": "Unique Identifier",
       "description": "The unique identifier is a unique string that can be used to look up this identity, usually this should be your user or organization ID on your platform."
     }
+  },
+  "ImportAgentsDialog": {
+    "errors": {
+      "fileIsRequired": "Please select a file to import",
+      "invalidFile": "The file you selected is not a valid agentfile, please select a valid agentfile to import"
+    },
+    "confirm": "Start import",
+    "label": "Agent to upload",
+    "chooseAgent": "or click here to upload",
+    "title": "Import Agent",
+    "dropAgent": "Drop an .af file here"
   }
 }

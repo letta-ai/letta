@@ -10,6 +10,13 @@
   "mac": {
     "category": "public.app-category.developer-tools"
   },
+  "fileAssociations": [
+    {
+      "ext": "af",
+      "name": "AgentFile",
+      "mimeType": "application/json"
+    }
+  ],
   "dmg": {
     "background": "dist/assets/background.tiff",
     "iconSize": 104,

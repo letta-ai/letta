@@ -31,6 +31,7 @@ import CreateAgentDialog from '../components/CreateAgentDialog/CreateAgentDialog
 import { useInfiniteQuery } from '@tanstack/react-query';
 import { useDebouncedValue } from '@mantine/hooks';
 import type { InfiniteData } from '@tanstack/query-core';
+import { ImportAgentsDialog } from '@letta-cloud/ui-ade-components';
 
 const LIMIT = 10;
 
@@ -254,6 +255,9 @@ function LocalProjectPage() {
       title={currentDevelopmentServerConfig?.name || ''}
       actions={
         <HStack>
+          <ImportAgentsDialog
+            trigger={<Button color="tertiary" label={t('importAgent')} />}
+          />
           <CreateAgentDialog
             trigger={
               <Button

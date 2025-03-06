@@ -7,14 +7,33 @@ import { VStack } from '../../framing/VStack/VStack';
 import { FileIcon } from '../../icons';
 import { Button } from '../Button/Button';
 import { HStack } from '../../framing/HStack/HStack';
+import { useTranslations } from '@letta-cloud/translations';
+import { Slot } from '@radix-ui/react-slot';
 
 interface SingleFileUploadProps {
   onChange: (file: File | undefined) => void;
   value: File;
+  removeFileText?: string;
+  changeFileText?: string;
+  chooseFileText?: string;
+  fileIcon?: React.ReactNode;
+  dropText?: string;
+  accept?: string;
 }
 
 function SingleFileUploadPrimitive(props: SingleFileUploadProps) {
-  const { onChange, value } = props;
+  const t = useTranslations('components/SingleFileUpload');
+
+  const {
+    onChange,
+    value,
+    dropText = t('dropFile'),
+    removeFileText = t('removeFile'),
+    changeFileText = t('changeFile'),
+    fileIcon = <FileIcon />,
+    chooseFileText = t('chooseFileText'),
+    accept,
+  } = props;
 
   const handleDropFile = useCallback(
     (event: React.DragEvent<HTMLDivElement>) => {
@@ -59,15 +78,15 @@ function SingleFileUploadPrimitive(props: SingleFileUploadProps) {
       {!value ? (
         <>
           <VStack align="center">
-            <FileIcon className="w-8" />
+            <Slot className="w-8">{fileIcon}</Slot>
             <VStack>
               <Typography variant="body" className="text-center">
-                Drop a file here
+                {dropText}
               </Typography>
               <Button
                 onClick={triggerChooseFile}
                 color="secondary"
-                label="Choose file"
+                label={chooseFileText}
               ></Button>
             </VStack>
           </VStack>
@@ -81,7 +100,7 @@ function SingleFileUploadPrimitive(props: SingleFileUploadProps) {
             fullWidth
             justify="center"
           >
-            <FileIcon />
+            {fileIcon}
             <Typography variant="body" className="text-center">
               {value.name}
             </Typography>
@@ -90,14 +109,14 @@ function SingleFileUploadPrimitive(props: SingleFileUploadProps) {
             <Button
               onClick={triggerChooseFile}
               color="secondary"
-              label="Change file"
+              label={changeFileText}
             ></Button>
             <Button
               onClick={() => {
                 onChange(undefined);
               }}
               color="destructive"
-              label="Remove file"
+              label={removeFileText}
             ></Button>
           </HStack>
         </VStack>
@@ -105,6 +124,7 @@ function SingleFileUploadPrimitive(props: SingleFileUploadProps) {
       <input
         ref={inputRef}
         type="file"
+        accept={accept}
         className="w-[0] h-[0] absolute opacity-0"
         onChange={handleChooseFile}
       />

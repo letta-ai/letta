@@ -28,5 +28,11 @@
       "noSources": "No sources in this agent",
       "title": "Source"
     }
+  },
+  "components/SingleFileUpload": {
+    "dropFile": "Drop a file here",
+    "chooseFileText": "Choose a file",
+    "changeFile": "Change file",
+    "removeFile": "Remove file"
   }
 }
