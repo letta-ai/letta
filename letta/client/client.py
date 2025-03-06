@@ -2986,7 +2986,6 @@ class LocalClient(AbstractClient):
 
         Args:
             func (callable): The function to create a tool for.
-            name: (str): Name of the tool (must be unique per-user.)
             tags (Optional[List[str]], optional): Tags for the tool. Defaults to None.
             description (str, optional): The description.
             return_char_limit (int): The character limit for the tool's return value. Defaults to FUNCTION_RETURN_CHAR_LIMIT.
@@ -2999,6 +2998,7 @@ class LocalClient(AbstractClient):
         # parse source code/schema
         source_code = parse_source_code(func)
         source_type = "python"
+        name = func.__name__  # Initialize name using function's __name__
         if not tags:
             tags = []
 
