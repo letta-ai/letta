@@ -15,7 +15,7 @@ from letta.orm.errors import NoResultFound
 from letta.schemas.agent import AgentState, CreateAgent, UpdateAgent
 from letta.schemas.block import Block, BlockUpdate, CreateBlock  # , BlockLabelUpdate, BlockLimitUpdate
 from letta.schemas.job import JobStatus, JobUpdate, LettaRequestConfig
-from letta.schemas.letta_message import LettaMessageUnion
+from letta.schemas.letta_message import LettaMessageUnion, LettaMessageUpdateUnion
 from letta.schemas.letta_request import LettaRequest, LettaStreamingRequest
 from letta.schemas.letta_response import LettaResponse
 from letta.schemas.memory import ContextWindowOverview, CreateArchivalMemory, Memory
@@ -526,20 +526,20 @@ def list_messages(
     )
 
 
-@router.patch("/{agent_id}/messages/{message_id}", response_model=Message, operation_id="modify_message")
+@router.patch("/{agent_id}/messages/{message_id}", response_model=LettaMessageUpdateUnion, operation_id="modify_message")
 def modify_message(
     agent_id: str,
     message_id: str,
-    request: MessageUpdate = Body(...),
+    request: LettaMessageUpdateUnion = Body(...),
     server: "SyncServer" = Depends(get_letta_server),
     actor_id: Optional[str] = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
 ):
     """
     Update the details of a message associated with an agent.
     """
-    # TODO: Get rid of agent_id here, it's not really relevant
+    # TODO: support modifying tool calls/returns
     actor = server.user_manager.get_user_or_default(user_id=actor_id)
-    return server.message_manager.update_message_by_id(message_id=message_id, message_update=request, actor=actor)
+    return server.message_manager.update_message_by_letta_message(message_id=message_id, letta_message_update=request, actor=actor)
 
 
 @router.post(

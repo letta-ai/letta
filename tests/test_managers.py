@@ -24,6 +24,7 @@ from letta.schemas.file import FileMetadata as PydanticFileMetadata
 from letta.schemas.identity import IdentityCreate, IdentityProperty, IdentityPropertyType, IdentityType, IdentityUpdate
 from letta.schemas.job import Job as PydanticJob
 from letta.schemas.job import JobUpdate, LettaRequestConfig
+from letta.schemas.letta_message import LettaMessage, UpdateAssistantMessage, UpdateReasoningMessage, UpdateSystemMessage, UpdateUserMessage
 from letta.schemas.llm_config import LLMConfig
 from letta.schemas.message import Message as PydanticMessage
 from letta.schemas.message import MessageCreate, MessageUpdate
@@ -1151,6 +1152,73 @@ def test_reset_messages_idempotency(server: SyncServer, sarah_agent, default_use
     reset_agent_again = server.agent_manager.reset_messages(agent_id=sarah_agent.id, actor=default_user)
     assert len(reset_agent.message_ids) == 1
     assert server.message_manager.size(agent_id=sarah_agent.id, actor=default_user) == 1
+
+
+def test_modify_letta_message(server: SyncServer, sarah_agent, default_user):
+    """
+    Test updating a message.
+    """
+
+    messages = server.message_manager.list_messages_for_agent(agent_id=sarah_agent.id, actor=default_user)
+    letta_messages = PydanticMessage.to_letta_messages_from_list(messages=messages)
+
+    system_message = [msg for msg in letta_messages if msg.message_type == "system_message"][0]
+    assistant_message = [msg for msg in letta_messages if msg.message_type == "assistant_message"][0]
+    user_message = [msg for msg in letta_messages if msg.message_type == "user_message"][0]
+    reasoning_message = [msg for msg in letta_messages if msg.message_type == "reasoning_message"][0]
+
+    # user message
+    update_user_message = UpdateUserMessage(content="Hello, Sarah!")
+    original_user_message = server.message_manager.get_message_by_id(message_id=user_message.id, actor=default_user)
+    assert original_user_message.content[0].text != update_user_message.content
+    server.message_manager.update_message_by_letta_message(
+        message_id=user_message.id, letta_message_update=update_user_message, actor=default_user
+    )
+    updated_user_message = server.message_manager.get_message_by_id(message_id=user_message.id, actor=default_user)
+    assert updated_user_message.content[0].text == update_user_message.content
+
+    # system message
+    update_system_message = UpdateSystemMessage(content="You are a friendly assistant!")
+    original_system_message = server.message_manager.get_message_by_id(message_id=system_message.id, actor=default_user)
+    assert original_system_message.content[0].text != update_system_message.content
+    server.message_manager.update_message_by_letta_message(
+        message_id=system_message.id, letta_message_update=update_system_message, actor=default_user
+    )
+    updated_system_message = server.message_manager.get_message_by_id(message_id=system_message.id, actor=default_user)
+    assert updated_system_message.content[0].text == update_system_message.content
+
+    # reasoning message
+    update_reasoning_message = UpdateReasoningMessage(reasoning="I am thinking")
+    original_reasoning_message = server.message_manager.get_message_by_id(message_id=reasoning_message.id, actor=default_user)
+    assert original_reasoning_message.content[0].text != update_reasoning_message.reasoning
+    server.message_manager.update_message_by_letta_message(
+        message_id=reasoning_message.id, letta_message_update=update_reasoning_message, actor=default_user
+    )
+    updated_reasoning_message = server.message_manager.get_message_by_id(message_id=reasoning_message.id, actor=default_user)
+    assert updated_reasoning_message.content[0].text == update_reasoning_message.reasoning
+
+    # assistant message
+    def parse_send_message(tool_call):
+        import json
+
+        function_call = tool_call.function
+        arguments = json.loads(function_call.arguments)
+        return arguments["message"]
+
+    update_assistant_message = UpdateAssistantMessage(content="I am an agent!")
+    original_assistant_message = server.message_manager.get_message_by_id(message_id=assistant_message.id, actor=default_user)
+    print("ORIGINAL", original_assistant_message.tool_calls)
+    print("MESSAGE", parse_send_message(original_assistant_message.tool_calls[0]))
+    assert parse_send_message(original_assistant_message.tool_calls[0]) != update_assistant_message.content
+    server.message_manager.update_message_by_letta_message(
+        message_id=assistant_message.id, letta_message_update=update_assistant_message, actor=default_user
+    )
+    updated_assistant_message = server.message_manager.get_message_by_id(message_id=assistant_message.id, actor=default_user)
+    print("UPDATED", updated_assistant_message.tool_calls)
+    print("MESSAGE", parse_send_message(updated_assistant_message.tool_calls[0]))
+    assert parse_send_message(updated_assistant_message.tool_calls[0]) == update_assistant_message.content
+
+    # TODO: tool calls/responses
 
 
 # ======================================================================================================================
