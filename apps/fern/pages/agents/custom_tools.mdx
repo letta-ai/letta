@@ -8,6 +8,59 @@ You can create custom tools in Letta using the Python SDK, as well as via the [A
 For your agent to call a tool, Letta constructs an OpenAI tool schema (contained in `json_schema` field) from the function you define. Letta can either parse this automatically from a properly formatting docstring, or you can pass in the schema explicitly by providing a Pydantic object that defines the argument schema. 
 
 # Creating a custom tool 
+ 
+## Specifying tools via Pydantic models
+To create a custom tool, you can extend the `BaseTool` class and specify the following: 
+* `name` - The name of the tool 
+* `args_schema` - A Pydantic model that defines the arguments for the tool
+* `description` - A description of the tool
+* `tags` - (Optional) A list of tags for the tool to query 
+You must also define a `run(..)` method for the tool code that takes in the fields from the `args_schema`. 
+
+Below is an example of how to create a tool by extending `BaseTool`: 
+```python title="python" maxLines=50
+from letta_client import Letta
+from letta_client.client import BaseTool
+from pydantic import BaseModel 
+from typing import List, Type
+
+class InventoryItem(BaseModel):
+    sku: str  # Unique product identifier
+    name: str  # Product name
+    price: float  # Current price
+    category: str  # Product category (e.g., "Electronics", "Clothing")
+
+class InventoryEntry(BaseModel):
+    timestamp: int  # Unix timestamp of the transaction
+    item: InventoryItem  # The product being updated
+    transaction_id: str  # Unique identifier for this inventory update
+
+class InventoryEntryData(BaseModel):
+    data: InventoryEntry
+    quantity_change: int  # Change in quantity (positive for additions, negative for removals)
+
+
+class ManageInventoryTool(BaseTool):
+    name: str = "manage_inventory"
+    args_schema: Type[BaseModel] = InventoryEntryData
+    description: str = "Update inventory catalogue with a new data entry"
+    tags: List[str] = ["inventory", "shop"]
+
+    def run(self, data: InventoryEntry, quantity_change: int) -> bool:
+        print(f"Updated inventory for {data.item.name} with a quantity change of {quantity_change}")
+        return True
+
+# create a client to connect to your local Letta Server
+client = Letta(
+  base_url="http://localhost:8283"
+)
+# create the tool 
+tool_from_class = client.tools.add(
+    tool=ManageInventoryTool(),
+)
+```
+
+## Specifying tools via function docstrings
 You can create a tool by passing in a function with a properly formatting docstring specifying the arguments and description of the tool: 
 ```python title="python" maxLines=50
 # install letta_client with `pip install letta-client`
@@ -43,8 +96,8 @@ tool = client.tools.create_from_function(
 The tool creation will return a `Tool` object. You can update the tool with `client.tools.upsert_from_function(...)`. 
 
 
-#  Specifing complex arguments
-To specify the arguments for a complex tool, you can use the `args_json_schema` parameter.
+## Specifying arguments via Pydantic models
+To specify the arguments for a complex tool, you can use the `args_schema` parameter.
 
 ```python title="python" maxLines=50
 # install letta_client with `pip install letta-client`
@@ -66,8 +119,12 @@ class StepsList(BaseModel):
         ...,
         description="List of steps to add to the task plan.",
     )
+    explanation: str = Field(
+        ...,
+        description="Explanation for the list of steps.",
+    )
 
-def create_task_plan(steps):
+def create_task_plan(steps, explanation):
     """ Creates a task plan for the current task. """
     return steps
 
@@ -77,8 +134,9 @@ tool = client.tools.upsert_from_function(
     args_schema=StepsList
 )
 ```
+Note: this path for updating tools is currently only supported in Python. 
 
-# Creating a tool from a file
+## Creating a tool from a file
 You can also define a tool from a file that contains source code. For example, you may have the following file: 
 ```python title="custom_tool.py"
 from typing import List, Optional
