@@ -474,6 +474,45 @@ def agent_passages_setup(server, default_source, default_user, sarah_agent):
     server.source_manager.delete_source(default_source.id, actor=actor)
 
 
+@pytest.fixture
+def agent_with_tags(server: SyncServer, default_user):
+    """Fixture to create agents with specific tags."""
+    agent1 = server.agent_manager.create_agent(
+        agent_create=CreateAgent(
+            name="agent1",
+            tags=["primary_agent", "benefit_1"],
+            llm_config=LLMConfig.default_config("gpt-4o-mini"),
+            embedding_config=EmbeddingConfig.default_config(provider="openai"),
+            memory_blocks=[],
+        ),
+        actor=default_user,
+    )
+
+    agent2 = server.agent_manager.create_agent(
+        agent_create=CreateAgent(
+            name="agent2",
+            tags=["primary_agent", "benefit_2"],
+            llm_config=LLMConfig.default_config("gpt-4o-mini"),
+            embedding_config=EmbeddingConfig.default_config(provider="openai"),
+            memory_blocks=[],
+        ),
+        actor=default_user,
+    )
+
+    agent3 = server.agent_manager.create_agent(
+        agent_create=CreateAgent(
+            name="agent3",
+            tags=["primary_agent", "benefit_1", "benefit_2"],
+            llm_config=LLMConfig.default_config("gpt-4o-mini"),
+            embedding_config=EmbeddingConfig.default_config(provider="openai"),
+            memory_blocks=[],
+        ),
+        actor=default_user,
+    )
+
+    return [agent1, agent2, agent3]
+
+
 # ======================================================================================================================
 # AgentManager Tests - Basic
 # ======================================================================================================================
@@ -775,6 +814,45 @@ def test_list_attached_agents_nonexistent_source(server: SyncServer, default_use
 # ======================================================================================================================
 # AgentManager Tests - Tags Relationship
 # ======================================================================================================================
+
+
+def test_list_agents_matching_all_tags(server: SyncServer, default_user, agent_with_tags):
+    agents = server.agent_manager.list_agents_matching_tags(
+        actor=default_user,
+        match_all=["primary_agent", "benefit_1"],
+        match_some=[],
+    )
+    assert len(agents) == 2  # agent1 and agent3 match
+    assert {a.name for a in agents} == {"agent1", "agent3"}
+
+
+def test_list_agents_matching_some_tags(server: SyncServer, default_user, agent_with_tags):
+    agents = server.agent_manager.list_agents_matching_tags(
+        actor=default_user,
+        match_all=["primary_agent"],
+        match_some=["benefit_1", "benefit_2"],
+    )
+    assert len(agents) == 3  # All agents match
+    assert {a.name for a in agents} == {"agent1", "agent2", "agent3"}
+
+
+def test_list_agents_matching_all_and_some_tags(server: SyncServer, default_user, agent_with_tags):
+    agents = server.agent_manager.list_agents_matching_tags(
+        actor=default_user,
+        match_all=["primary_agent", "benefit_1"],
+        match_some=["benefit_2", "nonexistent"],
+    )
+    assert len(agents) == 1  # Only agent3 matches
+    assert agents[0].name == "agent3"
+
+
+def test_list_agents_matching_no_tags(server: SyncServer, default_user, agent_with_tags):
+    agents = server.agent_manager.list_agents_matching_tags(
+        actor=default_user,
+        match_all=["primary_agent", "nonexistent_tag"],
+        match_some=["benefit_1", "benefit_2"],
+    )
+    assert len(agents) == 0  # No agent should match
 
 
 def test_list_agents_by_tags_match_all(server: SyncServer, sarah_agent, charles_agent, default_user):
