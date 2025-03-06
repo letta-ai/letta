@@ -68,6 +68,10 @@ def generate_openapi_schema(app: FastAPI):
     letta_docs["paths"] = {k: v for k, v in letta_docs["paths"].items() if not k.startswith("/openai")}
     letta_docs["info"]["title"] = "Letta API"
     letta_docs["components"]["schemas"]["LettaMessageUnion"] = create_letta_message_union_schema()
+
+    # Update the app's schema with our modified version
+    app.openapi_schema = letta_docs
+
     for name, docs in [
         (
             "letta",
@@ -267,6 +271,9 @@ def create_application() -> "FastAPI":
 
     # / static files
     mount_static_files(app)
+
+    # Generate OpenAPI schema after all routes are mounted
+    generate_openapi_schema(app)
 
     @app.on_event("shutdown")
     def on_shutdown():
