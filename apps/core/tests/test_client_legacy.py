@@ -536,21 +536,6 @@ def test_sources(client: Union[LocalClient, RESTClient], agent: AgentState):
     client.delete_source(source.id)
 
 
-def test_message_update(client: Union[LocalClient, RESTClient], agent: AgentState):
-    """Test that we can update the details of a message"""
-
-    # create a message
-    message_response = client.send_message(agent_id=agent.id, message="Test message", role="user")
-    print("Messages=", message_response)
-    assert isinstance(message_response, LettaResponse)
-    assert isinstance(message_response.messages[-1], AssistantMessage)
-    message = message_response.messages[-1]
-
-    new_text = "this is a secret message"
-    new_message = client.update_message(message_id=message.id, text=new_text, agent_id=agent.id)
-    assert new_message.text == new_text
-
-
 def test_organization(client: RESTClient):
     if isinstance(client, LocalClient):
         pytest.skip("Skipping test_organization because LocalClient does not support organizations")

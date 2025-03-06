@@ -521,24 +521,14 @@ export type ChatCompletionFunctionMessageParam = {
 
 export type role3 = 'function';
 
-export type ChatCompletionMessageToolCall_Input = {
-  id: string;
-  function: openai__types__chat__chat_completion_message_tool_call__Function;
-  type: 'function';
-  [key: string]:
-    | unknown
-    | string
-    | openai__types__chat__chat_completion_message_tool_call__Function;
-};
-
-export type type5 = 'function';
-
-export type ChatCompletionMessageToolCall_Output = {
+export type ChatCompletionMessageToolCall = {
   id: string;
   function: Function_Output;
   type: 'function';
   [key: string]: unknown | string | Function_Output;
 };
+
+export type type5 = 'function';
 
 export type ChatCompletionMessageToolCallParam = {
   id: string;
@@ -1840,7 +1830,7 @@ export type Message = {
   /**
    * The list of tool calls requested.
    */
-  tool_calls?: Array<ChatCompletionMessageToolCall_Output> | null;
+  tool_calls?: Array<ChatCompletionMessageToolCall> | null;
   /**
    * The id of the tool call.
    */
@@ -1883,32 +1873,6 @@ export type MessageCreate = {
 export type role7 = 'user' | 'system';
 
 export type MessageRole = 'assistant' | 'user' | 'tool' | 'function' | 'system';
-
-/**
- * Request to update a message
- */
-export type MessageUpdate = {
-  /**
-   * The role of the participant.
-   */
-  role?: MessageRole | null;
-  /**
-   * The content of the message.
-   */
-  content: string | Array<TextContent> | null;
-  /**
-   * The name of the participant.
-   */
-  name?: string | null;
-  /**
-   * The list of tool calls requested.
-   */
-  tool_calls?: Array<ChatCompletionMessageToolCall_Input> | null;
-  /**
-   * The id of the tool call.
-   */
-  tool_call_id?: string | null;
-};
 
 export type Organization = {
   /**
@@ -2892,6 +2856,34 @@ export type UpdateAgent = {
   message_buffer_autoclear?: boolean | null;
 };
 
+export type UpdateAssistantMessage = {
+  content: string | Array<TextContent>;
+  message_type?: 'assistant_message';
+};
+
+export type message_type2 = 'assistant_message';
+
+export type UpdateReasoningMessage = {
+  reasoning: string | Array<TextContent>;
+  message_type?: 'reasoning_message';
+};
+
+export type message_type3 = 'reasoning_message';
+
+export type UpdateSystemMessage = {
+  content: string | Array<TextContent>;
+  message_type?: 'system_message';
+};
+
+export type message_type4 = 'system_message';
+
+export type UpdateUserMessage = {
+  content: string | Array<TextContent>;
+  message_type?: 'user_message';
+};
+
+export type message_type5 = 'user_message';
+
 export type UsageStatistics = {
   completion_tokens?: number;
   prompt_tokens?: number;
@@ -2978,12 +2970,6 @@ export type ValidationError = {
   loc: Array<string | number>;
   msg: string;
   type: string;
-};
-
-export type openai__types__chat__chat_completion_message_tool_call__Function = {
-  arguments: string;
-  name: string;
-  [key: string]: unknown | string;
 };
 
 export type openai__types__chat__chat_completion_message_tool_call_param__Function =
@@ -3463,11 +3449,19 @@ export type SendMessageResponse = LettaResponse;
 export type ModifyMessageData = {
   agentId: string;
   messageId: string;
-  requestBody: MessageUpdate;
+  requestBody:
+    | UpdateSystemMessage
+    | UpdateUserMessage
+    | UpdateReasoningMessage
+    | UpdateAssistantMessage;
   userId?: string | null;
 };
 
-export type ModifyMessageResponse = Message;
+export type ModifyMessageResponse =
+  | UpdateSystemMessage
+  | UpdateUserMessage
+  | UpdateReasoningMessage
+  | UpdateAssistantMessage;
 
 export type CreateAgentMessageStreamData = {
   agentId: string;
@@ -4679,7 +4673,11 @@ export type $OpenApiTs = {
         /**
          * Successful Response
          */
-        200: Message;
+        200:
+          | UpdateSystemMessage
+          | UpdateUserMessage
+          | UpdateReasoningMessage
+          | UpdateAssistantMessage;
         /**
          * Validation Error
          */

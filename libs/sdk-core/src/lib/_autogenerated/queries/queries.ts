@@ -1,10 +1,10 @@
 // generated with @7nohe/openapi-react-query-codegen@1.6.0
 
 import {
-  useMutation,
   UseMutationOptions,
-  useQuery,
   UseQueryOptions,
+  useMutation,
+  useQuery,
 } from '@tanstack/react-query';
 import {
   AdminService,
@@ -44,7 +44,6 @@ import {
   LettaStreamingRequest,
   LocalSandboxConfig,
   MessageRole,
-  MessageUpdate,
   OrganizationCreate,
   PassageUpdate,
   ProviderCreate,
@@ -60,6 +59,10 @@ import {
   ToolRunFromSource,
   ToolUpdate,
   UpdateAgent,
+  UpdateAssistantMessage,
+  UpdateReasoningMessage,
+  UpdateSystemMessage,
+  UpdateUserMessage,
   UserCreate,
   UserUpdate,
 } from '../requests/types.gen';
@@ -3755,7 +3758,7 @@ export const useAgentsServiceModifyPassage = <
  * @param data.messageId
  * @param data.requestBody
  * @param data.userId
- * @returns Message Successful Response
+ * @returns unknown Successful Response
  * @throws ApiError
  */
 export const useAgentsServiceModifyMessage = <
@@ -3770,7 +3773,11 @@ export const useAgentsServiceModifyMessage = <
       {
         agentId: string;
         messageId: string;
-        requestBody: MessageUpdate;
+        requestBody:
+          | UpdateSystemMessage
+          | UpdateUserMessage
+          | UpdateReasoningMessage
+          | UpdateAssistantMessage;
         userId?: string;
       },
       TContext
@@ -3784,7 +3791,11 @@ export const useAgentsServiceModifyMessage = <
     {
       agentId: string;
       messageId: string;
-      requestBody: MessageUpdate;
+      requestBody:
+        | UpdateSystemMessage
+        | UpdateUserMessage
+        | UpdateReasoningMessage
+        | UpdateAssistantMessage;
       userId?: string;
     },
     TContext

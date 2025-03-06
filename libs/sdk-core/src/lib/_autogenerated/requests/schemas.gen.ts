@@ -1496,29 +1496,7 @@ export const $ChatCompletionFunctionMessageParam = {
   title: 'ChatCompletionFunctionMessageParam',
 } as const;
 
-export const $ChatCompletionMessageToolCall_Input = {
-  properties: {
-    id: {
-      type: 'string',
-      title: 'Id',
-    },
-    function: {
-      $ref: '#/components/schemas/openai__types__chat__chat_completion_message_tool_call__Function',
-    },
-    type: {
-      type: 'string',
-      enum: ['function'],
-      const: 'function',
-      title: 'Type',
-    },
-  },
-  additionalProperties: true,
-  type: 'object',
-  required: ['id', 'function', 'type'],
-  title: 'ChatCompletionMessageToolCall',
-} as const;
-
-export const $ChatCompletionMessageToolCall_Output = {
+export const $ChatCompletionMessageToolCall = {
   properties: {
     id: {
       type: 'string',
@@ -4734,7 +4712,7 @@ export const $Message = {
       anyOf: [
         {
           items: {
-            $ref: '#/components/schemas/ChatCompletionMessageToolCall-Output',
+            $ref: '#/components/schemas/ChatCompletionMessageToolCall',
           },
           type: 'array',
         },
@@ -4872,93 +4850,6 @@ export const $MessageRole = {
   type: 'string',
   enum: ['assistant', 'user', 'tool', 'function', 'system'],
   title: 'MessageRole',
-} as const;
-
-export const $MessageUpdate = {
-  properties: {
-    role: {
-      anyOf: [
-        {
-          $ref: '#/components/schemas/MessageRole',
-        },
-        {
-          type: 'null',
-        },
-      ],
-      description: 'The role of the participant.',
-    },
-    content: {
-      anyOf: [
-        {
-          type: 'string',
-        },
-        {
-          items: {
-            oneOf: [
-              {
-                $ref: '#/components/schemas/TextContent',
-              },
-            ],
-            discriminator: {
-              propertyName: 'type',
-              mapping: {
-                text: '#/components/schemas/TextContent',
-              },
-            },
-          },
-          type: 'array',
-        },
-        {
-          type: 'null',
-        },
-      ],
-      title: 'Content',
-      description: 'The content of the message.',
-    },
-    name: {
-      anyOf: [
-        {
-          type: 'string',
-        },
-        {
-          type: 'null',
-        },
-      ],
-      title: 'Name',
-      description: 'The name of the participant.',
-    },
-    tool_calls: {
-      anyOf: [
-        {
-          items: {
-            $ref: '#/components/schemas/ChatCompletionMessageToolCall-Input',
-          },
-          type: 'array',
-        },
-        {
-          type: 'null',
-        },
-      ],
-      title: 'Tool Calls',
-      description: 'The list of tool calls requested.',
-    },
-    tool_call_id: {
-      anyOf: [
-        {
-          type: 'string',
-        },
-        {
-          type: 'null',
-        },
-      ],
-      title: 'Tool Call Id',
-      description: 'The id of the tool call.',
-    },
-  },
-  type: 'object',
-  required: ['content'],
-  title: 'MessageUpdate',
-  description: 'Request to update a message',
 } as const;
 
 export const $Organization = {
@@ -7435,6 +7326,162 @@ export const $UpdateAgent = {
   title: 'UpdateAgent',
 } as const;
 
+export const $UpdateAssistantMessage = {
+  properties: {
+    content: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          items: {
+            oneOf: [
+              {
+                $ref: '#/components/schemas/TextContent',
+              },
+            ],
+            discriminator: {
+              propertyName: 'type',
+              mapping: {
+                text: '#/components/schemas/TextContent',
+              },
+            },
+          },
+          type: 'array',
+        },
+      ],
+      title: 'Content',
+    },
+    message_type: {
+      type: 'string',
+      enum: ['assistant_message'],
+      const: 'assistant_message',
+      title: 'Message Type',
+      default: 'assistant_message',
+    },
+  },
+  type: 'object',
+  required: ['content'],
+  title: 'UpdateAssistantMessage',
+} as const;
+
+export const $UpdateReasoningMessage = {
+  properties: {
+    reasoning: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          items: {
+            oneOf: [
+              {
+                $ref: '#/components/schemas/TextContent',
+              },
+            ],
+            discriminator: {
+              propertyName: 'type',
+              mapping: {
+                text: '#/components/schemas/TextContent',
+              },
+            },
+          },
+          type: 'array',
+        },
+      ],
+      title: 'Reasoning',
+    },
+    message_type: {
+      type: 'string',
+      enum: ['reasoning_message'],
+      const: 'reasoning_message',
+      title: 'Message Type',
+      default: 'reasoning_message',
+    },
+  },
+  type: 'object',
+  required: ['reasoning'],
+  title: 'UpdateReasoningMessage',
+} as const;
+
+export const $UpdateSystemMessage = {
+  properties: {
+    content: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          items: {
+            oneOf: [
+              {
+                $ref: '#/components/schemas/TextContent',
+              },
+            ],
+            discriminator: {
+              propertyName: 'type',
+              mapping: {
+                text: '#/components/schemas/TextContent',
+              },
+            },
+          },
+          type: 'array',
+        },
+      ],
+      title: 'Content',
+    },
+    message_type: {
+      type: 'string',
+      enum: ['system_message'],
+      const: 'system_message',
+      title: 'Message Type',
+      default: 'system_message',
+    },
+  },
+  type: 'object',
+  required: ['content'],
+  title: 'UpdateSystemMessage',
+} as const;
+
+export const $UpdateUserMessage = {
+  properties: {
+    content: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          items: {
+            oneOf: [
+              {
+                $ref: '#/components/schemas/TextContent',
+              },
+            ],
+            discriminator: {
+              propertyName: 'type',
+              mapping: {
+                text: '#/components/schemas/TextContent',
+              },
+            },
+          },
+          type: 'array',
+        },
+      ],
+      title: 'Content',
+    },
+    message_type: {
+      type: 'string',
+      enum: ['user_message'],
+      const: 'user_message',
+      title: 'Message Type',
+      default: 'user_message',
+    },
+  },
+  type: 'object',
+  required: ['content'],
+  title: 'UpdateUserMessage',
+} as const;
+
 export const $UsageStatistics = {
   properties: {
     completion_tokens: {
@@ -7669,24 +7716,6 @@ export const $ValidationError = {
   required: ['loc', 'msg', 'type'],
   title: 'ValidationError',
 } as const;
-
-export const $openai__types__chat__chat_completion_message_tool_call__Function =
-  {
-    properties: {
-      arguments: {
-        type: 'string',
-        title: 'Arguments',
-      },
-      name: {
-        type: 'string',
-        title: 'Name',
-      },
-    },
-    additionalProperties: true,
-    type: 'object',
-    required: ['arguments', 'name'],
-    title: 'Function',
-  } as const;
 
 export const $openai__types__chat__chat_completion_message_tool_call_param__Function =
   {

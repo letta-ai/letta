@@ -1103,35 +1103,6 @@ export const ChatCompletionFunctionMessageParam = z.object({
   role: z.literal('function'),
 });
 
-export type openai__types__chat__chat_completion_message_tool_call__Function =
-  z.infer<
-    typeof openai__types__chat__chat_completion_message_tool_call__Function
-  >;
-export const openai__types__chat__chat_completion_message_tool_call__Function =
-  z.intersection(
-    z.object({
-      arguments: z.string(),
-      name: z.string(),
-    }),
-    z.object({
-      string: z.any(),
-    }),
-  );
-
-export type ChatCompletionMessageToolCall_Input = z.infer<
-  typeof ChatCompletionMessageToolCall_Input
->;
-export const ChatCompletionMessageToolCall_Input = z.intersection(
-  z.object({
-    id: z.string(),
-    function: openai__types__chat__chat_completion_message_tool_call__Function,
-    type: z.literal('function'),
-  }),
-  z.object({
-    string: z.any(),
-  }),
-);
-
 export type Function_Output = z.infer<typeof Function_Output>;
 export const Function_Output = z.intersection(
   z.object({
@@ -1143,10 +1114,10 @@ export const Function_Output = z.intersection(
   }),
 );
 
-export type ChatCompletionMessageToolCall_Output = z.infer<
-  typeof ChatCompletionMessageToolCall_Output
+export type ChatCompletionMessageToolCall = z.infer<
+  typeof ChatCompletionMessageToolCall
 >;
-export const ChatCompletionMessageToolCall_Output = z.intersection(
+export const ChatCompletionMessageToolCall = z.intersection(
   z.object({
     id: z.string(),
     function: Function_Output,
@@ -2180,11 +2151,9 @@ export const Message = z.object({
     .optional(),
   tool_calls: z
     .union([
-      z.array(ChatCompletionMessageToolCall_Output),
+      z.array(ChatCompletionMessageToolCall),
       z.null(),
-      z.array(
-        z.union([z.array(ChatCompletionMessageToolCall_Output), z.null()]),
-      ),
+      z.array(z.union([z.array(ChatCompletionMessageToolCall), z.null()])),
       z.undefined(),
     ])
     .optional(),
@@ -2906,50 +2875,6 @@ export const LocalSandboxConfig = z.object({
   use_venv: z.boolean().optional(),
   venv_name: z.string().optional(),
   pip_requirements: z.array(PipRequirement).optional(),
-});
-
-export type MessageUpdate = z.infer<typeof MessageUpdate>;
-export const MessageUpdate = z.object({
-  role: z
-    .union([
-      MessageRole,
-      z.null(),
-      z.array(z.union([MessageRole, z.null()])),
-      z.undefined(),
-    ])
-    .optional(),
-  content: z.union([
-    z.string(),
-    z.array(TextContent),
-    z.null(),
-    z.array(z.union([z.string(), z.array(TextContent), z.null()])),
-  ]),
-  name: z
-    .union([
-      z.string(),
-      z.null(),
-      z.array(z.union([z.string(), z.null()])),
-      z.undefined(),
-    ])
-    .optional(),
-  tool_calls: z
-    .union([
-      z.array(ChatCompletionMessageToolCall_Input),
-      z.null(),
-      z.array(
-        z.union([z.array(ChatCompletionMessageToolCall_Input), z.null()]),
-      ),
-      z.undefined(),
-    ])
-    .optional(),
-  tool_call_id: z
-    .union([
-      z.string(),
-      z.null(),
-      z.array(z.union([z.string(), z.null()])),
-      z.undefined(),
-    ])
-    .optional(),
 });
 
 export type Organization = z.infer<typeof Organization>;
@@ -3739,6 +3664,52 @@ export const UpdateAgent = z.object({
   message_buffer_autoclear: z
     .union([z.boolean(), z.null(), z.array(z.union([z.boolean(), z.null()]))])
     .optional(),
+});
+
+export type UpdateAssistantMessage = z.infer<typeof UpdateAssistantMessage>;
+export const UpdateAssistantMessage = z.object({
+  content: z.union([
+    z.string(),
+    z.array(TextContent),
+    z.array(z.union([z.string(), z.array(TextContent)])),
+  ]),
+  message_type: z
+    .union([z.literal('assistant_message'), z.undefined()])
+    .optional(),
+});
+
+export type UpdateReasoningMessage = z.infer<typeof UpdateReasoningMessage>;
+export const UpdateReasoningMessage = z.object({
+  reasoning: z.union([
+    z.string(),
+    z.array(TextContent),
+    z.array(z.union([z.string(), z.array(TextContent)])),
+  ]),
+  message_type: z
+    .union([z.literal('reasoning_message'), z.undefined()])
+    .optional(),
+});
+
+export type UpdateSystemMessage = z.infer<typeof UpdateSystemMessage>;
+export const UpdateSystemMessage = z.object({
+  content: z.union([
+    z.string(),
+    z.array(TextContent),
+    z.array(z.union([z.string(), z.array(TextContent)])),
+  ]),
+  message_type: z
+    .union([z.literal('system_message'), z.undefined()])
+    .optional(),
+});
+
+export type UpdateUserMessage = z.infer<typeof UpdateUserMessage>;
+export const UpdateUserMessage = z.object({
+  content: z.union([
+    z.string(),
+    z.array(TextContent),
+    z.array(z.union([z.string(), z.array(TextContent)])),
+  ]),
+  message_type: z.union([z.literal('user_message'), z.undefined()]).optional(),
 });
 
 export type UsageStatistics = z.infer<typeof UsageStatistics>;
@@ -4759,9 +4730,27 @@ export const patch_Modify_message = {
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
     }),
-    body: MessageUpdate,
+    body: z.union([
+      UpdateSystemMessage,
+      UpdateUserMessage,
+      UpdateReasoningMessage,
+      UpdateAssistantMessage,
+      z.array(
+        z.union([
+          UpdateSystemMessage,
+          UpdateUserMessage,
+          UpdateReasoningMessage,
+          UpdateAssistantMessage,
+        ]),
+      ),
+    ]),
   }),
-  response: Message,
+  response: z.union([
+    UpdateSystemMessage,
+    UpdateUserMessage,
+    UpdateReasoningMessage,
+    UpdateAssistantMessage,
+  ]),
 };
 
 export type post_Create_agent_message_stream =

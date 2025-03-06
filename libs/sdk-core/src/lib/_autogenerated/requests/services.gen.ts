@@ -1542,7 +1542,7 @@ export class AgentsService {
    * @param data.messageId
    * @param data.requestBody
    * @param data.userId
-   * @returns Message Successful Response
+   * @returns unknown Successful Response
    * @throws ApiError
    */
   public static modifyMessage(
