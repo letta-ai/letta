@@ -78,7 +78,13 @@ class IdentityManager:
         if existing_identity is None:
             return self.create_identity(identity=identity, actor=actor)
         else:
-            identity_update = IdentityUpdate(name=identity.name, identity_type=identity.identity_type, agent_ids=identity.agent_ids)
+            identity_update = IdentityUpdate(
+                name=identity.name,
+                identifier_key=identity.identifier_key,
+                identity_type=identity.identity_type,
+                agent_ids=identity.agent_ids,
+                properties=identity.properties,
+            )
             return self._update_identity(
                 session=session, existing_identity=existing_identity, identity=identity_update, actor=actor, replace=True
             )
