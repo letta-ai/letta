@@ -119,6 +119,7 @@ async def upload_agent_serialized(
         True,
         description="If set to True, existing tools can get their source code overwritten by the uploaded tool definitions. Note that Letta core tools can never be updated externally.",
     ),
+    project_id: Optional[str] = Query(None, description="The project ID to associate the uploaded agent with."),
 ):
     """
     Upload a serialized agent JSON file and recreate the agent in the system.
@@ -129,7 +130,11 @@ async def upload_agent_serialized(
         serialized_data = await file.read()
         agent_json = json.loads(serialized_data)
         new_agent = server.agent_manager.deserialize(
-            serialized_agent=agent_json, actor=actor, append_copy_suffix=append_copy_suffix, override_existing_tools=override_existing_tools
+            serialized_agent=agent_json,
+            actor=actor,
+            append_copy_suffix=append_copy_suffix,
+            override_existing_tools=override_existing_tools,
+            project_id=project_id,
         )
         return new_agent
 

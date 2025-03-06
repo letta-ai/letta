@@ -2202,6 +2202,7 @@ export const useAgentsServiceCreateAgent = <
  * @param data.formData
  * @param data.appendCopySuffix If set to True, appends "_copy" to the end of the agent name.
  * @param data.overrideExistingTools If set to True, existing tools can get their source code overwritten by the uploaded tool definitions. Note that Letta core tools can never be updated externally.
+ * @param data.projectId The project ID to associate the uploaded agent with.
  * @param data.userId
  * @returns AgentState Successful Response
  * @throws ApiError
@@ -2219,6 +2220,7 @@ export const useAgentsServiceUploadAgentSerialized = <
         appendCopySuffix?: boolean;
         formData: Body_upload_agent_serialized;
         overrideExistingTools?: boolean;
+        projectId?: string;
         userId?: string;
       },
       TContext
@@ -2233,6 +2235,7 @@ export const useAgentsServiceUploadAgentSerialized = <
       appendCopySuffix?: boolean;
       formData: Body_upload_agent_serialized;
       overrideExistingTools?: boolean;
+      projectId?: string;
       userId?: string;
     },
     TContext
@@ -2241,12 +2244,14 @@ export const useAgentsServiceUploadAgentSerialized = <
       appendCopySuffix,
       formData,
       overrideExistingTools,
+      projectId,
       userId,
     }) =>
       AgentsService.uploadAgentSerialized({
         appendCopySuffix,
         formData,
         overrideExistingTools,
+        projectId,
         userId,
       }) as unknown as Promise<TData>,
     ...options,

@@ -3236,6 +3236,10 @@ export type UploadAgentSerializedData = {
    * If set to True, existing tools can get their source code overwritten by the uploaded tool definitions. Note that Letta core tools can never be updated externally.
    */
   overrideExistingTools?: boolean;
+  /**
+   * The project ID to associate the uploaded agent with.
+   */
+  projectId?: string | null;
   userId?: string | null;
 };
 

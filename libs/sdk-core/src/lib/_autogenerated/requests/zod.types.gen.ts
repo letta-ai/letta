@@ -4264,6 +4264,9 @@ export const post_Upload_agent_serialized = {
     query: z.object({
       append_copy_suffix: z.boolean().optional(),
       override_existing_tools: z.boolean().optional(),
+      project_id: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
     }),
     header: z.object({
       user_id: z

@@ -70,4 +70,11 @@ class SerializedAgentSchema(BaseSchema):
     class Meta(BaseSchema.Meta):
         model = Agent
         # TODO: Serialize these as well...
-        exclude = BaseSchema.Meta.exclude + ("sources", "source_passages", "agent_passages")
+        exclude = BaseSchema.Meta.exclude + (
+            "project_id",
+            "template_id",
+            "base_template_id",
+            "sources",
+            "source_passages",
+            "agent_passages",
+        )
