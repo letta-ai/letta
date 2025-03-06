@@ -1,14 +1,10 @@
 ---
-title: Define and customize tools
+title: Tools
 slug: guides/agents/tools
 ---
+Tools allow agents to take actions by executing Python code. Letta uses tools to manage memory and even to send messages to the end user. You can add custom tools to Letta by defining your own tools, and also customize the execution environment of the tools. You can import external tool libraries like Composio. 
 
-<Tip>
-Letta has a native integration with [Composio](/guides/agents/composio), which supports over 7000 pre-made tools to connect with popular services such as Slack, GitHub, Discord, etc.
-You can also create your own custom tools from scratch using Python.
-</Tip>
-
-## Default Letta Tools
+# Default Tools
 By default, agents in Letta are created with the following tools:
 
 | Tool                       | Description                                          |
@@ -23,45 +19,11 @@ By default, agents in Letta are created with the following tools:
 Letta also includes a set of pre-made tools designed for multi-agent interaction.
 See [our guide on multi-agent](/guides/agents/multi-agent) for more information.
 
-## Custom Tools
-You can create custom tools in Letta using the Python SDK, as well as via the [ADE tool builder](/guides/ade/usage#tools).
+You can disable the default tools by passing `include_base_tools=False` to the agent creation.
 
-When you define the function for the tool, you must make sure to have a properly formatting docstring so the Letta Server can parse the function schema:
-```python title="python" maxLines=50
-# install letta_client with `pip install letta-client`
-from letta_client import Letta
+# Defining Custom Tools
+You can create custom tools in Letta using the SDKs, as well as via the [ADE tool builder](/guides/ade/usage#tools). See more on defining custom tools [here](/guides/agents/custom-tools).
 
-# create a client to connect to your local Letta Server
-client = Letta(
-  base_url="http://localhost:8283"
-)
-
-# define a function with a docstring
-def roll_dice() -> str:
-    """
-    Simulate the roll of a 20-sided die (d20).
-
-    This function generates a random integer between 1 and 20, inclusive,
-    which represents the outcome of a single roll of a d20.
-
-    Returns:
-        str: The result of the die roll.
-    """
-    import random
-
-    dice_role_outcome = random.randint(1, 20)
-    output_string = f"You rolled a {dice_role_outcome}"
-    return output_string
-
-# create the tool
-tool = client.tools.create_from_function(
-    func=roll_dice
-)
-
-print(f"Created tool {tool.name}")
-```
-
-### Adding tools to agents in the Python SDK
 Once the tool is created, you can add it to an agent by passing the tool name to the `tools` parameter in the agent creation.
 ```python title="python" {9}
 # create a new agent
@@ -72,11 +34,14 @@ agent = client.agents.create(
     ],
     model="openai/gpt-4o-mini",
     embedding="openai/text-embedding-3-small",
-    tool_ids=[tool.id]
+    tools=["my_custom_tool_name"]
 )
 ```
 
-## Tool Environment Variables
+# Tool Execution 
+You can custom the enviornment that your tool runs in (the Python package dependencies and environment variables) by setting a tool execution environment. See more [here](/guides/agents/tool-execution).
+
+# Tool Environment Variables
 You can set agent-scoped environment variables for your tools.
 These environment variables will be accessible in the sandboxed environment that any of the agent tools are run in.
 
@@ -95,46 +60,16 @@ agent = client.agents.create(
     }
 )
 ```
+# Tool Rules
+Tool rules allow you to define graph-like constrains on your tools, such as requiring that a tool terminate agent execution or be followed by another tool.
 
-## External Tool Libraries
+Read more about tool rules [here](/guides/agents/tool-rules).
+
+# External Tool Libraries
 Letta also has early support for adding tools from the external tool library [Composio](https://docs.composio.dev).
 This integrations works by converting the external library tools into Letta tools.
 
 For more information on setting up Composio tools, see our [Composio guide](/guides/agents/composio).
 
-## Excluding Default Tools
-To skip adding default tools when creating a new agent, you can add in `include_base_tools=False` to the agent creation:
-```python title="python" {9}
-# create an agent with no tools
-agent = client.agents.create(
-    memory_blocks=[
-        {"label": "human", "limit": 2000, "value": "Name: Bob"},
-        {"label": "persona", "limit": 2000, "value": "You are a friendly agent"}
-    ],
-    model="openai/gpt-4o-mini",
-    embedding="openai/text-embedding-3-small",
-    include_base_tools=False
-)
-```
-Warning: this will create an agent with no tools, so the agent will have no ability to manage memory or search conversation history.
 
-## Tool Rules
-Tool rules allow you to define graph-like constrains on your tools, such as requiring that a tool terminate agent execution or be followed by another tool.
 
-Read more about tool rules [here](/guides/agents/tool-rules).
-
-## Accessing Agent State
-<Warning>
-Tools that use `agent_state` currently do not work in the ADE live tool tester (they will error when you press "Run"), however if the tool is correct it will work once you attach it to an agent.
-</Warning>
-If you need to directly access the state of an agent inside a tool, you can use the reserved `agent_state` keyword argument, for example:
-```python title="python"
-def get_agent_id(agent_state: "AgentState") -> str:
-    """
-    A custom tool that returns the agent ID
-
-    Returns:
-        str: The agent ID
-    """
-    return agent_state.id
-```
