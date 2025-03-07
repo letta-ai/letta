@@ -242,6 +242,13 @@ export async function makeRequestToSDK(
     }
   }
 
+  if (identitiesPath === '/v1/identities') {
+    // if project_id is not present in the body, add it
+    if (!query.get('project_id')) {
+      query.set('project_id', await getCatchAllProjectId({ organizationId }));
+    }
+  }
+
   if (isOpenAIChatCompletionRequest(options)) {
     const check = await handleMessageRateLimiting({
       organizationId,

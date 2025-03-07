@@ -8,6 +8,7 @@ import type { contracts } from '$web/web-api/contracts';
 import { and, eq, isNull } from 'drizzle-orm';
 import { ApplicationServices } from '@letta-cloud/service-rbac';
 import { deleteRedisData } from '@letta-cloud/service-redis';
+import { AdminService } from '@letta-cloud/sdk-core';
 
 type CreateAPIKeyPayload = ServerInferRequest<
   typeof contracts.apiKeys.createAPIKey
@@ -155,6 +156,10 @@ export async function deleteAPIKey(
         eq(lettaAPIKeys.organizationId, organizationId),
       ),
     );
+
+  await AdminService.deleteUser({
+    userId: existingKey.coreUserId,
+  });
 
   return {
     status: 200,

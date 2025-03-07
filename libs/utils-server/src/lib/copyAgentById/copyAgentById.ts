@@ -34,24 +34,14 @@ export async function copyAgentById(
     baseTemplateId,
   } = options;
 
-  const [baseAgent, agentSources] = await Promise.all([
-    AgentsService.retrieveAgent(
-      {
-        agentId: baseAgentId,
-      },
-      {
-        user_id: lettaAgentsUserId,
-      },
-    ),
-    AgentsService.listAgentSources(
-      {
-        agentId: baseAgentId,
-      },
-      {
-        user_id: lettaAgentsUserId,
-      },
-    ),
-  ]);
+  const baseAgent = await AgentsService.retrieveAgent(
+    {
+      agentId: baseAgentId,
+    },
+    {
+      user_id: lettaAgentsUserId,
+    },
+  );
 
   const agentBody = attachVariablesToTemplates(baseAgent, memoryVariables);
 
@@ -104,7 +94,7 @@ export async function copyAgentById(
   }
 
   await Promise.all(
-    agentSources.map(async (source) => {
+    baseAgent.sources.map(async (source) => {
       if (!source.id || !baseAgent.id) {
         return;
       }
