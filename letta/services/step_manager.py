@@ -33,10 +33,15 @@ class StepManager:
         limit: Optional[int] = 50,
         order: Optional[str] = None,
         model: Optional[str] = None,
+        agent_id: Optional[str] = None,
     ) -> List[PydanticStep]:
         """List all jobs with optional pagination and status filter."""
         with self.session_maker() as session:
-            filter_kwargs = {"organization_id": actor.organization_id, "model": model}
+            filter_kwargs = {"organization_id": actor.organization_id}
+            if model:
+                filter_kwargs["model"] = model
+            if agent_id:
+                filter_kwargs["agent_id"] = agent_id
 
             steps = StepModel.list(
                 db_session=session,
@@ -54,6 +59,7 @@ class StepManager:
     def log_step(
         self,
         actor: PydanticUser,
+        agent_id: str,
         provider_name: str,
         model: str,
         model_endpoint: Optional[str],
@@ -65,6 +71,7 @@ class StepManager:
         step_data = {
             "origin": None,
             "organization_id": actor.organization_id,
+            "agent_id": agent_id,
             "provider_id": provider_id,
             "provider_name": provider_name,
             "model": model,

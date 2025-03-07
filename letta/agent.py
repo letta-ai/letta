@@ -909,6 +909,7 @@ class Agent(BaseAgent):
             # Log step - this must happen before messages are persisted
             step = self.step_manager.log_step(
                 actor=self.user,
+                agent_id=self.agent_state.id,
                 provider_name=self.agent_state.llm_config.model_endpoint_type,
                 model=self.agent_state.llm_config.model,
                 model_endpoint=self.agent_state.llm_config.model_endpoint,

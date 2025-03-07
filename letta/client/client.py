@@ -4,7 +4,6 @@ import time
 from typing import Callable, Dict, Generator, List, Optional, Union
 
 import requests
-from openai.types.chat.chat_completion_message_tool_call import ChatCompletionMessageToolCall as OpenAIToolCall
 
 import letta.utils
 from letta.constants import ADMIN_PREFIX, BASE_MEMORY_TOOLS, BASE_TOOLS, DEFAULT_HUMAN, DEFAULT_PERSONA, FUNCTION_RETURN_CHAR_LIMIT
@@ -29,7 +28,7 @@ from letta.schemas.letta_request import LettaRequest, LettaStreamingRequest
 from letta.schemas.letta_response import LettaResponse, LettaStreamingResponse
 from letta.schemas.llm_config import LLMConfig
 from letta.schemas.memory import ArchivalMemorySummary, ChatMemory, CreateArchivalMemory, Memory, RecallMemorySummary
-from letta.schemas.message import Message, MessageCreate, MessageUpdate
+from letta.schemas.message import Message, MessageCreate
 from letta.schemas.openai.chat_completion_response import UsageStatistics
 from letta.schemas.organization import Organization
 from letta.schemas.passage import Passage

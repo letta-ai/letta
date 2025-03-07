@@ -26,7 +26,7 @@ from letta.schemas.letta_message import (
     ToolReturnMessage,
     UserMessage,
 )
-from letta.schemas.letta_response import LettaResponse, LettaStreamingResponse
+from letta.schemas.letta_response import LettaStreamingResponse
 from letta.schemas.llm_config import LLMConfig
 from letta.schemas.message import MessageCreate
 from letta.schemas.usage import LettaUsageStatistics
