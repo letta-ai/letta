@@ -981,6 +981,7 @@ export const useStepsServiceListStepsKey = 'StepsServiceListSteps';
 export const UseStepsServiceListStepsKeyFn = (
   {
     after,
+    agentId,
     before,
     endDate,
     limit,
@@ -990,6 +991,7 @@ export const UseStepsServiceListStepsKeyFn = (
     userId,
   }: {
     after?: string;
+    agentId?: string;
     before?: string;
     endDate?: string;
     limit?: number;
@@ -1002,7 +1004,7 @@ export const UseStepsServiceListStepsKeyFn = (
 ) => [
   useStepsServiceListStepsKey,
   ...(queryKey ?? [
-    { after, before, endDate, limit, model, order, startDate, userId },
+    { after, agentId, before, endDate, limit, model, order, startDate, userId },
   ]),
 ];
 export type StepsServiceRetrieveStepDefaultResponse = Awaited<

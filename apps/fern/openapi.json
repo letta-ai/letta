@@ -4503,6 +4503,24 @@
               "title": "Model"
             },
             "description": "Filter by the name of the model used for the step"
+          },
+          {
+            "name": "agent_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter by the ID of the agent that performed the step",
+              "title": "Agent Id"
+            },
+            "description": "Filter by the ID of the agent that performed the step"
           }
         ],
         "responses": {
@@ -15671,6 +15689,18 @@
             ],
             "title": "Job Id",
             "description": "The unique identifier of the job that this step belongs to. Only included for async calls."
+          },
+          "agent_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Agent Id",
+            "description": "The ID of the agent that performed the step."
           },
           "provider_name": {
             "anyOf": [

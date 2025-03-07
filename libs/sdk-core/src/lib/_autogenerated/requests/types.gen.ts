@@ -2431,6 +2431,10 @@ export type Step = {
    */
   job_id?: string | null;
   /**
+   * The ID of the agent that performed the step.
+   */
+  agent_id?: string | null;
+  /**
    * The name of the provider used for this step.
    */
   provider_name?: string | null;
@@ -3874,6 +3878,10 @@ export type ListStepsData = {
    * Return steps after this step ID
    */
   after?: string | null;
+  /**
+   * Filter by the ID of the agent that performed the step
+   */
+  agentId?: string | null;
   /**
    * Return steps before this step ID
    */

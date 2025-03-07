@@ -19,7 +19,6 @@ from letta.schemas.letta_message import LettaMessageUnion, LettaMessageUpdateUni
 from letta.schemas.letta_request import LettaRequest, LettaStreamingRequest
 from letta.schemas.letta_response import LettaResponse
 from letta.schemas.memory import ContextWindowOverview, CreateArchivalMemory, Memory
-from letta.schemas.message import Message, MessageUpdate
 from letta.schemas.passage import Passage, PassageUpdate
 from letta.schemas.run import Run
 from letta.schemas.source import Source

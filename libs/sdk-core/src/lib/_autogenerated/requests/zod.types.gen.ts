@@ -3379,6 +3379,14 @@ export const Step = z.object({
       z.undefined(),
     ])
     .optional(),
+  agent_id: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
   provider_name: z
     .union([
       z.string(),
@@ -5705,6 +5713,9 @@ export const get_List_steps = {
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
       model: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      agent_id: z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
     }),

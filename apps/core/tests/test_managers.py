@@ -24,7 +24,7 @@ from letta.schemas.file import FileMetadata as PydanticFileMetadata
 from letta.schemas.identity import IdentityCreate, IdentityProperty, IdentityPropertyType, IdentityType, IdentityUpdate
 from letta.schemas.job import Job as PydanticJob
 from letta.schemas.job import JobUpdate, LettaRequestConfig
-from letta.schemas.letta_message import LettaMessage, UpdateAssistantMessage, UpdateReasoningMessage, UpdateSystemMessage, UpdateUserMessage
+from letta.schemas.letta_message import UpdateAssistantMessage, UpdateReasoningMessage, UpdateSystemMessage, UpdateUserMessage
 from letta.schemas.llm_config import LLMConfig
 from letta.schemas.message import Message as PydanticMessage
 from letta.schemas.message import MessageCreate, MessageUpdate
@@ -3391,13 +3391,14 @@ def test_get_run_messages(server: SyncServer, default_user: PydanticUser, sarah_
 # ======================================================================================================================
 
 
-def test_job_usage_stats_add_and_get(server: SyncServer, default_job, default_user):
+def test_job_usage_stats_add_and_get(server: SyncServer, sarah_agent, default_job, default_user):
     """Test adding and retrieving job usage statistics."""
     job_manager = server.job_manager
     step_manager = server.step_manager
 
     # Add usage statistics
     step_manager.log_step(
+        agent_id=sarah_agent.id,
         provider_name="openai",
         model="gpt-4",
         model_endpoint="https://api.openai.com/v1",
@@ -3441,13 +3442,14 @@ def test_job_usage_stats_get_no_stats(server: SyncServer, default_job, default_u
     assert len(steps) == 0
 
 
-def test_job_usage_stats_add_multiple(server: SyncServer, default_job, default_user):
+def test_job_usage_stats_add_multiple(server: SyncServer, sarah_agent, default_job, default_user):
     """Test adding multiple usage statistics entries for a job."""
     job_manager = server.job_manager
     step_manager = server.step_manager
 
     # Add first usage statistics entry
     step_manager.log_step(
+        agent_id=sarah_agent.id,
         provider_name="openai",
         model="gpt-4",
         model_endpoint="https://api.openai.com/v1",
@@ -3463,6 +3465,7 @@ def test_job_usage_stats_add_multiple(server: SyncServer, default_job, default_u
 
     # Add second usage statistics entry
     step_manager.log_step(
+        agent_id=sarah_agent.id,
         provider_name="openai",
         model="gpt-4",
         model_endpoint="https://api.openai.com/v1",
@@ -3489,6 +3492,10 @@ def test_job_usage_stats_add_multiple(server: SyncServer, default_job, default_u
     steps = job_manager.get_job_steps(job_id=default_job.id, actor=default_user)
     assert len(steps) == 2
 
+    # get agent steps
+    steps = step_manager.list_steps(agent_id=sarah_agent.id, actor=default_user)
+    assert len(steps) == 2
+
 
 def test_job_usage_stats_get_nonexistent_job(server: SyncServer, default_user):
     """Test getting usage statistics for a nonexistent job."""
@@ -3498,12 +3505,13 @@ def test_job_usage_stats_get_nonexistent_job(server: SyncServer, default_user):
         job_manager.get_job_usage(job_id="nonexistent_job", actor=default_user)
 
 
-def test_job_usage_stats_add_nonexistent_job(server: SyncServer, default_user):
+def test_job_usage_stats_add_nonexistent_job(server: SyncServer, sarah_agent, default_user):
     """Test adding usage statistics for a nonexistent job."""
     step_manager = server.step_manager
 
     with pytest.raises(NoResultFound):
         step_manager.log_step(
+            agent_id=sarah_agent.id,
             provider_name="openai",
             model="gpt-4",
             model_endpoint="https://api.openai.com/v1",

@@ -1,7 +1,6 @@
 import json
 from typing import List, Optional
 
-from openai.types.chat.chat_completion_message_tool_call import ChatCompletionMessageToolCall as OpenAIToolCall
 from sqlalchemy import and_, or_
 
 from letta.log import get_logger

@@ -6189,6 +6189,18 @@ export const $Step = {
       description:
         'The unique identifier of the job that this step belongs to. Only included for async calls.',
     },
+    agent_id: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Agent Id',
+      description: 'The ID of the agent that performed the step.',
+    },
     provider_name: {
       anyOf: [
         {

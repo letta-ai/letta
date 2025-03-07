@@ -1570,6 +1570,7 @@ export const useRunsServiceListRunStepsSuspense = <
  * @param data.startDate Return steps after this ISO datetime (e.g. "2025-01-29T15:01:19-08:00")
  * @param data.endDate Return steps before this ISO datetime (e.g. "2025-01-29T15:01:19-08:00")
  * @param data.model Filter by the name of the model used for the step
+ * @param data.agentId Filter by the ID of the agent that performed the step
  * @param data.userId
  * @returns Step Successful Response
  * @throws ApiError
@@ -1581,6 +1582,7 @@ export const useStepsServiceListStepsSuspense = <
 >(
   {
     after,
+    agentId,
     before,
     endDate,
     limit,
@@ -1590,6 +1592,7 @@ export const useStepsServiceListStepsSuspense = <
     userId,
   }: {
     after?: string;
+    agentId?: string;
     before?: string;
     endDate?: string;
     limit?: number;
@@ -1603,12 +1606,23 @@ export const useStepsServiceListStepsSuspense = <
 ) =>
   useSuspenseQuery<TData, TError>({
     queryKey: Common.UseStepsServiceListStepsKeyFn(
-      { after, before, endDate, limit, model, order, startDate, userId },
+      {
+        after,
+        agentId,
+        before,
+        endDate,
+        limit,
+        model,
+        order,
+        startDate,
+        userId,
+      },
       queryKey,
     ),
     queryFn: () =>
       StepsService.listSteps({
         after,
+        agentId,
         before,
         endDate,
         limit,
