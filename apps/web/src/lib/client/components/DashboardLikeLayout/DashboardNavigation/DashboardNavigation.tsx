@@ -49,6 +49,7 @@ import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as Sentry from '@sentry/browser';
 import { ApplicationServices } from '@letta-cloud/service-rbac';
+import { CloudAccessCodeDialog } from '$web/client/components/DashboardLikeLayout/DashboardNavigation/CloudAccessCodeDialog/CloudAccessCodeDialog';
 
 interface NavButtonProps {
   href: string;
@@ -679,11 +680,15 @@ export function DashboardHeaderNavigation(
   const t = useTranslations(
     'components/DashboardLikeLayout/DashboardNavigation',
   );
+  const currentUser = useCurrentUser();
 
   return (
     <HiddenOnMobile>
       <HStack gap="small" align="center">
         {preItems}
+        {currentUser && !currentUser.hasCloudAccess && (
+          <CloudAccessCodeDialog />
+        )}
         <Button
           size="small"
           color="tertiary"

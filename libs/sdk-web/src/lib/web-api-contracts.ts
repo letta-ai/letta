@@ -71,6 +71,7 @@ import {
   launchLinkQueryKeys,
 } from './public/launchLinkContracts';
 import { modelContracts, modelQueryClientKeys } from './public/modelsContracts';
+import { cloudAccessCodeContract } from './public/cloudAccessCodeContract';
 
 export const contracts = {
   user: userContract,
@@ -91,6 +92,7 @@ export const contracts = {
   sso: ssoContracts,
   launchLinks: launchLinkContracts,
   models: modelContracts,
+  cloudAccessCode: cloudAccessCodeContract,
   admin: {
     usage: adminUsageContracts,
     toolMetadata: adminToolMetadataContracts,

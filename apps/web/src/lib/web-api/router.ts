@@ -23,6 +23,7 @@ import { sharedAgentChatsRoutes } from '$web/web-api/shared-agent-chats/sharedAg
 import { ssoRoutes } from '$web/web-api/sso/ssoRoutes';
 import { launchLinkRoutes } from '$web/web-api/launch-links/launchLinksRoutes';
 import { modelsRouter } from '$web/web-api/models/modelRoutes';
+import { cloudAccessCodeRouter } from '$web/web-api/cloud-access-code/cloudAccessCodeRouter';
 
 export const router = {
   user: userRouter,
@@ -43,6 +44,7 @@ export const router = {
   sso: ssoRoutes,
   launchLinks: launchLinkRoutes,
   models: modelsRouter,
+  cloudAccessCode: cloudAccessCodeRouter,
   admin: {
     usage: adminUsageRouter,
     toolMetadata: adminToolMetadataRouter,
