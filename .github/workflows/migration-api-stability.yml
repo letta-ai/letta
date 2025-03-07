@@ -139,7 +139,7 @@ jobs:
           psql -h localhost -U postgres -d postgres -c 'CREATE EXTENSION vector'
           poetry run alembic upgrade head
       - name: Load cached venv
-        id: cached-poetry-dependencies
+        id: branch-cached-poetry-dependencies
         uses: actions/cache@v4
         with:
           path: branch-code/apps/core/.venv
@@ -149,7 +149,7 @@ jobs:
           restore-keys: |
             venv-${{ runner.os }}-${{ steps.setup-python.outputs.python-version }}-${{ hashFiles('branch-code/**/poetry.lock') }}
       - name: Install poetry dependencies on branch code
-        if: steps.cached-poetry-dependencies.outputs.cache-hit != 'true'
+        if: steps.branch-cached-poetry-dependencies.outputs.cache-hit != 'true'
         shell: bash
         working-directory: branch-code/apps/core
         run: poetry install --no-interaction --no-root ${{ inputs.install-args || '-E dev -E postgres -E external-tools -E tests -E cloud-tool-sandbox' }}
