@@ -5,6 +5,9 @@ import type { MessageCreate } from '@letta-cloud/sdk-core';
 import { RESTRICTED_ROUTE_BASE_PATHS } from '@letta-cloud/sdk-core';
 import * as Sentry from '@sentry/nextjs';
 import { handleMessageRateLimiting } from '@letta-cloud/utils-server';
+import { db, organizationPreferences } from '@letta-cloud/service-database';
+import { eq } from 'drizzle-orm';
+import { get } from 'lodash-es';
 
 interface RequestOptions {
   pathname: string;
@@ -179,6 +182,33 @@ function isStreamMessageRequest(options: RequestOptions) {
   return regex.test(options.pathname);
 }
 
+interface GetCatchAllProjectId {
+  organizationId: string;
+}
+
+async function getCatchAllProjectId(args: GetCatchAllProjectId) {
+  const { organizationId } = args;
+
+  const orgPrefResponse = await db.query.organizationPreferences.findFirst({
+    where: eq(organizationPreferences.organizationId, organizationId),
+    columns: {
+      defaultProjectId: true,
+    },
+  });
+
+  if (!orgPrefResponse?.defaultProjectId) {
+    Sentry.captureMessage(
+      `Organization preferences not found for organization ${organizationId}`,
+    );
+
+    throw new Error('Organization preferences not found');
+  }
+
+  return orgPrefResponse.defaultProjectId;
+}
+
+const identitiesPath = '/v1/identities';
+
 export async function makeRequestToSDK(
   options: RequestOptions,
 ): Promise<Response> {
@@ -203,6 +233,13 @@ export async function makeRequestToSDK(
         'Content-Type': 'application/json',
       },
     });
+  }
+
+  if (pathname.startsWith(identitiesPath) && method === 'POST') {
+    // if project_id is not present in the body, add it
+    if (!get(body, 'project_id')) {
+      body.project_id = await getCatchAllProjectId({ organizationId });
+    }
   }
 
   if (isOpenAIChatCompletionRequest(options)) {
