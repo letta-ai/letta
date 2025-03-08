@@ -78,6 +78,9 @@ export async function copyAgentById(
           ...toolVariables,
         },
         tags,
+        source_ids: baseAgent.sources
+          .map((source) => source.id || '')
+          .filter(Boolean),
         memory_blocks: agentBody.memory_blocks.map((block) => {
           return {
             limit: block.limit,
