@@ -51,16 +51,15 @@ function EditMemoryForm(props: EditMemoryFormProps) {
             disabled={!canUpdateAgent}
             variant="secondary"
             rightOfLabelContent={
-              isUpdating ? (
-                <Spinner size="xsmall" />
-              ) : (
+              <HStack align="center">
+                {isUpdating && <Spinner size="xsmall" />}
                 <Typography variant="body2" color="muted">
                   {t('EditMemoryForm.characterLimit', {
                     count: value.length,
                     limit: memory.limit,
                   })}
                 </Typography>
-              )
+              </HStack>
             }
             autosize={false}
             flex
