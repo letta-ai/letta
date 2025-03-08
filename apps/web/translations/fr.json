@@ -515,7 +515,7 @@
     }
   },
   "ADE/EditDataSourcesPanel": {
-    "mobileTitle": "Sources",
+    "mobileTitle": "Data Sources",
     "infoTooltip": "Fichiers externes chargés dans la mémoire d'archives de l'agent pour RAG",
     "AttachDataSourceView": {
       "notCompatible": {

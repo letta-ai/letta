@@ -16,7 +16,7 @@
       "title": "Embedding Config"
     },
     "SystemPrompt": {
-      "title": "System Prompt"
+      "title": "System Instructions"
     },
     "PromptTemplate": {
       "title": "Prompt Template"

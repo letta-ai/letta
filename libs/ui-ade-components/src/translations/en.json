@@ -132,7 +132,7 @@
       "save": "Update tool variables",
       "label": "Edit tool variables",
       "details": {
-        "cloud": "Tool variables are exposed in tool calls. Agent-scoped tool variables superceed global tool variables. To configure your global tool variables, modify them in your <link>organization settings</link>",
+        "cloud": "Tool variables are exposed in tool calls. Agent-scoped tool variables superceed global tool variables. To configure your global tool variables, modify them in your <link>organization settings</link>.",
         "local": "Tool variables are exposed in tool calls. Agent-scoped tool variables superceed global tool variables set in your computer's environment variables."
       }
     }
@@ -169,7 +169,7 @@
     }
   },
   "ADE/EditDataSourcesPanel": {
-    "mobileTitle": "Sources",
+    "mobileTitle": "Data Sources",
     "infoTooltip": "External files loaded into the agent’s archival memory for RAG",
     "AttachDataSourceView": {
       "notCompatible": {
@@ -238,7 +238,7 @@
       "title": "Upload a file",
       "confirm": "Upload"
     },
-    "title": "Sources ({count})",
+    "title": "Data Sources ({count})",
     "errorDetaching": "There was an error detaching this data source, please try again or contact support.",
     "editName": {
       "label": "Data source name",
@@ -314,7 +314,7 @@
     },
     "mobileTitle": "{baseName}",
     "SystemPromptEditor": {
-      "trigger": "Edit System Prompt",
+      "trigger": "Edit System Instructions",
       "characterCount": "{count} CHARS",
       "updatedAt": "Last updated on {date}",
       "tooltip": "Configures the behavior of the agent, and placed in the context window",
@@ -322,8 +322,8 @@
       "error": "There was an error while updating the system prompt, please try again or contact support.",
       "expand": "Show full system prompt editor",
       "dialog": {
-        "title": "Update System Prompt",
-        "label": "System Prompt",
+        "title": "Update System Instructions",
+        "label": "System Instructions",
         "save": "Update",
         "info": "The system instructions are not editable by the agent itself (unlike core memory).",
         "characterCount": "{count} characters"
@@ -341,7 +341,7 @@
     },
     "title": "{baseName} Settings",
     "modelInput": {
-      "tooltip": "The LLM backend for the {baseName}",
+      "tooltip": "The model (LLM) backend for the agent",
       "recommended": "Recommended models",
       "others": "All available models",
       "label": "Model"
@@ -438,10 +438,10 @@
       "title": "Update Core Memory",
       "newMemory": "Add memory block"
     },
-    "systemPrompt": "System Prompt",
+    "systemPrompt": "System Instructions",
     "EditSystemPrompt": {
-      "title": "System Prompt",
-      "label": "Edit System Prompt"
+      "title": "System Instructions",
+      "label": "Edit System Instructions"
     },
     "expandContent": "Full Screen",
     "MemorySettingsDialog": {
