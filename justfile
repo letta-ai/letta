@@ -329,12 +329,14 @@ web:
 
 ready:
   @echo "🚧 Updating your local environment..."
-  npx nx reset
   npm install
+  npx nx reset
   npm run core:install
   @echo "Migrating the database..."
   npm run web:database:migrate
   npm run core:database:migrate
+
+  just setup-cloud-api
 
 
 start-services:
