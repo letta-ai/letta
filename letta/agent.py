@@ -29,6 +29,7 @@ from letta.helpers.json_helpers import json_dumps, json_loads
 from letta.interface import AgentInterface
 from letta.llm_api.helpers import calculate_summarizer_cutoff, get_token_counts_for_messages, is_context_overflow_error
 from letta.llm_api.llm_api_tools import create
+from letta.llm_api.llm_client import LLMClient
 from letta.local_llm.utils import num_tokens_from_functions, num_tokens_from_messages
 from letta.log import get_logger
 from letta.memory import summarize_messages
@@ -356,19 +357,38 @@ class Agent(BaseAgent):
         for attempt in range(1, empty_response_retry_limit + 1):
             try:
                 log_telemetry(self.logger, "_get_ai_reply create start")
-                response = create(
+                # New LLM client flow
+                llm_client = LLMClient.create(
+                    agent_id=self.agent_state.id,
                     llm_config=self.agent_state.llm_config,
-                    messages=message_sequence,
-                    user_id=self.agent_state.created_by_id,
-                    functions=allowed_functions,
-                    # functions_python=self.functions_python, do we need this?
-                    function_call=function_call,
-                    first_message=first_message,
-                    force_tool_call=force_tool_call,
-                    stream=stream,
-                    stream_interface=self.interface,
                     put_inner_thoughts_first=put_inner_thoughts_first,
+                    actor_id=self.agent_state.created_by_id,
                 )
+
+                if llm_client and not stream:
+                    response = llm_client.send_llm_request(
+                        messages=message_sequence,
+                        tools=allowed_functions,
+                        tool_call=function_call,
+                        stream=stream,
+                        first_message=first_message,
+                        force_tool_call=force_tool_call,
+                    )
+                else:
+                    # Fallback to existing flow
+                    response = create(
+                        llm_config=self.agent_state.llm_config,
+                        messages=message_sequence,
+                        user_id=self.agent_state.created_by_id,
+                        functions=allowed_functions,
+                        # functions_python=self.functions_python, do we need this?
+                        function_call=function_call,
+                        first_message=first_message,
+                        force_tool_call=force_tool_call,
+                        stream=stream,
+                        stream_interface=self.interface,
+                        put_inner_thoughts_first=put_inner_thoughts_first,
+                    )
                 log_telemetry(self.logger, "_get_ai_reply create finish")
 
                 # These bottom two are retryable
@@ -632,7 +652,7 @@ class Agent(BaseAgent):
                     function_args,
                     function_response,
                     messages,
-                    [tool_return] if tool_return else None,
+                    [tool_return],
                     include_function_failed_message=True,
                 )
                 return messages, False, True  # force a heartbeat to allow agent to handle error
@@ -659,7 +679,7 @@ class Agent(BaseAgent):
                         "content": function_response,
                         "tool_call_id": tool_call_id,
                     },
-                    tool_returns=[tool_return] if tool_return else None,
+                    tool_returns=[tool_return] if sandbox_run_result else None,
                 )
             )  # extend conversation with function response
             self.interface.function_message(f"Ran {function_name}({function_args})", msg_obj=messages[-1])
