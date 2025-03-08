@@ -392,6 +392,10 @@ async function deleteAgent(
           'Cannot delete agent template via API, please delete in the UI',
       },
     };
+  } else if (agentTemplate) {
+    await db
+      .delete(agentTemplates)
+      .where(eq(agentTemplates.id, agentTemplate.id));
   }
 
   await AgentsService.deleteAgent(
