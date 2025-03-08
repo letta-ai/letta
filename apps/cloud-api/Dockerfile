@@ -5,12 +5,14 @@ FROM base AS deps
 RUN apk add --no-cache libc6-compat
 WORKDIR /app
 
-# Copy package.json and lock fil
-COPY apps/cloud-api/package.json apps/cloud-api/package-lock.json ./
+# Copy necessary package files
+COPY package.json package-lock.json ./
+COPY apps/cloud-api/package.json ./apps/cloud-api/
 
-# Install dependencies
-RUN npm ci
-
+# Install only production dependencies
+RUN npm ci --production --ignore-scripts --legacy-peer-deps
+# Install specific packages needed for the build
+RUN npm install --legacy-peer-deps @ts-rest/express@3.51.0 @ts-rest/react-query@3.51.0 lodash jsonrepair axios @tanstack/react-query
 
 # Build the application
 FROM base AS builder
@@ -20,8 +22,8 @@ COPY . .
 
 ENV NODE_ENV=production
 
-## Build
-RUN npm run cloud-api:build
+# Build with external modules
+RUN mkdir -p dist/apps/cloud-api && npx esbuild apps/cloud-api/src/main.ts --bundle --platform=node --outfile=dist/apps/cloud-api/main.js --external:@ts-rest/express --external:@ts-rest/react-query/v5 --external:lodash --external:jsonrepair --external:axios --external:@tanstack/react-query --external:unique-names-generator
 
 # Production image, copy all the files and run next
 FROM base AS cloud-api
@@ -29,10 +31,8 @@ WORKDIR /app
 
 ENV NODE_ENV=production
 
-
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nodeserver
-
 
 RUN mkdir -p /app
 RUN chown -R nodeserver:nodejs /app

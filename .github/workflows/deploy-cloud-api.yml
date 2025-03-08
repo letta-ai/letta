@@ -12,6 +12,7 @@ env:
   NEXT_PUBLIC_CURRENT_HOST: https://api.letta.com
   REDIS_HOST: "10.167.199.148"
   REDIS_PORT: "6379"
+  PORT: "8080"
   REGION: us-central1
   GCP_SA_EMAIL: github-actions-service-account@memgpt-428419.iam.gserviceaccount.com
 

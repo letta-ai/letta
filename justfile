@@ -190,6 +190,7 @@ cloud-api: setup-cloud-api
     @echo "🚧 Running the cloud API..."
     npm run cloud-api:dev
 
+# Trigger the cloud API deployment workflow (defaults to current branch if none specified)
 trigger-cloud-api-deploy branch="" deploy_message="":
     #!/usr/bin/env bash
     if [ -z "{{branch}}" ]; then
@@ -204,9 +205,34 @@ build-cloud-api:
     @echo "🚧 Building cloud API Docker image with tag: {{TAG}}..."
     docker buildx build --platform linux/amd64 --target cloud-api -t {{DOCKER_REGISTRY}}/cloud-api:{{TAG}} . --load --file apps/cloud-api/Dockerfile
 
-deploy-cloud-api:
+push-cloud-api:
     @echo "🚀 Pushing Docker images to registry with tag: {{TAG}}..."
     docker push {{DOCKER_REGISTRY}}/cloud-api:{{TAG}}
+
+# Deploy the cloud API Helm chart
+deploy-cloud-api: push-cloud-api
+    @echo "🚧 Deploying cloud API Helm chart..."
+    kubectl delete job cloud-api-migrations --ignore-not-found || true
+    npm run slack-bot-says "Deploying cloud API service with tag: {{TAG}}..."
+    helm upgrade --install cloud-api {{HELM_CHARTS_DIR}}/cloud-api \
+        --set image.repository={{DOCKER_REGISTRY}}/cloud-api \
+        --set image.tag={{TAG}} \
+        --set-string "podAnnotations.kubectl\.kubernetes\.io/restartedAt"="$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+        --set env.LETTA_AGENTS_ENDPOINT="${LETTA_AGENTS_ENDPOINT}" \
+        --set env.HOST="0.0.0.0" \
+        --set env.PORT="8080" \
+        --set service.port=80 \
+        --set service.type=LoadBalancer \
+        --set ingress.enabled=true \
+        --set ingress.hosts[0].host=api.letta.com \
+        --set "ingress.hosts[0].paths[0].path=/(.*)" \
+        --set livenessProbe.httpGet.path="/" \
+        --set livenessProbe.httpGet.port=8080 \
+        --set readinessProbe.httpGet.path="/" \
+        --set readinessProbe.httpGet.port=8080
+
+    npm run slack-bot-says "Successfully deployed cloud API service with tag: {{TAG}}."
+    
 
 undertaker:
     @echo "🚧 Running the undertaker..."
