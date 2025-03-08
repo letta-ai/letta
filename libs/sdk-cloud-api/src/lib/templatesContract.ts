@@ -36,6 +36,10 @@ const createAgentsFromTemplate = c.mutation({
       .record(z.string())
       .optional()
       .openapi({ description: 'The tool variables to assign to the agent' }),
+    identity_ids: z
+      .array(z.string())
+      .optional()
+      .openapi({ description: 'The identity ids to assign to the agent' }),
   }),
   responses: {
     201: z.object({

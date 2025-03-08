@@ -167,6 +167,7 @@ async function createAgent(
         body: {
           tags: agent.tags || [],
           agent_name: agent.name,
+          identity_ids: agent.identity_ids || [],
           memory_variables: memory_variables || {},
           tool_variables: agent.tool_exec_environment_variables || {},
         },

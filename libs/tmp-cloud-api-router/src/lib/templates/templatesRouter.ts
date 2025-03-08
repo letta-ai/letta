@@ -27,7 +27,8 @@ async function createAgentsFromTemplate(
     context,
   );
   const { template_version } = req.params;
-  const { memory_variables, tool_variables, agent_name, tags } = req.body;
+  const { memory_variables, identity_ids, tool_variables, agent_name, tags } =
+    req.body;
 
   // when template creation on agents is deprecated, we can remove this
   // const project = await db.query.projects.findFirst({
@@ -64,6 +65,7 @@ async function createAgentsFromTemplate(
     {
       name: agent_name,
       tags,
+      identityIds: identity_ids,
       memoryVariables: memory_variables,
       toolVariables: tool_variables,
       projectId: deployedAgentTemplate.projectId,

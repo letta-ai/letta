@@ -5708,6 +5708,13 @@
                       "type": "string"
                     },
                     "description": "The tool variables to assign to the agent"
+                  },
+                  "identity_ids": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    },
+                    "description": "The identity ids to assign to the agent"
                   }
                 }
               }

@@ -14,6 +14,7 @@ interface CopyAgentByIdOptions {
   toolVariables?: Record<string, string>;
   tags?: string[];
   templateVersionId?: string;
+  identityIds?: string[];
   baseTemplateId?: string;
   projectId?: string;
   name?: string;
@@ -31,6 +32,7 @@ export async function copyAgentById(
     toolVariables,
     projectId,
     templateVersionId,
+    identityIds,
     baseTemplateId,
   } = options;
 
@@ -60,6 +62,7 @@ export async function copyAgentById(
         ...lodash.omit(baseAgent, omittedFieldsOnCopy),
         project_id: projectId,
         template_id: templateVersionId,
+        identity_ids: identityIds,
         base_template_id: baseTemplateId,
         tool_ids: agentBody.tool_ids,
         name:
