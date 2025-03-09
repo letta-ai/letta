@@ -501,6 +501,7 @@ function AgentResetMessagesDialog() {
   });
 
   const { id: agentId } = useCurrentSimulatedAgent();
+  const setMessagesInFlightCache = useSetAtom(messagesInFlightCacheAtom);
 
   const {
     mutate: resetMessages,
@@ -509,36 +510,24 @@ function AgentResetMessagesDialog() {
   } = useAgentsServiceResetMessages({
     onSuccess: () => {
       toast.success(t('AgentResetMessagesDialog.success'));
-      setIsOpen(false);
       form.reset();
       reset();
+      setMessagesInFlightCache({});
+      setIsOpen(false);
     },
     onError: () => {
       toast.error(t('AgentResetMessagesDialog.error'));
     },
   });
 
-  const setMessagesInFlightCache = useSetAtom(messagesInFlightCacheAtom);
-
   const handleResetMessages = useCallback(
     (values: AgentResetMessagesPayload) => {
-      resetMessages(
-        {
-          agentId,
-          addDefaultInitialMessages: values.addDefaultInitialMessages,
-        },
-        {
-          onSuccess: () => {
-            setIsOpen(false);
-
-            setMessagesInFlightCache({});
-
-            window.location.reload();
-          },
-        },
-      );
+      resetMessages({
+        agentId,
+        addDefaultInitialMessages: values.addDefaultInitialMessages,
+      });
     },
-    [agentId, resetMessages, setMessagesInFlightCache],
+    [agentId, resetMessages],
   );
 
   return (

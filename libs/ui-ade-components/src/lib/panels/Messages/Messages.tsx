@@ -593,7 +593,7 @@ export function Messages(props: MessagesProps) {
       return [];
     }
 
-    const anIdFromMessagesInFlight = messagesInFlight[agentId]?.[1]?.id;
+    const anIdFromMessagesInFlight = messagesInFlight?.[agentId]?.[1]?.id;
     const firstPage = data.pages[0] || [];
 
     const firstPageHasAnIdFromMessagesInFlight = firstPage.some(

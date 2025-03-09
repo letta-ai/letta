@@ -328,7 +328,7 @@ async function getAgentById(
     }),
   ]);
 
-  if (agentTemplate) {
+  if (agentTemplate && getContextDataHack(req, context).source !== 'web') {
     return {
       status: 400,
       body: 'This agentId corresponds to a template, please edit this template from the ADE',
