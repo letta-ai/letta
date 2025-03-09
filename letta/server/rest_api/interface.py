@@ -918,13 +918,9 @@ class StreamingServerInterface(AgentChunkStreamingInterface):
             # skip if there's a finish
             return None
         else:
-            # Example case that would trigger here:
-            # id='chatcmpl-AKtUvREgRRvgTW6n8ZafiKuV0mxhQ'
-            # choices=[ChunkChoice(finish_reason=None, index=0, delta=MessageDelta(content=None, tool_calls=None, function_call=None), logprobs=None)]
-            # created=datetime.datetime(2024, 10, 21, 20, 40, 57, tzinfo=TzInfo(UTC))
-            # model='gpt-4o-mini-2024-07-18'
-            # object='chat.completion.chunk'
-            warnings.warn(f"Couldn't find delta in chunk: {chunk}")
+            # Only warn for non-Claude models since Claude commonly has empty first chunks
+            if not chunk.model.startswith("claude-"):
+                warnings.warn(f"Couldn't find delta in chunk: {chunk}")
             return None
 
         return processed_chunk
