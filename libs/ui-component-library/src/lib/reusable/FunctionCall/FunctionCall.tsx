@@ -1,30 +1,34 @@
+'use client';
 import * as React from 'react';
 import { VStack } from '../../framing/VStack/VStack';
 import { HStack } from '../../framing/HStack/HStack';
 import {
-  CheckIcon,
+  CheckCircleFilledIcon,
   ChevronDownIcon,
   ChevronRightIcon,
-  TerminalIcon,
+  FunctionIcon,
   WarningIcon,
 } from '../../icons';
 import { Typography } from '../../core/Typography/Typography';
 import { RawCodeEditor } from '../../core/Code/Code';
 import { useTranslations } from '@letta-cloud/translations';
 import { Spinner } from '../../core/Spinner/Spinner';
-import { useCallback, useMemo } from 'react';
-import { atom, useAtom } from 'jotai';
+import { useCallback, useMemo, useState } from 'react';
+import { useAtom } from 'jotai';
+import { Badge } from '../../core/Badge/Badge';
+import type { ToolReturnMessageSchemaType } from '@letta-cloud/sdk-core';
+import { TabGroup } from '../../core/TabGroup/TabGroup';
+import { functionCallOpenStatusAtom } from './functionCallOpenStatusAtom';
 
 interface FunctionCallProps {
   name: string;
   inputs: string;
-  response?: string;
+  response?: ToolReturnMessageSchemaType;
   status?: string;
   id: string;
 }
 
-// make sure the open state is stored in an atom, as this component gets refreshed and can lose it's state
-const functionCallOpenStatusAtom = atom<Record<string, boolean>>();
+type ResponseViews = 'response' | 'stderr' | 'stdout';
 
 export function FunctionCall(props: FunctionCallProps) {
   const { id, name, inputs, response, status } = props;
@@ -41,7 +45,7 @@ export function FunctionCall(props: FunctionCallProps) {
   const t = useTranslations('ui-component-library/FunctionCall');
 
   const statusMessage = useMemo(() => {
-    if (!response) {
+    if (!response?.tool_return) {
       return t('isExecuting');
     }
 
@@ -50,10 +54,10 @@ export function FunctionCall(props: FunctionCallProps) {
     }
 
     return t('error');
-  }, [response, status, t]);
+  }, [response?.tool_return, status, t]);
 
   const statusColor = useMemo(() => {
-    if (!response) {
+    if (!response?.tool_return) {
       return 'warning';
     }
 
@@ -62,36 +66,51 @@ export function FunctionCall(props: FunctionCallProps) {
     }
 
     return 'destructive';
-  }, [response, status]);
+  }, [response?.tool_return, status]);
 
   const statusIcon = useMemo(() => {
-    if (!response) {
+    if (!response?.tool_return) {
       return <Spinner size="small" />;
     }
 
     if (status === 'success') {
-      return <CheckIcon size="small" />;
+      return <CheckCircleFilledIcon size="small" />;
     }
 
     return <WarningIcon />;
-  }, [response, status]);
+  }, [response?.tool_return, status]);
+
+  const [responseView, setResponseView] = useState<ResponseViews>('response');
+
+  const responseData = useMemo(() => {
+    switch (responseView) {
+      case 'response':
+        return response?.tool_return;
+      case 'stdout':
+        return response?.stdout?.join('\n');
+      case 'stderr':
+        return response?.stderr?.join('\n');
+
+      default:
+        return null;
+    }
+  }, [response, responseView]);
 
   return (
     <details
-      className="bg-background w-full"
+      className="w-full"
       open={open}
       onClick={(e) => {
         e.preventDefault();
         toggleOpen();
       }}
     >
-      <HStack as="summary">
-        <HStack className="h-[40px]" gap={false}>
+      <HStack gap={false} as="summary">
+        <HStack align="center" className="h-[24px]" gap="medium">
           <HStack
             gap="large"
             align="center"
-            color="background-grey"
-            className="px-2 pr-3 py-2 cursor-pointer"
+            className="px-2 pr-3 py-1 bg-border cursor-pointer"
           >
             <HStack gap="small">
               {!open ? (
@@ -99,33 +118,32 @@ export function FunctionCall(props: FunctionCallProps) {
               ) : (
                 <ChevronDownIcon size="small" />
               )}
-              <TerminalIcon size="small" />
-              <Typography bold variant="body">
+              <FunctionIcon size="small" />
+              <Typography bold variant="body3">
                 {name}
               </Typography>
             </HStack>
-          </HStack>
-          <HStack
-            color={statusColor}
-            align="center"
-            justify="center"
-            className="w-[40px] h-[40px]"
-          >
-            <div className="sr-only">{statusMessage}</div>
-            {statusIcon}
+            <Badge
+              preIcon={statusIcon}
+              content={statusMessage}
+              variant={statusColor}
+            />
           </HStack>
         </HStack>
       </HStack>
       <VStack color="background-grey" border gap={false}>
         <VStack gap={false}>
-          <VStack paddingX="medium" paddingTop="small">
-            <Typography variant="body2" bold>
-              {t('request')}
-            </Typography>
+          <VStack
+            borderBottom
+            paddingX="medium"
+            paddingBottom="xsmall"
+            paddingTop="medium"
+          >
+            <Typography variant="body3">{t('request')}</Typography>
           </VStack>
           <RawCodeEditor
             hideLabel
-            color="background-grey"
+            color="background"
             variant="minimal"
             fullWidth
             showLineNumbers={false}
@@ -137,22 +155,56 @@ export function FunctionCall(props: FunctionCallProps) {
         </VStack>
         {response && (
           <VStack borderTop gap={false}>
-            <VStack paddingX="medium" paddingTop="small">
-              <Typography variant="body2" bold>
-                {t('response')}
-              </Typography>
+            <VStack
+              paddingTop="xsmall"
+              onClick={(e) => {
+                e.stopPropagation();
+                e.preventDefault();
+              }}
+            >
+              <TabGroup
+                size="xsmall"
+                extendBorder
+                value={responseView}
+                onValueChange={(value) => {
+                  if (!value) return;
+                  setResponseView(value as ResponseViews);
+                }}
+                items={[
+                  {
+                    label: t('response'),
+                    value: 'response',
+                  },
+                  {
+                    label: 'stdout',
+                    value: 'stdout',
+                  },
+                  {
+                    label: 'stderr',
+                    value: 'stderr',
+                  },
+                ]}
+              />
             </VStack>
-            <RawCodeEditor
-              hideLabel
-              color="background-grey"
-              variant="minimal"
-              fullWidth
-              label=""
-              language="javascript"
-              showLineNumbers={false}
-              fontSize="small"
-              code={response}
-            />
+            {responseData ? (
+              <RawCodeEditor
+                hideLabel
+                color="background"
+                variant="minimal"
+                fullWidth
+                label=""
+                language="javascript"
+                showLineNumbers={false}
+                fontSize="small"
+                code={responseData}
+              />
+            ) : (
+              <HStack padding="small">
+                <Typography italic variant="body3">
+                  {t('empty')}
+                </Typography>
+              </HStack>
+            )}
           </VStack>
         )}
       </VStack>

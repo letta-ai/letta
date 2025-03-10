@@ -76,6 +76,10 @@ export const ToolReturnMessageSchema = z.object({
   stderr: z.array(z.string()).optional(),
 });
 
+export type ToolReturnMessageSchemaType = z.infer<
+  typeof ToolReturnMessageSchema
+>;
+
 export const AgentMessageSchema = z.discriminatedUnion('message_type', [
   ToolReturnMessageSchema,
   ToolCallMessageSchema,

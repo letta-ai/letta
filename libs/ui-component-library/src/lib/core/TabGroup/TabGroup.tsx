@@ -62,6 +62,9 @@ export function TabGroup(props: TabGroupProps) {
     <Tabs.Root
       className={cn(fullWidth || extendBorder ? 'w-full' : '')}
       value={value}
+      onClick={(e) => {
+        e.stopPropagation();
+      }}
       defaultValue={defaultValue}
       onValueChange={onValueChange}
     >
@@ -72,6 +75,9 @@ export function TabGroup(props: TabGroupProps) {
               'px-4 h-[28px] flex items-center gap-2 flex-row ',
               listVariant({ variant, size, fullWidth }),
             )}
+            onClick={(e) => {
+              e.stopPropagation();
+            }}
             key={item.value}
             value={item.value}
             data-testid={`tab-item:${item.value}`}

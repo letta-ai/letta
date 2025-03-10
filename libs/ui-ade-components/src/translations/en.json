@@ -491,6 +491,7 @@
   "ui-component-library/FunctionCall": {
     "isExecuting": "Executing",
     "error": "Error",
+    "empty": "None",
     "success": "Success",
     "request": "Request",
     "response": "Response"

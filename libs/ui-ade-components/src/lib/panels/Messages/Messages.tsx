@@ -26,7 +26,10 @@ import {
   BlockQuote,
   InnerMonologueIcon,
 } from '@letta-cloud/ui-component-library';
-import type { AgentMessage } from '@letta-cloud/sdk-core';
+import type {
+  AgentMessage,
+  ToolReturnMessageSchemaType,
+} from '@letta-cloud/sdk-core';
 import { SendMessageFunctionCallSchema } from '@letta-cloud/sdk-core';
 import {
   type ListMessagesResponse,
@@ -124,7 +127,15 @@ function MessageGroup({ group }: MessageGroupType) {
   }, [name]);
 
   return (
-    <HStack data-testid="message-group" gap="medium">
+    <HStack
+      padding="small"
+      /* eslint-disable-next-line react/forbid-component-props */
+      style={{
+        backgroundColor: name === 'User' ? 'rgba(7, 7, 172, 0.04)' : '',
+      }}
+      data-testid="message-group"
+      gap="medium"
+    >
       <IconAvatar
         textColor={textColor}
         backgroundColor={backgroundColor}
@@ -429,7 +440,7 @@ export function Messages(props: MessagesProps) {
                     key={`${agentMessage.id}-${agentMessage.message_type}`}
                     name={agentMessage.tool_call.name || ''}
                     inputs={agentMessage.tool_call.arguments || ''}
-                    response={get(functionResponse, 'tool_return')}
+                    response={functionResponse as ToolReturnMessageSchemaType}
                     status={get(functionResponse, 'status')}
                   />
                 ),
@@ -697,8 +708,8 @@ export function Messages(props: MessagesProps) {
       fullWidth
       collapseHeight
       overflowY="auto"
-      gap="xlarge"
-      padding="large"
+      gap="small"
+      padding="small"
     >
       {hasNextPage && (
         <Button
