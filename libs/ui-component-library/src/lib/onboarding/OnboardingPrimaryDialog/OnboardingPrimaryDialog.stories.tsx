@@ -21,7 +21,15 @@ export default meta;
 type Story = StoryObj<typeof OnboardingPrimaryDialog>;
 
 export const Primary: Story = {
+  decorators: [
+    (Story) => (
+      <VStack className="h-[1000px]">
+        <Story />
+      </VStack>
+    ),
+  ],
   args: {
+    isOpen: true,
     children: (
       <VStack>
         <OnboardingPrimaryHeading

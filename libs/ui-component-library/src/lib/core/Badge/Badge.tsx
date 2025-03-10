@@ -35,7 +35,7 @@ const badgeVariants = cva(
   },
 );
 
-interface BadgeProps extends VariantProps<typeof badgeVariants> {
+export interface BadgeProps extends VariantProps<typeof badgeVariants> {
   content: React.ReactNode;
   preIcon?: React.ReactNode;
   className?: string;

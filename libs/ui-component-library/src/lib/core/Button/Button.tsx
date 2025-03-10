@@ -118,6 +118,7 @@ export type ButtonProps = Omit<
       disabled?: boolean;
       hideLabel?: boolean;
       target?: string;
+      bold?: boolean;
       type?: 'button' | 'reset' | 'submit';
       _use_rarely_className?: string;
       _use_rarely_disableTooltip?: boolean;
@@ -140,6 +141,7 @@ export const Button = forwardRef<
     active,
     fullWidth,
     animate,
+    bold,
     align,
     fullHeight,
     size,
@@ -192,7 +194,7 @@ export const Button = forwardRef<
         {hideLabel ? (
           <span className="sr-only">{label}</span>
         ) : (
-          <span>{label}</span>
+          <span className={cn(bold && 'font-bold')}>{label}</span>
         )}
         {postIcon && <Slot className={iconSize}>{postIcon}</Slot>}
       </ButtonPrimitive>

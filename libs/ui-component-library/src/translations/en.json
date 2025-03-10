@@ -34,5 +34,20 @@
     "chooseFileText": "Choose a file",
     "changeFile": "Change file",
     "removeFile": "Remove file"
+  },
+  "onboarding/OnboardingSteps": {
+    "step": "{currentStep} of {totalSteps}"
+  },
+  "onboarding/OnboardingMiniMenu": {
+    "continue": "Continue onboarding",
+    "step": "{currentStep} of {totalSteps}"
+  },
+  "onboarding/OnboardingAsideFocus": {
+    "tryLater": "Try later",
+    "difficulty": {
+      "easy": "Easy",
+      "medium": "Medium",
+      "hard": "Hard"
+    }
   }
 }
