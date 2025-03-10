@@ -119,11 +119,15 @@ export async function listAgentTemplates(
           {
             user_id: lettaAgentsId,
           },
-        ),
+        ).catch(() => null),
       ),
     );
 
     agentStates.forEach((agentState, index) => {
+      if (!agentState) {
+        return;
+      }
+
       agentStateMap.set(agentTemplatesResponse[index].id, agentState);
     });
   }
