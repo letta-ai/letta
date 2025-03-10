@@ -2,7 +2,7 @@ from typing import TYPE_CHECKING, Optional
 
 import httpx
 import openai
-from fastapi import APIRouter, Body, Depends, Header, HTTPException
+from fastapi import APIRouter, Body, Depends, Header
 from fastapi.responses import StreamingResponse
 from openai.types.chat.completion_create_params import CompletionCreateParams
 
@@ -22,7 +22,7 @@ logger = get_logger(__name__)
 
 
 @router.post(
-    "/chat/completions",
+    "/{agent_id}/chat/completions",
     response_model=None,
     operation_id="create_voice_chat_completions",
     responses={
@@ -35,15 +35,12 @@ logger = get_logger(__name__)
     },
 )
 async def create_voice_chat_completions(
+    agent_id: str,
     completion_request: CompletionCreateParams = Body(...),
     server: "SyncServer" = Depends(get_letta_server),
     user_id: Optional[str] = Header(None, alias="user_id"),
 ):
     actor = server.user_manager.get_user_or_default(user_id=user_id)
-
-    agent_id = str(completion_request.get("user", None))
-    if agent_id is None:
-        raise HTTPException(status_code=400, detail="Must pass agent_id in the 'user' field")
 
     # Also parse the user's new input
     input_message = UserMessage(**get_messages_from_completion_request(completion_request)[-1])
