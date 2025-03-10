@@ -13,6 +13,7 @@ from letta.schemas.agent import AgentState, AgentType
 from letta.schemas.enums import MessageRole
 from letta.schemas.memory import Memory
 from letta.schemas.message import Message, MessageCreate, TextContent
+from letta.schemas.passage import Passage as PydanticPassage
 from letta.schemas.tool_rule import ToolRule
 from letta.schemas.user import User
 from letta.system import get_initial_boot_messages, get_login_event
@@ -99,7 +100,10 @@ def derive_system_message(agent_type: AgentType, system: Optional[str] = None):
 
 # TODO: This code is kind of wonky and deserves a rewrite
 def compile_memory_metadata_block(
-    memory_edit_timestamp: datetime.datetime, previous_message_count: int = 0, archival_memory_size: int = 0
+    memory_edit_timestamp: datetime.datetime,
+    previous_message_count: int = 0,
+    archival_memory_size: int = 0,
+    recent_passages: List[PydanticPassage] = None,
 ) -> str:
     # Put the timestamp in the local timezone (mimicking get_local_time())
     timestamp_str = memory_edit_timestamp.astimezone().strftime("%Y-%m-%d %I:%M:%S %p %Z%z").strip()
@@ -110,6 +114,11 @@ def compile_memory_metadata_block(
             f"### Memory [last modified: {timestamp_str}]",
             f"{previous_message_count} previous messages between you and the user are stored in recall memory (use functions to access them)",
             f"{archival_memory_size} total memories you created are stored in archival memory (use functions to access them)",
+            (
+                f"Most recent archival passages {len(recent_passages)} recent passages: {[passage.text for passage in recent_passages]}"
+                if recent_passages is not None
+                else ""
+            ),
             "\nCore memory shown below (limited in size, additional information stored in archival / recall memory):",
         ]
     )
@@ -146,6 +155,7 @@ def compile_system_message(
     template_format: Literal["f-string", "mustache", "jinja2"] = "f-string",
     previous_message_count: int = 0,
     archival_memory_size: int = 0,
+    recent_passages: Optional[List[PydanticPassage]] = None,
 ) -> str:
     """Prepare the final/full system message that will be fed into the LLM API
 
@@ -170,6 +180,7 @@ def compile_system_message(
             memory_edit_timestamp=in_context_memory_last_edit,
             previous_message_count=previous_message_count,
             archival_memory_size=archival_memory_size,
+            recent_passages=recent_passages,
         )
         full_memory_string = memory_metadata_string + "\n" + in_context_memory.compile()
 

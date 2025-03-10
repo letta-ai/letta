@@ -598,6 +598,7 @@ class AgentManager:
             system_prompt=agent_state.system,
             in_context_memory=agent_state.memory,
             in_context_memory_last_edit=memory_edit_timestamp,
+            recent_passages=self.list_passages(actor=actor, agent_id=agent_id, ascending=False, limit=10),
         )
 
         diff = united_diff(curr_system_message_openai["content"], new_system_message_str)
@@ -768,7 +769,9 @@ class AgentManager:
             # Commit the changes
             agent.update(session, actor=actor)
 
-        # Add system messsage alert to agent
+        # Force rebuild of system prompt so that the agent is updated with passage count
+        # and recent passages and add system message alert to agent
+        self.rebuild_system_prompt(agent_id=agent_id, actor=actor, force=True)
         self.append_system_message(
             agent_id=agent_id,
             content=DATA_SOURCE_ATTACH_ALERT,
