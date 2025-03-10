@@ -27,17 +27,20 @@ interface CreateIdentityDialogProps {
   currentProjectId?: string;
 }
 
-const identityFormSchema = z.object({
-  uniqueIdentifier: z.string(),
-  identityType: z.enum(['org', 'user', 'other']),
-  name: z.string(),
-});
-
-type IdentityFormValues = z.infer<typeof identityFormSchema>;
-
 export function CreateIdentityDialog(props: CreateIdentityDialogProps) {
   const { trigger, currentProjectId } = props;
   const [open, setOpen] = React.useState(false);
+  const t = useTranslations('CreateIdentityDialog');
+
+  const identityFormSchema = z.object({
+    uniqueIdentifier: z.string().min(1, {
+      message: t('errors.minLength'),
+    }),
+    identityType: z.enum(['org', 'user', 'other']),
+    name: z.string(),
+  });
+
+  type IdentityFormValues = z.infer<typeof identityFormSchema>;
 
   const form = useForm<IdentityFormValues>({
     resolver: zodResolver(identityFormSchema),
@@ -50,8 +53,6 @@ export function CreateIdentityDialog(props: CreateIdentityDialogProps) {
   const queryClient = useQueryClient();
   const { mutate, isPending, error, reset } =
     useIdentitiesServiceCreateIdentity();
-
-  const t = useTranslations('CreateIdentityDialog');
 
   const handleOpenChange = useCallback(
     (nextState: boolean) => {
@@ -67,7 +68,7 @@ export function CreateIdentityDialog(props: CreateIdentityDialogProps) {
   const errorMessage = useMemo(() => {
     if (error) {
       if (isAPIError(error)) {
-        if (error.body?.detail?.includes('unique constraint')) {
+        if (error.status === 409) {
           return t('errors.uniqueConstraint');
         }
       }

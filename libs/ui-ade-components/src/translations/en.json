@@ -1042,6 +1042,7 @@
       "label": "Name"
     },
     "errors": {
+      "minLength": "Unique identifier must be at least 1 character long",
       "uniqueConstraint": "The unique identifier provided is already in use, please choose another unique key",
       "default": "There was an error creating this identity, please try again or contact support."
     },
