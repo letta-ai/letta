@@ -85,9 +85,9 @@ readinessProbe:
     failureThreshold: 3
 
 autoscaling:
-  enabled: false
-  minReplicas: 1
-  maxReplicas: 100
+  enabled: true
+  minReplicas: 4
+  maxReplicas: 16
   targetCPUUtilizationPercentage: 80
   # targetMemoryUtilizationPercentage: 80
 
