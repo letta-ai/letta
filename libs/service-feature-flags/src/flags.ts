@@ -26,16 +26,6 @@ export const featureFlags = {
     expiryDate: '2024-03-01',
     flagValue: z.boolean(),
   },
-  CONTEXT_WINDOW_SIMULATOR: {
-    description: 'Context window simulator',
-    expiryDate: '2024-01-31',
-    flagValue: z.boolean(),
-  },
-  TOOL_RULES: {
-    description: 'Tool rules',
-    expiryDate: '2024-01-31',
-    flagValue: z.boolean(),
-  },
   TEMPLATE_DISTRIBUTION: {
     description: 'Template distribution',
     flagValue: z.boolean(),

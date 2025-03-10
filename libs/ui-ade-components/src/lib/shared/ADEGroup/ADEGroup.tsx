@@ -20,8 +20,7 @@ export function ADEGroup(props: ADEGroupProps) {
     <VStack
       overflow="hidden"
       gap={false}
-      color="background"
-      border
+      color="background-grey"
       fullWidth
       fullHeight
     >
@@ -35,13 +34,18 @@ export function ADEGroup(props: ADEGroupProps) {
               borderLeft={index !== 0}
               borderBottom={activeTab !== index}
               padding="small"
-              color={activeTab === index ? 'background' : 'background-grey'}
+              color="background-grey"
               key={item.id}
               onClick={() => {
                 setActiveTab(index);
               }}
             >
-              <Typography uppercase bold variant="body3">
+              <Typography
+                uppercase
+                bold
+                color={activeTab === index ? 'default' : 'muted'}
+                variant="body3"
+              >
                 {item.title}
               </Typography>
             </HStack>

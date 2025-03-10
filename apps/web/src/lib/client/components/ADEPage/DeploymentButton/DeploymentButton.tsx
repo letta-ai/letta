@@ -94,7 +94,6 @@ function CloudUpsellDeploy() {
       triggerAsChild
       trigger={
         <Button
-          size="small"
           color="primary"
           preIcon={<RocketIcon size="small" />}
           data-testid="trigger-cloud-upsell"
@@ -397,7 +396,6 @@ function TemplateVersionDisplay() {
     return (
       <Tooltip asChild content={t('DeploymentButton.errorTooltip')}>
         <Button
-          size="small"
           color="destructive"
           data-testid="version-template-trigger"
           label={t('DeploymentButton.error')}
@@ -410,7 +408,6 @@ function TemplateVersionDisplay() {
   if (!canUpdateTemplate) {
     return (
       <Button
-        size="small"
         color="primary"
         disabled
         label={t('DeploymentButton.readyToDeploy.trigger', {
@@ -427,7 +424,6 @@ function TemplateVersionDisplay() {
         trigger={
           <Button
             busy={isLoading}
-            size="small"
             color="primary"
             data-testid="version-template-trigger"
             label={
@@ -437,13 +433,7 @@ function TemplateVersionDisplay() {
                   })
                 : t('DeploymentButton.readyToDeploy.triggerNoVersion')
             }
-            preIcon={
-              isAtLatestVersion ? (
-                <RocketIcon size="small" />
-              ) : (
-                <WarningIcon size="small" />
-              )
-            }
+            preIcon={isAtLatestVersion ? <RocketIcon /> : <WarningIcon />}
           />
         }
         align="end"
@@ -498,7 +488,6 @@ function TemplateVersionDisplay() {
       <CreateNewTemplateVersionDialog
         trigger={
           <Button
-            size="small"
             preIcon={<WarningIcon />}
             data-testid="stage-new-version-button"
             color="primary"
@@ -558,7 +547,6 @@ function CreateTemplateButton() {
       triggerAsChild
       trigger={
         <Button
-          size="small"
           preIcon={<TemplateIcon />}
           color="primary"
           label={t('CreateTemplateButton.trigger')}

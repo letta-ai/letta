@@ -71,7 +71,6 @@ function useADETitleTranslations() {
   };
 }
 import { Panel, PanelGroup, PanelResizeHandle } from 'react-resizable-panels';
-import { useFeatureFlag } from '@letta-cloud/sdk-web';
 import { Slot } from '@radix-ui/react-slot';
 import { createPortal } from 'react-dom';
 
@@ -85,12 +84,8 @@ function DesktopLayout() {
     archivalMemoriesTitle,
   } = useADETitleTranslations();
 
-  const { data: isContextWindowSimulatorEnabled } = useFeatureFlag(
-    'CONTEXT_WINDOW_SIMULATOR',
-  );
-
   return (
-    <HStack gap="small" fullWidth fullHeight>
+    <HStack border color="background-grey" fullWidth fullHeight>
       <PanelGroup className="h-full" direction="horizontal" autoSaveId="ade">
         <Panel
           defaultSize={30}
@@ -98,7 +93,7 @@ function DesktopLayout() {
           className="h-full"
           minSize={20}
         >
-          <VStack gap="small" fullWidth fullHeight>
+          <VStack gap={false} fullWidth fullHeight>
             <div className="h-[380px]">
               <ADEGroup
                 items={[
@@ -115,6 +110,7 @@ function DesktopLayout() {
                 ]}
               />
             </div>
+            <div className="h-[1px] w-full bg-border" />
             <ADEGroup
               items={[
                 {
@@ -131,7 +127,7 @@ function DesktopLayout() {
             />
           </VStack>
         </Panel>
-        <PanelResizeHandle className="w-[4px]" />
+        <PanelResizeHandle className="w-[1px] bg-border" />
         <Panel
           defaultSize={40}
           defaultValue={40}
@@ -146,30 +142,27 @@ function DesktopLayout() {
                   id: 'agent-simulator',
                   content: <AgentSimulator />,
                 },
-                ...(isContextWindowSimulatorEnabled
-                  ? [
-                      {
-                        title: t('contextWindowSimulator'),
-                        id: 'context-window-simulator',
-                        content: <ContextWindowSimulator />,
-                      },
-                    ]
-                  : []),
+                {
+                  title: t('contextWindowSimulator'),
+                  id: 'context-window-simulator',
+                  content: <ContextWindowSimulator />,
+                },
               ]}
             />
           </HStack>
         </Panel>
-        <PanelResizeHandle className="w-[4px]" />
+        <PanelResizeHandle className="w-[1px] bg-border" />
         <Panel
           defaultSize={30}
           defaultValue={30}
           className="h-full"
           minSize={20}
         >
-          <VStack gap="small" fullWidth fullHeight>
+          <VStack gap={false} fullWidth fullHeight>
             <HStack className="max-h-[100px]">
               <ContextWindowPanel />
             </HStack>
+            <div className="h-[1px] w-full bg-border" />
             <ADEGroup
               items={[
                 {
@@ -294,7 +287,6 @@ function MobileAppSelector(props: MobileAppSelectorProps) {
     fixed top-0 left-0 z-miniapp"
     >
       <VStack
-        border
         gap="large"
         overflow="hidden"
         align="center"
@@ -308,6 +300,7 @@ function MobileAppSelector(props: MobileAppSelectorProps) {
               <VStack
                 fullHeight
                 fullWidth
+                className="min-h-[100px]"
                 align="center"
                 justify="center"
                 color={selectedAppId === appId ? 'primary' : 'background'}
@@ -324,20 +317,20 @@ function MobileAppSelector(props: MobileAppSelectorProps) {
           </NiceGridDisplay>
         </VStack>
         <HStack
+          color="background-grey"
           onClick={() => {
             onClose();
           }}
           as="button"
-          height="header-sm"
           align="center"
-          borderTop
-          padding="small"
+          padding
+          className="min-h-[56px] mb-[-7px]"
           fullWidth
           justify="spaceBetween"
         >
           <HStack align="center">
             <AppsIcon />
-            <Typography className="mt-0.5">
+            <Typography bold className="mt-0.5">
               {t('MobileAppSelector.apps')}
             </Typography>
           </HStack>
@@ -359,15 +352,8 @@ function MobileLayout() {
 
   return (
     <VStack gap={false} fullWidth fullHeight overflow="hidden">
-      <VStack
-        gap={false}
-        overflow="hidden"
-        fullWidth
-        border
-        flex
-        collapseHeight
-      >
-        <VStack fullWidth flex collapseHeight>
+      <VStack gap={false} overflow="hidden" fullWidth flex collapseHeight>
+        <VStack border fullWidth flex color="background-grey" collapseHeight>
           {selectedApp.content}
         </VStack>
         <HStack
@@ -377,14 +363,13 @@ function MobileLayout() {
           }}
           fullWidth
           justify="spaceBetween"
-          borderTop
-          height="header-sm"
-          padding="small"
+          className="min-h-[56px] mb-[-7px]"
+          padding
           align="center"
         >
           <HStack align="center">
             <Slot className="w-5 h-5">{selectedApp.icon}</Slot>
-            <Typography>{selectedApp.title}</Typography>
+            <Typography bold>{selectedApp.title}</Typography>
           </HStack>
           <div className={'sr-only'}>{t('MobileAppSelector.open')}</div>
           <AppsIcon />
@@ -408,7 +393,13 @@ export function ADELayout(props: ADELayoutProps) {
 
   return (
     <AppContextProvider user={user} projectId={projectId}>
-      <Frame position="relative" fullWidth fullHeight zIndex="rightAboveZero">
+      <Frame
+        overflow="hidden"
+        position="relative"
+        fullWidth
+        fullHeight
+        zIndex="rightAboveZero"
+      >
         <HiddenOnMobile checkWithJs>
           <DesktopLayout />
         </HiddenOnMobile>

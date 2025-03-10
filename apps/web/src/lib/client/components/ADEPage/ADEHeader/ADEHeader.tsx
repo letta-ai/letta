@@ -4,7 +4,6 @@ import {
   Breadcrumb,
   Button,
   Dialog,
-  DotsHorizontalIcon,
   DownloadIcon,
   DropdownMenu,
   DropdownMenuItem,
@@ -19,7 +18,7 @@ import {
   TrashIcon,
   Typography,
   useForm,
-  VerticalDotsIcon,
+  DotsVerticalIcon,
   VisibleOnMobile,
 } from '@letta-cloud/ui-component-library';
 import type { QueryBuilderQuery } from '@letta-cloud/ui-component-library';
@@ -320,12 +319,12 @@ function AgentSettingsDropdown(props: AgentSettingsDropdownProps) {
         triggerAsChild
         trigger={
           <Button
+            size="small"
             preIcon={icon}
             label={t('AgentSettingsDropdown.trigger', {
               agentBaseType: agentBaseType.capitalized,
             })}
             hideLabel
-            size="small"
             color="tertiary"
           />
         }
@@ -365,7 +364,7 @@ function MobileADEHeader(props: DesktopADEHeaderProps) {
         <LogoContainer />
         <Typography variant="body">{name}</Typography>
       </HStack>
-      <AgentSettingsDropdown icon={<VerticalDotsIcon size="medium" />} />
+      <AgentSettingsDropdown icon={<DotsVerticalIcon size="medium" />} />
     </HStack>
   );
 }
@@ -377,7 +376,7 @@ function LogoContainer() {
       justify="center"
       color="brand"
       /* eslint-disable-next-line react/forbid-component-props */
-      className="h-[38px] min-w-[40px]"
+      className="min-h-biHeight min-w-[40px]"
       fullHeight
     >
       <Logo size="small" />
@@ -417,7 +416,6 @@ function DesktopADEHeader(props: DesktopADEHeaderProps) {
     <HStack
       justify="spaceBetween"
       align="center"
-      border
       /* eslint-disable-next-line react/forbid-component-props */
       className="h-[40px] min-h-[40px] largerThanMobile:pr-0 pr-3 relative"
       fullWidth
@@ -431,9 +429,9 @@ function DesktopADEHeader(props: DesktopADEHeaderProps) {
             </button>
           }
         />
-        <HStack gap={false}>
+        <HStack align="center" gap={false}>
           <Breadcrumb
-            variant="small"
+            size="small"
             items={[
               {
                 label: projectName,
@@ -452,14 +450,14 @@ function DesktopADEHeader(props: DesktopADEHeaderProps) {
               },
             ]}
           />
-          <AgentSettingsDropdown icon={<DotsHorizontalIcon />} />
+          <AgentSettingsDropdown icon={<DotsVerticalIcon />} />
         </HStack>
       </HStack>
       <HStack gap={false} align="center">
         <HStack paddingRight="small" align="center" gap="small">
           <DashboardHeaderNavigation />
         </HStack>
-        <HStack paddingRight="small" align="center" gap="small">
+        <HStack align="center" gap="small">
           <DeploymentButton />
           {isTemplate && (
             <Button
@@ -483,11 +481,10 @@ function DesktopADEHeader(props: DesktopADEHeaderProps) {
                   ],
                 },
               } satisfies QueryBuilderQuery)}`}
-              size="small"
               color="secondary"
             />
           )}
-          <ProfilePopover size="small" />
+          <ProfilePopover />
         </HStack>
       </HStack>
     </HStack>

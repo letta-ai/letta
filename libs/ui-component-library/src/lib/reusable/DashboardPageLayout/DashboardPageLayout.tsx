@@ -28,7 +28,7 @@ function Title({ title }: TitleProps) {
     );
   }
 
-  return <Breadcrumb items={title} />;
+  return <Breadcrumb size="small" items={title} />;
 }
 
 interface DashboardPageLayoutProps {

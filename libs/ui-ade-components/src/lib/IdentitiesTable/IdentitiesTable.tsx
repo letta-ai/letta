@@ -406,6 +406,7 @@ function IdentityItemOverlay(props: IdentityItemOverlayProps) {
       <VStack overflow="hidden" gap={false}>
         <SideOverlayHeader>
           <Breadcrumb
+            size="small"
             items={[
               {
                 label: t('IdentityItemOverlay.breadcrumb.main'),

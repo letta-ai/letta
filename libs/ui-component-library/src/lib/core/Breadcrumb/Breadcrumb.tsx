@@ -123,10 +123,11 @@ interface BreadcrumbItemWrapperProps {
   item: BreadcrumbItemType;
   variant?: Variants;
   isLast?: boolean;
+  size?: 'default' | 'small';
 }
 
 function BreadcrumbItemWrapper(props: BreadcrumbItemWrapperProps) {
-  const { item, isLast } = props;
+  const { item, isLast, size } = props;
 
   const { href, preIcon, contentOverride, label, onClick } = item;
 
@@ -143,7 +144,7 @@ function BreadcrumbItemWrapper(props: BreadcrumbItemWrapperProps) {
         color="tertiary"
         preIcon={preIcon}
         label={label}
-        size="small"
+        size={size}
         _use_rarely_className={cn(
           !isLast ? 'text-text-lighter' : '',
           !onClick && !href ? 'cursor-default hover:bg-transparent' : '',
@@ -156,9 +157,10 @@ function BreadcrumbItemWrapper(props: BreadcrumbItemWrapperProps) {
 export interface BreadcrumbProps {
   items: BreadcrumbItemType[];
   variant?: Variants;
+  size?: 'default' | 'small';
 }
 
-export function Breadcrumb({ items, variant }: BreadcrumbProps) {
+export function Breadcrumb({ items, size, variant }: BreadcrumbProps) {
   return (
     <BreadcrumbPrimitive>
       <BreadcrumbList>
@@ -167,6 +169,7 @@ export function Breadcrumb({ items, variant }: BreadcrumbProps) {
             <BreadcrumbItemWrapper
               isLast={index === items.length - 1}
               variant={variant}
+              size={size}
               item={item}
             />
             {index !== items.length - 1 && <BreadcrumbSeparator />}

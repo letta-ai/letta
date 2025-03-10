@@ -1803,6 +1803,7 @@ function ToolCreator() {
       <ToolAppHeader borderBottom>
         <HStack>
           <Breadcrumb
+            size="small"
             items={[
               {
                 preIcon: <ExploreIcon />,
@@ -2053,6 +2054,7 @@ function EditToolWrapper() {
       <ToolAppHeader borderBottom>
         <HStack>
           <Breadcrumb
+            size="small"
             items={[
               {
                 preIcon: <ExploreIcon />,

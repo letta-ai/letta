@@ -389,7 +389,7 @@ export function ContextWindowPanel() {
   ]);
 
   return (
-    <VStack border fullWidth gap="small" paddingX="small" paddingY="xsmall">
+    <VStack fullWidth gap="small" paddingX="small" paddingY="xsmall">
       <HStack fullWidth justify="spaceBetween">
         <Typography variant="body3" uppercase bold>
           {t('title')}

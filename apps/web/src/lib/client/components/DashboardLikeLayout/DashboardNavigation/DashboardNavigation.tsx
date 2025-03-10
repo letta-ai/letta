@@ -780,6 +780,7 @@ export function DashboardHeader() {
             <HStack fullWidth align="center">
               <HStack justify="start" align="center">
                 <Breadcrumb
+                  size="small"
                   items={[
                     {
                       label: 'root',

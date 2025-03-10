@@ -31,7 +31,6 @@ import {
   useToolsExplorerState,
 } from '../ToolsExplorer/ToolsExplorer';
 import { ToolRulesEditor } from '../ToolRules/ToolRules';
-import { useFeatureFlag } from '@letta-cloud/sdk-web';
 import { ApplicationServices } from '@letta-cloud/service-rbac';
 import { useADEPermissions } from '../../hooks/useADEPermissions/useADEPermissions';
 
@@ -253,10 +252,7 @@ export function ToolsPanel() {
   const [search, setSearch] = useState('');
   const t = useTranslations('ADE/Tools');
   const { openToolExplorer } = useToolsExplorerState();
-  const { isLoading, data } = useFeatureFlag('TOOL_RULES');
   const [canUpdateAgent] = useADEPermissions(ApplicationServices.UPDATE_AGENT);
-
-  const isToolRulesEnabled = !isLoading && data;
 
   return (
     <VStack overflow="hidden" gap={false}>
@@ -269,7 +265,7 @@ export function ToolsPanel() {
         actions={
           canUpdateAgent && (
             <HStack>
-              {isToolRulesEnabled && <ToolRulesEditor />}
+              <ToolRulesEditor />
               <Button
                 label={t('ToolsListPage.openExplorer')}
                 color="secondary"
