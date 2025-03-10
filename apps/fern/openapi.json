@@ -4677,12 +4677,22 @@
         }
       }
     },
-    "/v1/voice/chat/completions": {
+    "/v1/voice/{agent_id}/chat/completions": {
       "post": {
         "tags": ["voice"],
         "summary": "Create Voice Chat Completions",
         "operationId": "create_voice_chat_completions",
-        "parameters": [],
+        "parameters": [
+          {
+            "name": "agent_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Agent Id"
+            }
+          }
+        ],
         "requestBody": {
           "required": true,
           "content": {
@@ -10512,7 +10522,11 @@
               "BASIC",
               "BEARER_TOKEN",
               "BASIC_WITH_JWT",
-              "NO_AUTH"
+              "GOOGLE_SERVICE_ACCOUNT",
+              "GOOGLEADS_AUTH",
+              "NO_AUTH",
+              "COMPOSIO_LINK",
+              "CALCOM_AUTH"
             ],
             "title": "Auth Mode"
           },

@@ -2921,6 +2921,7 @@ export const useAdminServiceCreateOrganization = <
 /**
  * Create Voice Chat Completions
  * @param data The data for the request.
+ * @param data.agentId
  * @param data.requestBody
  * @param data.userId
  * @returns unknown Successful response
@@ -2936,6 +2937,7 @@ export const useVoiceServiceCreateVoiceChatCompletions = <
       TData,
       TError,
       {
+        agentId: string;
         requestBody:
           | CompletionCreateParamsNonStreaming
           | CompletionCreateParamsStreaming;
@@ -2950,6 +2952,7 @@ export const useVoiceServiceCreateVoiceChatCompletions = <
     TData,
     TError,
     {
+      agentId: string;
       requestBody:
         | CompletionCreateParamsNonStreaming
         | CompletionCreateParamsStreaming;
@@ -2957,8 +2960,9 @@ export const useVoiceServiceCreateVoiceChatCompletions = <
     },
     TContext
   >({
-    mutationFn: ({ requestBody, userId }) =>
+    mutationFn: ({ agentId, requestBody, userId }) =>
       VoiceService.createVoiceChatCompletions({
+        agentId,
         requestBody,
         userId,
       }) as unknown as Promise<TData>,

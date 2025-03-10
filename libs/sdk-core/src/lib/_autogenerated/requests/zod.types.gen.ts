@@ -683,7 +683,11 @@ export const AppAuthScheme = z.object({
     z.literal('BASIC'),
     z.literal('BEARER_TOKEN'),
     z.literal('BASIC_WITH_JWT'),
+    z.literal('GOOGLE_SERVICE_ACCOUNT'),
+    z.literal('GOOGLEADS_AUTH'),
     z.literal('NO_AUTH'),
+    z.literal('COMPOSIO_LINK'),
+    z.literal('CALCOM_AUTH'),
   ]),
   fields: z.array(AuthSchemeField),
   proxy: z
@@ -5796,9 +5800,12 @@ export type post_Create_voice_chat_completions =
   typeof post_Create_voice_chat_completions;
 export const post_Create_voice_chat_completions = {
   method: z.literal('POST'),
-  path: z.literal('/v1/voice/chat/completions'),
+  path: z.literal('/v1/voice/{agent_id}/chat/completions'),
   requestFormat: z.literal('json'),
   parameters: z.object({
+    path: z.object({
+      agent_id: z.string(),
+    }),
     header: z.object({
       user_id: z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
@@ -6052,7 +6059,7 @@ export const EndpointByMethod = {
     '/v1/sandbox-config/{sandbox_config_id}/environment-variable':
       post_Create_sandbox_env_var_v1_sandbox_config__sandbox_config_id__environment_variable_post,
     '/v1/providers/': post_Create_provider,
-    '/v1/voice/chat/completions': post_Create_voice_chat_completions,
+    '/v1/voice/{agent_id}/chat/completions': post_Create_voice_chat_completions,
     '/v1/admin/users/': post_Create_user,
     '/v1/admin/orgs/': post_Create_organization,
     '/v1/auth': post_Authenticate_user_v1_auth_post,

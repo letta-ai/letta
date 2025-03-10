@@ -232,7 +232,11 @@ export type AppAuthScheme = {
     | 'BASIC'
     | 'BEARER_TOKEN'
     | 'BASIC_WITH_JWT'
-    | 'NO_AUTH';
+    | 'GOOGLE_SERVICE_ACCOUNT'
+    | 'GOOGLEADS_AUTH'
+    | 'NO_AUTH'
+    | 'COMPOSIO_LINK'
+    | 'CALCOM_AUTH';
   fields: Array<AuthSchemeField>;
   proxy?: {
     [key: string]: unknown;
@@ -252,7 +256,11 @@ export type auth_mode =
   | 'BASIC'
   | 'BEARER_TOKEN'
   | 'BASIC_WITH_JWT'
-  | 'NO_AUTH';
+  | 'GOOGLE_SERVICE_ACCOUNT'
+  | 'GOOGLEADS_AUTH'
+  | 'NO_AUTH'
+  | 'COMPOSIO_LINK'
+  | 'CALCOM_AUTH';
 
 /**
  * App data model.
@@ -3986,6 +3994,7 @@ export type DeleteOrganizationByIdData = {
 export type DeleteOrganizationByIdResponse = Organization;
 
 export type CreateVoiceChatCompletionsData = {
+  agentId: string;
   requestBody:
     | CompletionCreateParamsNonStreaming
     | CompletionCreateParamsStreaming;
@@ -5480,7 +5489,7 @@ export type $OpenApiTs = {
       };
     };
   };
-  '/v1/voice/chat/completions': {
+  '/v1/voice/{agent_id}/chat/completions': {
     post: {
       req: CreateVoiceChatCompletionsData;
       res: {

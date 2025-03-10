@@ -3147,6 +3147,7 @@ export class VoiceService {
   /**
    * Create Voice Chat Completions
    * @param data The data for the request.
+   * @param data.agentId
    * @param data.requestBody
    * @param data.userId
    * @returns unknown Successful response
@@ -3158,7 +3159,10 @@ export class VoiceService {
   ): CancelablePromise<CreateVoiceChatCompletionsResponse> {
     return __request(OpenAPI, {
       method: 'POST',
-      url: '/v1/voice/chat/completions',
+      url: '/v1/voice/{agent_id}/chat/completions',
+      path: {
+        agent_id: data.agentId,
+      },
       body: data.requestBody,
       mediaType: 'application/json',
       errors: {
