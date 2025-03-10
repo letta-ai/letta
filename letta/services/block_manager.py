@@ -97,12 +97,13 @@ class BlockManager:
 
     @enforce_types
     def get_all_blocks_by_ids(self, block_ids: List[str], actor: Optional[PydanticUser] = None) -> List[PydanticBlock]:
-        # TODO: We can do this much more efficiently by listing, instead of executing individual queries per block_id
-        blocks = []
-        for block_id in block_ids:
-            block = self.get_block_by_id(block_id, actor=actor)
-            blocks.append(block)
-        return blocks
+        """Retrieve blocks by their names."""
+        with self.session_maker() as session:
+            try:
+                blocks = BlockModel.read_multiple(db_session=session, identifiers=block_ids, actor=actor)
+                return map(lambda obj: obj.to_pydantic(), blocks)
+            except NoResultFound:
+                return []
 
     @enforce_types
     def add_default_blocks(self, actor: PydanticUser):
