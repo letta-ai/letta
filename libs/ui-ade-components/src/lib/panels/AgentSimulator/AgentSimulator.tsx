@@ -757,7 +757,7 @@ export function AgentSimulator() {
           Accept: 'text/event-stream',
         },
         body: {
-          messages: [{ role, text: message }],
+          messages: [{ role, content: message }],
           stream_steps: true,
           stream_tokens: true,
         },
