@@ -16,6 +16,7 @@ import type {
   ProviderConfiguration,
   StepCostVersionOne,
   MemoryVariableVersionOneType,
+  OnboardingSteps,
 } from '@letta-cloud/types';
 import type { ApplicationServices } from '@letta-cloud/service-rbac';
 import type { UserPresetRolesType } from '@letta-cloud/service-rbac';
@@ -40,6 +41,7 @@ export const organizations = pgTable('organizations', {
   lettaServiceAccountId: text('letta_service_account_id'),
   isAdmin: boolean('is_admin').notNull().default(false),
   enabledCloudAt: timestamp('enabled_cloud_at'),
+  onboardingStep: text('onboarding_step').$type<OnboardingSteps>(),
   createdAt: timestamp('created_at').notNull().defaultNow(),
   deletedAt: timestamp('deleted_at'),
   bannedAt: timestamp('banned_at'),
