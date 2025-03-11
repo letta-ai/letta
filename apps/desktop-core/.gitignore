@@ -8,3 +8,4 @@ alembic.ini
 letta_desktop/alembic
 
 app.spec
+.venv

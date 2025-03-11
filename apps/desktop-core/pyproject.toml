@@ -13,7 +13,7 @@ readme = "README.md"
 
 [tool.poetry.dependencies]
 python = "<3.14,>=3.10"
-letta = {path = "../core", extras=["all"]}
+letta = {path = "../core", extras=["desktop"]}
 pyinstaller = {version = "^6.11.1"}
 pg8000 = "^1.31.2"
 flake8 = "^7.1.1"
@@ -21,3 +21,4 @@ alembic = "^1.14.0"
 pgserver = "~0.1.4"
 python-dotenv = "^1.0.1"
 anthropic = "^0.43.0"
+datamodel-code-generator = {extras = ["http"], version = "^0.25.0"}

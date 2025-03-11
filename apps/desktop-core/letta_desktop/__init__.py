@@ -23,10 +23,13 @@ from tiktoken_ext import openai_public # noqa
 import tiktoken_ext # noqa
 import tiktoken # noqa
 import pydantic.deprecated.decorator # noqa
+import datamodel_code_generator # noqa
 import opentelemetry # noqa
 import asyncio
 import uvicorn
 from uvicorn import Config
+import blib2to3.pgen2.tokenize # noqa
+import blib2to3.pgen2.parse # noqa
 
 # read first argument
 
