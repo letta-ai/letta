@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "letta"
-version = "0.6.37"
+version = "0.6.38"
 packages = [
     {include = "letta"},
 ]
@@ -98,9 +98,9 @@ qdrant = ["qdrant-client"]
 cloud-tool-sandbox = ["e2b-code-interpreter"]
 external-tools = ["docker", "langchain", "wikipedia", "langchain-community"]
 tests = ["wikipedia"]
-all = ["pgvector", "pg8000", "psycopg2-binary", "psycopg2", "pytest", "pytest-asyncio", "pexpect", "black", "pre-commit", "datasets", "pyright", "pytest-order", "autoflake", "isort", "websockets", "fastapi", "uvicorn", "docker", "langchain", "wikipedia", "langchain-community", "locust"]
 bedrock = ["boto3"]
 google = ["google-genai"]
+all = ["pgvector", "pg8000", "psycopg2-binary", "psycopg2", "pytest", "pytest-asyncio", "pexpect", "black", "pre-commit", "datasets", "pyright", "pytest-order", "autoflake", "isort", "websockets", "fastapi", "uvicorn", "docker", "langchain", "wikipedia", "langchain-community", "locust", "datamodel-code-generator"]
 
 [tool.poetry.group.dev.dependencies]
 black = "^24.4.2"
