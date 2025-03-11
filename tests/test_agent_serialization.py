@@ -229,7 +229,7 @@ def _compare_agent_state_model_dump(d1: Dict[str, Any], d2: Dict[str, Any], log:
     - Datetime fields are ignored.
     - Order-independent comparison for lists of dicts.
     """
-    ignore_prefix_fields = {"id", "last_updated_by_id", "organization_id", "created_by_id", "agent_id"}
+    ignore_prefix_fields = {"id", "last_updated_by_id", "organization_id", "created_by_id", "agent_id", "project_id"}
 
     # Remove datetime fields upfront
     d1 = strip_datetime_fields(d1)
@@ -476,8 +476,9 @@ def test_agent_serialize_tool_calls(mock_e2b_api_key_none, local_client, server,
 # FastAPI endpoint tests
 
 
-@pytest.mark.parametrize("append_copy_suffix", [True])
-def test_agent_download_upload_flow(fastapi_client, server, serialize_test_agent, default_user, other_user, append_copy_suffix):
+@pytest.mark.parametrize("append_copy_suffix", [True, False])
+@pytest.mark.parametrize("project_id", ["project-12345", None])
+def test_agent_download_upload_flow(fastapi_client, server, serialize_test_agent, default_user, other_user, append_copy_suffix, project_id):
     """
     Test the full E2E serialization and deserialization flow using FastAPI endpoints.
     """
@@ -495,7 +496,7 @@ def test_agent_download_upload_flow(fastapi_client, server, serialize_test_agent
     upload_response = fastapi_client.post(
         "/v1/agents/upload",
         headers={"user_id": other_user.id},
-        params={"append_copy_suffix": append_copy_suffix, "override_existing_tools": False},
+        params={"append_copy_suffix": append_copy_suffix, "override_existing_tools": False, "project_id": project_id},
         files=files,
     )
     assert upload_response.status_code == 200, f"Upload failed: {upload_response.text}"
@@ -504,7 +505,8 @@ def test_agent_download_upload_flow(fastapi_client, server, serialize_test_agent
     copied_agent = upload_response.json()
     copied_agent_id = copied_agent["id"]
     assert copied_agent_id != agent_id, "Copied agent should have a different ID"
-    assert copied_agent["name"] == serialize_test_agent.name + "_copy", "Copied agent name should have '_copy' suffix"
+    if append_copy_suffix:
+        assert copied_agent["name"] == serialize_test_agent.name + "_copy", "Copied agent name should have '_copy' suffix"
 
     # Step 3: Retrieve the copied agent
     serialize_test_agent = server.agent_manager.get_agent_by_id(agent_id=serialize_test_agent.id, actor=default_user)

@@ -17,6 +17,7 @@ from letta.embeddings import embedding_model
 from letta.errors import InvalidInnerMonologueError, InvalidToolCallError, MissingInnerMonologueError, MissingToolCallError
 from letta.helpers.json_helpers import json_dumps
 from letta.llm_api.llm_api_tools import create
+from letta.llm_api.llm_client import LLMClient
 from letta.local_llm.constants import INNER_THOUGHTS_KWARG
 from letta.schemas.agent import AgentState
 from letta.schemas.embedding_config import EmbeddingConfig
@@ -103,12 +104,23 @@ def check_first_response_is_valid_for_llm_endpoint(filename: str, validate_inner
     messages = client.server.agent_manager.get_in_context_messages(agent_id=full_agent_state.id, actor=client.user)
     agent = Agent(agent_state=full_agent_state, interface=None, user=client.user)
 
-    response = create(
+    llm_client = LLMClient.create(
+        agent_id=agent_state.id,
         llm_config=agent_state.llm_config,
-        user_id=str(uuid.UUID(int=1)),  # dummy user_id
-        messages=messages,
-        functions=[t.json_schema for t in agent.agent_state.tools],
+        actor_id=str(uuid.UUID(int=1)),
     )
+    if llm_client:
+        response = llm_client.send_llm_request(
+            messages=messages,
+            tools=[t.json_schema for t in agent.agent_state.tools],
+        )
+    else:
+        response = create(
+            llm_config=agent_state.llm_config,
+            user_id=str(uuid.UUID(int=1)),  # dummy user_id
+            messages=messages,
+            functions=[t.json_schema for t in agent.agent_state.tools],
+        )
 
     # Basic check
     assert response is not None, response

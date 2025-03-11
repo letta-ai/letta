@@ -4,7 +4,6 @@ import time
 from typing import Callable, Dict, Generator, List, Optional, Union
 
 import requests
-from openai.types.chat.chat_completion_message_tool_call import ChatCompletionMessageToolCall as OpenAIToolCall
 
 import letta.utils
 from letta.constants import ADMIN_PREFIX, BASE_MEMORY_TOOLS, BASE_TOOLS, DEFAULT_HUMAN, DEFAULT_PERSONA, FUNCTION_RETURN_CHAR_LIMIT
@@ -29,7 +28,7 @@ from letta.schemas.letta_request import LettaRequest, LettaStreamingRequest
 from letta.schemas.letta_response import LettaResponse, LettaStreamingResponse
 from letta.schemas.llm_config import LLMConfig
 from letta.schemas.memory import ArchivalMemorySummary, ChatMemory, CreateArchivalMemory, Memory, RecallMemorySummary
-from letta.schemas.message import Message, MessageCreate, MessageUpdate
+from letta.schemas.message import Message, MessageCreate
 from letta.schemas.openai.chat_completion_response import UsageStatistics
 from letta.schemas.organization import Organization
 from letta.schemas.passage import Passage
@@ -639,30 +638,6 @@ class RESTClient(AbstractClient):
 
         # refresh and return agent
         return self.get_agent(agent_state.id)
-
-    def update_message(
-        self,
-        agent_id: str,
-        message_id: str,
-        role: Optional[MessageRole] = None,
-        text: Optional[str] = None,
-        name: Optional[str] = None,
-        tool_calls: Optional[List[OpenAIToolCall]] = None,
-        tool_call_id: Optional[str] = None,
-    ) -> Message:
-        request = MessageUpdate(
-            role=role,
-            content=text,
-            name=name,
-            tool_calls=tool_calls,
-            tool_call_id=tool_call_id,
-        )
-        response = requests.patch(
-            f"{self.base_url}/{self.api_prefix}/agents/{agent_id}/messages/{message_id}", json=request.model_dump(), headers=self.headers
-        )
-        if response.status_code != 200:
-            raise ValueError(f"Failed to update message: {response.text}")
-        return Message(**response.json())
 
     def update_agent(
         self,
@@ -2435,30 +2410,6 @@ class LocalClient(AbstractClient):
 
         # TODO: get full agent state
         return self.server.agent_manager.get_agent_by_id(agent_state.id, actor=self.user)
-
-    def update_message(
-        self,
-        agent_id: str,
-        message_id: str,
-        role: Optional[MessageRole] = None,
-        text: Optional[str] = None,
-        name: Optional[str] = None,
-        tool_calls: Optional[List[OpenAIToolCall]] = None,
-        tool_call_id: Optional[str] = None,
-    ) -> Message:
-        message = self.server.update_agent_message(
-            agent_id=agent_id,
-            message_id=message_id,
-            request=MessageUpdate(
-                role=role,
-                content=text,
-                name=name,
-                tool_calls=tool_calls,
-                tool_call_id=tool_call_id,
-            ),
-            actor=self.user,
-        )
-        return message
 
     def update_agent(
         self,

@@ -74,7 +74,7 @@ class MessageUpdate(BaseModel):
     """Request to update a message"""
 
     role: Optional[MessageRole] = Field(None, description="The role of the participant.")
-    content: Optional[Union[str, List[MessageContentUnion]]] = Field(..., description="The content of the message.")
+    content: Optional[Union[str, List[MessageContentUnion]]] = Field(None, description="The content of the message.")
     # NOTE: probably doesn't make sense to allow remapping user_id or agent_id (vs creating a new message)
     # user_id: Optional[str] = Field(None, description="The unique identifier of the user.")
     # agent_id: Optional[str] = Field(None, description="The unique identifier of the agent.")

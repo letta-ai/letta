@@ -359,6 +359,49 @@ class AgentManager:
             return [agent.to_pydantic() for agent in agents]
 
     @enforce_types
+    def list_agents_matching_tags(
+        self,
+        actor: PydanticUser,
+        match_all: List[str],
+        match_some: List[str],
+        limit: Optional[int] = 50,
+    ) -> List[PydanticAgentState]:
+        """
+        Retrieves agents in the same organization that match all specified `match_all` tags
+        and at least one tag from `match_some`. The query is optimized for efficiency by
+        leveraging indexed filtering and aggregation.
+
+        Args:
+            actor (PydanticUser): The user requesting the agent list.
+            match_all (List[str]): Agents must have all these tags.
+            match_some (List[str]): Agents must have at least one of these tags.
+            limit (Optional[int]): Maximum number of agents to return.
+
+        Returns:
+            List[PydanticAgentState: The filtered list of matching agents.
+        """
+        with self.session_maker() as session:
+            query = select(AgentModel).where(AgentModel.organization_id == actor.organization_id)
+
+            if match_all:
+                # Subquery to find agent IDs that contain all match_all tags
+                subquery = (
+                    select(AgentsTags.agent_id)
+                    .where(AgentsTags.tag.in_(match_all))
+                    .group_by(AgentsTags.agent_id)
+                    .having(func.count(AgentsTags.tag) == literal(len(match_all)))
+                )
+                query = query.where(AgentModel.id.in_(subquery))
+
+            if match_some:
+                # Ensures agents match at least one tag in match_some
+                query = query.join(AgentsTags).where(AgentsTags.tag.in_(match_some))
+
+            query = query.group_by(AgentModel.id).limit(limit)
+
+            return list(session.execute(query).scalars())
+
+    @enforce_types
     def get_agent_by_id(self, agent_id: str, actor: PydanticUser) -> PydanticAgentState:
         """Fetch an agent by its ID."""
         with self.session_maker() as session:
@@ -401,7 +444,12 @@ class AgentManager:
 
     @enforce_types
     def deserialize(
-        self, serialized_agent: dict, actor: PydanticUser, append_copy_suffix: bool = True, override_existing_tools: bool = True
+        self,
+        serialized_agent: dict,
+        actor: PydanticUser,
+        append_copy_suffix: bool = True,
+        override_existing_tools: bool = True,
+        project_id: Optional[str] = None,
     ) -> PydanticAgentState:
         tool_data_list = serialized_agent.pop("tools", [])
 
@@ -410,7 +458,9 @@ class AgentManager:
             agent = schema.load(serialized_agent, session=session)
             if append_copy_suffix:
                 agent.name += "_copy"
-            agent.create(session, actor=actor)
+            if project_id:
+                agent.project_id = project_id
+            agent = agent.create(session, actor=actor)
             pydantic_agent = agent.to_pydantic()
 
         # Need to do this separately as there's some fancy upsert logic that SqlAlchemy cannot handle
@@ -548,6 +598,7 @@ class AgentManager:
             system_prompt=agent_state.system,
             in_context_memory=agent_state.memory,
             in_context_memory_last_edit=memory_edit_timestamp,
+            recent_passages=self.list_passages(actor=actor, agent_id=agent_id, ascending=False, limit=10),
         )
 
         diff = united_diff(curr_system_message_openai["content"], new_system_message_str)
@@ -718,7 +769,9 @@ class AgentManager:
             # Commit the changes
             agent.update(session, actor=actor)
 
-        # Add system messsage alert to agent
+        # Force rebuild of system prompt so that the agent is updated with passage count
+        # and recent passages and add system message alert to agent
+        self.rebuild_system_prompt(agent_id=agent_id, actor=actor, force=True)
         self.append_system_message(
             agent_id=agent_id,
             content=DATA_SOURCE_ATTACH_ALERT,

@@ -120,12 +120,11 @@ def agent(client, roll_dice_tool, weather_tool, composio_gmail_get_profile_tool)
 # --- Helper Functions --- #
 
 
-def _get_chat_request(agent_id, message, stream=True):
+def _get_chat_request(message, stream=True):
     """Returns a chat completion request with streaming enabled."""
     return ChatCompletionRequest(
         model="gpt-4o-mini",
         messages=[UserMessage(content=message)],
-        user=agent_id,
         stream=stream,
     )
 
@@ -157,9 +156,9 @@ def _assert_valid_chunk(chunk, idx, chunks):
 @pytest.mark.parametrize("endpoint", ["v1/voice"])
 async def test_latency(mock_e2b_api_key_none, client, agent, message, endpoint):
     """Tests chat completion streaming using the Async OpenAI client."""
-    request = _get_chat_request(agent.id, message)
+    request = _get_chat_request(message)
 
-    async_client = AsyncOpenAI(base_url=f"{client.base_url}/{endpoint}", max_retries=0)
+    async_client = AsyncOpenAI(base_url=f"{client.base_url}/{endpoint}/{agent.id}", max_retries=0)
     stream = await async_client.chat.completions.create(**request.model_dump(exclude_none=True))
     async with stream:
         async for chunk in stream:
@@ -171,9 +170,9 @@ async def test_latency(mock_e2b_api_key_none, client, agent, message, endpoint):
 @pytest.mark.parametrize("endpoint", ["openai/v1", "v1/voice"])
 async def test_chat_completions_streaming_openai_client(mock_e2b_api_key_none, client, agent, message, endpoint):
     """Tests chat completion streaming using the Async OpenAI client."""
-    request = _get_chat_request(agent.id, message)
+    request = _get_chat_request(message)
 
-    async_client = AsyncOpenAI(base_url=f"{client.base_url}/{endpoint}", max_retries=0)
+    async_client = AsyncOpenAI(base_url=f"{client.base_url}/{endpoint}/{agent.id}", max_retries=0)
     stream = await async_client.chat.completions.create(**request.model_dump(exclude_none=True))
 
     received_chunks = 0

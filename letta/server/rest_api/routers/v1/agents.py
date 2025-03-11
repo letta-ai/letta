@@ -13,13 +13,12 @@ from letta.constants import DEFAULT_MESSAGE_TOOL, DEFAULT_MESSAGE_TOOL_KWARG
 from letta.log import get_logger
 from letta.orm.errors import NoResultFound
 from letta.schemas.agent import AgentState, CreateAgent, UpdateAgent
-from letta.schemas.block import Block, BlockUpdate, CreateBlock  # , BlockLabelUpdate, BlockLimitUpdate
+from letta.schemas.block import Block, BlockUpdate
 from letta.schemas.job import JobStatus, JobUpdate, LettaRequestConfig
-from letta.schemas.letta_message import LettaMessageUnion
+from letta.schemas.letta_message import LettaMessageUnion, LettaMessageUpdateUnion
 from letta.schemas.letta_request import LettaRequest, LettaStreamingRequest
 from letta.schemas.letta_response import LettaResponse
 from letta.schemas.memory import ContextWindowOverview, CreateArchivalMemory, Memory
-from letta.schemas.message import Message, MessageUpdate
 from letta.schemas.passage import Passage, PassageUpdate
 from letta.schemas.run import Run
 from letta.schemas.source import Source
@@ -119,6 +118,7 @@ async def upload_agent_serialized(
         True,
         description="If set to True, existing tools can get their source code overwritten by the uploaded tool definitions. Note that Letta core tools can never be updated externally.",
     ),
+    project_id: Optional[str] = Query(None, description="The project ID to associate the uploaded agent with."),
 ):
     """
     Upload a serialized agent JSON file and recreate the agent in the system.
@@ -129,7 +129,11 @@ async def upload_agent_serialized(
         serialized_data = await file.read()
         agent_json = json.loads(serialized_data)
         new_agent = server.agent_manager.deserialize(
-            serialized_agent=agent_json, actor=actor, append_copy_suffix=append_copy_suffix, override_existing_tools=override_existing_tools
+            serialized_agent=agent_json,
+            actor=actor,
+            append_copy_suffix=append_copy_suffix,
+            override_existing_tools=override_existing_tools,
+            project_id=project_id,
         )
         return new_agent
 
@@ -526,20 +530,20 @@ def list_messages(
     )
 
 
-@router.patch("/{agent_id}/messages/{message_id}", response_model=Message, operation_id="modify_message")
+@router.patch("/{agent_id}/messages/{message_id}", response_model=LettaMessageUpdateUnion, operation_id="modify_message")
 def modify_message(
     agent_id: str,
     message_id: str,
-    request: MessageUpdate = Body(...),
+    request: LettaMessageUpdateUnion = Body(...),
     server: "SyncServer" = Depends(get_letta_server),
     actor_id: Optional[str] = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
 ):
     """
     Update the details of a message associated with an agent.
     """
-    # TODO: Get rid of agent_id here, it's not really relevant
+    # TODO: support modifying tool calls/returns
     actor = server.user_manager.get_user_or_default(user_id=actor_id)
-    return server.message_manager.update_message_by_id(message_id=message_id, message_update=request, actor=actor)
+    return server.message_manager.update_message_by_letta_message(message_id=message_id, letta_message_update=request, actor=actor)
 
 
 @router.post(

@@ -236,6 +236,32 @@ LettaMessageUnion = Annotated[
 ]
 
 
+class UpdateSystemMessage(BaseModel):
+    content: Union[str, List[MessageContentUnion]]
+    message_type: Literal["system_message"] = "system_message"
+
+
+class UpdateUserMessage(BaseModel):
+    content: Union[str, List[MessageContentUnion]]
+    message_type: Literal["user_message"] = "user_message"
+
+
+class UpdateReasoningMessage(BaseModel):
+    reasoning: Union[str, List[MessageContentUnion]]
+    message_type: Literal["reasoning_message"] = "reasoning_message"
+
+
+class UpdateAssistantMessage(BaseModel):
+    content: Union[str, List[MessageContentUnion]]
+    message_type: Literal["assistant_message"] = "assistant_message"
+
+
+LettaMessageUpdateUnion = Annotated[
+    Union[UpdateSystemMessage, UpdateUserMessage, UpdateReasoningMessage, UpdateAssistantMessage],
+    Field(discriminator="message_type"),
+]
+
+
 def create_letta_message_union_schema():
     return {
         "oneOf": [
