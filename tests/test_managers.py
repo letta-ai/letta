@@ -2149,26 +2149,40 @@ def test_update_block(server: SyncServer, default_user):
 
 
 def test_update_block_limit(server: SyncServer, default_user):
-
     block_manager = BlockManager()
     block = block_manager.create_or_update_block(PydanticBlock(label="persona", value="Original Content"), actor=default_user)
 
     limit = len("Updated Content") * 2000
-    update_data = BlockUpdate(value="Updated Content" * 2000, description="Updated description", limit=limit)
+    update_data = BlockUpdate(value="Updated Content" * 2000, description="Updated description")
 
-    # Check that a large block fails
-    try:
+    # Check that exceeding the block limit raises an exception
+    with pytest.raises(ValueError):
         block_manager.update_block(block_id=block.id, block_update=update_data, actor=default_user)
-        assert False
-    except Exception:
-        pass
 
+    # Ensure the update works when within limits
+    update_data = BlockUpdate(value="Updated Content" * 2000, description="Updated description", limit=limit)
     block_manager.update_block(block_id=block.id, block_update=update_data, actor=default_user)
-    # Retrieve the updated block
+
+    # Retrieve the updated block and validate the update
     updated_block = block_manager.get_blocks(actor=default_user, id=block.id)[0]
-    # Assertions to verify the update
+
     assert updated_block.value == "Updated Content" * 2000
     assert updated_block.description == "Updated description"
+
+
+def test_update_block_limit_does_not_reset(server: SyncServer, default_user):
+    block_manager = BlockManager()
+    new_content = "Updated Content" * 2000
+    limit = len(new_content)
+    block = block_manager.create_or_update_block(PydanticBlock(label="persona", value="Original Content", limit=limit), actor=default_user)
+
+    # Ensure the update works
+    update_data = BlockUpdate(value=new_content)
+    block_manager.update_block(block_id=block.id, block_update=update_data, actor=default_user)
+
+    # Retrieve the updated block and validate the update
+    updated_block = block_manager.get_blocks(actor=default_user, id=block.id)[0]
+    assert updated_block.value == new_content
 
 
 def test_delete_block(server: SyncServer, default_user):
