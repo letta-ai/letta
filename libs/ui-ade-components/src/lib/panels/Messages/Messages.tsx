@@ -88,7 +88,7 @@ function MessageGroup({ group }: MessageGroupType) {
 
   const textColor = useMemo(() => {
     if (name === 'Agent') {
-      return 'hsl(var(--brand-light-content))';
+      return 'hsl(var(--agent-color-content))';
     }
 
     if (name === 'User') {
@@ -100,7 +100,7 @@ function MessageGroup({ group }: MessageGroupType) {
 
   const backgroundColor = useMemo(() => {
     if (name === 'Agent') {
-      return 'hsl(var(--brand-light))';
+      return 'hsl(var(--agent-color))';
     }
 
     if (name === 'User') {
@@ -131,7 +131,7 @@ function MessageGroup({ group }: MessageGroupType) {
       padding="small"
       /* eslint-disable-next-line react/forbid-component-props */
       style={{
-        backgroundColor: name === 'User' ? 'rgba(7, 7, 172, 0.04)' : '',
+        backgroundColor: name === 'User' ? 'hsl(var(--element-focus))' : '',
       }}
       data-testid="message-group"
       gap="medium"
@@ -143,7 +143,7 @@ function MessageGroup({ group }: MessageGroupType) {
         size={'xsmall'}
       />
       <VStack collapseWidth flex gap="small">
-        <Typography bold uppercase variant="body2" color="lighter">
+        <Typography bold variant="body2" color="lighter">
           {name}
         </Typography>
         <VStack

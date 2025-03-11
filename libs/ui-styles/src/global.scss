@@ -41,6 +41,8 @@
   --brand-light-content: 240 96% 40%;
   --brand-light-border: 240, 100%, 88%;
 
+  --element-focus: 240, 50%, 97%;;
+
   --primary: 0 0% 0%;
   --primary-content: 0 0% 100%;
   --primary-hover: 0, 0%, 10%;
@@ -116,6 +118,9 @@
   --user-color: 180, 66%, 92%;
   --user-color-content: 0, 0%, 0%;
 
+  --agent-color: 276, 74%, 93%;
+  --agent-color-content: 0, 0%, 0%;
+
   --font-sans: 'Manrope', -apple-system, BlinkMacSystemFont, 'Segoe UI',
     'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans',
     'Helvetica Neue', sans-serif;
@@ -190,6 +195,14 @@
   --card-content: 0 0% 98%;
   --popover: var(--background);
   --popover-content: var(--content);
+
+  --element-focus: 240, 7%, 14%;
+
+  --user-color: 180, 45%, 36%;
+  --user-color-content: 0, 0%, 100%;
+
+  --agent-color: 278, 44%, 25%;
+  --agent-color-content: 0, 0%, 100%;
 
   --primary: 0 0% 100%;
   --primary-content: 225 6% 13%;
