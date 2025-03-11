@@ -1057,6 +1057,8 @@
       "fileIsRequired": "Please select a file to import",
       "invalidFile": "The file you selected is not a valid agentfile, please select a valid agentfile to import"
     },
+    "changeAgent": "Change agent",
+    "removeAgent": "Remove agent",
     "confirm": "Start import",
     "label": "Agent to upload",
     "chooseAgent": "or click here to upload",

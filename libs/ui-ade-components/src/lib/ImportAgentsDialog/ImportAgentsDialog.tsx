@@ -103,6 +103,8 @@ export function ImportAgentsDialog(props: ImportAgentsDialogProps) {
               fullWidth
               {...field}
               hideLabel
+              changeFileText={t('changeAgent')}
+              removeFileText={t('removeAgent')}
               accept=".af,application/json"
               fileIcon={<LettaInvaderIcon />}
               chooseFileText={t('chooseAgent')}
