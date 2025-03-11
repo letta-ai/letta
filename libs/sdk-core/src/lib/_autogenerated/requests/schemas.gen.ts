@@ -1159,7 +1159,6 @@ export const $BlockUpdate = {
       ],
       title: 'Limit',
       description: 'Character limit of the block.',
-      default: 5000,
     },
     name: {
       anyOf: [

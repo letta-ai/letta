@@ -1,6 +1,6 @@
 from typing import Optional
 
-from pydantic import BaseModel, Field, model_validator
+from pydantic import Field, model_validator
 from typing_extensions import Self
 
 from letta.constants import CORE_MEMORY_BLOCK_CHAR_LIMIT
@@ -37,7 +37,8 @@ class BaseBlock(LettaBase, validate_assignment=True):
 
     @model_validator(mode="after")
     def verify_char_limit(self) -> Self:
-        if self.value and len(self.value) > self.limit:
+        # self.limit can be None from
+        if self.limit is not None and self.value and len(self.value) > self.limit:
             error_msg = f"Edit failed: Exceeds {self.limit} character limit (requested {len(self.value)}) - {str(self)}."
             raise ValueError(error_msg)
 
@@ -89,59 +90,14 @@ class Persona(Block):
     label: str = "persona"
 
 
-# class CreateBlock(BaseBlock):
-#    """Create a block"""
-#
-#    is_template: bool = True
-#    label: str = Field(..., description="Label of the block.")
-
-
-class BlockLabelUpdate(BaseModel):
-    """Update the label of a block"""
-
-    current_label: str = Field(..., description="Current label of the block.")
-    new_label: str = Field(..., description="New label of the block.")
-
-
-# class CreatePersona(CreateBlock):
-#    """Create a persona block"""
-#
-#    label: str = "persona"
-#
-#
-# class CreateHuman(CreateBlock):
-#    """Create a human block"""
-#
-#    label: str = "human"
-
-
 class BlockUpdate(BaseBlock):
     """Update a block"""
 
-    limit: Optional[int] = Field(CORE_MEMORY_BLOCK_CHAR_LIMIT, description="Character limit of the block.")
+    limit: Optional[int] = Field(None, description="Character limit of the block.")
     value: Optional[str] = Field(None, description="Value of the block.")
 
     class Config:
         extra = "ignore"  # Ignores extra fields
-
-
-class BlockLimitUpdate(BaseModel):
-    """Update the limit of a block"""
-
-    label: str = Field(..., description="Label of the block.")
-    limit: int = Field(..., description="New limit of the block.")
-
-
-# class UpdatePersona(BlockUpdate):
-#    """Update a persona block"""
-#
-#    label: str = "persona"
-#
-#
-# class UpdateHuman(BlockUpdate):
-#    """Update a human block"""
-#
-#    label: str = "human"
 
 
 class CreateBlock(BaseBlock):

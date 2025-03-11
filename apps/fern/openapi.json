@@ -11054,8 +11054,7 @@
               }
             ],
             "title": "Limit",
-            "description": "Character limit of the block.",
-            "default": 5000
+            "description": "Character limit of the block."
           },
           "name": {
             "anyOf": [
