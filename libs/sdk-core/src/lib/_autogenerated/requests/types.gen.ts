@@ -588,6 +588,7 @@ export type ChatCompletionUserMessageParam = {
         | ChatCompletionContentPartTextParam
         | ChatCompletionContentPartImageParam
         | ChatCompletionContentPartInputAudioParam
+        | File
       >;
   role: 'user';
   name?: string;
@@ -631,6 +632,9 @@ export type CompletionCreateParamsNonStreaming = {
     | 'o1-preview-2024-09-12'
     | 'o1-mini'
     | 'o1-mini-2024-09-12'
+    | 'computer-use-preview'
+    | 'computer-use-preview-2025-02-04'
+    | 'computer-use-preview-2025-03-11'
     | 'gpt-4.5-preview'
     | 'gpt-4.5-preview-2025-02-27'
     | 'gpt-4o'
@@ -685,8 +689,8 @@ export type CompletionCreateParamsNonStreaming = {
   reasoning_effort?: 'low' | 'medium' | 'high' | null;
   response_format?:
     | ResponseFormatText
-    | ResponseFormatJSONObject
-    | ResponseFormatJSONSchema;
+    | ResponseFormatJSONSchema
+    | ResponseFormatJSONObject;
   seed?: number | null;
   service_tier?: 'auto' | 'default' | null;
   stop?: string | Array<string> | null;
@@ -702,6 +706,7 @@ export type CompletionCreateParamsNonStreaming = {
   top_logprobs?: number | null;
   top_p?: number | null;
   user?: string;
+  web_search_options?: WebSearchOptions;
   stream?: false | null;
 };
 
@@ -724,6 +729,9 @@ export type CompletionCreateParamsStreaming = {
     | 'o1-preview-2024-09-12'
     | 'o1-mini'
     | 'o1-mini-2024-09-12'
+    | 'computer-use-preview'
+    | 'computer-use-preview-2025-02-04'
+    | 'computer-use-preview-2025-03-11'
     | 'gpt-4.5-preview'
     | 'gpt-4.5-preview-2025-02-27'
     | 'gpt-4o'
@@ -778,8 +786,8 @@ export type CompletionCreateParamsStreaming = {
   reasoning_effort?: 'low' | 'medium' | 'high' | null;
   response_format?:
     | ResponseFormatText
-    | ResponseFormatJSONObject
-    | ResponseFormatJSONSchema;
+    | ResponseFormatJSONSchema
+    | ResponseFormatJSONObject;
   seed?: number | null;
   service_tier?: 'auto' | 'default' | null;
   stop?: string | Array<string> | null;
@@ -795,6 +803,7 @@ export type CompletionCreateParamsStreaming = {
   top_logprobs?: number | null;
   top_p?: number | null;
   user?: string;
+  web_search_options?: WebSearchOptions;
   stream: true;
 };
 
@@ -1210,6 +1219,19 @@ export type embedding_endpoint_type =
   | 'mistral'
   | 'together';
 
+export type File = {
+  file: FileFile;
+  type: 'file';
+};
+
+export type type10 = 'file';
+
+export type FileFile = {
+  file_data?: string;
+  file_id?: string;
+  file_name?: string;
+};
+
 /**
  * Representation of a single FileMetadata
  */
@@ -1449,7 +1471,7 @@ export type InitToolRule = {
   type?: 'run_first';
 };
 
-export type type10 = 'run_first';
+export type type11 = 'run_first';
 
 export type InputAudio = {
   data: string;
@@ -2114,14 +2136,14 @@ export type ResponseFormatJSONObject = {
   type: 'json_object';
 };
 
-export type type11 = 'json_object';
+export type type12 = 'json_object';
 
 export type ResponseFormatJSONSchema = {
   json_schema: JSONSchema;
   type: 'json_schema';
 };
 
-export type type12 = 'json_schema';
+export type type13 = 'json_schema';
 
 export type ResponseFormatText = {
   type: 'text';
@@ -2520,7 +2542,7 @@ export type TerminalToolRule = {
   type?: 'exit_loop';
 };
 
-export type type13 = 'exit_loop';
+export type type14 = 'exit_loop';
 
 export type TextContent = {
   /**
@@ -2982,6 +3004,27 @@ export type ValidationError = {
   loc: Array<string | number>;
   msg: string;
   type: string;
+};
+
+export type WebSearchOptions = {
+  search_context_size?: 'low' | 'medium' | 'high';
+  user_location?: WebSearchOptionsUserLocation | null;
+};
+
+export type search_context_size = 'low' | 'medium' | 'high';
+
+export type WebSearchOptionsUserLocation = {
+  approximate: WebSearchOptionsUserLocationApproximate;
+  type: 'approximate';
+};
+
+export type type15 = 'approximate';
+
+export type WebSearchOptionsUserLocationApproximate = {
+  city?: string;
+  country?: string;
+  region?: string;
+  timezone?: string;
 };
 
 export type openai__types__chat__chat_completion_message_tool_call_param__Function =

@@ -560,11 +560,11 @@ def test_create_agent_passed_in_initial_messages(server: SyncServer, default_use
     assert server.message_manager.size(agent_id=agent_state.id, actor=default_user) == 2
     init_messages = server.agent_manager.get_in_context_messages(agent_id=agent_state.id, actor=default_user)
     # Check that the system appears in the first initial message
-    assert create_agent_request.system in init_messages[0].text
-    assert create_agent_request.memory_blocks[0].value in init_messages[0].text
+    assert create_agent_request.system in init_messages[0].content[0].text
+    assert create_agent_request.memory_blocks[0].value in init_messages[0].content[0].text
     # Check that the second message is the passed in initial message seq
     assert create_agent_request.initial_message_sequence[0].role == init_messages[1].role
-    assert create_agent_request.initial_message_sequence[0].content in init_messages[1].text
+    assert create_agent_request.initial_message_sequence[0].content in init_messages[1].content[0].text
 
 
 def test_create_agent_default_initial_message(server: SyncServer, default_user, default_block):
@@ -585,8 +585,8 @@ def test_create_agent_default_initial_message(server: SyncServer, default_user, 
     assert server.message_manager.size(agent_id=agent_state.id, actor=default_user) == 4
     init_messages = server.agent_manager.get_in_context_messages(agent_id=agent_state.id, actor=default_user)
     # Check that the system appears in the first initial message
-    assert create_agent_request.system in init_messages[0].text
-    assert create_agent_request.memory_blocks[0].value in init_messages[0].text
+    assert create_agent_request.system in init_messages[0].content[0].text
+    assert create_agent_request.memory_blocks[0].value in init_messages[0].content[0].text
 
 
 def test_update_agent(server: SyncServer, comprehensive_test_agent_fixture, other_tool, other_source, other_block, default_user):
@@ -1915,7 +1915,7 @@ def test_upsert_base_tools(server: SyncServer, default_user):
 def test_message_create(server: SyncServer, hello_world_message_fixture, default_user):
     """Test creating a message using hello_world_message_fixture fixture"""
     assert hello_world_message_fixture.id is not None
-    assert hello_world_message_fixture.text == "Hello, world!"
+    assert hello_world_message_fixture.content[0].text == "Hello, world!"
     assert hello_world_message_fixture.role == "user"
 
     # Verify we can retrieve it
@@ -1925,7 +1925,7 @@ def test_message_create(server: SyncServer, hello_world_message_fixture, default
     )
     assert retrieved is not None
     assert retrieved.id == hello_world_message_fixture.id
-    assert retrieved.text == hello_world_message_fixture.text
+    assert retrieved.content[0].text == hello_world_message_fixture.content[0].text
     assert retrieved.role == hello_world_message_fixture.role
 
 
@@ -1934,7 +1934,7 @@ def test_message_get_by_id(server: SyncServer, hello_world_message_fixture, defa
     retrieved = server.message_manager.get_message_by_id(hello_world_message_fixture.id, actor=default_user)
     assert retrieved is not None
     assert retrieved.id == hello_world_message_fixture.id
-    assert retrieved.text == hello_world_message_fixture.text
+    assert retrieved.content[0].text == hello_world_message_fixture.content[0].text
 
 
 def test_message_update(server: SyncServer, hello_world_message_fixture, default_user, other_user):
@@ -1942,9 +1942,9 @@ def test_message_update(server: SyncServer, hello_world_message_fixture, default
     new_text = "Updated text"
     updated = server.message_manager.update_message_by_id(hello_world_message_fixture.id, MessageUpdate(content=new_text), actor=other_user)
     assert updated is not None
-    assert updated.text == new_text
+    assert updated.content[0].text == new_text
     retrieved = server.message_manager.get_message_by_id(hello_world_message_fixture.id, actor=default_user)
-    assert retrieved.text == new_text
+    assert retrieved.content[0].text == new_text
 
     # Assert that orm metadata fields are populated
     assert retrieved.created_by_id == default_user.id
@@ -2073,7 +2073,7 @@ def test_message_listing_text_search(server: SyncServer, hello_world_message_fix
         agent_id=sarah_agent.id, actor=default_user, query_text="Test message", limit=10
     )
     assert len(search_results) == 4
-    assert all("Test message" in msg.text for msg in search_results)
+    assert all("Test message" in msg.content[0].text for msg in search_results)
 
     # Test no results
     search_results = server.message_manager.list_user_messages_for_agent(
@@ -3056,7 +3056,7 @@ def test_job_messages_add(server: SyncServer, default_run, hello_world_message_f
     )
     assert len(messages) == 1
     assert messages[0].id == hello_world_message_fixture.id
-    assert messages[0].text == hello_world_message_fixture.text
+    assert messages[0].content[0].text == hello_world_message_fixture.content[0].text
 
 
 def test_job_messages_pagination(server: SyncServer, default_run, default_user, sarah_agent):

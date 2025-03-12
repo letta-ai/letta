@@ -38,7 +38,7 @@ from letta.orm.enums import ToolType
 from letta.schemas.agent import AgentState, AgentStepResponse, UpdateAgent
 from letta.schemas.block import BlockUpdate
 from letta.schemas.embedding_config import EmbeddingConfig
-from letta.schemas.enums import MessageRole
+from letta.schemas.enums import MessageContentType, MessageRole
 from letta.schemas.memory import ContextWindowOverview, Memory
 from letta.schemas.message import Message, ToolReturn
 from letta.schemas.openai.chat_completion_response import ChatCompletionResponse
@@ -154,13 +154,14 @@ class Agent(BaseAgent):
         in_context_messages = self.agent_manager.get_in_context_messages(agent_id=self.agent_state.id, actor=self.user)
         for i in range(len(in_context_messages) - 1, -1, -1):
             msg = in_context_messages[i]
-            if msg.role == MessageRole.tool and msg.text:
+            if msg.role == MessageRole.tool and msg.content and len(msg.content) == 1 and msg.content[0].type == MessageContentType.text:
+                text_content = msg.content[0].text
                 try:
-                    response_json = json.loads(msg.text)
+                    response_json = json.loads(text_content)
                     if response_json.get("message"):
                         return response_json["message"]
                 except (json.JSONDecodeError, KeyError):
-                    raise ValueError(f"Invalid JSON format in message: {msg.text}")
+                    raise ValueError(f"Invalid JSON format in message: {text_content}")
         return None
 
     def update_memory_if_changed(self, new_memory: Memory) -> bool:
@@ -1010,7 +1011,7 @@ class Agent(BaseAgent):
                         err_msg,
                         details={
                             "num_in_context_messages": len(self.agent_state.message_ids),
-                            "in_context_messages_text": [m.text for m in in_context_messages],
+                            "in_context_messages_text": [m.content for m in in_context_messages],
                             "token_counts": token_counts,
                         },
                     )
@@ -1164,14 +1165,17 @@ class Agent(BaseAgent):
         if (
             len(in_context_messages) > 1
             and in_context_messages[1].role == MessageRole.user
-            and isinstance(in_context_messages[1].text, str)
+            and in_context_messages[1].content
+            and len(in_context_messages[1].content) == 1
+            and in_context_messages[1].content[0].type == MessageContentType.text
             # TODO remove hardcoding
-            and "The following is a summary of the previous " in in_context_messages[1].text
+            and "The following is a summary of the previous " in in_context_messages[1].content[0].text
         ):
             # Summary message exists
-            assert in_context_messages[1].text is not None
-            summary_memory = in_context_messages[1].text
-            num_tokens_summary_memory = count_tokens(in_context_messages[1].text)
+            text_content = in_context_messages[1].content[0].text
+            assert text_content is not None
+            summary_memory = text_content
+            num_tokens_summary_memory = count_tokens(text_content)
             # with a summary message, the real messages start at index 2
             num_tokens_messages = (
                 num_tokens_from_messages(messages=in_context_messages_openai[2:], model=self.model)

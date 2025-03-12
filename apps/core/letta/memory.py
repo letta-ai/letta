@@ -36,7 +36,7 @@ def get_memory_functions(cls: Memory) -> Dict[str, Callable]:
 
 def _format_summary_history(message_history: List[Message]):
     # TODO use existing prompt formatters for this (eg ChatML)
-    return "\n".join([f"{m.role}: {m.text}" for m in message_history])
+    return "\n".join([f"{m.role}: {m.content[0].text}" for m in message_history])
 
 
 def summarize_messages(

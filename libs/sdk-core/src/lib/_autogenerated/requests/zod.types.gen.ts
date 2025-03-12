@@ -1216,6 +1216,19 @@ export const ChatCompletionToolParam = z.object({
   type: z.literal('function'),
 });
 
+export type FileFile = z.infer<typeof FileFile>;
+export const FileFile = z.object({
+  file_data: z.string().optional(),
+  file_id: z.string().optional(),
+  file_name: z.string().optional(),
+});
+
+export type File = z.infer<typeof File>;
+export const File = z.object({
+  file: FileFile,
+  type: z.literal('file'),
+});
+
 export type ChatCompletionUserMessageParam = z.infer<
   typeof ChatCompletionUserMessageParam
 >;
@@ -1227,11 +1240,13 @@ export const ChatCompletionUserMessageParam = z.object({
         ChatCompletionContentPartTextParam,
         ChatCompletionContentPartImageParam,
         ChatCompletionContentPartInputAudioParam,
+        File,
         z.array(
           z.union([
             ChatCompletionContentPartTextParam,
             ChatCompletionContentPartImageParam,
             ChatCompletionContentPartInputAudioParam,
+            File,
           ]),
         ),
       ]),
@@ -1244,11 +1259,13 @@ export const ChatCompletionUserMessageParam = z.object({
             ChatCompletionContentPartTextParam,
             ChatCompletionContentPartImageParam,
             ChatCompletionContentPartInputAudioParam,
+            File,
             z.array(
               z.union([
                 ChatCompletionContentPartTextParam,
                 ChatCompletionContentPartImageParam,
                 ChatCompletionContentPartInputAudioParam,
+                File,
               ]),
             ),
           ]),
@@ -1276,11 +1293,6 @@ export const ResponseFormatText = z.object({
   type: z.literal('text'),
 });
 
-export type ResponseFormatJSONObject = z.infer<typeof ResponseFormatJSONObject>;
-export const ResponseFormatJSONObject = z.object({
-  type: z.literal('json_object'),
-});
-
 export type JSONSchema = z.infer<typeof JSONSchema>;
 export const JSONSchema = z.object({
   name: z.string(),
@@ -1300,6 +1312,43 @@ export type ResponseFormatJSONSchema = z.infer<typeof ResponseFormatJSONSchema>;
 export const ResponseFormatJSONSchema = z.object({
   json_schema: JSONSchema,
   type: z.literal('json_schema'),
+});
+
+export type ResponseFormatJSONObject = z.infer<typeof ResponseFormatJSONObject>;
+export const ResponseFormatJSONObject = z.object({
+  type: z.literal('json_object'),
+});
+
+export type WebSearchOptionsUserLocationApproximate = z.infer<
+  typeof WebSearchOptionsUserLocationApproximate
+>;
+export const WebSearchOptionsUserLocationApproximate = z.object({
+  city: z.string().optional(),
+  country: z.string().optional(),
+  region: z.string().optional(),
+  timezone: z.string().optional(),
+});
+
+export type WebSearchOptionsUserLocation = z.infer<
+  typeof WebSearchOptionsUserLocation
+>;
+export const WebSearchOptionsUserLocation = z.object({
+  approximate: WebSearchOptionsUserLocationApproximate,
+  type: z.literal('approximate'),
+});
+
+export type WebSearchOptions = z.infer<typeof WebSearchOptions>;
+export const WebSearchOptions = z.object({
+  search_context_size: z
+    .union([z.literal('low'), z.literal('medium'), z.literal('high')])
+    .optional(),
+  user_location: z
+    .union([
+      WebSearchOptionsUserLocation,
+      z.null(),
+      z.array(z.union([WebSearchOptionsUserLocation, z.null()])),
+    ])
+    .optional(),
 });
 
 export type CompletionCreateParamsNonStreaming = z.infer<
@@ -1336,6 +1385,9 @@ export const CompletionCreateParamsNonStreaming = z.object({
     z.literal('o1-preview-2024-09-12'),
     z.literal('o1-mini'),
     z.literal('o1-mini-2024-09-12'),
+    z.literal('computer-use-preview'),
+    z.literal('computer-use-preview-2025-02-04'),
+    z.literal('computer-use-preview-2025-03-11'),
     z.literal('gpt-4.5-preview'),
     z.literal('gpt-4.5-preview-2025-02-27'),
     z.literal('gpt-4o'),
@@ -1380,6 +1432,9 @@ export const CompletionCreateParamsNonStreaming = z.object({
         z.literal('o1-preview-2024-09-12'),
         z.literal('o1-mini'),
         z.literal('o1-mini-2024-09-12'),
+        z.literal('computer-use-preview'),
+        z.literal('computer-use-preview-2025-02-04'),
+        z.literal('computer-use-preview-2025-03-11'),
         z.literal('gpt-4.5-preview'),
         z.literal('gpt-4.5-preview-2025-02-27'),
         z.literal('gpt-4o'),
@@ -1551,13 +1606,13 @@ export const CompletionCreateParamsNonStreaming = z.object({
   response_format: z
     .union([
       ResponseFormatText,
-      ResponseFormatJSONObject,
       ResponseFormatJSONSchema,
+      ResponseFormatJSONObject,
       z.array(
         z.union([
           ResponseFormatText,
-          ResponseFormatJSONObject,
           ResponseFormatJSONSchema,
+          ResponseFormatJSONObject,
         ]),
       ),
       z.undefined(),
@@ -1648,6 +1703,7 @@ export const CompletionCreateParamsNonStreaming = z.object({
     ])
     .optional(),
   user: z.union([z.string(), z.undefined()]).optional(),
+  web_search_options: z.union([WebSearchOptions, z.undefined()]).optional(),
   stream: z
     .union([
       z.literal('false'),
@@ -1692,6 +1748,9 @@ export const CompletionCreateParamsStreaming = z.object({
     z.literal('o1-preview-2024-09-12'),
     z.literal('o1-mini'),
     z.literal('o1-mini-2024-09-12'),
+    z.literal('computer-use-preview'),
+    z.literal('computer-use-preview-2025-02-04'),
+    z.literal('computer-use-preview-2025-03-11'),
     z.literal('gpt-4.5-preview'),
     z.literal('gpt-4.5-preview-2025-02-27'),
     z.literal('gpt-4o'),
@@ -1736,6 +1795,9 @@ export const CompletionCreateParamsStreaming = z.object({
         z.literal('o1-preview-2024-09-12'),
         z.literal('o1-mini'),
         z.literal('o1-mini-2024-09-12'),
+        z.literal('computer-use-preview'),
+        z.literal('computer-use-preview-2025-02-04'),
+        z.literal('computer-use-preview-2025-03-11'),
         z.literal('gpt-4.5-preview'),
         z.literal('gpt-4.5-preview-2025-02-27'),
         z.literal('gpt-4o'),
@@ -1907,13 +1969,13 @@ export const CompletionCreateParamsStreaming = z.object({
   response_format: z
     .union([
       ResponseFormatText,
-      ResponseFormatJSONObject,
       ResponseFormatJSONSchema,
+      ResponseFormatJSONObject,
       z.array(
         z.union([
           ResponseFormatText,
-          ResponseFormatJSONObject,
           ResponseFormatJSONSchema,
+          ResponseFormatJSONObject,
         ]),
       ),
       z.undefined(),
@@ -2004,6 +2066,7 @@ export const CompletionCreateParamsStreaming = z.object({
     ])
     .optional(),
   user: z.union([z.string(), z.undefined()]).optional(),
+  web_search_options: z.union([WebSearchOptions, z.undefined()]).optional(),
   stream: z.literal('true'),
 });
 

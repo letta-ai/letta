@@ -1698,6 +1698,9 @@ export const $ChatCompletionUserMessageParam = {
               {
                 $ref: '#/components/schemas/ChatCompletionContentPartInputAudioParam',
               },
+              {
+                $ref: '#/components/schemas/File',
+              },
             ],
           },
           type: 'array',
@@ -1796,6 +1799,9 @@ export const $CompletionCreateParamsNonStreaming = {
             'o1-preview-2024-09-12',
             'o1-mini',
             'o1-mini-2024-09-12',
+            'computer-use-preview',
+            'computer-use-preview-2025-02-04',
+            'computer-use-preview-2025-03-11',
             'gpt-4.5-preview',
             'gpt-4.5-preview-2025-02-27',
             'gpt-4o',
@@ -2004,10 +2010,10 @@ export const $CompletionCreateParamsNonStreaming = {
           $ref: '#/components/schemas/ResponseFormatText',
         },
         {
-          $ref: '#/components/schemas/ResponseFormatJSONObject',
+          $ref: '#/components/schemas/ResponseFormatJSONSchema',
         },
         {
-          $ref: '#/components/schemas/ResponseFormatJSONSchema',
+          $ref: '#/components/schemas/ResponseFormatJSONObject',
         },
       ],
       title: 'Response Format',
@@ -2128,6 +2134,9 @@ export const $CompletionCreateParamsNonStreaming = {
     user: {
       type: 'string',
       title: 'User',
+    },
+    web_search_options: {
+      $ref: '#/components/schemas/WebSearchOptions',
     },
     stream: {
       anyOf: [
@@ -2192,6 +2201,9 @@ export const $CompletionCreateParamsStreaming = {
             'o1-preview-2024-09-12',
             'o1-mini',
             'o1-mini-2024-09-12',
+            'computer-use-preview',
+            'computer-use-preview-2025-02-04',
+            'computer-use-preview-2025-03-11',
             'gpt-4.5-preview',
             'gpt-4.5-preview-2025-02-27',
             'gpt-4o',
@@ -2400,10 +2412,10 @@ export const $CompletionCreateParamsStreaming = {
           $ref: '#/components/schemas/ResponseFormatText',
         },
         {
-          $ref: '#/components/schemas/ResponseFormatJSONObject',
+          $ref: '#/components/schemas/ResponseFormatJSONSchema',
         },
         {
-          $ref: '#/components/schemas/ResponseFormatJSONSchema',
+          $ref: '#/components/schemas/ResponseFormatJSONObject',
         },
       ],
       title: 'Response Format',
@@ -2524,6 +2536,9 @@ export const $CompletionCreateParamsStreaming = {
     user: {
       type: 'string',
       title: 'User',
+    },
+    web_search_options: {
+      $ref: '#/components/schemas/WebSearchOptions',
     },
     stream: {
       type: 'boolean',
@@ -3421,6 +3436,42 @@ Attributes:
     azure_endpoint (:obj:\`str\`, optional): The Azure endpoint for the model (Azure only).
     azure_version (str): The Azure version for the model (Azure only).
     azure_deployment (str): The Azure deployment for the model (Azure only).`,
+} as const;
+
+export const $File = {
+  properties: {
+    file: {
+      $ref: '#/components/schemas/FileFile',
+    },
+    type: {
+      type: 'string',
+      enum: ['file'],
+      const: 'file',
+      title: 'Type',
+    },
+  },
+  type: 'object',
+  required: ['file', 'type'],
+  title: 'File',
+} as const;
+
+export const $FileFile = {
+  properties: {
+    file_data: {
+      type: 'string',
+      title: 'File Data',
+    },
+    file_id: {
+      type: 'string',
+      title: 'File Id',
+    },
+    file_name: {
+      type: 'string',
+      title: 'File Name',
+    },
+  },
+  type: 'object',
+  title: 'FileFile',
 } as const;
 
 export const $FileMetadata = {
@@ -7730,6 +7781,68 @@ export const $ValidationError = {
   type: 'object',
   required: ['loc', 'msg', 'type'],
   title: 'ValidationError',
+} as const;
+
+export const $WebSearchOptions = {
+  properties: {
+    search_context_size: {
+      type: 'string',
+      enum: ['low', 'medium', 'high'],
+      title: 'Search Context Size',
+    },
+    user_location: {
+      anyOf: [
+        {
+          $ref: '#/components/schemas/WebSearchOptionsUserLocation',
+        },
+        {
+          type: 'null',
+        },
+      ],
+    },
+  },
+  type: 'object',
+  title: 'WebSearchOptions',
+} as const;
+
+export const $WebSearchOptionsUserLocation = {
+  properties: {
+    approximate: {
+      $ref: '#/components/schemas/WebSearchOptionsUserLocationApproximate',
+    },
+    type: {
+      type: 'string',
+      enum: ['approximate'],
+      const: 'approximate',
+      title: 'Type',
+    },
+  },
+  type: 'object',
+  required: ['approximate', 'type'],
+  title: 'WebSearchOptionsUserLocation',
+} as const;
+
+export const $WebSearchOptionsUserLocationApproximate = {
+  properties: {
+    city: {
+      type: 'string',
+      title: 'City',
+    },
+    country: {
+      type: 'string',
+      title: 'Country',
+    },
+    region: {
+      type: 'string',
+      title: 'Region',
+    },
+    timezone: {
+      type: 'string',
+      title: 'Timezone',
+    },
+  },
+  type: 'object',
+  title: 'WebSearchOptionsUserLocationApproximate',
 } as const;
 
 export const $openai__types__chat__chat_completion_message_tool_call_param__Function =
