@@ -42,7 +42,6 @@ from letta.schemas.user import User as PydanticUser
 from letta.schemas.user import UserUpdate
 from letta.server.server import SyncServer
 from letta.services.block_manager import BlockManager
-from letta.services.identity_manager import IdentityManager
 from letta.services.organization_manager import OrganizationManager
 from letta.settings import tool_settings
 from tests.helpers.utils import comprehensive_agent_checks
@@ -2243,7 +2242,6 @@ def test_get_agents_for_block(server: SyncServer, sarah_agent, charles_agent, de
 
 
 def test_create_and_upsert_identity(server: SyncServer, default_user):
-    identity_manager = IdentityManager()
     identity_create = IdentityCreate(
         identifier_key="1234",
         name="caren",
@@ -2254,7 +2252,7 @@ def test_create_and_upsert_identity(server: SyncServer, default_user):
         ],
     )
 
-    identity = identity_manager.create_identity(identity_create, actor=default_user)
+    identity = server.identity_manager.create_identity(identity_create, actor=default_user)
 
     # Assertions to ensure the created identity matches the expected values
     assert identity.identifier_key == identity_create.identifier_key
@@ -2265,48 +2263,46 @@ def test_create_and_upsert_identity(server: SyncServer, default_user):
     assert identity.project_id == None
 
     with pytest.raises(UniqueConstraintViolationError):
-        identity_manager.create_identity(
+        server.identity_manager.create_identity(
             IdentityCreate(identifier_key="1234", name="sarah", identity_type=IdentityType.user),
             actor=default_user,
         )
 
     identity_create.properties = [(IdentityProperty(key="age", value=29, type=IdentityPropertyType.number))]
 
-    identity = identity_manager.upsert_identity(identity_create, actor=default_user)
+    identity = server.identity_manager.upsert_identity(identity_create, actor=default_user)
 
-    identity = identity_manager.get_identity(identity_id=identity.id, actor=default_user)
+    identity = server.identity_manager.get_identity(identity_id=identity.id, actor=default_user)
     assert len(identity.properties) == 1
     assert identity.properties[0].key == "age"
     assert identity.properties[0].value == 29
 
-    identity_manager.delete_identity(identity.id, actor=default_user)
+    server.identity_manager.delete_identity(identity_id=identity.id, actor=default_user)
 
 
 def test_get_identities(server, default_user):
-    identity_manager = IdentityManager()
-
     # Create identities to retrieve later
-    user = identity_manager.create_identity(
+    user = server.identity_manager.create_identity(
         IdentityCreate(name="caren", identifier_key="1234", identity_type=IdentityType.user), actor=default_user
     )
-    org = identity_manager.create_identity(
+    org = server.identity_manager.create_identity(
         IdentityCreate(name="letta", identifier_key="0001", identity_type=IdentityType.org), actor=default_user
     )
 
     # Retrieve identities by different filters
-    all_identities = identity_manager.list_identities(actor=default_user)
+    all_identities = server.identity_manager.list_identities(actor=default_user)
     assert len(all_identities) == 2
 
-    user_identities = identity_manager.list_identities(actor=default_user, identity_type=IdentityType.user)
+    user_identities = server.identity_manager.list_identities(actor=default_user, identity_type=IdentityType.user)
     assert len(user_identities) == 1
     assert user_identities[0].name == user.name
 
-    org_identities = identity_manager.list_identities(actor=default_user, identity_type=IdentityType.org)
+    org_identities = server.identity_manager.list_identities(actor=default_user, identity_type=IdentityType.org)
     assert len(org_identities) == 1
     assert org_identities[0].name == org.name
 
-    identity_manager.delete_identity(user.id, actor=default_user)
-    identity_manager.delete_identity(org.id, actor=default_user)
+    server.identity_manager.delete_identity(identity_id=user.id, actor=default_user)
+    server.identity_manager.delete_identity(identity_id=org.id, actor=default_user)
 
 
 def test_update_identity(server: SyncServer, sarah_agent, charles_agent, default_user):
@@ -2333,7 +2329,7 @@ def test_update_identity(server: SyncServer, sarah_agent, charles_agent, default
     agent_state = server.agent_manager.get_agent_by_id(agent_id=charles_agent.id, actor=default_user)
     assert identity.id in agent_state.identity_ids
 
-    server.identity_manager.delete_identity(identity.id, actor=default_user)
+    server.identity_manager.delete_identity(identity_id=identity.id, actor=default_user)
 
 
 def test_attach_detach_identity_from_agent(server: SyncServer, sarah_agent, default_user):
@@ -2360,29 +2356,137 @@ def test_attach_detach_identity_from_agent(server: SyncServer, sarah_agent, defa
     assert not identity.id in agent_state.identity_ids
 
 
-def test_get_agents_for_identities(server: SyncServer, sarah_agent, charles_agent, default_user):
+def test_get_set_agents_for_identities(server: SyncServer, sarah_agent, charles_agent, default_user):
     identity = server.identity_manager.create_identity(
         IdentityCreate(name="caren", identifier_key="1234", identity_type=IdentityType.user, agent_ids=[sarah_agent.id, charles_agent.id]),
         actor=default_user,
     )
 
-    # Get the agents for identity id
-    agent_states = server.agent_manager.list_agents(identifier_id=identity.id, actor=default_user)
-    assert len(agent_states) == 2
+    agent_with_identity = server.create_agent(
+        CreateAgent(
+            memory_blocks=[],
+            llm_config=LLMConfig.default_config("gpt-4"),
+            embedding_config=EmbeddingConfig.default_config(provider="openai"),
+            identity_ids=[identity.id],
+        ),
+        actor=default_user,
+    )
+    agent_without_identity = server.create_agent(
+        CreateAgent(
+            memory_blocks=[],
+            llm_config=LLMConfig.default_config("gpt-4"),
+            embedding_config=EmbeddingConfig.default_config(provider="openai"),
+        ),
+        actor=default_user,
+    )
 
-    # Check both agents are in the list
+    # Get the agents for identity id
+    agent_states = server.agent_manager.list_agents(identity_id=identity.id, actor=default_user)
+    assert len(agent_states) == 3
+
+    # Check all agents are in the list
     agent_state_ids = [a.id for a in agent_states]
     assert sarah_agent.id in agent_state_ids
     assert charles_agent.id in agent_state_ids
+    assert agent_with_identity.id in agent_state_ids
+    assert not agent_without_identity.id in agent_state_ids
 
     # Get the agents for identifier key
     agent_states = server.agent_manager.list_agents(identifier_keys=[identity.identifier_key], actor=default_user)
-    assert len(agent_states) == 2
+    assert len(agent_states) == 3
 
-    # Check both agents are in the list
+    # Check all agents are in the list
     agent_state_ids = [a.id for a in agent_states]
     assert sarah_agent.id in agent_state_ids
     assert charles_agent.id in agent_state_ids
+    assert agent_with_identity.id in agent_state_ids
+    assert not agent_without_identity.id in agent_state_ids
+
+    # Delete new agents
+    server.agent_manager.delete_agent(agent_id=agent_with_identity.id, actor=default_user)
+    server.agent_manager.delete_agent(agent_id=agent_without_identity.id, actor=default_user)
+
+    # Get the agents for identity id
+    agent_states = server.agent_manager.list_agents(identity_id=identity.id, actor=default_user)
+    assert len(agent_states) == 2
+
+    # Check only initial agents are in the list
+    agent_state_ids = [a.id for a in agent_states]
+    assert sarah_agent.id in agent_state_ids
+    assert charles_agent.id in agent_state_ids
+
+    server.identity_manager.delete_identity(identity_id=identity.id, actor=default_user)
+
+
+def test_attach_detach_identity_from_block(server: SyncServer, default_block, default_user):
+    # Create an identity
+    identity = server.identity_manager.create_identity(
+        IdentityCreate(name="caren", identifier_key="1234", identity_type=IdentityType.user, block_ids=[default_block.id]),
+        actor=default_user,
+    )
+
+    # Check that identity has been attached
+    blocks = server.block_manager.get_blocks(identity_id=identity.id, actor=default_user)
+    assert len(blocks) == 1 and blocks[0].id == default_block.id
+
+    # Now attempt to delete the identity
+    server.identity_manager.delete_identity(identity_id=identity.id, actor=default_user)
+
+    # Verify that the identity was deleted
+    identities = server.identity_manager.list_identities(actor=default_user)
+    assert len(identities) == 0
+
+    # Check that block has been detached too
+    blocks = server.block_manager.get_blocks(identity_id=identity.id, actor=default_user)
+    assert len(blocks) == 0
+
+
+def test_get_set_blocks_for_identities(server: SyncServer, default_block, default_user):
+    block_manager = BlockManager()
+    block_with_identity = block_manager.create_or_update_block(PydanticBlock(label="persona", value="Original Content"), actor=default_user)
+    block_without_identity = block_manager.create_or_update_block(PydanticBlock(label="user", value="Original Content"), actor=default_user)
+    identity = server.identity_manager.create_identity(
+        IdentityCreate(
+            name="caren", identifier_key="1234", identity_type=IdentityType.user, block_ids=[default_block.id, block_with_identity.id]
+        ),
+        actor=default_user,
+    )
+
+    # Get the blocks for identity id
+    blocks = server.block_manager.get_blocks(identity_id=identity.id, actor=default_user)
+    assert len(blocks) == 2
+
+    # Check blocks are in the list
+    block_ids = [b.id for b in blocks]
+    assert default_block.id in block_ids
+    assert block_with_identity.id in block_ids
+    assert not block_without_identity.id in block_ids
+
+    # Get the blocks for identifier key
+    blocks = server.block_manager.get_blocks(identifier_keys=[identity.identifier_key], actor=default_user)
+    assert len(blocks) == 2
+
+    # Check blocks are in the list
+    block_ids = [b.id for b in blocks]
+    assert default_block.id in block_ids
+    assert block_with_identity.id in block_ids
+    assert not block_without_identity.id in block_ids
+
+    # Delete new agents
+    server.block_manager.delete_block(block_id=block_with_identity.id, actor=default_user)
+    server.block_manager.delete_block(block_id=block_without_identity.id, actor=default_user)
+
+    # Get the blocks for identity id
+    blocks = server.block_manager.get_blocks(identity_id=identity.id, actor=default_user)
+    assert len(blocks) == 1
+
+    # Check only initial block in the list
+    block_ids = [b.id for b in blocks]
+    assert default_block.id in block_ids
+    assert not block_with_identity.id in block_ids
+    assert not block_without_identity.id in block_ids
+
+    server.identity_manager.delete_identity(identity.id, actor=default_user)
 
 
 # ======================================================================================================================
