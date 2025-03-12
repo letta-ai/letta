@@ -229,7 +229,9 @@ export default class App {
 
     if (lettaServer.stdout) {
       lettaServer.stdout.on('data', (data) => {
-        console.log(`stdout: ${data}`);
+        if (data.toString().includes('/v1/health')) {
+          return;
+        }
 
         lettaServerLogs.addLog({
           type: 'info',
