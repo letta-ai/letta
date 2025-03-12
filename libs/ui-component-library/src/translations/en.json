@@ -49,5 +49,8 @@
       "medium": "Medium",
       "hard": "Hard"
     }
+  },
+  "onboarding/OnboardingRewardElement": {
+    "claimed": "Someone in your organization has already claimed this reward"
   }
 }

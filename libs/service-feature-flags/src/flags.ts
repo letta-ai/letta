@@ -36,6 +36,11 @@ export const featureFlags = {
     expiryDate: '2024-02-31',
     flagValue: z.boolean(),
   },
+  ONBOARDING: {
+    description: 'Onboarding',
+    expiryDate: '2024-02-31',
+    flagValue: z.boolean(),
+  },
 } satisfies Record<string, FlagProperties>;
 
 export type Flag = keyof typeof featureFlags;

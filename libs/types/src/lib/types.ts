@@ -62,13 +62,13 @@ export type MemoryVariableVersionOneType = z.infer<
 >;
 
 export const onboardingSteps = z.enum([
-  'create_agent',
-  'message_agent',
-  'convert_to_template',
-  'add_a_variable',
+  'create_template',
+  'message_template',
+  'edit_template',
   'save_version',
   'deploy_agent',
+  'skipped',
   'completed',
 ]);
 
-export type OnboardingSteps = z.infer<typeof onboardingSteps>;
+export type OnboardingStepsType = z.infer<typeof onboardingSteps>;

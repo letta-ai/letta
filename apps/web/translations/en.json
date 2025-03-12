@@ -3,6 +3,36 @@
     "emptyMessage": "This is not the page you're looking for",
     "emptyAction": "Go home"
   },
+  "onboarding/StartOnboardingDialog": {
+    "skip": "Skip for now",
+    "start": "Start onboarding",
+    "title": "Learn about Letta",
+    "description": "Welcome to Letta! Take our onboarding to learn about Letta and how to get your agents to deployment. Earn credits for completing the onboarding, credits are used to pay for agent usage.",
+    "reward": "Reward <lettacoin></lettacoin> 2500 credits",
+    "time": "15 minutes",
+    "steps": {
+      "createATemplate": "Create a template",
+      "messageASimulatedAgent": "Simulate a deployed agent",
+      "editATemplate": "Edit a template",
+      "versionATemplate": "Version a template",
+      "deployAnAgent": "Deploy an agent to production"
+    }
+  },
+  "onboarding/CreateTemplate": {
+    "title": "Create a template"
+  },
+  "onboarding/MessageASimulatedAgent": {
+    "title": "Simulate a deployed agent"
+  },
+  "onboarding/EditATemplate": {
+    "title": "Edit a template"
+  },
+  "onboarding/VersionATemplate": {
+    "title": "Version a template"
+  },
+  "onboarding/DeployAnAgent": {
+    "title": "Deploy an agent to production"
+  },
   "pages/distribution/LaunchLinks": {
     "title": "Launch Links",
     "description": "Launch links allow you to deploy agents without writing any code. When a user clicks the link below, they will be able to interact with an agent that is unique to them.",

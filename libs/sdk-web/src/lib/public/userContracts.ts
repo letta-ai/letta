@@ -1,8 +1,17 @@
 import type { ServerInferResponses } from '@ts-rest/core';
 import { initContract } from '@ts-rest/core';
 import { z } from 'zod';
+import { onboardingSteps } from '@letta-cloud/types';
 
 const c = initContract();
+
+export const OnboardingStepSchema = z.object({
+  claimedSteps: onboardingSteps.array(),
+  completedSteps: onboardingSteps.array(),
+  currentStep: onboardingSteps.nullable(),
+});
+
+export type OnboardingStepSchemaType = z.infer<typeof OnboardingStepSchema>;
 
 export const PublicUserSchema = z.object({
   name: z.string(),
@@ -14,6 +23,7 @@ export const PublicUserSchema = z.object({
   activeOrganizationId: z.string(),
   hasOnboarded: z.boolean(),
   hasCloudAccess: z.boolean(),
+  onboardingStatus: OnboardingStepSchema.nullable(),
   id: z.string(),
 });
 
@@ -160,6 +170,20 @@ const loginWithPasswordContract = c.mutation({
   },
 });
 
+export const updateUserOnboardingStepContract = c.mutation({
+  method: 'PUT',
+  path: '/user/self/onboarding-step',
+  body: z.object({
+    onboardingStep: onboardingSteps,
+    stepToClaim: onboardingSteps.optional(),
+  }),
+  responses: {
+    200: z.object({
+      success: z.boolean(),
+    }),
+  },
+});
+
 export const userContract = c.router({
   getCurrentUser: getUserContract,
   updateCurrentUser: updateCurrentUserContract,
@@ -169,6 +193,7 @@ export const userContract = c.router({
   setUserAsOnboarded: setUserAsOnboardedContract,
   createAccountWithPassword: createAccountWithPasswordContract,
   loginWithPassword: loginWithPasswordContract,
+  updateUserOnboardingStep: updateUserOnboardingStepContract,
 });
 
 export const userQueryClientKeys = {

@@ -14,11 +14,13 @@ import {
 } from '$web/server/auth';
 import {
   db,
+  organizationClaimedOnboardingRewards,
   organizationInvitedUsers,
   organizations,
   organizationUsers,
   userMarketingDetails,
   userPassword,
+  userProductOnboarding,
   users,
 } from '@letta-cloud/service-database';
 import { and, eq, inArray, isNull } from 'drizzle-orm';
@@ -30,6 +32,7 @@ import * as Sentry from '@sentry/node';
 import { environment } from '@letta-cloud/config-environment-variables';
 import { trackServerSideEvent } from '@letta-cloud/service-analytics/server';
 import { AnalyticsEvent } from '@letta-cloud/service-analytics';
+import { addCreditsToOrganization } from '@letta-cloud/utils-server';
 
 type ResponseShapes = ServerInferResponses<typeof userContract>;
 
@@ -56,6 +59,7 @@ async function getCurrentUser(): Promise<ResponseShapes['getCurrentUser']> {
       permissions: Array.from(user.permissions),
       hasCloudAccess: user.hasCloudAccess,
       hasOnboarded: user.hasOnboarded,
+      onboardingStatus: user.onboardingStatus,
       activeOrganizationId: user.activeOrganizationId || '',
       id: user.id,
     },
@@ -116,6 +120,7 @@ async function updateCurrentUser(
       permissions: Array.from(user.permissions),
       hasCloudAccess: user.hasCloudAccess,
       imageUrl: updatedUser.imageUrl,
+      onboardingStatus: updatedUser.onboardingStatus,
       activeOrganizationId: updatedUser.activeOrganizationId || '',
       id: updatedUser.id,
     },
@@ -479,6 +484,83 @@ async function loginWithPassword(
   };
 }
 
+type UpdateUserOnboardingStep = ServerInferResponses<
+  typeof contracts.user.updateUserOnboardingStep
+>;
+
+type UpdateUserOnboardingStepRequest = ServerInferRequest<
+  typeof contracts.user.updateUserOnboardingStep
+>;
+
+const stepToRewardMap: Record<string, number> = {
+  create_template: 400,
+};
+
+async function updateUserOnboardingStep(
+  req: UpdateUserOnboardingStepRequest,
+): Promise<UpdateUserOnboardingStep> {
+  const { onboardingStep, stepToClaim } = req.body;
+
+  const user = await getUser();
+
+  if (!user?.activeOrganizationId) {
+    return {
+      status: 401,
+      body: {
+        message: 'User not found',
+      },
+    };
+  }
+
+  const currentOnboardingStep = user.onboardingStatus?.completedSteps || [];
+
+  const claimedSteps = user.onboardingStatus?.claimedSteps || [];
+
+  if (
+    stepToClaim &&
+    !claimedSteps.includes(stepToClaim) &&
+    stepToRewardMap[stepToClaim]
+  ) {
+    try {
+      await db.insert(organizationClaimedOnboardingRewards).values({
+        organizationId: user.activeOrganizationId,
+        rewardKey: stepToClaim,
+      });
+
+      await addCreditsToOrganization({
+        organizationId: user.activeOrganizationId,
+        note: `Claimed reward for ${onboardingStep}`,
+        amount: stepToRewardMap[stepToClaim] || 0,
+        source: 'onboarding',
+      });
+    } catch (_e) {
+      // this means the reward has already been claimed
+    }
+  }
+
+  await db
+    .insert(userProductOnboarding)
+    .values({
+      userId: user.id,
+      currentStep: onboardingStep,
+      completedSteps: [...currentOnboardingStep, onboardingStep],
+    })
+    .onConflictDoUpdate({
+      target: userProductOnboarding.userId,
+      set: {
+        currentStep: onboardingStep,
+        completedSteps: [...currentOnboardingStep, onboardingStep],
+      },
+    });
+
+  return {
+    status: 200,
+    body: {
+      success: true,
+    },
+  };
+}
+
 export const userRouter = {
   getCurrentUser,
   updateCurrentUser,
@@ -488,4 +570,5 @@ export const userRouter = {
   deleteCurrentUser,
   createAccountWithPassword,
   loginWithPassword,
+  updateUserOnboardingStep,
 };

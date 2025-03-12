@@ -6,6 +6,7 @@ import { and, eq, isNull } from 'drizzle-orm';
 import { redirect } from 'next/navigation';
 import type { ApplicationServices } from '@letta-cloud/service-rbac';
 import { roleToServicesMap } from '@letta-cloud/service-rbac';
+import type { OnboardingStepSchemaType } from '@letta-cloud/sdk-web';
 
 export interface GetUserDataResponse {
   activeOrganizationId: string | null;
@@ -18,6 +19,7 @@ export interface GetUserDataResponse {
   theme: string;
   locale: string;
   hasOnboarded: boolean;
+  onboardingStatus: OnboardingStepSchemaType | null;
   name: string;
 }
 
@@ -57,9 +59,18 @@ export async function getUser(): Promise<GetUserDataResponse | null> {
           role: true,
         },
       },
+      userProductOnboarding: {
+        columns: {
+          completedSteps: true,
+          currentStep: true,
+        },
+      },
       activeOrganization: {
         columns: {
           enabledCloudAt: true,
+        },
+        with: {
+          organizationClaimedOnboardingRewards: true,
         },
       },
     },
@@ -103,6 +114,14 @@ export async function getUser(): Promise<GetUserDataResponse | null> {
     email: userFromDb.email,
     imageUrl: userFromDb.imageUrl,
     permissions: new Set(permissions),
+    onboardingStatus: {
+      claimedSteps:
+        userFromDb.activeOrganization?.organizationClaimedOnboardingRewards?.map(
+          (reward) => reward.rewardKey,
+        ) || [],
+      completedSteps: userFromDb.userProductOnboarding?.completedSteps || [],
+      currentStep: userFromDb.userProductOnboarding?.currentStep || null,
+    },
     name: userFromDb.name,
     theme: userFromDb.theme || 'auto',
   };

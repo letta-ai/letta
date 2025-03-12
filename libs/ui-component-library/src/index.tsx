@@ -186,3 +186,5 @@ export * from './lib/onboarding/OnboardingAsideFocus/OnboardingAsideFocus';
 export * from './lib/onboarding/OnboardingSteps/OnboardingSteps';
 
 export * from './lib/onboarding/OnboardingMiniMenu/OnboardingMiniMenu';
+
+export * from './lib/reusable/CrossedOut/CrossedOut';

@@ -16,7 +16,7 @@ import type {
   ProviderConfiguration,
   StepCostVersionOne,
   MemoryVariableVersionOneType,
-  OnboardingSteps,
+  OnboardingStepsType,
 } from '@letta-cloud/types';
 import type { ApplicationServices } from '@letta-cloud/service-rbac';
 import type { UserPresetRolesType } from '@letta-cloud/service-rbac';
@@ -41,7 +41,6 @@ export const organizations = pgTable('organizations', {
   lettaServiceAccountId: text('letta_service_account_id'),
   isAdmin: boolean('is_admin').notNull().default(false),
   enabledCloudAt: timestamp('enabled_cloud_at'),
-  onboardingStep: text('onboarding_step').$type<OnboardingSteps>(),
   createdAt: timestamp('created_at').notNull().defaultNow(),
   deletedAt: timestamp('deleted_at'),
   bannedAt: timestamp('banned_at'),
@@ -75,7 +74,44 @@ export const orgRelationsTable = relations(organizations, ({ many, one }) => ({
   }),
   organizationCreditTransactions: many(organizationCreditTransactions),
   organizationSSOConfiguration: many(organizationSSOConfiguration),
+  organizationClaimedOnboardingRewards: many(
+    organizationClaimedOnboardingRewards,
+    {
+      relationName: 'claimedOnboardingRewards',
+    },
+  ),
 }));
+
+export const organizationClaimedOnboardingRewards = pgTable(
+  'organization_claimed_onboarding_rewards',
+  {
+    id: text('id')
+      .primaryKey()
+      .default(sql`gen_random_uuid()`),
+    organizationId: text('organization_id')
+      .references(() => organizations.id, { onDelete: 'cascade' })
+      .notNull(),
+    rewardKey: text('reward_key').notNull().$type<OnboardingStepsType>(),
+    createdAt: timestamp('created_at').notNull().defaultNow(),
+  },
+  (table) => ({
+    uniqueRewardKey: uniqueIndex('unique_reward_key').on(
+      table.rewardKey,
+      table.organizationId,
+    ),
+  }),
+);
+
+export const organizationClaimedOnboardingRewardsRelations = relations(
+  organizationClaimedOnboardingRewards,
+  ({ one }) => ({
+    organization: one(organizations, {
+      relationName: 'claimedOnboardingRewards',
+      fields: [organizationClaimedOnboardingRewards.organizationId],
+      references: [organizations.id],
+    }),
+  }),
+);
 
 export const organizationPreferences = pgTable('organization_preferences', {
   id: text('id')
@@ -145,7 +181,20 @@ export const userRelations = relations(users, ({ many, one }) => ({
     fields: [users.id],
     references: [userPassword.userId],
   }),
+  userProductOnboarding: one(userProductOnboarding, {
+    fields: [users.id],
+    references: [userProductOnboarding.userId],
+  }),
 }));
+
+export const userProductOnboarding = pgTable('user_product_onboarding_step', {
+  userId: text('user_id')
+    .notNull()
+    .references(() => users.id, { onDelete: 'cascade' })
+    .primaryKey(),
+  completedSteps: json('completed_steps').$type<OnboardingStepsType[]>(),
+  currentStep: text('current_step').$type<OnboardingStepsType>(),
+});
 
 export const userPassword = pgTable('user_password', {
   userId: text('user_id')
@@ -739,7 +788,6 @@ export const organizationCreditTransactions = pgTable(
       .primaryKey()
       .default(sql`gen_random_uuid()`),
     organizationId: text('organization_id')
-      .notNull()
       .references(() => organizations.id, { onDelete: 'cascade' })
       .notNull(),
     stepId: text('step_id').unique(),
@@ -917,7 +965,6 @@ export const organizationSSOConfiguration = pgTable(
       .primaryKey()
       .default(sql`gen_random_uuid()`),
     organizationId: text('organization_id')
-      .notNull()
       .references(() => organizations.id, { onDelete: 'cascade' })
       .notNull(),
     domain: text('domain').notNull().unique(),
