@@ -84,12 +84,14 @@ navigation:
             contents:
               - page: Custom Tools
                 path: pages/agents/custom_tools.mdx
-              - page: Tool Execution 
+              - page: Tool Execution
                 path: pages/agents/tool_exec.mdx
               - page: Tool Rules
                 path: pages/agents/tool_rules.mdx
               - page: Tool Variables
                 path: pages/agents/tool_variables.mdx
+              - page: MCP Integration
+                path: pages/agents/mcp.mdx
               - page: Composio Integration
                 path: pages/agents/composio.mdx
           - page: Data Sources

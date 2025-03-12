@@ -2,7 +2,7 @@
 title: Tools
 slug: guides/agents/tools
 ---
-Tools allow agents to take actions by executing Python code. Letta uses tools to manage memory and even to send messages to the end user. You can add custom tools to Letta by defining your own tools, and also customize the execution environment of the tools. You can import external tool libraries like Composio. 
+Tools allow agents to take actions by executing Python code. Letta uses tools to manage memory and even to send messages to the end user. You can add custom tools to Letta by defining your own tools, and also customize the execution environment of the tools. You can import external tool libraries like Composio.
 
 # Default Tools
 By default, agents in Letta are created with the following tools:
@@ -38,7 +38,7 @@ agent = client.agents.create(
 )
 ```
 
-# Tool Execution 
+# Tool Execution
 You can custom the enviornment that your tool runs in (the Python package dependencies and environment variables) by setting a tool execution environment. See more [here](/guides/agents/tool-execution).
 
 # Tool Environment Variables
@@ -66,10 +66,8 @@ Tool rules allow you to define graph-like constrains on your tools, such as requ
 Read more about tool rules [here](/guides/agents/tool-rules).
 
 # External Tool Libraries
-Letta also has early support for adding tools from the external tool library [Composio](https://docs.composio.dev).
-This integrations works by converting the external library tools into Letta tools.
+Letta also has early support for adding tools from external tool libraries via MCP and Composio.
 
-For more information on setting up Composio tools, see our [Composio guide](/guides/agents/composio).
+For more information on setting up **MCP servers**, see our [MCP guide](/guides/agents/mcp).
 
-
-
+For more information on setting up **Composio tools**, see our [Composio guide](/guides/agents/composio).
