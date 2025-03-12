@@ -1360,6 +1360,10 @@ export type Identity = {
    */
   agent_ids: Array<string>;
   /**
+   * The IDs of the blocks associated with the identity.
+   */
+  block_ids: Array<string>;
+  /**
    * The organization id of the user
    */
   organization_id?: string | null;
@@ -1390,6 +1394,10 @@ export type IdentityCreate = {
    * The agent ids that are associated with the identity.
    */
   agent_ids?: Array<string> | null;
+  /**
+   * The IDs of the blocks associated with the identity.
+   */
+  block_ids?: Array<string> | null;
   /**
    * List of properties associated with the identity.
    */
@@ -1447,6 +1455,10 @@ export type IdentityUpdate = {
    * The agent ids that are associated with the identity.
    */
   agent_ids?: Array<string> | null;
+  /**
+   * The IDs of the blocks associated with the identity.
+   */
+  block_ids?: Array<string> | null;
   /**
    * List of properties associated with the identity.
    */
@@ -3226,13 +3238,13 @@ export type ListAgentsData = {
    */
   before?: string | null;
   /**
-   * Search agents by identifier id
-   */
-  identifierId?: string | null;
-  /**
    * Search agents by identifier keys
    */
   identifierKeys?: Array<string> | null;
+  /**
+   * Search agents by identifier id
+   */
+  identityId?: string | null;
   /**
    * Limit for pagination
    */
@@ -3605,6 +3617,14 @@ export type ListModelsResponse = Array<LLMConfig>;
 export type ListEmbeddingModelsResponse = Array<EmbeddingConfig>;
 
 export type ListBlocksData = {
+  /**
+   * Search agents by identifier keys
+   */
+  identifierKeys?: Array<string> | null;
+  /**
+   * Search agents by identifier id
+   */
+  identityId?: string | null;
   /**
    * Labels to include (e.g. human, persona)
    */

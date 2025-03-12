@@ -53,7 +53,7 @@ def list_agents(
     project_id: Optional[str] = Query(None, description="Search agents by project id"),
     template_id: Optional[str] = Query(None, description="Search agents by template id"),
     base_template_id: Optional[str] = Query(None, description="Search agents by base template id"),
-    identifier_id: Optional[str] = Query(None, description="Search agents by identifier id"),
+    identity_id: Optional[str] = Query(None, description="Search agents by identifier id"),
     identifier_keys: Optional[List[str]] = Query(None, description="Search agents by identifier keys"),
 ):
     """
@@ -84,7 +84,7 @@ def list_agents(
         tags=tags,
         match_all_tags=match_all_tags,
         identifier_keys=identifier_keys,
-        identifier_id=identifier_id,
+        identity_id=identity_id,
         **kwargs,
     )
     return agents

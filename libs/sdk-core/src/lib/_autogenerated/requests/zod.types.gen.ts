@@ -2659,6 +2659,7 @@ export const Identity = z.object({
     ])
     .optional(),
   agent_ids: z.array(z.string()),
+  block_ids: z.array(z.string()),
   organization_id: z
     .union([
       z.string(),
@@ -2691,6 +2692,14 @@ export const IdentityCreate = z.object({
       z.undefined(),
     ])
     .optional(),
+  block_ids: z
+    .union([
+      z.array(z.string()),
+      z.null(),
+      z.array(z.union([z.array(z.string()), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
   properties: z
     .union([
       z.array(IdentityProperty),
@@ -2713,6 +2722,13 @@ export const IdentityUpdate = z.object({
     .union([IdentityType, z.null(), z.array(z.union([IdentityType, z.null()]))])
     .optional(),
   agent_ids: z
+    .union([
+      z.array(z.string()),
+      z.null(),
+      z.array(z.union([z.array(z.string()), z.null()])),
+    ])
+    .optional(),
+  block_ids: z
     .union([
       z.array(z.string()),
       z.null(),
@@ -4272,7 +4288,7 @@ export const get_List_agents = {
       base_template_id: z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
-      identifier_id: z
+      identity_id: z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
       identifier_keys: z
@@ -5058,6 +5074,16 @@ export const get_List_blocks = {
       templates_only: z.boolean().optional(),
       name: z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      identity_id: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      identifier_keys: z
+        .union([
+          z.array(z.string()),
+          z.null(),
+          z.array(z.union([z.array(z.string()), z.null()])),
+        ])
         .optional(),
     }),
     header: z.object({

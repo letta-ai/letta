@@ -786,7 +786,7 @@ export class AgentsService {
    * @param data.projectId Search agents by project id
    * @param data.templateId Search agents by template id
    * @param data.baseTemplateId Search agents by base template id
-   * @param data.identifierId Search agents by identifier id
+   * @param data.identityId Search agents by identifier id
    * @param data.identifierKeys Search agents by identifier keys
    * @param data.userId
    * @returns AgentState Successful Response
@@ -810,7 +810,7 @@ export class AgentsService {
         project_id: data.projectId,
         template_id: data.templateId,
         base_template_id: data.baseTemplateId,
-        identifier_id: data.identifierId,
+        identity_id: data.identityId,
         identifier_keys: data.identifierKeys,
       },
       errors: {
@@ -1899,6 +1899,8 @@ export class BlocksService {
    * @param data.label Labels to include (e.g. human, persona)
    * @param data.templatesOnly Whether to include only templates
    * @param data.name Name of the block
+   * @param data.identityId Search agents by identifier id
+   * @param data.identifierKeys Search agents by identifier keys
    * @param data.userId
    * @returns Block Successful Response
    * @throws ApiError
@@ -1914,6 +1916,8 @@ export class BlocksService {
         label: data.label,
         templates_only: data.templatesOnly,
         name: data.name,
+        identity_id: data.identityId,
+        identifier_keys: data.identifierKeys,
       },
       errors: {
         422: 'Validation Error',

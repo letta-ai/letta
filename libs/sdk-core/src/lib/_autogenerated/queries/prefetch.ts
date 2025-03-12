@@ -271,7 +271,7 @@ export const prefetchUseSourcesServiceListSourceFiles = (
  * @param data.projectId Search agents by project id
  * @param data.templateId Search agents by template id
  * @param data.baseTemplateId Search agents by base template id
- * @param data.identifierId Search agents by identifier id
+ * @param data.identityId Search agents by identifier id
  * @param data.identifierKeys Search agents by identifier keys
  * @param data.userId
  * @returns AgentState Successful Response
@@ -283,8 +283,8 @@ export const prefetchUseAgentsServiceListAgents = (
     after,
     baseTemplateId,
     before,
-    identifierId,
     identifierKeys,
+    identityId,
     limit,
     matchAllTags,
     name,
@@ -297,8 +297,8 @@ export const prefetchUseAgentsServiceListAgents = (
     after?: string;
     baseTemplateId?: string;
     before?: string;
-    identifierId?: string;
     identifierKeys?: string[];
+    identityId?: string;
     limit?: number;
     matchAllTags?: boolean;
     name?: string;
@@ -314,8 +314,8 @@ export const prefetchUseAgentsServiceListAgents = (
       after,
       baseTemplateId,
       before,
-      identifierId,
       identifierKeys,
+      identityId,
       limit,
       matchAllTags,
       name,
@@ -330,8 +330,8 @@ export const prefetchUseAgentsServiceListAgents = (
         after,
         baseTemplateId,
         before,
-        identifierId,
         identifierKeys,
+        identityId,
         limit,
         matchAllTags,
         name,
@@ -782,6 +782,8 @@ export const prefetchUseLlmsServiceListEmbeddingModels = (
  * @param data.label Labels to include (e.g. human, persona)
  * @param data.templatesOnly Whether to include only templates
  * @param data.name Name of the block
+ * @param data.identityId Search agents by identifier id
+ * @param data.identifierKeys Search agents by identifier keys
  * @param data.userId
  * @returns Block Successful Response
  * @throws ApiError
@@ -789,11 +791,15 @@ export const prefetchUseLlmsServiceListEmbeddingModels = (
 export const prefetchUseBlocksServiceListBlocks = (
   queryClient: QueryClient,
   {
+    identifierKeys,
+    identityId,
     label,
     name,
     templatesOnly,
     userId,
   }: {
+    identifierKeys?: string[];
+    identityId?: string;
     label?: string;
     name?: string;
     templatesOnly?: boolean;
@@ -802,13 +808,22 @@ export const prefetchUseBlocksServiceListBlocks = (
 ) =>
   queryClient.prefetchQuery({
     queryKey: Common.UseBlocksServiceListBlocksKeyFn({
+      identifierKeys,
+      identityId,
       label,
       name,
       templatesOnly,
       userId,
     }),
     queryFn: () =>
-      BlocksService.listBlocks({ label, name, templatesOnly, userId }),
+      BlocksService.listBlocks({
+        identifierKeys,
+        identityId,
+        label,
+        name,
+        templatesOnly,
+        userId,
+      }),
   });
 /**
  * Retrieve Block

@@ -46,7 +46,7 @@ export function IdentityAgentsList(props: AgentsListProps) {
     queryKey: [
       'infinite',
       ...UseAgentsServiceListAgentsKeyFn({
-        identifierId: identity.id || '',
+        identityId: identity.id || '',
         queryText: debouncedSearch,
         limit: limit + 1,
       }),
@@ -56,7 +56,7 @@ export function IdentityAgentsList(props: AgentsListProps) {
         queryText: debouncedSearch,
         limit: limit + 1,
         after: pageParam?.after,
-        identifierId: identity.id || '',
+        identityId: identity.id || '',
       });
     },
     initialPageParam: { after: null },

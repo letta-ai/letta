@@ -338,7 +338,7 @@ export const useSourcesServiceListSourceFilesSuspense = <
  * @param data.projectId Search agents by project id
  * @param data.templateId Search agents by template id
  * @param data.baseTemplateId Search agents by base template id
- * @param data.identifierId Search agents by identifier id
+ * @param data.identityId Search agents by identifier id
  * @param data.identifierKeys Search agents by identifier keys
  * @param data.userId
  * @returns AgentState Successful Response
@@ -353,8 +353,8 @@ export const useAgentsServiceListAgentsSuspense = <
     after,
     baseTemplateId,
     before,
-    identifierId,
     identifierKeys,
+    identityId,
     limit,
     matchAllTags,
     name,
@@ -367,8 +367,8 @@ export const useAgentsServiceListAgentsSuspense = <
     after?: string;
     baseTemplateId?: string;
     before?: string;
-    identifierId?: string;
     identifierKeys?: string[];
+    identityId?: string;
     limit?: number;
     matchAllTags?: boolean;
     name?: string;
@@ -387,8 +387,8 @@ export const useAgentsServiceListAgentsSuspense = <
         after,
         baseTemplateId,
         before,
-        identifierId,
         identifierKeys,
+        identityId,
         limit,
         matchAllTags,
         name,
@@ -405,8 +405,8 @@ export const useAgentsServiceListAgentsSuspense = <
         after,
         baseTemplateId,
         before,
-        identifierId,
         identifierKeys,
+        identityId,
         limit,
         matchAllTags,
         name,
@@ -983,6 +983,8 @@ export const useLlmsServiceListEmbeddingModelsSuspense = <
  * @param data.label Labels to include (e.g. human, persona)
  * @param data.templatesOnly Whether to include only templates
  * @param data.name Name of the block
+ * @param data.identityId Search agents by identifier id
+ * @param data.identifierKeys Search agents by identifier keys
  * @param data.userId
  * @returns Block Successful Response
  * @throws ApiError
@@ -993,11 +995,15 @@ export const useBlocksServiceListBlocksSuspense = <
   TQueryKey extends Array<unknown> = unknown[],
 >(
   {
+    identifierKeys,
+    identityId,
     label,
     name,
     templatesOnly,
     userId,
   }: {
+    identifierKeys?: string[];
+    identityId?: string;
     label?: string;
     name?: string;
     templatesOnly?: boolean;
@@ -1008,11 +1014,18 @@ export const useBlocksServiceListBlocksSuspense = <
 ) =>
   useSuspenseQuery<TData, TError>({
     queryKey: Common.UseBlocksServiceListBlocksKeyFn(
-      { label, name, templatesOnly, userId },
+      { identifierKeys, identityId, label, name, templatesOnly, userId },
       queryKey,
     ),
     queryFn: () =>
-      BlocksService.listBlocks({ label, name, templatesOnly, userId }) as TData,
+      BlocksService.listBlocks({
+        identifierKeys,
+        identityId,
+        label,
+        name,
+        templatesOnly,
+        userId,
+      }) as TData,
     ...options,
   });
 /**

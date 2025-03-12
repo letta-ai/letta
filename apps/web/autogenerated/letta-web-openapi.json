@@ -341,7 +341,7 @@
             }
           },
           {
-            "name": "identifier_id",
+            "name": "identity_id",
             "in": "query",
             "schema": {
               "oneOf": [

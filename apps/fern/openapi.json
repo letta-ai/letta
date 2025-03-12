@@ -1149,7 +1149,7 @@
             "description": "Search agents by base template id"
           },
           {
-            "name": "identifier_id",
+            "name": "identity_id",
             "in": "query",
             "required": false,
             "schema": {
@@ -1162,7 +1162,7 @@
                 }
               ],
               "description": "Search agents by identifier id",
-              "title": "Identifier Id"
+              "title": "Identity Id"
             },
             "description": "Search agents by identifier id"
           },
@@ -3323,6 +3323,45 @@
               "title": "Name"
             },
             "description": "Name of the block"
+          },
+          {
+            "name": "identity_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Search agents by identifier id",
+              "title": "Identity Id"
+            },
+            "description": "Search agents by identifier id"
+          },
+          {
+            "name": "identifier_keys",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Search agents by identifier keys",
+              "title": "Identifier Keys"
+            },
+            "description": "Search agents by identifier keys"
           }
         ],
         "responses": {
@@ -13616,6 +13655,14 @@
             "title": "Agent Ids",
             "description": "The IDs of the agents associated with the identity."
           },
+          "block_ids": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Block Ids",
+            "description": "The IDs of the blocks associated with the identity."
+          },
           "properties": {
             "items": {
               "$ref": "#/components/schemas/IdentityProperty"
@@ -13627,7 +13674,13 @@
         },
         "additionalProperties": false,
         "type": "object",
-        "required": ["identifier_key", "name", "identity_type", "agent_ids"],
+        "required": [
+          "identifier_key",
+          "name",
+          "identity_type",
+          "agent_ids",
+          "block_ids"
+        ],
         "title": "Identity"
       },
       "IdentityCreate": {
@@ -13672,6 +13725,21 @@
             ],
             "title": "Agent Ids",
             "description": "The agent ids that are associated with the identity."
+          },
+          "block_ids": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Block Ids",
+            "description": "The IDs of the blocks associated with the identity."
           },
           "properties": {
             "anyOf": [
@@ -13796,6 +13864,21 @@
             ],
             "title": "Agent Ids",
             "description": "The agent ids that are associated with the identity."
+          },
+          "block_ids": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Block Ids",
+            "description": "The IDs of the blocks associated with the identity."
           },
           "properties": {
             "anyOf": [

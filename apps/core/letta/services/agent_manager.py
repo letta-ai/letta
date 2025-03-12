@@ -337,6 +337,7 @@ class AgentManager:
         match_all_tags: bool = False,
         query_text: Optional[str] = None,
         identifier_keys: Optional[List[str]] = None,
+        identity_id: Optional[str] = None,
         **kwargs,
     ) -> List[PydanticAgentState]:
         """
@@ -353,6 +354,7 @@ class AgentManager:
                 organization_id=actor.organization_id if actor else None,
                 query_text=query_text,
                 identifier_keys=identifier_keys,
+                identity_id=identity_id,
                 **kwargs,
             )
 

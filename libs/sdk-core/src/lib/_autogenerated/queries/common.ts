@@ -226,8 +226,8 @@ export const UseAgentsServiceListAgentsKeyFn = (
     after,
     baseTemplateId,
     before,
-    identifierId,
     identifierKeys,
+    identityId,
     limit,
     matchAllTags,
     name,
@@ -240,8 +240,8 @@ export const UseAgentsServiceListAgentsKeyFn = (
     after?: string;
     baseTemplateId?: string;
     before?: string;
-    identifierId?: string;
     identifierKeys?: string[];
+    identityId?: string;
     limit?: number;
     matchAllTags?: boolean;
     name?: string;
@@ -259,8 +259,8 @@ export const UseAgentsServiceListAgentsKeyFn = (
       after,
       baseTemplateId,
       before,
-      identifierId,
       identifierKeys,
+      identityId,
       limit,
       matchAllTags,
       name,
@@ -641,11 +641,15 @@ export type BlocksServiceListBlocksQueryResult<
 export const useBlocksServiceListBlocksKey = 'BlocksServiceListBlocks';
 export const UseBlocksServiceListBlocksKeyFn = (
   {
+    identifierKeys,
+    identityId,
     label,
     name,
     templatesOnly,
     userId,
   }: {
+    identifierKeys?: string[];
+    identityId?: string;
     label?: string;
     name?: string;
     templatesOnly?: boolean;
@@ -654,7 +658,9 @@ export const UseBlocksServiceListBlocksKeyFn = (
   queryKey?: Array<unknown>,
 ) => [
   useBlocksServiceListBlocksKey,
-  ...(queryKey ?? [{ label, name, templatesOnly, userId }]),
+  ...(queryKey ?? [
+    { identifierKeys, identityId, label, name, templatesOnly, userId },
+  ]),
 ];
 export type BlocksServiceRetrieveBlockDefaultResponse = Awaited<
   ReturnType<typeof BlocksService.retrieveBlock>

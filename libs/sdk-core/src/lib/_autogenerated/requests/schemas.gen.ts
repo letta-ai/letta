@@ -3816,6 +3816,14 @@ export const $Identity = {
       title: 'Agent Ids',
       description: 'The IDs of the agents associated with the identity.',
     },
+    block_ids: {
+      items: {
+        type: 'string',
+      },
+      type: 'array',
+      title: 'Block Ids',
+      description: 'The IDs of the blocks associated with the identity.',
+    },
     organization_id: {
       anyOf: [
         {
@@ -3839,7 +3847,13 @@ export const $Identity = {
   },
   additionalProperties: false,
   type: 'object',
-  required: ['identifier_key', 'name', 'identity_type', 'agent_ids'],
+  required: [
+    'identifier_key',
+    'name',
+    'identity_type',
+    'agent_ids',
+    'block_ids',
+  ],
   title: 'Identity',
 } as const;
 
@@ -3885,6 +3899,21 @@ export const $IdentityCreate = {
       ],
       title: 'Agent Ids',
       description: 'The agent ids that are associated with the identity.',
+    },
+    block_ids: {
+      anyOf: [
+        {
+          items: {
+            type: 'string',
+          },
+          type: 'array',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Block Ids',
+      description: 'The IDs of the blocks associated with the identity.',
     },
     properties: {
       anyOf: [
@@ -4013,6 +4042,21 @@ export const $IdentityUpdate = {
       ],
       title: 'Agent Ids',
       description: 'The agent ids that are associated with the identity.',
+    },
+    block_ids: {
+      anyOf: [
+        {
+          items: {
+            type: 'string',
+          },
+          type: 'array',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Block Ids',
+      description: 'The IDs of the blocks associated with the identity.',
     },
     properties: {
       anyOf: [
