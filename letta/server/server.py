@@ -601,11 +601,12 @@ class SyncServer(Server):
 
         if isinstance(message, Message):
             # Can't have a null text field
-            if message.text is None or len(message.text) == 0:
-                raise ValueError(f"Invalid input: '{message.text}'")
+            message_text = message.content[0].text
+            if message_text is None or len(message_text) == 0:
+                raise ValueError(f"Invalid input: '{message_text}'")
             # If the input begins with a command prefix, reject
-            elif message.text.startswith("/"):
-                raise ValueError(f"Invalid input: '{message.text}'")
+            elif message_text.startswith("/"):
+                raise ValueError(f"Invalid input: '{message_text}'")
 
         else:
             raise TypeError(f"Invalid input: '{message}' - type {type(message)}")

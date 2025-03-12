@@ -628,7 +628,7 @@ def test_initial_message_sequence(client: Union[LocalClient, RESTClient], agent:
     ), f"Expected {len(custom_sequence) + 1} messages, got {len(custom_agent_state.message_ids)}"
     # assert custom_agent_state.message_ids[1:] == [msg.id for msg in custom_sequence]
     # shoule be contained in second message (after system message)
-    assert custom_sequence[0].content in client.get_in_context_messages(custom_agent_state.id)[1].text
+    assert custom_sequence[0].content in client.get_in_context_messages(custom_agent_state.id)[1].content[0].text
 
 
 def test_add_and_manage_tags_for_agent(client: Union[LocalClient, RESTClient], agent: AgentState):

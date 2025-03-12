@@ -56,7 +56,7 @@ def conversation_search(self: "Agent", query: str, page: Optional[int] = 0) -> O
         results_str = f"No results found."
     else:
         results_pref = f"Showing {len(messages)} of {total} results (page {page}/{num_pages}):"
-        results_formatted = [message.text for message in messages]
+        results_formatted = [message.content[0].text for message in messages]
         results_str = f"{results_pref} {json_dumps(results_formatted)}"
     return results_str
 
