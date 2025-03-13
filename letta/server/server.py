@@ -21,6 +21,15 @@ from letta.config import LettaConfig
 from letta.data_sources.connectors import DataConnector, load_data
 from letta.helpers.datetime_helpers import get_utc_time
 from letta.helpers.json_helpers import json_dumps, json_loads
+from letta.helpers.mcp_helpers import (
+    BaseMCPClient,
+    LocalMCPClient,
+    LocalServerConfig,
+    MCPServerType,
+    MCPTool,
+    SSEMCPClient,
+    SSEServerConfig,
+)
 
 # TODO use custom interface
 from letta.interface import AgentInterface  # abstract
@@ -314,6 +323,31 @@ class SyncServer(Server):
         if model_settings.xai_api_key:
             self._enabled_providers.append(xAIProvider(api_key=model_settings.xai_api_key))
 
+        # For MCP
+        """Initialize the MCP clients (there may be multiple)"""
+        mcp_server_configs = self.get_mcp_servers()
+        self.mcp_clients: Dict[str, BaseMCPClient] = {}
+
+        for server_name, server_config in mcp_server_configs.items():
+            if server_config.type == MCPServerType.SSE:
+                self.mcp_clients[server_name] = SSEMCPClient()
+            elif server_config.type == MCPServerType.LOCAL:
+                self.mcp_clients[server_name] = LocalMCPClient()
+            else:
+                raise ValueError(f"Invalid MCP server config: {server_config}")
+            try:
+                self.mcp_clients[server_name].connect_to_server(server_config)
+            except:
+                logger.exception(f"Failed to connect to MCP server: {server_name}")
+                raise
+
+        # Print out the tools that are connected
+        for server_name, client in self.mcp_clients.items():
+            logger.info(f"Attempting to fetch tools from MCP server: {server_name}")
+            mcp_tools = client.list_tools()
+            logger.info(f"MCP tools connected: {', '.join([t.name for t in mcp_tools])}")
+            logger.debug(f"MCP tools: {', '.join([str(t) for t in mcp_tools])}")
+
     def load_agent(self, agent_id: str, actor: User, interface: Union[AgentInterface, None] = None) -> Agent:
         """Updated method to load agents from persisted storage"""
         agent_lock = self.per_agent_lock_manager.get_lock(agent_id)
@@ -322,7 +356,7 @@ class SyncServer(Server):
 
             interface = interface or self.default_interface_factory()
             if agent_state.agent_type == AgentType.memgpt_agent:
-                agent = Agent(agent_state=agent_state, interface=interface, user=actor)
+                agent = Agent(agent_state=agent_state, interface=interface, user=actor, mcp_clients=self.mcp_clients)
             elif agent_state.agent_type == AgentType.offline_memory_agent:
                 agent = OfflineMemoryAgent(agent_state=agent_state, interface=interface, user=actor)
             else:
@@ -601,11 +635,12 @@ class SyncServer(Server):
 
         if isinstance(message, Message):
             # Can't have a null text field
-            if message.text is None or len(message.text) == 0:
-                raise ValueError(f"Invalid input: '{message.text}'")
+            message_text = message.content[0].text
+            if message_text is None or len(message_text) == 0:
+                raise ValueError(f"Invalid input: '{message_text}'")
             # If the input begins with a command prefix, reject
-            elif message.text.startswith("/"):
-                raise ValueError(f"Invalid input: '{message.text}'")
+            elif message_text.startswith("/"):
+                raise ValueError(f"Invalid input: '{message_text}'")
 
         else:
             raise TypeError(f"Invalid input: '{message}' - type {type(message)}")
@@ -1171,6 +1206,68 @@ class SyncServer(Server):
     def get_composio_actions_from_app_name(self, composio_app_name: str, api_key: Optional[str] = None) -> List["ActionModel"]:
         actions = self.get_composio_client(api_key=api_key).actions.get(apps=[composio_app_name])
         return actions
+
+    # MCP wrappers
+    # TODO support both command + SSE servers (via config)
+    def get_mcp_servers(self) -> dict[str, Union[SSEServerConfig, LocalServerConfig]]:
+        """List the MCP servers in the config (doesn't test that they are actually working)"""
+        mcp_server_list = {}
+
+        # Attempt to read from ~/.letta/mcp_config.json
+        mcp_config_path = os.path.join(constants.LETTA_DIR, constants.MCP_CONFIG_NAME)
+        if os.path.exists(mcp_config_path):
+            with open(mcp_config_path, "r") as f:
+
+                try:
+                    mcp_config = json.load(f)
+                except Exception as e:
+                    logger.error(f"Failed to parse MCP config file ({mcp_config_path}) as json: {e}")
+                    return mcp_server_list
+
+                # Proper formatting is "mcpServers" key at the top level,
+                # then a dict with the MCP server name as the key,
+                # with the value being the schema from StdioServerParameters
+                if "mcpServers" in mcp_config:
+                    for server_name, server_params_raw in mcp_config["mcpServers"].items():
+
+                        # No support for duplicate server names
+                        if server_name in mcp_server_list:
+                            logger.error(f"Duplicate MCP server name found (skipping): {server_name}")
+                            continue
+
+                        if "url" in server_params_raw:
+                            # Attempt to parse the server params as an SSE server
+                            try:
+                                server_params = SSEServerConfig(
+                                    server_name=server_name,
+                                    server_url=server_params_raw["url"],
+                                )
+                                mcp_server_list[server_name] = server_params
+                            except Exception as e:
+                                logger.error(f"Failed to parse server params for MCP server {server_name} (skipping): {e}")
+                                continue
+                        else:
+                            # Attempt to parse the server params as a StdioServerParameters
+                            try:
+                                server_params = LocalServerConfig(
+                                    server_name=server_name,
+                                    command=server_params_raw["command"],
+                                    args=server_params_raw.get("args", []),
+                                )
+                                mcp_server_list[server_name] = server_params
+                            except Exception as e:
+                                logger.error(f"Failed to parse server params for MCP server {server_name} (skipping): {e}")
+                                continue
+
+        # If the file doesn't exist, return empty dictionary
+        return mcp_server_list
+
+    def get_tools_from_mcp_server(self, mcp_server_name: str) -> List[MCPTool]:
+        """List the tools in an MCP server. Requires a client to be created."""
+        if mcp_server_name not in self.mcp_clients:
+            raise ValueError(f"No client was created for MCP server: {mcp_server_name}")
+
+        return self.mcp_clients[mcp_server_name].list_tools()
 
     @trace_method
     async def send_message_to_agent(

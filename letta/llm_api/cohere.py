@@ -321,7 +321,7 @@ def cohere_chat_completions_request(
     # See: https://docs.cohere.com/reference/chat
     # The chat_history parameter should not be used for SYSTEM messages in most cases. Instead, to add a SYSTEM role message at the beginning of a conversation, the preamble parameter should be used.
     assert msg_objs[0].role == "system", msg_objs[0]
-    preamble = msg_objs[0].text
+    preamble = msg_objs[0].content[0].text
 
     # data["messages"] = [m.to_cohere_dict() for m in msg_objs[1:]]
     data["messages"] = []

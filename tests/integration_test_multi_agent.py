@@ -112,11 +112,11 @@ def test_send_message_to_agent(client, agent_obj, other_agent_obj):
     target_snippet = f"{other_agent_obj.agent_state.id} said:"
 
     for m in in_context_messages:
-        if target_snippet in m.text:
+        if target_snippet in m.content[0].text:
             found = True
             break
 
-    print(f"In context messages of the sender agent (without system):\n\n{"\n".join([m.text for m in in_context_messages[1:]])}")
+    print(f"In context messages of the sender agent (without system):\n\n{"\n".join([m.content[0].text for m in in_context_messages[1:]])}")
     if not found:
         raise Exception(f"Was not able to find an instance of the target snippet: {target_snippet}")
 

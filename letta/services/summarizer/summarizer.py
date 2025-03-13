@@ -96,7 +96,7 @@ class Summarizer:
         )
 
         messages = await self.summarizer_agent.step(UserMessage(content=summary_request_text))
-        current_summary = "\n".join([m.text for m in messages])
+        current_summary = "\n".join([m.content[0].text for m in messages])
         current_summary = f"{self.summary_prefix}{current_summary}"
 
         return updated_in_context_messages, current_summary, True

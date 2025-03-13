@@ -54,7 +54,7 @@ DEVELOPMENT_LOGGING = {
             "propagate": True,  # Let logs bubble up to root
         },
         "uvicorn": {
-            "level": "INFO",
+            "level": "CRITICAL",
             "handlers": ["console"],
             "propagate": True,
         },

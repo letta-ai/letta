@@ -40,11 +40,19 @@ class Identity(SqlalchemyBase, OrganizationMixin):
     agents: Mapped[List["Agent"]] = relationship(
         "Agent", secondary="identities_agents", lazy="selectin", passive_deletes=True, back_populates="identities"
     )
+    blocks: Mapped[List["Block"]] = relationship(
+        "Block", secondary="identities_blocks", lazy="selectin", passive_deletes=True, back_populates="identities"
+    )
 
     @property
     def agent_ids(self) -> List[str]:
         """Get just the agent IDs without loading the full agent objects"""
         return [agent.id for agent in self.agents]
+
+    @property
+    def block_ids(self) -> List[str]:
+        """Get just the block IDs without loading the full agent objects"""
+        return [block.id for block in self.blocks]
 
     def to_pydantic(self) -> PydanticIdentity:
         state = {
@@ -54,6 +62,7 @@ class Identity(SqlalchemyBase, OrganizationMixin):
             "identity_type": self.identity_type,
             "project_id": self.project_id,
             "agent_ids": self.agent_ids,
+            "block_ids": self.block_ids,
             "organization_id": self.organization_id,
             "properties": self.properties,
         }

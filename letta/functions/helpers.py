@@ -48,6 +48,20 @@ def generate_composio_action_from_func_name(func_name: str) -> str:
     return func_name.upper()
 
 
+# TODO needed?
+def generate_mcp_tool_wrapper(mcp_tool_name: str) -> tuple[str, str]:
+
+    wrapper_function_str = f"""\
+def {mcp_tool_name}(**kwargs):
+    raise RuntimeError("Something went wrong - we should never be using the persisted source code for MCP. Please reach out to Letta team")
+"""
+
+    # Compile safety check
+    assert_code_gen_compilable(wrapper_function_str.strip())
+
+    return mcp_tool_name, wrapper_function_str.strip()
+
+
 def generate_composio_tool_wrapper(action_name: str) -> tuple[str, str]:
     # Generate func name
     func_name = generate_func_name_from_composio_action(action_name)

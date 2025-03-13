@@ -158,19 +158,6 @@ class Message(BaseMessage):
             del data["content"]
         return data
 
-    @property
-    def text(self) -> Optional[str]:
-        """
-        Retrieve the first text content's text.
-
-        Returns:
-            str: The text content, or None if no text content exists
-        """
-        if not self.content:
-            return None
-        text_content = [content.text for content in self.content if content.type == MessageContentType.text]
-        return text_content[0] if text_content else None
-
     def to_json(self):
         json_message = vars(self)
         if json_message["tool_calls"] is not None:
@@ -227,17 +214,21 @@ class Message(BaseMessage):
         assistant_message_tool_kwarg: str = DEFAULT_MESSAGE_TOOL_KWARG,
     ) -> List[LettaMessage]:
         """Convert message object (in DB format) to the style used by the original Letta API"""
+        if self.content and len(self.content) == 1 and self.content[0].type == MessageContentType.text:
+            text_content = self.content[0].text
+        else:
+            text_content = None
 
         messages = []
 
         if self.role == MessageRole.assistant:
-            if self.text is not None:
+            if text_content is not None:
                 # This is type InnerThoughts
                 messages.append(
                     ReasoningMessage(
                         id=self.id,
                         date=self.created_at,
-                        reasoning=self.text,
+                        reasoning=text_content,
                     )
                 )
             if self.tool_calls is not None:
@@ -281,9 +272,9 @@ class Message(BaseMessage):
             #         "message": response_string,
             #         "time": formatted_time,
             #     }
-            assert self.text is not None, self
+            assert text_content is not None, self
             try:
-                function_return = json.loads(self.text)
+                function_return = json.loads(text_content)
                 status = function_return["status"]
                 if status == "OK":
                     status_enum = "success"
@@ -292,7 +283,7 @@ class Message(BaseMessage):
                 else:
                     raise ValueError(f"Invalid status: {status}")
             except json.JSONDecodeError:
-                raise ValueError(f"Failed to decode function return: {self.text}")
+                raise ValueError(f"Failed to decode function return: {text_content}")
             assert self.tool_call_id is not None
             messages.append(
                 # TODO make sure this is what the API returns
@@ -300,7 +291,7 @@ class Message(BaseMessage):
                 ToolReturnMessage(
                     id=self.id,
                     date=self.created_at,
-                    tool_return=self.text,
+                    tool_return=text_content,
                     status=self.tool_returns[0].status if self.tool_returns else status_enum,
                     tool_call_id=self.tool_call_id,
                     stdout=self.tool_returns[0].stdout if self.tool_returns else None,
@@ -309,23 +300,23 @@ class Message(BaseMessage):
             )
         elif self.role == MessageRole.user:
             # This is type UserMessage
-            assert self.text is not None, self
-            message_str = unpack_message(self.text)
+            assert text_content is not None, self
+            message_str = unpack_message(text_content)
             messages.append(
                 UserMessage(
                     id=self.id,
                     date=self.created_at,
-                    content=message_str or self.text,
+                    content=message_str or text_content,
                 )
             )
         elif self.role == MessageRole.system:
             # This is type SystemMessage
-            assert self.text is not None, self
+            assert text_content is not None, self
             messages.append(
                 SystemMessage(
                     id=self.id,
                     date=self.created_at,
-                    content=self.text,
+                    content=text_content,
                 )
             )
         else:
@@ -494,11 +485,15 @@ class Message(BaseMessage):
         """Go from Message class to ChatCompletion message object"""
 
         # TODO change to pydantic casting, eg `return SystemMessageModel(self)`
+        if self.content and len(self.content) == 1 and self.content[0].type == MessageContentType.text:
+            text_content = self.content[0].text
+        else:
+            text_content = None
 
         if self.role == "system":
             assert all([v is not None for v in [self.role]]), vars(self)
             openai_message = {
-                "content": self.text,
+                "content": text_content,
                 "role": self.role,
             }
             # Optional field, do not include if null
@@ -506,9 +501,9 @@ class Message(BaseMessage):
                 openai_message["name"] = self.name
 
         elif self.role == "user":
-            assert all([v is not None for v in [self.text, self.role]]), vars(self)
+            assert all([v is not None for v in [text_content, self.role]]), vars(self)
             openai_message = {
-                "content": self.text,
+                "content": text_content,
                 "role": self.role,
             }
             # Optional field, do not include if null
@@ -516,9 +511,9 @@ class Message(BaseMessage):
                 openai_message["name"] = self.name
 
         elif self.role == "assistant":
-            assert self.tool_calls is not None or self.text is not None
+            assert self.tool_calls is not None or text_content is not None
             openai_message = {
-                "content": None if put_inner_thoughts_in_kwargs else self.text,
+                "content": None if put_inner_thoughts_in_kwargs else text_content,
                 "role": self.role,
             }
             # Optional fields, do not include if null
@@ -530,7 +525,7 @@ class Message(BaseMessage):
                     openai_message["tool_calls"] = [
                         add_inner_thoughts_to_tool_call(
                             tool_call,
-                            inner_thoughts=self.text,
+                            inner_thoughts=text_content,
                             inner_thoughts_key=INNER_THOUGHTS_KWARG,
                         ).model_dump()
                         for tool_call in self.tool_calls
@@ -544,7 +539,7 @@ class Message(BaseMessage):
         elif self.role == "tool":
             assert all([v is not None for v in [self.role, self.tool_call_id]]), vars(self)
             openai_message = {
-                "content": self.text,
+                "content": text_content,
                 "role": self.role,
                 "tool_call_id": self.tool_call_id[:max_tool_id_length] if max_tool_id_length else self.tool_call_id,
             }
@@ -565,6 +560,10 @@ class Message(BaseMessage):
         Args:
             inner_thoughts_xml_tag (str): The XML tag to wrap around inner thoughts
         """
+        if self.content and len(self.content) == 1 and self.content[0].type == MessageContentType.text:
+            text_content = self.content[0].text
+        else:
+            text_content = None
 
         def add_xml_tag(string: str, xml_tag: Optional[str]):
             # NOTE: Anthropic docs recommends using <thinking> tag when using CoT + tool use
@@ -573,34 +572,34 @@ class Message(BaseMessage):
         if self.role == "system":
             # NOTE: this is not for system instructions, but instead system "events"
 
-            assert all([v is not None for v in [self.text, self.role]]), vars(self)
+            assert all([v is not None for v in [text_content, self.role]]), vars(self)
             # Two options here, we would use system.package_system_message,
             # or use a more Anthropic-specific packaging ie xml tags
-            user_system_event = add_xml_tag(string=f"SYSTEM ALERT: {self.text}", xml_tag="event")
+            user_system_event = add_xml_tag(string=f"SYSTEM ALERT: {text_content}", xml_tag="event")
             anthropic_message = {
                 "content": user_system_event,
                 "role": "user",
             }
 
         elif self.role == "user":
-            assert all([v is not None for v in [self.text, self.role]]), vars(self)
+            assert all([v is not None for v in [text_content, self.role]]), vars(self)
             anthropic_message = {
-                "content": self.text,
+                "content": text_content,
                 "role": self.role,
             }
 
         elif self.role == "assistant":
-            assert self.tool_calls is not None or self.text is not None
+            assert self.tool_calls is not None or text_content is not None
             anthropic_message = {
                 "role": self.role,
             }
             content = []
             # COT / reasoning / thinking
-            if self.text is not None and not put_inner_thoughts_in_kwargs:
+            if text_content is not None and not put_inner_thoughts_in_kwargs:
                 content.append(
                     {
                         "type": "text",
-                        "text": add_xml_tag(string=self.text, xml_tag=inner_thoughts_xml_tag),
+                        "text": add_xml_tag(string=text_content, xml_tag=inner_thoughts_xml_tag),
                     }
                 )
             # Tool calling
@@ -610,7 +609,7 @@ class Message(BaseMessage):
                     if put_inner_thoughts_in_kwargs:
                         tool_call_input = add_inner_thoughts_to_tool_call(
                             tool_call,
-                            inner_thoughts=self.text,
+                            inner_thoughts=text_content,
                             inner_thoughts_key=INNER_THOUGHTS_KWARG,
                         ).model_dump()
                     else:
@@ -639,7 +638,7 @@ class Message(BaseMessage):
                     {
                         "type": "tool_result",
                         "tool_use_id": self.tool_call_id,
-                        "content": self.text,
+                        "content": text_content,
                     }
                 ],
             }
@@ -656,6 +655,10 @@ class Message(BaseMessage):
         # type Content: https://ai.google.dev/api/rest/v1/Content / https://ai.google.dev/api/rest/v1beta/Content
         #     parts[]: Part
         #     role: str ('user' or 'model')
+        if self.content and len(self.content) == 1 and self.content[0].type == MessageContentType.text:
+            text_content = self.content[0].text
+        else:
+            text_content = None
 
         if self.role != "tool" and self.name is not None:
             warnings.warn(f"Using Google AI with non-null 'name' field ({self.name}) not yet supported.")
@@ -665,18 +668,18 @@ class Message(BaseMessage):
             # https://www.reddit.com/r/Bard/comments/1b90i8o/does_gemini_have_a_system_prompt_option_while/
             google_ai_message = {
                 "role": "user",  # NOTE: no 'system'
-                "parts": [{"text": self.text}],
+                "parts": [{"text": text_content}],
             }
 
         elif self.role == "user":
-            assert all([v is not None for v in [self.text, self.role]]), vars(self)
+            assert all([v is not None for v in [text_content, self.role]]), vars(self)
             google_ai_message = {
                 "role": "user",
-                "parts": [{"text": self.text}],
+                "parts": [{"text": text_content}],
             }
 
         elif self.role == "assistant":
-            assert self.tool_calls is not None or self.text is not None
+            assert self.tool_calls is not None or text_content is not None
             google_ai_message = {
                 "role": "model",  # NOTE: different
             }
@@ -684,10 +687,10 @@ class Message(BaseMessage):
             # NOTE: Google AI API doesn't allow non-null content + function call
             # To get around this, just two a two part message, inner thoughts first then
             parts = []
-            if not put_inner_thoughts_in_kwargs and self.text is not None:
+            if not put_inner_thoughts_in_kwargs and text_content is not None:
                 # NOTE: ideally we do multi-part for CoT / inner thoughts + function call, but Google AI API doesn't allow it
                 raise NotImplementedError
-                parts.append({"text": self.text})
+                parts.append({"text": text_content})
 
             if self.tool_calls is not None:
                 # NOTE: implied support for multiple calls
@@ -701,10 +704,10 @@ class Message(BaseMessage):
                         raise UserWarning(f"Failed to parse JSON function args: {function_args}")
                         function_args = {"args": function_args}
 
-                    if put_inner_thoughts_in_kwargs and self.text is not None:
+                    if put_inner_thoughts_in_kwargs and text_content is not None:
                         assert "inner_thoughts" not in function_args, function_args
                         assert len(self.tool_calls) == 1
-                        function_args[INNER_THOUGHTS_KWARG] = self.text
+                        function_args[INNER_THOUGHTS_KWARG] = text_content
 
                     parts.append(
                         {
@@ -715,8 +718,8 @@ class Message(BaseMessage):
                         }
                     )
             else:
-                assert self.text is not None
-                parts.append({"text": self.text})
+                assert text_content is not None
+                parts.append({"text": text_content})
             google_ai_message["parts"] = parts
 
         elif self.role == "tool":
@@ -731,9 +734,9 @@ class Message(BaseMessage):
 
             # NOTE: Google AI API wants the function response as JSON only, no string
             try:
-                function_response = json.loads(self.text)
+                function_response = json.loads(text_content)
             except:
-                function_response = {"function_response": self.text}
+                function_response = {"function_response": text_content}
 
             google_ai_message = {
                 "role": "function",
@@ -778,7 +781,10 @@ class Message(BaseMessage):
 
         # TODO: update this prompt style once guidance from Cohere on
         # embedded function calls in multi-turn conversation become more clear
-
+        if self.content and len(self.content) == 1 and self.content[0].type == MessageContentType.text:
+            text_content = self.content[0].text
+        else:
+            text_content = None
         if self.role == "system":
             """
             The chat_history parameter should not be used for SYSTEM messages in most cases.
@@ -787,26 +793,26 @@ class Message(BaseMessage):
             raise UserWarning(f"role 'system' messages should go in 'preamble' field for Cohere API")
 
         elif self.role == "user":
-            assert all([v is not None for v in [self.text, self.role]]), vars(self)
+            assert all([v is not None for v in [text_content, self.role]]), vars(self)
             cohere_message = [
                 {
                     "role": "USER",
-                    "message": self.text,
+                    "message": text_content,
                 }
             ]
 
         elif self.role == "assistant":
             # NOTE: we may break this into two message - an inner thought and a function call
             # Optionally, we could just make this a function call with the inner thought inside
-            assert self.tool_calls is not None or self.text is not None
+            assert self.tool_calls is not None or text_content is not None
 
-            if self.text and self.tool_calls:
+            if text_content and self.tool_calls:
                 if inner_thoughts_as_kwarg:
                     raise NotImplementedError
                 cohere_message = [
                     {
                         "role": "CHATBOT",
-                        "message": self.text,
+                        "message": text_content,
                     },
                 ]
                 for tc in self.tool_calls:
@@ -820,7 +826,7 @@ class Message(BaseMessage):
                             "message": f"{function_call_prefix} {function_call_text}",
                         }
                     )
-            elif not self.text and self.tool_calls:
+            elif not text_content and self.tool_calls:
                 cohere_message = []
                 for tc in self.tool_calls:
                     # TODO better way to pack?
@@ -831,11 +837,11 @@ class Message(BaseMessage):
                             "message": f"{function_call_prefix} {function_call_text}",
                         }
                     )
-            elif self.text and not self.tool_calls:
+            elif text_content and not self.tool_calls:
                 cohere_message = [
                     {
                         "role": "CHATBOT",
-                        "message": self.text,
+                        "message": text_content,
                     }
                 ]
             else:
@@ -843,7 +849,7 @@ class Message(BaseMessage):
 
         elif self.role == "tool":
             assert all([v is not None for v in [self.role, self.tool_call_id]]), vars(self)
-            function_response_text = self.text
+            function_response_text = text_content
             cohere_message = [
                 {
                     "role": function_response_role,

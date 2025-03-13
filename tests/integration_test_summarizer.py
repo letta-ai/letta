@@ -192,8 +192,8 @@ def test_auto_summarize(client, mock_e2b_api_key_none):
 
         def summarize_message_exists(messages: List[Message]) -> bool:
             for message in messages:
-                if message.text and "The following is a summary of the previous" in message.text:
-                    print(f"Summarize message found after {message_count} messages: \n {message.text}")
+                if message.content[0].text and "The following is a summary of the previous" in message.content[0].text:
+                    print(f"Summarize message found after {message_count} messages: \n {message.content[0].text}")
                     return True
             return False
 
@@ -277,4 +277,4 @@ def test_summarizer(config_filename, client, agent_state):
     # Invoke a summarize
     letta_agent.summarize_messages_inplace()
     in_context_messages = client.get_in_context_messages(agent_state.id)
-    assert SUMMARY_KEY_PHRASE in in_context_messages[1].text, f"Test failed for config: {config_filename}"
+    assert SUMMARY_KEY_PHRASE in in_context_messages[1].content[0].text, f"Test failed for config: {config_filename}"
