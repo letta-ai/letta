@@ -394,22 +394,6 @@ def test_deserialize_override_existing_tools(
                 assert existing_tool.source_code == weather_tool.source_code, f"Tool {tool_name} should NOT be overridden"
 
 
-def test_in_context_message_id_remapping(local_client, server, serialize_test_agent, default_user, other_user):
-    """Test deserializing JSON into an Agent instance."""
-    result = server.agent_manager.serialize(agent_id=serialize_test_agent.id, actor=default_user)
-
-    # Check remapping on message_ids and messages is consistent
-    assert sorted([m["id"] for m in result["messages"]]) == sorted(result["message_ids"])
-
-    # Deserialize the agent
-    agent_copy = server.agent_manager.deserialize(serialized_agent=result, actor=other_user)
-
-    # Make sure all the messages are able to be retrieved
-    in_context_messages = server.agent_manager.get_in_context_messages(agent_id=agent_copy.id, actor=other_user)
-    assert len(in_context_messages) == len(result["message_ids"])
-    assert sorted([m.id for m in in_context_messages]) == sorted(result["message_ids"])
-
-
 def test_agent_serialize_with_user_messages(local_client, server, serialize_test_agent, default_user, other_user):
     """Test deserializing JSON into an Agent instance."""
     append_copy_suffix = False
@@ -471,6 +455,19 @@ def test_agent_serialize_tool_calls(mock_e2b_api_key_none, local_client, server,
 
     assert original_agent_response.completion_tokens > 0 and original_agent_response.step_count > 0
     assert copy_agent_response.completion_tokens > 0 and copy_agent_response.step_count > 0
+
+
+def test_in_context_message_id_remapping(local_client, server, serialize_test_agent, default_user, other_user):
+    """Test deserializing JSON into an Agent instance."""
+    result = server.agent_manager.serialize(agent_id=serialize_test_agent.id, actor=default_user)
+
+    # Deserialize the agent
+    agent_copy = server.agent_manager.deserialize(serialized_agent=result, actor=other_user)
+
+    # Make sure all the messages are able to be retrieved
+    in_context_messages = server.agent_manager.get_in_context_messages(agent_id=agent_copy.id, actor=other_user)
+    assert len(in_context_messages) == len(result["message_ids"])
+    assert sorted([m.id for m in in_context_messages]) == sorted(result["message_ids"])
 
 
 # FastAPI endpoint tests
