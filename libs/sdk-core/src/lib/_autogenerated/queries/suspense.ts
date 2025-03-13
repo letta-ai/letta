@@ -5,6 +5,7 @@ import {
   AdminService,
   AgentsService,
   BlocksService,
+  GroupsService,
   HealthService,
   IdentitiesService,
   JobsService,
@@ -20,7 +21,12 @@ import {
   ToolsService,
   UsersService,
 } from '../requests/services.gen';
-import { IdentityType, MessageRole, SandboxType } from '../requests/types.gen';
+import {
+  IdentityType,
+  ManagerType,
+  MessageRole,
+  SandboxType,
+} from '../requests/types.gen';
 import * as Common from './common';
 /**
  * Retrieve Tool
@@ -857,6 +863,127 @@ export const useAgentsServiceListMessagesSuspense = <
         assistantMessageToolKwarg,
         assistantMessageToolName,
         before,
+        limit,
+        useAssistantMessage,
+        userId,
+      }) as TData,
+    ...options,
+  });
+/**
+ * List Groups
+ * Fetch all multi-agent groups matching query.
+ * @param data The data for the request.
+ * @param data.managerType Search groups by manager type
+ * @param data.before Cursor for pagination
+ * @param data.after Cursor for pagination
+ * @param data.limit Limit for pagination
+ * @param data.projectId Search groups by project id
+ * @param data.userId
+ * @returns Group Successful Response
+ * @throws ApiError
+ */
+export const useGroupsServiceListGroupsSuspense = <
+  TData = Common.GroupsServiceListGroupsDefaultResponse,
+  TError = unknown,
+  TQueryKey extends Array<unknown> = unknown[],
+>(
+  {
+    after,
+    before,
+    limit,
+    managerType,
+    projectId,
+    userId,
+  }: {
+    after?: string;
+    before?: string;
+    limit?: number;
+    managerType?: ManagerType;
+    projectId?: string;
+    userId?: string;
+  } = {},
+  queryKey?: TQueryKey,
+  options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>,
+) =>
+  useSuspenseQuery<TData, TError>({
+    queryKey: Common.UseGroupsServiceListGroupsKeyFn(
+      { after, before, limit, managerType, projectId, userId },
+      queryKey,
+    ),
+    queryFn: () =>
+      GroupsService.listGroups({
+        after,
+        before,
+        limit,
+        managerType,
+        projectId,
+        userId,
+      }) as TData,
+    ...options,
+  });
+/**
+ * List Group Messages
+ * Retrieve message history for an agent.
+ * @param data The data for the request.
+ * @param data.groupId
+ * @param data.after Message after which to retrieve the returned messages.
+ * @param data.before Message before which to retrieve the returned messages.
+ * @param data.limit Maximum number of messages to retrieve.
+ * @param data.useAssistantMessage Whether to use assistant messages
+ * @param data.assistantMessageToolName The name of the designated message tool.
+ * @param data.assistantMessageToolKwarg The name of the message argument.
+ * @param data.userId
+ * @returns LettaMessageUnion Successful Response
+ * @throws ApiError
+ */
+export const useGroupsServiceListGroupMessagesSuspense = <
+  TData = Common.GroupsServiceListGroupMessagesDefaultResponse,
+  TError = unknown,
+  TQueryKey extends Array<unknown> = unknown[],
+>(
+  {
+    after,
+    assistantMessageToolKwarg,
+    assistantMessageToolName,
+    before,
+    groupId,
+    limit,
+    useAssistantMessage,
+    userId,
+  }: {
+    after?: string;
+    assistantMessageToolKwarg?: string;
+    assistantMessageToolName?: string;
+    before?: string;
+    groupId: string;
+    limit?: number;
+    useAssistantMessage?: boolean;
+    userId?: string;
+  },
+  queryKey?: TQueryKey,
+  options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>,
+) =>
+  useSuspenseQuery<TData, TError>({
+    queryKey: Common.UseGroupsServiceListGroupMessagesKeyFn(
+      {
+        after,
+        assistantMessageToolKwarg,
+        assistantMessageToolName,
+        before,
+        groupId,
+        limit,
+        useAssistantMessage,
+        userId,
+      },
+      queryKey,
+    ),
+    queryFn: () =>
+      GroupsService.listGroupMessages({
+        after,
+        assistantMessageToolKwarg,
+        assistantMessageToolName,
+        before,
+        groupId,
         limit,
         useAssistantMessage,
         userId,

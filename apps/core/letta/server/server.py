@@ -19,6 +19,7 @@ import letta.system as system
 from letta.agent import Agent, save_agent
 from letta.config import LettaConfig
 from letta.data_sources.connectors import DataConnector, load_data
+from letta.dynamic_multi_agent import DynamicMultiAgent
 from letta.helpers.datetime_helpers import get_utc_time
 from letta.helpers.json_helpers import json_dumps, json_loads
 from letta.helpers.mcp_helpers import (
@@ -37,6 +38,7 @@ from letta.interface import CLIInterface  # for printing to terminal
 from letta.log import get_logger
 from letta.offline_memory_agent import OfflineMemoryAgent
 from letta.orm.errors import NoResultFound
+from letta.round_robin_multi_agent import RoundRobinMultiAgent
 from letta.schemas.agent import AgentState, AgentType, CreateAgent
 from letta.schemas.block import BlockUpdate
 from letta.schemas.embedding_config import EmbeddingConfig
@@ -44,6 +46,7 @@ from letta.schemas.embedding_config import EmbeddingConfig
 # openai schemas
 from letta.schemas.enums import JobStatus, MessageStreamStatus
 from letta.schemas.environment_variables import SandboxEnvironmentVariableCreate
+from letta.schemas.group import Group, ManagerType
 from letta.schemas.job import Job, JobUpdate
 from letta.schemas.letta_message import LegacyLettaMessage, LettaMessage, ToolReturnMessage
 from letta.schemas.letta_response import LettaResponse
@@ -80,6 +83,7 @@ from letta.server.rest_api.interface import StreamingServerInterface
 from letta.server.rest_api.utils import sse_async_generator
 from letta.services.agent_manager import AgentManager
 from letta.services.block_manager import BlockManager
+from letta.services.group_manager import GroupManager
 from letta.services.identity_manager import IdentityManager
 from letta.services.job_manager import JobManager
 from letta.services.message_manager import MessageManager
@@ -94,6 +98,7 @@ from letta.services.tool_execution_sandbox import ToolExecutionSandbox
 from letta.services.tool_manager import ToolManager
 from letta.services.user_manager import UserManager
 from letta.settings import model_settings, settings, tool_settings
+from letta.supervisor_multi_agent import SupervisorMultiAgent
 from letta.tracing import trace_method
 from letta.utils import get_friendly_error_msg
 
@@ -207,6 +212,7 @@ class SyncServer(Server):
         self.provider_manager = ProviderManager()
         self.step_manager = StepManager()
         self.identity_manager = IdentityManager()
+        self.group_manager = GroupManager()
 
         # Managers that interface with parallelism
         self.per_agent_lock_manager = PerAgentLockManager()
@@ -353,6 +359,8 @@ class SyncServer(Server):
         agent_lock = self.per_agent_lock_manager.get_lock(agent_id)
         with agent_lock:
             agent_state = self.agent_manager.get_agent_by_id(agent_id=agent_id, actor=actor)
+            if agent_state.multi_agent_group:
+                return self.load_multi_agent(agent_state.multi_agent_group, actor, interface, agent_state)
 
             interface = interface or self.default_interface_factory()
             if agent_state.agent_type == AgentType.memgpt_agent:
@@ -363,6 +371,46 @@ class SyncServer(Server):
                 raise ValueError(f"Invalid agent type {agent_state.agent_type}")
 
             return agent
+
+    def load_multi_agent(
+        self, group: Group, actor: User, interface: Union[AgentInterface, None] = None, agent_state: Optional[AgentState] = None
+    ) -> Agent:
+        match group.manager_type:
+            case ManagerType.round_robin:
+                agent_state = agent_state or self.agent_manager.get_agent_by_id(agent_id=group.agent_ids[0], actor=actor)
+                return RoundRobinMultiAgent(
+                    agent_state=agent_state,
+                    interface=interface,
+                    user=actor,
+                    group_id=group.id,
+                    agent_ids=group.agent_ids,
+                    description=group.description,
+                    max_turns=group.max_turns,
+                )
+            case ManagerType.dynamic:
+                agent_state = agent_state or self.agent_manager.get_agent_by_id(agent_id=group.manager_agent_id, actor=actor)
+                return DynamicMultiAgent(
+                    agent_state=agent_state,
+                    interface=interface,
+                    user=actor,
+                    group_id=group.id,
+                    agent_ids=group.agent_ids,
+                    description=group.description,
+                    max_turns=group.max_turns,
+                    termination_token=group.termination_token,
+                )
+            case ManagerType.supervisor:
+                agent_state = agent_state or self.agent_manager.get_agent_by_id(agent_id=group.manager_agent_id, actor=actor)
+                return SupervisorMultiAgent(
+                    agent_state=agent_state,
+                    interface=interface,
+                    user=actor,
+                    group_id=group.id,
+                    agent_ids=group.agent_ids,
+                    description=group.description,
+                )
+            case _:
+                raise ValueError(f"Type {group.manager_type} is not supported.")
 
     def _step(
         self,
@@ -1395,6 +1443,109 @@ class SyncServer(Server):
                 # TODO: eventually update the interface to use `Message` and `MessageChunk` (new) inside the deque instead
                 return LettaResponse(messages=filtered_stream, usage=usage)
 
+        except HTTPException:
+            raise
+        except Exception as e:
+            print(e)
+            import traceback
+
+            traceback.print_exc()
+            raise HTTPException(status_code=500, detail=f"{e}")
+
+    @trace_method
+    async def send_group_message_to_agent(
+        self,
+        group_id: str,
+        actor: User,
+        messages: Union[List[Message], List[MessageCreate]],
+        stream_steps: bool,
+        stream_tokens: bool,
+        chat_completion_mode: bool = False,
+        # Support for AssistantMessage
+        use_assistant_message: bool = True,
+        assistant_message_tool_name: str = constants.DEFAULT_MESSAGE_TOOL,
+        assistant_message_tool_kwarg: str = constants.DEFAULT_MESSAGE_TOOL_KWARG,
+        metadata: Optional[dict] = None,
+    ) -> Union[StreamingResponse, LettaResponse]:
+        include_final_message = True
+        if not stream_steps and stream_tokens:
+            raise HTTPException(status_code=400, detail="stream_steps must be 'true' if stream_tokens is 'true'")
+
+        try:
+            # fetch the group
+            group = self.group_manager.retrieve_group(group_id=group_id, actor=actor)
+            letta_multi_agent = self.load_multi_agent(group=group, actor=actor)
+
+            llm_config = letta_multi_agent.agent_state.llm_config
+            supports_token_streaming = ["openai", "anthropic", "deepseek"]
+            if stream_tokens and (
+                llm_config.model_endpoint_type not in supports_token_streaming or "inference.memgpt.ai" in llm_config.model_endpoint
+            ):
+                warnings.warn(
+                    f"Token streaming is only supported for models with type {' or '.join(supports_token_streaming)} in the model_endpoint: agent has endpoint type {llm_config.model_endpoint_type} and {llm_config.model_endpoint}. Setting stream_tokens to False."
+                )
+                stream_tokens = False
+
+            # Create a new interface per request
+            letta_multi_agent.interface = StreamingServerInterface(
+                use_assistant_message=use_assistant_message,
+                assistant_message_tool_name=assistant_message_tool_name,
+                assistant_message_tool_kwarg=assistant_message_tool_kwarg,
+                inner_thoughts_in_kwargs=(
+                    llm_config.put_inner_thoughts_in_kwargs if llm_config.put_inner_thoughts_in_kwargs is not None else False
+                ),
+            )
+            streaming_interface = letta_multi_agent.interface
+            if not isinstance(streaming_interface, StreamingServerInterface):
+                raise ValueError(f"Agent has wrong type of interface: {type(streaming_interface)}")
+            streaming_interface.streaming_mode = stream_tokens
+            streaming_interface.streaming_chat_completion_mode = chat_completion_mode
+            if metadata and hasattr(streaming_interface, "metadata"):
+                streaming_interface.metadata = metadata
+
+            streaming_interface.stream_start()
+            task = asyncio.create_task(
+                asyncio.to_thread(
+                    letta_multi_agent.step,
+                    messages=messages,
+                    chaining=self.chaining,
+                    max_chaining_steps=self.max_chaining_steps,
+                )
+            )
+
+            if stream_steps:
+                # return a stream
+                return StreamingResponse(
+                    sse_async_generator(
+                        streaming_interface.get_generator(),
+                        usage_task=task,
+                        finish_message=include_final_message,
+                    ),
+                    media_type="text/event-stream",
+                )
+
+            else:
+                # buffer the stream, then return the list
+                generated_stream = []
+                async for message in streaming_interface.get_generator():
+                    assert (
+                        isinstance(message, LettaMessage)
+                        or isinstance(message, LegacyLettaMessage)
+                        or isinstance(message, MessageStreamStatus)
+                    ), type(message)
+                    generated_stream.append(message)
+                    if message == MessageStreamStatus.done:
+                        break
+
+                # Get rid of the stream status messages
+                filtered_stream = [d for d in generated_stream if not isinstance(d, MessageStreamStatus)]
+                usage = await task
+
+                # By default the stream will be messages of type LettaMessage or LettaLegacyMessage
+                # If we want to convert these to Message, we can use the attached IDs
+                # NOTE: we will need to de-duplicate the Messsage IDs though (since Assistant->Inner+Func_Call)
+                # TODO: eventually update the interface to use `Message` and `MessageChunk` (new) inside the deque instead
+                return LettaResponse(messages=filtered_stream, usage=usage)
         except HTTPException:
             raise
         except Exception as e:

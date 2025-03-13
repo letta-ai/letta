@@ -2977,6 +2977,513 @@
         }
       }
     },
+    "/v1/groups/": {
+      "post": {
+        "tags": ["groups"],
+        "summary": "Create Group",
+        "description": "Create a new multi-agent group with the specified configuration.",
+        "operationId": "create_group",
+        "parameters": [
+          {
+            "name": "X-Project",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Project"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GroupCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Group"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": ["groups"],
+        "summary": "List Groups",
+        "description": "Fetch all multi-agent groups matching query.",
+        "operationId": "list_groups",
+        "parameters": [
+          {
+            "name": "manager_type",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/ManagerType"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Search groups by manager type",
+              "title": "Manager Type"
+            },
+            "description": "Search groups by manager type"
+          },
+          {
+            "name": "before",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Cursor for pagination",
+              "title": "Before"
+            },
+            "description": "Cursor for pagination"
+          },
+          {
+            "name": "after",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Cursor for pagination",
+              "title": "After"
+            },
+            "description": "Cursor for pagination"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Limit for pagination",
+              "title": "Limit"
+            },
+            "description": "Limit for pagination"
+          },
+          {
+            "name": "project_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Search groups by project id",
+              "title": "Project Id"
+            },
+            "description": "Search groups by project id"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Group"
+                  },
+                  "title": "Response List Groups"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": ["groups"],
+        "summary": "Upsert Group",
+        "description": "Create a new multi-agent group with the specified configuration.",
+        "operationId": "upsert_group",
+        "parameters": [
+          {
+            "name": "X-Project",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Project"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GroupCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Group"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/groups/{group_id}": {
+      "delete": {
+        "tags": ["groups"],
+        "summary": "Delete Group",
+        "description": "Delete a multi-agent group.",
+        "operationId": "delete_group",
+        "parameters": [
+          {
+            "name": "group_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Group Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/groups/{group_id}/messages": {
+      "post": {
+        "tags": ["groups"],
+        "summary": "Send Group Message",
+        "description": "Process a user message and return the group's response.\nThis endpoint accepts a message from a user and processes it through through agents in the group based on the specified pattern",
+        "operationId": "send_group_message",
+        "parameters": [
+          {
+            "name": "agent_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Agent Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LettaRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LettaResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": ["groups"],
+        "summary": "List Group Messages",
+        "description": "Retrieve message history for an agent.",
+        "operationId": "list_group_messages",
+        "parameters": [
+          {
+            "name": "group_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Group Id"
+            }
+          },
+          {
+            "name": "after",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Message after which to retrieve the returned messages.",
+              "title": "After"
+            },
+            "description": "Message after which to retrieve the returned messages."
+          },
+          {
+            "name": "before",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Message before which to retrieve the returned messages.",
+              "title": "Before"
+            },
+            "description": "Message before which to retrieve the returned messages."
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "description": "Maximum number of messages to retrieve.",
+              "default": 10,
+              "title": "Limit"
+            },
+            "description": "Maximum number of messages to retrieve."
+          },
+          {
+            "name": "use_assistant_message",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "description": "Whether to use assistant messages",
+              "default": true,
+              "title": "Use Assistant Message"
+            },
+            "description": "Whether to use assistant messages"
+          },
+          {
+            "name": "assistant_message_tool_name",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "description": "The name of the designated message tool.",
+              "default": "send_message",
+              "title": "Assistant Message Tool Name"
+            },
+            "description": "The name of the designated message tool."
+          },
+          {
+            "name": "assistant_message_tool_kwarg",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "description": "The name of the message argument.",
+              "default": "message",
+              "title": "Assistant Message Tool Kwarg"
+            },
+            "description": "The name of the message argument."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/LettaMessageUnion"
+                  },
+                  "title": "Response List Group Messages"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/groups/{group_id}/messages/stream": {
+      "post": {
+        "tags": ["groups"],
+        "summary": "Send Group Message Streaming",
+        "description": "Process a user message and return the group's responses.\nThis endpoint accepts a message from a user and processes it through agents in the group based on the specified pattern.\nIt will stream the steps of the response always, and stream the tokens if 'stream_tokens' is set to True.",
+        "operationId": "send_group_message_streaming",
+        "parameters": [
+          {
+            "name": "group_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Group Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LettaStreamingRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              },
+              "text/event-stream": {
+                "description": "Server-Sent Events stream"
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/identities/": {
       "get": {
         "tags": ["identities", "identities"],
@@ -7345,6 +7852,274 @@
                               {}
                             ]
                           },
+                          "multi_agent_group": {
+                            "oneOf": [
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "id": {
+                                    "type": "string"
+                                  },
+                                  "manager_type": {
+                                    "type": "string",
+                                    "enum": [
+                                      "round_robin",
+                                      "supervisor",
+                                      "dynamic",
+                                      "swarm"
+                                    ]
+                                  },
+                                  "agent_ids": {
+                                    "type": "array",
+                                    "items": {
+                                      "type": "string"
+                                    }
+                                  },
+                                  "description": {
+                                    "type": "string"
+                                  },
+                                  "manager_agent_id": {
+                                    "oneOf": [
+                                      {
+                                        "type": "string"
+                                      },
+                                      {
+                                        "type": "string",
+                                        "format": "null",
+                                        "nullable": true
+                                      },
+                                      {
+                                        "type": "array",
+                                        "items": {
+                                          "oneOf": [
+                                            {
+                                              "type": "string"
+                                            },
+                                            {
+                                              "type": "string",
+                                              "format": "null",
+                                              "nullable": true
+                                            }
+                                          ],
+                                          "nullable": true
+                                        }
+                                      },
+                                      {}
+                                    ],
+                                    "nullable": true
+                                  },
+                                  "termination_token": {
+                                    "oneOf": [
+                                      {
+                                        "type": "string"
+                                      },
+                                      {
+                                        "type": "string",
+                                        "format": "null",
+                                        "nullable": true
+                                      },
+                                      {
+                                        "type": "array",
+                                        "items": {
+                                          "oneOf": [
+                                            {
+                                              "type": "string"
+                                            },
+                                            {
+                                              "type": "string",
+                                              "format": "null",
+                                              "nullable": true
+                                            }
+                                          ],
+                                          "nullable": true
+                                        }
+                                      },
+                                      {}
+                                    ],
+                                    "nullable": true
+                                  },
+                                  "max_turns": {
+                                    "oneOf": [
+                                      {
+                                        "type": "number"
+                                      },
+                                      {
+                                        "type": "string",
+                                        "format": "null",
+                                        "nullable": true
+                                      },
+                                      {
+                                        "type": "array",
+                                        "items": {
+                                          "oneOf": [
+                                            {
+                                              "type": "number"
+                                            },
+                                            {
+                                              "type": "string",
+                                              "format": "null",
+                                              "nullable": true
+                                            }
+                                          ],
+                                          "nullable": true
+                                        }
+                                      },
+                                      {}
+                                    ],
+                                    "nullable": true
+                                  }
+                                },
+                                "required": [
+                                  "id",
+                                  "manager_type",
+                                  "agent_ids",
+                                  "description"
+                                ]
+                              },
+                              {
+                                "type": "string",
+                                "format": "null",
+                                "nullable": true
+                              },
+                              {
+                                "type": "array",
+                                "items": {
+                                  "oneOf": [
+                                    {
+                                      "type": "object",
+                                      "properties": {
+                                        "id": {
+                                          "type": "string"
+                                        },
+                                        "manager_type": {
+                                          "type": "string",
+                                          "enum": [
+                                            "round_robin",
+                                            "supervisor",
+                                            "dynamic",
+                                            "swarm"
+                                          ]
+                                        },
+                                        "agent_ids": {
+                                          "type": "array",
+                                          "items": {
+                                            "type": "string"
+                                          }
+                                        },
+                                        "description": {
+                                          "type": "string"
+                                        },
+                                        "manager_agent_id": {
+                                          "oneOf": [
+                                            {
+                                              "type": "string"
+                                            },
+                                            {
+                                              "type": "string",
+                                              "format": "null",
+                                              "nullable": true
+                                            },
+                                            {
+                                              "type": "array",
+                                              "items": {
+                                                "oneOf": [
+                                                  {
+                                                    "type": "string"
+                                                  },
+                                                  {
+                                                    "type": "string",
+                                                    "format": "null",
+                                                    "nullable": true
+                                                  }
+                                                ],
+                                                "nullable": true
+                                              }
+                                            },
+                                            {}
+                                          ],
+                                          "nullable": true
+                                        },
+                                        "termination_token": {
+                                          "oneOf": [
+                                            {
+                                              "type": "string"
+                                            },
+                                            {
+                                              "type": "string",
+                                              "format": "null",
+                                              "nullable": true
+                                            },
+                                            {
+                                              "type": "array",
+                                              "items": {
+                                                "oneOf": [
+                                                  {
+                                                    "type": "string"
+                                                  },
+                                                  {
+                                                    "type": "string",
+                                                    "format": "null",
+                                                    "nullable": true
+                                                  }
+                                                ],
+                                                "nullable": true
+                                              }
+                                            },
+                                            {}
+                                          ],
+                                          "nullable": true
+                                        },
+                                        "max_turns": {
+                                          "oneOf": [
+                                            {
+                                              "type": "number"
+                                            },
+                                            {
+                                              "type": "string",
+                                              "format": "null",
+                                              "nullable": true
+                                            },
+                                            {
+                                              "type": "array",
+                                              "items": {
+                                                "oneOf": [
+                                                  {
+                                                    "type": "number"
+                                                  },
+                                                  {
+                                                    "type": "string",
+                                                    "format": "null",
+                                                    "nullable": true
+                                                  }
+                                                ],
+                                                "nullable": true
+                                              }
+                                            },
+                                            {}
+                                          ],
+                                          "nullable": true
+                                        }
+                                      },
+                                      "required": [
+                                        "id",
+                                        "manager_type",
+                                        "agent_ids",
+                                        "description"
+                                      ]
+                                    },
+                                    {
+                                      "type": "string",
+                                      "format": "null",
+                                      "nullable": true
+                                    }
+                                  ],
+                                  "nullable": true
+                                }
+                              },
+                              {}
+                            ],
+                            "nullable": true
+                          },
                           "template": {
                             "type": "string"
                           }
@@ -10118,6 +10893,274 @@
                               },
                               {}
                             ]
+                          },
+                          "multi_agent_group": {
+                            "oneOf": [
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "id": {
+                                    "type": "string"
+                                  },
+                                  "manager_type": {
+                                    "type": "string",
+                                    "enum": [
+                                      "round_robin",
+                                      "supervisor",
+                                      "dynamic",
+                                      "swarm"
+                                    ]
+                                  },
+                                  "agent_ids": {
+                                    "type": "array",
+                                    "items": {
+                                      "type": "string"
+                                    }
+                                  },
+                                  "description": {
+                                    "type": "string"
+                                  },
+                                  "manager_agent_id": {
+                                    "oneOf": [
+                                      {
+                                        "type": "string"
+                                      },
+                                      {
+                                        "type": "string",
+                                        "format": "null",
+                                        "nullable": true
+                                      },
+                                      {
+                                        "type": "array",
+                                        "items": {
+                                          "oneOf": [
+                                            {
+                                              "type": "string"
+                                            },
+                                            {
+                                              "type": "string",
+                                              "format": "null",
+                                              "nullable": true
+                                            }
+                                          ],
+                                          "nullable": true
+                                        }
+                                      },
+                                      {}
+                                    ],
+                                    "nullable": true
+                                  },
+                                  "termination_token": {
+                                    "oneOf": [
+                                      {
+                                        "type": "string"
+                                      },
+                                      {
+                                        "type": "string",
+                                        "format": "null",
+                                        "nullable": true
+                                      },
+                                      {
+                                        "type": "array",
+                                        "items": {
+                                          "oneOf": [
+                                            {
+                                              "type": "string"
+                                            },
+                                            {
+                                              "type": "string",
+                                              "format": "null",
+                                              "nullable": true
+                                            }
+                                          ],
+                                          "nullable": true
+                                        }
+                                      },
+                                      {}
+                                    ],
+                                    "nullable": true
+                                  },
+                                  "max_turns": {
+                                    "oneOf": [
+                                      {
+                                        "type": "number"
+                                      },
+                                      {
+                                        "type": "string",
+                                        "format": "null",
+                                        "nullable": true
+                                      },
+                                      {
+                                        "type": "array",
+                                        "items": {
+                                          "oneOf": [
+                                            {
+                                              "type": "number"
+                                            },
+                                            {
+                                              "type": "string",
+                                              "format": "null",
+                                              "nullable": true
+                                            }
+                                          ],
+                                          "nullable": true
+                                        }
+                                      },
+                                      {}
+                                    ],
+                                    "nullable": true
+                                  }
+                                },
+                                "required": [
+                                  "id",
+                                  "manager_type",
+                                  "agent_ids",
+                                  "description"
+                                ]
+                              },
+                              {
+                                "type": "string",
+                                "format": "null",
+                                "nullable": true
+                              },
+                              {
+                                "type": "array",
+                                "items": {
+                                  "oneOf": [
+                                    {
+                                      "type": "object",
+                                      "properties": {
+                                        "id": {
+                                          "type": "string"
+                                        },
+                                        "manager_type": {
+                                          "type": "string",
+                                          "enum": [
+                                            "round_robin",
+                                            "supervisor",
+                                            "dynamic",
+                                            "swarm"
+                                          ]
+                                        },
+                                        "agent_ids": {
+                                          "type": "array",
+                                          "items": {
+                                            "type": "string"
+                                          }
+                                        },
+                                        "description": {
+                                          "type": "string"
+                                        },
+                                        "manager_agent_id": {
+                                          "oneOf": [
+                                            {
+                                              "type": "string"
+                                            },
+                                            {
+                                              "type": "string",
+                                              "format": "null",
+                                              "nullable": true
+                                            },
+                                            {
+                                              "type": "array",
+                                              "items": {
+                                                "oneOf": [
+                                                  {
+                                                    "type": "string"
+                                                  },
+                                                  {
+                                                    "type": "string",
+                                                    "format": "null",
+                                                    "nullable": true
+                                                  }
+                                                ],
+                                                "nullable": true
+                                              }
+                                            },
+                                            {}
+                                          ],
+                                          "nullable": true
+                                        },
+                                        "termination_token": {
+                                          "oneOf": [
+                                            {
+                                              "type": "string"
+                                            },
+                                            {
+                                              "type": "string",
+                                              "format": "null",
+                                              "nullable": true
+                                            },
+                                            {
+                                              "type": "array",
+                                              "items": {
+                                                "oneOf": [
+                                                  {
+                                                    "type": "string"
+                                                  },
+                                                  {
+                                                    "type": "string",
+                                                    "format": "null",
+                                                    "nullable": true
+                                                  }
+                                                ],
+                                                "nullable": true
+                                              }
+                                            },
+                                            {}
+                                          ],
+                                          "nullable": true
+                                        },
+                                        "max_turns": {
+                                          "oneOf": [
+                                            {
+                                              "type": "number"
+                                            },
+                                            {
+                                              "type": "string",
+                                              "format": "null",
+                                              "nullable": true
+                                            },
+                                            {
+                                              "type": "array",
+                                              "items": {
+                                                "oneOf": [
+                                                  {
+                                                    "type": "number"
+                                                  },
+                                                  {
+                                                    "type": "string",
+                                                    "format": "null",
+                                                    "nullable": true
+                                                  }
+                                                ],
+                                                "nullable": true
+                                              }
+                                            },
+                                            {}
+                                          ],
+                                          "nullable": true
+                                        }
+                                      },
+                                      "required": [
+                                        "id",
+                                        "manager_type",
+                                        "agent_ids",
+                                        "description"
+                                      ]
+                                    },
+                                    {
+                                      "type": "string",
+                                      "format": "null",
+                                      "nullable": true
+                                    }
+                                  ],
+                                  "nullable": true
+                                }
+                              },
+                              {}
+                            ],
+                            "nullable": true
                           }
                         },
                         "required": [
@@ -10660,6 +11703,17 @@
             "title": "Message Buffer Autoclear",
             "description": "If set to True, the agent will not remember previous messages (though the agent will still retain state via core memory blocks and archival/recall memory). Not recommended unless you have an advanced use case.",
             "default": false
+          },
+          "multi_agent_group": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Group"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The multi-agent group that this agent manages"
           }
         },
         "additionalProperties": false,
@@ -13280,6 +14334,51 @@
         "title": "CreateBlock",
         "description": "Create a block"
       },
+      "DynamicManager": {
+        "properties": {
+          "manager_type": {
+            "type": "string",
+            "enum": ["dynamic"],
+            "const": "dynamic",
+            "title": "Manager Type",
+            "description": "",
+            "default": "dynamic"
+          },
+          "manager_agent_id": {
+            "type": "string",
+            "title": "Manager Agent Id",
+            "description": ""
+          },
+          "termination_token": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Termination Token",
+            "description": "",
+            "default": "DONE!"
+          },
+          "max_turns": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max Turns",
+            "description": ""
+          }
+        },
+        "type": "object",
+        "required": ["manager_agent_id"],
+        "title": "DynamicManager"
+      },
       "E2BSandboxConfig": {
         "properties": {
           "timeout": {
@@ -13721,6 +14820,122 @@
         "type": "object",
         "required": ["function", "type"],
         "title": "FunctionTool"
+      },
+      "Group": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id",
+            "description": "The id of the group. Assigned by the database."
+          },
+          "manager_type": {
+            "$ref": "#/components/schemas/ManagerType",
+            "description": ""
+          },
+          "agent_ids": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Agent Ids",
+            "description": ""
+          },
+          "description": {
+            "type": "string",
+            "title": "Description",
+            "description": ""
+          },
+          "manager_agent_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Manager Agent Id",
+            "description": ""
+          },
+          "termination_token": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Termination Token",
+            "description": ""
+          },
+          "max_turns": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max Turns",
+            "description": ""
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": ["id", "manager_type", "agent_ids", "description"],
+        "title": "Group"
+      },
+      "GroupCreate": {
+        "properties": {
+          "agent_ids": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Agent Ids",
+            "description": ""
+          },
+          "description": {
+            "type": "string",
+            "title": "Description",
+            "description": ""
+          },
+          "manager_config": {
+            "anyOf": [
+              {
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/RoundRobinManager"
+                  },
+                  {
+                    "$ref": "#/components/schemas/SupervisorManager"
+                  },
+                  {
+                    "$ref": "#/components/schemas/DynamicManager"
+                  }
+                ],
+                "discriminator": {
+                  "propertyName": "manager_type",
+                  "mapping": {
+                    "dynamic": "#/components/schemas/DynamicManager",
+                    "round_robin": "#/components/schemas/RoundRobinManager",
+                    "supervisor": "#/components/schemas/SupervisorManager"
+                  }
+                }
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Manager Config",
+            "description": ""
+          }
+        },
+        "type": "object",
+        "required": ["agent_ids", "description"],
+        "title": "GroupCreate"
       },
       "HTTPValidationError": {
         "properties": {
@@ -14602,6 +15817,11 @@
         "title": "MCPTool",
         "description": "A simple wrapper around MCP's tool definition (to avoid conflict with our own)"
       },
+      "ManagerType": {
+        "type": "string",
+        "enum": ["round_robin", "supervisor", "dynamic", "swarm"],
+        "title": "ManagerType"
+      },
       "Memory": {
         "properties": {
           "blocks": {
@@ -14806,6 +16026,18 @@
             ],
             "title": "Tool Returns",
             "description": "Tool execution return information for prior tool calls"
+          },
+          "group_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Group Id",
+            "description": "The multi-agent group that the message was sent in"
           }
         },
         "additionalProperties": false,
@@ -15403,6 +16635,32 @@
         "type": "object",
         "required": ["type"],
         "title": "ResponseFormatText"
+      },
+      "RoundRobinManager": {
+        "properties": {
+          "manager_type": {
+            "type": "string",
+            "enum": ["round_robin"],
+            "const": "round_robin",
+            "title": "Manager Type",
+            "description": "",
+            "default": "round_robin"
+          },
+          "max_turns": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max Turns",
+            "description": ""
+          }
+        },
+        "type": "object",
+        "title": "RoundRobinManager"
       },
       "Run": {
         "properties": {
@@ -16219,6 +17477,26 @@
         "type": "object",
         "required": ["id"],
         "title": "Step"
+      },
+      "SupervisorManager": {
+        "properties": {
+          "manager_type": {
+            "type": "string",
+            "enum": ["supervisor"],
+            "const": "supervisor",
+            "title": "Manager Type",
+            "description": "",
+            "default": "supervisor"
+          },
+          "manager_agent_id": {
+            "type": "string",
+            "title": "Manager Agent Id",
+            "description": ""
+          }
+        },
+        "type": "object",
+        "required": ["manager_agent_id"],
+        "title": "SupervisorManager"
       },
       "SystemMessage": {
         "properties": {

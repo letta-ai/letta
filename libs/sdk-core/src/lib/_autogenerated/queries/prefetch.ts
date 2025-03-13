@@ -5,6 +5,7 @@ import {
   AdminService,
   AgentsService,
   BlocksService,
+  GroupsService,
   HealthService,
   IdentitiesService,
   JobsService,
@@ -20,7 +21,12 @@ import {
   ToolsService,
   UsersService,
 } from '../requests/services.gen';
-import { IdentityType, MessageRole, SandboxType } from '../requests/types.gen';
+import {
+  IdentityType,
+  ManagerType,
+  MessageRole,
+  SandboxType,
+} from '../requests/types.gen';
 import * as Common from './common';
 /**
  * Retrieve Tool
@@ -688,6 +694,116 @@ export const prefetchUseAgentsServiceListMessages = (
         assistantMessageToolKwarg,
         assistantMessageToolName,
         before,
+        limit,
+        useAssistantMessage,
+        userId,
+      }),
+  });
+/**
+ * List Groups
+ * Fetch all multi-agent groups matching query.
+ * @param data The data for the request.
+ * @param data.managerType Search groups by manager type
+ * @param data.before Cursor for pagination
+ * @param data.after Cursor for pagination
+ * @param data.limit Limit for pagination
+ * @param data.projectId Search groups by project id
+ * @param data.userId
+ * @returns Group Successful Response
+ * @throws ApiError
+ */
+export const prefetchUseGroupsServiceListGroups = (
+  queryClient: QueryClient,
+  {
+    after,
+    before,
+    limit,
+    managerType,
+    projectId,
+    userId,
+  }: {
+    after?: string;
+    before?: string;
+    limit?: number;
+    managerType?: ManagerType;
+    projectId?: string;
+    userId?: string;
+  } = {},
+) =>
+  queryClient.prefetchQuery({
+    queryKey: Common.UseGroupsServiceListGroupsKeyFn({
+      after,
+      before,
+      limit,
+      managerType,
+      projectId,
+      userId,
+    }),
+    queryFn: () =>
+      GroupsService.listGroups({
+        after,
+        before,
+        limit,
+        managerType,
+        projectId,
+        userId,
+      }),
+  });
+/**
+ * List Group Messages
+ * Retrieve message history for an agent.
+ * @param data The data for the request.
+ * @param data.groupId
+ * @param data.after Message after which to retrieve the returned messages.
+ * @param data.before Message before which to retrieve the returned messages.
+ * @param data.limit Maximum number of messages to retrieve.
+ * @param data.useAssistantMessage Whether to use assistant messages
+ * @param data.assistantMessageToolName The name of the designated message tool.
+ * @param data.assistantMessageToolKwarg The name of the message argument.
+ * @param data.userId
+ * @returns LettaMessageUnion Successful Response
+ * @throws ApiError
+ */
+export const prefetchUseGroupsServiceListGroupMessages = (
+  queryClient: QueryClient,
+  {
+    after,
+    assistantMessageToolKwarg,
+    assistantMessageToolName,
+    before,
+    groupId,
+    limit,
+    useAssistantMessage,
+    userId,
+  }: {
+    after?: string;
+    assistantMessageToolKwarg?: string;
+    assistantMessageToolName?: string;
+    before?: string;
+    groupId: string;
+    limit?: number;
+    useAssistantMessage?: boolean;
+    userId?: string;
+  },
+) =>
+  queryClient.prefetchQuery({
+    queryKey: Common.UseGroupsServiceListGroupMessagesKeyFn({
+      after,
+      assistantMessageToolKwarg,
+      assistantMessageToolName,
+      before,
+      groupId,
+      limit,
+      useAssistantMessage,
+      userId,
+    }),
+    queryFn: () =>
+      GroupsService.listGroupMessages({
+        after,
+        assistantMessageToolKwarg,
+        assistantMessageToolName,
+        before,
+        groupId,
         limit,
         useAssistantMessage,
         userId,

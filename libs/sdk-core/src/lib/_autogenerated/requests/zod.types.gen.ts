@@ -505,6 +505,46 @@ export const Source = z.object({
     .optional(),
 });
 
+export type ManagerType = z.infer<typeof ManagerType>;
+export const ManagerType = z.union([
+  z.literal('round_robin'),
+  z.literal('supervisor'),
+  z.literal('dynamic'),
+  z.literal('swarm'),
+]);
+
+export type Group = z.infer<typeof Group>;
+export const Group = z.object({
+  id: z.string(),
+  manager_type: ManagerType,
+  agent_ids: z.array(z.string()),
+  description: z.string(),
+  manager_agent_id: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  termination_token: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  max_turns: z
+    .union([
+      z.number(),
+      z.null(),
+      z.array(z.union([z.number(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+});
+
 export type AgentState = z.infer<typeof AgentState>;
 export const AgentState = z.object({
   created_by_id: z
@@ -639,6 +679,14 @@ export const AgentState = z.object({
     .optional(),
   identity_ids: z.union([z.array(z.string()), z.undefined()]).optional(),
   message_buffer_autoclear: z.union([z.boolean(), z.undefined()]).optional(),
+  multi_agent_group: z
+    .union([
+      Group,
+      z.null(),
+      z.array(z.union([Group, z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
 });
 
 export type AuthSchemeField = z.infer<typeof AuthSchemeField>;
@@ -2257,6 +2305,14 @@ export const Message = z.object({
       z.undefined(),
     ])
     .optional(),
+  group_id: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
 });
 
 export type ContextWindowOverview = z.infer<typeof ContextWindowOverview>;
@@ -2496,6 +2552,28 @@ export const CreateArchivalMemory = z.object({
   text: z.string(),
 });
 
+export type DynamicManager = z.infer<typeof DynamicManager>;
+export const DynamicManager = z.object({
+  manager_type: z.union([z.literal('dynamic'), z.undefined()]).optional(),
+  manager_agent_id: z.string(),
+  termination_token: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  max_turns: z
+    .union([
+      z.number(),
+      z.null(),
+      z.array(z.union([z.number(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+});
+
 export type E2BSandboxConfig = z.infer<typeof E2BSandboxConfig>;
 export const E2BSandboxConfig = z.object({
   timeout: z.number().optional(),
@@ -2588,6 +2666,43 @@ export const FileMetadata = z.object({
     ])
     .optional(),
   is_deleted: z.union([z.boolean(), z.undefined()]).optional(),
+});
+
+export type RoundRobinManager = z.infer<typeof RoundRobinManager>;
+export const RoundRobinManager = z.object({
+  manager_type: z.literal('round_robin').optional(),
+  max_turns: z
+    .union([z.number(), z.null(), z.array(z.union([z.number(), z.null()]))])
+    .optional(),
+});
+
+export type SupervisorManager = z.infer<typeof SupervisorManager>;
+export const SupervisorManager = z.object({
+  manager_type: z.union([z.literal('supervisor'), z.undefined()]).optional(),
+  manager_agent_id: z.string(),
+});
+
+export type GroupCreate = z.infer<typeof GroupCreate>;
+export const GroupCreate = z.object({
+  agent_ids: z.array(z.string()),
+  description: z.string(),
+  manager_config: z
+    .union([
+      RoundRobinManager,
+      SupervisorManager,
+      DynamicManager,
+      z.null(),
+      z.array(
+        z.union([
+          RoundRobinManager,
+          SupervisorManager,
+          DynamicManager,
+          z.null(),
+        ]),
+      ),
+      z.undefined(),
+    ])
+    .optional(),
 });
 
 export type ValidationError = z.infer<typeof ValidationError>;
@@ -4998,6 +5113,167 @@ export const patch_Reset_messages = {
   response: AgentState,
 };
 
+export type post_Create_group = typeof post_Create_group;
+export const post_Create_group = {
+  method: z.literal('POST'),
+  path: z.literal('/v1/groups/'),
+  requestFormat: z.literal('json'),
+  parameters: z.object({
+    header: z.object({
+      user_id: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'X-Project': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+    }),
+    body: GroupCreate,
+  }),
+  response: Group,
+};
+
+export type get_List_groups = typeof get_List_groups;
+export const get_List_groups = {
+  method: z.literal('GET'),
+  path: z.literal('/v1/groups/'),
+  requestFormat: z.literal('json'),
+  parameters: z.object({
+    query: z.object({
+      manager_type: z
+        .union([
+          ManagerType,
+          z.null(),
+          z.array(z.union([ManagerType, z.null()])),
+        ])
+        .optional(),
+      before: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      after: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      limit: z
+        .union([z.number(), z.null(), z.array(z.union([z.number(), z.null()]))])
+        .optional(),
+      project_id: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+    }),
+    header: z.object({
+      user_id: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+    }),
+  }),
+  response: z.array(Group),
+};
+
+export type put_Upsert_group = typeof put_Upsert_group;
+export const put_Upsert_group = {
+  method: z.literal('PUT'),
+  path: z.literal('/v1/groups/'),
+  requestFormat: z.literal('json'),
+  parameters: z.object({
+    header: z.object({
+      user_id: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'X-Project': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+    }),
+    body: GroupCreate,
+  }),
+  response: Group,
+};
+
+export type delete_Delete_group = typeof delete_Delete_group;
+export const delete_Delete_group = {
+  method: z.literal('DELETE'),
+  path: z.literal('/v1/groups/{group_id}'),
+  requestFormat: z.literal('json'),
+  parameters: z.object({
+    path: z.object({
+      group_id: z.string(),
+    }),
+    header: z.object({
+      user_id: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+    }),
+  }),
+  response: z.unknown(),
+};
+
+export type post_Send_group_message = typeof post_Send_group_message;
+export const post_Send_group_message = {
+  method: z.literal('POST'),
+  path: z.literal('/v1/groups/{group_id}/messages'),
+  requestFormat: z.literal('json'),
+  parameters: z.object({
+    query: z.object({
+      agent_id: z.string(),
+    }),
+    header: z.object({
+      user_id: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+    }),
+    body: LettaRequest,
+  }),
+  response: LettaResponse,
+};
+
+export type get_List_group_messages = typeof get_List_group_messages;
+export const get_List_group_messages = {
+  method: z.literal('GET'),
+  path: z.literal('/v1/groups/{group_id}/messages'),
+  requestFormat: z.literal('json'),
+  parameters: z.object({
+    query: z.object({
+      after: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      before: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      limit: z.number().optional(),
+      use_assistant_message: z.boolean().optional(),
+      assistant_message_tool_name: z.string().optional(),
+      assistant_message_tool_kwarg: z.string().optional(),
+    }),
+    path: z.object({
+      group_id: z.string(),
+    }),
+    header: z.object({
+      user_id: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+    }),
+  }),
+  response: z.array(LettaMessageUnion),
+};
+
+export type post_Send_group_message_streaming =
+  typeof post_Send_group_message_streaming;
+export const post_Send_group_message_streaming = {
+  method: z.literal('POST'),
+  path: z.literal('/v1/groups/{group_id}/messages/stream'),
+  requestFormat: z.literal('json'),
+  parameters: z.object({
+    path: z.object({
+      group_id: z.string(),
+    }),
+    header: z.object({
+      user_id: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+    }),
+    body: LettaStreamingRequest,
+  }),
+  response: z.unknown(),
+};
+
 export type get_List_identities = typeof get_List_identities;
 export const get_List_identities = {
   method: z.literal('GET'),
@@ -6120,6 +6396,7 @@ export const EndpointByMethod = {
     '/v1/sources/{source_id}/{file_id}': delete_Delete_file_from_source,
     '/v1/agents/{agent_id}': delete_Delete_agent,
     '/v1/agents/{agent_id}/archival-memory/{memory_id}': delete_Delete_passage,
+    '/v1/groups/{group_id}': delete_Delete_group,
     '/v1/identities/{identity_id}': delete_Delete_identity,
     '/v1/blocks/{block_id}': delete_Delete_block,
     '/v1/jobs/{job_id}': delete_Delete_job,
@@ -6158,6 +6435,8 @@ export const EndpointByMethod = {
     '/v1/agents/{agent_id}/core-memory/blocks': get_List_core_memory_blocks,
     '/v1/agents/{agent_id}/archival-memory': get_List_passages,
     '/v1/agents/{agent_id}/messages': get_List_messages,
+    '/v1/groups/': get_List_groups,
+    '/v1/groups/{group_id}/messages': get_List_group_messages,
     '/v1/identities/': get_List_identities,
     '/v1/identities/{identity_id}': get_Retrieve_identity,
     '/v1/models/': get_List_models,
@@ -6229,6 +6508,9 @@ export const EndpointByMethod = {
     '/v1/agents/{agent_id}/messages': post_Send_message,
     '/v1/agents/{agent_id}/messages/stream': post_Create_agent_message_stream,
     '/v1/agents/{agent_id}/messages/async': post_Create_agent_message_async,
+    '/v1/groups/': post_Create_group,
+    '/v1/groups/{group_id}/messages': post_Send_group_message,
+    '/v1/groups/{group_id}/messages/stream': post_Send_group_message_streaming,
     '/v1/identities/': post_Create_identity,
     '/v1/blocks/': post_Create_block,
     '/v1/sandbox-config/': post_Create_sandbox_config_v1_sandbox_config__post,
@@ -6250,6 +6532,7 @@ export const EndpointByMethod = {
   },
   put: {
     '/v1/tools/': put_Upsert_tool,
+    '/v1/groups/': put_Upsert_group,
     '/v1/identities/': put_Upsert_identity,
     '/v1/admin/users/': put_Update_user,
   },

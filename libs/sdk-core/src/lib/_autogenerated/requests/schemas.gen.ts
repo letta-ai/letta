@@ -547,6 +547,17 @@ export const $AgentState = {
         'If set to True, the agent will not remember previous messages (though the agent will still retain state via core memory blocks and archival/recall memory). Not recommended unless you have an advanced use case.',
       default: false,
     },
+    multi_agent_group: {
+      anyOf: [
+        {
+          $ref: '#/components/schemas/Group',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      description: 'The multi-agent group that this agent manages',
+    },
   },
   additionalProperties: false,
   type: 'object',
@@ -3269,6 +3280,52 @@ export const $CreateBlock = {
   description: 'Create a block',
 } as const;
 
+export const $DynamicManager = {
+  properties: {
+    manager_type: {
+      type: 'string',
+      enum: ['dynamic'],
+      const: 'dynamic',
+      title: 'Manager Type',
+      description: '',
+      default: 'dynamic',
+    },
+    manager_agent_id: {
+      type: 'string',
+      title: 'Manager Agent Id',
+      description: '',
+    },
+    termination_token: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Termination Token',
+      description: '',
+      default: 'DONE!',
+    },
+    max_turns: {
+      anyOf: [
+        {
+          type: 'integer',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Max Turns',
+      description: '',
+    },
+  },
+  type: 'object',
+  required: ['manager_agent_id'],
+  title: 'DynamicManager',
+} as const;
+
 export const $E2BSandboxConfig = {
   properties: {
     timeout: {
@@ -3740,6 +3797,124 @@ export const $FunctionTool = {
   type: 'object',
   required: ['function', 'type'],
   title: 'FunctionTool',
+} as const;
+
+export const $Group = {
+  properties: {
+    id: {
+      type: 'string',
+      title: 'Id',
+      description: 'The id of the group. Assigned by the database.',
+    },
+    manager_type: {
+      $ref: '#/components/schemas/ManagerType',
+      description: '',
+    },
+    agent_ids: {
+      items: {
+        type: 'string',
+      },
+      type: 'array',
+      title: 'Agent Ids',
+      description: '',
+    },
+    description: {
+      type: 'string',
+      title: 'Description',
+      description: '',
+    },
+    manager_agent_id: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Manager Agent Id',
+      description: '',
+    },
+    termination_token: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Termination Token',
+      description: '',
+    },
+    max_turns: {
+      anyOf: [
+        {
+          type: 'integer',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Max Turns',
+      description: '',
+    },
+  },
+  additionalProperties: false,
+  type: 'object',
+  required: ['id', 'manager_type', 'agent_ids', 'description'],
+  title: 'Group',
+} as const;
+
+export const $GroupCreate = {
+  properties: {
+    agent_ids: {
+      items: {
+        type: 'string',
+      },
+      type: 'array',
+      title: 'Agent Ids',
+      description: '',
+    },
+    description: {
+      type: 'string',
+      title: 'Description',
+      description: '',
+    },
+    manager_config: {
+      anyOf: [
+        {
+          oneOf: [
+            {
+              $ref: '#/components/schemas/RoundRobinManager',
+            },
+            {
+              $ref: '#/components/schemas/SupervisorManager',
+            },
+            {
+              $ref: '#/components/schemas/DynamicManager',
+            },
+          ],
+          discriminator: {
+            propertyName: 'manager_type',
+            mapping: {
+              dynamic: '#/components/schemas/DynamicManager',
+              round_robin: '#/components/schemas/RoundRobinManager',
+              supervisor: '#/components/schemas/SupervisorManager',
+            },
+          },
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Manager Config',
+      description: '',
+    },
+  },
+  type: 'object',
+  required: ['agent_ids', 'description'],
+  title: 'GroupCreate',
 } as const;
 
 export const $HTTPValidationError = {
@@ -4716,6 +4891,12 @@ export const $MCPTool = {
     "A simple wrapper around MCP's tool definition (to avoid conflict with our own)",
 } as const;
 
+export const $ManagerType = {
+  type: 'string',
+  enum: ['round_robin', 'supervisor', 'dynamic', 'swarm'],
+  title: 'ManagerType',
+} as const;
+
 export const $Memory = {
   properties: {
     blocks: {
@@ -4938,6 +5119,18 @@ export const $Message = {
       ],
       title: 'Tool Returns',
       description: 'Tool execution return information for prior tool calls',
+    },
+    group_id: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Group Id',
+      description: 'The multi-agent group that the message was sent in',
     },
   },
   additionalProperties: false,
@@ -5620,6 +5813,33 @@ export const $ResponseFormatText = {
   type: 'object',
   required: ['type'],
   title: 'ResponseFormatText',
+} as const;
+
+export const $RoundRobinManager = {
+  properties: {
+    manager_type: {
+      type: 'string',
+      enum: ['round_robin'],
+      const: 'round_robin',
+      title: 'Manager Type',
+      description: '',
+      default: 'round_robin',
+    },
+    max_turns: {
+      anyOf: [
+        {
+          type: 'integer',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Max Turns',
+      description: '',
+    },
+  },
+  type: 'object',
+  title: 'RoundRobinManager',
 } as const;
 
 export const $Run = {
@@ -6535,6 +6755,27 @@ export const $Step = {
   type: 'object',
   required: ['id'],
   title: 'Step',
+} as const;
+
+export const $SupervisorManager = {
+  properties: {
+    manager_type: {
+      type: 'string',
+      enum: ['supervisor'],
+      const: 'supervisor',
+      title: 'Manager Type',
+      description: '',
+      default: 'supervisor',
+    },
+    manager_agent_id: {
+      type: 'string',
+      title: 'Manager Agent Id',
+      description: '',
+    },
+  },
+  type: 'object',
+  required: ['manager_agent_id'],
+  title: 'SupervisorManager',
 } as const;
 
 export const $SystemMessage = {

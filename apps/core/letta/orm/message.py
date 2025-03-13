@@ -36,6 +36,7 @@ class Message(SqlalchemyBase, OrganizationMixin, AgentMixin):
     tool_returns: Mapped[List[ToolReturn]] = mapped_column(
         ToolReturnColumn, nullable=True, doc="Tool execution return information for prior tool calls"
     )
+    group_id: Mapped[Optional[str]] = mapped_column(nullable=True, doc="The multi-agent group that the message was sent in")
 
     # Relationships
     agent: Mapped["Agent"] = relationship("Agent", back_populates="messages", lazy="selectin")

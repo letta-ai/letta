@@ -11,6 +11,7 @@ import {
   AgentsService,
   AuthService,
   BlocksService,
+  GroupsService,
   HealthService,
   IdentitiesService,
   JobsService,
@@ -37,12 +38,14 @@ import {
   CreateAgentRequest,
   CreateArchivalMemory,
   CreateBlock,
+  GroupCreate,
   IdentityCreate,
   IdentityType,
   IdentityUpdate,
   LettaRequest,
   LettaStreamingRequest,
   LocalSandboxConfig,
+  ManagerType,
   MessageRole,
   OrganizationCreate,
   PassageUpdate,
@@ -902,6 +905,127 @@ export const useAgentsServiceListMessages = <
         assistantMessageToolKwarg,
         assistantMessageToolName,
         before,
+        limit,
+        useAssistantMessage,
+        userId,
+      }) as TData,
+    ...options,
+  });
+/**
+ * List Groups
+ * Fetch all multi-agent groups matching query.
+ * @param data The data for the request.
+ * @param data.managerType Search groups by manager type
+ * @param data.before Cursor for pagination
+ * @param data.after Cursor for pagination
+ * @param data.limit Limit for pagination
+ * @param data.projectId Search groups by project id
+ * @param data.userId
+ * @returns Group Successful Response
+ * @throws ApiError
+ */
+export const useGroupsServiceListGroups = <
+  TData = Common.GroupsServiceListGroupsDefaultResponse,
+  TError = unknown,
+  TQueryKey extends Array<unknown> = unknown[],
+>(
+  {
+    after,
+    before,
+    limit,
+    managerType,
+    projectId,
+    userId,
+  }: {
+    after?: string;
+    before?: string;
+    limit?: number;
+    managerType?: ManagerType;
+    projectId?: string;
+    userId?: string;
+  } = {},
+  queryKey?: TQueryKey,
+  options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>,
+) =>
+  useQuery<TData, TError>({
+    queryKey: Common.UseGroupsServiceListGroupsKeyFn(
+      { after, before, limit, managerType, projectId, userId },
+      queryKey,
+    ),
+    queryFn: () =>
+      GroupsService.listGroups({
+        after,
+        before,
+        limit,
+        managerType,
+        projectId,
+        userId,
+      }) as TData,
+    ...options,
+  });
+/**
+ * List Group Messages
+ * Retrieve message history for an agent.
+ * @param data The data for the request.
+ * @param data.groupId
+ * @param data.after Message after which to retrieve the returned messages.
+ * @param data.before Message before which to retrieve the returned messages.
+ * @param data.limit Maximum number of messages to retrieve.
+ * @param data.useAssistantMessage Whether to use assistant messages
+ * @param data.assistantMessageToolName The name of the designated message tool.
+ * @param data.assistantMessageToolKwarg The name of the message argument.
+ * @param data.userId
+ * @returns LettaMessageUnion Successful Response
+ * @throws ApiError
+ */
+export const useGroupsServiceListGroupMessages = <
+  TData = Common.GroupsServiceListGroupMessagesDefaultResponse,
+  TError = unknown,
+  TQueryKey extends Array<unknown> = unknown[],
+>(
+  {
+    after,
+    assistantMessageToolKwarg,
+    assistantMessageToolName,
+    before,
+    groupId,
+    limit,
+    useAssistantMessage,
+    userId,
+  }: {
+    after?: string;
+    assistantMessageToolKwarg?: string;
+    assistantMessageToolName?: string;
+    before?: string;
+    groupId: string;
+    limit?: number;
+    useAssistantMessage?: boolean;
+    userId?: string;
+  },
+  queryKey?: TQueryKey,
+  options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>,
+) =>
+  useQuery<TData, TError>({
+    queryKey: Common.UseGroupsServiceListGroupMessagesKeyFn(
+      {
+        after,
+        assistantMessageToolKwarg,
+        assistantMessageToolName,
+        before,
+        groupId,
+        limit,
+        useAssistantMessage,
+        userId,
+      },
+      queryKey,
+    ),
+    queryFn: () =>
+      GroupsService.listGroupMessages({
+        after,
+        assistantMessageToolKwarg,
+        assistantMessageToolName,
+        before,
+        groupId,
         limit,
         useAssistantMessage,
         userId,
@@ -2582,6 +2706,150 @@ export const useAgentsServiceCreateAgentMessageAsync = <
     ...options,
   });
 /**
+ * Create Group
+ * Create a new multi-agent group with the specified configuration.
+ * @param data The data for the request.
+ * @param data.requestBody
+ * @param data.userId
+ * @param data.xProject
+ * @returns Group Successful Response
+ * @throws ApiError
+ */
+export const useGroupsServiceCreateGroup = <
+  TData = Common.GroupsServiceCreateGroupMutationResult,
+  TError = unknown,
+  TContext = unknown,
+>(
+  options?: Omit<
+    UseMutationOptions<
+      TData,
+      TError,
+      {
+        requestBody: GroupCreate;
+        userId?: string;
+        xProject?: string;
+      },
+      TContext
+    >,
+    'mutationFn'
+  >,
+) =>
+  useMutation<
+    TData,
+    TError,
+    {
+      requestBody: GroupCreate;
+      userId?: string;
+      xProject?: string;
+    },
+    TContext
+  >({
+    mutationFn: ({ requestBody, userId, xProject }) =>
+      GroupsService.createGroup({
+        requestBody,
+        userId,
+        xProject,
+      }) as unknown as Promise<TData>,
+    ...options,
+  });
+/**
+ * Send Group Message
+ * Process a user message and return the group's response.
+ * This endpoint accepts a message from a user and processes it through through agents in the group based on the specified pattern
+ * @param data The data for the request.
+ * @param data.agentId
+ * @param data.requestBody
+ * @param data.userId
+ * @returns LettaResponse Successful Response
+ * @throws ApiError
+ */
+export const useGroupsServiceSendGroupMessage = <
+  TData = Common.GroupsServiceSendGroupMessageMutationResult,
+  TError = unknown,
+  TContext = unknown,
+>(
+  options?: Omit<
+    UseMutationOptions<
+      TData,
+      TError,
+      {
+        agentId: string;
+        requestBody: LettaRequest;
+        userId?: string;
+      },
+      TContext
+    >,
+    'mutationFn'
+  >,
+) =>
+  useMutation<
+    TData,
+    TError,
+    {
+      agentId: string;
+      requestBody: LettaRequest;
+      userId?: string;
+    },
+    TContext
+  >({
+    mutationFn: ({ agentId, requestBody, userId }) =>
+      GroupsService.sendGroupMessage({
+        agentId,
+        requestBody,
+        userId,
+      }) as unknown as Promise<TData>,
+    ...options,
+  });
+/**
+ * Send Group Message Streaming
+ * Process a user message and return the group's responses.
+ * This endpoint accepts a message from a user and processes it through agents in the group based on the specified pattern.
+ * It will stream the steps of the response always, and stream the tokens if 'stream_tokens' is set to True.
+ * @param data The data for the request.
+ * @param data.groupId
+ * @param data.requestBody
+ * @param data.userId
+ * @returns unknown Successful response
+ * @throws ApiError
+ */
+export const useGroupsServiceSendGroupMessageStreaming = <
+  TData = Common.GroupsServiceSendGroupMessageStreamingMutationResult,
+  TError = unknown,
+  TContext = unknown,
+>(
+  options?: Omit<
+    UseMutationOptions<
+      TData,
+      TError,
+      {
+        groupId: string;
+        requestBody: LettaStreamingRequest;
+        userId?: string;
+      },
+      TContext
+    >,
+    'mutationFn'
+  >,
+) =>
+  useMutation<
+    TData,
+    TError,
+    {
+      groupId: string;
+      requestBody: LettaStreamingRequest;
+      userId?: string;
+    },
+    TContext
+  >({
+    mutationFn: ({ groupId, requestBody, userId }) =>
+      GroupsService.sendGroupMessageStreaming({
+        groupId,
+        requestBody,
+        userId,
+      }) as unknown as Promise<TData>,
+    ...options,
+  });
+/**
  * Create Identity
  * @param data The data for the request.
  * @param data.requestBody
@@ -3244,6 +3512,53 @@ export const useToolsServiceUpsertTool = <
       ToolsService.upsertTool({
         requestBody,
         userId,
+      }) as unknown as Promise<TData>,
+    ...options,
+  });
+/**
+ * Upsert Group
+ * Create a new multi-agent group with the specified configuration.
+ * @param data The data for the request.
+ * @param data.requestBody
+ * @param data.userId
+ * @param data.xProject
+ * @returns Group Successful Response
+ * @throws ApiError
+ */
+export const useGroupsServiceUpsertGroup = <
+  TData = Common.GroupsServiceUpsertGroupMutationResult,
+  TError = unknown,
+  TContext = unknown,
+>(
+  options?: Omit<
+    UseMutationOptions<
+      TData,
+      TError,
+      {
+        requestBody: GroupCreate;
+        userId?: string;
+        xProject?: string;
+      },
+      TContext
+    >,
+    'mutationFn'
+  >,
+) =>
+  useMutation<
+    TData,
+    TError,
+    {
+      requestBody: GroupCreate;
+      userId?: string;
+      xProject?: string;
+    },
+    TContext
+  >({
+    mutationFn: ({ requestBody, userId, xProject }) =>
+      GroupsService.upsertGroup({
+        requestBody,
+        userId,
+        xProject,
       }) as unknown as Promise<TData>,
     ...options,
   });
@@ -4486,6 +4801,49 @@ export const useAgentsServiceDeletePassage = <
       AgentsService.deletePassage({
         agentId,
         memoryId,
+        userId,
+      }) as unknown as Promise<TData>,
+    ...options,
+  });
+/**
+ * Delete Group
+ * Delete a multi-agent group.
+ * @param data The data for the request.
+ * @param data.groupId
+ * @param data.userId
+ * @returns unknown Successful Response
+ * @throws ApiError
+ */
+export const useGroupsServiceDeleteGroup = <
+  TData = Common.GroupsServiceDeleteGroupMutationResult,
+  TError = unknown,
+  TContext = unknown,
+>(
+  options?: Omit<
+    UseMutationOptions<
+      TData,
+      TError,
+      {
+        groupId: string;
+        userId?: string;
+      },
+      TContext
+    >,
+    'mutationFn'
+  >,
+) =>
+  useMutation<
+    TData,
+    TError,
+    {
+      groupId: string;
+      userId?: string;
+    },
+    TContext
+  >({
+    mutationFn: ({ groupId, userId }) =>
+      GroupsService.deleteGroup({
+        groupId,
         userId,
       }) as unknown as Promise<TData>,
     ...options,

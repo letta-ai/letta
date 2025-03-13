@@ -112,6 +112,20 @@ import type {
   CreateAgentMessageAsyncResponse,
   ResetMessagesData,
   ResetMessagesResponse,
+  CreateGroupData,
+  CreateGroupResponse,
+  ListGroupsData,
+  ListGroupsResponse,
+  UpsertGroupData,
+  UpsertGroupResponse,
+  DeleteGroupData,
+  DeleteGroupResponse,
+  SendGroupMessageData,
+  SendGroupMessageResponse,
+  ListGroupMessagesData,
+  ListGroupMessagesResponse,
+  SendGroupMessageStreamingData,
+  SendGroupMessageStreamingResponse,
   ListIdentitiesData,
   ListIdentitiesResponse,
   CreateIdentityData,
@@ -1733,6 +1747,221 @@ export class AgentsService {
       query: {
         add_default_initial_messages: data.addDefaultInitialMessages,
       },
+      errors: {
+        422: 'Validation Error',
+      },
+      headers,
+    });
+  }
+}
+
+export class GroupsService {
+  /**
+   * Create Group
+   * Create a new multi-agent group with the specified configuration.
+   * @param data The data for the request.
+   * @param data.requestBody
+   * @param data.userId
+   * @param data.xProject
+   * @returns Group Successful Response
+   * @throws ApiError
+   */
+  public static createGroup(
+    data: CreateGroupData,
+    headers?: { user_id: string },
+  ): CancelablePromise<CreateGroupResponse> {
+    return __request(OpenAPI, {
+      method: 'POST',
+      url: '/v1/groups/',
+      body: data.requestBody,
+      mediaType: 'application/json',
+      errors: {
+        422: 'Validation Error',
+      },
+      headers,
+    });
+  }
+
+  /**
+   * List Groups
+   * Fetch all multi-agent groups matching query.
+   * @param data The data for the request.
+   * @param data.managerType Search groups by manager type
+   * @param data.before Cursor for pagination
+   * @param data.after Cursor for pagination
+   * @param data.limit Limit for pagination
+   * @param data.projectId Search groups by project id
+   * @param data.userId
+   * @returns Group Successful Response
+   * @throws ApiError
+   */
+  public static listGroups(
+    data: ListGroupsData = {},
+    headers?: { user_id: string },
+  ): CancelablePromise<ListGroupsResponse> {
+    return __request(OpenAPI, {
+      method: 'GET',
+      url: '/v1/groups/',
+      query: {
+        manager_type: data.managerType,
+        before: data.before,
+        after: data.after,
+        limit: data.limit,
+        project_id: data.projectId,
+      },
+      errors: {
+        422: 'Validation Error',
+      },
+      headers,
+    });
+  }
+
+  /**
+   * Upsert Group
+   * Create a new multi-agent group with the specified configuration.
+   * @param data The data for the request.
+   * @param data.requestBody
+   * @param data.userId
+   * @param data.xProject
+   * @returns Group Successful Response
+   * @throws ApiError
+   */
+  public static upsertGroup(
+    data: UpsertGroupData,
+    headers?: { user_id: string },
+  ): CancelablePromise<UpsertGroupResponse> {
+    return __request(OpenAPI, {
+      method: 'PUT',
+      url: '/v1/groups/',
+      body: data.requestBody,
+      mediaType: 'application/json',
+      errors: {
+        422: 'Validation Error',
+      },
+      headers,
+    });
+  }
+
+  /**
+   * Delete Group
+   * Delete a multi-agent group.
+   * @param data The data for the request.
+   * @param data.groupId
+   * @param data.userId
+   * @returns unknown Successful Response
+   * @throws ApiError
+   */
+  public static deleteGroup(
+    data: DeleteGroupData,
+    headers?: { user_id: string },
+  ): CancelablePromise<DeleteGroupResponse> {
+    return __request(OpenAPI, {
+      method: 'DELETE',
+      url: '/v1/groups/{group_id}',
+      path: {
+        group_id: data.groupId,
+      },
+      errors: {
+        422: 'Validation Error',
+      },
+      headers,
+    });
+  }
+
+  /**
+   * Send Group Message
+   * Process a user message and return the group's response.
+   * This endpoint accepts a message from a user and processes it through through agents in the group based on the specified pattern
+   * @param data The data for the request.
+   * @param data.agentId
+   * @param data.requestBody
+   * @param data.userId
+   * @returns LettaResponse Successful Response
+   * @throws ApiError
+   */
+  public static sendGroupMessage(
+    data: SendGroupMessageData,
+    headers?: { user_id: string },
+  ): CancelablePromise<SendGroupMessageResponse> {
+    return __request(OpenAPI, {
+      method: 'POST',
+      url: '/v1/groups/{group_id}/messages',
+      query: {
+        agent_id: data.agentId,
+      },
+      body: data.requestBody,
+      mediaType: 'application/json',
+      errors: {
+        422: 'Validation Error',
+      },
+      headers,
+    });
+  }
+
+  /**
+   * List Group Messages
+   * Retrieve message history for an agent.
+   * @param data The data for the request.
+   * @param data.groupId
+   * @param data.after Message after which to retrieve the returned messages.
+   * @param data.before Message before which to retrieve the returned messages.
+   * @param data.limit Maximum number of messages to retrieve.
+   * @param data.useAssistantMessage Whether to use assistant messages
+   * @param data.assistantMessageToolName The name of the designated message tool.
+   * @param data.assistantMessageToolKwarg The name of the message argument.
+   * @param data.userId
+   * @returns LettaMessageUnion Successful Response
+   * @throws ApiError
+   */
+  public static listGroupMessages(
+    data: ListGroupMessagesData,
+    headers?: { user_id: string },
+  ): CancelablePromise<ListGroupMessagesResponse> {
+    return __request(OpenAPI, {
+      method: 'GET',
+      url: '/v1/groups/{group_id}/messages',
+      path: {
+        group_id: data.groupId,
+      },
+      query: {
+        after: data.after,
+        before: data.before,
+        limit: data.limit,
+        use_assistant_message: data.useAssistantMessage,
+        assistant_message_tool_name: data.assistantMessageToolName,
+        assistant_message_tool_kwarg: data.assistantMessageToolKwarg,
+      },
+      errors: {
+        422: 'Validation Error',
+      },
+      headers,
+    });
+  }
+
+  /**
+   * Send Group Message Streaming
+   * Process a user message and return the group's responses.
+   * This endpoint accepts a message from a user and processes it through agents in the group based on the specified pattern.
+   * It will stream the steps of the response always, and stream the tokens if 'stream_tokens' is set to True.
+   * @param data The data for the request.
+   * @param data.groupId
+   * @param data.requestBody
+   * @param data.userId
+   * @returns unknown Successful response
+   * @throws ApiError
+   */
+  public static sendGroupMessageStreaming(
+    data: SendGroupMessageStreamingData,
+    headers?: { user_id: string },
+  ): CancelablePromise<SendGroupMessageStreamingResponse> {
+    return __request(OpenAPI, {
+      method: 'POST',
+      url: '/v1/groups/{group_id}/messages/stream',
+      path: {
+        group_id: data.groupId,
+      },
+      body: data.requestBody,
+      mediaType: 'application/json',
       errors: {
         422: 'Validation Error',
       },

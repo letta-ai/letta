@@ -6,6 +6,7 @@ import {
   AgentsService,
   AuthService,
   BlocksService,
+  GroupsService,
   HealthService,
   IdentitiesService,
   JobsService,
@@ -22,7 +23,12 @@ import {
   UsersService,
   VoiceService,
 } from '../requests/services.gen';
-import { IdentityType, MessageRole, SandboxType } from '../requests/types.gen';
+import {
+  IdentityType,
+  ManagerType,
+  MessageRole,
+  SandboxType,
+} from '../requests/types.gen';
 export type ToolsServiceRetrieveToolDefaultResponse = Awaited<
   ReturnType<typeof ToolsService.retrieveTool>
 >;
@@ -548,6 +554,80 @@ export const UseAgentsServiceListMessagesKeyFn = (
       assistantMessageToolKwarg,
       assistantMessageToolName,
       before,
+      limit,
+      useAssistantMessage,
+      userId,
+    },
+  ]),
+];
+export type GroupsServiceListGroupsDefaultResponse = Awaited<
+  ReturnType<typeof GroupsService.listGroups>
+>;
+export type GroupsServiceListGroupsQueryResult<
+  TData = GroupsServiceListGroupsDefaultResponse,
+  TError = unknown,
+> = UseQueryResult<TData, TError>;
+export const useGroupsServiceListGroupsKey = 'GroupsServiceListGroups';
+export const UseGroupsServiceListGroupsKeyFn = (
+  {
+    after,
+    before,
+    limit,
+    managerType,
+    projectId,
+    userId,
+  }: {
+    after?: string;
+    before?: string;
+    limit?: number;
+    managerType?: ManagerType;
+    projectId?: string;
+    userId?: string;
+  } = {},
+  queryKey?: Array<unknown>,
+) => [
+  useGroupsServiceListGroupsKey,
+  ...(queryKey ?? [{ after, before, limit, managerType, projectId, userId }]),
+];
+export type GroupsServiceListGroupMessagesDefaultResponse = Awaited<
+  ReturnType<typeof GroupsService.listGroupMessages>
+>;
+export type GroupsServiceListGroupMessagesQueryResult<
+  TData = GroupsServiceListGroupMessagesDefaultResponse,
+  TError = unknown,
+> = UseQueryResult<TData, TError>;
+export const useGroupsServiceListGroupMessagesKey =
+  'GroupsServiceListGroupMessages';
+export const UseGroupsServiceListGroupMessagesKeyFn = (
+  {
+    after,
+    assistantMessageToolKwarg,
+    assistantMessageToolName,
+    before,
+    groupId,
+    limit,
+    useAssistantMessage,
+    userId,
+  }: {
+    after?: string;
+    assistantMessageToolKwarg?: string;
+    assistantMessageToolName?: string;
+    before?: string;
+    groupId: string;
+    limit?: number;
+    useAssistantMessage?: boolean;
+    userId?: string;
+  },
+  queryKey?: Array<unknown>,
+) => [
+  useGroupsServiceListGroupMessagesKey,
+  ...(queryKey ?? [
+    {
+      after,
+      assistantMessageToolKwarg,
+      assistantMessageToolName,
+      before,
+      groupId,
       limit,
       useAssistantMessage,
       userId,
@@ -1230,6 +1310,15 @@ export type AgentsServiceCreateAgentMessageStreamMutationResult = Awaited<
 export type AgentsServiceCreateAgentMessageAsyncMutationResult = Awaited<
   ReturnType<typeof AgentsService.createAgentMessageAsync>
 >;
+export type GroupsServiceCreateGroupMutationResult = Awaited<
+  ReturnType<typeof GroupsService.createGroup>
+>;
+export type GroupsServiceSendGroupMessageMutationResult = Awaited<
+  ReturnType<typeof GroupsService.sendGroupMessage>
+>;
+export type GroupsServiceSendGroupMessageStreamingMutationResult = Awaited<
+  ReturnType<typeof GroupsService.sendGroupMessageStreaming>
+>;
 export type IdentitiesServiceCreateIdentityMutationResult = Awaited<
   ReturnType<typeof IdentitiesService.createIdentity>
 >;
@@ -1295,6 +1384,9 @@ export type AuthServiceAuthenticateUserV1AuthPostMutationResult = Awaited<
 >;
 export type ToolsServiceUpsertToolMutationResult = Awaited<
   ReturnType<typeof ToolsService.upsertTool>
+>;
+export type GroupsServiceUpsertGroupMutationResult = Awaited<
+  ReturnType<typeof GroupsService.upsertGroup>
 >;
 export type IdentitiesServiceUpsertIdentityMutationResult = Awaited<
   ReturnType<typeof IdentitiesService.upsertIdentity>
@@ -1382,6 +1474,9 @@ export type AgentsServiceDeleteAgentMutationResult = Awaited<
 >;
 export type AgentsServiceDeletePassageMutationResult = Awaited<
   ReturnType<typeof AgentsService.deletePassage>
+>;
+export type GroupsServiceDeleteGroupMutationResult = Awaited<
+  ReturnType<typeof GroupsService.deleteGroup>
 >;
 export type IdentitiesServiceDeleteIdentityMutationResult = Awaited<
   ReturnType<typeof IdentitiesService.deleteIdentity>
