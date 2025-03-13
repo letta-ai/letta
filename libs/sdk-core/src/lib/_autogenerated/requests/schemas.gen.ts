@@ -4649,6 +4649,73 @@ export const $LocalSandboxConfig = {
   title: 'LocalSandboxConfig',
 } as const;
 
+export const $LocalServerConfig = {
+  properties: {
+    server_name: {
+      type: 'string',
+      title: 'Server Name',
+      description: 'The name of the server',
+    },
+    type: {
+      $ref: '#/components/schemas/MCPServerType',
+      default: 'local',
+    },
+    command: {
+      type: 'string',
+      title: 'Command',
+      description:
+        "The command to run (MCP 'local' client will run this command)",
+    },
+    args: {
+      items: {
+        type: 'string',
+      },
+      type: 'array',
+      title: 'Args',
+      description: 'The arguments to pass to the command',
+    },
+  },
+  type: 'object',
+  required: ['server_name', 'command', 'args'],
+  title: 'LocalServerConfig',
+} as const;
+
+export const $MCPServerType = {
+  type: 'string',
+  enum: ['sse', 'local'],
+  title: 'MCPServerType',
+} as const;
+
+export const $MCPTool = {
+  properties: {
+    name: {
+      type: 'string',
+      title: 'Name',
+    },
+    description: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Description',
+    },
+    inputSchema: {
+      type: 'object',
+      title: 'Inputschema',
+    },
+  },
+  additionalProperties: true,
+  type: 'object',
+  required: ['name', 'inputSchema'],
+  title: 'MCPTool',
+  description:
+    "A simple wrapper around MCP's tool definition (to avoid conflict with our own)",
+} as const;
+
 export const $Memory = {
   properties: {
     blocks: {
@@ -5684,6 +5751,29 @@ Parameters:
     created_at (datetime): The unix timestamp of when the run was created.
     completed_at (datetime): The unix timestamp of when the run was completed.
     user_id (str): The unique identifier of the user associated with the run.`,
+} as const;
+
+export const $SSEServerConfig = {
+  properties: {
+    server_name: {
+      type: 'string',
+      title: 'Server Name',
+      description: 'The name of the server',
+    },
+    type: {
+      $ref: '#/components/schemas/MCPServerType',
+      default: 'sse',
+    },
+    server_url: {
+      type: 'string',
+      title: 'Server Url',
+      description:
+        'The URL of the server (MCP SSE client will connect to this URL)',
+    },
+  },
+  type: 'object',
+  required: ['server_name', 'server_url'],
+  title: 'SSEServerConfig',
 } as const;
 
 export const $SandboxConfig = {
@@ -7064,6 +7154,7 @@ export const $ToolType = {
     'letta_multi_agent_core',
     'external_composio',
     'external_langchain',
+    'external_mcp',
   ],
   title: 'ToolType',
 } as const;

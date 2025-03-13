@@ -127,6 +127,52 @@ export const prefetchUseToolsServiceListComposioActionsByApp = (
       ToolsService.listComposioActionsByApp({ composioAppName, userId }),
   });
 /**
+ * List Mcp Servers
+ * Get a list of all configured MCP servers
+ * @param data The data for the request.
+ * @param data.userId
+ * @returns unknown Successful Response
+ * @throws ApiError
+ */
+export const prefetchUseToolsServiceListMcpServers = (
+  queryClient: QueryClient,
+  {
+    userId,
+  }: {
+    userId?: string;
+  } = {},
+) =>
+  queryClient.prefetchQuery({
+    queryKey: Common.UseToolsServiceListMcpServersKeyFn({ userId }),
+    queryFn: () => ToolsService.listMcpServers({ userId }),
+  });
+/**
+ * List Mcp Tools By Server
+ * Get a list of all tools for a specific MCP server
+ * @param data The data for the request.
+ * @param data.mcpServerName
+ * @param data.userId
+ * @returns MCPTool Successful Response
+ * @throws ApiError
+ */
+export const prefetchUseToolsServiceListMcpToolsByServer = (
+  queryClient: QueryClient,
+  {
+    mcpServerName,
+    userId,
+  }: {
+    mcpServerName: string;
+    userId?: string;
+  },
+) =>
+  queryClient.prefetchQuery({
+    queryKey: Common.UseToolsServiceListMcpToolsByServerKeyFn({
+      mcpServerName,
+      userId,
+    }),
+    queryFn: () => ToolsService.listMcpToolsByServer({ mcpServerName, userId }),
+  });
+/**
  * Retrieve Source
  * Get all sources
  * @param data The data for the request.

@@ -156,6 +156,65 @@ export const useToolsServiceListComposioActionsByAppSuspense = <
     ...options,
   });
 /**
+ * List Mcp Servers
+ * Get a list of all configured MCP servers
+ * @param data The data for the request.
+ * @param data.userId
+ * @returns unknown Successful Response
+ * @throws ApiError
+ */
+export const useToolsServiceListMcpServersSuspense = <
+  TData = Common.ToolsServiceListMcpServersDefaultResponse,
+  TError = unknown,
+  TQueryKey extends Array<unknown> = unknown[],
+>(
+  {
+    userId,
+  }: {
+    userId?: string;
+  } = {},
+  queryKey?: TQueryKey,
+  options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>,
+) =>
+  useSuspenseQuery<TData, TError>({
+    queryKey: Common.UseToolsServiceListMcpServersKeyFn({ userId }, queryKey),
+    queryFn: () => ToolsService.listMcpServers({ userId }) as TData,
+    ...options,
+  });
+/**
+ * List Mcp Tools By Server
+ * Get a list of all tools for a specific MCP server
+ * @param data The data for the request.
+ * @param data.mcpServerName
+ * @param data.userId
+ * @returns MCPTool Successful Response
+ * @throws ApiError
+ */
+export const useToolsServiceListMcpToolsByServerSuspense = <
+  TData = Common.ToolsServiceListMcpToolsByServerDefaultResponse,
+  TError = unknown,
+  TQueryKey extends Array<unknown> = unknown[],
+>(
+  {
+    mcpServerName,
+    userId,
+  }: {
+    mcpServerName: string;
+    userId?: string;
+  },
+  queryKey?: TQueryKey,
+  options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>,
+) =>
+  useSuspenseQuery<TData, TError>({
+    queryKey: Common.UseToolsServiceListMcpToolsByServerKeyFn(
+      { mcpServerName, userId },
+      queryKey,
+    ),
+    queryFn: () =>
+      ToolsService.listMcpToolsByServer({ mcpServerName, userId }) as TData,
+    ...options,
+  });
+/**
  * Retrieve Source
  * Get all sources
  * @param data The data for the request.

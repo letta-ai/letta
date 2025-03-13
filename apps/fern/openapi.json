@@ -507,6 +507,143 @@
         }
       }
     },
+    "/v1/tools/mcp/servers": {
+      "get": {
+        "tags": ["tools"],
+        "summary": "List Mcp Servers",
+        "description": "Get a list of all configured MCP servers",
+        "operationId": "list_mcp_servers",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "anyOf": [
+                      {
+                        "$ref": "#/components/schemas/SSEServerConfig"
+                      },
+                      {
+                        "$ref": "#/components/schemas/LocalServerConfig"
+                      }
+                    ]
+                  },
+                  "title": "Response List Mcp Servers"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/tools/mcp/servers/{mcp_server_name}/tools": {
+      "get": {
+        "tags": ["tools"],
+        "summary": "List Mcp Tools By Server",
+        "description": "Get a list of all tools for a specific MCP server",
+        "operationId": "list_mcp_tools_by_server",
+        "parameters": [
+          {
+            "name": "mcp_server_name",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Mcp Server Name"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/MCPTool"
+                  },
+                  "title": "Response List Mcp Tools By Server"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/tools/mcp/servers/{mcp_server_name}/{mcp_tool_name}": {
+      "post": {
+        "tags": ["tools"],
+        "summary": "Add Mcp Tool",
+        "description": "Add a new MCP tool by server + tool name",
+        "operationId": "add_mcp_tool",
+        "parameters": [
+          {
+            "name": "mcp_server_name",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Mcp Server Name"
+            }
+          },
+          {
+            "name": "mcp_tool_name",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Mcp Tool Name"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Tool"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/sources/{source_id}": {
       "get": {
         "tags": ["sources"],
@@ -6155,7 +6292,8 @@
                                     "letta_memory_core",
                                     "letta_multi_agent_core",
                                     "external_composio",
-                                    "external_langchain"
+                                    "external_langchain",
+                                    "external_mcp"
                                   ]
                                 },
                                 "description": {
@@ -8928,7 +9066,8 @@
                                     "letta_memory_core",
                                     "letta_multi_agent_core",
                                     "external_composio",
-                                    "external_langchain"
+                                    "external_langchain",
+                                    "external_mcp"
                                   ]
                                 },
                                 "description": {
@@ -14401,6 +14540,68 @@
         "type": "object",
         "title": "LocalSandboxConfig"
       },
+      "LocalServerConfig": {
+        "properties": {
+          "server_name": {
+            "type": "string",
+            "title": "Server Name",
+            "description": "The name of the server"
+          },
+          "type": {
+            "$ref": "#/components/schemas/MCPServerType",
+            "default": "local"
+          },
+          "command": {
+            "type": "string",
+            "title": "Command",
+            "description": "The command to run (MCP 'local' client will run this command)"
+          },
+          "args": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Args",
+            "description": "The arguments to pass to the command"
+          }
+        },
+        "type": "object",
+        "required": ["server_name", "command", "args"],
+        "title": "LocalServerConfig"
+      },
+      "MCPServerType": {
+        "type": "string",
+        "enum": ["sse", "local"],
+        "title": "MCPServerType"
+      },
+      "MCPTool": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "inputSchema": {
+            "type": "object",
+            "title": "Inputschema"
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "required": ["name", "inputSchema"],
+        "title": "MCPTool",
+        "description": "A simple wrapper around MCP's tool definition (to avoid conflict with our own)"
+      },
       "Memory": {
         "properties": {
           "blocks": {
@@ -15312,6 +15513,27 @@
         "type": "object",
         "title": "Run",
         "description": "Representation of a run, which is a job with a 'run' prefix in its ID.\nInherits all fields and behavior from Job except for the ID prefix.\n\nParameters:\n    id (str): The unique identifier of the run (prefixed with 'run-').\n    status (JobStatus): The status of the run.\n    created_at (datetime): The unix timestamp of when the run was created.\n    completed_at (datetime): The unix timestamp of when the run was completed.\n    user_id (str): The unique identifier of the user associated with the run."
+      },
+      "SSEServerConfig": {
+        "properties": {
+          "server_name": {
+            "type": "string",
+            "title": "Server Name",
+            "description": "The name of the server"
+          },
+          "type": {
+            "$ref": "#/components/schemas/MCPServerType",
+            "default": "sse"
+          },
+          "server_url": {
+            "type": "string",
+            "title": "Server Url",
+            "description": "The URL of the server (MCP SSE client will connect to this URL)"
+          }
+        },
+        "type": "object",
+        "required": ["server_name", "server_url"],
+        "title": "SSEServerConfig"
       },
       "SandboxConfig": {
         "properties": {
@@ -16560,7 +16782,8 @@
           "letta_memory_core",
           "letta_multi_agent_core",
           "external_composio",
-          "external_langchain"
+          "external_langchain",
+          "external_mcp"
         ],
         "title": "ToolType"
       },

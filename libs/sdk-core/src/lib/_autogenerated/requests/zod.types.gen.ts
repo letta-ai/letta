@@ -404,6 +404,7 @@ export const ToolType = z.union([
   z.literal('letta_multi_agent_core'),
   z.literal('external_composio'),
   z.literal('external_langchain'),
+  z.literal('external_mcp'),
 ]);
 
 export type Tool = z.infer<typeof Tool>;
@@ -2960,6 +2961,36 @@ export const LocalSandboxConfig = z.object({
   pip_requirements: z.array(PipRequirement).optional(),
 });
 
+export type MCPServerType = z.infer<typeof MCPServerType>;
+export const MCPServerType = z.union([z.literal('sse'), z.literal('local')]);
+
+export type LocalServerConfig = z.infer<typeof LocalServerConfig>;
+export const LocalServerConfig = z.object({
+  server_name: z.string(),
+  type: z.union([MCPServerType, z.undefined()]).optional(),
+  command: z.string(),
+  args: z.array(z.string()),
+});
+
+export type MCPTool = z.infer<typeof MCPTool>;
+export const MCPTool = z.intersection(
+  z.object({
+    name: z.string(),
+    description: z
+      .union([
+        z.string(),
+        z.null(),
+        z.array(z.union([z.string(), z.null()])),
+        z.undefined(),
+      ])
+      .optional(),
+    inputSchema: z.unknown(),
+  }),
+  z.object({
+    string: z.any(),
+  }),
+);
+
 export type Organization = z.infer<typeof Organization>;
 export const Organization = z.object({
   id: z.string().optional(),
@@ -3242,6 +3273,13 @@ export const Run = z.object({
       z.array(z.union([LettaRequestConfig, z.null()])),
     ])
     .optional(),
+});
+
+export type SSEServerConfig = z.infer<typeof SSEServerConfig>;
+export const SSEServerConfig = z.object({
+  server_name: z.string(),
+  type: z.union([MCPServerType, z.undefined()]).optional(),
+  server_url: z.string(),
 });
 
 export type SandboxType = z.infer<typeof SandboxType>;
@@ -4054,6 +4092,58 @@ export const post_Add_composio_tool = {
   parameters: z.object({
     path: z.object({
       composio_action_name: z.string(),
+    }),
+    header: z.object({
+      user_id: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+    }),
+  }),
+  response: Tool,
+};
+
+export type get_List_mcp_servers = typeof get_List_mcp_servers;
+export const get_List_mcp_servers = {
+  method: z.literal('GET'),
+  path: z.literal('/v1/tools/mcp/servers'),
+  requestFormat: z.literal('json'),
+  parameters: z.object({
+    header: z.object({
+      user_id: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+    }),
+  }),
+  response: z.unknown(),
+};
+
+export type get_List_mcp_tools_by_server = typeof get_List_mcp_tools_by_server;
+export const get_List_mcp_tools_by_server = {
+  method: z.literal('GET'),
+  path: z.literal('/v1/tools/mcp/servers/{mcp_server_name}/tools'),
+  requestFormat: z.literal('json'),
+  parameters: z.object({
+    path: z.object({
+      mcp_server_name: z.string(),
+    }),
+    header: z.object({
+      user_id: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+    }),
+  }),
+  response: z.array(MCPTool),
+};
+
+export type post_Add_mcp_tool = typeof post_Add_mcp_tool;
+export const post_Add_mcp_tool = {
+  method: z.literal('POST'),
+  path: z.literal('/v1/tools/mcp/servers/{mcp_server_name}/{mcp_tool_name}'),
+  requestFormat: z.literal('json'),
+  parameters: z.object({
+    path: z.object({
+      mcp_server_name: z.string(),
+      mcp_tool_name: z.string(),
     }),
     header: z.object({
       user_id: z
@@ -6048,6 +6138,9 @@ export const EndpointByMethod = {
     '/v1/tools/composio/apps': get_List_composio_apps,
     '/v1/tools/composio/apps/{composio_app_name}/actions':
       get_List_composio_actions_by_app,
+    '/v1/tools/mcp/servers': get_List_mcp_servers,
+    '/v1/tools/mcp/servers/{mcp_server_name}/tools':
+      get_List_mcp_tools_by_server,
     '/v1/sources/{source_id}': get_Retrieve_source,
     '/v1/sources/name/{source_name}': get_Get_source_id_by_name,
     '/v1/sources/': get_List_sources,
@@ -6126,6 +6219,8 @@ export const EndpointByMethod = {
     '/v1/tools/add-base-tools': post_Add_base_tools,
     '/v1/tools/run': post_Run_tool_from_source,
     '/v1/tools/composio/{composio_action_name}': post_Add_composio_tool,
+    '/v1/tools/mcp/servers/{mcp_server_name}/{mcp_tool_name}':
+      post_Add_mcp_tool,
     '/v1/sources/': post_Create_source,
     '/v1/sources/{source_id}/upload': post_Upload_file_to_source,
     '/v1/agents/': post_Create_agent,

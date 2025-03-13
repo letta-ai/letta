@@ -1795,6 +1795,36 @@ export type LocalSandboxConfig = {
   pip_requirements?: Array<PipRequirement>;
 };
 
+export type LocalServerConfig = {
+  /**
+   * The name of the server
+   */
+  server_name: string;
+  type?: MCPServerType;
+  /**
+   * The command to run (MCP 'local' client will run this command)
+   */
+  command: string;
+  /**
+   * The arguments to pass to the command
+   */
+  args: Array<string>;
+};
+
+export type MCPServerType = 'sse' | 'local';
+
+/**
+ * A simple wrapper around MCP's tool definition (to avoid conflict with our own)
+ */
+export type MCPTool = {
+  name: string;
+  description?: string | null;
+  inputSchema: {
+    [key: string]: unknown;
+  };
+  [key: string]: unknown | string;
+};
+
 /**
  * Represents the in-context memory (i.e. Core memory) of the agent. This includes both the `Block` objects (labelled by sections), as well as tools to edit the blocks.
  */
@@ -2216,6 +2246,18 @@ export type Run = {
    * The request configuration for the run.
    */
   request_config?: LettaRequestConfig | null;
+};
+
+export type SSEServerConfig = {
+  /**
+   * The name of the server
+   */
+  server_name: string;
+  type?: MCPServerType;
+  /**
+   * The URL of the server (MCP SSE client will connect to this URL)
+   */
+  server_url: string;
 };
 
 export type SandboxConfig = {
@@ -2780,7 +2822,8 @@ export type ToolType =
   | 'letta_memory_core'
   | 'letta_multi_agent_core'
   | 'external_composio'
-  | 'external_langchain';
+  | 'external_langchain'
+  | 'external_mcp';
 
 export type ToolUpdate = {
   /**
@@ -3143,6 +3186,29 @@ export type AddComposioToolData = {
 };
 
 export type AddComposioToolResponse = Tool;
+
+export type ListMcpServersData = {
+  userId?: string | null;
+};
+
+export type ListMcpServersResponse = {
+  [key: string]: SSEServerConfig | LocalServerConfig;
+};
+
+export type ListMcpToolsByServerData = {
+  mcpServerName: string;
+  userId?: string | null;
+};
+
+export type ListMcpToolsByServerResponse = Array<MCPTool>;
+
+export type AddMcpToolData = {
+  mcpServerName: string;
+  mcpToolName: string;
+  userId?: string | null;
+};
+
+export type AddMcpToolResponse = Tool;
 
 export type RetrieveSourceData = {
   sourceId: string;
@@ -4218,6 +4284,53 @@ export type $OpenApiTs = {
   '/v1/tools/composio/{composio_action_name}': {
     post: {
       req: AddComposioToolData;
+      res: {
+        /**
+         * Successful Response
+         */
+        200: Tool;
+        /**
+         * Validation Error
+         */
+        422: HTTPValidationError;
+      };
+    };
+  };
+  '/v1/tools/mcp/servers': {
+    get: {
+      req: ListMcpServersData;
+      res: {
+        /**
+         * Successful Response
+         */
+        200: {
+          [key: string]: SSEServerConfig | LocalServerConfig;
+        };
+        /**
+         * Validation Error
+         */
+        422: HTTPValidationError;
+      };
+    };
+  };
+  '/v1/tools/mcp/servers/{mcp_server_name}/tools': {
+    get: {
+      req: ListMcpToolsByServerData;
+      res: {
+        /**
+         * Successful Response
+         */
+        200: Array<MCPTool>;
+        /**
+         * Validation Error
+         */
+        422: HTTPValidationError;
+      };
+    };
+  };
+  '/v1/tools/mcp/servers/{mcp_server_name}/{mcp_tool_name}': {
+    post: {
+      req: AddMcpToolData;
       res: {
         /**
          * Successful Response

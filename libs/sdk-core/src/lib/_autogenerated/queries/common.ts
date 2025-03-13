@@ -105,6 +105,44 @@ export const UseToolsServiceListComposioActionsByAppKeyFn = (
   useToolsServiceListComposioActionsByAppKey,
   ...(queryKey ?? [{ composioAppName, userId }]),
 ];
+export type ToolsServiceListMcpServersDefaultResponse = Awaited<
+  ReturnType<typeof ToolsService.listMcpServers>
+>;
+export type ToolsServiceListMcpServersQueryResult<
+  TData = ToolsServiceListMcpServersDefaultResponse,
+  TError = unknown,
+> = UseQueryResult<TData, TError>;
+export const useToolsServiceListMcpServersKey = 'ToolsServiceListMcpServers';
+export const UseToolsServiceListMcpServersKeyFn = (
+  {
+    userId,
+  }: {
+    userId?: string;
+  } = {},
+  queryKey?: Array<unknown>,
+) => [useToolsServiceListMcpServersKey, ...(queryKey ?? [{ userId }])];
+export type ToolsServiceListMcpToolsByServerDefaultResponse = Awaited<
+  ReturnType<typeof ToolsService.listMcpToolsByServer>
+>;
+export type ToolsServiceListMcpToolsByServerQueryResult<
+  TData = ToolsServiceListMcpToolsByServerDefaultResponse,
+  TError = unknown,
+> = UseQueryResult<TData, TError>;
+export const useToolsServiceListMcpToolsByServerKey =
+  'ToolsServiceListMcpToolsByServer';
+export const UseToolsServiceListMcpToolsByServerKeyFn = (
+  {
+    mcpServerName,
+    userId,
+  }: {
+    mcpServerName: string;
+    userId?: string;
+  },
+  queryKey?: Array<unknown>,
+) => [
+  useToolsServiceListMcpToolsByServerKey,
+  ...(queryKey ?? [{ mcpServerName, userId }]),
+];
 export type SourcesServiceRetrieveSourceDefaultResponse = Awaited<
   ReturnType<typeof SourcesService.retrieveSource>
 >;
@@ -1164,6 +1202,9 @@ export type ToolsServiceRunToolFromSourceMutationResult = Awaited<
 >;
 export type ToolsServiceAddComposioToolMutationResult = Awaited<
   ReturnType<typeof ToolsService.addComposioTool>
+>;
+export type ToolsServiceAddMcpToolMutationResult = Awaited<
+  ReturnType<typeof ToolsService.addMcpTool>
 >;
 export type SourcesServiceCreateSourceMutationResult = Awaited<
   ReturnType<typeof SourcesService.createSource>

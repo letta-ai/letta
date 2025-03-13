@@ -3,7 +3,7 @@ import time
 import traceback
 import warnings
 from abc import ABC, abstractmethod
-from typing import Any, List, Optional, Tuple, Union
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 from openai.types.beta.function_tool import FunctionTool as OpenAITool
 
@@ -26,6 +26,7 @@ from letta.helpers import ToolRulesSolver
 from letta.helpers.composio_helpers import get_composio_api_key
 from letta.helpers.datetime_helpers import get_utc_time
 from letta.helpers.json_helpers import json_dumps, json_loads
+from letta.helpers.mcp_helpers import BaseMCPClient
 from letta.interface import AgentInterface
 from letta.llm_api.helpers import calculate_summarizer_cutoff, get_token_counts_for_messages, is_context_overflow_error
 from letta.llm_api.llm_api_tools import create
@@ -92,6 +93,8 @@ class Agent(BaseAgent):
         user: User,
         # extras
         first_message_verify_mono: bool = True,  # TODO move to config?
+        # MCP sessions, state held in-memory in the server
+        mcp_clients: Optional[Dict[str, BaseMCPClient]] = None,
     ):
         assert isinstance(agent_state.memory, Memory), f"Memory object is not of type Memory: {type(agent_state.memory)}"
         # Hold a copy of the state that was used to init the agent
@@ -149,6 +152,9 @@ class Agent(BaseAgent):
         # Logger that the Agent specifically can use, will also report the agent_state ID with the logs
         self.logger = get_logger(agent_state.id)
 
+        # MCPClient, state/sessions managed by the server
+        self.mcp_clients = mcp_clients
+
     def load_last_function_response(self):
         """Load the last function response from message history"""
         in_context_messages = self.agent_manager.get_in_context_messages(agent_id=self.agent_state.id, actor=self.user)
@@ -198,6 +204,7 @@ class Agent(BaseAgent):
             return True
         return False
 
+    # TODO: Refactor into separate class v.s. large if/elses here
     def execute_tool_and_persist_state(
         self, function_name: str, function_args: dict, target_letta_tool: Tool
     ) -> tuple[Any, Optional[SandboxRunResult]]:
@@ -238,6 +245,32 @@ class Agent(BaseAgent):
                 function_response = execute_composio_action(
                     action_name=action_name, args=function_args, api_key=composio_api_key, entity_id=entity_id
                 )
+            elif target_letta_tool.tool_type == ToolType.EXTERNAL_MCP:
+                # Get the server name from the tool tag
+                # TODO make a property instead?
+                server_name = target_letta_tool.tags[0].split(":")[1]
+
+                # Get the MCPClient from the server's handle
+                # TODO these don't get raised properly
+                if not self.mcp_clients:
+                    raise ValueError(f"No MCP client available to use")
+                if server_name not in self.mcp_clients:
+                    raise ValueError(f"Unknown MCP server name: {server_name}")
+                mcp_client = self.mcp_clients[server_name]
+                if not isinstance(mcp_client, BaseMCPClient):
+                    raise RuntimeError(f"Expected an MCPClient, but got: {type(mcp_client)}")
+
+                # Check that tool exists
+                available_tools = mcp_client.list_tools()
+                available_tool_names = [t.name for t in available_tools]
+                if function_name not in available_tool_names:
+                    raise ValueError(
+                        f"{function_name} is not available in MCP server {server_name}. Please check your `~/.letta/mcp_config.json` file."
+                    )
+
+                function_response, is_error = mcp_client.execute_tool(tool_name=function_name, tool_args=function_args)
+                sandbox_run_result = SandboxRunResult(status="error" if is_error else "success")
+                return function_response, sandbox_run_result
             else:
                 try:
                     # Parse the source code to extract function annotations
@@ -268,6 +301,7 @@ class Agent(BaseAgent):
             function_response = get_friendly_error_msg(
                 function_name=function_name, exception_name=type(e).__name__, exception_message=str(e)
             )
+            return function_response, SandboxRunResult(status="error")
 
         return function_response, None
 

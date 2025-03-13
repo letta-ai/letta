@@ -26,6 +26,12 @@ import type {
   ListComposioActionsByAppResponse,
   AddComposioToolData,
   AddComposioToolResponse,
+  ListMcpServersData,
+  ListMcpServersResponse,
+  ListMcpToolsByServerData,
+  ListMcpToolsByServerResponse,
+  AddMcpToolData,
+  AddMcpToolResponse,
   RetrieveSourceData,
   RetrieveSourceResponse,
   ModifySourceData,
@@ -490,6 +496,82 @@ export class ToolsService {
       url: '/v1/tools/composio/{composio_action_name}',
       path: {
         composio_action_name: data.composioActionName,
+      },
+      errors: {
+        422: 'Validation Error',
+      },
+      headers,
+    });
+  }
+
+  /**
+   * List Mcp Servers
+   * Get a list of all configured MCP servers
+   * @param data The data for the request.
+   * @param data.userId
+   * @returns unknown Successful Response
+   * @throws ApiError
+   */
+  public static listMcpServers(
+    data: ListMcpServersData = {},
+    headers?: { user_id: string },
+  ): CancelablePromise<ListMcpServersResponse> {
+    return __request(OpenAPI, {
+      method: 'GET',
+      url: '/v1/tools/mcp/servers',
+      errors: {
+        422: 'Validation Error',
+      },
+      headers,
+    });
+  }
+
+  /**
+   * List Mcp Tools By Server
+   * Get a list of all tools for a specific MCP server
+   * @param data The data for the request.
+   * @param data.mcpServerName
+   * @param data.userId
+   * @returns MCPTool Successful Response
+   * @throws ApiError
+   */
+  public static listMcpToolsByServer(
+    data: ListMcpToolsByServerData,
+    headers?: { user_id: string },
+  ): CancelablePromise<ListMcpToolsByServerResponse> {
+    return __request(OpenAPI, {
+      method: 'GET',
+      url: '/v1/tools/mcp/servers/{mcp_server_name}/tools',
+      path: {
+        mcp_server_name: data.mcpServerName,
+      },
+      errors: {
+        422: 'Validation Error',
+      },
+      headers,
+    });
+  }
+
+  /**
+   * Add Mcp Tool
+   * Add a new MCP tool by server + tool name
+   * @param data The data for the request.
+   * @param data.mcpServerName
+   * @param data.mcpToolName
+   * @param data.userId
+   * @returns Tool Successful Response
+   * @throws ApiError
+   */
+  public static addMcpTool(
+    data: AddMcpToolData,
+    headers?: { user_id: string },
+  ): CancelablePromise<AddMcpToolResponse> {
+    return __request(OpenAPI, {
+      method: 'POST',
+      url: '/v1/tools/mcp/servers/{mcp_server_name}/{mcp_tool_name}',
+      path: {
+        mcp_server_name: data.mcpServerName,
+        mcp_tool_name: data.mcpToolName,
       },
       errors: {
         422: 'Validation Error',

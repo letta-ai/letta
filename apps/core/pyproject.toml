@@ -88,6 +88,7 @@ colorama = "^0.4.6"
 marshmallow-sqlalchemy = "^1.4.1"
 boto3 = {version = "^1.36.24", optional = true}
 datamodel-code-generator = {extras = ["http"], version = "^0.25.0"}
+mcp = "^1.3.0"
 
 
 [tool.poetry.extras]
