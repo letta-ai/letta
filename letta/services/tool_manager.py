@@ -57,6 +57,12 @@ class ToolManager:
         return tool
 
     @enforce_types
+    def create_or_update_mcp_tool(self, tool_create: ToolCreate, actor: PydanticUser) -> PydanticTool:
+        return self.create_or_update_tool(
+            PydanticTool(tool_type=ToolType.EXTERNAL_MCP, name=tool_create.json_schema["name"], **tool_create.model_dump()), actor
+        )
+
+    @enforce_types
     def create_or_update_composio_tool(self, tool_create: ToolCreate, actor: PydanticUser) -> PydanticTool:
         return self.create_or_update_tool(
             PydanticTool(tool_type=ToolType.EXTERNAL_COMPOSIO, name=tool_create.json_schema["name"], **tool_create.model_dump()), actor

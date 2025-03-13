@@ -7,11 +7,22 @@ from letta.constants import (
     FUNCTION_RETURN_CHAR_LIMIT,
     LETTA_CORE_TOOL_MODULE_NAME,
     LETTA_MULTI_AGENT_TOOL_MODULE_NAME,
+    MCP_TOOL_TAG_NAME_PREFIX,
 )
 from letta.functions.ast_parsers import get_function_name_and_description
 from letta.functions.functions import derive_openai_json_schema, get_json_schema_from_module
-from letta.functions.helpers import generate_composio_tool_wrapper, generate_langchain_tool_wrapper, generate_model_from_args_json_schema
-from letta.functions.schema_generator import generate_schema_from_args_schema_v2, generate_tool_schema_for_composio
+from letta.functions.helpers import (
+    generate_composio_tool_wrapper,
+    generate_langchain_tool_wrapper,
+    generate_mcp_tool_wrapper,
+    generate_model_from_args_json_schema,
+)
+from letta.functions.schema_generator import (
+    generate_schema_from_args_schema_v2,
+    generate_tool_schema_for_composio,
+    generate_tool_schema_for_mcp,
+)
+from letta.helpers.mcp_helpers import MCPTool
 from letta.log import get_logger
 from letta.orm.enums import ToolType
 from letta.schemas.letta_base import LettaBase
@@ -120,6 +131,32 @@ class ToolCreate(LettaBase):
     )
     args_json_schema: Optional[Dict] = Field(None, description="The args JSON schema of the function.")
     return_char_limit: int = Field(FUNCTION_RETURN_CHAR_LIMIT, description="The maximum number of characters in the response.")
+
+    # TODO should we put the HTTP / API fetch inside from_mcp?
+    # async def from_mcp(cls, mcp_server: str, mcp_tool_name: str) -> "ToolCreate":
+
+    @classmethod
+    def from_mcp(cls, mcp_server_name: str, mcp_tool: MCPTool) -> "ToolCreate":
+
+        # Get the MCP tool from the MCP server
+        # NVM
+
+        # Pass the MCP tool to the schema generator
+        json_schema = generate_tool_schema_for_mcp(mcp_tool=mcp_tool)
+
+        # Return a ToolCreate instance
+        description = mcp_tool.description
+        source_type = "python"
+        tags = [f"{MCP_TOOL_TAG_NAME_PREFIX}:{mcp_server_name}"]
+        wrapper_func_name, wrapper_function_str = generate_mcp_tool_wrapper(mcp_tool.name)
+
+        return cls(
+            description=description,
+            source_type=source_type,
+            tags=tags,
+            source_code=wrapper_function_str,
+            json_schema=json_schema,
+        )
 
     @classmethod
     def from_composio(cls, action_name: str) -> "ToolCreate":

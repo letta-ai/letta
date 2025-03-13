@@ -136,6 +136,21 @@ def create_application() -> "FastAPI":
         debug=debug_mode,  # if True, the stack trace will be printed in the response
     )
 
+    @app.on_event("shutdown")
+    def shutdown_mcp_clients():
+        global server
+        import threading
+
+        def cleanup_clients():
+            if hasattr(server, "mcp_clients"):
+                for client in server.mcp_clients.values():
+                    client.cleanup()
+                server.mcp_clients.clear()
+
+        t = threading.Thread(target=cleanup_clients)
+        t.start()
+        t.join()
+
     @app.exception_handler(Exception)
     async def generic_error_handler(request: Request, exc: Exception):
         # Log the actual error for debugging
