@@ -90,8 +90,6 @@ navigation:
                 path: pages/agents/tool_rules.mdx
               - page: Tool Variables
                 path: pages/agents/tool_variables.mdx
-              - page: MCP Integration
-                path: pages/agents/mcp.mdx
               - page: Composio Integration
                 path: pages/agents/composio.mdx
           - page: Data Sources
@@ -113,6 +111,17 @@ navigation:
             path: pages/agent-development-environment/connect.mdx
           - page: Using the ADE
             path: pages/agent-development-environment/usage.mdx
+      - section: Model Context Protocol
+        contents:
+          - page: What is MCP?
+            path: pages/mcp/overview.mdx
+          - section: Connecting Letta to MCP
+            path: pages/mcp/setup.mdx
+            contents:
+              - page: SSE (Remote) MCP Servers
+                path: pages/mcp/sse.mdx
+              - page: stdio (Local) MCP Servers
+                path: pages/mcp/stdio.mdx
       - section: Deploying a Letta Server
         contents:
           - page: Letta Docker Image
@@ -270,6 +279,8 @@ typography:
         style: normal
 
 redirects:
+  - source: "/guides/agents/mcp"
+    destination: "/guides/mcp/overview"
   - source: "/guides/server/quickstart"
     destination: "/quickstart"
   - source: "/agent-development-environment/troubleshooting"

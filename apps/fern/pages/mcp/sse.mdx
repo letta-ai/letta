@@ -1,0 +1,119 @@
+---
+title: Connecting Letta to a SSE MCP Server
+slug: guides/mcp/sse
+---
+
+<Warning>
+Many remote MCP servers use unauthenticated URLs (meaning that anyone with the URL is able to use the tools on the MCP server), **so make sure you keep your MCP server URLs private**.
+</Warning>
+
+Connecting to a remote MCP server is as simple as adding the URL to your `~/.letta/mcp_config.json` file.
+For example, if you have the URL of an MCP server that looks like `https://mcp-server-123456.externaldomain.com`, simply add it to your `~/.letta/mcp_config.json` file like so:
+```json
+{
+  "mcpServers": {
+    "myRemoteServerName": {
+      "url": "https://mcp-server-123456.externaldomain.com"
+    }
+  }
+}
+```
+
+To add more servers, simply add more entries to the config:
+```json
+{
+  "mcpServers": {
+    "myRemoteServerName": {
+      "url": "https://mcp-server-123456.externaldomain.com"
+    },
+    "myRemoteServerName2": {
+      "url": "https://mcp-server-78910.externaldomain.com"
+    }
+  }
+}
+```
+
+## Example: connecting to the Everything MCP server
+
+The "Everything MCP server" ([repo link](https://github.com/modelcontextprotocol/servers/tree/main/src/everything)) is an example server made by Anthropic intended to showcase the full featureset of the MCP protocol.
+
+The source code for the server includes the option to run it in SSE mode, so we can use it as an example for how to connect Letta to a locally running SSE server.
+
+<AccordionGroup>
+<Accordion title="Step 1: Install the Everything MCP server">
+If you don't have npm installed, [install it here](https://docs.npmjs.com/downloading-and-installing-node-js-and-npm).
+
+Then follow these steps:
+```bash
+# First clone the GitHub repo
+git clone https://github.com/modelcontextprotocol/servers.git
+
+# Navigate to the directory
+cd servers/src/everything
+
+# Install with npm
+npm install
+npm run build
+```
+</Accordion>
+
+<Accordion title="Step 2: Launch the MCP server in SSE mode">
+In the same directory, run `npm run` (make sure to specify SSE mode with `:sse`):
+```bash
+npm run start:sse
+```
+
+Once started, you'll see this output in your terminal:
+```
+> @modelcontextprotocol/server-everything@0.6.2 start:sse
+> node dist/sse.js
+
+Server is running on port 3001
+```
+</Accordion>
+
+<Accordion title="Step 3: Modify your `~/.letta/mcp_config.json` file">
+By default, the Everything MCP server will run on port `3001`. It will listen for SSE connections on `:3001/SSE`, so that's the address we'll use.
+```json
+{
+  "mcpServers": {
+    "everything": {
+        "url": "http://localhost:3001/sse"
+    }
+  }
+}
+```
+
+If we're using Docker, we'll need to modify the address to be `host.docker.internal` instead of `localhost`:
+```json
+{
+  "mcpServers": {
+    "everything": {
+        "url": "http://host.docker.internal:3001/sse"
+    }
+  }
+}
+```
+</Accordion>
+
+<Accordion title="Step 4: Launch the MCP server in SSE mode">
+In this example, we'll use Docker to show you how to read your `~/.letta/mcp_config.json` file.
+
+To mount your `~/.letta/mcp_config.json` file into Docker, when we run `docker run` we need to add `-v ~/.letta/mcp_config.json:/app/config/mcp_config.json`:
+```bash
+docker run \
+  -v ~/.letta/.persist/pgdata:/var/lib/postgresql/data \
+  -v ~/.letta/mcp_config.json:/app/config/mcp_config.json \
+  -p 8283:8283 \
+  --env-file .env \
+  letta/letta:latest
+```
+</Accordion>
+</AccordionGroup>
+
+## Attaching an MCP tool to an agent
+
+Once your Letta server has ingested your `~/.letta/mcp_config.json` file and registered the tools, you still need to attach your tools to your agent (if your `mcp_config.json` was set up correctly, then the tools will now be available to attach).
+
+This can be done via the ADE (by opening the tool browser), or programatically via the API / SDKs.
+For a complete example of using the Python SDK to , [check our GitHub](https://github.com/letta-ai/letta/tree/main/examples/mcp_example.py).

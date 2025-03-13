@@ -1,0 +1,73 @@
+---
+title: Connecting Letta to MCP Servers
+subtitle: Connect Letta agents to tools over Model Context Protocol (MCP)
+slug: guides/mcp/setup
+---
+
+<Note>
+When using Letta with Docker, **local MCP** servers ("**command**" or "**stdio**" servers) are not natively supported. [Read more here](guides/mcp/stdio).
+</Note>
+
+To connect Letta to MCP servers, you need to edit the `~/.letta/mcp_config.json` file.
+If the file doesn't exist, you can create it with an initial empty state:
+```json
+{
+  "mcpServers": {
+
+  }
+}
+```
+
+## Understanding `mcp_config.json`
+
+The basic structure of the file is `mcpServers` at the top level - which is a dictionary of MCP server configurations. `stdio` (also called "local" or "command") MCP servers can be configured with `command` (required - the command to start the server), `args` (optional extra args to the command), and `env` (optional extra env vars for the server). `SSE` (also called "remote") MCP servers are configured with `url` (required - the URL of the MCP server).
+
+If you've already used MCP with Claude Desktop, you can copy the configuration from your Claude MCP JSON config into your `~/.letta/mcp_config.json` file. However, note that there are limitations when using local ("command" or "stdio") MCP servers if you are running Letta using Docker.
+
+### `stdio` ("local" / "command") vs `SSE` ("remote") MCP servers
+
+There are two main ways an MCP client like Letta can connect to an MCP server (for example, a "weather" server that provides tools to check the weather):
+1. `stdio`: the MCP client is responsible for running the MCP server itself using the `command` (e.g. `python -m run_mcp_server`) pulled from the config.
+2. `SSE`: the MCP client connects to an already running MCP server using the `url` pulled from the config.
+
+`stdio` MCP servers are sometimes called "local" or "command" MCP servers, since the MCP client runs the server "locally".
+
+`SSE` MCP servers are sometimes called "remote" MCP servers, since the MCP client connects to an already running server "remotely". However, the "remote" name is not strictly accurate since you can run an `SSE` MCP server locally (where the URL is `localhost`).
+
+You can read more about the `stdio` vs `SSE` (called the "transport mechanisms" or "communication protocols")[on the official MCP docs](https://modelcontextprotocol.io/docs/concepts/transports).
+
+### Example `stdio` config
+
+For a `stdio` / local MCP server, the config should contain the command, args, and env vars to run the server. For example:
+```json
+{
+  "mcpServers": {
+    "weather-local": {
+      "command": "python",
+      "args": [
+        "run_weather_service.py",
+      ],
+      "env": {
+        "WEATHER_API_KEY": "YOUR_API_KEY_HERE"
+      }
+    }
+  }
+}
+```
+
+### Example `SSE` config
+
+For a `SSE` / remote MCP server, the config should contain the URL of the server. For example:
+```json
+{
+  "mcpServers": {
+    "weather-remote": {
+      "url": "https://mcp-server-123456.externaldomain.com"
+    }
+  }
+}
+```
+
+## Next steps: set up an SSE MCP server
+
+The fastest way to get set up with MCP and Letta is to use an SSE MCP server. Check out our [guide here](/guides/mcp/sse) for next steps.
