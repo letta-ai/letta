@@ -99,13 +99,12 @@ If we're using Docker, we'll need to modify the address to be `host.docker.inter
 <Accordion title="Step 4: Launch the MCP server in SSE mode">
 In this example, we'll use Docker to show you how to read your `~/.letta/mcp_config.json` file.
 
-To mount your `~/.letta/mcp_config.json` file into Docker, when we run `docker run` we need to add `-v ~/.letta/mcp_config.json:/app/config/mcp_config.json`:
+To mount your `~/.letta/mcp_config.json` file into Docker, when we run `docker run` we need to add `-v ~/.letta/mcp_config.json:/root/.letta/mcp_config.json`:
 ```bash
 docker run \
   -v ~/.letta/.persist/pgdata:/var/lib/postgresql/data \
-  -v ~/.letta/mcp_config.json:/app/config/mcp_config.json \
+  -v ~/.letta/mcp_config.json:/root/.letta/mcp_config.json \
   -p 8283:8283 \
-  --env-file .env \
   letta/letta:latest
 ```
 </Accordion>

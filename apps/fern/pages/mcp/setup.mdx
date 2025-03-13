@@ -5,7 +5,7 @@ slug: guides/mcp/setup
 ---
 
 <Note>
-When using Letta with Docker, **local MCP** servers ("**command**" or "**stdio**" servers) are not natively supported. [Read more here](guides/mcp/stdio).
+When using Letta with Docker, **`stdio` MCP** servers ("**command**" or "**local**" servers) are not natively supported ([read more here](guides/mcp/stdio)). We recommend you use **`SSE` MCP** servers instead.
 </Note>
 
 To connect Letta to MCP servers, you need to edit the `~/.letta/mcp_config.json` file.
@@ -30,15 +30,15 @@ There are two main ways an MCP client like Letta can connect to an MCP server (f
 1. `stdio`: the MCP client is responsible for running the MCP server itself using the `command` (e.g. `python -m run_mcp_server`) pulled from the config.
 2. `SSE`: the MCP client connects to an already running MCP server using the `url` pulled from the config.
 
-`stdio` MCP servers are sometimes called "local" or "command" MCP servers, since the MCP client runs the server "locally".
+`stdio` MCP servers are sometimes called "local" or "command" MCP servers, since the MCP client runs the MCP server "locally".
 
 `SSE` MCP servers are sometimes called "remote" MCP servers, since the MCP client connects to an already running server "remotely". However, the "remote" name is not strictly accurate since you can run an `SSE` MCP server locally (where the URL is `localhost`).
 
-You can read more about the `stdio` vs `SSE` (called the "transport mechanisms" or "communication protocols")[on the official MCP docs](https://modelcontextprotocol.io/docs/concepts/transports).
+You can read more about the `stdio` vs `SSE` (called the "transport mechanisms" or "communication protocols") [on the official MCP docs](https://modelcontextprotocol.io/docs/concepts/transports).
 
-### Example `stdio` config
+### Example `stdio` (local) config
 
-For a `stdio` / local MCP server, the config should contain the command, args, and env vars to run the server. For example:
+For a `stdio` MCP server, the config should contain the `command`, `args`, and `env` vars to run the server. For example:
 ```json
 {
   "mcpServers": {
@@ -55,9 +55,9 @@ For a `stdio` / local MCP server, the config should contain the command, args, a
 }
 ```
 
-### Example `SSE` config
+### Example `SSE` (remote) config
 
-For a `SSE` / remote MCP server, the config should contain the URL of the server. For example:
+For a `SSE` MCP server, the config should contain the `url` of the server. For example:
 ```json
 {
   "mcpServers": {
@@ -70,4 +70,7 @@ For a `SSE` / remote MCP server, the config should contain the URL of the server
 
 ## Next steps: set up an SSE MCP server
 
-The fastest way to get set up with MCP and Letta is to use an SSE MCP server. Check out our [guide here](/guides/mcp/sse) for next steps.
+The fastest way to get set up with MCP and Letta is to use an SSE MCP server.
+When using MCP servers via third party providers (like [Composio](https://mcp.composio.dev/)), they will provide you a URL to use (for an `SSE` server config).
+
+Check out our [guide here](/guides/mcp/sse) for more information on setting up Letta with an SSE MCP server.
