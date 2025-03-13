@@ -272,6 +272,7 @@ export const UseAgentsServiceListAgentsKeyFn = (
     before,
     identifierKeys,
     identityId,
+    includeRelationships,
     limit,
     matchAllTags,
     name,
@@ -286,6 +287,7 @@ export const UseAgentsServiceListAgentsKeyFn = (
     before?: string;
     identifierKeys?: string[];
     identityId?: string;
+    includeRelationships?: string[];
     limit?: number;
     matchAllTags?: boolean;
     name?: string;
@@ -305,6 +307,7 @@ export const UseAgentsServiceListAgentsKeyFn = (
       before,
       identifierKeys,
       identityId,
+      includeRelationships,
       limit,
       matchAllTags,
       name,

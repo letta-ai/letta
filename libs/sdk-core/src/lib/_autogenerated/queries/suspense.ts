@@ -391,20 +391,23 @@ export const useSourcesServiceListSourceFilesSuspense = <
 /**
  * List Agents
  * List all agents associated with a given user.
- * This endpoint retrieves a list of all agents and their configurations associated with the specified user ID.
+ *
+ * This endpoint retrieves a list of all agents and their configurations
+ * associated with the specified user ID.
  * @param data The data for the request.
  * @param data.name Name of the agent
  * @param data.tags List of tags to filter agents by
- * @param data.matchAllTags If True, only returns agents that match ALL given tags. Otherwise, return agents that have ANY of the passed in tags.
+ * @param data.matchAllTags If True, only returns agents that match ALL given tags. Otherwise, return agents that have ANY of the passed-in tags.
  * @param data.before Cursor for pagination
  * @param data.after Cursor for pagination
  * @param data.limit Limit for pagination
  * @param data.queryText Search agents by name
- * @param data.projectId Search agents by project id
- * @param data.templateId Search agents by template id
- * @param data.baseTemplateId Search agents by base template id
- * @param data.identityId Search agents by identifier id
+ * @param data.projectId Search agents by project ID
+ * @param data.templateId Search agents by template ID
+ * @param data.baseTemplateId Search agents by base template ID
+ * @param data.identityId Search agents by identity ID
  * @param data.identifierKeys Search agents by identifier keys
+ * @param data.includeRelationships Specify which relational fields (e.g., 'tools', 'sources', 'memory') to include in the response. If not provided, all relationships are loaded by default. Using this can optimize performance by reducing unnecessary joins.
  * @param data.userId
  * @returns AgentState Successful Response
  * @throws ApiError
@@ -420,6 +423,7 @@ export const useAgentsServiceListAgentsSuspense = <
     before,
     identifierKeys,
     identityId,
+    includeRelationships,
     limit,
     matchAllTags,
     name,
@@ -434,6 +438,7 @@ export const useAgentsServiceListAgentsSuspense = <
     before?: string;
     identifierKeys?: string[];
     identityId?: string;
+    includeRelationships?: string[];
     limit?: number;
     matchAllTags?: boolean;
     name?: string;
@@ -454,6 +459,7 @@ export const useAgentsServiceListAgentsSuspense = <
         before,
         identifierKeys,
         identityId,
+        includeRelationships,
         limit,
         matchAllTags,
         name,
@@ -472,6 +478,7 @@ export const useAgentsServiceListAgentsSuspense = <
         before,
         identifierKeys,
         identityId,
+        includeRelationships,
         limit,
         matchAllTags,
         name,

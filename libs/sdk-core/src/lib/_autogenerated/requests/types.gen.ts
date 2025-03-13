@@ -3380,7 +3380,7 @@ export type ListAgentsData = {
    */
   after?: string | null;
   /**
-   * Search agents by base template id
+   * Search agents by base template ID
    */
   baseTemplateId?: string | null;
   /**
@@ -3392,15 +3392,19 @@ export type ListAgentsData = {
    */
   identifierKeys?: Array<string> | null;
   /**
-   * Search agents by identifier id
+   * Search agents by identity ID
    */
   identityId?: string | null;
+  /**
+   * Specify which relational fields (e.g., 'tools', 'sources', 'memory') to include in the response. If not provided, all relationships are loaded by default. Using this can optimize performance by reducing unnecessary joins.
+   */
+  includeRelationships?: Array<string> | null;
   /**
    * Limit for pagination
    */
   limit?: number | null;
   /**
-   * If True, only returns agents that match ALL given tags. Otherwise, return agents that have ANY of the passed in tags.
+   * If True, only returns agents that match ALL given tags. Otherwise, return agents that have ANY of the passed-in tags.
    */
   matchAllTags?: boolean;
   /**
@@ -3408,7 +3412,7 @@ export type ListAgentsData = {
    */
   name?: string | null;
   /**
-   * Search agents by project id
+   * Search agents by project ID
    */
   projectId?: string | null;
   /**
@@ -3420,7 +3424,7 @@ export type ListAgentsData = {
    */
   tags?: Array<string> | null;
   /**
-   * Search agents by template id
+   * Search agents by template ID
    */
   templateId?: string | null;
   userId?: string | null;

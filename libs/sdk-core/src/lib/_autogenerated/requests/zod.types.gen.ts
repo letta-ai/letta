@@ -4505,6 +4505,13 @@ export const get_List_agents = {
           z.array(z.union([z.array(z.string()), z.null()])),
         ])
         .optional(),
+      include_relationships: z
+        .union([
+          z.array(z.string()),
+          z.null(),
+          z.array(z.union([z.array(z.string()), z.null()])),
+        ])
+        .optional(),
     }),
     header: z.object({
       user_id: z

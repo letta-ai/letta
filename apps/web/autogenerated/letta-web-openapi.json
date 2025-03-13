@@ -411,6 +411,45 @@
               ],
               "nullable": true
             }
+          },
+          {
+            "name": "include_relationships",
+            "in": "query",
+            "schema": {
+              "oneOf": [
+                {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                {
+                  "type": "string",
+                  "format": "null",
+                  "nullable": true
+                },
+                {
+                  "type": "array",
+                  "items": {
+                    "oneOf": [
+                      {
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        }
+                      },
+                      {
+                        "type": "string",
+                        "format": "null",
+                        "nullable": true
+                      }
+                    ],
+                    "nullable": true
+                  }
+                }
+              ],
+              "nullable": true
+            }
           }
         ],
         "operationId": "agents.listAgents",

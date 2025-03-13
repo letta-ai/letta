@@ -1105,7 +1105,7 @@
       "get": {
         "tags": ["agents"],
         "summary": "List Agents",
-        "description": "List all agents associated with a given user.\nThis endpoint retrieves a list of all agents and their configurations associated with the specified user ID.",
+        "description": "List all agents associated with a given user.\n\nThis endpoint retrieves a list of all agents and their configurations\nassociated with the specified user ID.",
         "operationId": "list_agents",
         "parameters": [
           {
@@ -1153,11 +1153,11 @@
             "required": false,
             "schema": {
               "type": "boolean",
-              "description": "If True, only returns agents that match ALL given tags. Otherwise, return agents that have ANY of the passed in tags.",
+              "description": "If True, only returns agents that match ALL given tags. Otherwise, return agents that have ANY of the passed-in tags.",
               "default": false,
               "title": "Match All Tags"
             },
-            "description": "If True, only returns agents that match ALL given tags. Otherwise, return agents that have ANY of the passed in tags."
+            "description": "If True, only returns agents that match ALL given tags. Otherwise, return agents that have ANY of the passed-in tags."
           },
           {
             "name": "before",
@@ -1209,6 +1209,7 @@
                 }
               ],
               "description": "Limit for pagination",
+              "default": 50,
               "title": "Limit"
             },
             "description": "Limit for pagination"
@@ -1244,10 +1245,10 @@
                   "type": "null"
                 }
               ],
-              "description": "Search agents by project id",
+              "description": "Search agents by project ID",
               "title": "Project Id"
             },
-            "description": "Search agents by project id"
+            "description": "Search agents by project ID"
           },
           {
             "name": "template_id",
@@ -1262,10 +1263,10 @@
                   "type": "null"
                 }
               ],
-              "description": "Search agents by template id",
+              "description": "Search agents by template ID",
               "title": "Template Id"
             },
-            "description": "Search agents by template id"
+            "description": "Search agents by template ID"
           },
           {
             "name": "base_template_id",
@@ -1280,10 +1281,10 @@
                   "type": "null"
                 }
               ],
-              "description": "Search agents by base template id",
+              "description": "Search agents by base template ID",
               "title": "Base Template Id"
             },
-            "description": "Search agents by base template id"
+            "description": "Search agents by base template ID"
           },
           {
             "name": "identity_id",
@@ -1298,10 +1299,10 @@
                   "type": "null"
                 }
               ],
-              "description": "Search agents by identifier id",
+              "description": "Search agents by identity ID",
               "title": "Identity Id"
             },
-            "description": "Search agents by identifier id"
+            "description": "Search agents by identity ID"
           },
           {
             "name": "identifier_keys",
@@ -1323,6 +1324,27 @@
               "title": "Identifier Keys"
             },
             "description": "Search agents by identifier keys"
+          },
+          {
+            "name": "include_relationships",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Specify which relational fields (e.g., 'tools', 'sources', 'memory') to include in the response. If not provided, all relationships are loaded by default. Using this can optimize performance by reducing unnecessary joins.",
+              "title": "Include Relationships"
+            },
+            "description": "Specify which relational fields (e.g., 'tools', 'sources', 'memory') to include in the response. If not provided, all relationships are loaded by default. Using this can optimize performance by reducing unnecessary joins."
           }
         ],
         "responses": {

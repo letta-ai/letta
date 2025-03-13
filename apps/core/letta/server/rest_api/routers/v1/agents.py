@@ -35,59 +35,61 @@ router = APIRouter(prefix="/agents", tags=["agents"])
 logger = get_logger(__name__)
 
 
-# TODO: This should be paginated
 @router.get("/", response_model=List[AgentState], operation_id="list_agents")
 def list_agents(
     name: Optional[str] = Query(None, description="Name of the agent"),
     tags: Optional[List[str]] = Query(None, description="List of tags to filter agents by"),
     match_all_tags: bool = Query(
         False,
-        description="If True, only returns agents that match ALL given tags. Otherwise, return agents that have ANY of the passed in tags.",
+        description="If True, only returns agents that match ALL given tags. Otherwise, return agents that have ANY of the passed-in tags.",
     ),
-    server: "SyncServer" = Depends(get_letta_server),
+    server: SyncServer = Depends(get_letta_server),
     actor_id: Optional[str] = Header(None, alias="user_id"),
     before: Optional[str] = Query(None, description="Cursor for pagination"),
     after: Optional[str] = Query(None, description="Cursor for pagination"),
-    limit: Optional[int] = Query(None, description="Limit for pagination"),
+    limit: Optional[int] = Query(50, description="Limit for pagination"),
     query_text: Optional[str] = Query(None, description="Search agents by name"),
-    project_id: Optional[str] = Query(None, description="Search agents by project id"),
-    template_id: Optional[str] = Query(None, description="Search agents by template id"),
-    base_template_id: Optional[str] = Query(None, description="Search agents by base template id"),
-    identity_id: Optional[str] = Query(None, description="Search agents by identifier id"),
+    project_id: Optional[str] = Query(None, description="Search agents by project ID"),
+    template_id: Optional[str] = Query(None, description="Search agents by template ID"),
+    base_template_id: Optional[str] = Query(None, description="Search agents by base template ID"),
+    identity_id: Optional[str] = Query(None, description="Search agents by identity ID"),
     identifier_keys: Optional[List[str]] = Query(None, description="Search agents by identifier keys"),
+    include_relationships: Optional[List[str]] = Query(
+        None,
+        description=(
+            "Specify which relational fields (e.g., 'tools', 'sources', 'memory') to include in the response. "
+            "If not provided, all relationships are loaded by default. "
+            "Using this can optimize performance by reducing unnecessary joins."
+        ),
+    ),
 ):
     """
     List all agents associated with a given user.
-    This endpoint retrieves a list of all agents and their configurations associated with the specified user ID.
+
+    This endpoint retrieves a list of all agents and their configurations
+    associated with the specified user ID.
     """
+
+    # Retrieve the actor (user) details
     actor = server.user_manager.get_user_or_default(user_id=actor_id)
 
-    # Use dictionary comprehension to build kwargs dynamically
-    kwargs = {
-        key: value
-        for key, value in {
-            "name": name,
-            "project_id": project_id,
-            "template_id": template_id,
-            "base_template_id": base_template_id,
-        }.items()
-        if value is not None
-    }
-
-    # Call list_agents with the dynamic kwargs
-    agents = server.agent_manager.list_agents(
+    # Call list_agents directly without unnecessary dict handling
+    return server.agent_manager.list_agents(
         actor=actor,
+        name=name,
         before=before,
         after=after,
         limit=limit,
         query_text=query_text,
         tags=tags,
         match_all_tags=match_all_tags,
-        identifier_keys=identifier_keys,
+        project_id=project_id,
+        template_id=template_id,
+        base_template_id=base_template_id,
         identity_id=identity_id,
-        **kwargs,
+        identifier_keys=identifier_keys,
+        include_relationships=include_relationships,
     )
-    return agents
 
 
 @router.get("/{agent_id}/download", operation_id="download_agent_serialized")
