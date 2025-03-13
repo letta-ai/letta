@@ -2822,13 +2822,13 @@ pytest = ["pytest (>=7.0.0)", "rich (>=13.9.4,<14.0.0)"]
 
 [[package]]
 name = "letta-client"
-version = "0.1.65"
+version = "0.1.66"
 description = ""
 optional = false
 python-versions = "<4.0,>=3.8"
 files = [
-    {file = "letta_client-0.1.65-py3-none-any.whl", hash = "sha256:e7853d3742991e61b74d540ce7ad237528d860f1d63d1fd7a1bf5d237844d2ee"},
-    {file = "letta_client-0.1.65.tar.gz", hash = "sha256:5f83492bd84f68a3d9f816b5f840882d2cf39af5bb5aa2386079efec2fef51bd"},
+    {file = "letta_client-0.1.66-py3-none-any.whl", hash = "sha256:9f18f0161f5eec83ad4c7f02fd91dea31e97e3b688c29ae6116df1b252b892c6"},
+    {file = "letta_client-0.1.66.tar.gz", hash = "sha256:589f2fc88776e60bbeeecf14de9dd9a938216b2225c1984f486aec9015b41896"},
 ]
 
 [package.dependencies]
@@ -7032,11 +7032,11 @@ cffi = {version = ">=1.11", markers = "platform_python_implementation == \"PyPy\
 cffi = ["cffi (>=1.11)"]
 
 [extras]
-all = ["autoflake", "black", "datamodel-code-generator", "datasets", "docker", "fastapi", "isort", "langchain", "langchain-community", "locust", "pexpect", "pg8000", "pgvector", "pre-commit", "psycopg2", "psycopg2-binary", "pyright", "pytest-asyncio", "pytest-order", "uvicorn", "wikipedia"]
+all = ["autoflake", "black", "datamodel-code-generator", "docker", "fastapi", "isort", "langchain", "langchain-community", "locust", "pexpect", "pg8000", "pgvector", "pre-commit", "psycopg2", "psycopg2-binary", "pyright", "pytest-asyncio", "pytest-order", "uvicorn", "wikipedia"]
 bedrock = ["boto3"]
 cloud-tool-sandbox = ["e2b-code-interpreter"]
-desktop = ["datamodel-code-generator", "datasets", "docker", "fastapi", "langchain", "langchain-community", "locust", "pg8000", "pgvector", "psycopg2", "psycopg2-binary", "pyright", "uvicorn", "wikipedia"]
-dev = ["autoflake", "black", "datasets", "isort", "locust", "pexpect", "pre-commit", "pyright", "pytest-asyncio", "pytest-order"]
+desktop = ["datamodel-code-generator", "docker", "fastapi", "langchain", "langchain-community", "locust", "pg8000", "pgvector", "psycopg2", "psycopg2-binary", "pyright", "uvicorn", "wikipedia"]
+dev = ["autoflake", "black", "isort", "locust", "pexpect", "pre-commit", "pyright", "pytest-asyncio", "pytest-order"]
 external-tools = ["docker", "langchain", "langchain-community", "wikipedia"]
 google = ["google-genai"]
 postgres = ["pg8000", "pgvector", "psycopg2", "psycopg2-binary"]
@@ -7047,4 +7047,4 @@ tests = ["wikipedia"]
 [metadata]
 lock-version = "2.0"
 python-versions = "<3.14,>=3.10"
-content-hash = "0c1b4dfec2397a4a8dc1c3c76c5b7a1a3691c778333d8379dae7722d28ae9ced"
+content-hash = "21a4534904aa25a7879ba34eff7d3a10d2601ac9af821649217b60df0d8a404d"

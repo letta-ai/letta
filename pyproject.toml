@@ -93,7 +93,7 @@ mcp = "^1.3.0"
 
 [tool.poetry.extras]
 postgres = ["pgvector", "pg8000", "psycopg2-binary", "psycopg2"]
-dev = ["pytest", "pytest-asyncio", "pexpect", "black", "pre-commit", "datasets", "pyright", "pytest-order", "autoflake", "isort", "locust"]
+dev = ["pytest", "pytest-asyncio", "pexpect", "black", "pre-commit", "pyright", "pytest-order", "autoflake", "isort", "locust"]
 server = ["websockets", "fastapi", "uvicorn"]
 qdrant = ["qdrant-client"]
 cloud-tool-sandbox = ["e2b-code-interpreter"]
@@ -101,8 +101,8 @@ external-tools = ["docker", "langchain", "wikipedia", "langchain-community"]
 tests = ["wikipedia"]
 bedrock = ["boto3"]
 google = ["google-genai"]
-desktop = ["pgvector", "pg8000", "psycopg2-binary", "psycopg2", "datasets", "pyright", "websockets", "fastapi", "uvicorn", "docker", "langchain", "wikipedia", "langchain-community", "locust", "datamodel-code-generator"]
-all = ["pgvector", "pg8000", "psycopg2-binary", "psycopg2", "pytest", "pytest-asyncio", "pexpect", "black", "pre-commit", "datasets", "pyright", "pytest-order", "autoflake", "isort", "websockets", "fastapi", "uvicorn", "docker", "langchain", "wikipedia", "langchain-community", "locust", "datamodel-code-generator"]
+desktop = ["pgvector", "pg8000", "psycopg2-binary", "psycopg2", "pyright", "websockets", "fastapi", "uvicorn", "docker", "langchain", "wikipedia", "langchain-community", "locust", "datamodel-code-generator"]
+all = ["pgvector", "pg8000", "psycopg2-binary", "psycopg2", "pytest", "pytest-asyncio", "pexpect", "black", "pre-commit", "pyright", "pytest-order", "autoflake", "isort", "websockets", "fastapi", "uvicorn", "docker", "langchain", "wikipedia", "langchain-community", "locust", "datamodel-code-generator"]
 
 [tool.poetry.group.dev.dependencies]
 black = "^24.4.2"
