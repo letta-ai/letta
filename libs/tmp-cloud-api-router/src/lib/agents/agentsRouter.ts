@@ -603,6 +603,7 @@ async function searchDeployedAgents(
       limit: limit + 1,
       projectId: project_id,
       after,
+      includeRelationships: ['tags'],
     },
     {
       user_id: getContextDataHack(req, context).lettaAgentsUserId,
