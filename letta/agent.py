@@ -95,6 +95,7 @@ class Agent(BaseAgent):
         first_message_verify_mono: bool = True,  # TODO move to config?
         # MCP sessions, state held in-memory in the server
         mcp_clients: Optional[Dict[str, BaseMCPClient]] = None,
+        save_last_response: bool = False,
     ):
         assert isinstance(agent_state.memory, Memory), f"Memory object is not of type Memory: {type(agent_state.memory)}"
         # Hold a copy of the state that was used to init the agent
@@ -148,6 +149,10 @@ class Agent(BaseAgent):
 
         # Load last function response from message history
         self.last_function_response = self.load_last_function_response()
+
+        # Save last responses in memory
+        self.save_last_response = save_last_response
+        self.last_response_messages = []
 
         # Logger that the Agent specifically can use, will also report the agent_state ID with the logs
         self.logger = get_logger(agent_state.id)
@@ -926,6 +931,9 @@ class Agent(BaseAgent):
             else:
                 all_new_messages = all_response_messages
 
+            if self.save_last_response:
+                self.last_response_messages = all_response_messages
+
             # Check the memory pressure and potentially issue a memory pressure warning
             current_total_tokens = response.usage.total_tokens
             active_memory_warning = False
@@ -1052,6 +1060,7 @@ class Agent(BaseAgent):
 
             else:
                 logger.error(f"step() failed with an unrecognized exception: '{str(e)}'")
+                traceback.print_exc()
                 raise e
 
     def step_user_message(self, user_message_str: str, **kwargs) -> AgentStepResponse:

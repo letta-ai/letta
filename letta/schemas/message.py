@@ -129,6 +129,7 @@ class Message(BaseMessage):
     step_id: Optional[str] = Field(None, description="The id of the step that this message was created in.")
     otid: Optional[str] = Field(None, description="The offline threading id associated with this message")
     tool_returns: Optional[List[ToolReturn]] = Field(None, description="Tool execution return information for prior tool calls")
+    group_id: Optional[str] = Field(None, description="The multi-agent group that the message was sent in")
 
     # This overrides the optional base orm schema, created_at MUST exist on all messages objects
     created_at: datetime = Field(default_factory=get_utc_time, description="The timestamp when the object was created.")

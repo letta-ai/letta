@@ -128,11 +128,25 @@ class Agent(SqlalchemyBase, OrganizationMixin):
         back_populates="agents",
         passive_deletes=True,
     )
+    groups: Mapped[List["Group"]] = relationship(
+        "Group",
+        secondary="groups_agents",
+        lazy="selectin",
+        back_populates="agents",
+        passive_deletes=True,
+    )
+    multi_agent_group: Mapped["Group"] = relationship(
+        "Group",
+        lazy="joined",
+        viewonly=True,
+        back_populates="manager_agent",
+    )
 
     def to_pydantic(self) -> PydanticAgentState:
         """converts to the basic pydantic model counterpart"""
         # add default rule for having send_message be a terminal tool
         tool_rules = self.tool_rules
+        multi_agent_group = self.multi_agent_group
         state = {
             "id": self.id,
             "organization_id": self.organization_id,
@@ -159,6 +173,7 @@ class Agent(SqlalchemyBase, OrganizationMixin):
             "base_template_id": self.base_template_id,
             "identity_ids": [identity.id for identity in self.identities],
             "message_buffer_autoclear": self.message_buffer_autoclear,
+            "multi_agent_group": multi_agent_group,
         }
 
         return self.__pydantic_model__(**state)

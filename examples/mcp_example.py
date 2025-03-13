@@ -1,5 +1,6 @@
-from letta_client import Letta
 from pprint import pprint
+
+from letta_client import Letta
 
 client = Letta(base_url="http://localhost:8283")
 

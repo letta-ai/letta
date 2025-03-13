@@ -399,7 +399,7 @@ class AgentManager:
                 # Ensures agents match at least one tag in match_some
                 query = query.join(AgentsTags).where(AgentsTags.tag.in_(match_some))
 
-            query = query.group_by(AgentModel.id).limit(limit)
+            query = query.distinct(AgentModel.id).order_by(AgentModel.id).limit(limit)
 
             return list(session.execute(query).scalars())
 
@@ -434,6 +434,7 @@ class AgentManager:
         with self.session_maker() as session:
             # Retrieve the agent
             agent = AgentModel.read(db_session=session, identifier=agent_id, actor=actor)
+            # TODO check if it is managing a group
             agent.hard_delete(session)
 
     @enforce_types
