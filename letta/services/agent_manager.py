@@ -18,6 +18,7 @@ from letta.orm import Tool as ToolModel
 from letta.orm.enums import ToolType
 from letta.orm.errors import NoResultFound
 from letta.orm.sandbox_config import AgentEnvironmentVariable as AgentEnvironmentVariableModel
+from letta.orm.sqlalchemy_base import AccessType
 from letta.orm.sqlite_functions import adapt_array
 from letta.schemas.agent import AgentState as PydanticAgentState
 from letta.schemas.agent import AgentType, CreateAgent, UpdateAgent
@@ -39,6 +40,10 @@ from letta.serialize_schemas import SerializedAgentSchema
 from letta.serialize_schemas.tool import SerializedToolSchema
 from letta.services.block_manager import BlockManager
 from letta.services.helpers.agent_manager_helper import (
+    _apply_filters,
+    _apply_identity_filters,
+    _apply_pagination,
+    _apply_tag_filter,
     _process_relationship,
     _process_tags,
     check_supports_structured_output,
@@ -326,39 +331,60 @@ class AgentManager:
             # Convert to PydanticAgentState and return
             return agent.to_pydantic()
 
-    @enforce_types
+    # TODO: Make this general and think about how to roll this into sqlalchemybase
     def list_agents(
         self,
         actor: PydanticUser,
+        name: Optional[str] = None,
+        tags: Optional[List[str]] = None,
+        match_all_tags: bool = False,
         before: Optional[str] = None,
         after: Optional[str] = None,
         limit: Optional[int] = 50,
-        tags: Optional[List[str]] = None,
-        match_all_tags: bool = False,
         query_text: Optional[str] = None,
-        identifier_keys: Optional[List[str]] = None,
+        project_id: Optional[str] = None,
+        template_id: Optional[str] = None,
+        base_template_id: Optional[str] = None,
         identity_id: Optional[str] = None,
-        **kwargs,
+        identifier_keys: Optional[List[str]] = None,
+        include_relationships: Optional[List[str]] = None,
     ) -> List[PydanticAgentState]:
         """
-        List agents that have the specified tags.
+        Retrieves agents with optimized filtering and optional field selection.
+
+        Args:
+            actor: The User requesting the list
+            name (Optional[str]): Filter by agent name.
+            tags (Optional[List[str]]): Filter agents by tags.
+            match_all_tags (bool): If True, only return agents that match ALL given tags.
+            before (Optional[str]): Cursor for pagination.
+            after (Optional[str]): Cursor for pagination.
+            limit (Optional[int]): Maximum number of agents to return.
+            query_text (Optional[str]): Search agents by name.
+            project_id (Optional[str]): Filter by project ID.
+            template_id (Optional[str]): Filter by template ID.
+            base_template_id (Optional[str]): Filter by base template ID.
+            identity_id (Optional[str]): Filter by identifier ID.
+            identifier_keys (Optional[List[str]]): Search agents by identifier keys.
+            include_relationships (Optional[List[str]]): List of fields to load for performance optimization.
+
+        Returns:
+            List[PydanticAgentState]: The filtered list of matching agents.
         """
         with self.session_maker() as session:
-            agents = AgentModel.list(
-                db_session=session,
-                before=before,
-                after=after,
-                limit=limit,
-                tags=tags,
-                match_all_tags=match_all_tags,
-                organization_id=actor.organization_id if actor else None,
-                query_text=query_text,
-                identifier_keys=identifier_keys,
-                identity_id=identity_id,
-                **kwargs,
-            )
+            query = select(AgentModel).distinct(AgentModel.created_at, AgentModel.id)
+            query = AgentModel.apply_access_predicate(query, actor, ["read"], AccessType.ORGANIZATION)
 
-            return [agent.to_pydantic() for agent in agents]
+            # Apply filters
+            query = _apply_filters(query, name, query_text, project_id, template_id, base_template_id)
+            query = _apply_identity_filters(query, identity_id, identifier_keys)
+            query = _apply_tag_filter(query, tags, match_all_tags)
+            query = _apply_pagination(query, before, after, session)
+
+            query = query.limit(limit)
+
+            agents = session.execute(query).scalars().all()
+            return [agent.to_pydantic(include_relationships=include_relationships) for agent in agents]
 
     @enforce_types
     def list_agents_matching_tags(
