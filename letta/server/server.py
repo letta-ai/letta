@@ -335,13 +335,18 @@ class SyncServer(Server):
                 self.mcp_clients[server_name] = LocalMCPClient()
             else:
                 raise ValueError(f"Invalid MCP server config: {server_config}")
-            self.mcp_clients[server_name].connect_to_server(server_config)
+            try:
+                self.mcp_clients[server_name].connect_to_server(server_config)
+            except:
+                logger.exception(f"Failed to connect to MCP server: {server_name}")
+                raise
 
         # Print out the tools that are connected
         for server_name, client in self.mcp_clients.items():
-            logger.debug(f"Attempting to fetch tools from MCP server: {server_name}")
+            logger.info(f"Attempting to fetch tools from MCP server: {server_name}")
             mcp_tools = client.list_tools()
-            logger.debug(f"MCP tools connected:", mcp_tools)
+            logger.info(f"MCP tools connected: {", ".join([t.name for t in mcp_tools])}")
+            logger.debug(f"MCP tools: {"\n".join([str(t) for t in mcp_tools])}")
 
     def load_agent(self, agent_id: str, actor: User, interface: Union[AgentInterface, None] = None) -> Agent:
         """Updated method to load agents from persisted storage"""
