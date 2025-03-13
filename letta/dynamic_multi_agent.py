@@ -4,7 +4,7 @@ from letta.agent import Agent, AgentState
 from letta.interface import AgentInterface
 from letta.orm import User
 from letta.schemas.block import Block
-from letta.schemas.letta_message import TextContent
+from letta.schemas.letta_message_content import TextContent
 from letta.schemas.message import Message, MessageCreate
 from letta.schemas.openai.chat_completion_response import UsageStatistics
 from letta.schemas.usage import LettaUsageStatistics

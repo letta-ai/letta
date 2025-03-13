@@ -39,7 +39,8 @@ from letta.orm.enums import ToolType
 from letta.schemas.agent import AgentState, AgentStepResponse, UpdateAgent
 from letta.schemas.block import BlockUpdate
 from letta.schemas.embedding_config import EmbeddingConfig
-from letta.schemas.enums import MessageContentType, MessageRole
+from letta.schemas.enums import MessageRole
+from letta.schemas.letta_message_content import TextContent
 from letta.schemas.memory import ContextWindowOverview, Memory
 from letta.schemas.message import Message, ToolReturn
 from letta.schemas.openai.chat_completion_response import ChatCompletionResponse
@@ -165,7 +166,7 @@ class Agent(BaseAgent):
         in_context_messages = self.agent_manager.get_in_context_messages(agent_id=self.agent_state.id, actor=self.user)
         for i in range(len(in_context_messages) - 1, -1, -1):
             msg = in_context_messages[i]
-            if msg.role == MessageRole.tool and msg.content and len(msg.content) == 1 and msg.content[0].type == MessageContentType.text:
+            if msg.role == MessageRole.tool and msg.content and len(msg.content) == 1 and isinstance(msg.content[0], TextContent):
                 text_content = msg.content[0].text
                 try:
                     response_json = json.loads(text_content)
@@ -1210,7 +1211,7 @@ class Agent(BaseAgent):
             and in_context_messages[1].role == MessageRole.user
             and in_context_messages[1].content
             and len(in_context_messages[1].content) == 1
-            and in_context_messages[1].content[0].type == MessageContentType.text
+            and isinstance(in_context_messages[1].content[0], TextContent)
             # TODO remove hardcoding
             and "The following is a summary of the previous " in in_context_messages[1].content[0].text
         ):

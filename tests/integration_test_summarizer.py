@@ -13,8 +13,9 @@ from letta.errors import ContextWindowExceededError
 from letta.llm_api.helpers import calculate_summarizer_cutoff
 from letta.schemas.embedding_config import EmbeddingConfig
 from letta.schemas.enums import MessageRole
+from letta.schemas.letta_message_content import TextContent
 from letta.schemas.llm_config import LLMConfig
-from letta.schemas.message import Message, TextContent
+from letta.schemas.message import Message
 from letta.settings import summarizer_settings
 from letta.streaming_interface import StreamingRefreshCLIInterface
 from tests.helpers.endpoints_helper import EMBEDDING_CONFIG_PATH
