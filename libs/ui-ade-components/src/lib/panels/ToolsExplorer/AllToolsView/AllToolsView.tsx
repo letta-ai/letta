@@ -1,10 +1,9 @@
-import React from 'react';
+import React, { Fragment } from 'react';
 import { useTranslations } from '@letta-cloud/translations';
 import {
   Button,
+  ExploreIcon,
   HStack,
-  Link,
-  LoadingEmptyStatusComponent,
   PlusIcon,
   Typography,
   VStack,
@@ -20,10 +19,10 @@ import { LocalToolsView } from './LocalToolsView/LocalToolsView';
 import { ComposioToolsView } from './ComposioToolsView/ComposioToolsView';
 import {
   AllToolsViewStateProvider,
-  type ToolViewerCategory,
   useAllToolsViewState,
 } from './hooks/useAllToolsViewState/useAllToolsViewState';
 import { useToolCategoryDetails } from './hooks/useToolCategoryDetails/useToolCategoryDetails';
+import { ViewMCPServers } from './ViewMCPServers/ViewMCPServers';
 
 interface ToolCategoryButtonProps {
   label: string;
@@ -57,22 +56,30 @@ function ToolCategorySidebar() {
   const t = useTranslations('AllToolsView');
 
   return (
-    <VStack gap="medium" paddingY="xxsmall">
-      {Object.entries(categories).map(([category, details]) => {
-        return (
-          <>
-            <ToolCategoryButton
-              label={details.title}
-              isSelected={category === selectedCategory}
-              preIcon={details.icon}
-              onSelect={() => {
-                setCategory(category as ToolViewerCategory);
-              }}
-            />
-            {category === 'current' && <Hr />}
-          </>
-        );
-      })}
+    <VStack gap="medium" paddingX paddingBottom="xxsmall">
+      <HStack paddingTop="large" paddingBottom="small" align="center">
+        <ExploreIcon />
+        <Typography bold>{t('ToolCategorySidebar.title')}</Typography>
+      </HStack>
+      <Typography variant="body3" uppercase bold>
+        {t('ToolCategorySidebar.pythonTools')}
+      </Typography>
+      <ToolCategoryButton
+        label={categories.local.title}
+        isSelected={'local' === selectedCategory}
+        preIcon={categories.local.icon}
+        onSelect={() => {
+          setCategory('local');
+        }}
+      />
+      <ToolCategoryButton
+        label={categories.composio.title}
+        isSelected={'composio' === selectedCategory}
+        preIcon={categories.composio.icon}
+        onSelect={() => {
+          setCategory('composio');
+        }}
+      />
       <Button
         onClick={() => {
           startCreateTool();
@@ -83,6 +90,20 @@ function ToolCategorySidebar() {
         label={t('ToolCategorySidebar.create')}
         color="primary"
       />
+      <Hr />
+      <HStack>
+        <Typography variant="body3" uppercase bold>
+          {t('ToolCategorySidebar.mcpTools')}
+        </Typography>
+      </HStack>
+      <ToolCategoryButton
+        label={categories.mcp.title}
+        isSelected={'mcp' === selectedCategory}
+        preIcon={categories.mcp.icon}
+        onSelect={() => {
+          setCategory('mcp');
+        }}
+      />
     </VStack>
   );
 }
@@ -90,8 +111,6 @@ function ToolCategorySidebar() {
 function ToolsViewerContent() {
   const { category } = useAllToolsViewState();
   const { currentTool } = useToolsExplorerState();
-
-  const t = useTranslations('AllToolsView');
 
   if (isCurrentToolInViewOrEdit(currentTool) && currentTool?.data) {
     return (
@@ -110,18 +129,7 @@ function ToolsViewerContent() {
   }
 
   if (category === 'mcp') {
-    return (
-      <LoadingEmptyStatusComponent
-        emptyMessage={t.rich('ToolsViewerContent.mcpSoon', {
-          link: (chunks) => (
-            <Link href="https://discord.gg/letta" target="_blank">
-              {chunks}
-            </Link>
-          ),
-        })}
-        isLoading={false}
-      />
-    );
+    return <ViewMCPServers />;
   }
 
   if (category === 'composio') {
@@ -132,8 +140,6 @@ function ToolsViewerContent() {
 }
 
 export function AllToolsView() {
-  const t = useTranslations('AllToolsView');
-
   return (
     <AllToolsViewStateProvider>
       <HStack fullHeight gap={false}>
@@ -143,14 +149,7 @@ export function AllToolsView() {
           className="min-w-[225px] visibleSidebar:flex hidden"
           borderRight
         >
-          <HStack padding="medium" borderBottom>
-            <Typography bold uppercase variant="body3">
-              {t('title')}
-            </Typography>
-          </HStack>
-          <VStack overflowY="auto" paddingX="small" gap="small">
-            <ToolCategorySidebar />
-          </VStack>
+          <ToolCategorySidebar />
         </VStack>
         <VStack gap={false} fullHeight fullWidth>
           <ToolsViewerContent />

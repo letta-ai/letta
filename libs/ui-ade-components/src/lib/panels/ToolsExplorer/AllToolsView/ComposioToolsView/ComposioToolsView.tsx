@@ -3,7 +3,9 @@ import { useTranslations } from '@letta-cloud/translations';
 import {
   Breadcrumb,
   Button,
+  ComposioLogoMarkDynamic,
   HStack,
+  Link,
   LoadingEmptyStatusComponent,
   NiceGridDisplay,
   Typography,
@@ -233,11 +235,40 @@ const composioSelectedApp = atom<ComposioAppType | null>(null);
 
 export function ComposioToolsView() {
   const [selectedApp, setSelectedApp] = useAtom(composioSelectedApp);
+  const t = useTranslations('ComposioToolsView');
 
   if (!selectedApp) {
     return (
       <VStack fullHeight overflow="hidden" fullWidth gap={false}>
         <AllToolsViewHeader />
+        <VStack gap="large" paddingX="xlarge" paddingBottom="xlarge">
+          <HStack align="center" justify="spaceBetween">
+            <HStack align="end">
+              <ComposioLogoMarkDynamic size="xxlarge" />
+              <Typography variant="heading4">Composio</Typography>
+            </HStack>
+            <Button
+              href="https://composio.dev/"
+              target="_blank"
+              color="tertiary"
+              label={t('visitWebsite')}
+            />
+          </HStack>
+          <HStack width="contained">
+            <Typography>
+              {t.rich('description', {
+                link: (chunks) => (
+                  <Link
+                    href="https://docs.letta.com/guides/mcp/setup"
+                    target="_blank"
+                  >
+                    {chunks}
+                  </Link>
+                ),
+              })}
+            </Typography>
+          </HStack>
+        </VStack>
         <AppsViewer onSelectApp={setSelectedApp} />
       </VStack>
     );

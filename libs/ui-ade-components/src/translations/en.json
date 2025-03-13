@@ -700,6 +700,8 @@
     "placeholder": "Search tools"
   },
   "ComposioToolsView": {
+    "visitWebsite": "Visit composio.dev",
+    "description": "Composio is an tool integration platform that lets you to easily connect your agent to a wide range of tools and services. Below lists all the products that Composio integrates with. To note, Composio is not open-source nor a part of Letta.",
     "loadingMessage": "Loading Composio tools...",
     "openApp": "Discover actions",
     "showing": "Showing {count} of {total} tools",
@@ -711,13 +713,34 @@
     "emptyMessage": "This app has no actions, please contact Composio support for more information",
     "errorMessage": "There was an error loading Composio actions, please try again or contact support."
   },
+  "ViewMCPServers": {
+    "title": "Model Context Protocol Servers",
+    "description": "Below lists all the Model Context Protocol (MCP) servers that are connected to your letta instance. To learn more about the Model Context Protocol and how to connect them to Letta, visit the <link>documentation</link>.",
+    "MCPServerTable": {
+      "columns": {
+        "name": "Server name",
+        "type": "Type",
+        "details": "Connection details"
+      },
+      "types": {
+        "remote": "SSE",
+        "local": "stdio"
+      },
+      "noResults": "No MCP servers found",
+      "error": "There was an error loading your MCP servers, please try again or contact support."
+    }
+  },
   "AllToolsView": {
     "ToolCategorySidebar": {
+      "title": "Agent integrations",
       "current": "Current Agent Tools",
       "create": "Create custom tool",
       "local": "Local Tools",
       "composio": "Composio Tools",
-      "mcp": "MCP Servers"
+      "mcp": "All MCP Servers",
+      "pythonTools": "Code Tools",
+      "mcpTools": "MCP Servers",
+      "createMcp": "Add MCP Server"
     },
     "ToolsViewerContent": {
       "mcpSoon": "Coming soon, check our <link>discord</link> for more information"

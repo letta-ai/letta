@@ -15,7 +15,6 @@ import {
   Popover,
   VStack,
 } from '@letta-cloud/ui-component-library';
-import { Hr } from '@react-email/components';
 import { ToolAppHeader } from '../../ToolAppHeader/ToolAppHeader';
 
 interface ReturnToCategoryButtonProps {
@@ -68,6 +67,8 @@ function CategoryDropdown() {
   return (
     <Popover
       align="start"
+      triggerAsChild
+      className="shadow-lg w-[200px]"
       trigger={
         <Button
           label={currentCategory.title}
@@ -78,7 +79,7 @@ function CategoryDropdown() {
         />
       }
     >
-      <VStack gap="small">
+      <VStack color="background-grey" gap="small">
         {Object.entries(allCategoryDetails)
           .filter(([categoryKey]) => category !== categoryKey)
           .map(([c, details]) => {
@@ -87,6 +88,7 @@ function CategoryDropdown() {
                 <Button
                   fullWidth
                   align="left"
+                  size="small"
                   label={details.title}
                   color="tertiary"
                   preIcon={details.icon}
@@ -97,19 +99,17 @@ function CategoryDropdown() {
               </HStack>
             );
           })}
-        <Hr />
-        <HStack padding="small">
-          <Button
-            onClick={() => {
-              startCreateTool();
-            }}
-            fullWidth
-            size="small"
-            preIcon={<PlusIcon />}
-            label={t('ToolCategorySidebar.create')}
-            color="primary"
-          />
-        </HStack>
+        <Button
+          onClick={() => {
+            startCreateTool();
+          }}
+          fullWidth
+          align="left"
+          size="small"
+          preIcon={<PlusIcon />}
+          label={t('ToolCategorySidebar.create')}
+          color="primary"
+        />
       </VStack>
     </Popover>
   );

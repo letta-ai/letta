@@ -12,6 +12,7 @@ const badgeVariants = cva(
       size: {
         default: 'text-xs  h-[18px] max-h-[16px]',
         small: 'text-[0.625rem]  h-[16px] max-h-[16px] font-semibold',
+        large: 'text-sm h-[24px] max-h-[24px]',
       },
       border: {
         true: 'border',
