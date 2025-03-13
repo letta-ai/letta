@@ -1,187 +1,182 @@
 'use client';
 
 import {
-  Avatar,
+  BoxList,
+  Button,
+  ChevronRightIcon,
   DashboardPageLayout,
   DashboardPageSection,
   HStack,
-  LettaInvaderOutlineIcon,
-  NiceGridDisplay,
+  LettaInvaderIcon,
   PlusIcon,
   TemplateIcon,
   VStack,
 } from '@letta-cloud/ui-component-library';
 import React, { useMemo } from 'react';
 import { useCurrentProject } from '$web/client/hooks/useCurrentProject/useCurrentProject';
-import type { webApiContracts } from '$web/client';
 
 import { webApi, webApiQueryKeys } from '$web/client';
 import { useTranslations } from '@letta-cloud/translations';
-import { DashboardCard, Tutorials } from '$web/client/components';
+import { Tutorials } from '$web/client/components';
 import { useWelcomeText } from '$web/client/hooks/useWelcomeText/useWelcomeText';
 import { CreateNewTemplateDialog } from './_components/CreateNewTemplateDialog/CreateNewTemplateDialog';
-import type { ServerInferResponseBody } from '@ts-rest/core';
 import { useUserHasPermission } from '$web/client/hooks';
 import { ApplicationServices } from '@letta-cloud/service-rbac';
+import { useAgentsServiceListAgents } from '@letta-cloud/sdk-core';
+import { useDateFormatter } from '@letta-cloud/utils-client';
 
-interface AgentTemplatesListProps {
-  agents?: ServerInferResponseBody<
-    typeof webApiContracts.agentTemplates.listAgentTemplates,
-    200
-  >['agentTemplates'];
-}
+function RecentAgentsSection() {
+  const { slug, id } = useCurrentProject();
+  const { data: agents } = useAgentsServiceListAgents(
+    {
+      limit: 3,
+      projectId: id,
+    },
+    undefined,
+    {
+      retry: false,
+    },
+  );
 
-const RECENT_AGENTS_TO_DISPLAY = 3;
-
-function AgentTemplatesList(props: AgentTemplatesListProps) {
-  const { agents } = props;
+  const { formatDate } = useDateFormatter();
   const t = useTranslations('projects/(projectSlug)/page');
-  const { slug: projectSlug } = useCurrentProject();
-
-  if (!agents) {
-    return (
-      <NiceGridDisplay itemHeight="98px" itemWidth="318px">
-        {new Array(RECENT_AGENTS_TO_DISPLAY).fill(null).map((_u, index) => (
-          <DashboardCard title="" key={index} isSkeleton />
-        ))}
-      </NiceGridDisplay>
-    );
-  }
 
   return (
-    <NiceGridDisplay itemHeight="98px" itemWidth="318px">
-      {agents.map((agent) => (
-        <DashboardCard
-          href={`/projects/${projectSlug}/templates/${agent.name}`}
-          largeImage={
-            <Avatar size="xxlarge" name={agent.name.replace('-', ' ')} />
-          }
-          description={
-            typeof agent.agentState?.description === 'string'
-              ? agent.agentState.description
-              : t('agentTemplatesList.noDescription')
-          }
-          title={agent.name}
-          key={agent.id}
+    <BoxList
+      title={t('RecentAgentsSection.title')}
+      items={(agents || []).map((agent) => ({
+        title: agent.name,
+        description: t('RecentAgentsSection.createdAt', {
+          date: formatDate(agent.updated_at || ''),
+        }),
+        action: (
+          <Button
+            color="secondary"
+            label={t('RecentAgentsSection.viewAgent')}
+            size="small"
+          />
+        ),
+      }))}
+      loadingConfig={{
+        isLoading: !agents,
+        rowsToDisplay: 3,
+      }}
+      emptyConfig={{
+        icon: <LettaInvaderIcon />,
+        title: t('RecentAgentsSection.emptyState.title'),
+        description: t('RecentAgentsSection.emptyState.description'),
+        action: (
+          <Button
+            bold
+            disabled
+            label={t('RecentAgentsSection.noAgents')}
+            color="secondary"
+          />
+        ),
+      }}
+      bottomAction={
+        <Button
+          label={t('RecentAgentsSection.viewAllAgents')}
+          size="small"
+          color="tertiary"
+          href={`/projects/${slug}/agents`}
+          postIcon={<ChevronRightIcon />}
         />
-      ))}
-    </NiceGridDisplay>
+      }
+    />
   );
 }
 
-function AgentTemplatesSection() {
-  const { id: currentProjectId } = useCurrentProject();
+function RecentTemplatesSection() {
+  const { id: currentProjectId, slug } = useCurrentProject();
   const { data } = webApi.agentTemplates.listAgentTemplates.useQuery({
     queryKey: webApiQueryKeys.agentTemplates.listAgentTemplatesWithSearch({
       search: '',
       projectId: currentProjectId,
       includeAgentState: true,
-      limit: RECENT_AGENTS_TO_DISPLAY + 1,
+      limit: 3,
     }),
     queryData: {
       query: {
         projectId: currentProjectId,
         includeAgentState: true,
-        limit: RECENT_AGENTS_TO_DISPLAY + 1,
+        limit: 3,
       },
     },
   });
-
-  const t = useTranslations('projects/(projectSlug)/page');
-
-  const agentsList = useMemo(
-    () => data?.body.agentTemplates.slice(0, RECENT_AGENTS_TO_DISPLAY),
-    [data],
-  );
-
-  if (agentsList && agentsList.length === 0) {
-    return null;
-  }
-
-  return (
-    <>
-      <DashboardPageSection
-        title={t('agentTemplatesSection.title')}
-        description={t('agentTemplatesSection.subtitle')}
-      >
-        <HStack fullWidth>
-          <AgentTemplatesList agents={agentsList} />
-        </HStack>
-      </DashboardPageSection>
-    </>
-  );
-}
-
-function QuickActions() {
-  const t = useTranslations('projects/(projectSlug)/page');
-  const { slug: projectSlug } = useCurrentProject();
 
   const [canCRDTemplates] = useUserHasPermission(
     ApplicationServices.CREATE_UPDATE_DELETE_TEMPLATES,
   );
 
+  const t = useTranslations('projects/(projectSlug)/page');
+
+  const templatesList = useMemo(() => data?.body.agentTemplates || [], [data]);
+
   return (
-    <DashboardPageSection
-      title={t('QuickActions.title')}
-      description={t('QuickActions.subtitle')}
-    >
-      <NiceGridDisplay itemWidth="318px" itemHeight="98px">
-        <DashboardCard
-          href={`/projects/${projectSlug}/agents`}
-          largeImage={
-            <VStack
-              fullHeight
-              fullWidth
-              align="center"
-              justify="center"
-              color="background-grey"
-            >
-              <LettaInvaderOutlineIcon color="primary" size="xxlarge" />
-            </VStack>
-          }
-          title={t('QuickActions.monitorAgents.title')}
-          description={t('QuickActions.monitorAgents.description')}
-        />
-        <DashboardCard
-          href={`/projects/${projectSlug}/templates`}
-          largeImage={
-            <VStack
-              fullHeight
-              fullWidth
-              align="center"
-              justify="center"
-              color="background-grey"
-            >
-              <TemplateIcon color="primary" size="xxlarge" />
-            </VStack>
-          }
-          title={t('QuickActions.viewTemplates.title')}
-          description={t('QuickActions.viewTemplates.description')}
-        />
-        {canCRDTemplates && (
+    <BoxList
+      title={t('RecentTemplatesSection.title')}
+      items={templatesList.map((agent) => ({
+        title: agent.name,
+        description:
+          typeof agent.agentState?.description === 'string'
+            ? agent.agentState?.description
+            : t('RecentTemplatesSection.noDescription'),
+        action: (
+          <Button
+            color="secondary"
+            label={t('RecentTemplatesSection.viewTemplate')}
+            size="small"
+          />
+        ),
+      }))}
+      loadingConfig={{
+        isLoading: !data?.body,
+        rowsToDisplay: 3,
+      }}
+      emptyConfig={{
+        icon: <TemplateIcon />,
+        title: t('RecentTemplatesSection.emptyState.title'),
+        description: canCRDTemplates
+          ? t('RecentTemplatesSection.emptyState.description')
+          : t('RecentTemplatesSection.emptyState.noCrdDescription'),
+        action: canCRDTemplates && (
           <CreateNewTemplateDialog
             trigger={
-              <DashboardCard
-                testId="create-agent-template-button"
-                largeImage={
-                  <VStack
-                    fullHeight
-                    fullWidth
-                    align="center"
-                    justify="center"
-                    color="background-grey"
-                  >
-                    <PlusIcon color="primary" size="xxlarge" />
-                  </VStack>
-                }
-                title={t('QuickActions.createTemplate.title')}
-                description={t('QuickActions.createTemplate.description')}
+              <Button
+                data-testid="create-agent-template-button"
+                label={t('RecentTemplatesSection.createTemplate')}
+                bold
               />
             }
           />
-        )}
-      </NiceGridDisplay>
-    </DashboardPageSection>
+        ),
+      }}
+      topRightAction={
+        canCRDTemplates && (
+          <CreateNewTemplateDialog
+            trigger={
+              <Button
+                data-testid="create-agent-template-button"
+                label={t('RecentTemplatesSection.createTemplate')}
+                size="small"
+                hideLabel
+                preIcon={<PlusIcon />}
+              />
+            }
+          />
+        )
+      }
+      bottomAction={
+        <Button
+          label={t('RecentTemplatesSection.viewAllTemplates')}
+          size="small"
+          color="tertiary"
+          href={`/projects/${slug}/templates`}
+          postIcon={<ChevronRightIcon />}
+        />
+      }
+    />
   );
 }
 
@@ -198,9 +193,19 @@ function ProjectPage() {
       title={welcomeText || ''}
       subtitle={t('subtitle', { name })}
     >
-      <AgentTemplatesSection />
-      <QuickActions />
-      <Tutorials />
+      <DashboardPageSection>
+        <HStack>
+          <VStack collapseWidth flex>
+            <RecentTemplatesSection />
+          </VStack>
+          <VStack collapseWidth flex>
+            <RecentAgentsSection />
+          </VStack>
+        </HStack>
+        <HStack border padding="medium">
+          <Tutorials />
+        </HStack>
+      </DashboardPageSection>
     </DashboardPageLayout>
   );
 }

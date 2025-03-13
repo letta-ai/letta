@@ -188,3 +188,5 @@ export * from './lib/onboarding/OnboardingSteps/OnboardingSteps';
 export * from './lib/onboarding/OnboardingMiniMenu/OnboardingMiniMenu';
 
 export * from './lib/reusable/CrossedOut/CrossedOut';
+
+export * from './lib/reusable/BoxList/BoxList';
