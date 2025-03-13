@@ -21,11 +21,13 @@ const nonCloudWhitelist = [
   new RegExp('/api/feature-flags(.+)?'),
   new RegExp('/api/chat(.+)?'),
   new RegExp('/api/cloud-access-code'),
+  new RegExp('/api/composio(.+)?'),
 ];
 
 const publicApis = [
   new RegExp('/api/tool-metadata-summary(.+)?'),
   new RegExp('/api/tool-metadata(.+)?'),
+  new RegExp('/api/composio(.+)?'),
   new RegExp('/api/tool-group-metadata(.+)?'),
   new RegExp('/api/invites/(.+)?'),
   new RegExp('/api/user/new(.+)?'),
@@ -36,7 +38,7 @@ const publicApis = [
 const handler = createNextHandler(contracts, router, {
   basePath: '/api',
   jsonQuery: true,
-  responseValidation: true,
+  responseValidation: false,
   cors: {
     allowMethods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     exposeHeaders: [],

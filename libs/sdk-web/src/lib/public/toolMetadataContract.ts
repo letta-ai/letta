@@ -21,7 +21,7 @@ export const ToolMetadataPreview = z.object({
   provider: z.string(),
   providerId: z.string().optional(),
   configuration: ProviderSchemaConfiguration.nullable().optional(),
-  imageUrl: z.string().nullable(),
+  imageUrl: z.string().nullable().optional(),
 });
 
 export type ToolMetadataPreviewType = z.infer<typeof ToolMetadataPreview>;

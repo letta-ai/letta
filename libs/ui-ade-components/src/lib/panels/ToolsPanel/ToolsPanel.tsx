@@ -1,6 +1,6 @@
 'use client';
 import React, { useCallback, useMemo, useState } from 'react';
-import { HStack } from '@letta-cloud/ui-component-library';
+import { ExploreIcon, HStack } from '@letta-cloud/ui-component-library';
 import type { FileTreeContentsType } from '@letta-cloud/ui-component-library';
 import { VStack } from '@letta-cloud/ui-component-library';
 import { brandKeyToLogo, isBrandKey } from '@letta-cloud/ui-component-library';
@@ -9,7 +9,6 @@ import {
   Dialog,
   FileTree,
   Logo,
-  PlusIcon,
   ToolsIcon,
 } from '@letta-cloud/ui-component-library';
 import {
@@ -25,14 +24,12 @@ import { UseAgentsServiceRetrieveAgentKeyFn } from '@letta-cloud/sdk-core';
 
 import { useQueryClient } from '@tanstack/react-query';
 import { useTranslations } from '@letta-cloud/translations';
-import {
-  findProviderFromTags,
-  ToolsExplorer,
-  useToolsExplorerState,
-} from '../ToolsExplorer/ToolsExplorer';
+import { ToolsExplorer } from '../ToolsExplorer/ToolsExplorer';
 import { ToolRulesEditor } from '../ToolRules/ToolRules';
 import { ApplicationServices } from '@letta-cloud/service-rbac';
 import { useADEPermissions } from '../../hooks/useADEPermissions/useADEPermissions';
+import { useToolsExplorerState } from '../ToolsExplorer/useToolsExplorerState/useToolsExplorerState';
+import { findProviderFromTags } from '../ToolsExplorer/findProviderFromTags/findProviderFromTags';
 
 interface RemoveToolPayload {
   toolName: string;
@@ -274,7 +271,7 @@ export function ToolsPanel() {
                 onClick={() => {
                   openToolExplorer();
                 }}
-                preIcon={<PlusIcon />}
+                preIcon={<ExploreIcon />}
               />
             </HStack>
           )

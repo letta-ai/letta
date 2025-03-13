@@ -72,6 +72,10 @@ import {
 } from './public/launchLinkContracts';
 import { modelContracts, modelQueryClientKeys } from './public/modelsContracts';
 import { cloudAccessCodeContract } from './public/cloudAccessCodeContract';
+import {
+  composioContracts,
+  composioQueryKeys,
+} from './public/composioContracts';
 
 export const contracts = {
   user: userContract,
@@ -86,6 +90,7 @@ export const contracts = {
   usage: usageContracts,
   toolMetadata: toolMetadataContracts,
   starterKits: starterKitsContracts,
+  composio: composioContracts,
   costs: costsContract,
   rateLimits: rateLimitsContracts,
   sharedAgentChats: sharedAgentChatsContracts,
@@ -120,6 +125,7 @@ export const queryClientKeys = {
   rateLimits: rateLimitQueryClientKeys,
   sharedAgentChats: sharedAgentChatQueryClientKeys,
   launchLinks: launchLinkQueryKeys,
+  composio: composioQueryKeys,
   models: modelQueryClientKeys,
   admin: {
     usage: adminUsageQueryKeys,
@@ -153,3 +159,4 @@ export * from './public/costsContract';
 export * from './public/sharedAgentChatsContracts';
 export * from './public/launchLinkContracts';
 export * from './public/modelsContracts';
+export * from './public/composioContracts';

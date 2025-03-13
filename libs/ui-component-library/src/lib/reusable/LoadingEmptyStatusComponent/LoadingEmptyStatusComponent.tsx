@@ -8,7 +8,7 @@ import { cn } from '@letta-cloud/ui-styles';
 
 interface LoadingEmptyStatusComponentProps {
   loadingMessage?: string;
-  emptyMessage?: string;
+  emptyMessage?: React.ReactNode;
   emptyAction?: React.ReactNode;
   errorMessage?: string;
   errorAction?: React.ReactNode;

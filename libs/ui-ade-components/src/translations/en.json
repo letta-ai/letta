@@ -694,6 +694,74 @@
       "creditLimitExceeded": "You have run out of credits, please <link>buy more credits</link> to continue chatting."
     }
   },
+
+  "SearchTools": {
+    "label": "Search tools",
+    "placeholder": "Search tools"
+  },
+  "ComposioToolsView": {
+    "loadingMessage": "Loading Composio tools...",
+    "openApp": "Discover actions",
+    "showing": "Showing {count} of {total} tools",
+    "errorMessage": "There was an error loading Composio tools, please try again or contact support."
+  },
+  "ComposioActionsView": {
+    "backToApps": "All Apps",
+    "loadingMessage": "Loading Composio actions...",
+    "emptyMessage": "This app has no actions, please contact Composio support for more information",
+    "errorMessage": "There was an error loading Composio actions, please try again or contact support."
+  },
+  "AllToolsView": {
+    "ToolCategorySidebar": {
+      "current": "Current Agent Tools",
+      "create": "Create custom tool",
+      "local": "Local Tools",
+      "composio": "Composio Tools",
+      "mcp": "MCP Servers"
+    },
+    "ToolsViewerContent": {
+      "mcpSoon": "Coming soon, check our <link>discord</link> for more information"
+    },
+    "ViewCategoryTools": {
+      "view": "View",
+      "showing": "Showing {count} tools",
+      "next": "Next",
+      "previous": "Previous",
+      "loadMore": "Load more",
+      "create": "Create new tool",
+      "search": {
+        "label": "Search tools",
+        "placeholder": "Search tools"
+      }
+    },
+    "backToAllTools": "All tools",
+    "backToCategory": "All {category}",
+    "title": "Tool Manager",
+    "back": "Back",
+    "searchCategories": {
+      "placeholder": "Filter by category",
+      "label": "Search categories"
+    },
+    "titles": {
+      "allTools": "All tools",
+      "lettaTools": "Letta tools",
+      "customTools": "Custom tools",
+      "brandTools": "{brand} tools"
+    },
+    "categories": {
+      "allTools": "All tools ({count})",
+      "lettaTools": "Letta ({count})",
+      "customTools": "Custom tools ({count})",
+      "brandTools": "{brand} ({count})"
+    }
+  },
+  "ToolCard": {
+    "select": "View"
+  },
+  "LocalToolsView": {
+    "loadingMessage": "Loading local tools...",
+    "errorMessage": "There was an error loading local tools, please try again or contact support."
+  },
   "ADE/Tools": {
     "DeleteToolButton": {
       "title": "Delete tool",
@@ -716,40 +784,7 @@
         "description": "Defaults to 6000 if left blank"
       }
     },
-    "ViewCategoryTools": {
-      "view": "View",
-      "showing": "Showing {count} tools",
-      "next": "Next",
-      "previous": "Previous",
-      "loadMore": "Load more",
-      "create": "Create new tool",
-      "search": {
-        "label": "Search tools",
-        "placeholder": "Search tools"
-      }
-    },
-    "AllToolsView": {
-      "backToAllTools": "All tools",
-      "backToCategory": "All {category}",
-      "title": "Tool Explorer",
-      "back": "Back",
-      "searchCategories": {
-        "placeholder": "Filter by category",
-        "label": "Search categories"
-      },
-      "titles": {
-        "allTools": "All tools",
-        "lettaTools": "Letta tools",
-        "customTools": "Custom tools",
-        "brandTools": "{brand} tools"
-      },
-      "categories": {
-        "allTools": "All tools ({count})",
-        "lettaTools": "Letta ({count})",
-        "customTools": "Custom tools ({count})",
-        "brandTools": "{brand} ({count})"
-      }
-    },
+
     "ErrorMessageAlert": {
       "title": "There was an error, see below for details:",
       "dismiss": "Dismiss"

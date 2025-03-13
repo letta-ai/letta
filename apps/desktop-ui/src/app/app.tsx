@@ -16,6 +16,7 @@ import {
   HStack,
   LettaInvaderIcon,
   TerminalIcon,
+  Toaster,
   VStack,
 } from '@letta-cloud/ui-component-library';
 import { useTranslations } from '@letta-cloud/translations';
@@ -99,30 +100,33 @@ export function App() {
   }, []);
 
   return (
-    <Routes>
-      <Route path="/" element={<Homepage />} />
-      <Route path="/dashboard" element={<Dashboard />}>
-        <Route
-          path="/dashboard/agents"
-          element={
-            <NotConnectedOverlay>
-              <Agents />
-            </NotConnectedOverlay>
-          }
-        />
-        <Route
-          path="/dashboard/agents/:agentId"
-          element={
-            <NotConnectedOverlay>
-              <ADE />
-            </NotConnectedOverlay>
-          }
-        />
-        <Route path="/dashboard/server-status" element={<ServerStatus />} />
+    <>
+      <Routes>
+        <Route path="/" element={<Homepage />} />
+        <Route path="/dashboard" element={<Dashboard />}>
+          <Route
+            path="/dashboard/agents"
+            element={
+              <NotConnectedOverlay>
+                <Agents />
+              </NotConnectedOverlay>
+            }
+          />
+          <Route
+            path="/dashboard/agents/:agentId"
+            element={
+              <NotConnectedOverlay>
+                <ADE />
+              </NotConnectedOverlay>
+            }
+          />
+          <Route path="/dashboard/server-status" element={<ServerStatus />} />
 
-        <Route path="/dashboard/integrations" element={<Integrations />} />
-      </Route>
-    </Routes>
+          <Route path="/dashboard/integrations" element={<Integrations />} />
+        </Route>
+      </Routes>
+      <Toaster />
+    </>
   );
 }
 
