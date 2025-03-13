@@ -322,6 +322,9 @@ def start_server(
             app,
             host=host or "localhost",
             port=port or REST_DEFAULT_PORT,
+            workers=settings.uvicorn_workers,
+            reload=settings.uvicorn_reload,
+            timeout_keep_alive=settings.uvicorn_timeout_keep_alive,
             ssl_keyfile="certs/localhost-key.pem",
             ssl_certfile="certs/localhost.pem",
         )
@@ -338,4 +341,7 @@ def start_server(
             app,
             host=host or "localhost",
             port=port or REST_DEFAULT_PORT,
+            workers=settings.uvicorn_workers,
+            reload=settings.uvicorn_reload,
+            timeout_keep_alive=settings.uvicorn_timeout_keep_alive,
         )
