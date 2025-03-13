@@ -11,8 +11,9 @@ from letta.orm.errors import NoResultFound
 from letta.prompts import gpt_system
 from letta.schemas.agent import AgentState, AgentType
 from letta.schemas.enums import MessageRole
+from letta.schemas.letta_message_content import TextContent
 from letta.schemas.memory import Memory
-from letta.schemas.message import Message, MessageCreate, TextContent
+from letta.schemas.message import Message, MessageCreate
 from letta.schemas.passage import Passage as PydanticPassage
 from letta.schemas.tool_rule import ToolRule
 from letta.schemas.user import User

@@ -879,6 +879,12 @@ export const TextContent = z.object({
   text: z.string(),
 });
 
+export type LettaMessageContentUnion = z.infer<typeof LettaMessageContentUnion>;
+export const LettaMessageContentUnion = z.object({
+  type: z.union([z.literal('text'), z.undefined()]).optional(),
+  text: z.string(),
+});
+
 export type AssistantMessage = z.infer<typeof AssistantMessage>;
 export const AssistantMessage = z.object({
   id: z.string(),
@@ -887,9 +893,9 @@ export const AssistantMessage = z.object({
     .union([z.literal('assistant_message'), z.undefined()])
     .optional(),
   content: z.union([
-    z.string(),
     z.array(TextContent),
-    z.array(z.union([z.string(), z.array(TextContent)])),
+    z.string(),
+    z.array(z.union([z.array(TextContent), z.string()])),
   ]),
 });
 
@@ -2923,9 +2929,9 @@ export const SystemMessage = z.object({
     .union([z.literal('system_message'), z.undefined()])
     .optional(),
   content: z.union([
-    z.string(),
     z.array(TextContent),
-    z.array(z.union([z.string(), z.array(TextContent)])),
+    z.string(),
+    z.array(z.union([z.array(TextContent), z.string()])),
   ]),
 });
 
@@ -2935,9 +2941,9 @@ export const UserMessage = z.object({
   date: z.string(),
   message_type: z.union([z.literal('user_message'), z.undefined()]).optional(),
   content: z.union([
-    z.string(),
     z.array(TextContent),
-    z.array(z.union([z.string(), z.array(TextContent)])),
+    z.string(),
+    z.array(z.union([z.array(TextContent), z.string()])),
   ]),
 });
 
@@ -3912,23 +3918,19 @@ export const UpdateAgent = z.object({
 
 export type UpdateAssistantMessage = z.infer<typeof UpdateAssistantMessage>;
 export const UpdateAssistantMessage = z.object({
-  content: z.union([
-    z.string(),
-    z.array(TextContent),
-    z.array(z.union([z.string(), z.array(TextContent)])),
-  ]),
   message_type: z
     .union([z.literal('assistant_message'), z.undefined()])
     .optional(),
+  content: z.union([
+    z.array(TextContent),
+    z.string(),
+    z.array(z.union([z.array(TextContent), z.string()])),
+  ]),
 });
 
 export type UpdateReasoningMessage = z.infer<typeof UpdateReasoningMessage>;
 export const UpdateReasoningMessage = z.object({
-  reasoning: z.union([
-    z.string(),
-    z.array(TextContent),
-    z.array(z.union([z.string(), z.array(TextContent)])),
-  ]),
+  reasoning: z.string(),
   message_type: z
     .union([z.literal('reasoning_message'), z.undefined()])
     .optional(),
@@ -3936,24 +3938,24 @@ export const UpdateReasoningMessage = z.object({
 
 export type UpdateSystemMessage = z.infer<typeof UpdateSystemMessage>;
 export const UpdateSystemMessage = z.object({
-  content: z.union([
-    z.string(),
-    z.array(TextContent),
-    z.array(z.union([z.string(), z.array(TextContent)])),
-  ]),
   message_type: z
     .union([z.literal('system_message'), z.undefined()])
     .optional(),
+  content: z.union([
+    z.array(TextContent),
+    z.string(),
+    z.array(z.union([z.array(TextContent), z.string()])),
+  ]),
 });
 
 export type UpdateUserMessage = z.infer<typeof UpdateUserMessage>;
 export const UpdateUserMessage = z.object({
-  content: z.union([
-    z.string(),
-    z.array(TextContent),
-    z.array(z.union([z.string(), z.array(TextContent)])),
-  ]),
   message_type: z.union([z.literal('user_message'), z.undefined()]).optional(),
+  content: z.union([
+    z.array(TextContent),
+    z.string(),
+    z.array(z.union([z.array(TextContent), z.string()])),
+  ]),
 });
 
 export type UsageStatistics = z.infer<typeof UsageStatistics>;
@@ -5045,10 +5047,12 @@ export const patch_Modify_message = {
     ]),
   }),
   response: z.union([
-    UpdateSystemMessage,
-    UpdateUserMessage,
-    UpdateReasoningMessage,
-    UpdateAssistantMessage,
+    SystemMessage,
+    UserMessage,
+    ReasoningMessage,
+    ToolCallMessage,
+    ToolReturnMessage,
+    AssistantMessage,
   ]),
 };
 

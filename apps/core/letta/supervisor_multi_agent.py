@@ -6,7 +6,7 @@ from letta.functions.function_sets.multi_agent import send_message_to_all_agents
 from letta.interface import AgentInterface
 from letta.orm import User
 from letta.orm.enums import ToolType
-from letta.schemas.letta_message import TextContent
+from letta.schemas.letta_message_content import TextContent
 from letta.schemas.message import Message, MessageCreate
 from letta.schemas.tool_rule import ChildToolRule, InitToolRule, TerminalToolRule
 from letta.schemas.usage import LettaUsageStatistics

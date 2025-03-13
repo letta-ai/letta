@@ -49,10 +49,11 @@ from letta.schemas.environment_variables import SandboxEnvironmentVariableCreate
 from letta.schemas.group import Group, ManagerType
 from letta.schemas.job import Job, JobUpdate
 from letta.schemas.letta_message import LegacyLettaMessage, LettaMessage, ToolReturnMessage
+from letta.schemas.letta_message_content import TextContent
 from letta.schemas.letta_response import LettaResponse
 from letta.schemas.llm_config import LLMConfig
 from letta.schemas.memory import ArchivalMemorySummary, ContextWindowOverview, Memory, RecallMemorySummary
-from letta.schemas.message import Message, MessageCreate, MessageRole, MessageUpdate, TextContent
+from letta.schemas.message import Message, MessageCreate, MessageRole, MessageUpdate
 from letta.schemas.organization import Organization
 from letta.schemas.passage import Passage, PassageUpdate
 from letta.schemas.providers import (

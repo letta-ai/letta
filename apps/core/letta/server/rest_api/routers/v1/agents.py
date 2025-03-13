@@ -530,7 +530,7 @@ def list_messages(
     )
 
 
-@router.patch("/{agent_id}/messages/{message_id}", response_model=LettaMessageUpdateUnion, operation_id="modify_message")
+@router.patch("/{agent_id}/messages/{message_id}", response_model=LettaMessageUnion, operation_id="modify_message")
 def modify_message(
     agent_id: str,
     message_id: str,

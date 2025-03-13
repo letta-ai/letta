@@ -15,20 +15,19 @@ from letta.constants import DEFAULT_MESSAGE_TOOL, DEFAULT_MESSAGE_TOOL_KWARG, TO
 from letta.helpers.datetime_helpers import get_utc_time, is_utc_datetime
 from letta.helpers.json_helpers import json_dumps
 from letta.local_llm.constants import INNER_THOUGHTS_KWARG
-from letta.schemas.enums import MessageContentType, MessageRole
+from letta.schemas.enums import MessageRole
 from letta.schemas.letta_base import OrmMetadataBase
 from letta.schemas.letta_message import (
     AssistantMessage,
     LettaMessage,
-    MessageContentUnion,
     ReasoningMessage,
     SystemMessage,
-    TextContent,
     ToolCall,
     ToolCallMessage,
     ToolReturnMessage,
     UserMessage,
 )
+from letta.schemas.letta_message_content import LettaMessageContentUnion, TextContent
 from letta.system import unpack_message
 
 
@@ -66,7 +65,7 @@ class MessageCreate(BaseModel):
         MessageRole.user,
         MessageRole.system,
     ] = Field(..., description="The role of the participant.")
-    content: Union[str, List[MessageContentUnion]] = Field(..., description="The content of the message.")
+    content: Union[str, List[LettaMessageContentUnion]] = Field(..., description="The content of the message.")
     name: Optional[str] = Field(None, description="The name of the participant.")
 
 
@@ -74,7 +73,7 @@ class MessageUpdate(BaseModel):
     """Request to update a message"""
 
     role: Optional[MessageRole] = Field(None, description="The role of the participant.")
-    content: Optional[Union[str, List[MessageContentUnion]]] = Field(None, description="The content of the message.")
+    content: Optional[Union[str, List[LettaMessageContentUnion]]] = Field(None, description="The content of the message.")
     # NOTE: probably doesn't make sense to allow remapping user_id or agent_id (vs creating a new message)
     # user_id: Optional[str] = Field(None, description="The unique identifier of the user.")
     # agent_id: Optional[str] = Field(None, description="The unique identifier of the agent.")
@@ -119,7 +118,7 @@ class Message(BaseMessage):
 
     id: str = BaseMessage.generate_id_field()
     role: MessageRole = Field(..., description="The role of the participant.")
-    content: Optional[List[MessageContentUnion]] = Field(None, description="The content of the message.")
+    content: Optional[List[LettaMessageContentUnion]] = Field(None, description="The content of the message.")
     organization_id: Optional[str] = Field(None, description="The unique identifier of the organization.")
     agent_id: Optional[str] = Field(None, description="The unique identifier of the agent.")
     model: Optional[str] = Field(None, description="The model used to make the function call.")
@@ -215,7 +214,7 @@ class Message(BaseMessage):
         assistant_message_tool_kwarg: str = DEFAULT_MESSAGE_TOOL_KWARG,
     ) -> List[LettaMessage]:
         """Convert message object (in DB format) to the style used by the original Letta API"""
-        if self.content and len(self.content) == 1 and self.content[0].type == MessageContentType.text:
+        if self.content and len(self.content) == 1 and isinstance(self.content[0], TextContent):
             text_content = self.content[0].text
         else:
             text_content = None
@@ -486,7 +485,7 @@ class Message(BaseMessage):
         """Go from Message class to ChatCompletion message object"""
 
         # TODO change to pydantic casting, eg `return SystemMessageModel(self)`
-        if self.content and len(self.content) == 1 and self.content[0].type == MessageContentType.text:
+        if self.content and len(self.content) == 1 and isinstance(self.content[0], TextContent):
             text_content = self.content[0].text
         else:
             text_content = None
@@ -561,7 +560,7 @@ class Message(BaseMessage):
         Args:
             inner_thoughts_xml_tag (str): The XML tag to wrap around inner thoughts
         """
-        if self.content and len(self.content) == 1 and self.content[0].type == MessageContentType.text:
+        if self.content and len(self.content) == 1 and isinstance(self.content[0], TextContent):
             text_content = self.content[0].text
         else:
             text_content = None
@@ -656,7 +655,7 @@ class Message(BaseMessage):
         # type Content: https://ai.google.dev/api/rest/v1/Content / https://ai.google.dev/api/rest/v1beta/Content
         #     parts[]: Part
         #     role: str ('user' or 'model')
-        if self.content and len(self.content) == 1 and self.content[0].type == MessageContentType.text:
+        if self.content and len(self.content) == 1 and isinstance(self.content[0], TextContent):
             text_content = self.content[0].text
         else:
             text_content = None
@@ -782,7 +781,7 @@ class Message(BaseMessage):
 
         # TODO: update this prompt style once guidance from Cohere on
         # embedded function calls in multi-turn conversation become more clear
-        if self.content and len(self.content) == 1 and self.content[0].type == MessageContentType.text:
+        if self.content and len(self.content) == 1 and isinstance(self.content[0], TextContent):
             text_content = self.content[0].text
         else:
             text_content = None

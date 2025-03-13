@@ -2782,25 +2782,33 @@
                 "schema": {
                   "oneOf": [
                     {
-                      "$ref": "#/components/schemas/UpdateSystemMessage"
+                      "$ref": "#/components/schemas/SystemMessage"
                     },
                     {
-                      "$ref": "#/components/schemas/UpdateUserMessage"
+                      "$ref": "#/components/schemas/UserMessage"
                     },
                     {
-                      "$ref": "#/components/schemas/UpdateReasoningMessage"
+                      "$ref": "#/components/schemas/ReasoningMessage"
                     },
                     {
-                      "$ref": "#/components/schemas/UpdateAssistantMessage"
+                      "$ref": "#/components/schemas/ToolCallMessage"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ToolReturnMessage"
+                    },
+                    {
+                      "$ref": "#/components/schemas/AssistantMessage"
                     }
                   ],
                   "discriminator": {
                     "propertyName": "message_type",
                     "mapping": {
-                      "system_message": "#/components/schemas/UpdateSystemMessage",
-                      "user_message": "#/components/schemas/UpdateUserMessage",
-                      "reasoning_message": "#/components/schemas/UpdateReasoningMessage",
-                      "assistant_message": "#/components/schemas/UpdateAssistantMessage"
+                      "system_message": "#/components/schemas/SystemMessage",
+                      "user_message": "#/components/schemas/UserMessage",
+                      "reasoning_message": "#/components/schemas/ReasoningMessage",
+                      "tool_call_message": "#/components/schemas/ToolCallMessage",
+                      "tool_return_message": "#/components/schemas/ToolReturnMessage",
+                      "assistant_message": "#/components/schemas/AssistantMessage"
                     }
                   },
                   "title": "Response Modify Message"
@@ -12021,31 +12029,23 @@
           "content": {
             "anyOf": [
               {
-                "type": "string"
-              },
-              {
                 "items": {
-                  "oneOf": [
-                    {
-                      "$ref": "#/components/schemas/TextContent"
-                    }
-                  ],
-                  "discriminator": {
-                    "propertyName": "type",
-                    "mapping": {
-                      "text": "#/components/schemas/TextContent"
-                    }
-                  }
+                  "$ref": "#/components/schemas/LettaMessageContentUnion"
                 },
                 "type": "array"
+              },
+              {
+                "type": "string"
               }
             ],
-            "title": "Content"
+            "title": "Content",
+            "description": "The message content sent by the agent (can be a string or an array of content parts)"
           }
         },
         "type": "object",
         "required": ["id", "date", "content"],
-        "title": "AssistantMessage"
+        "title": "AssistantMessage",
+        "description": "A message sent by the LLM in response to user input. Used in the LLM context.\n\nArgs:\n    id (str): The ID of the message\n    date (datetime): The date the message was created in ISO format\n    content (Union[str, List[LettaMessageContentUnion]]): The message content sent by the agent (can be a string or an array of content parts)"
       },
       "Audio": {
         "properties": {
@@ -16592,7 +16592,7 @@
         "type": "object",
         "required": ["id", "date", "reasoning"],
         "title": "ReasoningMessage",
-        "description": "Representation of an agent's internal reasoning.\n\nAttributes:\n    reasoning (str): The internal reasoning of the agent\n    id (str): The ID of the message\n    date (datetime): The date the message was created in ISO format"
+        "description": "Representation of an agent's internal reasoning.\n\nArgs:\n    id (str): The ID of the message\n    date (datetime): The date the message was created in ISO format\n    reasoning (str): The internal reasoning of the agent"
       },
       "ResponseFormatJSONObject": {
         "properties": {
@@ -17519,32 +17519,23 @@
           "content": {
             "anyOf": [
               {
-                "type": "string"
-              },
-              {
                 "items": {
-                  "oneOf": [
-                    {
-                      "$ref": "#/components/schemas/TextContent"
-                    }
-                  ],
-                  "discriminator": {
-                    "propertyName": "type",
-                    "mapping": {
-                      "text": "#/components/schemas/TextContent"
-                    }
-                  }
+                  "$ref": "#/components/schemas/LettaMessageContentUnion"
                 },
                 "type": "array"
+              },
+              {
+                "type": "string"
               }
             ],
-            "title": "Content"
+            "title": "Content",
+            "description": "The message content sent by the system (can be a string or an array of content parts)"
           }
         },
         "type": "object",
         "required": ["id", "date", "content"],
         "title": "SystemMessage",
-        "description": "A message generated by the system. Never streamed back on a response, only used for cursor pagination.\n\nAttributes:\n    content (Union[str, List[MessageContentUnion]]): The message content sent by the user (can be a string or an array of content parts)\n    id (str): The ID of the message\n    date (datetime): The date the message was created in ISO format"
+        "description": "A message generated by the system. Never streamed back on a response, only used for cursor pagination.\n\nArgs:\n    id (str): The ID of the message\n    date (datetime): The date the message was created in ISO format\n    content (Union[str, List[LettaMessageContentUnion]]): The message content sent by the system (can be a string or an array of content parts)"
       },
       "TerminalToolRule": {
         "properties": {
@@ -17810,7 +17801,7 @@
         "type": "object",
         "required": ["id", "date", "tool_call"],
         "title": "ToolCallMessage",
-        "description": "A message representing a request to call a tool (generated by the LLM to trigger tool execution).\n\nAttributes:\n    tool_call (Union[ToolCall, ToolCallDelta]): The tool call\n    id (str): The ID of the message\n    date (datetime): The date the message was created in ISO format"
+        "description": "A message representing a request to call a tool (generated by the LLM to trigger tool execution).\n\nArgs:\n    id (str): The ID of the message\n    date (datetime): The date the message was created in ISO format\n    tool_call (Union[ToolCall, ToolCallDelta]): The tool call"
       },
       "ToolCreate": {
         "properties": {
@@ -17988,7 +17979,7 @@
         "type": "object",
         "required": ["id", "date", "tool_return", "status", "tool_call_id"],
         "title": "ToolReturnMessage",
-        "description": "A message representing the return value of a tool call (generated by Letta executing the requested tool).\n\nAttributes:\n    tool_return (str): The return value of the tool\n    status (Literal[\"success\", \"error\"]): The status of the tool call\n    id (str): The ID of the message\n    date (datetime): The date the message was created in ISO format\n    tool_call_id (str): A unique identifier for the tool call that generated this message\n    stdout (Optional[List(str)]): Captured stdout (e.g. prints, logs) from the tool invocation\n    stderr (Optional[List(str)]): Captured stderr from the tool invocation"
+        "description": "A message representing the return value of a tool call (generated by Letta executing the requested tool).\n\nArgs:\n    id (str): The ID of the message\n    date (datetime): The date the message was created in ISO format\n    tool_return (str): The return value of the tool\n    status (Literal[\"success\", \"error\"]): The status of the tool call\n    tool_call_id (str): A unique identifier for the tool call that generated this message\n    stdout (Optional[List(str)]): Captured stdout (e.g. prints, logs) from the tool invocation\n    stderr (Optional[List(str)]): Captured stderr from the tool invocation"
       },
       "ToolRunFromSource": {
         "properties": {
@@ -18430,36 +18421,27 @@
       },
       "UpdateAssistantMessage": {
         "properties": {
-          "content": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "items": {
-                  "oneOf": [
-                    {
-                      "$ref": "#/components/schemas/TextContent"
-                    }
-                  ],
-                  "discriminator": {
-                    "propertyName": "type",
-                    "mapping": {
-                      "text": "#/components/schemas/TextContent"
-                    }
-                  }
-                },
-                "type": "array"
-              }
-            ],
-            "title": "Content"
-          },
           "message_type": {
             "type": "string",
             "enum": ["assistant_message"],
             "const": "assistant_message",
             "title": "Message Type",
             "default": "assistant_message"
+          },
+          "content": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/LettaMessageContentUnion"
+                },
+                "type": "array"
+              },
+              {
+                "type": "string"
+              }
+            ],
+            "title": "Content",
+            "description": "The message content sent by the assistant (can be a string or an array of content parts)"
           }
         },
         "type": "object",
@@ -18469,27 +18451,7 @@
       "UpdateReasoningMessage": {
         "properties": {
           "reasoning": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "items": {
-                  "oneOf": [
-                    {
-                      "$ref": "#/components/schemas/TextContent"
-                    }
-                  ],
-                  "discriminator": {
-                    "propertyName": "type",
-                    "mapping": {
-                      "text": "#/components/schemas/TextContent"
-                    }
-                  }
-                },
-                "type": "array"
-              }
-            ],
+            "type": "string",
             "title": "Reasoning"
           },
           "message_type": {
@@ -18506,36 +18468,27 @@
       },
       "UpdateSystemMessage": {
         "properties": {
-          "content": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "items": {
-                  "oneOf": [
-                    {
-                      "$ref": "#/components/schemas/TextContent"
-                    }
-                  ],
-                  "discriminator": {
-                    "propertyName": "type",
-                    "mapping": {
-                      "text": "#/components/schemas/TextContent"
-                    }
-                  }
-                },
-                "type": "array"
-              }
-            ],
-            "title": "Content"
-          },
           "message_type": {
             "type": "string",
             "enum": ["system_message"],
             "const": "system_message",
             "title": "Message Type",
             "default": "system_message"
+          },
+          "content": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/LettaMessageContentUnion"
+                },
+                "type": "array"
+              },
+              {
+                "type": "string"
+              }
+            ],
+            "title": "Content",
+            "description": "The message content sent by the system (can be a string or an array of content parts)"
           }
         },
         "type": "object",
@@ -18544,36 +18497,27 @@
       },
       "UpdateUserMessage": {
         "properties": {
-          "content": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "items": {
-                  "oneOf": [
-                    {
-                      "$ref": "#/components/schemas/TextContent"
-                    }
-                  ],
-                  "discriminator": {
-                    "propertyName": "type",
-                    "mapping": {
-                      "text": "#/components/schemas/TextContent"
-                    }
-                  }
-                },
-                "type": "array"
-              }
-            ],
-            "title": "Content"
-          },
           "message_type": {
             "type": "string",
             "enum": ["user_message"],
             "const": "user_message",
             "title": "Message Type",
             "default": "user_message"
+          },
+          "content": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/LettaMessageContentUnion"
+                },
+                "type": "array"
+              },
+              {
+                "type": "string"
+              }
+            ],
+            "title": "Content",
+            "description": "The message content sent by the user (can be a string or an array of content parts)"
           }
         },
         "type": "object",
@@ -18688,32 +18632,23 @@
           "content": {
             "anyOf": [
               {
-                "type": "string"
-              },
-              {
                 "items": {
-                  "oneOf": [
-                    {
-                      "$ref": "#/components/schemas/TextContent"
-                    }
-                  ],
-                  "discriminator": {
-                    "propertyName": "type",
-                    "mapping": {
-                      "text": "#/components/schemas/TextContent"
-                    }
-                  }
+                  "$ref": "#/components/schemas/LettaMessageContentUnion"
                 },
                 "type": "array"
+              },
+              {
+                "type": "string"
               }
             ],
-            "title": "Content"
+            "title": "Content",
+            "description": "The message content sent by the user (can be a string or an array of content parts)"
           }
         },
         "type": "object",
         "required": ["id", "date", "content"],
         "title": "UserMessage",
-        "description": "A message sent by the user. Never streamed back on a response, only used for cursor pagination.\n\nAttributes:\n    content (Union[str, List[MessageContentUnion]]): The message content sent by the user (can be a string or an array of content parts)\n    id (str): The ID of the message\n    date (datetime): The date the message was created in ISO format"
+        "description": "A message sent by the user. Never streamed back on a response, only used for cursor pagination.\n\nArgs:\n    id (str): The ID of the message\n    date (datetime): The date the message was created in ISO format\n    content (Union[str, List[LettaMessageContentUnion]]): The message content sent by the user (can be a string or an array of content parts)"
       },
       "UserUpdate": {
         "properties": {
@@ -18903,6 +18838,19 @@
             "tool_call_message": "#/components/schemas/ToolCallMessage",
             "tool_return_message": "#/components/schemas/ToolReturnMessage",
             "assistant_message": "#/components/schemas/AssistantMessage"
+          }
+        }
+      },
+      "LettaMessageContentUnion": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/TextContent"
+          }
+        ],
+        "discriminator": {
+          "propertyName": "type",
+          "mapping": {
+            "text": "#/components/schemas/TextContent"
           }
         }
       }
