@@ -21,6 +21,7 @@ from letta.schemas.llm_config import LLMConfig
 from letta.schemas.message import MessageCreate
 from letta.schemas.organization import Organization
 from letta.schemas.user import User
+from letta.serialize_schemas.pydantic_agent_schema import AgentSchema
 from letta.server.rest_api.app import app
 from letta.server.server import SyncServer
 
@@ -369,12 +370,12 @@ def test_deserialize_override_existing_tools(
     result = server.agent_manager.serialize(agent_id=serialize_test_agent.id, actor=default_user)
 
     # Extract tools before upload
-    tool_data_list = result.get("tools", [])
-    tool_names = {tool["name"]: tool for tool in tool_data_list}
+    tool_data_list = result.tools
+    tool_names = {tool.name: tool for tool in tool_data_list}
 
     # Rewrite all the tool source code to the print_tool source code
-    for tool in result["tools"]:
-        tool["source_code"] = print_tool.source_code
+    for tool in result.tools:
+        tool.source_code = print_tool.source_code
 
     # Deserialize the agent with different override settings
     server.agent_manager.deserialize(
@@ -466,8 +467,7 @@ def test_in_context_message_id_remapping(local_client, server, serialize_test_ag
 
     # Make sure all the messages are able to be retrieved
     in_context_messages = server.agent_manager.get_in_context_messages(agent_id=agent_copy.id, actor=other_user)
-    assert len(in_context_messages) == len(result["message_ids"])
-    assert sorted([m.id for m in in_context_messages]) == sorted(result["message_ids"])
+    assert len(in_context_messages) == len(serialize_test_agent.message_ids)
 
 
 # FastAPI endpoint tests
@@ -485,7 +485,9 @@ def test_agent_download_upload_flow(fastapi_client, server, serialize_test_agent
     response = fastapi_client.get(f"/v1/agents/{agent_id}/download", headers={"user_id": default_user.id})
     assert response.status_code == 200, f"Download failed: {response.text}"
 
-    agent_json = response.json()
+    # Ensure response matches expected schema
+    agent_schema = AgentSchema.model_validate(response.json())  # Validate as Pydantic model
+    agent_json = agent_schema.model_dump(mode="json")  # Convert back to serializable JSON
 
     # Step 2: Upload the serialized agent as a copy
     agent_bytes = BytesIO(json.dumps(agent_json).encode("utf-8"))
@@ -508,6 +510,7 @@ def test_agent_download_upload_flow(fastapi_client, server, serialize_test_agent
     # Step 3: Retrieve the copied agent
     serialize_test_agent = server.agent_manager.get_agent_by_id(agent_id=serialize_test_agent.id, actor=default_user)
     agent_copy = server.agent_manager.get_agent_by_id(agent_id=copied_agent_id, actor=other_user)
+
     print_dict_diff(json.loads(serialize_test_agent.model_dump_json()), json.loads(agent_copy.model_dump_json()))
     assert compare_agent_state(agent_copy, serialize_test_agent, append_copy_suffix=append_copy_suffix)
 

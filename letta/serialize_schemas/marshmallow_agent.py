@@ -6,17 +6,17 @@ import letta
 from letta.orm import Agent
 from letta.schemas.agent import AgentState as PydanticAgentState
 from letta.schemas.user import User
-from letta.serialize_schemas.agent_environment_variable import SerializedAgentEnvironmentVariableSchema
-from letta.serialize_schemas.base import BaseSchema
-from letta.serialize_schemas.block import SerializedBlockSchema
-from letta.serialize_schemas.custom_fields import EmbeddingConfigField, LLMConfigField, ToolRulesField
-from letta.serialize_schemas.message import SerializedMessageSchema
-from letta.serialize_schemas.tag import SerializedAgentTagSchema
-from letta.serialize_schemas.tool import SerializedToolSchema
+from letta.serialize_schemas.marshmallow_agent_environment_variable import SerializedAgentEnvironmentVariableSchema
+from letta.serialize_schemas.marshmallow_base import BaseSchema
+from letta.serialize_schemas.marshmallow_block import SerializedBlockSchema
+from letta.serialize_schemas.marshmallow_custom_fields import EmbeddingConfigField, LLMConfigField, ToolRulesField
+from letta.serialize_schemas.marshmallow_message import SerializedMessageSchema
+from letta.serialize_schemas.marshmallow_tag import SerializedAgentTagSchema
+from letta.serialize_schemas.marshmallow_tool import SerializedToolSchema
 from letta.server.db import SessionLocal
 
 
-class SerializedAgentSchema(BaseSchema):
+class MarshmallowAgentSchema(BaseSchema):
     """
     Marshmallow schema for serializing/deserializing Agent objects.
     Excludes relational fields.
@@ -98,7 +98,6 @@ class SerializedAgentSchema(BaseSchema):
 
     class Meta(BaseSchema.Meta):
         model = Agent
-        # TODO: Serialize these as well...
         exclude = BaseSchema.Meta.exclude + (
             "project_id",
             "template_id",
