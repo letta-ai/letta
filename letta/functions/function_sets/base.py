@@ -77,6 +77,7 @@ def archival_memory_insert(self: "Agent", content: str) -> Optional[str]:
         text=content,
         actor=self.user,
     )
+    self.agent_manager.rebuild_system_prompt(agent_id=self.agent_state.id, actor=self.user, force=True)
     return None
 
 

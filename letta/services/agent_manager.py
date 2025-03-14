@@ -55,6 +55,7 @@ from letta.services.helpers.agent_manager_helper import (
 )
 from letta.services.identity_manager import IdentityManager
 from letta.services.message_manager import MessageManager
+from letta.services.passage_manager import PassageManager
 from letta.services.source_manager import SourceManager
 from letta.services.tool_manager import ToolManager
 from letta.settings import settings
@@ -76,6 +77,7 @@ class AgentManager:
         self.tool_manager = ToolManager()
         self.source_manager = SourceManager()
         self.message_manager = MessageManager()
+        self.passage_manager = PassageManager()
         self.identity_manager = IdentityManager()
 
     # ======================================================================================================================
@@ -625,12 +627,17 @@ class AgentManager:
             # NOTE: a bit of a hack - we pull the timestamp from the message created_by
             memory_edit_timestamp = curr_system_message.created_at
 
+        num_messages = self.message_manager.size(actor=actor, agent_id=agent_id)
+        num_archival_memories = self.passage_manager.size(actor=actor, agent_id=agent_id)
+
         # update memory (TODO: potentially update recall/archival stats separately)
         new_system_message_str = compile_system_message(
             system_prompt=agent_state.system,
             in_context_memory=agent_state.memory,
             in_context_memory_last_edit=memory_edit_timestamp,
             recent_passages=self.list_passages(actor=actor, agent_id=agent_id, ascending=False, limit=10),
+            previous_message_count=num_messages,
+            archival_memory_size=num_archival_memories,
         )
 
         diff = united_diff(curr_system_message_openai["content"], new_system_message_str)

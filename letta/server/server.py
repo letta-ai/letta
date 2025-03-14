@@ -850,6 +850,9 @@ class SyncServer(Server):
         # TODO: @mindy look at moving this to agent_manager to avoid above extra call
         passages = self.passage_manager.insert_passage(agent_state=agent_state, agent_id=agent_id, text=memory_contents, actor=actor)
 
+        # rebuild agent system prompt - force since no archival change
+        self.agent_manager.rebuild_system_prompt(agent_id=agent_id, actor=actor, force=True)
+
         return passages
 
     def modify_archival_memory(self, agent_id: str, memory_id: str, passage: PassageUpdate, actor: User) -> List[Passage]:
@@ -859,10 +862,14 @@ class SyncServer(Server):
 
     def delete_archival_memory(self, memory_id: str, actor: User):
         # TODO check if it exists first, and throw error if not
-        # TODO: @mindy make this return the deleted passage instead
+        # TODO: need to also rebuild the prompt here
+        passage = self.passage_manager.get_passage_by_id(passage_id=memory_id, actor=actor)
+
+        # delete the passage
         self.passage_manager.delete_passage_by_id(passage_id=memory_id, actor=actor)
 
-        # TODO: return archival memory
+        # rebuild system prompt and force
+        self.agent_manager.rebuild_system_prompt(agent_id=passage.agent_id, actor=actor, force=True)
 
     def get_agent_recall(
         self,
@@ -980,6 +987,9 @@ class SyncServer(Server):
             self.agent_manager.attach_source(agent_id=agent_state.id, source_id=source_id, actor=actor)
             new_passage_size = self.agent_manager.passage_size(actor=actor, agent_id=agent_id)
             assert new_passage_size >= curr_passage_size  # in case empty files are added
+
+            # rebuild system prompt and force
+            self.agent_manager.rebuild_system_prompt(agent_id=agent_id, actor=actor, force=True)
 
         return job
 
