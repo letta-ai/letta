@@ -150,8 +150,10 @@ describe-web:
         --set secrets.E2B_API_KEY=${E2B_API_KEY} \
         --set secrets.E2B_SANDBOX_TEMPLATE_ID=${E2B_SANDBOX_TEMPLATE_ID} \
         --set secrets.LETTA_LOAD_DEFAULT_EXTERNAL_TOOLS=True \
-        --set otelCollector.clickhouse.password=${CLICKHOUSE_PASSWORD} \
-        --set secrets.OTEL_EXPORTER_OTLP_ENDPOINT=${OTEL_EXPORTER_OTLP_ENDPOINT}
+        --set secrets.CLICKHOUSE_ENDPOINT=${CLICKHOUSE_ENDPOINT} \
+        --set secrets.CLICKHOUSE_DATABASE=${CLICKHOUSE_DATABASE} \
+        --set secrets.CLICKHOUSE_USERNAME=${CLICKHOUSE_USERNAME} \
+        --set secrets.CLICKHOUSE_PASSWORD=${CLICKHOUSE_PASSWORD}
 
 # Deploy Grafana
 @deploy-grafana:
@@ -232,7 +234,7 @@ deploy-cloud-api: push-cloud-api
         --set readinessProbe.httpGet.port=8080
 
     npm run slack-bot-says "Successfully deployed cloud API service with tag: {{TAG}}."
-    
+
 
 undertaker:
     @echo "🚧 Running the undertaker..."

@@ -207,7 +207,7 @@ def log_event(name: str, attributes: Optional[Dict[str, Any]] = None, timestamp:
     current_span = trace.get_current_span()
     if current_span:
         if timestamp is None:
-            timestamp = int(time.perf_counter_ns())
+            timestamp = time.time_ns()
 
         def _safe_convert(v):
             if isinstance(v, (str, bool, int, float)):

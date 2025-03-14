@@ -1,0 +1,73 @@
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4317
+      http:
+        endpoint: 0.0.0.0:4318
+  filelog:
+    include:
+      - /root/.letta/logs/Letta.log
+    multiline:
+      line_start_pattern: ^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2},\d{3}
+    operators:
+      # Extract timestamp and other fields
+      - type: regex_parser
+        regex: '^(?P<timestamp>\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2},\d{3})\s+-\s+(?P<component>[\w\.-]+)\s+-\s+(?P<severity>\w+)\s+-\s+(?P<body>.*)$'
+      # Parse the timestamp
+      - type: time_parser
+        parse_from: attributes.timestamp
+        layout: '%Y-%m-%d %H:%M:%S,%L'
+      # Set severity
+      - type: severity_parser
+        parse_from: attributes.severity
+        mapping:
+          debug: DEBUG
+          info: INFO
+          warning: WARN
+          error: ERROR
+          critical: FATAL
+      # Add resource attributes
+      - type: add
+        field: resource.service_name
+        value: letta-server
+      - type: add
+        field: resource.environment
+        value: ${ENV_NAME}
+
+processors:
+  batch:
+    timeout: 1s
+    send_batch_size: 1024
+
+exporters:
+  file:
+    path: /root/.letta/logs/traces.json
+    rotation:
+      max_megabytes: 100
+      max_days: 7
+      max_backups: 5
+  clickhouse:
+    endpoint: ${CLICKHOUSE_ENDPOINT}
+    database: ${CLICKHOUSE_DATABASE}
+    username: ${CLICKHOUSE_USERNAME}
+    password: ${CLICKHOUSE_PASSWORD}
+    timeout: 5s
+    sending_queue:
+      queue_size: 100
+    retry_on_failure:
+      enabled: true
+      initial_interval: 5s
+      max_interval: 30s
+      max_elapsed_time: 300s
+
+service:
+  pipelines:
+    traces:
+      receivers: [otlp]
+      processors: [batch]
+      exporters: [file, clickhouse]
+    logs:
+      receivers: [filelog]
+      processors: [batch]
+      exporters: [clickhouse]

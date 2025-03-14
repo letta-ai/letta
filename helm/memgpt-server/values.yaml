@@ -125,20 +125,7 @@ secrets:
   E2B_SANDBOX_TEMPLATE_ID: ""
   E2B_API_KEY: ""
   SENTRY_DSN: ""
-  OTEL_EXPORTER_OTLP_ENDPOINT: ""
-
-otelCollector:
-  enabled: true
-  replicas: 1
-  clickhouse:
-    endpoint: "http://ch-logs.us-central1-b.c.memgpt-428419.internal:8123"
-    database: "otel"
-    username: "default"
-    password: ""
-  resources:
-    limits:
-      cpu: 500m
-      memory: 512Mi
-    requests:
-      cpu: 200m
-      memory: 256Mi
+  CLICKHOUSE_ENDPOINT: ""
+  CLICKHOUSE_DATABASE: ""
+  CLICKHOUSE_USERNAME: ""
+  CLICKHOUSE_PASSWORD: ""
