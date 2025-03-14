@@ -1,1 +1,1 @@
-from letta.serialize_schemas.agent import SerializedAgentSchema
+from letta.serialize_schemas.marshmallow_agent import MarshmallowAgentSchema

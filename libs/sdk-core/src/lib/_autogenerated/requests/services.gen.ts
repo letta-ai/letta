@@ -60,10 +60,10 @@ import type {
   ListAgentsResponse,
   CreateAgentData,
   CreateAgentResponse,
-  DownloadAgentSerializedData,
-  DownloadAgentSerializedResponse,
-  UploadAgentSerializedData,
-  UploadAgentSerializedResponse,
+  ExportAgentSerializedData,
+  ExportAgentSerializedResponse,
+  ImportAgentSerializedData,
+  ImportAgentSerializedResponse,
   RetrieveAgentContextWindowData,
   RetrieveAgentContextWindowResponse,
   ModifyAgentData,
@@ -1002,21 +1002,21 @@ export class AgentsService {
   }
 
   /**
-   * Download Agent Serialized
-   * Download the serialized JSON representation of an agent.
+   * Export Agent Serialized
+   * Export the serialized JSON representation of an agent.
    * @param data The data for the request.
    * @param data.agentId
    * @param data.userId
-   * @returns unknown Successful Response
+   * @returns AgentSchema Successful Response
    * @throws ApiError
    */
-  public static downloadAgentSerialized(
-    data: DownloadAgentSerializedData,
+  public static exportAgentSerialized(
+    data: ExportAgentSerializedData,
     headers?: { user_id: string },
-  ): CancelablePromise<DownloadAgentSerializedResponse> {
+  ): CancelablePromise<ExportAgentSerializedResponse> {
     return __request(OpenAPI, {
       method: 'GET',
-      url: '/v1/agents/{agent_id}/download',
+      url: '/v1/agents/{agent_id}/export',
       path: {
         agent_id: data.agentId,
       },
@@ -1028,8 +1028,8 @@ export class AgentsService {
   }
 
   /**
-   * Upload Agent Serialized
-   * Upload a serialized agent JSON file and recreate the agent in the system.
+   * Import Agent Serialized
+   * Import a serialized agent file and recreate the agent in the system.
    * @param data The data for the request.
    * @param data.formData
    * @param data.appendCopySuffix If set to True, appends "_copy" to the end of the agent name.
@@ -1039,13 +1039,13 @@ export class AgentsService {
    * @returns AgentState Successful Response
    * @throws ApiError
    */
-  public static uploadAgentSerialized(
-    data: UploadAgentSerializedData,
+  public static importAgentSerialized(
+    data: ImportAgentSerializedData,
     headers?: { user_id: string },
-  ): CancelablePromise<UploadAgentSerializedResponse> {
+  ): CancelablePromise<ImportAgentSerializedResponse> {
     return __request(OpenAPI, {
       method: 'POST',
-      url: '/v1/agents/upload',
+      url: '/v1/agents/import',
       query: {
         append_copy_suffix: data.appendCopySuffix,
         override_existing_tools: data.overrideExistingTools,

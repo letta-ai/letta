@@ -36,8 +36,9 @@ from letta.schemas.tool_rule import ContinueToolRule as PydanticContinueToolRule
 from letta.schemas.tool_rule import TerminalToolRule as PydanticTerminalToolRule
 from letta.schemas.tool_rule import ToolRule as PydanticToolRule
 from letta.schemas.user import User as PydanticUser
-from letta.serialize_schemas import SerializedAgentSchema
-from letta.serialize_schemas.tool import SerializedToolSchema
+from letta.serialize_schemas import MarshmallowAgentSchema
+from letta.serialize_schemas.marshmallow_tool import SerializedToolSchema
+from letta.serialize_schemas.pydantic_agent_schema import AgentSchema
 from letta.services.block_manager import BlockManager
 from letta.services.helpers.agent_manager_helper import (
     _apply_filters,
@@ -464,26 +465,28 @@ class AgentManager:
             agent.hard_delete(session)
 
     @enforce_types
-    def serialize(self, agent_id: str, actor: PydanticUser) -> dict:
+    def serialize(self, agent_id: str, actor: PydanticUser) -> AgentSchema:
         with self.session_maker() as session:
             # Retrieve the agent
             agent = AgentModel.read(db_session=session, identifier=agent_id, actor=actor)
-            schema = SerializedAgentSchema(session=session, actor=actor)
-            return schema.dump(agent)
+            schema = MarshmallowAgentSchema(session=session, actor=actor)
+            data = schema.dump(agent)
+            return AgentSchema(**data)
 
     @enforce_types
     def deserialize(
         self,
-        serialized_agent: dict,
+        serialized_agent: AgentSchema,
         actor: PydanticUser,
         append_copy_suffix: bool = True,
         override_existing_tools: bool = True,
         project_id: Optional[str] = None,
     ) -> PydanticAgentState:
+        serialized_agent = serialized_agent.model_dump()
         tool_data_list = serialized_agent.pop("tools", [])
 
         with self.session_maker() as session:
-            schema = SerializedAgentSchema(session=session, actor=actor)
+            schema = MarshmallowAgentSchema(session=session, actor=actor)
             agent = schema.load(serialized_agent, session=session)
             if append_copy_suffix:
                 agent.name += "_copy"

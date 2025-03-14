@@ -402,15 +402,15 @@ export const prefetchUseAgentsServiceListAgents = (
       }),
   });
 /**
- * Download Agent Serialized
- * Download the serialized JSON representation of an agent.
+ * Export Agent Serialized
+ * Export the serialized JSON representation of an agent.
  * @param data The data for the request.
  * @param data.agentId
  * @param data.userId
- * @returns unknown Successful Response
+ * @returns AgentSchema Successful Response
  * @throws ApiError
  */
-export const prefetchUseAgentsServiceDownloadAgentSerialized = (
+export const prefetchUseAgentsServiceExportAgentSerialized = (
   queryClient: QueryClient,
   {
     agentId,
@@ -421,11 +421,11 @@ export const prefetchUseAgentsServiceDownloadAgentSerialized = (
   },
 ) =>
   queryClient.prefetchQuery({
-    queryKey: Common.UseAgentsServiceDownloadAgentSerializedKeyFn({
+    queryKey: Common.UseAgentsServiceExportAgentSerializedKeyFn({
       agentId,
       userId,
     }),
-    queryFn: () => AgentsService.downloadAgentSerialized({ agentId, userId }),
+    queryFn: () => AgentsService.exportAgentSerialized({ agentId, userId }),
   });
 /**
  * Retrieve Agent Context Window

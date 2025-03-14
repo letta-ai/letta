@@ -132,123 +132,27 @@ export const AgentEnvironmentVariable = z.object({
   agent_id: z.string(),
 });
 
-export type ChildToolRule = z.infer<typeof ChildToolRule>;
-export const ChildToolRule = z.object({
-  tool_name: z.string(),
-  type: z.union([z.literal('constrain_child_tools'), z.undefined()]).optional(),
-  children: z.array(z.string()),
-});
-
-export type InitToolRule = z.infer<typeof InitToolRule>;
-export const InitToolRule = z.object({
-  tool_name: z.string(),
-  type: z.union([z.literal('run_first'), z.undefined()]).optional(),
-});
-
-export type TerminalToolRule = z.infer<typeof TerminalToolRule>;
-export const TerminalToolRule = z.object({
-  tool_name: z.string(),
-  type: z.union([z.literal('exit_loop'), z.undefined()]).optional(),
-});
-
-export type ConditionalToolRule = z.infer<typeof ConditionalToolRule>;
-export const ConditionalToolRule = z.object({
-  tool_name: z.string(),
-  type: z.union([z.literal('conditional'), z.undefined()]).optional(),
-  default_child: z
-    .union([
-      z.string(),
-      z.null(),
-      z.array(z.union([z.string(), z.null()])),
-      z.undefined(),
-    ])
-    .optional(),
-  child_output_mapping: z.unknown(),
-  require_output_mapping: z.union([z.boolean(), z.undefined()]).optional(),
-});
-
-export type ContinueToolRule = z.infer<typeof ContinueToolRule>;
-export const ContinueToolRule = z.object({
-  tool_name: z.string(),
-  type: z.union([z.literal('continue_loop'), z.undefined()]).optional(),
-});
-
-export type AgentType = z.infer<typeof AgentType>;
-export const AgentType = z.union([
-  z.literal('memgpt_agent'),
-  z.literal('split_thread_agent'),
-  z.literal('offline_memory_agent'),
-]);
-
-export type LLMConfig = z.infer<typeof LLMConfig>;
-export const LLMConfig = z.object({
-  model: z.string(),
-  model_endpoint_type: z.union([
-    z.literal('openai'),
-    z.literal('anthropic'),
-    z.literal('cohere'),
-    z.literal('google_ai'),
-    z.literal('google_vertex'),
-    z.literal('azure'),
-    z.literal('groq'),
-    z.literal('ollama'),
-    z.literal('webui'),
-    z.literal('webui-legacy'),
-    z.literal('lmstudio'),
-    z.literal('lmstudio-legacy'),
-    z.literal('lmstudio-chatcompletions'),
-    z.literal('llamacpp'),
-    z.literal('koboldcpp'),
-    z.literal('vllm'),
-    z.literal('hugging-face'),
-    z.literal('mistral'),
-    z.literal('together'),
-    z.literal('bedrock'),
-    z.literal('deepseek'),
-    z.literal('xai'),
+export type CoreMemoryBlockSchema = z.infer<typeof CoreMemoryBlockSchema>;
+export const CoreMemoryBlockSchema = z.object({
+  created_at: z.string(),
+  description: z.union([
+    z.string(),
+    z.null(),
+    z.array(z.union([z.string(), z.null()])),
   ]),
-  model_endpoint: z
-    .union([
-      z.string(),
-      z.null(),
-      z.array(z.union([z.string(), z.null()])),
-      z.undefined(),
-    ])
-    .optional(),
-  model_wrapper: z
-    .union([
-      z.string(),
-      z.null(),
-      z.array(z.union([z.string(), z.null()])),
-      z.undefined(),
-    ])
-    .optional(),
-  context_window: z.number(),
-  put_inner_thoughts_in_kwargs: z
-    .union([
-      z.boolean(),
-      z.null(),
-      z.array(z.union([z.boolean(), z.null()])),
-      z.undefined(),
-    ])
-    .optional(),
-  handle: z
-    .union([
-      z.string(),
-      z.null(),
-      z.array(z.union([z.string(), z.null()])),
-      z.undefined(),
-    ])
-    .optional(),
-  temperature: z.union([z.number(), z.undefined()]).optional(),
-  max_tokens: z
-    .union([
-      z.number(),
-      z.null(),
-      z.array(z.union([z.number(), z.null()])),
-      z.undefined(),
-    ])
-    .optional(),
+  identities: z.array(z.unknown()),
+  is_deleted: z.boolean(),
+  is_template: z.boolean(),
+  label: z.string(),
+  limit: z.number(),
+  metadata_: z.union([z.unknown(), z.undefined()]).optional(),
+  template_name: z.union([
+    z.string(),
+    z.null(),
+    z.array(z.union([z.string(), z.null()])),
+  ]),
+  updated_at: z.string(),
+  value: z.string(),
 });
 
 export type EmbeddingConfig = z.infer<typeof EmbeddingConfig>;
@@ -325,6 +229,284 @@ export const EmbeddingConfig = z.object({
     ])
     .optional(),
 });
+
+export type LLMConfig = z.infer<typeof LLMConfig>;
+export const LLMConfig = z.object({
+  model: z.string(),
+  model_endpoint_type: z.union([
+    z.literal('openai'),
+    z.literal('anthropic'),
+    z.literal('cohere'),
+    z.literal('google_ai'),
+    z.literal('google_vertex'),
+    z.literal('azure'),
+    z.literal('groq'),
+    z.literal('ollama'),
+    z.literal('webui'),
+    z.literal('webui-legacy'),
+    z.literal('lmstudio'),
+    z.literal('lmstudio-legacy'),
+    z.literal('lmstudio-chatcompletions'),
+    z.literal('llamacpp'),
+    z.literal('koboldcpp'),
+    z.literal('vllm'),
+    z.literal('hugging-face'),
+    z.literal('mistral'),
+    z.literal('together'),
+    z.literal('bedrock'),
+    z.literal('deepseek'),
+    z.literal('xai'),
+  ]),
+  model_endpoint: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  model_wrapper: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  context_window: z.number(),
+  put_inner_thoughts_in_kwargs: z
+    .union([
+      z.boolean(),
+      z.null(),
+      z.array(z.union([z.boolean(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  handle: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  temperature: z.union([z.number(), z.undefined()]).optional(),
+  max_tokens: z
+    .union([
+      z.number(),
+      z.null(),
+      z.array(z.union([z.number(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+});
+
+export type MessageSchema = z.infer<typeof MessageSchema>;
+export const MessageSchema = z.object({
+  created_at: z.string(),
+  group_id: z.union([
+    z.string(),
+    z.null(),
+    z.array(z.union([z.string(), z.null()])),
+  ]),
+  in_context: z.boolean(),
+  model: z.union([
+    z.string(),
+    z.null(),
+    z.array(z.union([z.string(), z.null()])),
+  ]),
+  name: z.union([
+    z.string(),
+    z.null(),
+    z.array(z.union([z.string(), z.null()])),
+  ]),
+  role: z.string(),
+  text: z.string(),
+  tool_call_id: z.union([
+    z.string(),
+    z.null(),
+    z.array(z.union([z.string(), z.null()])),
+  ]),
+  tool_calls: z.array(z.unknown()),
+  tool_returns: z.array(z.unknown()),
+  updated_at: z.string(),
+});
+
+export type TagSchema = z.infer<typeof TagSchema>;
+export const TagSchema = z.object({
+  tag: z.string(),
+});
+
+export type ToolEnvVarSchema = z.infer<typeof ToolEnvVarSchema>;
+export const ToolEnvVarSchema = z.object({
+  created_at: z.string(),
+  description: z.union([
+    z.string(),
+    z.null(),
+    z.array(z.union([z.string(), z.null()])),
+  ]),
+  is_deleted: z.boolean(),
+  key: z.string(),
+  updated_at: z.string(),
+  value: z.string(),
+});
+
+export type ToolRuleSchema = z.infer<typeof ToolRuleSchema>;
+export const ToolRuleSchema = z.object({
+  tool_name: z.string(),
+  type: z.string(),
+});
+
+export type ParameterProperties = z.infer<typeof ParameterProperties>;
+export const ParameterProperties = z.object({
+  type: z.string(),
+  description: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+});
+
+export type ParametersSchema = z.infer<typeof ParametersSchema>;
+export const ParametersSchema = z.object({
+  type: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  properties: z.unknown(),
+  required: z.union([z.array(z.string()), z.undefined()]).optional(),
+});
+
+export type ToolJSONSchema = z.infer<typeof ToolJSONSchema>;
+export const ToolJSONSchema = z.object({
+  name: z.string(),
+  description: z.string(),
+  parameters: ParametersSchema,
+  type: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  required: z
+    .union([
+      z.array(z.string()),
+      z.null(),
+      z.array(z.union([z.array(z.string()), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+});
+
+export type ToolSchema = z.infer<typeof ToolSchema>;
+export const ToolSchema = z.object({
+  args_json_schema: z.union([
+    z.unknown(),
+    z.null(),
+    z.array(z.union([z.unknown(), z.null()])),
+  ]),
+  created_at: z.string(),
+  description: z.string(),
+  is_deleted: z.boolean(),
+  json_schema: ToolJSONSchema,
+  name: z.string(),
+  return_char_limit: z.number(),
+  source_code: z.union([
+    z.string(),
+    z.null(),
+    z.array(z.union([z.string(), z.null()])),
+  ]),
+  source_type: z.string(),
+  tags: z.array(z.string()),
+  tool_type: z.string(),
+  updated_at: z.string(),
+});
+
+export type AgentSchema = z.infer<typeof AgentSchema>;
+export const AgentSchema = z.object({
+  agent_type: z.string(),
+  core_memory: z.array(CoreMemoryBlockSchema),
+  created_at: z.string(),
+  description: z.string(),
+  embedding_config: EmbeddingConfig,
+  groups: z.array(z.unknown()),
+  identities: z.array(z.unknown()),
+  is_deleted: z.boolean(),
+  llm_config: LLMConfig,
+  message_buffer_autoclear: z.boolean(),
+  messages: z.array(MessageSchema),
+  metadata_: z.unknown(),
+  multi_agent_group: z.union([
+    z.unknown(),
+    z.null(),
+    z.array(z.union([z.unknown(), z.null()])),
+  ]),
+  name: z.string(),
+  system: z.string(),
+  tags: z.array(TagSchema),
+  tool_exec_environment_variables: z.array(ToolEnvVarSchema),
+  tool_rules: z.array(ToolRuleSchema),
+  tools: z.array(ToolSchema),
+  updated_at: z.string(),
+  version: z.string(),
+});
+
+export type ChildToolRule = z.infer<typeof ChildToolRule>;
+export const ChildToolRule = z.object({
+  tool_name: z.string(),
+  type: z.union([z.literal('constrain_child_tools'), z.undefined()]).optional(),
+  children: z.array(z.string()),
+});
+
+export type InitToolRule = z.infer<typeof InitToolRule>;
+export const InitToolRule = z.object({
+  tool_name: z.string(),
+  type: z.union([z.literal('run_first'), z.undefined()]).optional(),
+});
+
+export type TerminalToolRule = z.infer<typeof TerminalToolRule>;
+export const TerminalToolRule = z.object({
+  tool_name: z.string(),
+  type: z.union([z.literal('exit_loop'), z.undefined()]).optional(),
+});
+
+export type ConditionalToolRule = z.infer<typeof ConditionalToolRule>;
+export const ConditionalToolRule = z.object({
+  tool_name: z.string(),
+  type: z.union([z.literal('conditional'), z.undefined()]).optional(),
+  default_child: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  child_output_mapping: z.unknown(),
+  require_output_mapping: z.union([z.boolean(), z.undefined()]).optional(),
+});
+
+export type ContinueToolRule = z.infer<typeof ContinueToolRule>;
+export const ContinueToolRule = z.object({
+  tool_name: z.string(),
+  type: z.union([z.literal('continue_loop'), z.undefined()]).optional(),
+});
+
+export type AgentType = z.infer<typeof AgentType>;
+export const AgentType = z.union([
+  z.literal('memgpt_agent'),
+  z.literal('split_thread_agent'),
+  z.literal('offline_memory_agent'),
+]);
 
 export type Block = z.infer<typeof Block>;
 export const Block = z.object({
@@ -945,10 +1127,10 @@ export const BlockUpdate = z.object({
     .optional(),
 });
 
-export type Body_upload_agent_serialized = z.infer<
-  typeof Body_upload_agent_serialized
+export type Body_import_agent_serialized = z.infer<
+  typeof Body_import_agent_serialized
 >;
-export const Body_upload_agent_serialized = z.object({
+export const Body_import_agent_serialized = z.object({
   file: z.string(),
 });
 
@@ -4599,11 +4781,10 @@ export const post_Create_agent = {
   response: AgentState,
 };
 
-export type get_Download_agent_serialized =
-  typeof get_Download_agent_serialized;
-export const get_Download_agent_serialized = {
+export type get_Export_agent_serialized = typeof get_Export_agent_serialized;
+export const get_Export_agent_serialized = {
   method: z.literal('GET'),
-  path: z.literal('/v1/agents/{agent_id}/download'),
+  path: z.literal('/v1/agents/{agent_id}/export'),
   requestFormat: z.literal('json'),
   parameters: z.object({
     path: z.object({
@@ -4615,13 +4796,13 @@ export const get_Download_agent_serialized = {
         .optional(),
     }),
   }),
-  response: z.unknown(),
+  response: AgentSchema,
 };
 
-export type post_Upload_agent_serialized = typeof post_Upload_agent_serialized;
-export const post_Upload_agent_serialized = {
+export type post_Import_agent_serialized = typeof post_Import_agent_serialized;
+export const post_Import_agent_serialized = {
   method: z.literal('POST'),
-  path: z.literal('/v1/agents/upload'),
+  path: z.literal('/v1/agents/import'),
   requestFormat: z.literal('form-data'),
   parameters: z.object({
     query: z.object({
@@ -4636,7 +4817,7 @@ export const post_Upload_agent_serialized = {
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
     }),
-    body: Body_upload_agent_serialized,
+    body: Body_import_agent_serialized,
   }),
   response: AgentState,
 };
@@ -6494,7 +6675,7 @@ export const EndpointByMethod = {
     '/v1/sources/{source_id}/passages': get_List_source_passages,
     '/v1/sources/{source_id}/files': get_List_source_files,
     '/v1/agents/': get_List_agents,
-    '/v1/agents/{agent_id}/download': get_Download_agent_serialized,
+    '/v1/agents/{agent_id}/export': get_Export_agent_serialized,
     '/v1/agents/{agent_id}/context': get_Retrieve_agent_context_window,
     '/v1/agents/{agent_id}': get_Retrieve_agent,
     '/v1/agents/{agent_id}/tools': get_List_agent_tools,
@@ -6573,7 +6754,7 @@ export const EndpointByMethod = {
     '/v1/sources/': post_Create_source,
     '/v1/sources/{source_id}/upload': post_Upload_file_to_source,
     '/v1/agents/': post_Create_agent,
-    '/v1/agents/upload': post_Upload_agent_serialized,
+    '/v1/agents/import': post_Import_agent_serialized,
     '/v1/agents/{agent_id}/archival-memory': post_Create_passage,
     '/v1/agents/{agent_id}/messages': post_Send_message,
     '/v1/agents/{agent_id}/messages/stream': post_Create_agent_message_stream,

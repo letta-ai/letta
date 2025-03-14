@@ -491,16 +491,16 @@ export const useAgentsServiceListAgentsSuspense = <
     ...options,
   });
 /**
- * Download Agent Serialized
- * Download the serialized JSON representation of an agent.
+ * Export Agent Serialized
+ * Export the serialized JSON representation of an agent.
  * @param data The data for the request.
  * @param data.agentId
  * @param data.userId
- * @returns unknown Successful Response
+ * @returns AgentSchema Successful Response
  * @throws ApiError
  */
-export const useAgentsServiceDownloadAgentSerializedSuspense = <
-  TData = Common.AgentsServiceDownloadAgentSerializedDefaultResponse,
+export const useAgentsServiceExportAgentSerializedSuspense = <
+  TData = Common.AgentsServiceExportAgentSerializedDefaultResponse,
   TError = unknown,
   TQueryKey extends Array<unknown> = unknown[],
 >(
@@ -515,12 +515,12 @@ export const useAgentsServiceDownloadAgentSerializedSuspense = <
   options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>,
 ) =>
   useSuspenseQuery<TData, TError>({
-    queryKey: Common.UseAgentsServiceDownloadAgentSerializedKeyFn(
+    queryKey: Common.UseAgentsServiceExportAgentSerializedKeyFn(
       { agentId, userId },
       queryKey,
     ),
     queryFn: () =>
-      AgentsService.downloadAgentSerialized({ agentId, userId }) as TData,
+      AgentsService.exportAgentSerialized({ agentId, userId }) as TData,
     ...options,
   });
 /**

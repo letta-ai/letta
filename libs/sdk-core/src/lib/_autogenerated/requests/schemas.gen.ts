@@ -286,6 +286,143 @@ export const $AgentEnvironmentVariable = {
   title: 'AgentEnvironmentVariable',
 } as const;
 
+export const $AgentSchema = {
+  properties: {
+    agent_type: {
+      type: 'string',
+      title: 'Agent Type',
+    },
+    core_memory: {
+      items: {
+        $ref: '#/components/schemas/CoreMemoryBlockSchema',
+      },
+      type: 'array',
+      title: 'Core Memory',
+    },
+    created_at: {
+      type: 'string',
+      title: 'Created At',
+    },
+    description: {
+      type: 'string',
+      title: 'Description',
+    },
+    embedding_config: {
+      $ref: '#/components/schemas/EmbeddingConfig',
+    },
+    groups: {
+      items: {},
+      type: 'array',
+      title: 'Groups',
+    },
+    identities: {
+      items: {},
+      type: 'array',
+      title: 'Identities',
+    },
+    is_deleted: {
+      type: 'boolean',
+      title: 'Is Deleted',
+    },
+    llm_config: {
+      $ref: '#/components/schemas/LLMConfig',
+    },
+    message_buffer_autoclear: {
+      type: 'boolean',
+      title: 'Message Buffer Autoclear',
+    },
+    messages: {
+      items: {
+        $ref: '#/components/schemas/MessageSchema',
+      },
+      type: 'array',
+      title: 'Messages',
+    },
+    metadata_: {
+      type: 'object',
+      title: 'Metadata ',
+    },
+    multi_agent_group: {
+      anyOf: [
+        {},
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Multi Agent Group',
+    },
+    name: {
+      type: 'string',
+      title: 'Name',
+    },
+    system: {
+      type: 'string',
+      title: 'System',
+    },
+    tags: {
+      items: {
+        $ref: '#/components/schemas/TagSchema',
+      },
+      type: 'array',
+      title: 'Tags',
+    },
+    tool_exec_environment_variables: {
+      items: {
+        $ref: '#/components/schemas/ToolEnvVarSchema',
+      },
+      type: 'array',
+      title: 'Tool Exec Environment Variables',
+    },
+    tool_rules: {
+      items: {
+        $ref: '#/components/schemas/ToolRuleSchema',
+      },
+      type: 'array',
+      title: 'Tool Rules',
+    },
+    tools: {
+      items: {
+        $ref: '#/components/schemas/ToolSchema',
+      },
+      type: 'array',
+      title: 'Tools',
+    },
+    updated_at: {
+      type: 'string',
+      title: 'Updated At',
+    },
+    version: {
+      type: 'string',
+      title: 'Version',
+    },
+  },
+  type: 'object',
+  required: [
+    'agent_type',
+    'core_memory',
+    'created_at',
+    'description',
+    'embedding_config',
+    'groups',
+    'identities',
+    'is_deleted',
+    'llm_config',
+    'message_buffer_autoclear',
+    'messages',
+    'metadata_',
+    'multi_agent_group',
+    'name',
+    'system',
+    'tags',
+    'tool_exec_environment_variables',
+    'tool_rules',
+    'tools',
+    'updated_at',
+    'version',
+  ],
+  title: 'AgentSchema',
+} as const;
+
 export const $AgentState = {
   properties: {
     created_by_id: {
@@ -1232,7 +1369,7 @@ export const $BlockUpdate = {
   description: 'Update a block',
 } as const;
 
-export const $Body_upload_agent_serialized = {
+export const $Body_import_agent_serialized = {
   properties: {
     file: {
       type: 'string',
@@ -1242,7 +1379,7 @@ export const $Body_upload_agent_serialized = {
   },
   type: 'object',
   required: ['file'],
-  title: 'Body_upload_agent_serialized',
+  title: 'Body_import_agent_serialized',
 } as const;
 
 export const $Body_upload_file_to_source = {
@@ -2769,6 +2906,84 @@ export const $ContinueToolRule = {
   title: 'ContinueToolRule',
   description:
     'Represents a tool rule configuration where if this tool gets called, it must continue the agent loop.',
+} as const;
+
+export const $CoreMemoryBlockSchema = {
+  properties: {
+    created_at: {
+      type: 'string',
+      title: 'Created At',
+    },
+    description: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Description',
+    },
+    identities: {
+      items: {},
+      type: 'array',
+      title: 'Identities',
+    },
+    is_deleted: {
+      type: 'boolean',
+      title: 'Is Deleted',
+    },
+    is_template: {
+      type: 'boolean',
+      title: 'Is Template',
+    },
+    label: {
+      type: 'string',
+      title: 'Label',
+    },
+    limit: {
+      type: 'integer',
+      title: 'Limit',
+    },
+    metadata_: {
+      type: 'object',
+      title: 'Metadata ',
+    },
+    template_name: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Template Name',
+    },
+    updated_at: {
+      type: 'string',
+      title: 'Updated At',
+    },
+    value: {
+      type: 'string',
+      title: 'Value',
+    },
+  },
+  type: 'object',
+  required: [
+    'created_at',
+    'description',
+    'identities',
+    'is_deleted',
+    'is_template',
+    'label',
+    'limit',
+    'template_name',
+    'updated_at',
+    'value',
+  ],
+  title: 'CoreMemoryBlockSchema',
 } as const;
 
 export const $CreateAgentRequest = {
@@ -5177,6 +5392,100 @@ export const $MessageRole = {
   title: 'MessageRole',
 } as const;
 
+export const $MessageSchema = {
+  properties: {
+    created_at: {
+      type: 'string',
+      title: 'Created At',
+    },
+    group_id: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Group Id',
+    },
+    in_context: {
+      type: 'boolean',
+      title: 'In Context',
+    },
+    model: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Model',
+    },
+    name: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Name',
+    },
+    role: {
+      type: 'string',
+      title: 'Role',
+    },
+    text: {
+      type: 'string',
+      title: 'Text',
+    },
+    tool_call_id: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Tool Call Id',
+    },
+    tool_calls: {
+      items: {},
+      type: 'array',
+      title: 'Tool Calls',
+    },
+    tool_returns: {
+      items: {},
+      type: 'array',
+      title: 'Tool Returns',
+    },
+    updated_at: {
+      type: 'string',
+      title: 'Updated At',
+    },
+  },
+  type: 'object',
+  required: [
+    'created_at',
+    'group_id',
+    'in_context',
+    'model',
+    'name',
+    'role',
+    'text',
+    'tool_call_id',
+    'tool_calls',
+    'tool_returns',
+    'updated_at',
+  ],
+  title: 'MessageSchema',
+} as const;
+
 export const $Organization = {
   properties: {
     id: {
@@ -5229,6 +5538,63 @@ export const $OrganizationCreate = {
   additionalProperties: false,
   type: 'object',
   title: 'OrganizationCreate',
+} as const;
+
+export const $ParameterProperties = {
+  properties: {
+    type: {
+      type: 'string',
+      title: 'Type',
+    },
+    description: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Description',
+    },
+  },
+  type: 'object',
+  required: ['type'],
+  title: 'ParameterProperties',
+} as const;
+
+export const $ParametersSchema = {
+  properties: {
+    type: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Type',
+      default: 'object',
+    },
+    properties: {
+      additionalProperties: {
+        $ref: '#/components/schemas/ParameterProperties',
+      },
+      type: 'object',
+      title: 'Properties',
+    },
+    required: {
+      items: {
+        type: 'string',
+      },
+      type: 'array',
+      title: 'Required',
+    },
+  },
+  type: 'object',
+  required: ['properties'],
+  title: 'ParametersSchema',
 } as const;
 
 export const $Passage = {
@@ -6837,6 +7203,18 @@ Args:
     content (Union[str, List[LettaMessageContentUnion]]): The message content sent by the system (can be a string or an array of content parts)`,
 } as const;
 
+export const $TagSchema = {
+  properties: {
+    tag: {
+      type: 'string',
+      title: 'Tag',
+    },
+  },
+  type: 'object',
+  required: ['tag'],
+  title: 'TagSchema',
+} as const;
+
 export const $TerminalToolRule = {
   properties: {
     tool_name: {
@@ -7208,6 +7586,96 @@ export const $ToolCreate = {
   title: 'ToolCreate',
 } as const;
 
+export const $ToolEnvVarSchema = {
+  properties: {
+    created_at: {
+      type: 'string',
+      title: 'Created At',
+    },
+    description: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Description',
+    },
+    is_deleted: {
+      type: 'boolean',
+      title: 'Is Deleted',
+    },
+    key: {
+      type: 'string',
+      title: 'Key',
+    },
+    updated_at: {
+      type: 'string',
+      title: 'Updated At',
+    },
+    value: {
+      type: 'string',
+      title: 'Value',
+    },
+  },
+  type: 'object',
+  required: [
+    'created_at',
+    'description',
+    'is_deleted',
+    'key',
+    'updated_at',
+    'value',
+  ],
+  title: 'ToolEnvVarSchema',
+} as const;
+
+export const $ToolJSONSchema = {
+  properties: {
+    name: {
+      type: 'string',
+      title: 'Name',
+    },
+    description: {
+      type: 'string',
+      title: 'Description',
+    },
+    parameters: {
+      $ref: '#/components/schemas/ParametersSchema',
+    },
+    type: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Type',
+    },
+    required: {
+      anyOf: [
+        {
+          items: {
+            type: 'string',
+          },
+          type: 'array',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Required',
+    },
+  },
+  type: 'object',
+  required: ['name', 'description', 'parameters'],
+  title: 'ToolJSONSchema',
+} as const;
+
 export const $ToolReturn = {
   properties: {
     status: {
@@ -7328,6 +7796,22 @@ Args:
     stderr (Optional[List(str)]): Captured stderr from the tool invocation`,
 } as const;
 
+export const $ToolRuleSchema = {
+  properties: {
+    tool_name: {
+      type: 'string',
+      title: 'Tool Name',
+    },
+    type: {
+      type: 'string',
+      title: 'Type',
+    },
+  },
+  type: 'object',
+  required: ['tool_name', 'type'],
+  title: 'ToolRuleSchema',
+} as const;
+
 export const $ToolRunFromSource = {
   properties: {
     source_code: {
@@ -7389,6 +7873,89 @@ export const $ToolRunFromSource = {
   type: 'object',
   required: ['source_code', 'args'],
   title: 'ToolRunFromSource',
+} as const;
+
+export const $ToolSchema = {
+  properties: {
+    args_json_schema: {
+      anyOf: [
+        {},
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Args Json Schema',
+    },
+    created_at: {
+      type: 'string',
+      title: 'Created At',
+    },
+    description: {
+      type: 'string',
+      title: 'Description',
+    },
+    is_deleted: {
+      type: 'boolean',
+      title: 'Is Deleted',
+    },
+    json_schema: {
+      $ref: '#/components/schemas/ToolJSONSchema',
+    },
+    name: {
+      type: 'string',
+      title: 'Name',
+    },
+    return_char_limit: {
+      type: 'integer',
+      title: 'Return Char Limit',
+    },
+    source_code: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Source Code',
+    },
+    source_type: {
+      type: 'string',
+      title: 'Source Type',
+    },
+    tags: {
+      items: {
+        type: 'string',
+      },
+      type: 'array',
+      title: 'Tags',
+    },
+    tool_type: {
+      type: 'string',
+      title: 'Tool Type',
+    },
+    updated_at: {
+      type: 'string',
+      title: 'Updated At',
+    },
+  },
+  type: 'object',
+  required: [
+    'args_json_schema',
+    'created_at',
+    'description',
+    'is_deleted',
+    'json_schema',
+    'name',
+    'return_char_limit',
+    'source_code',
+    'source_type',
+    'tags',
+    'tool_type',
+    'updated_at',
+  ],
+  title: 'ToolSchema',
 } as const;
 
 export const $ToolType = {

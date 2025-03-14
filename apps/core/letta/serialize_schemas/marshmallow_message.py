@@ -4,8 +4,8 @@ from marshmallow import post_dump, pre_load
 
 from letta.orm.message import Message
 from letta.schemas.message import Message as PydanticMessage
-from letta.serialize_schemas.base import BaseSchema
-from letta.serialize_schemas.custom_fields import ToolCallField
+from letta.serialize_schemas.marshmallow_base import BaseSchema
+from letta.serialize_schemas.marshmallow_custom_fields import ToolCallField
 
 
 class SerializedMessageSchema(BaseSchema):

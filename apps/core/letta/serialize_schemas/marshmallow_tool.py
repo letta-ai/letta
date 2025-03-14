@@ -1,6 +1,6 @@
 from letta.orm import Tool
 from letta.schemas.tool import Tool as PydanticTool
-from letta.serialize_schemas.base import BaseSchema
+from letta.serialize_schemas.marshmallow_base import BaseSchema
 
 
 class SerializedToolSchema(BaseSchema):

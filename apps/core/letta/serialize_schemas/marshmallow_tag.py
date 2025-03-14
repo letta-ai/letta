@@ -3,7 +3,7 @@ from typing import Dict
 from marshmallow import fields, post_dump, pre_load
 
 from letta.orm.agents_tags import AgentsTags
-from letta.serialize_schemas.base import BaseSchema
+from letta.serialize_schemas.marshmallow_base import BaseSchema
 
 
 class SerializedAgentTagSchema(BaseSchema):

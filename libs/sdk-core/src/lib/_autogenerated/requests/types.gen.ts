@@ -87,6 +87,32 @@ export type AgentEnvironmentVariable = {
   agent_id: string;
 };
 
+export type AgentSchema = {
+  agent_type: string;
+  core_memory: Array<CoreMemoryBlockSchema>;
+  created_at: string;
+  description: string;
+  embedding_config: EmbeddingConfig;
+  groups: Array<unknown>;
+  identities: Array<unknown>;
+  is_deleted: boolean;
+  llm_config: LLMConfig;
+  message_buffer_autoclear: boolean;
+  messages: Array<MessageSchema>;
+  metadata_: {
+    [key: string]: unknown;
+  };
+  multi_agent_group: unknown | null;
+  name: string;
+  system: string;
+  tags: Array<TagSchema>;
+  tool_exec_environment_variables: Array<ToolEnvVarSchema>;
+  tool_rules: Array<ToolRuleSchema>;
+  tools: Array<ToolSchema>;
+  updated_at: string;
+  version: string;
+};
+
 /**
  * Representation of an agent's state. This is the state of the agent at a given time, and is persisted in the DB backend. The state has all the information needed to recreate a persisted agent.
  *
@@ -445,7 +471,7 @@ export type BlockUpdate = {
   } | null;
 };
 
-export type Body_upload_agent_serialized = {
+export type Body_import_agent_serialized = {
   file: Blob | File;
 };
 
@@ -935,6 +961,22 @@ export type ContinueToolRule = {
 };
 
 export type type9 = 'continue_loop';
+
+export type CoreMemoryBlockSchema = {
+  created_at: string;
+  description: string | null;
+  identities: Array<unknown>;
+  is_deleted: boolean;
+  is_template: boolean;
+  label: string;
+  limit: number;
+  metadata_?: {
+    [key: string]: unknown;
+  };
+  template_name: string | null;
+  updated_at: string;
+  value: string;
+};
 
 /**
  * CreateAgent model specifically for POST request body, excluding user_id which comes from headers
@@ -1983,6 +2025,20 @@ export type role7 = 'user' | 'system';
 
 export type MessageRole = 'assistant' | 'user' | 'tool' | 'function' | 'system';
 
+export type MessageSchema = {
+  created_at: string;
+  group_id: string | null;
+  in_context: boolean;
+  model: string | null;
+  name: string | null;
+  role: string;
+  text: string;
+  tool_call_id: string | null;
+  tool_calls: Array<unknown>;
+  tool_returns: Array<unknown>;
+  updated_at: string;
+};
+
 export type Organization = {
   /**
    * The human-friendly ID of the Org
@@ -2003,6 +2059,19 @@ export type OrganizationCreate = {
    * The name of the organization.
    */
   name?: string | null;
+};
+
+export type ParameterProperties = {
+  type: string;
+  description?: string | null;
+};
+
+export type ParametersSchema = {
+  type?: string | null;
+  properties: {
+    [key: string]: ParameterProperties;
+  };
+  required?: Array<string>;
 };
 
 /**
@@ -2661,6 +2730,10 @@ export type SystemMessage = {
   content: Array<LettaMessageContentUnion> | string;
 };
 
+export type TagSchema = {
+  tag: string;
+};
+
 /**
  * Represents a terminal tool rule configuration where if this tool gets called, it must end the agent loop.
  */
@@ -2816,6 +2889,23 @@ export type ToolCreate = {
   return_char_limit?: number;
 };
 
+export type ToolEnvVarSchema = {
+  created_at: string;
+  description: string | null;
+  is_deleted: boolean;
+  key: string;
+  updated_at: string;
+  value: string;
+};
+
+export type ToolJSONSchema = {
+  name: string;
+  description: string;
+  parameters: ParametersSchema;
+  type?: string | null;
+  required?: Array<string> | null;
+};
+
 export type ToolReturn = {
   /**
    * The status of the tool call
@@ -2859,6 +2949,11 @@ export type ToolReturnMessage = {
   stderr?: Array<string> | null;
 };
 
+export type ToolRuleSchema = {
+  tool_name: string;
+  type: string;
+};
+
 export type ToolRunFromSource = {
   /**
    * The source code of the function.
@@ -2890,6 +2985,21 @@ export type ToolRunFromSource = {
   args_json_schema?: {
     [key: string]: unknown;
   } | null;
+};
+
+export type ToolSchema = {
+  args_json_schema: unknown | null;
+  created_at: string;
+  description: string;
+  is_deleted: boolean;
+  json_schema: ToolJSONSchema;
+  name: string;
+  return_char_limit: number;
+  source_code: string | null;
+  source_type: string;
+  tags: Array<string>;
+  tool_type: string;
+  updated_at: string;
 };
 
 export type ToolType =
@@ -3462,19 +3572,19 @@ export type CreateAgentData = {
 
 export type CreateAgentResponse = AgentState;
 
-export type DownloadAgentSerializedData = {
+export type ExportAgentSerializedData = {
   agentId: string;
   userId?: string | null;
 };
 
-export type DownloadAgentSerializedResponse = unknown;
+export type ExportAgentSerializedResponse = AgentSchema;
 
-export type UploadAgentSerializedData = {
+export type ImportAgentSerializedData = {
   /**
    * If set to True, appends "_copy" to the end of the agent name.
    */
   appendCopySuffix?: boolean;
-  formData: Body_upload_agent_serialized;
+  formData: Body_import_agent_serialized;
   /**
    * If set to True, existing tools can get their source code overwritten by the uploaded tool definitions. Note that Letta core tools can never be updated externally.
    */
@@ -3486,7 +3596,7 @@ export type UploadAgentSerializedData = {
   userId?: string | null;
 };
 
-export type UploadAgentSerializedResponse = AgentState;
+export type ImportAgentSerializedResponse = AgentState;
 
 export type RetrieveAgentContextWindowData = {
   agentId: string;
@@ -4751,14 +4861,14 @@ export type $OpenApiTs = {
       };
     };
   };
-  '/v1/agents/{agent_id}/download': {
+  '/v1/agents/{agent_id}/export': {
     get: {
-      req: DownloadAgentSerializedData;
+      req: ExportAgentSerializedData;
       res: {
         /**
          * Successful Response
          */
-        200: unknown;
+        200: AgentSchema;
         /**
          * Validation Error
          */
@@ -4766,9 +4876,9 @@ export type $OpenApiTs = {
       };
     };
   };
-  '/v1/agents/upload': {
+  '/v1/agents/import': {
     post: {
-      req: UploadAgentSerializedData;
+      req: ImportAgentSerializedData;
       res: {
         /**
          * Successful Response

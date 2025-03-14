@@ -3,7 +3,7 @@ import React, { useCallback, useEffect, useMemo } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import {
   UseAgentsServiceListAgentsKeyFn,
-  useAgentsServiceUploadAgentSerialized,
+  useAgentsServiceImportAgentSerialized,
 } from '@letta-cloud/sdk-core';
 import {
   Dialog,
@@ -40,7 +40,7 @@ export function ImportAgentsDialog(props: ImportAgentsDialogProps) {
   type UploadToFormValues = z.infer<typeof UploadToFormValuesSchema>;
 
   const { mutate, isPending, isSuccess, reset } =
-    useAgentsServiceUploadAgentSerialized({
+    useAgentsServiceImportAgentSerialized({
       onSuccess: async () => {
         await queryClient.refetchQueries({
           queryKey: ['infinite', ...UseAgentsServiceListAgentsKeyFn()].slice(

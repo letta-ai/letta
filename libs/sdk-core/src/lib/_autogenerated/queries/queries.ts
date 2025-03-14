@@ -31,7 +31,7 @@ import {
 import {
   AuthRequest,
   BlockUpdate,
-  Body_upload_agent_serialized,
+  Body_import_agent_serialized,
   Body_upload_file_to_source,
   CompletionCreateParamsNonStreaming,
   CompletionCreateParamsStreaming,
@@ -535,16 +535,16 @@ export const useAgentsServiceListAgents = <
     ...options,
   });
 /**
- * Download Agent Serialized
- * Download the serialized JSON representation of an agent.
+ * Export Agent Serialized
+ * Export the serialized JSON representation of an agent.
  * @param data The data for the request.
  * @param data.agentId
  * @param data.userId
- * @returns unknown Successful Response
+ * @returns AgentSchema Successful Response
  * @throws ApiError
  */
-export const useAgentsServiceDownloadAgentSerialized = <
-  TData = Common.AgentsServiceDownloadAgentSerializedDefaultResponse,
+export const useAgentsServiceExportAgentSerialized = <
+  TData = Common.AgentsServiceExportAgentSerializedDefaultResponse,
   TError = unknown,
   TQueryKey extends Array<unknown> = unknown[],
 >(
@@ -559,12 +559,12 @@ export const useAgentsServiceDownloadAgentSerialized = <
   options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>,
 ) =>
   useQuery<TData, TError>({
-    queryKey: Common.UseAgentsServiceDownloadAgentSerializedKeyFn(
+    queryKey: Common.UseAgentsServiceExportAgentSerializedKeyFn(
       { agentId, userId },
       queryKey,
     ),
     queryFn: () =>
-      AgentsService.downloadAgentSerialized({ agentId, userId }) as TData,
+      AgentsService.exportAgentSerialized({ agentId, userId }) as TData,
     ...options,
   });
 /**
@@ -2462,8 +2462,8 @@ export const useAgentsServiceCreateAgent = <
     ...options,
   });
 /**
- * Upload Agent Serialized
- * Upload a serialized agent JSON file and recreate the agent in the system.
+ * Import Agent Serialized
+ * Import a serialized agent file and recreate the agent in the system.
  * @param data The data for the request.
  * @param data.formData
  * @param data.appendCopySuffix If set to True, appends "_copy" to the end of the agent name.
@@ -2473,8 +2473,8 @@ export const useAgentsServiceCreateAgent = <
  * @returns AgentState Successful Response
  * @throws ApiError
  */
-export const useAgentsServiceUploadAgentSerialized = <
-  TData = Common.AgentsServiceUploadAgentSerializedMutationResult,
+export const useAgentsServiceImportAgentSerialized = <
+  TData = Common.AgentsServiceImportAgentSerializedMutationResult,
   TError = unknown,
   TContext = unknown,
 >(
@@ -2484,7 +2484,7 @@ export const useAgentsServiceUploadAgentSerialized = <
       TError,
       {
         appendCopySuffix?: boolean;
-        formData: Body_upload_agent_serialized;
+        formData: Body_import_agent_serialized;
         overrideExistingTools?: boolean;
         projectId?: string;
         userId?: string;
@@ -2499,7 +2499,7 @@ export const useAgentsServiceUploadAgentSerialized = <
     TError,
     {
       appendCopySuffix?: boolean;
-      formData: Body_upload_agent_serialized;
+      formData: Body_import_agent_serialized;
       overrideExistingTools?: boolean;
       projectId?: string;
       userId?: string;
@@ -2513,7 +2513,7 @@ export const useAgentsServiceUploadAgentSerialized = <
       projectId,
       userId,
     }) =>
-      AgentsService.uploadAgentSerialized({
+      AgentsService.importAgentSerialized({
         appendCopySuffix,
         formData,
         overrideExistingTools,
