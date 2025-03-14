@@ -33,6 +33,7 @@ jobs:
         OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
 
       run: |
+        cd apps/core
         docker compose -f dev-compose.yaml up --build -d
     #- name: "Setup Python, Poetry and Dependencies"
     #  uses: packetcoders/action-setup-cache-python-poetry@v1.2.0
@@ -42,7 +43,9 @@ jobs:
     #    install-args: "--all-extras"
 
     - name: Wait for service
-      run: bash scripts/wait_for_service.sh http://localhost:8283 -- echo "Service is ready"
+      run: |
+        cd apps/core
+        bash scripts/wait_for_service.sh http://localhost:8283 -- echo "Service is ready"
 
     - name: Run tests with pytest
       env:
@@ -55,6 +58,7 @@ jobs:
         OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
         PYTHONPATH: ${{ github.workspace }}:${{ env.PYTHONPATH }}
       run: |
+        cd apps/core
         pipx install poetry==1.8.2
         poetry install -E dev -E postgres
         poetry run pytest -s tests/test_client_legacy.py
@@ -62,5 +66,6 @@ jobs:
     - name: Print docker logs if tests fail
       if: failure()
       run: |
+        cd apps/core
         echo "Printing Docker Logs..."
         docker compose -f dev-compose.yaml logs
