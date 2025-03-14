@@ -286,9 +286,20 @@ class SqlalchemyBase(CommonSqlalchemyMetaMixins, Base):
         Raises:
             NoResultFound: if the object is not found
         """
-        # this is ok because read_multiple will check if the 
+        # this is ok because read_multiple will check if the
         identifiers = [] if identifier is None else [identifier]
-        return cls.read_multiple(cls, db_session, identifiers, actor, access, access_type, kwargs)[0]
+        found = cls.read_multiple(db_session, identifiers, actor, access, access_type, **kwargs)
+        if len(found) == 0:
+            # for backwards compatibility.
+            conditions = []
+            if identifier:
+                conditions.append(f"id={identifier}")
+            if actor:
+                conditions.append(f"access level in {access} for {actor}")
+            if hasattr(cls, "is_deleted"):
+                conditions.append("is_deleted=False")
+            raise NoResultFound(f"{cls.__name__} not found with {', '.join(conditions if conditions else ['no conditions'])}")
+        return found[0]
 
     @classmethod
     @handle_db_timeout
@@ -341,26 +352,27 @@ class SqlalchemyBase(CommonSqlalchemyMetaMixins, Base):
             query_conditions.append("is_deleted=False")
 
         results = db_session.execute(query).scalars().all()
-        if results: # if empty list a.k.a. no results
+        if results:  # if empty list a.k.a. no results
             if len(identifiers) > 0:
                 # find which identifiers were not found
                 # only when identifier length is greater than 0 (so it was used in the actual query)
                 identifier_set = set(identifiers)
                 results_set = set(map(lambda obj: obj.id, results))
-                
-                # we return an error message if any of the queried IDs were not found.
-                # we do this because this is expected behavior in the old get_all_blocks_by_ids (in block_manager.py),
-                # where failure to retrieve a single record will raise an Error, basically invalidating the entire operation.
-                # TODO: maybe should not error out
+
+                # we log a warning message if any of the queried IDs were not found.
+                # TODO: should we error out instead?
                 if identifier_set != results_set:
                     # Construct a detailed error message based on query conditions
                     conditions_str = ", ".join(query_conditions) if query_conditions else "no specific conditions"
-                    raise NoResultFound(f"{cls.__name__} not found with {conditions_str}. Queried ids: {identifier_set}, Found ids: {results_set}")
+                    logger.warning(
+                        f"{cls.__name__} not found with {conditions_str}. Queried ids: {identifier_set}, Found ids: {results_set}"
+                    )
             return results
 
         # Construct a detailed error message based on query conditions
         conditions_str = ", ".join(query_conditions) if query_conditions else "no specific conditions"
-        raise NoResultFound(f"{cls.__name__} not found with {conditions_str}")
+        logger.warning(f"{cls.__name__} not found with {conditions_str}")
+        return []
 
     @handle_db_timeout
     def create(self, db_session: "Session", actor: Optional["User"] = None) -> "SqlalchemyBase":
