@@ -3,6 +3,7 @@ from typing import TYPE_CHECKING, List
 
 from letta.functions.helpers import (
     _send_message_to_agents_matching_tags_async,
+    _send_message_to_all_agents_in_group_async,
     execute_send_message_to_agent,
     fire_and_forget_send_to_agent,
 )
@@ -86,3 +87,19 @@ def send_message_to_agents_matching_tags(self: "Agent", message: str, match_all:
     """
 
     return asyncio.run(_send_message_to_agents_matching_tags_async(self, message, match_all, match_some))
+
+
+def send_message_to_all_agents_in_group(self: "Agent", message: str) -> List[str]:
+    """
+    Sends a message to all agents within the same multi-agent group.
+
+    Args:
+        message (str): The content of the message to be sent to each matching agent.
+
+    Returns:
+        List[str]: A list of responses from the agents that matched the filtering criteria. Each
+        response corresponds to a single agent. Agents that do not respond will not have an entry
+        in the returned list.
+    """
+
+    return asyncio.run(_send_message_to_all_agents_in_group_async(self, message))

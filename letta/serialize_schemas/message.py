@@ -1,6 +1,6 @@
 from typing import Dict
 
-from marshmallow import post_dump
+from marshmallow import post_dump, pre_load
 
 from letta.orm.message import Message
 from letta.schemas.message import Message as PydanticMessage
@@ -18,12 +18,25 @@ class SerializedMessageSchema(BaseSchema):
     tool_calls = ToolCallField()
 
     @post_dump
-    def sanitize_ids(self, data: Dict, **kwargs):
-        # We don't want to remap here
-        # Because of the way that message_ids is just a JSON field on agents
-        # We need to wait for the agent dumps, and then keep track of all the message IDs we remapped
+    def sanitize_ids(self, data: Dict, **kwargs) -> Dict:
+        # keep id for remapping later on agent dump
+        # agent dump will then get rid of message ids
+        del data["_created_by_id"]
+        del data["_last_updated_by_id"]
+        del data["organization"]
+
+        return data
+
+    @pre_load
+    def regenerate_ids(self, data: Dict, **kwargs) -> Dict:
+        if self.Meta.model:
+            # Skip regenerating ID, as agent dump will do it
+            data["_created_by_id"] = self.actor.id
+            data["_last_updated_by_id"] = self.actor.id
+            data["organization"] = self.actor.organization_id
+
         return data
 
     class Meta(BaseSchema.Meta):
         model = Message
-        exclude = BaseSchema.Meta.exclude + ("step", "job_message", "agent")
+        exclude = BaseSchema.Meta.exclude + ("step", "job_message", "agent", "otid", "is_deleted")

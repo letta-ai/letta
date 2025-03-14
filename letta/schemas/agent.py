@@ -7,6 +7,7 @@ from letta.constants import DEFAULT_EMBEDDING_CHUNK_SIZE
 from letta.schemas.block import CreateBlock
 from letta.schemas.embedding_config import EmbeddingConfig
 from letta.schemas.environment_variables import AgentEnvironmentVariable
+from letta.schemas.group import Group
 from letta.schemas.letta_base import OrmMetadataBase
 from letta.schemas.llm_config import LLMConfig
 from letta.schemas.memory import Memory
@@ -89,6 +90,8 @@ class AgentState(OrmMetadataBase, validate_assignment=True):
         False,
         description="If set to True, the agent will not remember previous messages (though the agent will still retain state via core memory blocks and archival/recall memory). Not recommended unless you have an advanced use case.",
     )
+
+    multi_agent_group: Optional[Group] = Field(None, description="The multi-agent group that this agent manages")
 
     def get_agent_env_vars_as_dict(self) -> Dict[str, str]:
         # Get environment variables for this agent specifically

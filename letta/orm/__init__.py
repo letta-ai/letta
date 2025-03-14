@@ -4,6 +4,8 @@ from letta.orm.base import Base
 from letta.orm.block import Block
 from letta.orm.blocks_agents import BlocksAgents
 from letta.orm.file import FileMetadata
+from letta.orm.group import Group
+from letta.orm.groups_agents import GroupsAgents
 from letta.orm.identities_agents import IdentitiesAgents
 from letta.orm.identities_blocks import IdentitiesBlocks
 from letta.orm.identity import Identity

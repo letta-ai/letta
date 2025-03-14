@@ -11,6 +11,9 @@ from letta.log import get_logger
 
 logger = get_logger(__name__)
 
+# see: https://modelcontextprotocol.io/quickstart/user
+MCP_CONFIG_TOPLEVEL_KEY = "mcpServers"
+
 
 class MCPTool(Tool):
     """A simple wrapper around MCP's tool definition (to avoid conflict with our own)"""
@@ -18,7 +21,7 @@ class MCPTool(Tool):
 
 class MCPServerType(str, Enum):
     SSE = "sse"
-    LOCAL = "local"
+    STDIO = "stdio"
 
 
 class BaseServerConfig(BaseModel):
@@ -30,11 +33,29 @@ class SSEServerConfig(BaseServerConfig):
     type: MCPServerType = MCPServerType.SSE
     server_url: str = Field(..., description="The URL of the server (MCP SSE client will connect to this URL)")
 
+    def to_dict(self) -> dict:
+        values = {
+            "transport": "sse",
+            "url": self.server_url,
+        }
+        return values
 
-class LocalServerConfig(BaseServerConfig):
-    type: MCPServerType = MCPServerType.LOCAL
+
+class StdioServerConfig(BaseServerConfig):
+    type: MCPServerType = MCPServerType.STDIO
     command: str = Field(..., description="The command to run (MCP 'local' client will run this command)")
     args: List[str] = Field(..., description="The arguments to pass to the command")
+    env: Optional[dict[str, str]] = Field(None, description="Environment variables to set")
+
+    def to_dict(self) -> dict:
+        values = {
+            "transport": "stdio",
+            "command": self.command,
+            "args": self.args,
+        }
+        if self.env is not None:
+            values["env"] = self.env
+        return values
 
 
 class BaseMCPClient:
@@ -83,8 +104,8 @@ class BaseMCPClient:
             logger.info("Cleaned up MCP clients on shutdown.")
 
 
-class LocalMCPClient(BaseMCPClient):
-    def _initialize_connection(self, server_config: LocalServerConfig):
+class StdioMCPClient(BaseMCPClient):
+    def _initialize_connection(self, server_config: StdioServerConfig):
         server_params = StdioServerParameters(command=server_config.command, args=server_config.args)
         stdio_cm = stdio_client(server_params)
         stdio_transport = self.loop.run_until_complete(stdio_cm.__aenter__())

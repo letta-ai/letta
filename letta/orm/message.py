@@ -7,8 +7,8 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from letta.orm.custom_columns import ToolCallColumn, ToolReturnColumn
 from letta.orm.mixins import AgentMixin, OrganizationMixin
 from letta.orm.sqlalchemy_base import SqlalchemyBase
+from letta.schemas.letta_message_content import TextContent as PydanticTextContent
 from letta.schemas.message import Message as PydanticMessage
-from letta.schemas.message import TextContent as PydanticTextContent
 from letta.schemas.message import ToolReturn
 
 
@@ -36,6 +36,7 @@ class Message(SqlalchemyBase, OrganizationMixin, AgentMixin):
     tool_returns: Mapped[List[ToolReturn]] = mapped_column(
         ToolReturnColumn, nullable=True, doc="Tool execution return information for prior tool calls"
     )
+    group_id: Mapped[Optional[str]] = mapped_column(nullable=True, doc="The multi-agent group that the message was sent in")
 
     # Relationships
     agent: Mapped["Agent"] = relationship("Agent", back_populates="messages", lazy="selectin")

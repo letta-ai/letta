@@ -615,6 +615,104 @@ def test_update_agent(server: SyncServer, comprehensive_test_agent_fixture, othe
 
 
 # ======================================================================================================================
+# AgentManager Tests - Listing
+# ======================================================================================================================
+
+
+def test_list_agents_select_fields_empty(server: SyncServer, comprehensive_test_agent_fixture, default_user):
+    # Create an agent using the comprehensive fixture.
+    created_agent, create_agent_request = comprehensive_test_agent_fixture
+
+    # List agents using an empty list for select_fields.
+    agents = server.agent_manager.list_agents(actor=default_user, include_relationships=[])
+    # Assert that the agent is returned and basic fields are present.
+    assert len(agents) >= 1
+    agent = agents[0]
+    assert agent.id is not None
+    assert agent.name is not None
+
+    # Assert no relationships were loaded
+    assert len(agent.tools) == 0
+    assert len(agent.tags) == 0
+
+
+def test_list_agents_select_fields_none(server: SyncServer, comprehensive_test_agent_fixture, default_user):
+    # Create an agent using the comprehensive fixture.
+    created_agent, create_agent_request = comprehensive_test_agent_fixture
+
+    # List agents using an empty list for select_fields.
+    agents = server.agent_manager.list_agents(actor=default_user, include_relationships=None)
+    # Assert that the agent is returned and basic fields are present.
+    assert len(agents) >= 1
+    agent = agents[0]
+    assert agent.id is not None
+    assert agent.name is not None
+
+    # Assert no relationships were loaded
+    assert len(agent.tools) > 0
+    assert len(agent.tags) > 0
+
+
+def test_list_agents_select_fields_specific(server: SyncServer, comprehensive_test_agent_fixture, default_user):
+    created_agent, create_agent_request = comprehensive_test_agent_fixture
+
+    # Choose a subset of valid relationship fields.
+    valid_fields = ["tools", "tags"]
+    agents = server.agent_manager.list_agents(actor=default_user, include_relationships=valid_fields)
+    assert len(agents) >= 1
+    agent = agents[0]
+    # Depending on your to_pydantic() implementation,
+    # verify that the fields exist in the returned pydantic model.
+    # (Note: These assertions may require that your CreateAgent fixture sets up these relationships.)
+    assert agent.tools
+    assert sorted(agent.tags) == ["a", "b"]
+    assert not agent.memory.blocks
+
+
+def test_list_agents_select_fields_invalid(server: SyncServer, comprehensive_test_agent_fixture, default_user):
+    created_agent, create_agent_request = comprehensive_test_agent_fixture
+
+    # Provide field names that are not recognized.
+    invalid_fields = ["foobar", "nonexistent_field"]
+    # The expectation is that these fields are simply ignored.
+    agents = server.agent_manager.list_agents(actor=default_user, include_relationships=invalid_fields)
+    assert len(agents) >= 1
+    agent = agents[0]
+    # Verify that standard fields are still present.c
+    assert agent.id is not None
+    assert agent.name is not None
+
+
+def test_list_agents_select_fields_duplicates(server: SyncServer, comprehensive_test_agent_fixture, default_user):
+    created_agent, create_agent_request = comprehensive_test_agent_fixture
+
+    # Provide duplicate valid field names.
+    duplicate_fields = ["tools", "tools", "tags", "tags"]
+    agents = server.agent_manager.list_agents(actor=default_user, include_relationships=duplicate_fields)
+    assert len(agents) >= 1
+    agent = agents[0]
+    # Verify that the agent pydantic representation includes the relationships.
+    # Even if duplicates were provided, the query should not break.
+    assert isinstance(agent.tools, list)
+    assert isinstance(agent.tags, list)
+
+
+def test_list_agents_select_fields_mixed(server: SyncServer, comprehensive_test_agent_fixture, default_user):
+    created_agent, create_agent_request = comprehensive_test_agent_fixture
+
+    # Mix valid fields with an invalid one.
+    mixed_fields = ["tools", "invalid_field"]
+    agents = server.agent_manager.list_agents(actor=default_user, include_relationships=mixed_fields)
+    assert len(agents) >= 1
+    agent = agents[0]
+    # Valid fields should be loaded and accessible.
+    assert agent.tools
+    # Since "invalid_field" is not recognized, it should have no adverse effect.
+    # You might optionally check that no extra attribute is created on the pydantic model.
+    assert not hasattr(agent, "invalid_field")
+
+
+# ======================================================================================================================
 # AgentManager Tests - Tools Relationship
 # ======================================================================================================================
 

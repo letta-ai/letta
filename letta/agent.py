@@ -39,7 +39,8 @@ from letta.orm.enums import ToolType
 from letta.schemas.agent import AgentState, AgentStepResponse, UpdateAgent
 from letta.schemas.block import BlockUpdate
 from letta.schemas.embedding_config import EmbeddingConfig
-from letta.schemas.enums import MessageContentType, MessageRole
+from letta.schemas.enums import MessageRole
+from letta.schemas.letta_message_content import TextContent
 from letta.schemas.memory import ContextWindowOverview, Memory
 from letta.schemas.message import Message, ToolReturn
 from letta.schemas.openai.chat_completion_response import ChatCompletionResponse
@@ -95,6 +96,7 @@ class Agent(BaseAgent):
         first_message_verify_mono: bool = True,  # TODO move to config?
         # MCP sessions, state held in-memory in the server
         mcp_clients: Optional[Dict[str, BaseMCPClient]] = None,
+        save_last_response: bool = False,
     ):
         assert isinstance(agent_state.memory, Memory), f"Memory object is not of type Memory: {type(agent_state.memory)}"
         # Hold a copy of the state that was used to init the agent
@@ -149,6 +151,10 @@ class Agent(BaseAgent):
         # Load last function response from message history
         self.last_function_response = self.load_last_function_response()
 
+        # Save last responses in memory
+        self.save_last_response = save_last_response
+        self.last_response_messages = []
+
         # Logger that the Agent specifically can use, will also report the agent_state ID with the logs
         self.logger = get_logger(agent_state.id)
 
@@ -160,7 +166,7 @@ class Agent(BaseAgent):
         in_context_messages = self.agent_manager.get_in_context_messages(agent_id=self.agent_state.id, actor=self.user)
         for i in range(len(in_context_messages) - 1, -1, -1):
             msg = in_context_messages[i]
-            if msg.role == MessageRole.tool and msg.content and len(msg.content) == 1 and msg.content[0].type == MessageContentType.text:
+            if msg.role == MessageRole.tool and msg.content and len(msg.content) == 1 and isinstance(msg.content[0], TextContent):
                 text_content = msg.content[0].text
                 try:
                     response_json = json.loads(text_content)
@@ -926,6 +932,9 @@ class Agent(BaseAgent):
             else:
                 all_new_messages = all_response_messages
 
+            if self.save_last_response:
+                self.last_response_messages = all_response_messages
+
             # Check the memory pressure and potentially issue a memory pressure warning
             current_total_tokens = response.usage.total_tokens
             active_memory_warning = False
@@ -1052,6 +1061,7 @@ class Agent(BaseAgent):
 
             else:
                 logger.error(f"step() failed with an unrecognized exception: '{str(e)}'")
+                traceback.print_exc()
                 raise e
 
     def step_user_message(self, user_message_str: str, **kwargs) -> AgentStepResponse:
@@ -1201,7 +1211,7 @@ class Agent(BaseAgent):
             and in_context_messages[1].role == MessageRole.user
             and in_context_messages[1].content
             and len(in_context_messages[1].content) == 1
-            and in_context_messages[1].content[0].type == MessageContentType.text
+            and isinstance(in_context_messages[1].content[0], TextContent)
             # TODO remove hardcoding
             and "The following is a summary of the previous " in in_context_messages[1].content[0].text
         ):

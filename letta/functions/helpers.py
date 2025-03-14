@@ -604,6 +604,47 @@ async def _send_message_to_agents_matching_tags_async(
     return final
 
 
+async def _send_message_to_all_agents_in_group_async(sender_agent: "Agent", message: str) -> List[str]:
+    server = get_letta_server()
+
+    augmented_message = (
+        f"[Incoming message from agent with ID '{sender_agent.agent_state.id}' - to reply to this message, "
+        f"make sure to use the 'send_message' at the end, and the system will notify the sender of your response] "
+        f"{message}"
+    )
+
+    worker_agents_ids = sender_agent.agent_state.multi_agent_group.agent_ids
+    worker_agents = [server.agent_manager.get_agent_by_id(agent_id=agent_id, actor=sender_agent.user) for agent_id in worker_agents_ids]
+
+    # Create a system message
+    messages = [MessageCreate(role=MessageRole.system, content=augmented_message, name=sender_agent.agent_state.name)]
+
+    # Possibly limit concurrency to avoid meltdown:
+    sem = asyncio.Semaphore(settings.multi_agent_concurrent_sends)
+
+    async def _send_single(agent_state):
+        async with sem:
+            return await async_send_message_with_retries(
+                server=server,
+                sender_agent=sender_agent,
+                target_agent_id=agent_state.id,
+                messages=messages,
+                max_retries=3,
+                timeout=settings.multi_agent_send_message_timeout,
+            )
+
+    tasks = [asyncio.create_task(_send_single(agent_state)) for agent_state in worker_agents]
+    results = await asyncio.gather(*tasks, return_exceptions=True)
+    final = []
+    for r in results:
+        if isinstance(r, Exception):
+            final.append(str(r))
+        else:
+            final.append(r)
+
+    return final
+
+
 def generate_model_from_args_json_schema(schema: Dict[str, Any]) -> Type[BaseModel]:
     """Creates a Pydantic model from a JSON schema.
 
