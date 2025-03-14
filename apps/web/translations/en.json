@@ -18,20 +18,11 @@
       "deployAnAgent": "Deploy an agent to production"
     }
   },
-  "onboarding/CreateTemplate": {
-    "title": "Create a template"
-  },
-  "onboarding/MessageASimulatedAgent": {
-    "title": "Simulate a deployed agent"
-  },
-  "onboarding/EditATemplate": {
-    "title": "Edit a template"
-  },
-  "onboarding/VersionATemplate": {
-    "title": "Version a template"
-  },
-  "onboarding/DeployAnAgent": {
-    "title": "Deploy an agent to production"
+  "onboarding/PrimaryOnboarding": {
+    "CreateTemplate": {
+      "title": "Create a template",
+      "description": "The first thing in building production agents is defining a template. A template is a blueprint for an agent, it defines the structure and behavior of the agent. Create a template by pressing the highlighted button and pick from a starter template."
+    }
   },
   "pages/distribution/LaunchLinks": {
     "title": "Launch Links",

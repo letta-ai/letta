@@ -16,6 +16,8 @@ import { STARTER_KITS } from '@letta-cloud/config-agent-starter-kits';
 import { useQueryClient } from '@tanstack/react-query';
 import { useUserHasPermission } from '$web/client/hooks';
 import { ApplicationServices } from '@letta-cloud/service-rbac';
+import { Slot } from '@radix-ui/react-slot';
+import { PrimaryOnboardingAsideFocus } from '$web/client/components/PrimaryOnboardingAsideFocus/PrimaryOnboardingAsideFocus';
 
 interface CreateNewTemplateDialogProps {
   trigger: React.ReactNode;
@@ -36,6 +38,8 @@ export function CreateNewTemplateDialog(props: CreateNewTemplateDialogProps) {
 
   const { mutate, isPending, isSuccess, isError } =
     webApi.starterKits.createTemplateFromStarterKit.useMutation();
+
+  const [open, setOpen] = React.useState(false);
 
   const queryClient = useQueryClient();
 
@@ -76,10 +80,23 @@ export function CreateNewTemplateDialog(props: CreateNewTemplateDialogProps) {
   return (
     <Dialog
       title={t('title')}
-      trigger={trigger}
+      trigger={
+        <PrimaryOnboardingAsideFocus step="create_template">
+          <Slot
+            data-testid="create-agent-template-button"
+            onClick={() => {
+              setOpen(true);
+            }}
+          >
+            {trigger}
+          </Slot>
+        </PrimaryOnboardingAsideFocus>
+      }
       hideFooter
       disableForm
       size="xxlarge"
+      isOpen={open}
+      onOpenChange={setOpen}
     >
       <Section
         title={t('starterKits.title')}
@@ -96,15 +113,17 @@ export function CreateNewTemplateDialog(props: CreateNewTemplateDialogProps) {
             <VStack>
               {isError && <Alert title={t('error')} />}
               <NiceGridDisplay itemWidth="250px" itemHeight="260px">
-                {starterKits.map(([id, starterKit]) => (
-                  <StarterKitItems
-                    onSelectStarterKit={() => {
-                      handleSelectStarterKit(starterKit.id);
-                    }}
-                    key={id}
-                    starterKit={starterKit}
-                  />
-                ))}
+                {starterKits.map(([id, starterKit]) => {
+                  return (
+                    <StarterKitItems
+                      onSelectStarterKit={() => {
+                        handleSelectStarterKit(starterKit.id);
+                      }}
+                      key={id}
+                      starterKit={starterKit}
+                    />
+                  );
+                })}
               </NiceGridDisplay>
             </VStack>
           )}

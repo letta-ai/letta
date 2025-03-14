@@ -61,6 +61,7 @@ const frameVariants = cva('', {
     },
     minWidth: {
       sidebar: 'min-w-sidebar',
+      mobile: 'min-w-[350px]',
     },
     height: {
       header: 'h-header min-h-header',

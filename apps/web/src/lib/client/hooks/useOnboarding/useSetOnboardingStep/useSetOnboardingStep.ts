@@ -16,8 +16,41 @@ export function useSetOnboardingStep() {
 
   const queryClient = useQueryClient();
 
+  const handleUpdateStatus = useCallback(
+    (onboardingStep: OnboardingStepsType) => {
+      queryClient.setQueriesData<
+        | ServerInferResponses<typeof contracts.user.getCurrentUser, 200>
+        | undefined
+      >({ queryKey: webApiQueryKeys.user.getCurrentUser }, (oldData) => {
+        if (!oldData) {
+          return oldData;
+        }
+
+        return {
+          ...oldData,
+          body: {
+            ...oldData.body,
+            onboardingStatus: {
+              completedSteps: [
+                ...(oldData.body.onboardingStatus?.completedSteps ?? []),
+                onboardingStep,
+              ],
+              claimedSteps: oldData.body.onboardingStatus?.claimedSteps ?? [],
+              currentStep: onboardingStep,
+            },
+          },
+        };
+      });
+    },
+    [queryClient],
+  );
+
   const setOnboardingStep = useCallback(
     (onboardingStep: OnboardingStepsType, onSuccess?: VoidFunction) => {
+      if (onboardingStep === 'skipped') {
+        handleUpdateStatus(onboardingStep);
+      }
+
       mutate(
         {
           body: {
@@ -26,30 +59,9 @@ export function useSetOnboardingStep() {
         },
         {
           onSuccess: () => {
-            queryClient.setQueriesData<
-              | ServerInferResponses<typeof contracts.user.getCurrentUser, 200>
-              | undefined
-            >({ queryKey: webApiQueryKeys.user.getCurrentUser }, (oldData) => {
-              if (!oldData) {
-                return oldData;
-              }
-
-              return {
-                ...oldData,
-                body: {
-                  ...oldData.body,
-                  onboardingStatus: {
-                    completedSteps: [
-                      ...(oldData.body.onboardingStatus?.completedSteps ?? []),
-                      onboardingStep,
-                    ],
-                    claimedSteps:
-                      oldData.body.onboardingStatus?.claimedSteps ?? [],
-                    currentStep: onboardingStep,
-                  },
-                },
-              };
-            });
+            if (onboardingStep !== 'skipped') {
+              handleUpdateStatus(onboardingStep);
+            }
 
             if (onSuccess) {
               onSuccess();
@@ -58,7 +70,7 @@ export function useSetOnboardingStep() {
         },
       );
     },
-    [mutate, queryClient],
+    [mutate, handleUpdateStatus],
   );
 
   return { setOnboardingStep, isPending, isSuccess };

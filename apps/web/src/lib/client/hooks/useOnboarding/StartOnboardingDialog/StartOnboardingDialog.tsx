@@ -42,6 +42,7 @@ export function StartOnboardingDialog() {
   return (
     <OnboardingPrimaryDialog
       imageUrl={Astronaut}
+      title={t('title')}
       isOpen
       secondaryAction={
         <Button

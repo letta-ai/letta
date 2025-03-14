@@ -28,6 +28,7 @@ export function OnboardingSteps(props: OnboardingStepsProps) {
       <HStack gap="small">
         {Array.from({ length: totalSteps }).map((_, index) => (
           <div
+            key={index}
             className={cn(
               'w-full h-[4px] rounded-[2px] overflow-hidden',
               'bg-gray-200',

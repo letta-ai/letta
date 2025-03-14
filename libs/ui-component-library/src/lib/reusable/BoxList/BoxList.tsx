@@ -121,6 +121,7 @@ function LoadingState(props: LoadingConfigProps) {
 
 interface BoxListProps {
   title: string;
+  icon?: React.ReactNode;
   items: BoxListItem[];
   loadingConfig: LoadingConfigProps;
   emptyConfig: EmptyStateProps;
@@ -134,6 +135,7 @@ export function BoxList(props: BoxListProps) {
     items,
     emptyConfig,
     loadingConfig,
+    icon,
     topRightAction,
     bottomAction,
   } = props;
@@ -155,9 +157,12 @@ export function BoxList(props: BoxListProps) {
   return (
     <VStack fullWidth fullHeight border gap="large" padding>
       <HStack className="h-biHeight-sm" align="center" justify="spaceBetween">
-        <Typography variant="large" bold>
-          {title}
-        </Typography>
+        <HStack align="center">
+          {icon && <Slot className="w-[20px]">{icon}</Slot>}
+          <Typography variant="large" bold>
+            {title}
+          </Typography>
+        </HStack>
         {!hasNoItems && topRightAction}
       </HStack>
       {component}

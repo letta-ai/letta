@@ -43,6 +43,7 @@ function RecentAgentsSection() {
 
   return (
     <BoxList
+      icon={<LettaInvaderIcon />}
       title={t('RecentAgentsSection.title')}
       items={(agents || []).map((agent) => ({
         title: agent.name,
@@ -116,6 +117,7 @@ function RecentTemplatesSection() {
 
   return (
     <BoxList
+      icon={<TemplateIcon />}
       title={t('RecentTemplatesSection.title')}
       items={templatesList.map((agent) => ({
         title: agent.name,
@@ -145,11 +147,7 @@ function RecentTemplatesSection() {
         action: canCRDTemplates && (
           <CreateNewTemplateDialog
             trigger={
-              <Button
-                data-testid="create-agent-template-button"
-                label={t('RecentTemplatesSection.createTemplate')}
-                bold
-              />
+              <Button label={t('RecentTemplatesSection.createTemplate')} bold />
             }
           />
         ),
@@ -159,7 +157,6 @@ function RecentTemplatesSection() {
           <CreateNewTemplateDialog
             trigger={
               <Button
-                data-testid="create-agent-template-button"
                 label={t('RecentTemplatesSection.createTemplate')}
                 size="small"
                 hideLabel
@@ -196,11 +193,11 @@ function ProjectPage() {
       subtitle={t('subtitle', { name })}
     >
       <DashboardPageSection>
-        <HStack>
-          <VStack collapseWidth flex>
+        <HStack wrap>
+          <VStack minWidth="mobile" collapseWidth flex>
             <RecentTemplatesSection />
           </VStack>
-          <VStack collapseWidth flex>
+          <VStack minWidth="mobile" collapseWidth flex>
             <RecentAgentsSection />
           </VStack>
         </HStack>

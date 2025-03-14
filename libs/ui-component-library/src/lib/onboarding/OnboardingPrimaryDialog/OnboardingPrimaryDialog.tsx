@@ -6,6 +6,7 @@ import { Typography } from '../../core/Typography/Typography';
 import { HStack } from '../../framing/HStack/HStack';
 import * as DialogPrimitive from '@radix-ui/react-dialog';
 import { DialogOverlay } from '../../core/Dialog/Dialog';
+import { DialogTitle } from '@radix-ui/react-dialog';
 
 interface OnboardingPrimaryHeadingProps {
   title: React.ReactNode;
@@ -28,6 +29,7 @@ export function OnboardingPrimaryHeading(props: OnboardingPrimaryHeadingProps) {
 
 interface OnboardingPrimaryDialogProps {
   imageUrl: StaticImport | string;
+  title: string;
   children: React.ReactNode;
   primaryAction: React.ReactNode;
   secondaryAction: React.ReactNode;
@@ -35,13 +37,15 @@ interface OnboardingPrimaryDialogProps {
 }
 
 export function OnboardingPrimaryDialog(props: OnboardingPrimaryDialogProps) {
-  const { imageUrl, children, isOpen, primaryAction, secondaryAction } = props;
+  const { imageUrl, title, children, isOpen, primaryAction, secondaryAction } =
+    props;
   return (
     <DialogPrimitive.Root open={isOpen}>
       <DialogOverlay />
       <DialogPrimitive.Content className="fixed flex flex-col max-w-[468px]  text-base left-[50%] top-[50%] z-dialog w-full bg-background gap-0 translate-x-[-50%] translate-y-[-50%] shadow-lg duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[state=closed]:slide-out-to-left-1/2 data-[state=closed]:slide-out-to-top-[48%] data-[state=open]:slide-in-from-left-1/2 data-[state=open]:slide-in-from-top-[48%]">
         <Image width={468} height={250} src={imageUrl} alt="" />
         <VStack gap="xlarge" padding color="background-grey">
+          <DialogTitle className="sr-only">{title}</DialogTitle>
           <VStack>{children}</VStack>
           <HStack align="center" justify="spaceBetween">
             {secondaryAction || <div />}

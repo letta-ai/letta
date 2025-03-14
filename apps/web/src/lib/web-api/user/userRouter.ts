@@ -14,13 +14,11 @@ import {
 } from '$web/server/auth';
 import {
   db,
-  organizationClaimedOnboardingRewards,
   organizationInvitedUsers,
   organizations,
   organizationUsers,
   userMarketingDetails,
   userPassword,
-  userProductOnboarding,
   users,
 } from '@letta-cloud/service-database';
 import { and, eq, inArray, isNull } from 'drizzle-orm';
@@ -32,7 +30,7 @@ import * as Sentry from '@sentry/node';
 import { environment } from '@letta-cloud/config-environment-variables';
 import { trackServerSideEvent } from '@letta-cloud/service-analytics/server';
 import { AnalyticsEvent } from '@letta-cloud/service-analytics';
-import { addCreditsToOrganization } from '@letta-cloud/utils-server';
+import { goToNextOnboardingStep } from '@letta-cloud/utils-server';
 
 type ResponseShapes = ServerInferResponses<typeof userContract>;
 
@@ -492,10 +490,6 @@ type UpdateUserOnboardingStepRequest = ServerInferRequest<
   typeof contracts.user.updateUserOnboardingStep
 >;
 
-const stepToRewardMap: Record<string, number> = {
-  create_template: 400,
-};
-
 async function updateUserOnboardingStep(
   req: UpdateUserOnboardingStepRequest,
 ): Promise<UpdateUserOnboardingStep> {
@@ -512,46 +506,11 @@ async function updateUserOnboardingStep(
     };
   }
 
-  const currentOnboardingStep = user.onboardingStatus?.completedSteps || [];
-
-  const claimedSteps = user.onboardingStatus?.claimedSteps || [];
-
-  if (
-    stepToClaim &&
-    !claimedSteps.includes(stepToClaim) &&
-    stepToRewardMap[stepToClaim]
-  ) {
-    try {
-      await db.insert(organizationClaimedOnboardingRewards).values({
-        organizationId: user.activeOrganizationId,
-        rewardKey: stepToClaim,
-      });
-
-      await addCreditsToOrganization({
-        organizationId: user.activeOrganizationId,
-        note: `Claimed reward for ${onboardingStep}`,
-        amount: stepToRewardMap[stepToClaim] || 0,
-        source: 'onboarding',
-      });
-    } catch (_e) {
-      // this means the reward has already been claimed
-    }
-  }
-
-  await db
-    .insert(userProductOnboarding)
-    .values({
-      userId: user.id,
-      currentStep: onboardingStep,
-      completedSteps: [...currentOnboardingStep, onboardingStep],
-    })
-    .onConflictDoUpdate({
-      target: userProductOnboarding.userId,
-      set: {
-        currentStep: onboardingStep,
-        completedSteps: [...currentOnboardingStep, onboardingStep],
-      },
-    });
+  await goToNextOnboardingStep({
+    userId: user.id,
+    nextStep: onboardingStep,
+    stepToClaim,
+  });
 
   return {
     status: 200,

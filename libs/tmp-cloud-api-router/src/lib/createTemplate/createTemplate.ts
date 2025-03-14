@@ -3,7 +3,7 @@ import type { CreateAgentData } from '@letta-cloud/sdk-core';
 import { agentTemplates, db } from '@letta-cloud/service-database';
 import { findUniqueAgentTemplateName } from '@letta-cloud/utils-server';
 import { and, eq, isNull } from 'drizzle-orm';
-import { cloudApiRouter } from 'tmp-cloud-api-router';
+import { cloudApiRouter } from '../router';
 
 interface CreateTemplateOptions {
   projectId: string;

@@ -72,3 +72,7 @@ export const onboardingSteps = z.enum([
 ]);
 
 export type OnboardingStepsType = z.infer<typeof onboardingSteps>;
+
+export const stepToRewardMap: Partial<Record<OnboardingStepsType, number>> = {
+  create_template: 400,
+};
