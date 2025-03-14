@@ -3,6 +3,7 @@ from typing import Any, Dict, List, Optional
 from pydantic import BaseModel, Field
 
 from letta.schemas.embedding_config import EmbeddingConfig
+from letta.schemas.letta_message_content import TextContent
 from letta.schemas.llm_config import LLMConfig
 
 
@@ -27,7 +28,7 @@ class MessageSchema(BaseModel):
     model: Optional[str]
     name: Optional[str]
     role: str
-    text: str
+    content: List[TextContent]  # TODO: Expand to more in the future
     tool_call_id: Optional[str]
     tool_calls: List[Any]
     tool_returns: List[Any]

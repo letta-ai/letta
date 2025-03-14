@@ -4,7 +4,12 @@ from typing import Annotated, List, Literal, Optional, Union
 
 from pydantic import BaseModel, Field, field_serializer, field_validator
 
-from letta.schemas.letta_message_content import LettaMessageContentUnion, get_letta_message_content_union_str_json_schema
+from letta.schemas.letta_message_content import (
+    LettaAssistantMessageContentUnion,
+    LettaUserMessageContentUnion,
+    get_letta_assistant_message_content_union_str_json_schema,
+    get_letta_user_message_content_union_str_json_schema,
+)
 
 # ---------------------------
 # Letta API Messaging Schemas
@@ -20,11 +25,12 @@ class LettaMessage(BaseModel):
     Args:
         id (str): The ID of the message
         date (datetime): The date the message was created in ISO format
-
+        name (Optional[str]): The name of the sender of the message
     """
 
     id: str
     date: datetime
+    name: Optional[str] = None
 
     @field_serializer("date")
     def serialize_datetime(self, dt: datetime, _info):
@@ -44,15 +50,12 @@ class SystemMessage(LettaMessage):
     Args:
         id (str): The ID of the message
         date (datetime): The date the message was created in ISO format
-        content (Union[str, List[LettaMessageContentUnion]]): The message content sent by the system (can be a string or an array of content parts)
+        name (Optional[str]): The name of the sender of the message
+        content (str): The message content sent by the system
     """
 
     message_type: Literal["system_message"] = "system_message"
-    content: Union[str, List[LettaMessageContentUnion]] = Field(
-        ...,
-        description="The message content sent by the system (can be a string or an array of content parts)",
-        json_schema_extra=get_letta_message_content_union_str_json_schema(),
-    )
+    content: str = Field(..., description="The message content sent by the system")
 
 
 class UserMessage(LettaMessage):
@@ -62,14 +65,15 @@ class UserMessage(LettaMessage):
     Args:
         id (str): The ID of the message
         date (datetime): The date the message was created in ISO format
-        content (Union[str, List[LettaMessageContentUnion]]): The message content sent by the user (can be a string or an array of content parts)
+        name (Optional[str]): The name of the sender of the message
+        content (Union[str, List[LettaUserMessageContentUnion]]): The message content sent by the user (can be a string or an array of multi-modal content parts)
     """
 
     message_type: Literal["user_message"] = "user_message"
-    content: Union[str, List[LettaMessageContentUnion]] = Field(
+    content: Union[str, List[LettaUserMessageContentUnion]] = Field(
         ...,
-        description="The message content sent by the user (can be a string or an array of content parts)",
-        json_schema_extra=get_letta_message_content_union_str_json_schema(),
+        description="The message content sent by the user (can be a string or an array of multi-modal content parts)",
+        json_schema_extra=get_letta_user_message_content_union_str_json_schema(),
     )
 
 
@@ -80,10 +84,33 @@ class ReasoningMessage(LettaMessage):
     Args:
         id (str): The ID of the message
         date (datetime): The date the message was created in ISO format
+        name (Optional[str]): The name of the sender of the message
+        source (Literal["reasoner_model", "non_reasoner_model"]): Whether the reasoning
+            content was generated natively by a reasoner model or derived via prompting
         reasoning (str): The internal reasoning of the agent
     """
 
     message_type: Literal["reasoning_message"] = "reasoning_message"
+    source: Literal["reasoner_model", "non_reasoner_model"] = "non_reasoner_model"
+    reasoning: str
+
+
+class HiddenReasoningMessage(LettaMessage):
+    """
+    Representation of an agent's internal reasoning where reasoning content
+    has been hidden from the response.
+
+    Args:
+        id (str): The ID of the message
+        date (datetime): The date the message was created in ISO format
+        name (Optional[str]): The name of the sender of the message
+        state (Literal["redacted", "omitted"]): Whether the reasoning
+            content was redacted by the provider or simply omitted by the API
+        reasoning (str): The internal reasoning of the agent
+    """
+
+    message_type: Literal["reasoning_message"] = "reasoning_message"
+    state: Literal["redacted", "omitted"]
     reasoning: str
 
 
@@ -117,6 +144,7 @@ class ToolCallMessage(LettaMessage):
     Args:
         id (str): The ID of the message
         date (datetime): The date the message was created in ISO format
+        name (Optional[str]): The name of the sender of the message
         tool_call (Union[ToolCall, ToolCallDelta]): The tool call
     """
 
@@ -164,6 +192,7 @@ class ToolReturnMessage(LettaMessage):
     Args:
         id (str): The ID of the message
         date (datetime): The date the message was created in ISO format
+        name (Optional[str]): The name of the sender of the message
         tool_return (str): The return value of the tool
         status (Literal["success", "error"]): The status of the tool call
         tool_call_id (str): A unique identifier for the tool call that generated this message
@@ -186,14 +215,15 @@ class AssistantMessage(LettaMessage):
     Args:
         id (str): The ID of the message
         date (datetime): The date the message was created in ISO format
-        content (Union[str, List[LettaMessageContentUnion]]): The message content sent by the agent (can be a string or an array of content parts)
+        name (Optional[str]): The name of the sender of the message
+        content (Union[str, List[LettaAssistantMessageContentUnion]]): The message content sent by the agent (can be a string or an array of content parts)
     """
 
     message_type: Literal["assistant_message"] = "assistant_message"
-    content: Union[str, List[LettaMessageContentUnion]] = Field(
+    content: Union[str, List[LettaAssistantMessageContentUnion]] = Field(
         ...,
         description="The message content sent by the agent (can be a string or an array of content parts)",
-        json_schema_extra=get_letta_message_content_union_str_json_schema(),
+        json_schema_extra=get_letta_assistant_message_content_union_str_json_schema(),
     )
 
 
@@ -235,19 +265,17 @@ def create_letta_message_union_schema():
 
 class UpdateSystemMessage(BaseModel):
     message_type: Literal["system_message"] = "system_message"
-    content: Union[str, List[LettaMessageContentUnion]] = Field(
-        ...,
-        description="The message content sent by the system (can be a string or an array of content parts)",
-        json_schema_extra=get_letta_message_content_union_str_json_schema(),
+    content: str = Field(
+        ..., description="The message content sent by the system (can be a string or an array of multi-modal content parts)"
     )
 
 
 class UpdateUserMessage(BaseModel):
     message_type: Literal["user_message"] = "user_message"
-    content: Union[str, List[LettaMessageContentUnion]] = Field(
+    content: Union[str, List[LettaUserMessageContentUnion]] = Field(
         ...,
-        description="The message content sent by the user (can be a string or an array of content parts)",
-        json_schema_extra=get_letta_message_content_union_str_json_schema(),
+        description="The message content sent by the user (can be a string or an array of multi-modal content parts)",
+        json_schema_extra=get_letta_user_message_content_union_str_json_schema(),
     )
 
 
@@ -258,10 +286,10 @@ class UpdateReasoningMessage(BaseModel):
 
 class UpdateAssistantMessage(BaseModel):
     message_type: Literal["assistant_message"] = "assistant_message"
-    content: Union[str, List[LettaMessageContentUnion]] = Field(
+    content: Union[str, List[LettaAssistantMessageContentUnion]] = Field(
         ...,
         description="The message content sent by the assistant (can be a string or an array of content parts)",
-        json_schema_extra=get_letta_message_content_union_str_json_schema(),
+        json_schema_extra=get_letta_assistant_message_content_union_str_json_schema(),
     )
 
 

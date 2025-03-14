@@ -4,9 +4,10 @@ from openai.types.chat.chat_completion_message_tool_call import ChatCompletionMe
 from sqlalchemy import ForeignKey, Index
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from letta.orm.custom_columns import ToolCallColumn, ToolReturnColumn
+from letta.orm.custom_columns import MessageContentColumn, ToolCallColumn, ToolReturnColumn
 from letta.orm.mixins import AgentMixin, OrganizationMixin
 from letta.orm.sqlalchemy_base import SqlalchemyBase
+from letta.schemas.letta_message_content import MessageContent
 from letta.schemas.letta_message_content import TextContent as PydanticTextContent
 from letta.schemas.message import Message as PydanticMessage
 from letta.schemas.message import ToolReturn
@@ -25,6 +26,7 @@ class Message(SqlalchemyBase, OrganizationMixin, AgentMixin):
     id: Mapped[str] = mapped_column(primary_key=True, doc="Unique message identifier")
     role: Mapped[str] = mapped_column(doc="Message role (user/assistant/system/tool)")
     text: Mapped[Optional[str]] = mapped_column(nullable=True, doc="Message content")
+    content: Mapped[List[MessageContent]] = mapped_column(MessageContentColumn, nullable=True, doc="Message content parts")
     model: Mapped[Optional[str]] = mapped_column(nullable=True, doc="LLM model used")
     name: Mapped[Optional[str]] = mapped_column(nullable=True, doc="Name for multi-agent scenarios")
     tool_calls: Mapped[List[OpenAIToolCall]] = mapped_column(ToolCallColumn, doc="Tool call information")
@@ -54,8 +56,8 @@ class Message(SqlalchemyBase, OrganizationMixin, AgentMixin):
         return self.job_message.job if self.job_message else None
 
     def to_pydantic(self) -> PydanticMessage:
-        """custom pydantic conversion for message content mapping"""
+        """Custom pydantic conversion to handle data using legacy text field"""
         model = self.__pydantic_model__.model_validate(self)
-        if self.text:
+        if self.text and not model.content:
             model.content = [PydanticTextContent(text=self.text)]
         return model

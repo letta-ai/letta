@@ -25,6 +25,7 @@ from letta.schemas.identity import IdentityCreate, IdentityProperty, IdentityPro
 from letta.schemas.job import Job as PydanticJob
 from letta.schemas.job import JobUpdate, LettaRequestConfig
 from letta.schemas.letta_message import UpdateAssistantMessage, UpdateReasoningMessage, UpdateSystemMessage, UpdateUserMessage
+from letta.schemas.letta_message_content import TextContent
 from letta.schemas.llm_config import LLMConfig
 from letta.schemas.message import Message as PydanticMessage
 from letta.schemas.message import MessageCreate, MessageUpdate
@@ -272,7 +273,7 @@ def hello_world_message_fixture(server: SyncServer, default_user, sarah_agent):
         organization_id=default_user.organization_id,
         agent_id=sarah_agent.id,
         role="user",
-        text="Hello, world!",
+        content=[TextContent(text="Hello, world!")],
     )
 
     msg = server.message_manager.create_message(message, actor=default_user)
@@ -1196,7 +1197,7 @@ def test_reset_messages_with_existing_messages(server: SyncServer, sarah_agent, 
             agent_id=sarah_agent.id,
             organization_id=default_user.organization_id,
             role="user",
-            text="Hello, Sarah!",
+            content=[TextContent(text="Hello, Sarah!")],
         ),
         actor=default_user,
     )
@@ -1205,7 +1206,7 @@ def test_reset_messages_with_existing_messages(server: SyncServer, sarah_agent, 
             agent_id=sarah_agent.id,
             organization_id=default_user.organization_id,
             role="assistant",
-            text="Hello, user!",
+            content=[TextContent(text="Hello, user!")],
         ),
         actor=default_user,
     )
@@ -1236,7 +1237,7 @@ def test_reset_messages_idempotency(server: SyncServer, sarah_agent, default_use
             agent_id=sarah_agent.id,
             organization_id=default_user.organization_id,
             role="user",
-            text="Hello, Sarah!",
+            content=[TextContent(text="Hello, Sarah!")],
         ),
         actor=default_user,
     )
@@ -2062,7 +2063,10 @@ def test_message_size(server: SyncServer, hello_world_message_fixture, default_u
     # Create additional test messages
     messages = [
         PydanticMessage(
-            organization_id=default_user.organization_id, agent_id=base_message.agent_id, role=base_message.role, text=f"Test message {i}"
+            organization_id=default_user.organization_id,
+            agent_id=base_message.agent_id,
+            role=base_message.role,
+            content=[TextContent(text=f"Test message {i}")],
         )
         for i in range(4)
     ]
@@ -2090,7 +2094,10 @@ def create_test_messages(server: SyncServer, base_message: PydanticMessage, defa
     """Helper function to create test messages for all tests"""
     messages = [
         PydanticMessage(
-            organization_id=default_user.organization_id, agent_id=base_message.agent_id, role=base_message.role, text=f"Test message {i}"
+            organization_id=default_user.organization_id,
+            agent_id=base_message.agent_id,
+            role=base_message.role,
+            content=[TextContent(text=f"Test message {i}")],
         )
         for i in range(4)
     ]
@@ -3270,7 +3277,7 @@ def test_job_messages_pagination(server: SyncServer, default_run, default_user, 
             organization_id=default_user.organization_id,
             agent_id=sarah_agent.id,
             role=MessageRole.user,
-            text=f"Test message {i}",
+            content=[TextContent(text=f"Test message {i}")],
         )
         msg = server.message_manager.create_message(message, actor=default_user)
         message_ids.append(msg.id)
@@ -3383,7 +3390,7 @@ def test_job_messages_ordering(server: SyncServer, default_run, default_user, sa
     for i, created_at in enumerate(message_times):
         message = PydanticMessage(
             role=MessageRole.user,
-            text="Test message",
+            content=[TextContent(text="Test message")],
             organization_id=default_user.organization_id,
             agent_id=sarah_agent.id,
             created_at=created_at,
@@ -3452,19 +3459,19 @@ def test_job_messages_filter(server: SyncServer, default_run, default_user, sara
     messages = [
         PydanticMessage(
             role=MessageRole.user,
-            text="Hello",
+            content=[TextContent(text="Hello")],
             organization_id=default_user.organization_id,
             agent_id=sarah_agent.id,
         ),
         PydanticMessage(
             role=MessageRole.assistant,
-            text="Hi there!",
+            content=[TextContent(text="Hi there!")],
             organization_id=default_user.organization_id,
             agent_id=sarah_agent.id,
         ),
         PydanticMessage(
             role=MessageRole.assistant,
-            text="Let me help you with that",
+            content=[TextContent(text="Let me help you with that")],
             organization_id=default_user.organization_id,
             agent_id=sarah_agent.id,
             tool_calls=[
@@ -3519,7 +3526,7 @@ def test_get_run_messages(server: SyncServer, default_user: PydanticUser, sarah_
             organization_id=default_user.organization_id,
             agent_id=sarah_agent.id,
             role=MessageRole.tool if i % 2 == 0 else MessageRole.assistant,
-            text=f"Test message {i}" if i % 2 == 1 else '{"status": "OK"}',
+            content=[TextContent(text=f"Test message {i}" if i % 2 == 1 else '{"status": "OK"}')],
             tool_calls=(
                 [{"type": "function", "id": f"call_{i//2}", "function": {"name": "custom_tool", "arguments": '{"custom_arg": "test"}'}}]
                 if i % 2 == 1
@@ -3570,7 +3577,7 @@ def test_get_run_messages(server: SyncServer, default_user: PydanticUser, sarah_
             organization_id=default_user.organization_id,
             agent_id=sarah_agent.id,
             role=MessageRole.tool if i % 2 == 0 else MessageRole.assistant,
-            text=f"Test message {i}" if i % 2 == 1 else '{"status": "OK"}',
+            content=[TextContent(text=f"Test message {i}" if i % 2 == 1 else '{"status": "OK"}')],
             tool_calls=(
                 [{"type": "function", "id": f"call_{i//2}", "function": {"name": "custom_tool", "arguments": '{"custom_arg": "test"}'}}]
                 if i % 2 == 1

@@ -221,7 +221,7 @@ def openai_chat_completions_process_stream(
     # TODO(sarah): add message ID generation function
     dummy_message = _Message(
         role=_MessageRole.assistant,
-        text="",
+        content=[],
         agent_id="",
         model="",
         name=None,
