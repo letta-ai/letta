@@ -3083,15 +3083,7 @@ export const LocalSandboxConfig = z.object({
 });
 
 export type MCPServerType = z.infer<typeof MCPServerType>;
-export const MCPServerType = z.union([z.literal('sse'), z.literal('local')]);
-
-export type LocalServerConfig = z.infer<typeof LocalServerConfig>;
-export const LocalServerConfig = z.object({
-  server_name: z.string(),
-  type: z.union([MCPServerType, z.undefined()]).optional(),
-  command: z.string(),
-  args: z.array(z.string()),
-});
+export const MCPServerType = z.union([z.literal('sse'), z.literal('stdio')]);
 
 export type MCPTool = z.infer<typeof MCPTool>;
 export const MCPTool = z.intersection(
@@ -3582,6 +3574,22 @@ export const SourceUpdate = z.object({
       EmbeddingConfig,
       z.null(),
       z.array(z.union([EmbeddingConfig, z.null()])),
+    ])
+    .optional(),
+});
+
+export type StdioServerConfig = z.infer<typeof StdioServerConfig>;
+export const StdioServerConfig = z.object({
+  server_name: z.string(),
+  type: z.union([MCPServerType, z.undefined()]).optional(),
+  command: z.string(),
+  args: z.array(z.string()),
+  env: z
+    .union([
+      z.unknown(),
+      z.null(),
+      z.array(z.union([z.unknown(), z.null()])),
+      z.undefined(),
     ])
     .optional(),
 });
@@ -4234,6 +4242,32 @@ export const get_List_mcp_servers = {
   response: z.unknown(),
 };
 
+export type put_Add_mcp_server = typeof put_Add_mcp_server;
+export const put_Add_mcp_server = {
+  method: z.literal('PUT'),
+  path: z.literal('/v1/tools/mcp/servers'),
+  requestFormat: z.literal('json'),
+  parameters: z.object({
+    header: z.object({
+      user_id: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+    }),
+    body: z.union([
+      StdioServerConfig,
+      SSEServerConfig,
+      z.array(z.union([StdioServerConfig, SSEServerConfig])),
+    ]),
+  }),
+  response: z.array(
+    z.union([
+      StdioServerConfig,
+      SSEServerConfig,
+      z.array(z.union([StdioServerConfig, SSEServerConfig])),
+    ]),
+  ),
+};
+
 export type get_List_mcp_tools_by_server = typeof get_List_mcp_tools_by_server;
 export const get_List_mcp_tools_by_server = {
   method: z.literal('GET'),
@@ -4269,6 +4303,30 @@ export const post_Add_mcp_tool = {
     }),
   }),
   response: Tool,
+};
+
+export type delete_Delete_mcp_server = typeof delete_Delete_mcp_server;
+export const delete_Delete_mcp_server = {
+  method: z.literal('DELETE'),
+  path: z.literal('/v1/tools/mcp/servers/{mcp_server_name}'),
+  requestFormat: z.literal('json'),
+  parameters: z.object({
+    path: z.object({
+      mcp_server_name: z.string(),
+    }),
+    header: z.object({
+      user_id: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+    }),
+  }),
+  response: z.array(
+    z.union([
+      StdioServerConfig,
+      SSEServerConfig,
+      z.array(z.union([StdioServerConfig, SSEServerConfig])),
+    ]),
+  ),
 };
 
 export type get_Retrieve_source = typeof get_Retrieve_source;
@@ -6403,6 +6461,7 @@ export const post_Authenticate_user_v1_auth_post = {
 export const EndpointByMethod = {
   delete: {
     '/v1/tools/{tool_id}': delete_Delete_tool,
+    '/v1/tools/mcp/servers/{mcp_server_name}': delete_Delete_mcp_server,
     '/v1/sources/{source_id}': delete_Delete_source,
     '/v1/sources/{source_id}/{file_id}': delete_Delete_file_from_source,
     '/v1/agents/{agent_id}': delete_Delete_agent,
@@ -6543,6 +6602,7 @@ export const EndpointByMethod = {
   },
   put: {
     '/v1/tools/': put_Upsert_tool,
+    '/v1/tools/mcp/servers': put_Add_mcp_server,
     '/v1/groups/': put_Upsert_group,
     '/v1/identities/': put_Upsert_identity,
     '/v1/admin/users/': put_Update_user,

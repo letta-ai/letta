@@ -13,7 +13,7 @@ from fastapi import APIRouter, Body, Depends, Header, HTTPException
 
 from letta.errors import LettaToolCreateError
 from letta.helpers.composio_helpers import get_composio_api_key
-from letta.helpers.mcp_helpers import LocalServerConfig, MCPTool, SSEServerConfig
+from letta.helpers.mcp_helpers import MCPTool, SSEServerConfig, StdioServerConfig
 from letta.log import get_logger
 from letta.orm.errors import UniqueConstraintViolationError
 from letta.schemas.letta_message import ToolReturnMessage
@@ -333,7 +333,7 @@ def add_composio_tool(
 
 
 # Specific routes for MCP
-@router.get("/mcp/servers", response_model=dict[str, Union[SSEServerConfig, LocalServerConfig]], operation_id="list_mcp_servers")
+@router.get("/mcp/servers", response_model=dict[str, Union[SSEServerConfig, StdioServerConfig]], operation_id="list_mcp_servers")
 def list_mcp_servers(server: SyncServer = Depends(get_letta_server), user_id: Optional[str] = Header(None, alias="user_id")):
     """
     Get a list of all configured MCP servers
@@ -376,7 +376,7 @@ def add_mcp_tool(
     actor_id: Optional[str] = Header(None, alias="user_id"),
 ):
     """
-    Add a new MCP tool by server + tool name
+    Register a new MCP tool as a Letta server by MCP server + tool name
     """
     actor = server.user_manager.get_user_or_default(user_id=actor_id)
 
@@ -399,3 +399,31 @@ def add_mcp_tool(
 
     tool_create = ToolCreate.from_mcp(mcp_server_name=mcp_server_name, mcp_tool=mcp_tool)
     return server.tool_manager.create_or_update_mcp_tool(tool_create=tool_create, actor=actor)
+
+
+@router.put("/mcp/servers", response_model=List[Union[StdioServerConfig, SSEServerConfig]], operation_id="add_mcp_server")
+def add_mcp_server_to_config(
+    request: Union[StdioServerConfig, SSEServerConfig] = Body(...),
+    server: SyncServer = Depends(get_letta_server),
+    actor_id: Optional[str] = Header(None, alias="user_id"),
+):
+    """
+    Add a new MCP server to the Letta MCP server config
+    """
+    actor = server.user_manager.get_user_or_default(user_id=actor_id)
+    return server.add_mcp_server_to_config(server_config=request, allow_upsert=True)
+
+
+@router.delete(
+    "/mcp/servers/{mcp_server_name}", response_model=List[Union[StdioServerConfig, SSEServerConfig]], operation_id="delete_mcp_server"
+)
+def delete_mcp_server_from_config(
+    mcp_server_name: str,
+    server: SyncServer = Depends(get_letta_server),
+    actor_id: Optional[str] = Header(None, alias="user_id"),
+):
+    """
+    Add a new MCP server to the Letta MCP server config
+    """
+    actor = server.user_manager.get_user_or_default(user_id=actor_id)
+    return server.delete_mcp_server_from_config(server_name=mcp_server_name)

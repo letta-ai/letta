@@ -527,11 +527,69 @@
                         "$ref": "#/components/schemas/SSEServerConfig"
                       },
                       {
-                        "$ref": "#/components/schemas/LocalServerConfig"
+                        "$ref": "#/components/schemas/StdioServerConfig"
                       }
                     ]
                   },
                   "title": "Response List Mcp Servers"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": ["tools"],
+        "summary": "Add Mcp Server To Config",
+        "description": "Add a new MCP server to the Letta MCP server config",
+        "operationId": "add_mcp_server",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/StdioServerConfig"
+                  },
+                  {
+                    "$ref": "#/components/schemas/SSEServerConfig"
+                  }
+                ],
+                "title": "Request"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "anyOf": [
+                      {
+                        "$ref": "#/components/schemas/StdioServerConfig"
+                      },
+                      {
+                        "$ref": "#/components/schemas/SSEServerConfig"
+                      }
+                    ]
+                  },
+                  "title": "Response Add Mcp Server"
                 }
               }
             }
@@ -598,7 +656,7 @@
       "post": {
         "tags": ["tools"],
         "summary": "Add Mcp Tool",
-        "description": "Add a new MCP tool by server + tool name",
+        "description": "Register a new MCP tool as a Letta server by MCP server + tool name",
         "operationId": "add_mcp_tool",
         "parameters": [
           {
@@ -627,6 +685,58 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Tool"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/tools/mcp/servers/{mcp_server_name}": {
+      "delete": {
+        "tags": ["tools"],
+        "summary": "Delete Mcp Server From Config",
+        "description": "Add a new MCP server to the Letta MCP server config",
+        "operationId": "delete_mcp_server",
+        "parameters": [
+          {
+            "name": "mcp_server_name",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Mcp Server Name"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "anyOf": [
+                      {
+                        "$ref": "#/components/schemas/StdioServerConfig"
+                      },
+                      {
+                        "$ref": "#/components/schemas/SSEServerConfig"
+                      }
+                    ]
+                  },
+                  "title": "Response Delete Mcp Server"
                 }
               }
             }
@@ -15777,38 +15887,9 @@
         "type": "object",
         "title": "LocalSandboxConfig"
       },
-      "LocalServerConfig": {
-        "properties": {
-          "server_name": {
-            "type": "string",
-            "title": "Server Name",
-            "description": "The name of the server"
-          },
-          "type": {
-            "$ref": "#/components/schemas/MCPServerType",
-            "default": "local"
-          },
-          "command": {
-            "type": "string",
-            "title": "Command",
-            "description": "The command to run (MCP 'local' client will run this command)"
-          },
-          "args": {
-            "items": {
-              "type": "string"
-            },
-            "type": "array",
-            "title": "Args",
-            "description": "The arguments to pass to the command"
-          }
-        },
-        "type": "object",
-        "required": ["server_name", "command", "args"],
-        "title": "LocalServerConfig"
-      },
       "MCPServerType": {
         "type": "string",
-        "enum": ["sse", "local"],
+        "enum": ["sse", "stdio"],
         "title": "MCPServerType"
       },
       "MCPTool": {
@@ -17300,6 +17381,50 @@
         "type": "object",
         "title": "SourceUpdate",
         "description": "Schema for updating an existing Source."
+      },
+      "StdioServerConfig": {
+        "properties": {
+          "server_name": {
+            "type": "string",
+            "title": "Server Name",
+            "description": "The name of the server"
+          },
+          "type": {
+            "$ref": "#/components/schemas/MCPServerType",
+            "default": "stdio"
+          },
+          "command": {
+            "type": "string",
+            "title": "Command",
+            "description": "The command to run (MCP 'local' client will run this command)"
+          },
+          "args": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Args",
+            "description": "The arguments to pass to the command"
+          },
+          "env": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "type": "string"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Env",
+            "description": "Environment variables to set"
+          }
+        },
+        "type": "object",
+        "required": ["server_name", "command", "args"],
+        "title": "StdioServerConfig"
       },
       "Step": {
         "properties": {

@@ -28,10 +28,14 @@ import type {
   AddComposioToolResponse,
   ListMcpServersData,
   ListMcpServersResponse,
+  AddMcpServerData,
+  AddMcpServerResponse,
   ListMcpToolsByServerData,
   ListMcpToolsByServerResponse,
   AddMcpToolData,
   AddMcpToolResponse,
+  DeleteMcpServerData,
+  DeleteMcpServerResponse,
   RetrieveSourceData,
   RetrieveSourceResponse,
   ModifySourceData,
@@ -541,6 +545,31 @@ export class ToolsService {
   }
 
   /**
+   * Add Mcp Server To Config
+   * Add a new MCP server to the Letta MCP server config
+   * @param data The data for the request.
+   * @param data.requestBody
+   * @param data.userId
+   * @returns unknown Successful Response
+   * @throws ApiError
+   */
+  public static addMcpServer(
+    data: AddMcpServerData,
+    headers?: { user_id: string },
+  ): CancelablePromise<AddMcpServerResponse> {
+    return __request(OpenAPI, {
+      method: 'PUT',
+      url: '/v1/tools/mcp/servers',
+      body: data.requestBody,
+      mediaType: 'application/json',
+      errors: {
+        422: 'Validation Error',
+      },
+      headers,
+    });
+  }
+
+  /**
    * List Mcp Tools By Server
    * Get a list of all tools for a specific MCP server
    * @param data The data for the request.
@@ -568,7 +597,7 @@ export class ToolsService {
 
   /**
    * Add Mcp Tool
-   * Add a new MCP tool by server + tool name
+   * Register a new MCP tool as a Letta server by MCP server + tool name
    * @param data The data for the request.
    * @param data.mcpServerName
    * @param data.mcpToolName
@@ -586,6 +615,32 @@ export class ToolsService {
       path: {
         mcp_server_name: data.mcpServerName,
         mcp_tool_name: data.mcpToolName,
+      },
+      errors: {
+        422: 'Validation Error',
+      },
+      headers,
+    });
+  }
+
+  /**
+   * Delete Mcp Server From Config
+   * Add a new MCP server to the Letta MCP server config
+   * @param data The data for the request.
+   * @param data.mcpServerName
+   * @param data.userId
+   * @returns unknown Successful Response
+   * @throws ApiError
+   */
+  public static deleteMcpServer(
+    data: DeleteMcpServerData,
+    headers?: { user_id: string },
+  ): CancelablePromise<DeleteMcpServerResponse> {
+    return __request(OpenAPI, {
+      method: 'DELETE',
+      url: '/v1/tools/mcp/servers/{mcp_server_name}',
+      path: {
+        mcp_server_name: data.mcpServerName,
       },
       errors: {
         422: 'Validation Error',

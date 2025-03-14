@@ -1388,6 +1388,9 @@ export type AuthServiceAuthenticateUserV1AuthPostMutationResult = Awaited<
 export type ToolsServiceUpsertToolMutationResult = Awaited<
   ReturnType<typeof ToolsService.upsertTool>
 >;
+export type ToolsServiceAddMcpServerMutationResult = Awaited<
+  ReturnType<typeof ToolsService.addMcpServer>
+>;
 export type GroupsServiceUpsertGroupMutationResult = Awaited<
   ReturnType<typeof GroupsService.upsertGroup>
 >;
@@ -1465,6 +1468,9 @@ export type StepsServiceUpdateStepTransactionIdMutationResult = Awaited<
 >;
 export type ToolsServiceDeleteToolMutationResult = Awaited<
   ReturnType<typeof ToolsService.deleteTool>
+>;
+export type ToolsServiceDeleteMcpServerMutationResult = Awaited<
+  ReturnType<typeof ToolsService.deleteMcpServer>
 >;
 export type SourcesServiceDeleteSourceMutationResult = Awaited<
   ReturnType<typeof SourcesService.deleteSource>

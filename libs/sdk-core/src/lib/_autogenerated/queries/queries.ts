@@ -51,6 +51,7 @@ import {
   PassageUpdate,
   ProviderCreate,
   ProviderUpdate,
+  SSEServerConfig,
   SandboxConfigCreate,
   SandboxConfigUpdate,
   SandboxEnvironmentVariableCreate,
@@ -58,6 +59,7 @@ import {
   SandboxType,
   SourceCreate,
   SourceUpdate,
+  StdioServerConfig,
   ToolCreate,
   ToolRunFromSource,
   ToolUpdate,
@@ -2277,7 +2279,7 @@ export const useToolsServiceAddComposioTool = <
   });
 /**
  * Add Mcp Tool
- * Add a new MCP tool by server + tool name
+ * Register a new MCP tool as a Letta server by MCP server + tool name
  * @param data The data for the request.
  * @param data.mcpServerName
  * @param data.mcpToolName
@@ -3523,6 +3525,49 @@ export const useToolsServiceUpsertTool = <
     ...options,
   });
 /**
+ * Add Mcp Server To Config
+ * Add a new MCP server to the Letta MCP server config
+ * @param data The data for the request.
+ * @param data.requestBody
+ * @param data.userId
+ * @returns unknown Successful Response
+ * @throws ApiError
+ */
+export const useToolsServiceAddMcpServer = <
+  TData = Common.ToolsServiceAddMcpServerMutationResult,
+  TError = unknown,
+  TContext = unknown,
+>(
+  options?: Omit<
+    UseMutationOptions<
+      TData,
+      TError,
+      {
+        requestBody: StdioServerConfig | SSEServerConfig;
+        userId?: string;
+      },
+      TContext
+    >,
+    'mutationFn'
+  >,
+) =>
+  useMutation<
+    TData,
+    TError,
+    {
+      requestBody: StdioServerConfig | SSEServerConfig;
+      userId?: string;
+    },
+    TContext
+  >({
+    mutationFn: ({ requestBody, userId }) =>
+      ToolsService.addMcpServer({
+        requestBody,
+        userId,
+      }) as unknown as Promise<TData>,
+    ...options,
+  });
+/**
  * Upsert Group
  * Create a new multi-agent group with the specified configuration.
  * @param data The data for the request.
@@ -4630,6 +4675,49 @@ export const useToolsServiceDeleteTool = <
   >({
     mutationFn: ({ toolId, userId }) =>
       ToolsService.deleteTool({ toolId, userId }) as unknown as Promise<TData>,
+    ...options,
+  });
+/**
+ * Delete Mcp Server From Config
+ * Add a new MCP server to the Letta MCP server config
+ * @param data The data for the request.
+ * @param data.mcpServerName
+ * @param data.userId
+ * @returns unknown Successful Response
+ * @throws ApiError
+ */
+export const useToolsServiceDeleteMcpServer = <
+  TData = Common.ToolsServiceDeleteMcpServerMutationResult,
+  TError = unknown,
+  TContext = unknown,
+>(
+  options?: Omit<
+    UseMutationOptions<
+      TData,
+      TError,
+      {
+        mcpServerName: string;
+        userId?: string;
+      },
+      TContext
+    >,
+    'mutationFn'
+  >,
+) =>
+  useMutation<
+    TData,
+    TError,
+    {
+      mcpServerName: string;
+      userId?: string;
+    },
+    TContext
+  >({
+    mutationFn: ({ mcpServerName, userId }) =>
+      ToolsService.deleteMcpServer({
+        mcpServerName,
+        userId,
+      }) as unknown as Promise<TData>,
     ...options,
   });
 /**

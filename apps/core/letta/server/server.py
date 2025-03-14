@@ -23,13 +23,14 @@ from letta.dynamic_multi_agent import DynamicMultiAgent
 from letta.helpers.datetime_helpers import get_utc_time
 from letta.helpers.json_helpers import json_dumps, json_loads
 from letta.helpers.mcp_helpers import (
+    MCP_CONFIG_TOPLEVEL_KEY,
     BaseMCPClient,
-    LocalMCPClient,
-    LocalServerConfig,
     MCPServerType,
     MCPTool,
     SSEMCPClient,
     SSEServerConfig,
+    StdioMCPClient,
+    StdioServerConfig,
 )
 
 # TODO use custom interface
@@ -338,8 +339,8 @@ class SyncServer(Server):
         for server_name, server_config in mcp_server_configs.items():
             if server_config.type == MCPServerType.SSE:
                 self.mcp_clients[server_name] = SSEMCPClient()
-            elif server_config.type == MCPServerType.LOCAL:
-                self.mcp_clients[server_name] = LocalMCPClient()
+            elif server_config.type == MCPServerType.STDIO:
+                self.mcp_clients[server_name] = StdioMCPClient()
             else:
                 raise ValueError(f"Invalid MCP server config: {server_config}")
             try:
@@ -1258,7 +1259,7 @@ class SyncServer(Server):
 
     # MCP wrappers
     # TODO support both command + SSE servers (via config)
-    def get_mcp_servers(self) -> dict[str, Union[SSEServerConfig, LocalServerConfig]]:
+    def get_mcp_servers(self) -> dict[str, Union[SSEServerConfig, StdioServerConfig]]:
         """List the MCP servers in the config (doesn't test that they are actually working)"""
         mcp_server_list = {}
 
@@ -1276,8 +1277,8 @@ class SyncServer(Server):
                 # Proper formatting is "mcpServers" key at the top level,
                 # then a dict with the MCP server name as the key,
                 # with the value being the schema from StdioServerParameters
-                if "mcpServers" in mcp_config:
-                    for server_name, server_params_raw in mcp_config["mcpServers"].items():
+                if MCP_CONFIG_TOPLEVEL_KEY in mcp_config:
+                    for server_name, server_params_raw in mcp_config[MCP_CONFIG_TOPLEVEL_KEY].items():
 
                         # No support for duplicate server names
                         if server_name in mcp_server_list:
@@ -1298,7 +1299,7 @@ class SyncServer(Server):
                         else:
                             # Attempt to parse the server params as a StdioServerParameters
                             try:
-                                server_params = LocalServerConfig(
+                                server_params = StdioServerConfig(
                                     server_name=server_name,
                                     command=server_params_raw["command"],
                                     args=server_params_raw.get("args", []),
@@ -1317,6 +1318,98 @@ class SyncServer(Server):
             raise ValueError(f"No client was created for MCP server: {mcp_server_name}")
 
         return self.mcp_clients[mcp_server_name].list_tools()
+
+    def add_mcp_server_to_config(
+        self, server_config: Union[SSEServerConfig, StdioServerConfig], allow_upsert: bool = True
+    ) -> dict[str, Union[SSEServerConfig, StdioServerConfig]]:
+        """Add a new server config to the MCP config file"""
+
+        # If the config file doesn't exist, throw an error.
+        mcp_config_path = os.path.join(constants.LETTA_DIR, constants.MCP_CONFIG_NAME)
+        if not os.path.exists(mcp_config_path):
+            raise FileNotFoundError(f"MCP config file not found: {mcp_config_path}")
+
+        # If the file does exist, attempt to parse it get calling get_mcp_servers
+        try:
+            current_mcp_servers = self.get_mcp_servers()
+        except Exception as e:
+            # Raise an error telling the user to fix the config file
+            logger.error(f"Failed to parse MCP config file at {mcp_config_path}: {e}")
+            raise ValueError(f"Failed to parse MCP config file {mcp_config_path}")
+
+        # Check if the server name is already in the config
+        if server_config.server_name in current_mcp_servers and not allow_upsert:
+            raise ValueError(f"Server name {server_config.server_name} is already in the config file")
+
+        # Attempt to initialize the connection to the server
+        if server_config.type == MCPServerType.SSE:
+            new_mcp_client = SSEMCPClient()
+        elif server_config.type == MCPServerType.STDIO:
+            new_mcp_client = StdioMCPClient()
+        else:
+            raise ValueError(f"Invalid MCP server config: {server_config}")
+        try:
+            new_mcp_client.connect_to_server(server_config)
+        except:
+            logger.exception(f"Failed to connect to MCP server: {server_config.server_name}")
+            raise RuntimeError(f"Failed to connect to MCP server: {server_config.server_name}")
+        # Print out the tools that are connected
+        logger.info(f"Attempting to fetch tools from MCP server: {server_config.server_name}")
+        new_mcp_tools = new_mcp_client.list_tools()
+        logger.info(f"MCP tools connected: {", ".join([t.name for t in new_mcp_tools])}")
+        logger.debug(f"MCP tools: {"\n".join([str(t) for t in new_mcp_tools])}")
+
+        # Now that we've confirmed the config is working, let's add it to the client list
+        self.mcp_clients[server_config.server_name] = new_mcp_client
+
+        # Add to the server file
+        current_mcp_servers[server_config.server_name] = server_config
+
+        # Write out the file, and make sure to in include the top-level mcpConfig
+        try:
+            new_mcp_file = {MCP_CONFIG_TOPLEVEL_KEY: {k: v.to_dict() for k, v in current_mcp_servers.items()}}
+            with open(mcp_config_path, "w") as f:
+                json.dump(new_mcp_file, f, indent=4)
+        except Exception as e:
+            logger.error(f"Failed to write MCP config file at {mcp_config_path}: {e}")
+            raise ValueError(f"Failed to write MCP config file {mcp_config_path}")
+
+        return list(current_mcp_servers.values())
+
+    def delete_mcp_server_from_config(self, server_name: str) -> dict[str, Union[SSEServerConfig, StdioServerConfig]]:
+        """Delete a server config from the MCP config file"""
+
+        # If the config file doesn't exist, throw an error.
+        mcp_config_path = os.path.join(constants.LETTA_DIR, constants.MCP_CONFIG_NAME)
+        if not os.path.exists(mcp_config_path):
+            raise FileNotFoundError(f"MCP config file not found: {mcp_config_path}")
+
+        # If the file does exist, attempt to parse it get calling get_mcp_servers
+        try:
+            current_mcp_servers = self.get_mcp_servers()
+        except Exception as e:
+            # Raise an error telling the user to fix the config file
+            logger.error(f"Failed to parse MCP config file at {mcp_config_path}: {e}")
+            raise ValueError(f"Failed to parse MCP config file {mcp_config_path}")
+
+        # Check if the server name is already in the config
+        # If it's not, throw an error
+        if server_name not in current_mcp_servers:
+            raise ValueError(f"Server name {server_name} not found in MCP config file")
+
+        # Remove from the server file
+        del current_mcp_servers[server_name]
+
+        # Write out the file, and make sure to in include the top-level mcpConfig
+        try:
+            new_mcp_file = {MCP_CONFIG_TOPLEVEL_KEY: {k: v.to_dict() for k, v in current_mcp_servers.items()}}
+            with open(mcp_config_path, "w") as f:
+                json.dump(new_mcp_file, f, indent=4)
+        except Exception as e:
+            logger.error(f"Failed to write MCP config file at {mcp_config_path}: {e}")
+            raise ValueError(f"Failed to write MCP config file {mcp_config_path}")
+
+        return list(current_mcp_servers.values())
 
     @trace_method
     async def send_message_to_agent(

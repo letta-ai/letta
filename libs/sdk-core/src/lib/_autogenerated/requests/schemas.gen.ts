@@ -4822,40 +4822,9 @@ export const $LocalSandboxConfig = {
   title: 'LocalSandboxConfig',
 } as const;
 
-export const $LocalServerConfig = {
-  properties: {
-    server_name: {
-      type: 'string',
-      title: 'Server Name',
-      description: 'The name of the server',
-    },
-    type: {
-      $ref: '#/components/schemas/MCPServerType',
-      default: 'local',
-    },
-    command: {
-      type: 'string',
-      title: 'Command',
-      description:
-        "The command to run (MCP 'local' client will run this command)",
-    },
-    args: {
-      items: {
-        type: 'string',
-      },
-      type: 'array',
-      title: 'Args',
-      description: 'The arguments to pass to the command',
-    },
-  },
-  type: 'object',
-  required: ['server_name', 'command', 'args'],
-  title: 'LocalServerConfig',
-} as const;
-
 export const $MCPServerType = {
   type: 'string',
-  enum: ['sse', 'local'],
+  enum: ['sse', 'stdio'],
   title: 'MCPServerType',
 } as const;
 
@@ -6535,6 +6504,52 @@ export const $SourceUpdate = {
   type: 'object',
   title: 'SourceUpdate',
   description: 'Schema for updating an existing Source.',
+} as const;
+
+export const $StdioServerConfig = {
+  properties: {
+    server_name: {
+      type: 'string',
+      title: 'Server Name',
+      description: 'The name of the server',
+    },
+    type: {
+      $ref: '#/components/schemas/MCPServerType',
+      default: 'stdio',
+    },
+    command: {
+      type: 'string',
+      title: 'Command',
+      description:
+        "The command to run (MCP 'local' client will run this command)",
+    },
+    args: {
+      items: {
+        type: 'string',
+      },
+      type: 'array',
+      title: 'Args',
+      description: 'The arguments to pass to the command',
+    },
+    env: {
+      anyOf: [
+        {
+          additionalProperties: {
+            type: 'string',
+          },
+          type: 'object',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Env',
+      description: 'Environment variables to set',
+    },
+  },
+  type: 'object',
+  required: ['server_name', 'command', 'args'],
+  title: 'StdioServerConfig',
 } as const;
 
 export const $Step = {

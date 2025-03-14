@@ -12,12 +12,12 @@ import {
   Link,
 } from '@letta-cloud/ui-component-library';
 import { useToolsServiceListMcpServers } from '@letta-cloud/sdk-core';
-import type { LocalServerConfig, SSEServerConfig } from '@letta-cloud/sdk-core';
+import type { StdioServerConfig, SSEServerConfig } from '@letta-cloud/sdk-core';
 import { useTranslations } from '@letta-cloud/translations';
 import { AllToolsViewHeader } from '../AllToolsViewHeader/AllToolsViewHeader';
 import type { ColumnDef } from '@tanstack/react-table';
 
-type MCPServerResponse = LocalServerConfig | SSEServerConfig;
+type MCPServerResponse = SSEServerConfig | StdioServerConfig;
 
 function MCPServerTable() {
   const [limit, setLimit] = useState(0);
@@ -81,8 +81,8 @@ function MCPServerTable() {
           let message = '';
           if (row.original.type === 'sse') {
             message = (row.original as SSEServerConfig).server_url;
-          } else if (row.original.type === 'local') {
-            message = (row.original as LocalServerConfig).command;
+          } else if (row.original.type === 'stdio') {
+            message = (row.original as StdioServerConfig).command;
           }
 
           return (

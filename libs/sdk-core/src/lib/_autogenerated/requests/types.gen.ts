@@ -1842,23 +1842,7 @@ export type LocalSandboxConfig = {
   pip_requirements?: Array<PipRequirement>;
 };
 
-export type LocalServerConfig = {
-  /**
-   * The name of the server
-   */
-  server_name: string;
-  type?: MCPServerType;
-  /**
-   * The command to run (MCP 'local' client will run this command)
-   */
-  command: string;
-  /**
-   * The arguments to pass to the command
-   */
-  args: Array<string>;
-};
-
-export type MCPServerType = 'sse' | 'local';
+export type MCPServerType = 'sse' | 'stdio';
 
 /**
  * A simple wrapper around MCP's tool definition (to avoid conflict with our own)
@@ -2551,6 +2535,28 @@ export type SourceUpdate = {
    * The embedding configuration used by the source.
    */
   embedding_config?: EmbeddingConfig | null;
+};
+
+export type StdioServerConfig = {
+  /**
+   * The name of the server
+   */
+  server_name: string;
+  type?: MCPServerType;
+  /**
+   * The command to run (MCP 'local' client will run this command)
+   */
+  command: string;
+  /**
+   * The arguments to pass to the command
+   */
+  args: Array<string>;
+  /**
+   * Environment variables to set
+   */
+  env?: {
+    [key: string]: string;
+  } | null;
 };
 
 export type Step = {
@@ -3276,8 +3282,15 @@ export type ListMcpServersData = {
 };
 
 export type ListMcpServersResponse = {
-  [key: string]: SSEServerConfig | LocalServerConfig;
+  [key: string]: SSEServerConfig | StdioServerConfig;
 };
+
+export type AddMcpServerData = {
+  requestBody: StdioServerConfig | SSEServerConfig;
+  userId?: string | null;
+};
+
+export type AddMcpServerResponse = Array<StdioServerConfig | SSEServerConfig>;
 
 export type ListMcpToolsByServerData = {
   mcpServerName: string;
@@ -3293,6 +3306,15 @@ export type AddMcpToolData = {
 };
 
 export type AddMcpToolResponse = Tool;
+
+export type DeleteMcpServerData = {
+  mcpServerName: string;
+  userId?: string | null;
+};
+
+export type DeleteMcpServerResponse = Array<
+  StdioServerConfig | SSEServerConfig
+>;
 
 export type RetrieveSourceData = {
   sourceId: string;
@@ -4490,8 +4512,21 @@ export type $OpenApiTs = {
          * Successful Response
          */
         200: {
-          [key: string]: SSEServerConfig | LocalServerConfig;
+          [key: string]: SSEServerConfig | StdioServerConfig;
         };
+        /**
+         * Validation Error
+         */
+        422: HTTPValidationError;
+      };
+    };
+    put: {
+      req: AddMcpServerData;
+      res: {
+        /**
+         * Successful Response
+         */
+        200: Array<StdioServerConfig | SSEServerConfig>;
         /**
          * Validation Error
          */
@@ -4522,6 +4557,21 @@ export type $OpenApiTs = {
          * Successful Response
          */
         200: Tool;
+        /**
+         * Validation Error
+         */
+        422: HTTPValidationError;
+      };
+    };
+  };
+  '/v1/tools/mcp/servers/{mcp_server_name}': {
+    delete: {
+      req: DeleteMcpServerData;
+      res: {
+        /**
+         * Successful Response
+         */
+        200: Array<StdioServerConfig | SSEServerConfig>;
         /**
          * Validation Error
          */
