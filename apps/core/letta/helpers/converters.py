@@ -80,10 +80,13 @@ def deserialize_tool_rule(data: Dict) -> Union[ChildToolRule, InitToolRule, Term
     rule_type = ToolRuleType(data.get("type"))
 
     if rule_type == ToolRuleType.run_first or rule_type == ToolRuleType.InitToolRule:
+        data["type"] = ToolRuleType.run_first
         return InitToolRule(**data)
     elif rule_type == ToolRuleType.exit_loop or rule_type == ToolRuleType.TerminalToolRule:
+        data["type"] = ToolRuleType.exit_loop
         return TerminalToolRule(**data)
     elif rule_type == ToolRuleType.constrain_child_tools or rule_type == ToolRuleType.ToolRule:
+        data["type"] = ToolRuleType.constrain_child_tools
         return ChildToolRule(**data)
     elif rule_type == ToolRuleType.conditional:
         return ConditionalToolRule(**data)
