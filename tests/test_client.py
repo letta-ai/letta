@@ -1,14 +1,12 @@
 import asyncio
-import json
 import os
 import threading
 import time
 import uuid
-from typing import List, Union
 
 import pytest
 from dotenv import load_dotenv
-from letta_client import AgentState, JobStatus, Letta, MessageCreate, MessageRole
+from letta_client import AgentState, Letta, MessageCreate
 from letta_client.core.api_error import ApiError
 from sqlalchemy import delete
 
