@@ -22,11 +22,11 @@ from letta.errors import ContextWindowExceededError
 from letta.functions.ast_parsers import coerce_dict_args_by_annotations, get_function_annotations_from_source
 from letta.functions.functions import get_function_from_module
 from letta.functions.helpers import execute_composio_action, generate_composio_action_from_func_name
+from letta.functions.mcp_client.base_client import BaseMCPClient
 from letta.helpers import ToolRulesSolver
 from letta.helpers.composio_helpers import get_composio_api_key
 from letta.helpers.datetime_helpers import get_utc_time
 from letta.helpers.json_helpers import json_dumps, json_loads
-from letta.helpers.mcp_helpers import BaseMCPClient
 from letta.interface import AgentInterface
 from letta.llm_api.helpers import calculate_summarizer_cutoff, get_token_counts_for_messages, is_context_overflow_error
 from letta.llm_api.llm_api_tools import create

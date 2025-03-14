@@ -17,12 +17,12 @@ from letta.functions.helpers import (
     generate_mcp_tool_wrapper,
     generate_model_from_args_json_schema,
 )
+from letta.functions.mcp_client.types import MCPTool
 from letta.functions.schema_generator import (
     generate_schema_from_args_schema_v2,
     generate_tool_schema_for_composio,
     generate_tool_schema_for_mcp,
 )
-from letta.helpers.mcp_helpers import MCPTool
 from letta.log import get_logger
 from letta.orm.enums import ToolType
 from letta.schemas.letta_base import LettaBase
