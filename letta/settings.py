@@ -173,6 +173,7 @@ class Settings(BaseSettings):
 
     # telemetry logging
     verbose_telemetry_logging: bool = False
+    otel_exporter_otlp_endpoint: str = "http://localhost:4317"
 
     # uvicorn settings
     uvicorn_workers: int = 1
