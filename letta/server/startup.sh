@@ -53,6 +53,26 @@ if [ "${SECURE:-false}" = "true" ]; then
     CMD="$CMD --secure"
 fi
 
+# Start OpenTelemetry Collector in the background
+if [ -n "$CLICKHOUSE_ENDPOINT" ] && [ -n "$CLICKHOUSE_PASSWORD" ]; then
+    echo "Starting OpenTelemetry Collector with Clickhouse export..."
+    CONFIG_FILE="/etc/otel/config-clickhouse.yaml"
+else
+    echo "Starting OpenTelemetry Collector with file export only..."
+    CONFIG_FILE="/etc/otel/config-file.yaml"
+fi
+
+/usr/local/bin/otelcol-contrib --config "$CONFIG_FILE" &
+OTEL_PID=$!
+
+# Function to cleanup processes on exit
+cleanup() {
+    echo "Shutting down..."
+    kill $OTEL_PID
+    wait $OTEL_PID
+}
+trap cleanup EXIT
+
 echo "Starting Letta server at http://$HOST:$PORT..."
 echo "Executing: $CMD"
 exec $CMD

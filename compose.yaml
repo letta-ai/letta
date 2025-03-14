@@ -49,6 +49,10 @@ services:
       - VLLM_API_BASE=${VLLM_API_BASE}
       - OPENLLM_AUTH_TYPE=${OPENLLM_AUTH_TYPE}
       - OPENLLM_API_KEY=${OPENLLM_API_KEY}
+      - CLICKHOUSE_ENDPOINT=${CLICKHOUSE_ENDPOINT}
+      - CLICKHOUSE_DATABASE=${CLICKHOUSE_DATABASE}
+      - CLICKHOUSE_USERNAME=${CLICKHOUSE_USERNAME}
+      - CLICKHOUSE_PASSWORD=${CLICKHOUSE_PASSWORD}
     # volumes:
     # - ./configs/server_config.yaml:/root/.letta/config # config file
     # - ~/.letta/credentials:/root/.letta/credentials # credentials file

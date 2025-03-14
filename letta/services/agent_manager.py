@@ -59,7 +59,6 @@ from letta.services.passage_manager import PassageManager
 from letta.services.source_manager import SourceManager
 from letta.services.tool_manager import ToolManager
 from letta.settings import settings
-from letta.tracing import trace_method
 from letta.utils import enforce_types, united_diff
 
 logger = get_logger(__name__)
@@ -83,7 +82,6 @@ class AgentManager:
     # ======================================================================================================================
     # Basic CRUD operations
     # ======================================================================================================================
-    @trace_method
     @enforce_types
     def create_agent(
         self,
@@ -446,7 +444,6 @@ class AgentManager:
             agent = AgentModel.read(db_session=session, name=agent_name, actor=actor)
             return agent.to_pydantic()
 
-    @trace_method
     @enforce_types
     def delete_agent(self, agent_id: str, actor: PydanticUser) -> None:
         """
