@@ -65,6 +65,14 @@ function ToolCategorySidebar() {
         {t('ToolCategorySidebar.pythonTools')}
       </Typography>
       <ToolCategoryButton
+        label={categories.current.title}
+        isSelected={'current' === selectedCategory}
+        preIcon={categories.current.icon}
+        onSelect={() => {
+          setCategory('current');
+        }}
+      />
+      <ToolCategoryButton
         label={categories.local.title}
         isSelected={'local' === selectedCategory}
         preIcon={categories.local.icon}
