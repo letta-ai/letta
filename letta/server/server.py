@@ -1366,8 +1366,8 @@ class SyncServer(Server):
         # Print out the tools that are connected
         logger.info(f"Attempting to fetch tools from MCP server: {server_config.server_name}")
         new_mcp_tools = new_mcp_client.list_tools()
-        logger.info(f"MCP tools connected: {", ".join([t.name for t in new_mcp_tools])}")
-        logger.debug(f"MCP tools: {"\n".join([str(t) for t in new_mcp_tools])}")
+        logger.info(f"MCP tools connected: {', '.join([t.name for t in new_mcp_tools])}")
+        logger.debug(f"MCP tools: {', '.join([str(t) for t in new_mcp_tools])}")
 
         # Now that we've confirmed the config is working, let's add it to the client list
         self.mcp_clients[server_config.server_name] = new_mcp_client
