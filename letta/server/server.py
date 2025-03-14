@@ -20,18 +20,12 @@ from letta.agent import Agent, save_agent
 from letta.config import LettaConfig
 from letta.data_sources.connectors import DataConnector, load_data
 from letta.dynamic_multi_agent import DynamicMultiAgent
+from letta.functions.mcp_client.base_client import BaseMCPClient
+from letta.functions.mcp_client.sse_client import MCP_CONFIG_TOPLEVEL_KEY, SSEMCPClient
+from letta.functions.mcp_client.stdio_client import StdioMCPClient
+from letta.functions.mcp_client.types import MCPServerType, MCPTool, SSEServerConfig, StdioServerConfig
 from letta.helpers.datetime_helpers import get_utc_time
 from letta.helpers.json_helpers import json_dumps, json_loads
-from letta.helpers.mcp_helpers import (
-    MCP_CONFIG_TOPLEVEL_KEY,
-    BaseMCPClient,
-    MCPServerType,
-    MCPTool,
-    SSEMCPClient,
-    SSEServerConfig,
-    StdioMCPClient,
-    StdioServerConfig,
-)
 
 # TODO use custom interface
 from letta.interface import AgentInterface  # abstract
@@ -343,11 +337,12 @@ class SyncServer(Server):
                 self.mcp_clients[server_name] = StdioMCPClient()
             else:
                 raise ValueError(f"Invalid MCP server config: {server_config}")
+
             try:
                 self.mcp_clients[server_name].connect_to_server(server_config)
-            except:
-                logger.exception(f"Failed to connect to MCP server: {server_name}")
-                raise
+            except Exception as e:
+                logger.error(e)
+                self.mcp_clients.pop(server_name)
 
         # Print out the tools that are connected
         for server_name, client in self.mcp_clients.items():
