@@ -5,8 +5,6 @@ import time
 import pytest
 from dotenv import load_dotenv
 from letta_client import AgentState, Letta, LlmConfig, MessageCreate
-from letta_client.core.api_error import ApiError
-from pytest import fixture
 
 
 def run_server():
