@@ -54,6 +54,7 @@ function RecentAgentsSection() {
             color="secondary"
             label={t('RecentAgentsSection.viewAgent')}
             size="small"
+            href={`/projects/${slug}/agents/${agent.id}`}
           />
         ),
       }))}
@@ -127,6 +128,7 @@ function RecentTemplatesSection() {
             color="secondary"
             label={t('RecentTemplatesSection.viewTemplate')}
             size="small"
+            href={`/projects/${slug}/templates/${agent.name}`}
           />
         ),
       }))}
