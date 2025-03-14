@@ -18,6 +18,7 @@ from letta.orm import Tool as ToolModel
 from letta.orm.enums import ToolType
 from letta.orm.errors import NoResultFound
 from letta.orm.sandbox_config import AgentEnvironmentVariable as AgentEnvironmentVariableModel
+from letta.orm.sqlalchemy_base import AccessType
 from letta.orm.sqlite_functions import adapt_array
 from letta.schemas.agent import AgentState as PydanticAgentState
 from letta.schemas.agent import AgentType, CreateAgent, UpdateAgent
@@ -35,10 +36,15 @@ from letta.schemas.tool_rule import ContinueToolRule as PydanticContinueToolRule
 from letta.schemas.tool_rule import TerminalToolRule as PydanticTerminalToolRule
 from letta.schemas.tool_rule import ToolRule as PydanticToolRule
 from letta.schemas.user import User as PydanticUser
-from letta.serialize_schemas import SerializedAgentSchema
-from letta.serialize_schemas.tool import SerializedToolSchema
+from letta.serialize_schemas import MarshmallowAgentSchema
+from letta.serialize_schemas.marshmallow_tool import SerializedToolSchema
+from letta.serialize_schemas.pydantic_agent_schema import AgentSchema
 from letta.services.block_manager import BlockManager
 from letta.services.helpers.agent_manager_helper import (
+    _apply_filters,
+    _apply_identity_filters,
+    _apply_pagination,
+    _apply_tag_filter,
     _process_relationship,
     _process_tags,
     check_supports_structured_output,
@@ -49,6 +55,7 @@ from letta.services.helpers.agent_manager_helper import (
 )
 from letta.services.identity_manager import IdentityManager
 from letta.services.message_manager import MessageManager
+from letta.services.passage_manager import PassageManager
 from letta.services.source_manager import SourceManager
 from letta.services.tool_manager import ToolManager
 from letta.settings import settings
@@ -70,6 +77,7 @@ class AgentManager:
         self.tool_manager = ToolManager()
         self.source_manager = SourceManager()
         self.message_manager = MessageManager()
+        self.passage_manager = PassageManager()
         self.identity_manager = IdentityManager()
 
     # ======================================================================================================================
@@ -326,39 +334,60 @@ class AgentManager:
             # Convert to PydanticAgentState and return
             return agent.to_pydantic()
 
-    @enforce_types
+    # TODO: Make this general and think about how to roll this into sqlalchemybase
     def list_agents(
         self,
         actor: PydanticUser,
+        name: Optional[str] = None,
+        tags: Optional[List[str]] = None,
+        match_all_tags: bool = False,
         before: Optional[str] = None,
         after: Optional[str] = None,
         limit: Optional[int] = 50,
-        tags: Optional[List[str]] = None,
-        match_all_tags: bool = False,
         query_text: Optional[str] = None,
-        identifier_keys: Optional[List[str]] = None,
+        project_id: Optional[str] = None,
+        template_id: Optional[str] = None,
+        base_template_id: Optional[str] = None,
         identity_id: Optional[str] = None,
-        **kwargs,
+        identifier_keys: Optional[List[str]] = None,
+        include_relationships: Optional[List[str]] = None,
     ) -> List[PydanticAgentState]:
         """
-        List agents that have the specified tags.
+        Retrieves agents with optimized filtering and optional field selection.
+
+        Args:
+            actor: The User requesting the list
+            name (Optional[str]): Filter by agent name.
+            tags (Optional[List[str]]): Filter agents by tags.
+            match_all_tags (bool): If True, only return agents that match ALL given tags.
+            before (Optional[str]): Cursor for pagination.
+            after (Optional[str]): Cursor for pagination.
+            limit (Optional[int]): Maximum number of agents to return.
+            query_text (Optional[str]): Search agents by name.
+            project_id (Optional[str]): Filter by project ID.
+            template_id (Optional[str]): Filter by template ID.
+            base_template_id (Optional[str]): Filter by base template ID.
+            identity_id (Optional[str]): Filter by identifier ID.
+            identifier_keys (Optional[List[str]]): Search agents by identifier keys.
+            include_relationships (Optional[List[str]]): List of fields to load for performance optimization.
+
+        Returns:
+            List[PydanticAgentState]: The filtered list of matching agents.
         """
         with self.session_maker() as session:
-            agents = AgentModel.list(
-                db_session=session,
-                before=before,
-                after=after,
-                limit=limit,
-                tags=tags,
-                match_all_tags=match_all_tags,
-                organization_id=actor.organization_id if actor else None,
-                query_text=query_text,
-                identifier_keys=identifier_keys,
-                identity_id=identity_id,
-                **kwargs,
-            )
+            query = select(AgentModel).distinct(AgentModel.created_at, AgentModel.id)
+            query = AgentModel.apply_access_predicate(query, actor, ["read"], AccessType.ORGANIZATION)
 
-            return [agent.to_pydantic() for agent in agents]
+            # Apply filters
+            query = _apply_filters(query, name, query_text, project_id, template_id, base_template_id)
+            query = _apply_identity_filters(query, identity_id, identifier_keys)
+            query = _apply_tag_filter(query, tags, match_all_tags)
+            query = _apply_pagination(query, before, after, session)
+
+            query = query.limit(limit)
+
+            agents = session.execute(query).scalars().all()
+            return [agent.to_pydantic(include_relationships=include_relationships) for agent in agents]
 
     @enforce_types
     def list_agents_matching_tags(
@@ -399,7 +428,7 @@ class AgentManager:
                 # Ensures agents match at least one tag in match_some
                 query = query.join(AgentsTags).where(AgentsTags.tag.in_(match_some))
 
-            query = query.group_by(AgentModel.id).limit(limit)
+            query = query.distinct(AgentModel.id).order_by(AgentModel.id).limit(limit)
 
             return list(session.execute(query).scalars())
 
@@ -434,29 +463,32 @@ class AgentManager:
         with self.session_maker() as session:
             # Retrieve the agent
             agent = AgentModel.read(db_session=session, identifier=agent_id, actor=actor)
+            # TODO check if it is managing a group
             agent.hard_delete(session)
 
     @enforce_types
-    def serialize(self, agent_id: str, actor: PydanticUser) -> dict:
+    def serialize(self, agent_id: str, actor: PydanticUser) -> AgentSchema:
         with self.session_maker() as session:
             # Retrieve the agent
             agent = AgentModel.read(db_session=session, identifier=agent_id, actor=actor)
-            schema = SerializedAgentSchema(session=session, actor=actor)
-            return schema.dump(agent)
+            schema = MarshmallowAgentSchema(session=session, actor=actor)
+            data = schema.dump(agent)
+            return AgentSchema(**data)
 
     @enforce_types
     def deserialize(
         self,
-        serialized_agent: dict,
+        serialized_agent: AgentSchema,
         actor: PydanticUser,
         append_copy_suffix: bool = True,
         override_existing_tools: bool = True,
         project_id: Optional[str] = None,
     ) -> PydanticAgentState:
+        serialized_agent = serialized_agent.model_dump()
         tool_data_list = serialized_agent.pop("tools", [])
 
         with self.session_maker() as session:
-            schema = SerializedAgentSchema(session=session, actor=actor)
+            schema = MarshmallowAgentSchema(session=session, actor=actor)
             agent = schema.load(serialized_agent, session=session)
             if append_copy_suffix:
                 agent.name += "_copy"
@@ -595,12 +627,17 @@ class AgentManager:
             # NOTE: a bit of a hack - we pull the timestamp from the message created_by
             memory_edit_timestamp = curr_system_message.created_at
 
+        num_messages = self.message_manager.size(actor=actor, agent_id=agent_id)
+        num_archival_memories = self.passage_manager.size(actor=actor, agent_id=agent_id)
+
         # update memory (TODO: potentially update recall/archival stats separately)
         new_system_message_str = compile_system_message(
             system_prompt=agent_state.system,
             in_context_memory=agent_state.memory,
             in_context_memory_last_edit=memory_edit_timestamp,
             recent_passages=self.list_passages(actor=actor, agent_id=agent_id, ascending=False, limit=10),
+            previous_message_count=num_messages,
+            archival_memory_size=num_archival_memories,
         )
 
         diff = united_diff(curr_system_message_openai["content"], new_system_message_str)

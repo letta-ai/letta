@@ -174,6 +174,11 @@ class Settings(BaseSettings):
     # telemetry logging
     verbose_telemetry_logging: bool = False
 
+    # uvicorn settings
+    uvicorn_workers: int = 1
+    uvicorn_reload: bool = False
+    uvicorn_timeout_keep_alive: int = 5
+
     @property
     def letta_pg_uri(self) -> str:
         if self.pg_uri:

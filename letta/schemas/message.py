@@ -9,26 +9,25 @@ from typing import Any, Dict, List, Literal, Optional, Union
 
 from openai.types.chat.chat_completion_message_tool_call import ChatCompletionMessageToolCall as OpenAIToolCall
 from openai.types.chat.chat_completion_message_tool_call import Function as OpenAIFunction
-from pydantic import BaseModel, Field, field_validator, model_validator
+from pydantic import BaseModel, Field, field_validator
 
 from letta.constants import DEFAULT_MESSAGE_TOOL, DEFAULT_MESSAGE_TOOL_KWARG, TOOL_CALL_ID_MAX_LEN
 from letta.helpers.datetime_helpers import get_utc_time, is_utc_datetime
 from letta.helpers.json_helpers import json_dumps
 from letta.local_llm.constants import INNER_THOUGHTS_KWARG
-from letta.schemas.enums import MessageContentType, MessageRole
+from letta.schemas.enums import MessageRole
 from letta.schemas.letta_base import OrmMetadataBase
 from letta.schemas.letta_message import (
     AssistantMessage,
     LettaMessage,
-    MessageContentUnion,
     ReasoningMessage,
     SystemMessage,
-    TextContent,
     ToolCall,
     ToolCallMessage,
     ToolReturnMessage,
     UserMessage,
 )
+from letta.schemas.letta_message_content import LettaMessageContentUnion, TextContent, get_letta_message_content_union_str_json_schema
 from letta.system import unpack_message
 
 
@@ -66,15 +65,30 @@ class MessageCreate(BaseModel):
         MessageRole.user,
         MessageRole.system,
     ] = Field(..., description="The role of the participant.")
-    content: Union[str, List[MessageContentUnion]] = Field(..., description="The content of the message.")
+    content: Union[str, List[LettaMessageContentUnion]] = Field(
+        ...,
+        description="The content of the message.",
+        json_schema_extra=get_letta_message_content_union_str_json_schema(),
+    )
     name: Optional[str] = Field(None, description="The name of the participant.")
+
+    def model_dump(self, to_orm: bool = False, **kwargs) -> Dict[str, Any]:
+        data = super().model_dump(**kwargs)
+        if to_orm and "content" in data:
+            if isinstance(data["content"], str):
+                data["content"] = [TextContent(text=data["content"])]
+        return data
 
 
 class MessageUpdate(BaseModel):
     """Request to update a message"""
 
     role: Optional[MessageRole] = Field(None, description="The role of the participant.")
-    content: Optional[Union[str, List[MessageContentUnion]]] = Field(None, description="The content of the message.")
+    content: Optional[Union[str, List[LettaMessageContentUnion]]] = Field(
+        None,
+        description="The content of the message.",
+        json_schema_extra=get_letta_message_content_union_str_json_schema(),
+    )
     # NOTE: probably doesn't make sense to allow remapping user_id or agent_id (vs creating a new message)
     # user_id: Optional[str] = Field(None, description="The unique identifier of the user.")
     # agent_id: Optional[str] = Field(None, description="The unique identifier of the agent.")
@@ -90,12 +104,7 @@ class MessageUpdate(BaseModel):
         data = super().model_dump(**kwargs)
         if to_orm and "content" in data:
             if isinstance(data["content"], str):
-                data["text"] = data["content"]
-            else:
-                for content in data["content"]:
-                    if content["type"] == "text":
-                        data["text"] = content["text"]
-            del data["content"]
+                data["content"] = [TextContent(text=data["content"])]
         return data
 
 
@@ -119,7 +128,7 @@ class Message(BaseMessage):
 
     id: str = BaseMessage.generate_id_field()
     role: MessageRole = Field(..., description="The role of the participant.")
-    content: Optional[List[MessageContentUnion]] = Field(None, description="The content of the message.")
+    content: Optional[List[LettaMessageContentUnion]] = Field(None, description="The content of the message.")
     organization_id: Optional[str] = Field(None, description="The unique identifier of the organization.")
     agent_id: Optional[str] = Field(None, description="The unique identifier of the agent.")
     model: Optional[str] = Field(None, description="The model used to make the function call.")
@@ -129,6 +138,7 @@ class Message(BaseMessage):
     step_id: Optional[str] = Field(None, description="The id of the step that this message was created in.")
     otid: Optional[str] = Field(None, description="The offline threading id associated with this message")
     tool_returns: Optional[List[ToolReturn]] = Field(None, description="Tool execution return information for prior tool calls")
+    group_id: Optional[str] = Field(None, description="The multi-agent group that the message was sent in")
 
     # This overrides the optional base orm schema, created_at MUST exist on all messages objects
     created_at: datetime = Field(default_factory=get_utc_time, description="The timestamp when the object was created.")
@@ -139,24 +149,6 @@ class Message(BaseMessage):
         roles = ["system", "assistant", "user", "tool"]
         assert v in roles, f"Role must be one of {roles}"
         return v
-
-    @model_validator(mode="before")
-    @classmethod
-    def convert_from_orm(cls, data: Dict[str, Any]) -> Dict[str, Any]:
-        if isinstance(data, dict):
-            if "text" in data and "content" not in data:
-                data["content"] = [TextContent(text=data["text"])]
-                del data["text"]
-        return data
-
-    def model_dump(self, to_orm: bool = False, **kwargs) -> Dict[str, Any]:
-        data = super().model_dump(**kwargs)
-        if to_orm:
-            for content in data["content"]:
-                if content["type"] == "text":
-                    data["text"] = content["text"]
-            del data["content"]
-        return data
 
     def to_json(self):
         json_message = vars(self)
@@ -214,7 +206,7 @@ class Message(BaseMessage):
         assistant_message_tool_kwarg: str = DEFAULT_MESSAGE_TOOL_KWARG,
     ) -> List[LettaMessage]:
         """Convert message object (in DB format) to the style used by the original Letta API"""
-        if self.content and len(self.content) == 1 and self.content[0].type == MessageContentType.text:
+        if self.content and len(self.content) == 1 and isinstance(self.content[0], TextContent):
             text_content = self.content[0].text
         else:
             text_content = None
@@ -485,7 +477,7 @@ class Message(BaseMessage):
         """Go from Message class to ChatCompletion message object"""
 
         # TODO change to pydantic casting, eg `return SystemMessageModel(self)`
-        if self.content and len(self.content) == 1 and self.content[0].type == MessageContentType.text:
+        if self.content and len(self.content) == 1 and isinstance(self.content[0], TextContent):
             text_content = self.content[0].text
         else:
             text_content = None
@@ -560,7 +552,7 @@ class Message(BaseMessage):
         Args:
             inner_thoughts_xml_tag (str): The XML tag to wrap around inner thoughts
         """
-        if self.content and len(self.content) == 1 and self.content[0].type == MessageContentType.text:
+        if self.content and len(self.content) == 1 and isinstance(self.content[0], TextContent):
             text_content = self.content[0].text
         else:
             text_content = None
@@ -655,7 +647,7 @@ class Message(BaseMessage):
         # type Content: https://ai.google.dev/api/rest/v1/Content / https://ai.google.dev/api/rest/v1beta/Content
         #     parts[]: Part
         #     role: str ('user' or 'model')
-        if self.content and len(self.content) == 1 and self.content[0].type == MessageContentType.text:
+        if self.content and len(self.content) == 1 and isinstance(self.content[0], TextContent):
             text_content = self.content[0].text
         else:
             text_content = None
@@ -781,7 +773,7 @@ class Message(BaseMessage):
 
         # TODO: update this prompt style once guidance from Cohere on
         # embedded function calls in multi-turn conversation become more clear
-        if self.content and len(self.content) == 1 and self.content[0].type == MessageContentType.text:
+        if self.content and len(self.content) == 1 and isinstance(self.content[0], TextContent):
             text_content = self.content[0].text
         else:
             text_content = None

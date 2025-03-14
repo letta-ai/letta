@@ -5,8 +5,9 @@ from letta.llm_api.llm_api_tools import create
 from letta.prompts.gpt_summarize import SYSTEM as SUMMARY_PROMPT_SYSTEM
 from letta.schemas.agent import AgentState
 from letta.schemas.enums import MessageRole
+from letta.schemas.letta_message_content import TextContent
 from letta.schemas.memory import Memory
-from letta.schemas.message import Message, TextContent
+from letta.schemas.message import Message
 from letta.settings import summarizer_settings
 from letta.utils import count_tokens, printd
 

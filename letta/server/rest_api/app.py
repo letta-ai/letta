@@ -17,6 +17,11 @@ from letta.errors import BedrockPermissionError, LettaAgentNotFoundError, LettaU
 from letta.log import get_logger
 from letta.orm.errors import DatabaseTimeoutError, ForeignKeyConstraintViolationError, NoResultFound, UniqueConstraintViolationError
 from letta.schemas.letta_message import create_letta_message_union_schema
+from letta.schemas.letta_message_content import (
+    create_letta_assistant_message_content_union_schema,
+    create_letta_message_content_union_schema,
+    create_letta_user_message_content_union_schema,
+)
 from letta.server.constants import REST_DEFAULT_PORT
 
 # NOTE(charles): these are extra routes that are not part of v1 but we still need to mount to pass tests
@@ -68,6 +73,10 @@ def generate_openapi_schema(app: FastAPI):
     letta_docs["paths"] = {k: v for k, v in letta_docs["paths"].items() if not k.startswith("/openai")}
     letta_docs["info"]["title"] = "Letta API"
     letta_docs["components"]["schemas"]["LettaMessageUnion"] = create_letta_message_union_schema()
+    letta_docs["components"]["schemas"]["LettaMessageContentUnion"] = create_letta_message_content_union_schema()
+    letta_docs["components"]["schemas"]["LettaAssistantMessageContentUnion"] = create_letta_assistant_message_content_union_schema()
+    letta_docs["components"]["schemas"]["LettaUserMessageContentUnion"] = create_letta_user_message_content_union_schema()
+
     for name, docs in [
         (
             "letta",
@@ -320,6 +329,9 @@ def start_server(
             app,
             host=host or "localhost",
             port=port or REST_DEFAULT_PORT,
+            workers=settings.uvicorn_workers,
+            reload=settings.uvicorn_reload,
+            timeout_keep_alive=settings.uvicorn_timeout_keep_alive,
             ssl_keyfile="certs/localhost-key.pem",
             ssl_certfile="certs/localhost.pem",
         )
@@ -336,4 +348,7 @@ def start_server(
             app,
             host=host or "localhost",
             port=port or REST_DEFAULT_PORT,
+            workers=settings.uvicorn_workers,
+            reload=settings.uvicorn_reload,
+            timeout_keep_alive=settings.uvicorn_timeout_keep_alive,
         )
