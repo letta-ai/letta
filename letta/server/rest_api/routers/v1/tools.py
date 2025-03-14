@@ -12,8 +12,8 @@ from composio.exceptions import (
 from fastapi import APIRouter, Body, Depends, Header, HTTPException
 
 from letta.errors import LettaToolCreateError
+from letta.functions.mcp_client.types import MCPTool, SSEServerConfig, StdioServerConfig
 from letta.helpers.composio_helpers import get_composio_api_key
-from letta.helpers.mcp_helpers import MCPTool, SSEServerConfig, StdioServerConfig
 from letta.log import get_logger
 from letta.orm.errors import UniqueConstraintViolationError
 from letta.schemas.letta_message import ToolReturnMessage

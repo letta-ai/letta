@@ -6,7 +6,7 @@ from composio.client.collections import ActionParametersModel
 from docstring_parser import parse
 from pydantic import BaseModel
 
-from letta.helpers.mcp_helpers import MCPTool
+from letta.functions.mcp_client.types import MCPTool
 
 
 def is_optional(annotation):
