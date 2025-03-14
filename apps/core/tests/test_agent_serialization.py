@@ -482,7 +482,7 @@ def test_agent_download_upload_flow(fastapi_client, server, serialize_test_agent
     agent_id = serialize_test_agent.id
 
     # Step 1: Download the serialized agent
-    response = fastapi_client.get(f"/v1/agents/{agent_id}/download", headers={"user_id": default_user.id})
+    response = fastapi_client.get(f"/v1/agents/{agent_id}/export", headers={"user_id": default_user.id})
     assert response.status_code == 200, f"Download failed: {response.text}"
 
     # Ensure response matches expected schema
@@ -493,7 +493,7 @@ def test_agent_download_upload_flow(fastapi_client, server, serialize_test_agent
     agent_bytes = BytesIO(json.dumps(agent_json).encode("utf-8"))
     files = {"file": ("agent.json", agent_bytes, "application/json")}
     upload_response = fastapi_client.post(
-        "/v1/agents/upload",
+        "/v1/agents/import",
         headers={"user_id": other_user.id},
         params={"append_copy_suffix": append_copy_suffix, "override_existing_tools": False, "project_id": project_id},
         files=files,

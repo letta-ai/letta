@@ -1,7 +1,7 @@
 import json
 from typing import List, Optional
 
-from sqlalchemy import and_, or_
+from sqlalchemy import and_, exists, func, or_, select, text
 
 from letta.log import get_logger
 from letta.orm.agent import Agent as AgentModel
@@ -233,9 +233,17 @@ class MessageManager:
             # Build a query that directly filters the Message table by agent_id.
             query = session.query(MessageModel).filter(MessageModel.agent_id == agent_id)
 
-            # If query_text is provided, filter messages by partial match on text.
+            # If query_text is provided, filter messages using subquery.
             if query_text:
-                query = query.filter(MessageModel.text.ilike(f"%{query_text}%"))
+                content_element = func.json_array_elements(MessageModel.content).alias("content_element")
+                query = query.filter(
+                    exists(
+                        select(1)
+                        .select_from(content_element)
+                        .where(text("content_element->>'type' = 'text' AND content_element->>'text' ILIKE :query_text"))
+                        .params(query_text=f"%{query_text}%")
+                    )
+                )
 
             # If role is provided, filter messages by role.
             if role:

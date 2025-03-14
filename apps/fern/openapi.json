@@ -12289,6 +12289,17 @@
             "format": "date-time",
             "title": "Date"
           },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
           "message_type": {
             "type": "string",
             "enum": ["assistant_message"],
@@ -12300,7 +12311,7 @@
             "anyOf": [
               {
                 "items": {
-                  "$ref": "#/components/schemas/LettaMessageContentUnion"
+                  "$ref": "#/components/schemas/LettaAssistantMessageContentUnion"
                 },
                 "type": "array"
               },
@@ -12315,7 +12326,7 @@
         "type": "object",
         "required": ["id", "date", "content"],
         "title": "AssistantMessage",
-        "description": "A message sent by the LLM in response to user input. Used in the LLM context.\n\nArgs:\n    id (str): The ID of the message\n    date (datetime): The date the message was created in ISO format\n    content (Union[str, List[LettaMessageContentUnion]]): The message content sent by the agent (can be a string or an array of content parts)"
+        "description": "A message sent by the LLM in response to user input. Used in the LLM context.\n\nArgs:\n    id (str): The ID of the message\n    date (datetime): The date the message was created in ISO format\n    name (Optional[str]): The name of the sender of the message\n    content (Union[str, List[LettaAssistantMessageContentUnion]]): The message content sent by the agent (can be a string or an array of content parts)"
       },
       "Audio": {
         "properties": {
@@ -16225,12 +16236,32 @@
                   "oneOf": [
                     {
                       "$ref": "#/components/schemas/TextContent"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ToolCallContent"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ToolReturnContent"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ReasoningContent"
+                    },
+                    {
+                      "$ref": "#/components/schemas/RedactedReasoningContent"
+                    },
+                    {
+                      "$ref": "#/components/schemas/OmittedReasoningContent"
                     }
                   ],
                   "discriminator": {
                     "propertyName": "type",
                     "mapping": {
-                      "text": "#/components/schemas/TextContent"
+                      "omitted_reasoning": "#/components/schemas/OmittedReasoningContent",
+                      "reasoning": "#/components/schemas/ReasoningContent",
+                      "redacted_reasoning": "#/components/schemas/RedactedReasoningContent",
+                      "text": "#/components/schemas/TextContent",
+                      "tool_call": "#/components/schemas/ToolCallContent",
+                      "tool_return": "#/components/schemas/ToolReturnContent"
                     }
                   }
                 },
@@ -16375,23 +16406,13 @@
           "content": {
             "anyOf": [
               {
-                "type": "string"
-              },
-              {
                 "items": {
-                  "oneOf": [
-                    {
-                      "$ref": "#/components/schemas/TextContent"
-                    }
-                  ],
-                  "discriminator": {
-                    "propertyName": "type",
-                    "mapping": {
-                      "text": "#/components/schemas/TextContent"
-                    }
-                  }
+                  "$ref": "#/components/schemas/LettaMessageContentUnion"
                 },
                 "type": "array"
+              },
+              {
+                "type": "string"
               }
             ],
             "title": "Content",
@@ -16467,9 +16488,12 @@
             "type": "string",
             "title": "Role"
           },
-          "text": {
-            "type": "string",
-            "title": "Text"
+          "content": {
+            "items": {
+              "$ref": "#/components/schemas/TextContent"
+            },
+            "type": "array",
+            "title": "Content"
           },
           "tool_call_id": {
             "anyOf": [
@@ -16505,13 +16529,33 @@
           "model",
           "name",
           "role",
-          "text",
+          "content",
           "tool_call_id",
           "tool_calls",
           "tool_returns",
           "updated_at"
         ],
         "title": "MessageSchema"
+      },
+      "OmittedReasoningContent": {
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": ["omitted_reasoning"],
+            "const": "omitted_reasoning",
+            "title": "Type",
+            "description": "Indicates this is an omitted reasoning step.",
+            "default": "omitted_reasoning"
+          },
+          "tokens": {
+            "type": "integer",
+            "title": "Tokens",
+            "description": "The reasoning token count for intermediate reasoning content."
+          }
+        },
+        "type": "object",
+        "required": ["tokens"],
+        "title": "OmittedReasoningContent"
       },
       "Organization": {
         "properties": {
@@ -17032,6 +17076,43 @@
         "required": ["id", "api_key"],
         "title": "ProviderUpdate"
       },
+      "ReasoningContent": {
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": ["reasoning"],
+            "const": "reasoning",
+            "title": "Type",
+            "description": "Indicates this is a reasoning/intermediate step.",
+            "default": "reasoning"
+          },
+          "is_native": {
+            "type": "boolean",
+            "title": "Is Native",
+            "description": "Whether the reasoning content was generated by a reasoner model that processed this step."
+          },
+          "reasoning": {
+            "type": "string",
+            "title": "Reasoning",
+            "description": "The intermediate reasoning or thought process content."
+          },
+          "signature": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Signature",
+            "description": "A unique identifier for this reasoning step."
+          }
+        },
+        "type": "object",
+        "required": ["is_native", "reasoning"],
+        "title": "ReasoningContent"
+      },
       "ReasoningMessage": {
         "properties": {
           "id": {
@@ -17043,12 +17124,29 @@
             "format": "date-time",
             "title": "Date"
           },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
           "message_type": {
             "type": "string",
             "enum": ["reasoning_message"],
             "const": "reasoning_message",
             "title": "Message Type",
             "default": "reasoning_message"
+          },
+          "source": {
+            "type": "string",
+            "enum": ["reasoner_model", "non_reasoner_model"],
+            "title": "Source",
+            "default": "non_reasoner_model"
           },
           "reasoning": {
             "type": "string",
@@ -17058,7 +17156,27 @@
         "type": "object",
         "required": ["id", "date", "reasoning"],
         "title": "ReasoningMessage",
-        "description": "Representation of an agent's internal reasoning.\n\nArgs:\n    id (str): The ID of the message\n    date (datetime): The date the message was created in ISO format\n    reasoning (str): The internal reasoning of the agent"
+        "description": "Representation of an agent's internal reasoning.\n\nArgs:\n    id (str): The ID of the message\n    date (datetime): The date the message was created in ISO format\n    name (Optional[str]): The name of the sender of the message\n    source (Literal[\"reasoner_model\", \"non_reasoner_model\"]): Whether the reasoning\n        content was generated natively by a reasoner model or derived via prompting\n    reasoning (str): The internal reasoning of the agent"
+      },
+      "RedactedReasoningContent": {
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": ["redacted_reasoning"],
+            "const": "redacted_reasoning",
+            "title": "Type",
+            "description": "Indicates this is a redacted thinking step.",
+            "default": "redacted_reasoning"
+          },
+          "data": {
+            "type": "string",
+            "title": "Data",
+            "description": "The redacted or filtered intermediate reasoning content."
+          }
+        },
+        "type": "object",
+        "required": ["data"],
+        "title": "RedactedReasoningContent"
       },
       "ResponseFormatJSONObject": {
         "properties": {
@@ -18019,6 +18137,17 @@
             "format": "date-time",
             "title": "Date"
           },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
           "message_type": {
             "type": "string",
             "enum": ["system_message"],
@@ -18027,25 +18156,15 @@
             "default": "system_message"
           },
           "content": {
-            "anyOf": [
-              {
-                "items": {
-                  "$ref": "#/components/schemas/LettaMessageContentUnion"
-                },
-                "type": "array"
-              },
-              {
-                "type": "string"
-              }
-            ],
+            "type": "string",
             "title": "Content",
-            "description": "The message content sent by the system (can be a string or an array of content parts)"
+            "description": "The message content sent by the system"
           }
         },
         "type": "object",
         "required": ["id", "date", "content"],
         "title": "SystemMessage",
-        "description": "A message generated by the system. Never streamed back on a response, only used for cursor pagination.\n\nArgs:\n    id (str): The ID of the message\n    date (datetime): The date the message was created in ISO format\n    content (Union[str, List[LettaMessageContentUnion]]): The message content sent by the system (can be a string or an array of content parts)"
+        "description": "A message generated by the system. Never streamed back on a response, only used for cursor pagination.\n\nArgs:\n    id (str): The ID of the message\n    date (datetime): The date the message was created in ISO format\n    name (Optional[str]): The name of the sender of the message\n    content (str): The message content sent by the system"
       },
       "TagSchema": {
         "properties": {
@@ -18249,6 +18368,36 @@
         "required": ["name", "arguments", "tool_call_id"],
         "title": "ToolCall"
       },
+      "ToolCallContent": {
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": ["tool_call"],
+            "const": "tool_call",
+            "title": "Type",
+            "description": "Indicates this content represents a tool call event.",
+            "default": "tool_call"
+          },
+          "id": {
+            "type": "string",
+            "title": "Id",
+            "description": "A unique identifier for this specific tool call instance."
+          },
+          "name": {
+            "type": "string",
+            "title": "Name",
+            "description": "The name of the tool being called."
+          },
+          "input": {
+            "type": "object",
+            "title": "Input",
+            "description": "The parameters being passed to the tool, structured as a dictionary of parameter names to values."
+          }
+        },
+        "type": "object",
+        "required": ["id", "name", "input"],
+        "title": "ToolCallContent"
+      },
       "ToolCallDelta": {
         "properties": {
           "name": {
@@ -18300,6 +18449,17 @@
             "format": "date-time",
             "title": "Date"
           },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
           "message_type": {
             "type": "string",
             "enum": ["tool_call_message"],
@@ -18322,7 +18482,7 @@
         "type": "object",
         "required": ["id", "date", "tool_call"],
         "title": "ToolCallMessage",
-        "description": "A message representing a request to call a tool (generated by the LLM to trigger tool execution).\n\nArgs:\n    id (str): The ID of the message\n    date (datetime): The date the message was created in ISO format\n    tool_call (Union[ToolCall, ToolCallDelta]): The tool call"
+        "description": "A message representing a request to call a tool (generated by the LLM to trigger tool execution).\n\nArgs:\n    id (str): The ID of the message\n    date (datetime): The date the message was created in ISO format\n    name (Optional[str]): The name of the sender of the message\n    tool_call (Union[ToolCall, ToolCallDelta]): The tool call"
       },
       "ToolCreate": {
         "properties": {
@@ -18525,6 +18685,36 @@
         "required": ["status"],
         "title": "ToolReturn"
       },
+      "ToolReturnContent": {
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": ["tool_return"],
+            "const": "tool_return",
+            "title": "Type",
+            "description": "Indicates this content represents a tool return event.",
+            "default": "tool_return"
+          },
+          "tool_call_id": {
+            "type": "string",
+            "title": "Tool Call Id",
+            "description": "References the ID of the ToolCallContent that initiated this tool call."
+          },
+          "content": {
+            "type": "string",
+            "title": "Content",
+            "description": "The content returned by the tool execution."
+          },
+          "is_error": {
+            "type": "boolean",
+            "title": "Is Error",
+            "description": "Indicates whether the tool execution resulted in an error."
+          }
+        },
+        "type": "object",
+        "required": ["tool_call_id", "content", "is_error"],
+        "title": "ToolReturnContent"
+      },
       "ToolReturnMessage": {
         "properties": {
           "id": {
@@ -18535,6 +18725,17 @@
             "type": "string",
             "format": "date-time",
             "title": "Date"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
           },
           "message_type": {
             "type": "string",
@@ -18588,7 +18789,7 @@
         "type": "object",
         "required": ["id", "date", "tool_return", "status", "tool_call_id"],
         "title": "ToolReturnMessage",
-        "description": "A message representing the return value of a tool call (generated by Letta executing the requested tool).\n\nArgs:\n    id (str): The ID of the message\n    date (datetime): The date the message was created in ISO format\n    tool_return (str): The return value of the tool\n    status (Literal[\"success\", \"error\"]): The status of the tool call\n    tool_call_id (str): A unique identifier for the tool call that generated this message\n    stdout (Optional[List(str)]): Captured stdout (e.g. prints, logs) from the tool invocation\n    stderr (Optional[List(str)]): Captured stderr from the tool invocation"
+        "description": "A message representing the return value of a tool call (generated by Letta executing the requested tool).\n\nArgs:\n    id (str): The ID of the message\n    date (datetime): The date the message was created in ISO format\n    name (Optional[str]): The name of the sender of the message\n    tool_return (str): The return value of the tool\n    status (Literal[\"success\", \"error\"]): The status of the tool call\n    tool_call_id (str): A unique identifier for the tool call that generated this message\n    stdout (Optional[List(str)]): Captured stdout (e.g. prints, logs) from the tool invocation\n    stderr (Optional[List(str)]): Captured stderr from the tool invocation"
       },
       "ToolRuleSchema": {
         "properties": {
@@ -19138,7 +19339,7 @@
             "anyOf": [
               {
                 "items": {
-                  "$ref": "#/components/schemas/LettaMessageContentUnion"
+                  "$ref": "#/components/schemas/LettaAssistantMessageContentUnion"
                 },
                 "type": "array"
               },
@@ -19182,19 +19383,9 @@
             "default": "system_message"
           },
           "content": {
-            "anyOf": [
-              {
-                "items": {
-                  "$ref": "#/components/schemas/LettaMessageContentUnion"
-                },
-                "type": "array"
-              },
-              {
-                "type": "string"
-              }
-            ],
+            "type": "string",
             "title": "Content",
-            "description": "The message content sent by the system (can be a string or an array of content parts)"
+            "description": "The message content sent by the system (can be a string or an array of multi-modal content parts)"
           }
         },
         "type": "object",
@@ -19214,7 +19405,7 @@
             "anyOf": [
               {
                 "items": {
-                  "$ref": "#/components/schemas/LettaMessageContentUnion"
+                  "$ref": "#/components/schemas/LettaUserMessageContentUnion"
                 },
                 "type": "array"
               },
@@ -19223,7 +19414,7 @@
               }
             ],
             "title": "Content",
-            "description": "The message content sent by the user (can be a string or an array of content parts)"
+            "description": "The message content sent by the user (can be a string or an array of multi-modal content parts)"
           }
         },
         "type": "object",
@@ -19328,6 +19519,17 @@
             "format": "date-time",
             "title": "Date"
           },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
           "message_type": {
             "type": "string",
             "enum": ["user_message"],
@@ -19339,7 +19541,7 @@
             "anyOf": [
               {
                 "items": {
-                  "$ref": "#/components/schemas/LettaMessageContentUnion"
+                  "$ref": "#/components/schemas/LettaUserMessageContentUnion"
                 },
                 "type": "array"
               },
@@ -19348,13 +19550,13 @@
               }
             ],
             "title": "Content",
-            "description": "The message content sent by the user (can be a string or an array of content parts)"
+            "description": "The message content sent by the user (can be a string or an array of multi-modal content parts)"
           }
         },
         "type": "object",
         "required": ["id", "date", "content"],
         "title": "UserMessage",
-        "description": "A message sent by the user. Never streamed back on a response, only used for cursor pagination.\n\nArgs:\n    id (str): The ID of the message\n    date (datetime): The date the message was created in ISO format\n    content (Union[str, List[LettaMessageContentUnion]]): The message content sent by the user (can be a string or an array of content parts)"
+        "description": "A message sent by the user. Never streamed back on a response, only used for cursor pagination.\n\nArgs:\n    id (str): The ID of the message\n    date (datetime): The date the message was created in ISO format\n    name (Optional[str]): The name of the sender of the message\n    content (Union[str, List[LettaUserMessageContentUnion]]): The message content sent by the user (can be a string or an array of multi-modal content parts)"
       },
       "UserUpdate": {
         "properties": {
@@ -19548,6 +19750,52 @@
         }
       },
       "LettaMessageContentUnion": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/TextContent"
+          },
+          {
+            "$ref": "#/components/schemas/ToolCallContent"
+          },
+          {
+            "$ref": "#/components/schemas/ToolReturnContent"
+          },
+          {
+            "$ref": "#/components/schemas/ReasoningContent"
+          },
+          {
+            "$ref": "#/components/schemas/RedactedReasoningContent"
+          },
+          {
+            "$ref": "#/components/schemas/OmittedReasoningContent"
+          }
+        ],
+        "discriminator": {
+          "propertyName": "type",
+          "mapping": {
+            "text": "#/components/schemas/TextContent",
+            "tool_call": "#/components/schemas/ToolCallContent",
+            "tool_return": "#/components/schemas/ToolCallContent",
+            "reasoning": "#/components/schemas/ReasoningContent",
+            "redacted_reasoning": "#/components/schemas/RedactedReasoningContent",
+            "omitted_reasoning": "#/components/schemas/OmittedReasoningContent"
+          }
+        }
+      },
+      "LettaAssistantMessageContentUnion": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/TextContent"
+          }
+        ],
+        "discriminator": {
+          "propertyName": "type",
+          "mapping": {
+            "text": "#/components/schemas/TextContent"
+          }
+        }
+      },
+      "LettaUserMessageContentUnion": {
         "oneOf": [
           {
             "$ref": "#/components/schemas/TextContent"

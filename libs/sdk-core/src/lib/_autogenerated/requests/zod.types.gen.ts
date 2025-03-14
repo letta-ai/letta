@@ -301,6 +301,12 @@ export const LLMConfig = z.object({
     .optional(),
 });
 
+export type TextContent = z.infer<typeof TextContent>;
+export const TextContent = z.object({
+  type: z.union([z.literal('text'), z.undefined()]).optional(),
+  text: z.string(),
+});
+
 export type MessageSchema = z.infer<typeof MessageSchema>;
 export const MessageSchema = z.object({
   created_at: z.string(),
@@ -321,7 +327,7 @@ export const MessageSchema = z.object({
     z.array(z.union([z.string(), z.null()])),
   ]),
   role: z.string(),
-  text: z.string(),
+  content: z.array(TextContent),
   tool_call_id: z.union([
     z.string(),
     z.null(),
@@ -1055,14 +1061,10 @@ export const AppModel = z.object({
     .optional(),
 });
 
-export type TextContent = z.infer<typeof TextContent>;
-export const TextContent = z.object({
-  type: z.union([z.literal('text'), z.undefined()]).optional(),
-  text: z.string(),
-});
-
-export type LettaMessageContentUnion = z.infer<typeof LettaMessageContentUnion>;
-export const LettaMessageContentUnion = z.object({
+export type LettaAssistantMessageContentUnion = z.infer<
+  typeof LettaAssistantMessageContentUnion
+>;
+export const LettaAssistantMessageContentUnion = z.object({
   type: z.union([z.literal('text'), z.undefined()]).optional(),
   text: z.string(),
 });
@@ -1071,6 +1073,14 @@ export type AssistantMessage = z.infer<typeof AssistantMessage>;
 export const AssistantMessage = z.object({
   id: z.string(),
   date: z.string(),
+  name: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
   message_type: z
     .union([z.literal('assistant_message'), z.undefined()])
     .optional(),
@@ -2363,6 +2373,49 @@ export const MessageRole = z.union([
   z.literal('system'),
 ]);
 
+export type ToolCallContent = z.infer<typeof ToolCallContent>;
+export const ToolCallContent = z.object({
+  type: z.union([z.literal('tool_call'), z.undefined()]).optional(),
+  id: z.string(),
+  name: z.string(),
+  input: z.unknown(),
+});
+
+export type ToolReturnContent = z.infer<typeof ToolReturnContent>;
+export const ToolReturnContent = z.object({
+  type: z.union([z.literal('tool_return'), z.undefined()]).optional(),
+  tool_call_id: z.string(),
+  content: z.string(),
+  is_error: z.boolean(),
+});
+
+export type ReasoningContent = z.infer<typeof ReasoningContent>;
+export const ReasoningContent = z.object({
+  type: z.union([z.literal('reasoning'), z.undefined()]).optional(),
+  is_native: z.boolean(),
+  reasoning: z.string(),
+  signature: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+});
+
+export type RedactedReasoningContent = z.infer<typeof RedactedReasoningContent>;
+export const RedactedReasoningContent = z.object({
+  type: z.union([z.literal('redacted_reasoning'), z.undefined()]).optional(),
+  data: z.string(),
+});
+
+export type OmittedReasoningContent = z.infer<typeof OmittedReasoningContent>;
+export const OmittedReasoningContent = z.object({
+  type: z.union([z.literal('omitted_reasoning'), z.undefined()]).optional(),
+  tokens: z.number(),
+});
+
 export type ToolReturn = z.infer<typeof ToolReturn>;
 export const ToolReturn = z.object({
   status: z.union([z.literal('success'), z.literal('error')]),
@@ -2415,9 +2468,32 @@ export const Message = z.object({
   role: MessageRole,
   content: z
     .union([
-      z.array(TextContent),
+      z.array(
+        z.union([
+          TextContent,
+          ToolCallContent,
+          ToolReturnContent,
+          ReasoningContent,
+          RedactedReasoningContent,
+          OmittedReasoningContent,
+        ]),
+      ),
       z.null(),
-      z.array(z.union([z.array(TextContent), z.null()])),
+      z.array(
+        z.union([
+          z.array(
+            z.union([
+              TextContent,
+              ToolCallContent,
+              ToolReturnContent,
+              ReasoningContent,
+              RedactedReasoningContent,
+              OmittedReasoningContent,
+            ]),
+          ),
+          z.null(),
+        ]),
+      ),
       z.undefined(),
     ])
     .optional(),
@@ -2567,13 +2643,23 @@ export const CreateBlock = z.object({
     .optional(),
 });
 
+export type LettaMessageContentUnion = z.infer<typeof LettaMessageContentUnion>;
+export const LettaMessageContentUnion = z.union([
+  TextContent,
+  ToolCallContent,
+  ToolReturnContent,
+  ReasoningContent,
+  RedactedReasoningContent,
+  OmittedReasoningContent,
+]);
+
 export type MessageCreate = z.infer<typeof MessageCreate>;
 export const MessageCreate = z.object({
   role: z.union([z.literal('user'), z.literal('system')]),
   content: z.union([
+    z.array(LettaMessageContentUnion),
     z.string(),
-    z.array(TextContent),
-    z.array(z.union([z.string(), z.array(TextContent)])),
+    z.array(z.union([z.array(LettaMessageContentUnion), z.string()])),
   ]),
   name: z
     .union([
@@ -3107,20 +3193,40 @@ export type SystemMessage = z.infer<typeof SystemMessage>;
 export const SystemMessage = z.object({
   id: z.string(),
   date: z.string(),
+  name: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
   message_type: z
     .union([z.literal('system_message'), z.undefined()])
     .optional(),
-  content: z.union([
-    z.array(TextContent),
-    z.string(),
-    z.array(z.union([z.array(TextContent), z.string()])),
-  ]),
+  content: z.string(),
+});
+
+export type LettaUserMessageContentUnion = z.infer<
+  typeof LettaUserMessageContentUnion
+>;
+export const LettaUserMessageContentUnion = z.object({
+  type: z.union([z.literal('text'), z.undefined()]).optional(),
+  text: z.string(),
 });
 
 export type UserMessage = z.infer<typeof UserMessage>;
 export const UserMessage = z.object({
   id: z.string(),
   date: z.string(),
+  name: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
   message_type: z.union([z.literal('user_message'), z.undefined()]).optional(),
   content: z.union([
     z.array(TextContent),
@@ -3133,8 +3239,23 @@ export type ReasoningMessage = z.infer<typeof ReasoningMessage>;
 export const ReasoningMessage = z.object({
   id: z.string(),
   date: z.string(),
+  name: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
   message_type: z
     .union([z.literal('reasoning_message'), z.undefined()])
+    .optional(),
+  source: z
+    .union([
+      z.literal('reasoner_model'),
+      z.literal('non_reasoner_model'),
+      z.undefined(),
+    ])
     .optional(),
   reasoning: z.string(),
 });
@@ -3169,6 +3290,14 @@ export type ToolCallMessage = z.infer<typeof ToolCallMessage>;
 export const ToolCallMessage = z.object({
   id: z.string(),
   date: z.string(),
+  name: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
   message_type: z
     .union([z.literal('tool_call_message'), z.undefined()])
     .optional(),
@@ -3183,6 +3312,14 @@ export type ToolReturnMessage = z.infer<typeof ToolReturnMessage>;
 export const ToolReturnMessage = z.object({
   id: z.string(),
   date: z.string(),
+  name: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
   message_type: z
     .union([z.literal('tool_return_message'), z.undefined()])
     .optional(),
@@ -4131,11 +4268,7 @@ export const UpdateSystemMessage = z.object({
   message_type: z
     .union([z.literal('system_message'), z.undefined()])
     .optional(),
-  content: z.union([
-    z.array(TextContent),
-    z.string(),
-    z.array(z.union([z.array(TextContent), z.string()])),
-  ]),
+  content: z.string(),
 });
 
 export type UpdateUserMessage = z.infer<typeof UpdateUserMessage>;

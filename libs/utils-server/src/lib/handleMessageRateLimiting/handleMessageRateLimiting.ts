@@ -226,7 +226,9 @@ export async function handleMessageRateLimiting(
     let text = '';
 
     if (Array.isArray(message.content)) {
-      text = message.content.map((c) => c.text).join(' ');
+      text = message.content
+        .map((c) => (c.type === 'text' ? c.text : ''))
+        .join(' ');
     } else {
       text = message.content;
     }

@@ -740,7 +740,7 @@ class SyncServer(Server):
                     Message(
                         agent_id=agent_id,
                         role=message.role,
-                        content=[TextContent(text=message.content)],
+                        content=[TextContent(text=message.content)] if message.content else [],
                         name=message.name,
                         # assigned later?
                         model=None,
