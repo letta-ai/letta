@@ -1266,6 +1266,11 @@ class SyncServer(Server):
     # TODO support both command + SSE servers (via config)
     def get_mcp_servers(self) -> dict[str, Union[SSEServerConfig, StdioServerConfig]]:
         """List the MCP servers in the config (doesn't test that they are actually working)"""
+
+        # TODO implement non-flatfile mechanism
+        if not tool_settings.mcp_read_from_config:
+            raise RuntimeError("MCP config file disabled. Enable it in settings.")
+
         mcp_server_list = {}
 
         # Attempt to read from ~/.letta/mcp_config.json
@@ -1329,10 +1334,15 @@ class SyncServer(Server):
     ) -> dict[str, Union[SSEServerConfig, StdioServerConfig]]:
         """Add a new server config to the MCP config file"""
 
+        # TODO implement non-flatfile mechanism
+        if not tool_settings.mcp_read_from_config:
+            raise RuntimeError("MCP config file disabled. Enable it in settings.")
+
         # If the config file doesn't exist, throw an error.
         mcp_config_path = os.path.join(constants.LETTA_DIR, constants.MCP_CONFIG_NAME)
         if not os.path.exists(mcp_config_path):
-            raise FileNotFoundError(f"MCP config file not found: {mcp_config_path}")
+            # Create the file if it doesn't exist
+            logger.debug(f"MCP config file not found, creating new file at: {mcp_config_path}")
 
         # If the file does exist, attempt to parse it get calling get_mcp_servers
         try:
@@ -1384,9 +1394,14 @@ class SyncServer(Server):
     def delete_mcp_server_from_config(self, server_name: str) -> dict[str, Union[SSEServerConfig, StdioServerConfig]]:
         """Delete a server config from the MCP config file"""
 
+        # TODO implement non-flatfile mechanism
+        if not tool_settings.mcp_read_from_config:
+            raise RuntimeError("MCP config file disabled. Enable it in settings.")
+
         # If the config file doesn't exist, throw an error.
         mcp_config_path = os.path.join(constants.LETTA_DIR, constants.MCP_CONFIG_NAME)
         if not os.path.exists(mcp_config_path):
+            # If the file doesn't exist, raise an error
             raise FileNotFoundError(f"MCP config file not found: {mcp_config_path}")
 
         # If the file does exist, attempt to parse it get calling get_mcp_servers

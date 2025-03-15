@@ -18,6 +18,9 @@ class ToolSettings(BaseSettings):
     # Local Sandbox configurations
     local_sandbox_dir: Optional[str] = None
 
+    # MCP read from config file
+    mcp_read_from_config: bool = True  # if False, will throw if attempting to read/write from file
+
 
 class SummarizerSettings(BaseSettings):
     model_config = SettingsConfigDict(env_prefix="letta_summarizer_", extra="ignore")
