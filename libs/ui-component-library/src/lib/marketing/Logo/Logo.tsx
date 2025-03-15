@@ -11,6 +11,7 @@ const color = {
   muted: 'text-muted',
   steel: 'text-steel',
   primary: 'text-primary',
+  background: 'text-background',
 };
 
 const logoVariants = cva('', {
