@@ -1,0 +1,11 @@
+---
+title: Archival Memory
+subtitle: Manage the agent's external long-term memory
+slug: guides/ade/archival-memory
+---
+
+<Tip>Already have an existing vector database that you'd like to connect your agent to? You can easily connect Letta to your existing database by creating new tools, or by overriding the existing archival memory tools to point at your external database (instead of the default one).</Tip>
+
+Archival memory is an out-of-context memory store that's is accessible to the agent via tool calls (`archival_memory_search` and `archival_memory_insert`).
+
+By default, archival memory is implemented as a vector database store: the memories inside archival memory are "chunks", each of which has a corresponding embedding (based on the default embedding model of the agent, for example OpenAI's `text-embedding-3-small`).

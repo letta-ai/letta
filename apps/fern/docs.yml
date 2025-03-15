@@ -5,9 +5,13 @@ title: Letta
 
 tabs:
   docs:
-    display-name: Guides and Concepts
+    display-name: Documentation
     icon: fa-sharp fa-light fa-file-lines
     slug: documentation
+  ade:
+    display-name: ADE Guide
+    icon: fa-sharp fa-light fa-browser
+    slug: ade
   ref:
     display-name: API Reference
     icon: fa-sharp fa-light code
@@ -25,17 +29,13 @@ tabs:
     icon: fa-brands fa-discord
     href: https://discord.gg/letta
   community:
-    display-name: Community Events
+    display-name: Developer Community
     icon: fa-sharp fa-light fa-user-astronaut
     skip-slug: true
   install:
     display-name: Download
     icon: fa-sharp fa-light fa-download
     skip-slug: true
-  changelog:
-    display-name: API Changelog
-    icon: fa-sharp fa-light rss-square
-    changelog: ./changelog
 
 landing-page:
   page: home
@@ -105,12 +105,6 @@ navigation:
               path: pages/agents/multiagent_memory.mdx
           - page: Multi-User (Identities)
             path: pages/agents/multiuser.mdx
-      - section: ADE Guide
-        contents:
-          - page: Initial Setup
-            path: pages/agent-development-environment/connect.mdx
-          - page: Using the ADE
-            path: pages/agent-development-environment/usage.mdx
       - section: Model Context Protocol
         contents:
           - page: What is MCP?
@@ -185,12 +179,39 @@ navigation:
         contents:
           - link: DeepLearning.AI course
             href: https://www.deeplearning.ai/short-courses/llms-as-operating-systems-agent-memory
+  - tab: ade
+    layout:
+      - section: ADE Guide
+        contents:
+          - page: ADE Overview
+            path: pages/ade-guide/overview.mdx
+          - page: Initial Setup
+            path: pages/ade-guide/setup.mdx
+      - section: ADE Components
+        contents:
+          - page: Agent Simulator
+            path: pages/ade-guide/simulator.mdx
+          - page: Context Window Viewer
+            path: pages/ade-guide/context_window_viewer.mdx
+          - page: Core Memory
+            path: pages/ade-guide/core_memory.mdx
+          - page: Archival Memory
+            path: pages/ade-guide/archival_memory.mdx
+          - page: Data Sources
+            path: pages/ade-guide/data_sources.mdx
+          - page: Tools
+            path: pages/ade-guide/tools.mdx
+          - page: Settings
+            path: pages/ade-guide/settings.mdx
   - tab: ref
     layout:
-      - section: Letta API
+      - section: API Reference
         contents:
           - page: API and SDK Overview
             path: pages/api/about.mdx
+          - changelog: ./changelog
+            title: Changelog
+            slug: changelog
       - api: API Reference
         display-errors: true
         paginated: true
@@ -200,7 +221,6 @@ navigation:
           python: letta
         layout:
           - agents
-  - tab: changelog
   - tab: cookbooks
     layout:
       - section: Cookbooks
@@ -210,10 +230,9 @@ navigation:
             contents:
               - page: Async Multi-Agent
                 path: pages/tutorials/multiagent_async.mdx
-  - tab: discord
   - tab: community
     layout:
-      - page: Community Events
+      - page: Developer Community
         path: pages/community.mdx
 
 colors:
@@ -279,6 +298,8 @@ typography:
         style: normal
 
 redirects:
+  - source: "/guides/ade/usage"
+    destination: "/guides/ade/overview"
   - source: "/guides/agents/mcp"
     destination: "/guides/mcp/overview"
   - source: "/guides/server/quickstart"
@@ -322,4 +343,6 @@ redirects:
   - source: "/advanced/memory_management"
     destination: "/guides/agents/memory"
   - source: "/changelog"
-    destination: "/api-changelog"
+    destination: "/api-reference/changelog"
+  - source: "/api-changelog"
+    destination: "/api-reference/changelog"

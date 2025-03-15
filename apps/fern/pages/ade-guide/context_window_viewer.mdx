@@ -1,0 +1,39 @@
+---
+title: Context Window Viewer
+subtitle: Understand the context window of your agent
+slug: guides/ade/context-window-viewer
+---
+
+The context window viewer visualizes the current status of the agent's context window, which includes:
+
+<AccordionGroup>
+  <Accordion title="System instructions">
+    The top-level system prompt which guides the behavior of the agent (this can often be left unchanged).
+  </Accordion>
+
+  <Accordion title="Function (tool) definitions">
+    The JSON schema definitions of the tools available to the agent, which describe to the agent how to use them.
+  </Accordion>
+
+  <Accordion title="Core (in-context) memory blocks">
+    The long-term memory of the agent, for example the long-term memory about the user ("human") and agent's own "persona".
+  </Accordion>
+
+  <Accordion title="External (out-of-context) memory statistics">
+    Statistics about the archival memory (out-of-context) of the agent, such as the total number of memories available.
+  </Accordion>
+
+  <Accordion title="Recursive summary">
+    A recursive (rolling) summary of the event history, which is updated when the context window is truncated.
+  </Accordion>
+
+  <Accordion title="Event (message) queue">
+    The current event queue, which stores a chronological list of events (messages) that the agent has processed.
+  </Accordion>
+</AccordionGroup>
+
+### Configuring the max context length
+<Tip>Letta allows you to artificially limit the maximum context window length of your agent's underlying LLM. Even though some LLM API providers support large context windows (e.g. 200k+), artifically constraining the LLM context window can improve your agent's performance / stability and decrease overall cost / latency.</Tip>
+
+The max length of the context window is configurable in Letta (under "Advanced" agent settings).
+For example, if you're using Claude Sonnet 3.5, but do not want the context window to exceed 16k for performance/cost/latency reasons, you can set the max context window in Letta to 16k (instead of the 200k default). When the context window reaches its max length, Letta will automatically evict old events/messages to external storage (they are not deleted, and are still accessible to the agent via tool calls).

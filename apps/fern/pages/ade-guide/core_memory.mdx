@@ -1,0 +1,11 @@
+---
+title: Core Memory
+subtitle: Manage the agent's in-context long-term memory
+slug: guides/ade/core-memory
+---
+
+Core memory is comprised of memory *blocks*, which are text segments which are pinned to the context window (always visible) and are editable by the agent.
+
+For example, if the agent learns a new fact about the user, it can store this fact by editing its core memory (for example, by using the tool `core_memory_append`).
+
+Because the core memory blocks are persistent (and because the context window is finite), core memory blocks have length limits. Blocks have a default length limit, which can be edited through the API or via the ADE core memory editor.

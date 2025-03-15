@@ -1,0 +1,16 @@
+---
+title: ADE Settings
+subtitle: Manage your agent's settings
+slug: guides/ade/settings
+---
+
+You can change your agent name and system instructions in the "Agent Settings" panel.
+The agent ID is shown below the agent name, and is what you use to identify your agent when interacting with it via the [Letta APIs / SDKs](https://docs.letta.com/api-reference).
+
+### Changing the LLM model
+You can change the LLM model of your agent to any model registered on the Letta server.
+To enable more models on your Letta server, follow the Letta server [model configuration instructions](/models).
+
+### Changing the embedding model
+<Warning>We do not recommend changing the embedding model of your agent frequently. If you already have existing data in archival memory, those memories will have to be re-embedded if you change your embedding model backend.</Warning>
+You can also change the embedding model of your agent under "Advanced" agent settings.
