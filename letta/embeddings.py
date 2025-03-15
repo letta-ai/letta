@@ -236,19 +236,6 @@ def embedding_model(config: EmbeddingConfig, user_id: Optional[uuid.UUID] = None
                 model_settings.azure_api_version is not None,
             ]
         )
-        # from llama_index.embeddings.azure_openai import AzureOpenAIEmbedding
-
-        ## https://learn.microsoft.com/en-us/azure/ai-services/openai/reference#embeddings
-        # model = "text-embedding-ada-002"
-        # deployment = credentials.azure_embedding_deployment if credentials.azure_embedding_deployment is not None else model
-        # return AzureOpenAIEmbedding(
-        #    model=model,
-        #    deployment_name=deployment,
-        #    api_key=credentials.azure_key,
-        #    azure_endpoint=credentials.azure_endpoint,
-        #    api_version=credentials.azure_version,
-        # )
-
         return AzureOpenAIEmbedding(
             api_endpoint=model_settings.azure_base_url,
             api_key=model_settings.azure_api_key,
