@@ -3,7 +3,7 @@ import { useCurrentAgentMetaData } from '@letta-cloud/ui-ade-components';
 import {
   Button,
   LettaAlienChatIcon,
-  ShippingIcon,
+  RocketIcon,
   VStack,
 } from '@letta-cloud/ui-component-library';
 import { usePathname } from 'next/navigation';
@@ -49,7 +49,7 @@ export function TemplateSidebarInner() {
       />
       <SidebarButton
         label={t('nav.distribution')}
-        icon={<ShippingIcon />}
+        icon={<RocketIcon />}
         href={`/projects/${slug}/templates/${templateName}/distribution`}
       />
     </VStack>

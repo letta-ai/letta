@@ -10,7 +10,7 @@ export function RuleIcon(props: IconWrappedProps) {
         viewBox="0 -960 960 960"
         fill="currentColor"
       >
-        <path d="m579-192-51-51 93-93-93-93 51-51 93 93 93-93 51 51-93 93 93 93-51 51-93-93-93 93Zm64-336L507-664l51-51 85 85 169-170 52 51-221 221ZM96-288v-72h336v72H96Zm0-312v-72h336v72H96Z" />
+        <path d="M576-168v-84H444v-192h-60v84H96v-240h288v84h60v-192h132v-84h288v240H576v-84h-60v312h60v-84h288v240H576Zm72-72h144v-96H648v96ZM168-432h144v-96H168v96Zm480-192h144v-96H648v96Zm0 384v-96 96ZM312-432v-96 96Zm336-192v-96 96Z" />
       </svg>
     </IconWrapper>
   );
