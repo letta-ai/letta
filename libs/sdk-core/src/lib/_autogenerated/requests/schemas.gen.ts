@@ -6902,6 +6902,30 @@ export const $SourceCreate = {
       title: 'Name',
       description: 'The name of the source.',
     },
+    embedding: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Embedding',
+      description: 'The hande for the embedding config used by the source.',
+    },
+    embedding_chunk_size: {
+      anyOf: [
+        {
+          type: 'integer',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Embedding Chunk Size',
+      description: 'The chunk size of the embedding.',
+    },
     embedding_config: {
       anyOf: [
         {
@@ -6911,7 +6935,7 @@ export const $SourceCreate = {
           type: 'null',
         },
       ],
-      description: 'The embedding configuration used by the source.',
+      description: '(Legacy) The embedding configuration used by the source.',
     },
     description: {
       anyOf: [

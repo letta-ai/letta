@@ -2624,7 +2624,15 @@ export type SourceCreate = {
    */
   name: string;
   /**
-   * The embedding configuration used by the source.
+   * The hande for the embedding config used by the source.
+   */
+  embedding?: string | null;
+  /**
+   * The chunk size of the embedding.
+   */
+  embedding_chunk_size?: number | null;
+  /**
+   * (Legacy) The embedding configuration used by the source.
    */
   embedding_config?: EmbeddingConfig | null;
   /**

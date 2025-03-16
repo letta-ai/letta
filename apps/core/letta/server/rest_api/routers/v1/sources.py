@@ -76,8 +76,20 @@ def create_source(
     Create a new data source.
     """
     actor = server.user_manager.get_user_or_default(user_id=actor_id)
-    source = Source(**source_create.model_dump())
-
+    if not source_create.embedding_config:
+        if not source_create.embedding:
+            # TODO: modify error type
+            raise ValueError("Must specify either embedding or embedding_config in request")
+        source_create.embedding_config = server.get_embedding_config_from_handle(
+            handle=source_create.embedding,
+            embedding_chunk_size=source_create.embedding_chunk_size or constants.DEFAULT_EMBEDDING_CHUNK_SIZE,
+        )
+    source = Source(
+        name=source_create.name,
+        embedding_config=source_create.embedding_config,
+        description=source_create.description,
+        metadata=source_create.metadata,
+    )
     return server.source_manager.create_source(source=source, actor=actor)
 
 
@@ -91,6 +103,7 @@ def modify_source(
     """
     Update the name or documentation of an existing data source.
     """
+    # TODO: allow updating the handle/embedding config
     actor = server.user_manager.get_user_or_default(user_id=actor_id)
     if not server.source_manager.get_source_by_id(source_id=source_id, actor=actor):
         raise HTTPException(status_code=404, detail=f"Source with id={source_id} does not exist.")

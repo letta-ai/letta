@@ -3851,6 +3851,22 @@ export const SandboxEnvironmentVariableUpdate = z.object({
 export type SourceCreate = z.infer<typeof SourceCreate>;
 export const SourceCreate = z.object({
   name: z.string(),
+  embedding: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  embedding_chunk_size: z
+    .union([
+      z.number(),
+      z.null(),
+      z.array(z.union([z.number(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
   embedding_config: z
     .union([
       EmbeddingConfig,
