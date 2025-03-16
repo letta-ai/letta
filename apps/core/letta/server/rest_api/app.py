@@ -326,7 +326,7 @@ def start_server(
         print(f"▶ Server running at: https://{host or 'localhost'}:{port or REST_DEFAULT_PORT}")
         print(f"▶ View using ADE at: https://app.letta.com/development-servers/local/dashboard\n")
         uvicorn.run(
-            app,
+            "letta.server.rest_api.app:app",
             host=host or "localhost",
             port=port or REST_DEFAULT_PORT,
             workers=settings.uvicorn_workers,
@@ -345,7 +345,7 @@ def start_server(
             print(f"▶ View using ADE at: https://app.letta.com/development-servers/local/dashboard\n")
 
         uvicorn.run(
-            app,
+            "letta.server.rest_api.app:app",
             host=host or "localhost",
             port=port or REST_DEFAULT_PORT,
             workers=settings.uvicorn_workers,
