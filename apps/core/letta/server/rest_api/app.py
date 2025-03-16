@@ -256,15 +256,15 @@ def create_application() -> "FastAPI":
     )
 
     # Set up OpenTelemetry tracing
-    endpoint = os.getenv("OTEL_EXPORTER_OTLP_ENDPOINT")
-    if endpoint:
-        print(f"▶ Using OTLP tracing with endpoint: {endpoint}")
+    otlp_endpoint = os.getenv("LETTA_OTEL_EXPORTER_OTLP_ENDPOINT")
+    if otlp_endpoint:
+        print(f"▶ Using OTLP tracing with endpoint: {otlp_endpoint}")
         env_name_suffix = os.getenv("ENV_NAME")
         service_name = f"letta-server-{env_name_suffix.lower()}" if env_name_suffix else "letta-server"
         from letta.tracing import setup_tracing
 
         setup_tracing(
-            endpoint=endpoint,
+            endpoint=otlp_endpoint,
             app=app,
             service_name=service_name,
         )

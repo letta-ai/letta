@@ -160,6 +160,9 @@ describe-web:
     echo "🚧 Deploying Grafana..."
     helm upgrade --install grafana {{HELM_CHARTS_DIR}}/grafana \
         --set grafana.adminPassword=${GRAFANA_ADMIN_PASSWORD} \
+        --set 'grafana.datasources."datasources.yaml".datasources[0].url'=${CLICKHOUSE_ENDPOINT} \
+        --set 'grafana.datasources."datasources.yaml".datasources[0].jsonData.defaultDatabase'=${CLICKHOUSE_DATABASE} \
+        --set 'grafana.datasources."datasources.yaml".datasources[0].jsonData.username'=${CLICKHOUSE_USERNAME} \
         --set 'grafana.datasources."datasources.yaml".datasources[0].secureJsonData.password'=${CLICKHOUSE_PASSWORD}
 
 # Get migration job logs

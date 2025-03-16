@@ -16,15 +16,13 @@ grafana:
         - name: ClickHouse
           type: grafana-clickhouse-datasource
           uid: clickhouse
-          url: http://10.0.0.84:8123
+          url: ""
           access: proxy
           isDefault: true
           jsonData:
-            defaultDatabase: otel
-            server: 10.0.0.84
-            port: 8123
-            protocol: http
-            username: default
+            defaultDatabase: ""
+            protocol: https
+            username: ""
             tlsSkipVerify: true
           secureJsonData:
             password: ""
