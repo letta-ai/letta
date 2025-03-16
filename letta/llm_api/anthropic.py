@@ -840,7 +840,7 @@ def anthropic_chat_completions_process_stream(
     # Create a dummy message for ID/datetime if needed
     dummy_message = _Message(
         role=_MessageRole.assistant,
-        text="",
+        content=[],
         agent_id="",
         model="",
         name=None,
