@@ -20,6 +20,9 @@ exporters:
       max_backups: 5
 
 service:
+  telemetry:
+    logs:
+      level: error
   pipelines:
     traces:
       receivers: [otlp]
