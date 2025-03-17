@@ -256,15 +256,15 @@ def create_application() -> "FastAPI":
     )
 
     # Set up OpenTelemetry tracing
-    endpoint = os.getenv("OTEL_EXPORTER_OTLP_ENDPOINT")
-    if endpoint:
-        print(f"▶ Using OTLP tracing with endpoint: {endpoint}")
+    otlp_endpoint = settings.otel_exporter_otlp_endpoint
+    if otlp_endpoint:
+        print(f"▶ Using OTLP tracing with endpoint: {otlp_endpoint}")
         env_name_suffix = os.getenv("ENV_NAME")
         service_name = f"letta-server-{env_name_suffix.lower()}" if env_name_suffix else "letta-server"
         from letta.tracing import setup_tracing
 
         setup_tracing(
-            endpoint=endpoint,
+            endpoint=otlp_endpoint,
             app=app,
             service_name=service_name,
         )
@@ -326,7 +326,7 @@ def start_server(
         print(f"▶ Server running at: https://{host or 'localhost'}:{port or REST_DEFAULT_PORT}")
         print(f"▶ View using ADE at: https://app.letta.com/development-servers/local/dashboard\n")
         uvicorn.run(
-            app,
+            "letta.server.rest_api.app:app",
             host=host or "localhost",
             port=port or REST_DEFAULT_PORT,
             workers=settings.uvicorn_workers,
@@ -345,7 +345,7 @@ def start_server(
             print(f"▶ View using ADE at: https://app.letta.com/development-servers/local/dashboard\n")
 
         uvicorn.run(
-            app,
+            "letta.server.rest_api.app:app",
             host=host or "localhost",
             port=port or REST_DEFAULT_PORT,
             workers=settings.uvicorn_workers,

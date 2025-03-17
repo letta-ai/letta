@@ -1,3 +1,4 @@
+import asyncio
 import sys
 from contextlib import asynccontextmanager
 
@@ -16,19 +17,23 @@ logger = get_logger(__name__)
 
 
 class StdioMCPClient(BaseMCPClient):
-    def _initialize_connection(self, server_config: StdioServerConfig) -> bool:
+    def _initialize_connection(self, server_config: StdioServerConfig, timeout: float) -> bool:
         try:
             server_params = StdioServerParameters(command=server_config.command, args=server_config.args)
             stdio_cm = forked_stdio_client(server_params)
-            stdio_transport = self.loop.run_until_complete(stdio_cm.__aenter__())
+            stdio_transport = self.loop.run_until_complete(asyncio.wait_for(stdio_cm.__aenter__(), timeout=timeout))
             self.stdio, self.write = stdio_transport
             self.cleanup_funcs.append(lambda: self.loop.run_until_complete(stdio_cm.__aexit__(None, None, None)))
 
             session_cm = ClientSession(self.stdio, self.write)
-            self.session = self.loop.run_until_complete(session_cm.__aenter__())
+            self.session = self.loop.run_until_complete(asyncio.wait_for(session_cm.__aenter__(), timeout=timeout))
             self.cleanup_funcs.append(lambda: self.loop.run_until_complete(session_cm.__aexit__(None, None, None)))
             return True
+        except asyncio.TimeoutError:
+            logger.error(f"Timed out while establishing stdio connection (timeout={timeout}s).")
+            return False
         except Exception:
+            logger.exception("Exception occurred while initializing stdio client session.")
             return False
 
 

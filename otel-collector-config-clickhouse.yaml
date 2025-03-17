@@ -62,6 +62,9 @@ exporters:
       max_elapsed_time: 300s
 
 service:
+  telemetry:
+    logs:
+      level: error
   pipelines:
     traces:
       receivers: [otlp]
