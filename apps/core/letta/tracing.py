@@ -90,8 +90,8 @@ async def trace_error_handler(_request: Request, exc: Exception) -> JSONResponse
     # Add error details to current span
     span = trace.get_current_span()
     if span:
-        span.add_event(
-            name="exception",
+        span.record_exception(
+            exc,
             attributes={
                 "exception.message": error_msg,
                 "exception.type": type(exc).__name__,
