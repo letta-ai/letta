@@ -723,10 +723,17 @@ class SyncServer(Server):
                 assert isinstance(message, MessageCreate)
 
                 # If wrapping is enabled, wrap with metadata before placing content inside the Message object
+                if isinstance(message.content, str):
+                    message_content = message.content
+                elif message.content and len(message.content) > 0 and isinstance(message.content[0], TextContent):
+                    message_content = message.content[0].text
+                else:
+                    assert message_content is not None, "Message content is empty"
+
                 if message.role == MessageRole.user and wrap_user_message:
-                    message.content = system.package_user_message(user_message=message.content)
+                    message_content = system.package_user_message(user_message=message_content)
                 elif message.role == MessageRole.system and wrap_system_message:
-                    message.content = system.package_system_message(system_message=message.content)
+                    message_content = system.package_system_message(system_message=message_content)
                 else:
                     raise ValueError(f"Invalid message role: {message.role}")
 
@@ -735,7 +742,7 @@ class SyncServer(Server):
                     Message(
                         agent_id=agent_id,
                         role=message.role,
-                        content=[TextContent(text=message.content)] if message.content else [],
+                        content=[TextContent(text=message_content)] if message_content else [],
                         name=message.name,
                         # assigned later?
                         model=None,
