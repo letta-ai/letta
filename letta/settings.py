@@ -18,7 +18,10 @@ class ToolSettings(BaseSettings):
     # Local Sandbox configurations
     local_sandbox_dir: Optional[str] = None
 
-    # MCP read from config file
+    # MCP settings
+    mcp_connect_to_server_timeout: float = 15.0
+    mcp_list_tools_timeout: float = 10.0
+    mcp_execute_tool_timeout: float = 60.0
     mcp_read_from_config: bool = True  # if False, will throw if attempting to read/write from file
 
 

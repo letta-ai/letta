@@ -332,14 +332,14 @@ class SyncServer(Server):
 
         for server_name, server_config in mcp_server_configs.items():
             if server_config.type == MCPServerType.SSE:
-                self.mcp_clients[server_name] = SSEMCPClient()
+                self.mcp_clients[server_name] = SSEMCPClient(server_config)
             elif server_config.type == MCPServerType.STDIO:
-                self.mcp_clients[server_name] = StdioMCPClient()
+                self.mcp_clients[server_name] = StdioMCPClient(server_config)
             else:
                 raise ValueError(f"Invalid MCP server config: {server_config}")
 
             try:
-                self.mcp_clients[server_name].connect_to_server(server_config)
+                self.mcp_clients[server_name].connect_to_server()
             except Exception as e:
                 logger.error(e)
                 self.mcp_clients.pop(server_name)
@@ -1331,7 +1331,7 @@ class SyncServer(Server):
 
     def add_mcp_server_to_config(
         self, server_config: Union[SSEServerConfig, StdioServerConfig], allow_upsert: bool = True
-    ) -> dict[str, Union[SSEServerConfig, StdioServerConfig]]:
+    ) -> List[Union[SSEServerConfig, StdioServerConfig]]:
         """Add a new server config to the MCP config file"""
 
         # TODO implement non-flatfile mechanism
@@ -1358,13 +1358,13 @@ class SyncServer(Server):
 
         # Attempt to initialize the connection to the server
         if server_config.type == MCPServerType.SSE:
-            new_mcp_client = SSEMCPClient()
+            new_mcp_client = SSEMCPClient(server_config)
         elif server_config.type == MCPServerType.STDIO:
-            new_mcp_client = StdioMCPClient()
+            new_mcp_client = StdioMCPClient(server_config)
         else:
             raise ValueError(f"Invalid MCP server config: {server_config}")
         try:
-            new_mcp_client.connect_to_server(server_config)
+            new_mcp_client.connect_to_server()
         except:
             logger.exception(f"Failed to connect to MCP server: {server_config.server_name}")
             raise RuntimeError(f"Failed to connect to MCP server: {server_config.server_name}")
