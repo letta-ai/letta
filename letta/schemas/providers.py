@@ -208,8 +208,7 @@ class OpenAIProvider(Provider):
         if model_name in LLM_MAX_TOKENS:
             return LLM_MAX_TOKENS[model_name]
         else:
-            return None
-
+            return LLM_MAX_TOKENS["DEFAULT"]
 
 class xAIProvider(OpenAIProvider):
     """https://docs.x.ai/docs/api-reference"""
