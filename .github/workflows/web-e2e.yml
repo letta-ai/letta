@@ -119,13 +119,6 @@ jobs:
         with:
           path: ~/.npm
           key: ${{ runner.os }}-${{ env.cache-name }}
-      - name: Restore Cypress cache if exist
-        uses: actions/cache@v4
-        env:
-          cache-name: cache-cypress-${{ env.node-version }}
-        with:
-          path: ~/.cache/Cypress
-          key: ${{ runner.os }}-${{ env.cache-name }}
       - name: Set up python 3.12
         id: setup-python
         uses: actions/setup-python@v5
@@ -206,7 +199,6 @@ jobs:
         with:
           build: npm run build
           start: npm run start:e2e
-          install: false
           project: apps/web
           wait-on: 'http://localhost:3000'
           record: true
