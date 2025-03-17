@@ -333,14 +333,14 @@ function TemplateDescription() {
       disabled={!canUpdateTemplate}
       rightOfLabelContent={isPending ? <Spinner size="xsmall" /> : null}
       placeholder={t('TemplateDescription.placeholder')}
-      rows={3}
+      rows={2}
       value={localDescription || ''}
       fullWidth
       variant="secondary"
       resize="none"
       autosize
-      maxRows={3}
-      minRows={3}
+      maxRows={2}
+      minRows={2}
       label={t('TemplateDescription.label')}
     />
   );
