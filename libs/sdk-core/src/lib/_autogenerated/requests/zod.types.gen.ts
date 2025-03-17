@@ -4592,9 +4592,9 @@ export const put_Add_mcp_server = {
   }),
   response: z.array(
     z.union([
-      StdioServerConfig,
       SSEServerConfig,
-      z.array(z.union([StdioServerConfig, SSEServerConfig])),
+      StdioServerConfig,
+      z.array(z.union([SSEServerConfig, StdioServerConfig])),
     ]),
   ),
 };
@@ -4653,9 +4653,9 @@ export const delete_Delete_mcp_server = {
   }),
   response: z.array(
     z.union([
-      StdioServerConfig,
       SSEServerConfig,
-      z.array(z.union([StdioServerConfig, SSEServerConfig])),
+      StdioServerConfig,
+      z.array(z.union([SSEServerConfig, StdioServerConfig])),
     ]),
   ),
 };

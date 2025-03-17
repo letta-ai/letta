@@ -582,10 +582,10 @@
                   "items": {
                     "anyOf": [
                       {
-                        "$ref": "#/components/schemas/StdioServerConfig"
+                        "$ref": "#/components/schemas/SSEServerConfig"
                       },
                       {
-                        "$ref": "#/components/schemas/SSEServerConfig"
+                        "$ref": "#/components/schemas/StdioServerConfig"
                       }
                     ]
                   },
@@ -729,10 +729,10 @@
                   "items": {
                     "anyOf": [
                       {
-                        "$ref": "#/components/schemas/StdioServerConfig"
+                        "$ref": "#/components/schemas/SSEServerConfig"
                       },
                       {
-                        "$ref": "#/components/schemas/SSEServerConfig"
+                        "$ref": "#/components/schemas/StdioServerConfig"
                       }
                     ]
                   },
