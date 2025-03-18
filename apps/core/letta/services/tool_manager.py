@@ -2,7 +2,7 @@ import importlib
 import warnings
 from typing import List, Optional
 
-from letta.constants import BASE_FUNCTION_RETURN_CHAR_LIMIT, BASE_MEMORY_TOOLS, BASE_TOOLS, MULTI_AGENT_TOOLS
+from letta.constants import BASE_FUNCTION_RETURN_CHAR_LIMIT, BASE_MEMORY_TOOLS, BASE_TOOLS, MCP_TOOL_TAG_NAME_PREFIX, MULTI_AGENT_TOOLS
 from letta.functions.functions import derive_openai_json_schema, load_function_set
 from letta.log import get_logger
 from letta.orm.enums import ToolType
@@ -57,9 +57,13 @@ class ToolManager:
         return tool
 
     @enforce_types
-    def create_or_update_mcp_tool(self, tool_create: ToolCreate, actor: PydanticUser) -> PydanticTool:
+    def create_or_update_mcp_tool(self, tool_create: ToolCreate, mcp_server_name: str, actor: PydanticUser) -> PydanticTool:
+        metadata = {MCP_TOOL_TAG_NAME_PREFIX: {"server_name": mcp_server_name}}
         return self.create_or_update_tool(
-            PydanticTool(tool_type=ToolType.EXTERNAL_MCP, name=tool_create.json_schema["name"], **tool_create.model_dump()), actor
+            PydanticTool(
+                tool_type=ToolType.EXTERNAL_MCP, name=tool_create.json_schema["name"], metadata_=metadata, **tool_create.model_dump()
+            ),
+            actor,
         )
 
     @enforce_types
