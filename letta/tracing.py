@@ -112,6 +112,16 @@ def setup_tracing(
     global _is_tracing_initialized
 
     provider = TracerProvider(resource=Resource.create({"service.name": service_name}))
+    import uuid
+
+    provider = TracerProvider(
+        resource=Resource.create(
+            {
+                "service.name": service_name,
+                "device.id": uuid.getnode(),  # MAC address as unique device identifier
+            }
+        )
+    )
     if endpoint:
         provider.add_span_processor(BatchSpanProcessor(OTLPSpanExporter(endpoint=endpoint)))
         _is_tracing_initialized = True

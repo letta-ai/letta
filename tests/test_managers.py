@@ -8,9 +8,10 @@ from openai.types.chat.chat_completion_message_tool_call import Function as Open
 from sqlalchemy.exc import IntegrityError
 
 from letta.config import LettaConfig
-from letta.constants import BASE_MEMORY_TOOLS, BASE_TOOLS, LETTA_TOOL_EXECUTION_DIR, MULTI_AGENT_TOOLS
+from letta.constants import BASE_MEMORY_TOOLS, BASE_TOOLS, LETTA_TOOL_EXECUTION_DIR, MCP_TOOL_TAG_NAME_PREFIX, MULTI_AGENT_TOOLS
 from letta.embeddings import embedding_model
 from letta.functions.functions import derive_openai_json_schema, parse_source_code
+from letta.functions.mcp_client.types import MCPTool
 from letta.orm import Base
 from letta.orm.enums import JobType, ToolType
 from letta.orm.errors import NoResultFound, UniqueConstraintViolationError
@@ -145,8 +146,9 @@ def print_tool(server: SyncServer, default_user, default_organization):
     source_type = "python"
     description = "test_description"
     tags = ["test"]
+    metadata = {"a": "b"}
 
-    tool = PydanticTool(description=description, tags=tags, source_code=source_code, source_type=source_type)
+    tool = PydanticTool(description=description, tags=tags, source_code=source_code, source_type=source_type, metadata_=metadata)
     derived_json_schema = derive_openai_json_schema(source_code=tool.source_code, name=tool.name)
 
     derived_name = derived_json_schema["name"]
@@ -163,6 +165,30 @@ def print_tool(server: SyncServer, default_user, default_organization):
 def composio_github_star_tool(server, default_user):
     tool_create = ToolCreate.from_composio(action_name="GITHUB_STAR_A_REPOSITORY_FOR_THE_AUTHENTICATED_USER")
     tool = server.tool_manager.create_or_update_composio_tool(tool_create=tool_create, actor=default_user)
+    yield tool
+
+
+@pytest.fixture
+def mcp_tool(server, default_user):
+    mcp_tool = MCPTool(
+        name="weather_lookup",
+        description="Fetches the current weather for a given location.",
+        inputSchema={
+            "type": "object",
+            "properties": {
+                "location": {"type": "string", "description": "The name of the city or location."},
+                "units": {
+                    "type": "string",
+                    "enum": ["metric", "imperial"],
+                    "description": "The unit system for temperature (metric or imperial).",
+                },
+            },
+            "required": ["location"],
+        },
+    )
+    mcp_server_name = "test"
+    tool_create = ToolCreate.from_mcp(mcp_server_name=mcp_server_name, mcp_tool=mcp_tool)
+    tool = server.tool_manager.create_or_update_mcp_tool(tool_create=tool_create, mcp_server_name=mcp_server_name, actor=default_user)
     yield tool
 
 
@@ -1816,6 +1842,14 @@ def test_create_composio_tool(server: SyncServer, composio_github_star_tool, def
     assert composio_github_star_tool.tool_type == ToolType.EXTERNAL_COMPOSIO
 
 
+def test_create_mcp_tool(server: SyncServer, mcp_tool, default_user, default_organization):
+    # Assertions to ensure the created tool matches the expected values
+    assert mcp_tool.created_by_id == default_user.id
+    assert mcp_tool.organization_id == default_organization.id
+    assert mcp_tool.tool_type == ToolType.EXTERNAL_MCP
+    assert mcp_tool.metadata_[MCP_TOOL_TAG_NAME_PREFIX]["server_name"] == "test"
+
+
 @pytest.mark.skipif(USING_SQLITE, reason="Test not applicable when using SQLite.")
 def test_create_tool_duplicate_name(server: SyncServer, print_tool, default_user, default_organization):
     data = print_tool.model_dump(exclude=["id"])
@@ -1834,6 +1868,7 @@ def test_get_tool_by_id(server: SyncServer, print_tool, default_user):
     assert fetched_tool.name == print_tool.name
     assert fetched_tool.description == print_tool.description
     assert fetched_tool.tags == print_tool.tags
+    assert fetched_tool.metadata_ == print_tool.metadata_
     assert fetched_tool.source_code == print_tool.source_code
     assert fetched_tool.source_type == print_tool.source_type
     assert fetched_tool.tool_type == ToolType.CUSTOM
