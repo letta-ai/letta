@@ -9,20 +9,3 @@ grafana:
   adminPassword: ""
   plugins:
     - grafana-clickhouse-datasource
-  datasources:
-    datasources.yaml:
-      apiVersion: 1
-      datasources:
-        - name: ClickHouse
-          type: grafana-clickhouse-datasource
-          uid: clickhouse
-          url: ""
-          access: proxy
-          isDefault: true
-          jsonData:
-            defaultDatabase: ""
-            protocol: https
-            username: ""
-            tlsSkipVerify: true
-          secureJsonData:
-            password: ""

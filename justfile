@@ -156,14 +156,10 @@ describe-web:
         --set secrets.CLICKHOUSE_PASSWORD=${CLICKHOUSE_PASSWORD}
 
 # Deploy Grafana
-@deploy-grafana:
+deploy-grafana:
     echo "🚧 Deploying Grafana..."
     helm upgrade --install grafana {{HELM_CHARTS_DIR}}/grafana \
         --set grafana.adminPassword=${GRAFANA_ADMIN_PASSWORD} \
-        --set 'grafana.datasources."datasources.yaml".datasources[0].url'=${CLICKHOUSE_ENDPOINT} \
-        --set 'grafana.datasources."datasources.yaml".datasources[0].jsonData.defaultDatabase'=${CLICKHOUSE_DATABASE} \
-        --set 'grafana.datasources."datasources.yaml".datasources[0].jsonData.username'=${CLICKHOUSE_USERNAME} \
-        --set 'grafana.datasources."datasources.yaml".datasources[0].secureJsonData.password'=${CLICKHOUSE_PASSWORD}
 
 # Get migration job logs
 web-migration-logs:
@@ -173,8 +169,10 @@ core-migration-logs:
     kubectl logs job/{{CORE_HELM_CHART_NAME}}-migration
 
 grafana:
+    #!/usr/bin/env bash
+    device_id=$(python3 -c 'import uuid; print(uuid.getnode())')
     echo "🚧 Connecting to Grafana..."
-    echo "View Grafana at http://localhost:3002"
+    echo "View Traces at http://localhost:3002/d/dc738af7-6c30-4b42-aef2-f967d65638af/letta-dev-traces?orgId=1&var-deviceid=$device_id&kiosk=tv&autologin=true&username=admin&password=${GRAFANA_ADMIN_PASSWORD}"
     kubectl port-forward service/grafana 3002:3002
 
 # starts up cool dev environment
