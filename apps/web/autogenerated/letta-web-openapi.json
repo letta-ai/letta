@@ -731,6 +731,27 @@
                                     }
                                   },
                                   "required": ["tool_name"]
+                                },
+                                {
+                                  "type": "object",
+                                  "properties": {
+                                    "tool_name": {
+                                      "type": "string"
+                                    },
+                                    "type": {
+                                      "oneOf": [
+                                        {
+                                          "type": "string",
+                                          "enum": ["max_count_per_step"]
+                                        },
+                                        {}
+                                      ]
+                                    },
+                                    "max_count_limit": {
+                                      "type": "number"
+                                    }
+                                  },
+                                  "required": ["tool_name", "max_count_limit"]
                                 }
                               ]
                             }
@@ -886,6 +907,30 @@
                                           }
                                         },
                                         "required": ["tool_name"]
+                                      },
+                                      {
+                                        "type": "object",
+                                        "properties": {
+                                          "tool_name": {
+                                            "type": "string"
+                                          },
+                                          "type": {
+                                            "oneOf": [
+                                              {
+                                                "type": "string",
+                                                "enum": ["max_count_per_step"]
+                                              },
+                                              {}
+                                            ]
+                                          },
+                                          "max_count_limit": {
+                                            "type": "number"
+                                          }
+                                        },
+                                        "required": [
+                                          "tool_name",
+                                          "max_count_limit"
+                                        ]
                                       }
                                     ]
                                   }
@@ -3479,6 +3524,30 @@
                                         }
                                       },
                                       "required": ["tool_name"]
+                                    },
+                                    {
+                                      "type": "object",
+                                      "properties": {
+                                        "tool_name": {
+                                          "type": "string"
+                                        },
+                                        "type": {
+                                          "oneOf": [
+                                            {
+                                              "type": "string",
+                                              "enum": ["max_count_per_step"]
+                                            },
+                                            {}
+                                          ]
+                                        },
+                                        "max_count_limit": {
+                                          "type": "number"
+                                        }
+                                      },
+                                      "required": [
+                                        "tool_name",
+                                        "max_count_limit"
+                                      ]
                                     }
                                   ]
                                 }
@@ -3637,6 +3706,32 @@
                                               }
                                             },
                                             "required": ["tool_name"]
+                                          },
+                                          {
+                                            "type": "object",
+                                            "properties": {
+                                              "tool_name": {
+                                                "type": "string"
+                                              },
+                                              "type": {
+                                                "oneOf": [
+                                                  {
+                                                    "type": "string",
+                                                    "enum": [
+                                                      "max_count_per_step"
+                                                    ]
+                                                  },
+                                                  {}
+                                                ]
+                                              },
+                                              "max_count_limit": {
+                                                "type": "number"
+                                              }
+                                            },
+                                            "required": [
+                                              "tool_name",
+                                              "max_count_limit"
+                                            ]
                                           }
                                         ]
                                       }
@@ -6637,6 +6732,30 @@
                                         }
                                       },
                                       "required": ["tool_name"]
+                                    },
+                                    {
+                                      "type": "object",
+                                      "properties": {
+                                        "tool_name": {
+                                          "type": "string"
+                                        },
+                                        "type": {
+                                          "oneOf": [
+                                            {
+                                              "type": "string",
+                                              "enum": ["max_count_per_step"]
+                                            },
+                                            {}
+                                          ]
+                                        },
+                                        "max_count_limit": {
+                                          "type": "number"
+                                        }
+                                      },
+                                      "required": [
+                                        "tool_name",
+                                        "max_count_limit"
+                                      ]
                                     }
                                   ]
                                 }
@@ -6795,6 +6914,32 @@
                                               }
                                             },
                                             "required": ["tool_name"]
+                                          },
+                                          {
+                                            "type": "object",
+                                            "properties": {
+                                              "tool_name": {
+                                                "type": "string"
+                                              },
+                                              "type": {
+                                                "oneOf": [
+                                                  {
+                                                    "type": "string",
+                                                    "enum": [
+                                                      "max_count_per_step"
+                                                    ]
+                                                  },
+                                                  {}
+                                                ]
+                                              },
+                                              "max_count_limit": {
+                                                "type": "number"
+                                              }
+                                            },
+                                            "required": [
+                                              "tool_name",
+                                              "max_count_limit"
+                                            ]
                                           }
                                         ]
                                       }

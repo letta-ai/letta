@@ -161,6 +161,7 @@ export type AgentState = {
     | TerminalToolRule
     | ConditionalToolRule
     | ContinueToolRule
+    | MaxCountPerStepToolRule
   > | null;
   /**
    * The ids of the messages in the agent's in-context memory.
@@ -1017,6 +1018,7 @@ export type CreateAgentRequest = {
     | TerminalToolRule
     | ConditionalToolRule
     | ContinueToolRule
+    | MaxCountPerStepToolRule
   > | null;
   /**
    * The tags associated with the agent.
@@ -1903,6 +1905,23 @@ export type MCPTool = {
 export type ManagerType = 'round_robin' | 'supervisor' | 'dynamic' | 'swarm';
 
 /**
+ * Represents a tool rule configuration which constrains the total number of times this tool can be invoked in a single step.
+ */
+export type MaxCountPerStepToolRule = {
+  /**
+   * The name of the tool. Must exist in the database for the user's organization.
+   */
+  tool_name: string;
+  type?: 'max_count_per_step';
+  /**
+   * The max limit for the total number of times this tool can be invoked in a single step.
+   */
+  max_count_limit: number;
+};
+
+export type type12 = 'max_count_per_step';
+
+/**
  * Represents the in-context memory (i.e. Core memory) of the agent. This includes both the `Block` objects (labelled by sections), as well as tools to edit the blocks.
  */
 export type Memory = {
@@ -2341,14 +2360,14 @@ export type ResponseFormatJSONObject = {
   type: 'json_object';
 };
 
-export type type12 = 'json_object';
+export type type13 = 'json_object';
 
 export type ResponseFormatJSONSchema = {
   json_schema: JSONSchema;
   type: 'json_schema';
 };
 
-export type type13 = 'json_schema';
+export type type14 = 'json_schema';
 
 export type ResponseFormatText = {
   type: 'text';
@@ -2812,7 +2831,7 @@ export type TerminalToolRule = {
   type?: 'exit_loop';
 };
 
-export type type14 = 'exit_loop';
+export type type15 = 'exit_loop';
 
 export type TextContent = {
   /**
@@ -3200,6 +3219,7 @@ export type UpdateAgent = {
     | TerminalToolRule
     | ConditionalToolRule
     | ContinueToolRule
+    | MaxCountPerStepToolRule
   > | null;
   /**
    * The LLM configuration used by the agent.
@@ -3393,7 +3413,7 @@ export type WebSearchOptionsUserLocation = {
   type: 'approximate';
 };
 
-export type type15 = 'approximate';
+export type type16 = 'approximate';
 
 export type WebSearchOptionsUserLocationApproximate = {
   city?: string;

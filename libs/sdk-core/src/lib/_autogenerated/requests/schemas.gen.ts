@@ -511,6 +511,9 @@ export const $AgentState = {
               {
                 $ref: '#/components/schemas/ContinueToolRule',
               },
+              {
+                $ref: '#/components/schemas/MaxCountPerStepToolRule',
+              },
             ],
             discriminator: {
               propertyName: 'type',
@@ -519,6 +522,8 @@ export const $AgentState = {
                 constrain_child_tools: '#/components/schemas/ChildToolRule',
                 continue_loop: '#/components/schemas/ContinueToolRule',
                 exit_loop: '#/components/schemas/TerminalToolRule',
+                max_count_per_step:
+                  '#/components/schemas/MaxCountPerStepToolRule',
                 run_first: '#/components/schemas/InitToolRule',
               },
             },
@@ -3113,6 +3118,9 @@ export const $CreateAgentRequest = {
               {
                 $ref: '#/components/schemas/ContinueToolRule',
               },
+              {
+                $ref: '#/components/schemas/MaxCountPerStepToolRule',
+              },
             ],
             discriminator: {
               propertyName: 'type',
@@ -3121,6 +3129,8 @@ export const $CreateAgentRequest = {
                 constrain_child_tools: '#/components/schemas/ChildToolRule',
                 continue_loop: '#/components/schemas/ContinueToolRule',
                 exit_loop: '#/components/schemas/TerminalToolRule',
+                max_count_per_step:
+                  '#/components/schemas/MaxCountPerStepToolRule',
                 run_first: '#/components/schemas/InitToolRule',
               },
             },
@@ -5102,6 +5112,36 @@ export const $ManagerType = {
   type: 'string',
   enum: ['round_robin', 'supervisor', 'dynamic', 'swarm'],
   title: 'ManagerType',
+} as const;
+
+export const $MaxCountPerStepToolRule = {
+  properties: {
+    tool_name: {
+      type: 'string',
+      title: 'Tool Name',
+      description:
+        "The name of the tool. Must exist in the database for the user's organization.",
+    },
+    type: {
+      type: 'string',
+      enum: ['max_count_per_step'],
+      const: 'max_count_per_step',
+      title: 'Type',
+      default: 'max_count_per_step',
+    },
+    max_count_limit: {
+      type: 'integer',
+      title: 'Max Count Limit',
+      description:
+        'The max limit for the total number of times this tool can be invoked in a single step.',
+    },
+  },
+  additionalProperties: false,
+  type: 'object',
+  required: ['tool_name', 'max_count_limit'],
+  title: 'MaxCountPerStepToolRule',
+  description:
+    'Represents a tool rule configuration which constrains the total number of times this tool can be invoked in a single step.',
 } as const;
 
 export const $Memory = {
@@ -8451,6 +8491,9 @@ export const $UpdateAgent = {
               {
                 $ref: '#/components/schemas/ContinueToolRule',
               },
+              {
+                $ref: '#/components/schemas/MaxCountPerStepToolRule',
+              },
             ],
             discriminator: {
               propertyName: 'type',
@@ -8459,6 +8502,8 @@ export const $UpdateAgent = {
                 constrain_child_tools: '#/components/schemas/ChildToolRule',
                 continue_loop: '#/components/schemas/ContinueToolRule',
                 exit_loop: '#/components/schemas/TerminalToolRule',
+                max_count_per_step:
+                  '#/components/schemas/MaxCountPerStepToolRule',
                 run_first: '#/components/schemas/InitToolRule',
               },
             },

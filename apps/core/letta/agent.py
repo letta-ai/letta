@@ -367,7 +367,10 @@ class Agent(BaseAgent):
     ) -> ChatCompletionResponse:
         """Get response from LLM API with robust retry mechanism."""
         log_telemetry(self.logger, "_get_ai_reply start")
-        allowed_tool_names = self.tool_rules_solver.get_allowed_tool_names(last_function_response=self.last_function_response)
+        available_tools = set([t.name for t in self.agent_state.tools])
+        allowed_tool_names = self.tool_rules_solver.get_allowed_tool_names(
+            available_tools=available_tools, last_function_response=self.last_function_response
+        )
         agent_state_tool_jsons = [t.json_schema for t in self.agent_state.tools]
 
         allowed_functions = (
@@ -377,8 +380,8 @@ class Agent(BaseAgent):
         )
 
         # Don't allow a tool to be called if it failed last time
-        if last_function_failed and self.tool_rules_solver.last_tool_name:
-            allowed_functions = [f for f in allowed_functions if f["name"] != self.tool_rules_solver.last_tool_name]
+        if last_function_failed and self.tool_rules_solver.tool_call_history:
+            allowed_functions = [f for f in allowed_functions if f["name"] != self.tool_rules_solver.tool_call_history[-1]]
             if not allowed_functions:
                 return None
 
@@ -773,6 +776,11 @@ class Agent(BaseAgent):
         **kwargs,
     ) -> LettaUsageStatistics:
         """Run Agent.step in a loop, handling chaining via heartbeat requests and function failures"""
+        # Defensively clear the tool rules solver history
+        # Usually this would be extraneous as Agent loop is re-loaded on every message send
+        # But just to be safe
+        self.tool_rules_solver.clear_tool_history()
+
         next_input_message = messages if isinstance(messages, list) else [messages]
         counter = 0
         total_usage = UsageStatistics()
