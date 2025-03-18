@@ -12,6 +12,7 @@ from composio.exceptions import (
 from fastapi import APIRouter, Body, Depends, Header, HTTPException
 
 from letta.errors import LettaToolCreateError
+from letta.functions.mcp_client.exceptions import MCPTimeoutError
 from letta.functions.mcp_client.types import MCPTool, SSEServerConfig, StdioServerConfig
 from letta.helpers.composio_helpers import get_composio_api_key
 from letta.log import get_logger
@@ -367,6 +368,15 @@ def list_mcp_tools_by_server(
                 "mcp_server_name": mcp_server_name,
             },
         )
+    except MCPTimeoutError as e:
+        raise HTTPException(
+            status_code=408,  # Timeout
+            detail={
+                "code": "MCPTimeoutError",
+                "message": str(e),
+                "mcp_server_name": mcp_server_name,
+            },
+        )
 
 
 @router.post("/mcp/servers/{mcp_server_name}/{mcp_tool_name}", response_model=Tool, operation_id="add_mcp_tool")
@@ -381,8 +391,29 @@ def add_mcp_tool(
     """
     actor = server.user_manager.get_user_or_default(user_id=actor_id)
 
-    available_tools = server.get_tools_from_mcp_server(mcp_server_name=mcp_server_name)
-    # See if the tool is in the avaialable list
+    try:
+        available_tools = server.get_tools_from_mcp_server(mcp_server_name=mcp_server_name)
+    except ValueError as e:
+        # ValueError means that the MCP server name doesn't exist
+        raise HTTPException(
+            status_code=400,  # Bad Request
+            detail={
+                "code": "MCPServerNotFoundError",
+                "message": str(e),
+                "mcp_server_name": mcp_server_name,
+            },
+        )
+    except MCPTimeoutError as e:
+        raise HTTPException(
+            status_code=408,  # Timeout
+            detail={
+                "code": "MCPTimeoutError",
+                "message": str(e),
+                "mcp_server_name": mcp_server_name,
+            },
+        )
+
+    # See if the tool is in the available list
     mcp_tool = None
     for tool in available_tools:
         if tool.name == mcp_tool_name:

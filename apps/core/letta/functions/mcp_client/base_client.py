@@ -1,9 +1,10 @@
 import asyncio
 from typing import List, Optional, Tuple
 
-from mcp import ClientSession, Tool
+from mcp import ClientSession
 
-from letta.functions.mcp_client.types import BaseServerConfig
+from letta.functions.mcp_client.exceptions import MCPTimeoutError
+from letta.functions.mcp_client.types import BaseServerConfig, MCPTool
 from letta.log import get_logger
 from letta.settings import tool_settings
 
@@ -31,9 +32,7 @@ class BaseMCPClient:
                 )
                 self.initialized = True
             except asyncio.TimeoutError:
-                raise RuntimeError(
-                    f"Timed out while initializing session for MCP server {self.server_config.server_name} (timeout={tool_settings.mcp_connect_to_server_timeout}s)."
-                )
+                raise MCPTimeoutError("initializing session", self.server_config.server_name, tool_settings.mcp_connect_to_server_timeout)
         else:
             raise RuntimeError(
                 f"Connecting to MCP server failed. Please review your server config: {self.server_config.model_dump_json(indent=4)}"
@@ -42,7 +41,7 @@ class BaseMCPClient:
     def _initialize_connection(self, server_config: BaseServerConfig, timeout: float) -> bool:
         raise NotImplementedError("Subclasses must implement _initialize_connection")
 
-    def list_tools(self) -> List[Tool]:
+    def list_tools(self) -> List[MCPTool]:
         self._check_initialized()
         try:
             response = self.loop.run_until_complete(
@@ -50,11 +49,10 @@ class BaseMCPClient:
             )
             return response.tools
         except asyncio.TimeoutError:
-            # Could log, throw a custom exception, etc.
             logger.error(
                 f"Timed out while listing tools for MCP server {self.server_config.server_name} (timeout={tool_settings.mcp_list_tools_timeout}s)."
             )
-            return []
+            raise MCPTimeoutError("listing tools", self.server_config.server_name, tool_settings.mcp_list_tools_timeout)
 
     def execute_tool(self, tool_name: str, tool_args: dict) -> Tuple[str, bool]:
         self._check_initialized()
@@ -67,7 +65,7 @@ class BaseMCPClient:
             logger.error(
                 f"Timed out while executing tool '{tool_name}' for MCP server {self.server_config.server_name} (timeout={tool_settings.mcp_execute_tool_timeout}s)."
             )
-            return "", True
+            raise MCPTimeoutError(f"executing tool '{tool_name}'", self.server_config.server_name, tool_settings.mcp_execute_tool_timeout)
 
     def _check_initialized(self):
         if not self.initialized:
