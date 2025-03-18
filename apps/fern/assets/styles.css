@@ -1,6 +1,10 @@
 /* .fern-header-container * {
   font-weight: 600;
 } */
+ 
+:root {
+  --radius: 0px;
+}
 
 /* Override styles related to soft borders */
 .fern-button {
@@ -81,7 +85,15 @@ code:not(.code-block) {
   background-color: rgba(7, 7, 172, 0.04);
 }
 
+:is(.light) body#fern-docs  .fern-sidebar-link[data-state="active"] {
+  background-color: rgba(7, 7, 172, 0.04);
+}
+
 :is(.light) .fern-sidebar-link-container[data-state="active"] .fern-sidebar-link-text {
+  color: #0707ac;
+}
+
+:is(.light) body#fern-docs  .fern-sidebar-link[data-state="active"] span {
   color: #0707ac;
 }
 
@@ -90,7 +102,15 @@ code:not(.code-block) {
   background-color: rgba(255, 187, 173, 0.08);  /* #FFBBAD */
 }
 
+:is(.dark) body#fern-docs  .fern-sidebar-link[data-state="active"] {
+  background-color: rgba(255, 187, 173, 0.08);  /* #FFBBAD */
+}
+
 :is(.dark) .fern-sidebar-link-container[data-state="active"] .fern-sidebar-link-text {
+  color: #FF5533;
+}
+
+:is(.dark) body#fern-docs  .fern-sidebar-link[data-state="active"] span {
   color: #FF5533;
 }
 
