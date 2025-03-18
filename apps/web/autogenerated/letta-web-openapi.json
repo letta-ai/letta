@@ -2010,6 +2010,35 @@
                                 }
                               ],
                               "nullable": true
+                            },
+                            "metadata_": {
+                              "oneOf": [
+                                {
+                                  "nullable": true
+                                },
+                                {
+                                  "type": "string",
+                                  "format": "null",
+                                  "nullable": true
+                                },
+                                {
+                                  "type": "array",
+                                  "items": {
+                                    "oneOf": [
+                                      {
+                                        "nullable": true
+                                      },
+                                      {
+                                        "type": "string",
+                                        "format": "null",
+                                        "nullable": true
+                                      }
+                                    ],
+                                    "nullable": true
+                                  }
+                                }
+                              ],
+                              "nullable": true
                             }
                           }
                         }
@@ -4720,6 +4749,35 @@
                                         "oneOf": [
                                           {
                                             "type": "string"
+                                          },
+                                          {
+                                            "type": "string",
+                                            "format": "null",
+                                            "nullable": true
+                                          }
+                                        ],
+                                        "nullable": true
+                                      }
+                                    }
+                                  ],
+                                  "nullable": true
+                                },
+                                "metadata_": {
+                                  "oneOf": [
+                                    {
+                                      "nullable": true
+                                    },
+                                    {
+                                      "type": "string",
+                                      "format": "null",
+                                      "nullable": true
+                                    },
+                                    {
+                                      "type": "array",
+                                      "items": {
+                                        "oneOf": [
+                                          {
+                                            "nullable": true
                                           },
                                           {
                                             "type": "string",
@@ -7849,6 +7907,35 @@
                                         "oneOf": [
                                           {
                                             "type": "string"
+                                          },
+                                          {
+                                            "type": "string",
+                                            "format": "null",
+                                            "nullable": true
+                                          }
+                                        ],
+                                        "nullable": true
+                                      }
+                                    }
+                                  ],
+                                  "nullable": true
+                                },
+                                "metadata_": {
+                                  "oneOf": [
+                                    {
+                                      "nullable": true
+                                    },
+                                    {
+                                      "type": "string",
+                                      "format": "null",
+                                      "nullable": true
+                                    },
+                                    {
+                                      "type": "array",
+                                      "items": {
+                                        "oneOf": [
+                                          {
+                                            "nullable": true
                                           },
                                           {
                                             "type": "string",

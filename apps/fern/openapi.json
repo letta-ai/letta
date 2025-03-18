@@ -7214,6 +7214,35 @@
                                     }
                                   ],
                                   "nullable": true
+                                },
+                                "metadata_": {
+                                  "oneOf": [
+                                    {
+                                      "nullable": true
+                                    },
+                                    {
+                                      "type": "string",
+                                      "format": "null",
+                                      "nullable": true
+                                    },
+                                    {
+                                      "type": "array",
+                                      "items": {
+                                        "oneOf": [
+                                          {
+                                            "nullable": true
+                                          },
+                                          {
+                                            "type": "string",
+                                            "format": "null",
+                                            "nullable": true
+                                          }
+                                        ],
+                                        "nullable": true
+                                      }
+                                    }
+                                  ],
+                                  "nullable": true
                                 }
                               }
                             }
@@ -10256,6 +10285,35 @@
                                     }
                                   ],
                                   "nullable": true
+                                },
+                                "metadata_": {
+                                  "oneOf": [
+                                    {
+                                      "nullable": true
+                                    },
+                                    {
+                                      "type": "string",
+                                      "format": "null",
+                                      "nullable": true
+                                    },
+                                    {
+                                      "type": "array",
+                                      "items": {
+                                        "oneOf": [
+                                          {
+                                            "nullable": true
+                                          },
+                                          {
+                                            "type": "string",
+                                            "format": "null",
+                                            "nullable": true
+                                          }
+                                        ],
+                                        "nullable": true
+                                      }
+                                    }
+                                  ],
+                                  "nullable": true
                                 }
                               }
                             }
@@ -11653,7 +11711,14 @@
             "title": "Messages"
           },
           "metadata_": {
-            "type": "object",
+            "anyOf": [
+              {
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Metadata "
           },
           "multi_agent_group": {
@@ -11723,7 +11788,6 @@
           "llm_config",
           "message_buffer_autoclear",
           "messages",
-          "metadata_",
           "multi_agent_group",
           "name",
           "system",
@@ -14171,7 +14235,14 @@
             "title": "Limit"
           },
           "metadata_": {
-            "type": "object",
+            "anyOf": [
+              {
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Metadata "
           },
           "template_name": {
@@ -18366,6 +18437,18 @@
             ],
             "title": "Last Updated By Id",
             "description": "The id of the user that made this Tool."
+          },
+          "metadata_": {
+            "anyOf": [
+              {
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Metadata ",
+            "description": "A dictionary of additional metadata for the tool."
           }
         },
         "additionalProperties": false,
@@ -18955,6 +19038,17 @@
           "updated_at": {
             "type": "string",
             "title": "Updated At"
+          },
+          "metadata_": {
+            "anyOf": [
+              {
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Metadata "
           }
         },
         "type": "object",

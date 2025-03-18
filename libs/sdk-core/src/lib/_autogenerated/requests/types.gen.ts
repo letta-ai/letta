@@ -99,9 +99,9 @@ export type AgentSchema = {
   llm_config: LLMConfig;
   message_buffer_autoclear: boolean;
   messages: Array<MessageSchema>;
-  metadata_: {
+  metadata_?: {
     [key: string]: unknown;
-  };
+  } | null;
   multi_agent_group: unknown | null;
   name: string;
   system: string;
@@ -974,7 +974,7 @@ export type CoreMemoryBlockSchema = {
   limit: number;
   metadata_?: {
     [key: string]: unknown;
-  };
+  } | null;
   template_name: string | null;
   updated_at: string;
   value: string;
@@ -2892,6 +2892,12 @@ export type Tool = {
    * The id of the user that made this Tool.
    */
   last_updated_by_id?: string | null;
+  /**
+   * A dictionary of additional metadata for the tool.
+   */
+  metadata_?: {
+    [key: string]: unknown;
+  } | null;
 };
 
 export type ToolCall = {
@@ -3111,6 +3117,9 @@ export type ToolSchema = {
   tags: Array<string>;
   tool_type: string;
   updated_at: string;
+  metadata_?: {
+    [key: string]: unknown;
+  } | null;
 };
 
 export type ToolType =

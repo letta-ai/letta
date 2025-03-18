@@ -339,7 +339,14 @@ export const $AgentSchema = {
       title: 'Messages',
     },
     metadata_: {
-      type: 'object',
+      anyOf: [
+        {
+          type: 'object',
+        },
+        {
+          type: 'null',
+        },
+      ],
       title: 'Metadata ',
     },
     multi_agent_group: {
@@ -409,7 +416,6 @@ export const $AgentSchema = {
     'llm_config',
     'message_buffer_autoclear',
     'messages',
-    'metadata_',
     'multi_agent_group',
     'name',
     'system',
@@ -2959,7 +2965,14 @@ export const $CoreMemoryBlockSchema = {
       title: 'Limit',
     },
     metadata_: {
-      type: 'object',
+      anyOf: [
+        {
+          type: 'object',
+        },
+        {
+          type: 'null',
+        },
+      ],
       title: 'Metadata ',
     },
     template_name: {
@@ -7552,6 +7565,18 @@ export const $Tool = {
       title: 'Last Updated By Id',
       description: 'The id of the user that made this Tool.',
     },
+    metadata_: {
+      anyOf: [
+        {
+          type: 'object',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Metadata ',
+      description: 'A dictionary of additional metadata for the tool.',
+    },
   },
   additionalProperties: false,
   type: 'object',
@@ -8180,6 +8205,17 @@ export const $ToolSchema = {
     updated_at: {
       type: 'string',
       title: 'Updated At',
+    },
+    metadata_: {
+      anyOf: [
+        {
+          type: 'object',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Metadata ',
     },
   },
   type: 'object',

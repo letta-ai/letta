@@ -145,8 +145,9 @@ def print_tool(server: SyncServer, default_user, default_organization):
     source_type = "python"
     description = "test_description"
     tags = ["test"]
+    metadata = {"a": "b"}
 
-    tool = PydanticTool(description=description, tags=tags, source_code=source_code, source_type=source_type)
+    tool = PydanticTool(description=description, tags=tags, source_code=source_code, source_type=source_type, metadata_=metadata)
     derived_json_schema = derive_openai_json_schema(source_code=tool.source_code, name=tool.name)
 
     derived_name = derived_json_schema["name"]
@@ -1834,6 +1835,7 @@ def test_get_tool_by_id(server: SyncServer, print_tool, default_user):
     assert fetched_tool.name == print_tool.name
     assert fetched_tool.description == print_tool.description
     assert fetched_tool.tags == print_tool.tags
+    assert fetched_tool.metadata_ == print_tool.metadata_
     assert fetched_tool.source_code == print_tool.source_code
     assert fetched_tool.source_type == print_tool.source_type
     assert fetched_tool.tool_type == ToolType.CUSTOM

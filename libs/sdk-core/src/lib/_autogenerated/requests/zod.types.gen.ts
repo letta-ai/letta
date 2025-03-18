@@ -145,7 +145,14 @@ export const CoreMemoryBlockSchema = z.object({
   is_template: z.boolean(),
   label: z.string(),
   limit: z.number(),
-  metadata_: z.union([z.unknown(), z.undefined()]).optional(),
+  metadata_: z
+    .union([
+      z.unknown(),
+      z.null(),
+      z.array(z.union([z.unknown(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
   template_name: z.union([
     z.string(),
     z.null(),
@@ -435,6 +442,14 @@ export const ToolSchema = z.object({
   tags: z.array(z.string()),
   tool_type: z.string(),
   updated_at: z.string(),
+  metadata_: z
+    .union([
+      z.unknown(),
+      z.null(),
+      z.array(z.union([z.unknown(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
 });
 
 export type AgentSchema = z.infer<typeof AgentSchema>;
@@ -450,7 +465,14 @@ export const AgentSchema = z.object({
   llm_config: LLMConfig,
   message_buffer_autoclear: z.boolean(),
   messages: z.array(MessageSchema),
-  metadata_: z.unknown(),
+  metadata_: z
+    .union([
+      z.unknown(),
+      z.null(),
+      z.array(z.union([z.unknown(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
   multi_agent_group: z.union([
     z.unknown(),
     z.null(),
@@ -627,6 +649,9 @@ export const Tool = z.object({
     .optional(),
   last_updated_by_id: z
     .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+    .optional(),
+  metadata_: z
+    .union([z.unknown(), z.null(), z.array(z.union([z.unknown(), z.null()]))])
     .optional(),
 });
 
