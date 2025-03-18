@@ -4153,6 +4153,14 @@ export const ToolRunFromSource = z.object({
       z.undefined(),
     ])
     .optional(),
+  json_schema: z
+    .union([
+      z.unknown(),
+      z.null(),
+      z.array(z.union([z.unknown(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
 });
 
 export type ToolUpdate = z.infer<typeof ToolUpdate>;

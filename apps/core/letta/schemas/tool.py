@@ -250,3 +250,6 @@ class ToolRunFromSource(LettaBase):
     name: Optional[str] = Field(None, description="The name of the tool to run.")
     source_type: Optional[str] = Field(None, description="The type of the source code.")
     args_json_schema: Optional[Dict] = Field(None, description="The args JSON schema of the function.")
+    json_schema: Optional[Dict] = Field(
+        None, description="The JSON schema of the function (auto-generated from source_code if not provided)"
+    )

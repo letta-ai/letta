@@ -8175,6 +8175,19 @@ export const $ToolRunFromSource = {
       title: 'Args Json Schema',
       description: 'The args JSON schema of the function.',
     },
+    json_schema: {
+      anyOf: [
+        {
+          type: 'object',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Json Schema',
+      description:
+        'The JSON schema of the function (auto-generated from source_code if not provided)',
+    },
   },
   additionalProperties: false,
   type: 'object',

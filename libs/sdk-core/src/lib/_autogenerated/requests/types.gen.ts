@@ -3121,6 +3121,12 @@ export type ToolRunFromSource = {
   args_json_schema?: {
     [key: string]: unknown;
   } | null;
+  /**
+   * The JSON schema of the function (auto-generated from source_code if not provided)
+   */
+  json_schema?: {
+    [key: string]: unknown;
+  } | null;
 };
 
 export type ToolSchema = {
