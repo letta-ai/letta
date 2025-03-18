@@ -6270,7 +6270,7 @@ export type $OpenApiTs = {
       };
     };
   };
-  '/v1/voice/{agent_id}/chat/completions': {
+  '/v1/voice-beta/{agent_id}/chat/completions': {
     post: {
       req: CreateVoiceChatCompletionsData;
       res: {

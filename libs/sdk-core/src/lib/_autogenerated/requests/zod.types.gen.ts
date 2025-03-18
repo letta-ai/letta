@@ -6700,7 +6700,7 @@ export type post_Create_voice_chat_completions =
   typeof post_Create_voice_chat_completions;
 export const post_Create_voice_chat_completions = {
   method: z.literal('POST'),
-  path: z.literal('/v1/voice/{agent_id}/chat/completions'),
+  path: z.literal('/v1/voice-beta/{agent_id}/chat/completions'),
   requestFormat: z.literal('json'),
   parameters: z.object({
     path: z.object({
@@ -6971,7 +6971,8 @@ export const EndpointByMethod = {
     '/v1/sandbox-config/{sandbox_config_id}/environment-variable':
       post_Create_sandbox_env_var_v1_sandbox_config__sandbox_config_id__environment_variable_post,
     '/v1/providers/': post_Create_provider,
-    '/v1/voice/{agent_id}/chat/completions': post_Create_voice_chat_completions,
+    '/v1/voice-beta/{agent_id}/chat/completions':
+      post_Create_voice_chat_completions,
     '/v1/admin/users/': post_Create_user,
     '/v1/admin/orgs/': post_Create_organization,
     '/v1/auth': post_Authenticate_user_v1_auth_post,

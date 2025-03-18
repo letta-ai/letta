@@ -63,8 +63,33 @@ class MessageManager:
 
     @enforce_types
     def create_many_messages(self, pydantic_msgs: List[PydanticMessage], actor: PydanticUser) -> List[PydanticMessage]:
-        """Create multiple messages."""
-        return [self.create_message(m, actor=actor) for m in pydantic_msgs]
+        """
+        Create multiple messages in a single database transaction.
+
+        Args:
+            pydantic_msgs: List of Pydantic message models to create
+            actor: User performing the action
+
+        Returns:
+            List of created Pydantic message models
+        """
+        if not pydantic_msgs:
+            return []
+
+        # Create ORM model instances for all messages
+        orm_messages = []
+        for pydantic_msg in pydantic_msgs:
+            # Set the organization id of the Pydantic message
+            pydantic_msg.organization_id = actor.organization_id
+            msg_data = pydantic_msg.model_dump(to_orm=True)
+            orm_messages.append(MessageModel(**msg_data))
+
+        # Use the batch_create method for efficient creation
+        with self.session_maker() as session:
+            created_messages = MessageModel.batch_create(orm_messages, session, actor=actor)
+
+            # Convert back to Pydantic models
+            return [msg.to_pydantic() for msg in created_messages]
 
     @enforce_types
     def update_message_by_letta_message(

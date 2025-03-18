@@ -3533,7 +3533,7 @@ export class VoiceService {
   ): CancelablePromise<CreateVoiceChatCompletionsResponse> {
     return __request(OpenAPI, {
       method: 'POST',
-      url: '/v1/voice/{agent_id}/chat/completions',
+      url: '/v1/voice-beta/{agent_id}/chat/completions',
       path: {
         agent_id: data.agentId,
       },

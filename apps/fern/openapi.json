@@ -5502,7 +5502,7 @@
         }
       }
     },
-    "/v1/voice/{agent_id}/chat/completions": {
+    "/v1/voice-beta/{agent_id}/chat/completions": {
       "post": {
         "tags": ["voice"],
         "summary": "Create Voice Chat Completions",
