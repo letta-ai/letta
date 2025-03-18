@@ -398,7 +398,7 @@ def add_mcp_tool(
         )
 
     tool_create = ToolCreate.from_mcp(mcp_server_name=mcp_server_name, mcp_tool=mcp_tool)
-    return server.tool_manager.create_or_update_mcp_tool(tool_create=tool_create, actor=actor)
+    return server.tool_manager.create_or_update_mcp_tool(tool_create=tool_create, mcp_server_name=mcp_server_name, actor=actor)
 
 
 @router.put("/mcp/servers", response_model=List[Union[StdioServerConfig, SSEServerConfig]], operation_id="add_mcp_server")
