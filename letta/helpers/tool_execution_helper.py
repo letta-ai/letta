@@ -40,7 +40,7 @@ def enable_strict_mode(tool_schema: Dict[str, Any]) -> Dict[str, Any]:
     return schema
 
 
-def add_pre_execution_message(tool_schema: Dict[str, Any]) -> Dict[str, Any]:
+def add_pre_execution_message(tool_schema: Dict[str, Any], description: Optional[str] = None) -> Dict[str, Any]:
     """Adds a `pre_execution_message` parameter to a tool schema to prompt a natural, human-like message before executing the tool.
 
     Args:
@@ -58,14 +58,17 @@ def add_pre_execution_message(tool_schema: Dict[str, Any]) -> Dict[str, Any]:
     properties = parameters.get("properties", {})
     required = parameters.get("required", [])
 
-    # Define the new `pre_execution_message` field with a refined description
-    pre_execution_message_field = {
-        "type": "string",
-        "description": (
+    # Define the new `pre_execution_message` field
+    if not description:
+        # Default description
+        description = (
             "A concise message to be uttered before executing this tool. "
             "This should sound natural, as if a person is casually announcing their next action."
             "You MUST also include punctuation at the end of this message."
-        ),
+        )
+    pre_execution_message_field = {
+        "type": "string",
+        "description": description,
     }
 
     # Ensure the pre-execution message is the first field in properties
