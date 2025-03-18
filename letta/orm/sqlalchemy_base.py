@@ -508,10 +508,13 @@ class SqlalchemyBase(CommonSqlalchemyMetaMixins, Base):
         raise NotImplementedError("Sqlalchemy models must declare a __pydantic_model__ property to be convertable.")
 
     def to_pydantic(self) -> "BaseModel":
-        """converts to the basic pydantic model counterpart"""
-        model = self.__pydantic_model__.model_validate(self)
-        if hasattr(self, "metadata_"):
-            model.metadata = self.metadata_
+        """Converts the SQLAlchemy model to its corresponding Pydantic model."""
+        model = self.__pydantic_model__.model_validate(self, from_attributes=True)
+
+        # Explicitly map metadata_ to metadata in Pydantic model
+        if hasattr(self, "metadata_") and hasattr(model, "metadata_"):
+            setattr(model, "metadata_", self.metadata_)  # Ensures correct assignment
+
         return model
 
     def pretty_print_columns(self) -> str:

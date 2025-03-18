@@ -15,7 +15,7 @@ class CoreMemoryBlockSchema(BaseModel):
     is_template: bool
     label: str
     limit: int
-    metadata_: Dict[str, Any] = Field(default_factory=dict)
+    metadata_: Optional[Dict] = None
     template_name: Optional[str]
     updated_at: str
     value: str
@@ -85,6 +85,7 @@ class ToolSchema(BaseModel):
     tags: List[str]
     tool_type: str
     updated_at: str
+    metadata_: Optional[Dict] = None
 
 
 class AgentSchema(BaseModel):
@@ -99,7 +100,7 @@ class AgentSchema(BaseModel):
     llm_config: LLMConfig
     message_buffer_autoclear: bool
     messages: List[MessageSchema]
-    metadata_: Dict
+    metadata_: Optional[Dict] = None
     multi_agent_group: Optional[Any]
     name: str
     system: str

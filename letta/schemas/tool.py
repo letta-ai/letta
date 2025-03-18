@@ -66,6 +66,7 @@ class Tool(BaseTool):
     # metadata fields
     created_by_id: Optional[str] = Field(None, description="The id of the user that made this Tool.")
     last_updated_by_id: Optional[str] = Field(None, description="The id of the user that made this Tool.")
+    metadata_: Optional[Dict[str, Any]] = Field(default_factory=dict, description="A dictionary of additional metadata for the tool.")
 
     @model_validator(mode="after")
     def refresh_source_code_and_json_schema(self):
@@ -137,10 +138,6 @@ class ToolCreate(LettaBase):
 
     @classmethod
     def from_mcp(cls, mcp_server_name: str, mcp_tool: MCPTool) -> "ToolCreate":
-
-        # Get the MCP tool from the MCP server
-        # NVM
-
         # Pass the MCP tool to the schema generator
         json_schema = generate_tool_schema_for_mcp(mcp_tool=mcp_tool)
 
