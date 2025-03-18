@@ -23,6 +23,7 @@ def get_bedrock_client():
     """
     import boto3
 
+    logger.debug(f"Getting Bedrock client for {model_settings.aws_region}")
     sts_client = boto3.client(
         "sts",
         aws_access_key_id=model_settings.aws_access_key,
@@ -54,6 +55,7 @@ def bedrock_get_model_list(region_name: str) -> List[dict]:
     """
     import boto3
 
+    logger.debug(f"Getting model list for {region_name}")
     try:
         bedrock = boto3.client("bedrock", region_name=region_name)
         response = bedrock.list_inference_profiles()
@@ -70,6 +72,7 @@ def bedrock_get_model_details(region_name: str, model_id: str) -> Dict[str, Any]
     import boto3
     from botocore.exceptions import ClientError
 
+    logger.debug(f"Getting model details for {model_id}")
     try:
         bedrock = boto3.client("bedrock", region_name=region_name)
         response = bedrock.get_foundation_model(modelIdentifier=model_id)
