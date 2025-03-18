@@ -41,14 +41,16 @@ export interface BadgeProps extends VariantProps<typeof badgeVariants> {
   preIcon?: React.ReactNode;
   className?: string;
   uppercase?: boolean;
+  ref?: React.Ref<HTMLDivElement>;
 }
 
 export function Badge(props: BadgeProps) {
-  const { size, className, border, preIcon, variant, uppercase, content } =
+  const { size, className, border, ref, preIcon, variant, uppercase, content } =
     props;
 
   return (
     <HStack
+      ref={ref}
       className={cn(
         badgeVariants({ size, border, uppercase, variant }),
         className,

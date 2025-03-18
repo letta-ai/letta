@@ -19,6 +19,7 @@ const composioAppSchema = z.object({
   name: z.string(),
   description: z.string(),
   logo: z.string(),
+  meta: z.object({ actionsCount: z.number() }),
   categories: z.string().array(),
   enabled: z.boolean(),
   createdAt: z.string(),

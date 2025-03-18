@@ -249,7 +249,7 @@ export function Debugger<InputSchema extends GenericSchema>(
   } = props;
 
   return (
-    <HStack className="min-h-[300px]" flex fullWidth>
+    <HStack className="min-h-[300px]" fullHeight flex fullWidth>
       <RawInputContainer
         fullWidth
         hideLabel={hideLabel}
@@ -257,14 +257,7 @@ export function Debugger<InputSchema extends GenericSchema>(
         preLabelIcon={preLabelIcon}
         label={label}
       >
-        <VStack
-          borderTop
-          overflow="hidden"
-          collapseHeight
-          flex
-          fullWidth
-          gap={false}
-        >
+        <VStack overflow="hidden" collapseHeight flex fullWidth gap={false}>
           <DebuggerInput
             isRunning={isRunning}
             onRun={onRun}

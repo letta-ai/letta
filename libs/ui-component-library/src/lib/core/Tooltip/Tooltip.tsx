@@ -167,17 +167,21 @@ export interface TooltipProps extends TooltipOptions {
   content: React.ReactNode;
   children: React.ReactNode;
   asChild?: boolean;
+  ref?: React.Ref<HTMLAnchorElement | HTMLButtonElement>;
 }
 
 export function Tooltip({
   asChild,
   content,
   children,
+  ref,
   ...options
 }: TooltipProps) {
   return (
     <TooltipProvider {...options}>
-      <TooltipTrigger asChild={asChild}>{children}</TooltipTrigger>
+      <TooltipTrigger ref={ref} asChild={asChild}>
+        {children}
+      </TooltipTrigger>
       <TooltipContent>{content}</TooltipContent>
     </TooltipProvider>
   );

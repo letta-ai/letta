@@ -190,3 +190,5 @@ export * from './lib/onboarding/OnboardingMiniMenu/OnboardingMiniMenu';
 export * from './lib/reusable/CrossedOut/CrossedOut';
 
 export * from './lib/reusable/BoxList/BoxList';
+
+export * from './lib/core/WrapNotificationDot/WrapNotificationDot';

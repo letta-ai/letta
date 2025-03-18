@@ -554,10 +554,7 @@ export function FormActions({
       {startAction ? startAction : <div />}
       <HStack align="center" reverse={align === 'start'}>
         {errorMessage && (
-          <Typography
-            align={align === 'start' ? 'left' : 'right'}
-            color="destructive"
-          >
+          <Typography align="left" color="destructive">
             {errorMessage}
           </Typography>
         )}

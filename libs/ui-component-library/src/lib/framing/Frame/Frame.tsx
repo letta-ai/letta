@@ -67,6 +67,10 @@ const frameVariants = cva('', {
       header: 'h-header min-h-header',
       'header-sm': 'h-header-sm',
     },
+    minHeight: {
+      header: 'min-h-header',
+      'header-sm': 'min-h-header-sm',
+    },
     borderColor: {
       true: 'border-border',
     },

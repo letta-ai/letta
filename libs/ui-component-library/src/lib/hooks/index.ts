@@ -2,6 +2,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { toast } from '../core/Toaster/Toaster';
 import { useTranslations } from '@letta-cloud/translations';
+import { useViewportSize } from '@mantine/hooks';
 
 interface UseCopyToClipboardArgs {
   textToCopy: string;
@@ -43,4 +44,10 @@ export function useCopyToClipboard(args: UseCopyToClipboardArgs) {
     isCopied,
     copyToClipboard,
   };
+}
+
+export function useIsMobile() {
+  const { width = 0 } = useViewportSize();
+
+  return width < 640;
 }

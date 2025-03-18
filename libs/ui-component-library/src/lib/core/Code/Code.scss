@@ -47,6 +47,7 @@ pre[class*='language-'] {
   hyphens: none;
 }
 
+
 /* Selection */
 code[class*='language-']::-moz-selection,
 code[class*='language-'] *::-moz-selection,
@@ -82,11 +83,11 @@ pre[class*='language-'] {
 :root {
   --comment-color: #878390;
   --keyword-color: #9c5f2d;
-  --string-color: #49a549;
+  --string-color: #277827;
   --base-code-color: #55585b;
   --bool-color: #a260c9;
-  --property-color: #d85b42;
-  --operator-color: #5151a0;
+  --property-color: #960ce6;
+  --operator-color: #2a2abd;
   --regex-color: #b7881a;
 }
 
@@ -454,9 +455,14 @@ pre > code.diff-highlight .token.token.inserted:not(.prefix) *::selection {
   overflow: hidden;
 }
 
+.editor textarea {
+  outline: none;
+}
+
 .editor.line-numbers textarea {
   outline: none;
   padding-left: calc(var(--editor-lineNumber-gutter-width) + 20px) !important;
+
 }
 
 .editor.line-numbers pre {
@@ -488,4 +494,17 @@ pre > code.diff-highlight .token.token.inserted:not(.prefix) *::selection {
   border-right: 1px solid hsl(var(--border));
   background-color: hsl(var(--background));
   z-index: 1;
+}
+
+
+.current-line-highlight {
+  position: absolute;
+  pointer-events: none;
+  right: 0;
+  width: 100%;
+  display: none;
+  background: hsla(var(--brand-light), 0.2);
+  height: 1.5em;
+  margin-top: -2px;
+  z-index: 2;
 }

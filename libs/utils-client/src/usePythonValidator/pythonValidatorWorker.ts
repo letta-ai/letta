@@ -20,6 +20,10 @@ try {
   console.warn('Failed to import pyodide.js');
 }
 async function loadPyodideAndPackages() {
+  if (!self.loadPyodide) {
+    return;
+  }
+
   self.pyodide = await loadPyodide();
 }
 
@@ -29,6 +33,10 @@ registerPromiseWorker(
   async (
     message: GetMessagesWorkerPayload,
   ): Promise<PythonValidatorWorkerResponse> => {
+    if (!self.pyodide) {
+      return { errors: [] };
+    }
+
     await pyodideReadyPromise;
 
     let errors: PythonValidatorError[] = [];

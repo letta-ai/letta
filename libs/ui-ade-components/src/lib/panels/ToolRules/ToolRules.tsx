@@ -50,30 +50,6 @@ import { FormProvider, useFormContext } from 'react-hook-form';
 import { useQueryClient } from '@tanstack/react-query';
 import { deepEquals } from 'nx/src/utils/json-diff';
 
-function ToolRuleHeader() {
-  const t = useTranslations('ADE/ToolRules');
-  return (
-    <HStack
-      height="header"
-      align="center"
-      justify="spaceBetween"
-      borderBottom
-      paddingX
-      fullWidth
-    >
-      <HStack>
-        <RuleIcon />
-        <Typography bold>{t('title')}</Typography>
-      </HStack>
-      <CloseMiniApp data-testid="close-tool-rule-editor">
-        <HStack>
-          <CloseIcon />
-        </HStack>
-      </CloseMiniApp>
-    </HStack>
-  );
-}
-
 function useToolTitleFromType(type: SupportedToolRuleNameTypes) {
   const t = useTranslations('ADE/ToolRules');
 
@@ -784,7 +760,7 @@ interface ToolRuleListProps {
   defaultToolRules: AgentState['tool_rules'];
 }
 
-function ToolRuleList(props: ToolRuleListProps) {
+export function ToolRuleList(props: ToolRuleListProps) {
   const { defaultToolRules } = props;
 
   const [search, setSearch] = React.useState('');
@@ -988,6 +964,40 @@ function ToolRuleList(props: ToolRuleListProps) {
 }
 
 export function ToolRulesEditor() {
+  const { tool_rules, tools } = useCurrentAgent();
+
+  if (Array.isArray(tools)) {
+    return <ToolRuleList defaultToolRules={tool_rules} />;
+  }
+
+  return <LoadingEmptyStatusComponent />;
+}
+
+function ToolRuleHeader() {
+  const t = useTranslations('ADE/ToolRules');
+  return (
+    <HStack
+      height="header"
+      align="center"
+      justify="spaceBetween"
+      borderBottom
+      paddingX
+      fullWidth
+    >
+      <HStack>
+        <RuleIcon />
+        <Typography bold>{t('title')}</Typography>
+      </HStack>
+      <CloseMiniApp data-testid="close-tool-rule-editor">
+        <HStack>
+          <CloseIcon />
+        </HStack>
+      </CloseMiniApp>
+    </HStack>
+  );
+}
+
+export function OldToolRulesEditor() {
   const [isToolRulesOpen, setIsToolRulesOpen] = React.useState(false);
   const [isConfirmOpen, setIsConfirmOpen] = React.useState(false);
 

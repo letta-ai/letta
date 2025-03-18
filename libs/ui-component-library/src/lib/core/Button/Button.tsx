@@ -166,6 +166,7 @@ export const Button = forwardRef<
   return (
     <MaybeTooltip
       asChild
+      ref={ref}
       placement={tooltipPlacement}
       renderTooltip={!!hideLabel && !_use_rarely_disableTooltip}
       content={label}

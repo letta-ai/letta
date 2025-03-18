@@ -38,7 +38,7 @@ function useContextWindowDetails() {
     undefined,
     {
       enabled: !!id,
-      refetchInterval: 2500,
+      refetchInterval: 5000,
     },
   );
 

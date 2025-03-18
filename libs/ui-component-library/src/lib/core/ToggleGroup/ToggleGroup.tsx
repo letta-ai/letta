@@ -138,12 +138,21 @@ interface ToggleGroupItemType {
 interface ToggleGroupProps extends Omit<ToggleGroupSingleProps, 'type'> {
   items: ToggleGroupItemType[];
   border?: boolean;
+  vertical?: boolean;
   fullWidth?: boolean;
   size?: VariantProps<typeof toggleVariants>['size'];
 }
 
 function ToggleGroupWrapper(props: ToggleGroupProps) {
-  const { items, border, fullWidth, size, value, onValueChange } = props;
+  const {
+    items,
+    vertical = false,
+    border,
+    fullWidth,
+    size,
+    value,
+    onValueChange,
+  } = props;
 
   return (
     <Frame
@@ -155,6 +164,7 @@ function ToggleGroupWrapper(props: ToggleGroupProps) {
       <ToggleGroupRoot
         type="single"
         value={value}
+        className={cn(vertical ? 'flex-col' : 'flex-row')}
         onValueChange={onValueChange}
       >
         {items.map((item) => (
@@ -167,6 +177,7 @@ function ToggleGroupWrapper(props: ToggleGroupProps) {
             <ToggleGroupItem
               hideLabel={item.hideLabel}
               size={size}
+              className={cn(vertical ? 'min-h-biHeight' : '')}
               fullWidth={fullWidth}
               key={item.value}
               value={item.value}

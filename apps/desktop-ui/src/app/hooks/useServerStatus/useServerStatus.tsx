@@ -1,5 +1,5 @@
-import { createContext, useContext, useEffect, useRef, useState } from 'react';
-import { HealthService } from '@letta-cloud/sdk-core';
+import { createContext, useContext } from 'react';
+import { useHealthServiceHealthCheck } from '@letta-cloud/sdk-core';
 
 const ServerStatusContext = createContext<boolean>(false);
 
@@ -12,40 +12,12 @@ interface ServerStatusProviderProps {
 }
 
 export function ServerStatusProvider(props: ServerStatusProviderProps) {
-  const [status, setStatus] = useState(false);
   const { children } = props;
 
-  const interval = useRef<ReturnType<typeof setInterval> | null>(null);
-
-  useEffect(() => {
-    async function checkHealth() {
-      try {
-        const response = await HealthService.healthCheck();
-
-        if (!response.version) {
-          throw new Error('Invalid response');
-        }
-
-        setStatus(true);
-      } catch (e) {
-        setStatus(false);
-      }
-    }
-    void checkHealth();
-
-    interval.current = setInterval(() => {
-      void checkHealth();
-    }, 2500);
-
-    return () => {
-      if (interval.current) {
-        clearInterval(interval.current);
-      }
-    };
-  }, []);
+  const { data: status } = useHealthServiceHealthCheck();
 
   return (
-    <ServerStatusContext.Provider value={status}>
+    <ServerStatusContext.Provider value={!!status?.status}>
       {children}
     </ServerStatusContext.Provider>
   );

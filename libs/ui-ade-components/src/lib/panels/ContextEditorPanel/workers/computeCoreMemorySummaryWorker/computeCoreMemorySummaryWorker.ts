@@ -17,6 +17,10 @@ try {
 }
 
 async function loadPyodideAndPackages() {
+  if (!loadPyodide) {
+    return;
+  }
+
   self.pyodide = await loadPyodide();
   await self.pyodide.loadPackage(['jinja2']);
 }
@@ -61,6 +65,10 @@ function createDict(object: Record<string, unknown>) {
 self.onmessage = async (
   event: MessageEvent<ComputeCoreMemoryWorkerPayload>,
 ) => {
+  if (!self.pyodide) {
+    return;
+  }
+
   // make sure loading is done
   await pyodideReadyPromise;
 

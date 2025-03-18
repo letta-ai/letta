@@ -22,6 +22,7 @@ import { cn } from '@letta-cloud/ui-styles';
 import { VStack } from '../../framing/VStack/VStack';
 import type { FrameProps } from '../../framing/Frame/Frame';
 import { Tooltip } from '../Tooltip/Tooltip';
+import { getTextareaCaretPosition } from '@letta-cloud/utils-client';
 
 export type SupportedLangauges =
   | 'bash'
@@ -69,6 +70,7 @@ export interface CodeProps extends VariantProps<typeof codeVariants> {
   flex?: boolean;
   testId?: string;
   showLineNumbers?: boolean;
+  highlightCurrentLine?: boolean;
   border?: boolean;
   onSetCode?: (code: string) => void;
   placeholder?: string;
@@ -163,6 +165,7 @@ export function Code(props: CodeProps) {
     flex,
     toolbarAction,
     lineNumberError,
+    highlightCurrentLine,
   } = props;
 
   const id = useId();
@@ -193,6 +196,61 @@ export function Code(props: CodeProps) {
     ),
     [code, language, testId, toolbarAction],
   );
+
+  const lineHighlightElementRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    try {
+      // listen to cursor movement and highlight the current line
+      const editor = document.getElementById(id) as HTMLTextAreaElement;
+
+      if (!editor) {
+        return;
+      }
+
+      if (!highlightCurrentLine) {
+        return;
+      }
+
+      const highlightElement = lineHighlightElementRef.current;
+
+      if (!highlightElement) {
+        return;
+      }
+
+      const lineHeight = parseInt(
+        getComputedStyle(editor).lineHeight.replace('px', ''),
+        10,
+      );
+
+      function handleMouseMove() {
+        requestAnimationFrame(() => {
+          if (!highlightElement) {
+            return;
+          }
+
+          const position = getTextareaCaretPosition(
+            editor,
+            editor.selectionStart || 0,
+          );
+
+          highlightElement.style.top = `${position.top}px`;
+          highlightElement.style.display = 'block';
+          highlightElement.style.height = `${lineHeight}px`;
+        });
+      }
+
+      editor.addEventListener('keydown', handleMouseMove);
+      editor.addEventListener('click', handleMouseMove);
+
+      return () => {
+        editor.removeEventListener('keydown', handleMouseMove);
+        editor.removeEventListener('click', handleMouseMove);
+      };
+    } catch (_e) {
+      // ignore
+    }
+  }, [highlightCurrentLine, id]);
 
   if (inline) {
     return <code className={`language-${language}`}>{code}</code>;
@@ -235,6 +293,12 @@ export function Code(props: CodeProps) {
           <div
             className={cn(showLineNumbers ? 'line-number-wrapper' : 'hidden')}
           />
+          {highlightCurrentLine && (
+            <div
+              ref={lineHighlightElementRef}
+              className="current-line-highlight"
+            />
+          )}
           <Editor
             id={`code-editor-${id}`}
             className={cn('editor w-full', showLineNumbers && 'line-numbers')}
