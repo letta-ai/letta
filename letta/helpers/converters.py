@@ -20,7 +20,15 @@ from letta.schemas.letta_message_content import (
 )
 from letta.schemas.llm_config import LLMConfig
 from letta.schemas.message import ToolReturn
-from letta.schemas.tool_rule import ChildToolRule, ConditionalToolRule, ContinueToolRule, InitToolRule, TerminalToolRule, ToolRule
+from letta.schemas.tool_rule import (
+    ChildToolRule,
+    ConditionalToolRule,
+    ContinueToolRule,
+    InitToolRule,
+    MaxCountPerStepToolRule,
+    TerminalToolRule,
+    ToolRule,
+)
 
 # --------------------------
 # LLMConfig Serialization
@@ -85,23 +93,27 @@ def deserialize_tool_rules(data: Optional[List[Dict]]) -> List[Union[ChildToolRu
     return [deserialize_tool_rule(rule_data) for rule_data in data]
 
 
-def deserialize_tool_rule(data: Dict) -> Union[ChildToolRule, InitToolRule, TerminalToolRule, ConditionalToolRule, ContinueToolRule]:
+def deserialize_tool_rule(
+    data: Dict,
+) -> Union[ChildToolRule, InitToolRule, TerminalToolRule, ConditionalToolRule, ContinueToolRule, MaxCountPerStepToolRule]:
     """Deserialize a dictionary to the appropriate ToolRule subclass based on 'type'."""
     rule_type = ToolRuleType(data.get("type"))
 
-    if rule_type == ToolRuleType.run_first or rule_type == ToolRuleType.InitToolRule:
+    if rule_type == ToolRuleType.run_first:
         data["type"] = ToolRuleType.run_first
         return InitToolRule(**data)
-    elif rule_type == ToolRuleType.exit_loop or rule_type == ToolRuleType.TerminalToolRule:
+    elif rule_type == ToolRuleType.exit_loop:
         data["type"] = ToolRuleType.exit_loop
         return TerminalToolRule(**data)
-    elif rule_type == ToolRuleType.constrain_child_tools or rule_type == ToolRuleType.ToolRule:
+    elif rule_type == ToolRuleType.constrain_child_tools:
         data["type"] = ToolRuleType.constrain_child_tools
         return ChildToolRule(**data)
     elif rule_type == ToolRuleType.conditional:
         return ConditionalToolRule(**data)
     elif rule_type == ToolRuleType.continue_loop:
         return ContinueToolRule(**data)
+    elif rule_type == ToolRuleType.max_count_per_step:
+        return MaxCountPerStepToolRule(**data)
     raise ValueError(f"Unknown ToolRule type: {rule_type}")
 
 
