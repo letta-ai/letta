@@ -55,14 +55,19 @@ exporters:
       max_interval: 30s
       max_elapsed_time: 300s
 
+extensions:
+  health_check:
+  pprof:
+  zpages:
+
 service:
   telemetry:
     logs:
-      level: error
+      level: debug
+      development: true
     metrics:
-      level: debug
-    traces:
-      level: debug
+      address: 0.0.0.0:8888
+  extensions: [health_check, pprof, zpages]
   pipelines:
     traces:
       receivers: [otlp]
@@ -70,5 +75,9 @@ service:
       exporters: [clickhouse]
     logs:
       receivers: [filelog]
+      processors: [batch]
+      exporters: [clickhouse]
+    metrics:
+      receivers: [otlp]
       processors: [batch]
       exporters: [clickhouse]
