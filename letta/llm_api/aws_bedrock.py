@@ -5,6 +5,9 @@ from anthropic import AnthropicBedrock
 
 from letta.settings import model_settings
 
+from letta.log import get_logger
+
+logger = get_logger(__name__)
 
 def has_valid_aws_credentials() -> bool:
     """
@@ -56,7 +59,7 @@ def bedrock_get_model_list(region_name: str) -> List[dict]:
         response = bedrock.list_inference_profiles()
         return response["inferenceProfileSummaries"]
     except Exception as e:
-        print(f"Error getting model list: {str(e)}")
+        logger.exception(f"Error getting model list: {str(e)}", e)
         raise e
 
 
@@ -72,7 +75,7 @@ def bedrock_get_model_details(region_name: str, model_id: str) -> Dict[str, Any]
         response = bedrock.get_foundation_model(modelIdentifier=model_id)
         return response["modelDetails"]
     except ClientError as e:
-        print(f"Error getting model details: {str(e)}")
+        logger.exception(f"Error getting model details: {str(e)}", e)
         raise e
 
 
