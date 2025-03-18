@@ -45,7 +45,7 @@ COPY ./libs/config-core-deploy/scripts /scripts
 COPY ../apps/core/scripts /letta-scripts
 COPY ../apps/core/otel-collector-config-clickhouse-prod.yaml /etc/otel/config-clickhouse.yaml
 
-EXPOSE 8283
+EXPOSE 8283 4317 4318
 
 RUN ["chmod", "+x", "./scripts/startup.sh"]
 CMD ./scripts/startup.sh
