@@ -192,6 +192,7 @@ export const userProductOnboarding = pgTable('user_product_onboarding_step', {
     .notNull()
     .references(() => users.id, { onDelete: 'cascade' })
     .primaryKey(),
+  pausedAt: timestamp('paused_at'),
   completedSteps: json('completed_steps').$type<OnboardingStepsType[]>(),
   currentStep: text('current_step').$type<OnboardingStepsType>(),
 });

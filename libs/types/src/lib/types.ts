@@ -62,17 +62,21 @@ export type MemoryVariableVersionOneType = z.infer<
 >;
 
 export const onboardingSteps = z.enum([
+  'about_credits',
   'create_template',
-  'message_template',
-  'edit_template',
+  'explore_ade',
   'save_version',
   'deploy_agent',
-  'skipped',
   'completed',
 ]);
 
 export type OnboardingStepsType = z.infer<typeof onboardingSteps>;
 
-export const stepToRewardMap: Partial<Record<OnboardingStepsType, number>> = {
-  create_template: 400,
+export const stepToRewardMap: Record<OnboardingStepsType, number> = {
+  about_credits: 500,
+  create_template: 500,
+  explore_ade: 1500,
+  save_version: 2500,
+  deploy_agent: 5000,
+  completed: 0,
 };

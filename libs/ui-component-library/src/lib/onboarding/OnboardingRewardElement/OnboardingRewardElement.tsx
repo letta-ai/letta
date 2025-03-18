@@ -31,7 +31,7 @@ export function OnboardingRewardElement(props: OnboardingRewardElementProps) {
   }
 
   return (
-    <Tooltip content={t('claimed')}>
+    <Tooltip asChild content={t('claimed')}>
       <CrossedOut>{child}</CrossedOut>
     </Tooltip>
   );

@@ -9,6 +9,7 @@ export const OnboardingStepSchema = z.object({
   claimedSteps: onboardingSteps.array(),
   completedSteps: onboardingSteps.array(),
   currentStep: onboardingSteps.nullable(),
+  pausedAt: z.string().nullable(),
 });
 
 export type OnboardingStepSchemaType = z.infer<typeof OnboardingStepSchema>;
@@ -170,13 +171,35 @@ const loginWithPasswordContract = c.mutation({
   },
 });
 
-export const updateUserOnboardingStepContract = c.mutation({
+const updateUserOnboardingStepContract = c.mutation({
   method: 'PUT',
-  path: '/user/self/onboarding-step',
+  path: '/user/self/onboarding/claim',
   body: z.object({
     onboardingStep: onboardingSteps,
     stepToClaim: onboardingSteps.optional(),
   }),
+  responses: {
+    200: z.object({
+      success: z.boolean(),
+    }),
+  },
+});
+
+const PauseOnboardingContract = c.mutation({
+  method: 'POST',
+  path: '/user/self/onboarding/pause',
+  body: z.undefined(),
+  responses: {
+    200: z.object({
+      success: z.boolean(),
+    }),
+  },
+});
+
+const UnpauseOnboardingContract = c.mutation({
+  method: 'POST',
+  path: '/user/self/onboarding/unpause',
+  body: z.undefined(),
   responses: {
     200: z.object({
       success: z.boolean(),
@@ -194,6 +217,8 @@ export const userContract = c.router({
   createAccountWithPassword: createAccountWithPasswordContract,
   loginWithPassword: loginWithPasswordContract,
   updateUserOnboardingStep: updateUserOnboardingStepContract,
+  pauseUserOnboarding: PauseOnboardingContract,
+  unpauseUserOnboarding: UnpauseOnboardingContract,
 });
 
 export const userQueryClientKeys = {

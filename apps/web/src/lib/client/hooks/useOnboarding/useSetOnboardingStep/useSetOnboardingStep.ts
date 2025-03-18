@@ -31,6 +31,7 @@ export function useSetOnboardingStep() {
           body: {
             ...oldData.body,
             onboardingStatus: {
+              pausedAt: null,
               completedSteps: [
                 ...(oldData.body.onboardingStatus?.completedSteps ?? []),
                 onboardingStep,
@@ -47,10 +48,6 @@ export function useSetOnboardingStep() {
 
   const setOnboardingStep = useCallback(
     (onboardingStep: OnboardingStepsType, onSuccess?: VoidFunction) => {
-      if (onboardingStep === 'skipped') {
-        handleUpdateStatus(onboardingStep);
-      }
-
       mutate(
         {
           body: {
@@ -59,10 +56,7 @@ export function useSetOnboardingStep() {
         },
         {
           onSuccess: () => {
-            if (onboardingStep !== 'skipped') {
-              handleUpdateStatus(onboardingStep);
-            }
-
+            handleUpdateStatus(onboardingStep);
             if (onSuccess) {
               onSuccess();
             }

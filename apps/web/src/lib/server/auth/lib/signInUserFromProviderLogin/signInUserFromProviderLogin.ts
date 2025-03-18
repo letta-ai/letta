@@ -9,6 +9,7 @@ import {
   organizationUsers,
   organizationVerifiedDomains,
   projects,
+  userProductOnboarding,
   users,
 } from '@letta-cloud/service-database';
 import { eq } from 'drizzle-orm';
@@ -237,6 +238,9 @@ async function createUserAndOrganization(
       userId: createdUser.userId,
       role: role,
       organizationId,
+    }),
+    db.insert(userProductOnboarding).values({
+      userId: createdUser.userId,
     }),
   ]);
 

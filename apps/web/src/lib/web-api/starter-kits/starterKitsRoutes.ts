@@ -225,7 +225,7 @@ async function createTemplateFromStarterKit(
     if (onboardingStatus?.currentStep === 'create_template') {
       await goToNextOnboardingStep({
         userId,
-        nextStep: 'edit_template',
+        nextStep: 'explore_ade',
         stepToClaim: 'create_template',
       });
     }

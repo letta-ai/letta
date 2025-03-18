@@ -3,8 +3,13 @@ import './CrossedOut.scss';
 
 interface CrossedOutProps {
   children: React.ReactNode;
+  ref?: React.RefObject<HTMLModElement>;
 }
 
-export function CrossedOut(props: CrossedOutProps) {
-  return <del className="crossed-out">{props.children}</del>;
+export function CrossedOut({ children, ...rest }: CrossedOutProps) {
+  return (
+    <del className="crossed-out" {...rest}>
+      {children}
+    </del>
+  );
 }

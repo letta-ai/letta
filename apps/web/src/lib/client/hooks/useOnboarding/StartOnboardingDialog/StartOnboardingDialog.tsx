@@ -14,24 +14,19 @@ import { useTranslations } from '@letta-cloud/translations';
 import { useCurrentUser } from '$web/client/hooks';
 import { useCallback } from 'react';
 import { useSetOnboardingStep } from '$web/client/hooks/useOnboarding/useSetOnboardingStep/useSetOnboardingStep';
-import { useRouter } from 'next/navigation';
+import { stepToRewardMap } from '@letta-cloud/types';
+import { usePauseOnboarding } from '$web/client/components/usePauseOnboarding/usePauseOnboarding';
 
 export function StartOnboardingDialog() {
   const t = useTranslations('onboarding/StartOnboardingDialog');
 
-  const { push } = useRouter();
-
   const { setOnboardingStep, isPending, isSuccess } = useSetOnboardingStep();
 
   const handleStart = useCallback(() => {
-    setOnboardingStep('create_template', () => {
-      push('/projects/default-project');
-    });
-  }, [setOnboardingStep, push]);
-
-  const handleDismiss = useCallback(() => {
-    setOnboardingStep('skipped');
+    setOnboardingStep('about_credits');
   }, [setOnboardingStep]);
+
+  const { pauseOnboarding } = usePauseOnboarding();
 
   const user = useCurrentUser();
 
@@ -46,7 +41,7 @@ export function StartOnboardingDialog() {
       isOpen
       secondaryAction={
         <Button
-          onClick={handleDismiss}
+          onClick={pauseOnboarding}
           color="tertiary"
           size="large"
           label={t('skip')}
@@ -69,7 +64,15 @@ export function StartOnboardingDialog() {
                 variant="success"
                 content={
                   <>
-                    {t.rich('reward', { lettacoin: () => <LettaCoinIcon /> })}
+                    {t.rich('reward', {
+                      lettacoin: () => <LettaCoinIcon />,
+                      credits:
+                        stepToRewardMap.create_template +
+                        stepToRewardMap.explore_ade +
+                        stepToRewardMap.save_version +
+                        stepToRewardMap.deploy_agent +
+                        stepToRewardMap.about_credits,
+                    })}
                   </>
                 }
               />
@@ -81,39 +84,39 @@ export function StartOnboardingDialog() {
         ></OnboardingPrimaryHeading>
         <VStack paddingTop gap="medium">
           <HStack>
+            <OnboardingCheckbox label={t('steps.creditsAndCloud')} />
+            <OnboardingRewardElement
+              isClaimed={user.onboardingStatus?.claimedSteps.includes(
+                'about_credits',
+              )}
+              reward={stepToRewardMap.about_credits}
+            />
+          </HStack>
+          <HStack>
             <OnboardingCheckbox label={t('steps.createATemplate')} />
             <OnboardingRewardElement
               isClaimed={user.onboardingStatus?.claimedSteps.includes(
                 'create_template',
               )}
-              reward={250}
+              reward={stepToRewardMap.create_template}
             />
           </HStack>
           <HStack>
-            <OnboardingCheckbox label={t('steps.messageASimulatedAgent')} />
+            <OnboardingCheckbox label={t('steps.exploreTheADE')} />
             <OnboardingRewardElement
               isClaimed={user.onboardingStatus?.claimedSteps.includes(
-                'message_template',
+                'explore_ade',
               )}
-              reward={250}
+              reward={stepToRewardMap.explore_ade}
             />
           </HStack>
           <HStack>
-            <OnboardingCheckbox label={t('steps.editATemplate')} />
-            <OnboardingRewardElement
-              isClaimed={user.onboardingStatus?.claimedSteps.includes(
-                'edit_template',
-              )}
-              reward={500}
-            />
-          </HStack>
-          <HStack>
-            <OnboardingCheckbox label={t('steps.versionATemplate')} />
+            <OnboardingCheckbox label={t('steps.saveATemplate')} />
             <OnboardingRewardElement
               isClaimed={user.onboardingStatus?.claimedSteps.includes(
                 'save_version',
               )}
-              reward={500}
+              reward={stepToRewardMap.save_version}
             />
           </HStack>
           <HStack>
@@ -122,7 +125,7 @@ export function StartOnboardingDialog() {
               isClaimed={user.onboardingStatus?.claimedSteps.includes(
                 'deploy_agent',
               )}
-              reward={1000}
+              reward={stepToRewardMap.deploy_agent}
             />
           </HStack>
         </VStack>

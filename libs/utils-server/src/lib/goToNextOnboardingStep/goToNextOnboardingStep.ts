@@ -84,17 +84,10 @@ export async function goToNextOnboardingStep(
   ).filter((step) => !!step);
 
   await db
-    .insert(userProductOnboarding)
-    .values({
-      userId: userFromDb.id,
+    .update(userProductOnboarding)
+    .set({
       currentStep: nextStep,
       completedSteps: nextCompletedSteps,
     })
-    .onConflictDoUpdate({
-      target: userProductOnboarding.userId,
-      set: {
-        currentStep: nextStep,
-        completedSteps: nextCompletedSteps,
-      },
-    });
+    .where(eq(userProductOnboarding.userId, userId));
 }

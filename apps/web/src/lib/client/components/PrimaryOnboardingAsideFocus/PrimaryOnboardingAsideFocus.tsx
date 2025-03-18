@@ -1,11 +1,10 @@
 import { type OnboardingStepsType, stepToRewardMap } from '@letta-cloud/types';
 import { useTranslations } from '@letta-cloud/translations';
 import { OnboardingAsideFocus } from '@letta-cloud/ui-component-library';
-import React, { useMemo } from 'react';
+import React from 'react';
 import { get } from 'lodash-es';
-import { useCurrentUser } from '$web/client/hooks';
-import { useSetOnboardingStep } from '$web/client/hooks/useOnboarding/useSetOnboardingStep/useSetOnboardingStep';
-import { useFeatureFlag } from '@letta-cloud/sdk-web';
+import { usePauseOnboarding } from '$web/client/components/usePauseOnboarding/usePauseOnboarding';
+import { useShowOnboarding } from '$web/client/hooks/useShowOnboarding/useShowOnboarding';
 
 interface PrimaryOnboardingAsideFocusProps {
   step: OnboardingStepsType;
@@ -40,15 +39,10 @@ export function PrimaryOnboardingAsideFocus(
   const { step, children } = props;
   const details = useStepDetails(step);
 
-  const user = useCurrentUser();
-  const { setOnboardingStep } = useSetOnboardingStep();
-  const flags = useFeatureFlag('ONBOARDING');
+  const { pauseOnboarding } = usePauseOnboarding();
+  const showOnboarding = useShowOnboarding(step);
 
-  const isInTutorial = useMemo(() => {
-    return user?.onboardingStatus?.currentStep === step;
-  }, [user, step]);
-
-  if (flags.isLoading || !flags.data) {
+  if (!showOnboarding) {
     return children;
   }
 
@@ -66,10 +60,8 @@ export function PrimaryOnboardingAsideFocus(
       currentStep={1}
       difficulty="easy"
       description={details.description}
-      onDismiss={() => {
-        setOnboardingStep('skipped');
-      }}
-      isOpen={isInTutorial}
+      onDismiss={pauseOnboarding}
+      isOpen={showOnboarding}
     >
       {children}
     </OnboardingAsideFocus>

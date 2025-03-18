@@ -63,6 +63,7 @@ export async function getUser(): Promise<GetUserDataResponse | null> {
         columns: {
           completedSteps: true,
           currentStep: true,
+          pausedAt: true,
         },
       },
       activeOrganization: {
@@ -115,6 +116,9 @@ export async function getUser(): Promise<GetUserDataResponse | null> {
     imageUrl: userFromDb.imageUrl,
     permissions: new Set(permissions),
     onboardingStatus: {
+      pausedAt: userFromDb.userProductOnboarding?.pausedAt
+        ? userFromDb.userProductOnboarding.pausedAt.toISOString()
+        : null,
       claimedSteps:
         userFromDb.activeOrganization?.organizationClaimedOnboardingRewards?.map(
           (reward) => reward.rewardKey,

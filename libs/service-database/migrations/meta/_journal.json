@@ -484,6 +484,13 @@
       "when": 1741734904863,
       "tag": "0068_bouncy_anthem",
       "breakpoints": true
+    },
+    {
+      "idx": 69,
+      "version": "7",
+      "when": 1742253948519,
+      "tag": "0069_gray_red_ghost",
+      "breakpoints": true
     }
   ]
 }

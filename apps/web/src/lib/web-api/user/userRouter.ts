@@ -19,6 +19,7 @@ import {
   organizationUsers,
   userMarketingDetails,
   userPassword,
+  userProductOnboarding,
   users,
 } from '@letta-cloud/service-database';
 import { and, eq, inArray, isNull } from 'drizzle-orm';
@@ -520,6 +521,68 @@ async function updateUserOnboardingStep(
   };
 }
 
+type PauseUserOnboardingResponse = ServerInferResponses<
+  typeof contracts.user.pauseUserOnboarding
+>;
+
+async function pauseUserOnboarding(): Promise<PauseUserOnboardingResponse> {
+  const user = await getUser();
+
+  if (!user) {
+    return {
+      status: 401,
+      body: {
+        message: 'User not found',
+      },
+    };
+  }
+
+  await db
+    .update(userProductOnboarding)
+    .set({
+      pausedAt: new Date(),
+    })
+    .where(eq(userProductOnboarding.userId, user.id));
+
+  return {
+    status: 200,
+    body: {
+      success: true,
+    },
+  };
+}
+
+type UnpauseUserOnboardingResponse = ServerInferResponses<
+  typeof contracts.user.unpauseUserOnboarding
+>;
+
+async function unpauseUserOnboarding(): Promise<UnpauseUserOnboardingResponse> {
+  const user = await getUser();
+
+  if (!user) {
+    return {
+      status: 401,
+      body: {
+        message: 'User not found',
+      },
+    };
+  }
+
+  await db
+    .update(userProductOnboarding)
+    .set({
+      pausedAt: null,
+    })
+    .where(eq(userProductOnboarding.userId, user.id));
+
+  return {
+    status: 200,
+    body: {
+      success: true,
+    },
+  };
+}
+
 export const userRouter = {
   getCurrentUser,
   updateCurrentUser,
@@ -530,4 +593,6 @@ export const userRouter = {
   createAccountWithPassword,
   loginWithPassword,
   updateUserOnboardingStep,
+  pauseUserOnboarding,
+  unpauseUserOnboarding,
 };

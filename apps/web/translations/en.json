@@ -3,18 +3,21 @@
     "emptyMessage": "This is not the page you're looking for",
     "emptyAction": "Go home"
   },
+  "components/PauseOnboardingSlot": {
+    "error": "There was an error pausing the onboarding, please try again or contact support."
+  },
   "onboarding/StartOnboardingDialog": {
-    "skip": "Skip for now",
-    "start": "Start onboarding",
+    "skip": "Skip onboarding",
+    "start": "Learn about credits",
     "title": "Learn about Letta",
-    "description": "Welcome to Letta! Take our onboarding to learn about Letta and how to get your agents to deployment. Earn credits for completing the onboarding, credits are used to pay for agent usage.",
-    "reward": "Reward <lettacoin></lettacoin> 2500 credits",
+    "description": "Welcome to Letta! Take our onboarding to learn about Letta and how to get your agents to deployment. Earn credits for completing the onboarding, you can learn about credits in the next step!",
+    "reward": "Reward <lettacoin></lettacoin> {credits} credits",
     "time": "15 minutes",
     "steps": {
+      "creditsAndCloud": "Learn about credits",
       "createATemplate": "Create a template",
-      "messageASimulatedAgent": "Simulate a deployed agent",
-      "editATemplate": "Edit a template",
-      "versionATemplate": "Version a template",
+      "exploreTheADE": "Explore the ADE",
+      "saveATemplate": "Save a template",
       "deployAnAgent": "Deploy an agent to production"
     }
   },
