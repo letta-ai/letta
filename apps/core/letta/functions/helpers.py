@@ -533,57 +533,17 @@ def fire_and_forget_send_to_agent(
 
 
 async def _send_message_to_agents_matching_tags_async(
-    sender_agent: "Agent", message: str, match_all: List[str], match_some: List[str]
+    sender_agent: "Agent", server: "SyncServer", messages: List[MessageCreate], matching_agents: List["AgentState"]
 ) -> List[str]:
-    log_telemetry(
-        sender_agent.logger,
-        "_send_message_to_agents_matching_tags_async start",
-        message=message,
-        match_all=match_all,
-        match_some=match_some,
-    )
-    server = get_letta_server()
-
-    augmented_message = (
-        f"[Incoming message from agent with ID '{sender_agent.agent_state.id}' - to reply to this message, "
-        f"make sure to use the 'send_message' at the end, and the system will notify the sender of your response] "
-        f"{message}"
-    )
-
-    # Retrieve up to 100 matching agents
-    log_telemetry(
-        sender_agent.logger,
-        "_send_message_to_agents_matching_tags_async listing agents start",
-        message=message,
-        match_all=match_all,
-        match_some=match_some,
-    )
-    matching_agents = server.agent_manager.list_agents_matching_tags(actor=sender_agent.user, match_all=match_all, match_some=match_some)
-
-    log_telemetry(
-        sender_agent.logger,
-        "_send_message_to_agents_matching_tags_async  listing agents finish",
-        message=message,
-        match_all=match_all,
-        match_some=match_some,
-    )
-
-    # Create a system message
-    messages = [MessageCreate(role=MessageRole.system, content=augmented_message, name=sender_agent.agent_state.name)]
-
-    # Possibly limit concurrency to avoid meltdown:
-    sem = asyncio.Semaphore(settings.multi_agent_concurrent_sends)
-
     async def _send_single(agent_state):
-        async with sem:
-            return await async_send_message_with_retries(
-                server=server,
-                sender_agent=sender_agent,
-                target_agent_id=agent_state.id,
-                messages=messages,
-                max_retries=3,
-                timeout=settings.multi_agent_send_message_timeout,
-            )
+        return await async_send_message_with_retries(
+            server=server,
+            sender_agent=sender_agent,
+            target_agent_id=agent_state.id,
+            messages=messages,
+            max_retries=3,
+            timeout=settings.multi_agent_send_message_timeout,
+        )
 
     tasks = [asyncio.create_task(_send_single(agent_state)) for agent_state in matching_agents]
     results = await asyncio.gather(*tasks, return_exceptions=True)
@@ -594,13 +554,6 @@ async def _send_message_to_agents_matching_tags_async(
         else:
             final.append(r)
 
-    log_telemetry(
-        sender_agent.logger,
-        "_send_message_to_agents_matching_tags_async finish",
-        message=message,
-        match_all=match_all,
-        match_some=match_some,
-    )
     return final
 
 
