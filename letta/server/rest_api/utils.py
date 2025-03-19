@@ -257,7 +257,7 @@ def create_assistant_messages_from_openai_response(
     )
 
 
-def convert_letta_messages_to_openai(messages: List[Message]) -> List[dict]:
+def convert_in_context_letta_messages_to_openai(in_context_messages: List[Message], exclude_system_messages: bool = False) -> List[dict]:
     """
     Flattens Letta's messages (with system, user, assistant, tool roles, etc.)
     into standard OpenAI chat messages (system, user, assistant).
@@ -268,10 +268,15 @@ def convert_letta_messages_to_openai(messages: List[Message]) -> List[dict]:
       3. User messages might store actual text inside JSON => parse that into content
       4. System => pass through as normal
     """
+    # Always include the system prompt
+    # TODO: This is brittle
+    openai_messages = [in_context_messages[0].to_openai_dict()]
 
-    openai_messages = []
+    for msg in in_context_messages[1:]:
+        if msg.role == MessageRole.system and exclude_system_messages:
+            # Skip if exclude_system_messages is set to True
+            continue
 
-    for msg in messages:
         # 1. Assistant + 'send_message' tool_calls => flatten
         if msg.role == MessageRole.assistant and msg.tool_calls:
             # Find any 'send_message' tool_calls
@@ -329,8 +334,6 @@ def convert_letta_messages_to_openai(messages: List[Message]) -> List[dict]:
                 except json.JSONDecodeError:
                     pass  # It's not JSON, leave as-is
 
-        # 4. System is left as-is (or any other role that doesn't need special handling)
-        #
         # Finally, convert to dict using your existing method
         openai_messages.append(msg.to_openai_dict())
 

@@ -31,7 +31,7 @@ from letta.schemas.openai.chat_completion_request import (
 )
 from letta.schemas.user import User
 from letta.server.rest_api.utils import (
-    convert_letta_messages_to_openai,
+    convert_in_context_letta_messages_to_openai,
     create_assistant_messages_from_openai_response,
     create_tool_call_messages_from_openai_response,
     create_user_message,
@@ -98,7 +98,7 @@ class VoiceAgent(BaseAgent):
         while True:
             # Rebuild memory each loop
             in_context_messages = self._rebuild_memory(in_context_messages, agent_state)
-            openai_messages = convert_letta_messages_to_openai(in_context_messages)
+            openai_messages = convert_in_context_letta_messages_to_openai(in_context_messages, exclude_system_messages=True)
             openai_messages.extend(in_memory_message_history)
 
             request = self._build_openai_request(openai_messages, agent_state)
