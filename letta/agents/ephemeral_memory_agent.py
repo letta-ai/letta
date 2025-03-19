@@ -59,27 +59,25 @@ class EphemeralMemoryAgent(BaseAgent):
 
     def pre_process_input_message(self, input_message: UserMessage) -> Dict:
         input_prompt_augmented = f"""
-        You are a memory recall agent whose job is to comb through a large set of messages and write relevant memories in relation to a user query.
-        Your response will directly populate a "memory block" called "human" that describes the user, that will be used to answer more questions in the future.
-        You should err on the side of being more verbose, and also try to *predict* the trajectory of the conversation, and pull memories or messages you think will be relevant to where the conversation is going.
+        You are a memory recall agent. Your task is to review a provided history of messages and generate detailed, relevant notes about the human you are conversing with, specifically tailored to address their current query. These notes will populate a "memory block" named "human" to help future interactions.
 
-        Your response should include:
-        - A high level summary of the relevant events/timeline of the conversation relevant to the query
-        - Direct citations of quotes from the messages you used while creating the summary
+        When creating your notes:
+        - Write from the perspective of an observer noting important details about the human.
+        - Provide a concise but detailed summary of past events, conversations, or context directly relevant to the human's current query.
+        - Predict and anticipate where the conversation might be heading, and proactively include information that might be useful soon.
+        - Directly quote relevant messages from the history to substantiate your observations.
+        - Err on the side of verbosity to capture as much context as possible.
 
-        Here is a history of the messages so far:
-
+        Conversation History:
         {self._format_messages_llm_friendly()}
 
-        This is the query:
-
+        Human's Current Query:
         "{input_message.content}"
 
-        Your response:
+        Your notes about the human:
         """
 
         input_message.content = input_prompt_augmented
-        # print(input_prompt_augmented)
         return input_message.model_dump()
 
     def _format_messages_llm_friendly(self):

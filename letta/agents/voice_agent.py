@@ -41,7 +41,6 @@ from letta.services.block_manager import BlockManager
 from letta.services.helpers.agent_manager_helper import compile_system_message
 from letta.services.message_manager import MessageManager
 from letta.services.passage_manager import PassageManager
-from letta.services.summarizer.enums import SummarizationMode
 from letta.utils import united_diff
 
 logger = get_logger(__name__)
@@ -63,31 +62,20 @@ class VoiceAgent(BaseAgent):
         message_manager: MessageManager,
         agent_manager: AgentManager,
         block_manager: BlockManager,
+        passage_manager: PassageManager,
         actor: User,
         message_buffer_limit: int,
-        message_buffer_min: int,
-        summarization_mode: SummarizationMode = SummarizationMode.STATIC_MESSAGE_BUFFER,
     ):
         super().__init__(
             agent_id=agent_id, openai_client=openai_client, message_manager=message_manager, agent_manager=agent_manager, actor=actor
         )
 
-        # TODO: Make this more general, factorable
         # Summarizer settings
         self.block_manager = block_manager
-        self.passage_manager = PassageManager()  # TODO: pass this in
+        self.passage_manager = passage_manager
         # TODO: This is not guaranteed to exist!
         self.summary_block_label = "human"
-        # self.summarizer = Summarizer(
-        #     mode=summarization_mode,
-        #     summarizer_agent=EphemeralAgent(
-        #         agent_id=agent_id, openai_client=openai_client, message_manager=message_manager, agent_manager=agent_manager, actor=actor
-        #     ),
-        #     message_buffer_limit=message_buffer_limit,
-        #     message_buffer_min=message_buffer_min,
-        # )
         self.message_buffer_limit = message_buffer_limit
-        # self.message_buffer_min = message_buffer_min
         self.offline_memory_agent = EphemeralMemoryAgent(
             agent_id=agent_id, openai_client=openai_client, message_manager=message_manager, agent_manager=agent_manager, actor=actor
         )

@@ -3,6 +3,7 @@ import threading
 import time
 import uuid
 
+import httpx
 import pytest
 from dotenv import load_dotenv
 from openai import AsyncOpenAI
@@ -156,7 +157,7 @@ def _assert_valid_chunk(chunk, idx, chunks):
 
 
 @pytest.mark.asyncio
-@pytest.mark.parametrize("message", ["Hi how are you today?"])
+@pytest.mark.parametrize("message", ["What's the weather like in SF?"])
 @pytest.mark.parametrize("endpoint", ["v1/voice-beta"])
 async def test_latency(mock_e2b_api_key_none, client, agent, message, endpoint):
     """Tests chat completion streaming using the Async OpenAI client."""
@@ -167,6 +168,22 @@ async def test_latency(mock_e2b_api_key_none, client, agent, message, endpoint):
     async with stream:
         async for chunk in stream:
             print(chunk)
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("message", ["What's the weather like in SF?"])
+@pytest.mark.parametrize("endpoint", ["v1/voice-beta"])
+async def test_latency_sse(mock_e2b_api_key_none, client, agent, message, endpoint):
+    """Tests chat completion streaming by directly sending an SSE request using httpx."""
+    request = _get_chat_request(message)
+    url = f"{client.base_url}/{endpoint}/{agent.id}/chat/completions"
+
+    async with httpx.AsyncClient(timeout=30.0) as async_client:
+        async with async_client.stream("POST", url, json=request.model_dump(exclude_none=True)) as response:
+            assert response.status_code == 200
+            async for line in response.aiter_lines():
+                continue
+                # print(line)
 
 
 @pytest.mark.asyncio
