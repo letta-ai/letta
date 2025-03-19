@@ -68,8 +68,8 @@ async def create_voice_chat_completions(
         agent_manager=server.agent_manager,
         block_manager=server.block_manager,
         actor=actor,
-        message_buffer_limit=100,
-        message_buffer_min=4,
+        message_buffer_limit=50,
+        message_buffer_min=10,
     )
 
     # Return the streaming generator

@@ -5,11 +5,15 @@ from typing import Any, AsyncGenerator, Dict, List, Tuple
 import openai
 
 from letta.agents.base_agent import BaseAgent
-from letta.agents.ephemeral_agent import EphemeralAgent
 from letta.agents.ephemeral_memory_agent import EphemeralMemoryAgent
 from letta.constants import NON_USER_MSG_PREFIX
 from letta.helpers.datetime_helpers import get_utc_time
-from letta.helpers.tool_execution_helper import add_pre_execution_message, execute_external_tool, remove_request_heartbeat
+from letta.helpers.tool_execution_helper import (
+    add_pre_execution_message,
+    enable_strict_mode,
+    execute_external_tool,
+    remove_request_heartbeat,
+)
 from letta.interfaces.openai_chat_completions_streaming_interface import OpenAIChatCompletionsStreamingInterface
 from letta.log import get_logger
 from letta.orm.enums import ToolType
@@ -38,7 +42,6 @@ from letta.services.helpers.agent_manager_helper import compile_system_message
 from letta.services.message_manager import MessageManager
 from letta.services.passage_manager import PassageManager
 from letta.services.summarizer.enums import SummarizationMode
-from letta.services.summarizer.summarizer import Summarizer
 from letta.utils import united_diff
 
 logger = get_logger(__name__)
@@ -75,16 +78,16 @@ class VoiceAgent(BaseAgent):
         self.passage_manager = PassageManager()  # TODO: pass this in
         # TODO: This is not guaranteed to exist!
         self.summary_block_label = "human"
-        self.summarizer = Summarizer(
-            mode=summarization_mode,
-            summarizer_agent=EphemeralAgent(
-                agent_id=agent_id, openai_client=openai_client, message_manager=message_manager, agent_manager=agent_manager, actor=actor
-            ),
-            message_buffer_limit=message_buffer_limit,
-            message_buffer_min=message_buffer_min,
-        )
+        # self.summarizer = Summarizer(
+        #     mode=summarization_mode,
+        #     summarizer_agent=EphemeralAgent(
+        #         agent_id=agent_id, openai_client=openai_client, message_manager=message_manager, agent_manager=agent_manager, actor=actor
+        #     ),
+        #     message_buffer_limit=message_buffer_limit,
+        #     message_buffer_min=message_buffer_min,
+        # )
         self.message_buffer_limit = message_buffer_limit
-        self.message_buffer_min = message_buffer_min
+        # self.message_buffer_min = message_buffer_min
         self.offline_memory_agent = EphemeralMemoryAgent(
             agent_id=agent_id, openai_client=openai_client, message_manager=message_manager, agent_manager=agent_manager, actor=actor
         )
@@ -105,8 +108,6 @@ class VoiceAgent(BaseAgent):
 
         # TODO: Define max steps here
         while True:
-            step_first = True
-
             # Rebuild memory each loop
             in_context_messages = self._rebuild_memory(in_context_messages, agent_state)
             openai_messages = convert_letta_messages_to_openai(in_context_messages)
@@ -119,8 +120,6 @@ class VoiceAgent(BaseAgent):
 
             # 1) Yield partial tokens from OpenAI
             async for sse_chunk in streaming_interface.process(stream):
-                if step_first:
-                    step_first = False
                 yield sse_chunk
 
             # 2) Now handle the final AI response. This might yield more text (stalling, etc.)
@@ -241,6 +240,14 @@ class VoiceAgent(BaseAgent):
         )
 
     def _rebuild_memory(self, in_context_messages: List[Message], agent_state: AgentState) -> List[Message]:
+        # Refresh memory
+        # TODO: This only happens for the summary block
+        # TODO: We want to extend this refresh to be general, and stick it in agent_manager
+        for i, b in enumerate(agent_state.memory.blocks):
+            if b.label == self.summary_block_label:
+                agent_state.memory.blocks[i] = self.block_manager.get_block_by_id(block_id=b.id, actor=self.actor)
+                break
+
         # TODO: This is a pretty brittle pattern established all over our code, need to get rid of this
         curr_system_message = in_context_messages[0]
         curr_memory_str = agent_state.memory.compile()
@@ -309,28 +316,31 @@ class VoiceAgent(BaseAgent):
         )
         recall_memory_json = Tool(
             type="function",
-            function=add_pre_execution_message(
-                {
-                    "name": "recall_memory",
-                    "description": "Retrieve relevant information from memory based on a given query. Use when you don't remember the answer to a question.",
-                    "parameters": {
-                        "type": "object",
-                        "properties": {
-                            "query": {
-                                "type": "string",
-                                "description": "A description of what the model is trying to recall from memory.",
-                            }
+            function=enable_strict_mode(
+                add_pre_execution_message(
+                    {
+                        "name": "recall_memory",
+                        "description": "Retrieve relevant information from memory based on a given query. Use when you don't remember the answer to a question.",
+                        "parameters": {
+                            "type": "object",
+                            "properties": {
+                                "query": {
+                                    "type": "string",
+                                    "description": "A description of what the model is trying to recall from memory.",
+                                }
+                            },
+                            "required": ["query"],
                         },
-                        "required": ["query"],
                     },
-                },
-                description=recall_memory_utterance_description,
+                    description=recall_memory_utterance_description,
+                )
             ),
         )
 
         # TODO: Customize whether or not to have heartbeats, pre_exec_message, etc.
         return [recall_memory_json] + [
-            Tool(type="function", function=add_pre_execution_message(remove_request_heartbeat(t.json_schema))) for t in tools
+            Tool(type="function", function=enable_strict_mode(add_pre_execution_message(remove_request_heartbeat(t.json_schema))))
+            for t in tools
         ]
 
     async def _execute_tool(self, tool_name: str, tool_args: dict, agent_state: AgentState) -> Tuple[str, bool]:

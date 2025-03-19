@@ -82,6 +82,7 @@ class FunctionSchema(BaseModel):
     name: str
     description: Optional[str] = None
     parameters: Optional[Dict[str, Any]] = None  # JSON Schema for the parameters
+    strict: bool = False
 
 
 class Tool(BaseModel):
