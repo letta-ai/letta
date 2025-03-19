@@ -1,5 +1,5 @@
 servers:
-  - url: https://app.letta.com
+  - url: https://api.letta.com
     description: Letta Cloud
     x-fern-server-name: Letta Cloud
   - url: http://localhost:8283
