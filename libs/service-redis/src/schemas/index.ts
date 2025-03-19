@@ -4,7 +4,6 @@ import {
   db,
   inferenceModelsMetadata,
   lettaAPIKeys,
-  organizationCredits,
   organizations,
   stepCostSchemaTable,
 } from '@letta-cloud/service-database';

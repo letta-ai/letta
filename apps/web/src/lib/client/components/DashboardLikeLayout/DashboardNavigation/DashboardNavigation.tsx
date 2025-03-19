@@ -50,6 +50,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import * as Sentry from '@sentry/browser';
 import { ApplicationServices } from '@letta-cloud/service-rbac';
 import { CloudAccessCodeDialog } from '$web/client/components/DashboardLikeLayout/DashboardNavigation/CloudAccessCodeDialog/CloudAccessCodeDialog';
+import { CreditsViewer } from '$web/client/components/CreditsViewer/CreditsViewer';
 
 interface NavButtonProps {
   href: string;
@@ -816,6 +817,7 @@ export function DashboardHeader() {
           </HStack>
           <HStack align="center">
             <DashboardHeaderNavigation />
+            <CreditsViewer />
             <ProfilePopover />
           </HStack>
         </HStack>

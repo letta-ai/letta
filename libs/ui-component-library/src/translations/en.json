@@ -43,7 +43,7 @@
     "step": "{currentStep} of {totalSteps}"
   },
   "onboarding/OnboardingAsideFocus": {
-    "tryLater": "Try later",
+    "tryLater": "Pause",
     "difficulty": {
       "easy": "Easy",
       "medium": "Medium",

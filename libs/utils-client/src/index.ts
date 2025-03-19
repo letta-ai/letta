@@ -12,3 +12,4 @@ export * from './useNumberFormatter/useNumberFormatter';
 export * from './useSortedMemories/useSortedMemories';
 export * from './usePythonValidator/usePythonValidator';
 export * from './usePythonValidator/types';
+export * from './useShouldUserSeeOnboarding/useShouldUserSeeOnboarding';

@@ -36,7 +36,10 @@ import {
   getPaymentCharge,
 } from '@letta-cloud/service-payments';
 import { ApplicationServices } from '@letta-cloud/service-rbac';
-import { addCreditsToOrganization } from '@letta-cloud/utils-server';
+import {
+  addCreditsToOrganization,
+  getOrganizationCredits,
+} from '@letta-cloud/utils-server';
 import { creditsToDollars } from '@letta-cloud/utils-shared';
 import { sendEmail } from '@letta-cloud/service-email';
 
@@ -1255,6 +1258,33 @@ export async function getOrganizationBillingHistory(
   };
 }
 
+type GetOrganizationCreditsResponse = ServerInferResponses<
+  typeof contracts.organizations.getOrganizationCredits
+>;
+
+export async function getOrganizationCreditsRoute(): Promise<GetOrganizationCreditsResponse> {
+  const { activeOrganizationId } =
+    await getUserWithActiveOrganizationIdOrThrow();
+
+  const credits = await getOrganizationCredits(activeOrganizationId);
+
+  if (!credits) {
+    return {
+      status: 500,
+      body: {
+        message: 'Failed to get credits',
+      },
+    };
+  }
+
+  return {
+    status: 200,
+    body: {
+      credits,
+    },
+  };
+}
+
 export const organizationsRouter = {
   getCurrentOrganization,
   getCurrentOrganizationPreferences,
@@ -1271,6 +1301,7 @@ export const organizationsRouter = {
   regenerateInviteCode,
   getInviteByCode,
   startSetupIntent,
+  getOrganizationCredits: getOrganizationCreditsRoute,
   updateOrganizationUserRole,
   removeOrganizationBillingMethod,
   setDefaultOrganizationBillingMethod,

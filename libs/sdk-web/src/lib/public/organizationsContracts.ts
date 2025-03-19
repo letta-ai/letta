@@ -491,6 +491,16 @@ const getOrganizationBillingHistoryContract = c.query({
   },
 });
 
+const getOrganizationCreditsContract = c.query({
+  path: '/organizations/self/credits',
+  method: 'GET',
+  responses: {
+    200: z.object({
+      credits: z.number(),
+    }),
+  },
+});
+
 export const organizationsContract = c.router({
   getCurrentOrganization: getCurrentOrganizationContract,
   getCurrentOrganizationPreferences: getCurrentOrganizationPreferencesContract,
@@ -515,6 +525,7 @@ export const organizationsContract = c.router({
   createInviteRule: createInviteRuleContract,
   listInviteRules: listInviteRulesContract,
   deleteInviteRule: deleteInviteRuleContract,
+  getOrganizationCredits: getOrganizationCreditsContract,
   getOrganizationBillingHistory: getOrganizationBillingHistoryContract,
 });
 
@@ -527,6 +538,7 @@ export const organizationsQueryClientKeys = {
     ...organizationsQueryClientKeys.getCurrentOrganizationTeamMembers,
     params,
   ],
+  getOrganizationCredits: ['organizations', 'self', 'credits'],
   listInvitedMembers: ['organizations', 'self', 'invited-members'],
   listInvitedMembersWithSearch: (params: InvitedMembersQueryParamsType) => [
     ...organizationsQueryClientKeys.listInvitedMembers,

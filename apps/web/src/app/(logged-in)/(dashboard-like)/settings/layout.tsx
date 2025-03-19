@@ -18,17 +18,9 @@ function SettingsLayout(props: SettingsLayoutProps) {
 
   const { isLoading: isLoadingModelProviders, data: isModelProvidersEnabled } =
     useFeatureFlag('ALLOW_MODEL_PROVIDER_CONFIGURATION');
-  const { isLoading: isLoadingBilling, data: isBillingProviderEnabled } =
-    useFeatureFlag('BILLING');
+
   const showModelProviders =
     !isLoadingModelProviders && isModelProvidersEnabled;
-
-  const [canManageBilling] = useUserHasPermission(
-    ApplicationServices.MANAGE_BILLING,
-  );
-
-  const showBilling =
-    !isLoadingBilling && isBillingProviderEnabled && canManageBilling;
 
   const [canCRUDTheOrg] = useUserHasPermission(
     ApplicationServices.UPDATE_ORGANIZATION,
@@ -72,15 +64,11 @@ function SettingsLayout(props: SettingsLayoutProps) {
                     label: t('organization.members'),
                     href: '/settings/organization/members',
                   },
-                  ...(showBilling
-                    ? [
-                        {
-                          id: 'billing',
-                          label: t('organization.billing'),
-                          href: '/settings/organization/billing',
-                        },
-                      ]
-                    : []),
+                  {
+                    id: 'billing',
+                    label: t('organization.billing'),
+                    href: '/settings/organization/billing',
+                  },
                   {
                     id: 'integrations',
                     label: t('organization.integrations'),

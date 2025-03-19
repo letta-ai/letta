@@ -1,6 +1,7 @@
 'use client';
 import {
   AppsIcon,
+  Button,
   CloseIcon,
   CodeIcon,
   CogIcon,
@@ -13,6 +14,9 @@ import {
   LettaInvaderIcon,
   Logo,
   NiceGridDisplay,
+  OnboardingPrimaryDialog,
+  OnboardingPrimaryHeading,
+  OnboardingSteps,
   SettingsApplicationsIcon,
   ToolsIcon,
   Typography,
@@ -73,6 +77,9 @@ function useADETitleTranslations() {
 import { Panel, PanelGroup, PanelResizeHandle } from 'react-resizable-panels';
 import { Slot } from '@radix-ui/react-slot';
 import { createPortal } from 'react-dom';
+import { useADETour } from '../hooks/useADETour/useADETour';
+import { TOTAL_PRIMARY_ONBOARDING_STEPS } from '@letta-cloud/types';
+import { usePauseOnboarding } from '@letta-cloud/sdk-web';
 
 function DesktopLayout() {
   const t = useTranslations('ADELayout');
@@ -388,6 +395,52 @@ function MobileLayout() {
   );
 }
 
+function ADEOnboarding() {
+  const t = useTranslations('ADELayout');
+
+  const { currentStep, setStep } = useADETour();
+  const { pauseOnboarding } = usePauseOnboarding();
+
+  if (currentStep !== 'welcome') {
+    return null;
+  }
+
+  return (
+    <OnboardingPrimaryDialog
+      isOpen
+      imageUrl="/images/ade-onboarding/welcome.svg"
+      title={t('ADEOnboarding.welcome')}
+      primaryAction={
+        <Button
+          onClick={() => {
+            setStep('core_memories');
+          }}
+          label={t('ADEOnboarding.start')}
+          color="primary"
+        />
+      }
+      secondaryAction={
+        <Button
+          onClick={pauseOnboarding}
+          label={t('ADEOnboarding.skip')}
+          color="tertiary"
+        />
+      }
+    >
+      <VStack>
+        <OnboardingPrimaryHeading
+          title={t('ADEOnboarding.welcome')}
+          description={t('ADEOnboarding.description')}
+        ></OnboardingPrimaryHeading>
+        <OnboardingSteps
+          currentStep={3}
+          totalSteps={TOTAL_PRIMARY_ONBOARDING_STEPS}
+        />
+      </VStack>
+    </OnboardingPrimaryDialog>
+  );
+}
+
 export function ADELayout(props: ADELayoutProps) {
   const { user, projectId } = props;
 
@@ -401,6 +454,7 @@ export function ADELayout(props: ADELayoutProps) {
         zIndex="rightAboveZero"
       >
         <HiddenOnMobile checkWithJs>
+          <ADEOnboarding />
           <DesktopLayout />
         </HiddenOnMobile>
         <VisibleOnMobile checkWithJs>

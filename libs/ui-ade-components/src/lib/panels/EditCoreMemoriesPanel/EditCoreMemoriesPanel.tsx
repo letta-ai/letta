@@ -1,4 +1,9 @@
-import { Button, Spinner, TabGroup } from '@letta-cloud/ui-component-library';
+import {
+  Button,
+  OnboardingAsideFocus,
+  Spinner,
+  TabGroup,
+} from '@letta-cloud/ui-component-library';
 import { InfoTooltip } from '@letta-cloud/ui-component-library';
 import { LettaLoaderPanel } from '@letta-cloud/ui-component-library';
 import {
@@ -23,6 +28,7 @@ import {
 } from './AdvancedCoreMemoryEditor';
 import { useADEPermissions } from '../../hooks/useADEPermissions/useADEPermissions';
 import { ApplicationServices } from '@letta-cloud/service-rbac';
+import { useADETour } from '../../hooks/useADETour/useADETour';
 
 interface AdvancedEditorPayload {
   label: string;
@@ -155,6 +161,47 @@ function SimulatedMemory() {
   );
 }
 
+interface MemoryOnboardingProps {
+  children: React.ReactNode;
+}
+
+function MemoryOnboarding(props: MemoryOnboardingProps) {
+  const t = useTranslations('ADE/EditCoreMemoriesPanel');
+  const { children } = props;
+
+  const { currentStep, setStep } = useADETour();
+
+  if (currentStep !== 'core_memories') {
+    return <>{children}</>;
+  }
+
+  return (
+    <OnboardingAsideFocus
+      className="w-full h-full"
+      title={t('MemoryOnboarding.title')}
+      placement="left-start"
+      description={t('MemoryOnboarding.description')}
+      isOpen
+      difficulty="medium"
+      totalSteps={3}
+      nextStep={
+        <Button
+          fullWidth
+          size="large"
+          bold
+          onClick={() => {
+            setStep('tools');
+          }}
+          label={t('MemoryOnboarding.next')}
+        />
+      }
+      currentStep={1}
+    >
+      {children}
+    </OnboardingAsideFocus>
+  );
+}
+
 type MemoryType = 'simulated' | 'templated';
 
 export function EditMemory() {
@@ -171,88 +218,94 @@ export function EditMemory() {
 
   return (
     <PanelMainContent variant="noPadding">
-      <VStack fullHeight gap={false}>
-        <VStack paddingX="small">
-          <HStack align="end">
-            <TabGroup
-              extendBorder
-              rightContent={
-                firstLabel && (
-                  <HStack
-                    fullWidth
-                    fullHeight
-                    paddingTop="xxsmall"
-                    paddingBottom="xxsmall"
-                    align="center"
-                    justify="end"
-                  >
-                    <Button
-                      color="tertiary"
-                      size="small"
-                      label={t('advancedEditor')}
-                      onClick={() => {
-                        open(firstLabel);
-                      }}
-                    />
-                  </HStack>
-                )
-              }
-              size="small"
-              value={memoryType}
-              onValueChange={(value) => {
-                if (!value) {
-                  return;
+      <MemoryOnboarding>
+        <VStack fullHeight gap={false}>
+          <VStack paddingX="small">
+            <HStack align="end">
+              <TabGroup
+                extendBorder
+                rightContent={
+                  firstLabel && (
+                    <HStack
+                      fullWidth
+                      fullHeight
+                      paddingTop="xxsmall"
+                      paddingBottom="xxsmall"
+                      align="center"
+                      justify="end"
+                    >
+                      <Button
+                        color="tertiary"
+                        size="small"
+                        label={t('advancedEditor')}
+                        onClick={() => {
+                          open(firstLabel);
+                        }}
+                      />
+                    </HStack>
+                  )
                 }
+                size="small"
+                value={memoryType}
+                onValueChange={(value) => {
+                  if (!value) {
+                    return;
+                  }
 
-                setMemoryType(value as MemoryType);
-              }}
-              items={
-                isTemplate
-                  ? [
-                      {
-                        label: t('toggleMemoryType.templated.label'),
-                        value: 'templated',
-                        postIcon: (
-                          <InfoTooltip
-                            text={t('toggleMemoryType.templated.tooltip')}
-                          />
-                        ),
-                      },
-                      {
-                        label: t('toggleMemoryType.simulated.label'),
-                        value: 'simulated',
-                        postIcon: (
-                          <InfoTooltip
-                            text={t('toggleMemoryType.simulated.tooltip')}
-                          />
-                        ),
-                      },
-                    ]
-                  : [
-                      {
-                        label: t('toggleMemoryType.agent.label'),
-                        value: 'templated',
-                        postIcon: (
-                          <InfoTooltip
-                            text={t('toggleMemoryType.agent.tooltip')}
-                          />
-                        ),
-                      },
-                    ]
-              }
-            />
-          </HStack>
+                  setMemoryType(value as MemoryType);
+                }}
+                items={
+                  isTemplate
+                    ? [
+                        {
+                          label: t('toggleMemoryType.templated.label'),
+                          value: 'templated',
+                          postIcon: (
+                            <InfoTooltip
+                              text={t('toggleMemoryType.templated.tooltip')}
+                            />
+                          ),
+                        },
+                        {
+                          label: t('toggleMemoryType.simulated.label'),
+                          value: 'simulated',
+                          postIcon: (
+                            <InfoTooltip
+                              text={t('toggleMemoryType.simulated.tooltip')}
+                            />
+                          ),
+                        },
+                      ]
+                    : [
+                        {
+                          label: t('toggleMemoryType.agent.label'),
+                          value: 'templated',
+                          postIcon: (
+                            <InfoTooltip
+                              text={t('toggleMemoryType.agent.tooltip')}
+                            />
+                          ),
+                        },
+                      ]
+                }
+              />
+            </HStack>
+          </VStack>
+          <VStack
+            paddingTop="small"
+            fullHeight
+            gap="small"
+            paddingX="large"
+            paddingBottom="small"
+          >
+            {memoryType === 'templated' ? (
+              <DefaultMemory />
+            ) : (
+              <SimulatedMemory />
+            )}
+          </VStack>
         </VStack>
-        <VStack
-          paddingTop="small"
-          fullHeight
-          gap="small"
-          paddingX="large"
-          paddingBottom="small"
-        >
-          {memoryType === 'templated' ? <DefaultMemory /> : <SimulatedMemory />}
-        </VStack>
-      </VStack>
+      </MemoryOnboarding>
     </PanelMainContent>
   );
 }

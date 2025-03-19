@@ -1,6 +1,10 @@
 'use client';
 import React, { useCallback, useMemo, useState } from 'react';
-import { ExploreIcon, HStack } from '@letta-cloud/ui-component-library';
+import {
+  ExploreIcon,
+  HStack,
+  OnboardingAsideFocus,
+} from '@letta-cloud/ui-component-library';
 import type { FileTreeContentsType } from '@letta-cloud/ui-component-library';
 import { VStack } from '@letta-cloud/ui-component-library';
 import { brandKeyToLogo, isBrandKey } from '@letta-cloud/ui-component-library';
@@ -36,6 +40,7 @@ import { useToolsExplorerState } from '../ToolsExplorer/useToolsExplorerState/us
 import { useFeatureFlag } from '@letta-cloud/sdk-web';
 import { findProviderFromTags } from '../ToolsExplorer/findProviderFromTags/findProviderFromTags';
 import { OldToolRulesEditor } from '../ToolRules/ToolRules';
+import { useADETour } from '../../hooks/useADETour/useADETour';
 
 interface RemoveToolPayload {
   toolName: string;
@@ -317,30 +322,73 @@ function OpenToolManagerButton() {
   );
 }
 
+interface ToolsOnboardingProps {
+  children: React.ReactNode;
+}
+
+function ToolsOnboarding(props: ToolsOnboardingProps) {
+  const t = useTranslations('ADE/Tools');
+  const { children } = props;
+
+  const { currentStep, setStep } = useADETour();
+
+  if (currentStep !== 'tools') {
+    return <>{children}</>;
+  }
+
+  return (
+    <OnboardingAsideFocus
+      className="w-full h-full"
+      title={t('ToolsOnboarding.title')}
+      placement="right-start"
+      description={t('ToolsOnboarding.description')}
+      isOpen
+      difficulty="medium"
+      totalSteps={3}
+      nextStep={
+        <Button
+          fullWidth
+          size="large"
+          bold
+          onClick={() => {
+            setStep('chat');
+          }}
+          label={t('ToolsOnboarding.next')}
+        />
+      }
+      currentStep={2}
+    >
+      {children}
+    </OnboardingAsideFocus>
+  );
+}
+
 export function ToolsPanel() {
   const [search, setSearch] = useState('');
   const [canUpdateAgent] = useADEPermissions(ApplicationServices.UPDATE_AGENT);
 
   return (
     <ToolManagerProvider>
-      <VStack overflow="hidden" gap={false}>
-        <ToolManager />
-        <ToolsExplorer />
-        <PanelBar
-          searchValue={search}
-          onSearch={(value) => {
-            setSearch(value);
-          }}
-          actions={
-            canUpdateAgent && (
-              <HStack>
-                <OpenToolManagerButton />
-              </HStack>
-            )
-          }
-        />
-        <ToolsList search={search} />
-      </VStack>
+      <ToolsOnboarding>
+        <VStack overflow="hidden" gap={false}>
+          <ToolManager />
+          <ToolsExplorer />
+          <PanelBar
+            searchValue={search}
+            onSearch={(value) => {
+              setSearch(value);
+            }}
+            actions={
+              canUpdateAgent && (
+                <HStack>
+                  <OpenToolManagerButton />
+                </HStack>
+              )
+            }
+          />
+          <ToolsList search={search} />
+        </VStack>
+      </ToolsOnboarding>
     </ToolManagerProvider>
   );
 }

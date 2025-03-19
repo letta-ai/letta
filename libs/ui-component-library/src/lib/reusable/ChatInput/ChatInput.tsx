@@ -200,7 +200,7 @@ export const ChatInput = forwardRef<ChatInputRef, ChatInputProps>(
           align="center"
           position="absolute"
           className={cn(
-            'mt-[-25px] fade-out-0 fade-in-10 z-[0] transition-all duration-200 slide-in-from-bottom-10',
+            'mt-[-25px] fade-out-0 fade-in-10  transition-all duration-200 slide-in-from-bottom-10',
             isSendingMessage ? '' : 'mt-0 opacity-0',
           )}
         >
@@ -216,7 +216,7 @@ export const ChatInput = forwardRef<ChatInputRef, ChatInputProps>(
           color="panel-input-background"
           onSubmit={handleSubmit}
           as="form"
-          className="z-[1] relative focus-within:ring-ring focus-within:ring-1 ignore-focus-on-buttons"
+          className="relative focus-within:ring-ring focus-within:ring-1 ignore-focus-on-buttons"
           border
           fullWidth
           borderTop

@@ -80,3 +80,6 @@ export const stepToRewardMap: Record<OnboardingStepsType, number> = {
   deploy_agent: 5000,
   completed: 0,
 };
+
+export const TOTAL_PRIMARY_ONBOARDING_STEPS =
+  Object.keys(stepToRewardMap).length - 1;

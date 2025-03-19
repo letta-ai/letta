@@ -19,10 +19,12 @@ export function OnboardingPrimaryHeading(props: OnboardingPrimaryHeadingProps) {
   return (
     <VStack gap={false}>
       <HStack paddingBottom="small">{badge}</HStack>
-      <Typography variant="heading4">{title}</Typography>
-      <Typography variant="heading6" color="lighter">
-        {description}
-      </Typography>
+      <VStack gap="small">
+        <Typography variant="heading4">{title}</Typography>
+        <Typography variant="heading6" color="lighter">
+          {description}
+        </Typography>
+      </VStack>
     </VStack>
   );
 }

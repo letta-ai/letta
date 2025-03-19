@@ -3,6 +3,9 @@ import { initTsrReactQuery } from '@ts-rest/react-query/v5';
 import { CURRENT_RUNTIME } from '@letta-cloud/config-runtime';
 
 export * from './lib/hooks/useFeatureFlag/useFeatureFlag';
+export * from './lib/hooks/useSetOnboardingStep/useSetOnboardingStep';
+export * from './lib/hooks/usePauseOnboarding/usePauseOnboarding';
+
 export * from './lib/web-api-contracts';
 export * from './lib/types';
 

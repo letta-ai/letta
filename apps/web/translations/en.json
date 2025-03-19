@@ -152,6 +152,15 @@
     },
     "hasFailedToSendMessage": "Failed to send message, please try again or contact the person that has shared this chat with you."
   },
+  "components/CreditsViewer": {
+    "label": "Go to billing",
+    "Onboarding": {
+      "nextStep": "Create your first template!",
+      "title": "What are credits?",
+      "seeCostsExplorer": "See our costs explorer",
+      "description": "Credits are the currency used to pay for agent usage. We work with LLM providers to get good <link>rates for you</link>, and combine the cost of Letta's infrastructure and the model provider's cost into a single credit price. \n\nSounds good? Let's start building agents with a template!"
+    }
+  },
   "components/DashboardLikeLayout/DashboardNavigation": {
     "back": "Back",
     "nav": {
@@ -879,6 +888,10 @@
   },
   "projects/(projectSlug)/components/CreateNewTemplateDialog": {
     "title": "Create a template",
+    "OnboardingWrapper": {
+      "title": "What is a template?",
+      "description": "The first thing in building production agents is defining a template. A template is a blueprint for an agent, it defines the structure and behavior of the agent. \n\nTo claim your reward, create a template by pressing the highlighted button and pick from a starter template."
+    },
     "back": "All templates",
     "error": "An error occurred while creating the template. Please try again or contact support.",
     "loading": "Creating template...",

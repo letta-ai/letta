@@ -8,6 +8,7 @@ import {
   Dialog,
   LoadingEmptyStatusComponent,
   NiceGridDisplay,
+  OnboardingAsideFocus,
   Section,
   StarterKitItems,
   VStack,
@@ -17,10 +18,42 @@ import { useQueryClient } from '@tanstack/react-query';
 import { useUserHasPermission } from '$web/client/hooks';
 import { ApplicationServices } from '@letta-cloud/service-rbac';
 import { Slot } from '@radix-ui/react-slot';
-import { PrimaryOnboardingAsideFocus } from '$web/client/components/PrimaryOnboardingAsideFocus/PrimaryOnboardingAsideFocus';
+import { useShowOnboarding } from '$web/client/hooks/useShowOnboarding/useShowOnboarding';
+import {
+  stepToRewardMap,
+  TOTAL_PRIMARY_ONBOARDING_STEPS,
+} from '@letta-cloud/types';
 
 interface CreateNewTemplateDialogProps {
   trigger: React.ReactNode;
+}
+
+interface OnboardingWrapperProps {
+  children: React.ReactNode;
+}
+
+function OnboardingWrapper(props: OnboardingWrapperProps) {
+  const { children } = props;
+  const t = useTranslations(
+    'projects/(projectSlug)/components/CreateNewTemplateDialog',
+  );
+
+  const show = useShowOnboarding('create_template');
+
+  return (
+    <OnboardingAsideFocus
+      difficulty="easy"
+      reward={stepToRewardMap.create_template}
+      totalSteps={TOTAL_PRIMARY_ONBOARDING_STEPS}
+      currentStep={2}
+      title={t('OnboardingWrapper.title')}
+      description={t('OnboardingWrapper.description')}
+      placement="left-start"
+      isOpen={show}
+    >
+      {children}
+    </OnboardingAsideFocus>
+  );
 }
 
 export function CreateNewTemplateDialog(props: CreateNewTemplateDialogProps) {
@@ -81,7 +114,7 @@ export function CreateNewTemplateDialog(props: CreateNewTemplateDialogProps) {
     <Dialog
       title={t('title')}
       trigger={
-        <PrimaryOnboardingAsideFocus step="create_template">
+        <OnboardingWrapper>
           <Slot
             data-testid="create-agent-template-button"
             onClick={() => {
@@ -90,7 +123,7 @@ export function CreateNewTemplateDialog(props: CreateNewTemplateDialogProps) {
           >
             {trigger}
           </Slot>
-        </PrimaryOnboardingAsideFocus>
+        </OnboardingWrapper>
       }
       hideFooter
       disableForm

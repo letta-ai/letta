@@ -1,18 +1,10 @@
-import { type contracts, webApi, webApiQueryKeys } from '@letta-cloud/sdk-web';
+import { type contracts, webApi, webApiQueryKeys } from '../../../index';
 import { useQueryClient } from '@tanstack/react-query';
 import { useCallback } from 'react';
 import type { ServerInferResponses } from '@ts-rest/core';
-import { useTranslations } from '@letta-cloud/translations';
-import { toast } from '@letta-cloud/ui-component-library';
 
 export function usePauseOnboarding() {
-  const t = useTranslations('components/PauseOnboardingSlot');
-
-  const { mutate } = webApi.user.pauseUserOnboarding.useMutation({
-    onError: () => {
-      toast.error(t('error'));
-    },
-  });
+  const { mutate } = webApi.user.pauseUserOnboarding.useMutation();
 
   const queryClient = useQueryClient();
 

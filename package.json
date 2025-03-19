@@ -64,7 +64,7 @@
   "dependencies": {
     "@dnd-kit/accessibility": "^3.1.1",
     "@dnd-kit/utilities": "^3.2.2",
-    "@floating-ui/react": "^0.27.2",
+    "@floating-ui/react": "^0.27.5",
     "@hookform/resolvers": "^3.9.1",
     "@launchdarkly/node-server-sdk": "^9.7.2",
     "@mantine/hooks": "^7.15.2",

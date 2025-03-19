@@ -13,9 +13,9 @@ import {
 import { useTranslations } from '@letta-cloud/translations';
 import { useCurrentUser } from '$web/client/hooks';
 import { useCallback } from 'react';
-import { useSetOnboardingStep } from '$web/client/hooks/useOnboarding/useSetOnboardingStep/useSetOnboardingStep';
+import { useSetOnboardingStep } from '@letta-cloud/sdk-web';
 import { stepToRewardMap } from '@letta-cloud/types';
-import { usePauseOnboarding } from '$web/client/components/usePauseOnboarding/usePauseOnboarding';
+import { usePauseOnboarding } from '@letta-cloud/sdk-web';
 
 export function StartOnboardingDialog() {
   const t = useTranslations('onboarding/StartOnboardingDialog');
@@ -23,7 +23,9 @@ export function StartOnboardingDialog() {
   const { setOnboardingStep, isPending, isSuccess } = useSetOnboardingStep();
 
   const handleStart = useCallback(() => {
-    setOnboardingStep('about_credits');
+    setOnboardingStep({
+      onboardingStep: 'about_credits',
+    });
   }, [setOnboardingStep]);
 
   const { pauseOnboarding } = usePauseOnboarding();

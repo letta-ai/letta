@@ -23,6 +23,7 @@ import {
   FormField,
   Checkbox,
   Link,
+  OnboardingAsideFocus,
 } from '@letta-cloud/ui-component-library';
 import type { ChatInputRef } from '@letta-cloud/ui-component-library';
 import { PanelBar } from '@letta-cloud/ui-component-library';
@@ -50,7 +51,11 @@ import { get } from 'lodash-es';
 import { z } from 'zod';
 import { useTranslations } from '@letta-cloud/translations';
 import { useDebouncedCallback, useLocalStorage } from '@mantine/hooks';
-import { webApi, webApiQueryKeys } from '@letta-cloud/sdk-web';
+import {
+  useSetOnboardingStep,
+  webApi,
+  webApiQueryKeys,
+} from '@letta-cloud/sdk-web';
 import {
   compareAgentStates,
   findMemoryBlockVariables,
@@ -70,6 +75,7 @@ import { AgentVariablesModal } from './AgentVariablesModal/AgentVariablesModal';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { ShareAgentDialog } from './ShareAgentDialog/ShareAgentDialog';
 import { isSendingMessageAtom } from './atoms';
+import { useADETour } from '../../hooks/useADETour/useADETour';
 
 type ErrorCode = z.infer<typeof ErrorMessageSchema>['code'];
 
@@ -602,6 +608,52 @@ function AgentSimulatorOptionsMenu() {
   );
 }
 
+interface AgentSimulatorOnboardingProps {
+  children: React.ReactNode;
+}
+
+function AgentSimulatorOnboarding(props: AgentSimulatorOnboardingProps) {
+  const t = useTranslations('ADE/AgentSimulator');
+  const { children } = props;
+
+  const { currentStep } = useADETour();
+
+  const { setOnboardingStep } = useSetOnboardingStep();
+
+  if (currentStep !== 'chat') {
+    return <>{children}</>;
+  }
+
+  return (
+    <OnboardingAsideFocus
+      className="w-full h-full"
+      title={t('AgentSimulatorOnboarding.title')}
+      placement="left-start"
+      description={t('AgentSimulatorOnboarding.description')}
+      isOpen
+      difficulty="medium"
+      totalSteps={3}
+      nextStep={
+        <Button
+          fullWidth
+          size="large"
+          bold
+          onClick={() => {
+            setOnboardingStep({
+              onboardingStep: 'save_version',
+              stepToClaim: 'explore_ade',
+            });
+          }}
+          label={t('AgentSimulatorOnboarding.next')}
+        />
+      }
+      currentStep={3}
+    >
+      {children}
+    </OnboardingAsideFocus>
+  );
+}
+
 export function AgentSimulator() {
   const t = useTranslations('ADE/AgentSimulator');
   const agentState = useCurrentAgent();
@@ -768,79 +820,81 @@ export function AgentSimulator() {
   );
 
   return (
-    <ChatroomContext.Provider value={{ renderMode, setRenderMode }}>
-      <VStack gap={false} fullHeight fullWidth>
-        <PanelBar
-          actions={
-            <HStack>
-              <ControlChatroomRenderMode />
-              <AgentFlushButton />
-              <AgentSimulatorOptionsMenu />
-            </HStack>
-          }
-        >
-          <VStack paddingLeft="small">
-            <AgentVariablesModal
-              trigger={
-                <Button
-                  data-testid="toggle-variables-button"
-                  preIcon={
-                    hasVariableIssue ? (
-                      <WarningIcon color="warning" />
-                    ) : (
-                      <VariableIcon />
-                    )
-                  }
-                  color="secondary"
-                  label={t('showVariables')}
-                  size="small"
-                />
-              }
-            />
-          </VStack>
-        </PanelBar>
-        <VStack collapseHeight gap={false} fullWidth>
-          <VStack gap="large" collapseHeight>
-            <VStack collapseHeight position="relative">
-              <Messages
-                renderAgentsLink
-                mode={renderMode}
-                isPanelActive
-                isSendingMessage={isPending}
-                agentId={agentIdToUse || ''}
+    <AgentSimulatorOnboarding>
+      <ChatroomContext.Provider value={{ renderMode, setRenderMode }}>
+        <VStack gap={false} fullHeight fullWidth>
+          <PanelBar
+            actions={
+              <HStack>
+                <ControlChatroomRenderMode />
+                <AgentFlushButton />
+                <AgentSimulatorOptionsMenu />
+              </HStack>
+            }
+          >
+            <VStack paddingLeft="small">
+              <AgentVariablesModal
+                trigger={
+                  <Button
+                    data-testid="toggle-variables-button"
+                    preIcon={
+                      hasVariableIssue ? (
+                        <WarningIcon color="warning" />
+                      ) : (
+                        <VariableIcon />
+                      )
+                    }
+                    color="secondary"
+                    label={t('showVariables')}
+                    size="small"
+                  />
+                }
               />
             </VStack>
-            <ChatInput
-              disabled={!agentIdToUse}
-              defaultRole="user"
-              roles={[
-                {
-                  value: 'user',
-                  label: t('role.user'),
-                  icon: <PersonIcon />,
-                  color: {
-                    background: 'hsl(var(--user-color))',
-                    text: 'hsl(var(--user-color-content))',
+          </PanelBar>
+          <VStack collapseHeight gap={false} fullWidth>
+            <VStack gap="large" collapseHeight>
+              <VStack collapseHeight position="relative">
+                <Messages
+                  renderAgentsLink
+                  mode={renderMode}
+                  isPanelActive
+                  isSendingMessage={isPending}
+                  agentId={agentIdToUse || ''}
+                />
+              </VStack>
+              <ChatInput
+                disabled={!agentIdToUse}
+                defaultRole="user"
+                roles={[
+                  {
+                    value: 'user',
+                    label: t('role.user'),
+                    icon: <PersonIcon />,
+                    color: {
+                      background: 'hsl(var(--user-color))',
+                      text: 'hsl(var(--user-color-content))',
+                    },
                   },
-                },
-                {
-                  value: 'system',
-                  label: t('role.system'),
-                  icon: <SystemIcon />,
-                },
-              ]}
-              ref={ref}
-              getSendSnippet={getSendSnippet}
-              hasFailedToSendMessageText={hasFailedToSendMessageText}
-              sendingMessageText={t('sendingMessage')}
-              onSendMessage={(role: string, content: string) => {
-                sendMessage({ role, content });
-              }}
-              isSendingMessage={isPending}
-            />
+                  {
+                    value: 'system',
+                    label: t('role.system'),
+                    icon: <SystemIcon />,
+                  },
+                ]}
+                ref={ref}
+                getSendSnippet={getSendSnippet}
+                hasFailedToSendMessageText={hasFailedToSendMessageText}
+                sendingMessageText={t('sendingMessage')}
+                onSendMessage={(role: string, content: string) => {
+                  sendMessage({ role, content });
+                }}
+                isSendingMessage={isPending}
+              />
+            </VStack>
           </VStack>
         </VStack>
-      </VStack>
-    </ChatroomContext.Provider>
+      </ChatroomContext.Provider>
+    </AgentSimulatorOnboarding>
   );
 }

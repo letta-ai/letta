@@ -1,8 +1,15 @@
-import { type contracts, webApi, webApiQueryKeys } from '@letta-cloud/sdk-web';
+'use client';
+import { type contracts, webApi, webApiQueryKeys } from '../../../index';
 import { useCallback, useEffect } from 'react';
 import type { OnboardingStepsType } from '@letta-cloud/types';
 import type { ServerInferResponses } from '@ts-rest/core';
 import { useQueryClient } from '@tanstack/react-query';
+
+interface SetOnboardingStepPayload {
+  onboardingStep: OnboardingStepsType;
+  stepToClaim?: OnboardingStepsType;
+  onSuccess?: VoidFunction;
+}
 
 export function useSetOnboardingStep() {
   const { mutate, isPending, isSuccess, reset } =
@@ -47,18 +54,22 @@ export function useSetOnboardingStep() {
   );
 
   const setOnboardingStep = useCallback(
-    (onboardingStep: OnboardingStepsType, onSuccess?: VoidFunction) => {
+    (payload: SetOnboardingStepPayload) => {
+      handleUpdateStatus(payload.onboardingStep);
+
       mutate(
         {
           body: {
-            onboardingStep,
+            onboardingStep: payload.onboardingStep,
+            ...(payload.stepToClaim
+              ? { stepToClaim: payload.stepToClaim }
+              : {}),
           },
         },
         {
           onSuccess: () => {
-            handleUpdateStatus(onboardingStep);
-            if (onSuccess) {
-              onSuccess();
+            if (payload.onSuccess) {
+              payload.onSuccess();
             }
           },
         },
