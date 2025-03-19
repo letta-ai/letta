@@ -88,6 +88,10 @@ class VoiceAgent(BaseAgent):
         Main streaming loop that yields partial tokens.
         Whenever we detect a tool call, we yield from _handle_ai_response as well.
         """
+        import time
+
+        print(f"HIT STEP STREAM {time.perf_counter()}")
+
         input_message = self.pre_process_input_message(input_message)
         agent_state = self.agent_manager.get_agent_by_id(self.agent_id, actor=self.actor)
         in_context_messages = self.message_manager.get_messages_by_ids(message_ids=agent_state.message_ids, actor=self.actor)
@@ -231,10 +235,10 @@ class VoiceAgent(BaseAgent):
         # Refresh memory
         # TODO: This only happens for the summary block
         # TODO: We want to extend this refresh to be general, and stick it in agent_manager
-        for i, b in enumerate(agent_state.memory.blocks):
-            if b.label == self.summary_block_label:
-                agent_state.memory.blocks[i] = self.block_manager.get_block_by_id(block_id=b.id, actor=self.actor)
-                break
+        # for i, b in enumerate(agent_state.memory.blocks):
+        #     if b.label == self.summary_block_label:
+        #         agent_state.memory.blocks[i] = self.block_manager.get_block_by_id(block_id=b.id, actor=self.actor)
+        #         break
 
         # TODO: This is a pretty brittle pattern established all over our code, need to get rid of this
         curr_system_message = in_context_messages[0]
@@ -249,15 +253,15 @@ class VoiceAgent(BaseAgent):
 
         memory_edit_timestamp = get_utc_time()
 
-        num_messages = self.message_manager.size(actor=self.actor, agent_id=agent_state.id)
-        num_archival_memories = self.passage_manager.size(actor=self.actor, agent_id=agent_state.id)
+        # num_messages = self.message_manager.size(actor=self.actor, agent_id=agent_state.id)
+        # num_archival_memories = self.passage_manager.size(actor=self.actor, agent_id=agent_state.id)
 
         new_system_message_str = compile_system_message(
             system_prompt=agent_state.system,
             in_context_memory=agent_state.memory,
             in_context_memory_last_edit=memory_edit_timestamp,
-            previous_message_count=num_messages,
-            archival_memory_size=num_archival_memories,
+            previous_message_count=0,
+            archival_memory_size=0,
         )
 
         diff = united_diff(curr_system_message_text, new_system_message_str)

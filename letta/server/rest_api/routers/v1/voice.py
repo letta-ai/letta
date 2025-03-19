@@ -1,6 +1,5 @@
 from typing import TYPE_CHECKING, Optional
 
-import httpx
 import openai
 from fastapi import APIRouter, Body, Depends, Header
 from fastapi.responses import StreamingResponse
@@ -49,15 +48,7 @@ async def create_voice_chat_completions(
     client = openai.AsyncClient(
         api_key=model_settings.openai_api_key,
         max_retries=0,
-        http_client=httpx.AsyncClient(
-            timeout=httpx.Timeout(connect=15.0, read=30.0, write=15.0, pool=15.0),
-            follow_redirects=True,
-            limits=httpx.Limits(
-                max_connections=50,
-                max_keepalive_connections=50,
-                keepalive_expiry=120,
-            ),
-        ),
+        http_client=server.httpx_client,
     )
 
     # Instantiate our LowLatencyAgent

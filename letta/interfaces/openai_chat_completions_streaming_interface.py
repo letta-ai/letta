@@ -33,16 +33,33 @@ class OpenAIChatCompletionsStreamingInterface:
         Iterates over the OpenAI stream, yielding SSE events.
         It also collects tokens and detects if a tool call is triggered.
         """
+        first = True
+        first_letta = True
         async with stream:
             async for chunk in stream:
+                if first:
+                    import time
+
+                    print(f"FIRST OPENAI CHUNK: {time.perf_counter()}")
+                    first = False
                 choice = chunk.choices[0]
                 delta = choice.delta
                 finish_reason = choice.finish_reason
 
                 async for sse_chunk in self._process_content(delta, chunk):
+                    if first_letta:
+                        import time
+
+                        print(f"FIRST LETTA CHUNK: {time.perf_counter()}")
+                        first_letta = False
                     yield sse_chunk
 
                 async for sse_chunk in self._process_tool_calls(delta, chunk):
+                    if first_letta:
+                        import time
+
+                        print(f"FIRST LETTA CHUNK: {time.perf_counter()}")
+                        first_letta = False
                     yield sse_chunk
 
                 if self._handle_finish_reason(finish_reason):
