@@ -107,6 +107,11 @@
     "ServerStatus": {
       "connected": "Connected",
       "connecting": "Connecting..."
+    },
+    "AgentMenu": {
+      "trigger": "Options",
+      "delete": "Delete",
+      "export": "Export"
     }
   },
   "App": {

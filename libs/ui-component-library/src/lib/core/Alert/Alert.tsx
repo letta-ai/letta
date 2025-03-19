@@ -79,7 +79,7 @@ export function Alert(props: AlertProps) {
       role="alert"
       className={cn(alertVariants({ fullWidth, variant }), className)}
     >
-      <div className="flex flex-col w-full text-base gap">
+      <div className="flex flex-col w-full text-base gap-2">
         <HStack fullWidth gap="small" justify="spaceBetween" align="center">
           <HStack gap="small" align="center">
             <Slot className="min-w-5 min-h-5">{icon || defaultIcon}</Slot>

@@ -8,30 +8,27 @@ import {
   DropdownMenu,
   DropdownMenuItem,
   ForkIcon,
-  FormField,
-  FormProvider,
   HiddenOnMobile,
   HStack,
-  Input,
   LettaInvaderIcon,
   Logo,
   TrashIcon,
   Typography,
-  useForm,
   DotsVerticalIcon,
   VisibleOnMobile,
 } from '@letta-cloud/ui-component-library';
 import type { QueryBuilderQuery } from '@letta-cloud/ui-component-library';
 import { ProjectSelector } from '$web/client/components';
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useState } from 'react';
 import { useTranslations } from '@letta-cloud/translations';
-import { useCurrentAgentMetaData } from '@letta-cloud/ui-ade-components';
+import {
+  DeleteAgentDialog,
+  ExportAgentButton,
+  useCurrentAgentMetaData,
+} from '@letta-cloud/ui-ade-components';
 import { useAgentBaseTypeName } from '$web/client/hooks/useAgentBaseNameType/useAgentBaseNameType';
 import { useCurrentUser, useUserHasPermission } from '$web/client/hooks';
 import { ApplicationServices } from '@letta-cloud/service-rbac';
-import { z } from 'zod';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { useAgentsServiceDeleteAgent } from '@letta-cloud/sdk-core';
 import { trackClientSideEvent } from '@letta-cloud/service-analytics/client';
 import { AnalyticsEvent } from '@letta-cloud/service-analytics';
 import { useRouter } from 'next/navigation';
@@ -41,132 +38,9 @@ import {
   ProfilePopover,
 } from '$web/client/components/DashboardLikeLayout/DashboardNavigation/DashboardNavigation';
 import { useCurrentAgent } from '$web/client/hooks/useCurrentAgent/useCurrentAgent';
-import { useCurrentDevelopmentServerConfig } from '@letta-cloud/utils-client';
-import axios from 'axios';
 
 interface DesktopADEHeaderProps {
   name: string;
-}
-
-interface DeleteAgentDialogProps {
-  onClose: () => void;
-}
-
-function DeleteAgentDialog(props: DeleteAgentDialogProps) {
-  const { onClose } = props;
-  const { name } = useCurrentAgent();
-
-  const { slug: projectSlug } = useCurrentProject();
-  const { id: agentTemplateId } = useCurrentAgent();
-  const { isLocal } = useCurrentAgentMetaData();
-  const user = useCurrentUser();
-
-  const t = useTranslations(
-    'projects/(projectSlug)/agents/(agentId)/AgentPage',
-  );
-
-  const DeleteAgentDialogFormSchema = useMemo(
-    () =>
-      z.object({
-        agentName: z.literal(name, {
-          message: t('DeleteAgentDialog.nameError'),
-        }),
-      }),
-    [name, t],
-  );
-
-  const form = useForm<z.infer<typeof DeleteAgentDialogFormSchema>>({
-    resolver: zodResolver(DeleteAgentDialogFormSchema),
-    defaultValues: {
-      agentName: '',
-    },
-  });
-
-  const { mutate, isPending, isSuccess, isError } = useAgentsServiceDeleteAgent(
-    {
-      onSuccess: () => {
-        if (isLocal) {
-          trackClientSideEvent(AnalyticsEvent.LOCAL_AGENT_DELETED, {
-            userId: user?.id || '',
-          });
-
-          window.location.href = `/development-servers/local/dashboard`;
-        } else {
-          trackClientSideEvent(AnalyticsEvent.CLOUD_AGENT_DELETED, {
-            userId: user?.id || '',
-          });
-
-          window.location.href = `/projects/${projectSlug}`;
-        }
-      },
-    },
-  );
-
-  const agentBaseType = useAgentBaseTypeName();
-
-  const handleSubmit = useCallback(() => {
-    mutate({
-      agentId: agentTemplateId,
-    });
-  }, [mutate, agentTemplateId]);
-
-  return (
-    <FormProvider {...form}>
-      <Dialog
-        isOpen
-        onOpenChange={(next) => {
-          if (!next) {
-            onClose();
-          }
-        }}
-        errorMessage={
-          isError
-            ? t('DeleteAgentDialog.error', {
-                agentBaseType: agentBaseType.base,
-              })
-            : undefined
-        }
-        confirmColor="destructive"
-        confirmText={t('DeleteAgentDialog.confirm', {
-          agentBaseType: agentBaseType.capitalized,
-        })}
-        title={t('DeleteAgentDialog.title', {
-          agentBaseType: agentBaseType.capitalized,
-        })}
-        onSubmit={form.handleSubmit(handleSubmit)}
-        isConfirmBusy={isPending || isSuccess}
-      >
-        <Typography>
-          {t('DeleteAgentDialog.description', {
-            agentBaseType: agentBaseType.base,
-          })}
-        </Typography>
-        <Typography>
-          {t.rich('DeleteAgentDialog.confirmText', {
-            templateName: name,
-            agentBaseType: agentBaseType.base,
-            strong: (chunks) => (
-              <Typography overrideEl="span" bold>
-                {chunks}
-              </Typography>
-            ),
-          })}
-        </Typography>
-        <FormField
-          name="agentName"
-          render={({ field }) => (
-            <Input
-              fullWidth
-              label={t('DeleteAgentDialog.confirmTextLabel', {
-                agentBaseType: agentBaseType.capitalized,
-              })}
-              {...field}
-            />
-          )}
-        />
-      </Dialog>
-    </FormProvider>
-  );
 }
 
 interface ForkAgentDialogProps {
@@ -242,43 +116,6 @@ function ForkAgentDialog(props: ForkAgentDialogProps) {
 
 type Dialogs = 'deleteAgent' | 'forkAgent' | 'renameAgent';
 
-function DownloadAgentButton() {
-  const t = useTranslations(
-    'projects/(projectSlug)/agents/(agentId)/AgentPage',
-  );
-
-  const { id: agentId, name } = useCurrentAgent();
-  const config = useCurrentDevelopmentServerConfig();
-
-  const handleAsyncDownload = useCallback(async () => {
-    const response = await axios.get(
-      `${config?.url}/v1/agents/${agentId}/download`,
-      {
-        responseType: 'blob',
-      },
-    );
-
-    const url = window.URL.createObjectURL(new Blob([response.data]));
-
-    const link = document.createElement('a');
-
-    link.href = url;
-    link.setAttribute('download', `${name}.af`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    window.URL.revokeObjectURL(url);
-  }, [agentId, name, config]);
-
-  return (
-    <DropdownMenuItem
-      onClick={handleAsyncDownload}
-      preIcon={<DownloadIcon />}
-      label={t('AgentSettingsDropdown.download')}
-    />
-  );
-}
-
 interface AgentSettingsDropdownProps {
   icon: React.ReactNode;
 }
@@ -301,6 +138,30 @@ function AgentSettingsDropdown(props: AgentSettingsDropdownProps) {
     ApplicationServices.UPDATE_AGENT,
   );
 
+  const user = useCurrentUser();
+  const { slug: projectSlug } = useCurrentProject();
+  const { isLocal } = useCurrentAgentMetaData();
+
+  const handleDeleteAgentSuccess = useCallback(() => {
+    if (isLocal) {
+      trackClientSideEvent(AnalyticsEvent.LOCAL_AGENT_DELETED, {
+        userId: user?.id || '',
+      });
+
+      window.location.href = `/development-servers/local/dashboard`;
+    } else {
+      trackClientSideEvent(AnalyticsEvent.CLOUD_AGENT_DELETED, {
+        userId: user?.id || '',
+      });
+
+      window.location.href = `/projects/${projectSlug}`;
+    }
+  }, [isLocal, projectSlug, user]);
+
+  const { name } = useCurrentAgent();
+
+  const { id: agentTemplateId } = useCurrentAgent();
+
   if (!canUpdateAgent) {
     return null;
   }
@@ -310,10 +171,6 @@ function AgentSettingsDropdown(props: AgentSettingsDropdownProps) {
       {openDialog == 'forkAgent' && (
         <ForkAgentDialog onClose={handleCloseDialog} />
       )}
-      {openDialog == 'deleteAgent' && (
-        <DeleteAgentDialog onClose={handleCloseDialog} />
-      )}
-
       <DropdownMenu
         align="center"
         triggerAsChild
@@ -329,7 +186,17 @@ function AgentSettingsDropdown(props: AgentSettingsDropdownProps) {
           />
         }
       >
-        {!isTemplate && <DownloadAgentButton />}
+        {!isTemplate && (
+          <ExportAgentButton
+            trigger={
+              <DropdownMenuItem
+                doNotCloseOnSelect
+                preIcon={<DownloadIcon />}
+                label={t('AgentSettingsDropdown.download')}
+              />
+            }
+          />
+        )}
         {isTemplate && (
           <DropdownMenuItem
             onClick={() => {
@@ -341,14 +208,19 @@ function AgentSettingsDropdown(props: AgentSettingsDropdownProps) {
             })}
           />
         )}
-        <DropdownMenuItem
-          onClick={() => {
-            setOpenDialog('deleteAgent');
-          }}
-          preIcon={<TrashIcon />}
-          label={t('DeleteAgentDialog.trigger', {
-            agentBaseType: agentBaseType.capitalized,
-          })}
+        <DeleteAgentDialog
+          agentId={agentTemplateId}
+          agentName={name}
+          trigger={
+            <DropdownMenuItem
+              doNotCloseOnSelect
+              preIcon={<TrashIcon />}
+              label={t('AgentSettingsDropdown.delete', {
+                agentBaseType: agentBaseType.capitalized,
+              })}
+            />
+          }
+          onSuccess={handleDeleteAgentSuccess}
         />
       </DropdownMenu>
     </>

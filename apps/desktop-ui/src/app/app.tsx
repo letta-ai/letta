@@ -10,9 +10,7 @@ import { AppHeader } from './AppHeader/AppHeader';
 import { Agents } from './pages/Agents/Agents';
 import {
   Button,
-  CogIcon,
   CommunicationsIcon,
-  Frame,
   HStack,
   LettaInvaderIcon,
   TerminalIcon,

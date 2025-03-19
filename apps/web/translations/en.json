@@ -1355,6 +1355,7 @@
     "AgentSettingsDropdown": {
       "trigger": "{agentBaseType} settings",
       "returnToProject": "Return to project",
+      "delete": "Delete {agentBaseType}",
       "download": "Export Agent"
     },
     "DeployAgentDialog": {
@@ -1419,16 +1420,6 @@
         "template": "Template",
         "agent": "Agent"
       }
-    },
-    "DeleteAgentDialog": {
-      "nameError": "Agent name does not match",
-      "trigger": "Delete {agentBaseType}",
-      "title": "Delete {agentBaseType}",
-      "error": "There was an error deleting this {agentBaseType}, try again or contact support.",
-      "confirm": "Delete {agentBaseType}",
-      "confirmText": "Your {agentBaseType}'s name is <strong>{templateName}</strong>",
-      "confirmTextLabel": "Type the name of the {agentBaseType} name to confirm",
-      "description": "Are you sure you want to delete this {agentBaseType}? This is permanent and cannot be undone."
     },
     "ForkAgentDialog": {
       "error": "There was an error forking this agent, please try again or contact support.",

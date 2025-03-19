@@ -1341,11 +1341,79 @@
       "description": "The unique identifier is a unique string that can be used to look up this identity, usually this should be your user or organization ID on your platform."
     }
   },
+  "ExportAgentButton": {
+    "error": "There was an error exporting this agent, please try again or contact support."
+  },
   "ImportAgentsDialog": {
-    "errors": {
-      "fileIsRequired": "Please select a file to import",
-      "invalidFile": "The file you selected is not a valid agentfile, please select a valid agentfile to import"
+    "importOptions": "Import options",
+
+    "warnings": {
+      "versionMismatch": "The version of this agentfile is not the same as your current version, this may cause issues with the import."
     },
+    "AgentPreview": {
+      "tools": {
+        "label": "Tools",
+        "preview": "Preview",
+        "none": "No tools will be imported",
+        "dialog": {
+          "title": "Previewing {name}",
+          "close": "Close"
+        }
+      },
+      "system": "System Prompt",
+      "toolRules": {
+        "label": "Tool Rules",
+        "none": "No tool rules will be imported"
+      },
+      "messages": {
+        "label": "Messages",
+        "none": "No messages will be imported",
+        "count": "{count} messages"
+      },
+
+      "embeddingConfig": "Embedding config",
+      "llmConfig": "LLM config",
+      "general": "General",
+      "tags": {
+        "label": "Tags",
+        "none": "No tags will be imported"
+      },
+      "name": {
+        "label": "Name",
+        "info": "This will be the name of your agent when it's imported, you can change this later."
+      },
+      "description": "Description",
+      "coreMemories": "Core Memory"
+    },
+    "MessagesPreviewDialog": {
+      "trigger": "View messages",
+      "title": "Messages",
+      "close": "Close"
+    },
+    "errors": {
+      "failedToImport": "There was an error importing your agentfile, please check the agentfile integrity and try again or contact support.",
+      "fileIsRequired": "Please select a file to import",
+      "invalidFile": "The file you selected is not a valid agentfile, please select a valid agentfile (.af) to import",
+      "failedToRead": "There was an issue reading this file, it is most likely due to an issue with your browser or you have provided a non-.af file, please try again or contact support."
+    },
+    "AgentsDialogSidebar": {
+      "reset": "Reset",
+      "appendCopySuffix": {
+        "label": "Add -copy to end of agent name",
+        "info": "If an agent with the same name already exists, this will append -copy to the end of the agent name"
+      },
+      "importButton": "Import Agent",
+      "overrideExistingTools": {
+        "label": "Override existing tools",
+        "info": "If a tool with the same name already exists, this will override the existing tool"
+      }
+    },
+    "warning": {
+      "content": "You are about to import an agent from a third-party source, please ensure you trust the source before proceeding.",
+      "title": "Warning"
+    },
+    "dropText": "Drop an .af file here",
+    "chooseFileText": "or click here to upload",
     "changeAgent": "Change agent",
     "removeAgent": "Remove agent",
     "confirm": "Start import",
@@ -1353,5 +1421,15 @@
     "chooseAgent": "or click here to upload",
     "title": "Import Agent",
     "dropAgent": "Drop an .af file here"
+  },
+  "DeleteAgentDialog": {
+    "nameError": "Agent name does not match",
+    "trigger": "Delete {agentBaseType}",
+    "title": "Delete {agentBaseType}",
+    "error": "There was an error deleting this {agentBaseType}, try again or contact support.",
+    "confirm": "Delete {agentBaseType}",
+    "confirmText": "Your {agentBaseType}'s name is <strong>{templateName}</strong>",
+    "confirmTextLabel": "Type the name of the {agentBaseType} name to confirm",
+    "description": "Are you sure you want to delete this {agentBaseType}? This is permanent and cannot be undone."
   }
 }

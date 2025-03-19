@@ -1,15 +1,18 @@
 import './AppHeader.css';
 import {
   Button,
+  DotsVerticalIcon, DownloadIcon,
+  DropdownMenu, DropdownMenuItem,
   HStack,
   Logo,
-  StatusIndicator,
-  Typography,
+  StatusIndicator, TrashIcon,
+  Typography
 } from '@letta-cloud/ui-component-library';
-import { useHealthServiceHealthCheck } from '@letta-cloud/sdk-core';
-import { Link, useLocation } from 'react-router-dom';
-import { useMemo } from 'react';
+import { useAgentsServiceRetrieveAgent, useHealthServiceHealthCheck } from '@letta-cloud/sdk-core';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+import React, { useCallback, useMemo } from 'react';
 import { useTranslations } from '@letta-cloud/translations';
+import { DeleteAgentDialog, ExportAgentButton } from '@letta-cloud/ui-ade-components';
 
 function ServerStatus() {
   const t = useTranslations('AppHeader');
@@ -65,6 +68,60 @@ function Navigation() {
   );
 }
 
+interface AgentMenuProps {
+  agentId: string;
+}
+
+function AgentMenu(props: AgentMenuProps) {
+  const { agentId } = props;
+  const t = useTranslations('AppHeader');
+
+  const { data } = useAgentsServiceRetrieveAgent({
+    agentId,
+  })
+
+  const navigate = useNavigate()
+
+  const handleDeleteAgentSuccess = useCallback(() => {
+    navigate('/dashboard/agents');
+
+  }, [navigate]);
+
+  return (
+    <DropdownMenu
+      align="end"
+      triggerAsChild
+      trigger={
+        <Button
+          size="small"
+          preIcon={<DotsVerticalIcon />}
+          label={t('AgentMenu.trigger')}
+          hideLabel
+          color="tertiary"
+        />
+      }
+    >
+      <DeleteAgentDialog
+        agentId={agentId}
+        agentName={data?.name || ''}
+        trigger={
+          <DropdownMenuItem
+            doNotCloseOnSelect
+            preIcon={<TrashIcon />}
+            label={t('AgentMenu.delete')}
+
+          />
+        }
+        onSuccess={handleDeleteAgentSuccess}
+      />
+      <ExportAgentButton trigger={<DropdownMenuItem
+        preIcon={<DownloadIcon />}
+        label={t('AgentMenu.export')} />} />
+
+    </DropdownMenu>
+  );
+}
+
 function AgentNavigation() {
   const location = useLocation();
 
@@ -91,6 +148,7 @@ function AgentNavigation() {
       <Typography variant="body2" bold>
         {agentId}
       </Typography>
+      <AgentMenu agentId={agentId} />
     </>
   );
 }
@@ -110,7 +168,7 @@ export function AppHeader() {
         <HStack gap="large">
           {!isWindows && <div className="w-[60px] h-[42px] border-r" />}
           <HStack className="disable-app-header" align="center">
-            <Link className="contents " to="/">
+            <Link className="contents " to="/dashboard/agents">
               <Logo size="small" />
               <Typography variant="body2" bold>
                 Letta Desktop

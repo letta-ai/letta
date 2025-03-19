@@ -9,7 +9,6 @@ import {
 } from '@letta-cloud/ui-component-library';
 import type { ServerLogType } from '@letta-cloud/types';
 import { useEffect, useRef, useState } from 'react';
-import { useServerStatus } from '../../hooks/useServerStatus/useServerStatus';
 import { DesktopPageLayout } from '../shared/DesktopPageLayout/DesktopPageLayout';
 
 export function ServerStatus() {

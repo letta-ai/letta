@@ -30,6 +30,7 @@ import uvicorn
 from uvicorn import Config
 import blib2to3.pgen2.tokenize # noqa
 import blib2to3.pgen2.parse # noqa
+import mcp # noqa
 
 # read first argument
 
