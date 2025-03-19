@@ -186,6 +186,18 @@ To modify these variables, update either:
 - GitHub repository secrets for sensitive values
 - Environment variables in `.github/workflows/deploy.yml` for non-sensitive values
 
+# Letta Desktop
 
-# Why is my letta desktop "letta" not updating
+## Updating dependencies
+
+If you add a dependency to the repo (`.toml`), make sure to update the section on `letta-desktop` in the `.toml` file, as well as add an import to the package in `letta_desktop/__init__.py`.
+
+Then, run:
+```sh
+just prepare-desktop
+just desktop
+```
+
+## Why is my letta desktop "letta" not updating?
+
 There is a weird caching issue with letta, just edit the main.ts file in apps/electron, and it should work (even adding a new line)
