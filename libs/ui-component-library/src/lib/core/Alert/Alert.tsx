@@ -20,6 +20,7 @@ const alertVariants = cva(
         info: 'bg-background-grey border-grey-content text-background-grey-content',
         warning:
           'bg-background-warning border-warning-content text-background-warning-content',
+        brand: 'bg-brand-light text-brand-light-content',
       },
     },
     defaultVariants: {

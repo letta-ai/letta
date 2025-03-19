@@ -16,6 +16,7 @@ import {
   Typography,
   DotsVerticalIcon,
   VisibleOnMobile,
+  ExternalLinkIcon,
 } from '@letta-cloud/ui-component-library';
 import type { QueryBuilderQuery } from '@letta-cloud/ui-component-library';
 import { ProjectSelector } from '$web/client/components';
@@ -291,6 +292,7 @@ function DesktopADEHeader(props: DesktopADEHeaderProps) {
       /* eslint-disable-next-line react/forbid-component-props */
       className="h-[40px] min-h-[40px] largerThanMobile:pr-0 pr-3 relative"
       fullWidth
+      gap="small"
       color="background"
     >
       <HStack overflowX="hidden" align="center" fullHeight gap="small">
@@ -326,14 +328,15 @@ function DesktopADEHeader(props: DesktopADEHeaderProps) {
         </HStack>
       </HStack>
       <HStack gap={false} align="center">
-        <HStack paddingRight="small" align="center" gap="small">
+        <HStack align="center" gap="small">
           <DashboardHeaderNavigation />
         </HStack>
         <HStack align="center" gap="small">
-          <DeploymentButton />
           {isTemplate && (
             <Button
+              size="small"
               preIcon={<LettaInvaderIcon />}
+              postIcon={<ExternalLinkIcon />}
               label={t('viewAgents')}
               target="_blank"
               href={`/projects/${slug}/agents?query=${JSON.stringify({
@@ -353,10 +356,13 @@ function DesktopADEHeader(props: DesktopADEHeaderProps) {
                   ],
                 },
               } satisfies QueryBuilderQuery)}`}
-              color="secondary"
+              color="tertiary"
             />
           )}
-          <ProfilePopover />
+          <HStack paddingRight="small">
+            <DeploymentButton />
+          </HStack>
+          <ProfilePopover size="large" />
         </HStack>
       </HStack>
     </HStack>

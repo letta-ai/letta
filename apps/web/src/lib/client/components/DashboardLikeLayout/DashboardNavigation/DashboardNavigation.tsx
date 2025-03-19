@@ -13,6 +13,7 @@ import {
   TextArea,
   useForm,
   Breadcrumb,
+  ExternalLinkIcon,
 } from '@letta-cloud/ui-component-library';
 import { HiddenOnMobile } from '@letta-cloud/ui-component-library';
 import {
@@ -690,20 +691,6 @@ export function DashboardHeaderNavigation(
         {currentUser && !currentUser.hasCloudAccess && (
           <CloudAccessCodeDialog />
         )}
-        <Button
-          size="small"
-          color="tertiary"
-          target="_blank"
-          label={t('DashboardHeaderNavigation.documentation')}
-          href="https://docs.letta.com/introduction"
-        />
-        <Button
-          size="small"
-          color="tertiary"
-          target="_blank"
-          label={t('DashboardHeaderNavigation.apiReference')}
-          href="https://docs.letta.com/api-reference"
-        />
         <Popover
           triggerAsChild
           trigger={
@@ -747,6 +734,22 @@ export function DashboardHeaderNavigation(
             </a>
           </VStack>
         </Popover>
+        <Button
+          size="small"
+          color="tertiary"
+          postIcon={<ExternalLinkIcon />}
+          target="_blank"
+          label={t('DashboardHeaderNavigation.documentation')}
+          href="https://docs.letta.com/introduction"
+        />
+        <Button
+          size="small"
+          color="tertiary"
+          postIcon={<ExternalLinkIcon />}
+          target="_blank"
+          label={t('DashboardHeaderNavigation.apiReference')}
+          href="https://docs.letta.com/api-reference"
+        />
       </HStack>
     </HiddenOnMobile>
   );

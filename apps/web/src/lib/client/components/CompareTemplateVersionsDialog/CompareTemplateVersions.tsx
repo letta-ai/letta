@@ -2,9 +2,7 @@ import type { AgentState } from '@letta-cloud/sdk-core';
 import React from 'react';
 import {
   AgentStateViewer,
-  HStack,
   LoadingEmptyStatusComponent,
-  Typography,
   VStack,
 } from '@letta-cloud/ui-component-library';
 import { webApi, webApiQueryKeys } from '@letta-cloud/sdk-web';
@@ -41,6 +39,8 @@ function useAgentStateFromVersionName(
 interface CompareTemplateVersionsProps {
   leftComparisonVersion: Versions;
   rightComparisonVersion: Versions;
+  leftNameOverride?: string;
+  rightNameOverride?: string;
   defaultLeftComparisonState?: AgentState;
   defaultRightComparisonState?: AgentState;
 }
@@ -53,6 +53,8 @@ export function CompareTemplateVersions(props: CompareTemplateVersionsProps) {
     leftComparisonVersion,
     defaultLeftComparisonState,
     rightComparisonVersion,
+    leftNameOverride,
+    rightNameOverride,
   } = props;
 
   const leftAgentState = useAgentStateFromVersionName(
@@ -67,14 +69,6 @@ export function CompareTemplateVersions(props: CompareTemplateVersionsProps) {
 
   return (
     <VStack flex collapseHeight>
-      <HStack border gap={false}>
-        <VStack flex fullWidth borderRight paddingRight="none" padding="small">
-          <Typography bold>{`${name}:${leftComparisonVersion}`}</Typography>
-        </VStack>
-        <VStack flex fullWidth padding="small" color="brand-light">
-          <Typography bold>{`${name}:${rightComparisonVersion}`}</Typography>
-        </VStack>
-      </HStack>
       <VStack border flex collapseHeight overflowY="auto">
         {!leftAgentState || !rightAgentState ? (
           <LoadingEmptyStatusComponent
@@ -83,6 +77,16 @@ export function CompareTemplateVersions(props: CompareTemplateVersionsProps) {
           />
         ) : (
           <AgentStateViewer
+            baseName={
+              leftNameOverride
+                ? leftNameOverride
+                : `${name}:${leftComparisonVersion}`
+            }
+            comparedName={
+              rightNameOverride
+                ? rightNameOverride
+                : `${name}:${rightComparisonVersion}`
+            }
             baseState={leftAgentState as AgentState}
             comparedState={rightAgentState as AgentState}
           />

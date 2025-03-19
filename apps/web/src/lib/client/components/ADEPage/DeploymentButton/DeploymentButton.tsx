@@ -6,18 +6,18 @@ import {
   Checkbox,
   CloseIcon,
   CloseMiniApp,
-  Dialog,
   ExternalLink,
   FormActions,
   FormField,
   FormProvider,
   HStack,
-  Input,
-  LettaLoader,
   MiniApp,
+  OnboardingAsideFocus,
   Popover,
   RocketIcon,
+  SaveIcon,
   TemplateIcon,
+  TextArea,
   toast,
   Tooltip,
   Typography,
@@ -25,7 +25,6 @@ import {
   VStack,
   WarningIcon,
 } from '@letta-cloud/ui-component-library';
-import { DeployAgentUsageInstructions } from '$web/client/code-reference/DeployAgentUsageInstructions';
 import { z } from 'zod';
 import { useQueryClient } from '@tanstack/react-query';
 import React, { useCallback, useMemo, useState } from 'react';
@@ -33,12 +32,10 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { type webApiContracts, webApiQueryKeys } from '$web/client';
 import { CLOUD_UPSELL_URL } from '$web/constants';
 import type { AgentState } from '@letta-cloud/sdk-core';
-import { isAgentState } from '@letta-cloud/sdk-core';
 import { useCurrentUser, useUserHasPermission } from '$web/client/hooks';
 import type { ServerInferResponses } from '@ts-rest/core';
-import type { contracts } from '@letta-cloud/sdk-web';
+import { type contracts, useSetOnboardingStep } from '@letta-cloud/sdk-web';
 import { atom, useSetAtom } from 'jotai';
-import { compareAgentStates } from '@letta-cloud/utils-shared';
 import { useCurrentAgentMetaData } from '@letta-cloud/ui-ade-components';
 import { ApplicationServices } from '@letta-cloud/service-rbac';
 import { CompareTemplateVersions } from '$web/client/components';
@@ -46,43 +43,11 @@ import type { InfiniteData } from '@tanstack/query-core';
 import { useCurrentAgent } from '$web/client/hooks/useCurrentAgent/useCurrentAgent';
 import { useLatestAgentTemplate } from '$web/client/hooks/useLatestAgentTemplate/useLatestAgentTemplate';
 import { cloudAPI } from '@letta-cloud/sdk-cloud-api';
-
-interface DeployAgentDialogProps {
-  isAtLatestVersion: boolean;
-  deployedTemplateId: string;
-}
-
-function DeployAgentDialog(props: DeployAgentDialogProps) {
-  const { isAtLatestVersion, deployedTemplateId } = props;
-  const { name } = useCurrentAgent();
-  const { id: projectId } = useCurrentProject();
-  const t = useTranslations(
-    'projects/(projectSlug)/agents/(agentId)/AgentPage',
-  );
-
-  return (
-    <Dialog
-      title={t('DeployAgentDialog.title')}
-      size="xlarge"
-      trigger={
-        <Button
-          fullWidth
-          data-testid="deploy-agent-dialog-trigger"
-          color={!isAtLatestVersion ? 'tertiary' : 'primary'}
-          label={t('DeployAgentDialog.trigger')}
-          target="_blank"
-        />
-      }
-      hideConfirm
-    >
-      <DeployAgentUsageInstructions
-        deployedTemplateId={deployedTemplateId}
-        versionKey={`${name}:latest`}
-        projectId={projectId}
-      />
-    </Dialog>
-  );
-}
+import { useShowOnboarding } from '$web/client/hooks/useShowOnboarding/useShowOnboarding';
+import {
+  stepToRewardMap,
+  TOTAL_PRIMARY_ONBOARDING_STEPS,
+} from '@letta-cloud/types';
 
 function CloudUpsellDeploy() {
   const t = useTranslations(
@@ -148,6 +113,9 @@ function CreateNewTemplateVersionDialog(
   );
 
   const { name } = useCurrentAgent();
+
+  const { setOnboardingStep } = useSetOnboardingStep();
+  const showOnboardingMessage = useShowOnboarding('save_version');
 
   type VersionAgentFormValues = z.infer<typeof versionAgentFormSchema>;
   const agentState = useCurrentAgent();
@@ -236,6 +204,13 @@ function CreateNewTemplateVersionDialog(
             };
           },
         );
+
+        if (showOnboardingMessage) {
+          setOnboardingStep({
+            stepToClaim: 'save_version',
+            onboardingStep: 'deploy_agent',
+          });
+        }
       },
     });
 
@@ -262,6 +237,8 @@ function CreateNewTemplateVersionDialog(
         appName={t('VersionAgentDialog.title')}
         onOpenChange={setOpen}
         isOpen={open}
+        backdrop
+        __use__rarely__className="max-w-[1024px]"
         trigger={trigger}
       >
         <form
@@ -287,20 +264,42 @@ function CreateNewTemplateVersionDialog(
                 </HStack>
               </CloseMiniApp>
             </HStack>
+            {showOnboardingMessage && (
+              <VStack paddingX paddingTop>
+                <HStack color="brand-light" padding="small">
+                  <VStack>
+                    <HStack>
+                      <Badge
+                        content={t('VersionAgentDialog.onboarding.badge')}
+                      />
+                    </HStack>
+                    <Typography>
+                      {t('VersionAgentDialog.onboarding.title')}
+                    </Typography>
+                  </VStack>
+                </HStack>
+              </VStack>
+            )}
             <VStack padding fullHeight overflow="hidden">
               <CompareTemplateVersions
+                leftNameOverride={t('VersionAgentDialog.leftNameOverride')}
+                rightNameOverride={t('VersionAgentDialog.rightNameOverride')}
                 leftComparisonVersion="latest"
                 rightComparisonVersion="current"
                 defaultRightComparisonState={agentState as AgentState}
                 defaultLeftComparisonState={deployedAgentTemplate?.state}
               />
+
               <VStack border padding>
                 <VStack paddingBottom gap="form">
                   <FormField
                     render={({ field }) => {
                       return (
-                        <Input
+                        <TextArea
                           {...field}
+                          autosize
+                          minRows={3}
+                          rows={2}
                           fullWidth
                           description={t(
                             'VersionAgentDialog.message.description',
@@ -344,7 +343,7 @@ function CreateNewTemplateVersionDialog(
                     name="migrate"
                   />
                 </VStack>
-                <FormActions>
+                <FormActions align="start">
                   <Button
                     data-testid="deploy-agent-dialog-trigger"
                     color="primary"
@@ -361,11 +360,35 @@ function CreateNewTemplateVersionDialog(
   );
 }
 
+interface OnboardingWrapperProps {
+  children: React.ReactNode;
+}
+
+function OnboardingWrapper(props: OnboardingWrapperProps) {
+  const { children } = props;
+  const t = useTranslations('DeploymentButton');
+
+  const show = useShowOnboarding('save_version');
+
+  return (
+    <OnboardingAsideFocus
+      difficulty="easy"
+      reward={stepToRewardMap.save_version}
+      totalSteps={TOTAL_PRIMARY_ONBOARDING_STEPS}
+      currentStep={4}
+      title={t('OnboardingWrapper.title')}
+      description={t('OnboardingWrapper.description')}
+      placement="bottom-end"
+      isOpen={show}
+    >
+      {children}
+    </OnboardingAsideFocus>
+  );
+}
+
 function TemplateVersionDisplay() {
   // get latest template version
-  const agentState = useCurrentAgent();
-  const { deployedAgentTemplate, notFoundError, otherError } =
-    useLatestAgentTemplate();
+  const { deployedAgentTemplate, otherError } = useLatestAgentTemplate();
   const t = useTranslations(
     'projects/(projectSlug)/agents/(agentId)/AgentPage',
   );
@@ -374,28 +397,12 @@ function TemplateVersionDisplay() {
     ApplicationServices.CREATE_UPDATE_DELETE_TEMPLATES,
   );
 
-  const isAtLatestVersion = useMemo(() => {
-    if (notFoundError) {
-      return false;
-    }
-
-    if (!deployedAgentTemplate?.state || !isAgentState(agentState)) {
-      return true;
-    }
-
-    return compareAgentStates(agentState, deployedAgentTemplate.state);
-  }, [deployedAgentTemplate, notFoundError, agentState]);
-
   const versionNumber = deployedAgentTemplate?.version;
-
-  const isLoading = useMemo(() => {
-    return !deployedAgentTemplate && !notFoundError && !otherError;
-  }, [deployedAgentTemplate, notFoundError, otherError]);
-
   if (otherError) {
     return (
       <Tooltip asChild content={t('DeploymentButton.errorTooltip')}>
         <Button
+          size="small"
           color="destructive"
           data-testid="version-template-trigger"
           label={t('DeploymentButton.error')}
@@ -408,6 +415,7 @@ function TemplateVersionDisplay() {
   if (!canUpdateTemplate) {
     return (
       <Button
+        size="small"
         color="primary"
         disabled
         label={t('DeploymentButton.readyToDeploy.trigger', {
@@ -417,92 +425,21 @@ function TemplateVersionDisplay() {
     );
   }
 
-  if (isAtLatestVersion || isLoading) {
-    return (
-      <Popover
-        triggerAsChild
-        trigger={
-          <Button
-            busy={isLoading}
-            color="primary"
-            data-testid="version-template-trigger"
-            label={
-              versionNumber
-                ? t('DeploymentButton.readyToDeploy.trigger', {
-                    version: versionNumber,
-                  })
-                : t('DeploymentButton.readyToDeploy.triggerNoVersion')
-            }
-            preIcon={isAtLatestVersion ? <RocketIcon /> : <WarningIcon />}
-          />
-        }
-        align="end"
-      >
-        {isLoading ? (
-          <VStack align="center" justify="center" padding>
-            <LettaLoader variant="grower" />
-            <Typography>{t('DeploymentButton.loading')}</Typography>
-          </VStack>
-        ) : (
-          <VStack padding="medium" gap="large">
-            <VStack>
-              {deployedAgentTemplate?.version && (
-                <HStack>
-                  <Badge
-                    content={t('DeploymentButton.version', {
-                      version: deployedAgentTemplate?.version,
-                    })}
-                  />
-                </HStack>
-              )}
-              <Typography variant="heading5" bold>
-                {isAtLatestVersion
-                  ? t('DeploymentButton.readyToDeploy.heading')
-                  : t('DeploymentButton.updateAvailable.heading')}
-              </Typography>
-              <Typography>
-                {isAtLatestVersion
-                  ? t('DeploymentButton.readyToDeploy.copy')
-                  : versionNumber
-                    ? t('DeploymentButton.updateAvailable.copy', {
-                        version: versionNumber,
-                      })
-                    : t('DeploymentButton.updateAvailable.copyNoVersion')}
-              </Typography>
-            </VStack>
-            <VStack gap="small">
-              <DeployAgentDialog
-                deployedTemplateId={deployedAgentTemplate?.id || ''}
-                isAtLatestVersion={isAtLatestVersion}
-              />
-            </VStack>
-          </VStack>
-        )}
-      </Popover>
-    );
-  }
-
   return (
-    deployedAgentTemplate?.state &&
-    isAgentState(agentState) && (
+    <OnboardingWrapper>
       <CreateNewTemplateVersionDialog
         trigger={
           <Button
-            preIcon={<WarningIcon />}
+            size="small"
+            preIcon={<SaveIcon />}
             data-testid="stage-new-version-button"
             color="primary"
             fullWidth
-            label={
-              versionNumber
-                ? t('DeploymentButton.updateAvailable.trigger', {
-                    version: versionNumber,
-                  })
-                : t('DeploymentButton.updateAvailable.triggerNoVersion')
-            }
+            label={t('DeploymentButton.save')}
           />
         }
       />
-    )
+    </OnboardingWrapper>
   );
 }
 
@@ -547,6 +484,7 @@ function CreateTemplateButton() {
       triggerAsChild
       trigger={
         <Button
+          size="small"
           preIcon={<TemplateIcon />}
           color="primary"
           label={t('CreateTemplateButton.trigger')}

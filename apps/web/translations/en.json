@@ -1360,6 +1360,12 @@
       "loading": "Loading agents..."
     }
   },
+  "DeploymentButton": {
+    "OnboardingWrapper": {
+      "title": "Save a template",
+      "description": "Once you've made changes to your template you're happy with, you should save a new version of the template."
+    }
+  },
   "projects/(projectSlug)/agents/(agentId)/AgentPage": {
     "convertingToTemplate": "Converting to template...",
     "preparingAgent": "Preparing agent",
@@ -1376,7 +1382,13 @@
       "title": "Deploy agent instructions"
     },
     "VersionAgentDialog": {
-      "title": "Template Version Manager",
+      "onboarding": {
+        "badge": "Finish saving a template",
+        "title": "Before saving, we will show you the changes you've made to this template, if you're satisfied with the changes or just want to test saving, press the save button at the bottom of the screen."
+      },
+      "leftNameOverride": "Last saved version",
+      "rightNameOverride": "Template to save",
+      "title": "Save Template",
       "trigger": "Version manager",
       "deployedAgents": "Deployed agents",
       "confirm": "Save new version",
@@ -1409,6 +1421,7 @@
       "loading": "Loading version information...",
       "version": "VERSION {version}",
       "error": "ERROR",
+      "save": "Save Template",
       "errorTooltip": "There was an error fetching template information, please refresh the page or contact support.",
       "readyToDeploy": {
         "trigger": "Template v{version}",
@@ -1447,7 +1460,7 @@
     "positionError": "There was a unhandled error while positioning the window, will fallback to default position, we have notified our team about this issue."
   },
   "ADE/TemplateVersionManager": {
-    "title": "Template Version Manager"
+    "title": "Save a template"
   },
   "api-keys/page": {
     "title": "API keys",

@@ -13,6 +13,8 @@ import type { CleanedAgentState } from '@letta-cloud/utils-shared';
 interface AgentStateViewerProps {
   baseState: AgentState;
   comparedState?: AgentState;
+  baseName?: string;
+  comparedName?: string;
 }
 
 interface GetChangeClassProps {
@@ -163,7 +165,7 @@ function SectionWrapper(props: React.PropsWithChildren<SectionWrapperProps>) {
 
   return (
     <VStack id={`${baseId}-${id}`} gap={false}>
-      <VStack color="brand-light" padding="xsmall">
+      <VStack color="background-grey" padding="xsmall">
         <Typography variant="body2" bold>
           {props.title}
         </Typography>
@@ -488,7 +490,7 @@ function SingleStateViewer(props: SingleStateViewerProps) {
 }
 
 export function AgentStateViewer(props: AgentStateViewerProps) {
-  const { baseState, comparedState } = props;
+  const { baseState, comparedState, baseName, comparedName } = props;
 
   const { tools, sources } = useMemo(() => {
     const toolsMap: Record<string, Tool> = {};
@@ -542,6 +544,11 @@ export function AgentStateViewer(props: AgentStateViewerProps) {
   return (
     <HStack gap={false}>
       <VStack gap={false} fullWidth borderRight={!!cleanedComparedState}>
+        <HStack borderBottom color="background-grey2" padding="small">
+          <Typography bold variant="body">
+            {baseName}
+          </Typography>
+        </HStack>
         <SingleStateViewer
           id="base"
           state={cleanedBaseState}
@@ -552,6 +559,11 @@ export function AgentStateViewer(props: AgentStateViewerProps) {
       </VStack>
       {cleanedComparedState && (
         <VStack gap={false} fullWidth>
+          <HStack borderBottom color="brand-light" padding="small">
+            <Typography bold variant="body">
+              {comparedName}
+            </Typography>
+          </HStack>
           <SingleStateViewer
             id="compared"
             isAdditive
