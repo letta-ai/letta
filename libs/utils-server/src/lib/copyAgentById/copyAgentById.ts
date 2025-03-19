@@ -64,6 +64,10 @@ export async function copyAgentById(
         template_id: templateVersionId,
         identity_ids: identityIds,
         base_template_id: baseTemplateId,
+        include_base_tools: false,
+        include_base_tool_rules: false,
+        include_multi_agent_tools: false,
+        tool_rules: baseAgent.tool_rules,
         tool_ids: agentBody.tool_ids,
         name:
           name ||
