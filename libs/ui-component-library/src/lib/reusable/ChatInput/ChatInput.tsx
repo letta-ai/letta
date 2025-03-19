@@ -213,7 +213,7 @@ export const ChatInput = forwardRef<ChatInputRef, ChatInputProps>(
         </HStack>
 
         <VStack
-          color="background"
+          color="panel-input-background"
           onSubmit={handleSubmit}
           as="form"
           className="z-[1] relative focus-within:ring-ring focus-within:ring-1 ignore-focus-on-buttons"

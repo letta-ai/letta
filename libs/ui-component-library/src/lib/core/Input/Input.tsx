@@ -42,7 +42,7 @@ const inputVariants = cva(
       },
       color: {
         transparent: 'bg-transparent text-content border-transparent',
-        default: 'bg-background text-background-content',
+        default: 'bg-panel-input-background text-background-content',
         grey: 'bg-background-grey text-background-content',
       },
       fullWidth: {

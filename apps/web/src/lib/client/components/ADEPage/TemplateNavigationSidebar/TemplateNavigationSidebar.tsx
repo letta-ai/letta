@@ -27,6 +27,7 @@ function SidebarButton(props: SidebarButtonProps) {
       label={label}
       active={pathname === href ? 'brand' : undefined}
       preIcon={icon}
+      size="default"
       hideLabel
     />
   );
@@ -40,7 +41,7 @@ export function TemplateSidebarInner() {
     <VStack
       align="center"
       /* eslint-disable-next-line react/forbid-component-props */
-      className="w-[43px] min-w-[43px] pr-[1px]"
+      className="w-[43px] min-w-[43px] pr-[1px] pt-[3px] bg-background-grey2"
     >
       <SidebarButton
         icon={<LettaAlienChatIcon />}

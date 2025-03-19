@@ -144,7 +144,7 @@ function MessageGroup({ group }: MessageGroupType) {
       />
       <VStack collapseWidth flex gap="small">
         <Typography bold variant="body2" color="lighter">
-          {name}
+          {name.toUpperCase()}
         </Typography>
         <VStack
           gap="large"

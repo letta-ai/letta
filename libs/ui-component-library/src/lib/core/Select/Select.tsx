@@ -211,7 +211,7 @@ function useSelectComponents(selectProps: BaseSelectProps) {
 }
 
 const controlVariants = cva(
-  'border bg-background border-solid h-[auto] px-2 py-1 w-full text-base',
+  'border bg-panel-input-background text-panel-input-background-content border-solid h-[auto] px-2 py-1 w-full',
   {
     variants: {},
     defaultVariants: {},
@@ -248,11 +248,14 @@ function getClassNames(props: GetClassNameArgs = {}) {
     container: () => 'min-w-[200px] w-full',
     control: () =>
       cn(
-        'border bg-background border-solid h-[auto] px-2 py-1 w-full text-base',
+        'border bg-panel-input-background text-panel-input-background-content border-solid h-[auto] px-2 py-1 w-full',
         controlVariants(props),
       ),
     placeholder: () => cn('text-muted-content'),
-    menu: () => cn('mt-1 bg-background border'),
+    menu: () =>
+      cn(
+        'mt-1 bg-panel-input-background text-panel-input-background-content border',
+      ),
     option: () => cn('px-3 py-2  hover:bg-background-hover'),
     noOptionsMessage: () => cn('py-3 px-3'),
     valueContainer: () => cn('flex items-center gap-1'),

@@ -79,6 +79,9 @@
   --background-destructive: 0, 100%, 90%;
   --background-destructive-content: 0, 100%, 10%;
 
+  --panel-input-background: var(--background);
+  --panel-input-background-content: var(--text-default);
+
   --background-grey-content: var(--text-default);
   --background-grey: 210, 10%, 98%;
   --background-grey-hover: 210, 10%, 80%;
@@ -185,11 +188,14 @@
   --violet: 278 72%, 69%;
   --on-transparent: 100, 100%, 100%;
 
-  --background: 0 0% 6%;
-  --background-hover: 240 10% 3.9%;
+  --background: 0, 0%, 6%;
+  --background-hover: 240, 10%, 3.9%;
   --content: var(--text-default);
 
-  --background-grey: 0, 0%, 7%;
+  --panel-input-background: 0, 0%, 8%;
+  --panel-input-background-content: var(--text-default);
+
+  --background-grey: 0, 0%, 9%;
   --background-grey-content: var(--text-default);
 
   --background-grey2: 0, 0%, 13%;
@@ -208,8 +214,8 @@
   --agent-color: 278, 44%, 25%;
   --agent-color-content: 0, 0%, 100%;
 
-  --primary: 0 0% 90%;
-  --primary-content: 225 6% 13%;
+  --primary: 210 6% 73%;
+  --primary-content: 0 0% 8%;
 
   --secondary: var(--background);
   --secondary-content: var(--content);

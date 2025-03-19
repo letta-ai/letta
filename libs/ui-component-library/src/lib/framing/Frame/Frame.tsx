@@ -40,6 +40,8 @@ const frameVariants = cva('', {
     color: {
       transparent: 'bg-transparent',
       background: 'bg-background text-background-content',
+      'panel-input-background':
+        'bg-panel-input-background text-panel-input-background-content',
       'background-grey': 'bg-background-grey text-background-grey-content',
       'background-grey2': 'bg-background-grey2 text-background-grey2-content',
       'background-black': 'bg-background-black text-background-black-content',
