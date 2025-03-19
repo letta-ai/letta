@@ -1,6 +1,6 @@
 
 ## Nested K/V (`nested_kv_task`)
-This task runs K/V lookups on synthetic data. You can run it with `icml_experiments/nested_kv_task/run.sh`.
+This task runs K/V lookups on synthetic data. You can run it with `paper_experiments/nested_kv_task/run.sh`.
 
 ## Document Q/A (`doc_qa_task`)
 This task runs question answering on a set of embedded wikipedia passages.

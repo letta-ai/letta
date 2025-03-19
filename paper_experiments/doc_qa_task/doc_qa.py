@@ -37,7 +37,7 @@ from memgpt.cli.cli_config import delete
 from memgpt import utils
 from memgpt.utils import count_tokens
 
-from icml_experiments.utils import load_gzipped_file, get_experiment_config
+from paper_experiments.utils import load_gzipped_file, get_experiment_config
 
 
 DATA_SOURCE_NAME = "wikipedia"
@@ -248,7 +248,7 @@ def run_docqa_task(
     """Run the full set of MemGPT doc QA experiments"""
 
     # Grab the question data
-    data_file = "icml_experiments/qa_data/30_total_documents/nq-open-30_total_documents_gold_at_0.jsonl.gz"
+    data_file = "paper_experiments/qa_data/30_total_documents/nq-open-30_total_documents_gold_at_0.jsonl.gz"
     all_question_data = load_gzipped_file(data_file)
 
     config = get_experiment_config(os.environ.get("PGVECTOR_TEST_DB_URL"), endpoint_type=provider, model=model)

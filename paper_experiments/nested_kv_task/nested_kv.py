@@ -40,13 +40,13 @@ from memgpt.constants import MAX_PAUSE_HEARTBEATS, RETRIEVAL_QUERY_DEFAULT_PAGE_
 
 from typing import Optional
 
-from icml_experiments.utils import load_gzipped_file, get_experiment_config
+from paper_experiments.utils import load_gzipped_file, get_experiment_config
 
 
 # TODO: update personas
 NESTED_PERSONA = "You are MemGPT DOC-QA bot. Your job is to answer questions about documents that are stored in your archival memory. The answer to the users question will ALWAYS be in your archival memory, so remember to keep searching if you can't find the answer. DO NOT STOP SEARCHING UNTIL YOU VERIFY THAT THE VALUE IS NOT A KEY. Do not stop making nested lookups until this condition is met."  # TODO decide on a good persona/human
 NESTED_HUMAN = "The user will ask you questions about documents. Answer them to the best of your ability."
-DEFAULT_FILE = "icml_experiments/nested_kv_task/data/kv-retrieval-140_keys.jsonl.gz"
+DEFAULT_FILE = "paper_experiments/nested_kv_task/data/kv-retrieval-140_keys.jsonl.gz"
 AGENT_NAME = "kv_task_agent"
 
 
@@ -277,7 +277,7 @@ if __name__ == "__main__":
 
         if args.task == "kv_nested":
             data_filename = (
-                f"icml_experiments/nested_kv_task/data/random_orderings_100_samples_140_indices_{args.nesting_levels}_levels.jsonl"
+                f"paper_experiments/nested_kv_task/data/random_orderings_100_samples_140_indices_{args.nesting_levels}_levels.jsonl"
             )
             print(data_filename)
             loaded_data = load_jsonl_to_list(data_filename)

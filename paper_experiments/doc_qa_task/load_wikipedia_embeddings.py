@@ -11,7 +11,7 @@ from memgpt.data_types import Passage
 from memgpt.config import MemGPTConfig
 from memgpt.agent_store.storage import StorageConnector, TableType
 
-from icml_experiments.utils import get_experiment_config
+from paper_experiments.utils import get_experiment_config
 from multiprocessing import Pool
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from absl import app, flags

@@ -6,7 +6,7 @@ do
     do
         for baseline in $model "memgpt"
         do
-            python icml_experiments/nested_kv_task/nested_kv.py --model $model  --task kv_nested --baseline $baseline --nesting_levels $nest --seed $seed #--rerun
+            python paper_experiments/nested_kv_task/nested_kv.py --model $model  --task kv_nested --baseline $baseline --nesting_levels $nest --seed $seed #--rerun
         done
     done
 done
