@@ -137,6 +137,9 @@
   --background: 240, 100%, 33%;
   --background-hover: 240, 54%, 48%;
 
+  --panel-input-background: var(--background);
+  --panel-input-background-content: var(--text-default);
+
   --background-grey: 0, 0%, 1%;
   --background-grey-content: 0, 0, 100%;
   --background-grey2: 0, 0%, 50%;
