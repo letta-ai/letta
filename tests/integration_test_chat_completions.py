@@ -110,11 +110,11 @@ def composio_gmail_get_profile_tool(default_user):
 
 
 @pytest.fixture(scope="function")
-def agent(client, roll_dice_tool, weather_tool, composio_gmail_get_profile_tool):
+def agent(client, roll_dice_tool, weather_tool):
     """Creates an agent and ensures cleanup after tests."""
     agent_state = client.create_agent(
         name=f"test_compl_{str(uuid.uuid4())[5:]}",
-        tool_ids=[roll_dice_tool.id, weather_tool.id, composio_gmail_get_profile_tool.id],
+        tool_ids=[roll_dice_tool.id, weather_tool.id],
         include_base_tools=False,
     )
     yield agent_state

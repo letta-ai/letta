@@ -36,7 +36,6 @@ def enable_strict_mode(tool_schema: Dict[str, Any]) -> Dict[str, Any]:
         # Set additionalProperties to False
         parameters["additionalProperties"] = False
         schema["parameters"] = parameters
-
     return schema
 
 
