@@ -333,10 +333,7 @@ class SqlalchemyBase(CommonSqlalchemyMetaMixins, Base):
 
         # If an identifier is provided, add it to the query conditions
         if len(identifiers) > 0:
-            if len(identifiers) == 1:
-                query = query.where(cls.id == identifiers[0])
-            else:
-                query = query.where(cls.id.in_(identifiers))
+            query = query.where(cls.id.in_(identifiers))
             query_conditions.append(f"id='{identifiers}'")
 
         if kwargs:
