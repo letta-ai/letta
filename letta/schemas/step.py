@@ -18,6 +18,7 @@ class Step(StepBase):
     job_id: Optional[str] = Field(
         None, description="The unique identifier of the job that this step belongs to. Only included for async calls."
     )
+    agent_id: Optional[str] = Field(None, description="The ID of the agent that performed the step.")
     provider_name: Optional[str] = Field(None, description="The name of the provider used for this step.")
     model: Optional[str] = Field(None, description="The name of the model used for this step.")
     model_endpoint: Optional[str] = Field(None, description="The model endpoint url used for this step.")

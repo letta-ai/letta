@@ -1,6 +1,6 @@
 from letta.orm.block import Block
 from letta.schemas.block import Block as PydanticBlock
-from letta.serialize_schemas.base import BaseSchema
+from letta.serialize_schemas.marshmallow_base import BaseSchema
 
 
 class SerializedBlockSchema(BaseSchema):

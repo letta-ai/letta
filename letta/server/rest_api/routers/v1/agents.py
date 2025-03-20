@@ -13,18 +13,18 @@ from letta.constants import DEFAULT_MESSAGE_TOOL, DEFAULT_MESSAGE_TOOL_KWARG
 from letta.log import get_logger
 from letta.orm.errors import NoResultFound
 from letta.schemas.agent import AgentState, CreateAgent, UpdateAgent
-from letta.schemas.block import Block, BlockUpdate, CreateBlock  # , BlockLabelUpdate, BlockLimitUpdate
+from letta.schemas.block import Block, BlockUpdate
 from letta.schemas.job import JobStatus, JobUpdate, LettaRequestConfig
-from letta.schemas.letta_message import LettaMessageUnion
+from letta.schemas.letta_message import LettaMessageUnion, LettaMessageUpdateUnion
 from letta.schemas.letta_request import LettaRequest, LettaStreamingRequest
 from letta.schemas.letta_response import LettaResponse
 from letta.schemas.memory import ContextWindowOverview, CreateArchivalMemory, Memory
-from letta.schemas.message import Message, MessageUpdate
 from letta.schemas.passage import Passage, PassageUpdate
 from letta.schemas.run import Run
 from letta.schemas.source import Source
 from letta.schemas.tool import Tool
 from letta.schemas.user import User
+from letta.serialize_schemas.pydantic_agent_schema import AgentSchema
 from letta.server.rest_api.utils import get_letta_server
 from letta.server.server import SyncServer
 
@@ -36,81 +36,82 @@ router = APIRouter(prefix="/agents", tags=["agents"])
 logger = get_logger(__name__)
 
 
-# TODO: This should be paginated
 @router.get("/", response_model=List[AgentState], operation_id="list_agents")
 def list_agents(
     name: Optional[str] = Query(None, description="Name of the agent"),
     tags: Optional[List[str]] = Query(None, description="List of tags to filter agents by"),
     match_all_tags: bool = Query(
         False,
-        description="If True, only returns agents that match ALL given tags. Otherwise, return agents that have ANY of the passed in tags.",
+        description="If True, only returns agents that match ALL given tags. Otherwise, return agents that have ANY of the passed-in tags.",
     ),
-    server: "SyncServer" = Depends(get_letta_server),
+    server: SyncServer = Depends(get_letta_server),
     actor_id: Optional[str] = Header(None, alias="user_id"),
     before: Optional[str] = Query(None, description="Cursor for pagination"),
     after: Optional[str] = Query(None, description="Cursor for pagination"),
-    limit: Optional[int] = Query(None, description="Limit for pagination"),
+    limit: Optional[int] = Query(50, description="Limit for pagination"),
     query_text: Optional[str] = Query(None, description="Search agents by name"),
-    project_id: Optional[str] = Query(None, description="Search agents by project id"),
-    template_id: Optional[str] = Query(None, description="Search agents by template id"),
-    base_template_id: Optional[str] = Query(None, description="Search agents by base template id"),
-    identifier_id: Optional[str] = Query(None, description="Search agents by identifier id"),
+    project_id: Optional[str] = Query(None, description="Search agents by project ID"),
+    template_id: Optional[str] = Query(None, description="Search agents by template ID"),
+    base_template_id: Optional[str] = Query(None, description="Search agents by base template ID"),
+    identity_id: Optional[str] = Query(None, description="Search agents by identity ID"),
     identifier_keys: Optional[List[str]] = Query(None, description="Search agents by identifier keys"),
+    include_relationships: Optional[List[str]] = Query(
+        None,
+        description=(
+            "Specify which relational fields (e.g., 'tools', 'sources', 'memory') to include in the response. "
+            "If not provided, all relationships are loaded by default. "
+            "Using this can optimize performance by reducing unnecessary joins."
+        ),
+    ),
 ):
     """
     List all agents associated with a given user.
-    This endpoint retrieves a list of all agents and their configurations associated with the specified user ID.
+
+    This endpoint retrieves a list of all agents and their configurations
+    associated with the specified user ID.
     """
+
+    # Retrieve the actor (user) details
     actor = server.user_manager.get_user_or_default(user_id=actor_id)
 
-    # Use dictionary comprehension to build kwargs dynamically
-    kwargs = {
-        key: value
-        for key, value in {
-            "name": name,
-            "project_id": project_id,
-            "template_id": template_id,
-            "base_template_id": base_template_id,
-        }.items()
-        if value is not None
-    }
-
-    # Call list_agents with the dynamic kwargs
-    agents = server.agent_manager.list_agents(
+    # Call list_agents directly without unnecessary dict handling
+    return server.agent_manager.list_agents(
         actor=actor,
+        name=name,
         before=before,
         after=after,
         limit=limit,
         query_text=query_text,
         tags=tags,
         match_all_tags=match_all_tags,
+        project_id=project_id,
+        template_id=template_id,
+        base_template_id=base_template_id,
+        identity_id=identity_id,
         identifier_keys=identifier_keys,
-        identifier_id=identifier_id,
-        **kwargs,
+        include_relationships=include_relationships,
     )
-    return agents
 
 
-@router.get("/{agent_id}/download", operation_id="download_agent_serialized")
-def download_agent_serialized(
+@router.get("/{agent_id}/export", operation_id="export_agent_serialized", response_model=AgentSchema)
+def export_agent_serialized(
     agent_id: str,
     server: "SyncServer" = Depends(get_letta_server),
     actor_id: Optional[str] = Header(None, alias="user_id"),
-):
+) -> AgentSchema:
     """
-    Download the serialized JSON representation of an agent.
+    Export the serialized JSON representation of an agent.
     """
     actor = server.user_manager.get_user_or_default(user_id=actor_id)
 
     try:
-        serialized_agent = server.agent_manager.serialize(agent_id=agent_id, actor=actor)
-        return JSONResponse(content=serialized_agent, media_type="application/json")
+        return server.agent_manager.serialize(agent_id=agent_id, actor=actor)
     except NoResultFound:
         raise HTTPException(status_code=404, detail=f"Agent with id={agent_id} not found for user_id={actor.id}.")
 
 
-@router.post("/upload", response_model=AgentState, operation_id="upload_agent_serialized")
-async def upload_agent_serialized(
+@router.post("/import", response_model=AgentState, operation_id="import_agent_serialized")
+async def import_agent_serialized(
     file: UploadFile = File(...),
     server: "SyncServer" = Depends(get_letta_server),
     actor_id: Optional[str] = Header(None, alias="user_id"),
@@ -119,17 +120,26 @@ async def upload_agent_serialized(
         True,
         description="If set to True, existing tools can get their source code overwritten by the uploaded tool definitions. Note that Letta core tools can never be updated externally.",
     ),
+    project_id: Optional[str] = Query(None, description="The project ID to associate the uploaded agent with."),
 ):
     """
-    Upload a serialized agent JSON file and recreate the agent in the system.
+    Import a serialized agent file and recreate the agent in the system.
     """
     actor = server.user_manager.get_user_or_default(user_id=actor_id)
 
     try:
         serialized_data = await file.read()
         agent_json = json.loads(serialized_data)
+
+        # Validate the JSON against AgentSchema before passing it to deserialize
+        agent_schema = AgentSchema.model_validate(agent_json)
+
         new_agent = server.agent_manager.deserialize(
-            serialized_agent=agent_json, actor=actor, append_copy_suffix=append_copy_suffix, override_existing_tools=override_existing_tools
+            serialized_agent=agent_schema,  # Ensure we're passing a validated AgentSchema
+            actor=actor,
+            append_copy_suffix=append_copy_suffix,
+            override_existing_tools=override_existing_tools,
+            project_id=project_id,
         )
         return new_agent
 
@@ -137,7 +147,7 @@ async def upload_agent_serialized(
         raise HTTPException(status_code=400, detail="Corrupted agent file format.")
 
     except ValidationError as e:
-        raise HTTPException(status_code=422, detail=f"Invalid agent schema: {str(e)}")
+        raise HTTPException(status_code=422, detail=f"Invalid agent schema: {e.errors()}")
 
     except IntegrityError as e:
         raise HTTPException(status_code=409, detail=f"Database integrity error: {str(e)}")
@@ -145,9 +155,9 @@ async def upload_agent_serialized(
     except OperationalError as e:
         raise HTTPException(status_code=503, detail=f"Database connection error. Please try again later: {str(e)}")
 
-    except Exception:
+    except Exception as e:
         traceback.print_exc()
-        raise HTTPException(status_code=500, detail="An unexpected error occurred while uploading the agent.")
+        raise HTTPException(status_code=500, detail=f"An unexpected error occurred while uploading the agent: {str(e)}")
 
 
 @router.get("/{agent_id}/context", response_model=ContextWindowOverview, operation_id="retrieve_agent_context_window")
@@ -526,20 +536,20 @@ def list_messages(
     )
 
 
-@router.patch("/{agent_id}/messages/{message_id}", response_model=Message, operation_id="modify_message")
+@router.patch("/{agent_id}/messages/{message_id}", response_model=LettaMessageUnion, operation_id="modify_message")
 def modify_message(
     agent_id: str,
     message_id: str,
-    request: MessageUpdate = Body(...),
+    request: LettaMessageUpdateUnion = Body(...),
     server: "SyncServer" = Depends(get_letta_server),
     actor_id: Optional[str] = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
 ):
     """
     Update the details of a message associated with an agent.
     """
-    # TODO: Get rid of agent_id here, it's not really relevant
+    # TODO: support modifying tool calls/returns
     actor = server.user_manager.get_user_or_default(user_id=actor_id)
-    return server.message_manager.update_message_by_id(message_id=message_id, message_update=request, actor=actor)
+    return server.message_manager.update_message_by_letta_message(message_id=message_id, letta_message_update=request, actor=actor)
 
 
 @router.post(

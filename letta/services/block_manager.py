@@ -64,6 +64,8 @@ class BlockManager:
         label: Optional[str] = None,
         is_template: Optional[bool] = None,
         template_name: Optional[str] = None,
+        identifier_keys: Optional[List[str]] = None,
+        identity_id: Optional[str] = None,
         id: Optional[str] = None,
         after: Optional[str] = None,
         limit: Optional[int] = 50,
@@ -81,7 +83,14 @@ class BlockManager:
             if id:
                 filters["id"] = id
 
-            blocks = BlockModel.list(db_session=session, after=after, limit=limit, **filters)
+            blocks = BlockModel.list(
+                db_session=session,
+                after=after,
+                limit=limit,
+                identifier_keys=identifier_keys,
+                identity_id=identity_id,
+                **filters,
+            )
 
             return [block.to_pydantic() for block in blocks]
 

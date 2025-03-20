@@ -8,9 +8,27 @@ from sqlalchemy import Dialect
 
 from letta.schemas.embedding_config import EmbeddingConfig
 from letta.schemas.enums import ToolRuleType
+from letta.schemas.letta_message_content import (
+    MessageContent,
+    MessageContentType,
+    OmittedReasoningContent,
+    ReasoningContent,
+    RedactedReasoningContent,
+    TextContent,
+    ToolCallContent,
+    ToolReturnContent,
+)
 from letta.schemas.llm_config import LLMConfig
 from letta.schemas.message import ToolReturn
-from letta.schemas.tool_rule import ChildToolRule, ConditionalToolRule, ContinueToolRule, InitToolRule, TerminalToolRule, ToolRule
+from letta.schemas.tool_rule import (
+    ChildToolRule,
+    ConditionalToolRule,
+    ContinueToolRule,
+    InitToolRule,
+    MaxCountPerStepToolRule,
+    TerminalToolRule,
+    ToolRule,
+)
 
 # --------------------------
 # LLMConfig Serialization
@@ -75,20 +93,27 @@ def deserialize_tool_rules(data: Optional[List[Dict]]) -> List[Union[ChildToolRu
     return [deserialize_tool_rule(rule_data) for rule_data in data]
 
 
-def deserialize_tool_rule(data: Dict) -> Union[ChildToolRule, InitToolRule, TerminalToolRule, ConditionalToolRule, ContinueToolRule]:
+def deserialize_tool_rule(
+    data: Dict,
+) -> Union[ChildToolRule, InitToolRule, TerminalToolRule, ConditionalToolRule, ContinueToolRule, MaxCountPerStepToolRule]:
     """Deserialize a dictionary to the appropriate ToolRule subclass based on 'type'."""
     rule_type = ToolRuleType(data.get("type"))
 
-    if rule_type == ToolRuleType.run_first or rule_type == ToolRuleType.InitToolRule:
+    if rule_type == ToolRuleType.run_first:
+        data["type"] = ToolRuleType.run_first
         return InitToolRule(**data)
-    elif rule_type == ToolRuleType.exit_loop or rule_type == ToolRuleType.TerminalToolRule:
+    elif rule_type == ToolRuleType.exit_loop:
+        data["type"] = ToolRuleType.exit_loop
         return TerminalToolRule(**data)
-    elif rule_type == ToolRuleType.constrain_child_tools or rule_type == ToolRuleType.ToolRule:
+    elif rule_type == ToolRuleType.constrain_child_tools:
+        data["type"] = ToolRuleType.constrain_child_tools
         return ChildToolRule(**data)
     elif rule_type == ToolRuleType.conditional:
         return ConditionalToolRule(**data)
     elif rule_type == ToolRuleType.continue_loop:
         return ContinueToolRule(**data)
+    elif rule_type == ToolRuleType.max_count_per_step:
+        return MaxCountPerStepToolRule(**data)
     raise ValueError(f"Unknown ToolRule type: {rule_type}")
 
 
@@ -161,6 +186,60 @@ def deserialize_tool_returns(data: Optional[List[Dict]]) -> List[ToolReturn]:
         tool_returns.append(tool_return)
 
     return tool_returns
+
+
+# ----------------------------
+# MessageContent Serialization
+# ----------------------------
+
+
+def serialize_message_content(message_content: Optional[List[Union[MessageContent, dict]]]) -> List[Dict]:
+    """Convert a list of MessageContent objects into JSON-serializable format."""
+    if not message_content:
+        return []
+
+    serialized_message_content = []
+    for content in message_content:
+        if isinstance(content, MessageContent):
+            serialized_message_content.append(content.model_dump())
+        elif isinstance(content, dict):
+            serialized_message_content.append(content)  # Already a dictionary, leave it as-is
+        else:
+            raise TypeError(f"Unexpected message content type: {type(content)}")
+
+    return serialized_message_content
+
+
+def deserialize_message_content(data: Optional[List[Dict]]) -> List[MessageContent]:
+    """Convert a JSON list back into MessageContent objects."""
+    if not data:
+        return []
+
+    message_content = []
+    for item in data:
+        if not item:
+            continue
+
+        content_type = item.get("type")
+        if content_type == MessageContentType.text:
+            content = TextContent(**item)
+        elif content_type == MessageContentType.tool_call:
+            content = ToolCallContent(**item)
+        elif content_type == MessageContentType.tool_return:
+            content = ToolReturnContent(**item)
+        elif content_type == MessageContentType.reasoning:
+            content = ReasoningContent(**item)
+        elif content_type == MessageContentType.redacted_reasoning:
+            content = RedactedReasoningContent(**item)
+        elif content_type == MessageContentType.omitted_reasoning:
+            content = OmittedReasoningContent(**item)
+        else:
+            # Skip invalid content
+            continue
+
+        message_content.append(content)
+
+    return message_content
 
 
 # --------------------------

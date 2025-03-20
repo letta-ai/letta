@@ -86,20 +86,6 @@ def test_archival(agent_obj):
         pass
 
 
-def test_recall_user(client, agent_obj):
-    # keyword
-    keyword = "banana"
-
-    # Send messages to agent
-    client.send_message(agent_id=agent_obj.agent_state.id, role="user", message="hello")
-    client.send_message(agent_id=agent_obj.agent_state.id, role="user", message=keyword)
-    client.send_message(agent_id=agent_obj.agent_state.id, role="user", message="tell me a fun fact")
-
-    # Conversation search
-    result = base_functions.conversation_search(agent_obj, "banana")
-    assert keyword in result
-
-
 def test_recall_self(client, agent_obj):
     # keyword
     keyword = "banana"

@@ -86,9 +86,8 @@ def convert_to_structured_output(openai_function: dict, allow_optional: bool = F
     # but if "type" is "object" we expected "properties", where each property has details
     # and if "type" is "array" we expect "items": <type>
     for param, details in openai_function["parameters"]["properties"].items():
-
         param_type = details["type"]
-        description = details["description"]
+        description = details.get("description", "")
 
         if param_type == "object":
             if "properties" not in details:

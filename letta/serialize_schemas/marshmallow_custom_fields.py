@@ -3,10 +3,12 @@ from marshmallow import fields
 from letta.helpers.converters import (
     deserialize_embedding_config,
     deserialize_llm_config,
+    deserialize_message_content,
     deserialize_tool_calls,
     deserialize_tool_rules,
     serialize_embedding_config,
     serialize_llm_config,
+    serialize_message_content,
     serialize_tool_calls,
     serialize_tool_rules,
 )
@@ -67,3 +69,13 @@ class ToolCallField(fields.Field):
 
     def _deserialize(self, value, attr, data, **kwargs):
         return deserialize_tool_calls(value)
+
+
+class MessageContentField(fields.Field):
+    """Marshmallow field for handling a list of Message Content Part objects."""
+
+    def _serialize(self, value, attr, obj, **kwargs):
+        return serialize_message_content(value)
+
+    def _deserialize(self, value, attr, data, **kwargs):
+        return deserialize_message_content(value)

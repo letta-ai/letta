@@ -596,7 +596,6 @@ def create(
             messages[0].content[
                 0
             ].text += f'Select best function to call simply by responding with a single json block with the keys "function" and "params". Use double quotes around the arguments.'
-
         return get_chat_completion(
             model=llm_config.model,
             messages=messages,

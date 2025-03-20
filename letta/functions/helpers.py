@@ -48,6 +48,20 @@ def generate_composio_action_from_func_name(func_name: str) -> str:
     return func_name.upper()
 
 
+# TODO needed?
+def generate_mcp_tool_wrapper(mcp_tool_name: str) -> tuple[str, str]:
+
+    wrapper_function_str = f"""\
+def {mcp_tool_name}(**kwargs):
+    raise RuntimeError("Something went wrong - we should never be using the persisted source code for MCP. Please reach out to Letta team")
+"""
+
+    # Compile safety check
+    assert_code_gen_compilable(wrapper_function_str.strip())
+
+    return mcp_tool_name, wrapper_function_str.strip()
+
+
 def generate_composio_tool_wrapper(action_name: str) -> tuple[str, str]:
     # Generate func name
     func_name = generate_func_name_from_composio_action(action_name)
@@ -518,8 +532,16 @@ def fire_and_forget_send_to_agent(
         run_in_background_thread(background_task())
 
 
-async def _send_message_to_agents_matching_all_tags_async(sender_agent: "Agent", message: str, tags: List[str]) -> List[str]:
-    log_telemetry(sender_agent.logger, "_send_message_to_agents_matching_all_tags_async start", message=message, tags=tags)
+async def _send_message_to_agents_matching_tags_async(
+    sender_agent: "Agent", message: str, match_all: List[str], match_some: List[str]
+) -> List[str]:
+    log_telemetry(
+        sender_agent.logger,
+        "_send_message_to_agents_matching_tags_async start",
+        message=message,
+        match_all=match_all,
+        match_some=match_some,
+    )
     server = get_letta_server()
 
     augmented_message = (
@@ -529,9 +551,22 @@ async def _send_message_to_agents_matching_all_tags_async(sender_agent: "Agent",
     )
 
     # Retrieve up to 100 matching agents
-    log_telemetry(sender_agent.logger, "_send_message_to_agents_matching_all_tags_async listing agents start", message=message, tags=tags)
-    matching_agents = server.agent_manager.list_agents(actor=sender_agent.user, tags=tags, match_all_tags=True, limit=100)
-    log_telemetry(sender_agent.logger, "_send_message_to_agents_matching_all_tags_async  listing agents finish", message=message, tags=tags)
+    log_telemetry(
+        sender_agent.logger,
+        "_send_message_to_agents_matching_tags_async listing agents start",
+        message=message,
+        match_all=match_all,
+        match_some=match_some,
+    )
+    matching_agents = server.agent_manager.list_agents_matching_tags(actor=sender_agent.user, match_all=match_all, match_some=match_some)
+
+    log_telemetry(
+        sender_agent.logger,
+        "_send_message_to_agents_matching_tags_async  listing agents finish",
+        message=message,
+        match_all=match_all,
+        match_some=match_some,
+    )
 
     # Create a system message
     messages = [MessageCreate(role=MessageRole.system, content=augmented_message, name=sender_agent.agent_state.name)]
@@ -559,7 +594,54 @@ async def _send_message_to_agents_matching_all_tags_async(sender_agent: "Agent",
         else:
             final.append(r)
 
-    log_telemetry(sender_agent.logger, "_send_message_to_agents_matching_all_tags_async finish", message=message, tags=tags)
+    log_telemetry(
+        sender_agent.logger,
+        "_send_message_to_agents_matching_tags_async finish",
+        message=message,
+        match_all=match_all,
+        match_some=match_some,
+    )
+    return final
+
+
+async def _send_message_to_all_agents_in_group_async(sender_agent: "Agent", message: str) -> List[str]:
+    server = get_letta_server()
+
+    augmented_message = (
+        f"[Incoming message from agent with ID '{sender_agent.agent_state.id}' - to reply to this message, "
+        f"make sure to use the 'send_message' at the end, and the system will notify the sender of your response] "
+        f"{message}"
+    )
+
+    worker_agents_ids = sender_agent.agent_state.multi_agent_group.agent_ids
+    worker_agents = [server.agent_manager.get_agent_by_id(agent_id=agent_id, actor=sender_agent.user) for agent_id in worker_agents_ids]
+
+    # Create a system message
+    messages = [MessageCreate(role=MessageRole.system, content=augmented_message, name=sender_agent.agent_state.name)]
+
+    # Possibly limit concurrency to avoid meltdown:
+    sem = asyncio.Semaphore(settings.multi_agent_concurrent_sends)
+
+    async def _send_single(agent_state):
+        async with sem:
+            return await async_send_message_with_retries(
+                server=server,
+                sender_agent=sender_agent,
+                target_agent_id=agent_state.id,
+                messages=messages,
+                max_retries=3,
+                timeout=settings.multi_agent_send_message_timeout,
+            )
+
+    tasks = [asyncio.create_task(_send_single(agent_state)) for agent_state in worker_agents]
+    results = await asyncio.gather(*tasks, return_exceptions=True)
+    final = []
+    for r in results:
+        if isinstance(r, Exception):
+            final.append(str(r))
+        else:
+            final.append(r)
+
     return final
 
 

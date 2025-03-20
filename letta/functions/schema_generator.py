@@ -6,6 +6,8 @@ from composio.client.collections import ActionParametersModel
 from docstring_parser import parse
 from pydantic import BaseModel
 
+from letta.functions.mcp_client.types import MCPTool
+
 
 def is_optional(annotation):
     # Check if the annotation is a Union
@@ -445,6 +447,51 @@ def generate_schema_from_args_schema_v2(
         function_call_json["parameters"]["required"].append("request_heartbeat")
 
     return function_call_json
+
+
+def generate_tool_schema_for_mcp(
+    mcp_tool: MCPTool,
+    append_heartbeat: bool = True,
+    strict: bool = False,
+) -> Dict[str, Any]:
+
+    # MCP tool.inputSchema is a JSON schema
+    # https://github.com/modelcontextprotocol/python-sdk/blob/775f87981300660ee957b63c2a14b448ab9c3675/src/mcp/types.py#L678
+    parameters_schema = mcp_tool.inputSchema
+    name = mcp_tool.name
+    description = mcp_tool.description
+
+    assert "type" in parameters_schema
+    assert "required" in parameters_schema
+    assert "properties" in parameters_schema
+
+    # Add the optional heartbeat parameter
+    if append_heartbeat:
+        parameters_schema["properties"]["request_heartbeat"] = {
+            "type": "boolean",
+            "description": "Request an immediate heartbeat after function execution. Set to `True` if you want to send a follow-up message or run a follow-up function.",
+        }
+        parameters_schema["required"].append("request_heartbeat")
+
+    # Return the final schema
+    if strict:
+        # https://platform.openai.com/docs/guides/function-calling#strict-mode
+
+        # Add additionalProperties: False
+        parameters_schema["additionalProperties"] = False
+
+        return {
+            "strict": True,  # NOTE
+            "name": name,
+            "description": description,
+            "parameters": parameters_schema,
+        }
+    else:
+        return {
+            "name": name,
+            "description": description,
+            "parameters": parameters_schema,
+        }
 
 
 def generate_tool_schema_for_composio(

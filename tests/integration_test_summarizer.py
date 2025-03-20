@@ -13,8 +13,9 @@ from letta.errors import ContextWindowExceededError
 from letta.llm_api.helpers import calculate_summarizer_cutoff
 from letta.schemas.embedding_config import EmbeddingConfig
 from letta.schemas.enums import MessageRole
+from letta.schemas.letta_message_content import TextContent
 from letta.schemas.llm_config import LLMConfig
-from letta.schemas.message import Message, TextContent
+from letta.schemas.message import Message
 from letta.settings import summarizer_settings
 from letta.streaming_interface import StreamingRefreshCLIInterface
 from tests.helpers.endpoints_helper import EMBEDDING_CONFIG_PATH
@@ -192,8 +193,8 @@ def test_auto_summarize(client, mock_e2b_api_key_none):
 
         def summarize_message_exists(messages: List[Message]) -> bool:
             for message in messages:
-                if message.text and "The following is a summary of the previous" in message.text:
-                    print(f"Summarize message found after {message_count} messages: \n {message.text}")
+                if message.content[0].text and "The following is a summary of the previous" in message.content[0].text:
+                    print(f"Summarize message found after {message_count} messages: \n {message.content[0].text}")
                     return True
             return False
 
@@ -277,4 +278,4 @@ def test_summarizer(config_filename, client, agent_state):
     # Invoke a summarize
     letta_agent.summarize_messages_inplace()
     in_context_messages = client.get_in_context_messages(agent_state.id)
-    assert SUMMARY_KEY_PHRASE in in_context_messages[1].text, f"Test failed for config: {config_filename}"
+    assert SUMMARY_KEY_PHRASE in in_context_messages[1].content[0].text, f"Test failed for config: {config_filename}"

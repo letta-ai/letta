@@ -90,8 +90,8 @@ async def trace_error_handler(_request: Request, exc: Exception) -> JSONResponse
     # Add error details to current span
     span = trace.get_current_span()
     if span:
-        span.add_event(
-            name="exception",
+        span.record_exception(
+            exc,
             attributes={
                 "exception.message": error_msg,
                 "exception.type": type(exc).__name__,
@@ -112,6 +112,16 @@ def setup_tracing(
     global _is_tracing_initialized
 
     provider = TracerProvider(resource=Resource.create({"service.name": service_name}))
+    import uuid
+
+    provider = TracerProvider(
+        resource=Resource.create(
+            {
+                "service.name": service_name,
+                "device.id": uuid.getnode(),  # MAC address as unique device identifier
+            }
+        )
+    )
     if endpoint:
         provider.add_span_processor(BatchSpanProcessor(OTLPSpanExporter(endpoint=endpoint)))
         _is_tracing_initialized = True
@@ -207,7 +217,7 @@ def log_event(name: str, attributes: Optional[Dict[str, Any]] = None, timestamp:
     current_span = trace.get_current_span()
     if current_span:
         if timestamp is None:
-            timestamp = int(time.perf_counter_ns())
+            timestamp = time.time_ns()
 
         def _safe_convert(v):
             if isinstance(v, (str, bool, int, float)):

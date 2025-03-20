@@ -8,9 +8,10 @@ from openai.types.chat.chat_completion_message_tool_call import Function as Open
 from sqlalchemy.exc import IntegrityError
 
 from letta.config import LettaConfig
-from letta.constants import BASE_MEMORY_TOOLS, BASE_TOOLS, LETTA_TOOL_EXECUTION_DIR, MULTI_AGENT_TOOLS
+from letta.constants import BASE_MEMORY_TOOLS, BASE_TOOLS, LETTA_TOOL_EXECUTION_DIR, MCP_TOOL_TAG_NAME_PREFIX, MULTI_AGENT_TOOLS
 from letta.embeddings import embedding_model
 from letta.functions.functions import derive_openai_json_schema, parse_source_code
+from letta.functions.mcp_client.types import MCPTool
 from letta.orm import Base
 from letta.orm.enums import JobType, ToolType
 from letta.orm.errors import NoResultFound, UniqueConstraintViolationError
@@ -21,8 +22,11 @@ from letta.schemas.embedding_config import EmbeddingConfig
 from letta.schemas.enums import JobStatus, MessageRole
 from letta.schemas.environment_variables import SandboxEnvironmentVariableCreate, SandboxEnvironmentVariableUpdate
 from letta.schemas.file import FileMetadata as PydanticFileMetadata
+from letta.schemas.identity import IdentityCreate, IdentityProperty, IdentityPropertyType, IdentityType, IdentityUpdate
 from letta.schemas.job import Job as PydanticJob
 from letta.schemas.job import JobUpdate, LettaRequestConfig
+from letta.schemas.letta_message import UpdateAssistantMessage, UpdateReasoningMessage, UpdateSystemMessage, UpdateUserMessage
+from letta.schemas.letta_message_content import TextContent
 from letta.schemas.llm_config import LLMConfig
 from letta.schemas.message import Message as PydanticMessage
 from letta.schemas.message import MessageCreate, MessageUpdate
@@ -142,8 +146,9 @@ def print_tool(server: SyncServer, default_user, default_organization):
     source_type = "python"
     description = "test_description"
     tags = ["test"]
+    metadata = {"a": "b"}
 
-    tool = PydanticTool(description=description, tags=tags, source_code=source_code, source_type=source_type)
+    tool = PydanticTool(description=description, tags=tags, source_code=source_code, source_type=source_type, metadata_=metadata)
     derived_json_schema = derive_openai_json_schema(source_code=tool.source_code, name=tool.name)
 
     derived_name = derived_json_schema["name"]
@@ -160,6 +165,30 @@ def print_tool(server: SyncServer, default_user, default_organization):
 def composio_github_star_tool(server, default_user):
     tool_create = ToolCreate.from_composio(action_name="GITHUB_STAR_A_REPOSITORY_FOR_THE_AUTHENTICATED_USER")
     tool = server.tool_manager.create_or_update_composio_tool(tool_create=tool_create, actor=default_user)
+    yield tool
+
+
+@pytest.fixture
+def mcp_tool(server, default_user):
+    mcp_tool = MCPTool(
+        name="weather_lookup",
+        description="Fetches the current weather for a given location.",
+        inputSchema={
+            "type": "object",
+            "properties": {
+                "location": {"type": "string", "description": "The name of the city or location."},
+                "units": {
+                    "type": "string",
+                    "enum": ["metric", "imperial"],
+                    "description": "The unit system for temperature (metric or imperial).",
+                },
+            },
+            "required": ["location"],
+        },
+    )
+    mcp_server_name = "test"
+    tool_create = ToolCreate.from_mcp(mcp_server_name=mcp_server_name, mcp_tool=mcp_tool)
+    tool = server.tool_manager.create_or_update_mcp_tool(tool_create=tool_create, mcp_server_name=mcp_server_name, actor=default_user)
     yield tool
 
 
@@ -270,7 +299,7 @@ def hello_world_message_fixture(server: SyncServer, default_user, sarah_agent):
         organization_id=default_user.organization_id,
         agent_id=sarah_agent.id,
         role="user",
-        text="Hello, world!",
+        content=[TextContent(text="Hello, world!")],
     )
 
     msg = server.message_manager.create_message(message, actor=default_user)
@@ -472,6 +501,45 @@ def agent_passages_setup(server, default_source, default_user, sarah_agent):
     server.source_manager.delete_source(default_source.id, actor=actor)
 
 
+@pytest.fixture
+def agent_with_tags(server: SyncServer, default_user):
+    """Fixture to create agents with specific tags."""
+    agent1 = server.agent_manager.create_agent(
+        agent_create=CreateAgent(
+            name="agent1",
+            tags=["primary_agent", "benefit_1"],
+            llm_config=LLMConfig.default_config("gpt-4o-mini"),
+            embedding_config=EmbeddingConfig.default_config(provider="openai"),
+            memory_blocks=[],
+        ),
+        actor=default_user,
+    )
+
+    agent2 = server.agent_manager.create_agent(
+        agent_create=CreateAgent(
+            name="agent2",
+            tags=["primary_agent", "benefit_2"],
+            llm_config=LLMConfig.default_config("gpt-4o-mini"),
+            embedding_config=EmbeddingConfig.default_config(provider="openai"),
+            memory_blocks=[],
+        ),
+        actor=default_user,
+    )
+
+    agent3 = server.agent_manager.create_agent(
+        agent_create=CreateAgent(
+            name="agent3",
+            tags=["primary_agent", "benefit_1", "benefit_2"],
+            llm_config=LLMConfig.default_config("gpt-4o-mini"),
+            embedding_config=EmbeddingConfig.default_config(provider="openai"),
+            memory_blocks=[],
+        ),
+        actor=default_user,
+    )
+
+    return [agent1, agent2, agent3]
+
+
 # ======================================================================================================================
 # AgentManager Tests - Basic
 # ======================================================================================================================
@@ -518,11 +586,11 @@ def test_create_agent_passed_in_initial_messages(server: SyncServer, default_use
     assert server.message_manager.size(agent_id=agent_state.id, actor=default_user) == 2
     init_messages = server.agent_manager.get_in_context_messages(agent_id=agent_state.id, actor=default_user)
     # Check that the system appears in the first initial message
-    assert create_agent_request.system in init_messages[0].text
-    assert create_agent_request.memory_blocks[0].value in init_messages[0].text
+    assert create_agent_request.system in init_messages[0].content[0].text
+    assert create_agent_request.memory_blocks[0].value in init_messages[0].content[0].text
     # Check that the second message is the passed in initial message seq
     assert create_agent_request.initial_message_sequence[0].role == init_messages[1].role
-    assert create_agent_request.initial_message_sequence[0].content in init_messages[1].text
+    assert create_agent_request.initial_message_sequence[0].content in init_messages[1].content[0].text
 
 
 def test_create_agent_default_initial_message(server: SyncServer, default_user, default_block):
@@ -543,8 +611,8 @@ def test_create_agent_default_initial_message(server: SyncServer, default_user, 
     assert server.message_manager.size(agent_id=agent_state.id, actor=default_user) == 4
     init_messages = server.agent_manager.get_in_context_messages(agent_id=agent_state.id, actor=default_user)
     # Check that the system appears in the first initial message
-    assert create_agent_request.system in init_messages[0].text
-    assert create_agent_request.memory_blocks[0].value in init_messages[0].text
+    assert create_agent_request.system in init_messages[0].content[0].text
+    assert create_agent_request.memory_blocks[0].value in init_messages[0].content[0].text
 
 
 def test_update_agent(server: SyncServer, comprehensive_test_agent_fixture, other_tool, other_source, other_block, default_user):
@@ -571,6 +639,104 @@ def test_update_agent(server: SyncServer, comprehensive_test_agent_fixture, othe
     comprehensive_agent_checks(updated_agent, update_agent_request, actor=default_user)
     assert updated_agent.message_ids == update_agent_request.message_ids
     assert updated_agent.updated_at > last_updated_timestamp
+
+
+# ======================================================================================================================
+# AgentManager Tests - Listing
+# ======================================================================================================================
+
+
+def test_list_agents_select_fields_empty(server: SyncServer, comprehensive_test_agent_fixture, default_user):
+    # Create an agent using the comprehensive fixture.
+    created_agent, create_agent_request = comprehensive_test_agent_fixture
+
+    # List agents using an empty list for select_fields.
+    agents = server.agent_manager.list_agents(actor=default_user, include_relationships=[])
+    # Assert that the agent is returned and basic fields are present.
+    assert len(agents) >= 1
+    agent = agents[0]
+    assert agent.id is not None
+    assert agent.name is not None
+
+    # Assert no relationships were loaded
+    assert len(agent.tools) == 0
+    assert len(agent.tags) == 0
+
+
+def test_list_agents_select_fields_none(server: SyncServer, comprehensive_test_agent_fixture, default_user):
+    # Create an agent using the comprehensive fixture.
+    created_agent, create_agent_request = comprehensive_test_agent_fixture
+
+    # List agents using an empty list for select_fields.
+    agents = server.agent_manager.list_agents(actor=default_user, include_relationships=None)
+    # Assert that the agent is returned and basic fields are present.
+    assert len(agents) >= 1
+    agent = agents[0]
+    assert agent.id is not None
+    assert agent.name is not None
+
+    # Assert no relationships were loaded
+    assert len(agent.tools) > 0
+    assert len(agent.tags) > 0
+
+
+def test_list_agents_select_fields_specific(server: SyncServer, comprehensive_test_agent_fixture, default_user):
+    created_agent, create_agent_request = comprehensive_test_agent_fixture
+
+    # Choose a subset of valid relationship fields.
+    valid_fields = ["tools", "tags"]
+    agents = server.agent_manager.list_agents(actor=default_user, include_relationships=valid_fields)
+    assert len(agents) >= 1
+    agent = agents[0]
+    # Depending on your to_pydantic() implementation,
+    # verify that the fields exist in the returned pydantic model.
+    # (Note: These assertions may require that your CreateAgent fixture sets up these relationships.)
+    assert agent.tools
+    assert sorted(agent.tags) == ["a", "b"]
+    assert not agent.memory.blocks
+
+
+def test_list_agents_select_fields_invalid(server: SyncServer, comprehensive_test_agent_fixture, default_user):
+    created_agent, create_agent_request = comprehensive_test_agent_fixture
+
+    # Provide field names that are not recognized.
+    invalid_fields = ["foobar", "nonexistent_field"]
+    # The expectation is that these fields are simply ignored.
+    agents = server.agent_manager.list_agents(actor=default_user, include_relationships=invalid_fields)
+    assert len(agents) >= 1
+    agent = agents[0]
+    # Verify that standard fields are still present.c
+    assert agent.id is not None
+    assert agent.name is not None
+
+
+def test_list_agents_select_fields_duplicates(server: SyncServer, comprehensive_test_agent_fixture, default_user):
+    created_agent, create_agent_request = comprehensive_test_agent_fixture
+
+    # Provide duplicate valid field names.
+    duplicate_fields = ["tools", "tools", "tags", "tags"]
+    agents = server.agent_manager.list_agents(actor=default_user, include_relationships=duplicate_fields)
+    assert len(agents) >= 1
+    agent = agents[0]
+    # Verify that the agent pydantic representation includes the relationships.
+    # Even if duplicates were provided, the query should not break.
+    assert isinstance(agent.tools, list)
+    assert isinstance(agent.tags, list)
+
+
+def test_list_agents_select_fields_mixed(server: SyncServer, comprehensive_test_agent_fixture, default_user):
+    created_agent, create_agent_request = comprehensive_test_agent_fixture
+
+    # Mix valid fields with an invalid one.
+    mixed_fields = ["tools", "invalid_field"]
+    agents = server.agent_manager.list_agents(actor=default_user, include_relationships=mixed_fields)
+    assert len(agents) >= 1
+    agent = agents[0]
+    # Valid fields should be loaded and accessible.
+    assert agent.tools
+    # Since "invalid_field" is not recognized, it should have no adverse effect.
+    # You might optionally check that no extra attribute is created on the pydantic model.
+    assert not hasattr(agent, "invalid_field")
 
 
 # ======================================================================================================================
@@ -773,6 +939,45 @@ def test_list_attached_agents_nonexistent_source(server: SyncServer, default_use
 # ======================================================================================================================
 # AgentManager Tests - Tags Relationship
 # ======================================================================================================================
+
+
+def test_list_agents_matching_all_tags(server: SyncServer, default_user, agent_with_tags):
+    agents = server.agent_manager.list_agents_matching_tags(
+        actor=default_user,
+        match_all=["primary_agent", "benefit_1"],
+        match_some=[],
+    )
+    assert len(agents) == 2  # agent1 and agent3 match
+    assert {a.name for a in agents} == {"agent1", "agent3"}
+
+
+def test_list_agents_matching_some_tags(server: SyncServer, default_user, agent_with_tags):
+    agents = server.agent_manager.list_agents_matching_tags(
+        actor=default_user,
+        match_all=["primary_agent"],
+        match_some=["benefit_1", "benefit_2"],
+    )
+    assert len(agents) == 3  # All agents match
+    assert {a.name for a in agents} == {"agent1", "agent2", "agent3"}
+
+
+def test_list_agents_matching_all_and_some_tags(server: SyncServer, default_user, agent_with_tags):
+    agents = server.agent_manager.list_agents_matching_tags(
+        actor=default_user,
+        match_all=["primary_agent", "benefit_1"],
+        match_some=["benefit_2", "nonexistent"],
+    )
+    assert len(agents) == 1  # Only agent3 matches
+    assert agents[0].name == "agent3"
+
+
+def test_list_agents_matching_no_tags(server: SyncServer, default_user, agent_with_tags):
+    agents = server.agent_manager.list_agents_matching_tags(
+        actor=default_user,
+        match_all=["primary_agent", "nonexistent_tag"],
+        match_some=["benefit_1", "benefit_2"],
+    )
+    assert len(agents) == 0  # No agent should match
 
 
 def test_list_agents_by_tags_match_all(server: SyncServer, sarah_agent, charles_agent, default_user):
@@ -1018,7 +1223,7 @@ def test_reset_messages_with_existing_messages(server: SyncServer, sarah_agent, 
             agent_id=sarah_agent.id,
             organization_id=default_user.organization_id,
             role="user",
-            text="Hello, Sarah!",
+            content=[TextContent(text="Hello, Sarah!")],
         ),
         actor=default_user,
     )
@@ -1027,7 +1232,7 @@ def test_reset_messages_with_existing_messages(server: SyncServer, sarah_agent, 
             agent_id=sarah_agent.id,
             organization_id=default_user.organization_id,
             role="assistant",
-            text="Hello, user!",
+            content=[TextContent(text="Hello, user!")],
         ),
         actor=default_user,
     )
@@ -1058,7 +1263,7 @@ def test_reset_messages_idempotency(server: SyncServer, sarah_agent, default_use
             agent_id=sarah_agent.id,
             organization_id=default_user.organization_id,
             role="user",
-            text="Hello, Sarah!",
+            content=[TextContent(text="Hello, Sarah!")],
         ),
         actor=default_user,
     )
@@ -1071,6 +1276,73 @@ def test_reset_messages_idempotency(server: SyncServer, sarah_agent, default_use
     reset_agent_again = server.agent_manager.reset_messages(agent_id=sarah_agent.id, actor=default_user)
     assert len(reset_agent.message_ids) == 1
     assert server.message_manager.size(agent_id=sarah_agent.id, actor=default_user) == 1
+
+
+def test_modify_letta_message(server: SyncServer, sarah_agent, default_user):
+    """
+    Test updating a message.
+    """
+
+    messages = server.message_manager.list_messages_for_agent(agent_id=sarah_agent.id, actor=default_user)
+    letta_messages = PydanticMessage.to_letta_messages_from_list(messages=messages)
+
+    system_message = [msg for msg in letta_messages if msg.message_type == "system_message"][0]
+    assistant_message = [msg for msg in letta_messages if msg.message_type == "assistant_message"][0]
+    user_message = [msg for msg in letta_messages if msg.message_type == "user_message"][0]
+    reasoning_message = [msg for msg in letta_messages if msg.message_type == "reasoning_message"][0]
+
+    # user message
+    update_user_message = UpdateUserMessage(content="Hello, Sarah!")
+    original_user_message = server.message_manager.get_message_by_id(message_id=user_message.id, actor=default_user)
+    assert original_user_message.content[0].text != update_user_message.content
+    server.message_manager.update_message_by_letta_message(
+        message_id=user_message.id, letta_message_update=update_user_message, actor=default_user
+    )
+    updated_user_message = server.message_manager.get_message_by_id(message_id=user_message.id, actor=default_user)
+    assert updated_user_message.content[0].text == update_user_message.content
+
+    # system message
+    update_system_message = UpdateSystemMessage(content="You are a friendly assistant!")
+    original_system_message = server.message_manager.get_message_by_id(message_id=system_message.id, actor=default_user)
+    assert original_system_message.content[0].text != update_system_message.content
+    server.message_manager.update_message_by_letta_message(
+        message_id=system_message.id, letta_message_update=update_system_message, actor=default_user
+    )
+    updated_system_message = server.message_manager.get_message_by_id(message_id=system_message.id, actor=default_user)
+    assert updated_system_message.content[0].text == update_system_message.content
+
+    # reasoning message
+    update_reasoning_message = UpdateReasoningMessage(reasoning="I am thinking")
+    original_reasoning_message = server.message_manager.get_message_by_id(message_id=reasoning_message.id, actor=default_user)
+    assert original_reasoning_message.content[0].text != update_reasoning_message.reasoning
+    server.message_manager.update_message_by_letta_message(
+        message_id=reasoning_message.id, letta_message_update=update_reasoning_message, actor=default_user
+    )
+    updated_reasoning_message = server.message_manager.get_message_by_id(message_id=reasoning_message.id, actor=default_user)
+    assert updated_reasoning_message.content[0].text == update_reasoning_message.reasoning
+
+    # assistant message
+    def parse_send_message(tool_call):
+        import json
+
+        function_call = tool_call.function
+        arguments = json.loads(function_call.arguments)
+        return arguments["message"]
+
+    update_assistant_message = UpdateAssistantMessage(content="I am an agent!")
+    original_assistant_message = server.message_manager.get_message_by_id(message_id=assistant_message.id, actor=default_user)
+    print("ORIGINAL", original_assistant_message.tool_calls)
+    print("MESSAGE", parse_send_message(original_assistant_message.tool_calls[0]))
+    assert parse_send_message(original_assistant_message.tool_calls[0]) != update_assistant_message.content
+    server.message_manager.update_message_by_letta_message(
+        message_id=assistant_message.id, letta_message_update=update_assistant_message, actor=default_user
+    )
+    updated_assistant_message = server.message_manager.get_message_by_id(message_id=assistant_message.id, actor=default_user)
+    print("UPDATED", updated_assistant_message.tool_calls)
+    print("MESSAGE", parse_send_message(updated_assistant_message.tool_calls[0]))
+    assert parse_send_message(updated_assistant_message.tool_calls[0]) == update_assistant_message.content
+
+    # TODO: tool calls/responses
 
 
 # ======================================================================================================================
@@ -1570,6 +1842,14 @@ def test_create_composio_tool(server: SyncServer, composio_github_star_tool, def
     assert composio_github_star_tool.tool_type == ToolType.EXTERNAL_COMPOSIO
 
 
+def test_create_mcp_tool(server: SyncServer, mcp_tool, default_user, default_organization):
+    # Assertions to ensure the created tool matches the expected values
+    assert mcp_tool.created_by_id == default_user.id
+    assert mcp_tool.organization_id == default_organization.id
+    assert mcp_tool.tool_type == ToolType.EXTERNAL_MCP
+    assert mcp_tool.metadata_[MCP_TOOL_TAG_NAME_PREFIX]["server_name"] == "test"
+
+
 @pytest.mark.skipif(USING_SQLITE, reason="Test not applicable when using SQLite.")
 def test_create_tool_duplicate_name(server: SyncServer, print_tool, default_user, default_organization):
     data = print_tool.model_dump(exclude=["id"])
@@ -1588,6 +1868,7 @@ def test_get_tool_by_id(server: SyncServer, print_tool, default_user):
     assert fetched_tool.name == print_tool.name
     assert fetched_tool.description == print_tool.description
     assert fetched_tool.tags == print_tool.tags
+    assert fetched_tool.metadata_ == print_tool.metadata_
     assert fetched_tool.source_code == print_tool.source_code
     assert fetched_tool.source_type == print_tool.source_type
     assert fetched_tool.tool_type == ToolType.CUSTOM
@@ -1767,7 +2048,7 @@ def test_upsert_base_tools(server: SyncServer, default_user):
 def test_message_create(server: SyncServer, hello_world_message_fixture, default_user):
     """Test creating a message using hello_world_message_fixture fixture"""
     assert hello_world_message_fixture.id is not None
-    assert hello_world_message_fixture.text == "Hello, world!"
+    assert hello_world_message_fixture.content[0].text == "Hello, world!"
     assert hello_world_message_fixture.role == "user"
 
     # Verify we can retrieve it
@@ -1777,7 +2058,7 @@ def test_message_create(server: SyncServer, hello_world_message_fixture, default
     )
     assert retrieved is not None
     assert retrieved.id == hello_world_message_fixture.id
-    assert retrieved.text == hello_world_message_fixture.text
+    assert retrieved.content[0].text == hello_world_message_fixture.content[0].text
     assert retrieved.role == hello_world_message_fixture.role
 
 
@@ -1786,7 +2067,7 @@ def test_message_get_by_id(server: SyncServer, hello_world_message_fixture, defa
     retrieved = server.message_manager.get_message_by_id(hello_world_message_fixture.id, actor=default_user)
     assert retrieved is not None
     assert retrieved.id == hello_world_message_fixture.id
-    assert retrieved.text == hello_world_message_fixture.text
+    assert retrieved.content[0].text == hello_world_message_fixture.content[0].text
 
 
 def test_message_update(server: SyncServer, hello_world_message_fixture, default_user, other_user):
@@ -1794,9 +2075,9 @@ def test_message_update(server: SyncServer, hello_world_message_fixture, default
     new_text = "Updated text"
     updated = server.message_manager.update_message_by_id(hello_world_message_fixture.id, MessageUpdate(content=new_text), actor=other_user)
     assert updated is not None
-    assert updated.text == new_text
+    assert updated.content[0].text == new_text
     retrieved = server.message_manager.get_message_by_id(hello_world_message_fixture.id, actor=default_user)
-    assert retrieved.text == new_text
+    assert retrieved.content[0].text == new_text
 
     # Assert that orm metadata fields are populated
     assert retrieved.created_by_id == default_user.id
@@ -1817,7 +2098,10 @@ def test_message_size(server: SyncServer, hello_world_message_fixture, default_u
     # Create additional test messages
     messages = [
         PydanticMessage(
-            organization_id=default_user.organization_id, agent_id=base_message.agent_id, role=base_message.role, text=f"Test message {i}"
+            organization_id=default_user.organization_id,
+            agent_id=base_message.agent_id,
+            role=base_message.role,
+            content=[TextContent(text=f"Test message {i}")],
         )
         for i in range(4)
     ]
@@ -1845,7 +2129,10 @@ def create_test_messages(server: SyncServer, base_message: PydanticMessage, defa
     """Helper function to create test messages for all tests"""
     messages = [
         PydanticMessage(
-            organization_id=default_user.organization_id, agent_id=base_message.agent_id, role=base_message.role, text=f"Test message {i}"
+            organization_id=default_user.organization_id,
+            agent_id=base_message.agent_id,
+            role=base_message.role,
+            content=[TextContent(text=f"Test message {i}")],
         )
         for i in range(4)
     ]
@@ -1925,7 +2212,7 @@ def test_message_listing_text_search(server: SyncServer, hello_world_message_fix
         agent_id=sarah_agent.id, actor=default_user, query_text="Test message", limit=10
     )
     assert len(search_results) == 4
-    assert all("Test message" in msg.text for msg in search_results)
+    assert all("Test message" in msg.content[0].text for msg in search_results)
 
     # Test no results
     search_results = server.message_manager.list_user_messages_for_agent(
@@ -2001,26 +2288,40 @@ def test_update_block(server: SyncServer, default_user):
 
 
 def test_update_block_limit(server: SyncServer, default_user):
-
     block_manager = BlockManager()
     block = block_manager.create_or_update_block(PydanticBlock(label="persona", value="Original Content"), actor=default_user)
 
     limit = len("Updated Content") * 2000
-    update_data = BlockUpdate(value="Updated Content" * 2000, description="Updated description", limit=limit)
+    update_data = BlockUpdate(value="Updated Content" * 2000, description="Updated description")
 
-    # Check that a large block fails
-    try:
+    # Check that exceeding the block limit raises an exception
+    with pytest.raises(ValueError):
         block_manager.update_block(block_id=block.id, block_update=update_data, actor=default_user)
-        assert False
-    except Exception:
-        pass
 
+    # Ensure the update works when within limits
+    update_data = BlockUpdate(value="Updated Content" * 2000, description="Updated description", limit=limit)
     block_manager.update_block(block_id=block.id, block_update=update_data, actor=default_user)
-    # Retrieve the updated block
+
+    # Retrieve the updated block and validate the update
     updated_block = block_manager.get_blocks(actor=default_user, id=block.id)[0]
-    # Assertions to verify the update
+
     assert updated_block.value == "Updated Content" * 2000
     assert updated_block.description == "Updated description"
+
+
+def test_update_block_limit_does_not_reset(server: SyncServer, default_user):
+    block_manager = BlockManager()
+    new_content = "Updated Content" * 2000
+    limit = len(new_content)
+    block = block_manager.create_or_update_block(PydanticBlock(label="persona", value="Original Content", limit=limit), actor=default_user)
+
+    # Ensure the update works
+    update_data = BlockUpdate(value=new_content)
+    block_manager.update_block(block_id=block.id, block_update=update_data, actor=default_user)
+
+    # Retrieve the updated block and validate the update
+    updated_block = block_manager.get_blocks(actor=default_user, id=block.id)[0]
+    assert updated_block.value == new_content
 
 
 def test_delete_block(server: SyncServer, default_user):
@@ -2073,6 +2374,259 @@ def test_get_agents_for_block(server: SyncServer, sarah_agent, charles_agent, de
     agent_state_ids = [a.id for a in agent_states]
     assert sarah_agent.id in agent_state_ids
     assert charles_agent.id in agent_state_ids
+
+
+# ======================================================================================================================
+# Identity Manager Tests
+# ======================================================================================================================
+
+
+def test_create_and_upsert_identity(server: SyncServer, default_user):
+    identity_create = IdentityCreate(
+        identifier_key="1234",
+        name="caren",
+        identity_type=IdentityType.user,
+        properties=[
+            IdentityProperty(key="email", value="caren@letta.com", type=IdentityPropertyType.string),
+            IdentityProperty(key="age", value=28, type=IdentityPropertyType.number),
+        ],
+    )
+
+    identity = server.identity_manager.create_identity(identity_create, actor=default_user)
+
+    # Assertions to ensure the created identity matches the expected values
+    assert identity.identifier_key == identity_create.identifier_key
+    assert identity.name == identity_create.name
+    assert identity.identity_type == identity_create.identity_type
+    assert identity.properties == identity_create.properties
+    assert identity.agent_ids == []
+    assert identity.project_id == None
+
+    with pytest.raises(UniqueConstraintViolationError):
+        server.identity_manager.create_identity(
+            IdentityCreate(identifier_key="1234", name="sarah", identity_type=IdentityType.user),
+            actor=default_user,
+        )
+
+    identity_create.properties = [(IdentityProperty(key="age", value=29, type=IdentityPropertyType.number))]
+
+    identity = server.identity_manager.upsert_identity(identity_create, actor=default_user)
+
+    identity = server.identity_manager.get_identity(identity_id=identity.id, actor=default_user)
+    assert len(identity.properties) == 1
+    assert identity.properties[0].key == "age"
+    assert identity.properties[0].value == 29
+
+    server.identity_manager.delete_identity(identity_id=identity.id, actor=default_user)
+
+
+def test_get_identities(server, default_user):
+    # Create identities to retrieve later
+    user = server.identity_manager.create_identity(
+        IdentityCreate(name="caren", identifier_key="1234", identity_type=IdentityType.user), actor=default_user
+    )
+    org = server.identity_manager.create_identity(
+        IdentityCreate(name="letta", identifier_key="0001", identity_type=IdentityType.org), actor=default_user
+    )
+
+    # Retrieve identities by different filters
+    all_identities = server.identity_manager.list_identities(actor=default_user)
+    assert len(all_identities) == 2
+
+    user_identities = server.identity_manager.list_identities(actor=default_user, identity_type=IdentityType.user)
+    assert len(user_identities) == 1
+    assert user_identities[0].name == user.name
+
+    org_identities = server.identity_manager.list_identities(actor=default_user, identity_type=IdentityType.org)
+    assert len(org_identities) == 1
+    assert org_identities[0].name == org.name
+
+    server.identity_manager.delete_identity(identity_id=user.id, actor=default_user)
+    server.identity_manager.delete_identity(identity_id=org.id, actor=default_user)
+
+
+def test_update_identity(server: SyncServer, sarah_agent, charles_agent, default_user):
+    identity = server.identity_manager.create_identity(
+        IdentityCreate(name="caren", identifier_key="1234", identity_type=IdentityType.user), actor=default_user
+    )
+
+    # Update identity fields
+    update_data = IdentityUpdate(
+        agent_ids=[sarah_agent.id, charles_agent.id],
+        properties=[IdentityProperty(key="email", value="caren@letta.com", type=IdentityPropertyType.string)],
+    )
+    server.identity_manager.update_identity(identity_id=identity.id, identity=update_data, actor=default_user)
+
+    # Retrieve the updated identity
+    updated_identity = server.identity_manager.get_identity(identity_id=identity.id, actor=default_user)
+
+    # Assertions to verify the update
+    assert updated_identity.agent_ids.sort() == update_data.agent_ids.sort()
+    assert updated_identity.properties == update_data.properties
+
+    agent_state = server.agent_manager.get_agent_by_id(agent_id=sarah_agent.id, actor=default_user)
+    assert identity.id in agent_state.identity_ids
+    agent_state = server.agent_manager.get_agent_by_id(agent_id=charles_agent.id, actor=default_user)
+    assert identity.id in agent_state.identity_ids
+
+    server.identity_manager.delete_identity(identity_id=identity.id, actor=default_user)
+
+
+def test_attach_detach_identity_from_agent(server: SyncServer, sarah_agent, default_user):
+    # Create an identity
+    identity = server.identity_manager.create_identity(
+        IdentityCreate(name="caren", identifier_key="1234", identity_type=IdentityType.user), actor=default_user
+    )
+    agent_state = server.agent_manager.update_agent(
+        agent_id=sarah_agent.id, agent_update=UpdateAgent(identity_ids=[identity.id]), actor=default_user
+    )
+
+    # Check that identity has been attached
+    assert identity.id in agent_state.identity_ids
+
+    # Now attempt to delete the identity
+    server.identity_manager.delete_identity(identity_id=identity.id, actor=default_user)
+
+    # Verify that the identity was deleted
+    identities = server.identity_manager.list_identities(actor=default_user)
+    assert len(identities) == 0
+
+    # Check that block has been detached too
+    agent_state = server.agent_manager.get_agent_by_id(agent_id=sarah_agent.id, actor=default_user)
+    assert not identity.id in agent_state.identity_ids
+
+
+def test_get_set_agents_for_identities(server: SyncServer, sarah_agent, charles_agent, default_user):
+    identity = server.identity_manager.create_identity(
+        IdentityCreate(name="caren", identifier_key="1234", identity_type=IdentityType.user, agent_ids=[sarah_agent.id, charles_agent.id]),
+        actor=default_user,
+    )
+
+    agent_with_identity = server.create_agent(
+        CreateAgent(
+            memory_blocks=[],
+            llm_config=LLMConfig.default_config("gpt-4"),
+            embedding_config=EmbeddingConfig.default_config(provider="openai"),
+            identity_ids=[identity.id],
+        ),
+        actor=default_user,
+    )
+    agent_without_identity = server.create_agent(
+        CreateAgent(
+            memory_blocks=[],
+            llm_config=LLMConfig.default_config("gpt-4"),
+            embedding_config=EmbeddingConfig.default_config(provider="openai"),
+        ),
+        actor=default_user,
+    )
+
+    # Get the agents for identity id
+    agent_states = server.agent_manager.list_agents(identity_id=identity.id, actor=default_user)
+    assert len(agent_states) == 3
+
+    # Check all agents are in the list
+    agent_state_ids = [a.id for a in agent_states]
+    assert sarah_agent.id in agent_state_ids
+    assert charles_agent.id in agent_state_ids
+    assert agent_with_identity.id in agent_state_ids
+    assert not agent_without_identity.id in agent_state_ids
+
+    # Get the agents for identifier key
+    agent_states = server.agent_manager.list_agents(identifier_keys=[identity.identifier_key], actor=default_user)
+    assert len(agent_states) == 3
+
+    # Check all agents are in the list
+    agent_state_ids = [a.id for a in agent_states]
+    assert sarah_agent.id in agent_state_ids
+    assert charles_agent.id in agent_state_ids
+    assert agent_with_identity.id in agent_state_ids
+    assert not agent_without_identity.id in agent_state_ids
+
+    # Delete new agents
+    server.agent_manager.delete_agent(agent_id=agent_with_identity.id, actor=default_user)
+    server.agent_manager.delete_agent(agent_id=agent_without_identity.id, actor=default_user)
+
+    # Get the agents for identity id
+    agent_states = server.agent_manager.list_agents(identity_id=identity.id, actor=default_user)
+    assert len(agent_states) == 2
+
+    # Check only initial agents are in the list
+    agent_state_ids = [a.id for a in agent_states]
+    assert sarah_agent.id in agent_state_ids
+    assert charles_agent.id in agent_state_ids
+
+    server.identity_manager.delete_identity(identity_id=identity.id, actor=default_user)
+
+
+def test_attach_detach_identity_from_block(server: SyncServer, default_block, default_user):
+    # Create an identity
+    identity = server.identity_manager.create_identity(
+        IdentityCreate(name="caren", identifier_key="1234", identity_type=IdentityType.user, block_ids=[default_block.id]),
+        actor=default_user,
+    )
+
+    # Check that identity has been attached
+    blocks = server.block_manager.get_blocks(identity_id=identity.id, actor=default_user)
+    assert len(blocks) == 1 and blocks[0].id == default_block.id
+
+    # Now attempt to delete the identity
+    server.identity_manager.delete_identity(identity_id=identity.id, actor=default_user)
+
+    # Verify that the identity was deleted
+    identities = server.identity_manager.list_identities(actor=default_user)
+    assert len(identities) == 0
+
+    # Check that block has been detached too
+    blocks = server.block_manager.get_blocks(identity_id=identity.id, actor=default_user)
+    assert len(blocks) == 0
+
+
+def test_get_set_blocks_for_identities(server: SyncServer, default_block, default_user):
+    block_manager = BlockManager()
+    block_with_identity = block_manager.create_or_update_block(PydanticBlock(label="persona", value="Original Content"), actor=default_user)
+    block_without_identity = block_manager.create_or_update_block(PydanticBlock(label="user", value="Original Content"), actor=default_user)
+    identity = server.identity_manager.create_identity(
+        IdentityCreate(
+            name="caren", identifier_key="1234", identity_type=IdentityType.user, block_ids=[default_block.id, block_with_identity.id]
+        ),
+        actor=default_user,
+    )
+
+    # Get the blocks for identity id
+    blocks = server.block_manager.get_blocks(identity_id=identity.id, actor=default_user)
+    assert len(blocks) == 2
+
+    # Check blocks are in the list
+    block_ids = [b.id for b in blocks]
+    assert default_block.id in block_ids
+    assert block_with_identity.id in block_ids
+    assert not block_without_identity.id in block_ids
+
+    # Get the blocks for identifier key
+    blocks = server.block_manager.get_blocks(identifier_keys=[identity.identifier_key], actor=default_user)
+    assert len(blocks) == 2
+
+    # Check blocks are in the list
+    block_ids = [b.id for b in blocks]
+    assert default_block.id in block_ids
+    assert block_with_identity.id in block_ids
+    assert not block_without_identity.id in block_ids
+
+    # Delete new agents
+    server.block_manager.delete_block(block_id=block_with_identity.id, actor=default_user)
+    server.block_manager.delete_block(block_id=block_without_identity.id, actor=default_user)
+
+    # Get the blocks for identity id
+    blocks = server.block_manager.get_blocks(identity_id=identity.id, actor=default_user)
+    assert len(blocks) == 1
+
+    # Check only initial block in the list
+    block_ids = [b.id for b in blocks]
+    assert default_block.id in block_ids
+    assert not block_with_identity.id in block_ids
+    assert not block_without_identity.id in block_ids
+
+    server.identity_manager.delete_identity(identity.id, actor=default_user)
 
 
 # ======================================================================================================================
@@ -2746,7 +3300,7 @@ def test_job_messages_add(server: SyncServer, default_run, hello_world_message_f
     )
     assert len(messages) == 1
     assert messages[0].id == hello_world_message_fixture.id
-    assert messages[0].text == hello_world_message_fixture.text
+    assert messages[0].content[0].text == hello_world_message_fixture.content[0].text
 
 
 def test_job_messages_pagination(server: SyncServer, default_run, default_user, sarah_agent):
@@ -2758,7 +3312,7 @@ def test_job_messages_pagination(server: SyncServer, default_run, default_user, 
             organization_id=default_user.organization_id,
             agent_id=sarah_agent.id,
             role=MessageRole.user,
-            text=f"Test message {i}",
+            content=[TextContent(text=f"Test message {i}")],
         )
         msg = server.message_manager.create_message(message, actor=default_user)
         message_ids.append(msg.id)
@@ -2871,7 +3425,7 @@ def test_job_messages_ordering(server: SyncServer, default_run, default_user, sa
     for i, created_at in enumerate(message_times):
         message = PydanticMessage(
             role=MessageRole.user,
-            text="Test message",
+            content=[TextContent(text="Test message")],
             organization_id=default_user.organization_id,
             agent_id=sarah_agent.id,
             created_at=created_at,
@@ -2940,19 +3494,19 @@ def test_job_messages_filter(server: SyncServer, default_run, default_user, sara
     messages = [
         PydanticMessage(
             role=MessageRole.user,
-            text="Hello",
+            content=[TextContent(text="Hello")],
             organization_id=default_user.organization_id,
             agent_id=sarah_agent.id,
         ),
         PydanticMessage(
             role=MessageRole.assistant,
-            text="Hi there!",
+            content=[TextContent(text="Hi there!")],
             organization_id=default_user.organization_id,
             agent_id=sarah_agent.id,
         ),
         PydanticMessage(
             role=MessageRole.assistant,
-            text="Let me help you with that",
+            content=[TextContent(text="Let me help you with that")],
             organization_id=default_user.organization_id,
             agent_id=sarah_agent.id,
             tool_calls=[
@@ -3007,7 +3561,7 @@ def test_get_run_messages(server: SyncServer, default_user: PydanticUser, sarah_
             organization_id=default_user.organization_id,
             agent_id=sarah_agent.id,
             role=MessageRole.tool if i % 2 == 0 else MessageRole.assistant,
-            text=f"Test message {i}" if i % 2 == 1 else '{"status": "OK"}',
+            content=[TextContent(text=f"Test message {i}" if i % 2 == 1 else '{"status": "OK"}')],
             tool_calls=(
                 [{"type": "function", "id": f"call_{i//2}", "function": {"name": "custom_tool", "arguments": '{"custom_arg": "test"}'}}]
                 if i % 2 == 1
@@ -3058,7 +3612,7 @@ def test_get_run_messages(server: SyncServer, default_user: PydanticUser, sarah_
             organization_id=default_user.organization_id,
             agent_id=sarah_agent.id,
             role=MessageRole.tool if i % 2 == 0 else MessageRole.assistant,
-            text=f"Test message {i}" if i % 2 == 1 else '{"status": "OK"}',
+            content=[TextContent(text=f"Test message {i}" if i % 2 == 1 else '{"status": "OK"}')],
             tool_calls=(
                 [{"type": "function", "id": f"call_{i//2}", "function": {"name": "custom_tool", "arguments": '{"custom_arg": "test"}'}}]
                 if i % 2 == 1
@@ -3095,13 +3649,14 @@ def test_get_run_messages(server: SyncServer, default_user: PydanticUser, sarah_
 # ======================================================================================================================
 
 
-def test_job_usage_stats_add_and_get(server: SyncServer, default_job, default_user):
+def test_job_usage_stats_add_and_get(server: SyncServer, sarah_agent, default_job, default_user):
     """Test adding and retrieving job usage statistics."""
     job_manager = server.job_manager
     step_manager = server.step_manager
 
     # Add usage statistics
     step_manager.log_step(
+        agent_id=sarah_agent.id,
         provider_name="openai",
         model="gpt-4",
         model_endpoint="https://api.openai.com/v1",
@@ -3145,13 +3700,14 @@ def test_job_usage_stats_get_no_stats(server: SyncServer, default_job, default_u
     assert len(steps) == 0
 
 
-def test_job_usage_stats_add_multiple(server: SyncServer, default_job, default_user):
+def test_job_usage_stats_add_multiple(server: SyncServer, sarah_agent, default_job, default_user):
     """Test adding multiple usage statistics entries for a job."""
     job_manager = server.job_manager
     step_manager = server.step_manager
 
     # Add first usage statistics entry
     step_manager.log_step(
+        agent_id=sarah_agent.id,
         provider_name="openai",
         model="gpt-4",
         model_endpoint="https://api.openai.com/v1",
@@ -3167,6 +3723,7 @@ def test_job_usage_stats_add_multiple(server: SyncServer, default_job, default_u
 
     # Add second usage statistics entry
     step_manager.log_step(
+        agent_id=sarah_agent.id,
         provider_name="openai",
         model="gpt-4",
         model_endpoint="https://api.openai.com/v1",
@@ -3193,6 +3750,10 @@ def test_job_usage_stats_add_multiple(server: SyncServer, default_job, default_u
     steps = job_manager.get_job_steps(job_id=default_job.id, actor=default_user)
     assert len(steps) == 2
 
+    # get agent steps
+    steps = step_manager.list_steps(agent_id=sarah_agent.id, actor=default_user)
+    assert len(steps) == 2
+
 
 def test_job_usage_stats_get_nonexistent_job(server: SyncServer, default_user):
     """Test getting usage statistics for a nonexistent job."""
@@ -3202,12 +3763,13 @@ def test_job_usage_stats_get_nonexistent_job(server: SyncServer, default_user):
         job_manager.get_job_usage(job_id="nonexistent_job", actor=default_user)
 
 
-def test_job_usage_stats_add_nonexistent_job(server: SyncServer, default_user):
+def test_job_usage_stats_add_nonexistent_job(server: SyncServer, sarah_agent, default_user):
     """Test adding usage statistics for a nonexistent job."""
     step_manager = server.step_manager
 
     with pytest.raises(NoResultFound):
         step_manager.log_step(
+            agent_id=sarah_agent.id,
             provider_name="openai",
             model="gpt-4",
             model_endpoint="https://api.openai.com/v1",

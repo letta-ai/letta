@@ -24,7 +24,7 @@ logger = get_logger(__name__)
 
 
 @router.post(
-    "/chat/completions",
+    "/{agent_id}/chat/completions",
     response_model=None,
     operation_id="create_chat_completions",
     responses={
@@ -37,6 +37,7 @@ logger = get_logger(__name__)
     },
 )
 async def create_chat_completions(
+    agent_id: str,
     completion_request: CompletionCreateParams = Body(...),
     server: "SyncServer" = Depends(get_letta_server),
     user_id: Optional[str] = Header(None, alias="user_id"),
@@ -50,12 +51,6 @@ async def create_chat_completions(
         raise HTTPException(status_code=400, detail="Must be streaming request: `stream` was set to `False` in the request.")
 
     actor = server.user_manager.get_user_or_default(user_id=user_id)
-
-    agent_id = str(completion_request.get("user", None))
-    if agent_id is None:
-        error_msg = "Must pass agent_id in the 'user' field"
-        logger.error(error_msg)
-        raise HTTPException(status_code=400, detail=error_msg)
 
     letta_agent = server.load_agent(agent_id=agent_id, actor=actor)
     llm_config = letta_agent.agent_state.llm_config

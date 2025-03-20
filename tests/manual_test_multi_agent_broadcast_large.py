@@ -65,10 +65,8 @@ def test_multi_agent_large(client, roll_dice_tool, num_workers):
         client.delete_agent(agent.id)
 
     # Create "manager" agent
-    send_message_to_agents_matching_all_tags_tool_id = client.get_tool_id(name="send_message_to_agents_matching_all_tags")
-    manager_agent_state = client.create_agent(
-        name="manager", tool_ids=[send_message_to_agents_matching_all_tags_tool_id], tags=manager_tags
-    )
+    send_message_to_agents_matching_tags_tool_id = client.get_tool_id(name="send_message_to_agents_matching_tags")
+    manager_agent_state = client.create_agent(name="manager", tool_ids=[send_message_to_agents_matching_tags_tool_id], tags=manager_tags)
     manager_agent = client.server.load_agent(agent_id=manager_agent_state.id, actor=client.user)
 
     # Create 3 worker agents

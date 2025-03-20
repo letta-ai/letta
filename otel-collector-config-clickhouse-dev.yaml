@@ -12,12 +12,20 @@ processors:
     send_batch_size: 1024
 
 exporters:
+  file:
+    path: ${HOME}/.letta/logs/traces.json
+    rotation:
+      max_megabytes: 100
+      max_days: 7
+      max_backups: 5
   clickhouse:
     endpoint: ${CLICKHOUSE_ENDPOINT}
-    username: ${CLICKHOUSE_USER}
-    password: ${CLICKHOUSE_PASSWORD}
     database: ${CLICKHOUSE_DATABASE}
-    timeout: 10s
+    username: ${CLICKHOUSE_USERNAME}
+    password: ${CLICKHOUSE_PASSWORD}
+    timeout: 5s
+    sending_queue:
+      queue_size: 100
     retry_on_failure:
       enabled: true
       initial_interval: 5s
@@ -25,8 +33,11 @@ exporters:
       max_elapsed_time: 300s
 
 service:
+  telemetry:
+    logs:
+      level: error
   pipelines:
     traces:
       receivers: [otlp]
       processors: [batch]
-      exporters: [clickhouse]
+      exporters: [file, clickhouse]

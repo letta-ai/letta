@@ -6,7 +6,7 @@ import pytest
 
 from letta.agents.base_agent import BaseAgent
 from letta.schemas.enums import MessageRole
-from letta.schemas.letta_message import TextContent
+from letta.schemas.letta_message_content import TextContent
 from letta.schemas.message import Message
 from letta.services.summarizer.enums import SummarizationMode
 from letta.services.summarizer.summarizer import Summarizer

@@ -7,7 +7,8 @@ import requests
 from letta.constants import MESSAGE_CHATGPT_FUNCTION_MODEL, MESSAGE_CHATGPT_FUNCTION_SYSTEM_MESSAGE
 from letta.helpers.json_helpers import json_dumps, json_loads
 from letta.llm_api.llm_api_tools import create
-from letta.schemas.message import Message, TextContent
+from letta.schemas.letta_message_content import TextContent
+from letta.schemas.message import Message
 
 
 def message_chatgpt(self, message: str):

@@ -2,7 +2,7 @@ import uuid
 from typing import Optional
 
 from letta.orm.sandbox_config import AgentEnvironmentVariable
-from letta.serialize_schemas.base import BaseSchema
+from letta.serialize_schemas.marshmallow_base import BaseSchema
 
 
 class SerializedAgentEnvironmentVariableSchema(BaseSchema):

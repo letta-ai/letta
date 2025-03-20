@@ -1,6 +1,8 @@
 import datetime
 from typing import List, Literal, Optional
 
+from sqlalchemy import and_, func, literal, or_, select
+
 from letta import system
 from letta.constants import IN_CONTEXT_MEMORY_KEYWORD, STRUCTURED_OUTPUT_MODELS
 from letta.helpers import ToolRulesSolver
@@ -8,11 +10,14 @@ from letta.helpers.datetime_helpers import get_local_time
 from letta.orm.agent import Agent as AgentModel
 from letta.orm.agents_tags import AgentsTags
 from letta.orm.errors import NoResultFound
+from letta.orm.identity import Identity
 from letta.prompts import gpt_system
 from letta.schemas.agent import AgentState, AgentType
 from letta.schemas.enums import MessageRole
+from letta.schemas.letta_message_content import TextContent
 from letta.schemas.memory import Memory
-from letta.schemas.message import Message, MessageCreate, TextContent
+from letta.schemas.message import Message, MessageCreate
+from letta.schemas.passage import Passage as PydanticPassage
 from letta.schemas.tool_rule import ToolRule
 from letta.schemas.user import User
 from letta.system import get_initial_boot_messages, get_login_event
@@ -99,7 +104,10 @@ def derive_system_message(agent_type: AgentType, system: Optional[str] = None):
 
 # TODO: This code is kind of wonky and deserves a rewrite
 def compile_memory_metadata_block(
-    memory_edit_timestamp: datetime.datetime, previous_message_count: int = 0, archival_memory_size: int = 0
+    memory_edit_timestamp: datetime.datetime,
+    previous_message_count: int = 0,
+    archival_memory_size: int = 0,
+    recent_passages: List[PydanticPassage] = None,
 ) -> str:
     # Put the timestamp in the local timezone (mimicking get_local_time())
     timestamp_str = memory_edit_timestamp.astimezone().strftime("%Y-%m-%d %I:%M:%S %p %Z%z").strip()
@@ -110,6 +118,11 @@ def compile_memory_metadata_block(
             f"### Memory [last modified: {timestamp_str}]",
             f"{previous_message_count} previous messages between you and the user are stored in recall memory (use functions to access them)",
             f"{archival_memory_size} total memories you created are stored in archival memory (use functions to access them)",
+            (
+                f"Most recent archival passages {len(recent_passages)} recent passages: {[passage.text for passage in recent_passages]}"
+                if recent_passages is not None
+                else ""
+            ),
             "\nCore memory shown below (limited in size, additional information stored in archival / recall memory):",
         ]
     )
@@ -146,6 +159,7 @@ def compile_system_message(
     template_format: Literal["f-string", "mustache", "jinja2"] = "f-string",
     previous_message_count: int = 0,
     archival_memory_size: int = 0,
+    recent_passages: Optional[List[PydanticPassage]] = None,
 ) -> str:
     """Prepare the final/full system message that will be fed into the LLM API
 
@@ -170,6 +184,7 @@ def compile_system_message(
             memory_edit_timestamp=in_context_memory_last_edit,
             previous_message_count=previous_message_count,
             archival_memory_size=archival_memory_size,
+            recent_passages=recent_passages,
         )
         full_memory_string = memory_metadata_string + "\n" + in_context_memory.compile()
 
@@ -282,3 +297,149 @@ def check_supports_structured_output(model: str, tool_rules: List[ToolRule]) -> 
         return False
     else:
         return True
+
+
+def _apply_pagination(query, before: Optional[str], after: Optional[str], session) -> any:
+    """
+    Apply cursor-based pagination filters using the agent's created_at timestamp with id as a tie-breaker.
+
+    Instead of relying on the UUID ordering, this function uses the agent's creation time
+    (and id for tie-breaking) to paginate the results. It performs a minimal lookup to fetch
+    only the created_at and id for the agent corresponding to the provided cursor.
+
+    Args:
+        query: The SQLAlchemy query object to modify.
+        before (Optional[str]): Cursor (agent id) to return agents created before this agent.
+        after (Optional[str]): Cursor (agent id) to return agents created after this agent.
+        session: The active database session used to execute the minimal lookup.
+
+    Returns:
+        The modified query with pagination filters applied and ordered by created_at and id.
+    """
+    if after:
+        # Retrieve only the created_at and id for the agent corresponding to the 'after' cursor.
+        result = session.execute(select(AgentModel.created_at, AgentModel.id).where(AgentModel.id == after)).first()
+        if result:
+            after_created_at, after_id = result
+            # Filter: include agents created after the reference, or at the same time but with a greater id.
+            query = query.where(
+                or_(
+                    AgentModel.created_at > after_created_at,
+                    and_(
+                        AgentModel.created_at == after_created_at,
+                        AgentModel.id > after_id,
+                    ),
+                )
+            )
+    if before:
+        # Retrieve only the created_at and id for the agent corresponding to the 'before' cursor.
+        result = session.execute(select(AgentModel.created_at, AgentModel.id).where(AgentModel.id == before)).first()
+        if result:
+            before_created_at, before_id = result
+            # Filter: include agents created before the reference, or at the same time but with a smaller id.
+            query = query.where(
+                or_(
+                    AgentModel.created_at < before_created_at,
+                    and_(
+                        AgentModel.created_at == before_created_at,
+                        AgentModel.id < before_id,
+                    ),
+                )
+            )
+    # Enforce a deterministic ordering: first by created_at, then by id.
+    query = query.order_by(AgentModel.created_at.asc(), AgentModel.id.asc())
+    return query
+
+
+def _apply_tag_filter(query, tags: Optional[List[str]], match_all_tags: bool):
+    """
+    Apply tag-based filtering to the agent query.
+
+    This helper function creates a subquery that groups agent IDs by their tags.
+    If `match_all_tags` is True, it filters agents that have all of the specified tags.
+    Otherwise, it filters agents that have any of the tags.
+
+    Args:
+        query: The SQLAlchemy query object to be modified.
+        tags (Optional[List[str]]): A list of tags to filter agents.
+        match_all_tags (bool): If True, only return agents that match all provided tags.
+
+    Returns:
+        The modified query with tag filters applied.
+    """
+    if tags:
+        # Build a subquery to select agent IDs that have the specified tags.
+        subquery = select(AgentsTags.agent_id).where(AgentsTags.tag.in_(tags)).group_by(AgentsTags.agent_id)
+        # If all tags must match, add a HAVING clause to ensure the count of tags equals the number provided.
+        if match_all_tags:
+            subquery = subquery.having(func.count(AgentsTags.tag) == literal(len(tags)))
+        # Filter the main query to include only agents present in the subquery.
+        query = query.where(AgentModel.id.in_(subquery))
+    return query
+
+
+def _apply_identity_filters(query, identity_id: Optional[str], identifier_keys: Optional[List[str]]):
+    """
+    Apply identity-related filters to the agent query.
+
+    This helper function joins the identities relationship and filters the agents based on
+    a specific identity ID and/or a list of identifier keys.
+
+    Args:
+        query: The SQLAlchemy query object to be modified.
+        identity_id (Optional[str]): The identity ID to filter by.
+        identifier_keys (Optional[List[str]]): A list of identifier keys to filter agents.
+
+    Returns:
+        The modified query with identity filters applied.
+    """
+    # Join the identities relationship and filter by a specific identity ID.
+    if identity_id:
+        query = query.join(AgentModel.identities).where(Identity.id == identity_id)
+    # Join the identities relationship and filter by a set of identifier keys.
+    if identifier_keys:
+        query = query.join(AgentModel.identities).where(Identity.identifier_key.in_(identifier_keys))
+    return query
+
+
+def _apply_filters(
+    query,
+    name: Optional[str],
+    query_text: Optional[str],
+    project_id: Optional[str],
+    template_id: Optional[str],
+    base_template_id: Optional[str],
+):
+    """
+    Apply basic filtering criteria to the agent query.
+
+    This helper function adds WHERE clauses based on provided parameters such as
+    exact name, partial name match (using ILIKE), project ID, template ID, and base template ID.
+
+    Args:
+        query: The SQLAlchemy query object to be modified.
+        name (Optional[str]): Exact name to filter by.
+        query_text (Optional[str]): Partial text to search in the agent's name (case-insensitive).
+        project_id (Optional[str]): Filter for agents belonging to a specific project.
+        template_id (Optional[str]): Filter for agents using a specific template.
+        base_template_id (Optional[str]): Filter for agents using a specific base template.
+
+    Returns:
+        The modified query with the applied filters.
+    """
+    # Filter by exact agent name if provided.
+    if name:
+        query = query.where(AgentModel.name == name)
+    # Apply a case-insensitive partial match for the agent's name.
+    if query_text:
+        query = query.where(AgentModel.name.ilike(f"%{query_text}%"))
+    # Filter agents by project ID.
+    if project_id:
+        query = query.where(AgentModel.project_id == project_id)
+    # Filter agents by template ID.
+    if template_id:
+        query = query.where(AgentModel.template_id == template_id)
+    # Filter agents by base template ID.
+    if base_template_id:
+        query = query.where(AgentModel.base_template_id == base_template_id)
+    return query

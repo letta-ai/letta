@@ -40,6 +40,7 @@ from letta.services.agent_manager import AgentManager
 from letta.services.block_manager import BlockManager
 from letta.services.helpers.agent_manager_helper import compile_system_message
 from letta.services.message_manager import MessageManager
+from letta.services.passage_manager import PassageManager
 from letta.services.summarizer.enums import SummarizationMode
 from letta.services.summarizer.summarizer import Summarizer
 from letta.utils import united_diff
@@ -75,6 +76,7 @@ class LowLatencyAgent(BaseAgent):
         # TODO: Make this more general, factorable
         # Summarizer settings
         self.block_manager = block_manager
+        self.passage_manager = PassageManager()  # TODO: pass this in
         # TODO: This is not guaranteed to exist!
         self.summary_block_label = "human"
         self.summarizer = Summarizer(
@@ -237,7 +239,8 @@ class LowLatencyAgent(BaseAgent):
         # TODO: This is a pretty brittle pattern established all over our code, need to get rid of this
         curr_system_message = in_context_messages[0]
         curr_memory_str = agent_state.memory.compile()
-        if curr_memory_str in curr_system_message.text:
+        curr_system_message_text = curr_system_message.content[0].text
+        if curr_memory_str in curr_system_message_text:
             # NOTE: could this cause issues if a block is removed? (substring match would still work)
             logger.debug(
                 f"Memory hasn't changed for agent id={agent_state.id} and actor=({self.actor.id}, {self.actor.name}), skipping system prompt rebuild"
@@ -245,13 +248,19 @@ class LowLatencyAgent(BaseAgent):
             return in_context_messages
 
         memory_edit_timestamp = get_utc_time()
+
+        num_messages = self.message_manager.size(actor=actor, agent_id=agent_id)
+        num_archival_memories = self.passage_manager.size(actor=actor, agent_id=agent_id)
+
         new_system_message_str = compile_system_message(
             system_prompt=agent_state.system,
             in_context_memory=agent_state.memory,
             in_context_memory_last_edit=memory_edit_timestamp,
+            previous_message_count=num_messages,
+            archival_memory_size=num_archival_memories,
         )
 
-        diff = united_diff(curr_system_message.text, new_system_message_str)
+        diff = united_diff(curr_system_message_text, new_system_message_str)
         if len(diff) > 0:
             logger.info(f"Rebuilding system with new memory...\nDiff:\n{diff}")
 

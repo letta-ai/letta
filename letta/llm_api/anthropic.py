@@ -53,6 +53,11 @@ MODEL_LIST = [
         "name": "claude-3-opus-20240229",
         "context_window": 200000,
     },
+    # latest
+    {
+        "name": "claude-3-opus-latest",
+        "context_window": 200000,
+    },
     ## Sonnet
     # 3.0
     {
@@ -69,9 +74,19 @@ MODEL_LIST = [
         "name": "claude-3-5-sonnet-20241022",
         "context_window": 200000,
     },
+    # 3.5 latest
+    {
+        "name": "claude-3-5-sonnet-latest",
+        "context_window": 200000,
+    },
     # 3.7
     {
         "name": "claude-3-7-sonnet-20250219",
+        "context_window": 200000,
+    },
+    # 3.7 latest
+    {
+        "name": "claude-3-7-sonnet-latest",
         "context_window": 200000,
     },
     ## Haiku
@@ -83,6 +98,11 @@ MODEL_LIST = [
     # 3.5
     {
         "name": "claude-3-5-haiku-20241022",
+        "context_window": 200000,
+    },
+    # 3.5 latest
+    {
+        "name": "claude-3-5-haiku-latest",
         "context_window": 200000,
     },
 ]
@@ -820,7 +840,7 @@ def anthropic_chat_completions_process_stream(
     # Create a dummy message for ID/datetime if needed
     dummy_message = _Message(
         role=_MessageRole.assistant,
-        text="",
+        content=[],
         agent_id="",
         model="",
         name=None,
