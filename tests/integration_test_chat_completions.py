@@ -157,17 +157,25 @@ def _assert_valid_chunk(chunk, idx, chunks):
 
 
 @pytest.mark.asyncio
-@pytest.mark.parametrize("message", ["What's the weather like in SF?"])
+@pytest.mark.parametrize("message", ["My name is Matt."])
 @pytest.mark.parametrize("endpoint", ["v1/voice-beta"])
 async def test_latency(mock_e2b_api_key_none, client, agent, message, endpoint):
     """Tests chat completion streaming using the Async OpenAI client."""
     request = _get_chat_request(message)
 
     async_client = AsyncOpenAI(base_url=f"{client.base_url}/{endpoint}/{agent.id}", max_retries=0)
+    import time
+
+    print(f"SENT OFF REQUEST {time.perf_counter()}")
+    first = True
     stream = await async_client.chat.completions.create(**request.model_dump(exclude_none=True))
     async with stream:
         async for chunk in stream:
-            print(chunk)
+            if first:
+                print(f"FIRST RECEIVED FROM REQUEST{time.perf_counter()}")
+                first = False
+            continue
+            # print(chunk)
 
 
 @pytest.mark.asyncio

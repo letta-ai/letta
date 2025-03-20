@@ -81,17 +81,13 @@ class VoiceAgent(BaseAgent):
         )
 
     async def step(self, input_message: UserMessage) -> List[Message]:
-        raise NotImplementedError("LowLatencyAgent does not have a synchronous step implemented currently.")
+        raise NotImplementedError("VoiceAgent does not have a synchronous step implemented currently.")
 
     async def step_stream(self, input_message: UserMessage) -> AsyncGenerator[str, None]:
         """
         Main streaming loop that yields partial tokens.
         Whenever we detect a tool call, we yield from _handle_ai_response as well.
         """
-        import time
-
-        print(f"HIT STEP STREAM {time.perf_counter()}")
-
         input_message = self.pre_process_input_message(input_message)
         agent_state = self.agent_manager.get_agent_by_id(self.agent_id, actor=self.actor)
         in_context_messages = self.message_manager.get_messages_by_ids(message_ids=agent_state.message_ids, actor=self.actor)
