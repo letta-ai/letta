@@ -96,7 +96,7 @@ def test_parse_number_cases(strict_parser):
 def test_parse_boolean_true(strict_parser):
     assert strict_parser.parse("true") is True, "Should parse 'true'."
     # Check leftover
-    assert strict_parser.last_parse_reminding == "", "No extra tokens expected."
+    assert strict_parser.last_parse_reminding == None, "No extra tokens expected."
 
 
 def test_parse_boolean_false(strict_parser):
@@ -246,3 +246,35 @@ def test_multiple_parse_calls(strict_parser):
     result_2 = strict_parser.parse(input_2)
     assert result_2 == [2, 3]
     assert strict_parser.last_parse_reminding.strip() == "trailing2"
+
+
+def test_parse_incomplete_string_streaming_strict(strict_parser):
+    """
+    Test how a strict parser handles an incomplete string received in chunks.
+    """
+    # Simulate streaming chunks
+    chunk1 = '{"message": "This is an incomplete'
+    chunk2 = " string with a newline\\n"
+    chunk3 = 'and more text"}'
+
+    with pytest.raises(json.JSONDecodeError, match="Unterminated string"):
+        strict_parser.parse(chunk1)
+
+    incomplete_json = chunk1 + chunk2
+    with pytest.raises(json.JSONDecodeError, match="Unterminated string"):
+        strict_parser.parse(incomplete_json)
+
+    complete_json = incomplete_json + chunk3
+    result = strict_parser.parse(complete_json)
+    expected = {"message": "This is an incomplete string with a newline\nand more text"}
+    assert result == expected, "Should parse complete JSON correctly"
+
+
+def test_unescaped_control_characters_strict(strict_parser):
+    """
+    Test parsing JSON containing unescaped control characters in strict mode.
+    """
+    input_str = '{"message": "This has a newline\nand tab\t"}'
+
+    with pytest.raises(json.JSONDecodeError, match="Invalid control character"):
+        strict_parser.parse(input_str)

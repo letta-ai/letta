@@ -32,7 +32,7 @@ class OptimisticJSONParser:
         self.on_extra_token = self.default_on_extra_token
 
     def default_on_extra_token(self, text, data, reminding):
-        pass
+        print(f"Parsed JSON with extra tokens: {data}, remaining: {reminding}")
 
     def parse(self, input_str):
         """
@@ -130,8 +130,8 @@ class OptimisticJSONParser:
         if end == -1:
             # Incomplete string
             if not self.strict:
-                return input_str[1:], ""
-            return json.loads(f'"{input_str[1:]}"'), ""
+                return input_str[1:], ""  # Lenient mode returns partial string
+            raise decode_error  # Raise error for incomplete string in strict mode
 
         str_val = input_str[: end + 1]
         input_str = input_str[end + 1 :]
@@ -152,8 +152,8 @@ class OptimisticJSONParser:
         num_str = input_str[:idx]
         remainder = input_str[idx:]
 
-        # If it's only a sign or just '.', return as-is with empty remainder
-        if not num_str or num_str in {"-", "."}:
+        # If not strict, and it's only a sign or just '.', return as-is with empty remainder
+        if not self.strict and (not num_str or num_str in {"-", "."}):
             return num_str, ""
 
         try:
