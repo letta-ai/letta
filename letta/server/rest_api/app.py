@@ -43,16 +43,6 @@ interface: StreamingServerInterface = StreamingServerInterface
 server = SyncServer(default_interface_factory=lambda: interface())
 logger = get_logger(__name__)
 
-# TODO: remove
-password = None
-## TODO(ethan): eventuall remove
-# if password := settings.server_pass:
-#    # if the pass was specified in the environment, use it
-#    print(f"Using existing admin server password from environment.")
-# else:
-#    # Autogenerate a password for this session and dump it to stdout
-#    password = secrets.token_urlsafe(16)
-#    #typer.secho(f"Generated admin server password for this session: {password}", fg=typer.colors.GREEN)
 
 import logging
 import platform
@@ -287,7 +277,7 @@ def create_application() -> "FastAPI":
     app.include_router(openai_chat_completions_router, prefix=OPENAI_API_PREFIX)
 
     # /api/auth endpoints
-    app.include_router(setup_auth_router(server, interface, password), prefix=API_PREFIX)
+    app.include_router(setup_auth_router(server, interface, random_password), prefix=API_PREFIX)
 
     # / static files
     mount_static_files(app)
