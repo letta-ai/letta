@@ -6,7 +6,7 @@ import traceback
 import warnings
 from abc import abstractmethod
 from datetime import datetime
-from typing import Callable, Dict, List, Optional, Tuple, Union
+from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 
 from composio.client import Composio
 from composio.client.collections import ActionModel, AppModel
@@ -17,9 +17,13 @@ import letta.constants as constants
 import letta.server.utils as server_utils
 import letta.system as system
 from letta.agent import Agent, save_agent
-from letta.chat_only_agent import ChatOnlyAgent
 from letta.config import LettaConfig
 from letta.data_sources.connectors import DataConnector, load_data
+from letta.dynamic_multi_agent import DynamicMultiAgent
+from letta.functions.mcp_client.base_client import BaseMCPClient
+from letta.functions.mcp_client.sse_client import MCP_CONFIG_TOPLEVEL_KEY, SSEMCPClient
+from letta.functions.mcp_client.stdio_client import StdioMCPClient
+from letta.functions.mcp_client.types import MCPServerType, MCPTool, SSEServerConfig, StdioServerConfig
 from letta.helpers.datetime_helpers import get_utc_time
 from letta.helpers.json_helpers import json_dumps, json_loads
 
@@ -29,6 +33,7 @@ from letta.interface import CLIInterface  # for printing to terminal
 from letta.log import get_logger
 from letta.offline_memory_agent import OfflineMemoryAgent
 from letta.orm.errors import NoResultFound
+from letta.round_robin_multi_agent import RoundRobinMultiAgent
 from letta.schemas.agent import AgentState, AgentType, CreateAgent
 from letta.schemas.block import BlockUpdate
 from letta.schemas.embedding_config import EmbeddingConfig
@@ -36,14 +41,16 @@ from letta.schemas.embedding_config import EmbeddingConfig
 # openai schemas
 from letta.schemas.enums import JobStatus, MessageStreamStatus
 from letta.schemas.environment_variables import SandboxEnvironmentVariableCreate
+from letta.schemas.group import Group, ManagerType
 from letta.schemas.job import Job, JobUpdate
 from letta.schemas.letta_message import LegacyLettaMessage, LettaMessage, ToolReturnMessage
+from letta.schemas.letta_message_content import TextContent
 from letta.schemas.letta_response import LettaResponse
 from letta.schemas.llm_config import LLMConfig
 from letta.schemas.memory import ArchivalMemorySummary, ContextWindowOverview, Memory, RecallMemorySummary
-from letta.schemas.message import Message, MessageCreate, MessageRole, MessageUpdate, TextContent
+from letta.schemas.message import Message, MessageCreate, MessageRole, MessageUpdate
 from letta.schemas.organization import Organization
-from letta.schemas.passage import Passage
+from letta.schemas.passage import Passage, PassageUpdate
 from letta.schemas.providers import (
     AnthropicBedrockProvider,
     AnthropicProvider,
@@ -60,6 +67,7 @@ from letta.schemas.providers import (
     TogetherProvider,
     VLLMChatCompletionsProvider,
     VLLMCompletionsProvider,
+    xAIProvider,
 )
 from letta.schemas.sandbox_config import SandboxType
 from letta.schemas.source import Source
@@ -71,6 +79,7 @@ from letta.server.rest_api.interface import StreamingServerInterface
 from letta.server.rest_api.utils import sse_async_generator
 from letta.services.agent_manager import AgentManager
 from letta.services.block_manager import BlockManager
+from letta.services.group_manager import GroupManager
 from letta.services.identity_manager import IdentityManager
 from letta.services.job_manager import JobManager
 from letta.services.message_manager import MessageManager
@@ -85,6 +94,7 @@ from letta.services.tool_execution_sandbox import ToolExecutionSandbox
 from letta.services.tool_manager import ToolManager
 from letta.services.user_manager import UserManager
 from letta.settings import model_settings, settings, tool_settings
+from letta.supervisor_multi_agent import SupervisorMultiAgent
 from letta.tracing import trace_method
 from letta.utils import get_friendly_error_msg
 
@@ -198,6 +208,7 @@ class SyncServer(Server):
         self.provider_manager = ProviderManager()
         self.step_manager = StepManager()
         self.identity_manager = IdentityManager()
+        self.group_manager = GroupManager()
 
         # Managers that interface with parallelism
         self.per_agent_lock_manager = PerAgentLockManager()
@@ -311,24 +322,92 @@ class SyncServer(Server):
             self._enabled_providers.append(LMStudioOpenAIProvider(base_url=lmstudio_url))
         if model_settings.deepseek_api_key:
             self._enabled_providers.append(DeepSeekProvider(api_key=model_settings.deepseek_api_key))
+        if model_settings.xai_api_key:
+            self._enabled_providers.append(xAIProvider(api_key=model_settings.xai_api_key))
+
+        # For MCP
+        """Initialize the MCP clients (there may be multiple)"""
+        mcp_server_configs = self.get_mcp_servers()
+        self.mcp_clients: Dict[str, BaseMCPClient] = {}
+
+        for server_name, server_config in mcp_server_configs.items():
+            if server_config.type == MCPServerType.SSE:
+                self.mcp_clients[server_name] = SSEMCPClient(server_config)
+            elif server_config.type == MCPServerType.STDIO:
+                self.mcp_clients[server_name] = StdioMCPClient(server_config)
+            else:
+                raise ValueError(f"Invalid MCP server config: {server_config}")
+
+            try:
+                self.mcp_clients[server_name].connect_to_server()
+            except Exception as e:
+                logger.error(e)
+                self.mcp_clients.pop(server_name)
+
+        # Print out the tools that are connected
+        for server_name, client in self.mcp_clients.items():
+            logger.info(f"Attempting to fetch tools from MCP server: {server_name}")
+            mcp_tools = client.list_tools()
+            logger.info(f"MCP tools connected: {', '.join([t.name for t in mcp_tools])}")
+            logger.debug(f"MCP tools: {', '.join([str(t) for t in mcp_tools])}")
 
     def load_agent(self, agent_id: str, actor: User, interface: Union[AgentInterface, None] = None) -> Agent:
         """Updated method to load agents from persisted storage"""
         agent_lock = self.per_agent_lock_manager.get_lock(agent_id)
         with agent_lock:
             agent_state = self.agent_manager.get_agent_by_id(agent_id=agent_id, actor=actor)
+            if agent_state.multi_agent_group:
+                return self.load_multi_agent(agent_state.multi_agent_group, actor, interface, agent_state)
 
             interface = interface or self.default_interface_factory()
             if agent_state.agent_type == AgentType.memgpt_agent:
-                agent = Agent(agent_state=agent_state, interface=interface, user=actor)
+                agent = Agent(agent_state=agent_state, interface=interface, user=actor, mcp_clients=self.mcp_clients)
             elif agent_state.agent_type == AgentType.offline_memory_agent:
                 agent = OfflineMemoryAgent(agent_state=agent_state, interface=interface, user=actor)
-            elif agent_state.agent_type == AgentType.chat_only_agent:
-                agent = ChatOnlyAgent(agent_state=agent_state, interface=interface, user=actor)
             else:
                 raise ValueError(f"Invalid agent type {agent_state.agent_type}")
 
             return agent
+
+    def load_multi_agent(
+        self, group: Group, actor: User, interface: Union[AgentInterface, None] = None, agent_state: Optional[AgentState] = None
+    ) -> Agent:
+        match group.manager_type:
+            case ManagerType.round_robin:
+                agent_state = agent_state or self.agent_manager.get_agent_by_id(agent_id=group.agent_ids[0], actor=actor)
+                return RoundRobinMultiAgent(
+                    agent_state=agent_state,
+                    interface=interface,
+                    user=actor,
+                    group_id=group.id,
+                    agent_ids=group.agent_ids,
+                    description=group.description,
+                    max_turns=group.max_turns,
+                )
+            case ManagerType.dynamic:
+                agent_state = agent_state or self.agent_manager.get_agent_by_id(agent_id=group.manager_agent_id, actor=actor)
+                return DynamicMultiAgent(
+                    agent_state=agent_state,
+                    interface=interface,
+                    user=actor,
+                    group_id=group.id,
+                    agent_ids=group.agent_ids,
+                    description=group.description,
+                    max_turns=group.max_turns,
+                    termination_token=group.termination_token,
+                )
+            case ManagerType.supervisor:
+                agent_state = agent_state or self.agent_manager.get_agent_by_id(agent_id=group.manager_agent_id, actor=actor)
+                return SupervisorMultiAgent(
+                    agent_state=agent_state,
+                    interface=interface,
+                    user=actor,
+                    group_id=group.id,
+                    agent_ids=group.agent_ids,
+                    description=group.description,
+                )
+            case _:
+                raise ValueError(f"Type {group.manager_type} is not supported.")
 
     def _step(
         self,
@@ -601,11 +680,12 @@ class SyncServer(Server):
 
         if isinstance(message, Message):
             # Can't have a null text field
-            if message.text is None or len(message.text) == 0:
-                raise ValueError(f"Invalid input: '{message.text}'")
+            message_text = message.content[0].text
+            if message_text is None or len(message_text) == 0:
+                raise ValueError(f"Invalid input: '{message_text}'")
             # If the input begins with a command prefix, reject
-            elif message.text.startswith("/"):
-                raise ValueError(f"Invalid input: '{message.text}'")
+            elif message_text.startswith("/"):
+                raise ValueError(f"Invalid input: '{message_text}'")
 
         else:
             raise TypeError(f"Invalid input: '{message}' - type {type(message)}")
@@ -643,10 +723,17 @@ class SyncServer(Server):
                 assert isinstance(message, MessageCreate)
 
                 # If wrapping is enabled, wrap with metadata before placing content inside the Message object
+                if isinstance(message.content, str):
+                    message_content = message.content
+                elif message.content and len(message.content) > 0 and isinstance(message.content[0], TextContent):
+                    message_content = message.content[0].text
+                else:
+                    assert message_content is not None, "Message content is empty"
+
                 if message.role == MessageRole.user and wrap_user_message:
-                    message.content = system.package_user_message(user_message=message.content)
+                    message_content = system.package_user_message(user_message=message_content)
                 elif message.role == MessageRole.system and wrap_system_message:
-                    message.content = system.package_system_message(system_message=message.content)
+                    message_content = system.package_system_message(system_message=message_content)
                 else:
                     raise ValueError(f"Invalid message role: {message.role}")
 
@@ -655,7 +742,7 @@ class SyncServer(Server):
                     Message(
                         agent_id=agent_id,
                         role=message.role,
-                        content=[TextContent(text=message.content)],
+                        content=[TextContent(text=message_content)] if message_content else [],
                         name=message.name,
                         # assigned later?
                         model=None,
@@ -765,14 +852,26 @@ class SyncServer(Server):
         # TODO: @mindy look at moving this to agent_manager to avoid above extra call
         passages = self.passage_manager.insert_passage(agent_state=agent_state, agent_id=agent_id, text=memory_contents, actor=actor)
 
+        # rebuild agent system prompt - force since no archival change
+        self.agent_manager.rebuild_system_prompt(agent_id=agent_id, actor=actor, force=True)
+
+        return passages
+
+    def modify_archival_memory(self, agent_id: str, memory_id: str, passage: PassageUpdate, actor: User) -> List[Passage]:
+        passage = Passage(**passage.model_dump(exclude_unset=True, exclude_none=True))
+        passages = self.passage_manager.update_passage_by_id(passage_id=memory_id, passage=passage, actor=actor)
         return passages
 
     def delete_archival_memory(self, memory_id: str, actor: User):
         # TODO check if it exists first, and throw error if not
-        # TODO: @mindy make this return the deleted passage instead
+        # TODO: need to also rebuild the prompt here
+        passage = self.passage_manager.get_passage_by_id(passage_id=memory_id, actor=actor)
+
+        # delete the passage
         self.passage_manager.delete_passage_by_id(passage_id=memory_id, actor=actor)
 
-        # TODO: return archival memory
+        # rebuild system prompt and force
+        self.agent_manager.rebuild_system_prompt(agent_id=passage.agent_id, actor=actor, force=True)
 
     def get_agent_recall(
         self,
@@ -891,6 +990,9 @@ class SyncServer(Server):
             new_passage_size = self.agent_manager.passage_size(actor=actor, agent_id=agent_id)
             assert new_passage_size >= curr_passage_size  # in case empty files are added
 
+            # rebuild system prompt and force
+            self.agent_manager.rebuild_system_prompt(agent_id=agent_id, actor=actor, force=True)
+
         return job
 
     def load_data(
@@ -975,6 +1077,10 @@ class SyncServer(Server):
                 warnings.warn(f"An error occurred while listing LLM models for provider {provider}: {e}")
 
         llm_models.extend(self.get_local_llm_configs())
+
+        # respect global maximum
+        for llm_config in llm_models:
+            llm_config.context_window = min(llm_config.context_window, model_settings.global_max_context_window_limit)
         return llm_models
 
     def list_embedding_models(self) -> List[EmbeddingConfig]:
@@ -1020,7 +1126,7 @@ class SyncServer(Server):
                 raise ValueError(f"Context window limit ({context_window_limit}) is greater than maximum of ({llm_config.context_window})")
             llm_config.context_window = context_window_limit
         else:
-            llm_config.context_window = min(llm_config.context_window, constants.DEFAULT_CONTEXT_WINDOW_SIZE)
+            llm_config.context_window = min(llm_config.context_window, model_settings.global_max_context_window_limit)
 
         return llm_config
 
@@ -1095,6 +1201,7 @@ class SyncServer(Server):
         tool_env_vars: Optional[Dict[str, str]] = None,
         tool_source_type: Optional[str] = None,
         tool_name: Optional[str] = None,
+        tool_args_json_schema: Optional[Dict[str, Any]] = None,
     ) -> ToolReturnMessage:
         """Run a tool from source code"""
         if tool_source_type is not None and tool_source_type != "python":
@@ -1104,6 +1211,7 @@ class SyncServer(Server):
         tool = Tool(
             name=tool_name,
             source_code=tool_source,
+            args_json_schema=tool_args_json_schema,
         )
         assert tool.name is not None, "Failed to create tool object"
 
@@ -1161,7 +1269,176 @@ class SyncServer(Server):
         actions = self.get_composio_client(api_key=api_key).actions.get(apps=[composio_app_name])
         return actions
 
-    @trace_method("Send Message")
+    # MCP wrappers
+    # TODO support both command + SSE servers (via config)
+    def get_mcp_servers(self) -> dict[str, Union[SSEServerConfig, StdioServerConfig]]:
+        """List the MCP servers in the config (doesn't test that they are actually working)"""
+
+        # TODO implement non-flatfile mechanism
+        if not tool_settings.mcp_read_from_config:
+            raise RuntimeError("MCP config file disabled. Enable it in settings.")
+
+        mcp_server_list = {}
+
+        # Attempt to read from ~/.letta/mcp_config.json
+        mcp_config_path = os.path.join(constants.LETTA_DIR, constants.MCP_CONFIG_NAME)
+        if os.path.exists(mcp_config_path):
+            with open(mcp_config_path, "r") as f:
+
+                try:
+                    mcp_config = json.load(f)
+                except Exception as e:
+                    logger.error(f"Failed to parse MCP config file ({mcp_config_path}) as json: {e}")
+                    return mcp_server_list
+
+                # Proper formatting is "mcpServers" key at the top level,
+                # then a dict with the MCP server name as the key,
+                # with the value being the schema from StdioServerParameters
+                if MCP_CONFIG_TOPLEVEL_KEY in mcp_config:
+                    for server_name, server_params_raw in mcp_config[MCP_CONFIG_TOPLEVEL_KEY].items():
+
+                        # No support for duplicate server names
+                        if server_name in mcp_server_list:
+                            logger.error(f"Duplicate MCP server name found (skipping): {server_name}")
+                            continue
+
+                        if "url" in server_params_raw:
+                            # Attempt to parse the server params as an SSE server
+                            try:
+                                server_params = SSEServerConfig(
+                                    server_name=server_name,
+                                    server_url=server_params_raw["url"],
+                                )
+                                mcp_server_list[server_name] = server_params
+                            except Exception as e:
+                                logger.error(f"Failed to parse server params for MCP server {server_name} (skipping): {e}")
+                                continue
+                        else:
+                            # Attempt to parse the server params as a StdioServerParameters
+                            try:
+                                server_params = StdioServerConfig(
+                                    server_name=server_name,
+                                    command=server_params_raw["command"],
+                                    args=server_params_raw.get("args", []),
+                                )
+                                mcp_server_list[server_name] = server_params
+                            except Exception as e:
+                                logger.error(f"Failed to parse server params for MCP server {server_name} (skipping): {e}")
+                                continue
+
+        # If the file doesn't exist, return empty dictionary
+        return mcp_server_list
+
+    def get_tools_from_mcp_server(self, mcp_server_name: str) -> List[MCPTool]:
+        """List the tools in an MCP server. Requires a client to be created."""
+        if mcp_server_name not in self.mcp_clients:
+            raise ValueError(f"No client was created for MCP server: {mcp_server_name}")
+
+        return self.mcp_clients[mcp_server_name].list_tools()
+
+    def add_mcp_server_to_config(
+        self, server_config: Union[SSEServerConfig, StdioServerConfig], allow_upsert: bool = True
+    ) -> List[Union[SSEServerConfig, StdioServerConfig]]:
+        """Add a new server config to the MCP config file"""
+
+        # TODO implement non-flatfile mechanism
+        if not tool_settings.mcp_read_from_config:
+            raise RuntimeError("MCP config file disabled. Enable it in settings.")
+
+        # If the config file doesn't exist, throw an error.
+        mcp_config_path = os.path.join(constants.LETTA_DIR, constants.MCP_CONFIG_NAME)
+        if not os.path.exists(mcp_config_path):
+            # Create the file if it doesn't exist
+            logger.debug(f"MCP config file not found, creating new file at: {mcp_config_path}")
+
+        # If the file does exist, attempt to parse it get calling get_mcp_servers
+        try:
+            current_mcp_servers = self.get_mcp_servers()
+        except Exception as e:
+            # Raise an error telling the user to fix the config file
+            logger.error(f"Failed to parse MCP config file at {mcp_config_path}: {e}")
+            raise ValueError(f"Failed to parse MCP config file {mcp_config_path}")
+
+        # Check if the server name is already in the config
+        if server_config.server_name in current_mcp_servers and not allow_upsert:
+            raise ValueError(f"Server name {server_config.server_name} is already in the config file")
+
+        # Attempt to initialize the connection to the server
+        if server_config.type == MCPServerType.SSE:
+            new_mcp_client = SSEMCPClient(server_config)
+        elif server_config.type == MCPServerType.STDIO:
+            new_mcp_client = StdioMCPClient(server_config)
+        else:
+            raise ValueError(f"Invalid MCP server config: {server_config}")
+        try:
+            new_mcp_client.connect_to_server()
+        except:
+            logger.exception(f"Failed to connect to MCP server: {server_config.server_name}")
+            raise RuntimeError(f"Failed to connect to MCP server: {server_config.server_name}")
+        # Print out the tools that are connected
+        logger.info(f"Attempting to fetch tools from MCP server: {server_config.server_name}")
+        new_mcp_tools = new_mcp_client.list_tools()
+        logger.info(f"MCP tools connected: {', '.join([t.name for t in new_mcp_tools])}")
+        logger.debug(f"MCP tools: {', '.join([str(t) for t in new_mcp_tools])}")
+
+        # Now that we've confirmed the config is working, let's add it to the client list
+        self.mcp_clients[server_config.server_name] = new_mcp_client
+
+        # Add to the server file
+        current_mcp_servers[server_config.server_name] = server_config
+
+        # Write out the file, and make sure to in include the top-level mcpConfig
+        try:
+            new_mcp_file = {MCP_CONFIG_TOPLEVEL_KEY: {k: v.to_dict() for k, v in current_mcp_servers.items()}}
+            with open(mcp_config_path, "w") as f:
+                json.dump(new_mcp_file, f, indent=4)
+        except Exception as e:
+            logger.error(f"Failed to write MCP config file at {mcp_config_path}: {e}")
+            raise ValueError(f"Failed to write MCP config file {mcp_config_path}")
+
+        return list(current_mcp_servers.values())
+
+    def delete_mcp_server_from_config(self, server_name: str) -> dict[str, Union[SSEServerConfig, StdioServerConfig]]:
+        """Delete a server config from the MCP config file"""
+
+        # TODO implement non-flatfile mechanism
+        if not tool_settings.mcp_read_from_config:
+            raise RuntimeError("MCP config file disabled. Enable it in settings.")
+
+        # If the config file doesn't exist, throw an error.
+        mcp_config_path = os.path.join(constants.LETTA_DIR, constants.MCP_CONFIG_NAME)
+        if not os.path.exists(mcp_config_path):
+            # If the file doesn't exist, raise an error
+            raise FileNotFoundError(f"MCP config file not found: {mcp_config_path}")
+
+        # If the file does exist, attempt to parse it get calling get_mcp_servers
+        try:
+            current_mcp_servers = self.get_mcp_servers()
+        except Exception as e:
+            # Raise an error telling the user to fix the config file
+            logger.error(f"Failed to parse MCP config file at {mcp_config_path}: {e}")
+            raise ValueError(f"Failed to parse MCP config file {mcp_config_path}")
+
+        # Check if the server name is already in the config
+        # If it's not, throw an error
+        if server_name not in current_mcp_servers:
+            raise ValueError(f"Server name {server_name} not found in MCP config file")
+
+        # Remove from the server file
+        del current_mcp_servers[server_name]
+
+        # Write out the file, and make sure to in include the top-level mcpConfig
+        try:
+            new_mcp_file = {MCP_CONFIG_TOPLEVEL_KEY: {k: v.to_dict() for k, v in current_mcp_servers.items()}}
+            with open(mcp_config_path, "w") as f:
+                json.dump(new_mcp_file, f, indent=4)
+        except Exception as e:
+            logger.error(f"Failed to write MCP config file at {mcp_config_path}: {e}")
+            raise ValueError(f"Failed to write MCP config file {mcp_config_path}")
+
+        return list(current_mcp_servers.values())
+
+    @trace_method
     async def send_message_to_agent(
         self,
         agent_id: str,
@@ -1197,7 +1474,8 @@ class SyncServer(Server):
             # Disable token streaming if not OpenAI or Anthropic
             # TODO: cleanup this logic
             llm_config = letta_agent.agent_state.llm_config
-            supports_token_streaming = ["openai", "anthropic", "deepseek"]
+            # supports_token_streaming = ["openai", "anthropic", "xai", "deepseek"]
+            supports_token_streaming = ["openai", "anthropic", "deepseek"]  # TODO re-enable xAI once streaming is patched
             if stream_tokens and (
                 llm_config.model_endpoint_type not in supports_token_streaming or "inference.memgpt.ai" in llm_config.model_endpoint
             ):
@@ -1286,6 +1564,109 @@ class SyncServer(Server):
                 # TODO: eventually update the interface to use `Message` and `MessageChunk` (new) inside the deque instead
                 return LettaResponse(messages=filtered_stream, usage=usage)
 
+        except HTTPException:
+            raise
+        except Exception as e:
+            print(e)
+            import traceback
+
+            traceback.print_exc()
+            raise HTTPException(status_code=500, detail=f"{e}")
+
+    @trace_method
+    async def send_group_message_to_agent(
+        self,
+        group_id: str,
+        actor: User,
+        messages: Union[List[Message], List[MessageCreate]],
+        stream_steps: bool,
+        stream_tokens: bool,
+        chat_completion_mode: bool = False,
+        # Support for AssistantMessage
+        use_assistant_message: bool = True,
+        assistant_message_tool_name: str = constants.DEFAULT_MESSAGE_TOOL,
+        assistant_message_tool_kwarg: str = constants.DEFAULT_MESSAGE_TOOL_KWARG,
+        metadata: Optional[dict] = None,
+    ) -> Union[StreamingResponse, LettaResponse]:
+        include_final_message = True
+        if not stream_steps and stream_tokens:
+            raise HTTPException(status_code=400, detail="stream_steps must be 'true' if stream_tokens is 'true'")
+
+        try:
+            # fetch the group
+            group = self.group_manager.retrieve_group(group_id=group_id, actor=actor)
+            letta_multi_agent = self.load_multi_agent(group=group, actor=actor)
+
+            llm_config = letta_multi_agent.agent_state.llm_config
+            supports_token_streaming = ["openai", "anthropic", "deepseek"]
+            if stream_tokens and (
+                llm_config.model_endpoint_type not in supports_token_streaming or "inference.memgpt.ai" in llm_config.model_endpoint
+            ):
+                warnings.warn(
+                    f"Token streaming is only supported for models with type {' or '.join(supports_token_streaming)} in the model_endpoint: agent has endpoint type {llm_config.model_endpoint_type} and {llm_config.model_endpoint}. Setting stream_tokens to False."
+                )
+                stream_tokens = False
+
+            # Create a new interface per request
+            letta_multi_agent.interface = StreamingServerInterface(
+                use_assistant_message=use_assistant_message,
+                assistant_message_tool_name=assistant_message_tool_name,
+                assistant_message_tool_kwarg=assistant_message_tool_kwarg,
+                inner_thoughts_in_kwargs=(
+                    llm_config.put_inner_thoughts_in_kwargs if llm_config.put_inner_thoughts_in_kwargs is not None else False
+                ),
+            )
+            streaming_interface = letta_multi_agent.interface
+            if not isinstance(streaming_interface, StreamingServerInterface):
+                raise ValueError(f"Agent has wrong type of interface: {type(streaming_interface)}")
+            streaming_interface.streaming_mode = stream_tokens
+            streaming_interface.streaming_chat_completion_mode = chat_completion_mode
+            if metadata and hasattr(streaming_interface, "metadata"):
+                streaming_interface.metadata = metadata
+
+            streaming_interface.stream_start()
+            task = asyncio.create_task(
+                asyncio.to_thread(
+                    letta_multi_agent.step,
+                    messages=messages,
+                    chaining=self.chaining,
+                    max_chaining_steps=self.max_chaining_steps,
+                )
+            )
+
+            if stream_steps:
+                # return a stream
+                return StreamingResponse(
+                    sse_async_generator(
+                        streaming_interface.get_generator(),
+                        usage_task=task,
+                        finish_message=include_final_message,
+                    ),
+                    media_type="text/event-stream",
+                )
+
+            else:
+                # buffer the stream, then return the list
+                generated_stream = []
+                async for message in streaming_interface.get_generator():
+                    assert (
+                        isinstance(message, LettaMessage)
+                        or isinstance(message, LegacyLettaMessage)
+                        or isinstance(message, MessageStreamStatus)
+                    ), type(message)
+                    generated_stream.append(message)
+                    if message == MessageStreamStatus.done:
+                        break
+
+                # Get rid of the stream status messages
+                filtered_stream = [d for d in generated_stream if not isinstance(d, MessageStreamStatus)]
+                usage = await task
+
+                # By default the stream will be messages of type LettaMessage or LettaLegacyMessage
+                # If we want to convert these to Message, we can use the attached IDs
+                # NOTE: we will need to de-duplicate the Messsage IDs though (since Assistant->Inner+Func_Call)
+                # TODO: eventually update the interface to use `Message` and `MessageChunk` (new) inside the deque instead
+                return LettaResponse(messages=filtered_stream, usage=usage)
         except HTTPException:
             raise
         except Exception as e:

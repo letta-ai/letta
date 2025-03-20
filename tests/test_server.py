@@ -662,7 +662,9 @@ def _test_get_messages_letta_format(
             print(f"Error: letta_message_index out of range. Expected more letta_messages for message {i}: {message.role}")
             raise ValueError(f"Mismatch in letta_messages length. Index: {letta_message_index}, Length: {len(letta_messages)}")
 
-        print(f"Processing message {i}: {message.role}, {message.text[:50] if message.text else 'null'}")
+        print(
+            f"Processing message {i}: {message.role}, {message.content[0].text[:50] if message.content and len(message.content) == 1 else 'null'}"
+        )
         while letta_message_index < len(letta_messages):
             letta_message = letta_messages[letta_message_index]
 
@@ -684,14 +686,14 @@ def _test_get_messages_letta_format(
                                 break
                             letta_message = letta_messages[letta_message_index]
 
-                    if message.text:
+                    if message.content[0].text:
                         assert isinstance(letta_message, ReasoningMessage)
                         letta_message_index += 1
                     else:
                         assert message.tool_calls is not None
 
                 else:  # Non-reverse handling
-                    if message.text:
+                    if message.content[0].text:
                         assert isinstance(letta_message, ReasoningMessage)
                         letta_message_index += 1
                         if letta_message_index >= len(letta_messages):
@@ -714,17 +716,17 @@ def _test_get_messages_letta_format(
 
             elif message.role == MessageRole.user:
                 assert isinstance(letta_message, UserMessage)
-                assert unpack_message(message.text) == letta_message.content
+                assert unpack_message(message.content[0].text) == letta_message.content
                 letta_message_index += 1
 
             elif message.role == MessageRole.system:
                 assert isinstance(letta_message, SystemMessage)
-                assert message.text == letta_message.content
+                assert message.content[0].text == letta_message.content
                 letta_message_index += 1
 
             elif message.role == MessageRole.tool:
                 assert isinstance(letta_message, ToolReturnMessage)
-                assert message.text == letta_message.tool_return
+                assert message.content[0].text == letta_message.tool_return
                 letta_message_index += 1
 
             else:
@@ -1194,7 +1196,7 @@ def test_messages_with_provider_override(server: SyncServer, user_id: str):
     step_ids = set([msg.step_id for msg in get_messages_response])
     completion_tokens, prompt_tokens, total_tokens = 0, 0, 0
     for step_id in step_ids:
-        step = server.step_manager.get_step(step_id=step_id)
+        step = server.step_manager.get_step(step_id=step_id, actor=actor)
         assert step, "Step was not logged correctly"
         assert step.provider_id == provider.id
         assert step.provider_name == agent.llm_config.model_endpoint_type
@@ -1208,7 +1210,7 @@ def test_messages_with_provider_override(server: SyncServer, user_id: str):
     assert prompt_tokens == usage.prompt_tokens
     assert total_tokens == usage.total_tokens
 
-    server.provider_manager.delete_provider_by_id(provider.id)
+    server.provider_manager.delete_provider_by_id(provider.id, actor=actor)
 
     existing_messages = server.message_manager.list_messages_for_agent(agent_id=agent.id, actor=actor)
 
@@ -1221,7 +1223,7 @@ def test_messages_with_provider_override(server: SyncServer, user_id: str):
     step_ids = set([msg.step_id for msg in get_messages_response])
     completion_tokens, prompt_tokens, total_tokens = 0, 0, 0
     for step_id in step_ids:
-        step = server.step_manager.get_step(step_id=step_id)
+        step = server.step_manager.get_step(step_id=step_id, actor=actor)
         assert step, "Step was not logged correctly"
         assert step.provider_id == None
         assert step.provider_name == agent.llm_config.model_endpoint_type

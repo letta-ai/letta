@@ -64,6 +64,8 @@ class BlockManager:
         label: Optional[str] = None,
         is_template: Optional[bool] = None,
         template_name: Optional[str] = None,
+        identifier_keys: Optional[List[str]] = None,
+        identity_id: Optional[str] = None,
         id: Optional[str] = None,
         after: Optional[str] = None,
         limit: Optional[int] = 50,
@@ -81,7 +83,14 @@ class BlockManager:
             if id:
                 filters["id"] = id
 
-            blocks = BlockModel.list(db_session=session, after=after, limit=limit, **filters)
+            blocks = BlockModel.list(
+                db_session=session,
+                after=after,
+                limit=limit,
+                identifier_keys=identifier_keys,
+                identity_id=identity_id,
+                **filters,
+            )
 
             return [block.to_pydantic() for block in blocks]
 
@@ -107,12 +116,14 @@ class BlockManager:
     @enforce_types
     def add_default_blocks(self, actor: PydanticUser):
         for persona_file in list_persona_files():
-            text = open(persona_file, "r", encoding="utf-8").read()
+            with open(persona_file, "r", encoding="utf-8") as f:
+                text = f.read()
             name = os.path.basename(persona_file).replace(".txt", "")
             self.create_or_update_block(Persona(template_name=name, value=text, is_template=True), actor=actor)
 
         for human_file in list_human_files():
-            text = open(human_file, "r", encoding="utf-8").read()
+            with open(human_file, "r", encoding="utf-8") as f:
+                text = f.read()
             name = os.path.basename(human_file).replace(".txt", "")
             self.create_or_update_block(Human(template_name=name, value=text, is_template=True), actor=actor)
 

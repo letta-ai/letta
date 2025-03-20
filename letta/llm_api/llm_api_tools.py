@@ -120,7 +120,7 @@ def retry_with_exponential_backoff(
     return wrapper
 
 
-@trace_method("LLM Request")
+@trace_method
 @retry_with_exponential_backoff
 def create(
     # agent_state: AgentState,
@@ -187,8 +187,65 @@ def create(
                 function_call = "required"
 
         data = build_openai_chat_completions_request(
-            llm_config, messages, user_id, functions, function_call, use_tool_naming, put_inner_thoughts_first=put_inner_thoughts_first
+            llm_config,
+            messages,
+            user_id,
+            functions,
+            function_call,
+            use_tool_naming,
+            put_inner_thoughts_first=put_inner_thoughts_first,
+            use_structured_output=True,  # NOTE: turn on all the time for OpenAI API
         )
+
+        if stream:  # Client requested token streaming
+            data.stream = True
+            assert isinstance(stream_interface, AgentChunkStreamingInterface) or isinstance(
+                stream_interface, AgentRefreshStreamingInterface
+            ), type(stream_interface)
+            response = openai_chat_completions_process_stream(
+                url=llm_config.model_endpoint,
+                api_key=api_key,
+                chat_completion_request=data,
+                stream_interface=stream_interface,
+            )
+        else:  # Client did not request token streaming (expect a blocking backend response)
+            data.stream = False
+            if isinstance(stream_interface, AgentChunkStreamingInterface):
+                stream_interface.stream_start()
+            try:
+                response = openai_chat_completions_request(
+                    url=llm_config.model_endpoint,
+                    api_key=api_key,
+                    chat_completion_request=data,
+                )
+            finally:
+                if isinstance(stream_interface, AgentChunkStreamingInterface):
+                    stream_interface.stream_end()
+
+        if llm_config.put_inner_thoughts_in_kwargs:
+            response = unpack_all_inner_thoughts_from_kwargs(response=response, inner_thoughts_key=INNER_THOUGHTS_KWARG)
+
+        return response
+
+    elif llm_config.model_endpoint_type == "xai":
+
+        api_key = model_settings.xai_api_key
+
+        if function_call is None and functions is not None and len(functions) > 0:
+            # force function calling for reliability, see https://platform.openai.com/docs/api-reference/chat/create#chat-create-tool_choice
+            function_call = "required"
+
+        data = build_openai_chat_completions_request(
+            llm_config,
+            messages,
+            user_id,
+            functions,
+            function_call,
+            use_tool_naming,
+            put_inner_thoughts_first=put_inner_thoughts_first,
+            use_structured_output=False,  # NOTE: not supported atm for xAI
+        )
+
         if stream:  # Client requested token streaming
             data.stream = True
             assert isinstance(stream_interface, AgentChunkStreamingInterface) or isinstance(
@@ -249,7 +306,6 @@ def create(
         response = azure_openai_chat_completions_request(
             model_settings=model_settings,
             llm_config=llm_config,
-            api_key=model_settings.azure_api_key,
             chat_completion_request=chat_completion_request,
         )
 
@@ -539,7 +595,6 @@ def create(
             messages[0].content[
                 0
             ].text += f'Select best function to call simply by responding with a single json block with the keys "function" and "params". Use double quotes around the arguments.'
-
         return get_chat_completion(
             model=llm_config.model,
             messages=messages,

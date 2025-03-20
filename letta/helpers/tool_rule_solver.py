@@ -1,10 +1,17 @@
-import json
-from typing import List, Optional, Union
+from typing import List, Optional, Set, Union
 
 from pydantic import BaseModel, Field
 
 from letta.schemas.enums import ToolRuleType
-from letta.schemas.tool_rule import BaseToolRule, ChildToolRule, ConditionalToolRule, ContinueToolRule, InitToolRule, TerminalToolRule
+from letta.schemas.tool_rule import (
+    BaseToolRule,
+    ChildToolRule,
+    ConditionalToolRule,
+    ContinueToolRule,
+    InitToolRule,
+    MaxCountPerStepToolRule,
+    TerminalToolRule,
+)
 
 
 class ToolRuleValidationError(Exception):
@@ -21,13 +28,15 @@ class ToolRulesSolver(BaseModel):
     continue_tool_rules: List[ContinueToolRule] = Field(
         default_factory=list, description="Continue tool rules to be used to continue tool execution."
     )
-    tool_rules: List[Union[ChildToolRule, ConditionalToolRule]] = Field(
+    # TODO: This should be renamed?
+    # TODO: These are tools that control the set of allowed functions in the next turn
+    child_based_tool_rules: List[Union[ChildToolRule, ConditionalToolRule, MaxCountPerStepToolRule]] = Field(
         default_factory=list, description="Standard tool rules for controlling execution sequence and allowed transitions."
     )
     terminal_tool_rules: List[TerminalToolRule] = Field(
         default_factory=list, description="Terminal tool rules that end the agent loop if called."
     )
-    last_tool_name: Optional[str] = Field(None, description="The most recent tool used, updated with each tool call.")
+    tool_call_history: List[str] = Field(default_factory=list, description="History of tool calls, updated with each tool call.")
 
     def __init__(self, tool_rules: List[BaseToolRule], **kwargs):
         super().__init__(**kwargs)
@@ -38,45 +47,60 @@ class ToolRulesSolver(BaseModel):
                 self.init_tool_rules.append(rule)
             elif rule.type == ToolRuleType.constrain_child_tools:
                 assert isinstance(rule, ChildToolRule)
-                self.tool_rules.append(rule)
+                self.child_based_tool_rules.append(rule)
             elif rule.type == ToolRuleType.conditional:
                 assert isinstance(rule, ConditionalToolRule)
                 self.validate_conditional_tool(rule)
-                self.tool_rules.append(rule)
+                self.child_based_tool_rules.append(rule)
             elif rule.type == ToolRuleType.exit_loop:
                 assert isinstance(rule, TerminalToolRule)
                 self.terminal_tool_rules.append(rule)
             elif rule.type == ToolRuleType.continue_loop:
                 assert isinstance(rule, ContinueToolRule)
                 self.continue_tool_rules.append(rule)
+            elif rule.type == ToolRuleType.max_count_per_step:
+                assert isinstance(rule, MaxCountPerStepToolRule)
+                self.child_based_tool_rules.append(rule)
 
     def update_tool_usage(self, tool_name: str):
-        """Update the internal state to track the last tool called."""
-        self.last_tool_name = tool_name
+        """Update the internal state to track tool call history."""
+        self.tool_call_history.append(tool_name)
 
-    def get_allowed_tool_names(self, error_on_empty: bool = False, last_function_response: Optional[str] = None) -> List[str]:
+    def clear_tool_history(self):
+        """Clear the history of tool calls."""
+        self.tool_call_history.clear()
+
+    def get_allowed_tool_names(
+        self, available_tools: Set[str], error_on_empty: bool = False, last_function_response: Optional[str] = None
+    ) -> List[str]:
         """Get a list of tool names allowed based on the last tool called."""
-        if self.last_tool_name is None:
-            # Use initial tool rules if no tool has been called yet
-            return [rule.tool_name for rule in self.init_tool_rules]
+        # TODO: This piece of code here is quite ugly and deserves a refactor
+        # TODO: There's some weird logic encoded here:
+        # TODO: -> This only takes into consideration Init, and a set of Child/Conditional/MaxSteps tool rules
+        # TODO: -> Init tool rules outputs are treated additively, Child/Conditional/MaxSteps are intersection based
+        # TODO: -> Tool rules should probably be refactored to take in a set of tool names?
+        # If no tool has been called yet, return InitToolRules additively
+        if not self.tool_call_history:
+            if self.init_tool_rules:
+                # If there are init tool rules, only return those defined in the init tool rules
+                return [rule.tool_name for rule in self.init_tool_rules]
+            else:
+                # Otherwise, return all the available tools
+                return list(available_tools)
         else:
-            # Find a matching ToolRule for the last tool used
-            current_rule = next((rule for rule in self.tool_rules if rule.tool_name == self.last_tool_name), None)
+            # Collect valid tools from all child-based rules
+            valid_tool_sets = [
+                rule.get_valid_tools(self.tool_call_history, available_tools, last_function_response)
+                for rule in self.child_based_tool_rules
+            ]
 
-            if current_rule is None:
-                if error_on_empty:
-                    raise ValueError(f"No tool rule found for {self.last_tool_name}")
-                return []
+            # Compute intersection of all valid tool sets
+            final_allowed_tools = set.intersection(*valid_tool_sets) if valid_tool_sets else available_tools
 
-            # If the current rule is a conditional tool rule, use the LLM response to
-            # determine which child tool to use
-            if isinstance(current_rule, ConditionalToolRule):
-                if not last_function_response:
-                    raise ValueError("Conditional tool rule requires an LLM response to determine which child tool to use")
-                next_tool = self.evaluate_conditional_tool(current_rule, last_function_response)
-                return [next_tool] if next_tool else []
+            if error_on_empty and not final_allowed_tools:
+                raise ValueError("No valid tools found based on tool rules.")
 
-            return current_rule.children if current_rule.children else []
+            return list(final_allowed_tools)
 
     def is_terminal_tool(self, tool_name: str) -> bool:
         """Check if the tool is defined as a terminal tool in the terminal tool rules."""
@@ -84,7 +108,7 @@ class ToolRulesSolver(BaseModel):
 
     def has_children_tools(self, tool_name):
         """Check if the tool has children tools"""
-        return any(rule.tool_name == tool_name for rule in self.tool_rules)
+        return any(rule.tool_name == tool_name for rule in self.child_based_tool_rules)
 
     def is_continue_tool(self, tool_name):
         """Check if the tool is defined as a continue tool in the tool rules."""
@@ -103,47 +127,3 @@ class ToolRulesSolver(BaseModel):
         if len(rule.child_output_mapping) == 0:
             raise ToolRuleValidationError("Conditional tool rule must have at least one child tool.")
         return True
-
-    def evaluate_conditional_tool(self, tool: ConditionalToolRule, last_function_response: str) -> str:
-        """
-        Parse function response to determine which child tool to use based on the mapping
-
-        Args:
-            tool (ConditionalToolRule): The conditional tool rule
-            last_function_response (str): The function response in JSON format
-
-        Returns:
-            str: The name of the child tool to use next
-        """
-        json_response = json.loads(last_function_response)
-        function_output = json_response["message"]
-
-        # Try to match the function output with a mapping key
-        for key in tool.child_output_mapping:
-
-            # Convert function output to match key type for comparison
-            if isinstance(key, bool):
-                typed_output = function_output.lower() == "true"
-            elif isinstance(key, int):
-                try:
-                    typed_output = int(function_output)
-                except (ValueError, TypeError):
-                    continue
-            elif isinstance(key, float):
-                try:
-                    typed_output = float(function_output)
-                except (ValueError, TypeError):
-                    continue
-            else:  # string
-                if function_output == "True" or function_output == "False":
-                    typed_output = function_output.lower()
-                elif function_output == "None":
-                    typed_output = None
-                else:
-                    typed_output = function_output
-
-            if typed_output == key:
-                return tool.child_output_mapping[key]
-
-        # If no match found, use default
-        return tool.default_child

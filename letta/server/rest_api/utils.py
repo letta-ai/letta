@@ -3,11 +3,9 @@ import json
 import os
 import uuid
 import warnings
-from datetime import datetime, timezone
 from enum import Enum
 from typing import TYPE_CHECKING, AsyncGenerator, Dict, Iterable, List, Optional, Union, cast
 
-import pytz
 from fastapi import Header, HTTPException
 from openai.types.chat import ChatCompletionMessageParam
 from openai.types.chat.chat_completion_message_tool_call import ChatCompletionMessageToolCall as OpenAIToolCall
@@ -15,15 +13,17 @@ from openai.types.chat.chat_completion_message_tool_call import Function as Open
 from openai.types.chat.completion_create_params import CompletionCreateParams
 from pydantic import BaseModel
 
-from letta.constants import DEFAULT_MESSAGE_TOOL, DEFAULT_MESSAGE_TOOL_KWARG
+from letta.constants import DEFAULT_MESSAGE_TOOL, DEFAULT_MESSAGE_TOOL_KWARG, FUNC_FAILED_HEARTBEAT_MESSAGE, REQ_HEARTBEAT_MESSAGE
 from letta.errors import ContextWindowExceededError, RateLimitExceededError
+from letta.helpers.datetime_helpers import get_utc_time
 from letta.log import get_logger
 from letta.schemas.enums import MessageRole
-from letta.schemas.letta_message import TextContent
+from letta.schemas.letta_message_content import TextContent
 from letta.schemas.message import Message
 from letta.schemas.usage import LettaUsageStatistics
 from letta.schemas.user import User
 from letta.server.rest_api.interface import StreamingServerInterface
+from letta.system import get_heartbeat, package_function_response
 
 if TYPE_CHECKING:
     from letta.server.server import SyncServer
@@ -145,7 +145,8 @@ def create_user_message(input_message: dict, agent_id: str, actor: User) -> Mess
     Converts a user input message into the internal structured format.
     """
     # Generate timestamp in the correct format
-    now = datetime.now(pytz.timezone("US/Pacific")).strftime("%Y-%m-%d %I:%M:%S %p %Z%z")
+    # Skip pytz for performance reasons
+    now = get_utc_time().isoformat()
 
     # Format message as structured JSON
     structured_message = {"type": "user_message", "message": input_message["content"], "time": now}
@@ -160,48 +161,100 @@ def create_user_message(input_message: dict, agent_id: str, actor: User) -> Mess
         model=None,
         tool_calls=None,
         tool_call_id=None,
-        created_at=datetime.now(timezone.utc),
+        created_at=get_utc_time(),
     )
 
     return user_message
 
 
-def create_assistant_message_from_openai_response(
-    response_text: str,
+def create_tool_call_messages_from_openai_response(
     agent_id: str,
     model: str,
+    function_name: str,
+    function_arguments: Dict,
+    tool_call_id: str,
+    function_call_success: bool,
+    function_response: Optional[str],
     actor: User,
-) -> Message:
-    """
-    Converts an OpenAI response into a Message that follows the internal
-    paradigm where LLM responses are structured as tool calls instead of content.
-    """
-    tool_call_id = str(uuid.uuid4())
+    add_heartbeat_request_system_message: bool = False,
+) -> List[Message]:
+    messages = []
 
     # Construct the tool call with the assistant's message
+    function_arguments["request_heartbeat"] = True
     tool_call = OpenAIToolCall(
         id=tool_call_id,
         function=OpenAIFunction(
-            name=DEFAULT_MESSAGE_TOOL,
-            arguments='{\n  "' + DEFAULT_MESSAGE_TOOL_KWARG + '": ' + f'"{response_text}",\n  "request_heartbeat": true\n' + "}",
+            name=function_name,
+            arguments=json.dumps(function_arguments),
         ),
         type="function",
     )
-
-    # Construct the Message object
     assistant_message = Message(
-        id=f"message-{uuid.uuid4()}",
         role=MessageRole.assistant,
         content=[],
         organization_id=actor.organization_id,
         agent_id=agent_id,
         model=model,
         tool_calls=[tool_call],
-        tool_call_id=None,
-        created_at=datetime.now(timezone.utc),
+        tool_call_id=tool_call_id,
+        created_at=get_utc_time(),
     )
+    messages.append(assistant_message)
 
-    return assistant_message
+    tool_message = Message(
+        role=MessageRole.tool,
+        content=[TextContent(text=package_function_response(function_call_success, function_response))],
+        organization_id=actor.organization_id,
+        agent_id=agent_id,
+        model=model,
+        tool_calls=[],
+        tool_call_id=tool_call_id,
+        created_at=get_utc_time(),
+        name=function_name,
+    )
+    messages.append(tool_message)
+
+    if add_heartbeat_request_system_message:
+        text_content = REQ_HEARTBEAT_MESSAGE if function_call_success else FUNC_FAILED_HEARTBEAT_MESSAGE
+        heartbeat_system_message = Message(
+            role=MessageRole.user,
+            content=[TextContent(text=get_heartbeat(text_content))],
+            organization_id=actor.organization_id,
+            agent_id=agent_id,
+            model=model,
+            tool_calls=[],
+            tool_call_id=None,
+            created_at=get_utc_time(),
+        )
+        messages.append(heartbeat_system_message)
+
+    return messages
+
+
+def create_assistant_messages_from_openai_response(
+    response_text: str,
+    agent_id: str,
+    model: str,
+    actor: User,
+) -> List[Message]:
+    """
+    Converts an OpenAI response into Messages that follow the internal
+    paradigm where LLM responses are structured as tool calls instead of content.
+    """
+    tool_call_id = str(uuid.uuid4())
+
+    return create_tool_call_messages_from_openai_response(
+        agent_id=agent_id,
+        model=model,
+        function_name=DEFAULT_MESSAGE_TOOL,
+        function_arguments={DEFAULT_MESSAGE_TOOL_KWARG: response_text},  # Avoid raw string manipulation
+        tool_call_id=tool_call_id,
+        function_call_success=True,
+        function_response=None,
+        actor=actor,
+        add_heartbeat_request_system_message=False,
+    )
 
 
 def convert_letta_messages_to_openai(messages: List[Message]) -> List[dict]:

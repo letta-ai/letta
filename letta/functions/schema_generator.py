@@ -6,6 +6,8 @@ from composio.client.collections import ActionParametersModel
 from docstring_parser import parse
 from pydantic import BaseModel
 
+from letta.functions.mcp_client.types import MCPTool
+
 
 def is_optional(annotation):
     # Check if the annotation is a Union
@@ -229,12 +231,27 @@ def pydantic_model_to_json_schema(model: Type[BaseModel]) -> dict:
     """
     schema = model.model_json_schema()
 
-    def clean_property(prop: dict) -> dict:
+    def clean_property(prop: dict, full_schema: dict) -> dict:
         """Clean up a property schema to match desired format"""
 
         if "description" not in prop:
             raise ValueError(f"Property {prop} lacks a 'description' key")
 
+        if "type" not in prop and "$ref" in prop:
+            prop["type"] = "object"
+
+        # Handle the case where the property is a $ref to another model
+        if "$ref" in prop:
+            # Resolve the reference to the nested model
+            ref_schema = resolve_ref(prop["$ref"], full_schema)
+            # Recursively clean the nested model
+            return {
+                "type": "object",
+                **clean_schema(ref_schema, full_schema),
+                "description": prop["description"],
+            }
+
+        # If it's a regular property with a direct type (e.g., string, number)
         return {
             "type": "string" if prop["type"] == "string" else prop["type"],
             "description": prop["description"],
@@ -283,7 +300,7 @@ def pydantic_model_to_json_schema(model: Type[BaseModel]) -> dict:
                         "description": prop["description"],
                     }
                 else:
-                    properties[name] = clean_property(prop)
+                    properties[name] = clean_property(prop, full_schema)
 
             pydantic_model_schema_dict = {
                 "type": "object",
@@ -430,6 +447,51 @@ def generate_schema_from_args_schema_v2(
         function_call_json["parameters"]["required"].append("request_heartbeat")
 
     return function_call_json
+
+
+def generate_tool_schema_for_mcp(
+    mcp_tool: MCPTool,
+    append_heartbeat: bool = True,
+    strict: bool = False,
+) -> Dict[str, Any]:
+
+    # MCP tool.inputSchema is a JSON schema
+    # https://github.com/modelcontextprotocol/python-sdk/blob/775f87981300660ee957b63c2a14b448ab9c3675/src/mcp/types.py#L678
+    parameters_schema = mcp_tool.inputSchema
+    name = mcp_tool.name
+    description = mcp_tool.description
+
+    assert "type" in parameters_schema
+    assert "required" in parameters_schema
+    assert "properties" in parameters_schema
+
+    # Add the optional heartbeat parameter
+    if append_heartbeat:
+        parameters_schema["properties"]["request_heartbeat"] = {
+            "type": "boolean",
+            "description": "Request an immediate heartbeat after function execution. Set to `True` if you want to send a follow-up message or run a follow-up function.",
+        }
+        parameters_schema["required"].append("request_heartbeat")
+
+    # Return the final schema
+    if strict:
+        # https://platform.openai.com/docs/guides/function-calling#strict-mode
+
+        # Add additionalProperties: False
+        parameters_schema["additionalProperties"] = False
+
+        return {
+            "strict": True,  # NOTE
+            "name": name,
+            "description": description,
+            "parameters": parameters_schema,
+        }
+    else:
+        return {
+            "name": name,
+            "description": description,
+            "parameters": parameters_schema,
+        }
 
 
 def generate_tool_schema_for_composio(

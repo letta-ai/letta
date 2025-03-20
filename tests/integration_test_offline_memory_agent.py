@@ -3,17 +3,12 @@ import pytest
 from letta import BasicBlockMemory
 from letta.client.client import create_client
 from letta.constants import DEFAULT_HUMAN, DEFAULT_PERSONA
-from letta.offline_memory_agent import (
-    finish_rethinking_memory,
-    finish_rethinking_memory_convo,
-    rethink_memory,
-    rethink_memory_convo,
-    trigger_rethink_memory,
-)
+from letta.offline_memory_agent import finish_rethinking_memory, rethink_memory, trigger_rethink_memory
 from letta.prompts import gpt_system
 from letta.schemas.agent import AgentType
 from letta.schemas.embedding_config import EmbeddingConfig
 from letta.schemas.llm_config import LLMConfig
+from letta.schemas.memory import BasicBlockMemory, Block
 from letta.schemas.tool_rule import TerminalToolRule
 from letta.utils import get_human_text, get_persona_text
 
@@ -126,42 +121,85 @@ def test_ripple_edit(client, mock_e2b_api_key_none):
 
 
 def test_chat_only_agent(client, mock_e2b_api_key_none):
-    rethink_memory = client.create_or_update_tool(rethink_memory_convo)
-    finish_rethinking_memory = client.create_or_update_tool(finish_rethinking_memory_convo)
-
-    # conversation_human_block = Block(name="chat_agent_human", label="chat_agent_human", value=get_human_text(DEFAULT_HUMAN), limit=2000)
-    # conversation_persona_block = Block(
-    #    name="chat_agent_persona", label="chat_agent_persona", value=get_persona_text(DEFAULT_PERSONA), limit=2000
-    # )
-
-    conversation_human_block = client.create_block(label="chat_agent_human", value=get_human_text(DEFAULT_HUMAN), limit=2000)
-    conversation_persona_block = client.create_block(label="chat_agent_persona", value=get_persona_text(DEFAULT_PERSONA), limit=2000)
-    conversation_memory = BasicBlockMemory(blocks=[conversation_persona_block, conversation_human_block])
+    from letta.offline_memory_agent import finish_rethinking_memory, rethink_memory
 
     send_message = client.server.tool_manager.get_tool_by_name(tool_name="send_message", actor=client.user)
-    chat_only_agent = client.create_agent(
-        name="conversation_agent",
-        agent_type=AgentType.chat_only_agent,
+    rethink_memory = client.create_or_update_tool(rethink_memory)
+    finish_rethinking_memory = client.create_or_update_tool(finish_rethinking_memory)
+    conversation_human_block = client.create_block(label="chat_only_agent_human", value=get_human_text(DEFAULT_HUMAN), limit=2000)
+    conversation_persona_block = client.create_block(label="chat_only_agent_persona", value=get_persona_text(DEFAULT_PERSONA), limit=2000)
+
+    offline_persona_block = Block(
+        name="offline_memory_persona",
+        label="offline_memory_persona",
+        value=get_persona_text("offline_memory_persona"),
+        limit=2000,
+    )
+
+    offline_memory = BasicBlockMemory(
+        blocks=[
+            offline_persona_block,
+            conversation_human_block,
+            conversation_persona_block,
+        ]
+    )
+
+    offline_memory_agent = client.create_agent(
+        name="offline_memory_agent",
+        agent_type=AgentType.offline_memory_agent,
+        system=gpt_system.get_system_text("memgpt_memory_only"),
+        memory=offline_memory,
         llm_config=LLMConfig.default_config("gpt-4"),
         embedding_config=EmbeddingConfig.default_config("text-embedding-ada-002"),
-        tool_ids=[send_message.id],
-        memory=conversation_memory,
+        tool_ids=[rethink_memory.id, finish_rethinking_memory.id],
         include_base_tools=False,
-        metadata={"offline_memory_tools": [rethink_memory.id, finish_rethinking_memory.id]},
     )
-    assert chat_only_agent is not None
-    assert set(chat_only_agent.memory.list_block_labels()) == {"chat_agent_persona", "chat_agent_human"}
-    assert len(chat_only_agent.tools) == 1
 
-    for message in ["hello", "my name is not chad, my name is swoodily"]:
-        client.send_message(agent_id=chat_only_agent.id, message=message, role="user")
+    chat_only_agent = client.create_agent(
+        name="conversation_agent",
+        agent_type=AgentType.memgpt_agent,
+        llm_config=LLMConfig.default_config("gpt-4"),
+        system=gpt_system.get_system_text("memgpt_convo_only"),
+        embedding_config=EmbeddingConfig.default_config("text-embedding-ada-002"),
+        tool_ids=[send_message.id],
+        memory=BasicBlockMemory(blocks=[conversation_persona_block, conversation_human_block]),
+        include_base_tools=False,
+    )
+
+    assert chat_only_agent is not None
+    assert offline_memory_agent is not None
+
+    # NOTE: the system messages sent to the offline memory agent here are not the actual messages,
+    # from the chat only agent. We need to actually stream the responses from the agent to the offline memory
+    # these are just for testing
+    for message in [
+        ("hello", "user"),
+        ("hi chad, how's it going?", "system"),
+        ("my name is not chad, my name is swoodily", "user"),
+        ("I'm sorry, I'm make a note of that, swoodily", "system"),
+        ("what's the weather like today?", "user"),
+        ("could you specify where you are at?", "system"),
+        ("I'm in SF", "user"),
+        ("it's currently 60 degrees in SF", "system"),
+        ("actually, I'm in Palo Alto", "user"),
+        ("it's currently 60 degrees in Palo Alto", "system"),
+        ("that sounds nice, I might go for a hike today then", "user"),
+        ("Here are some hikes near Palo Alto: 1. The Dish 2. Redtail Loop 3. Adobe Creek", "system"),
+        ("I'm going to try the first one, the Dish", "user"),
+        ("That sounds great, hope you enjoy it", "system"),
+    ]:
+        if message[1] == "user":
+            client.send_message(agent_id=chat_only_agent.id, message=message[0], role=message[1])
+            client.send_message(agent_id=offline_memory_agent.id, message=message[0], role=message[1])
+        else:
+            client.send_message(agent_id=offline_memory_agent.id, message=message[0], role=message[1])
+
+        offline_memory_agent = client.get_agent(agent_id=offline_memory_agent.id)
         chat_only_agent = client.get_agent(agent_id=chat_only_agent.id)
 
-    chat_only_agent = client.get_agent(agent_id=chat_only_agent.id)
-    assert chat_only_agent.memory.get_block("chat_agent_human").value != get_human_text(DEFAULT_HUMAN)
-
-    # Clean up agent
+    assert chat_only_agent.memory.get_block("chat_only_agent_human").value != get_human_text(DEFAULT_HUMAN)
     client.delete_agent(chat_only_agent.id)
+    client.delete_agent(offline_memory_agent.id)
 
 
 def test_initial_message_sequence(client, mock_e2b_api_key_none):

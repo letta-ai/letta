@@ -11,12 +11,14 @@ import traceback
 import uuid
 from typing import Any, Dict, Optional
 
+from letta.functions.helpers import generate_model_from_args_json_schema
 from letta.log import get_logger
 from letta.schemas.agent import AgentState
 from letta.schemas.sandbox_config import SandboxConfig, SandboxRunResult, SandboxType
 from letta.schemas.tool import Tool
 from letta.schemas.user import User
 from letta.services.helpers.tool_execution_helper import (
+    add_imports_and_pydantic_schemas_for_args,
     create_venv_for_local_sandbox,
     find_python_executable,
     install_pip_requirements_for_sandbox,
@@ -408,20 +410,35 @@ class ToolExecutionSandbox:
         code += "import sys\n"
         code += "import base64\n"
 
-        # Load the agent state data into the program
+        # imports to support agent state
         if agent_state:
             code += "import letta\n"
             code += "from letta import * \n"
             import pickle
 
+        if self.tool.args_json_schema:
+            schema_code = add_imports_and_pydantic_schemas_for_args(self.tool.args_json_schema)
+            if "from __future__ import annotations" in schema_code:
+                schema_code = schema_code.replace("from __future__ import annotations", "").lstrip()
+                code = "from __future__ import annotations\n\n" + code
+            code += schema_code + "\n"
+
+        # load the agent state
+        if agent_state:
             agent_state_pickle = pickle.dumps(agent_state)
             code += f"agent_state = pickle.loads({agent_state_pickle})\n"
         else:
             # agent state is None
             code += "agent_state = None\n"
 
-        for param in self.args:
-            code += self.initialize_param(param, self.args[param])
+        if self.tool.args_json_schema:
+            args_schema = generate_model_from_args_json_schema(self.tool.args_json_schema)
+            code += f"args_object = {args_schema.__name__}(**{self.args})\n"
+            for param in self.args:
+                code += f"{param} = args_object.{param}\n"
+        else:
+            for param in self.args:
+                code += self.initialize_param(param, self.args[param])
 
         if "agent_state" in self.parse_function_arguments(self.tool.source_code, self.tool.name):
             inject_agent_state = True

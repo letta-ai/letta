@@ -13,12 +13,14 @@ from letta.orm.job_messages import JobMessage
 from letta.orm.message import Message as MessageModel
 from letta.orm.sqlalchemy_base import AccessType
 from letta.orm.step import Step
+from letta.orm.step import Step as StepModel
 from letta.schemas.enums import JobStatus, MessageRole
 from letta.schemas.job import Job as PydanticJob
 from letta.schemas.job import JobUpdate, LettaRequestConfig
 from letta.schemas.letta_message import LettaMessage
 from letta.schemas.message import Message as PydanticMessage
 from letta.schemas.run import Run as PydanticRun
+from letta.schemas.step import Step as PydanticStep
 from letta.schemas.usage import LettaUsageStatistics
 from letta.schemas.user import User as PydanticUser
 from letta.utils import enforce_types
@@ -162,6 +164,51 @@ class JobManager:
         return [message.to_pydantic() for message in messages]
 
     @enforce_types
+    def get_job_steps(
+        self,
+        job_id: str,
+        actor: PydanticUser,
+        before: Optional[str] = None,
+        after: Optional[str] = None,
+        limit: Optional[int] = 100,
+        ascending: bool = True,
+    ) -> List[PydanticStep]:
+        """
+        Get all steps associated with a job.
+
+        Args:
+            job_id: The ID of the job to get steps for
+            actor: The user making the request
+            before: Cursor for pagination
+            after: Cursor for pagination
+            limit: Maximum number of steps to return
+            ascending: Optional flag to sort in ascending order
+
+        Returns:
+            List of steps associated with the job
+
+        Raises:
+            NoResultFound: If the job does not exist or user does not have access
+        """
+        with self.session_maker() as session:
+            # Build filters
+            filters = {}
+            filters["job_id"] = job_id
+
+            # Get steps
+            steps = StepModel.list(
+                db_session=session,
+                before=before,
+                after=after,
+                ascending=ascending,
+                limit=limit,
+                actor=actor,
+                **filters,
+            )
+
+        return [step.to_pydantic() for step in steps]
+
+    @enforce_types
     def add_message_to_job(self, job_id: str, message_id: str, actor: PydanticUser) -> None:
         """
         Associate a message with a job by creating a JobMessage record.
@@ -287,6 +334,57 @@ class JobManager:
 
         Returns:
             List of LettaMessages associated with the job
+
+        Raises:
+            NoResultFound: If the job does not exist or user does not have access
+        """
+        messages = self.get_job_messages(
+            job_id=run_id,
+            actor=actor,
+            before=before,
+            after=after,
+            limit=limit,
+            role=role,
+            ascending=ascending,
+        )
+
+        request_config = self._get_run_request_config(run_id)
+
+        messages = PydanticMessage.to_letta_messages_from_list(
+            messages=messages,
+            use_assistant_message=request_config["use_assistant_message"],
+            assistant_message_tool_name=request_config["assistant_message_tool_name"],
+            assistant_message_tool_kwarg=request_config["assistant_message_tool_kwarg"],
+        )
+
+        return messages
+
+    @enforce_types
+    def get_step_messages(
+        self,
+        run_id: str,
+        actor: PydanticUser,
+        before: Optional[str] = None,
+        after: Optional[str] = None,
+        limit: Optional[int] = 100,
+        role: Optional[MessageRole] = None,
+        ascending: bool = True,
+    ) -> List[LettaMessage]:
+        """
+        Get steps associated with a job using cursor-based pagination.
+        This is a wrapper around get_job_messages that provides cursor-based pagination.
+
+        Args:
+            run_id: The ID of the run to get steps for
+            actor: The user making the request
+            before: Message ID to get messages after
+            after: Message ID to get messages before
+            limit: Maximum number of messages to return
+            ascending: Whether to return messages in ascending order
+            role: Optional role filter
+
+        Returns:
+            List of Steps associated with the job
 
         Raises:
             NoResultFound: If the job does not exist or user does not have access

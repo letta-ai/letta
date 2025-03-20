@@ -13,7 +13,7 @@ from letta.schemas.message import Message as _Message
 from letta.schemas.message import MessageRole as _MessageRole
 from letta.schemas.openai.chat_completion_request import ChatCompletionRequest
 from letta.schemas.openai.chat_completion_request import FunctionCall as ToolFunctionChoiceFunctionCall
-from letta.schemas.openai.chat_completion_request import Tool, ToolFunctionChoice, cast_message_to_subtype
+from letta.schemas.openai.chat_completion_request import FunctionSchema, Tool, ToolFunctionChoice, cast_message_to_subtype
 from letta.schemas.openai.chat_completion_response import (
     ChatCompletionChunkResponse,
     ChatCompletionResponse,
@@ -25,6 +25,7 @@ from letta.schemas.openai.chat_completion_response import (
 )
 from letta.schemas.openai.embedding_response import EmbeddingResponse
 from letta.streaming_interface import AgentChunkStreamingInterface, AgentRefreshStreamingInterface
+from letta.tracing import log_event
 from letta.utils import get_tool_call_id, smart_urljoin
 
 logger = get_logger(__name__)
@@ -95,6 +96,7 @@ def build_openai_chat_completions_request(
     function_call: Optional[str],
     use_tool_naming: bool,
     put_inner_thoughts_first: bool = True,
+    use_structured_output: bool = True,
 ) -> ChatCompletionRequest:
     if functions and llm_config.put_inner_thoughts_in_kwargs:
         # Special case for LM Studio backend since it needs extra guidance to force out the thoughts first
@@ -157,6 +159,16 @@ def build_openai_chat_completions_request(
         data.user = str(uuid.UUID(int=0))
         data.model = "memgpt-openai"
 
+    if use_structured_output and data.tools is not None and len(data.tools) > 0:
+        # Convert to structured output style (which has 'strict' and no optionals)
+        for tool in data.tools:
+            try:
+                # tool["function"] = convert_to_structured_output(tool["function"])
+                structured_output_version = convert_to_structured_output(tool.function.model_dump())
+                tool.function = FunctionSchema(**structured_output_version)
+            except ValueError as e:
+                warnings.warn(f"Failed to convert tool function to structured output, tool={tool}, error={e}")
+
     return data
 
 
@@ -209,7 +221,7 @@ def openai_chat_completions_process_stream(
     # TODO(sarah): add message ID generation function
     dummy_message = _Message(
         role=_MessageRole.assistant,
-        text="",
+        content=[],
         agent_id="",
         model="",
         name=None,
@@ -231,6 +243,8 @@ def openai_chat_completions_process_stream(
             total_tokens=prompt_tokens,
         ),
     )
+
+    log_event(name="llm_request_sent", attributes=chat_completion_request.model_dump())
 
     if stream_interface:
         stream_interface.stream_start()
@@ -395,6 +409,7 @@ def openai_chat_completions_process_stream(
     assert len(chat_completion_response.choices) > 0, f"No response from provider {chat_completion_response}"
 
     # printd(chat_completion_response)
+    log_event(name="llm_response_received", attributes=chat_completion_response.model_dump())
     return chat_completion_response
 
 
@@ -426,7 +441,9 @@ def openai_chat_completions_request(
     """
     data = prepare_openai_payload(chat_completion_request)
     client = OpenAI(api_key=api_key, base_url=url, max_retries=0)
+    log_event(name="llm_request_sent", attributes=data)
     chat_completion = client.chat.completions.create(**data)
+    log_event(name="llm_response_received", attributes=chat_completion.model_dump())
     return ChatCompletionResponse(**chat_completion.model_dump())
 
 
@@ -455,11 +472,12 @@ def prepare_openai_payload(chat_completion_request: ChatCompletionRequest):
         data.pop("tools")
         data.pop("tool_choice", None)  # extra safe,  should exist always (default="auto")
 
-    if "tools" in data:
-        for tool in data["tools"]:
-            try:
-                tool["function"] = convert_to_structured_output(tool["function"])
-            except ValueError as e:
-                warnings.warn(f"Failed to convert tool function to structured output, tool={tool}, error={e}")
+    # # NOTE: move this out to wherever the ChatCompletionRequest is created
+    # if "tools" in data:
+    #     for tool in data["tools"]:
+    #         try:
+    #             tool["function"] = convert_to_structured_output(tool["function"])
+    #         except ValueError as e:
+    #             warnings.warn(f"Failed to convert tool function to structured output, tool={tool}, error={e}")
 
     return data

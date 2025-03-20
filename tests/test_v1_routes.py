@@ -380,6 +380,8 @@ def test_list_blocks(client, mock_sync_server):
         label=None,
         is_template=True,
         template_name=None,
+        identity_id=None,
+        identifier_keys=None,
     )
 
 

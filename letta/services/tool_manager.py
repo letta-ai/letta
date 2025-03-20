@@ -2,7 +2,7 @@ import importlib
 import warnings
 from typing import List, Optional
 
-from letta.constants import BASE_FUNCTION_RETURN_CHAR_LIMIT, BASE_MEMORY_TOOLS, BASE_TOOLS, MULTI_AGENT_TOOLS
+from letta.constants import BASE_FUNCTION_RETURN_CHAR_LIMIT, BASE_MEMORY_TOOLS, BASE_TOOLS, MCP_TOOL_TAG_NAME_PREFIX, MULTI_AGENT_TOOLS
 from letta.functions.functions import derive_openai_json_schema, load_function_set
 from letta.log import get_logger
 from letta.orm.enums import ToolType
@@ -42,7 +42,7 @@ class ToolManager:
         tool = self.get_tool_by_name(tool_name=pydantic_tool.name, actor=actor)
         if tool:
             # Put to dict and remove fields that should not be reset
-            update_data = pydantic_tool.model_dump(to_orm=True, exclude_unset=True, exclude_none=True)
+            update_data = pydantic_tool.model_dump(exclude_unset=True, exclude_none=True)
 
             # If there's anything to update
             if update_data:
@@ -55,6 +55,16 @@ class ToolManager:
             tool = self.create_tool(pydantic_tool, actor=actor)
 
         return tool
+
+    @enforce_types
+    def create_or_update_mcp_tool(self, tool_create: ToolCreate, mcp_server_name: str, actor: PydanticUser) -> PydanticTool:
+        metadata = {MCP_TOOL_TAG_NAME_PREFIX: {"server_name": mcp_server_name}}
+        return self.create_or_update_tool(
+            PydanticTool(
+                tool_type=ToolType.EXTERNAL_MCP, name=tool_create.json_schema["name"], metadata_=metadata, **tool_create.model_dump()
+            ),
+            actor,
+        )
 
     @enforce_types
     def create_or_update_composio_tool(self, tool_create: ToolCreate, actor: PydanticUser) -> PydanticTool:
