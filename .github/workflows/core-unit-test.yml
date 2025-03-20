@@ -57,6 +57,7 @@ jobs:
           - "test_utils.py"
           - "test_stream_buffer_readers.py"
           - "test_agent_serialization.py"
+          - "test_optimistic_json_parser.py"
     services:
       qdrant:
         image: qdrant/qdrant
