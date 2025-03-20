@@ -6,7 +6,7 @@ import { Typography } from '../../core/Typography/Typography';
 import { OnboardingRewardElement } from '../OnboardingRewardElement/OnboardingRewardElement';
 import { Badge, type BadgeProps } from '../../core/Badge/Badge';
 import { useTranslations } from '@letta-cloud/translations';
-import { useMemo } from 'react';
+import { useEffect, useId, useMemo } from 'react';
 import { Button } from '../../core/Button/Button';
 import { OnboardingSteps } from '../OnboardingSteps/OnboardingSteps';
 import {
@@ -76,6 +76,39 @@ export function OnboardingAsideFocus(props: OnboardingAsideFocusProps) {
     open: isOpen,
   });
 
+  const elId = useId();
+
+  const spotlightRef = React.useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!isOpen) {
+      return;
+    }
+
+    const el = document.getElementById(elId);
+    const spotlight = spotlightRef.current;
+
+    if (!el || !spotlight) {
+      return;
+    }
+
+    const rect = el.getBoundingClientRect();
+
+    const padding = 40;
+
+    spotlight.style.position = 'fixed';
+    const largerSize = Math.max(rect.width, rect.height);
+    spotlight.style.width = `${largerSize + padding}px`;
+    spotlight.style.height = `${largerSize + padding}px`;
+
+    // center the spotlight account for the 20px padding
+    const x = rect.left + rect.width / 2 - largerSize / 2 - padding / 2;
+    const y = rect.top + rect.height / 2 - largerSize / 2 - padding / 2;
+
+    spotlight.style.left = `${x}px`;
+    spotlight.style.top = `${y}px`;
+  }, [elId, spotlightRef, isOpen]);
+
   if (!isOpen) {
     return children;
   }
@@ -84,12 +117,16 @@ export function OnboardingAsideFocus(props: OnboardingAsideFocusProps) {
     <>
       <div className="fixed top-0 w-[100dvw] h-[100dvh] left-0 z-[7] inset-0 bg-black bg-opacity-50" />
       <div
+        id={elId}
         className={cn('z-[9] bg-background relative', className)}
         ref={refs.setReference}
       >
         {children}
         {spotlight && (
-          <div className="w-[100px] h-[100px] top-[-36px] left-[-36px] z-[-1] rounded-full bg-background absolute" />
+          <div
+            ref={spotlightRef}
+            className="z-[-1] rounded-full bg-background absolute"
+          />
         )}
       </div>
       <FloatingPortal>

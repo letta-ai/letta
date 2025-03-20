@@ -1,13 +1,15 @@
 'use client';
-import { useAtom } from 'jotai';
-import { useEffect, useMemo } from 'react';
+import { useMemo } from 'react';
 import { useADEAppContext } from '../../AppContext/AppContext';
 import { useShouldUserSeeOnboarding } from '@letta-cloud/utils-client';
-import { adeTourStepAtom } from './adeTourStepAtom';
 import { useCurrentAgentMetaData } from '../useCurrentAgentMetaData/useCurrentAgentMetaData';
+import { useLocalStorage } from '@mantine/hooks';
 
 export function useADETour() {
-  const [step, setStep] = useAtom(adeTourStepAtom);
+  const [step, setStep] = useLocalStorage({
+    key: 'ade_tour_step',
+    defaultValue: 'welcome',
+  });
   const user = useADEAppContext();
   const { isTemplate } = useCurrentAgentMetaData();
   const showOnboarding = useShouldUserSeeOnboarding(user.user, 'explore_ade');
@@ -23,16 +25,6 @@ export function useADETour() {
 
     return step;
   }, [showOnboarding, step, isTemplate]);
-
-  useEffect(() => {
-    if (!showOnboarding) {
-      setStep(null);
-    }
-
-    if (showOnboarding && !step) {
-      setStep('welcome');
-    }
-  }, [showOnboarding, step, setStep]);
 
   return {
     currentStep,
