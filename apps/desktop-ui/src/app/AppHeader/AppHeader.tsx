@@ -1,18 +1,27 @@
 import './AppHeader.css';
 import {
   Button,
-  DotsVerticalIcon, DownloadIcon,
-  DropdownMenu, DropdownMenuItem,
+  DotsVerticalIcon,
+  DownloadIcon,
+  DropdownMenu,
+  DropdownMenuItem,
   HStack,
   Logo,
-  StatusIndicator, TrashIcon,
-  Typography
+  StatusIndicator,
+  TrashIcon,
+  Typography,
 } from '@letta-cloud/ui-component-library';
-import { useAgentsServiceRetrieveAgent, useHealthServiceHealthCheck } from '@letta-cloud/sdk-core';
+import {
+  useAgentsServiceRetrieveAgent,
+  useHealthServiceHealthCheck,
+} from '@letta-cloud/sdk-core';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import React, { useCallback, useMemo } from 'react';
 import { useTranslations } from '@letta-cloud/translations';
-import { DeleteAgentDialog, ExportAgentButton } from '@letta-cloud/ui-ade-components';
+import {
+  DeleteAgentDialog,
+  ExportAgentButton,
+} from '@letta-cloud/ui-ade-components';
 
 function ServerStatus() {
   const t = useTranslations('AppHeader');
@@ -78,13 +87,12 @@ function AgentMenu(props: AgentMenuProps) {
 
   const { data } = useAgentsServiceRetrieveAgent({
     agentId,
-  })
+  });
 
-  const navigate = useNavigate()
+  const navigate = useNavigate();
 
   const handleDeleteAgentSuccess = useCallback(() => {
     navigate('/dashboard/agents');
-
   }, [navigate]);
 
   return (
@@ -109,15 +117,18 @@ function AgentMenu(props: AgentMenuProps) {
             doNotCloseOnSelect
             preIcon={<TrashIcon />}
             label={t('AgentMenu.delete')}
-
           />
         }
         onSuccess={handleDeleteAgentSuccess}
       />
-      <ExportAgentButton trigger={<DropdownMenuItem
-        preIcon={<DownloadIcon />}
-        label={t('AgentMenu.export')} />} />
-
+      <ExportAgentButton
+        trigger={
+          <DropdownMenuItem
+            preIcon={<DownloadIcon />}
+            label={t('AgentMenu.export')}
+          />
+        }
+      />
     </DropdownMenu>
   );
 }
