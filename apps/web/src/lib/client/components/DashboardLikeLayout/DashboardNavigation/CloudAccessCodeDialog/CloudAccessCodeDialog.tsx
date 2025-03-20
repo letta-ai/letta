@@ -52,10 +52,10 @@ export function CloudAccessCodeDialog() {
         confirmText="Submit"
         isConfirmBusy={isPending || isSuccess}
         trigger={
-          <Button label="Have a access code?" size="small" color="tertiary" />
+          <Button label="Have an access code?" size="small" color="tertiary" />
         }
       >
-        Do you have an access code? Enter it here to get early access the cloud!
+        Enter your access code to enable Letta Cloud
         <FormField
           name="accessCode"
           render={({ field }) => (
