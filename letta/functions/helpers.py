@@ -93,7 +93,7 @@ def execute_composio_action(
 
     entity_id = entity_id or os.getenv(COMPOSIO_ENTITY_ENV_VAR_KEY, DEFAULT_ENTITY_ID)
     try:
-        composio_toolset = ComposioToolSet(api_key=api_key, entity_id=entity_id)
+        composio_toolset = ComposioToolSet(api_key=api_key, entity_id=entity_id, lock=False)
         response = composio_toolset.execute_action(action=action_name, params=args)
     except ApiKeyNotProvidedError:
         raise RuntimeError(
