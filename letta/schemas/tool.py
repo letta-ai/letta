@@ -171,7 +171,7 @@ class ToolCreate(LettaBase):
         from composio import LogLevel
         from composio_langchain import ComposioToolSet
 
-        composio_toolset = ComposioToolSet(logging_level=LogLevel.ERROR)
+        composio_toolset = ComposioToolSet(logging_level=LogLevel.ERROR, lock=False)
         composio_action_schemas = composio_toolset.get_action_schemas(actions=[action_name], check_connected_accounts=False)
 
         assert len(composio_action_schemas) > 0, "User supplied parameters do not match any Composio tools"
