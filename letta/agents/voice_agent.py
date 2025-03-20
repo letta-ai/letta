@@ -18,7 +18,6 @@ from letta.interfaces.openai_chat_completions_streaming_interface import OpenAIC
 from letta.log import get_logger
 from letta.orm.enums import ToolType
 from letta.schemas.agent import AgentState
-from letta.schemas.block import BlockUpdate
 from letta.schemas.message import Message, MessageUpdate
 from letta.schemas.openai.chat_completion_request import (
     AssistantMessage,
@@ -41,6 +40,8 @@ from letta.services.block_manager import BlockManager
 from letta.services.helpers.agent_manager_helper import compile_system_message
 from letta.services.message_manager import MessageManager
 from letta.services.passage_manager import PassageManager
+from letta.services.summarizer.enums import SummarizationMode
+from letta.services.summarizer.summarizer import Summarizer
 from letta.utils import united_diff
 
 logger = get_logger(__name__)
@@ -65,6 +66,7 @@ class VoiceAgent(BaseAgent):
         passage_manager: PassageManager,
         actor: User,
         message_buffer_limit: int,
+        message_buffer_min: int,
     ):
         super().__init__(
             agent_id=agent_id, openai_client=openai_client, message_manager=message_manager, agent_manager=agent_manager, actor=actor
@@ -76,9 +78,24 @@ class VoiceAgent(BaseAgent):
         # TODO: This is not guaranteed to exist!
         self.summary_block_label = "human"
         self.message_buffer_limit = message_buffer_limit
-        self.offline_memory_agent = EphemeralMemoryAgent(
-            agent_id=agent_id, openai_client=openai_client, message_manager=message_manager, agent_manager=agent_manager, actor=actor
+        self.summarizer = Summarizer(
+            mode=SummarizationMode.STATIC_MESSAGE_BUFFER,
+            summarizer_agent=EphemeralMemoryAgent(
+                agent_id=agent_id,
+                openai_client=openai_client,
+                message_manager=message_manager,
+                agent_manager=agent_manager,
+                actor=actor,
+                block_manager=block_manager,
+                target_block_label=self.summary_block_label,
+            ),
+            message_buffer_limit=message_buffer_limit,
+            message_buffer_min=message_buffer_min,
         )
+
+        # Cached archival memory/message size
+        self.num_messages = self.message_manager.size(actor=self.actor, agent_id=agent_id)
+        self.num_archival_memories = self.passage_manager.size(actor=self.actor, agent_id=agent_id)
 
     async def step(self, input_message: UserMessage) -> List[Message]:
         raise NotImplementedError("VoiceAgent does not have a synchronous step implemented currently.")
@@ -123,6 +140,11 @@ class VoiceAgent(BaseAgent):
 
         # Rebuild context window if desired
         await self._rebuild_context_window(in_context_messages, letta_message_db_queue, agent_state)
+
+        # TODO: This may be out of sync, if in between steps users add files
+        self.num_messages = self.message_manager.size(actor=self.actor, agent_id=agent_state.id)
+        self.num_archival_memories = self.passage_manager.size(actor=self.actor, agent_id=agent_state.id)
+
         yield "data: [DONE]\n\n"
 
     async def _handle_ai_response(
@@ -217,11 +239,11 @@ class VoiceAgent(BaseAgent):
         self, in_context_messages: List[Message], letta_message_db_queue: List[Message], agent_state: AgentState
     ) -> None:
         new_letta_messages = self.message_manager.create_many_messages(letta_message_db_queue, actor=self.actor)
-        new_in_context_messages = in_context_messages + new_letta_messages
 
-        if len(new_in_context_messages) > self.message_buffer_limit:
-            cutoff = len(new_in_context_messages) - self.message_buffer_limit
-            new_in_context_messages = [new_in_context_messages[0]] + new_in_context_messages[cutoff:]
+        # TODO: Make this more general and configurable, less brittle
+        new_in_context_messages, updated = await self.summarizer.summarize(
+            in_context_messages=in_context_messages, new_letta_messages=new_letta_messages
+        )
 
         self.agent_manager.set_in_context_messages(
             agent_id=self.agent_id, message_ids=[m.id for m in new_in_context_messages], actor=self.actor
@@ -231,10 +253,10 @@ class VoiceAgent(BaseAgent):
         # Refresh memory
         # TODO: This only happens for the summary block
         # TODO: We want to extend this refresh to be general, and stick it in agent_manager
-        # for i, b in enumerate(agent_state.memory.blocks):
-        #     if b.label == self.summary_block_label:
-        #         agent_state.memory.blocks[i] = self.block_manager.get_block_by_id(block_id=b.id, actor=self.actor)
-        #         break
+        for i, b in enumerate(agent_state.memory.blocks):
+            if b.label == self.summary_block_label:
+                agent_state.memory.blocks[i] = self.block_manager.get_block_by_id(block_id=b.id, actor=self.actor)
+                break
 
         # TODO: This is a pretty brittle pattern established all over our code, need to get rid of this
         curr_system_message = in_context_messages[0]
@@ -249,15 +271,12 @@ class VoiceAgent(BaseAgent):
 
         memory_edit_timestamp = get_utc_time()
 
-        # num_messages = self.message_manager.size(actor=self.actor, agent_id=agent_state.id)
-        # num_archival_memories = self.passage_manager.size(actor=self.actor, agent_id=agent_state.id)
-
         new_system_message_str = compile_system_message(
             system_prompt=agent_state.system,
             in_context_memory=agent_state.memory,
             in_context_memory_last_edit=memory_edit_timestamp,
-            previous_message_count=0,
-            archival_memory_size=0,
+            previous_message_count=self.num_messages,
+            archival_memory_size=self.num_archival_memories,
         )
 
         diff = united_diff(curr_system_message_text, new_system_message_str)
@@ -308,16 +327,21 @@ class VoiceAgent(BaseAgent):
                 add_pre_execution_message(
                     {
                         "name": "recall_memory",
-                        "description": "Retrieve relevant information from memory based on a given query. Use when you don't remember the answer to a question.",
+                        "description": "Retrieve relevant information from memory based on semantic and keyword queries. Use when you don't remember the answer to a question.",
                         "parameters": {
                             "type": "object",
                             "properties": {
-                                "query": {
+                                "semantic_query": {
                                     "type": "string",
-                                    "description": "A description of what the model is trying to recall from memory.",
-                                }
+                                    "description": "A natural language description of what information you're trying to recall from memory.",
+                                },
+                                "keyword_queries": {
+                                    "type": "array",
+                                    "items": {"type": "string"},
+                                    "description": "A list of specific keywords to search for in memory. These help with precise retrieval.",
+                                },
                             },
-                            "required": ["query"],
+                            "required": ["semantic_query", "keyword_queries"],
                         },
                     },
                     description=recall_memory_utterance_description,
@@ -338,8 +362,10 @@ class VoiceAgent(BaseAgent):
         # Special memory case
         if tool_name == "recall_memory":
             # TODO: Make this safe
-            await self._recall_memory(tool_args["query"], agent_state)
-            return f"Successfully recalled memory and populated {self.summary_block_label} block.", True
+            tool_result = await self._recall_memory(
+                semantic_query=tool_args["semantic_query"], keyword_queries=tool_args["keyword_queries"], agent_state=agent_state
+            )
+            return tool_result, True
         else:
             target_tool = next((x for x in agent_state.tools if x.name == tool_name), None)
             if not target_tool:
@@ -358,9 +384,45 @@ class VoiceAgent(BaseAgent):
             except Exception as e:
                 return f"Failed to call tool. Error: {e}", False
 
-    async def _recall_memory(self, query, agent_state: AgentState) -> None:
-        results = await self.offline_memory_agent.step(UserMessage(content=query))
-        target_block = next(b for b in agent_state.memory.blocks if b.label == self.summary_block_label)
-        self.block_manager.update_block(
-            block_id=target_block.id, block_update=BlockUpdate(value=results[0].content[0].text), actor=self.actor
+    async def _recall_memory(self, semantic_query: str, keyword_queries: List[str], agent_state: AgentState) -> str:
+        """
+        Recalls memory based on both semantic query and keyword queries.
+
+        Args:
+            semantic_query: Natural language description of what to recall
+            keyword_queries: List of specific keywords to search for in memory
+            agent_state: Current agent state
+
+        Returns:
+            JSON-formatted string summarizing retrieved memory results.
+        """
+        # Retrieve from archival memory
+        archival_results = self.agent_manager.list_passages(
+            actor=self.actor,
+            agent_id=self.agent_id,
+            query_text=semantic_query,
+            limit=20,
+            embedding_config=agent_state.embedding_config,
+            embed_query=True,
         )
+        formatted_archival_results = [{"timestamp": str(result.created_at), "content": result.text} for result in archival_results]
+
+        # Retrieve from conversation
+        keyword_results = {}
+        for keyword in keyword_queries:
+            messages = self.message_manager.list_user_messages_for_agent(
+                agent_id=self.agent_id,
+                actor=self.actor,
+                query_text=keyword,
+                limit=3,
+            )
+            keyword_results[keyword] = [message.content[0].text for message in messages]
+
+        # Construct LLM-friendly output
+        response = {
+            "semantic_query": semantic_query,
+            "archival_memory": formatted_archival_results,
+            "keyword_memory": keyword_results,
+        }
+
+        return json.dumps(response, indent=2)
