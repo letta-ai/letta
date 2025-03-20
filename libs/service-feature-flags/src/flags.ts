@@ -41,6 +41,11 @@ export const featureFlags = {
     expiryDate: '2024-02-31',
     flagValue: z.boolean(),
   },
+  NEW_DEVELOPMENT_SERVER: {
+    description: 'Switch between development servers',
+    expiryDate: '2024-04-01',
+    flagValue: z.boolean(),
+  },
 } satisfies Record<string, FlagProperties>;
 
 export type Flag = keyof typeof featureFlags;
