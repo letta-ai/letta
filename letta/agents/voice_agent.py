@@ -139,7 +139,7 @@ class VoiceAgent(BaseAgent):
                 break
 
         # Rebuild context window if desired
-        await self._rebuild_context_window(in_context_messages, letta_message_db_queue, agent_state)
+        await self._rebuild_context_window(in_context_messages, letta_message_db_queue)
 
         # TODO: This may be out of sync, if in between steps users add files
         self.num_messages = self.message_manager.size(actor=self.actor, agent_id=agent_state.id)
@@ -235,9 +235,7 @@ class VoiceAgent(BaseAgent):
             # If we got here, there's no tool call. If finish_reason_stop => done
             return not streaming_interface.finish_reason_stop
 
-    async def _rebuild_context_window(
-        self, in_context_messages: List[Message], letta_message_db_queue: List[Message], agent_state: AgentState
-    ) -> None:
+    async def _rebuild_context_window(self, in_context_messages: List[Message], letta_message_db_queue: List[Message]) -> None:
         new_letta_messages = self.message_manager.create_many_messages(letta_message_db_queue, actor=self.actor)
 
         # TODO: Make this more general and configurable, less brittle
