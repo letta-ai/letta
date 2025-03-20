@@ -1,6 +1,8 @@
 import ast
 import json
-from typing import Dict
+from typing import Dict, Optional, Tuple
+
+from letta.errors import LettaToolCreateError
 
 # Registry of known types for annotation resolution
 BUILTIN_TYPES = {
@@ -32,6 +34,19 @@ def resolve_type(annotation: str):
         return BUILTIN_TYPES[annotation]
 
     try:
+        if annotation.startswith("list["):
+            inner_type = annotation[len("list[") : -1]
+            resolve_type(inner_type)
+            return list
+        elif annotation.startswith("dict["):
+            inner_types = annotation[len("dict[") : -1]
+            key_type, value_type = inner_types.split(",")
+            return dict
+        elif annotation.startswith("tuple["):
+            inner_types = annotation[len("tuple[") : -1]
+            [resolve_type(t.strip()) for t in inner_types.split(",")]
+            return tuple
+
         parsed = ast.literal_eval(annotation)
         if isinstance(parsed, type):
             return parsed
@@ -103,3 +118,50 @@ def coerce_dict_args_by_annotations(function_args: dict, annotations: Dict[str, 
             except (TypeError, ValueError, json.JSONDecodeError, SyntaxError) as e:
                 raise ValueError(f"Failed to coerce argument '{arg_name}' to {annotation_str}: {e}")
     return coerced_args
+
+
+def get_function_name_and_description(source_code: str, name: Optional[str] = None) -> Tuple[str, str]:
+    """Gets the name and description for a given function source code by parsing the AST.
+
+    Args:
+        source_code: The source code to parse
+        name: Optional override for the function name
+
+    Returns:
+        Tuple of (function_name, docstring)
+    """
+    try:
+        # Parse the source code into an AST
+        tree = ast.parse(source_code)
+
+        # Find the last function definition
+        function_def = None
+        for node in ast.walk(tree):
+            if isinstance(node, ast.FunctionDef):
+                function_def = node
+
+        if not function_def:
+            raise LettaToolCreateError("No function definition found in source code")
+
+        # Get the function name
+        function_name = name if name is not None else function_def.name
+
+        # Get the docstring if it exists
+        docstring = ast.get_docstring(function_def)
+
+        if not function_name:
+            raise LettaToolCreateError("Could not determine function name")
+
+        if not docstring:
+            raise LettaToolCreateError("Docstring is missing")
+
+        return function_name, docstring
+
+    except Exception as e:
+        raise LettaToolCreateError(f"Failed to parse function name and docstring: {str(e)}")
+
+    except Exception as e:
+        import traceback
+
+        traceback.print_exc()
+        raise LettaToolCreateError(f"Name and docstring generation failed: {str(e)}")

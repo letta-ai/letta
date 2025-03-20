@@ -1,11 +1,11 @@
 import asyncio
 import threading
 from random import uniform
-from typing import Any, List, Optional, Union
+from typing import Any, Dict, List, Optional, Type, Union
 
 import humps
 from composio.constants import DEFAULT_ENTITY_ID
-from pydantic import BaseModel
+from pydantic import BaseModel, Field, create_model
 
 from letta.constants import COMPOSIO_ENTITY_ENV_VAR_KEY, DEFAULT_MESSAGE_TOOL, DEFAULT_MESSAGE_TOOL_KWARG
 from letta.functions.interface import MultiAgentMessagingInterface
@@ -46,6 +46,20 @@ def generate_composio_action_from_func_name(func_name: str) -> str:
         composio action name
     """
     return func_name.upper()
+
+
+# TODO needed?
+def generate_mcp_tool_wrapper(mcp_tool_name: str) -> tuple[str, str]:
+
+    wrapper_function_str = f"""\
+def {mcp_tool_name}(**kwargs):
+    raise RuntimeError("Something went wrong - we should never be using the persisted source code for MCP. Please reach out to Letta team")
+"""
+
+    # Compile safety check
+    assert_code_gen_compilable(wrapper_function_str.strip())
+
+    return mcp_tool_name, wrapper_function_str.strip()
 
 
 def generate_composio_tool_wrapper(action_name: str) -> tuple[str, str]:
@@ -518,8 +532,16 @@ def fire_and_forget_send_to_agent(
         run_in_background_thread(background_task())
 
 
-async def _send_message_to_agents_matching_all_tags_async(sender_agent: "Agent", message: str, tags: List[str]) -> List[str]:
-    log_telemetry(sender_agent.logger, "_send_message_to_agents_matching_all_tags_async start", message=message, tags=tags)
+async def _send_message_to_agents_matching_tags_async(
+    sender_agent: "Agent", message: str, match_all: List[str], match_some: List[str]
+) -> List[str]:
+    log_telemetry(
+        sender_agent.logger,
+        "_send_message_to_agents_matching_tags_async start",
+        message=message,
+        match_all=match_all,
+        match_some=match_some,
+    )
     server = get_letta_server()
 
     augmented_message = (
@@ -529,9 +551,22 @@ async def _send_message_to_agents_matching_all_tags_async(sender_agent: "Agent",
     )
 
     # Retrieve up to 100 matching agents
-    log_telemetry(sender_agent.logger, "_send_message_to_agents_matching_all_tags_async listing agents start", message=message, tags=tags)
-    matching_agents = server.agent_manager.list_agents(actor=sender_agent.user, tags=tags, match_all_tags=True, limit=100)
-    log_telemetry(sender_agent.logger, "_send_message_to_agents_matching_all_tags_async  listing agents finish", message=message, tags=tags)
+    log_telemetry(
+        sender_agent.logger,
+        "_send_message_to_agents_matching_tags_async listing agents start",
+        message=message,
+        match_all=match_all,
+        match_some=match_some,
+    )
+    matching_agents = server.agent_manager.list_agents_matching_tags(actor=sender_agent.user, match_all=match_all, match_some=match_some)
+
+    log_telemetry(
+        sender_agent.logger,
+        "_send_message_to_agents_matching_tags_async  listing agents finish",
+        message=message,
+        match_all=match_all,
+        match_some=match_some,
+    )
 
     # Create a system message
     messages = [MessageCreate(role=MessageRole.system, content=augmented_message, name=sender_agent.agent_state.name)]
@@ -559,5 +594,129 @@ async def _send_message_to_agents_matching_all_tags_async(sender_agent: "Agent",
         else:
             final.append(r)
 
-    log_telemetry(sender_agent.logger, "_send_message_to_agents_matching_all_tags_async finish", message=message, tags=tags)
+    log_telemetry(
+        sender_agent.logger,
+        "_send_message_to_agents_matching_tags_async finish",
+        message=message,
+        match_all=match_all,
+        match_some=match_some,
+    )
     return final
+
+
+async def _send_message_to_all_agents_in_group_async(sender_agent: "Agent", message: str) -> List[str]:
+    server = get_letta_server()
+
+    augmented_message = (
+        f"[Incoming message from agent with ID '{sender_agent.agent_state.id}' - to reply to this message, "
+        f"make sure to use the 'send_message' at the end, and the system will notify the sender of your response] "
+        f"{message}"
+    )
+
+    worker_agents_ids = sender_agent.agent_state.multi_agent_group.agent_ids
+    worker_agents = [server.agent_manager.get_agent_by_id(agent_id=agent_id, actor=sender_agent.user) for agent_id in worker_agents_ids]
+
+    # Create a system message
+    messages = [MessageCreate(role=MessageRole.system, content=augmented_message, name=sender_agent.agent_state.name)]
+
+    # Possibly limit concurrency to avoid meltdown:
+    sem = asyncio.Semaphore(settings.multi_agent_concurrent_sends)
+
+    async def _send_single(agent_state):
+        async with sem:
+            return await async_send_message_with_retries(
+                server=server,
+                sender_agent=sender_agent,
+                target_agent_id=agent_state.id,
+                messages=messages,
+                max_retries=3,
+                timeout=settings.multi_agent_send_message_timeout,
+            )
+
+    tasks = [asyncio.create_task(_send_single(agent_state)) for agent_state in worker_agents]
+    results = await asyncio.gather(*tasks, return_exceptions=True)
+    final = []
+    for r in results:
+        if isinstance(r, Exception):
+            final.append(str(r))
+        else:
+            final.append(r)
+
+    return final
+
+
+def generate_model_from_args_json_schema(schema: Dict[str, Any]) -> Type[BaseModel]:
+    """Creates a Pydantic model from a JSON schema.
+
+    Args:
+        schema: The JSON schema dictionary
+
+    Returns:
+        A Pydantic model class
+    """
+    # First create any nested models from $defs in reverse order to handle dependencies
+    nested_models = {}
+    if "$defs" in schema:
+        for name, model_schema in reversed(list(schema.get("$defs", {}).items())):
+            nested_models[name] = _create_model_from_schema(name, model_schema, nested_models)
+
+    # Create and return the main model
+    return _create_model_from_schema(schema.get("title", "DynamicModel"), schema, nested_models)
+
+
+def _create_model_from_schema(name: str, model_schema: Dict[str, Any], nested_models: Dict[str, Type[BaseModel]] = None) -> Type[BaseModel]:
+    fields = {}
+    for field_name, field_schema in model_schema["properties"].items():
+        field_type = _get_field_type(field_schema, nested_models)
+        required = field_name in model_schema.get("required", [])
+        description = field_schema.get("description", "")  # Get description or empty string
+        fields[field_name] = (field_type, Field(..., description=description) if required else Field(None, description=description))
+
+    return create_model(name, **fields)
+
+
+def _get_field_type(field_schema: Dict[str, Any], nested_models: Dict[str, Type[BaseModel]] = None) -> Any:
+    """Helper to convert JSON schema types to Python types."""
+    if field_schema.get("type") == "string":
+        return str
+    elif field_schema.get("type") == "integer":
+        return int
+    elif field_schema.get("type") == "number":
+        return float
+    elif field_schema.get("type") == "boolean":
+        return bool
+    elif field_schema.get("type") == "array":
+        item_type = field_schema["items"].get("$ref", "").split("/")[-1]
+        if item_type and nested_models and item_type in nested_models:
+            return List[nested_models[item_type]]
+        return List[_get_field_type(field_schema["items"], nested_models)]
+    elif field_schema.get("type") == "object":
+        if "$ref" in field_schema:
+            ref_type = field_schema["$ref"].split("/")[-1]
+            if nested_models and ref_type in nested_models:
+                return nested_models[ref_type]
+        elif "additionalProperties" in field_schema:
+            value_type = _get_field_type(field_schema["additionalProperties"], nested_models)
+            return Dict[str, value_type]
+        return dict
+    elif field_schema.get("$ref") is not None:
+        ref_type = field_schema["$ref"].split("/")[-1]
+        if nested_models and ref_type in nested_models:
+            return nested_models[ref_type]
+        else:
+            raise ValueError(f"Reference {ref_type} not found in nested models")
+    elif field_schema.get("anyOf") is not None:
+        types = []
+        has_null = False
+        for type_option in field_schema["anyOf"]:
+            if type_option.get("type") == "null":
+                has_null = True
+            else:
+                types.append(_get_field_type(type_option, nested_models))
+        # If we have exactly one type and null, make it Optional
+        if has_null and len(types) == 1:
+            return Optional[types[0]]
+        # Otherwise make it a Union of all types
+        else:
+            return Union[tuple(types)]
+    raise ValueError(f"Unable to convert pydantic field schema to type: {field_schema}")

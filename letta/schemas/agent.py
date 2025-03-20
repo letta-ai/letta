@@ -7,6 +7,7 @@ from letta.constants import DEFAULT_EMBEDDING_CHUNK_SIZE
 from letta.schemas.block import CreateBlock
 from letta.schemas.embedding_config import EmbeddingConfig
 from letta.schemas.environment_variables import AgentEnvironmentVariable
+from letta.schemas.group import Group
 from letta.schemas.letta_base import OrmMetadataBase
 from letta.schemas.llm_config import LLMConfig
 from letta.schemas.memory import Memory
@@ -26,7 +27,6 @@ class AgentType(str, Enum):
     memgpt_agent = "memgpt_agent"
     split_thread_agent = "split_thread_agent"
     offline_memory_agent = "offline_memory_agent"
-    chat_only_agent = "chat_only_agent"
 
 
 class AgentState(OrmMetadataBase, validate_assignment=True):
@@ -83,12 +83,15 @@ class AgentState(OrmMetadataBase, validate_assignment=True):
     project_id: Optional[str] = Field(None, description="The id of the project the agent belongs to.")
     template_id: Optional[str] = Field(None, description="The id of the template the agent belongs to.")
     base_template_id: Optional[str] = Field(None, description="The base template id of the agent.")
+    identity_ids: List[str] = Field([], description="The ids of the identities associated with this agent.")
 
     # An advanced configuration that makes it so this agent does not remember any previous messages
     message_buffer_autoclear: bool = Field(
         False,
         description="If set to True, the agent will not remember previous messages (though the agent will still retain state via core memory blocks and archival/recall memory). Not recommended unless you have an advanced use case.",
     )
+
+    multi_agent_group: Optional[Group] = Field(None, description="The multi-agent group that this agent manages")
 
     def get_agent_env_vars_as_dict(self) -> Dict[str, str]:
         # Get environment variables for this agent specifically
@@ -129,6 +132,9 @@ class CreateAgent(BaseModel, validate_assignment=True):  #
     include_multi_agent_tools: bool = Field(
         False, description="If true, attaches the Letta multi-agent tools (e.g. sending a message to another agent)."
     )
+    include_base_tool_rules: bool = Field(
+        True, description="If true, attaches the Letta base tool rules (e.g. deny all tools not explicitly allowed)."
+    )
     description: Optional[str] = Field(None, description="The description of the agent.")
     metadata: Optional[Dict] = Field(None, description="The metadata of the agent.")
     model: Optional[str] = Field(
@@ -143,7 +149,11 @@ class CreateAgent(BaseModel, validate_assignment=True):  #
     embedding_chunk_size: Optional[int] = Field(DEFAULT_EMBEDDING_CHUNK_SIZE, description="The embedding chunk size used by the agent.")
     from_template: Optional[str] = Field(None, description="The template id used to configure the agent")
     template: bool = Field(False, description="Whether the agent is a template")
-    project: Optional[str] = Field(None, description="The project slug that the agent will be associated with.")
+    project: Optional[str] = Field(
+        None,
+        deprecated=True,
+        description="Deprecated: Project should now be passed via the X-Project header instead of in the request body. If using the sdk, this can be done via the new x_project field below.",
+    )
     tool_exec_environment_variables: Optional[Dict[str, str]] = Field(
         None, description="The environment variables for tool execution specific to this agent."
     )
@@ -151,6 +161,7 @@ class CreateAgent(BaseModel, validate_assignment=True):  #
     project_id: Optional[str] = Field(None, description="The id of the project the agent belongs to.")
     template_id: Optional[str] = Field(None, description="The id of the template the agent belongs to.")
     base_template_id: Optional[str] = Field(None, description="The base template id of the agent.")
+    identity_ids: Optional[List[str]] = Field(None, description="The ids of the identities associated with this agent.")
     message_buffer_autoclear: bool = Field(
         False,
         description="If set to True, the agent will not remember previous messages (though the agent will still retain state via core memory blocks and archival/recall memory). Not recommended unless you have an advanced use case.",
@@ -166,11 +177,6 @@ class CreateAgent(BaseModel, validate_assignment=True):  #
         if not name:
             # don't check if not provided
             return name
-
-        # TODO: this check should also be added to other model (e.g. User.name)
-        # Length check
-        if not (1 <= len(name) <= 50):
-            raise ValueError("Name length must be between 1 and 50 characters.")
 
         # Regex for allowed characters (alphanumeric, spaces, hyphens, underscores)
         if not re.match("^[A-Za-z0-9 _-]+$", name):
@@ -225,6 +231,7 @@ class UpdateAgent(BaseModel):
     project_id: Optional[str] = Field(None, description="The id of the project the agent belongs to.")
     template_id: Optional[str] = Field(None, description="The id of the template the agent belongs to.")
     base_template_id: Optional[str] = Field(None, description="The base template id of the agent.")
+    identity_ids: Optional[List[str]] = Field(None, description="The ids of the identities associated with this agent.")
     message_buffer_autoclear: Optional[bool] = Field(
         None,
         description="If set to True, the agent will not remember previous messages (though the agent will still retain state via core memory blocks and archival/recall memory). Not recommended unless you have an advanced use case.",

@@ -114,26 +114,36 @@ def num_tokens_from_functions(functions: List[dict], model: str = "gpt-4"):
                     function_tokens += len(encoding.encode(propertiesKey))
                     v = parameters["properties"][propertiesKey]
                     for field in v:
-                        if field == "type":
-                            function_tokens += 2
-                            function_tokens += len(encoding.encode(v["type"]))
-                        elif field == "description":
-                            function_tokens += 2
-                            function_tokens += len(encoding.encode(v["description"]))
-                        elif field == "enum":
-                            function_tokens -= 3
-                            for o in v["enum"]:
-                                function_tokens += 3
-                                function_tokens += len(encoding.encode(o))
-                        elif field == "items":
-                            function_tokens += 2
-                            if isinstance(v["items"], dict) and "type" in v["items"]:
-                                function_tokens += len(encoding.encode(v["items"]["type"]))
-                        elif field == "default":
-                            function_tokens += 2
-                            function_tokens += len(encoding.encode(str(v["default"])))
-                        else:
-                            logger.warning(f"num_tokens_from_functions: Unsupported field {field} in function {function}")
+                        try:
+                            if field == "type":
+                                function_tokens += 2
+                                function_tokens += len(encoding.encode(v["type"]))
+                            elif field == "description":
+                                function_tokens += 2
+                                function_tokens += len(encoding.encode(v["description"]))
+                            elif field == "enum":
+                                function_tokens -= 3
+                                for o in v["enum"]:
+                                    function_tokens += 3
+                                    function_tokens += len(encoding.encode(o))
+                            elif field == "items":
+                                function_tokens += 2
+                                if isinstance(v["items"], dict) and "type" in v["items"]:
+                                    function_tokens += len(encoding.encode(v["items"]["type"]))
+                            elif field == "default":
+                                function_tokens += 2
+                                function_tokens += len(encoding.encode(str(v["default"])))
+                            elif field == "title":
+                                # TODO: Is this right? For MCP
+                                continue
+                            else:
+                                # TODO: Handle nesting here properly
+                                # Disable this for now for MCP
+                                continue
+                                # logger.warning(f"num_tokens_from_functions: Unsupported field {field} in function {function}")
+                        except:
+                            logger.error(f"Failed to encode field {field} with value {v}")
+                            raise
                 function_tokens += 11
 
         num_tokens += function_tokens

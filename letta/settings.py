@@ -1,3 +1,4 @@
+import os
 from pathlib import Path
 from typing import Optional
 
@@ -16,6 +17,12 @@ class ToolSettings(BaseSettings):
 
     # Local Sandbox configurations
     local_sandbox_dir: Optional[str] = None
+
+    # MCP settings
+    mcp_connect_to_server_timeout: float = 15.0
+    mcp_list_tools_timeout: float = 10.0
+    mcp_execute_tool_timeout: float = 60.0
+    mcp_read_from_config: bool = True  # if False, will throw if attempting to read/write from file
 
 
 class SummarizerSettings(BaseSettings):
@@ -50,6 +57,8 @@ class ModelSettings(BaseSettings):
 
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
+    global_max_context_window_limit: int = 32000
+
     # env_prefix='my_prefix_'
 
     # when we use /completions APIs (instead of /chat/completions), we need to specify a model wrapper
@@ -59,6 +68,12 @@ class ModelSettings(BaseSettings):
     # openai
     openai_api_key: Optional[str] = None
     openai_api_base: str = "https://api.openai.com/v1"
+
+    # deepseek
+    deepseek_api_key: Optional[str] = None
+
+    # xAI / Grok
+    xai_api_key: Optional[str] = None
 
     # groq
     groq_api_key: Optional[str] = None
@@ -108,6 +123,8 @@ class ModelSettings(BaseSettings):
     disable_schema_generation: bool = False
 
 
+env_cors_origins = os.getenv("ACCEPTABLE_ORIGINS")
+
 cors_origins = [
     "http://letta.localhost",
     "http://localhost:8283",
@@ -115,6 +132,10 @@ cors_origins = [
     "http://localhost:3000",
     "http://localhost:4200",
 ]
+
+# attach the env_cors_origins to the cors_origins if it exists
+if env_cors_origins:
+    cors_origins.extend(env_cors_origins.split(","))
 
 # read pg_uri from ~/.letta/pg_uri or set to none, this is to support Letta Desktop
 default_pg_uri = None
@@ -158,6 +179,13 @@ class Settings(BaseSettings):
 
     # telemetry logging
     verbose_telemetry_logging: bool = False
+    otel_exporter_otlp_endpoint: str = "http://localhost:4317"
+    disable_tracing: bool = False
+
+    # uvicorn settings
+    uvicorn_workers: int = 1
+    uvicorn_reload: bool = False
+    uvicorn_timeout_keep_alive: int = 5
 
     @property
     def letta_pg_uri(self) -> str:

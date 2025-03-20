@@ -15,7 +15,7 @@ class SourceManager:
     """Manager class to handle business logic related to Sources."""
 
     def __init__(self):
-        from letta.server.server import db_context
+        from letta.server.db import db_context
 
         self.session_maker = db_context
 

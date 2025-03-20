@@ -15,8 +15,8 @@ from tests.utils import wait_for_incoming_message
 
 
 @pytest.fixture(autouse=True)
-def truncate_database():
-    from letta.server.server import db_context
+def clear_tables():
+    from letta.server.db import db_context
 
     with db_context() as session:
         for table in reversed(Base.metadata.sorted_tables):  # Reverse to avoid FK issues
@@ -112,11 +112,11 @@ def test_send_message_to_agent(client, agent_obj, other_agent_obj):
     target_snippet = f"{other_agent_obj.agent_state.id} said:"
 
     for m in in_context_messages:
-        if target_snippet in m.text:
+        if target_snippet in m.content[0].text:
             found = True
             break
 
-    print(f"In context messages of the sender agent (without system):\n\n{"\n".join([m.text for m in in_context_messages[1:]])}")
+    print(f"In context messages of the sender agent (without system):\n\n{"\n".join([m.content[0].text for m in in_context_messages[1:]])}")
     if not found:
         raise Exception(f"Was not able to find an instance of the target snippet: {target_snippet}")
 
@@ -127,54 +127,55 @@ def test_send_message_to_agent(client, agent_obj, other_agent_obj):
 
 @retry_until_success(max_attempts=3, sleep_time_seconds=2)
 def test_send_message_to_agents_with_tags_simple(client):
-    worker_tags = ["worker", "user-456"]
+    worker_tags_123 = ["worker", "user-123"]
+    worker_tags_456 = ["worker", "user-456"]
 
     # Clean up first from possibly failed tests
-    prev_worker_agents = client.server.agent_manager.list_agents(client.user, tags=worker_tags, match_all_tags=True)
+    prev_worker_agents = client.server.agent_manager.list_agents(
+        client.user, tags=list(set(worker_tags_123 + worker_tags_456)), match_all_tags=True
+    )
     for agent in prev_worker_agents:
         client.delete_agent(agent.id)
 
     secret_word = "banana"
 
     # Create "manager" agent
-    send_message_to_agents_matching_all_tags_tool_id = client.get_tool_id(name="send_message_to_agents_matching_all_tags")
-    manager_agent_state = client.create_agent(tool_ids=[send_message_to_agents_matching_all_tags_tool_id])
+    send_message_to_agents_matching_tags_tool_id = client.get_tool_id(name="send_message_to_agents_matching_tags")
+    manager_agent_state = client.create_agent(tool_ids=[send_message_to_agents_matching_tags_tool_id])
     manager_agent = client.server.load_agent(agent_id=manager_agent_state.id, actor=client.user)
 
     # Create 3 non-matching worker agents (These should NOT get the message)
-    worker_agents = []
-    worker_tags = ["worker", "user-123"]
+    worker_agents_123 = []
     for _ in range(3):
-        worker_agent_state = client.create_agent(include_multi_agent_tools=False, tags=worker_tags)
+        worker_agent_state = client.create_agent(include_multi_agent_tools=False, tags=worker_tags_123)
         worker_agent = client.server.load_agent(agent_id=worker_agent_state.id, actor=client.user)
-        worker_agents.append(worker_agent)
+        worker_agents_123.append(worker_agent)
 
     # Create 3 worker agents that should get the message
-    worker_agents = []
-    worker_tags = ["worker", "user-456"]
+    worker_agents_456 = []
     for _ in range(3):
-        worker_agent_state = client.create_agent(include_multi_agent_tools=False, tags=worker_tags)
+        worker_agent_state = client.create_agent(include_multi_agent_tools=False, tags=worker_tags_456)
         worker_agent = client.server.load_agent(agent_id=worker_agent_state.id, actor=client.user)
-        worker_agents.append(worker_agent)
+        worker_agents_456.append(worker_agent)
 
     # Encourage the manager to send a message to the other agent_obj with the secret string
     response = client.send_message(
         agent_id=manager_agent.agent_state.id,
         role="user",
-        message=f"Send a message to all agents with tags {worker_tags} informing them of the secret word: {secret_word}!",
+        message=f"Send a message to all agents with tags {worker_tags_456} informing them of the secret word: {secret_word}!",
     )
 
     for m in response.messages:
         if isinstance(m, ToolReturnMessage):
             tool_response = eval(json.loads(m.tool_return)["message"])
             print(f"\n\nManager agent tool response: \n{tool_response}\n\n")
-            assert len(tool_response) == len(worker_agents)
+            assert len(tool_response) == len(worker_agents_456)
 
             # We can break after this, the ToolReturnMessage after is not related
             break
 
     # Conversation search the worker agents
-    for agent in worker_agents:
+    for agent in worker_agents_456:
         messages = client.get_messages(agent.agent_state.id)
         # Check for the presence of system message
         for m in reversed(messages):
@@ -183,13 +184,22 @@ def test_send_message_to_agents_with_tags_simple(client):
                 assert secret_word in m.content
                 break
 
+    # Ensure it's NOT in the non matching worker agents
+    for agent in worker_agents_123:
+        messages = client.get_messages(agent.agent_state.id)
+        # Check for the presence of system message
+        for m in reversed(messages):
+            print(f"\n\n {agent.agent_state.id} -> {m.model_dump_json(indent=4)}")
+            if isinstance(m, SystemMessage):
+                assert secret_word not in m.content
+
     # Test that the agent can still receive messages fine
     response = client.send_message(agent_id=manager_agent.agent_state.id, role="user", message="So what did the other agents say?")
     print("Manager agent followup message: \n\n" + "\n".join([str(m) for m in response.messages]))
 
     # Clean up agents
     client.delete_agent(manager_agent_state.id)
-    for agent in worker_agents:
+    for agent in worker_agents_456 + worker_agents_123:
         client.delete_agent(agent.agent_state.id)
 
 
@@ -203,8 +213,8 @@ def test_send_message_to_agents_with_tags_complex_tool_use(client, roll_dice_too
         client.delete_agent(agent.id)
 
     # Create "manager" agent
-    send_message_to_agents_matching_all_tags_tool_id = client.get_tool_id(name="send_message_to_agents_matching_all_tags")
-    manager_agent_state = client.create_agent(tool_ids=[send_message_to_agents_matching_all_tags_tool_id])
+    send_message_to_agents_matching_tags_tool_id = client.get_tool_id(name="send_message_to_agents_matching_tags")
+    manager_agent_state = client.create_agent(tool_ids=[send_message_to_agents_matching_tags_tool_id])
     manager_agent = client.server.load_agent(agent_id=manager_agent_state.id, actor=client.user)
 
     # Create 3 worker agents
@@ -245,8 +255,8 @@ def test_send_message_to_agents_with_tags_complex_tool_use(client, roll_dice_too
 @retry_until_success(max_attempts=3, sleep_time_seconds=2)
 def test_send_message_to_sub_agents_auto_clear_message_buffer(client):
     # Create "manager" agent
-    send_message_to_agents_matching_all_tags_tool_id = client.get_tool_id(name="send_message_to_agents_matching_all_tags")
-    manager_agent_state = client.create_agent(name="manager", tool_ids=[send_message_to_agents_matching_all_tags_tool_id])
+    send_message_to_agents_matching_tags_tool_id = client.get_tool_id(name="send_message_to_agents_matching_tags")
+    manager_agent_state = client.create_agent(name="manager", tool_ids=[send_message_to_agents_matching_tags_tool_id])
     manager_agent = client.server.load_agent(agent_id=manager_agent_state.id, actor=client.user)
 
     # Create 2 worker agents
@@ -260,7 +270,7 @@ def test_send_message_to_sub_agents_auto_clear_message_buffer(client):
         worker_agents.append(worker_agent)
 
     # Encourage the manager to send a message to the other agent_obj with the secret string
-    broadcast_message = f"Using your tool named `send_message_to_agents_matching_all_tags`, instruct all agents with tags {worker_tags} to `core_memory_append` the topic of the day: bananas!"
+    broadcast_message = f"Using your tool named `send_message_to_agents_matching_tags`, instruct all agents with tags {worker_tags} to `core_memory_append` the topic of the day: bananas!"
     client.send_message(
         agent_id=manager_agent.agent_state.id,
         role="user",

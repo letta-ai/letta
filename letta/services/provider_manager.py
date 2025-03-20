@@ -10,7 +10,7 @@ from letta.utils import enforce_types
 class ProviderManager:
 
     def __init__(self):
-        from letta.server.server import db_context
+        from letta.server.db import db_context
 
         self.session_maker = db_context
 
@@ -25,15 +25,15 @@ class ProviderManager:
             provider.resolve_identifier()
 
             new_provider = ProviderModel(**provider.model_dump(to_orm=True, exclude_unset=True))
-            new_provider.create(session)
+            new_provider.create(session, actor=actor)
             return new_provider.to_pydantic()
 
     @enforce_types
-    def update_provider(self, provider_update: ProviderUpdate) -> PydanticProvider:
+    def update_provider(self, provider_update: ProviderUpdate, actor: PydanticUser) -> PydanticProvider:
         """Update provider details."""
         with self.session_maker() as session:
             # Retrieve the existing provider by ID
-            existing_provider = ProviderModel.read(db_session=session, identifier=provider_update.id)
+            existing_provider = ProviderModel.read(db_session=session, identifier=provider_update.id, actor=actor)
 
             # Update only the fields that are provided in ProviderUpdate
             update_data = provider_update.model_dump(to_orm=True, exclude_unset=True, exclude_none=True)
@@ -41,31 +41,32 @@ class ProviderManager:
                 setattr(existing_provider, key, value)
 
             # Commit the updated provider
-            existing_provider.update(session)
+            existing_provider.update(session, actor=actor)
             return existing_provider.to_pydantic()
 
     @enforce_types
-    def delete_provider_by_id(self, provider_id: str):
+    def delete_provider_by_id(self, provider_id: str, actor: PydanticUser):
         """Delete a provider."""
         with self.session_maker() as session:
             # Clear api key field
-            existing_provider = ProviderModel.read(db_session=session, identifier=provider_id)
+            existing_provider = ProviderModel.read(db_session=session, identifier=provider_id, actor=actor)
             existing_provider.api_key = None
-            existing_provider.update(session)
+            existing_provider.update(session, actor=actor)
 
             # Soft delete in provider table
-            existing_provider.delete(session)
+            existing_provider.delete(session, actor=actor)
 
             session.commit()
 
     @enforce_types
-    def list_providers(self, after: Optional[str] = None, limit: Optional[int] = 50) -> List[PydanticProvider]:
+    def list_providers(self, after: Optional[str] = None, limit: Optional[int] = 50, actor: PydanticUser = None) -> List[PydanticProvider]:
         """List all providers with optional pagination."""
         with self.session_maker() as session:
             providers = ProviderModel.list(
                 db_session=session,
                 after=after,
                 limit=limit,
+                actor=actor,
             )
             return [provider.to_pydantic() for provider in providers]
 

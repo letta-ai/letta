@@ -1,11 +1,12 @@
 import uuid
-from typing import TYPE_CHECKING, List, Optional
+from typing import TYPE_CHECKING, List, Optional, Set
 
 from sqlalchemy import JSON, Boolean, Index, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from letta.orm.block import Block
 from letta.orm.custom_columns import EmbeddingConfigColumn, LLMConfigColumn, ToolRulesColumn
+from letta.orm.identity import Identity
 from letta.orm.message import Message
 from letta.orm.mixins import OrganizationMixin
 from letta.orm.organization import Organization
@@ -15,10 +16,11 @@ from letta.schemas.agent import AgentType
 from letta.schemas.embedding_config import EmbeddingConfig
 from letta.schemas.llm_config import LLMConfig
 from letta.schemas.memory import Memory
-from letta.schemas.tool_rule import TerminalToolRule, ToolRule
+from letta.schemas.tool_rule import ToolRule
 
 if TYPE_CHECKING:
     from letta.orm.agents_tags import AgentsTags
+    from letta.orm.identity import Identity
     from letta.orm.organization import Organization
     from letta.orm.source import Source
     from letta.orm.tool import Tool
@@ -119,39 +121,93 @@ class Agent(SqlalchemyBase, OrganizationMixin):
         viewonly=True,  # Ensures SQLAlchemy doesn't attempt to manage this relationship
         doc="All passages derived created by this agent.",
     )
+    identities: Mapped[List["Identity"]] = relationship(
+        "Identity",
+        secondary="identities_agents",
+        lazy="selectin",
+        back_populates="agents",
+        passive_deletes=True,
+    )
+    groups: Mapped[List["Group"]] = relationship(
+        "Group",
+        secondary="groups_agents",
+        lazy="selectin",
+        back_populates="agents",
+        passive_deletes=True,
+    )
+    multi_agent_group: Mapped["Group"] = relationship(
+        "Group",
+        lazy="joined",
+        viewonly=True,
+        back_populates="manager_agent",
+    )
 
-    def to_pydantic(self) -> PydanticAgentState:
-        """converts to the basic pydantic model counterpart"""
-        # add default rule for having send_message be a terminal tool
-        tool_rules = self.tool_rules
-        if not tool_rules:
-            tool_rules = [TerminalToolRule(tool_name="send_message"), TerminalToolRule(tool_name="send_message_to_agent_async")]
+    def to_pydantic(self, include_relationships: Optional[Set[str]] = None) -> PydanticAgentState:
+        """
+        Converts the SQLAlchemy Agent model into its Pydantic counterpart.
 
+        The following base fields are always included:
+          - id, agent_type, name, description, system, message_ids, metadata_,
+            llm_config, embedding_config, project_id, template_id, base_template_id,
+            tool_rules, message_buffer_autoclear, tags
+
+        Everything else (e.g., tools, sources, memory, etc.) is optional and only
+        included if specified in `include_fields`.
+
+        Args:
+            include_relationships (Optional[Set[str]]):
+                A set of additional field names to include in the output. If None or empty,
+                no extra fields are loaded beyond the base fields.
+
+        Returns:
+            PydanticAgentState: The Pydantic representation of the agent.
+        """
+        # Base fields: always included
         state = {
             "id": self.id,
-            "organization_id": self.organization_id,
+            "agent_type": self.agent_type,
             "name": self.name,
             "description": self.description,
-            "message_ids": self.message_ids,
-            "tools": self.tools,
-            "sources": [source.to_pydantic() for source in self.sources],
-            "tags": [t.tag for t in self.tags],
-            "tool_rules": tool_rules,
             "system": self.system,
-            "agent_type": self.agent_type,
+            "message_ids": self.message_ids,
+            "metadata": self.metadata_,  # Exposed as 'metadata' to Pydantic
             "llm_config": self.llm_config,
             "embedding_config": self.embedding_config,
-            "metadata": self.metadata_,
-            "memory": Memory(blocks=[b.to_pydantic() for b in self.core_memory]),
+            "project_id": self.project_id,
+            "template_id": self.template_id,
+            "base_template_id": self.base_template_id,
+            "tool_rules": self.tool_rules,
+            "message_buffer_autoclear": self.message_buffer_autoclear,
             "created_by_id": self.created_by_id,
             "last_updated_by_id": self.last_updated_by_id,
             "created_at": self.created_at,
             "updated_at": self.updated_at,
-            "tool_exec_environment_variables": self.tool_exec_environment_variables,
-            "project_id": self.project_id,
-            "template_id": self.template_id,
-            "base_template_id": self.base_template_id,
-            "message_buffer_autoclear": self.message_buffer_autoclear,
+            # optional field defaults
+            "tags": [],
+            "tools": [],
+            "sources": [],
+            "memory": Memory(blocks=[]),
+            "identity_ids": [],
+            "multi_agent_group": None,
+            "tool_exec_environment_variables": [],
         }
+
+        # Optional fields: only included if requested
+        optional_fields = {
+            "tags": lambda: [t.tag for t in self.tags],
+            "tools": lambda: self.tools,
+            "sources": lambda: [s.to_pydantic() for s in self.sources],
+            "memory": lambda: Memory(blocks=[b.to_pydantic() for b in self.core_memory]),
+            "identity_ids": lambda: [i.id for i in self.identities],
+            "multi_agent_group": lambda: self.multi_agent_group,
+            "tool_exec_environment_variables": lambda: self.tool_exec_environment_variables,
+        }
+
+        include_relationships = set(optional_fields.keys() if include_relationships is None else include_relationships)
+
+        for field_name in include_relationships:
+            resolver = optional_fields.get(field_name)
+            if resolver:
+                state[field_name] = resolver()
 
         return self.__pydantic_model__(**state)

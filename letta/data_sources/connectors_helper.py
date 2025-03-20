@@ -73,7 +73,7 @@ def get_filenames_in_dir(
             ext = file_path.suffix.lstrip(".")
             # If required_exts is empty, match any file
             if not required_exts or ext in required_exts:
-                files.append(file_path)
+                files.append(str(file_path))
 
     return files
 

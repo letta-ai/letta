@@ -18,6 +18,7 @@ class Step(StepBase):
     job_id: Optional[str] = Field(
         None, description="The unique identifier of the job that this step belongs to. Only included for async calls."
     )
+    agent_id: Optional[str] = Field(None, description="The ID of the agent that performed the step.")
     provider_name: Optional[str] = Field(None, description="The name of the provider used for this step.")
     model: Optional[str] = Field(None, description="The name of the model used for this step.")
     model_endpoint: Optional[str] = Field(None, description="The model endpoint url used for this step.")
@@ -26,7 +27,7 @@ class Step(StepBase):
     prompt_tokens: Optional[int] = Field(None, description="The number of tokens in the prompt during this step.")
     total_tokens: Optional[int] = Field(None, description="The total number of tokens processed by the agent during this step.")
     completion_tokens_details: Optional[Dict] = Field(None, description="Metadata for the agent.")
-
     tags: List[str] = Field([], description="Metadata tags.")
     tid: Optional[str] = Field(None, description="The unique identifier of the transaction that processed this step.")
+    trace_id: Optional[str] = Field(None, description="The trace id of the agent step.")
     messages: List[Message] = Field([], description="The messages generated during this step.")

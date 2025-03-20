@@ -316,6 +316,30 @@ def test_vertex_gemini_pro_20_returns_valid_first_message():
 
 
 # ======================================================================================================================
+# DEEPSEEK TESTS
+# ======================================================================================================================
+@pytest.mark.deepseek_basic
+def test_deepseek_reasoner_returns_valid_first_message():
+    filename = os.path.join(llm_config_dir, "deepseek-reasoner.json")
+    # Don't validate that the inner monologue doesn't contain things like "function", since
+    # for the reasoners it might be quite meta (have analysis about functions etc.)
+    response = check_first_response_is_valid_for_llm_endpoint(filename, validate_inner_monologue_contents=False)
+    # Log out successful response
+    print(f"Got successful response from client: \n\n{response}")
+
+
+# ======================================================================================================================
+# xAI TESTS
+# ======================================================================================================================
+@pytest.mark.xai_basic
+def test_xai_grok2_returns_valid_first_message():
+    filename = os.path.join(llm_config_dir, "xai-grok-2.json")
+    response = check_first_response_is_valid_for_llm_endpoint(filename)
+    # Log out successful response
+    print(f"Got successful response from client: \n\n{response}")
+
+
+# ======================================================================================================================
 # TOGETHER TESTS
 # ======================================================================================================================
 def test_together_llama_3_70b_returns_valid_first_message():

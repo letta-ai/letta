@@ -9,10 +9,6 @@ class MessageRole(str, Enum):
     system = "system"
 
 
-class MessageContentType(str, Enum):
-    text = "text"
-
-
 class OptionState(str, Enum):
     """Useful for kwargs that are bool + default option"""
 
@@ -51,8 +47,4 @@ class ToolRuleType(str, Enum):
     continue_loop = "continue_loop"
     conditional = "conditional"
     constrain_child_tools = "constrain_child_tools"
-    require_parent_tools = "require_parent_tools"
-    # Deprecated
-    InitToolRule = "InitToolRule"
-    TerminalToolRule = "TerminalToolRule"
-    ToolRule = "ToolRule"
+    max_count_per_step = "max_count_per_step"

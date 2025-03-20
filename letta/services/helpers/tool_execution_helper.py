@@ -4,6 +4,10 @@ import subprocess
 import venv
 from typing import Dict, Optional
 
+from datamodel_code_generator import DataModelType, PythonVersion
+from datamodel_code_generator.model import get_data_model_types
+from datamodel_code_generator.parser.jsonschema import JsonSchemaParser
+
 from letta.log import get_logger
 from letta.schemas.sandbox_config import LocalSandboxConfig
 
@@ -153,3 +157,17 @@ def create_venv_for_local_sandbox(sandbox_dir_path: str, venv_path: str, env: Di
     except subprocess.CalledProcessError as e:
         logger.error(f"Error while setting up the virtual environment: {e}")
         raise RuntimeError(f"Failed to set up the virtual environment: {e}")
+
+
+def add_imports_and_pydantic_schemas_for_args(args_json_schema: dict) -> str:
+    data_model_types = get_data_model_types(DataModelType.PydanticV2BaseModel, target_python_version=PythonVersion.PY_311)
+    parser = JsonSchemaParser(
+        str(args_json_schema),
+        data_model_type=data_model_types.data_model,
+        data_model_root_type=data_model_types.root_model,
+        data_model_field_type=data_model_types.field_model,
+        data_type_manager_type=data_model_types.data_type_manager,
+        dump_resolve_reference_action=data_model_types.dump_resolve_reference_action,
+    )
+    result = parser.parse()
+    return result

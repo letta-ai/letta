@@ -214,3 +214,62 @@ def test_coerce_dict_args_non_parseable_list_or_dict():
 
     with pytest.raises(ValueError, match="Failed to coerce argument 'bad_list' to list"):
         coerce_dict_args_by_annotations(function_args, annotations)
+
+
+def test_coerce_dict_args_with_complex_list_annotation():
+    """
+    Test coercion when list with type annotation (e.g., list[int]) is used.
+    """
+    annotations = {"a": "list[int]"}
+    function_args = {"a": "[1, 2, 3]"}
+
+    coerced_args = coerce_dict_args_by_annotations(function_args, annotations)
+    assert coerced_args["a"] == [1, 2, 3]
+
+
+def test_coerce_dict_args_with_complex_dict_annotation():
+    """
+    Test coercion when dict with type annotation (e.g., dict[str, int]) is used.
+    """
+    annotations = {"a": "dict[str, int]"}
+    function_args = {"a": '{"x": 1, "y": 2}'}
+
+    coerced_args = coerce_dict_args_by_annotations(function_args, annotations)
+    assert coerced_args["a"] == {"x": 1, "y": 2}
+
+
+def test_coerce_dict_args_unsupported_complex_annotation():
+    """
+    If an unsupported complex annotation is used (e.g., a custom class),
+    a ValueError should be raised.
+    """
+    annotations = {"f": "CustomClass[int]"}
+    function_args = {"f": "CustomClass(42)"}
+
+    with pytest.raises(ValueError, match="Failed to coerce argument 'f' to CustomClass\[int\]: Unsupported annotation: CustomClass\[int\]"):
+        coerce_dict_args_by_annotations(function_args, annotations)
+
+
+def test_coerce_dict_args_with_nested_complex_annotation():
+    """
+    Test coercion with complex nested types like list[dict[str, int]].
+    """
+    annotations = {"a": "list[dict[str, int]]"}
+    function_args = {"a": '[{"x": 1}, {"y": 2}]'}
+
+    coerced_args = coerce_dict_args_by_annotations(function_args, annotations)
+    assert coerced_args["a"] == [{"x": 1}, {"y": 2}]
+
+
+def test_coerce_dict_args_with_default_arguments():
+    """
+    Test coercion with default arguments, where some arguments have defaults in the source code.
+    """
+    annotations = {"a": "int", "b": "str"}
+    function_args = {"a": "42"}
+
+    function_args.setdefault("b", "hello")  # Setting the default value for 'b'
+
+    coerced_args = coerce_dict_args_by_annotations(function_args, annotations)
+    assert coerced_args["a"] == 42
+    assert coerced_args["b"] == "hello"

@@ -14,7 +14,7 @@ from letta.local_llm.grammars.gbnf_grammar_generator import create_dynamic_model
 from letta.local_llm.koboldcpp.api import get_koboldcpp_completion
 from letta.local_llm.llamacpp.api import get_llamacpp_completion
 from letta.local_llm.llm_chat_completion_wrappers import simple_summary_wrapper
-from letta.local_llm.lmstudio.api import get_lmstudio_completion
+from letta.local_llm.lmstudio.api import get_lmstudio_completion, get_lmstudio_completion_chatcompletions
 from letta.local_llm.ollama.api import get_ollama_completion
 from letta.local_llm.utils import count_tokens, get_available_wrappers
 from letta.local_llm.vllm.api import get_vllm_completion
@@ -22,6 +22,7 @@ from letta.local_llm.webui.api import get_webui_completion
 from letta.local_llm.webui.legacy_api import get_webui_completion as get_webui_completion_legacy
 from letta.prompts.gpt_summarize import SYSTEM as SUMMARIZE_SYSTEM_MESSAGE
 from letta.schemas.openai.chat_completion_response import ChatCompletionResponse, Choice, Message, ToolCall, UsageStatistics
+from letta.tracing import log_event
 from letta.utils import get_tool_call_id
 
 has_shown_warning = False
@@ -141,11 +142,24 @@ def get_chat_completion(
             f"Failed to convert ChatCompletion messages into prompt string with wrapper {str(llm_wrapper)} - error: {str(e)}"
         )
 
+    # get the schema for the model
+
+    """
+    if functions_python is not None:
+        model_schema = generate_schema(functions)
+    else:
+        model_schema = None
+    """
+    log_event(name="llm_request_sent", attributes={"prompt": prompt, "grammar": grammar})
+    # Run the LLM
     try:
+        result_reasoning = None
         if endpoint_type == "webui":
             result, usage = get_webui_completion(endpoint, auth_type, auth_key, prompt, context_window, grammar=grammar)
         elif endpoint_type == "webui-legacy":
             result, usage = get_webui_completion_legacy(endpoint, auth_type, auth_key, prompt, context_window, grammar=grammar)
+        elif endpoint_type == "lmstudio-chatcompletions":
+            result, usage, result_reasoning = get_lmstudio_completion_chatcompletions(endpoint, auth_type, auth_key, model, messages)
         elif endpoint_type == "lmstudio":
             result, usage = get_lmstudio_completion(endpoint, auth_type, auth_key, prompt, context_window, api="completions")
         elif endpoint_type == "lmstudio-legacy":
@@ -164,6 +178,10 @@ def get_chat_completion(
             )
     except requests.exceptions.ConnectionError as e:
         raise LocalLLMConnectionError(f"Unable to connect to endpoint {endpoint}")
+
+    attributes = usage if isinstance(usage, dict) else {"usage": usage}
+    attributes.update({"result": result})
+    log_event(name="llm_request_sent", attributes=attributes)
 
     if result is None or result == "":
         raise LocalLLMError(f"Got back an empty response string from {endpoint}")
@@ -214,7 +232,7 @@ def get_chat_completion(
                 index=0,
                 message=Message(
                     role=chat_completion_result["role"],
-                    content=chat_completion_result["content"],
+                    content=result_reasoning if result_reasoning is not None else chat_completion_result["content"],
                     tool_calls=(
                         [ToolCall(id=get_tool_call_id(), type="function", function=chat_completion_result["function_call"])]
                         if "function_call" in chat_completion_result

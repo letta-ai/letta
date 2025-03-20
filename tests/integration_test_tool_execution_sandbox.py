@@ -35,7 +35,7 @@ user_name = str(uuid.uuid5(namespace, "test-tool-execution-sandbox-user"))
 @pytest.fixture(autouse=True)
 def clear_tables():
     """Fixture to clear the organization table before each test."""
-    from letta.server.server import db_context
+    from letta.server.db import db_context
 
     with db_context() as session:
         session.execute(delete(SandboxEnvironmentVariable))

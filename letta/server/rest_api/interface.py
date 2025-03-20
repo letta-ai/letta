@@ -24,6 +24,7 @@ from letta.schemas.letta_message import (
 )
 from letta.schemas.message import Message
 from letta.schemas.openai.chat_completion_response import ChatCompletionChunkResponse
+from letta.server.rest_api.optimistic_json_parser import OptimisticJSONParser
 from letta.streaming_interface import AgentChunkStreamingInterface
 from letta.streaming_utils import FunctionArgumentsStreamHandler, JSONInnerThoughtsExtractor
 
@@ -282,6 +283,11 @@ class StreamingServerInterface(AgentChunkStreamingInterface):
         # turn function argument to send_message into a normal text stream
         self.streaming_chat_completion_json_reader = FunctionArgumentsStreamHandler(json_key=assistant_message_tool_kwarg)
 
+        # @matt's changes here, adopting new optimistic json parser
+        self.current_function_arguments = []
+        self.optimistic_json_parser = OptimisticJSONParser()
+        self.current_json_parse_result = {}
+
         # Store metadata passed from server
         self.metadata = {}
 
@@ -316,6 +322,9 @@ class StreamingServerInterface(AgentChunkStreamingInterface):
         # extra prints
         self.debug = False
         self.timeout = 10 * 60  # 10 minute timeout
+
+        # for expect_reasoning_content, we should accumulate `content`
+        self.expect_reasoning_content_buffer = None
 
     def _reset_inner_thoughts_json_reader(self):
         # A buffer for accumulating function arguments (we want to buffer keys and run checks on each one)
@@ -371,6 +380,8 @@ class StreamingServerInterface(AgentChunkStreamingInterface):
     def stream_start(self):
         """Initialize streaming by activating the generator and clearing any old chunks."""
         self.streaming_chat_completion_mode_function_name = None
+        self.current_function_arguments = []
+        self.current_json_parse_result = {}
 
         if not self._active:
             self._active = True
@@ -380,12 +391,47 @@ class StreamingServerInterface(AgentChunkStreamingInterface):
     def stream_end(self):
         """Clean up the stream by deactivating and clearing chunks."""
         self.streaming_chat_completion_mode_function_name = None
+        self.current_function_arguments = []
+        self.current_json_parse_result = {}
 
         # if not self.streaming_chat_completion_mode and not self.nonstreaming_legacy_mode:
         #     self._push_to_buffer(self.multi_step_gen_indicator)
 
         # Wipe the inner thoughts buffers
         self._reset_inner_thoughts_json_reader()
+
+        # If we were in reasoning mode and accumulated a json block, attempt to release it as chunks
+        # if self.expect_reasoning_content_buffer is not None:
+        #     try:
+        #         # NOTE: this is hardcoded for our DeepSeek API integration
+        #         json_reasoning_content = json.loads(self.expect_reasoning_content_buffer)
+
+        #         if "name" in json_reasoning_content:
+        #             self._push_to_buffer(
+        #                 ToolCallMessage(
+        #                     id=message_id,
+        #                     date=message_date,
+        #                     tool_call=ToolCallDelta(
+        #                         name=json_reasoning_content["name"],
+        #                         arguments=None,
+        #                         tool_call_id=None,
+        #                     ),
+        #                 )
+        #             )
+        #         if "arguments" in json_reasoning_content:
+        #             self._push_to_buffer(
+        #                 ToolCallMessage(
+        #                     id=message_id,
+        #                     date=message_date,
+        #                     tool_call=ToolCallDelta(
+        #                         name=None,
+        #                         arguments=json_reasoning_content["arguments"],
+        #                         tool_call_id=None,
+        #                     ),
+        #                 )
+        #             )
+        #     except Exception as e:
+        #         print(f"Failed to interpret reasoning content ({self.expect_reasoning_content_buffer}) as JSON: {e}")
 
     def step_complete(self):
         """Signal from the agent that one 'step' finished (step = LLM response + tool execution)"""
@@ -410,7 +456,13 @@ class StreamingServerInterface(AgentChunkStreamingInterface):
         return
 
     def _process_chunk_to_letta_style(
-        self, chunk: ChatCompletionChunkResponse, message_id: str, message_date: datetime
+        self,
+        chunk: ChatCompletionChunkResponse,
+        message_id: str,
+        message_date: datetime,
+        # if we expect `reasoning_content``, then that's what gets mapped to ReasoningMessage
+        # and `content` needs to be handled outside the interface
+        expect_reasoning_content: bool = False,
     ) -> Optional[Union[ReasoningMessage, ToolCallMessage, AssistantMessage]]:
         """
         Example data from non-streaming response looks like:
@@ -426,6 +478,7 @@ class StreamingServerInterface(AgentChunkStreamingInterface):
 
         if (
             message_delta.content is None
+            and (expect_reasoning_content and message_delta.reasoning_content is None)
             and message_delta.tool_calls is None
             and message_delta.function_call is None
             and choice.finish_reason is None
@@ -435,16 +488,67 @@ class StreamingServerInterface(AgentChunkStreamingInterface):
             return None
 
         # inner thoughts
-        if message_delta.content is not None:
-            if message_delta.content == "":
-                print("skipping empty content")
-                processed_chunk = None
+        if expect_reasoning_content and message_delta.reasoning_content is not None:
+            processed_chunk = ReasoningMessage(
+                id=message_id,
+                date=message_date,
+                reasoning=message_delta.reasoning_content,
+            )
+        elif expect_reasoning_content and message_delta.content is not None:
+            # "ignore" content if we expect reasoning content
+            if self.expect_reasoning_content_buffer is None:
+                self.expect_reasoning_content_buffer = message_delta.content
             else:
-                processed_chunk = ReasoningMessage(
+                self.expect_reasoning_content_buffer += message_delta.content
+
+            # we expect this to be pure JSON
+            # OptimisticJSONParser
+
+            # If we can pull a name out, pull it
+
+            try:
+                # NOTE: this is hardcoded for our DeepSeek API integration
+                json_reasoning_content = json.loads(self.expect_reasoning_content_buffer)
+                print(f"json_reasoning_content: {json_reasoning_content}")
+
+                processed_chunk = ToolCallMessage(
                     id=message_id,
                     date=message_date,
-                    reasoning=message_delta.content,
+                    tool_call=ToolCallDelta(
+                        name=json_reasoning_content.get("name"),
+                        arguments=json.dumps(json_reasoning_content.get("arguments")),
+                        tool_call_id=None,
+                    ),
                 )
+
+            except json.JSONDecodeError as e:
+                print(f"Failed to interpret reasoning content ({self.expect_reasoning_content_buffer}) as JSON: {e}")
+
+                return None
+            # Else,
+            # return None
+            # processed_chunk = ToolCallMessage(
+            #     id=message_id,
+            #     date=message_date,
+            #     tool_call=ToolCallDelta(
+            #         # name=tool_call_delta.get("name"),
+            #         name=None,
+            #         arguments=message_delta.content,
+            #         # tool_call_id=tool_call_delta.get("id"),
+            #         tool_call_id=None,
+            #     ),
+            # )
+            # return processed_chunk
+
+            # TODO eventually output as tool call outputs?
+            # print(f"Hiding content delta stream: '{message_delta.content}'")
+            # return None
+        elif message_delta.content is not None:
+            processed_chunk = ReasoningMessage(
+                id=message_id,
+                date=message_date,
+                reasoning=message_delta.content,
+            )
 
         # tool calls
         elif message_delta.tool_calls is not None and len(message_delta.tool_calls) > 0:
@@ -474,20 +578,27 @@ class StreamingServerInterface(AgentChunkStreamingInterface):
                     self.streaming_chat_completion_json_reader.reset()
                     # early exit to turn into content mode
                     return None
+                if tool_call.function.arguments:
+                    self.current_function_arguments.append(tool_call.function.arguments)
 
                 # if we're in the middle of parsing a send_message, we'll keep processing the JSON chunks
                 if tool_call.function.arguments and self.streaming_chat_completion_mode_function_name == self.assistant_message_tool_name:
                     # Strip out any extras tokens
-                    cleaned_func_args = self.streaming_chat_completion_json_reader.process_json_chunk(tool_call.function.arguments)
                     # In the case that we just have the prefix of something, no message yet, then we should early exit to move to the next chunk
-                    if cleaned_func_args is None:
-                        return None
+                    combined_args = "".join(self.current_function_arguments)
+                    parsed_args = self.optimistic_json_parser.parse(combined_args)
+
+                    if parsed_args.get(self.assistant_message_tool_kwarg) and parsed_args.get(
+                        self.assistant_message_tool_kwarg
+                    ) != self.current_json_parse_result.get(self.assistant_message_tool_kwarg):
+                        new_content = parsed_args.get(self.assistant_message_tool_kwarg)
+                        prev_content = self.current_json_parse_result.get(self.assistant_message_tool_kwarg, "")
+                        # TODO: Assumes consistent state and that prev_content is subset of new_content
+                        diff = new_content.replace(prev_content, "", 1)
+                        self.current_json_parse_result = parsed_args
+                        processed_chunk = AssistantMessage(id=message_id, date=message_date, content=diff)
                     else:
-                        processed_chunk = AssistantMessage(
-                            id=message_id,
-                            date=message_date,
-                            content=cleaned_func_args,
-                        )
+                        return None
 
                 # otherwise we just do a regular passthrough of a ToolCallDelta via a ToolCallMessage
                 else:
@@ -543,6 +654,7 @@ class StreamingServerInterface(AgentChunkStreamingInterface):
                     # updates_inner_thoughts = ""
                     # else:  # OpenAI
                     # updates_main_json, updates_inner_thoughts = self.function_args_reader.process_fragment(tool_call.function.arguments)
+                    self.current_function_arguments.append(tool_call.function.arguments)
                     updates_main_json, updates_inner_thoughts = self.function_args_reader.process_fragment(tool_call.function.arguments)
 
                     # If we have inner thoughts, we should output them as a chunk
@@ -637,6 +749,7 @@ class StreamingServerInterface(AgentChunkStreamingInterface):
                                 if self.function_args_buffer:
                                     # In this case, we should release the buffer + new data at once
                                     combined_chunk = self.function_args_buffer + updates_main_json
+
                                     processed_chunk = AssistantMessage(
                                         id=message_id,
                                         date=message_date,
@@ -651,11 +764,24 @@ class StreamingServerInterface(AgentChunkStreamingInterface):
 
                                 else:
                                     # If there's no buffer to clear, just output a new chunk with new data
-                                    processed_chunk = AssistantMessage(
-                                        id=message_id,
-                                        date=message_date,
-                                        content=updates_main_json,
-                                    )
+                                    # TODO: THIS IS HORRIBLE
+                                    # TODO: WE USE THE OLD JSON PARSER EARLIER (WHICH DOES NOTHING) AND NOW THE NEW JSON PARSER
+                                    # TODO: THIS IS TOTALLY WRONG AND BAD, BUT SAVING FOR A LARGER REWRITE IN THE NEAR FUTURE
+                                    combined_args = "".join(self.current_function_arguments)
+                                    parsed_args = self.optimistic_json_parser.parse(combined_args)
+
+                                    if parsed_args.get(self.assistant_message_tool_kwarg) and parsed_args.get(
+                                        self.assistant_message_tool_kwarg
+                                    ) != self.current_json_parse_result.get(self.assistant_message_tool_kwarg):
+                                        new_content = parsed_args.get(self.assistant_message_tool_kwarg)
+                                        prev_content = self.current_json_parse_result.get(self.assistant_message_tool_kwarg, "")
+                                        # TODO: Assumes consistent state and that prev_content is subset of new_content
+                                        diff = new_content.replace(prev_content, "", 1)
+                                        self.current_json_parse_result = parsed_args
+                                        processed_chunk = AssistantMessage(id=message_id, date=message_date, content=diff)
+                                    else:
+                                        return None
+
                                     # Store the ID of the tool call so allow skipping the corresponding response
                                     if self.function_id_buffer:
                                         self.prev_assistant_message_id = self.function_id_buffer
@@ -824,13 +950,15 @@ class StreamingServerInterface(AgentChunkStreamingInterface):
             # skip if there's a finish
             return None
         else:
-            # Example case that would trigger here:
-            # id='chatcmpl-AKtUvREgRRvgTW6n8ZafiKuV0mxhQ'
-            # choices=[ChunkChoice(finish_reason=None, index=0, delta=MessageDelta(content=None, tool_calls=None, function_call=None), logprobs=None)]
-            # created=datetime.datetime(2024, 10, 21, 20, 40, 57, tzinfo=TzInfo(UTC))
-            # model='gpt-4o-mini-2024-07-18'
-            # object='chat.completion.chunk'
-            warnings.warn(f"Couldn't find delta in chunk: {chunk}")
+            # Only warn for non-Claude models since Claude commonly has empty first chunks
+            if not chunk.model.startswith("claude-"):
+                # Example case that would trigger here:
+                # id='chatcmpl-AKtUvREgRRvgTW6n8ZafiKuV0mxhQ'
+                # choices=[ChunkChoice(finish_reason=None, index=0, delta=MessageDelta(content=None, tool_calls=None, function_call=None), logprobs=None)]
+                # created=datetime.datetime(2024, 10, 21, 20, 40, 57, tzinfo=TzInfo(UTC))
+                # model='gpt-4o-mini-2024-07-18'
+                # object='chat.completion.chunk'
+                warnings.warn(f"Couldn't find delta in chunk: {chunk}")
             return None
 
         return processed_chunk
@@ -890,7 +1018,13 @@ class StreamingServerInterface(AgentChunkStreamingInterface):
 
         return processed_chunk
 
-    def process_chunk(self, chunk: ChatCompletionChunkResponse, message_id: str, message_date: datetime):
+    def process_chunk(
+        self,
+        chunk: ChatCompletionChunkResponse,
+        message_id: str,
+        message_date: datetime,
+        expect_reasoning_content: bool = False,
+    ):
         """Process a streaming chunk from an OpenAI-compatible server.
 
         Example data from non-streaming response looks like:
@@ -910,7 +1044,13 @@ class StreamingServerInterface(AgentChunkStreamingInterface):
             # processed_chunk = self._process_chunk_to_openai_style(chunk)
             raise NotImplementedError("OpenAI proxy streaming temporarily disabled")
         else:
-            processed_chunk = self._process_chunk_to_letta_style(chunk=chunk, message_id=message_id, message_date=message_date)
+            processed_chunk = self._process_chunk_to_letta_style(
+                chunk=chunk,
+                message_id=message_id,
+                message_date=message_date,
+                expect_reasoning_content=expect_reasoning_content,
+            )
+
         if processed_chunk is None:
             return
 
@@ -1064,8 +1204,10 @@ class StreamingServerInterface(AgentChunkStreamingInterface):
                     id=msg_obj.id,
                     date=msg_obj.created_at,
                     tool_return=msg,
-                    status="success",
+                    status=msg_obj.tool_returns[0].status if msg_obj.tool_returns else "success",
                     tool_call_id=msg_obj.tool_call_id,
+                    stdout=msg_obj.tool_returns[0].stdout if msg_obj.tool_returns else None,
+                    stderr=msg_obj.tool_returns[0].stderr if msg_obj.tool_returns else None,
                 )
 
         elif msg.startswith("Error: "):
@@ -1076,8 +1218,10 @@ class StreamingServerInterface(AgentChunkStreamingInterface):
                 id=msg_obj.id,
                 date=msg_obj.created_at,
                 tool_return=msg,
-                status="error",
+                status=msg_obj.tool_returns[0].status if msg_obj.tool_returns else "error",
                 tool_call_id=msg_obj.tool_call_id,
+                stdout=msg_obj.tool_returns[0].stdout if msg_obj.tool_returns else None,
+                stderr=msg_obj.tool_returns[0].stderr if msg_obj.tool_returns else None,
             )
 
         else:

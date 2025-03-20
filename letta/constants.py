@@ -2,7 +2,7 @@ import os
 from logging import CRITICAL, DEBUG, ERROR, INFO, NOTSET, WARN, WARNING
 
 LETTA_DIR = os.path.join(os.path.expanduser("~"), ".letta")
-LETTA_DIR_TOOL_SANDBOX = os.path.join(LETTA_DIR, "tool_sandbox_dir")
+LETTA_TOOL_EXECUTION_DIR = os.path.join(LETTA_DIR, "tool_execution_dir")
 
 ADMIN_PREFIX = "/v1/admin"
 API_PREFIX = "/v1"
@@ -10,6 +10,9 @@ OPENAI_API_PREFIX = "/openai"
 
 COMPOSIO_ENTITY_ENV_VAR_KEY = "COMPOSIO_ENTITY"
 COMPOSIO_TOOL_TAG_NAME = "composio"
+
+MCP_CONFIG_NAME = "mcp_config.json"
+MCP_TOOL_TAG_NAME_PREFIX = "mcp"  # full format, mcp:server_name
 
 LETTA_CORE_TOOL_MODULE_NAME = "letta.functions.function_sets.base"
 LETTA_MULTI_AGENT_TOOL_MODULE_NAME = "letta.functions.function_sets.multi_agent"
@@ -27,7 +30,6 @@ TOOL_CALL_ID_MAX_LEN = 29
 
 # minimum context window size
 MIN_CONTEXT_WINDOW = 4096
-DEFAULT_CONTEXT_WINDOW_SIZE = 32000
 
 # embeddings
 MAX_EMBEDDING_DIM = 4096  # maximum supported embeding size - do NOT change or else DBs will need to be reset
@@ -51,13 +53,20 @@ BASE_TOOLS = ["send_message", "conversation_search", "archival_memory_insert", "
 # Base memory tools CAN be edited, and are added by default by the server
 BASE_MEMORY_TOOLS = ["core_memory_append", "core_memory_replace"]
 # Multi agent tools
-MULTI_AGENT_TOOLS = ["send_message_to_agent_and_wait_for_reply", "send_message_to_agents_matching_all_tags", "send_message_to_agent_async"]
+MULTI_AGENT_TOOLS = ["send_message_to_agent_and_wait_for_reply", "send_message_to_agents_matching_tags", "send_message_to_agent_async"]
+# Set of all built-in Letta tools
+LETTA_TOOL_SET = set(BASE_TOOLS + BASE_MEMORY_TOOLS + MULTI_AGENT_TOOLS)
 
 # The name of the tool used to send message to the user
 # May not be relevant in cases where the agent has multiple ways to message to user (send_imessage, send_discord_mesasge, ...)
 # or in cases where the agent has no concept of messaging a user (e.g. a workflow agent)
 DEFAULT_MESSAGE_TOOL = "send_message"
 DEFAULT_MESSAGE_TOOL_KWARG = "message"
+
+PRE_EXECUTION_MESSAGE_ARG = "pre_exec_msg"
+
+REQUEST_HEARTBEAT_PARAM = "request_heartbeat"
+
 
 # Structured output models
 STRUCTURED_OUTPUT_MODELS = {"gpt-4o", "gpt-4o-mini"}
@@ -86,7 +95,12 @@ NON_USER_MSG_PREFIX = "[This is an automated system message hidden from the user
 # The max amount of tokens supported by the underlying model (eg 8k for gpt-4 and Mistral 7B)
 LLM_MAX_TOKENS = {
     "DEFAULT": 8192,
+    "deepseek-chat": 64000,
+    "deepseek-reasoner": 64000,
     ## OpenAI models: https://platform.openai.com/docs/models/overview
+    # gpt-4.5-preview
+    "gpt-4.5-preview": 128000,
+    "gpt-4.5-preview-2025-02-27": 128000,
     # "o1-preview
     "chatgpt-4o-latest": 128000,
     # "o1-preview-2024-09-12
@@ -134,6 +148,9 @@ MESSAGE_SUMMARY_WARNING_STR = " ".join(
         "If there is any important new information or general memories about you or the user that you would like to save, you should save that information immediately by calling function core_memory_append, core_memory_replace, or archival_memory_insert.",
         # "Remember to pass request_heartbeat = true if you would like to send a message immediately after.",
     ]
+)
+DATA_SOURCE_ATTACH_ALERT = (
+    "[ALERT] New data was just uploaded to archival memory. You can view this data by calling the archival_memory_search tool."
 )
 
 # The ackknowledgement message used in the summarize sequence

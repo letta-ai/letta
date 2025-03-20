@@ -10,6 +10,7 @@ from letta.schemas.openai.chat_completion_response import ChatCompletionResponse
 from letta.schemas.openai.chat_completions import ChatCompletionRequest
 from letta.schemas.openai.embedding_response import EmbeddingResponse
 from letta.settings import ModelSettings
+from letta.tracing import log_event
 
 
 def get_azure_chat_completions_endpoint(base_url: str, model: str, api_version: str):

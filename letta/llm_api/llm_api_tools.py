@@ -1,3 +1,4 @@
+import json
 import random
 import time
 from typing import List, Optional, Union
@@ -13,6 +14,7 @@ from letta.llm_api.anthropic import (
 )
 from letta.llm_api.aws_bedrock import has_valid_aws_credentials
 from letta.llm_api.azure_openai import azure_openai_chat_completions_request
+from letta.llm_api.deepseek import build_deepseek_chat_completions_request, convert_deepseek_response_to_chatcompletion
 from letta.llm_api.google_ai import convert_tools_to_google_ai_format, google_ai_chat_completions_request
 from letta.llm_api.helpers import add_inner_thoughts_to_functions, unpack_all_inner_thoughts_from_kwargs
 from letta.llm_api.openai import (
@@ -29,8 +31,9 @@ from letta.schemas.openai.chat_completion_request import ChatCompletionRequest, 
 from letta.schemas.openai.chat_completion_response import ChatCompletionResponse
 from letta.settings import ModelSettings
 from letta.streaming_interface import AgentChunkStreamingInterface, AgentRefreshStreamingInterface
+from letta.tracing import log_event, trace_method
 
-LLM_API_PROVIDER_OPTIONS = ["openai", "azure", "anthropic", "google_ai", "cohere", "local", "groq"]
+LLM_API_PROVIDER_OPTIONS = ["openai", "azure", "anthropic", "google_ai", "cohere", "local", "groq", "deepseek"]
 
 
 def retry_with_exponential_backoff(
@@ -68,9 +71,28 @@ def retry_with_exponential_backoff(
                 if http_err.response.status_code in error_codes:
                     # Increment retries
                     num_retries += 1
+                    log_event(
+                        "llm_retry_attempt",
+                        {
+                            "attempt": num_retries,
+                            "delay": delay,
+                            "status_code": http_err.response.status_code,
+                            "error_type": type(http_err).__name__,
+                            "error": str(http_err),
+                        },
+                    )
 
                     # Check if max retries has been reached
                     if num_retries > max_retries:
+                        log_event(
+                            "llm_max_retries_exceeded",
+                            {
+                                "max_retries": max_retries,
+                                "status_code": http_err.response.status_code,
+                                "error_type": type(http_err).__name__,
+                                "error": str(http_err),
+                            },
+                        )
                         raise RateLimitExceededError("Maximum number of retries exceeded", max_retries=max_retries)
 
                     # Increment the delay
@@ -84,15 +106,21 @@ def retry_with_exponential_backoff(
                     time.sleep(delay)
                 else:
                     # For other HTTP errors, re-raise the exception
+                    log_event(
+                        "llm_non_retryable_error",
+                        {"status_code": http_err.response.status_code, "error_type": type(http_err).__name__, "error": str(http_err)},
+                    )
                     raise
 
             # Raise exceptions for any errors not specified
             except Exception as e:
+                log_event("llm_unexpected_error", {"error_type": type(e).__name__, "error": str(e)})
                 raise e
 
     return wrapper
 
 
+@trace_method
 @retry_with_exponential_backoff
 def create(
     # agent_state: AgentState,
@@ -112,6 +140,7 @@ def create(
     stream: bool = False,
     stream_interface: Optional[Union[AgentRefreshStreamingInterface, AgentChunkStreamingInterface]] = None,
     model_settings: Optional[dict] = None,  # TODO: eventually pass from server
+    put_inner_thoughts_first: bool = True,
 ) -> ChatCompletionResponse:
     """Return response to chat completion with backoff"""
     from letta.utils import printd
@@ -157,7 +186,66 @@ def create(
             else:
                 function_call = "required"
 
-        data = build_openai_chat_completions_request(llm_config, messages, user_id, functions, function_call, use_tool_naming)
+        data = build_openai_chat_completions_request(
+            llm_config,
+            messages,
+            user_id,
+            functions,
+            function_call,
+            use_tool_naming,
+            put_inner_thoughts_first=put_inner_thoughts_first,
+            use_structured_output=True,  # NOTE: turn on all the time for OpenAI API
+        )
+
+        if stream:  # Client requested token streaming
+            data.stream = True
+            assert isinstance(stream_interface, AgentChunkStreamingInterface) or isinstance(
+                stream_interface, AgentRefreshStreamingInterface
+            ), type(stream_interface)
+            response = openai_chat_completions_process_stream(
+                url=llm_config.model_endpoint,
+                api_key=api_key,
+                chat_completion_request=data,
+                stream_interface=stream_interface,
+            )
+        else:  # Client did not request token streaming (expect a blocking backend response)
+            data.stream = False
+            if isinstance(stream_interface, AgentChunkStreamingInterface):
+                stream_interface.stream_start()
+            try:
+                response = openai_chat_completions_request(
+                    url=llm_config.model_endpoint,
+                    api_key=api_key,
+                    chat_completion_request=data,
+                )
+            finally:
+                if isinstance(stream_interface, AgentChunkStreamingInterface):
+                    stream_interface.stream_end()
+
+        if llm_config.put_inner_thoughts_in_kwargs:
+            response = unpack_all_inner_thoughts_from_kwargs(response=response, inner_thoughts_key=INNER_THOUGHTS_KWARG)
+
+        return response
+
+    elif llm_config.model_endpoint_type == "xai":
+
+        api_key = model_settings.xai_api_key
+
+        if function_call is None and functions is not None and len(functions) > 0:
+            # force function calling for reliability, see https://platform.openai.com/docs/api-reference/chat/create#chat-create-tool_choice
+            function_call = "required"
+
+        data = build_openai_chat_completions_request(
+            llm_config,
+            messages,
+            user_id,
+            functions,
+            function_call,
+            use_tool_naming,
+            put_inner_thoughts_first=put_inner_thoughts_first,
+            use_structured_output=False,  # NOTE: not supported atm for xAI
+        )
+
         if stream:  # Client requested token streaming
             data.stream = True
             assert isinstance(stream_interface, AgentChunkStreamingInterface) or isinstance(
@@ -452,10 +540,61 @@ def create(
             ),
         )
 
+    elif llm_config.model_endpoint_type == "deepseek":
+        if model_settings.deepseek_api_key is None and llm_config.model_endpoint == "":
+            # only is a problem if we are *not* using an openai proxy
+            raise LettaConfigurationError(message="DeepSeek key is missing from letta config file", missing_fields=["deepseek_api_key"])
+
+        data = build_deepseek_chat_completions_request(
+            llm_config,
+            messages,
+            user_id,
+            functions,
+            function_call,
+            use_tool_naming,
+            llm_config.max_tokens,
+        )
+        if stream:  # Client requested token streaming
+            data.stream = True
+            assert isinstance(stream_interface, AgentChunkStreamingInterface) or isinstance(
+                stream_interface, AgentRefreshStreamingInterface
+            ), type(stream_interface)
+            response = openai_chat_completions_process_stream(
+                url=llm_config.model_endpoint,
+                api_key=model_settings.deepseek_api_key,
+                chat_completion_request=data,
+                stream_interface=stream_interface,
+            )
+        else:  # Client did not request token streaming (expect a blocking backend response)
+            data.stream = False
+            if isinstance(stream_interface, AgentChunkStreamingInterface):
+                stream_interface.stream_start()
+            try:
+                response = openai_chat_completions_request(
+                    url=llm_config.model_endpoint,
+                    api_key=model_settings.deepseek_api_key,
+                    chat_completion_request=data,
+                )
+            finally:
+                if isinstance(stream_interface, AgentChunkStreamingInterface):
+                    stream_interface.stream_end()
+        """
+        if llm_config.put_inner_thoughts_in_kwargs:
+            response = unpack_all_inner_thoughts_from_kwargs(response=response, inner_thoughts_key=INNER_THOUGHTS_KWARG)
+        """
+        response = convert_deepseek_response_to_chatcompletion(response)
+        return response
+
     # local model
     else:
         if stream:
             raise NotImplementedError(f"Streaming not yet implemented for {llm_config.model_endpoint_type}")
+
+        if "DeepSeek-R1".lower() in llm_config.model.lower():  # TODO: move this to the llm_config.
+            messages[0].content[0].text += f"<available functions> {''.join(json.dumps(f) for f in functions)} </available functions>"
+            messages[0].content[
+                0
+            ].text += f'Select best function to call simply by responding with a single json block with the keys "function" and "params". Use double quotes around the arguments.'
         return get_chat_completion(
             model=llm_config.model,
             messages=messages,

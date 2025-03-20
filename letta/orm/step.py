@@ -33,6 +33,7 @@ class Step(SqlalchemyBase):
     job_id: Mapped[Optional[str]] = mapped_column(
         ForeignKey("jobs.id", ondelete="SET NULL"), nullable=True, doc="The unique identified of the job run that triggered this step"
     )
+    agent_id: Mapped[Optional[str]] = mapped_column(None, nullable=True, doc="The name of the model used for this step.")
     provider_name: Mapped[Optional[str]] = mapped_column(None, nullable=True, doc="The name of the provider used for this step.")
     model: Mapped[Optional[str]] = mapped_column(None, nullable=True, doc="The name of the model used for this step.")
     model_endpoint: Mapped[Optional[str]] = mapped_column(None, nullable=True, doc="The model endpoint url used for this step.")
@@ -45,6 +46,7 @@ class Step(SqlalchemyBase):
     completion_tokens_details: Mapped[Optional[Dict]] = mapped_column(JSON, nullable=True, doc="metadata for the agent.")
     tags: Mapped[Optional[List]] = mapped_column(JSON, doc="Metadata tags.")
     tid: Mapped[Optional[str]] = mapped_column(None, nullable=True, doc="Transaction ID that processed the step.")
+    trace_id: Mapped[Optional[str]] = mapped_column(None, nullable=True, doc="The trace id of the agent step.")
 
     # Relationships (foreign keys)
     organization: Mapped[Optional["Organization"]] = relationship("Organization")

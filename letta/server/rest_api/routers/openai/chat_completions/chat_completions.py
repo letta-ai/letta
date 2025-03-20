@@ -1,21 +1,19 @@
 import asyncio
-from typing import TYPE_CHECKING, Iterable, List, Optional, Union, cast
+from typing import TYPE_CHECKING, List, Optional, Union
 
 from fastapi import APIRouter, Body, Depends, Header, HTTPException
 from fastapi.responses import StreamingResponse
-from openai.types.chat import ChatCompletionMessageParam
 from openai.types.chat.completion_create_params import CompletionCreateParams
 
 from letta.agent import Agent
 from letta.constants import DEFAULT_MESSAGE_TOOL, DEFAULT_MESSAGE_TOOL_KWARG
 from letta.log import get_logger
-from letta.schemas.message import MessageCreate
-from letta.schemas.openai.chat_completion_response import Message
+from letta.schemas.message import Message, MessageCreate
 from letta.schemas.user import User
 from letta.server.rest_api.chat_completions_interface import ChatCompletionsStreamingInterface
 
 # TODO this belongs in a controller!
-from letta.server.rest_api.utils import get_letta_server, sse_async_generator
+from letta.server.rest_api.utils import get_letta_server, get_messages_from_completion_request, sse_async_generator
 
 if TYPE_CHECKING:
     from letta.server.server import SyncServer
@@ -26,7 +24,7 @@ logger = get_logger(__name__)
 
 
 @router.post(
-    "/chat/completions",
+    "/{agent_id}/chat/completions",
     response_model=None,
     operation_id="create_chat_completions",
     responses={
@@ -39,43 +37,20 @@ logger = get_logger(__name__)
     },
 )
 async def create_chat_completions(
+    agent_id: str,
     completion_request: CompletionCreateParams = Body(...),
     server: "SyncServer" = Depends(get_letta_server),
     user_id: Optional[str] = Header(None, alias="user_id"),
 ):
     # Validate and process fields
-    try:
-        messages = list(cast(Iterable[ChatCompletionMessageParam], completion_request["messages"]))
-    except KeyError:
-        # Handle the case where "messages" is not present in the request
-        raise HTTPException(status_code=400, detail="The 'messages' field is missing in the request.")
-    except TypeError:
-        # Handle the case where "messages" is not iterable
-        raise HTTPException(status_code=400, detail="The 'messages' field must be an iterable.")
-    except Exception as e:
-        # Catch any other unexpected errors and include the exception message
-        raise HTTPException(status_code=400, detail=f"An error occurred while processing 'messages': {str(e)}")
-
-    if messages[-1]["role"] != "user":
-        logger.error(f"The last message does not have a `user` role: {messages}")
-        raise HTTPException(status_code=400, detail="'messages[-1].role' must be a 'user'")
-
+    messages = get_messages_from_completion_request(completion_request)
     input_message = messages[-1]
-    if not isinstance(input_message["content"], str):
-        logger.error(f"The input message does not have valid content: {input_message}")
-        raise HTTPException(status_code=400, detail="'messages[-1].content' must be a 'string'")
 
     # Process remaining fields
     if not completion_request["stream"]:
         raise HTTPException(status_code=400, detail="Must be streaming request: `stream` was set to `False` in the request.")
 
     actor = server.user_manager.get_user_or_default(user_id=user_id)
-
-    agent_id = str(completion_request.get("user", None))
-    if agent_id is None:
-        error_msg = "Must pass agent_id in the 'user' field"
-        logger.error(error_msg)
-        raise HTTPException(status_code=400, detail=error_msg)
 
     letta_agent = server.load_agent(agent_id=agent_id, actor=actor)
     llm_config = letta_agent.agent_state.llm_config
@@ -138,6 +113,7 @@ async def send_message_to_agent_chat_completions(
                 agent_id=letta_agent.agent_state.id,
                 messages=messages,
                 interface=streaming_interface,
+                put_inner_thoughts_first=False,
             )
         )
 

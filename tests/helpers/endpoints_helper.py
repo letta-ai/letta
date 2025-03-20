@@ -17,6 +17,7 @@ from letta.embeddings import embedding_model
 from letta.errors import InvalidInnerMonologueError, InvalidToolCallError, MissingInnerMonologueError, MissingToolCallError
 from letta.helpers.json_helpers import json_dumps
 from letta.llm_api.llm_api_tools import create
+from letta.llm_api.llm_client import LLMClient
 from letta.local_llm.constants import INNER_THOUGHTS_KWARG
 from letta.schemas.agent import AgentState
 from letta.schemas.embedding_config import EmbeddingConfig
@@ -52,6 +53,7 @@ def setup_agent(
     tool_rules: Optional[List[BaseToolRule]] = None,
     agent_uuid: str = agent_uuid,
     include_base_tools: bool = True,
+    include_base_tool_rules: bool = True,
 ) -> AgentState:
     config_data = json.load(open(filename, "r"))
     llm_config = LLMConfig(**config_data)
@@ -72,6 +74,7 @@ def setup_agent(
         tool_ids=tool_ids,
         tool_rules=tool_rules,
         include_base_tools=include_base_tools,
+        include_base_tool_rules=include_base_tool_rules,
     )
 
     return agent_state
@@ -83,7 +86,7 @@ def setup_agent(
 # ======================================================================================================================
 
 
-def check_first_response_is_valid_for_llm_endpoint(filename: str) -> ChatCompletionResponse:
+def check_first_response_is_valid_for_llm_endpoint(filename: str, validate_inner_monologue_contents: bool = True) -> ChatCompletionResponse:
     """
     Checks that the first response is valid:
 
@@ -101,12 +104,23 @@ def check_first_response_is_valid_for_llm_endpoint(filename: str) -> ChatComplet
     messages = client.server.agent_manager.get_in_context_messages(agent_id=full_agent_state.id, actor=client.user)
     agent = Agent(agent_state=full_agent_state, interface=None, user=client.user)
 
-    response = create(
+    llm_client = LLMClient.create(
+        agent_id=agent_state.id,
         llm_config=agent_state.llm_config,
-        user_id=str(uuid.UUID(int=1)),  # dummy user_id
-        messages=messages,
-        functions=[t.json_schema for t in agent.agent_state.tools],
+        actor_id=str(uuid.UUID(int=1)),
     )
+    if llm_client:
+        response = llm_client.send_llm_request(
+            messages=messages,
+            tools=[t.json_schema for t in agent.agent_state.tools],
+        )
+    else:
+        response = create(
+            llm_config=agent_state.llm_config,
+            user_id=str(uuid.UUID(int=1)),  # dummy user_id
+            messages=messages,
+            functions=[t.json_schema for t in agent.agent_state.tools],
+        )
 
     # Basic check
     assert response is not None, response
@@ -126,7 +140,11 @@ def check_first_response_is_valid_for_llm_endpoint(filename: str) -> ChatComplet
     assert_contains_valid_function_call(choice.message, validator_func)
 
     # Assert that the message has an inner monologue
-    assert_contains_correct_inner_monologue(choice, agent_state.llm_config.put_inner_thoughts_in_kwargs)
+    assert_contains_correct_inner_monologue(
+        choice,
+        agent_state.llm_config.put_inner_thoughts_in_kwargs,
+        validate_inner_monologue_contents=validate_inner_monologue_contents,
+    )
 
     return response
 
@@ -470,7 +488,11 @@ def assert_inner_monologue_is_valid(message: Message) -> None:
             raise InvalidInnerMonologueError(messages=[message], explanation=f"{phrase} is in monologue")
 
 
-def assert_contains_correct_inner_monologue(choice: Choice, inner_thoughts_in_kwargs: bool) -> None:
+def assert_contains_correct_inner_monologue(
+    choice: Choice,
+    inner_thoughts_in_kwargs: bool,
+    validate_inner_monologue_contents: bool = True,
+) -> None:
     """
     Helper function to check that the inner monologue exists and is valid.
     """
@@ -483,4 +505,5 @@ def assert_contains_correct_inner_monologue(choice: Choice, inner_thoughts_in_kw
     if not monologue or monologue is None or monologue == "":
         raise MissingInnerMonologueError(messages=[message])
 
-    assert_inner_monologue_is_valid(message)
+    if validate_inner_monologue_contents:
+        assert_inner_monologue_is_valid(message)

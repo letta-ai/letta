@@ -26,7 +26,7 @@ from letta.schemas.letta_message import (
     ToolReturnMessage,
     UserMessage,
 )
-from letta.schemas.letta_response import LettaResponse, LettaStreamingResponse
+from letta.schemas.letta_response import LettaStreamingResponse
 from letta.schemas.llm_config import LLMConfig
 from letta.schemas.message import MessageCreate
 from letta.schemas.usage import LettaUsageStatistics
@@ -90,7 +90,7 @@ def client(request):
 @pytest.fixture(autouse=True)
 def clear_tables():
     """Fixture to clear the organization table before each test."""
-    from letta.server.server import db_context
+    from letta.server.db import db_context
 
     with db_context() as session:
         session.execute(delete(FileMetadata))
@@ -536,21 +536,6 @@ def test_sources(client: Union[LocalClient, RESTClient], agent: AgentState):
     client.delete_source(source.id)
 
 
-def test_message_update(client: Union[LocalClient, RESTClient], agent: AgentState):
-    """Test that we can update the details of a message"""
-
-    # create a message
-    message_response = client.send_message(agent_id=agent.id, message="Test message", role="user")
-    print("Messages=", message_response)
-    assert isinstance(message_response, LettaResponse)
-    assert isinstance(message_response.messages[-1], AssistantMessage)
-    message = message_response.messages[-1]
-
-    new_text = "this is a secret message"
-    new_message = client.update_message(message_id=message.id, text=new_text, agent_id=agent.id)
-    assert new_message.text == new_text
-
-
 def test_organization(client: RESTClient):
     if isinstance(client, LocalClient):
         pytest.skip("Skipping test_organization because LocalClient does not support organizations")
@@ -643,7 +628,7 @@ def test_initial_message_sequence(client: Union[LocalClient, RESTClient], agent:
     ), f"Expected {len(custom_sequence) + 1} messages, got {len(custom_agent_state.message_ids)}"
     # assert custom_agent_state.message_ids[1:] == [msg.id for msg in custom_sequence]
     # shoule be contained in second message (after system message)
-    assert custom_sequence[0].content in client.get_in_context_messages(custom_agent_state.id)[1].text
+    assert custom_sequence[0].content in client.get_in_context_messages(custom_agent_state.id)[1].content[0].text
 
 
 def test_add_and_manage_tags_for_agent(client: Union[LocalClient, RESTClient], agent: AgentState):

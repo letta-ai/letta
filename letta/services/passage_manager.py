@@ -16,7 +16,7 @@ class PassageManager:
     """Manager class to handle business logic related to Passages."""
 
     def __init__(self):
-        from letta.server.server import db_context
+        from letta.server.db import db_context
 
         self.session_maker = db_context
 
@@ -203,3 +203,18 @@ class PassageManager:
         for passage in passages:
             self.delete_passage_by_id(passage_id=passage.id, actor=actor)
         return True
+
+    @enforce_types
+    def size(
+        self,
+        actor: PydanticUser,
+        agent_id: Optional[str] = None,
+    ) -> int:
+        """Get the total count of messages with optional filters.
+
+        Args:
+            actor: The user requesting the count
+            agent_id: The agent ID of the messages
+        """
+        with self.session_maker() as session:
+            return AgentPassage.size(db_session=session, actor=actor, agent_id=agent_id)

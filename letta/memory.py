@@ -5,8 +5,9 @@ from letta.llm_api.llm_api_tools import create
 from letta.prompts.gpt_summarize import SYSTEM as SUMMARY_PROMPT_SYSTEM
 from letta.schemas.agent import AgentState
 from letta.schemas.enums import MessageRole
+from letta.schemas.letta_message_content import TextContent
 from letta.schemas.memory import Memory
-from letta.schemas.message import Message, TextContent
+from letta.schemas.message import Message
 from letta.settings import summarizer_settings
 from letta.utils import count_tokens, printd
 
@@ -36,7 +37,12 @@ def get_memory_functions(cls: Memory) -> Dict[str, Callable]:
 
 def _format_summary_history(message_history: List[Message]):
     # TODO use existing prompt formatters for this (eg ChatML)
-    return "\n".join([f"{m.role}: {m.text}" for m in message_history])
+    def get_message_text(content):
+        if content and len(content) == 1 and isinstance(content[0], TextContent):
+            return content[0].text
+        return ""
+
+    return "\n".join([f"{m.role}: {get_message_text(m.content)}" for m in message_history])
 
 
 def summarize_messages(
