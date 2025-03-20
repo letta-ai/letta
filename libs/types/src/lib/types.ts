@@ -62,6 +62,7 @@ export type MemoryVariableVersionOneType = z.infer<
 >;
 
 export const onboardingSteps = z.enum([
+  'restarted',
   'about_credits',
   'create_template',
   'explore_ade',
@@ -79,6 +80,7 @@ export const stepToRewardMap: Record<OnboardingStepsType, number> = {
   save_version: 2500,
   deploy_agent: 5000,
   completed: 0,
+  restarted: 0,
 };
 
 export const TOTAL_PRIMARY_ONBOARDING_STEPS =

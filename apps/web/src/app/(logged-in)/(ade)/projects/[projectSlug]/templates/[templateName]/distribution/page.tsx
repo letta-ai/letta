@@ -10,11 +10,15 @@ import {
   LettaInvaderIcon,
   LoadingEmptyStatusComponent,
   MaskIcon,
+  OnboardingAsideFocus,
   PanelBar,
+  PythonIcon,
   RawCodeEditor,
   RocketIcon,
   Skeleton,
   TabGroup,
+  TerminalIcon,
+  TypescriptIcon,
   Typography,
   useCopyToClipboard,
   VStack,
@@ -34,11 +38,15 @@ import {
 import type { ListAgentsResponse } from '@letta-cloud/sdk-core';
 import type { InfiniteData } from '@tanstack/query-core';
 import { useDebouncedValue } from '@mantine/hooks';
-import { webApi, webApiQueryKeys } from '@letta-cloud/sdk-web';
+import { useFeatureFlag, useSetOnboardingStep } from '@letta-cloud/sdk-web';
 import { LaunchLinks } from './LaunchLinks/LaunchLinks';
 import { VersionHistory } from './VersionHistory/VersionHistory';
 import { useLatestAgentTemplate } from '$web/client/hooks/useLatestAgentTemplate/useLatestAgentTemplate';
 import { useDateFormatter } from '@letta-cloud/utils-client';
+import { CreateAgentFromTemplateDialog } from './CreateAgentFromTemplateDialog/CreateAgentFromTemplateDialog';
+import { TypescriptInstructions } from './TypescriptInstructions/TypescriptInstructions';
+import { useShowOnboarding } from '$web/client/hooks/useShowOnboarding/useShowOnboarding';
+import { TOTAL_PRIMARY_ONBOARDING_STEPS } from '@letta-cloud/types';
 
 type CodeSnippetMethods = 'bash' | 'python' | 'typescript';
 type DeploymentMethods = CodeSnippetMethods | 'letta-launch';
@@ -123,6 +131,10 @@ curl -X POST https://app.letta.com/v1/agents/agent_id/messages \\
     return null;
   }
 
+  if (deploymentMethod === 'typescript') {
+    return <TypescriptInstructions />;
+  }
+
   return (
     <VStack fullHeight position="relative" color="background-grey">
       <div className="absolute z-header top-0 right-0">
@@ -155,22 +167,15 @@ curl -X POST https://app.letta.com/v1/agents/agent_id/messages \\
 }
 
 function DeploymentInstructions() {
-  const { agentId: agentTemplateId } = useCurrentAgentMetaData();
+  const { isLoading: isLaunchLinksEnabledLoading, data: isLaunchLinksEnabled } =
+    useFeatureFlag('LAUNCH_LINKS');
 
-  const { data: launchLinkConfig } = webApi.launchLinks.getLaunchLink.useQuery({
-    queryKey: webApiQueryKeys.launchLinks.getLaunchLink(agentTemplateId),
-    queryData: {
-      params: {
-        agentTemplateId,
-      },
-    },
-  });
+  const showLaunchLink = !isLaunchLinksEnabledLoading && isLaunchLinksEnabled;
 
-  const isLaunchLinkConfigured = !!launchLinkConfig?.body?.accessLevel;
+  const { templateName } = useCurrentAgentMetaData();
 
-  const [deploymentMethod, setDeploymentMethod] = useState<DeploymentMethods>(
-    isLaunchLinkConfigured ? 'letta-launch' : 'typescript',
-  );
+  const [deploymentMethod, setDeploymentMethod] =
+    useState<DeploymentMethods>('typescript');
   const t = useTranslations('pages/distribution');
 
   const tabs = useMemo(() => {
@@ -181,50 +186,74 @@ function DeploymentInstructions() {
     };
 
     return [
-      ...(isLaunchLinkConfigured ? [launchLinkTab] : []),
-      { label: 'Node.js', value: 'typescript' },
-      { label: 'Python', value: 'python' },
-      { label: 'cURL', value: 'bash' },
-      ...(isLaunchLinkConfigured ? [] : [launchLinkTab]),
+      {
+        icon: <TypescriptIcon />,
+        label: 'Typescript',
+        value: 'typescript',
+      },
+      {
+        icon: <PythonIcon />,
+        label: 'Python',
+        value: 'python',
+      },
+      {
+        icon: <TerminalIcon />,
+        label: 'cURL',
+        value: 'bash',
+      },
+      ...(showLaunchLink ? [launchLinkTab] : []),
     ];
-  }, [isLaunchLinkConfigured]);
+  }, [showLaunchLink]);
+
+  if (!templateName) {
+    return null;
+  }
 
   return (
-    <ADEGroup
-      items={[
-        {
-          title: t('DeploymentInstructions.title'),
-          id: 'title',
-
-          content: (
-            <VStack
-              collapseHeight
-              overflowY="auto"
-              paddingX="small"
-              paddingBottom="small"
-            >
-              <VStack fullHeight position="relative">
-                <HStack border justify="spaceBetween">
-                  <TabGroup
-                    variant="chips"
-                    size="xsmall"
-                    value={deploymentMethod}
-                    onValueChange={(value) => {
-                      setDeploymentMethod(value as DeploymentMethods);
-                    }}
-                    items={tabs}
-                  />
-                </HStack>
-                {isCodeSnippetMethod(deploymentMethod) && (
-                  <CodeSnippetView deploymentMethod={deploymentMethod} />
-                )}
-                {deploymentMethod === 'letta-launch' && <LaunchLinks />}
-              </VStack>
-            </VStack>
-          ),
-        },
-      ]}
-    ></ADEGroup>
+    <VStack
+      collapseHeight
+      overflowY="auto"
+      paddingX="small"
+      fullWidth
+      paddingBottom="small"
+    >
+      <DistributionOnboardingStepFinal>
+        <VStack fullWidth overflowX="hidden" fullHeight position="relative">
+          <HStack
+            /* eslint-disable-next-line react/forbid-component-props */
+            className="min-h-[45px]"
+            fullWidth
+            overflowX="auto"
+            align="center"
+            justify="spaceBetween"
+          >
+            <HStack align="center">
+              <TabGroup
+                variant="chips"
+                border
+                color="dark"
+                size="xxsmall"
+                value={deploymentMethod}
+                onValueChange={(value) => {
+                  setDeploymentMethod(value as DeploymentMethods);
+                }}
+                items={tabs}
+              />
+            </HStack>
+            <CreateAgentFromTemplateDialog
+              trigger={
+                <Button size="small" color="primary" label={t('createAgent')} />
+              }
+              templateName={templateName}
+            />
+          </HStack>
+          {isCodeSnippetMethod(deploymentMethod) && (
+            <CodeSnippetView deploymentMethod={deploymentMethod} />
+          )}
+          {deploymentMethod === 'letta-launch' && <LaunchLinks />}
+        </VStack>
+      </DistributionOnboardingStepFinal>
+    </VStack>
   );
 }
 
@@ -346,7 +375,9 @@ function RecentAgents() {
         flex
         ref={containerRef}
       >
-        {!data && <LoadingEmptyStatusComponent isLoading />}
+        {!data && (
+          <LoadingEmptyStatusComponent loaderVariant="grower" isLoading />
+        )}
         {!!data && agents.length === 0 && (
           <LoadingEmptyStatusComponent
             emptyMessage={
@@ -429,6 +460,53 @@ function RecentAgents() {
   );
 }
 
+interface DistributionOnboardingStepFinalProps {
+  children: React.ReactNode;
+}
+
+function DistributionOnboardingStepFinal(
+  props: DistributionOnboardingStepFinalProps,
+) {
+  const t = useTranslations('pages/distribution');
+  const { children } = props;
+
+  const showOnboarding = useShowOnboarding('deploy_agent');
+  const { setOnboardingStep } = useSetOnboardingStep();
+
+  if (!showOnboarding) {
+    return <>{children}</>;
+  }
+
+  return (
+    <OnboardingAsideFocus
+      title={t('DistributionOnboardingStepFinal.title')}
+      placement="right-start"
+      description={t('DistributionOnboardingStepFinal.description')}
+      isOpen
+      /* eslint-disable-next-line react/forbid-component-props */
+      className="w-full h-full"
+      difficulty="easy"
+      nextStep={
+        <Button
+          label={t('DistributionOnboardingStepFinal.nextStep')}
+          color="primary"
+          fullWidth
+          onClick={() => {
+            setOnboardingStep({
+              onboardingStep: 'completed',
+              stepToClaim: 'deploy_agent',
+            });
+          }}
+        />
+      }
+      totalSteps={TOTAL_PRIMARY_ONBOARDING_STEPS}
+      currentStep={5}
+    >
+      {children}
+    </OnboardingAsideFocus>
+  );
+}
+
 export default function DistributionPage() {
   const t = useTranslations('pages/distribution');
 
@@ -441,14 +519,13 @@ export default function DistributionPage() {
         autoSaveId="distribution"
       >
         <Panel
-          defaultSize={50}
-          defaultValue={50}
+          defaultSize={20}
+          defaultValue={20}
           /* eslint-disable-next-line react/forbid-component-props */
           className="h-full"
           minSize={20}
         >
           <VStack fullHeight gap="small">
-            <DeploymentInstructions />
             <ADEGroup
               items={[
                 {
@@ -465,8 +542,29 @@ export default function DistributionPage() {
           className="w-[4px]"
         />
         <Panel
-          defaultSize={50}
-          defaultValue={50}
+          defaultSize={60}
+          defaultValue={60}
+          /* eslint-disable-next-line react/forbid-component-props */
+          className="h-full"
+          minSize={20}
+        >
+          <ADEGroup
+            items={[
+              {
+                title: t('DeploymentInstructions.title'),
+                id: 'title',
+                content: <DeploymentInstructions />,
+              },
+            ]}
+          ></ADEGroup>
+        </Panel>
+        <PanelResizeHandle
+          /* eslint-disable-next-line react/forbid-component-props */
+          className="w-[4px]"
+        />
+        <Panel
+          defaultSize={20}
+          defaultValue={20}
           /* eslint-disable-next-line react/forbid-component-props */
           className="h-full"
           minSize={20}

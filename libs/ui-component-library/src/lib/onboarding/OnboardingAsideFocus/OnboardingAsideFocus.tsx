@@ -10,6 +10,7 @@ import { useMemo } from 'react';
 import { Button } from '../../core/Button/Button';
 import { OnboardingSteps } from '../OnboardingSteps/OnboardingSteps';
 import {
+  autoUpdate,
   FloatingPortal,
   type Placement,
   useFloating,
@@ -26,6 +27,7 @@ interface OnboardingAsideFocusProps {
   currentStep: number;
   difficulty: 'easy' | 'hard' | 'medium';
   description: React.ReactNode;
+  spotlight?: boolean;
   className?: string;
   isOpen: boolean;
   nextStep?: React.ReactNode;
@@ -48,6 +50,7 @@ export function OnboardingAsideFocus(props: OnboardingAsideFocusProps) {
     totalSteps = 1,
     currentStep = 1,
     isOpen,
+    spotlight,
     placement,
     nextStep,
     reward,
@@ -69,6 +72,8 @@ export function OnboardingAsideFocus(props: OnboardingAsideFocusProps) {
   const { refs, floatingStyles } = useFloating({
     placement,
     middleware: [offset(10)],
+    whileElementsMounted: autoUpdate,
+    open: isOpen,
   });
 
   if (!isOpen) {
@@ -78,8 +83,14 @@ export function OnboardingAsideFocus(props: OnboardingAsideFocusProps) {
   return (
     <>
       <div className="fixed top-0 w-[100dvw] h-[100dvh] left-0 z-[7] inset-0 bg-black bg-opacity-50" />
-      <div className={cn('z-[9] bg-white', className)} ref={refs.setReference}>
+      <div
+        className={cn('z-[9] bg-background relative', className)}
+        ref={refs.setReference}
+      >
         {children}
+        {spotlight && (
+          <div className="w-[100px] h-[100px] top-[-36px] left-[-36px] z-[-1] rounded-full bg-background absolute" />
+        )}
       </div>
       <FloatingPortal>
         <VStack
@@ -88,7 +99,7 @@ export function OnboardingAsideFocus(props: OnboardingAsideFocusProps) {
           gap="large"
           padding
           color="background-grey"
-          className="w-[350px] fixed z-[9]"
+          className="w-[350px] fixed z-[9] shadow-lg border"
         >
           <HStack justify="spaceBetween" align="center">
             {reward && <OnboardingRewardElement reward={reward} />}

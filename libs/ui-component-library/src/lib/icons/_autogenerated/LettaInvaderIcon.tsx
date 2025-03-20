@@ -4,7 +4,7 @@ import { IconWrapper } from '../IconWrapper';
 
 export function LettaInvaderIcon(props: IconWrappedProps) {
   return (
-    <IconWrapper className="transition-colors" {...props}>
+    <IconWrapper {...props}>
       <svg
         width="20"
         height="20"

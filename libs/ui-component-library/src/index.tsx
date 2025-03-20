@@ -192,3 +192,5 @@ export * from './lib/reusable/CrossedOut/CrossedOut';
 export * from './lib/reusable/BoxList/BoxList';
 
 export * from './lib/core/WrapNotificationDot/WrapNotificationDot';
+
+export * from './lib/reusable/PackageInstallerView/PackageInstallerView';

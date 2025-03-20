@@ -27,6 +27,16 @@
       "description": "The first thing in building production agents is defining a template. A template is a blueprint for an agent, it defines the structure and behavior of the agent. Create a template by pressing the highlighted button and pick from a starter template."
     }
   },
+  "pages/distribution/CreateAgentFromTemplateDialog": {
+    "create": "Create agent",
+    "error": "There was an error creating the agent, please try again or contact support.",
+    "title": "Create agent from {templateName}",
+    "inputDetails": "Please enter the following variables:",
+    "description": "Confirm creating an agent from {templateName}:latest.",
+    "loading": "Loading template information...",
+    "memoryVariables": "Memory variables",
+    "toolVariables": "Tool variables"
+  },
   "pages/distribution/LaunchLinks": {
     "title": "Launch Links",
     "description": "Launch links allow you to deploy agents without writing any code. When a user clicks the link below, they will be able to interact with an agent that is unique to them.",
@@ -74,7 +84,26 @@
       "compare": "Compare"
     }
   },
+  "distribution/Instructions/TypescriptInstructions": {
+    "PureServerInstructions": {
+      "warning": "The code below should only be used on the server, check out other frameworks for usage with client side code",
+      "install": "1. Install the Letta SDK",
+      "initializeYourSdk": "2. Initialize your SDK",
+      "createAgentCode": "3. Create a function to create an agent from a template",
+      "talkToAgent": "4. Write a function to talk to the agent"
+    },
+    "methods": {
+      "label": "Methods",
+      "pureServer": "No Framework"
+    }
+  },
   "pages/distribution": {
+    "DistributionOnboardingStepFinal": {
+      "title": "Deploy your agent",
+      "description": "You've made it to the end, now all you need to do is deploy your agent, you can do this either by following the instructions to the side, or manually creating an agent!",
+      "nextStep": "Complete onboarding"
+    },
+    "createAgent": "Manually create an agent",
     "DeploymentInstructions": {
       "title": "Agent Distribution"
     },
@@ -820,6 +849,20 @@
     "amount": {
       "label": "Select amount",
       "option": "<credits></credits> <label>credits</label>"
+    }
+  },
+  "settings/profile/page/OnboardingSupportUI": {
+    "RestartOnboarding": {
+      "title": "You've completed the onboarding process! <link>YIPIEE!</link>",
+      "button": "Restart onboarding"
+    },
+    "UnpauseOnboarding": {
+      "title": "You've paused the onboarding process!",
+      "button": "Unpause onboarding"
+    },
+    "InOnboarding": {
+      "title": "You're currently onboarding!",
+      "button": "Restart from start"
     }
   },
   "settings/profile/page": {
@@ -1627,6 +1670,10 @@
     }
   },
   "components/TemplateNavigationSidebar": {
+    "DistributionOnboardingStep": {
+      "title": "Distribute your agent",
+      "description": "Now that you've saved a template, let's head to the distribution tab to learn how to deploy your agent to Letta Cloud."
+    },
     "nav": {
       "templateEditor": "Template Editor",
       "distribution": "Distribution"

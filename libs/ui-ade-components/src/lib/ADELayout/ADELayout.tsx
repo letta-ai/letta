@@ -53,6 +53,7 @@ import {
   useArchivalMemoriesTitle,
 } from '../panels/ArchivalMemoriesPanel/ArchivalMemoriesPanel';
 import React, { useMemo, useState } from 'react';
+import WelcomeWebp from './welcome-to-ade.webp';
 
 interface ADELayoutProps {
   user?: UserContextData['user'];
@@ -408,7 +409,7 @@ function ADEOnboarding() {
   return (
     <OnboardingPrimaryDialog
       isOpen
-      imageUrl="/images/ade-onboarding/welcome.svg"
+      imageUrl={WelcomeWebp}
       title={t('ADEOnboarding.welcome')}
       primaryAction={
         <Button

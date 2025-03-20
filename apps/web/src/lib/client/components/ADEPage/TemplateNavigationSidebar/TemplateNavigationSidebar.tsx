@@ -1,14 +1,17 @@
-import { useFeatureFlag } from '@letta-cloud/sdk-web';
 import { useCurrentAgentMetaData } from '@letta-cloud/ui-ade-components';
 import {
   Button,
   LettaAlienChatIcon,
+  OnboardingAsideFocus,
   RocketIcon,
   VStack,
 } from '@letta-cloud/ui-component-library';
 import { usePathname } from 'next/navigation';
 import { useTranslations } from '@letta-cloud/translations';
 import { useCurrentProject } from '../../../hooks/useCurrentProject/useCurrentProject';
+import React from 'react';
+import { TOTAL_PRIMARY_ONBOARDING_STEPS } from '@letta-cloud/types';
+import { useShowOnboarding } from '$web/client/hooks/useShowOnboarding/useShowOnboarding';
 
 interface SidebarButtonProps {
   href: string;
@@ -33,6 +36,41 @@ function SidebarButton(props: SidebarButtonProps) {
   );
 }
 
+interface DistributionOnboardingStepProps {
+  children: React.ReactNode;
+}
+
+function DistributionOnboardingStep(props: DistributionOnboardingStepProps) {
+  const t = useTranslations('components/TemplateNavigationSidebar');
+  const { children } = props;
+
+  const showOnboarding = useShowOnboarding('deploy_agent');
+
+  const pathname = usePathname();
+
+  if (pathname.endsWith('distribution')) {
+    return <>{children}</>;
+  }
+
+  if (!showOnboarding) {
+    return <>{children}</>;
+  }
+
+  return (
+    <OnboardingAsideFocus
+      title={t('DistributionOnboardingStep.title')}
+      placement="right-start"
+      description={t('DistributionOnboardingStep.description')}
+      isOpen
+      difficulty="easy"
+      totalSteps={TOTAL_PRIMARY_ONBOARDING_STEPS}
+      currentStep={5}
+    >
+      {children}
+    </OnboardingAsideFocus>
+  );
+}
+
 export function TemplateSidebarInner() {
   const t = useTranslations('components/TemplateNavigationSidebar');
   const { slug } = useCurrentProject();
@@ -48,26 +86,21 @@ export function TemplateSidebarInner() {
         label={t('nav.templateEditor')}
         href={`/projects/${slug}/templates/${templateName}`}
       />
-      <SidebarButton
-        label={t('nav.distribution')}
-        icon={<RocketIcon />}
-        href={`/projects/${slug}/templates/${templateName}/distribution`}
-      />
+      <DistributionOnboardingStep>
+        <SidebarButton
+          label={t('nav.distribution')}
+          icon={<RocketIcon />}
+          href={`/projects/${slug}/templates/${templateName}/distribution`}
+        />
+      </DistributionOnboardingStep>
     </VStack>
   );
 }
 
 export function TemplateNavigationSidebar() {
-  const { isLoading, data: isEnabled } = useFeatureFlag(
-    'TEMPLATE_DISTRIBUTION',
-  );
   const { isTemplate } = useCurrentAgentMetaData();
 
   if (!isTemplate) {
-    return null;
-  }
-
-  if (isLoading || !isEnabled) {
     return null;
   }
 

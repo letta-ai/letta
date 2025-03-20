@@ -16,6 +16,11 @@ export const featureFlags = {
     expiryDate: '2024-01-31',
     flagValue: z.boolean(),
   },
+  LAUNCH_LINKS: {
+    description: 'Launch links',
+    expiryDate: '2024-01-31',
+    flagValue: z.boolean(),
+  },
   IDENTITIES: {
     description: 'Identities',
     expiryDate: '2024-03-01',

@@ -17,7 +17,7 @@ export function useADETour() {
       return null;
     }
 
-    if (isTemplate) {
+    if (!isTemplate) {
       return null;
     }
 

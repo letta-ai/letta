@@ -17,19 +17,27 @@ interface TabItemType {
 const listVariant = cva('px-4 h-[28px] flex items-center gap-2 flex-row', {
   variants: {
     variant: {
-      border: 'border-b-2 data-[state=active]:border-content',
+      border: 'border-b-2 data-[state=active]:border-content border-0 pt-2',
       'bordered-background':
-        'data-[state=active]:bg-background-grey2 data-[state=active]:border data-[state=active]:border-b-0',
-      chips:
-        'data-[state=active]:bg-brand-light data-[state=active]:text-brand-light-content font-medium',
+        'data-[state=active]:border data-[state=active]:border-b-0',
+      chips: ' font-medium',
+    },
+    color: {
+      default:
+        'data-[state=active]:bg-background-grey2 data-[state=active]:border-b border-b border-border',
+      dark: 'data-[state=active]:bg-dark-active data-[state=active]:text-dark-active-content',
     },
     size: {
       small: 'pb-2',
       xsmall: '',
+      xxsmall: 'px-2 h-[24px]',
     },
     fullWidth: {
       true: 'flex-1 justify-center',
     },
+  },
+  defaultVariants: {
+    color: 'default',
   },
 });
 
@@ -39,8 +47,10 @@ interface TabGroupProps extends TabAggregate {
   items: TabItemType[];
   fullWidth?: boolean;
   upperCase?: boolean;
+
   extendBorder?: boolean;
   noBottomBorder?: boolean;
+  border?: boolean;
   rightContent?: React.ReactNode;
 }
 
@@ -51,7 +61,9 @@ export function TabGroup(props: TabGroupProps) {
     extendBorder,
     upperCase,
     value,
+    color,
     variant = 'border',
+    border,
     size = 'xsmall',
     defaultValue,
     onValueChange,
@@ -68,12 +80,17 @@ export function TabGroup(props: TabGroupProps) {
       defaultValue={defaultValue}
       onValueChange={onValueChange}
     >
-      <Tabs.List className="flex items-end flex-row">
+      <Tabs.List
+        className={cn(
+          'flex items-end flex-row',
+          border ? 'p-[2px] border' : '',
+        )}
+      >
         {items.map((item) => (
           <Tabs.Trigger
             className={cn(
               'px-4 h-[28px] flex items-center gap-2 flex-row ',
-              listVariant({ variant, size, fullWidth }),
+              listVariant({ variant, color, size, fullWidth }),
             )}
             onClick={(e) => {
               e.stopPropagation();

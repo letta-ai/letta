@@ -68,6 +68,9 @@
   --warning: 40, 100%, 50%;
   --warning-content: 40, 100%, 85%;
 
+  --dark-active-background: 0	0	84%;
+  --dark-active-content: 0 0% 0%;
+
   /* backgrounds */
   --background: 0 0% 100%;
   --background-hover: 0 0% 98%;
@@ -219,6 +222,9 @@
 
   --primary: 210 6% 73%;
   --primary-content: 0 0% 8%;
+
+  --dark-active-background: 0	0	23%;
+  --dark-active-content: 0 0% 100%;
 
   --secondary: var(--background);
   --secondary-content: var(--content);

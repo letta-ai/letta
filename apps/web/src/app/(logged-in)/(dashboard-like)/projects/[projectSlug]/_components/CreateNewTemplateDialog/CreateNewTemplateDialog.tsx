@@ -15,7 +15,7 @@ import {
 } from '@letta-cloud/ui-component-library';
 import { STARTER_KITS } from '@letta-cloud/config-agent-starter-kits';
 import { useQueryClient } from '@tanstack/react-query';
-import { useUserHasPermission } from '$web/client/hooks';
+import { useCurrentUser, useUserHasPermission } from '$web/client/hooks';
 import { ApplicationServices } from '@letta-cloud/service-rbac';
 import { Slot } from '@radix-ui/react-slot';
 import { useShowOnboarding } from '$web/client/hooks/useShowOnboarding/useShowOnboarding';
@@ -23,6 +23,7 @@ import {
   stepToRewardMap,
   TOTAL_PRIMARY_ONBOARDING_STEPS,
 } from '@letta-cloud/types';
+import { useSetOnboardingStep } from '@letta-cloud/sdk-web';
 
 interface CreateNewTemplateDialogProps {
   trigger: React.ReactNode;
@@ -43,6 +44,7 @@ function OnboardingWrapper(props: OnboardingWrapperProps) {
   return (
     <OnboardingAsideFocus
       difficulty="easy"
+      spotlight
       reward={stepToRewardMap.create_template}
       totalSteps={TOTAL_PRIMARY_ONBOARDING_STEPS}
       currentStep={2}
@@ -69,8 +71,11 @@ export function CreateNewTemplateDialog(props: CreateNewTemplateDialogProps) {
 
   const { push } = useRouter();
 
+  const user = useCurrentUser();
   const { mutate, isPending, isSuccess, isError } =
     webApi.starterKits.createTemplateFromStarterKit.useMutation();
+
+  const { setOnboardingStep } = useSetOnboardingStep();
 
   const [open, setOpen] = React.useState(false);
 
@@ -78,6 +83,13 @@ export function CreateNewTemplateDialog(props: CreateNewTemplateDialogProps) {
 
   const handleSelectStarterKit = useCallback(
     (starterKitId: string) => {
+      if (user?.onboardingStatus?.currentStep === 'create_template') {
+        setOnboardingStep({
+          onboardingStep: 'explore_ade',
+          stepToClaim: 'create_template',
+        });
+      }
+
       mutate(
         {
           params: {
@@ -99,7 +111,15 @@ export function CreateNewTemplateDialog(props: CreateNewTemplateDialogProps) {
         },
       );
     },
-    [mutate, queryClient, push, slug, projectId],
+    [
+      mutate,
+      setOnboardingStep,
+      user?.onboardingStatus?.currentStep,
+      queryClient,
+      push,
+      slug,
+      projectId,
+    ],
   );
 
   const [canCreateTemplate] = useUserHasPermission(

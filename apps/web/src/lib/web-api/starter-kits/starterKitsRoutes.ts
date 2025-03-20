@@ -12,8 +12,6 @@ import { getUserWithActiveOrganizationIdOrThrow } from '$web/server/auth';
 import { db, projects } from '@letta-cloud/service-database';
 import { and, eq } from 'drizzle-orm';
 import { cloudApiRouter, createTemplate } from 'tmp-cloud-api-router';
-import { goToNextOnboardingStep } from '@letta-cloud/utils-server';
-import * as Sentry from '@sentry/node';
 
 type CreateAgentFromStarterKitsRequest = ServerInferRequest<
   typeof contracts.starterKits.createAgentFromStarterKit
@@ -180,7 +178,6 @@ async function createTemplateFromStarterKit(
     lettaAgentsId,
     activeOrganizationId,
     id: userId,
-    onboardingStatus,
   } = await getUserWithActiveOrganizationIdOrThrow();
 
   if (!isAStarterKitName(starterKitId)) {
@@ -220,18 +217,6 @@ async function createTemplateFromStarterKit(
       embedding_config: defaultEmbeddingConfig,
     },
   });
-
-  try {
-    if (onboardingStatus?.currentStep === 'create_template') {
-      await goToNextOnboardingStep({
-        userId,
-        nextStep: 'explore_ade',
-        stepToClaim: 'create_template',
-      });
-    }
-  } catch (e) {
-    Sentry.captureException(e);
-  }
 
   return {
     status: 201,

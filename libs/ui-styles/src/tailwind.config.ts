@@ -22,9 +22,9 @@ export function buildConfig(appDir: string): Config {
       extend: {
         zIndex: {
           rightAboveZero: '1',
-          sidebarNavOverlay: '6',
-          sidebarNav: '7',
-          header: '8',
+          sidebarNavOverlay: '5',
+          sidebarNav: '6',
+          header: '7',
           miniapp: '9',
           dialog: '10',
           dropdown: '11',
@@ -121,6 +121,10 @@ export function buildConfig(appDir: string): Config {
           'background-destructive': {
             DEFAULT: 'hsl(var(--background-destructive))',
             content: 'hsl(var(--background-destructive-content))',
+          },
+          'dark-active': {
+            DEFAULT: 'hsl(var(--dark-active-background))',
+            content: 'hsl(var(--dark-active-content))',
           },
           content: 'hsl(var(--content))',
           ['on-transparent']: 'hsl(var(--on-transparent))',

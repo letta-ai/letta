@@ -140,6 +140,7 @@ export function VersionHistory() {
         {!versionData && (
           <LoadingEmptyStatusComponent
             isLoading
+            loaderVariant="grower"
             loadingMessage={t('VersionHistory.loading')}
           />
         )}

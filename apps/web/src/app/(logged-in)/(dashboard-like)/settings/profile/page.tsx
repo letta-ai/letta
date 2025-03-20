@@ -7,6 +7,7 @@ import {
   Form,
   FormField,
   FormProvider,
+  HR,
   Input,
   LoadingEmptyStatusComponent,
   RawInput,
@@ -19,6 +20,7 @@ import { webApi, webApiQueryKeys } from '$web/client';
 import { useQueryClient } from '@tanstack/react-query';
 import { useTranslations } from '@letta-cloud/translations';
 import type { PublicUserSchemaType } from '$web/web-api/contracts';
+import { OnboardingSupportUI } from './OnboardingSupportUI/OnboardingSupportUI';
 
 const UpdateUserProfileSchema = z.object({
   name: z.string(),
@@ -100,6 +102,8 @@ function ProfileSettingsPage() {
         ) : (
           <UpdateUserProfileForm user={user} />
         )}
+        <HR />
+        <OnboardingSupportUI />
       </DashboardPageSection>
     </DashboardPageLayout>
   );

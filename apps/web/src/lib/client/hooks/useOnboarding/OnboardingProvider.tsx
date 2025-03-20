@@ -10,9 +10,10 @@ interface OnboardingProviderProps {
 export function OnboardingProvider(props: OnboardingProviderProps) {
   const { children } = props;
 
-  const showOnboarding = useShowOnboarding('init');
+  const showOnboardingFromInit = useShowOnboarding('init');
+  const showOnboardingFromRestart = useShowOnboarding('restarted');
 
-  if (showOnboarding) {
+  if (showOnboardingFromInit || showOnboardingFromRestart) {
     return (
       <>
         <StartOnboardingDialog />
