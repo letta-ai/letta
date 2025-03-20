@@ -72,7 +72,7 @@ def bedrock_get_model_details(region_name: str, model_id: str) -> Dict[str, Any]
         response = bedrock.get_foundation_model(modelIdentifier=model_id)
         return response["modelDetails"]
     except ClientError as e:
-        print(f"Error getting model details: {str(e)}")
+        logger.exception(f"Error getting model details: {str(e)}")
         raise e
 
 

@@ -844,6 +844,7 @@ def anthropic_chat_completions_process_stream(
             total_tokens=prompt_tokens,
         ),
     )
+
     log_event(name="llm_request_sent", attributes=chat_completion_request.model_dump())
 
     if stream_interface:

@@ -306,7 +306,6 @@ def create(
         response = azure_openai_chat_completions_request(
             model_settings=model_settings,
             llm_config=llm_config,
-            api_key=model_settings.azure_api_key,
             chat_completion_request=chat_completion_request,
         )
 
