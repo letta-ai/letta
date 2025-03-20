@@ -717,9 +717,9 @@
   },
   "ComposioToolsView": {
     "visitWebsite": "Visit composio.dev",
-    "description": "Composio is an tool integration platform that lets you to easily connect your agent to a wide range of tools and services. Below lists all the products that Composio integrates with. To note, Composio is not open-source nor a part of Letta.",
+    "description": "Composio is an tool integration platform that lets you to easily connect your agent to a wide range of tools and services. Note that Composio is not open-source nor a part of Letta.",
     "loadingMessage": "Loading Composio tools...",
-    "openApp": "Discover actions",
+    "openApp": "View tools",
     "showing": "Showing {count} of {total} apps",
     "errorMessage": "There was an error loading Composio tools, please try again or contact support."
   },
@@ -836,12 +836,12 @@
     "AttachMCPTool": {
       "error": "There was an error attaching this tool, please try again or contact support.",
       "success": "Tool has been attached",
-      "label": "Attach tool"
+      "label": "Attach tool to agent"
     },
     "DetachToolDialog": {
       "success": "Tool has been detached",
-      "label": "Detach tool",
-      "title": "Detach tool",
+      "label": "Detach tool from agent",
+      "title": "Detach tool from agent",
       "confirm": "Detach",
       "error": "There was an error detaching this tool, please try again or contact support.",
       "description": "Are you sure you want to detach this tool? This will remove the tool from this agent, but any other agents that use this tool will still have it."
@@ -853,7 +853,7 @@
     },
     "AttachComposioTool": {
       "success": "Tool has been attached",
-      "label": "Attach tool",
+      "label": "Attach tool to agent",
       "ComposioSDKError": "Please connect this App on Composio before attempting to attach this tool. Press the 'View on Composio' button to do this",
       "ApiKeyNotProvidedError": "Please connect your Composio API key with Letta to add this tool to your agent.",
       "GenericSDKError": "There was an error attaching this tool, please try again or contact support."
@@ -863,7 +863,7 @@
     "visitWebsite": "Visit composio.dev",
     "description": "Composio is an tool integration platform that lets you to easily connect your agent to a wide range of tools and services. Below lists all the products that Composio integrates with. To note, Composio is not open-source nor a part of Letta.",
     "loadingMessage": "Loading Composio tools...",
-    "openApp": "Discover actions",
+    "openApp": "View tools",
     "showing": "Showing {count} of {total} apps",
     "errorMessage": "There was an error loading Composio tools, please try again or contact support."
   },
@@ -1023,10 +1023,10 @@
       "collapse": "Close",
       "toolRules": "Tool rules",
       "current": "Current agent tools",
-      "codeTools": "Code Tools",
-      "customTools": "My tools",
+      "codeTools": "Available Tools",
+      "customTools": "Custom tools",
       "lettaTools": "Letta tools",
-      "integrationTools": "Integration tools",
+      "integrationTools": "External tools",
       "composioTools": "Composio",
       "mcpServers": "MCP servers",
       "create": "Create custom tool"
