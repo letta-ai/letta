@@ -522,7 +522,7 @@ class Agent(BaseAgent):
                     openai_message_dict=response_message.model_dump(),
                 )
             )  # extend conversation with assistant's reply
-            self.logger.info(f"Function call message: {messages[-1]}")
+            self.logger.debug(f"Function call message: {messages[-1]}")
 
             nonnull_content = False
             if response_message.content:
@@ -537,7 +537,7 @@ class Agent(BaseAgent):
                 response_message.function_call if response_message.function_call is not None else response_message.tool_calls[0].function
             )
             function_name = function_call.name
-            self.logger.info(f"Request to call function {function_name} with tool_call_id: {tool_call_id}")
+            self.logger.debug(f"Request to call function {function_name} with tool_call_id: {tool_call_id}")
 
             # Failure case 1: function name is wrong (not in agent_state.tools)
             target_letta_tool = None
