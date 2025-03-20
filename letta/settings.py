@@ -19,8 +19,8 @@ class ToolSettings(BaseSettings):
     local_sandbox_dir: Optional[str] = None
 
     # MCP settings
-    mcp_connect_to_server_timeout: float = 15.0
-    mcp_list_tools_timeout: float = 10.0
+    mcp_connect_to_server_timeout: float = 30.0
+    mcp_list_tools_timeout: float = 30.0
     mcp_execute_tool_timeout: float = 60.0
     mcp_read_from_config: bool = True  # if False, will throw if attempting to read/write from file
 
@@ -179,7 +179,7 @@ class Settings(BaseSettings):
 
     # telemetry logging
     verbose_telemetry_logging: bool = False
-    otel_exporter_otlp_endpoint: str = "http://localhost:4317"
+    otel_exporter_otlp_endpoint: Optional[str] = None  # otel default: "http://localhost:4317"
     disable_tracing: bool = False
 
     # uvicorn settings

@@ -9,6 +9,8 @@ from letta.functions.helpers import (
 )
 from letta.schemas.enums import MessageRole
 from letta.schemas.message import MessageCreate
+from letta.server.rest_api.utils import get_letta_server
+from letta.utils import log_telemetry
 
 if TYPE_CHECKING:
     from letta.agent import Agent
@@ -85,8 +87,51 @@ def send_message_to_agents_matching_tags(self: "Agent", message: str, match_all:
         response corresponds to a single agent. Agents that do not respond will not have an entry
         in the returned list.
     """
+    log_telemetry(
+        self.logger,
+        "_send_message_to_agents_matching_tags_async start",
+        message=message,
+        match_all=match_all,
+        match_some=match_some,
+    )
+    server = get_letta_server()
 
-    return asyncio.run(_send_message_to_agents_matching_tags_async(self, message, match_all, match_some))
+    augmented_message = (
+        f"[Incoming message from agent with ID '{self.agent_state.id}' - to reply to this message, "
+        f"make sure to use the 'send_message' at the end, and the system will notify the sender of your response] "
+        f"{message}"
+    )
+
+    # Retrieve up to 100 matching agents
+    log_telemetry(
+        self.logger,
+        "_send_message_to_agents_matching_tags_async listing agents start",
+        message=message,
+        match_all=match_all,
+        match_some=match_some,
+    )
+    matching_agents = server.agent_manager.list_agents_matching_tags(actor=self.user, match_all=match_all, match_some=match_some)
+
+    log_telemetry(
+        self.logger,
+        "_send_message_to_agents_matching_tags_async  listing agents finish",
+        message=message,
+        match_all=match_all,
+        match_some=match_some,
+    )
+
+    # Create a system message
+    messages = [MessageCreate(role=MessageRole.system, content=augmented_message, name=self.agent_state.name)]
+
+    result = asyncio.run(_send_message_to_agents_matching_tags_async(self, server, messages, matching_agents))
+    log_telemetry(
+        self.logger,
+        "_send_message_to_agents_matching_tags_async finish",
+        messages=message,
+        match_all=match_all,
+        match_some=match_some,
+    )
+    return result
 
 
 def send_message_to_all_agents_in_group(self: "Agent", message: str) -> List[str]:

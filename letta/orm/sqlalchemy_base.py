@@ -386,6 +386,50 @@ class SqlalchemyBase(CommonSqlalchemyMetaMixins, Base):
         except (DBAPIError, IntegrityError) as e:
             self._handle_dbapi_error(e)
 
+    @classmethod
+    @handle_db_timeout
+    def batch_create(cls, items: List["SqlalchemyBase"], db_session: "Session", actor: Optional["User"] = None) -> List["SqlalchemyBase"]:
+        """
+        Create multiple records in a single transaction for better performance.
+
+        Args:
+            items: List of model instances to create
+            db_session: SQLAlchemy session
+            actor: Optional user performing the action
+
+        Returns:
+            List of created model instances
+        """
+        logger.debug(f"Batch creating {len(items)} {cls.__name__} items with actor={actor}")
+
+        if not items:
+            return []
+
+        # Set created/updated by fields if actor is provided
+        if actor:
+            for item in items:
+                item._set_created_and_updated_by_fields(actor.id)
+
+        try:
+            with db_session as session:
+                session.add_all(items)
+                session.flush()  # Flush to generate IDs but don't commit yet
+
+                # Collect IDs to fetch the complete objects after commit
+                item_ids = [item.id for item in items]
+
+                session.commit()
+
+                # Re-query the objects to get them with relationships loaded
+                query = select(cls).where(cls.id.in_(item_ids))
+                if hasattr(cls, "created_at"):
+                    query = query.order_by(cls.created_at)
+
+                return list(session.execute(query).scalars())
+
+        except (DBAPIError, IntegrityError) as e:
+            cls._handle_dbapi_error(e)
+
     @handle_db_timeout
     def delete(self, db_session: "Session", actor: Optional["User"] = None) -> "SqlalchemyBase":
         logger.debug(f"Soft deleting {self.__class__.__name__} with ID: {self.id} with actor={actor}")

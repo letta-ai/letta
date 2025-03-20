@@ -6,7 +6,7 @@ from fastapi import APIRouter, Body, Depends, Header
 from fastapi.responses import StreamingResponse
 from openai.types.chat.completion_create_params import CompletionCreateParams
 
-from letta.agents.low_latency_agent import LowLatencyAgent
+from letta.agents.voice_agent import VoiceAgent
 from letta.log import get_logger
 from letta.schemas.openai.chat_completions import UserMessage
 from letta.server.rest_api.utils import get_letta_server, get_messages_from_completion_request
@@ -16,7 +16,7 @@ if TYPE_CHECKING:
     from letta.server.server import SyncServer
 
 
-router = APIRouter(prefix="/voice", tags=["voice"])
+router = APIRouter(prefix="/voice-beta", tags=["voice"])
 
 logger = get_logger(__name__)
 
@@ -61,15 +61,15 @@ async def create_voice_chat_completions(
     )
 
     # Instantiate our LowLatencyAgent
-    agent = LowLatencyAgent(
+    agent = VoiceAgent(
         agent_id=agent_id,
         openai_client=client,
         message_manager=server.message_manager,
         agent_manager=server.agent_manager,
         block_manager=server.block_manager,
         actor=actor,
-        message_buffer_limit=10,
-        message_buffer_min=4,
+        message_buffer_limit=50,
+        message_buffer_min=10,
     )
 
     # Return the streaming generator

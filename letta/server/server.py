@@ -1202,6 +1202,7 @@ class SyncServer(Server):
         tool_source_type: Optional[str] = None,
         tool_name: Optional[str] = None,
         tool_args_json_schema: Optional[Dict[str, Any]] = None,
+        tool_json_schema: Optional[Dict[str, Any]] = None,
     ) -> ToolReturnMessage:
         """Run a tool from source code"""
         if tool_source_type is not None and tool_source_type != "python":
@@ -1213,6 +1214,11 @@ class SyncServer(Server):
             source_code=tool_source,
             args_json_schema=tool_args_json_schema,
         )
+
+        # If tools_json_schema is explicitly passed in, override it on the created Tool object
+        if tool_json_schema:
+            tool.json_schema = tool_json_schema
+
         assert tool.name is not None, "Failed to create tool object"
 
         # TODO eventually allow using agent state in tools

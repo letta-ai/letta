@@ -755,7 +755,7 @@ class AgentManager:
                 if updated_value != agent_state.memory.get_block(label).value:
                     # update the block if it's changed
                     block_id = agent_state.memory.get_block(label).id
-                    block = self.block_manager.update_block(block_id=block_id, block_update=BlockUpdate(value=updated_value), actor=actor)
+                    self.block_manager.update_block(block_id=block_id, block_update=BlockUpdate(value=updated_value), actor=actor)
 
             # refresh memory from DB (using block ids)
             agent_state.memory = Memory(

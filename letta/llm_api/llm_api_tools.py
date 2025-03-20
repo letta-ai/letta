@@ -373,14 +373,26 @@ def create(
         # Force tool calling
         tool_call = None
         if force_tool_call is not None:
-            tool_call = {"type": "function", "function": {"name": force_tool_call}}
+            # tool_call = {"type": "function", "function": {"name": force_tool_call}}
+            tool_choice = {"type": "tool", "name": force_tool_call}
+            tools = [{"type": "function", "function": f} for f in functions if f["name"] == force_tool_call]
             assert functions is not None
+
+            # need to have this setting to be able to put inner thoughts in kwargs
+            llm_config.put_inner_thoughts_in_kwargs = True
+        else:
+            if llm_config.put_inner_thoughts_in_kwargs:
+                # tool_choice_type other than "auto" only plays nice if thinking goes inside the tool calls
+                tool_choice = {"type": "any", "disable_parallel_tool_use": True}
+            else:
+                tool_choice = {"type": "auto", "disable_parallel_tool_use": True}
+            tools = [{"type": "function", "function": f} for f in functions]
 
         chat_completion_request = ChatCompletionRequest(
             model=llm_config.model,
             messages=[cast_message_to_subtype(m.to_openai_dict()) for m in messages],
-            tools=([{"type": "function", "function": f} for f in functions] if functions else None),
-            tool_choice=tool_call,
+            tools=tools,
+            tool_choice=tool_choice,
             max_tokens=llm_config.max_tokens,  # Note: max_tokens is required for Anthropic API
             temperature=llm_config.temperature,
             stream=stream,
