@@ -120,7 +120,7 @@ def retry_with_exponential_backoff(
     return wrapper
 
 
-@trace_method("LLM Request")
+@trace_method
 @retry_with_exponential_backoff
 def create(
     # agent_state: AgentState,
@@ -306,7 +306,6 @@ def create(
         response = azure_openai_chat_completions_request(
             model_settings=model_settings,
             llm_config=llm_config,
-            api_key=model_settings.azure_api_key,
             chat_completion_request=chat_completion_request,
         )
 
@@ -596,7 +595,6 @@ def create(
             messages[0].content[
                 0
             ].text += f'Select best function to call simply by responding with a single json block with the keys "function" and "params". Use double quotes around the arguments.'
-
         return get_chat_completion(
             model=llm_config.model,
             messages=messages,

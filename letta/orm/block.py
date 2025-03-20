@@ -12,6 +12,7 @@ from letta.schemas.block import Human, Persona
 
 if TYPE_CHECKING:
     from letta.orm import Organization
+    from letta.orm.identity import Identity
 
 
 class Block(OrganizationMixin, SqlalchemyBase):
@@ -46,6 +47,13 @@ class Block(OrganizationMixin, SqlalchemyBase):
         passive_deletes=True,  # Ensures SQLAlchemy doesn't fetch blocks_agents rows before deleting
         back_populates="core_memory",
         doc="Agents associated with this block.",
+    )
+    identities: Mapped[List["Identity"]] = relationship(
+        "Identity",
+        secondary="identities_blocks",
+        lazy="selectin",
+        back_populates="blocks",
+        passive_deletes=True,
     )
 
     def to_pydantic(self) -> Type:

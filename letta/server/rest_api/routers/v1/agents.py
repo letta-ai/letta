@@ -1,30 +1,32 @@
+import json
 import traceback
 from datetime import datetime
 from typing import Annotated, List, Optional
 
-from fastapi import APIRouter, BackgroundTasks, Body, Depends, Header, HTTPException, Query, status
+from fastapi import APIRouter, BackgroundTasks, Body, Depends, File, Header, HTTPException, Query, UploadFile, status
 from fastapi.responses import JSONResponse
+from marshmallow import ValidationError
 from pydantic import Field
+from sqlalchemy.exc import IntegrityError, OperationalError
 
 from letta.constants import DEFAULT_MESSAGE_TOOL, DEFAULT_MESSAGE_TOOL_KWARG
 from letta.log import get_logger
 from letta.orm.errors import NoResultFound
 from letta.schemas.agent import AgentState, CreateAgent, UpdateAgent
-from letta.schemas.block import Block, BlockUpdate, CreateBlock  # , BlockLabelUpdate, BlockLimitUpdate
+from letta.schemas.block import Block, BlockUpdate
 from letta.schemas.job import JobStatus, JobUpdate, LettaRequestConfig
-from letta.schemas.letta_message import LettaMessageUnion
+from letta.schemas.letta_message import LettaMessageUnion, LettaMessageUpdateUnion
 from letta.schemas.letta_request import LettaRequest, LettaStreamingRequest
 from letta.schemas.letta_response import LettaResponse
 from letta.schemas.memory import ContextWindowOverview, CreateArchivalMemory, Memory
-from letta.schemas.message import Message, MessageUpdate
-from letta.schemas.passage import Passage
+from letta.schemas.passage import Passage, PassageUpdate
 from letta.schemas.run import Run
 from letta.schemas.source import Source
 from letta.schemas.tool import Tool
 from letta.schemas.user import User
+from letta.serialize_schemas.pydantic_agent_schema import AgentSchema
 from letta.server.rest_api.utils import get_letta_server
 from letta.server.server import SyncServer
-from letta.tracing import trace_method
 
 # These can be forward refs, but because Fastapi needs them at runtime the must be imported normally
 
@@ -34,59 +36,128 @@ router = APIRouter(prefix="/agents", tags=["agents"])
 logger = get_logger(__name__)
 
 
-# TODO: This should be paginated
 @router.get("/", response_model=List[AgentState], operation_id="list_agents")
 def list_agents(
     name: Optional[str] = Query(None, description="Name of the agent"),
     tags: Optional[List[str]] = Query(None, description="List of tags to filter agents by"),
     match_all_tags: bool = Query(
         False,
-        description="If True, only returns agents that match ALL given tags. Otherwise, return agents that have ANY of the passed in tags.",
+        description="If True, only returns agents that match ALL given tags. Otherwise, return agents that have ANY of the passed-in tags.",
     ),
-    server: "SyncServer" = Depends(get_letta_server),
+    server: SyncServer = Depends(get_letta_server),
     actor_id: Optional[str] = Header(None, alias="user_id"),
     before: Optional[str] = Query(None, description="Cursor for pagination"),
     after: Optional[str] = Query(None, description="Cursor for pagination"),
-    limit: Optional[int] = Query(None, description="Limit for pagination"),
+    limit: Optional[int] = Query(50, description="Limit for pagination"),
     query_text: Optional[str] = Query(None, description="Search agents by name"),
-    project_id: Optional[str] = Query(None, description="Search agents by project id"),
-    template_id: Optional[str] = Query(None, description="Search agents by template id"),
-    base_template_id: Optional[str] = Query(None, description="Search agents by base template id"),
-    identifier_id: Optional[str] = Query(None, description="Search agents by identifier id"),
+    project_id: Optional[str] = Query(None, description="Search agents by project ID"),
+    template_id: Optional[str] = Query(None, description="Search agents by template ID"),
+    base_template_id: Optional[str] = Query(None, description="Search agents by base template ID"),
+    identity_id: Optional[str] = Query(None, description="Search agents by identity ID"),
     identifier_keys: Optional[List[str]] = Query(None, description="Search agents by identifier keys"),
+    include_relationships: Optional[List[str]] = Query(
+        None,
+        description=(
+            "Specify which relational fields (e.g., 'tools', 'sources', 'memory') to include in the response. "
+            "If not provided, all relationships are loaded by default. "
+            "Using this can optimize performance by reducing unnecessary joins."
+        ),
+    ),
 ):
     """
     List all agents associated with a given user.
-    This endpoint retrieves a list of all agents and their configurations associated with the specified user ID.
+
+    This endpoint retrieves a list of all agents and their configurations
+    associated with the specified user ID.
     """
+
+    # Retrieve the actor (user) details
     actor = server.user_manager.get_user_or_default(user_id=actor_id)
 
-    # Use dictionary comprehension to build kwargs dynamically
-    kwargs = {
-        key: value
-        for key, value in {
-            "name": name,
-            "project_id": project_id,
-            "template_id": template_id,
-            "base_template_id": base_template_id,
-        }.items()
-        if value is not None
-    }
-
-    # Call list_agents with the dynamic kwargs
-    agents = server.agent_manager.list_agents(
+    # Call list_agents directly without unnecessary dict handling
+    return server.agent_manager.list_agents(
         actor=actor,
+        name=name,
         before=before,
         after=after,
         limit=limit,
         query_text=query_text,
         tags=tags,
         match_all_tags=match_all_tags,
+        project_id=project_id,
+        template_id=template_id,
+        base_template_id=base_template_id,
+        identity_id=identity_id,
         identifier_keys=identifier_keys,
-        identifier_id=identifier_id,
-        **kwargs,
+        include_relationships=include_relationships,
     )
-    return agents
+
+
+@router.get("/{agent_id}/export", operation_id="export_agent_serialized", response_model=AgentSchema)
+def export_agent_serialized(
+    agent_id: str,
+    server: "SyncServer" = Depends(get_letta_server),
+    actor_id: Optional[str] = Header(None, alias="user_id"),
+) -> AgentSchema:
+    """
+    Export the serialized JSON representation of an agent.
+    """
+    actor = server.user_manager.get_user_or_default(user_id=actor_id)
+
+    try:
+        return server.agent_manager.serialize(agent_id=agent_id, actor=actor)
+    except NoResultFound:
+        raise HTTPException(status_code=404, detail=f"Agent with id={agent_id} not found for user_id={actor.id}.")
+
+
+@router.post("/import", response_model=AgentState, operation_id="import_agent_serialized")
+async def import_agent_serialized(
+    file: UploadFile = File(...),
+    server: "SyncServer" = Depends(get_letta_server),
+    actor_id: Optional[str] = Header(None, alias="user_id"),
+    append_copy_suffix: bool = Query(True, description='If set to True, appends "_copy" to the end of the agent name.'),
+    override_existing_tools: bool = Query(
+        True,
+        description="If set to True, existing tools can get their source code overwritten by the uploaded tool definitions. Note that Letta core tools can never be updated externally.",
+    ),
+    project_id: Optional[str] = Query(None, description="The project ID to associate the uploaded agent with."),
+):
+    """
+    Import a serialized agent file and recreate the agent in the system.
+    """
+    actor = server.user_manager.get_user_or_default(user_id=actor_id)
+
+    try:
+        serialized_data = await file.read()
+        agent_json = json.loads(serialized_data)
+
+        # Validate the JSON against AgentSchema before passing it to deserialize
+        agent_schema = AgentSchema.model_validate(agent_json)
+
+        new_agent = server.agent_manager.deserialize(
+            serialized_agent=agent_schema,  # Ensure we're passing a validated AgentSchema
+            actor=actor,
+            append_copy_suffix=append_copy_suffix,
+            override_existing_tools=override_existing_tools,
+            project_id=project_id,
+        )
+        return new_agent
+
+    except json.JSONDecodeError:
+        raise HTTPException(status_code=400, detail="Corrupted agent file format.")
+
+    except ValidationError as e:
+        raise HTTPException(status_code=422, detail=f"Invalid agent schema: {e.errors()}")
+
+    except IntegrityError as e:
+        raise HTTPException(status_code=409, detail=f"Database integrity error: {str(e)}")
+
+    except OperationalError as e:
+        raise HTTPException(status_code=503, detail=f"Database connection error. Please try again later: {str(e)}")
+
+    except Exception as e:
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"An unexpected error occurred while uploading the agent: {str(e)}")
 
 
 @router.get("/{agent_id}/context", response_model=ContextWindowOverview, operation_id="retrieve_agent_context_window")
@@ -273,14 +344,14 @@ def retrieve_agent_memory(
 
 
 @router.get("/{agent_id}/core-memory/blocks/{block_label}", response_model=Block, operation_id="retrieve_core_memory_block")
-def retrieve_core_memory_block(
+def retrieve_block(
     agent_id: str,
     block_label: str,
     server: "SyncServer" = Depends(get_letta_server),
     actor_id: Optional[str] = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
 ):
     """
-    Retrieve a memory block from an agent.
+    Retrieve a core memory block from an agent.
     """
     actor = server.user_manager.get_user_or_default(user_id=actor_id)
 
@@ -291,13 +362,13 @@ def retrieve_core_memory_block(
 
 
 @router.get("/{agent_id}/core-memory/blocks", response_model=List[Block], operation_id="list_core_memory_blocks")
-def list_core_memory_blocks(
+def list_blocks(
     agent_id: str,
     server: "SyncServer" = Depends(get_letta_server),
     actor_id: Optional[str] = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
 ):
     """
-    Retrieve the memory blocks of a specific agent.
+    Retrieve the core memory blocks of a specific agent.
     """
     actor = server.user_manager.get_user_or_default(user_id=actor_id)
     try:
@@ -308,7 +379,7 @@ def list_core_memory_blocks(
 
 
 @router.patch("/{agent_id}/core-memory/blocks/{block_label}", response_model=Block, operation_id="modify_core_memory_block")
-def modify_core_memory_block(
+def modify_block(
     agent_id: str,
     block_label: str,
     block_update: BlockUpdate = Body(...),
@@ -316,7 +387,7 @@ def modify_core_memory_block(
     actor_id: Optional[str] = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
 ):
     """
-    Updates a memory block of an agent.
+    Updates a core memory block of an agent.
     """
     actor = server.user_manager.get_user_or_default(user_id=actor_id)
 
@@ -330,35 +401,35 @@ def modify_core_memory_block(
 
 
 @router.patch("/{agent_id}/core-memory/blocks/attach/{block_id}", response_model=AgentState, operation_id="attach_core_memory_block")
-def attach_core_memory_block(
+def attach_block(
     agent_id: str,
     block_id: str,
     server: "SyncServer" = Depends(get_letta_server),
     actor_id: Optional[str] = Header(None, alias="user_id"),
 ):
     """
-    Attach a block to an agent.
+    Attach a core memoryblock to an agent.
     """
     actor = server.user_manager.get_user_or_default(user_id=actor_id)
     return server.agent_manager.attach_block(agent_id=agent_id, block_id=block_id, actor=actor)
 
 
 @router.patch("/{agent_id}/core-memory/blocks/detach/{block_id}", response_model=AgentState, operation_id="detach_core_memory_block")
-def detach_core_memory_block(
+def detach_block(
     agent_id: str,
     block_id: str,
     server: "SyncServer" = Depends(get_letta_server),
     actor_id: Optional[str] = Header(None, alias="user_id"),
 ):
     """
-    Detach a block from an agent.
+    Detach a core memory block from an agent.
     """
     actor = server.user_manager.get_user_or_default(user_id=actor_id)
     return server.agent_manager.detach_block(agent_id=agent_id, block_id=block_id, actor=actor)
 
 
-@router.get("/{agent_id}/archival-memory", response_model=List[Passage], operation_id="list_archival_memory")
-def list_archival_memory(
+@router.get("/{agent_id}/archival-memory", response_model=List[Passage], operation_id="list_passages")
+def list_passages(
     agent_id: str,
     server: "SyncServer" = Depends(get_letta_server),
     after: Optional[int] = Query(None, description="Unique ID of the memory to start the query range at."),
@@ -380,8 +451,8 @@ def list_archival_memory(
     )
 
 
-@router.post("/{agent_id}/archival-memory", response_model=List[Passage], operation_id="create_archival_memory")
-def create_archival_memory(
+@router.post("/{agent_id}/archival-memory", response_model=List[Passage], operation_id="create_passage")
+def create_passage(
     agent_id: str,
     request: CreateArchivalMemory = Body(...),
     server: "SyncServer" = Depends(get_letta_server),
@@ -395,10 +466,25 @@ def create_archival_memory(
     return server.insert_archival_memory(agent_id=agent_id, memory_contents=request.text, actor=actor)
 
 
+@router.patch("/{agent_id}/archival-memory/{memory_id}", response_model=List[Passage], operation_id="modify_passage")
+def modify_passage(
+    agent_id: str,
+    memory_id: str,
+    passage: PassageUpdate = Body(...),
+    server: "SyncServer" = Depends(get_letta_server),
+    actor_id: Optional[str] = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
+):
+    """
+    Modify a memory in the agent's archival memory store.
+    """
+    actor = server.user_manager.get_user_or_default(user_id=actor_id)
+    return server.modify_archival_memory(agent_id=agent_id, memory_id=memory_id, passage=passage, actor=actor)
+
+
 # TODO(ethan): query or path parameter for memory_id?
 # @router.delete("/{agent_id}/archival")
-@router.delete("/{agent_id}/archival-memory/{memory_id}", response_model=None, operation_id="delete_archival_memory")
-def delete_archival_memory(
+@router.delete("/{agent_id}/archival-memory/{memory_id}", response_model=None, operation_id="delete_passage")
+def delete_passage(
     agent_id: str,
     memory_id: str,
     # memory_id: str = Query(..., description="Unique ID of the memory to be deleted."),
@@ -450,20 +536,20 @@ def list_messages(
     )
 
 
-@router.patch("/{agent_id}/messages/{message_id}", response_model=Message, operation_id="modify_message")
+@router.patch("/{agent_id}/messages/{message_id}", response_model=LettaMessageUnion, operation_id="modify_message")
 def modify_message(
     agent_id: str,
     message_id: str,
-    request: MessageUpdate = Body(...),
+    request: LettaMessageUpdateUnion = Body(...),
     server: "SyncServer" = Depends(get_letta_server),
     actor_id: Optional[str] = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
 ):
     """
     Update the details of a message associated with an agent.
     """
-    # TODO: Get rid of agent_id here, it's not really relevant
+    # TODO: support modifying tool calls/returns
     actor = server.user_manager.get_user_or_default(user_id=actor_id)
-    return server.message_manager.update_message_by_id(message_id=message_id, message_update=request, actor=actor)
+    return server.message_manager.update_message_by_letta_message(message_id=message_id, letta_message_update=request, actor=actor)
 
 
 @router.post(
@@ -471,7 +557,6 @@ def modify_message(
     response_model=LettaResponse,
     operation_id="send_message",
 )
-@trace_method("POST /v1/agents/{agent_id}/messages")
 async def send_message(
     agent_id: str,
     server: SyncServer = Depends(get_letta_server),
@@ -510,7 +595,6 @@ async def send_message(
         }
     },
 )
-@trace_method("POST /v1/agents/{agent_id}/messages/stream")
 async def send_message_streaming(
     agent_id: str,
     server: SyncServer = Depends(get_letta_server),
@@ -586,7 +670,6 @@ async def process_message_background(
     response_model=Run,
     operation_id="create_agent_message_async",
 )
-@trace_method("POST /v1/agents/{agent_id}/messages/async")
 async def send_message_async(
     agent_id: str,
     background_tasks: BackgroundTasks,

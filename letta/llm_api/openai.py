@@ -25,6 +25,7 @@ from letta.schemas.openai.chat_completion_response import (
 )
 from letta.schemas.openai.embedding_response import EmbeddingResponse
 from letta.streaming_interface import AgentChunkStreamingInterface, AgentRefreshStreamingInterface
+from letta.tracing import log_event
 from letta.utils import get_tool_call_id, smart_urljoin
 
 logger = get_logger(__name__)
@@ -220,7 +221,7 @@ def openai_chat_completions_process_stream(
     # TODO(sarah): add message ID generation function
     dummy_message = _Message(
         role=_MessageRole.assistant,
-        text="",
+        content=[],
         agent_id="",
         model="",
         name=None,
@@ -242,6 +243,8 @@ def openai_chat_completions_process_stream(
             total_tokens=prompt_tokens,
         ),
     )
+
+    log_event(name="llm_request_sent", attributes=chat_completion_request.model_dump())
 
     if stream_interface:
         stream_interface.stream_start()
@@ -406,6 +409,7 @@ def openai_chat_completions_process_stream(
     assert len(chat_completion_response.choices) > 0, f"No response from provider {chat_completion_response}"
 
     # printd(chat_completion_response)
+    log_event(name="llm_response_received", attributes=chat_completion_response.model_dump())
     return chat_completion_response
 
 
@@ -437,7 +441,9 @@ def openai_chat_completions_request(
     """
     data = prepare_openai_payload(chat_completion_request)
     client = OpenAI(api_key=api_key, base_url=url, max_retries=0)
+    log_event(name="llm_request_sent", attributes=data)
     chat_completion = client.chat.completions.create(**data)
+    log_event(name="llm_response_received", attributes=chat_completion.model_dump())
     return ChatCompletionResponse(**chat_completion.model_dump())
 
 

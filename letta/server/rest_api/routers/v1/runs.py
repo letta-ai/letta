@@ -9,6 +9,7 @@ from letta.schemas.enums import JobStatus, MessageRole
 from letta.schemas.letta_message import LettaMessageUnion
 from letta.schemas.openai.chat_completion_response import UsageStatistics
 from letta.schemas.run import Run
+from letta.schemas.step import Step
 from letta.server.rest_api.utils import get_letta_server
 from letta.server.server import SyncServer
 
@@ -135,6 +136,54 @@ def retrieve_run_usage(
         return usage
     except NoResultFound:
         raise HTTPException(status_code=404, detail=f"Run '{run_id}' not found")
+
+
+@router.get(
+    "/{run_id}/steps",
+    response_model=List[Step],
+    operation_id="list_run_steps",
+)
+async def list_run_steps(
+    run_id: str,
+    server: "SyncServer" = Depends(get_letta_server),
+    actor_id: Optional[str] = Header(None, alias="user_id"),
+    before: Optional[str] = Query(None, description="Cursor for pagination"),
+    after: Optional[str] = Query(None, description="Cursor for pagination"),
+    limit: Optional[int] = Query(100, description="Maximum number of messages to return"),
+    order: str = Query(
+        "desc", description="Sort order by the created_at timestamp of the objects. asc for ascending order and desc for descending order."
+    ),
+):
+    """
+    Get messages associated with a run with filtering options.
+
+    Args:
+        run_id: ID of the run
+        before: A cursor for use in pagination. `before` is an object ID that defines your place in the list. For instance, if you make a list request and receive 100 objects, starting with obj_foo, your subsequent call can include before=obj_foo in order to fetch the previous page of the list.
+        after: A cursor for use in pagination. `after` is an object ID that defines your place in the list. For instance, if you make a list request and receive 100 objects, ending with obj_foo, your subsequent call can include after=obj_foo in order to fetch the next page of the list.
+        limit: Maximum number of steps to return
+        order: Sort order by the created_at timestamp of the objects. asc for ascending order and desc for descending order.
+
+    Returns:
+        A list of steps associated with the run.
+    """
+    if order not in ["asc", "desc"]:
+        raise HTTPException(status_code=400, detail="Order must be 'asc' or 'desc'")
+
+    actor = server.user_manager.get_user_or_default(user_id=actor_id)
+
+    try:
+        steps = server.job_manager.get_job_steps(
+            job_id=run_id,
+            actor=actor,
+            limit=limit,
+            before=before,
+            after=after,
+            ascending=(order == "asc"),
+        )
+        return steps
+    except NoResultFound as e:
+        raise HTTPException(status_code=404, detail=str(e))
 
 
 @router.delete("/{run_id}", response_model=Run, operation_id="delete_run")

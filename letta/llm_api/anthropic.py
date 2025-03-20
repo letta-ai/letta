@@ -40,6 +40,7 @@ from letta.schemas.openai.chat_completion_response import MessageDelta, ToolCall
 from letta.services.provider_manager import ProviderManager
 from letta.settings import model_settings
 from letta.streaming_interface import AgentChunkStreamingInterface, AgentRefreshStreamingInterface
+from letta.tracing import log_event
 
 BASE_URL = "https://api.anthropic.com/v1"
 
@@ -50,6 +51,11 @@ MODEL_LIST = [
     ## Opus
     {
         "name": "claude-3-opus-20240229",
+        "context_window": 200000,
+    },
+    # latest
+    {
+        "name": "claude-3-opus-latest",
         "context_window": 200000,
     },
     ## Sonnet
@@ -68,9 +74,19 @@ MODEL_LIST = [
         "name": "claude-3-5-sonnet-20241022",
         "context_window": 200000,
     },
+    # 3.5 latest
+    {
+        "name": "claude-3-5-sonnet-latest",
+        "context_window": 200000,
+    },
     # 3.7
     {
         "name": "claude-3-7-sonnet-20250219",
+        "context_window": 200000,
+    },
+    # 3.7 latest
+    {
+        "name": "claude-3-7-sonnet-latest",
         "context_window": 200000,
     },
     ## Haiku
@@ -82,6 +98,11 @@ MODEL_LIST = [
     # 3.5
     {
         "name": "claude-3-5-haiku-20241022",
+        "context_window": 200000,
+    },
+    # 3.5 latest
+    {
+        "name": "claude-3-5-haiku-latest",
         "context_window": 200000,
     },
 ]
@@ -677,10 +698,12 @@ def anthropic_chat_completions_request(
         inner_thoughts_xml_tag=inner_thoughts_xml_tag,
         put_inner_thoughts_in_kwargs=put_inner_thoughts_in_kwargs,
     )
+    log_event(name="llm_request_sent", attributes=data)
     response = anthropic_client.beta.messages.create(
         **data,
         betas=betas,
     )
+    log_event(name="llm_response_received", attributes={"response": response.json()})
     return convert_anthropic_response_to_chatcompletion(response=response, inner_thoughts_xml_tag=inner_thoughts_xml_tag)
 
 
@@ -698,8 +721,9 @@ def anthropic_bedrock_chat_completions_request(
     try:
         # bedrock does not support certain args
         data["tool_choice"] = {"type": "any"}
-
+        log_event(name="llm_request_sent", attributes=data)
         response = client.messages.create(**data)
+        log_event(name="llm_response_received", attributes={"response": response.json()})
         return convert_anthropic_response_to_chatcompletion(response=response, inner_thoughts_xml_tag=inner_thoughts_xml_tag)
     except PermissionDeniedError:
         raise BedrockPermissionError(f"User does not have access to the Bedrock model with the specified ID. {data['model']}")
@@ -816,7 +840,7 @@ def anthropic_chat_completions_process_stream(
     # Create a dummy message for ID/datetime if needed
     dummy_message = _Message(
         role=_MessageRole.assistant,
-        text="",
+        content=[],
         agent_id="",
         model="",
         name=None,
@@ -838,6 +862,8 @@ def anthropic_chat_completions_process_stream(
             total_tokens=prompt_tokens,
         ),
     )
+
+    log_event(name="llm_request_sent", attributes=chat_completion_request.model_dump())
 
     if stream_interface:
         stream_interface.stream_start()
@@ -986,5 +1012,7 @@ def anthropic_chat_completions_process_stream(
     chat_completion_response.usage.total_tokens = prompt_tokens + n_chunks
 
     assert len(chat_completion_response.choices) > 0, chat_completion_response
+
+    log_event(name="llm_response_received", attributes=chat_completion_response.model_dump())
 
     return chat_completion_response

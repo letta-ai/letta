@@ -27,7 +27,7 @@ class Provider(ProviderBase):
 
     def resolve_identifier(self):
         if not self.id:
-            self.id = ProviderBase._generate_id(prefix=ProviderBase.__id_prefix__)
+            self.id = ProviderBase.generate_id(prefix=ProviderBase.__id_prefix__)
 
     def list_llm_models(self) -> List[LLMConfig]:
         return []
@@ -208,8 +208,7 @@ class OpenAIProvider(Provider):
         if model_name in LLM_MAX_TOKENS:
             return LLM_MAX_TOKENS[model_name]
         else:
-            return None
-
+            return LLM_MAX_TOKENS["DEFAULT"]
 
 class xAIProvider(OpenAIProvider):
     """https://docs.x.ai/docs/api-reference"""

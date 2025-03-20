@@ -2,7 +2,7 @@ from typing import TYPE_CHECKING, List, Optional
 
 from fastapi import APIRouter, Body, Depends, Header, HTTPException, Query
 
-from letta.orm.errors import NoResultFound
+from letta.orm.errors import NoResultFound, UniqueConstraintViolationError
 from letta.schemas.identity import Identity, IdentityCreate, IdentityType, IdentityUpdate
 from letta.server.rest_api.utils import get_letta_server
 
@@ -42,6 +42,8 @@ def list_identities(
         )
     except HTTPException:
         raise
+    except NoResultFound as e:
+        raise HTTPException(status_code=404, detail=str(e))
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"{e}")
     return identities
@@ -72,6 +74,14 @@ def create_identity(
         return server.identity_manager.create_identity(identity=identity, actor=actor)
     except HTTPException:
         raise
+    except UniqueConstraintViolationError:
+        if identity.project_id:
+            raise HTTPException(
+                status_code=409,
+                detail=f"An identity with identifier key {identity.identifier_key} already exists for project {identity.project_id}",
+            )
+        else:
+            raise HTTPException(status_code=409, detail=f"An identity with identifier key {identity.identifier_key} already exists")
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"{e}")
 
@@ -88,6 +98,8 @@ def upsert_identity(
         return server.identity_manager.upsert_identity(identity=identity, actor=actor)
     except HTTPException:
         raise
+    except NoResultFound as e:
+        raise HTTPException(status_code=404, detail=str(e))
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"{e}")
 
@@ -104,6 +116,8 @@ def modify_identity(
         return server.identity_manager.update_identity(identity_id=identity_id, identity=identity, actor=actor)
     except HTTPException:
         raise
+    except NoResultFound as e:
+        raise HTTPException(status_code=404, detail=str(e))
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"{e}")
 
@@ -117,5 +131,12 @@ def delete_identity(
     """
     Delete an identity by its identifier key
     """
-    actor = server.user_manager.get_user_or_default(user_id=actor_id)
-    server.identity_manager.delete_identity(identity_id=identity_id, actor=actor)
+    try:
+        actor = server.user_manager.get_user_or_default(user_id=actor_id)
+        server.identity_manager.delete_identity(identity_id=identity_id, actor=actor)
+    except HTTPException:
+        raise
+    except NoResultFound as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"{e}")

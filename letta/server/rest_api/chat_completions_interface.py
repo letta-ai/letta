@@ -267,3 +267,5 @@ class ChatCompletionsStreamingInterface(AgentChunkStreamingInterface):
         """Clears internal buffers for function call name/args."""
         self.current_function_name = ""
         self.current_function_arguments = []
+        self.current_json_parse_result = {}
+        self._found_message_tool_kwarg = False

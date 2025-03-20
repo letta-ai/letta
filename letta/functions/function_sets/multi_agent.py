@@ -2,7 +2,8 @@ import asyncio
 from typing import TYPE_CHECKING, List
 
 from letta.functions.helpers import (
-    _send_message_to_agents_matching_all_tags_async,
+    _send_message_to_agents_matching_tags_async,
+    _send_message_to_all_agents_in_group_async,
     execute_send_message_to_agent,
     fire_and_forget_send_to_agent,
 )
@@ -70,18 +71,35 @@ def send_message_to_agent_async(self: "Agent", message: str, other_agent_id: str
     return "Successfully sent message"
 
 
-def send_message_to_agents_matching_all_tags(self: "Agent", message: str, tags: List[str]) -> List[str]:
+def send_message_to_agents_matching_tags(self: "Agent", message: str, match_all: List[str], match_some: List[str]) -> List[str]:
     """
-    Sends a message to all agents within the same organization that match all of the specified tags. Messages are dispatched in parallel for improved performance, with retries to handle transient issues and timeouts to ensure responsiveness. This function enforces a limit of 100 agents and does not support pagination (cursor-based queries). Each agent must match all specified tags (`match_all_tags=True`) to be included.
+    Sends a message to all agents within the same organization that match the specified tag criteria. Agents must possess *all* of the tags in `match_all` and *at least one* of the tags in `match_some` to receive the message.
 
     Args:
         message (str): The content of the message to be sent to each matching agent.
-        tags (List[str]): A list of tags that an agent must possess to receive the message.
+        match_all (List[str]): A list of tags that an agent must possess to receive the message.
+        match_some (List[str]): A list of tags where an agent must have at least one to qualify.
 
     Returns:
-        List[str]: A list of responses from the agents that matched all tags. Each
-        response corresponds to a single agent. Agents that do not respond will not
-        have an entry in the returned list.
+        List[str]: A list of responses from the agents that matched the filtering criteria. Each
+        response corresponds to a single agent. Agents that do not respond will not have an entry
+        in the returned list.
     """
 
-    return asyncio.run(_send_message_to_agents_matching_all_tags_async(self, message, tags))
+    return asyncio.run(_send_message_to_agents_matching_tags_async(self, message, match_all, match_some))
+
+
+def send_message_to_all_agents_in_group(self: "Agent", message: str) -> List[str]:
+    """
+    Sends a message to all agents within the same multi-agent group.
+
+    Args:
+        message (str): The content of the message to be sent to each matching agent.
+
+    Returns:
+        List[str]: A list of responses from the agents that matched the filtering criteria. Each
+        response corresponds to a single agent. Agents that do not respond will not have an entry
+        in the returned list.
+    """
+
+    return asyncio.run(_send_message_to_all_agents_in_group_async(self, message))

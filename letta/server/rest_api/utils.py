@@ -13,12 +13,12 @@ from openai.types.chat.chat_completion_message_tool_call import Function as Open
 from openai.types.chat.completion_create_params import CompletionCreateParams
 from pydantic import BaseModel
 
-from letta.constants import DEFAULT_MESSAGE_TOOL, DEFAULT_MESSAGE_TOOL_KWARG, REQ_HEARTBEAT_MESSAGE
+from letta.constants import DEFAULT_MESSAGE_TOOL, DEFAULT_MESSAGE_TOOL_KWARG, FUNC_FAILED_HEARTBEAT_MESSAGE, REQ_HEARTBEAT_MESSAGE
 from letta.errors import ContextWindowExceededError, RateLimitExceededError
 from letta.helpers.datetime_helpers import get_utc_time
 from letta.log import get_logger
 from letta.schemas.enums import MessageRole
-from letta.schemas.letta_message import TextContent
+from letta.schemas.letta_message_content import TextContent
 from letta.schemas.message import Message
 from letta.schemas.usage import LettaUsageStatistics
 from letta.schemas.user import User
@@ -216,9 +216,10 @@ def create_tool_call_messages_from_openai_response(
     messages.append(tool_message)
 
     if add_heartbeat_request_system_message:
+        text_content = REQ_HEARTBEAT_MESSAGE if function_call_success else FUNC_FAILED_HEARTBEAT_MESSAGE
         heartbeat_system_message = Message(
             role=MessageRole.user,
-            content=[TextContent(text=get_heartbeat(REQ_HEARTBEAT_MESSAGE))],
+            content=[TextContent(text=get_heartbeat(text_content))],
             organization_id=actor.organization_id,
             agent_id=agent_id,
             model=model,

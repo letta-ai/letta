@@ -22,6 +22,7 @@ from letta.local_llm.webui.api import get_webui_completion
 from letta.local_llm.webui.legacy_api import get_webui_completion as get_webui_completion_legacy
 from letta.prompts.gpt_summarize import SYSTEM as SUMMARIZE_SYSTEM_MESSAGE
 from letta.schemas.openai.chat_completion_response import ChatCompletionResponse, Choice, Message, ToolCall, UsageStatistics
+from letta.tracing import log_event
 from letta.utils import get_tool_call_id
 
 has_shown_warning = False
@@ -149,7 +150,7 @@ def get_chat_completion(
     else:
         model_schema = None
     """
-
+    log_event(name="llm_request_sent", attributes={"prompt": prompt, "grammar": grammar})
     # Run the LLM
     try:
         result_reasoning = None
@@ -177,6 +178,10 @@ def get_chat_completion(
             )
     except requests.exceptions.ConnectionError as e:
         raise LocalLLMConnectionError(f"Unable to connect to endpoint {endpoint}")
+
+    attributes = usage if isinstance(usage, dict) else {"usage": usage}
+    attributes.update({"result": result})
+    log_event(name="llm_request_sent", attributes=attributes)
 
     if result is None or result == "":
         raise LocalLLMError(f"Got back an empty response string from {endpoint}")

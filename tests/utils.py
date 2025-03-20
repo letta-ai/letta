@@ -11,6 +11,7 @@ from letta.config import LettaConfig
 from letta.data_sources.connectors import DataConnector
 from letta.schemas.enums import MessageRole
 from letta.schemas.file import FileMetadata
+from letta.schemas.message import Message
 from letta.settings import TestSettings
 
 from .constants import TIMEOUT
@@ -165,8 +166,12 @@ def wait_for_incoming_message(
 
     while time.time() < deadline:
         messages = client.server.message_manager.list_messages_for_agent(agent_id=agent_id, actor=client.user)
+
         # Check for the system message containing `substring`
-        if any(message.role == MessageRole.system and substring in (message.text or "") for message in messages):
+        def get_message_text(message: Message) -> str:
+            return message.content[0].text if message.content and len(message.content) == 1 else ""
+
+        if any(message.role == MessageRole.system and substring in get_message_text(message) for message in messages):
             return True
         time.sleep(sleep_interval)
 

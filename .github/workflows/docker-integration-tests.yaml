@@ -32,7 +32,8 @@ jobs:
         LETTA_PG_PORT: 8888
         OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
 
-      run: docker compose -f dev-compose.yaml up --build -d
+      run: |
+        docker compose -f dev-compose.yaml up --build -d
     #- name: "Setup Python, Poetry and Dependencies"
     #  uses: packetcoders/action-setup-cache-python-poetry@v1.2.0
     #  with:
@@ -56,7 +57,8 @@ jobs:
       run: |
         pipx install poetry==1.8.2
         poetry install -E dev -E postgres
-        poetry run pytest -s tests/test_client_legacy.py
+        poetry run pytest -s tests/test_client.py 
+#        poetry run pytest -s tests/test_client_legacy.py 
 
     - name: Print docker logs if tests fail
       if: failure()

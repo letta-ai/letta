@@ -38,11 +38,40 @@ if ! alembic upgrade head; then
 fi
 echo "Database migration completed successfully."
 
+# Set permissions for tool execution directory if configured
+if [ -n "$LETTA_SANDBOX_MOUNT_PATH" ]; then
+    if ! chmod 777 "$LETTA_SANDBOX_MOUNT_PATH"; then
+        echo "ERROR: Failed to set permissions for tool execution directory at: $LETTA_SANDBOX_MOUNT_PATH"
+        echo "Please check that the directory exists and is accessible"
+        exit 1
+    fi
+fi
+
 # If ADE is enabled, add the --ade flag to the command
 CMD="letta server --host $HOST --port $PORT"
 if [ "${SECURE:-false}" = "true" ]; then
     CMD="$CMD --secure"
 fi
+
+# Start OpenTelemetry Collector in the background
+if [ -n "$CLICKHOUSE_ENDPOINT" ] && [ -n "$CLICKHOUSE_PASSWORD" ]; then
+    echo "Starting OpenTelemetry Collector with Clickhouse export..."
+    CONFIG_FILE="/etc/otel/config-clickhouse.yaml"
+else
+    echo "Starting OpenTelemetry Collector with file export only..."
+    CONFIG_FILE="/etc/otel/config-file.yaml"
+fi
+
+/usr/local/bin/otelcol-contrib --config "$CONFIG_FILE" &
+OTEL_PID=$!
+
+# Function to cleanup processes on exit
+cleanup() {
+    echo "Shutting down..."
+    kill $OTEL_PID
+    wait $OTEL_PID
+}
+trap cleanup EXIT
 
 echo "Starting Letta server at http://$HOST:$PORT..."
 echo "Executing: $CMD"

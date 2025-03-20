@@ -17,6 +17,11 @@ from letta.errors import BedrockPermissionError, LettaAgentNotFoundError, LettaU
 from letta.log import get_logger
 from letta.orm.errors import DatabaseTimeoutError, ForeignKeyConstraintViolationError, NoResultFound, UniqueConstraintViolationError
 from letta.schemas.letta_message import create_letta_message_union_schema
+from letta.schemas.letta_message_content import (
+    create_letta_assistant_message_content_union_schema,
+    create_letta_message_content_union_schema,
+    create_letta_user_message_content_union_schema,
+)
 from letta.server.constants import REST_DEFAULT_PORT
 
 # NOTE(charles): these are extra routes that are not part of v1 but we still need to mount to pass tests
@@ -38,16 +43,6 @@ interface: StreamingServerInterface = StreamingServerInterface
 server = SyncServer(default_interface_factory=lambda: interface())
 logger = get_logger(__name__)
 
-# TODO: remove
-password = None
-## TODO(ethan): eventuall remove
-# if password := settings.server_pass:
-#    # if the pass was specified in the environment, use it
-#    print(f"Using existing admin server password from environment.")
-# else:
-#    # Autogenerate a password for this session and dump it to stdout
-#    password = secrets.token_urlsafe(16)
-#    #typer.secho(f"Generated admin server password for this session: {password}", fg=typer.colors.GREEN)
 
 import logging
 import platform
@@ -68,6 +63,10 @@ def generate_openapi_schema(app: FastAPI):
     letta_docs["paths"] = {k: v for k, v in letta_docs["paths"].items() if not k.startswith("/openai")}
     letta_docs["info"]["title"] = "Letta API"
     letta_docs["components"]["schemas"]["LettaMessageUnion"] = create_letta_message_union_schema()
+    letta_docs["components"]["schemas"]["LettaMessageContentUnion"] = create_letta_message_content_union_schema()
+    letta_docs["components"]["schemas"]["LettaAssistantMessageContentUnion"] = create_letta_assistant_message_content_union_schema()
+    letta_docs["components"]["schemas"]["LettaUserMessageContentUnion"] = create_letta_user_message_content_union_schema()
+
     for name, docs in [
         (
             "letta",
@@ -135,6 +134,21 @@ def create_application() -> "FastAPI":
         version="1.0.0",  # TODO wire this up to the version in the package
         debug=debug_mode,  # if True, the stack trace will be printed in the response
     )
+
+    @app.on_event("shutdown")
+    def shutdown_mcp_clients():
+        global server
+        import threading
+
+        def cleanup_clients():
+            if hasattr(server, "mcp_clients"):
+                for client in server.mcp_clients.values():
+                    client.cleanup()
+                server.mcp_clients.clear()
+
+        t = threading.Thread(target=cleanup_clients)
+        t.start()
+        t.join()
 
     @app.exception_handler(Exception)
     async def generic_error_handler(request: Request, exc: Exception):
@@ -232,12 +246,18 @@ def create_application() -> "FastAPI":
     )
 
     # Set up OpenTelemetry tracing
-    endpoint = os.getenv("OTEL_EXPORTER_OTLP_ENDPOINT")
-    if endpoint:
-        print(f"▶ Using OTLP tracing with endpoint: {endpoint}")
+    otlp_endpoint = settings.otel_exporter_otlp_endpoint
+    if otlp_endpoint and not settings.disable_tracing:
+        print(f"▶ Using OTLP tracing with endpoint: {otlp_endpoint}")
+        env_name_suffix = os.getenv("ENV_NAME")
+        service_name = f"letta-server-{env_name_suffix.lower()}" if env_name_suffix else "letta-server"
         from letta.tracing import setup_tracing
 
-        setup_tracing(endpoint=endpoint, service_name="memgpt-server")
+        setup_tracing(
+            endpoint=otlp_endpoint,
+            app=app,
+            service_name=service_name,
+        )
 
     for route in v1_routes:
         app.include_router(route, prefix=API_PREFIX)
@@ -257,7 +277,7 @@ def create_application() -> "FastAPI":
     app.include_router(openai_chat_completions_router, prefix=OPENAI_API_PREFIX)
 
     # /api/auth endpoints
-    app.include_router(setup_auth_router(server, interface, password), prefix=API_PREFIX)
+    app.include_router(setup_auth_router(server, interface, random_password), prefix=API_PREFIX)
 
     # / static files
     mount_static_files(app)
@@ -296,9 +316,12 @@ def start_server(
         print(f"▶ Server running at: https://{host or 'localhost'}:{port or REST_DEFAULT_PORT}")
         print(f"▶ View using ADE at: https://app.letta.com/development-servers/local/dashboard\n")
         uvicorn.run(
-            app,
+            "letta.server.rest_api.app:app",
             host=host or "localhost",
             port=port or REST_DEFAULT_PORT,
+            workers=settings.uvicorn_workers,
+            reload=settings.uvicorn_reload,
+            timeout_keep_alive=settings.uvicorn_timeout_keep_alive,
             ssl_keyfile="certs/localhost-key.pem",
             ssl_certfile="certs/localhost.pem",
         )
@@ -312,7 +335,10 @@ def start_server(
             print(f"▶ View using ADE at: https://app.letta.com/development-servers/local/dashboard\n")
 
         uvicorn.run(
-            app,
+            "letta.server.rest_api.app:app",
             host=host or "localhost",
             port=port or REST_DEFAULT_PORT,
+            workers=settings.uvicorn_workers,
+            reload=settings.uvicorn_reload,
+            timeout_keep_alive=settings.uvicorn_timeout_keep_alive,
         )
