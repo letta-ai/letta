@@ -50,19 +50,14 @@ class EphemeralMemoryAgent(BaseAgent):
         until it decides to stop and provide a final response.
         """
         agent_state = self.agent_manager.get_agent_by_id(agent_id=self.agent_id, actor=self.actor)
-
-        # Pre-process the input message
         input_message_dict = self.pre_process_input_message(input_message=input_message)
-
-        # Create initial list of messages for the OpenAI request
         openai_messages = [input_message_dict]
-
-        # Keep track of all assistant responses
         assistant_responses = []
 
-        # Start a conversation loop that continues until the model decides to stop calling tools
+        # Keep track of memory store summaries
+        memory_summaries = []
+
         while True:
-            # Build the request with the current messages
             request = self._build_openai_request(openai_messages, agent_state)
 
             # Send the request to OpenAI
@@ -80,6 +75,11 @@ class EphemeralMemoryAgent(BaseAgent):
                         content=[TextContent(text=assistant_message.content.strip() if assistant_message.content else "")],
                     )
                 )
+
+                # Write the memory summaries if there are any
+                if memory_summaries:
+                    self.write_memory_metadata_to_block(memory_summaries, agent_state)
+
                 break
 
             # Process tool calls
@@ -91,12 +91,11 @@ class EphemeralMemoryAgent(BaseAgent):
                 if function_name == "store_episodic_memory":
                     print("Called store_episodic_memory")
                     result = await self.store_episodic_memory(agent_state=agent_state, **function_args)
+                    memory_summaries.append(result)
                 elif function_name == "store_semantic_memory":
                     print("Called store_semantic_memory")
                     result = await self.store_semantic_memory(agent_state=agent_state, **function_args)
-                elif function_name == "summarize_stored_memories":
-                    print("Called summarize_stored_memories")
-                    result = await self.summarize_stored_memories(agent_state=agent_state, **function_args)
+                    memory_summaries.append(result)
                 else:
                     result = f"Error: Unknown tool function '{function_name}'"
 
@@ -147,16 +146,30 @@ class EphemeralMemoryAgent(BaseAgent):
                 type="function",
                 function={
                     "name": "store_episodic_memory",
-                    "description": "Store a specific event or conversation as an episodic memory",
+                    "description": (
+                        "Store a specific event or conversation as an episodic memory. "
+                        "Include detailed context from the conversation that led to this event, "
+                        "and provide a concise summary (e.g., 'Noted user lost their wallet') "
+                        "that reflects the key takeaway of the memory."
+                    ),
                     "parameters": {
                         "type": "object",
                         "properties": {
                             "memory": {
                                 "type": "string",
-                                "description": "The episodic memory to store. Please make sure to add context of the message history around this point that lead you to add this memory.",
+                                "description": (
+                                    "The detailed episodic memory to store, including the conversation context " "that led to this memory."
+                                ),
+                            },
+                            "summary": {
+                                "type": "string",
+                                "description": (
+                                    "A concise summary capturing the essence of the memory, "
+                                    "reflecting the action taken (e.g., 'Noted user lost their wallet')."
+                                ),
                             },
                         },
-                        "required": ["memory"],
+                        "required": ["memory", "summary"],
                     },
                 },
             ),
@@ -164,33 +177,29 @@ class EphemeralMemoryAgent(BaseAgent):
                 type="function",
                 function={
                     "name": "store_semantic_memory",
-                    "description": "Store general information or facts about the human as semantic memory",
+                    "description": (
+                        "Store general information or facts about the user as semantic memory. "
+                        "Provide the necessary context from the conversation and include a concise summary "
+                        "that encapsulates the primary insight (e.g., 'Recognized user preference for chocolate ice cream')."
+                    ),
                     "parameters": {
                         "type": "object",
                         "properties": {
                             "memory": {
                                 "type": "string",
-                                "description": "The semantic memory to store. Please make sure to add context of the message history around this point that lead you to add this memory.",
+                                "description": (
+                                    "The detailed semantic memory to store, along with the conversation context "
+                                    "that provided this insight."
+                                ),
                             },
-                        },
-                        "required": ["memory"],
-                    },
-                },
-            ),
-            Tool(
-                type="function",
-                function={
-                    "name": "summarize_stored_memories",
-                    "description": "Log a summary of memory storage events for the main agent",
-                    "parameters": {
-                        "type": "object",
-                        "properties": {
                             "summary": {
                                 "type": "string",
-                                "description": "A summary for each of the memories you decided to store. Try to keep the summary brief and high level.",
-                            }
+                                "description": (
+                                    "A concise summary that reflects the main insight or fact " "captured from the conversation."
+                                ),
+                            },
                         },
-                        "required": ["summary"],
+                        "required": ["memory", "summary"],
                     },
                 },
             ),
@@ -198,7 +207,7 @@ class EphemeralMemoryAgent(BaseAgent):
 
         return tools
 
-    async def store_episodic_memory(self, memory: str, agent_state: AgentState) -> str:
+    async def store_episodic_memory(self, memory: str, summary: str, agent_state: AgentState) -> str:
         """
         Store an episodic memory.
         """
@@ -210,9 +219,9 @@ class EphemeralMemoryAgent(BaseAgent):
         )
         self.agent_manager.rebuild_system_prompt(agent_id=agent_state.id, actor=self.actor, force=True)
 
-        return f"Successfully stored episodic memory..."
+        return summary
 
-    async def store_semantic_memory(self, memory: str, agent_state: AgentState) -> str:
+    async def store_semantic_memory(self, memory: str, summary: str, agent_state: AgentState) -> str:
         """
         Store a semantic memory.
         """
@@ -225,19 +234,18 @@ class EphemeralMemoryAgent(BaseAgent):
         )
         self.agent_manager.rebuild_system_prompt(agent_id=agent_state.id, actor=self.actor, force=True)
 
-        return f"Successfully stored semantic memory..."
+        return summary
 
-    async def summarize_stored_memories(self, summary: str, agent_state: AgentState) -> str:
-        """
-        Summarize stored memories.
-        """
+    def write_memory_metadata_to_block(self, memory_summaries: List[str], agent_state: AgentState):
+        # Format
+        memory_summaries = [f"- {s}" for s in memory_summaries]
+        summary = f"[{datetime.now().strftime("%Y-%m-%d %H:%M:%S")}]\n{"\n".join(memory_summaries)}"
+
         current_value = str(agent_state.memory.get_block(self.target_block_label).value)
-        new_value = current_value + "\n" + f"[{datetime.now().strftime("%Y-%m-%d %H:%M:%S")}] {str(summary)}]"
+        new_value = current_value + "\n\n" + summary
         agent_state.memory.update_block_value(label=self.target_block_label, value=new_value)
         target_block = next(b for b in agent_state.memory.blocks if b.label == self.target_block_label)
         self.block_manager.update_block(block_id=target_block.id, block_update=BlockUpdate(value=new_value), actor=self.actor)
-
-        return f"Successfully stored memory summary..."
 
     async def step_stream(self, input_message: UserMessage) -> AsyncGenerator[str, None]:
         """

@@ -318,7 +318,6 @@ class VoiceAgent(BaseAgent):
         # Special tool state
         recall_memory_utterance_description = (
             "A lengthier message to be uttered while your memories of the current conversation are being re-contextualized."
-            "You should stall naturally and show the user you're thinking hard. The main thing is to not leave the user in silence."
             "You MUST also include punctuation at the end of this message."
         )
         recall_memory_json = Tool(
@@ -326,22 +325,22 @@ class VoiceAgent(BaseAgent):
             function=enable_strict_mode(
                 add_pre_execution_message(
                     {
-                        "name": "recall_memory",
-                        "description": "Retrieve relevant information from memory based on semantic and keyword queries. Use when you don't remember the answer to a question.",
+                        "name": "search_memory",
+                        "description": "Search relevant information from memory storage based on semantic and keyword queries. Use when you don't remember the answer to a question.",
                         "parameters": {
                             "type": "object",
                             "properties": {
-                                "semantic_query": {
+                                "archival_query": {
                                     "type": "string",
-                                    "description": "A natural language description of what information you're trying to recall from memory.",
+                                    "description": "A natural language description of what information you're trying to search in archival memory.",
                                 },
-                                "keyword_queries": {
+                                "convo_keyword_queries": {
                                     "type": "array",
                                     "items": {"type": "string"},
-                                    "description": "A list of specific keywords to search for in memory. These help with precise retrieval.",
+                                    "description": "A list of specific keywords to search for in memory. These help with precise retrieval, so add as many keywords here as you wish.",
                                 },
                             },
-                            "required": ["semantic_query", "keyword_queries"],
+                            "required": ["archival_query", "convo_keyword_queries"],
                         },
                     },
                     description=recall_memory_utterance_description,
@@ -360,10 +359,12 @@ class VoiceAgent(BaseAgent):
         Executes a tool and returns (result, success_flag).
         """
         # Special memory case
-        if tool_name == "recall_memory":
+        if tool_name == "search_memory":
             # TODO: Make this safe
-            tool_result = await self._recall_memory(
-                semantic_query=tool_args["semantic_query"], keyword_queries=tool_args["keyword_queries"], agent_state=agent_state
+            tool_result = await self._search_memory(
+                archival_query=tool_args["archival_query"],
+                convo_keyword_queries=tool_args["convo_keyword_queries"],
+                agent_state=agent_state,
             )
             return tool_result, True
         else:
@@ -384,13 +385,13 @@ class VoiceAgent(BaseAgent):
             except Exception as e:
                 return f"Failed to call tool. Error: {e}", False
 
-    async def _recall_memory(self, semantic_query: str, keyword_queries: List[str], agent_state: AgentState) -> str:
+    async def _search_memory(self, archival_query: str, convo_keyword_queries: List[str], agent_state: AgentState) -> str:
         """
         Recalls memory based on both semantic query and keyword queries.
 
         Args:
-            semantic_query: Natural language description of what to recall
-            keyword_queries: List of specific keywords to search for in memory
+            archival_query: Natural language description of what to recall
+            convo_keyword_queries: List of specific keywords to search for in memory
             agent_state: Current agent state
 
         Returns:
@@ -400,7 +401,7 @@ class VoiceAgent(BaseAgent):
         archival_results = self.agent_manager.list_passages(
             actor=self.actor,
             agent_id=self.agent_id,
-            query_text=semantic_query,
+            query_text=archival_query,
             limit=20,
             embedding_config=agent_state.embedding_config,
             embed_query=True,
@@ -409,20 +410,20 @@ class VoiceAgent(BaseAgent):
 
         # Retrieve from conversation
         keyword_results = {}
-        for keyword in keyword_queries:
-            messages = self.message_manager.list_user_messages_for_agent(
+        for keyword in convo_keyword_queries:
+            messages = self.message_manager.list_messages_for_agent(
                 agent_id=self.agent_id,
                 actor=self.actor,
                 query_text=keyword,
-                limit=3,
+                limit=4,
             )
-            keyword_results[keyword] = [message.content[0].text for message in messages]
+            if messages:
+                keyword_results[keyword] = [message.content[0].text for message in messages]
 
         # Construct LLM-friendly output
         response = {
-            "semantic_query": semantic_query,
-            "archival_memory": formatted_archival_results,
-            "keyword_memory": keyword_results,
+            "archival_search_results": formatted_archival_results,
+            "conversation_search_results": keyword_results,
         }
 
         return json.dumps(response, indent=2)
