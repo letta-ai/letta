@@ -28,7 +28,7 @@ First, install Poetry using [the official instructions here](https://python-poet
 Once Poetry is installed, navigate to the letta directory and install the Letta project with Poetry:
 ```shell
 cd letta
-poetry shell
+eval $(poetry env activate)
 poetry install --all-extras
 ```
 #### Setup PostgreSQL environment (optional)
@@ -60,8 +60,8 @@ alembic upgrade head
 Now when you want to use `letta`, make sure you first activate the `poetry` environment using poetry shell:
 
 ```shell
-$ poetry shell
-(pyletta-py3.12) $ letta run
+$ eval $(poetry env activate)
+(letta-py3.12) $ letta run
 ```
 
 Alternatively, you can use `poetry run` (which will activate the `poetry` environment for the `letta run` command only):
