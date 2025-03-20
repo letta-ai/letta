@@ -748,6 +748,12 @@ class Message(BaseMessage):
         else:
             raise ValueError(self.role)
 
+        # Validate that parts is never empty before returning
+        if "parts" not in google_ai_message or not google_ai_message["parts"]:
+            # If parts is empty, add a default text part
+            google_ai_message["parts"] = [{"text": "empty message"}]
+            warnings.warn(f"Empty 'parts' detected in message with role '{self.role}'. Added default empty text part.")
+
         return google_ai_message
 
     def to_cohere_dict(
