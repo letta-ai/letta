@@ -314,11 +314,11 @@ class VoiceAgent(BaseAgent):
             tools = agent_state.tools
 
         # Special tool state
-        recall_memory_utterance_description = (
+        search_memory_utterance_description = (
             "A lengthier message to be uttered while your memories of the current conversation are being re-contextualized."
             "You MUST also include punctuation at the end of this message."
         )
-        recall_memory_json = Tool(
+        search_memory_json = Tool(
             type="function",
             function=enable_strict_mode(
                 add_pre_execution_message(
@@ -341,13 +341,13 @@ class VoiceAgent(BaseAgent):
                             "required": ["archival_query", "convo_keyword_queries"],
                         },
                     },
-                    description=recall_memory_utterance_description,
+                    description=search_memory_utterance_description,
                 )
             ),
         )
 
         # TODO: Customize whether or not to have heartbeats, pre_exec_message, etc.
-        return [recall_memory_json] + [
+        return [search_memory_json] + [
             Tool(type="function", function=enable_strict_mode(add_pre_execution_message(remove_request_heartbeat(t.json_schema))))
             for t in tools
         ]
@@ -400,7 +400,7 @@ class VoiceAgent(BaseAgent):
             actor=self.actor,
             agent_id=self.agent_id,
             query_text=archival_query,
-            limit=20,
+            limit=5,
             embedding_config=agent_state.embedding_config,
             embed_query=True,
         )
@@ -413,12 +413,11 @@ class VoiceAgent(BaseAgent):
                 agent_id=self.agent_id,
                 actor=self.actor,
                 query_text=keyword,
-                limit=4,
+                limit=3,
             )
             if messages:
                 keyword_results[keyword] = [message.content[0].text for message in messages]
 
-        # Construct LLM-friendly output
         response = {
             "archival_search_results": formatted_archival_results,
             "conversation_search_results": keyword_results,

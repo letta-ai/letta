@@ -195,7 +195,7 @@ async def test_latency_sse(mock_e2b_api_key_none, client, agent, message, endpoi
 
 
 @pytest.mark.asyncio
-@pytest.mark.parametrize("message", ["Use recall memory tool to recall what my name is."])
+@pytest.mark.parametrize("message", ["Use search memory tool to recall what my name is."])
 @pytest.mark.parametrize("endpoint", ["v1/voice-beta"])
 async def test_voice_recall_memory(mock_e2b_api_key_none, client, agent, message, endpoint):
     """Tests chat completion streaming using the Async OpenAI client."""
