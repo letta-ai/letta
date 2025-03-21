@@ -522,7 +522,7 @@ class Agent(BaseAgent):
                     openai_message_dict=response_message.model_dump(),
                 )
             )  # extend conversation with assistant's reply
-            self.logger.info(f"Function call message: {messages[-1]}")
+            self.logger.debug(f"Function call message: {messages[-1]}")
 
             nonnull_content = False
             if response_message.content:
@@ -786,6 +786,7 @@ class Agent(BaseAgent):
         total_usage = UsageStatistics()
         step_count = 0
         function_failed = False
+        steps_messages = []
         while True:
             kwargs["first_message"] = False
             kwargs["step_count"] = step_count
@@ -800,6 +801,7 @@ class Agent(BaseAgent):
             function_failed = step_response.function_failed
             token_warning = step_response.in_context_memory_warning
             usage = step_response.usage
+            steps_messages.append(step_response.messages)
 
             step_count += 1
             total_usage += usage
@@ -859,9 +861,9 @@ class Agent(BaseAgent):
                 break
 
         if self.agent_state.message_buffer_autoclear:
-            self.agent_manager.trim_all_in_context_messages_except_system(self.agent_state.id, actor=self.user)
+            self.agent_state = self.agent_manager.trim_all_in_context_messages_except_system(self.agent_state.id, actor=self.user)
 
-        return LettaUsageStatistics(**total_usage.model_dump(), step_count=step_count)
+        return LettaUsageStatistics(**total_usage.model_dump(), step_count=step_count, steps_messages=steps_messages)
 
     def inner_step(
         self,

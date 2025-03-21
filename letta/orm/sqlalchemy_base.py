@@ -361,14 +361,12 @@ class SqlalchemyBase(CommonSqlalchemyMetaMixins, Base):
                 if identifier_set != results_set:
                     # Construct a detailed error message based on query conditions
                     conditions_str = ", ".join(query_conditions) if query_conditions else "no specific conditions"
-                    logger.warning(
-                        f"{cls.__name__} not found with {conditions_str}. Queried ids: {identifier_set}, Found ids: {results_set}"
-                    )
+                    logger.debug(f"{cls.__name__} not found with {conditions_str}. Queried ids: {identifier_set}, Found ids: {results_set}")
             return results
 
         # Construct a detailed error message based on query conditions
         conditions_str = ", ".join(query_conditions) if query_conditions else "no specific conditions"
-        logger.warning(f"{cls.__name__} not found with {conditions_str}")
+        logger.debug(f"{cls.__name__} not found with {conditions_str}")
         return []
 
     @handle_db_timeout
