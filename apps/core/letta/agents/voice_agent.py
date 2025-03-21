@@ -274,7 +274,7 @@ class VoiceAgent(BaseAgent):
 
         diff = united_diff(curr_system_message_text, new_system_message_str)
         if len(diff) > 0:
-            logger.info(f"Rebuilding system with new memory...\nDiff:\n{diff}")
+            logger.debug(f"Rebuilding system with new memory...\nDiff:\n{diff}")
 
             new_system_message = self.message_manager.update_message_by_id(
                 curr_system_message.id, message_update=MessageUpdate(content=new_system_message_str), actor=self.actor

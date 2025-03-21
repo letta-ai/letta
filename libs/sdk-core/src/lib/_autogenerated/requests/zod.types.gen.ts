@@ -3397,6 +3397,13 @@ export const LettaUsageStatistics = z.object({
   prompt_tokens: z.number().optional(),
   total_tokens: z.number().optional(),
   step_count: z.number().optional(),
+  steps_messages: z
+    .union([
+      z.array(z.array(Message)),
+      z.null(),
+      z.array(z.union([z.array(z.array(Message)), z.null()])),
+    ])
+    .optional(),
 });
 
 export type LettaResponse = z.infer<typeof LettaResponse>;

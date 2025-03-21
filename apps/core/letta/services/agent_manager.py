@@ -639,7 +639,7 @@ class AgentManager:
 
         diff = united_diff(curr_system_message_openai["content"], new_system_message_str)
         if len(diff) > 0:  # there was a diff
-            logger.info(f"Rebuilding system with new memory...\nDiff:\n{diff}")
+            logger.debug(f"Rebuilding system with new memory...\nDiff:\n{diff}")
 
             # Swap the system message out (only if there is a diff)
             message = PydanticMessage.dict_to_message(

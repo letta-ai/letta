@@ -1865,6 +1865,10 @@ export type LettaUsageStatistics = {
    * The number of steps taken by the agent.
    */
   step_count?: number;
+  /**
+   * The messages generated per step
+   */
+  steps_messages?: Array<Array<Message>> | null;
 };
 
 export type message_type = 'usage_statistics';

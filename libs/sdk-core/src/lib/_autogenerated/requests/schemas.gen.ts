@@ -5018,6 +5018,24 @@ export const $LettaUsageStatistics = {
       description: 'The number of steps taken by the agent.',
       default: 0,
     },
+    steps_messages: {
+      anyOf: [
+        {
+          items: {
+            items: {
+              $ref: '#/components/schemas/Message',
+            },
+            type: 'array',
+          },
+          type: 'array',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Steps Messages',
+      description: 'The messages generated per step',
+    },
   },
   type: 'object',
   title: 'LettaUsageStatistics',
