@@ -3674,6 +3674,10 @@ export type ListAgentsData = {
    */
   after?: string | null;
   /**
+   * Whether to sort agents oldest to newest (True) or newest to oldest (False, default)
+   */
+  ascending?: boolean;
+  /**
    * Search agents by base template ID
    */
   baseTemplateId?: string | null;

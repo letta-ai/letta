@@ -450,6 +450,13 @@
               ],
               "nullable": true
             }
+          },
+          {
+            "name": "ascending",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            }
           }
         ],
         "operationId": "agents.listAgents",

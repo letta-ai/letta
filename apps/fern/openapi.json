@@ -1455,6 +1455,18 @@
               "title": "Include Relationships"
             },
             "description": "Specify which relational fields (e.g., 'tools', 'sources', 'memory') to include in the response. If not provided, all relationships are loaded by default. Using this can optimize performance by reducing unnecessary joins."
+          },
+          {
+            "name": "ascending",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "description": "Whether to sort agents oldest to newest (True) or newest to oldest (False, default)",
+              "default": false,
+              "title": "Ascending"
+            },
+            "description": "Whether to sort agents oldest to newest (True) or newest to oldest (False, default)"
           }
         ],
         "responses": {

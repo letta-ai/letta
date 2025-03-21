@@ -408,6 +408,7 @@ export const useSourcesServiceListSourceFilesSuspense = <
  * @param data.identityId Search agents by identity ID
  * @param data.identifierKeys Search agents by identifier keys
  * @param data.includeRelationships Specify which relational fields (e.g., 'tools', 'sources', 'memory') to include in the response. If not provided, all relationships are loaded by default. Using this can optimize performance by reducing unnecessary joins.
+ * @param data.ascending Whether to sort agents oldest to newest (True) or newest to oldest (False, default)
  * @param data.userId
  * @returns AgentState Successful Response
  * @throws ApiError
@@ -419,6 +420,7 @@ export const useAgentsServiceListAgentsSuspense = <
 >(
   {
     after,
+    ascending,
     baseTemplateId,
     before,
     identifierKeys,
@@ -434,6 +436,7 @@ export const useAgentsServiceListAgentsSuspense = <
     userId,
   }: {
     after?: string;
+    ascending?: boolean;
     baseTemplateId?: string;
     before?: string;
     identifierKeys?: string[];
@@ -455,6 +458,7 @@ export const useAgentsServiceListAgentsSuspense = <
     queryKey: Common.UseAgentsServiceListAgentsKeyFn(
       {
         after,
+        ascending,
         baseTemplateId,
         before,
         identifierKeys,
@@ -474,6 +478,7 @@ export const useAgentsServiceListAgentsSuspense = <
     queryFn: () =>
       AgentsService.listAgents({
         after,
+        ascending,
         baseTemplateId,
         before,
         identifierKeys,

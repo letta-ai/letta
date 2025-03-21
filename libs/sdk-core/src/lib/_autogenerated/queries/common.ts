@@ -268,6 +268,7 @@ export const useAgentsServiceListAgentsKey = 'AgentsServiceListAgents';
 export const UseAgentsServiceListAgentsKeyFn = (
   {
     after,
+    ascending,
     baseTemplateId,
     before,
     identifierKeys,
@@ -283,6 +284,7 @@ export const UseAgentsServiceListAgentsKeyFn = (
     userId,
   }: {
     after?: string;
+    ascending?: boolean;
     baseTemplateId?: string;
     before?: string;
     identifierKeys?: string[];
@@ -303,6 +305,7 @@ export const UseAgentsServiceListAgentsKeyFn = (
   ...(queryKey ?? [
     {
       after,
+      ascending,
       baseTemplateId,
       before,
       identifierKeys,

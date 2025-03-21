@@ -349,6 +349,7 @@ class AgentManager:
         identity_id: Optional[str] = None,
         identifier_keys: Optional[List[str]] = None,
         include_relationships: Optional[List[str]] = None,
+        ascending: bool = True,
     ) -> List[PydanticAgentState]:
         """
         Retrieves agents with optimized filtering and optional field selection.
@@ -368,6 +369,7 @@ class AgentManager:
             identity_id (Optional[str]): Filter by identifier ID.
             identifier_keys (Optional[List[str]]): Search agents by identifier keys.
             include_relationships (Optional[List[str]]): List of fields to load for performance optimization.
+            ascending
 
         Returns:
             List[PydanticAgentState]: The filtered list of matching agents.
@@ -380,7 +382,7 @@ class AgentManager:
             query = _apply_filters(query, name, query_text, project_id, template_id, base_template_id)
             query = _apply_identity_filters(query, identity_id, identifier_keys)
             query = _apply_tag_filter(query, tags, match_all_tags)
-            query = _apply_pagination(query, before, after, session)
+            query = _apply_pagination(query, before, after, session, ascending=ascending)
 
             query = query.limit(limit)
 
