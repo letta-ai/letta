@@ -1,7 +1,7 @@
 import datetime
 from typing import List, Literal, Optional
 
-from sqlalchemy import and_, func, literal, or_, select
+from sqlalchemy import and_, asc, desc, func, literal, or_, select
 
 from letta import system
 from letta.constants import IN_CONTEXT_MEMORY_KEYWORD, STRUCTURED_OUTPUT_MODELS
@@ -299,55 +299,41 @@ def check_supports_structured_output(model: str, tool_rules: List[ToolRule]) -> 
         return True
 
 
-def _apply_pagination(query, before: Optional[str], after: Optional[str], session) -> any:
+def _cursor_filter(created_at_col, id_col, ref_created_at, ref_id, forward: bool):
     """
-    Apply cursor-based pagination filters using the agent's created_at timestamp with id as a tie-breaker.
+    Returns a SQLAlchemy filter expression for cursor-based pagination.
 
-    Instead of relying on the UUID ordering, this function uses the agent's creation time
-    (and id for tie-breaking) to paginate the results. It performs a minimal lookup to fetch
-    only the created_at and id for the agent corresponding to the provided cursor.
-
-    Args:
-        query: The SQLAlchemy query object to modify.
-        before (Optional[str]): Cursor (agent id) to return agents created before this agent.
-        after (Optional[str]): Cursor (agent id) to return agents created after this agent.
-        session: The active database session used to execute the minimal lookup.
-
-    Returns:
-        The modified query with pagination filters applied and ordered by created_at and id.
+    If `forward` is True, returns records after the reference.
+    If `forward` is False, returns records before the reference.
     """
+    if forward:
+        return or_(
+            created_at_col > ref_created_at,
+            and_(created_at_col == ref_created_at, id_col > ref_id),
+        )
+    else:
+        return or_(
+            created_at_col < ref_created_at,
+            and_(created_at_col == ref_created_at, id_col < ref_id),
+        )
+
+
+def _apply_pagination(query, before: Optional[str], after: Optional[str], session, ascending: bool = True) -> any:
     if after:
-        # Retrieve only the created_at and id for the agent corresponding to the 'after' cursor.
         result = session.execute(select(AgentModel.created_at, AgentModel.id).where(AgentModel.id == after)).first()
         if result:
             after_created_at, after_id = result
-            # Filter: include agents created after the reference, or at the same time but with a greater id.
-            query = query.where(
-                or_(
-                    AgentModel.created_at > after_created_at,
-                    and_(
-                        AgentModel.created_at == after_created_at,
-                        AgentModel.id > after_id,
-                    ),
-                )
-            )
+            query = query.where(_cursor_filter(AgentModel.created_at, AgentModel.id, after_created_at, after_id, forward=ascending))
+
     if before:
-        # Retrieve only the created_at and id for the agent corresponding to the 'before' cursor.
         result = session.execute(select(AgentModel.created_at, AgentModel.id).where(AgentModel.id == before)).first()
         if result:
             before_created_at, before_id = result
-            # Filter: include agents created before the reference, or at the same time but with a smaller id.
-            query = query.where(
-                or_(
-                    AgentModel.created_at < before_created_at,
-                    and_(
-                        AgentModel.created_at == before_created_at,
-                        AgentModel.id < before_id,
-                    ),
-                )
-            )
-    # Enforce a deterministic ordering: first by created_at, then by id.
-    query = query.order_by(AgentModel.created_at.asc(), AgentModel.id.asc())
+            query = query.where(_cursor_filter(AgentModel.created_at, AgentModel.id, before_created_at, before_id, forward=not ascending))
+
+    # Apply ordering
+    order_fn = asc if ascending else desc
+    query = query.order_by(order_fn(AgentModel.created_at), order_fn(AgentModel.id))
     return query
 
 

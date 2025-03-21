@@ -63,6 +63,10 @@ def list_agents(
             "Using this can optimize performance by reducing unnecessary joins."
         ),
     ),
+    ascending: bool = Query(
+        False,
+        description="Whether to sort agents oldest to newest (True) or newest to oldest (False, default)",
+    ),
 ):
     """
     List all agents associated with a given user.
@@ -90,6 +94,7 @@ def list_agents(
         identity_id=identity_id,
         identifier_keys=identifier_keys,
         include_relationships=include_relationships,
+        ascending=ascending,
     )
 
 
