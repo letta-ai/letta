@@ -1,23 +1,23 @@
 from dotenv import load_dotenv
 from pathlib import Path
 from os.path import join
-
-letta_dir = Path.home() / ".letta"
-import threading
-from argparse import ArgumentParser
-
-dotenv_path = join(letta_dir, "env")
-
-# make env file and folder if it doesn't exist
-Path(dotenv_path).parent.mkdir(parents=True, exist_ok=True)
-
-# make file if it doesn't exist
-Path(dotenv_path).touch(exist_ok=True)
-
-load_dotenv(dotenv_path)
-
 import os
 import sys
+import threading
+import asyncio
+import uvicorn
+import requests
+import time
+from argparse import ArgumentParser
+
+letta_dir = Path.home() / ".letta"
+dotenv_path = join(letta_dir, "env")
+
+# Create env file and folder if they don't exist
+Path(dotenv_path).parent.mkdir(parents=True, exist_ok=True)
+Path(dotenv_path).touch(exist_ok=True)
+load_dotenv(dotenv_path)
+
 import pgserver
 import pg8000  # noqa
 from tiktoken_ext import openai_public  # noqa
@@ -26,16 +26,10 @@ import tiktoken  # noqa
 import pydantic.deprecated.decorator  # noqa
 import datamodel_code_generator  # noqa
 import opentelemetry  # noqa
-import asyncio
-import uvicorn
-from uvicorn import Config
 import blib2to3.pgen2.tokenize  # noqa
 import blib2to3.pgen2.parse  # noqa
 import mcp  # noqa
 
-# read first argument
-
-pg_uri = ""
 
 print("Initializing Letta Desktop Service...")
 
@@ -47,31 +41,74 @@ def get_app_global_path():
         return os.path.dirname(__file__)
 
 
+def wait_for_psql(database, timeout=30, delay=1):
+    """Wait until the psql connection is available by repeatedly issuing a trivial query."""
+    start_time = time.time()
+    while True:
+        try:
+            database.psql("SELECT 1")
+            print("Postgres connection is ready.")
+            return
+        except Exception as e:
+            if time.time() - start_time > timeout:
+                raise TimeoutError("Timeout waiting for Postgres psql connection to be available.")
+            print("Waiting for Postgres connection to be ready...", e)
+            time.sleep(delay)
+
+
 def initialize_database():
-    """Initialize the postgres binary database"""
-    # create the pgdata
+    """Initialize the Postgres binary database with dynamic_library_path set to the bundled binaries."""
     pgdata = letta_dir / "desktop_data"
     pgdata.mkdir(parents=True, exist_ok=True)
 
+    # Use the bundled Postgres binaries path from pgserver.
+    from pgserver._commands import POSTGRES_BIN_PATH
+
+    lib_dir = POSTGRES_BIN_PATH
+
     try:
         database = pgserver.get_server(pgdata)
-        # create pg vector extension
-        database.psql("CREATE EXTENSION IF NOT EXISTS vector")
-        print("Database initialized at %s", pgdata)
+
+        # Wait until the server socket file is present.
+        socket_file = pgdata / ".s.PGSQL.5432"
+        timeout = 30
+        start_time = time.time()
+        while not socket_file.exists():
+            if time.time() - start_time > timeout:
+                raise TimeoutError("Timeout waiting for Postgres server socket.")
+            print("Waiting for server socket file to appear...")
+            time.sleep(0.5)
+
+        # Now wait for the connection to be ready.
+        wait_for_psql(database, timeout=30, delay=1)
+
+        # Set the dynamic_library_path to include the bundled binary path and the default $libdir.
+        print(f"Setting dynamic_library_path to '{lib_dir},$libdir'")
+        database.psql(f"ALTER SYSTEM SET dynamic_library_path = '{lib_dir},$libdir'")
+        # Reload configuration so the new setting takes effect.
+        database.psql("SELECT pg_reload_conf()")
+
+        # Only create the extension if it doesn't exist.
+        ext_check = database.psql("SELECT extname FROM pg_extension WHERE extname = 'vector'")
+        if not ext_check or "vector" not in str(ext_check):
+            print("Creating vector extension...")
+            database.psql("CREATE EXTENSION vector")
+        else:
+            print("Vector extension already exists, skipping creation.")
+
+        print("Database initialized at", pgdata)
     except Exception as e:
-        print("Database initialization failed: %s", e)
+        print("Database initialization failed:", e)
         raise e
-    print("Configuring app with database uri...")
 
+    print("Configuring app with database URI...")
     pg_uri = database.get_uri()
-    print("Saving pg_uri to ~/.letta/pg_uri")
-
-    # save uri to ~/.letta/pg_uri
     with open(letta_dir / "pg_uri", "w") as f:
         f.write(pg_uri)
+    return pg_uri
 
 
-def upgrade_db():
+def upgrade_db(pg_uri):
     from alembic import command
     from alembic.config import Config
 
@@ -79,18 +116,16 @@ def upgrade_db():
     alembic_cfg.set_main_option("script_location", str(letta_dir / "migrations" / "alembic"))
     alembic_cfg.set_main_option("sqlalchemy.url", pg_uri)
     command.upgrade(alembic_cfg, "head")
-
     print("Database upgraded")
 
 
 argparser = ArgumentParser()
-
 argparser.add_argument("--look-for-server-id", type=str, help="Look for server id")
 argparser.add_argument("--use-file-pg-uri", action="store_true")
 
 
 class ThreadedUvicorn:
-    def __init__(self, config: Config):
+    def __init__(self, config: uvicorn.Config):
         self.server = uvicorn.Server(config)
         self.thread = threading.Thread(daemon=True, target=self.server.run)
 
@@ -115,34 +150,19 @@ server = None
 def kill_app():
     if server:
         server.stop()
-
     sys.exit(1)
 
 
 def check_if_web_server_running():
-    # ping localhost:8285 every 5 seconds, if its down kill this process
-    import requests
-    import time
-
     print("Checking if web server is running...")
-
     while True:
         try:
             res = requests.get("http://localhost:8285/health", timeout=5)
             res.raise_for_status()
-
-            # extract server id from args --look-for-server-id={value}
             args = argparser.parse_args()
-
-            if args.look_for_server_id:
-                # get response text
-                response_text = res.text
-
-                # if the response text does not contain the server id, kill the process, throw an error
-                if args.look_for_server_id not in response_text:
-                    print("Server id not found in response text, exiting...")
-                    kill_app()
-
+            if args.look_for_server_id and args.look_for_server_id not in res.text:
+                print("Server id not found in response text, exiting...")
+                kill_app()
             time.sleep(5)
         except Exception as e:
             print("Web server is down, exiting...")
@@ -150,17 +170,13 @@ def check_if_web_server_running():
 
 
 if __name__ == "__main__":
-    initialize_database()
-    upgrade_db()
+    pg_uri = initialize_database()
+    upgrade_db(pg_uri)
 
     from letta.server.rest_api.app import app
 
     print("Starting letta server...")
-
-    # start the server in a separate thread
-    config = Config(app, host="localhost", port=8283)
-
+    config = uvicorn.Config(app, host="localhost", port=8283)
     server = ThreadedUvicorn(config)
-
     server.start()
     check_if_web_server_running()
