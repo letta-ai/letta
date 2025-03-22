@@ -784,6 +784,8 @@ class SyncServer(Server):
         limit: Optional[int] = 100,
         order_by: Optional[str] = "created_at",
         reverse: Optional[bool] = False,
+        query_text: Optional[str] = None,
+        ascending: Optional[bool] = True,
     ) -> List[Passage]:
         # TODO: Thread actor directly through this function, since the top level caller most likely already retrieved the user
         actor = self.user_manager.get_user_or_default(user_id=user_id)
@@ -793,9 +795,10 @@ class SyncServer(Server):
             actor=actor,
             agent_id=agent_id,
             after=after,
+            query_text=query_text,
             before=before,
+            ascending=ascending,
             limit=limit,
-            ascending=not reverse,
         )
         return records
 
