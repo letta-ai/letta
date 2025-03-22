@@ -5337,13 +5337,23 @@ export const get_List_passages = {
   parameters: z.object({
     query: z.object({
       after: z
-        .union([z.number(), z.null(), z.array(z.union([z.number(), z.null()]))])
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
       before: z
-        .union([z.number(), z.null(), z.array(z.union([z.number(), z.null()]))])
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
       limit: z
         .union([z.number(), z.null(), z.array(z.union([z.number(), z.null()]))])
+        .optional(),
+      search: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      ascending: z
+        .union([
+          z.boolean(),
+          z.null(),
+          z.array(z.union([z.boolean(), z.null()])),
+        ])
         .optional(),
     }),
     path: z.object({

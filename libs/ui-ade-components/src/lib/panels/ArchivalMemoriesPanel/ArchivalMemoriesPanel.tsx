@@ -22,6 +22,7 @@ import {
   useForm,
 } from '@letta-cloud/ui-component-library';
 import { z } from 'zod';
+import { AgentsService } from '@letta-cloud/sdk-core';
 import type { ListPassagesResponse, Passage } from '@letta-cloud/sdk-core';
 import {
   useAgentsServiceCreatePassage,
@@ -29,7 +30,7 @@ import {
   useAgentsServiceListPassages,
   UseAgentsServiceListPassagesKeyFn,
 } from '@letta-cloud/sdk-core';
-import { useQueryClient } from '@tanstack/react-query';
+import { useInfiniteQuery, useQueryClient } from '@tanstack/react-query';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useTranslations } from '@letta-cloud/translations';
 import { useDateFormatter } from '@letta-cloud/utils-client';
@@ -37,6 +38,14 @@ import { useCurrentSimulatedAgent } from '../../hooks/useCurrentSimulatedAgent/u
 import { useCurrentAgentMetaData } from '../../hooks';
 import { useADEPermissions } from '../../hooks/useADEPermissions/useADEPermissions';
 import { ApplicationServices } from '@letta-cloud/service-rbac';
+import { useDebouncedValue } from '@mantine/hooks';
+import type { InfiniteData } from '@tanstack/query-core';
+
+function UseInfiniteAgentPassagesQueryFn(
+  args: Parameters<typeof UseAgentsServiceListPassagesKeyFn>,
+) {
+  return ['infinite', ...UseAgentsServiceListPassagesKeyFn(...args)];
+}
 
 interface ViewArchivalMemoryDialogProps {
   memory: Passage;
@@ -190,24 +199,54 @@ interface MemoriesListProps {
 
 function MemoriesList(props: MemoriesListProps) {
   const { search } = props;
-  const { id: currentAgentId } = useCurrentSimulatedAgent();
+  const { id: agentId } = useCurrentSimulatedAgent();
 
-  const { data, isLoading } = useAgentsServiceListPassages(
-    {
-      agentId: currentAgentId,
-    },
-    undefined,
-    {
-      enabled: !!currentAgentId,
-      refetchInterval: 5000,
-    },
-  );
+  const limit = 5;
+
+  const [debouncedSearch] = useDebouncedValue(search, 500);
+
+  const t = useTranslations('ADE/ArchivalMemories');
+  const { data, isFetchingNextPage, hasNextPage, isLoading, fetchNextPage } =
+    useInfiniteQuery<
+      ListPassagesResponse,
+      unknown,
+      InfiniteData<ListPassagesResponse>,
+      unknown[],
+      { after?: string | null }
+    >({
+      queryKey: UseInfiniteAgentPassagesQueryFn([
+        {
+          agentId,
+          limit: limit + 1,
+          search: debouncedSearch,
+        },
+      ]),
+      queryFn: ({ pageParam }) => {
+        return AgentsService.listPassages({
+          limit: limit + 1,
+          after: pageParam?.after,
+          search: debouncedSearch,
+          agentId,
+        });
+      },
+      initialPageParam: { after: null },
+      getNextPageParam: (lastPage) => {
+        if (lastPage.length > limit) {
+          return {
+            after: lastPage[lastPage.length - 2].id,
+          };
+        }
+
+        return undefined;
+      },
+      enabled: !!limit,
+    });
 
   const allMemories = useMemo(() => {
-    return data || [];
+    return data?.pages.flatMap((page) => page.slice(0, limit)) || [];
   }, [data]);
 
-  if (isLoading || !currentAgentId) {
+  if (isLoading || !agentId) {
     return (
       <LoadingEmptyStatusComponent
         noMinHeight
@@ -220,13 +259,19 @@ function MemoriesList(props: MemoriesListProps) {
 
   return (
     <PanelMainContent>
-      {allMemories
-        .filter((memory) => {
-          return memory.text.toLowerCase().includes(search.toLowerCase());
-        })
-        .map((memory) => {
-          return <MemoryItem key={memory.id} memory={memory} />;
-        })}
+      {allMemories.map((memory) => {
+        return <MemoryItem key={memory.id} memory={memory} />;
+      })}
+      {hasNextPage && (
+        <Button
+          fullWidth
+          onClick={() => {
+            void fetchNextPage();
+          }}
+          label={t('loadMore')}
+          busy={isFetchingNextPage}
+        ></Button>
+      )}
     </PanelMainContent>
   );
 }
@@ -266,23 +311,37 @@ function CreateMemoryDialog() {
   const [open, setOpen] = useState(false);
   const { isTemplate } = useCurrentAgentMetaData();
 
-  const { mutate, isPending } = useAgentsServiceCreatePassage({
-    onSuccess: async () => {
-      setOpen(false);
-      await queryClient.invalidateQueries({
-        queryKey: UseAgentsServiceListPassagesKeyFn({
-          agentId: currentAgentId,
-        }),
-      });
-    },
-  });
-
   const form = useForm<z.infer<typeof createMemorySchema>>({
     resolver: zodResolver(createMemorySchema),
     defaultValues: {
       text: '',
     },
   });
+  const { mutate, isPending, reset } = useAgentsServiceCreatePassage({
+    onSuccess: async () => {
+      handleOpen(false);
+      await queryClient.invalidateQueries({
+        queryKey: UseInfiniteAgentPassagesQueryFn([
+          {
+            agentId: currentAgentId,
+          },
+        ]).slice(0, 1),
+        exact: false,
+      });
+    },
+  });
+
+  const handleOpen = useCallback(
+    (open: boolean) => {
+      if (!open) {
+        form.reset();
+        reset();
+      }
+
+      setOpen(open);
+    },
+    [form, reset],
+  );
 
   const handleSubmit = useCallback(
     (values: z.infer<typeof createMemorySchema>) => {
@@ -299,7 +358,7 @@ function CreateMemoryDialog() {
   return (
     <FormProvider {...form}>
       <Dialog
-        onOpenChange={setOpen}
+        onOpenChange={handleOpen}
         isOpen={open}
         size="large"
         isConfirmBusy={isPending}
@@ -341,6 +400,8 @@ export function useArchivalMemoriesTitle() {
   const { data, isLoading } = useAgentsServiceListPassages(
     {
       agentId: currentAgentId,
+      limit: 21,
+      ascending: false,
     },
     undefined,
     {
@@ -351,6 +412,10 @@ export function useArchivalMemoriesTitle() {
   const count = useMemo(() => {
     if (!data || isLoading) {
       return '-';
+    }
+
+    if (data.length > 20) {
+      return '20+';
     }
 
     return data.length;

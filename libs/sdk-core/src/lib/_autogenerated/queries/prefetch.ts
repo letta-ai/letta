@@ -620,6 +620,8 @@ export const prefetchUseAgentsServiceListCoreMemoryBlocks = (
  * @param data.after Unique ID of the memory to start the query range at.
  * @param data.before Unique ID of the memory to end the query range at.
  * @param data.limit How many results to include in the response.
+ * @param data.search Search passages by text
+ * @param data.ascending Whether to sort passages oldest to newest (True, default) or newest to oldest (False)
  * @param data.userId
  * @returns Passage Successful Response
  * @throws ApiError
@@ -629,14 +631,18 @@ export const prefetchUseAgentsServiceListPassages = (
   {
     after,
     agentId,
+    ascending,
     before,
     limit,
+    search,
     userId,
   }: {
-    after?: number;
+    after?: string;
     agentId: string;
-    before?: number;
+    ascending?: boolean;
+    before?: string;
     limit?: number;
+    search?: string;
     userId?: string;
   },
 ) =>
@@ -644,12 +650,22 @@ export const prefetchUseAgentsServiceListPassages = (
     queryKey: Common.UseAgentsServiceListPassagesKeyFn({
       after,
       agentId,
+      ascending,
       before,
       limit,
+      search,
       userId,
     }),
     queryFn: () =>
-      AgentsService.listPassages({ after, agentId, before, limit, userId }),
+      AgentsService.listPassages({
+        after,
+        agentId,
+        ascending,
+        before,
+        limit,
+        search,
+        userId,
+      }),
   });
 /**
  * List Messages

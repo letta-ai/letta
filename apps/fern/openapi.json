@@ -2453,7 +2453,7 @@
             "schema": {
               "anyOf": [
                 {
-                  "type": "integer"
+                  "type": "string"
                 },
                 {
                   "type": "null"
@@ -2471,7 +2471,7 @@
             "schema": {
               "anyOf": [
                 {
-                  "type": "integer"
+                  "type": "string"
                 },
                 {
                   "type": "null"
@@ -2499,6 +2499,43 @@
               "title": "Limit"
             },
             "description": "How many results to include in the response."
+          },
+          {
+            "name": "search",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Search passages by text",
+              "title": "Search"
+            },
+            "description": "Search passages by text"
+          },
+          {
+            "name": "ascending",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Whether to sort passages oldest to newest (True, default) or newest to oldest (False)",
+              "default": true,
+              "title": "Ascending"
+            },
+            "description": "Whether to sort passages oldest to newest (True, default) or newest to oldest (False)"
           }
         ],
         "responses": {

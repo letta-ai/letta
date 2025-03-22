@@ -3890,16 +3890,24 @@ export type ListPassagesData = {
   /**
    * Unique ID of the memory to start the query range at.
    */
-  after?: number | null;
+  after?: string | null;
   agentId: string;
+  /**
+   * Whether to sort passages oldest to newest (True, default) or newest to oldest (False)
+   */
+  ascending?: boolean | null;
   /**
    * Unique ID of the memory to end the query range at.
    */
-  before?: number | null;
+  before?: string | null;
   /**
    * How many results to include in the response.
    */
   limit?: number | null;
+  /**
+   * Search passages by text
+   */
+  search?: string | null;
   userId?: string | null;
 };
 

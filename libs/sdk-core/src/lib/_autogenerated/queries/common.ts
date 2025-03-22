@@ -507,20 +507,26 @@ export const UseAgentsServiceListPassagesKeyFn = (
   {
     after,
     agentId,
+    ascending,
     before,
     limit,
+    search,
     userId,
   }: {
-    after?: number;
+    after?: string;
     agentId: string;
-    before?: number;
+    ascending?: boolean;
+    before?: string;
     limit?: number;
+    search?: string;
     userId?: string;
   },
   queryKey?: Array<unknown>,
 ) => [
   useAgentsServiceListPassagesKey,
-  ...(queryKey ?? [{ after, agentId, before, limit, userId }]),
+  ...(queryKey ?? [
+    { after, agentId, ascending, before, limit, search, userId },
+  ]),
 ];
 export type AgentsServiceListMessagesDefaultResponse = Awaited<
   ReturnType<typeof AgentsService.listMessages>

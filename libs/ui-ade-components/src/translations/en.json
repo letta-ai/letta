@@ -361,6 +361,7 @@
     }
   },
   "ADE/ArchivalMemories": {
+    "loadMore": "Load more",
     "infoTooltip": "Memories stored in an external database (read-write)",
     "ViewArchivalMemoryDialog": {
       "trigger": "...see all",
