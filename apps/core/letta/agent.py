@@ -3,28 +3,21 @@ import time
 import traceback
 import warnings
 from abc import ABC, abstractmethod
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Dict, List, Optional, Tuple, Union
 
 from openai.types.beta.function_tool import FunctionTool as OpenAITool
 
 from letta.constants import (
     CLI_WARNING_PREFIX,
-    COMPOSIO_ENTITY_ENV_VAR_KEY,
     ERROR_MESSAGE_PREFIX,
     FIRST_MESSAGE_ATTEMPTS,
     FUNC_FAILED_HEARTBEAT_MESSAGE,
-    LETTA_CORE_TOOL_MODULE_NAME,
-    LETTA_MULTI_AGENT_TOOL_MODULE_NAME,
     LLM_MAX_TOKENS,
     REQ_HEARTBEAT_MESSAGE,
 )
 from letta.errors import ContextWindowExceededError
-from letta.functions.ast_parsers import coerce_dict_args_by_annotations, get_function_annotations_from_source
-from letta.functions.functions import get_function_from_module
-from letta.functions.helpers import execute_composio_action, generate_composio_action_from_func_name
 from letta.functions.mcp_client.base_client import BaseMCPClient
 from letta.helpers import ToolRulesSolver
-from letta.helpers.composio_helpers import get_composio_api_key
 from letta.helpers.datetime_helpers import get_utc_time
 from letta.helpers.json_helpers import json_dumps, json_loads
 from letta.interface import AgentInterface
@@ -35,7 +28,6 @@ from letta.local_llm.utils import num_tokens_from_functions, num_tokens_from_mes
 from letta.log import get_logger
 from letta.memory import summarize_messages
 from letta.orm import User
-from letta.orm.enums import ToolType
 from letta.schemas.agent import AgentState, AgentStepResponse, UpdateAgent
 from letta.schemas.block import BlockUpdate
 from letta.schemas.embedding_config import EmbeddingConfig
@@ -46,8 +38,6 @@ from letta.schemas.message import Message, ToolReturn
 from letta.schemas.openai.chat_completion_response import ChatCompletionResponse
 from letta.schemas.openai.chat_completion_response import Message as ChatCompletionMessage
 from letta.schemas.openai.chat_completion_response import UsageStatistics
-from letta.schemas.sandbox_config import SandboxRunResult
-from letta.schemas.tool import Tool
 from letta.schemas.tool_rule import TerminalToolRule
 from letta.schemas.usage import LettaUsageStatistics
 from letta.services.agent_manager import AgentManager
@@ -58,7 +48,7 @@ from letta.services.message_manager import MessageManager
 from letta.services.passage_manager import PassageManager
 from letta.services.provider_manager import ProviderManager
 from letta.services.step_manager import StepManager
-from letta.services.tool_execution_sandbox import ToolExecutionSandbox
+from letta.services.tool_executor.tool_executor import ToolExecutionManager
 from letta.services.tool_manager import ToolManager
 from letta.settings import summarizer_settings
 from letta.streaming_interface import StreamingRefreshCLIInterface
@@ -209,107 +199,6 @@ class Agent(BaseAgent):
 
             return True
         return False
-
-    # TODO: Refactor into separate class v.s. large if/elses here
-    def execute_tool_and_persist_state(
-        self, function_name: str, function_args: dict, target_letta_tool: Tool
-    ) -> tuple[Any, Optional[SandboxRunResult]]:
-        """
-        Execute tool modifications and persist the state of the agent.
-        Note: only some agent state modifications will be persisted, such as data in the AgentState ORM and block data
-        """
-        # TODO: add agent manager here
-        orig_memory_str = self.agent_state.memory.compile()
-
-        # TODO: need to have an AgentState object that actually has full access to the block data
-        # this is because the sandbox tools need to be able to access block.value to edit this data
-        try:
-            if target_letta_tool.tool_type == ToolType.LETTA_CORE:
-                # base tools are allowed to access the `Agent` object and run on the database
-                callable_func = get_function_from_module(LETTA_CORE_TOOL_MODULE_NAME, function_name)
-                function_args["self"] = self  # need to attach self to arg since it's dynamically linked
-                function_response = callable_func(**function_args)
-            elif target_letta_tool.tool_type == ToolType.LETTA_MULTI_AGENT_CORE:
-                callable_func = get_function_from_module(LETTA_MULTI_AGENT_TOOL_MODULE_NAME, function_name)
-                function_args["self"] = self  # need to attach self to arg since it's dynamically linked
-                function_response = callable_func(**function_args)
-            elif target_letta_tool.tool_type == ToolType.LETTA_MEMORY_CORE:
-                callable_func = get_function_from_module(LETTA_CORE_TOOL_MODULE_NAME, function_name)
-                agent_state_copy = self.agent_state.__deepcopy__()
-                function_args["agent_state"] = agent_state_copy  # need to attach self to arg since it's dynamically linked
-                function_response = callable_func(**function_args)
-                self.update_memory_if_changed(agent_state_copy.memory)
-            elif target_letta_tool.tool_type == ToolType.EXTERNAL_COMPOSIO:
-                action_name = generate_composio_action_from_func_name(target_letta_tool.name)
-                # Get entity ID from the agent_state
-                entity_id = None
-                for env_var in self.agent_state.tool_exec_environment_variables:
-                    if env_var.key == COMPOSIO_ENTITY_ENV_VAR_KEY:
-                        entity_id = env_var.value
-                # Get composio_api_key
-                composio_api_key = get_composio_api_key(actor=self.user, logger=self.logger)
-                function_response = execute_composio_action(
-                    action_name=action_name, args=function_args, api_key=composio_api_key, entity_id=entity_id
-                )
-            elif target_letta_tool.tool_type == ToolType.EXTERNAL_MCP:
-                # Get the server name from the tool tag
-                # TODO make a property instead?
-                server_name = target_letta_tool.tags[0].split(":")[1]
-
-                # Get the MCPClient from the server's handle
-                # TODO these don't get raised properly
-                if not self.mcp_clients:
-                    raise ValueError(f"No MCP client available to use")
-                if server_name not in self.mcp_clients:
-                    raise ValueError(f"Unknown MCP server name: {server_name}")
-                mcp_client = self.mcp_clients[server_name]
-                if not isinstance(mcp_client, BaseMCPClient):
-                    raise RuntimeError(f"Expected an MCPClient, but got: {type(mcp_client)}")
-
-                # Check that tool exists
-                available_tools = mcp_client.list_tools()
-                available_tool_names = [t.name for t in available_tools]
-                if function_name not in available_tool_names:
-                    raise ValueError(
-                        f"{function_name} is not available in MCP server {server_name}. Please check your `~/.letta/mcp_config.json` file."
-                    )
-
-                function_response, is_error = mcp_client.execute_tool(tool_name=function_name, tool_args=function_args)
-                sandbox_run_result = SandboxRunResult(status="error" if is_error else "success")
-                return function_response, sandbox_run_result
-            else:
-                try:
-                    # Parse the source code to extract function annotations
-                    annotations = get_function_annotations_from_source(target_letta_tool.source_code, function_name)
-                    # Coerce the function arguments to the correct types based on the annotations
-                    function_args = coerce_dict_args_by_annotations(function_args, annotations)
-                except ValueError as e:
-                    self.logger.debug(f"Error coercing function arguments: {e}")
-
-                # execute tool in a sandbox
-                # TODO: allow agent_state to specify which sandbox to execute tools in
-                # TODO: This is only temporary, can remove after we publish a pip package with this object
-                agent_state_copy = self.agent_state.__deepcopy__()
-                agent_state_copy.tools = []
-                agent_state_copy.tool_rules = []
-
-                sandbox_run_result = ToolExecutionSandbox(function_name, function_args, self.user, tool_object=target_letta_tool).run(
-                    agent_state=agent_state_copy
-                )
-                function_response, updated_agent_state = sandbox_run_result.func_return, sandbox_run_result.agent_state
-                assert orig_memory_str == self.agent_state.memory.compile(), "Memory should not be modified in a sandbox tool"
-                if updated_agent_state is not None:
-                    self.update_memory_if_changed(updated_agent_state.memory)
-                return function_response, sandbox_run_result
-        except Exception as e:
-            # Need to catch error here, or else trunction wont happen
-            # TODO: modify to function execution error
-            function_response = get_friendly_error_msg(
-                function_name=function_name, exception_name=type(e).__name__, exception_message=str(e)
-            )
-            return function_response, SandboxRunResult(status="error")
-
-        return function_response, None
 
     def _handle_function_error_response(
         self,
@@ -613,7 +502,12 @@ class Agent(BaseAgent):
                     },
                 )
 
-                function_response, sandbox_run_result = self.execute_tool_and_persist_state(function_name, function_args, target_letta_tool)
+                # TODO: Make this at the __init__ level
+                # TODO: Add refresh agent_state logic to ToolExecutionManager, either by passing in or retreiving from db
+                tool_execution_manager = ToolExecutionManager(self)
+                function_response, sandbox_run_result = tool_execution_manager.execute_tool(
+                    function_name=function_name, function_args=function_args, tool=target_letta_tool
+                )
 
                 log_event(
                     "tool_call_ended",

@@ -10,6 +10,7 @@ from letta.schemas.llm_config import LLMConfig
 from letta.schemas.tool import ToolCreate
 from letta.server.rest_api.app import app
 from letta.server.server import SyncServer
+from letta.services.tool_executor.tool_executor import ToolExecutionManager
 
 logger = get_logger(__name__)
 
@@ -67,8 +68,12 @@ def test_composio_tool_execution_e2e(check_composio_key_set, composio_gmail_get_
         actor=default_user,
     )
     agent = server.load_agent(agent_state.id, actor=default_user)
-    response = agent.execute_tool_and_persist_state(composio_gmail_get_profile_tool.name, {}, composio_gmail_get_profile_tool)
-    assert response[0]["response_data"]["emailAddress"] == "sarah@letta.com"
+
+    function_response, sandbox_run_result = ToolExecutionManager(agent).execute_tool(
+        function_name=composio_gmail_get_profile_tool.name, function_args={}, tool=composio_gmail_get_profile_tool
+    )
+
+    assert function_response["response_data"]["emailAddress"] == "sarah@letta.com"
 
     # Add agent variable changing the entity ID
     agent_state = server.agent_manager.update_agent(
@@ -77,5 +82,7 @@ def test_composio_tool_execution_e2e(check_composio_key_set, composio_gmail_get_
         actor=default_user,
     )
     agent = server.load_agent(agent_state.id, actor=default_user)
-    response = agent.execute_tool_and_persist_state(composio_gmail_get_profile_tool.name, {}, composio_gmail_get_profile_tool)
-    assert response[0]["response_data"]["emailAddress"] == "matt@letta.com"
+    function_response, sandbox_run_result = ToolExecutionManager(agent).execute_tool(
+        function_name=composio_gmail_get_profile_tool.name, function_args={}, tool=composio_gmail_get_profile_tool
+    )
+    assert function_response["response_data"]["emailAddress"] == "matt@letta.com"
