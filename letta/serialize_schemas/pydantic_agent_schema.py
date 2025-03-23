@@ -92,7 +92,7 @@ class AgentSchema(BaseModel):
     agent_type: str
     core_memory: List[CoreMemoryBlockSchema]
     created_at: str
-    description: str
+    description: Optional[str]
     embedding_config: EmbeddingConfig
     groups: List[Any]
     identities: List[Any]
