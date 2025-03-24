@@ -17,18 +17,19 @@ interface TabItemType {
 const listVariant = cva('px-4 h-[28px] flex items-center gap-2 flex-row', {
   variants: {
     variant: {
-      border: 'border-b-2 data-[state=active]:border-content border-0 pt-2',
+      default:
+        'border-b-2 border-b border-border pb-2 data-[state=active]:border-content pt-2',
       'bordered-background':
         'data-[state=active]:border data-[state=active]:border-b-0',
       chips: ' font-medium',
     },
     color: {
       default:
-        'data-[state=active]:bg-background-grey2 data-[state=active]:border-b border-b border-border',
+        'data-[state=active]:bg-background-grey2 data-[state=active]:border-b',
       dark: 'data-[state=active]:bg-dark-active data-[state=active]:text-dark-active-content',
     },
     size: {
-      small: 'pb-2',
+      small: 'h-biHeight',
       xsmall: '',
       xxsmall: 'px-2 h-[24px]',
     },
@@ -37,6 +38,7 @@ const listVariant = cva('px-4 h-[28px] flex items-center gap-2 flex-row', {
     },
   },
   defaultVariants: {
+    variant: 'default',
     color: 'default',
   },
 });
@@ -62,7 +64,7 @@ export function TabGroup(props: TabGroupProps) {
     upperCase,
     value,
     color,
-    variant = 'border',
+    variant = 'default',
     border,
     size = 'xsmall',
     defaultValue,

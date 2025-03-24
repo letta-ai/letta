@@ -17,6 +17,10 @@ export const Primary: Story = {
     defaultValue: {
       control: 'text',
     },
+    variant: {
+      control: 'select',
+      options: ['border', 'chips'],
+    },
   },
   args: {
     items: [
