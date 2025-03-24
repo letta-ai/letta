@@ -157,6 +157,23 @@ class OpenAIProvider(Provider):
                 # if "config" in data and "chat_template" in data["config"] and "tools" not in data["config"]["chat_template"]:
                 # continue
 
+            # for openai, filter models
+            if self.base_url == "https://api.openai.com/v1":
+                allowed_types = ["gpt-4", "o1", "o3"]
+                disallowed_types = ["transcribe", "search", "realtime", "tts", "audio", "computer"]
+                skip = True
+                for model_type in allowed_types:
+                    if model_name.startswith(model_type):
+                        skip = False
+                        break
+                for keyword in disallowed_types:
+                    if keyword in model_name:
+                        skip = True
+                        break
+                # ignore this model
+                if skip:
+                    continue
+
             configs.append(
                 LLMConfig(
                     model=model_name,
