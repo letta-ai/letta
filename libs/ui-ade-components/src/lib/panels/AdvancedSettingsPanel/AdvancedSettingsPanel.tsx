@@ -5,6 +5,7 @@ import {
   FormField,
   FormProvider,
   HStack,
+  RawSwitch,
   TextArea,
   tryParseSliderNumber,
   Typography,
@@ -424,6 +425,26 @@ function SystemPromptEditor() {
   );
 }
 
+function MessageBufferAutoclearSwitch() {
+  const currentAgent = useCurrentAgent();
+  const { syncUpdateCurrentAgent } = useSyncUpdateCurrentAgent();
+  const t = useTranslations('ADE/AdvancedSettings');
+
+  return (
+    <RawSwitch
+      name="messageBufferAutoclear"
+      label={t('AdvancedSettingsPanel.messageBufferAutoclear.label')}
+      checked={currentAgent.message_buffer_autoclear || false}
+      onCheckedChange={(checked) => {
+        syncUpdateCurrentAgent((existing) => ({
+          ...existing,
+          message_buffer_autoclear: checked,
+        }));
+      }}
+    />
+  );
+}
+
 export function AdvancedSettingsPanel() {
   const currentAgent = useCurrentAgent();
   const { data: modelsList } = useModelsServiceListModels();
@@ -479,6 +500,7 @@ export function AdvancedSettingsPanel() {
           type="number"
           disabled
         />
+        <MessageBufferAutoclearSwitch />
       </VStack>
     </PanelMainContent>
   );

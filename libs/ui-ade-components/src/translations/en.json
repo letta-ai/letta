@@ -165,6 +165,9 @@
       },
       "embeddingChunkSize": {
         "label": "Embedding chunk size"
+      },
+      "messageBufferAutoclear": {
+        "label": "Reset message buffer"
       }
     }
   },
