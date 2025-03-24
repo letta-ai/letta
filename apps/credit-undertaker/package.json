@@ -17,6 +17,7 @@
     "@react-email/components": "^0.0.33",
     "@sentry/node": "^8.52.0",
     "@t3-oss/env-nextjs": "^0.12.0",
+    "@ts-rest/core": "^3.52.1",
     "dotenv": "^16.4.7",
     "drizzle-orm": "^0.39.1",
     "express": "^4.21.2",
@@ -26,6 +27,7 @@
     "pg": "^8.13.3",
     "postgres": "^3.4.5",
     "react": "^19.0.0",
+    "react-dom": "^19.0.0",
     "resend": "^4.1.2",
     "zod": "^3.24.1"
   }
