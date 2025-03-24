@@ -676,11 +676,6 @@ export type CompletionCreateParamsNonStreaming = {
     | 'o1-preview-2024-09-12'
     | 'o1-mini'
     | 'o1-mini-2024-09-12'
-    | 'computer-use-preview'
-    | 'computer-use-preview-2025-02-04'
-    | 'computer-use-preview-2025-03-11'
-    | 'gpt-4.5-preview'
-    | 'gpt-4.5-preview-2025-02-27'
     | 'gpt-4o'
     | 'gpt-4o-2024-11-20'
     | 'gpt-4o-2024-08-06'
@@ -690,6 +685,10 @@ export type CompletionCreateParamsNonStreaming = {
     | 'gpt-4o-audio-preview-2024-12-17'
     | 'gpt-4o-mini-audio-preview'
     | 'gpt-4o-mini-audio-preview-2024-12-17'
+    | 'gpt-4o-search-preview'
+    | 'gpt-4o-mini-search-preview'
+    | 'gpt-4o-search-preview-2025-03-11'
+    | 'gpt-4o-mini-search-preview-2025-03-11'
     | 'chatgpt-4o-latest'
     | 'gpt-4o-mini'
     | 'gpt-4o-mini-2024-07-18'
@@ -773,11 +772,6 @@ export type CompletionCreateParamsStreaming = {
     | 'o1-preview-2024-09-12'
     | 'o1-mini'
     | 'o1-mini-2024-09-12'
-    | 'computer-use-preview'
-    | 'computer-use-preview-2025-02-04'
-    | 'computer-use-preview-2025-03-11'
-    | 'gpt-4.5-preview'
-    | 'gpt-4.5-preview-2025-02-27'
     | 'gpt-4o'
     | 'gpt-4o-2024-11-20'
     | 'gpt-4o-2024-08-06'
@@ -787,6 +781,10 @@ export type CompletionCreateParamsStreaming = {
     | 'gpt-4o-audio-preview-2024-12-17'
     | 'gpt-4o-mini-audio-preview'
     | 'gpt-4o-mini-audio-preview-2024-12-17'
+    | 'gpt-4o-search-preview'
+    | 'gpt-4o-mini-search-preview'
+    | 'gpt-4o-search-preview-2025-03-11'
+    | 'gpt-4o-mini-search-preview-2025-03-11'
     | 'chatgpt-4o-latest'
     | 'gpt-4o-mini'
     | 'gpt-4o-mini-2024-07-18'
@@ -1299,7 +1297,7 @@ export type type10 = 'file';
 export type FileFile = {
   file_data?: string;
   file_id?: string;
-  file_name?: string;
+  filename?: string;
 };
 
 /**
@@ -2095,6 +2093,10 @@ export type Organization = {
    * The creation date of the organization.
    */
   created_at?: string | null;
+  /**
+   * Whether the organization has access to privileged tools.
+   */
+  privileged_tools?: boolean;
 };
 
 export type OrganizationCreate = {
@@ -2102,6 +2104,21 @@ export type OrganizationCreate = {
    * The name of the organization.
    */
   name?: string | null;
+  /**
+   * Whether the organization has access to privileged tools.
+   */
+  privileged_tools?: boolean | null;
+};
+
+export type OrganizationUpdate = {
+  /**
+   * The name of the organization.
+   */
+  name?: string | null;
+  /**
+   * Whether the organization has access to privileged tools.
+   */
+  privileged_tools?: boolean | null;
 };
 
 export type ParameterProperties = {
@@ -4614,6 +4631,16 @@ export type DeleteOrganizationByIdData = {
 
 export type DeleteOrganizationByIdResponse = Organization;
 
+export type UpdateOrganizationData = {
+  /**
+   * The org_id key to be updated.
+   */
+  orgId: string;
+  requestBody: OrganizationUpdate;
+};
+
+export type UpdateOrganizationResponse = Organization;
+
 export type CreateVoiceChatCompletionsData = {
   agentId: string;
   requestBody:
@@ -6274,6 +6301,19 @@ export type $OpenApiTs = {
     };
     delete: {
       req: DeleteOrganizationByIdData;
+      res: {
+        /**
+         * Successful Response
+         */
+        200: Organization;
+        /**
+         * Validation Error
+         */
+        422: HTTPValidationError;
+      };
+    };
+    patch: {
+      req: UpdateOrganizationData;
       res: {
         /**
          * Successful Response

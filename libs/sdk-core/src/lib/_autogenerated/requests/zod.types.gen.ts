@@ -1505,7 +1505,7 @@ export type FileFile = z.infer<typeof FileFile>;
 export const FileFile = z.object({
   file_data: z.string().optional(),
   file_id: z.string().optional(),
-  file_name: z.string().optional(),
+  filename: z.string().optional(),
 });
 
 export type File = z.infer<typeof File>;
@@ -1670,11 +1670,6 @@ export const CompletionCreateParamsNonStreaming = z.object({
     z.literal('o1-preview-2024-09-12'),
     z.literal('o1-mini'),
     z.literal('o1-mini-2024-09-12'),
-    z.literal('computer-use-preview'),
-    z.literal('computer-use-preview-2025-02-04'),
-    z.literal('computer-use-preview-2025-03-11'),
-    z.literal('gpt-4.5-preview'),
-    z.literal('gpt-4.5-preview-2025-02-27'),
     z.literal('gpt-4o'),
     z.literal('gpt-4o-2024-11-20'),
     z.literal('gpt-4o-2024-08-06'),
@@ -1684,6 +1679,10 @@ export const CompletionCreateParamsNonStreaming = z.object({
     z.literal('gpt-4o-audio-preview-2024-12-17'),
     z.literal('gpt-4o-mini-audio-preview'),
     z.literal('gpt-4o-mini-audio-preview-2024-12-17'),
+    z.literal('gpt-4o-search-preview'),
+    z.literal('gpt-4o-mini-search-preview'),
+    z.literal('gpt-4o-search-preview-2025-03-11'),
+    z.literal('gpt-4o-mini-search-preview-2025-03-11'),
     z.literal('chatgpt-4o-latest'),
     z.literal('gpt-4o-mini'),
     z.literal('gpt-4o-mini-2024-07-18'),
@@ -1717,11 +1716,6 @@ export const CompletionCreateParamsNonStreaming = z.object({
         z.literal('o1-preview-2024-09-12'),
         z.literal('o1-mini'),
         z.literal('o1-mini-2024-09-12'),
-        z.literal('computer-use-preview'),
-        z.literal('computer-use-preview-2025-02-04'),
-        z.literal('computer-use-preview-2025-03-11'),
-        z.literal('gpt-4.5-preview'),
-        z.literal('gpt-4.5-preview-2025-02-27'),
         z.literal('gpt-4o'),
         z.literal('gpt-4o-2024-11-20'),
         z.literal('gpt-4o-2024-08-06'),
@@ -1731,6 +1725,10 @@ export const CompletionCreateParamsNonStreaming = z.object({
         z.literal('gpt-4o-audio-preview-2024-12-17'),
         z.literal('gpt-4o-mini-audio-preview'),
         z.literal('gpt-4o-mini-audio-preview-2024-12-17'),
+        z.literal('gpt-4o-search-preview'),
+        z.literal('gpt-4o-mini-search-preview'),
+        z.literal('gpt-4o-search-preview-2025-03-11'),
+        z.literal('gpt-4o-mini-search-preview-2025-03-11'),
         z.literal('chatgpt-4o-latest'),
         z.literal('gpt-4o-mini'),
         z.literal('gpt-4o-mini-2024-07-18'),
@@ -2033,11 +2031,6 @@ export const CompletionCreateParamsStreaming = z.object({
     z.literal('o1-preview-2024-09-12'),
     z.literal('o1-mini'),
     z.literal('o1-mini-2024-09-12'),
-    z.literal('computer-use-preview'),
-    z.literal('computer-use-preview-2025-02-04'),
-    z.literal('computer-use-preview-2025-03-11'),
-    z.literal('gpt-4.5-preview'),
-    z.literal('gpt-4.5-preview-2025-02-27'),
     z.literal('gpt-4o'),
     z.literal('gpt-4o-2024-11-20'),
     z.literal('gpt-4o-2024-08-06'),
@@ -2047,6 +2040,10 @@ export const CompletionCreateParamsStreaming = z.object({
     z.literal('gpt-4o-audio-preview-2024-12-17'),
     z.literal('gpt-4o-mini-audio-preview'),
     z.literal('gpt-4o-mini-audio-preview-2024-12-17'),
+    z.literal('gpt-4o-search-preview'),
+    z.literal('gpt-4o-mini-search-preview'),
+    z.literal('gpt-4o-search-preview-2025-03-11'),
+    z.literal('gpt-4o-mini-search-preview-2025-03-11'),
     z.literal('chatgpt-4o-latest'),
     z.literal('gpt-4o-mini'),
     z.literal('gpt-4o-mini-2024-07-18'),
@@ -2080,11 +2077,6 @@ export const CompletionCreateParamsStreaming = z.object({
         z.literal('o1-preview-2024-09-12'),
         z.literal('o1-mini'),
         z.literal('o1-mini-2024-09-12'),
-        z.literal('computer-use-preview'),
-        z.literal('computer-use-preview-2025-02-04'),
-        z.literal('computer-use-preview-2025-03-11'),
-        z.literal('gpt-4.5-preview'),
-        z.literal('gpt-4.5-preview-2025-02-27'),
         z.literal('gpt-4o'),
         z.literal('gpt-4o-2024-11-20'),
         z.literal('gpt-4o-2024-08-06'),
@@ -2094,6 +2086,10 @@ export const CompletionCreateParamsStreaming = z.object({
         z.literal('gpt-4o-audio-preview-2024-12-17'),
         z.literal('gpt-4o-mini-audio-preview'),
         z.literal('gpt-4o-mini-audio-preview-2024-12-17'),
+        z.literal('gpt-4o-search-preview'),
+        z.literal('gpt-4o-mini-search-preview'),
+        z.literal('gpt-4o-search-preview-2025-03-11'),
+        z.literal('gpt-4o-mini-search-preview-2025-03-11'),
         z.literal('chatgpt-4o-latest'),
         z.literal('gpt-4o-mini'),
         z.literal('gpt-4o-mini-2024-07-18'),
@@ -3477,12 +3473,26 @@ export const Organization = z.object({
   created_at: z
     .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
     .optional(),
+  privileged_tools: z.boolean().optional(),
 });
 
 export type OrganizationCreate = z.infer<typeof OrganizationCreate>;
 export const OrganizationCreate = z.object({
   name: z
     .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+    .optional(),
+  privileged_tools: z
+    .union([z.boolean(), z.null(), z.array(z.union([z.boolean(), z.null()]))])
+    .optional(),
+});
+
+export type OrganizationUpdate = z.infer<typeof OrganizationUpdate>;
+export const OrganizationUpdate = z.object({
+  name: z
+    .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+    .optional(),
+  privileged_tools: z
+    .union([z.boolean(), z.null(), z.array(z.union([z.boolean(), z.null()]))])
     .optional(),
 });
 
@@ -4570,7 +4580,7 @@ export const get_List_composio_apps = {
   requestFormat: z.literal('json'),
   parameters: z.object({
     header: z.object({
-      user_id: z
+      'user-id': z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
     }),
@@ -4622,7 +4632,7 @@ export const get_List_mcp_servers = {
   requestFormat: z.literal('json'),
   parameters: z.object({
     header: z.object({
-      user_id: z
+      'user-id': z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
     }),
@@ -6105,7 +6115,7 @@ export const post_Create_sandbox_config_v1_sandbox_config__post = {
   requestFormat: z.literal('json'),
   parameters: z.object({
     header: z.object({
-      user_id: z
+      'user-id': z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
     }),
@@ -6135,7 +6145,7 @@ export const get_List_sandbox_configs_v1_sandbox_config__get = {
         .optional(),
     }),
     header: z.object({
-      user_id: z
+      'user-id': z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
     }),
@@ -6152,7 +6162,7 @@ export const post_Create_default_e2b_sandbox_config_v1_sandbox_config_e2b_defaul
     requestFormat: z.literal('json'),
     parameters: z.object({
       header: z.object({
-        user_id: z
+        'user-id': z
           .union([
             z.string(),
             z.null(),
@@ -6173,7 +6183,7 @@ export const post_Create_default_local_sandbox_config_v1_sandbox_config_local_de
     requestFormat: z.literal('json'),
     parameters: z.object({
       header: z.object({
-        user_id: z
+        'user-id': z
           .union([
             z.string(),
             z.null(),
@@ -6194,7 +6204,7 @@ export const post_Create_custom_local_sandbox_config_v1_sandbox_config_local_pos
     requestFormat: z.literal('json'),
     parameters: z.object({
       header: z.object({
-        user_id: z
+        'user-id': z
           .union([
             z.string(),
             z.null(),
@@ -6219,7 +6229,7 @@ export const patch_Update_sandbox_config_v1_sandbox_config__sandbox_config_id__p
         sandbox_config_id: z.string(),
       }),
       header: z.object({
-        user_id: z
+        'user-id': z
           .union([
             z.string(),
             z.null(),
@@ -6244,7 +6254,7 @@ export const delete_Delete_sandbox_config_v1_sandbox_config__sandbox_config_id__
         sandbox_config_id: z.string(),
       }),
       header: z.object({
-        user_id: z
+        'user-id': z
           .union([
             z.string(),
             z.null(),
@@ -6265,7 +6275,7 @@ export const post_Force_recreate_local_sandbox_venv_v1_sandbox_config_local_recr
     requestFormat: z.literal('json'),
     parameters: z.object({
       header: z.object({
-        user_id: z
+        'user-id': z
           .union([
             z.string(),
             z.null(),
@@ -6291,7 +6301,7 @@ export const post_Create_sandbox_env_var_v1_sandbox_config__sandbox_config_id__e
         sandbox_config_id: z.string(),
       }),
       header: z.object({
-        user_id: z
+        'user-id': z
           .union([
             z.string(),
             z.null(),
@@ -6328,7 +6338,7 @@ export const get_List_sandbox_env_vars_v1_sandbox_config__sandbox_config_id__env
         sandbox_config_id: z.string(),
       }),
       header: z.object({
-        user_id: z
+        'user-id': z
           .union([
             z.string(),
             z.null(),
@@ -6352,7 +6362,7 @@ export const patch_Update_sandbox_env_var_v1_sandbox_config_environment_variable
         env_var_id: z.string(),
       }),
       header: z.object({
-        user_id: z
+        'user-id': z
           .union([
             z.string(),
             z.null(),
@@ -6377,7 +6387,7 @@ export const delete_Delete_sandbox_env_var_v1_sandbox_config_environment_variabl
         env_var_id: z.string(),
       }),
       header: z.object({
-        user_id: z
+        'user-id': z
           .union([
             z.string(),
             z.null(),
@@ -6729,7 +6739,7 @@ export const post_Create_voice_chat_completions = {
       agent_id: z.string(),
     }),
     header: z.object({
-      user_id: z
+      'user-id': z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
     }),
@@ -6839,6 +6849,20 @@ export const delete_Delete_organization_by_id = {
     query: z.object({
       org_id: z.string(),
     }),
+  }),
+  response: Organization,
+};
+
+export type patch_Update_organization = typeof patch_Update_organization;
+export const patch_Update_organization = {
+  method: z.literal('PATCH'),
+  path: z.literal('/v1/admin/orgs/'),
+  requestFormat: z.literal('json'),
+  parameters: z.object({
+    query: z.object({
+      org_id: z.string(),
+    }),
+    body: OrganizationUpdate,
   }),
   response: Organization,
 };
@@ -6960,6 +6984,7 @@ export const EndpointByMethod = {
     '/v1/providers/': patch_Modify_provider,
     '/v1/steps/{step_id}/transaction/{transaction_id}':
       patch_Update_step_transaction_id,
+    '/v1/admin/orgs/': patch_Update_organization,
   },
   post: {
     '/v1/tools/': post_Create_tool,

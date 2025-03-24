@@ -23,6 +23,7 @@ from letta.services.helpers.tool_execution_helper import (
     find_python_executable,
     install_pip_requirements_for_sandbox,
 )
+from letta.services.organization_manager import OrganizationManager
 from letta.services.sandbox_config_manager import SandboxConfigManager
 from letta.services.tool_manager import ToolManager
 from letta.settings import tool_settings
@@ -50,6 +51,9 @@ class ToolExecutionSandbox:
         self.tool_name = tool_name
         self.args = args
         self.user = user
+        # get organization
+        self.organization = OrganizationManager().get_organization_by_id(self.user.organization_id)
+        self.privileged_tools = self.organization.privileged_tools
 
         # If a tool object is provided, we use it directly, otherwise pull via name
         if tool_object is not None:
@@ -79,7 +83,7 @@ class ToolExecutionSandbox:
         Returns:
             Tuple[Any, Optional[AgentState]]: Tuple containing (tool_result, agent_state)
         """
-        if tool_settings.e2b_api_key:
+        if tool_settings.e2b_api_key and not self.privileged_tools:
             logger.debug(f"Using e2b sandbox to execute {self.tool_name}")
             result = self.run_e2b_sandbox(agent_state=agent_state, additional_env_vars=additional_env_vars)
         else:

@@ -1975,11 +1975,6 @@ export const $CompletionCreateParamsNonStreaming = {
             'o1-preview-2024-09-12',
             'o1-mini',
             'o1-mini-2024-09-12',
-            'computer-use-preview',
-            'computer-use-preview-2025-02-04',
-            'computer-use-preview-2025-03-11',
-            'gpt-4.5-preview',
-            'gpt-4.5-preview-2025-02-27',
             'gpt-4o',
             'gpt-4o-2024-11-20',
             'gpt-4o-2024-08-06',
@@ -1989,6 +1984,10 @@ export const $CompletionCreateParamsNonStreaming = {
             'gpt-4o-audio-preview-2024-12-17',
             'gpt-4o-mini-audio-preview',
             'gpt-4o-mini-audio-preview-2024-12-17',
+            'gpt-4o-search-preview',
+            'gpt-4o-mini-search-preview',
+            'gpt-4o-search-preview-2025-03-11',
+            'gpt-4o-mini-search-preview-2025-03-11',
             'chatgpt-4o-latest',
             'gpt-4o-mini',
             'gpt-4o-mini-2024-07-18',
@@ -2377,11 +2376,6 @@ export const $CompletionCreateParamsStreaming = {
             'o1-preview-2024-09-12',
             'o1-mini',
             'o1-mini-2024-09-12',
-            'computer-use-preview',
-            'computer-use-preview-2025-02-04',
-            'computer-use-preview-2025-03-11',
-            'gpt-4.5-preview',
-            'gpt-4.5-preview-2025-02-27',
             'gpt-4o',
             'gpt-4o-2024-11-20',
             'gpt-4o-2024-08-06',
@@ -2391,6 +2385,10 @@ export const $CompletionCreateParamsStreaming = {
             'gpt-4o-audio-preview-2024-12-17',
             'gpt-4o-mini-audio-preview',
             'gpt-4o-mini-audio-preview-2024-12-17',
+            'gpt-4o-search-preview',
+            'gpt-4o-mini-search-preview',
+            'gpt-4o-search-preview-2025-03-11',
+            'gpt-4o-mini-search-preview-2025-03-11',
             'chatgpt-4o-latest',
             'gpt-4o-mini',
             'gpt-4o-mini-2024-07-18',
@@ -3777,9 +3775,9 @@ export const $FileFile = {
       type: 'string',
       title: 'File Id',
     },
-    file_name: {
+    filename: {
       type: 'string',
-      title: 'File Name',
+      title: 'Filename',
     },
   },
   type: 'object',
@@ -5641,6 +5639,12 @@ export const $Organization = {
       title: 'Created At',
       description: 'The creation date of the organization.',
     },
+    privileged_tools: {
+      type: 'boolean',
+      title: 'Privileged Tools',
+      description: 'Whether the organization has access to privileged tools.',
+      default: false,
+    },
   },
   additionalProperties: false,
   type: 'object',
@@ -5661,10 +5665,56 @@ export const $OrganizationCreate = {
       title: 'Name',
       description: 'The name of the organization.',
     },
+    privileged_tools: {
+      anyOf: [
+        {
+          type: 'boolean',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Privileged Tools',
+      description: 'Whether the organization has access to privileged tools.',
+      default: false,
+    },
   },
   additionalProperties: false,
   type: 'object',
   title: 'OrganizationCreate',
+} as const;
+
+export const $OrganizationUpdate = {
+  properties: {
+    name: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Name',
+      description: 'The name of the organization.',
+    },
+    privileged_tools: {
+      anyOf: [
+        {
+          type: 'boolean',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Privileged Tools',
+      description: 'Whether the organization has access to privileged tools.',
+      default: false,
+    },
+  },
+  additionalProperties: false,
+  type: 'object',
+  title: 'OrganizationUpdate',
 } as const;
 
 export const $ParameterProperties = {

@@ -48,6 +48,7 @@ import {
   ManagerType,
   MessageRole,
   OrganizationCreate,
+  OrganizationUpdate,
   PassageUpdate,
   ProviderCreate,
   ProviderUpdate,
@@ -4647,6 +4648,90 @@ export const useStepsServiceUpdateStepTransactionId = <
         stepId,
         transactionId,
         userId,
+      }) as unknown as Promise<TData>,
+    ...options,
+  });
+/**
+ * Update Org
+ * @param data The data for the request.
+ * @param data.orgId The org_id key to be updated.
+ * @param data.requestBody
+ * @returns Organization Successful Response
+ * @throws ApiError
+ */
+export const useAdminServiceUpdateOrganization = <
+  TData = Common.AdminServiceUpdateOrganizationMutationResult,
+  TError = unknown,
+  TContext = unknown,
+>(
+  options?: Omit<
+    UseMutationOptions<
+      TData,
+      TError,
+      {
+        orgId: string;
+        requestBody: OrganizationUpdate;
+      },
+      TContext
+    >,
+    'mutationFn'
+  >,
+) =>
+  useMutation<
+    TData,
+    TError,
+    {
+      orgId: string;
+      requestBody: OrganizationUpdate;
+    },
+    TContext
+  >({
+    mutationFn: ({ orgId, requestBody }) =>
+      AdminService.updateOrganization({
+        orgId,
+        requestBody,
+      }) as unknown as Promise<TData>,
+    ...options,
+  });
+/**
+ * Update Org
+ * @param data The data for the request.
+ * @param data.orgId The org_id key to be updated.
+ * @param data.requestBody
+ * @returns Organization Successful Response
+ * @throws ApiError
+ */
+export const useOrganizationServiceUpdateOrganization = <
+  TData = Common.OrganizationServiceUpdateOrganizationMutationResult,
+  TError = unknown,
+  TContext = unknown,
+>(
+  options?: Omit<
+    UseMutationOptions<
+      TData,
+      TError,
+      {
+        orgId: string;
+        requestBody: OrganizationUpdate;
+      },
+      TContext
+    >,
+    'mutationFn'
+  >,
+) =>
+  useMutation<
+    TData,
+    TError,
+    {
+      orgId: string;
+      requestBody: OrganizationUpdate;
+    },
+    TContext
+  >({
+    mutationFn: ({ orgId, requestBody }) =>
+      OrganizationService.updateOrganization({
+        orgId,
+        requestBody,
       }) as unknown as Promise<TData>,
     ...options,
   });

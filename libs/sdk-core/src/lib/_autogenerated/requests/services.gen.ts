@@ -233,6 +233,8 @@ import type {
   CreateOrganizationResponse,
   DeleteOrganizationByIdData,
   DeleteOrganizationByIdResponse,
+  UpdateOrganizationData,
+  UpdateOrganizationResponse,
   CreateVoiceChatCompletionsData,
   CreateVoiceChatCompletionsResponse,
   AuthenticateUserV1AuthPostData,
@@ -3521,6 +3523,33 @@ export class AdminService {
       headers,
     });
   }
+
+  /**
+   * Update Org
+   * @param data The data for the request.
+   * @param data.orgId The org_id key to be updated.
+   * @param data.requestBody
+   * @returns Organization Successful Response
+   * @throws ApiError
+   */
+  public static updateOrganization(
+    data: UpdateOrganizationData,
+    headers?: { user_id: string },
+  ): CancelablePromise<UpdateOrganizationResponse> {
+    return __request(OpenAPI, {
+      method: 'PATCH',
+      url: '/v1/admin/orgs/',
+      query: {
+        org_id: data.orgId,
+      },
+      body: data.requestBody,
+      mediaType: 'application/json',
+      errors: {
+        422: 'Validation Error',
+      },
+      headers,
+    });
+  }
 }
 
 export class VoiceService {
@@ -3723,6 +3752,33 @@ export class OrganizationService {
       query: {
         org_id: data.orgId,
       },
+      errors: {
+        422: 'Validation Error',
+      },
+      headers,
+    });
+  }
+
+  /**
+   * Update Org
+   * @param data The data for the request.
+   * @param data.orgId The org_id key to be updated.
+   * @param data.requestBody
+   * @returns Organization Successful Response
+   * @throws ApiError
+   */
+  public static updateOrganization(
+    data: UpdateOrganizationData,
+    headers?: { user_id: string },
+  ): CancelablePromise<UpdateOrganizationResponse> {
+    return __request(OpenAPI, {
+      method: 'PATCH',
+      url: '/v1/admin/orgs/',
+      query: {
+        org_id: data.orgId,
+      },
+      body: data.requestBody,
+      mediaType: 'application/json',
       errors: {
         422: 'Validation Error',
       },

@@ -392,7 +392,24 @@
         "summary": "List Composio Apps",
         "description": "Get a list of all Composio apps",
         "operationId": "list_composio_apps",
-        "parameters": [],
+        "parameters": [
+          {
+            "name": "user-id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "User Id"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Successful Response",
@@ -513,7 +530,24 @@
         "summary": "List Mcp Servers",
         "description": "Get a list of all configured MCP servers",
         "operationId": "list_mcp_servers",
-        "parameters": [],
+        "parameters": [
+          {
+            "name": "user-id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "User Id"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Successful Response",
@@ -5564,6 +5598,22 @@
             "schema": {
               "type": "string",
               "title": "Agent Id"
+            }
+          },
+          {
+            "name": "user-id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "User Id"
             }
           }
         ],
@@ -13407,11 +13457,6 @@
                   "o1-preview-2024-09-12",
                   "o1-mini",
                   "o1-mini-2024-09-12",
-                  "computer-use-preview",
-                  "computer-use-preview-2025-02-04",
-                  "computer-use-preview-2025-03-11",
-                  "gpt-4.5-preview",
-                  "gpt-4.5-preview-2025-02-27",
                   "gpt-4o",
                   "gpt-4o-2024-11-20",
                   "gpt-4o-2024-08-06",
@@ -13421,6 +13466,10 @@
                   "gpt-4o-audio-preview-2024-12-17",
                   "gpt-4o-mini-audio-preview",
                   "gpt-4o-mini-audio-preview-2024-12-17",
+                  "gpt-4o-search-preview",
+                  "gpt-4o-mini-search-preview",
+                  "gpt-4o-search-preview-2025-03-11",
+                  "gpt-4o-mini-search-preview-2025-03-11",
                   "chatgpt-4o-latest",
                   "gpt-4o-mini",
                   "gpt-4o-mini-2024-07-18",
@@ -13808,11 +13857,6 @@
                   "o1-preview-2024-09-12",
                   "o1-mini",
                   "o1-mini-2024-09-12",
-                  "computer-use-preview",
-                  "computer-use-preview-2025-02-04",
-                  "computer-use-preview-2025-03-11",
-                  "gpt-4.5-preview",
-                  "gpt-4.5-preview-2025-02-27",
                   "gpt-4o",
                   "gpt-4o-2024-11-20",
                   "gpt-4o-2024-08-06",
@@ -13822,6 +13866,10 @@
                   "gpt-4o-audio-preview-2024-12-17",
                   "gpt-4o-mini-audio-preview",
                   "gpt-4o-mini-audio-preview-2024-12-17",
+                  "gpt-4o-search-preview",
+                  "gpt-4o-mini-search-preview",
+                  "gpt-4o-search-preview-2025-03-11",
+                  "gpt-4o-mini-search-preview-2025-03-11",
                   "chatgpt-4o-latest",
                   "gpt-4o-mini",
                   "gpt-4o-mini-2024-07-18",
@@ -15158,9 +15206,9 @@
             "type": "string",
             "title": "File Id"
           },
-          "file_name": {
+          "filename": {
             "type": "string",
-            "title": "File Name"
+            "title": "Filename"
           }
         },
         "type": "object",
@@ -16863,6 +16911,12 @@
             ],
             "title": "Created At",
             "description": "The creation date of the organization."
+          },
+          "privileged_tools": {
+            "type": "boolean",
+            "title": "Privileged Tools",
+            "description": "Whether the organization has access to privileged tools.",
+            "default": false
           }
         },
         "additionalProperties": false,
@@ -16882,11 +16936,56 @@
             ],
             "title": "Name",
             "description": "The name of the organization."
+          },
+          "privileged_tools": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Privileged Tools",
+            "description": "Whether the organization has access to privileged tools.",
+            "default": false
           }
         },
         "additionalProperties": false,
         "type": "object",
         "title": "OrganizationCreate"
+      },
+      "OrganizationUpdate": {
+        "properties": {
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name",
+            "description": "The name of the organization."
+          },
+          "privileged_tools": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Privileged Tools",
+            "description": "Whether the organization has access to privileged tools.",
+            "default": false
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "OrganizationUpdate"
       },
       "ParameterProperties": {
         "properties": {

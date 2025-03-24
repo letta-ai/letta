@@ -1475,6 +1475,12 @@ export type ProvidersServiceModifyProviderMutationResult = Awaited<
 export type StepsServiceUpdateStepTransactionIdMutationResult = Awaited<
   ReturnType<typeof StepsService.updateStepTransactionId>
 >;
+export type AdminServiceUpdateOrganizationMutationResult = Awaited<
+  ReturnType<typeof AdminService.updateOrganization>
+>;
+export type OrganizationServiceUpdateOrganizationMutationResult = Awaited<
+  ReturnType<typeof OrganizationService.updateOrganization>
+>;
 export type ToolsServiceDeleteToolMutationResult = Awaited<
   ReturnType<typeof ToolsService.deleteTool>
 >;
