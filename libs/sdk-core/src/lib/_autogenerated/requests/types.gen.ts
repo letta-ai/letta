@@ -91,7 +91,7 @@ export type AgentSchema = {
   agent_type: string;
   core_memory: Array<CoreMemoryBlockSchema>;
   created_at: string;
-  description: string;
+  description: string | null;
   embedding_config: EmbeddingConfig;
   groups: Array<unknown>;
   identities: Array<unknown>;

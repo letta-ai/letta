@@ -304,7 +304,14 @@ export const $AgentSchema = {
       title: 'Created At',
     },
     description: {
-      type: 'string',
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
       title: 'Description',
     },
     embedding_config: {

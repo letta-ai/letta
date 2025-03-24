@@ -457,7 +457,11 @@ export const AgentSchema = z.object({
   agent_type: z.string(),
   core_memory: z.array(CoreMemoryBlockSchema),
   created_at: z.string(),
-  description: z.string(),
+  description: z.union([
+    z.string(),
+    z.null(),
+    z.array(z.union([z.string(), z.null()])),
+  ]),
   embedding_config: EmbeddingConfig,
   groups: z.array(z.unknown()),
   identities: z.array(z.unknown()),
