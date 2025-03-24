@@ -28,7 +28,6 @@ import { UpdateDevelopmentServerDetailsDialog } from './shared/UpdateDevelopment
 import { useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 import type { ServerInferResponses } from '@ts-rest/core';
-import { useFeatureFlag } from '$web/web-api/contracts';
 import type { developmentServersContracts } from '$web/web-api/contracts';
 import { useDevelopmentServerStatus } from '$web/client/hooks/useDevelopmentServerStatus/useDevelopmentServerStatus';
 import semver from 'semver/preload';
@@ -179,9 +178,6 @@ function LocalProjectLayout(props: LocalProjectLayoutProps) {
       queryKey: webApiQueryKeys.developmentServers.getDevelopmentServers,
     });
 
-  const { isLoading: isLoadingFlag, data: isFlagEnabled } =
-    useFeatureFlag('IDENTITIES');
-
   const additionalNavigationItems = useMemo(() => {
     if (!remoteConnections) {
       return [];
@@ -245,19 +241,15 @@ function LocalProjectLayout(props: LocalProjectLayoutProps) {
           label: t('nav.agents'),
           href: `/development-servers/${server.id}/agents`,
         },
-        ...(isFlagEnabled && !isLoadingFlag
-          ? [
-              {
-                id: 'identities',
-                icon: <IdentitiesIcon />,
-                label: t('nav.identities'),
-                href: `/development-servers/${server.id}/identities`,
-              },
-            ]
-          : []),
+        {
+          id: 'identities',
+          icon: <IdentitiesIcon />,
+          label: t('nav.identities'),
+          href: `/development-servers/${server.id}/identities`,
+        },
       ],
     }));
-  }, [remoteConnections, t, isFlagEnabled, isLoadingFlag]);
+  }, [remoteConnections, t]);
 
   return (
     <DashboardWithSidebarWrapper
@@ -290,16 +282,12 @@ function LocalProjectLayout(props: LocalProjectLayoutProps) {
               label: t('nav.agents'),
               href: `/development-servers/local/agents`,
             },
-            ...(isFlagEnabled && !isLoadingFlag
-              ? [
-                  {
-                    id: 'identities',
-                    icon: <IdentitiesIcon />,
-                    label: t('nav.identities'),
-                    href: `/development-servers/local/identities`,
-                  },
-                ]
-              : []),
+            {
+              id: 'identities',
+              icon: <IdentitiesIcon />,
+              label: t('nav.identities'),
+              href: `/development-servers/local/identities`,
+            },
           ],
         },
         ...additionalNavigationItems,

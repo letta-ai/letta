@@ -1,6 +1,7 @@
 import { useTranslations } from '@letta-cloud/translations';
 import {
   Button,
+  DesktopPageLayout,
   HStack,
   LettaLoader,
   RefreshIcon,
@@ -9,7 +10,6 @@ import {
 } from '@letta-cloud/ui-component-library';
 import type { ServerLogType } from '@letta-cloud/types';
 import { useEffect, useRef, useState } from 'react';
-import { DesktopPageLayout } from '../shared/DesktopPageLayout/DesktopPageLayout';
 
 export function ServerStatus() {
   const t = useTranslations('ServerStatus');

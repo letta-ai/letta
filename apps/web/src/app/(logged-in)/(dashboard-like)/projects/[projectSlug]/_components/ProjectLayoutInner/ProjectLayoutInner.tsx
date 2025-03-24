@@ -16,7 +16,6 @@ import React from 'react';
 import { useCurrentProject } from '$web/client/hooks/useCurrentProject/useCurrentProject';
 import { useUserHasPermission } from '$web/client/hooks';
 import { ApplicationServices } from '@letta-cloud/service-rbac';
-import { useFeatureFlag } from '@letta-cloud/sdk-web';
 
 type ProjectLayoutInnerProps = PropsWithChildren;
 
@@ -26,9 +25,6 @@ export function ProjectLayoutInner(props: ProjectLayoutInnerProps) {
   const [canCRDProjects] = useUserHasPermission(
     ApplicationServices.CREATE_UPDATE_DELETE_PROJECTS,
   );
-
-  const { isLoading: isLoadingFlag, data: isFlagEnabled } =
-    useFeatureFlag('IDENTITIES');
 
   return (
     <DashboardWithSidebarWrapper
@@ -63,16 +59,12 @@ export function ProjectLayoutInner(props: ProjectLayoutInnerProps) {
           label: t('nav.templates'),
           href: `/projects/${projectSlug}/templates`,
         },
-        ...(isFlagEnabled && !isLoadingFlag
-          ? [
-              {
-                id: 'identities',
-                icon: <IdentitiesIcon />,
-                label: t('nav.identities'),
-                href: `/projects/${projectSlug}/identities`,
-              },
-            ]
-          : []),
+        {
+          id: 'identities',
+          icon: <IdentitiesIcon />,
+          label: t('nav.identities'),
+          href: `/projects/${projectSlug}/identities`,
+        },
         ...(canCRDProjects
           ? [
               {

@@ -1,5 +1,5 @@
 import React from 'react';
-import { HStack, Typography, VStack } from '@letta-cloud/ui-component-library';
+import { HStack, Typography, VStack } from '../../../';
 import { Slot } from '@radix-ui/react-slot';
 
 interface DesktopPageLayoutProps {

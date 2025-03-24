@@ -50,7 +50,6 @@ import { useQueryClient } from '@tanstack/react-query';
 import { UpdateNameDialog } from '../../shared/UpdateAgentNameDialog/UpdateAgentNameDialog';
 import {
   ExtendedLLMSchema,
-  useFeatureFlag,
   webApi,
   webApiQueryKeys,
 } from '@letta-cloud/sdk-web';
@@ -784,11 +783,6 @@ export function AgentSettingsPanel() {
 
   const { capitalized: baseName } = useAgentBaseTypeName();
 
-  const { isLoading: isLoadingFlag, data: isFlagEnabled } =
-    useFeatureFlag('IDENTITIES');
-
-  const isIdentitiesEnabled = isFlagEnabled && !isLoadingFlag;
-
   if (!currentAgent.llm_config) {
     return <LoadingEmptyStatusComponent emptyMessage="" isLoading />;
   }
@@ -817,7 +811,7 @@ export function AgentSettingsPanel() {
         </HStack>
         <AgentIdentifierToCopy />
       </VStack>
-      {isIdentitiesEnabled && !isTemplate && <IdentityViewer />}
+      {!isTemplate && <IdentityViewer />}
       {isTemplate && <TemplateDescription />}
       {!isTemplate && <AgentTags />}
       <ModelSelector llmConfig={currentAgent.llm_config} />

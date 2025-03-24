@@ -1,5 +1,4 @@
 import { useTranslations } from '@letta-cloud/translations';
-import { DesktopPageLayout } from '../shared/DesktopPageLayout/DesktopPageLayout';
 import {
   Alert,
   AnthropicLogoMarkDynamic,
@@ -7,6 +6,7 @@ import {
   Button,
   CommunicationsIcon,
   ComposioLogoMarkDynamic,
+  DesktopPageLayout,
   Dialog,
   HStack,
   Link,

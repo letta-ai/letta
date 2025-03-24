@@ -194,3 +194,4 @@ export * from './lib/reusable/BoxList/BoxList';
 export * from './lib/core/WrapNotificationDot/WrapNotificationDot';
 
 export * from './lib/reusable/PackageInstallerView/PackageInstallerView';
+export * from './lib/reusable/DesktopPageLayout/DesktopPageLayout';

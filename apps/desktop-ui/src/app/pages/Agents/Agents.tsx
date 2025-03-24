@@ -1,8 +1,8 @@
 import { Link } from 'react-router-dom';
 import {
   Button,
-  DashboardPageSection,
   DataTable,
+  DesktopPageLayout,
   HStack,
   LettaInvaderIcon,
   VStack,
@@ -16,7 +16,6 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { useDateFormatter } from '@letta-cloud/utils-client';
 import { useTranslations } from '@letta-cloud/translations';
 import { CreateLocalAgentDialog } from './CreateLocalAgentDialog/CreateLocalAgentDialog';
-import { DesktopPageLayout } from '../shared/DesktopPageLayout/DesktopPageLayout';
 import { useServerStatus } from '../../hooks/useServerStatus/useServerStatus';
 import { ImportAgentsDialog } from '@letta-cloud/ui-ade-components';
 

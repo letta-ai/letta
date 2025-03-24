@@ -22,6 +22,7 @@ import {
   DashboardPageLayout,
   DashboardPageSection,
   DataTable,
+  DesktopPageLayout,
   Dialog,
   DotsHorizontalIcon,
   DropdownMenu,
@@ -31,6 +32,7 @@ import {
   FormProvider,
   HR,
   HStack,
+  IdentitiesIcon,
   InfoTooltip,
   Input,
   isMultiValue,
@@ -59,11 +61,12 @@ interface DeleteIdentityDialogProps {
   id: string;
   name: string;
   trigger: React.ReactNode;
+  onDelete?: VoidFunction;
 }
 
 function DeleteIdentityDialog(props: DeleteIdentityDialogProps) {
   const t = useTranslations('IdentitiesTable');
-  const { id, name, trigger } = props;
+  const { id, onDelete, name, trigger } = props;
   const queryClient = useQueryClient();
   const [open, setOpen] = useState(false);
 
@@ -91,7 +94,6 @@ function DeleteIdentityDialog(props: DeleteIdentityDialogProps) {
       },
       {
         onSuccess: () => {
-          setOpen(false);
           queryClient.setQueriesData<
             InfiniteData<ListIdentitiesResponse> | undefined
           >(
@@ -112,10 +114,16 @@ function DeleteIdentityDialog(props: DeleteIdentityDialogProps) {
               };
             },
           );
+
+          setOpen(false);
+
+          if (onDelete) {
+            onDelete();
+          }
         },
       },
     );
-  }, [mutate, queryClient, id]);
+  }, [mutate, queryClient, id, onDelete]);
 
   return (
     <FormProvider {...form}>
@@ -440,6 +448,9 @@ function IdentityItemOverlay(props: IdentityItemOverlayProps) {
                 <DeleteIdentityDialog
                   id={props.identity.id || ''}
                   name={props.identity.name}
+                  onDelete={() => {
+                    setOpen(false);
+                  }}
                   trigger={
                     <Button
                       type="button"
@@ -460,10 +471,11 @@ function IdentityItemOverlay(props: IdentityItemOverlayProps) {
 
 interface IdentitiesTableProps {
   currentProjectId?: string;
+  isDesktop?: boolean;
 }
 
 export function IdentitiesTable(props: IdentitiesTableProps) {
-  const { currentProjectId } = props;
+  const { currentProjectId, isDesktop } = props;
   const t = useTranslations('IdentitiesTable');
 
   const [search, setSearch] = useState<string>('');
@@ -646,6 +658,46 @@ export function IdentitiesTable(props: IdentitiesTableProps) {
     ];
   }, [t]);
 
+  const table = (
+    <DataTable
+      autofitHeight
+      onSetPage={setPage}
+      page={page}
+      searchValue={search}
+      errorMessage={isError ? t('table.error') : undefined}
+      onSearch={!isError ? setSearch : undefined}
+      onLimitChange={setLimit}
+      limit={limit}
+      hasNextPage={hasNextPage}
+      showPagination
+      columns={columns}
+      data={filteredData}
+      isLoading={isLoadingPage}
+      loadingText={t('table.loading')}
+      noResultsText={t('table.noResults')}
+    />
+  );
+
+  if (isDesktop) {
+    return (
+      <DesktopPageLayout
+        icon={<IdentitiesIcon />}
+        subtitle={t('description')}
+        title={t('title')}
+        actions={
+          <CreateIdentityDialog
+            currentProjectId={currentProjectId}
+            trigger={<Button label={t('createIdentity')} color="primary" />}
+          />
+        }
+      >
+        <VStack fullWidth fullHeight paddingX="small" paddingTop="small">
+          {table}
+        </VStack>
+      </DesktopPageLayout>
+    );
+  }
+
   return (
     <DashboardPageLayout
       subtitle={t('description')}
@@ -662,23 +714,7 @@ export function IdentitiesTable(props: IdentitiesTableProps) {
         fullHeight
         searchPlaceholder={t('searchInput.placeholder')}
       >
-        <DataTable
-          autofitHeight
-          onSetPage={setPage}
-          page={page}
-          searchValue={search}
-          errorMessage={isError ? t('table.error') : undefined}
-          onSearch={!isError ? setSearch : undefined}
-          onLimitChange={setLimit}
-          limit={limit}
-          hasNextPage={hasNextPage}
-          showPagination
-          columns={columns}
-          data={filteredData}
-          isLoading={isLoadingPage}
-          loadingText={t('table.loading')}
-          noResultsText={t('table.noResults')}
-        />
+        {table}
       </DashboardPageSection>
     </DashboardPageLayout>
   );

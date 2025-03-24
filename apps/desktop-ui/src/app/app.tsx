@@ -12,6 +12,7 @@ import {
   Button,
   CommunicationsIcon,
   HStack,
+  IdentitiesIcon,
   LettaInvaderIcon,
   TerminalIcon,
   Toaster,
@@ -24,6 +25,7 @@ import { useEffect } from 'react';
 import { Integrations } from './pages/Integrations/Integrations';
 import { NotConnectedOverlay } from './pages/shared/NotConnectedOverlay/NotConnectedOverlay';
 import { ServerStatus } from './pages/ServerStatus/ServerStatus';
+import { IdentitiesTable } from '@letta-cloud/ui-ade-components';
 
 function Sidebar() {
   const t = useTranslations('App');
@@ -39,6 +41,15 @@ function Sidebar() {
           preIcon={<LettaInvaderIcon />}
           color="tertiary"
           label={t('Sidebar.agents')}
+        ></Button>
+      </Link>
+      <Link to="/dashboard/identities">
+        <Button
+          hideLabel
+          active={location.pathname === '/dashboard/identities'}
+          preIcon={<IdentitiesIcon />}
+          color="tertiary"
+          label={t('Sidebar.identities')}
         ></Button>
       </Link>
       <Link to="/dashboard/server-status">
@@ -119,6 +130,14 @@ export function App() {
             }
           />
           <Route path="/dashboard/server-status" element={<ServerStatus />} />
+          <Route
+            path="/dashboard/identities"
+            element={
+              <NotConnectedOverlay>
+                <IdentitiesTable isDesktop />
+              </NotConnectedOverlay>
+            }
+          />
 
           <Route path="/dashboard/integrations" element={<Integrations />} />
         </Route>

@@ -117,6 +117,7 @@
   "App": {
     "Sidebar": {
       "agents": "Agents",
+      "identities": "Identities",
       "integrations": "Integrations",
       "serverStatus": "Server Status"
     }
