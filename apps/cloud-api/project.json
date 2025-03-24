@@ -58,7 +58,8 @@
       "dependsOn": ["build"],
       "options": {
         "buildTarget": "cloud-api:build",
-        "runBuildTargetDependencies": false
+        "runBuildTargetDependencies": false,
+        "runtimeArgs": ["--import", "@sentry/node/preload"]
       },
       "configurations": {
         "development": {

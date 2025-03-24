@@ -38,6 +38,7 @@ RUN mkdir -p /app
 RUN chown -R nodeserver:nodejs /app
 
 COPY --from=builder --chown=nodeserver:nodejs /app/dist/apps/cloud-api /app
+COPY --from=builder --chown=nodeserver:nodejs /app/cloud-api/instrument.js /app
 COPY --from=builder --chown=nodeserver:nodejs /app/node_modules /app/node_modules
 COPY --from=builder --chown=nodeserver:nodejs /app/package.json /app/package.json
 
@@ -46,4 +47,4 @@ USER nodeserver
 EXPOSE 8080
 ENV PORT=8080
 
-CMD ["node", "main.js"]
+CMD ["node", "--require", "./instrument.js", "main.js"]

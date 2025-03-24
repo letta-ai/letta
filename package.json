@@ -24,7 +24,7 @@
     "core:install": "nx install core",
     "cloud-api:dev": "npm run cloud-api:build && npm run cloud-api:serve",
     "cloud-api:build": "esbuild apps/cloud-api/src/main.ts --bundle --platform=node --outfile=dist/apps/cloud-api/main.js",
-    "cloud-api:serve": "node dist/apps/cloud-api/main.js",
+    "cloud-api:serve": "node --require ./apps/cloud-api/instrument.js dist/apps/cloud-api/main.js",
     "desktop:setup-core": "nx install desktop-core",
     "desktop:package-core": "nx package desktop-core",
     "desktop:dev": "concurrently \"nx serve desktop-electron\" \"nx serve desktop-ui\"",
