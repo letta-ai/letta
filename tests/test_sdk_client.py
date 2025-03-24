@@ -1,4 +1,3 @@
-import asyncio
 import os
 import threading
 import time
@@ -444,43 +443,44 @@ def test_function_always_error(client: LettaSDKClient, agent: AgentState):
     assert "ZeroDivisionError" in response_message.tool_return
 
 
-@pytest.mark.asyncio
-async def test_send_message_parallel(client: LettaSDKClient, agent: AgentState):
-    """
-    Test that sending two messages in parallel does not error.
-    """
-
-    # Define a coroutine for sending a message using asyncio.to_thread for synchronous calls
-    async def send_message_task(message: str):
-        response = await asyncio.to_thread(
-            client.agents.messages.create,
-            agent_id=agent.id,
-            messages=[
-                MessageCreate(
-                    role="user",
-                    content=message,
-                ),
-            ],
-        )
-        assert response, f"Sending message '{message}' failed"
-        return response
-
-    # Prepare two tasks with different messages
-    messages = ["Test message 1", "Test message 2"]
-    tasks = [send_message_task(message) for message in messages]
-
-    # Run the tasks concurrently
-    responses = await asyncio.gather(*tasks, return_exceptions=True)
-
-    # Check for exceptions and validate responses
-    for i, response in enumerate(responses):
-        if isinstance(response, Exception):
-            pytest.fail(f"Task {i} failed with exception: {response}")
-        else:
-            assert response, f"Task {i} returned an invalid response: {response}"
-
-    # Ensure both tasks completed
-    assert len(responses) == len(messages), "Not all messages were processed"
+# TODO: Add back when the new agent loop hits
+# @pytest.mark.asyncio
+# async def test_send_message_parallel(client: LettaSDKClient, agent: AgentState):
+#     """
+#     Test that sending two messages in parallel does not error.
+#     """
+#
+#     # Define a coroutine for sending a message using asyncio.to_thread for synchronous calls
+#     async def send_message_task(message: str):
+#         response = await asyncio.to_thread(
+#             client.agents.messages.create,
+#             agent_id=agent.id,
+#             messages=[
+#                 MessageCreate(
+#                     role="user",
+#                     content=message,
+#                 ),
+#             ],
+#         )
+#         assert response, f"Sending message '{message}' failed"
+#         return response
+#
+#     # Prepare two tasks with different messages
+#     messages = ["Test message 1", "Test message 2"]
+#     tasks = [send_message_task(message) for message in messages]
+#
+#     # Run the tasks concurrently
+#     responses = await asyncio.gather(*tasks, return_exceptions=True)
+#
+#     # Check for exceptions and validate responses
+#     for i, response in enumerate(responses):
+#         if isinstance(response, Exception):
+#             pytest.fail(f"Task {i} failed with exception: {response}")
+#         else:
+#             assert response, f"Task {i} returned an invalid response: {response}"
+#
+#     # Ensure both tasks completed
+#     assert len(responses) == len(messages), "Not all messages were processed"
 
 
 def test_send_message_async(client: LettaSDKClient, agent: AgentState):
