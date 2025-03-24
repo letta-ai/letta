@@ -4,7 +4,8 @@ import axios from 'axios';
 import { Slot } from '@radix-ui/react-slot';
 import { toast } from '@letta-cloud/ui-component-library';
 import { useTranslations } from '@letta-cloud/translations';
-import { useCurrentAgent } from '../hooks/useCurrentAgent/useCurrentAgent';
+import { useCurrentAgent } from '../hooks';
+import { useCurrentAgentMetaData } from '../hooks';
 
 interface ExportAgentButtonProps {
   trigger: React.ReactNode;
@@ -14,16 +15,18 @@ export function ExportAgentButton(props: ExportAgentButtonProps) {
   const { trigger } = props;
 
   const t = useTranslations('ExportAgentButton');
+  const { isLocal } = useCurrentAgentMetaData();
   const { id: agentId, name } = useCurrentAgent();
   const config = useCurrentDevelopmentServerConfig();
   const handleAsyncDownload = useCallback(async () => {
+    const downloadURL = isLocal
+      ? `${config?.url}/v1/agents/${agentId}/export`
+      : `/v1/agents/${agentId}/export`;
+
     try {
-      const response = await axios.get(
-        `${config?.url}/v1/agents/${agentId}/export`,
-        {
-          responseType: 'blob',
-        },
-      );
+      const response = await axios.get(downloadURL, {
+        responseType: 'blob',
+      });
 
       const url = window.URL.createObjectURL(new Blob([response.data]));
 
@@ -38,7 +41,7 @@ export function ExportAgentButton(props: ExportAgentButtonProps) {
     } catch (_) {
       toast.error(t('error'));
     }
-  }, [agentId, t, name, config]);
+  }, [agentId, t, name, isLocal, config]);
 
   return <Slot onClick={handleAsyncDownload}>{trigger}</Slot>;
 }
