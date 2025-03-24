@@ -20,8 +20,8 @@ export function NotConnectedOverlay({ children }: NotConnectedOverlayProps) {
     <>
       {!isConnected && (
         <>
-          <div className="absolute z-[99] bg-gray-100 w-[100dvw] h-[100dvh] opacity-60"></div>
-          <div className="absolute z-[100] w-[100dvw] h-[100dvh] flex items-center justify-center">
+          <div className="absolute z-[8] bg-gray-100 w-[100dvw] h-[100dvh] opacity-60"></div>
+          <div className="absolute z-[9] w-[100dvw] h-[100dvh] flex items-center justify-center">
             <div className="border max-w-[350px] w-full flex items-center justify-center py-8 bg-background">
               <VStack className="max-w-[300px]" align="center" padding>
                 <LettaLoader size="xlarge" />

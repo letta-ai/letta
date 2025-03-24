@@ -6,6 +6,11 @@
 import { app, ipcMain } from 'electron';
 import { environment } from '../../environments/environment';
 import App from '../app';
+import {
+  getDesktopConfig,
+  saveDesktopConfig,
+} from '../utils/desktop-config/desktop-config';
+import { DesktopConfigSchemaType } from '@letta-cloud/types';
 
 export default class ElectronEvents {
   static bootstrapElectronEvents(): Electron.IpcMain {
@@ -35,6 +40,21 @@ ipcMain.handle('letta-server:get-logs', () => {
 
   App.mainWindow.webContents.send('letta-server:receive-logs', logs);
 });
+
+ipcMain.handle('desktop-config:get', () => {
+  const config = getDesktopConfig();
+
+  App.mainWindow.webContents.send('desktop-config:receive', config);
+});
+
+ipcMain.handle(
+  'desktop-config:save',
+  (event, payload: DesktopConfigSchemaType) => {
+    saveDesktopConfig(payload);
+
+    App.restartLettaServer();
+  },
+);
 
 ipcMain.handle('letta-server:restart', () => {
   App.restartLettaServer();

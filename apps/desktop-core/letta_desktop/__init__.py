@@ -29,9 +29,21 @@ import opentelemetry  # noqa
 import blib2to3.pgen2.tokenize  # noqa
 import blib2to3.pgen2.parse  # noqa
 import mcp  # noqa
+import json
 
 
 print("Initializing Letta Desktop Service...")
+
+def get_desktop_config():
+  # Desktop config is a json located at ~/.letta/desktop_config.json
+
+  desktop_config_path = letta_dir / "desktop_config.json"
+
+  if not desktop_config_path.exists():
+    return {}
+
+  with open(desktop_config_path, "r") as f:
+    return json.load(f)
 
 
 def get_app_global_path():
@@ -170,8 +182,23 @@ def check_if_web_server_running():
 
 
 if __name__ == "__main__":
-    pg_uri = initialize_database()
-    upgrade_db(pg_uri)
+    config = get_desktop_config()
+
+    try:
+      if config['databaseConfig']['type'] != 'embedded':
+        connection_string = config['databaseConfig']['connectionString']
+        with open(letta_dir / "pg_uri", "w") as f:
+          f.write(connection_string)
+
+        upgrade_db(connection_string)
+      else:
+        pg_uri = initialize_database()
+        upgrade_db(pg_uri)
+    except KeyError:
+        pg_uri = initialize_database()
+        upgrade_db(pg_uri)
+
+
 
     from letta.server.rest_api.app import app
 

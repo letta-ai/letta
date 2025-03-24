@@ -1,4 +1,5 @@
 import { contextBridge, ipcRenderer } from 'electron';
+import { DesktopConfigSchemaType } from '@letta-cloud/types';
 
 contextBridge.exposeInMainWorld('electron', {
   getAppVersion: () => ipcRenderer.invoke('get-app-version'),
@@ -17,6 +18,17 @@ contextBridge.exposeInMainWorld('router', {
       return callback(value);
     });
   },
+});
+
+contextBridge.exposeInMainWorld('desktopConfig', {
+  get: () => ipcRenderer.invoke('desktop-config:get'),
+  onGetConfig: (callback) => {
+    return ipcRenderer.on('desktop-config:receive', (_event, value) => {
+      return callback(value);
+    });
+  },
+  save: (config: DesktopConfigSchemaType) =>
+    ipcRenderer.invoke('desktop-config:save', config),
 });
 
 contextBridge.exposeInMainWorld('lettaServer', {

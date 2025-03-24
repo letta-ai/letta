@@ -1,5 +1,8 @@
 // extend window with electron
-import type { ServerLogType } from '@letta-cloud/types';
+import type {
+  DesktopConfigSchemaType,
+  ServerLogType,
+} from '@letta-cloud/types';
 
 declare global {
   interface Window {
@@ -19,6 +22,13 @@ declare global {
       restart: () => Promise<void>;
       getLogs: () => Promise<string>;
       onGetLogs: (callback: (logs: ServerLogType[]) => void) => void;
+    };
+    desktopConfig: {
+      get: () => Promise<string>;
+      onGetConfig: (
+        callback: (config: DesktopConfigSchemaType) => void,
+      ) => void;
+      save: (config: DesktopConfigSchemaType) => Promise<void>;
     };
     lettaConfig: {
       load: () => Promise<void>;

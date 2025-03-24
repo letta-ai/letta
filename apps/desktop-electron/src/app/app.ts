@@ -11,6 +11,7 @@ import type { ServerLogType } from '@letta-cloud/types';
 import * as todesktop from '@todesktop/runtime';
 import * as os from 'os';
 import { createWebServer, setServerId } from './web-server';
+import { getDesktopConfig } from './utils/desktop-config/desktop-config';
 todesktop.init();
 
 let lettaServer: ReturnType<typeof execFile> | null = null;
@@ -204,13 +205,27 @@ export default class App {
     }
   }
 
+  static findLettaDesktopConfig() {}
+
   static startLettaServer(copyFiles: boolean = true) {
+    const config = getDesktopConfig();
+
+    lettaServerLogs.clearLogs();
+
+    if (!config) {
+      lettaServerLogs.addLog({
+        type: 'info',
+        message: 'No desktop config found. Please set one up...',
+        timestamp: new Date().toISOString(),
+      });
+
+      return;
+    }
+
     if (copyFiles) {
       copyAlembicToLettaDir();
       copyLettaServerToLettaDir();
     }
-
-    lettaServerLogs.clearLogs();
 
     lettaServerLogs.addLog({
       type: 'info',

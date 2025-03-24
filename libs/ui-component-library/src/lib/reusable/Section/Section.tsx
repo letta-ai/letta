@@ -70,7 +70,7 @@ export function Section(props: SectionProps) {
       borderBottom={borderBottom}
     >
       <HStack align="center" justify="spaceBetween">
-        <HStack>
+        <HStack align="center">
           {icon && <VStack>{icon}</VStack>}
           <VStack gap={false}>
             {title && (

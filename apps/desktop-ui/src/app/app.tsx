@@ -10,6 +10,7 @@ import { AppHeader } from './AppHeader/AppHeader';
 import { Agents } from './pages/Agents/Agents';
 import {
   Button,
+  CogIcon,
   CommunicationsIcon,
   HStack,
   IdentitiesIcon,
@@ -25,6 +26,8 @@ import { useEffect } from 'react';
 import { Integrations } from './pages/Integrations/Integrations';
 import { NotConnectedOverlay } from './pages/shared/NotConnectedOverlay/NotConnectedOverlay';
 import { ServerStatus } from './pages/ServerStatus/ServerStatus';
+import { SetupProvider } from './pages/SetupProvider/SetupProvider';
+import { Settings } from './pages/Settings/Settings';
 import { IdentitiesTable } from '@letta-cloud/ui-ade-components';
 
 function Sidebar() {
@@ -70,6 +73,15 @@ function Sidebar() {
           label={t('Sidebar.integrations')}
         ></Button>
       </Link>
+      <Link to="/dashboard/settings">
+        <Button
+          hideLabel
+          active={location.pathname === '/dashboard/settings'}
+          preIcon={<CogIcon />}
+          color="tertiary"
+          label={t('Sidebar.settings')}
+        ></Button>
+      </Link>
     </VStack>
   );
 }
@@ -109,7 +121,7 @@ export function App() {
   }, []);
 
   return (
-    <>
+    <SetupProvider>
       <Routes>
         <Route path="/" element={<Homepage />} />
         <Route path="/dashboard" element={<Dashboard />}>
@@ -140,10 +152,11 @@ export function App() {
           />
 
           <Route path="/dashboard/integrations" element={<Integrations />} />
+          <Route path="/dashboard/settings" element={<Settings />} />
         </Route>
       </Routes>
       <Toaster />
-    </>
+    </SetupProvider>
   );
 }
 

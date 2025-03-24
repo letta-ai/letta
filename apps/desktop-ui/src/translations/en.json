@@ -98,6 +98,83 @@
     "title": "Letta Server Logs",
     "subtitle": "View the status of your server and the agents connected to it."
   },
+  "Settings": {
+    "title": "Desktop Settings",
+    "subtitle": "Update your desktop settings below.",
+    "DatabaseSettings": {
+      "edit": "Configure",
+      "title": "Database Settings",
+      "type": "Database Type",
+      "types": {
+        "external": "External Database",
+        "embedded": "Embedded Database"
+      },
+      "connectionString": "Connection String"
+    },
+    "EditDatabaseSettingsDialog": {
+      "title": "Update Database Connection",
+      "externalOnly": "External data",
+      "connectionString": {
+        "label": "Connection String",
+        "error": {
+          "missing": "Connection string is required",
+          "invalid": "Invalid connection string"
+        },
+        "placeholder": "postgresql://username:password@host:port/database",
+        "placeholderNone": "Embedded database does not have a connection string",
+        "description": "Enter the connection string for your external database",
+        "descriptionNone": "Embedded database does not have a connection string"
+      }
+    }
+  },
+  "SetupProvider": {
+    "title": "Setup Provider",
+    "welcome": "Welcome to Letta Desktop!",
+    "description": "Letta Desktop lets you build and manage agents locally on your machine. Before we begin, please select how you want your agents to be stored.",
+    "configureDatabase": "Configure Database",
+    "ConfigureExternalDatabaseStep": {
+      "back": "Back",
+      "next": "Save Configuration",
+      "step": {
+        "databaseName": {
+          "label": "Database Name",
+          "placeholder": "letta"
+        },
+        "host": {
+          "label": "Host",
+          "placeholder": "localhost"
+        },
+        "port": {
+          "label": "Port",
+          "placeholder": "5432"
+        },
+        "username": {
+          "label": "Username",
+          "placeholder": "postgres"
+        },
+        "password": {
+          "label": "Password",
+          "placeholder": ""
+        }
+      },
+      "title": "Configure your external database",
+      "description": "Please enter the connection details for your external database. We use postgres as the database type. If you have a value that isn't required, you can leave it blank."
+    },
+    "ConfigureDatabaseTypeStep": {
+      "description": "Select the database type you would like to use to store your agents. You can choose to use an embedded database that comes with Letta, or connect to your own database.",
+      "bringYourOwn": {
+        "label": "Bring your own database",
+        "description": "Connect to your own postgres database to store your agents. This is the most flexible option, but requires you to have a database setup.",
+        "badge": "Recommended"
+      },
+      "embedded": {
+        "noSetup": "No setup required",
+        "label": "Embedded database",
+        "description": "This is the easiest option to get started with, but is in a alpha state, and should only be used for evaluation purposes.",
+        "badge": "Alpha"
+      }
+    }
+  },
   "AppHeader": {
     "Navigation": {
       "cloud": "Cloud ADE",
@@ -116,6 +193,7 @@
   },
   "App": {
     "Sidebar": {
+      "settings": "Settings",
       "agents": "Agents",
       "identities": "Identities",
       "integrations": "Integrations",
