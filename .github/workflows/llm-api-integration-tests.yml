@@ -74,11 +74,11 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/.local
-          key: venv-${{ runner.os }}-${{ steps.setup-python.outputs.python-version }}-${{ inputs.poetry-version }}
+          key: venv-${{ runner.os }}-${{ steps.setup-python.outputs.python-version }}-1.8.3
       - name: Install Poetry
         uses: snok/install-poetry@v1
         with:
-          version: ${{ inputs.poetry-version }}
+          version: 1.8.3
           virtualenvs-create: true
           virtualenvs-in-project: true
       - name: Load cached venv
