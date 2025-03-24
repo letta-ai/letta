@@ -744,6 +744,8 @@ class AgentManager:
         Update internal memory object and system prompt if there have been modifications.
 
         Args:
+            actor:
+            agent_id:
             new_memory (Memory): the new memory object to compare to the current memory object
 
         Returns:
