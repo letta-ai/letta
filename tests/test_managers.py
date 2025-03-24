@@ -32,6 +32,7 @@ from letta.schemas.message import Message as PydanticMessage
 from letta.schemas.message import MessageCreate, MessageUpdate
 from letta.schemas.openai.chat_completion_response import UsageStatistics
 from letta.schemas.organization import Organization as PydanticOrganization
+from letta.schemas.organization import OrganizationUpdate
 from letta.schemas.passage import Passage as PydanticPassage
 from letta.schemas.run import Run as PydanticRun
 from letta.schemas.sandbox_config import E2BSandboxConfig, LocalSandboxConfig, SandboxConfigCreate, SandboxConfigUpdate, SandboxType
@@ -1786,6 +1787,14 @@ def test_update_organization_name(server: SyncServer):
     assert org.name == org_name_a
     org = server.organization_manager.update_organization_name_using_id(org_id=org.id, name=org_name_b)
     assert org.name == org_name_b
+
+
+def test_update_organization_privileged_tools(server: SyncServer):
+    org_name = "test"
+    org = server.organization_manager.create_organization(pydantic_org=PydanticOrganization(name=org_name))
+    assert org.privileged_tools == False
+    org = server.organization_manager.update_organization(org_id=org.id, org_update=OrganizationUpdate(privileged_tools=True))
+    assert org.privileged_tools == True
 
 
 def test_list_organizations_pagination(server: SyncServer):

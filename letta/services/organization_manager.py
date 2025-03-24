@@ -3,6 +3,7 @@ from typing import List, Optional
 from letta.orm.errors import NoResultFound
 from letta.orm.organization import Organization as OrganizationModel
 from letta.schemas.organization import Organization as PydanticOrganization
+from letta.schemas.organization import OrganizationUpdate
 from letta.utils import enforce_types
 
 
@@ -60,6 +61,18 @@ class OrganizationManager:
             org = OrganizationModel.read(db_session=session, identifier=org_id)
             if name:
                 org.name = name
+            org.update(session)
+            return org.to_pydantic()
+
+    @enforce_types
+    def update_organization(self, org_id: str, org_update: OrganizationUpdate) -> PydanticOrganization:
+        """Update an organization."""
+        with self.session_maker() as session:
+            org = OrganizationModel.read(db_session=session, identifier=org_id)
+            if org_update.name:
+                org.name = org_update.name
+            if org_update.privileged_tools:
+                org.privileged_tools = org_update.privileged_tools
             org.update(session)
             return org.to_pydantic()
 

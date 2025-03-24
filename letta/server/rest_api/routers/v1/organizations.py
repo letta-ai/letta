@@ -2,7 +2,7 @@ from typing import TYPE_CHECKING, List, Optional
 
 from fastapi import APIRouter, Body, Depends, HTTPException, Query
 
-from letta.schemas.organization import Organization, OrganizationCreate
+from letta.schemas.organization import Organization, OrganizationCreate, OrganizationUpdate
 from letta.server.rest_api.utils import get_letta_server
 
 if TYPE_CHECKING:
@@ -54,6 +54,24 @@ def delete_org(
         if org is None:
             raise HTTPException(status_code=404, detail=f"Organization does not exist")
         server.organization_manager.delete_organization_by_id(org_id=org_id)
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"{e}")
+    return org
+
+
+@router.patch("/", tags=["admin"], response_model=Organization, operation_id="update_organization")
+def update_org(
+    org_id: str = Query(..., description="The org_id key to be updated."),
+    request: OrganizationUpdate = Body(...),
+    server: "SyncServer" = Depends(get_letta_server),
+):
+    try:
+        org = server.organization_manager.get_organization_by_id(org_id=org_id)
+        if org is None:
+            raise HTTPException(status_code=404, detail=f"Organization does not exist")
+        org = server.organization_manager.update_organization(org_id=org_id, name=request.name)
     except HTTPException:
         raise
     except Exception as e:
