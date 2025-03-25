@@ -272,6 +272,150 @@ function ContextWindowSlider(props: ContextWindowSliderProps) {
   );
 }
 
+interface MaxTokensSliderProps {
+  maxContextWindow: number;
+  defaultMaxTokens: number;
+}
+
+function MaxTokensSlider(props: MaxTokensSliderProps) {
+  const { maxContextWindow, defaultMaxTokens } = props;
+  const currentAgent = useCurrentAgent();
+  const { syncUpdateCurrentAgent } = useSyncUpdateCurrentAgent();
+  const t = useTranslations('ADE/AdvancedSettings');
+
+  const [draftMaxTokens, setDraftMaxTokens] = useState<string>(
+    `${defaultMaxTokens || 1024}`,
+  );
+
+  const handleMaxTokensChange = useCallback(
+    (value: number) => {
+      if (!currentAgent.llm_config) {
+        return;
+      }
+
+      syncUpdateCurrentAgent((existing) => ({
+        llm_config: {
+          ...existing.llm_config,
+          max_tokens: value,
+        },
+      }));
+    },
+    [currentAgent.llm_config, syncUpdateCurrentAgent],
+  );
+
+  const parsedDraftMaxTokens = useMemo(() => {
+    const sliderNumber = tryParseSliderNumber(draftMaxTokens);
+
+    if (sliderNumber === false) {
+      return false;
+    }
+
+    if (sliderNumber < 1024 || sliderNumber > maxContextWindow) {
+      return false;
+    }
+
+    return sliderNumber;
+  }, [draftMaxTokens, maxContextWindow]);
+
+  return (
+    <RawSlider
+      fullWidth
+      label={t('MaxTokensSlider.label')}
+      value={draftMaxTokens}
+      errorMessage={
+        parsedDraftMaxTokens === false ? t('MaxTokensSlider.error') : undefined
+      }
+      onValueChange={(value) => {
+        setDraftMaxTokens(value);
+
+        const parsedNumber = tryParseSliderNumber(value);
+
+        if (parsedNumber) {
+          handleMaxTokensChange(parsedNumber);
+        }
+      }}
+      min={1024}
+      max={maxContextWindow}
+    />
+  );
+}
+
+interface MaxReasoningTokensSliderProps {
+  maxTokens: number;
+  defaultMaxReasoningTokens: number;
+}
+
+function MaxReasoningTokensSlider(props: MaxReasoningTokensSliderProps) {
+  const { maxTokens, defaultMaxReasoningTokens } = props;
+  const currentAgent = useCurrentAgent();
+  const { syncUpdateCurrentAgent } = useSyncUpdateCurrentAgent();
+  const t = useTranslations('ADE/AdvancedSettings');
+
+  const [draftMaxReasoningTokens, setDraftMaxReasoningTokens] =
+    useState<string>(
+      `${currentAgent.llm_config?.max_reasoning_tokens || defaultMaxReasoningTokens}`,
+    );
+
+  const handleMaxReasoningTokensChange = useCallback(
+    (value: number) => {
+      if (!currentAgent.llm_config) {
+        return;
+      }
+
+      syncUpdateCurrentAgent((existing) => ({
+        llm_config: {
+          ...existing.llm_config,
+          max_reasoning_tokens: value,
+          enable_reasoner: value !== 0,
+          temperature: value !== 0 ? 1 : existing.llm_config.temperature,
+        },
+      }));
+    },
+    [currentAgent.llm_config, syncUpdateCurrentAgent],
+  );
+
+  const parsedDraftMaxReasoningTokens = useMemo(() => {
+    const sliderNumber = tryParseSliderNumber(draftMaxReasoningTokens);
+
+    if (sliderNumber === false) {
+      return false;
+    }
+
+    if (
+      (sliderNumber < 1024 || sliderNumber > maxTokens) &&
+      sliderNumber !== 0
+    ) {
+      return false;
+    }
+
+    return sliderNumber;
+  }, [draftMaxReasoningTokens, maxTokens]);
+
+  return (
+    <RawSlider
+      fullWidth
+      label={t('MaxReasoningTokensSlider.label')}
+      value={draftMaxReasoningTokens}
+      errorMessage={
+        parsedDraftMaxReasoningTokens === false
+          ? t('MaxReasoningTokensSlider.error')
+          : undefined
+      }
+      onValueChange={(value) => {
+        setDraftMaxReasoningTokens(value);
+
+        const parsedNumber = tryParseSliderNumber(value);
+
+        if (parsedNumber !== false) {
+          handleMaxReasoningTokensChange(parsedNumber);
+        }
+      }}
+      min={0}
+      max={maxTokens}
+    />
+  );
+}
+
 const systemPromptEditorForm = z.object({
   system: z.string(),
 });
@@ -484,6 +628,28 @@ export function AdvancedSettingsPanel() {
             }
           />
         )}
+        {currentBaseModel?.max_tokens && (
+          <MaxTokensSlider
+            maxContextWindow={
+              currentAgent.llm_config.context_window || MIN_CONTEXT_WINDOW
+            }
+            defaultMaxTokens={
+              currentAgent.llm_config.max_tokens || currentBaseModel.max_tokens
+            }
+          />
+        )}
+        {currentBaseModel?.max_tokens &&
+          currentBaseModel.model.startsWith('claude-3-7-sonnet') && (
+            <MaxReasoningTokensSlider
+              maxTokens={
+                currentAgent.llm_config.max_tokens ||
+                currentBaseModel.max_tokens
+              }
+              defaultMaxReasoningTokens={
+                currentAgent.llm_config.max_reasoning_tokens || 0
+              }
+            />
+          )}
         <SystemPromptEditor />
         <EmbeddingSelector embeddingConfig={currentAgent.embedding_config} />
         <RawInput

@@ -19,12 +19,14 @@ import {
   PersonIcon,
   LettaInvaderIcon,
   ThoughtsIcon,
+  Tooltip,
   Typography,
   VStack,
   MessageWrapper,
   LoadingEmptyStatusComponent,
   BlockQuote,
   InnerMonologueIcon,
+  AnthropicLogoMarkDynamic,
 } from '@letta-cloud/ui-component-library';
 import type {
   AgentMessage,
@@ -493,13 +495,26 @@ export function Messages(props: MessagesProps) {
             return {
               id: `${agentMessage.id}-${agentMessage.message_type}`,
               content: (
-                <BlockQuote>
+                <BlockQuote fullWidth>
                   <VStack gap="small">
-                    <HStack align="center" gap="small">
-                      <InnerMonologueIcon color="violet" size="small" />
-                      <Typography bold color="violet" variant="body2">
-                        {t('reasoning')}
-                      </Typography>
+                    <HStack align="center" justify="spaceBetween">
+                      <HStack align="center" gap="small">
+                        <InnerMonologueIcon color="violet" size="small" />
+                        <Typography bold color="violet" variant="body2">
+                          {t('reasoning')}
+                        </Typography>
+                      </HStack>
+                      {agentMessage.source === 'reasoner_model' && (
+                        <div className="pr-8">
+                          <Tooltip content={t('reasonerModel')}>
+                            <AnthropicLogoMarkDynamic
+                              color="violet"
+                              size="small"
+                              className="opacity-60"
+                            />
+                          </Tooltip>
+                        </div>
+                      )}
                     </HStack>
                     <Typography>{agentMessage.reasoning}</Typography>
                   </VStack>
@@ -521,6 +536,67 @@ export function Messages(props: MessagesProps) {
                 }}
               >
                 <Typography>{agentMessage.reasoning}</Typography>
+              </MessageWrapper>
+            ),
+            timestamp: new Date(agentMessage.date).toISOString(),
+            name: 'Agent',
+          };
+        case 'hidden_reasoning_message':
+          if (mode === 'simple') {
+            return null;
+          }
+          if (mode === 'interactive') {
+            return {
+              id: `${agentMessage.id}-${agentMessage.message_type}`,
+              content: (
+                <BlockQuote fullWidth>
+                  <VStack gap="small">
+                    <HStack align="center" justify="spaceBetween">
+                      <HStack align="center" gap="small">
+                        <InnerMonologueIcon color="violet" size="small" />
+                        <Typography bold color="violet" variant="body2">
+                          {t('reasoning')}
+                        </Typography>
+                      </HStack>
+                      <div className="pr-8">
+                        <Tooltip content={t('reasonerModel')}>
+                          <AnthropicLogoMarkDynamic
+                            color="violet"
+                            size="small"
+                            className="opacity-60"
+                          />
+                        </Tooltip>
+                      </div>
+                    </HStack>
+                    <Typography
+                      semibold
+                      uppercase
+                      variant="body3"
+                      color="muted"
+                    >
+                      {agentMessage.state + ' by model provider'}
+                    </Typography>
+                  </VStack>
+                </BlockQuote>
+              ),
+              timestamp: new Date(agentMessage.date).toISOString(),
+              name: 'Agent',
+            };
+          }
+
+          return {
+            id: `${agentMessage.id}-${agentMessage.message_type}`,
+            content: (
+              <MessageWrapper
+                type="reasoningMessage"
+                header={{
+                  preIcon: <ThoughtsIcon />,
+                  title: t('reasoningMessage'),
+                }}
+              >
+                <Typography>
+                  {agentMessage.state + ' by model provider'}
+                </Typography>
               </MessageWrapper>
             ),
             timestamp: new Date(agentMessage.date).toISOString(),

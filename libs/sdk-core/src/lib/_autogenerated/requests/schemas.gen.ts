@@ -3314,6 +3314,46 @@ export const $CreateAgentRequest = {
       description: 'The embedding chunk size used by the agent.',
       default: 300,
     },
+    max_tokens: {
+      anyOf: [
+        {
+          type: 'integer',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Max Tokens',
+      description:
+        'The maximum number of tokens to generate, including reasoning step. If not set, the model will use its default value.',
+    },
+    max_reasoning_tokens: {
+      anyOf: [
+        {
+          type: 'integer',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Max Reasoning Tokens',
+      description:
+        'The maximum number of tokens to generate for reasoning step. If not set, the model will use its default value.',
+    },
+    enable_reasoner: {
+      anyOf: [
+        {
+          type: 'boolean',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Enable Reasoner',
+      description:
+        'Whether to enable internal extended thinking step for a reasoner model.',
+      default: false,
+    },
     from_template: {
       anyOf: [
         {
@@ -4201,6 +4241,67 @@ export const $Health = {
   description: 'Health check response body',
 } as const;
 
+export const $HiddenReasoningMessage = {
+  properties: {
+    id: {
+      type: 'string',
+      title: 'Id',
+    },
+    date: {
+      type: 'string',
+      format: 'date-time',
+      title: 'Date',
+    },
+    name: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Name',
+    },
+    message_type: {
+      type: 'string',
+      enum: ['hidden_reasoning_message'],
+      const: 'hidden_reasoning_message',
+      title: 'Message Type',
+      default: 'hidden_reasoning_message',
+    },
+    state: {
+      type: 'string',
+      enum: ['redacted', 'omitted'],
+      title: 'State',
+    },
+    hidden_reasoning: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Hidden Reasoning',
+    },
+  },
+  type: 'object',
+  required: ['id', 'date', 'state'],
+  title: 'HiddenReasoningMessage',
+  description: `Representation of an agent's internal reasoning where reasoning content
+has been hidden from the response.
+
+Args:
+    id (str): The ID of the message
+    date (datetime): The date the message was created in ISO format
+    name (Optional[str]): The name of the sender of the message
+    state (Literal["redacted", "omitted"]): Whether the reasoning
+        content was redacted by the provider or simply omitted by the API
+    hidden_reasoning (Optional[str]): The internal reasoning of the agent`,
+} as const;
+
 export const $Identity = {
   properties: {
     id: {
@@ -4840,6 +4941,20 @@ export const $LLMConfig = {
       description:
         'The maximum number of tokens to generate. If not set, the model will use its default value.',
       default: 4096,
+    },
+    enable_reasoner: {
+      type: 'boolean',
+      title: 'Enable Reasoner',
+      description:
+        "Whether or not the model should use extended thinking if it is a 'reasoning' style model",
+      default: false,
+    },
+    max_reasoning_tokens: {
+      type: 'integer',
+      title: 'Max Reasoning Tokens',
+      description:
+        'Configurable thinking budget for extended thinking, only used if enable_reasoner is True. Minimum value is 1024.',
+      default: 0,
     },
   },
   type: 'object',
@@ -6324,6 +6439,17 @@ export const $ReasoningMessage = {
       type: 'string',
       title: 'Reasoning',
     },
+    signature: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Signature',
+    },
   },
   type: 'object',
   required: ['id', 'date', 'reasoning'],
@@ -6336,7 +6462,8 @@ Args:
     name (Optional[str]): The name of the sender of the message
     source (Literal["reasoner_model", "non_reasoner_model"]): Whether the reasoning
         content was generated natively by a reasoner model or derived via prompting
-    reasoning (str): The internal reasoning of the agent`,
+    reasoning (str): The internal reasoning of the agent
+    signature (Optional[str]): The model-generated signature of the reasoning step`,
 } as const;
 
 export const $RedactedReasoningContent = {
@@ -9216,6 +9343,9 @@ export const $LettaMessageUnion = {
       $ref: '#/components/schemas/ReasoningMessage',
     },
     {
+      $ref: '#/components/schemas/HiddenReasoningMessage',
+    },
+    {
       $ref: '#/components/schemas/ToolCallMessage',
     },
     {
@@ -9231,6 +9361,7 @@ export const $LettaMessageUnion = {
       system_message: '#/components/schemas/SystemMessage',
       user_message: '#/components/schemas/UserMessage',
       reasoning_message: '#/components/schemas/ReasoningMessage',
+      hidden_reasoning_message: '#/components/schemas/HiddenReasoningMessage',
       tool_call_message: '#/components/schemas/ToolCallMessage',
       tool_return_message: '#/components/schemas/ToolReturnMessage',
       assistant_message: '#/components/schemas/AssistantMessage',

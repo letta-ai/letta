@@ -1081,6 +1081,18 @@ export type CreateAgentRequest = {
    */
   embedding_chunk_size?: number | null;
   /**
+   * The maximum number of tokens to generate, including reasoning step. If not set, the model will use its default value.
+   */
+  max_tokens?: number | null;
+  /**
+   * The maximum number of tokens to generate for reasoning step. If not set, the model will use its default value.
+   */
+  max_reasoning_tokens?: number | null;
+  /**
+   * Whether to enable internal extended thinking step for a reasoner model.
+   */
+  enable_reasoner?: boolean | null;
+  /**
    * The template id used to configure the agent
    */
   from_template?: string | null;
@@ -1425,6 +1437,29 @@ export type Health = {
   status: string;
 };
 
+/**
+ * Representation of an agent's internal reasoning where reasoning content
+ * has been hidden from the response.
+ *
+ * Args:
+ * id (str): The ID of the message
+ * date (datetime): The date the message was created in ISO format
+ * name (Optional[str]): The name of the sender of the message
+ * state (Literal["redacted", "omitted"]): Whether the reasoning
+ * content was redacted by the provider or simply omitted by the API
+ * hidden_reasoning (Optional[str]): The internal reasoning of the agent
+ */
+export type HiddenReasoningMessage = {
+  id: string;
+  date: string;
+  name?: string | null;
+  message_type?: 'hidden_reasoning_message';
+  state: 'redacted' | 'omitted';
+  hidden_reasoning?: string | null;
+};
+
+export type state = 'redacted' | 'omitted';
+
 export type Identity = {
   /**
    * The human-friendly ID of the Identity
@@ -1731,6 +1766,14 @@ export type LLMConfig = {
    * The maximum number of tokens to generate. If not set, the model will use its default value.
    */
   max_tokens?: number | null;
+  /**
+   * Whether or not the model should use extended thinking if it is a 'reasoning' style model
+   */
+  enable_reasoner?: boolean;
+  /**
+   * Configurable thinking budget for extended thinking, only used if enable_reasoner is True. Minimum value is 1024.
+   */
+  max_reasoning_tokens?: number;
 };
 
 /**
@@ -2354,6 +2397,7 @@ export type ReasoningContent = {
  * source (Literal["reasoner_model", "non_reasoner_model"]): Whether the reasoning
  * content was generated natively by a reasoner model or derived via prompting
  * reasoning (str): The internal reasoning of the agent
+ * signature (Optional[str]): The model-generated signature of the reasoning step
  */
 export type ReasoningMessage = {
   id: string;
@@ -2362,6 +2406,7 @@ export type ReasoningMessage = {
   message_type?: 'reasoning_message';
   source?: 'reasoner_model' | 'non_reasoner_model';
   reasoning: string;
+  signature?: string | null;
 };
 
 export type source = 'reasoner_model' | 'non_reasoner_model';
@@ -3472,6 +3517,7 @@ export type LettaMessageUnion =
   | SystemMessage
   | UserMessage
   | ReasoningMessage
+  | HiddenReasoningMessage
   | ToolCallMessage
   | ToolReturnMessage
   | AssistantMessage;
@@ -4009,6 +4055,7 @@ export type ModifyMessageResponse =
   | SystemMessage
   | UserMessage
   | ReasoningMessage
+  | HiddenReasoningMessage
   | ToolCallMessage
   | ToolReturnMessage
   | AssistantMessage;
@@ -5421,6 +5468,7 @@ export type $OpenApiTs = {
           | SystemMessage
           | UserMessage
           | ReasoningMessage
+          | HiddenReasoningMessage
           | ToolCallMessage
           | ToolReturnMessage
           | AssistantMessage;

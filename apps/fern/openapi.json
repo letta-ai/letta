@@ -3008,6 +3008,9 @@
                       "$ref": "#/components/schemas/ReasoningMessage"
                     },
                     {
+                      "$ref": "#/components/schemas/HiddenReasoningMessage"
+                    },
+                    {
                       "$ref": "#/components/schemas/ToolCallMessage"
                     },
                     {
@@ -3023,6 +3026,7 @@
                       "system_message": "#/components/schemas/SystemMessage",
                       "user_message": "#/components/schemas/UserMessage",
                       "reasoning_message": "#/components/schemas/ReasoningMessage",
+                      "hidden_reasoning_message": "#/components/schemas/HiddenReasoningMessage",
                       "tool_call_message": "#/components/schemas/ToolCallMessage",
                       "tool_return_message": "#/components/schemas/ToolReturnMessage",
                       "assistant_message": "#/components/schemas/AssistantMessage"
@@ -6496,6 +6500,22 @@
                                   {}
                                 ],
                                 "nullable": true
+                              },
+                              "enable_reasoner": {
+                                "oneOf": [
+                                  {
+                                    "type": "boolean"
+                                  },
+                                  {}
+                                ]
+                              },
+                              "max_reasoning_tokens": {
+                                "oneOf": [
+                                  {
+                                    "type": "number"
+                                  },
+                                  {}
+                                ]
                               }
                             },
                             "required": [
@@ -9617,6 +9637,22 @@
                                   {}
                                 ],
                                 "nullable": true
+                              },
+                              "enable_reasoner": {
+                                "oneOf": [
+                                  {
+                                    "type": "boolean"
+                                  },
+                                  {}
+                                ]
+                              },
+                              "max_reasoning_tokens": {
+                                "oneOf": [
+                                  {
+                                    "type": "number"
+                                  },
+                                  {}
+                                ]
                               }
                             },
                             "required": [
@@ -14774,6 +14810,43 @@
             "description": "The embedding chunk size used by the agent.",
             "default": 300
           },
+          "max_tokens": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max Tokens",
+            "description": "The maximum number of tokens to generate, including reasoning step. If not set, the model will use its default value."
+          },
+          "max_reasoning_tokens": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max Reasoning Tokens",
+            "description": "The maximum number of tokens to generate for reasoning step. If not set, the model will use its default value."
+          },
+          "enable_reasoner": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Enable Reasoner",
+            "description": "Whether to enable internal extended thinking step for a reasoner model.",
+            "default": false
+          },
           "from_template": {
             "anyOf": [
               {
@@ -15607,6 +15680,57 @@
         "title": "Health",
         "description": "Health check response body"
       },
+      "HiddenReasoningMessage": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "date": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Date"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "message_type": {
+            "type": "string",
+            "enum": ["hidden_reasoning_message"],
+            "const": "hidden_reasoning_message",
+            "title": "Message Type",
+            "default": "hidden_reasoning_message"
+          },
+          "state": {
+            "type": "string",
+            "enum": ["redacted", "omitted"],
+            "title": "State"
+          },
+          "hidden_reasoning": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Hidden Reasoning"
+          }
+        },
+        "type": "object",
+        "required": ["id", "date", "state"],
+        "title": "HiddenReasoningMessage",
+        "description": "Representation of an agent's internal reasoning where reasoning content\nhas been hidden from the response.\n\nArgs:\n    id (str): The ID of the message\n    date (datetime): The date the message was created in ISO format\n    name (Optional[str]): The name of the sender of the message\n    state (Literal[\"redacted\", \"omitted\"]): Whether the reasoning\n        content was redacted by the provider or simply omitted by the API\n    hidden_reasoning (Optional[str]): The internal reasoning of the agent"
+      },
       "Identity": {
         "properties": {
           "id": {
@@ -16197,6 +16321,18 @@
             "title": "Max Tokens",
             "description": "The maximum number of tokens to generate. If not set, the model will use its default value.",
             "default": 4096
+          },
+          "enable_reasoner": {
+            "type": "boolean",
+            "title": "Enable Reasoner",
+            "description": "Whether or not the model should use extended thinking if it is a 'reasoning' style model",
+            "default": false
+          },
+          "max_reasoning_tokens": {
+            "type": "integer",
+            "title": "Max Reasoning Tokens",
+            "description": "Configurable thinking budget for extended thinking, only used if enable_reasoner is True. Minimum value is 1024.",
+            "default": 0
           }
         },
         "type": "object",
@@ -17529,12 +17665,23 @@
           "reasoning": {
             "type": "string",
             "title": "Reasoning"
+          },
+          "signature": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Signature"
           }
         },
         "type": "object",
         "required": ["id", "date", "reasoning"],
         "title": "ReasoningMessage",
-        "description": "Representation of an agent's internal reasoning.\n\nArgs:\n    id (str): The ID of the message\n    date (datetime): The date the message was created in ISO format\n    name (Optional[str]): The name of the sender of the message\n    source (Literal[\"reasoner_model\", \"non_reasoner_model\"]): Whether the reasoning\n        content was generated natively by a reasoner model or derived via prompting\n    reasoning (str): The internal reasoning of the agent"
+        "description": "Representation of an agent's internal reasoning.\n\nArgs:\n    id (str): The ID of the message\n    date (datetime): The date the message was created in ISO format\n    name (Optional[str]): The name of the sender of the message\n    source (Literal[\"reasoner_model\", \"non_reasoner_model\"]): Whether the reasoning\n        content was generated natively by a reasoner model or derived via prompting\n    reasoning (str): The internal reasoning of the agent\n    signature (Optional[str]): The model-generated signature of the reasoning step"
       },
       "RedactedReasoningContent": {
         "properties": {
@@ -20169,6 +20316,9 @@
             "$ref": "#/components/schemas/ReasoningMessage"
           },
           {
+            "$ref": "#/components/schemas/HiddenReasoningMessage"
+          },
+          {
             "$ref": "#/components/schemas/ToolCallMessage"
           },
           {
@@ -20184,6 +20334,7 @@
             "system_message": "#/components/schemas/SystemMessage",
             "user_message": "#/components/schemas/UserMessage",
             "reasoning_message": "#/components/schemas/ReasoningMessage",
+            "hidden_reasoning_message": "#/components/schemas/HiddenReasoningMessage",
             "tool_call_message": "#/components/schemas/ToolCallMessage",
             "tool_return_message": "#/components/schemas/ToolReturnMessage",
             "assistant_message": "#/components/schemas/AssistantMessage"

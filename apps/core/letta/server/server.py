@@ -746,7 +746,13 @@ class SyncServer(Server):
         if request.llm_config is None:
             if request.model is None:
                 raise ValueError("Must specify either model or llm_config in request")
-            request.llm_config = self.get_llm_config_from_handle(handle=request.model, context_window_limit=request.context_window_limit)
+            request.llm_config = self.get_llm_config_from_handle(
+                handle=request.model,
+                context_window_limit=request.context_window_limit,
+                max_tokens=request.max_tokens,
+                max_reasoning_tokens=request.max_reasoning_tokens,
+                enable_reasoner=request.enable_reasoner,
+            )
 
         if request.embedding_config is None:
             if request.embedding is None:
@@ -1056,7 +1062,14 @@ class SyncServer(Server):
         # Merge the two dictionaries, keeping the values from providers_from_db where conflicts occur
         return {**providers_from_env, **providers_from_db}.values()
 
-    def get_llm_config_from_handle(self, handle: str, context_window_limit: Optional[int] = None) -> LLMConfig:
+    def get_llm_config_from_handle(
+        self,
+        handle: str,
+        context_window_limit: Optional[int] = None,
+        max_tokens: Optional[int] = None,
+        max_reasoning_tokens: Optional[int] = None,
+        enable_reasoner: Optional[bool] = None,
+    ) -> LLMConfig:
         try:
             provider_name, model_name = handle.split("/", 1)
             provider = self.get_provider_from_name(provider_name)
@@ -1078,12 +1091,21 @@ class SyncServer(Server):
         else:
             llm_config = llm_configs[0]
 
-        if context_window_limit:
+        if context_window_limit is not None:
             if context_window_limit > llm_config.context_window:
                 raise ValueError(f"Context window limit ({context_window_limit}) is greater than maximum of ({llm_config.context_window})")
             llm_config.context_window = context_window_limit
         else:
             llm_config.context_window = min(llm_config.context_window, model_settings.global_max_context_window_limit)
+
+        if max_tokens is not None:
+            llm_config.max_tokens = max_tokens
+        if max_reasoning_tokens is not None:
+            if not max_tokens or max_reasoning_tokens > max_tokens:
+                raise ValueError(f"Max reasoning tokens ({max_reasoning_tokens}) must be less than max tokens ({max_tokens})")
+            llm_config.max_reasoning_tokens = max_reasoning_tokens
+        if enable_reasoner is not None:
+            llm_config.enable_reasoner = enable_reasoner
 
         return llm_config
 

@@ -13,6 +13,7 @@ from letta.local_llm.constants import INNER_THOUGHTS_KWARG
 from letta.schemas.enums import MessageStreamStatus
 from letta.schemas.letta_message import (
     AssistantMessage,
+    HiddenReasoningMessage,
     LegacyFunctionCallMessage,
     LegacyLettaMessage,
     LettaMessage,
@@ -22,6 +23,7 @@ from letta.schemas.letta_message import (
     ToolCallMessage,
     ToolReturnMessage,
 )
+from letta.schemas.letta_message_content import ReasoningContent, RedactedReasoningContent, TextContent
 from letta.schemas.message import Message
 from letta.schemas.openai.chat_completion_response import ChatCompletionChunkResponse
 from letta.server.rest_api.optimistic_json_parser import OptimisticJSONParser
@@ -478,7 +480,7 @@ class StreamingServerInterface(AgentChunkStreamingInterface):
 
         if (
             message_delta.content is None
-            and (expect_reasoning_content and message_delta.reasoning_content is None)
+            and (expect_reasoning_content and message_delta.reasoning_content is None and message_delta.redacted_reasoning_content is None)
             and message_delta.tool_calls is None
             and message_delta.function_call is None
             and choice.finish_reason is None
@@ -493,6 +495,15 @@ class StreamingServerInterface(AgentChunkStreamingInterface):
                 id=message_id,
                 date=message_date,
                 reasoning=message_delta.reasoning_content,
+                signature=message_delta.reasoning_content_signature,
+                source="reasoner_model" if message_delta.reasoning_content_signature else "non_reasoner_model",
+            )
+        elif expect_reasoning_content and message_delta.redacted_reasoning_content is not None:
+            processed_chunk = HiddenReasoningMessage(
+                id=message_id,
+                date=message_date,
+                hidden_reasoning=message_delta.redacted_reasoning_content,
+                state="redacted",
             )
         elif expect_reasoning_content and message_delta.content is not None:
             # "ignore" content if we expect reasoning content
@@ -1071,13 +1082,39 @@ class StreamingServerInterface(AgentChunkStreamingInterface):
             #     "id": str(msg_obj.id) if msg_obj is not None else None,
             # }
             assert msg_obj is not None, "Internal monologue requires msg_obj references for metadata"
-            processed_chunk = ReasoningMessage(
-                id=msg_obj.id,
-                date=msg_obj.created_at,
-                reasoning=msg,
-            )
+            if msg_obj.content and len(msg_obj.content) == 1 and isinstance(msg_obj.content[0], TextContent):
+                processed_chunk = ReasoningMessage(
+                    id=msg_obj.id,
+                    date=msg_obj.created_at,
+                    reasoning=msg,
+                )
 
-            self._push_to_buffer(processed_chunk)
+                self._push_to_buffer(processed_chunk)
+            else:
+                for content in msg_obj.content:
+                    if isinstance(content, TextContent):
+                        processed_chunk = ReasoningMessage(
+                            id=msg_obj.id,
+                            date=msg_obj.created_at,
+                            reasoning=content.text,
+                        )
+                    elif isinstance(content, ReasoningContent):
+                        processed_chunk = ReasoningMessage(
+                            id=msg_obj.id,
+                            date=msg_obj.created_at,
+                            source="reasoner_model",
+                            reasoning=content.reasoning,
+                            signature=content.signature,
+                        )
+                    elif isinstance(content, RedactedReasoningContent):
+                        processed_chunk = HiddenReasoningMessage(
+                            id=msg_obj.id,
+                            date=msg_obj.created_at,
+                            state="redacted",
+                            hidden_reasoning=content.data,
+                        )
+
+                    self._push_to_buffer(processed_chunk)
 
         return
 

@@ -48,7 +48,17 @@ export const UserMessageSchema = z.object({
 
 export const ReasoningMessageSchema = z.object({
   message_type: z.literal('reasoning_message'),
+  source: z.enum(['reasoner_model', 'non_reasoner_model']),
+  signature: z.string().nullable().optional(),
   reasoning: z.string(),
+  date: z.string(),
+  id: z.string(),
+});
+
+export const HiddenReasoningMessageSchema = z.object({
+  message_type: z.literal('hidden_reasoning_message'),
+  state: z.enum(['redacted', 'omitted']),
+  hidden_reasoning: z.string().nullable().optional(),
   date: z.string(),
   id: z.string(),
 });
@@ -90,6 +100,7 @@ export const AgentMessageSchema = z.discriminatedUnion('message_type', [
   ToolReturnMessageSchema,
   ToolCallMessageSchema,
   ReasoningMessageSchema,
+  HiddenReasoningMessageSchema,
   UserMessageSchema,
   SystemMessageSchema,
 ]);

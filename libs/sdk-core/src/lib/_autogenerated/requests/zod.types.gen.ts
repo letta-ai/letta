@@ -306,6 +306,8 @@ export const LLMConfig = z.object({
       z.undefined(),
     ])
     .optional(),
+  enable_reasoner: z.union([z.boolean(), z.undefined()]).optional(),
+  max_reasoning_tokens: z.union([z.number(), z.undefined()]).optional(),
 });
 
 export type TextContent = z.infer<typeof TextContent>;
@@ -2822,6 +2824,15 @@ export const CreateAgentRequest = z.object({
   embedding_chunk_size: z
     .union([z.number(), z.null(), z.array(z.union([z.number(), z.null()]))])
     .optional(),
+  max_tokens: z
+    .union([z.number(), z.null(), z.array(z.union([z.number(), z.null()]))])
+    .optional(),
+  max_reasoning_tokens: z
+    .union([z.number(), z.null(), z.array(z.union([z.number(), z.null()]))])
+    .optional(),
+  enable_reasoner: z
+    .union([z.boolean(), z.null(), z.array(z.union([z.boolean(), z.null()]))])
+    .optional(),
   from_template: z
     .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
     .optional(),
@@ -3037,6 +3048,32 @@ export type Health = z.infer<typeof Health>;
 export const Health = z.object({
   version: z.string(),
   status: z.string(),
+});
+
+export type HiddenReasoningMessage = z.infer<typeof HiddenReasoningMessage>;
+export const HiddenReasoningMessage = z.object({
+  id: z.string(),
+  date: z.string(),
+  name: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  message_type: z
+    .union([z.literal('hidden_reasoning_message'), z.undefined()])
+    .optional(),
+  state: z.union([z.literal('redacted'), z.literal('omitted')]),
+  hidden_reasoning: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
 });
 
 export type IdentityType = z.infer<typeof IdentityType>;
@@ -3294,6 +3331,14 @@ export const ReasoningMessage = z.object({
     ])
     .optional(),
   reasoning: z.string(),
+  signature: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
 });
 
 export type ToolCall = z.infer<typeof ToolCall>;
@@ -3385,6 +3430,7 @@ export const LettaMessageUnion = z.union([
   SystemMessage,
   UserMessage,
   ReasoningMessage,
+  HiddenReasoningMessage,
   ToolCallMessage,
   ToolReturnMessage,
   AssistantMessage,
@@ -5523,6 +5569,7 @@ export const patch_Modify_message = {
     SystemMessage,
     UserMessage,
     ReasoningMessage,
+    HiddenReasoningMessage,
     ToolCallMessage,
     ToolReturnMessage,
     AssistantMessage,

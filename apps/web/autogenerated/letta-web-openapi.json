@@ -1195,6 +1195,22 @@
                               {}
                             ],
                             "nullable": true
+                          },
+                          "enable_reasoner": {
+                            "oneOf": [
+                              {
+                                "type": "boolean"
+                              },
+                              {}
+                            ]
+                          },
+                          "max_reasoning_tokens": {
+                            "oneOf": [
+                              {
+                                "type": "number"
+                              },
+                              {}
+                            ]
                           }
                         },
                         "required": [
@@ -3996,6 +4012,22 @@
                                   {}
                                 ],
                                 "nullable": true
+                              },
+                              "enable_reasoner": {
+                                "oneOf": [
+                                  {
+                                    "type": "boolean"
+                                  },
+                                  {}
+                                ]
+                              },
+                              "max_reasoning_tokens": {
+                                "oneOf": [
+                                  {
+                                    "type": "number"
+                                  },
+                                  {}
+                                ]
                               }
                             },
                             "required": [
@@ -7204,6 +7236,22 @@
                                   {}
                                 ],
                                 "nullable": true
+                              },
+                              "enable_reasoner": {
+                                "oneOf": [
+                                  {
+                                    "type": "boolean"
+                                  },
+                                  {}
+                                ]
+                              },
+                              "max_reasoning_tokens": {
+                                "oneOf": [
+                                  {
+                                    "type": "number"
+                                  },
+                                  {}
+                                ]
                               }
                             },
                             "required": [
