@@ -43,7 +43,7 @@ COPY ../apps/core/alembic.ini /alembic.ini
 COPY ../apps/core/alembic /alembic
 COPY ./libs/config-core-deploy/scripts /scripts
 COPY ../apps/core/scripts /letta-scripts
-COPY ../apps/core/otel-collector-config-clickhouse-prod.yaml /etc/otel/config-clickhouse.yaml
+COPY ../apps/core/otel/otel-collector-config-clickhouse-prod.yaml /etc/otel/config-clickhouse.yaml
 
 EXPOSE 8283 4317 4318
 
