@@ -1425,6 +1425,7 @@
       "title": "Deploy agent instructions"
     },
     "VersionAgentDialog": {
+      "mobileWarning": "Versioning templates are only available on desktop, as there is a lot of information to display.",
       "onboarding": {
         "badge": "Finish saving a template",
         "title": "Before saving, we will show you the changes you've made to this template, if you're satisfied with the changes or just want to test saving, press the save button at the bottom of the screen."
@@ -1441,7 +1442,7 @@
       "migrate": "Migrate all deployed agents to this version",
       "migrateDescription": "Selecting this option will migrate all deployed agents to this version, to programmatically migrate agents, visit the <link>API documentation</link>.",
       "message": {
-        "label": "Version Message",
+        "label": "Version message",
         "placeholder": "What's new in this version?",
         "description": "A description of the changes in this version",
         "maxChars": "Max 140 characters"

@@ -76,6 +76,9 @@
   --background-hover: 0 0% 98%;
   --content: var(--text-default);
 
+  --destructive-diff: 10, 100%, 60%, 0.16;
+  --destructive-diff-content: 10, 67%, 48%;
+
   --background-warning: 39, 100%, 94%;
   --background-warning-content: 39, 100%, 10%;
 
@@ -206,6 +209,7 @@
 
   --background-grey2: 0, 0%, 13%;
   --background-grey2-content: var(--text-default);
+
 
   --card: 240 10% 3.9%;
   --card-content: 0 0% 98%;

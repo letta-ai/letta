@@ -6,9 +6,14 @@ import { useTranslations } from '@letta-cloud/translations';
 import { HStack } from '../../framing/HStack/HStack';
 import { Typography } from '../../core/Typography/Typography';
 import { cn } from '@letta-cloud/ui-styles';
-import { useEffect, useMemo } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { stateCleaner } from '@letta-cloud/utils-shared';
 import type { CleanedAgentState } from '@letta-cloud/utils-shared';
+import { diffWords } from 'diff';
+import { ChevronDownIcon, ChevronUpIcon } from '../../icons';
+import { isEqual } from 'lodash-es';
+import { Alert } from '../../core/Alert/Alert';
+import { Badge } from '../../core/Badge/Badge';
 
 interface AgentStateViewerProps {
   baseState: AgentState;
@@ -18,20 +23,20 @@ interface AgentStateViewerProps {
 }
 
 interface GetChangeClassProps {
-  isAdditive: boolean;
   isChanged: boolean;
+  isAdditive?: boolean;
 }
 
-function getChangeClass({ isAdditive, isChanged }: GetChangeClassProps) {
-  if (!isAdditive) {
+function getChangeClass({ isChanged, isAdditive }: GetChangeClassProps) {
+  if (isAdditive) {
     return isChanged
-      ? 'bg-background-destructive text-background-destructive-content'
-      : '';
-  } else {
-    return isChanged
-      ? 'bg-background-success text-background-success-content'
+      ? 'bg-destructive-diff line-through text-destructive-diff-content'
       : '';
   }
+
+  return isChanged
+    ? 'bg-background-success text-background-success-content'
+    : '';
 }
 
 interface InlineTextDiffProps {
@@ -41,38 +46,26 @@ interface InlineTextDiffProps {
 
 function InlineTextDiff(props: InlineTextDiffProps) {
   const { text, comparedText } = props;
-  const textArray = text.split('');
 
-  const { isAdditive } = useSingleStateViewerContext();
-  const comparedTextArray = comparedText?.split('');
-
-  if (!comparedTextArray) {
+  if (!comparedText) {
     return text;
   }
 
-  const diff = textArray.map((char, index) => {
-    const comparedChar = comparedTextArray[index];
+  const diff = diffWords(text, comparedText);
 
-    if (char === comparedChar) {
-      return <span key={index}>{char}</span>;
-    }
+  return diff.map((part, index) => {
+    const className = part.removed
+      ? 'bg-destructive-diff line-through text-destructive-diff-content'
+      : part.added
+        ? 'bg-background-success text-background-success-content'
+        : '';
 
     return (
-      <span
-        key={index}
-        className={cn(
-          getChangeClass({
-            isAdditive,
-            isChanged: true,
-          }),
-        )}
-      >
-        {char}
+      <span key={index} className={className}>
+        {part.value}
       </span>
     );
-  });
-
-  return diff;
+  }, []);
 }
 
 interface ToolVariableViewerProps {
@@ -83,7 +76,6 @@ interface ToolVariableViewerProps {
 function ToolVariableViewer(props: ToolVariableViewerProps) {
   const t = useTranslations('components/AgentStateViewer');
 
-  const { isAdditive } = useSingleStateViewerContext();
   const { toolVariables, comparedVariables } = props;
 
   if (!toolVariables || toolVariables.length === 0) {
@@ -106,16 +98,15 @@ function ToolVariableViewer(props: ToolVariableViewerProps) {
             <tr
               className={cn(
                 getChangeClass({
-                  isAdditive,
                   isChanged: !comparedValue,
                 }),
               )}
               key={variable.key}
             >
-              <td className="p-1">
+              <td className="p-2">
                 <Typography variant="body2">{variable.key}</Typography>
               </td>
-              <td className="p1">
+              <td className="p-2">
                 <Typography variant="body2">
                   <InlineTextDiff
                     text={variable.value}
@@ -131,46 +122,88 @@ function ToolVariableViewer(props: ToolVariableViewerProps) {
   );
 }
 
+interface SectionWrapperHeaderProps {
+  title: string;
+  isOpen: boolean;
+  showIcon?: boolean;
+  hasDifference?: boolean;
+  onToggle: () => void;
+}
+
+function SectionWrapperHeader(props: SectionWrapperHeaderProps) {
+  const { title, isOpen, hasDifference, showIcon, onToggle } = props;
+
+  const t = useTranslations('components/AgentStateViewer');
+
+  return (
+    <HStack
+      onClick={(e) => {
+        e.stopPropagation();
+        onToggle();
+      }}
+      borderY
+      type="button"
+      as="button"
+      fullWidth
+      justify="spaceBetween"
+      color="background-grey"
+      padding="xsmall"
+    >
+      <HStack align="center">
+        <Typography variant="body" bold>
+          {title}
+        </Typography>
+        {hasDifference && (
+          <Badge content={t('changed')} variant="info" size="small" />
+        )}
+      </HStack>
+      {showIcon ? (
+        <>{isOpen ? <ChevronUpIcon /> : <ChevronDownIcon />}</>
+      ) : null}
+    </HStack>
+  );
+}
+
 interface SectionWrapperProps {
   title: string;
-  children: React.ReactNode;
-  id: string;
+  hasDifference?: boolean;
+  base: React.ReactNode;
+  compared?: React.ReactNode;
 }
 
 function SectionWrapper(props: React.PropsWithChildren<SectionWrapperProps>) {
-  const { id } = props;
+  const { title, base, hasDifference, compared } = props;
+  const [open, setOpen] = useState<boolean>(!!hasDifference);
 
-  const { id: baseId } = useSingleStateViewerContext();
-
-  useEffect(() => {
-    // compare base and compared id heights, and set the height of the shorter one to the height of the taller one
-
-    const base = document.getElementById(`base-${id}`);
-    const compared = document.getElementById(`compared-${id}`);
-
-    if (!base || !compared) {
-      return;
-    }
-
-    const baseHeight = base.clientHeight;
-
-    const comparedHeight = compared.clientHeight;
-
-    if (baseHeight > comparedHeight) {
-      compared.style.height = `${baseHeight}px`;
-    } else {
-      base.style.height = `${comparedHeight}px`;
-    }
-  }, [id]);
+  const handleToggle = useCallback(() => {
+    setOpen(!open);
+  }, [open]);
 
   return (
-    <VStack id={`${baseId}-${id}`} gap={false}>
-      <VStack color="background-grey" padding="xsmall">
-        <Typography variant="body2" bold>
-          {props.title}
-        </Typography>
-      </VStack>
-      <VStack padding="xsmall">{props.children}</VStack>
+    <VStack fullWidth gap={false}>
+      <HStack fullWidth gap={false}>
+        <VStack gap={false} fullWidth>
+          <SectionWrapperHeader
+            showIcon={!compared}
+            title={title}
+            isOpen={open}
+            onToggle={handleToggle}
+          />
+          <VStack fullWidth>{open && base}</VStack>
+        </VStack>
+        {compared && (
+          <VStack gap={false} fullWidth borderLeft>
+            <SectionWrapperHeader
+              hasDifference={hasDifference}
+              title={title}
+              showIcon
+              isOpen={open}
+              onToggle={handleToggle}
+            />
+            {open && <VStack fullHeight>{compared}</VStack>}
+          </VStack>
+        )}
+      </HStack>
     </VStack>
   );
 }
@@ -182,11 +215,14 @@ interface MemoryBlockViewerProps {
 
 function MemoryBlockViewer(props: MemoryBlockViewerProps) {
   const t = useTranslations('components/AgentStateViewer');
-  const { isAdditive } = useSingleStateViewerContext();
   const { memoryBlocks, comparedMemoryBlocks } = props;
 
-  if (!memoryBlocks) {
-    return <>{t('MemoryBlockViewer.noMemoryBlocks')}</>;
+  if (!memoryBlocks || memoryBlocks.length === 0) {
+    return (
+      <Typography variant="body3">
+        {t('MemoryBlockViewer.noMemoryBlocks')}
+      </Typography>
+    );
   }
 
   return (
@@ -200,18 +236,18 @@ function MemoryBlockViewer(props: MemoryBlockViewerProps) {
           <VStack
             padding="small"
             className={cn(
-              getChangeClass({
-                isAdditive,
-                isChanged: !comparedBlock,
-              }),
+              comparedBlock &&
+                getChangeClass({
+                  isChanged: !comparedBlock,
+                }),
             )}
             key={block.label || ''}
           >
             <HStack>
-              <Typography bold variant="body2">
+              <Typography bold variant="body">
                 {block.label || ''}
               </Typography>
-              <Typography variant="body2" color="muted">
+              <Typography variant="body" color="muted">
                 {t.rich('MemoryBlockViewer.limit', {
                   limit: () => (
                     <InlineTextDiff
@@ -223,12 +259,17 @@ function MemoryBlockViewer(props: MemoryBlockViewerProps) {
               </Typography>
             </HStack>
             <VStack className="p1">
-              <Typography variant="body2">
-                <InlineTextDiff
-                  text={block.value}
-                  comparedText={comparedBlock?.value}
-                />
-              </Typography>
+              <span
+                className="text-base
+               leading-7 "
+              >
+                <span className="bg-background-grey p-[1px] border border-background-grey2">
+                  <InlineTextDiff
+                    text={block.value}
+                    comparedText={comparedBlock?.value}
+                  />
+                </span>
+              </span>
             </VStack>
           </VStack>
         );
@@ -244,12 +285,11 @@ interface KeyValueDiffViewerProps {
 
 function KeyValueDiffViewer(props: KeyValueDiffViewerProps) {
   const { keyValuePairs, comparedKeyValuePairs } = props;
-  const { isAdditive } = useSingleStateViewerContext();
 
   return (
     <table>
       <tbody>
-        {Object.entries(keyValuePairs).map(([key, value]) => {
+        {Object.entries(keyValuePairs).map(([key, value], index) => {
           const parsedValue = JSON.stringify(value);
           const parsedComparedValue = JSON.stringify(
             comparedKeyValuePairs?.[key],
@@ -258,18 +298,18 @@ function KeyValueDiffViewer(props: KeyValueDiffViewerProps) {
           return (
             <tr
               className={cn(
-                getChangeClass({
-                  isAdditive,
-                  isChanged: parsedValue !== parsedComparedValue,
-                }),
+                index % 2 === 1 ? 'bg-background-grey' : '',
+                comparedKeyValuePairs && parsedValue !== parsedComparedValue
+                  ? 'bg-background-grey2'
+                  : '',
               )}
               key={key}
             >
               <td className="p-1 ">
-                <Typography variant="body2">{key}</Typography>
+                <Typography variant="body">{key}</Typography>
               </td>
               <td className="p1">
-                <Typography variant="body2">
+                <Typography variant="body">
                   <InlineTextDiff
                     text={parsedValue}
                     comparedText={parsedComparedValue}
@@ -291,7 +331,7 @@ interface ToolsViewerProps {
 
 function ToolsViewer(props: ToolsViewerProps) {
   const { toolIds, comparedToolIds } = props;
-  const { isAdditive, tools } = useSingleStateViewerContext();
+  const { tools } = useSingleStateViewerContext();
 
   return (
     <VStack gap={false}>
@@ -304,10 +344,11 @@ function ToolsViewer(props: ToolsViewerProps) {
             gap={false}
             key={toolId}
             className={cn(
-              getChangeClass({
-                isAdditive,
-                isChanged: !comparedTool,
-              }),
+              comparedTool
+                ? getChangeClass({
+                    isChanged: !comparedTool,
+                  })
+                : null,
               'p-3',
             )}
             align="start"
@@ -337,13 +378,11 @@ interface SourceViewerProps {
 
 function SourceViewer(props: SourceViewerProps) {
   const { sourceIds, comparedSourceIds } = props;
-  const { isAdditive, sources } = useSingleStateViewerContext();
+  const { sources } = useSingleStateViewerContext();
   const t = useTranslations('components/AgentStateViewer');
 
   if (!sourceIds || sourceIds.length === 0) {
-    return (
-      <Typography variant="body2">{t('SourceViewer.noSources')}</Typography>
-    );
+    return <VStack padding="xsmall">{t('SourceViewer.noSources')}</VStack>;
   }
 
   return (
@@ -358,7 +397,6 @@ function SourceViewer(props: SourceViewerProps) {
             key={sourceId}
             className={cn(
               getChangeClass({
-                isAdditive,
                 isChanged: !comparedSource,
               }),
               'p-3',
@@ -383,20 +421,18 @@ function SourceViewer(props: SourceViewerProps) {
   );
 }
 
-interface SingleStateViewerProps {
+interface StateViewerProps {
   tools: Record<string, Tool>;
   sources: Record<string, Source>;
   state: CleanedAgentState;
   toCompare?: CleanedAgentState;
-  isAdditive?: boolean;
-  id: string;
+  baseName?: string;
+  comparedName?: string;
 }
 
 interface SingleStateViewerContextData {
   tools: Record<string, Tool>;
   sources: Record<string, Source>;
-  isAdditive: boolean;
-  id: string;
 }
 
 const SingleStateViewerContext = React.createContext<
@@ -407,85 +443,254 @@ function useSingleStateViewerContext() {
   const context = React.useContext(SingleStateViewerContext);
   if (context === undefined) {
     throw new Error(
-      'useSingleStateViewerContext must be used within a SingleStateViewer',
+      'useSingleStateViewerContext must be used within a StateViewer',
     );
   }
   return context;
 }
 
-function SingleStateViewer(props: SingleStateViewerProps) {
-  const { state, toCompare, id, isAdditive = false, tools, sources } = props;
+interface GenericCompareProps {
+  children: React.ReactNode;
+}
+
+function GenericCompare({ children }: GenericCompareProps) {
+  return (
+    <VStack padding="xsmall">
+      <span className="text-base leading-7 ">
+        <span className="bg-background-grey p-[1px] border border-background-grey2">
+          {children}
+        </span>
+      </span>
+    </VStack>
+  );
+}
+
+function StateViewer(props: StateViewerProps) {
+  const { state, toCompare, tools, sources } = props;
 
   const t = useTranslations('components/AgentStateViewer');
+
+  const hasMemoryBlocksDifference = useMemo(() => {
+    return (
+      toCompare?.memoryBlocks &&
+      !isEqual(state.memoryBlocks, toCompare.memoryBlocks)
+    );
+  }, [state.memoryBlocks, toCompare?.memoryBlocks]);
+
+  const hasLLMConfigDifference = useMemo(() => {
+    return (
+      toCompare?.llmConfig && !isEqual(state.llmConfig, toCompare.llmConfig)
+    );
+  }, [state.llmConfig, toCompare?.llmConfig]);
+
+  const hasEmbeddingConfigDifference = useMemo(() => {
+    return (
+      toCompare?.embedding_config &&
+      !isEqual(state.embedding_config, toCompare.embedding_config)
+    );
+  }, [state.embedding_config, toCompare?.embedding_config]);
+
+  const hasToolIdsDifference = useMemo(() => {
+    return toCompare?.toolIds && !isEqual(state.toolIds, toCompare.toolIds);
+  }, [state.toolIds, toCompare?.toolIds]);
+
+  const hasSourceIdsDifference = useMemo(() => {
+    return (
+      toCompare?.sourceIds && !isEqual(state.sourceIds, toCompare.sourceIds)
+    );
+  }, [state.sourceIds, toCompare?.sourceIds]);
+
+  const hasPromptTemplateDifference = useMemo(() => {
+    return toCompare?.promptTemplate
+      ? !isEqual(state.promptTemplate, toCompare.promptTemplate)
+      : false;
+  }, [state.promptTemplate, toCompare?.promptTemplate]);
+
+  const hasSystemDifference = useMemo(() => {
+    return toCompare?.system ? state.system !== toCompare.system : false;
+  }, [state.system, toCompare?.system]);
+
+  const hasToolVariablesDifference = useMemo(() => {
+    return (
+      toCompare?.tool_exec_environment_variables &&
+      !isEqual(
+        state.tool_exec_environment_variables,
+        toCompare.tool_exec_environment_variables,
+      )
+    );
+  }, [
+    state.tool_exec_environment_variables,
+    toCompare?.tool_exec_environment_variables,
+  ]);
+
+  const hasNoDifference = useMemo(() => {
+    return (
+      !hasMemoryBlocksDifference &&
+      !hasLLMConfigDifference &&
+      !hasEmbeddingConfigDifference &&
+      !hasToolIdsDifference &&
+      !hasSourceIdsDifference &&
+      !hasPromptTemplateDifference &&
+      !hasToolVariablesDifference &&
+      !hasSystemDifference &&
+      !!toCompare
+    );
+  }, [
+    hasMemoryBlocksDifference,
+    hasLLMConfigDifference,
+    hasEmbeddingConfigDifference,
+    hasToolIdsDifference,
+    hasToolVariablesDifference,
+    hasSourceIdsDifference,
+    hasPromptTemplateDifference,
+    hasSystemDifference,
+    toCompare,
+  ]);
+
   return (
-    <SingleStateViewerContext.Provider
-      value={{ tools, id, sources, isAdditive }}
-    >
-      <VStack fullWidth gap={false}>
-        <SectionWrapper id="memory-block" title={t('MemoryBlockViewer.title')}>
-          <MemoryBlockViewer
-            memoryBlocks={state.memoryBlocks}
-            comparedMemoryBlocks={toCompare?.memoryBlocks}
-          />
-        </SectionWrapper>
-        <SectionWrapper id="llm-config" title={t('LLMConfig.title')}>
-          <KeyValueDiffViewer
-            keyValuePairs={state.llmConfig}
-            comparedKeyValuePairs={toCompare?.llmConfig}
-          />
-        </SectionWrapper>
+    <SingleStateViewerContext.Provider value={{ tools, sources }}>
+      {hasNoDifference && <Alert title={t('noDifference')} variant="info" />}
+      <VStack border className="w-fit min-w-full" overflowX="auto" gap={false}>
+        <HStack fullWidth gap={false}>
+          <StateHeader name={props.baseName || t('StateViewer.base')} />
+          {toCompare && (
+            <StateHeader
+              name={props.comparedName || t('StateViewer.compared')}
+            />
+          )}
+        </HStack>
         <SectionWrapper
-          id="embedding-config"
+          hasDifference={hasMemoryBlocksDifference}
+          title={t('MemoryBlockViewer.title')}
+          base={<MemoryBlockViewer memoryBlocks={state.memoryBlocks} />}
+          compared={
+            <MemoryBlockViewer
+              memoryBlocks={state.memoryBlocks}
+              comparedMemoryBlocks={toCompare?.memoryBlocks}
+            />
+          }
+        ></SectionWrapper>
+        <SectionWrapper
+          hasDifference={hasLLMConfigDifference}
+          base={<KeyValueDiffViewer keyValuePairs={state.llmConfig || {}} />}
+          compared={
+            <KeyValueDiffViewer
+              keyValuePairs={state.llmConfig || {}}
+              comparedKeyValuePairs={toCompare?.llmConfig}
+            />
+          }
+          title={t('LLMConfig.title')}
+        ></SectionWrapper>
+        <SectionWrapper
+          hasDifference={hasEmbeddingConfigDifference}
+          base={
+            <KeyValueDiffViewer keyValuePairs={state.embedding_config || {}} />
+          }
+          compared={
+            <KeyValueDiffViewer
+              keyValuePairs={state.embedding_config || {}}
+              comparedKeyValuePairs={toCompare?.embedding_config}
+            />
+          }
           title={t('EmbeddingConfig.title')}
-        >
-          <KeyValueDiffViewer
-            keyValuePairs={state.embedding_config}
-            comparedKeyValuePairs={toCompare?.embedding_config}
-          />
-        </SectionWrapper>
-        <SectionWrapper id="tool-ids" title={t('ToolsViewer.title')}>
-          <ToolsViewer
-            toolIds={state.toolIds}
-            comparedToolIds={toCompare?.toolIds}
-          />
-        </SectionWrapper>
+        ></SectionWrapper>
         <SectionWrapper
-          id="tool-variables"
-          title={t('ToolVariableViewer.toolVariables')}
-        >
-          <ToolVariableViewer
-            toolVariables={state.tool_exec_environment_variables}
-            comparedVariables={toCompare?.tool_exec_environment_variables}
-          />
-        </SectionWrapper>
-        <SectionWrapper id="source-ids" title={t('SourceViewer.title')}>
-          <SourceViewer
-            sourceIds={state.sourceIds}
-            comparedSourceIds={toCompare?.sourceIds}
-          />
-        </SectionWrapper>
-        <SectionWrapper id="prompt-template" title={t('PromptTemplate.title')}>
-          <HStack className="p-1">
-            <Typography variant="body2">
+          hasDifference={hasToolIdsDifference}
+          base={<ToolsViewer toolIds={state.toolIds} />}
+          compared={
+            <ToolsViewer
+              toolIds={state.toolIds}
+              comparedToolIds={toCompare?.toolIds}
+            />
+          }
+          title={t('ToolsViewer.title')}
+        ></SectionWrapper>
+        <SectionWrapper
+          hasDifference={hasSourceIdsDifference}
+          base={<SourceViewer sourceIds={state.sourceIds} />}
+          compared={
+            <SourceViewer
+              sourceIds={state.sourceIds}
+              comparedSourceIds={toCompare?.sourceIds}
+            />
+          }
+          title={t('SourceViewer.title')}
+        ></SectionWrapper>
+        <SectionWrapper
+          hasDifference={hasPromptTemplateDifference}
+          base={
+            <GenericCompare>
+              <InlineTextDiff text={state.promptTemplate} />
+            </GenericCompare>
+          }
+          compared={
+            <GenericCompare>
               <InlineTextDiff
                 text={state.promptTemplate}
                 comparedText={toCompare?.promptTemplate}
               />
-            </Typography>
-          </HStack>
-        </SectionWrapper>
-        <SectionWrapper id="system-prompt" title={t('SystemPrompt.title')}>
-          <HStack className="p-1">
-            <Typography variant="body2">
+            </GenericCompare>
+          }
+          title={t('PromptTemplate.title')}
+        ></SectionWrapper>
+
+        <SectionWrapper
+          hasDifference={hasSystemDifference}
+          base={
+            <GenericCompare>
+              <InlineTextDiff text={state.system} />
+            </GenericCompare>
+          }
+          compared={
+            <GenericCompare>
               <InlineTextDiff
                 text={state.system}
                 comparedText={toCompare?.system}
               />
-            </Typography>
-          </HStack>
-        </SectionWrapper>
+            </GenericCompare>
+          }
+          title={t('SystemPrompt.title')}
+        ></SectionWrapper>
+        <SectionWrapper
+          hasDifference={hasToolVariablesDifference}
+          base={
+            <ToolVariableViewer
+              toolVariables={state.tool_exec_environment_variables}
+            />
+          }
+          compared={
+            <ToolVariableViewer
+              toolVariables={state.tool_exec_environment_variables}
+              comparedVariables={toCompare?.tool_exec_environment_variables}
+            />
+          }
+          title={t('ToolVariableViewer.title')}
+        ></SectionWrapper>
       </VStack>
     </SingleStateViewerContext.Provider>
+  );
+}
+
+interface StateHeaderProps {
+  name: string;
+}
+
+function StateHeader(props: StateHeaderProps) {
+  const { name } = props;
+
+  return (
+    <HStack
+      fullWidth
+      className="h-[28px]"
+      borderBottom
+      color="background-grey"
+      align="center"
+      paddingX="xsmall"
+    >
+      <Typography bold variant="body4" uppercase>
+        {name}
+      </Typography>
+    </HStack>
   );
 }
 
@@ -497,7 +702,7 @@ export function AgentStateViewer(props: AgentStateViewerProps) {
 
     const sourcesMap: Record<string, Source> = {};
 
-    baseState.tools.forEach((tool) => {
+    (baseState.tools || []).forEach((tool) => {
       if (!tool.id) {
         return;
       }
@@ -505,7 +710,7 @@ export function AgentStateViewer(props: AgentStateViewerProps) {
     });
 
     if (comparedState) {
-      comparedState.tools.forEach((tool) => {
+      (comparedState.tools || []).forEach((tool) => {
         if (!tool.id) {
           return;
         }
@@ -513,7 +718,7 @@ export function AgentStateViewer(props: AgentStateViewerProps) {
       });
     }
 
-    baseState.sources.forEach((source) => {
+    (baseState.sources || []).forEach((source) => {
       if (!source.id) {
         return;
       }
@@ -521,7 +726,7 @@ export function AgentStateViewer(props: AgentStateViewerProps) {
     });
 
     if (comparedState) {
-      comparedState.sources.forEach((source) => {
+      (comparedState.sources || []).forEach((source) => {
         if (!source.id) {
           return;
         }
@@ -542,38 +747,13 @@ export function AgentStateViewer(props: AgentStateViewerProps) {
   );
 
   return (
-    <HStack gap={false}>
-      <VStack gap={false} fullWidth borderRight={!!cleanedComparedState}>
-        <HStack borderBottom color="background-grey2" padding="small">
-          <Typography bold variant="body">
-            {baseName}
-          </Typography>
-        </HStack>
-        <SingleStateViewer
-          id="base"
-          state={cleanedBaseState}
-          toCompare={cleanedComparedState}
-          tools={tools}
-          sources={sources}
-        />
-      </VStack>
-      {cleanedComparedState && (
-        <VStack gap={false} fullWidth>
-          <HStack borderBottom color="brand-light" padding="small">
-            <Typography bold variant="body">
-              {comparedName}
-            </Typography>
-          </HStack>
-          <SingleStateViewer
-            id="compared"
-            isAdditive
-            state={cleanedComparedState}
-            toCompare={cleanedBaseState}
-            tools={tools}
-            sources={sources}
-          />
-        </VStack>
-      )}
-    </HStack>
+    <StateViewer
+      baseName={baseName}
+      comparedName={comparedName}
+      state={cleanedBaseState}
+      toCompare={cleanedComparedState}
+      tools={tools}
+      sources={sources}
+    />
   );
 }

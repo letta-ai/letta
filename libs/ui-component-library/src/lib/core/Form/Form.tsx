@@ -123,7 +123,7 @@ function InputWrapper({
       <div className={className}>
         <div
           className={cn(
-            'flex flex-wrap pt-2 sm:pt-0 sm:flex-nowrap gap-2 justify-between items-center',
+            'flex flex-wrap pt-2 sm:pt-0 sm:flex-nowrap gap-2 justify-between items-start',
             inline === 'reverse' && 'flex-row-reverse justify-end',
           )}
         >
@@ -182,6 +182,7 @@ function InputContainerHeader(props: InputContainerHeaderProps) {
         {preLabelIcon && <Slot className="h-3">{preLabelIcon}</Slot>}
         <Typography
           align="left"
+          className={variant === 'simple' ? 'leading-[1.35]' : ''}
           variant={variant === 'default' ? 'body2' : 'body'}
           color={variant === 'default' ? 'lighter' : 'default'}
           uppercase={variant === 'default'}

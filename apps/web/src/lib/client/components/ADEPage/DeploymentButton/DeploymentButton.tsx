@@ -7,14 +7,12 @@ import {
   CloseIcon,
   CloseMiniApp,
   ExternalLink,
-  FormActions,
   FormField,
   FormProvider,
   HStack,
   MiniApp,
   OnboardingAsideFocus,
   Popover,
-  RocketIcon,
   SaveIcon,
   TemplateIcon,
   TextArea,
@@ -24,6 +22,9 @@ import {
   useForm,
   VStack,
   WarningIcon,
+  HiddenOnMobile,
+  VisibleOnMobile,
+  RocketIcon,
 } from '@letta-cloud/ui-component-library';
 import { z } from 'zod';
 import { useQueryClient } from '@tanstack/react-query';
@@ -89,6 +90,78 @@ function CloudUpsellDeploy() {
 
 interface CreateNewTemplateVersionDialogProps {
   trigger: React.ReactNode;
+}
+
+interface FormFieldsProps {
+  isPending: boolean;
+}
+
+function FormFields(props: FormFieldsProps) {
+  const { isPending } = props;
+
+  const t = useTranslations(
+    'projects/(projectSlug)/agents/(agentId)/AgentPage',
+  );
+  return (
+    <VStack fullHeight padding>
+      <VStack fullWidth fullHeight paddingBottom gap="xlarge">
+        <FormField
+          render={({ field }) => {
+            return (
+              <TextArea
+                {...field}
+                labelVariant="simple"
+                autosize
+                minRows={4}
+                rows={3}
+                fullWidth
+                label={t('VersionAgentDialog.message.label')}
+                placeholder={t('VersionAgentDialog.message.placeholder')}
+              />
+            );
+          }}
+          name="message"
+        />
+        <FormField
+          render={({ field }) => {
+            return (
+              <Checkbox
+                size="large"
+                labelVariant="simple"
+                checked={field.value}
+                description={t.rich('VersionAgentDialog.migrateDescription', {
+                  link: (chunks) => (
+                    <ExternalLink href="https://docs.letta.com/api-reference/agents/migrate-agent">
+                      {chunks}
+                    </ExternalLink>
+                  ),
+                })}
+                label={t('VersionAgentDialog.migrate')}
+                onCheckedChange={(value) => {
+                  field.onChange({
+                    target: {
+                      value: value,
+                      name: field.name,
+                    },
+                  });
+                }}
+              />
+            );
+          }}
+          name="migrate"
+        />
+      </VStack>
+      <Button
+        data-testid="deploy-agent-dialog-trigger"
+        color="primary"
+        fullWidth
+        bold
+        size="large"
+        busy={isPending}
+        label={t('VersionAgentDialog.confirm')}
+      />
+    </VStack>
+  );
 }
 
 function CreateNewTemplateVersionDialog(
@@ -239,7 +312,7 @@ function CreateNewTemplateVersionDialog(
         onOpenChange={setOpen}
         isOpen={open}
         backdrop
-        __use__rarely__className="max-w-[1024px]"
+        __use__rarely__className="widescreen:max-w-[1440px]"
         trigger={trigger}
       >
         <form
@@ -248,15 +321,14 @@ function CreateNewTemplateVersionDialog(
         >
           <VStack overflow="hidden" fullHeight gap={false}>
             <HStack
+              color="background-grey2"
               height="header"
               align="center"
               justify="spaceBetween"
-              borderBottom
               paddingX
               fullWidth
             >
               <HStack>
-                <RocketIcon />
                 <Typography bold>{t('VersionAgentDialog.title')}</Typography>
               </HStack>
               <CloseMiniApp data-testid="close-advanced-core-memory-editor">
@@ -281,79 +353,59 @@ function CreateNewTemplateVersionDialog(
                 </HStack>
               </VStack>
             )}
-            <VStack padding fullHeight overflow="hidden">
-              <CompareTemplateVersions
-                leftNameOverride={t('VersionAgentDialog.leftNameOverride')}
-                rightNameOverride={t('VersionAgentDialog.rightNameOverride')}
-                leftComparisonVersion="latest"
-                rightComparisonVersion="current"
-                defaultRightComparisonState={agentState as AgentState}
-                defaultLeftComparisonState={deployedAgentTemplate?.state}
-              />
-
-              <VStack border padding>
-                <VStack paddingBottom gap="form">
-                  <FormField
-                    render={({ field }) => {
-                      return (
-                        <TextArea
-                          {...field}
-                          autosize
-                          minRows={3}
-                          rows={2}
-                          fullWidth
-                          description={t(
-                            'VersionAgentDialog.message.description',
-                          )}
-                          label={t('VersionAgentDialog.message.label')}
-                          placeholder={t(
-                            'VersionAgentDialog.message.placeholder',
-                          )}
-                        />
-                      );
-                    }}
-                    name="message"
-                  />
-                  <FormField
-                    render={({ field }) => {
-                      return (
-                        <Checkbox
-                          checked={field.value}
-                          description={t.rich(
-                            'VersionAgentDialog.migrateDescription',
-                            {
-                              link: (chunks) => (
-                                <ExternalLink href="https://docs.letta.com/api-reference/agents/migrate-agent">
-                                  {chunks}
-                                </ExternalLink>
-                              ),
-                            },
-                          )}
-                          label={t('VersionAgentDialog.migrate')}
-                          onCheckedChange={(value) => {
-                            field.onChange({
-                              target: {
-                                value: value,
-                                name: field.name,
-                              },
-                            });
-                          }}
-                        />
-                      );
-                    }}
-                    name="migrate"
+            <HiddenOnMobile checkWithJs>
+              <HStack fullWidth fullHeight gap={false} overflow="hidden">
+                <VStack fullWidth fullHeight flex overflow="hidden">
+                  <VStack
+                    padding
+                    fullWidth
+                    collapseHeight
+                    flex
+                    overflowY="auto"
+                  >
+                    <CompareTemplateVersions
+                      leftNameOverride={t(
+                        'VersionAgentDialog.leftNameOverride',
+                      )}
+                      rightNameOverride={t(
+                        'VersionAgentDialog.rightNameOverride',
+                      )}
+                      leftComparisonVersion="latest"
+                      rightComparisonVersion="current"
+                      defaultRightComparisonState={agentState as AgentState}
+                      defaultLeftComparisonState={deployedAgentTemplate?.state}
+                    />
+                  </VStack>
+                </VStack>
+                <VStack
+                  /* eslint-disable-next-line react/forbid-component-props */
+                  className="max-w-[400px] w-[400px]"
+                  borderLeft
+                  fullHeight
+                >
+                  <FormFields isPending={isPending} />
+                </VStack>
+              </HStack>
+            </HiddenOnMobile>
+            <VisibleOnMobile checkWithJs>
+              <VStack fullWidth collapseHeight flex>
+                <VStack collapseHeight flex overflowY="auto" padding="small">
+                  <CompareTemplateVersions
+                    leftNameOverride={t('VersionAgentDialog.leftNameOverride')}
+                    rightNameOverride={t(
+                      'VersionAgentDialog.rightNameOverride',
+                    )}
+                    leftComparisonVersion="latest"
+                    rightComparisonVersion="current"
+                    defaultRightComparisonState={agentState as AgentState}
+                    defaultLeftComparisonState={deployedAgentTemplate?.state}
                   />
                 </VStack>
-                <FormActions align="start">
-                  <Button
-                    data-testid="deploy-agent-dialog-trigger"
-                    color="primary"
-                    busy={isPending}
-                    label={t('VersionAgentDialog.confirm')}
-                  />
-                </FormActions>
+                <VStack>
+                  <FormFields isPending={isPending} />
+                </VStack>
               </VStack>
-            </VStack>
+            </VisibleOnMobile>
           </VStack>
         </form>
       </MiniApp>

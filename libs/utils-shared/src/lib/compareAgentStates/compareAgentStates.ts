@@ -31,24 +31,40 @@ export function stateCleaner(state: AgentState): CleanedAgentState {
         value: '',
       }))
       .toSorted((a, b) => (a.key || '').localeCompare(b.key || '')),
-    toolIds: state.tools
+    toolIds: (state.tools || [])
       .map((tool) => tool.id)
       .filter((id) => !!id)
       .toSorted((a, b) => (a || '').localeCompare(b || '')) as string[],
-    sourceIds: state.sources
+    sourceIds: (state.sources || [])
       .map((source) => source.id)
       .filter((id) => !!id)
       .toSorted((a, b) => (a || '').localeCompare(b || '')) as string[],
-    llmConfig: state.llm_config,
-    embedding_config: state.embedding_config,
-    memoryBlocks: state.memory.blocks
-      .map((block) => ({
-        value: block.value || '',
-        label: block.label || '',
-        limit: block.limit || 0,
-      }))
-      .toSorted((a, b) => (a.label || '').localeCompare(b.label || '')),
-    promptTemplate: state.memory.prompt_template || '',
+    llmConfig: {
+      model: state.llm_config.model,
+      model_endpoint_type: state.llm_config.model_endpoint_type,
+      model_endpoint: state.llm_config.model_endpoint,
+      model_wrapper: state.llm_config.model_wrapper,
+      context_window: state.llm_config.context_window,
+      temperature: state.llm_config.temperature,
+      max_tokens: state.llm_config.max_tokens,
+      max_reasoning_tokens: state.llm_config.max_reasoning_tokens,
+    },
+    embedding_config: {
+      embedding_model: state.embedding_config.embedding_model,
+      embedding_endpoint_type: state.embedding_config.embedding_endpoint_type,
+      embedding_dim: state.embedding_config.embedding_dim,
+      embedding_chunk_size: state.embedding_config.embedding_chunk_size,
+    },
+    memoryBlocks: state.memory
+      ? state.memory.blocks
+          .map((block) => ({
+            value: block.value || '',
+            label: block.label || '',
+            limit: block.limit || 0,
+          }))
+          .toSorted((a, b) => (a.label || '').localeCompare(b.label || ''))
+      : [],
+    promptTemplate: state.memory?.prompt_template || '',
     system: state.system,
   };
 }

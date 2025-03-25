@@ -3,7 +3,6 @@ import React from 'react';
 import {
   AgentStateViewer,
   LoadingEmptyStatusComponent,
-  VStack,
 } from '@letta-cloud/ui-component-library';
 import { webApi, webApiQueryKeys } from '@letta-cloud/sdk-web';
 import { useTranslations } from '@letta-cloud/translations';
@@ -68,30 +67,25 @@ export function CompareTemplateVersions(props: CompareTemplateVersionsProps) {
   );
 
   return (
-    <VStack flex collapseHeight>
-      <VStack border flex collapseHeight overflowY="auto">
-        {!leftAgentState || !rightAgentState ? (
-          <LoadingEmptyStatusComponent
-            isLoading
-            loadingMessage={t('loading')}
-          />
-        ) : (
-          <AgentStateViewer
-            baseName={
-              leftNameOverride
-                ? leftNameOverride
-                : `${name}:${leftComparisonVersion}`
-            }
-            comparedName={
-              rightNameOverride
-                ? rightNameOverride
-                : `${name}:${rightComparisonVersion}`
-            }
-            baseState={leftAgentState as AgentState}
-            comparedState={rightAgentState as AgentState}
-          />
-        )}
-      </VStack>
-    </VStack>
+    <>
+      {!leftAgentState || !rightAgentState ? (
+        <LoadingEmptyStatusComponent isLoading loadingMessage={t('loading')} />
+      ) : (
+        <AgentStateViewer
+          baseName={
+            leftNameOverride
+              ? leftNameOverride
+              : `${name}:${leftComparisonVersion}`
+          }
+          comparedName={
+            rightNameOverride
+              ? rightNameOverride
+              : `${name}:${rightComparisonVersion}`
+          }
+          baseState={leftAgentState as AgentState}
+          comparedState={rightAgentState as AgentState}
+        />
+      )}
+    </>
   );
 }

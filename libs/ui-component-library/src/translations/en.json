@@ -1,7 +1,13 @@
 {
   "components/AgentStateViewer": {
+    "changed": "Changed",
+    "StateViewer": {
+      "base": "Base",
+      "compared": "Compared"
+    },
+    "noDifference": "There is no difference between these two versions, you can still view the agent state below",
     "ToolVariableViewer": {
-      "toolVariables": "Tool Variables",
+      "title": "Tool Variables",
       "noToolVariables": "No tool variables in this agent"
     },
     "MemoryBlockViewer": {

@@ -18,6 +18,7 @@ export function buildConfig(appDir: string): Config {
         sm: '640px',
         largerThanMobile: '640px',
         visibleSidebar: '840px',
+        widescreen: '1440px',
       },
       extend: {
         zIndex: {
@@ -142,6 +143,10 @@ export function buildConfig(appDir: string): Config {
             DEFAULT: 'hsl(var(--primary))',
             hover: 'hsl(var(--primary-hover))',
             content: 'hsl(var(--primary-content))',
+          },
+          'destructive-diff': {
+            DEFAULT: 'hsl(var(--destructive-diff))',
+            content: 'hsl(var(--destructive-diff-content))',
           },
           secondary: {
             DEFAULT: 'hsl(var(--secondary))',
