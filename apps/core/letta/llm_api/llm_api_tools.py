@@ -15,7 +15,6 @@ from letta.llm_api.anthropic import (
 from letta.llm_api.aws_bedrock import has_valid_aws_credentials
 from letta.llm_api.azure_openai import azure_openai_chat_completions_request
 from letta.llm_api.deepseek import build_deepseek_chat_completions_request, convert_deepseek_response_to_chatcompletion
-from letta.llm_api.google_ai import convert_tools_to_google_ai_format, google_ai_chat_completions_request
 from letta.llm_api.helpers import add_inner_thoughts_to_functions, unpack_all_inner_thoughts_from_kwargs
 from letta.llm_api.openai import (
     build_openai_chat_completions_request,
@@ -27,7 +26,7 @@ from letta.local_llm.constants import INNER_THOUGHTS_KWARG, INNER_THOUGHTS_KWARG
 from letta.local_llm.utils import num_tokens_from_functions, num_tokens_from_messages
 from letta.schemas.llm_config import LLMConfig
 from letta.schemas.message import Message
-from letta.schemas.openai.chat_completion_request import ChatCompletionRequest, Tool, cast_message_to_subtype
+from letta.schemas.openai.chat_completion_request import ChatCompletionRequest, cast_message_to_subtype
 from letta.schemas.openai.chat_completion_response import ChatCompletionResponse
 from letta.settings import ModelSettings
 from letta.streaming_interface import AgentChunkStreamingInterface, AgentRefreshStreamingInterface
@@ -313,58 +312,6 @@ def create(
             response = unpack_all_inner_thoughts_from_kwargs(response=response, inner_thoughts_key=INNER_THOUGHTS_KWARG)
 
         return response
-
-    elif llm_config.model_endpoint_type == "google_ai":
-        if stream:
-            raise NotImplementedError(f"Streaming not yet implemented for {llm_config.model_endpoint_type}")
-        if not use_tool_naming:
-            raise NotImplementedError("Only tool calling supported on Google AI API requests")
-
-        if functions is not None:
-            tools = [{"type": "function", "function": f} for f in functions]
-            tools = [Tool(**t) for t in tools]
-            tools = convert_tools_to_google_ai_format(tools, inner_thoughts_in_kwargs=llm_config.put_inner_thoughts_in_kwargs)
-        else:
-            tools = None
-
-        return google_ai_chat_completions_request(
-            base_url=llm_config.model_endpoint,
-            model=llm_config.model,
-            api_key=model_settings.gemini_api_key,
-            # see structure of payload here: https://ai.google.dev/docs/function_calling
-            data=dict(
-                contents=[m.to_google_ai_dict() for m in messages],
-                tools=tools,
-                generation_config={"temperature": llm_config.temperature, "max_output_tokens": llm_config.max_tokens},
-            ),
-            inner_thoughts_in_kwargs=llm_config.put_inner_thoughts_in_kwargs,
-        )
-
-    elif llm_config.model_endpoint_type == "google_vertex":
-        from letta.llm_api.google_vertex import google_vertex_chat_completions_request
-
-        if stream:
-            raise NotImplementedError(f"Streaming not yet implemented for {llm_config.model_endpoint_type}")
-        if not use_tool_naming:
-            raise NotImplementedError("Only tool calling supported on Google Vertex AI API requests")
-
-        if functions is not None:
-            tools = [{"type": "function", "function": f} for f in functions]
-            tools = [Tool(**t) for t in tools]
-            tools = convert_tools_to_google_ai_format(tools, inner_thoughts_in_kwargs=llm_config.put_inner_thoughts_in_kwargs)
-        else:
-            tools = None
-
-        config = {"tools": tools, "temperature": llm_config.temperature, "max_output_tokens": llm_config.max_tokens}
-
-        return google_vertex_chat_completions_request(
-            model=llm_config.model,
-            project_id=model_settings.google_cloud_project,
-            region=model_settings.google_cloud_location,
-            contents=[m.to_google_ai_dict() for m in messages],
-            config=config,
-            inner_thoughts_in_kwargs=llm_config.put_inner_thoughts_in_kwargs,
-        )
 
     elif llm_config.model_endpoint_type == "anthropic":
         if not use_tool_naming:
