@@ -219,6 +219,7 @@ test-cloud-api:
 
 database-compatibility:
     @echo "🚧 Running database database-compatibility tests..."
+    cd apps/cloud-api && cp -R node_modules ../../
     cd apps/cloud-api && npm run test:branch-regression
 
 migrate-cloud-db:
