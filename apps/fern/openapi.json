@@ -392,24 +392,7 @@
         "summary": "List Composio Apps",
         "description": "Get a list of all Composio apps",
         "operationId": "list_composio_apps",
-        "parameters": [
-          {
-            "name": "user-id",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "User Id"
-            }
-          }
-        ],
+        "parameters": [],
         "responses": {
           "200": {
             "description": "Successful Response",
@@ -530,24 +513,7 @@
         "summary": "List Mcp Servers",
         "description": "Get a list of all configured MCP servers",
         "operationId": "list_mcp_servers",
-        "parameters": [
-          {
-            "name": "user-id",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "User Id"
-            }
-          }
-        ],
+        "parameters": [],
         "responses": {
           "200": {
             "description": "Successful Response",
@@ -5602,22 +5568,6 @@
             "schema": {
               "type": "string",
               "title": "Agent Id"
-            }
-          },
-          {
-            "name": "user-id",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "User Id"
             }
           }
         ],
@@ -11924,20 +11874,6 @@
           "embedding_config": {
             "$ref": "#/components/schemas/EmbeddingConfig"
           },
-          "groups": {
-            "items": {},
-            "type": "array",
-            "title": "Groups"
-          },
-          "identities": {
-            "items": {},
-            "type": "array",
-            "title": "Identities"
-          },
-          "is_deleted": {
-            "type": "boolean",
-            "title": "Is Deleted"
-          },
           "llm_config": {
             "$ref": "#/components/schemas/LLMConfig"
           },
@@ -12024,9 +11960,6 @@
           "created_at",
           "description",
           "embedding_config",
-          "groups",
-          "identities",
-          "is_deleted",
           "llm_config",
           "message_buffer_autoclear",
           "messages",
@@ -13493,6 +13426,11 @@
                   "o1-preview-2024-09-12",
                   "o1-mini",
                   "o1-mini-2024-09-12",
+                  "computer-use-preview",
+                  "computer-use-preview-2025-02-04",
+                  "computer-use-preview-2025-03-11",
+                  "gpt-4.5-preview",
+                  "gpt-4.5-preview-2025-02-27",
                   "gpt-4o",
                   "gpt-4o-2024-11-20",
                   "gpt-4o-2024-08-06",
@@ -13502,10 +13440,6 @@
                   "gpt-4o-audio-preview-2024-12-17",
                   "gpt-4o-mini-audio-preview",
                   "gpt-4o-mini-audio-preview-2024-12-17",
-                  "gpt-4o-search-preview",
-                  "gpt-4o-mini-search-preview",
-                  "gpt-4o-search-preview-2025-03-11",
-                  "gpt-4o-mini-search-preview-2025-03-11",
                   "chatgpt-4o-latest",
                   "gpt-4o-mini",
                   "gpt-4o-mini-2024-07-18",
@@ -13893,6 +13827,11 @@
                   "o1-preview-2024-09-12",
                   "o1-mini",
                   "o1-mini-2024-09-12",
+                  "computer-use-preview",
+                  "computer-use-preview-2025-02-04",
+                  "computer-use-preview-2025-03-11",
+                  "gpt-4.5-preview",
+                  "gpt-4.5-preview-2025-02-27",
                   "gpt-4o",
                   "gpt-4o-2024-11-20",
                   "gpt-4o-2024-08-06",
@@ -13902,10 +13841,6 @@
                   "gpt-4o-audio-preview-2024-12-17",
                   "gpt-4o-mini-audio-preview",
                   "gpt-4o-mini-audio-preview-2024-12-17",
-                  "gpt-4o-search-preview",
-                  "gpt-4o-mini-search-preview",
-                  "gpt-4o-search-preview-2025-03-11",
-                  "gpt-4o-mini-search-preview-2025-03-11",
                   "chatgpt-4o-latest",
                   "gpt-4o-mini",
                   "gpt-4o-mini-2024-07-18",
@@ -14457,15 +14392,6 @@
             ],
             "title": "Description"
           },
-          "identities": {
-            "items": {},
-            "type": "array",
-            "title": "Identities"
-          },
-          "is_deleted": {
-            "type": "boolean",
-            "title": "Is Deleted"
-          },
           "is_template": {
             "type": "boolean",
             "title": "Is Template"
@@ -14513,8 +14439,6 @@
         "required": [
           "created_at",
           "description",
-          "identities",
-          "is_deleted",
           "is_template",
           "label",
           "limit",
@@ -15279,9 +15203,9 @@
             "type": "string",
             "title": "File Id"
           },
-          "filename": {
+          "file_name": {
             "type": "string",
-            "title": "Filename"
+            "title": "File Name"
           }
         },
         "type": "object",
@@ -19132,10 +19056,6 @@
             ],
             "title": "Description"
           },
-          "is_deleted": {
-            "type": "boolean",
-            "title": "Is Deleted"
-          },
           "key": {
             "type": "string",
             "title": "Key"
@@ -19150,14 +19070,7 @@
           }
         },
         "type": "object",
-        "required": [
-          "created_at",
-          "description",
-          "is_deleted",
-          "key",
-          "updated_at",
-          "value"
-        ],
+        "required": ["created_at", "description", "key", "updated_at", "value"],
         "title": "ToolEnvVarSchema"
       },
       "ToolJSONSchema": {
@@ -19460,10 +19373,6 @@
             "type": "string",
             "title": "Description"
           },
-          "is_deleted": {
-            "type": "boolean",
-            "title": "Is Deleted"
-          },
           "json_schema": {
             "$ref": "#/components/schemas/ToolJSONSchema"
           },
@@ -19522,7 +19431,6 @@
           "args_json_schema",
           "created_at",
           "description",
-          "is_deleted",
           "json_schema",
           "name",
           "return_char_limit",

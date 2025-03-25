@@ -93,9 +93,6 @@ export type AgentSchema = {
   created_at: string;
   description: string | null;
   embedding_config: EmbeddingConfig;
-  groups: Array<unknown>;
-  identities: Array<unknown>;
-  is_deleted: boolean;
   llm_config: LLMConfig;
   message_buffer_autoclear: boolean;
   messages: Array<MessageSchema>;
@@ -676,6 +673,11 @@ export type CompletionCreateParamsNonStreaming = {
     | 'o1-preview-2024-09-12'
     | 'o1-mini'
     | 'o1-mini-2024-09-12'
+    | 'computer-use-preview'
+    | 'computer-use-preview-2025-02-04'
+    | 'computer-use-preview-2025-03-11'
+    | 'gpt-4.5-preview'
+    | 'gpt-4.5-preview-2025-02-27'
     | 'gpt-4o'
     | 'gpt-4o-2024-11-20'
     | 'gpt-4o-2024-08-06'
@@ -685,10 +687,6 @@ export type CompletionCreateParamsNonStreaming = {
     | 'gpt-4o-audio-preview-2024-12-17'
     | 'gpt-4o-mini-audio-preview'
     | 'gpt-4o-mini-audio-preview-2024-12-17'
-    | 'gpt-4o-search-preview'
-    | 'gpt-4o-mini-search-preview'
-    | 'gpt-4o-search-preview-2025-03-11'
-    | 'gpt-4o-mini-search-preview-2025-03-11'
     | 'chatgpt-4o-latest'
     | 'gpt-4o-mini'
     | 'gpt-4o-mini-2024-07-18'
@@ -772,6 +770,11 @@ export type CompletionCreateParamsStreaming = {
     | 'o1-preview-2024-09-12'
     | 'o1-mini'
     | 'o1-mini-2024-09-12'
+    | 'computer-use-preview'
+    | 'computer-use-preview-2025-02-04'
+    | 'computer-use-preview-2025-03-11'
+    | 'gpt-4.5-preview'
+    | 'gpt-4.5-preview-2025-02-27'
     | 'gpt-4o'
     | 'gpt-4o-2024-11-20'
     | 'gpt-4o-2024-08-06'
@@ -781,10 +784,6 @@ export type CompletionCreateParamsStreaming = {
     | 'gpt-4o-audio-preview-2024-12-17'
     | 'gpt-4o-mini-audio-preview'
     | 'gpt-4o-mini-audio-preview-2024-12-17'
-    | 'gpt-4o-search-preview'
-    | 'gpt-4o-mini-search-preview'
-    | 'gpt-4o-search-preview-2025-03-11'
-    | 'gpt-4o-mini-search-preview-2025-03-11'
     | 'chatgpt-4o-latest'
     | 'gpt-4o-mini'
     | 'gpt-4o-mini-2024-07-18'
@@ -966,8 +965,6 @@ export type type9 = 'continue_loop';
 export type CoreMemoryBlockSchema = {
   created_at: string;
   description: string | null;
-  identities: Array<unknown>;
-  is_deleted: boolean;
   is_template: boolean;
   label: string;
   limit: number;
@@ -1309,7 +1306,7 @@ export type type10 = 'file';
 export type FileFile = {
   file_data?: string;
   file_id?: string;
-  filename?: string;
+  file_name?: string;
 };
 
 /**
@@ -3073,7 +3070,6 @@ export type ToolCreate = {
 export type ToolEnvVarSchema = {
   created_at: string;
   description: string | null;
-  is_deleted: boolean;
   key: string;
   updated_at: string;
   value: string;
@@ -3199,7 +3195,6 @@ export type ToolSchema = {
   args_json_schema: unknown | null;
   created_at: string;
   description: string;
-  is_deleted: boolean;
   json_schema: ToolJSONSchema;
   name: string;
   return_char_limit: number;

@@ -105,4 +105,7 @@ class MarshmallowAgentSchema(BaseSchema):
             "sources",
             "source_passages",
             "agent_passages",
+            "identities",
+            "is_deleted",
+            "groups",
         )
