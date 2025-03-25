@@ -3,6 +3,7 @@ import { getRedisData } from '@letta-cloud/service-redis';
 import { z } from 'zod';
 import type { ActorIdentity } from '../../types';
 import { verifyAndReturnAPIKeyDetails } from '@letta-cloud/utils-server';
+import { findOrCreateUserAndOrganizationFromProviderLogin } from '@letta-cloud/service-auth';
 
 const publicRoutes = [new RegExp('/v1/heath')];
 
@@ -67,11 +68,46 @@ async function verifyIfUserAccessTokenIsValid(
   };
 }
 
+async function handleFakeUser(req: Request) {
+  if (!process.env.USE_FAKE_USER) {
+    return false;
+  }
+
+  const user = await findOrCreateUserAndOrganizationFromProviderLogin({
+    provider: 'google',
+    email: 'api-tester@letta.com',
+    skipOnboarding: true,
+    name: 'API tester',
+    uniqueId: 'apitester',
+    imageUrl: '',
+  });
+
+  if (!user) {
+    throw new Error('Failed to create fake user');
+  }
+
+  req.actor = {
+    cloudOrganizationId: user.user.activeOrganizationId,
+    coreUserId: user.user.coreUserId,
+    cloudUserId: user.user.id,
+    source: 'api',
+  };
+
+  return true;
+}
+
 export async function verifyIdentityMiddleware(
   req: Request,
   res: Response,
   next: NextFunction,
 ) {
+  const fakeUserData = await handleFakeUser(req);
+
+  if (fakeUserData) {
+    next();
+    return;
+  }
+
   const apiKeyData = await verifyIfUserAccessTokenIsValid(req);
 
   if (apiKeyData) {

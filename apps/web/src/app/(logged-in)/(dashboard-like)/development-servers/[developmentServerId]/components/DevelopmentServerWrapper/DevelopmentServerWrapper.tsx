@@ -1,6 +1,6 @@
 'use client';
 import React from 'react';
-import { LettaAgentsAPIWrapper } from '@letta-cloud/sdk-core';
+import { LettaAgentsAPIWrapper } from '@letta-cloud/utils-client';
 import { useCurrentDevelopmentServerConfig } from '@letta-cloud/utils-client';
 import { LoadingEmptyStatusComponent } from '@letta-cloud/ui-component-library';
 

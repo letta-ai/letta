@@ -23,7 +23,6 @@
     "core:database:migrate": "nx database:migrate core",
     "core:install": "nx install core",
     "cloud-api:dev": "npm run cloud-api:build && npm run cloud-api:serve",
-    "cloud-api:build": "esbuild apps/cloud-api/src/main.ts --bundle --platform=node --outfile=dist/apps/cloud-api/main.js",
     "cloud-api:serve": "node --require ./apps/cloud-api/instrument.js dist/apps/cloud-api/main.js",
     "desktop:setup-core": "nx install desktop-core",
     "desktop:package-core": "nx package desktop-core",
@@ -44,7 +43,6 @@
     "start:api-stability": "nx start web -p 3000",
     "stress": "nx run stress:test --skip-nx-cache",
     "test": "npx nx run-many -p web ui-component-library  --skip-nx-cache --parallel --targets=test",
-    "test:api-stability": "nx test api-stability-tester",
     "type-check": "nx run-many --all --skip-nx-cache --parallel --targets=type-check",
     "undertaker:dev": "nx dev credit-undertaker",
     "undertaker:build": "esbuild apps/credit-undertaker/src/main.ts --bundle --platform=node --outfile=dist/apps/credit-undertaker/main.js",
@@ -134,8 +132,8 @@
     "next-intl": "^3.26.3",
     "next-transition-router": "^0.2.6",
     "nextjs-toploader": "^3.7.15",
+    "pg": "^8.14.1",
     "postgres": "^3.4.5",
-    "prismjs": "^1.29.0",
     "promise-worker": "^2.0.1",
     "ps-node": "^0.1.6",
     "pyodide": "^0.26.4",
@@ -274,9 +272,11 @@
     "ts-jest": "^29.2.5",
     "ts-morph": "^24.0.0",
     "ts-node": "10.9.2",
+    "tsconfig-paths-jest": "^0.0.1",
     "typescript": "5.7.2",
     "vite": "5.4.6",
-    "vitest": "^1.3.1"
+    "vitest": "^1.3.1",
+    "wait-on": "^8.0.3"
   },
   "engines": {
     "node": "22.14.0",

@@ -53,6 +53,13 @@ export function createRedisInstance() {
   }
 }
 
+export function destroyRedisInstance() {
+  if (redisInstance) {
+    redisInstance.disconnect();
+    redisInstance = null;
+  }
+}
+
 export async function testRedisConnection() {
   console.log(
     `[Redis] Testing connection... at ${environment.REDIS_HOST}:${environment.REDIS_PORT}`,

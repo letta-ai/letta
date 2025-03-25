@@ -26,11 +26,7 @@ jobs:
         with:
           files: |
             .github/workflows/migration-api-stability.yml
-            apps/web/src/app/api/**
-            apps/web/src/lib/server/**
-            apps/web/src/lib/web-api/**
-            apps/web/src/lib/utils/**
-            apps/web/src/lib/sdk/**
+            apps/cloud-api/src/**
             apps/core/**
             libs/sdk-core/**
             libs/utils-server/**
@@ -43,6 +39,8 @@ jobs:
             tsconfig.json
   migration-api-stability:
     env:
+      LETTA_AGENTS_ENDPOINT: http://localhost:8283
+      DATABASE_URL: postgres://postgres:postgres@localhost:5433/postgres
       IS_API_STABILITY_TEST: yes
       IS_CYPRESS_RUN: yes
       NODE_OPTIONS: --max_old_space_size=6144
@@ -112,6 +110,8 @@ jobs:
           version: 1.8.3
           virtualenvs-create: true
           virtualenvs-in-project: true
+      - name: Install just
+        run: curl -LSs https://just.systems/install.sh | sudo bash -s -- --to /usr/local/bin/
       - name: Load cached venv
         id: cached-poetry-dependencies
         uses: actions/cache@v4
@@ -167,54 +167,41 @@ jobs:
         id: cache-branch
         uses: actions/cache@v3
         with:
-          path: ./branch-code/node_modules
-          key: modules-${{ hashFiles('./branch-code/package-lock.json') }}
+          path: ./branch-code/apps/cloud-api/node_modules
+          key: modules-${{ hashFiles('./branch-code/apps/cloud-api/package-lock.json') }}
       - name: Cache npm dependencies
         id: cache-main
         uses: actions/cache@v3
         with:
-          path: ./main-code/node_modules
-          key: modules-${{ hashFiles('./main-code/package-lock.json') }}
-      - name: Install Dependencies on branch code
-        if: steps.cache-branch.outputs.cache-hit != 'true'
-        run: npm ci
-        working-directory: branch-code
-      - name: Install Dependencies on main branch
-        if: steps.cache-main.outputs.cache-hit != 'true'
-        run: npm ci
-        working-directory: main-code
-      - name: Delete unnecessary files on main branch
-        run: |
-          rm -rf main-code/apps/web/src/app/\(logged-in\)
-          rm -rf main-code/apps/web/src/app/\(logged-out\)
-          rm -rf main-code/apps/web/src/app/\(logged-in-no-org-check\)
-          rm -rf branch-code/apps/web/src/app/\(logged-in\)
-          rm -rf branch-code/apps/web/src/app/\(logged-out\)
-          rm -rf branch-code/apps/web/src/app/\(logged-in-no-org-check\)
-      - name: Build and migrate web on main branch
-        working-directory: main-code/apps/web
-        run: npm run build:e2e
-        env:
-          DATABASE_URL: postgres://postgres:postgres@localhost:5433/postgres
+          path: ./main-code/apps/cloud-api/node_modules
+          key: modules-${{ hashFiles('./main-code/apps/cloud-api/package-lock.json') }}
       - name: Turn on letta web on main branch
-        working-directory: main-code/apps/web
-        run: npm run start:api-stability &
+        working-directory: main-code/apps/cloud-api
+        run: just setup-cloud-api
+      - name: Migrate Cloud DB
+        working-directory: main-code
+        run:
+          just migrate-cloud-db
+      - name: Turn on letta web on main branch
+        working-directory: main-code/apps/cloud-api
+        run: just cloud-api &
         env:
           DATABASE_URL: postgres://postgres:postgres@localhost:5433/postgres
           REDIS_HOST: localhost
           REDIS_PORT: 6379
           LETTA_AGENTS_ENDPOINT: http://localhost:8283
-          NEXT_PUBLIC_CURRENT_HOST: http://localhost:3000
+          NEXT_PUBLIC_CURRENT_HOST: http://localhost:3006
           IS_API_STABILITY_TEST: yes
+          USE_FAKE_USER: yes
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           TEST_STAGE: main
-      - name: Run api stability tests
-        working-directory: branch-code/apps/api-stability-tester
-        run: npm run test:api-stability
+      - name: Run database compatibility tests
+        working-directory: branch-code
+        run: just database-compatibility
         env:
           TEST_STAGE: main
       - name: Kill Letta web
-        run: kill $(pgrep -f "npm run start:api-stability") || true
+        run: kill $(pgrep -f "just cloud-api") || true
       - name: Kill Letta agents
         run: kill $(pgrep -f "poetry run letta server") || true
       - name: Migrate database on branch code
@@ -227,11 +214,6 @@ jobs:
           LETTA_PG_HOST: localhost
         run: |
           poetry run alembic upgrade head
-      - name: Build and migrate web on branch code
-        working-directory: branch-code/apps/web
-        run: npm run build:e2e
-        env:
-          DATABASE_URL: postgres://postgres:postgres@localhost:5433/postgres
       - name: Turn on Letta agents on branch code
         working-directory: branch-code/apps/core
         env:
@@ -243,20 +225,27 @@ jobs:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
         # Detach
         run: poetry run letta server &
+      - name: Install deps on branch code
+        working-directory: branch-code/apps/cloud-api
+        run: just setup-cloud-api
+      - name: Migrate Cloud DB
+        working-directory: branch-code
+        run:
+          just migrate-cloud-db
       - name: Turn on letta web on branch code
-        working-directory: branch-code/apps/web
-        run: npm run start:api-stability &
+        working-directory: branch-code/apps/cloud-api
+        run: just cloud-api &
         env:
           DATABASE_URL: postgres://postgres:postgres@localhost:5433/postgres
           REDIS_HOST: localhost
           REDIS_PORT: 6379
-          LETTA_AGENTS_ENDPOINT: http://localhost:8283
-          NEXT_PUBLIC_CURRENT_HOST: http://localhost:3000
+          NEXT_PUBLIC_CURRENT_HOST: http://localhost:3006
           IS_API_STABILITY_TEST: yes
+          USE_FAKE_USER: yes
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           TEST_STAGE: branch
-      - name: Run api stability tests on branch code
-        working-directory: branch-code/apps/api-stability-tester
-        run: npm run test:api-stability
+      - name: Run database stability tests on branch code
+        working-directory: branch-code
+        run: just database-compatibility
         env:
           TEST_STAGE: branch

@@ -75,13 +75,14 @@ export async function createOrganization(args: CreateOrganizationArgs) {
     .returning({ organizationId: organizations.id });
 
   try {
-    const { id: stripeCustomerId } = process.env.IS_CYPRESS_RUN
-      ? { id: 'cus_Rd2i53yeQHNGYA' }
-      : await createPaymentCustomer({
-          organizationId: createdOrg.organizationId,
-          email: args.email,
-          name,
-        });
+    const { id: stripeCustomerId } =
+      process.env.IS_CYPRESS_RUN || process.env.USE_FAKE_USER
+        ? { id: 'cus_Rd2i53yeQHNGYA' }
+        : await createPaymentCustomer({
+            organizationId: createdOrg.organizationId,
+            email: args.email,
+            name,
+          });
 
     const [[createdProject]] = await Promise.all([
       db

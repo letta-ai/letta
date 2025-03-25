@@ -8,7 +8,7 @@ import { useQueryClient } from '@tanstack/react-query';
 interface SetOnboardingStepPayload {
   onboardingStep: OnboardingStepsType;
   stepToClaim?: OnboardingStepsType;
-  onSuccess?: VoidFunction;
+  onSuccess?: () => void;
 }
 
 export function useSetOnboardingStep() {

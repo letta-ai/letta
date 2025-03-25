@@ -37,7 +37,6 @@ import type { AgentMessage, AgentState } from '@letta-cloud/sdk-core';
 import { useAgentsServiceResetMessages } from '@letta-cloud/sdk-core';
 import { isAgentState } from '@letta-cloud/sdk-core';
 import { ErrorMessageSchema } from '@letta-cloud/sdk-core';
-import { useLettaAgentsAPI } from '@letta-cloud/sdk-core';
 import { getIsAgentState } from '@letta-cloud/sdk-core';
 import { useAgentsServiceListAgentSources } from '@letta-cloud/sdk-core';
 import {
@@ -70,7 +69,10 @@ import type { GetAgentTemplateSimulatorSessionResponseBody } from '@letta-cloud/
 import { messagesInFlightCacheAtom } from '../Messages/messagesInFlightCacheAtom/messagesInFlightCacheAtom';
 import { Messages } from '../Messages/Messages';
 import type { MessagesDisplayMode } from '../Messages/Messages';
-import { useCurrentAPIHostConfig } from '@letta-cloud/utils-client';
+import {
+  useCurrentAPIHostConfig,
+  useLettaAgentsAPI,
+} from '@letta-cloud/utils-client';
 import { AgentVariablesModal } from './AgentVariablesModal/AgentVariablesModal';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { ShareAgentDialog } from './ShareAgentDialog/ShareAgentDialog';

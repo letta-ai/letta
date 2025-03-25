@@ -1,13 +1,24 @@
-import { lettaAxiosSDK, TEST_STAGE } from './constant';
+import { BASE_URL, lettaAxiosSDK } from './constants';
+import waitOn from 'wait-on';
+import { getAgentByName, getAPIKey } from './helpers';
 
-const testAgentName = 'api-test-agent';
+export const TEST_STAGE: 'branch' | 'main' = process.env.TEST_STAGE as
+  | 'branch'
+  | 'main';
 
-async function getAgentByName(name: string) {
-  const agentsList = await lettaAxiosSDK.get(`/v1/agents?name=${name}`);
-  return agentsList.data[0];
-}
+const testAgentName = 'regression-test-agent';
 
 beforeAll(async () => {
+  await waitOn({
+    resources: [BASE_URL],
+    /* 30 seconds */
+    timeout: 30 * 1000,
+  });
+
+  const apiKey = await getAPIKey();
+
+  lettaAxiosSDK.defaults.headers.common['Authorization'] = `Bearer ${apiKey}`;
+
   if (TEST_STAGE === 'main') {
     // find agents
     const agent = await getAgentByName(testAgentName);

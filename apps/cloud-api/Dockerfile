@@ -23,7 +23,7 @@ COPY . .
 ENV NODE_ENV=production
 
 # Build with external modules
-RUN mkdir -p dist/apps/cloud-api && npx esbuild apps/cloud-api/src/main.ts --bundle --platform=node --outfile=dist/apps/cloud-api/main.js --external:@ts-rest/express --external:@ts-rest/react-query/v5 --external:lodash --external:jsonrepair --external:axios --external:@tanstack/react-query --external:unique-names-generator
+RUN mkdir -p dist/apps/cloud-api && (cd apps/cloud-api && npm run build)
 
 # Production image, copy all the files and run next
 FROM base AS cloud-api

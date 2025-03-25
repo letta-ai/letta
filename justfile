@@ -191,7 +191,7 @@ setup-cloud-api:
 
 cloud-api: setup-cloud-api
     @echo "🚧 Running the cloud API..."
-    npm run cloud-api:dev
+    cd apps/cloud-api && npm run build && npm run start
 
 # Trigger the cloud API deployment workflow (defaults to current branch if none specified)
 trigger-cloud-api-deploy branch="" deploy_message="":
@@ -211,6 +211,21 @@ build-cloud-api:
 push-cloud-api:
     @echo "🚀 Pushing Docker images to registry with tag: {{TAG}}..."
     docker push {{DOCKER_REGISTRY}}/cloud-api:{{TAG}}
+
+test-cloud-api:
+    @echo "🚧 Running tests for cloud API..."
+    cd apps/cloud-api && cp -R node_modules ../../
+    cd apps/cloud-api && npm run test:e2e
+
+database-compatibility:
+    @echo "🚧 Running database database-compatibility tests..."
+    cd apps/cloud-api && npm run test:branch-regression
+
+migrate-cloud-db:
+    @echo "🚧 Migrating the cloud API database..."
+    cd libs/service-database && npm ci
+    cd libs/service-database && npx drizzle-kit migrate --config ./drizzle.config.ts
+    rm -rf libs/service-database/node_modules
 
 # Deploy the cloud API Helm chart
 deploy-cloud-api: push-cloud-api

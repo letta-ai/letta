@@ -4,7 +4,6 @@
 import * as mixpanel from 'mixpanel';
 import { environment } from '@letta-cloud/config-environment-variables';
 import type { AnalyticsEvent, AnalyticsEventProperties } from '../events';
-import * as Sentry from '@sentry/nextjs';
 
 let mixpanelSingleton: mixpanel.Mixpanel | null = null;
 
@@ -60,6 +59,6 @@ export function trackServerSideEvent<Event extends AnalyticsEvent>(
 
     mixpanel.track(eventName);
   } catch (error) {
-    Sentry.captureException(error);
+    console.error('Failed to track event', error);
   }
 }

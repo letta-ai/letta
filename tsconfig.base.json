@@ -47,6 +47,7 @@
       "@letta-cloud/service-analytics/server": [
         "libs/service-analytics/src/server/index.ts"
       ],
+      "@letta-cloud/service-auth": ["libs/service-auth/src/index.ts"],
       "@letta-cloud/service-composio": ["libs/service-composio/src/index.ts"],
       "@letta-cloud/service-database": ["libs/service-database/src/index.ts"],
       "@letta-cloud/service-database-testing": [

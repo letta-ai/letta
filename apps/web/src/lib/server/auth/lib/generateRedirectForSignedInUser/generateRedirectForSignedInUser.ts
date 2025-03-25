@@ -1,4 +1,4 @@
-import type { NewUserDetails } from '$web/server/auth';
+import type { NewUserDetails } from '@letta-cloud/service-auth';
 
 interface GenerateRedirectSignatureForLoggedInUserOptions {
   newUserDetails?: NewUserDetails | undefined;

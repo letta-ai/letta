@@ -156,6 +156,7 @@ const DeleteAgentResponseSchema = z.object({
   success: z.literal(true),
 });
 
+// @ts-expect-error - no body required
 const deleteAgentContract = c.mutation({
   method: 'DELETE',
   summary: 'Delete Agent',
@@ -164,7 +165,6 @@ const deleteAgentContract = c.mutation({
   pathParams: z.object({
     agent_id: z.string(),
   }),
-  body: z.undefined(),
   responses: {
     200: DeleteAgentResponseSchema,
   },
@@ -296,6 +296,7 @@ const getAgentVariablesContract = c.query({
   pathParams: z.object({
     agent_id: z.string(),
   }),
+
   responses: {
     200: GetAgentVariablesResponseSchema,
     404: GetAgentVariablesNotFoundResponseSchema,

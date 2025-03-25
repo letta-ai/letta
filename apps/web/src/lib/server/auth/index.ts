@@ -1,7 +1,5 @@
-export * from './lib/createOrganization/createOrganization';
 export * from './lib/deleteUser/deleteUser';
 export * from './lib/extractGoogleIdTokenData/extractGoogleIdTokenData';
-export * from './lib/generateApiKey/generateApiKey';
 export * from './lib/generateRedirectForSignedInUser/generateRedirectForSignedInUser';
 export * from './lib/getGithubUserDetails/getGithubUserDetails';
 export * from './lib/getOrganizationFromOrganizationId/getOrganizationFromOrganizationId';

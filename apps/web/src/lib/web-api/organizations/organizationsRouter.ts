@@ -12,10 +12,10 @@ import {
   users,
 } from '@letta-cloud/service-database';
 import {
-  createOrganization as authCreateOrganization,
   getUserActiveOrganizationIdOrThrow,
   getUserWithActiveOrganizationIdOrThrow,
 } from '$web/server/auth';
+import { createOrganization as authCreateOrganization } from '@letta-cloud/service-auth';
 import type { ServerInferRequest, ServerInferResponses } from '@ts-rest/core';
 import type { contracts } from '$web/web-api/contracts';
 import { and, eq, gt, ilike } from 'drizzle-orm';
