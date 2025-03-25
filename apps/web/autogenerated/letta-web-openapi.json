@@ -6243,14 +6243,6 @@
           }
         ],
         "operationId": "agents.deleteAgent",
-        "requestBody": {
-          "description": "Body",
-          "content": {
-            "application/json": {
-              "schema": {}
-            }
-          }
-        },
         "responses": {
           "200": {
             "description": "200",

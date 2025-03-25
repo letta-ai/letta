@@ -63,6 +63,30 @@ lettaWebOpenAPI.paths = Object.fromEntries(
   }),
 );
 
+const agentStatePathsToOverride: Array<[string, string]> = [
+  ['/v1/templates/{project}/{template_version}/agents', '201'],
+  ['/v1/agents/search', '200'],
+];
+
+for (const [path, responseCode] of agentStatePathsToOverride) {
+  if (lettaWebOpenAPI.paths[path]?.post?.responses?.[responseCode]) {
+    // Get direct reference to the schema object
+    let responseSchema =
+      lettaWebOpenAPI.paths[path].post.responses[responseCode];
+    let contentSchema = responseSchema.content['application/json'].schema;
+
+    // Replace the entire agents array schema with the reference
+    if (contentSchema.properties?.agents) {
+      contentSchema.properties.agents = {
+        type: 'array',
+        items: {
+          $ref: '#/components/schemas/AgentState',
+        },
+      };
+    }
+  }
+}
+
 // go through the paths and remove "user_id"/"actor_id" from the headers
 for (const path of Object.keys(lettaAgentsAPI.paths)) {
   for (const method of Object.keys(lettaAgentsAPI.paths[path])) {
