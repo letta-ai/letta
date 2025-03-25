@@ -934,8 +934,6 @@ class Agent(BaseAgent):
                     )
                     raise e
 
-                summarize_attempt_count += 1
-
                 if summarize_attempt_count <= summarizer_settings.max_summarizer_retries:
                     logger.warning(
                         f"context window exceeded with limit {self.agent_state.llm_config.context_window}, attempting to summarize ({summarize_attempt_count}/{summarizer_settings.max_summarizer_retries}"
