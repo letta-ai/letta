@@ -351,9 +351,9 @@ def test_append_copy_suffix_simple(local_client, server, serialize_test_agent, d
     """Test deserializing JSON into an Agent instance."""
     result = server.agent_manager.serialize(agent_id=serialize_test_agent.id, actor=default_user)
 
-    # write file 
+    # write file
     with open("test_agent_serialization.json", "w") as f:
-        # write json 
+        # write json
         f.write(json.dumps(result.model_dump(), indent=4))
 
     # Deserialize the agent
