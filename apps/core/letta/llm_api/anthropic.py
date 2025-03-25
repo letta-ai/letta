@@ -352,7 +352,7 @@ def convert_anthropic_response_to_chatcompletion(
     redacted_reasoning_content = None
     tool_calls = None
 
-    if len(response.content) > 1:
+    if len(response.content) > 0:
         for content_part in response.content:
             if content_part.type == "text":
                 content = strip_xml_tags(string=content_part.text, tag=inner_thoughts_xml_tag)
