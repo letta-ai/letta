@@ -251,14 +251,14 @@ function getClassNames(props: GetClassNameArgs = {}) {
         'border bg-panel-input-background text-panel-input-background-content border-solid h-[auto] px-2 py-1 w-full',
         controlVariants(props),
       ),
-    placeholder: () => cn('text-muted-content'),
+    placeholder: () => cn('text-muted-content text-base'),
     menu: () =>
       cn(
         'mt-1 bg-panel-input-background text-panel-input-background-content border',
       ),
     option: () => cn('px-3 py-2  hover:bg-background-hover'),
     noOptionsMessage: () => cn('py-3 px-3'),
-    valueContainer: () => cn('flex items-center gap-1'),
+    valueContainer: () => cn('flex items-center gap-1 text-sm'),
     groupHeading: () =>
       cn('border-b px-3 mt-3 pb-2 text-sm font-medium text-tertiary-content'),
     multiValue: () => cn('h-[21px] text-sm'),
@@ -283,7 +283,7 @@ function useStyles(args: UseStylesArgs) {
           ? 'var(--button-input-height-lg)'
           : 'var(--button-input-height)',
     }),
-    option: () => ({ fontSize: 'var(--font-size-base)' }),
+    option: () => ({ fontSize: 'var(--font-size-sm)' }),
     noOptionsMessage: () => ({ fontSize: 'var(--font-size-sm)' }),
     menu: (base: any) => ({
       ...base,

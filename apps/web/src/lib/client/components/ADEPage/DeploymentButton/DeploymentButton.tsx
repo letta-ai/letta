@@ -59,6 +59,7 @@ function CloudUpsellDeploy() {
       triggerAsChild
       trigger={
         <Button
+          size="small"
           color="primary"
           preIcon={<RocketIcon size="small" />}
           data-testid="trigger-cloud-upsell"
