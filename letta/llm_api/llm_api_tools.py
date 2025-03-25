@@ -372,7 +372,11 @@ def create(
 
         # Force tool calling
         tool_call = None
-        if force_tool_call is not None:
+        if functions is None:
+            # Special case for summarization path
+            tools = None
+            tool_choice = None
+        elif force_tool_call is not None:
             # tool_call = {"type": "function", "function": {"name": force_tool_call}}
             tool_choice = {"type": "tool", "name": force_tool_call}
             tools = [{"type": "function", "function": f} for f in functions if f["name"] == force_tool_call]
