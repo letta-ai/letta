@@ -1,6 +1,8 @@
-from typing import Literal
+from typing import List, Literal, Optional
 
 from pydantic import BaseModel, Field
+
+from letta.schemas.message import Message
 
 
 class LettaUsageStatistics(BaseModel):
@@ -19,3 +21,5 @@ class LettaUsageStatistics(BaseModel):
     prompt_tokens: int = Field(0, description="The number of tokens in the prompt.")
     total_tokens: int = Field(0, description="The total number of tokens processed by the agent.")
     step_count: int = Field(0, description="The number of steps taken by the agent.")
+    # TODO: Optional for now. This field makes everyone's lives easier
+    steps_messages: Optional[List[List[Message]]] = Field(None, description="The messages generated per step")

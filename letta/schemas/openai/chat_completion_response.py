@@ -40,6 +40,8 @@ class Message(BaseModel):
     role: str
     function_call: Optional[FunctionCall] = None  # Deprecated
     reasoning_content: Optional[str] = None  # Used in newer reasoning APIs
+    reasoning_content_signature: Optional[str] = None  # NOTE: for Anthropic
+    redacted_reasoning_content: Optional[str] = None  # NOTE: for Anthropic
 
 
 class Choice(BaseModel):
@@ -117,6 +119,8 @@ class MessageDelta(BaseModel):
 
     content: Optional[str] = None
     reasoning_content: Optional[str] = None
+    reasoning_content_signature: Optional[str] = None  # NOTE: for Anthropic
+    redacted_reasoning_content: Optional[str] = None  # NOTE: for Anthropic
     tool_calls: Optional[List[ToolCallDelta]] = None
     role: Optional[str] = None
     function_call: Optional[FunctionCallDelta] = None  # Deprecated
@@ -140,3 +144,4 @@ class ChatCompletionChunkResponse(BaseModel):
     system_fingerprint: Optional[str] = None
     # object: str = Field(default="chat.completion")
     object: Literal["chat.completion.chunk"] = "chat.completion.chunk"
+    output_tokens: int = 0

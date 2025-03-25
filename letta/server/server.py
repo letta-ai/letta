@@ -26,6 +26,7 @@ from letta.functions.mcp_client.stdio_client import StdioMCPClient
 from letta.functions.mcp_client.types import MCPServerType, MCPTool, SSEServerConfig, StdioServerConfig
 from letta.helpers.datetime_helpers import get_utc_time
 from letta.helpers.json_helpers import json_dumps, json_loads
+from letta.helpers.message_helper import prepare_input_message_create
 
 # TODO use custom interface
 from letta.interface import AgentInterface  # abstract
@@ -48,7 +49,7 @@ from letta.schemas.letta_message_content import TextContent
 from letta.schemas.letta_response import LettaResponse
 from letta.schemas.llm_config import LLMConfig
 from letta.schemas.memory import ArchivalMemorySummary, ContextWindowOverview, Memory, RecallMemorySummary
-from letta.schemas.message import Message, MessageCreate, MessageRole, MessageUpdate
+from letta.schemas.message import Message, MessageCreate, MessageUpdate
 from letta.schemas.organization import Organization
 from letta.schemas.passage import Passage, PassageUpdate
 from letta.schemas.providers import (
@@ -85,7 +86,6 @@ from letta.services.job_manager import JobManager
 from letta.services.message_manager import MessageManager
 from letta.services.organization_manager import OrganizationManager
 from letta.services.passage_manager import PassageManager
-from letta.services.per_agent_lock_manager import PerAgentLockManager
 from letta.services.provider_manager import ProviderManager
 from letta.services.sandbox_config_manager import SandboxConfigManager
 from letta.services.source_manager import SourceManager
@@ -209,9 +209,6 @@ class SyncServer(Server):
         self.step_manager = StepManager()
         self.identity_manager = IdentityManager()
         self.group_manager = GroupManager()
-
-        # Managers that interface with parallelism
-        self.per_agent_lock_manager = PerAgentLockManager()
 
         # Make default user and org
         if init_with_default_org_and_user:
@@ -353,21 +350,19 @@ class SyncServer(Server):
 
     def load_agent(self, agent_id: str, actor: User, interface: Union[AgentInterface, None] = None) -> Agent:
         """Updated method to load agents from persisted storage"""
-        agent_lock = self.per_agent_lock_manager.get_lock(agent_id)
-        with agent_lock:
-            agent_state = self.agent_manager.get_agent_by_id(agent_id=agent_id, actor=actor)
-            if agent_state.multi_agent_group:
-                return self.load_multi_agent(agent_state.multi_agent_group, actor, interface, agent_state)
+        agent_state = self.agent_manager.get_agent_by_id(agent_id=agent_id, actor=actor)
+        if agent_state.multi_agent_group:
+            return self.load_multi_agent(agent_state.multi_agent_group, actor, interface, agent_state)
 
-            interface = interface or self.default_interface_factory()
-            if agent_state.agent_type == AgentType.memgpt_agent:
-                agent = Agent(agent_state=agent_state, interface=interface, user=actor, mcp_clients=self.mcp_clients)
-            elif agent_state.agent_type == AgentType.offline_memory_agent:
-                agent = OfflineMemoryAgent(agent_state=agent_state, interface=interface, user=actor)
-            else:
-                raise ValueError(f"Invalid agent type {agent_state.agent_type}")
+        interface = interface or self.default_interface_factory()
+        if agent_state.agent_type == AgentType.memgpt_agent:
+            agent = Agent(agent_state=agent_state, interface=interface, user=actor, mcp_clients=self.mcp_clients)
+        elif agent_state.agent_type == AgentType.offline_memory_agent:
+            agent = OfflineMemoryAgent(agent_state=agent_state, interface=interface, user=actor)
+        else:
+            raise ValueError(f"Invalid agent type {agent_state.agent_type}")
 
-            return agent
+        return agent
 
     def load_multi_agent(
         self, group: Group, actor: User, interface: Union[AgentInterface, None] = None, agent_state: Optional[AgentState] = None
@@ -702,63 +697,22 @@ class SyncServer(Server):
         actor: User,
         agent_id: str,
         messages: Union[List[MessageCreate], List[Message]],
-        # whether or not to wrap user and system message as MemGPT-style stringified JSON
         wrap_user_message: bool = True,
         wrap_system_message: bool = True,
-        interface: Union[AgentInterface, ChatCompletionsStreamingInterface, None] = None,  # needed to getting responses
+        interface: Union[AgentInterface, ChatCompletionsStreamingInterface, None] = None,  # needed for responses
         metadata: Optional[dict] = None,  # Pass through metadata to interface
         put_inner_thoughts_first: bool = True,
     ) -> LettaUsageStatistics:
-        """Send a list of messages to the agent
+        """Send a list of messages to the agent.
 
-        If the messages are of type MessageCreate, we need to turn them into
-        Message objects first before sending them through step.
-
-        Otherwise, we can pass them in directly.
+        If messages are of type MessageCreate, convert them to Message objects before sending.
         """
-        message_objects: List[Message] = []
-
         if all(isinstance(m, MessageCreate) for m in messages):
-            for message in messages:
-                assert isinstance(message, MessageCreate)
-
-                # If wrapping is enabled, wrap with metadata before placing content inside the Message object
-                if isinstance(message.content, str):
-                    message_content = message.content
-                elif message.content and len(message.content) > 0 and isinstance(message.content[0], TextContent):
-                    message_content = message.content[0].text
-                else:
-                    assert message_content is not None, "Message content is empty"
-
-                if message.role == MessageRole.user and wrap_user_message:
-                    message_content = system.package_user_message(user_message=message_content)
-                elif message.role == MessageRole.system and wrap_system_message:
-                    message_content = system.package_system_message(system_message=message_content)
-                else:
-                    raise ValueError(f"Invalid message role: {message.role}")
-
-                # Create the Message object
-                message_objects.append(
-                    Message(
-                        agent_id=agent_id,
-                        role=message.role,
-                        content=[TextContent(text=message_content)] if message_content else [],
-                        name=message.name,
-                        # assigned later?
-                        model=None,
-                        # irrelevant
-                        tool_calls=None,
-                        tool_call_id=None,
-                    )
-                )
-
+            message_objects = [prepare_input_message_create(m, agent_id, wrap_user_message, wrap_system_message) for m in messages]
         elif all(isinstance(m, Message) for m in messages):
-            for message in messages:
-                assert isinstance(message, Message)
-                message_objects.append(message)
-
+            message_objects = messages
         else:
-            raise ValueError(f"All messages must be of type Message or MessageCreate, got {[type(message) for message in messages]}")
+            raise ValueError(f"All messages must be of type Message or MessageCreate, got {[type(m) for m in messages]}")
 
         # Store metadata in interface if provided
         if metadata and hasattr(interface, "metadata"):
@@ -792,7 +746,13 @@ class SyncServer(Server):
         if request.llm_config is None:
             if request.model is None:
                 raise ValueError("Must specify either model or llm_config in request")
-            request.llm_config = self.get_llm_config_from_handle(handle=request.model, context_window_limit=request.context_window_limit)
+            request.llm_config = self.get_llm_config_from_handle(
+                handle=request.model,
+                context_window_limit=request.context_window_limit,
+                max_tokens=request.max_tokens,
+                max_reasoning_tokens=request.max_reasoning_tokens,
+                enable_reasoner=request.enable_reasoner,
+            )
 
         if request.embedding_config is None:
             if request.embedding is None:
@@ -830,6 +790,8 @@ class SyncServer(Server):
         limit: Optional[int] = 100,
         order_by: Optional[str] = "created_at",
         reverse: Optional[bool] = False,
+        query_text: Optional[str] = None,
+        ascending: Optional[bool] = True,
     ) -> List[Passage]:
         # TODO: Thread actor directly through this function, since the top level caller most likely already retrieved the user
         actor = self.user_manager.get_user_or_default(user_id=user_id)
@@ -839,9 +801,10 @@ class SyncServer(Server):
             actor=actor,
             agent_id=agent_id,
             after=after,
+            query_text=query_text,
             before=before,
+            ascending=ascending,
             limit=limit,
-            ascending=not reverse,
         )
         return records
 
@@ -1099,7 +1062,14 @@ class SyncServer(Server):
         # Merge the two dictionaries, keeping the values from providers_from_db where conflicts occur
         return {**providers_from_env, **providers_from_db}.values()
 
-    def get_llm_config_from_handle(self, handle: str, context_window_limit: Optional[int] = None) -> LLMConfig:
+    def get_llm_config_from_handle(
+        self,
+        handle: str,
+        context_window_limit: Optional[int] = None,
+        max_tokens: Optional[int] = None,
+        max_reasoning_tokens: Optional[int] = None,
+        enable_reasoner: Optional[bool] = None,
+    ) -> LLMConfig:
         try:
             provider_name, model_name = handle.split("/", 1)
             provider = self.get_provider_from_name(provider_name)
@@ -1121,12 +1091,21 @@ class SyncServer(Server):
         else:
             llm_config = llm_configs[0]
 
-        if context_window_limit:
+        if context_window_limit is not None:
             if context_window_limit > llm_config.context_window:
                 raise ValueError(f"Context window limit ({context_window_limit}) is greater than maximum of ({llm_config.context_window})")
             llm_config.context_window = context_window_limit
         else:
             llm_config.context_window = min(llm_config.context_window, model_settings.global_max_context_window_limit)
+
+        if max_tokens is not None:
+            llm_config.max_tokens = max_tokens
+        if max_reasoning_tokens is not None:
+            if not max_tokens or max_reasoning_tokens > max_tokens:
+                raise ValueError(f"Max reasoning tokens ({max_reasoning_tokens}) must be less than max tokens ({max_tokens})")
+            llm_config.max_reasoning_tokens = max_reasoning_tokens
+        if enable_reasoner is not None:
+            llm_config.enable_reasoner = enable_reasoner
 
         return llm_config
 

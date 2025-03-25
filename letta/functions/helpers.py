@@ -1,4 +1,6 @@
 import asyncio
+import json
+import logging
 import threading
 from random import uniform
 from typing import Any, Dict, List, Optional, Type, Union
@@ -17,7 +19,6 @@ from letta.schemas.message import Message, MessageCreate
 from letta.schemas.user import User
 from letta.server.rest_api.utils import get_letta_server
 from letta.settings import settings
-from letta.utils import log_telemetry
 
 
 # TODO: This is kind of hacky, as this is used to search up the action later on composio's side
@@ -386,15 +387,9 @@ async def async_send_message_with_retries(
     logging_prefix: Optional[str] = None,
 ) -> str:
     logging_prefix = logging_prefix or "[async_send_message_with_retries]"
-    log_telemetry(sender_agent.logger, f"async_send_message_with_retries start", target_agent_id=target_agent_id)
 
     for attempt in range(1, max_retries + 1):
         try:
-            log_telemetry(
-                sender_agent.logger,
-                f"async_send_message_with_retries -> asyncio wait for send_message_to_agent_no_stream start",
-                target_agent_id=target_agent_id,
-            )
             response = await asyncio.wait_for(
                 send_message_to_agent_no_stream(
                     server=server,
@@ -404,24 +399,15 @@ async def async_send_message_with_retries(
                 ),
                 timeout=timeout,
             )
-            log_telemetry(
-                sender_agent.logger,
-                f"async_send_message_with_retries -> asyncio wait for send_message_to_agent_no_stream finish",
-                target_agent_id=target_agent_id,
-            )
 
             # Then parse out the assistant message
             assistant_message = parse_letta_response_for_assistant_message(target_agent_id, response)
             if assistant_message:
                 sender_agent.logger.info(f"{logging_prefix} - {assistant_message}")
-                log_telemetry(
-                    sender_agent.logger, f"async_send_message_with_retries finish with assistant message", target_agent_id=target_agent_id
-                )
                 return assistant_message
             else:
                 msg = f"(No response from agent {target_agent_id})"
                 sender_agent.logger.info(f"{logging_prefix} - {msg}")
-                log_telemetry(sender_agent.logger, f"async_send_message_with_retries finish no response", target_agent_id=target_agent_id)
                 return msg
 
         except asyncio.TimeoutError:
@@ -439,12 +425,6 @@ async def async_send_message_with_retries(
             await asyncio.sleep(backoff)
         else:
             sender_agent.logger.error(f"{logging_prefix} - Fatal error: {error_msg}")
-            log_telemetry(
-                sender_agent.logger,
-                f"async_send_message_with_retries finish fatal error",
-                target_agent_id=target_agent_id,
-                error_msg=error_msg,
-            )
             raise Exception(error_msg)
 
 
@@ -673,3 +653,27 @@ def _get_field_type(field_schema: Dict[str, Any], nested_models: Dict[str, Type[
         else:
             return Union[tuple(types)]
     raise ValueError(f"Unable to convert pydantic field schema to type: {field_schema}")
+
+
+def extract_send_message_from_steps_messages(
+    steps_messages: List[List[Message]],
+    agent_send_message_tool_name: str = DEFAULT_MESSAGE_TOOL,
+    agent_send_message_tool_kwarg: str = DEFAULT_MESSAGE_TOOL_KWARG,
+    logger: Optional[logging.Logger] = None,
+) -> List[str]:
+    extracted_messages = []
+
+    for step in steps_messages:
+        for message in step:
+            if message.tool_calls:
+                for tool_call in message.tool_calls:
+                    if tool_call.function.name == agent_send_message_tool_name:
+                        try:
+                            # Parse arguments to extract the "message" field
+                            arguments = json.loads(tool_call.function.arguments)
+                            if agent_send_message_tool_kwarg in arguments:
+                                extracted_messages.append(arguments[agent_send_message_tool_kwarg])
+                        except json.JSONDecodeError:
+                            logger.error(f"Failed to parse arguments for tool call: {tool_call.id}")
+
+    return extracted_messages

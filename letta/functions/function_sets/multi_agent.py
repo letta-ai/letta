@@ -1,16 +1,19 @@
 import asyncio
+import json
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import TYPE_CHECKING, List
 
 from letta.functions.helpers import (
-    _send_message_to_agents_matching_tags_async,
     _send_message_to_all_agents_in_group_async,
     execute_send_message_to_agent,
+    extract_send_message_from_steps_messages,
     fire_and_forget_send_to_agent,
 )
+from letta.helpers.message_helper import prepare_input_message_create
 from letta.schemas.enums import MessageRole
 from letta.schemas.message import MessageCreate
 from letta.server.rest_api.utils import get_letta_server
-from letta.utils import log_telemetry
+from letta.settings import settings
 
 if TYPE_CHECKING:
     from letta.agent import Agent
@@ -87,51 +90,59 @@ def send_message_to_agents_matching_tags(self: "Agent", message: str, match_all:
         response corresponds to a single agent. Agents that do not respond will not have an entry
         in the returned list.
     """
-    log_telemetry(
-        self.logger,
-        "_send_message_to_agents_matching_tags_async start",
-        message=message,
-        match_all=match_all,
-        match_some=match_some,
-    )
     server = get_letta_server()
-
     augmented_message = (
-        f"[Incoming message from agent with ID '{self.agent_state.id}' - to reply to this message, "
+        f"[Incoming message from external Letta agent - to reply to this message, "
         f"make sure to use the 'send_message' at the end, and the system will notify the sender of your response] "
         f"{message}"
     )
 
-    # Retrieve up to 100 matching agents
-    log_telemetry(
-        self.logger,
-        "_send_message_to_agents_matching_tags_async listing agents start",
-        message=message,
-        match_all=match_all,
-        match_some=match_some,
-    )
+    # Find matching agents
     matching_agents = server.agent_manager.list_agents_matching_tags(actor=self.user, match_all=match_all, match_some=match_some)
+    if not matching_agents:
+        return []
 
-    log_telemetry(
-        self.logger,
-        "_send_message_to_agents_matching_tags_async  listing agents finish",
-        message=message,
-        match_all=match_all,
-        match_some=match_some,
-    )
+    def process_agent(agent_id: str) -> str:
+        """Loads an agent, formats the message, and executes .step()"""
+        actor = self.user  # Ensure correct actor context
+        agent = server.load_agent(agent_id=agent_id, interface=None, actor=actor)
 
-    # Create a system message
-    messages = [MessageCreate(role=MessageRole.system, content=augmented_message, name=self.agent_state.name)]
+        # Prepare the message
+        messages = [MessageCreate(role=MessageRole.system, content=augmented_message, name=self.agent_state.name)]
+        input_messages = [prepare_input_message_create(m, agent_id) for m in messages]
 
-    result = asyncio.run(_send_message_to_agents_matching_tags_async(self, server, messages, matching_agents))
-    log_telemetry(
-        self.logger,
-        "_send_message_to_agents_matching_tags_async finish",
-        messages=message,
-        match_all=match_all,
-        match_some=match_some,
-    )
-    return result
+        # Run .step() and return the response
+        usage_stats = agent.step(
+            messages=input_messages,
+            chaining=True,
+            max_chaining_steps=None,
+            stream=False,
+            skip_verify=True,
+            metadata=None,
+            put_inner_thoughts_first=True,
+        )
+
+        send_messages = extract_send_message_from_steps_messages(usage_stats.steps_messages, logger=agent.logger)
+        response_data = {
+            "agent_id": agent_id,
+            "response_messages": send_messages if send_messages else ["<no response>"],
+        }
+
+        return json.dumps(response_data, indent=2)
+
+    # Use ThreadPoolExecutor for parallel execution
+    results = []
+    with ThreadPoolExecutor(max_workers=settings.multi_agent_concurrent_sends) as executor:
+        future_to_agent = {executor.submit(process_agent, agent_state.id): agent_state for agent_state in matching_agents}
+
+        for future in as_completed(future_to_agent):
+            try:
+                results.append(future.result())  # Collect results
+            except Exception as e:
+                # Log or handle failure for specific agents if needed
+                self.logger.exception(f"Error processing agent {future_to_agent[future]}: {e}")
+
+    return results
 
 
 def send_message_to_all_agents_in_group(self: "Agent", message: str) -> List[str]:

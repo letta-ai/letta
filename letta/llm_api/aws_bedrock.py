@@ -3,17 +3,19 @@ from typing import Any, Dict, List
 
 from anthropic import AnthropicBedrock
 
+from letta.log import get_logger
 from letta.settings import model_settings
 
-from letta.log import get_logger
-
 logger = get_logger(__name__)
+
 
 def has_valid_aws_credentials() -> bool:
     """
     Check if AWS credentials are properly configured.
     """
-    valid_aws_credentials = os.getenv("AWS_ACCESS_KEY") is not None and os.getenv("AWS_SECRET_ACCESS_KEY") is not None and os.getenv("AWS_REGION") is not None
+    valid_aws_credentials = (
+        os.getenv("AWS_ACCESS_KEY") is not None and os.getenv("AWS_SECRET_ACCESS_KEY") is not None and os.getenv("AWS_REGION") is not None
+    )
     return valid_aws_credentials
 
 

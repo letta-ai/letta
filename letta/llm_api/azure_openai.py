@@ -3,7 +3,6 @@ from collections import defaultdict
 import requests
 from openai import AzureOpenAI
 
-
 from letta.llm_api.openai import prepare_openai_payload
 from letta.schemas.llm_config import LLMConfig
 from letta.schemas.openai.chat_completion_response import ChatCompletionResponse

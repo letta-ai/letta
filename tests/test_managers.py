@@ -32,6 +32,7 @@ from letta.schemas.message import Message as PydanticMessage
 from letta.schemas.message import MessageCreate, MessageUpdate
 from letta.schemas.openai.chat_completion_response import UsageStatistics
 from letta.schemas.organization import Organization as PydanticOrganization
+from letta.schemas.organization import OrganizationUpdate
 from letta.schemas.passage import Passage as PydanticPassage
 from letta.schemas.run import Run as PydanticRun
 from letta.schemas.sandbox_config import E2BSandboxConfig, LocalSandboxConfig, SandboxConfigCreate, SandboxConfigUpdate, SandboxType
@@ -737,6 +738,124 @@ def test_list_agents_select_fields_mixed(server: SyncServer, comprehensive_test_
     # Since "invalid_field" is not recognized, it should have no adverse effect.
     # You might optionally check that no extra attribute is created on the pydantic model.
     assert not hasattr(agent, "invalid_field")
+
+
+def test_list_agents_ascending(server: SyncServer, default_user):
+    # Create two agents with known names
+    agent1 = server.agent_manager.create_agent(
+        agent_create=CreateAgent(
+            name="agent_oldest",
+            llm_config=LLMConfig.default_config("gpt-4"),
+            embedding_config=EmbeddingConfig.default_config(provider="openai"),
+            memory_blocks=[],
+        ),
+        actor=default_user,
+    )
+
+    if USING_SQLITE:
+        time.sleep(CREATE_DELAY_SQLITE)
+
+    agent2 = server.agent_manager.create_agent(
+        agent_create=CreateAgent(
+            name="agent_newest",
+            llm_config=LLMConfig.default_config("gpt-4"),
+            embedding_config=EmbeddingConfig.default_config(provider="openai"),
+            memory_blocks=[],
+        ),
+        actor=default_user,
+    )
+
+    agents = server.agent_manager.list_agents(actor=default_user, ascending=True)
+    names = [agent.name for agent in agents]
+    assert names.index("agent_oldest") < names.index("agent_newest")
+
+
+def test_list_agents_descending(server: SyncServer, default_user):
+    # Create two agents with known names
+    agent1 = server.agent_manager.create_agent(
+        agent_create=CreateAgent(
+            name="agent_oldest",
+            llm_config=LLMConfig.default_config("gpt-4"),
+            embedding_config=EmbeddingConfig.default_config(provider="openai"),
+            memory_blocks=[],
+        ),
+        actor=default_user,
+    )
+
+    if USING_SQLITE:
+        time.sleep(CREATE_DELAY_SQLITE)
+
+    agent2 = server.agent_manager.create_agent(
+        agent_create=CreateAgent(
+            name="agent_newest",
+            llm_config=LLMConfig.default_config("gpt-4"),
+            embedding_config=EmbeddingConfig.default_config(provider="openai"),
+            memory_blocks=[],
+        ),
+        actor=default_user,
+    )
+
+    agents = server.agent_manager.list_agents(actor=default_user, ascending=False)
+    names = [agent.name for agent in agents]
+    assert names.index("agent_newest") < names.index("agent_oldest")
+
+
+def test_list_agents_ordering_and_pagination(server: SyncServer, default_user):
+    names = ["alpha_agent", "beta_agent", "gamma_agent"]
+    created_agents = []
+
+    # Create agents in known order
+    for name in names:
+        agent = server.agent_manager.create_agent(
+            agent_create=CreateAgent(
+                name=name,
+                memory_blocks=[],
+                llm_config=LLMConfig.default_config("gpt-4"),
+                embedding_config=EmbeddingConfig.default_config(provider="openai"),
+            ),
+            actor=default_user,
+        )
+        created_agents.append(agent)
+        if USING_SQLITE:
+            time.sleep(CREATE_DELAY_SQLITE)
+
+    agent_ids = {agent.name: agent.id for agent in created_agents}
+
+    # Ascending (oldest to newest)
+    agents_asc = server.agent_manager.list_agents(actor=default_user, ascending=True)
+    asc_names = [agent.name for agent in agents_asc]
+    assert asc_names.index("alpha_agent") < asc_names.index("beta_agent") < asc_names.index("gamma_agent")
+
+    # Descending (newest to oldest)
+    agents_desc = server.agent_manager.list_agents(actor=default_user, ascending=False)
+    desc_names = [agent.name for agent in agents_desc]
+    assert desc_names.index("gamma_agent") < desc_names.index("beta_agent") < desc_names.index("alpha_agent")
+
+    # After: Get agents after alpha_agent in ascending order (should exclude alpha)
+    after_alpha = server.agent_manager.list_agents(actor=default_user, after=agent_ids["alpha_agent"], ascending=True)
+    after_names = [a.name for a in after_alpha]
+    assert "alpha_agent" not in after_names
+    assert "beta_agent" in after_names
+    assert "gamma_agent" in after_names
+    assert after_names == ["beta_agent", "gamma_agent"]
+
+    # Before: Get agents before gamma_agent in ascending order (should exclude gamma)
+    before_gamma = server.agent_manager.list_agents(actor=default_user, before=agent_ids["gamma_agent"], ascending=True)
+    before_names = [a.name for a in before_gamma]
+    assert "gamma_agent" not in before_names
+    assert "alpha_agent" in before_names
+    assert "beta_agent" in before_names
+    assert before_names == ["alpha_agent", "beta_agent"]
+
+    # After: Get agents after gamma_agent in descending order (should exclude gamma, return beta then alpha)
+    after_gamma_desc = server.agent_manager.list_agents(actor=default_user, after=agent_ids["gamma_agent"], ascending=False)
+    after_names_desc = [a.name for a in after_gamma_desc]
+    assert after_names_desc == ["beta_agent", "alpha_agent"]
+
+    # Before: Get agents before alpha_agent in descending order (should exclude alpha)
+    before_alpha_desc = server.agent_manager.list_agents(actor=default_user, before=agent_ids["alpha_agent"], ascending=False)
+    before_names_desc = [a.name for a in before_alpha_desc]
+    assert before_names_desc == ["gamma_agent", "beta_agent"]
 
 
 # ======================================================================================================================
@@ -1668,6 +1787,14 @@ def test_update_organization_name(server: SyncServer):
     assert org.name == org_name_a
     org = server.organization_manager.update_organization_name_using_id(org_id=org.id, name=org_name_b)
     assert org.name == org_name_b
+
+
+def test_update_organization_privileged_tools(server: SyncServer):
+    org_name = "test"
+    org = server.organization_manager.create_organization(pydantic_org=PydanticOrganization(name=org_name))
+    assert org.privileged_tools == False
+    org = server.organization_manager.update_organization(org_id=org.id, org_update=OrganizationUpdate(privileged_tools=True))
+    assert org.privileged_tools == True
 
 
 def test_list_organizations_pagination(server: SyncServer):

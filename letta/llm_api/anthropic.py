@@ -13,7 +13,9 @@ from anthropic.types.beta import (
     BetaRawMessageDeltaEvent,
     BetaRawMessageStartEvent,
     BetaRawMessageStopEvent,
+    BetaRedactedThinkingBlock,
     BetaTextBlock,
+    BetaThinkingBlock,
     BetaToolUseBlock,
 )
 
@@ -345,43 +347,32 @@ def convert_anthropic_response_to_chatcompletion(
     finish_reason = remap_finish_reason(response.stop_reason)
 
     content = None
+    reasoning_content = None
+    reasoning_content_signature = None
+    redacted_reasoning_content = None
     tool_calls = None
 
     if len(response.content) > 1:
-        # inner mono + function call
-        assert len(response.content) == 2
-        text_block = response.content[0]
-        tool_block = response.content[1]
-        assert text_block.type == "text"
-        assert tool_block.type == "tool_use"
-        content = strip_xml_tags(string=text_block.text, tag=inner_thoughts_xml_tag)
-        tool_calls = [
-            ToolCall(
-                id=tool_block.id,
-                type="function",
-                function=FunctionCall(
-                    name=tool_block.name,
-                    arguments=json.dumps(tool_block.input, indent=2),
-                ),
-            )
-        ]
-    elif len(response.content) == 1:
-        block = response.content[0]
-        if block.type == "tool_use":
-            # function call only
-            tool_calls = [
-                ToolCall(
-                    id=block.id,
-                    type="function",
-                    function=FunctionCall(
-                        name=block.name,
-                        arguments=json.dumps(block.input, indent=2),
-                    ),
-                )
-            ]
-        else:
-            # inner mono only
-            content = strip_xml_tags(string=block.text, tag=inner_thoughts_xml_tag)
+        for content_part in response.content:
+            if content_part.type == "text":
+                content = strip_xml_tags(string=content_part.text, tag=inner_thoughts_xml_tag)
+            if content_part.type == "tool_use":
+                tool_calls = [
+                    ToolCall(
+                        id=content_part.id,
+                        type="function",
+                        function=FunctionCall(
+                            name=content_part.name,
+                            arguments=json.dumps(content_part.input, indent=2),
+                        ),
+                    )
+                ]
+            if content_part.type == "thinking":
+                reasoning_content = content_part.thinking
+                reasoning_content_signature = content_part.signature
+            if content_part.type == "redacted_thinking":
+                redacted_reasoning_content = content_part.data
+
     else:
         raise RuntimeError("Unexpected empty content in response")
 
@@ -392,6 +383,9 @@ def convert_anthropic_response_to_chatcompletion(
         message=ChoiceMessage(
             role=response.role,
             content=content,
+            reasoning_content=reasoning_content,
+            reasoning_content_signature=reasoning_content_signature,
+            redacted_reasoning_content=redacted_reasoning_content,
             tool_calls=tool_calls,
         ),
     )
@@ -462,7 +456,31 @@ def convert_anthropic_stream_event_to_chatcompletion(
     """
     # Get finish reason
     finish_reason = None
-    if isinstance(event, BetaRawMessageDeltaEvent):
+    completion_chunk_tokens = 0
+
+    # Get content and tool calls
+    content = None
+    reasoning_content = None
+    reasoning_content_signature = None
+    redacted_reasoning_content = None  # NOTE called "data" in the stream
+    tool_calls = None
+    if isinstance(event, BetaRawMessageStartEvent):
+        """
+        BetaRawMessageStartEvent(
+            message=BetaMessage(
+                content=[],
+                usage=BetaUsage(
+                    input_tokens=3086,
+                    output_tokens=1,
+                ),
+                ...,
+            ),
+            type='message_start'
+        )
+        """
+        completion_chunk_tokens += event.message.usage.output_tokens
+
+    elif isinstance(event, BetaRawMessageDeltaEvent):
         """
         BetaRawMessageDeltaEvent(
             delta=Delta(
@@ -474,11 +492,9 @@ def convert_anthropic_stream_event_to_chatcompletion(
         )
         """
         finish_reason = remap_finish_reason(event.delta.stop_reason)
+        completion_chunk_tokens += event.usage.output_tokens
 
-    # Get content and tool calls
-    content = None
-    tool_calls = None
-    if isinstance(event, BetaRawContentBlockDeltaEvent):
+    elif isinstance(event, BetaRawContentBlockDeltaEvent):
         """
         BetaRawContentBlockDeltaEvent(
             delta=BetaInputJSONDelta(
@@ -501,9 +517,24 @@ def convert_anthropic_stream_event_to_chatcompletion(
         )
 
         """
+        # ReACT COT
         if event.delta.type == "text_delta":
             content = strip_xml_tags_streaming(string=event.delta.text, tag=inner_thoughts_xml_tag)
 
+        # Extended thought COT
+        elif event.delta.type == "thinking_delta":
+            # Redacted doesn't come in the delta chunks, comes all at once
+            # "redacted_thinking blocks will not have any deltas associated and will be sent as a single event."
+            # Thinking might start with ""
+            if len(event.delta.thinking) > 0:
+                reasoning_content = event.delta.thinking
+
+        # Extended thought COT signature
+        elif event.delta.type == "signature_delta":
+            if len(event.delta.signature) > 0:
+                reasoning_content_signature = event.delta.signature
+
+        # Tool calling
         elif event.delta.type == "input_json_delta":
             tool_calls = [
                 ToolCallDelta(
@@ -514,6 +545,9 @@ def convert_anthropic_stream_event_to_chatcompletion(
                     ),
                 )
             ]
+        else:
+            warnings.warn("Unexpected delta type: " + event.delta.type)
+
     elif isinstance(event, BetaRawContentBlockStartEvent):
         """
         BetaRawContentBlockStartEvent(
@@ -551,6 +585,15 @@ def convert_anthropic_stream_event_to_chatcompletion(
             ]
         elif isinstance(event.content_block, BetaTextBlock):
             content = event.content_block.text
+        elif isinstance(event.content_block, BetaThinkingBlock):
+            reasoning_content = event.content_block.thinking
+        elif isinstance(event.content_block, BetaRedactedThinkingBlock):
+            redacted_reasoning_content = event.content_block.data
+        else:
+            warnings.warn("Unexpected content start type: " + str(type(event.content_block)))
+
+    else:
+        warnings.warn("Unexpected event type: " + event.type)
 
     # Initialize base response
     choice = ChunkChoice(
@@ -558,6 +601,9 @@ def convert_anthropic_stream_event_to_chatcompletion(
         finish_reason=finish_reason,
         delta=MessageDelta(
             content=content,
+            reasoning_content=reasoning_content,
+            reasoning_content_signature=reasoning_content_signature,
+            redacted_reasoning_content=redacted_reasoning_content,
             tool_calls=tool_calls,
         ),
     )
@@ -566,6 +612,7 @@ def convert_anthropic_stream_event_to_chatcompletion(
         choices=[choice],
         created=get_utc_time(),
         model=model,
+        output_tokens=completion_chunk_tokens,
     )
 
 
@@ -577,8 +624,20 @@ def _prepare_anthropic_request(
     # if true, put COT inside the tool calls instead of inside the content
     put_inner_thoughts_in_kwargs: bool = False,
     bedrock: bool = False,
+    # extended thinking related fields
+    # https://docs.anthropic.com/en/docs/build-with-claude/extended-thinking
+    extended_thinking: bool = False,
+    max_reasoning_tokens: Optional[int] = None,
 ) -> dict:
     """Prepare the request data for Anthropic API format."""
+    if extended_thinking:
+        assert (
+            max_reasoning_tokens is not None and max_reasoning_tokens < data.max_tokens
+        ), "max tokens must be greater than thinking budget"
+        assert not put_inner_thoughts_in_kwargs, "extended thinking not compatible with put_inner_thoughts_in_kwargs"
+        # assert not prefix_fill, "extended thinking not compatible with prefix_fill"
+        # Silently disable prefix_fill for now
+        prefix_fill = False
 
     # if needed, put inner thoughts as a kwarg for all tools
     if data.tools and put_inner_thoughts_in_kwargs:
@@ -594,6 +653,14 @@ def _prepare_anthropic_request(
 
     # pydantic -> dict
     data = data.model_dump(exclude_none=True)
+
+    if extended_thinking:
+        data["thinking"] = {
+            "type": "enabled",
+            "budget_tokens": max_reasoning_tokens,
+        }
+        # `temperature` may only be set to 1 when thinking is enabled. Please consult our documentation at https://docs.anthropic.com/en/docs/build-with-claude/extended-thinking#important-considerations-when-using-extended-thinking'
+        data["temperature"] = 1.0
 
     if "functions" in data:
         raise ValueError(f"'functions' unexpected in Anthropic API payload")
@@ -665,6 +732,8 @@ def anthropic_chat_completions_request(
     data: ChatCompletionRequest,
     inner_thoughts_xml_tag: Optional[str] = "thinking",
     put_inner_thoughts_in_kwargs: bool = False,
+    extended_thinking: bool = False,
+    max_reasoning_tokens: Optional[int] = None,
     betas: List[str] = ["tools-2024-04-04"],
 ) -> ChatCompletionResponse:
     """https://docs.anthropic.com/claude/docs/tool-use"""
@@ -678,6 +747,8 @@ def anthropic_chat_completions_request(
         data=data,
         inner_thoughts_xml_tag=inner_thoughts_xml_tag,
         put_inner_thoughts_in_kwargs=put_inner_thoughts_in_kwargs,
+        extended_thinking=extended_thinking,
+        max_reasoning_tokens=max_reasoning_tokens,
     )
     log_event(name="llm_request_sent", attributes=data)
     response = anthropic_client.beta.messages.create(
@@ -717,6 +788,8 @@ def anthropic_chat_completions_request_stream(
     data: ChatCompletionRequest,
     inner_thoughts_xml_tag: Optional[str] = "thinking",
     put_inner_thoughts_in_kwargs: bool = False,
+    extended_thinking: bool = False,
+    max_reasoning_tokens: Optional[int] = None,
     betas: List[str] = ["tools-2024-04-04"],
 ) -> Generator[ChatCompletionChunkResponse, None, None]:
     """Stream chat completions from Anthropic API.
@@ -728,6 +801,8 @@ def anthropic_chat_completions_request_stream(
         data=data,
         inner_thoughts_xml_tag=inner_thoughts_xml_tag,
         put_inner_thoughts_in_kwargs=put_inner_thoughts_in_kwargs,
+        extended_thinking=extended_thinking,
+        max_reasoning_tokens=max_reasoning_tokens,
     )
 
     anthropic_override_key = ProviderManager().get_anthropic_override_key()
@@ -777,6 +852,8 @@ def anthropic_chat_completions_process_stream(
     stream_interface: Optional[Union[AgentChunkStreamingInterface, AgentRefreshStreamingInterface]] = None,
     inner_thoughts_xml_tag: Optional[str] = "thinking",
     put_inner_thoughts_in_kwargs: bool = False,
+    extended_thinking: bool = False,
+    max_reasoning_tokens: Optional[int] = None,
     create_message_id: bool = True,
     create_message_datetime: bool = True,
     betas: List[str] = ["tools-2024-04-04"],
@@ -839,7 +916,6 @@ def anthropic_chat_completions_process_stream(
         created=dummy_message.created_at,
         model=chat_completion_request.model,
         usage=UsageStatistics(
-            completion_tokens=0,
             prompt_tokens=prompt_tokens,
             total_tokens=prompt_tokens,
         ),
@@ -850,13 +926,15 @@ def anthropic_chat_completions_process_stream(
     if stream_interface:
         stream_interface.stream_start()
 
-    n_chunks = 0
+    completion_tokens = 0
     try:
         for chunk_idx, chat_completion_chunk in enumerate(
             anthropic_chat_completions_request_stream(
                 data=chat_completion_request,
                 inner_thoughts_xml_tag=inner_thoughts_xml_tag,
                 put_inner_thoughts_in_kwargs=put_inner_thoughts_in_kwargs,
+                extended_thinking=extended_thinking,
+                max_reasoning_tokens=max_reasoning_tokens,
                 betas=betas,
             )
         ):
@@ -868,6 +946,9 @@ def anthropic_chat_completions_process_stream(
                         chat_completion_chunk,
                         message_id=chat_completion_response.id if create_message_id else chat_completion_chunk.id,
                         message_date=chat_completion_response.created if create_message_datetime else chat_completion_chunk.created,
+                        # if extended_thinking is on, then reasoning_content will be flowing as chunks
+                        # TODO handle emitting redacted reasoning content (e.g. as concat?)
+                        expect_reasoning_content=extended_thinking,
                     )
                 elif isinstance(stream_interface, AgentRefreshStreamingInterface):
                     stream_interface.process_refresh(chat_completion_response)
@@ -907,6 +988,30 @@ def anthropic_chat_completions_process_stream(
                         accum_message.content = content_delta
                     else:
                         accum_message.content += content_delta
+
+                # NOTE: for extended_thinking mode
+                if extended_thinking and message_delta.reasoning_content is not None:
+                    reasoning_content_delta = message_delta.reasoning_content
+                    if accum_message.reasoning_content is None:
+                        accum_message.reasoning_content = reasoning_content_delta
+                    else:
+                        accum_message.reasoning_content += reasoning_content_delta
+
+                # NOTE: extended_thinking sends a signature
+                if extended_thinking and message_delta.reasoning_content_signature is not None:
+                    reasoning_content_signature_delta = message_delta.reasoning_content_signature
+                    if accum_message.reasoning_content_signature is None:
+                        accum_message.reasoning_content_signature = reasoning_content_signature_delta
+                    else:
+                        accum_message.reasoning_content_signature += reasoning_content_signature_delta
+
+                # NOTE: extended_thinking also has the potential for redacted_reasoning_content
+                if extended_thinking and message_delta.redacted_reasoning_content is not None:
+                    redacted_reasoning_content_delta = message_delta.redacted_reasoning_content
+                    if accum_message.redacted_reasoning_content is None:
+                        accum_message.redacted_reasoning_content = redacted_reasoning_content_delta
+                    else:
+                        accum_message.redacted_reasoning_content += redacted_reasoning_content_delta
 
                 # TODO(charles) make sure this works for parallel tool calling?
                 if message_delta.tool_calls is not None:
@@ -966,7 +1071,8 @@ def anthropic_chat_completions_process_stream(
             chat_completion_response.system_fingerprint = chat_completion_chunk.system_fingerprint
 
             # increment chunk counter
-            n_chunks += 1
+            if chat_completion_chunk.output_tokens is not None:
+                completion_tokens += chat_completion_chunk.output_tokens
 
     except Exception as e:
         if stream_interface:
@@ -990,8 +1096,8 @@ def anthropic_chat_completions_process_stream(
 
     # compute token usage before returning
     # TODO try actually computing the #tokens instead of assuming the chunks is the same
-    chat_completion_response.usage.completion_tokens = n_chunks
-    chat_completion_response.usage.total_tokens = prompt_tokens + n_chunks
+    chat_completion_response.usage.completion_tokens = completion_tokens
+    chat_completion_response.usage.total_tokens = prompt_tokens + completion_tokens
 
     assert len(chat_completion_response.choices) > 0, chat_completion_response
 

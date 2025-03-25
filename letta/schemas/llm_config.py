@@ -60,6 +60,12 @@ class LLMConfig(BaseModel):
         4096,
         description="The maximum number of tokens to generate. If not set, the model will use its default value.",
     )
+    enable_reasoner: bool = Field(
+        False, description="Whether or not the model should use extended thinking if it is a 'reasoning' style model"
+    )
+    max_reasoning_tokens: int = Field(
+        0, description="Configurable thinking budget for extended thinking, only used if enable_reasoner is True. Minimum value is 1024."
+    )
 
     # FIXME hack to silence pydantic protected namespace warning
     model_config = ConfigDict(protected_namespaces=())

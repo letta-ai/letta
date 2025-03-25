@@ -47,7 +47,7 @@ def retry_until_threshold(threshold=0.5, max_attempts=10, sleep_time_seconds=4):
     return decorator_retry
 
 
-def retry_until_success(max_attempts=10, sleep_time_seconds=4):
+def retry_until_success(max_attempts=10, sleep_time_seconds=4, flush_tables_in_between: bool = False):
     """
     Decorator to retry a function until it succeeds or the maximum number of attempts is reached.
 
@@ -58,13 +58,25 @@ def retry_until_success(max_attempts=10, sleep_time_seconds=4):
     def decorator_retry(func):
         @functools.wraps(func)
         def wrapper(*args, **kwargs):
+            from letta.orm.base import Base
+            from letta.server.db import db_context
+
             for attempt in range(1, max_attempts + 1):
                 try:
                     return func(*args, **kwargs)
                 except Exception as e:
                     print(f"\033[93mAttempt {attempt} failed with error:\n{e}\033[0m")
+
+                    # Clear tables before retrying
+                    if flush_tables_in_between:
+                        with db_context() as session:
+                            for table in reversed(Base.metadata.sorted_tables):  # Reverse to avoid FK issues
+                                session.execute(table.delete())  # Truncate table
+                            session.commit()
+
                     if attempt == max_attempts:
                         raise
+
                     time.sleep(sleep_time_seconds)
 
         return wrapper

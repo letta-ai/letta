@@ -1,5 +1,5 @@
 import json
-from typing import List, Optional
+from typing import List, Optional, Sequence
 
 from sqlalchemy import and_, exists, func, or_, select, text
 
@@ -248,7 +248,7 @@ class MessageManager:
             after=after,
             before=before,
             query_text=query_text,
-            role=MessageRole.user,
+            roles=[MessageRole.user],
             limit=limit,
             ascending=ascending,
         )
@@ -261,7 +261,7 @@ class MessageManager:
         after: Optional[str] = None,
         before: Optional[str] = None,
         query_text: Optional[str] = None,
-        role: Optional[MessageRole] = None,  # New parameter for filtering by role
+        roles: Optional[Sequence[MessageRole]] = None,
         limit: Optional[int] = 50,
         ascending: bool = True,
     ) -> List[PydanticMessage]:
@@ -279,7 +279,7 @@ class MessageManager:
             after: A message ID; if provided, only messages *after* this message (per sort order) are returned.
             before: A message ID; if provided, only messages *before* this message are returned.
             query_text: Optional string to partially match the message text content.
-            role: Optional MessageRole to filter messages by role.
+            roles: Optional MessageRole to filter messages by role.
             limit: Maximum number of messages to return.
             ascending: If True, sort by (created_at, id) ascending; if False, sort descending.
 
@@ -309,8 +309,9 @@ class MessageManager:
                 )
 
             # If role is provided, filter messages by role.
-            if role:
-                query = query.filter(MessageModel.role == role.value)  # Enum.value ensures comparison is against the string value
+            if roles:
+                role_values = [r.value for r in roles]
+                query = query.filter(MessageModel.role.in_(role_values))
 
             # Apply 'after' pagination if specified.
             if after:

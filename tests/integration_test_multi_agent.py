@@ -10,12 +10,11 @@ from letta.schemas.letta_message import SystemMessage, ToolReturnMessage
 from letta.schemas.llm_config import LLMConfig
 from letta.schemas.memory import ChatMemory
 from letta.schemas.tool import Tool
-from tests.helpers.utils import retry_until_success
 from tests.utils import wait_for_incoming_message
 
 
 @pytest.fixture(autouse=True)
-def clear_tables():
+def truncate_database():
     from letta.server.db import db_context
 
     with db_context() as session:
@@ -86,7 +85,6 @@ def roll_dice_tool(client):
     yield tool
 
 
-@retry_until_success(max_attempts=3, sleep_time_seconds=2)
 def test_send_message_to_agent(client, agent_obj, other_agent_obj):
     secret_word = "banana"
 
@@ -125,7 +123,6 @@ def test_send_message_to_agent(client, agent_obj, other_agent_obj):
     print(response.messages)
 
 
-@retry_until_success(max_attempts=3, sleep_time_seconds=2)
 def test_send_message_to_agents_with_tags_simple(client):
     worker_tags_123 = ["worker", "user-123"]
     worker_tags_456 = ["worker", "user-456"]
@@ -141,20 +138,20 @@ def test_send_message_to_agents_with_tags_simple(client):
 
     # Create "manager" agent
     send_message_to_agents_matching_tags_tool_id = client.get_tool_id(name="send_message_to_agents_matching_tags")
-    manager_agent_state = client.create_agent(tool_ids=[send_message_to_agents_matching_tags_tool_id])
+    manager_agent_state = client.create_agent(name="manager_agent", tool_ids=[send_message_to_agents_matching_tags_tool_id])
     manager_agent = client.server.load_agent(agent_id=manager_agent_state.id, actor=client.user)
 
     # Create 3 non-matching worker agents (These should NOT get the message)
     worker_agents_123 = []
-    for _ in range(3):
-        worker_agent_state = client.create_agent(include_multi_agent_tools=False, tags=worker_tags_123)
+    for idx in range(2):
+        worker_agent_state = client.create_agent(name=f"not_worker_{idx}", include_multi_agent_tools=False, tags=worker_tags_123)
         worker_agent = client.server.load_agent(agent_id=worker_agent_state.id, actor=client.user)
         worker_agents_123.append(worker_agent)
 
     # Create 3 worker agents that should get the message
     worker_agents_456 = []
-    for _ in range(3):
-        worker_agent_state = client.create_agent(include_multi_agent_tools=False, tags=worker_tags_456)
+    for idx in range(2):
+        worker_agent_state = client.create_agent(name=f"worker_{idx}", include_multi_agent_tools=False, tags=worker_tags_456)
         worker_agent = client.server.load_agent(agent_id=worker_agent_state.id, actor=client.user)
         worker_agents_456.append(worker_agent)
 
@@ -203,7 +200,6 @@ def test_send_message_to_agents_with_tags_simple(client):
         client.delete_agent(agent.agent_state.id)
 
 
-@retry_until_success(max_attempts=3, sleep_time_seconds=2)
 def test_send_message_to_agents_with_tags_complex_tool_use(client, roll_dice_tool):
     worker_tags = ["dice-rollers"]
 
@@ -252,7 +248,6 @@ def test_send_message_to_agents_with_tags_complex_tool_use(client, roll_dice_too
         client.delete_agent(agent.agent_state.id)
 
 
-@retry_until_success(max_attempts=3, sleep_time_seconds=2)
 def test_send_message_to_sub_agents_auto_clear_message_buffer(client):
     # Create "manager" agent
     send_message_to_agents_matching_tags_tool_id = client.get_tool_id(name="send_message_to_agents_matching_tags")
@@ -285,7 +280,6 @@ def test_send_message_to_sub_agents_auto_clear_message_buffer(client):
         assert "banana" in worker_agent_state.memory.compile().lower()
 
 
-@retry_until_success(max_attempts=3, sleep_time_seconds=2)
 def test_agents_async_simple(client):
     """
     Test two agents with multi-agent tools sending messages back and forth to count to 5.

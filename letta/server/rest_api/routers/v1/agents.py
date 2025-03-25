@@ -63,6 +63,10 @@ def list_agents(
             "Using this can optimize performance by reducing unnecessary joins."
         ),
     ),
+    ascending: bool = Query(
+        False,
+        description="Whether to sort agents oldest to newest (True) or newest to oldest (False, default)",
+    ),
 ):
     """
     List all agents associated with a given user.
@@ -90,6 +94,7 @@ def list_agents(
         identity_id=identity_id,
         identifier_keys=identifier_keys,
         include_relationships=include_relationships,
+        ascending=ascending,
     )
 
 
@@ -432,9 +437,13 @@ def detach_block(
 def list_passages(
     agent_id: str,
     server: "SyncServer" = Depends(get_letta_server),
-    after: Optional[int] = Query(None, description="Unique ID of the memory to start the query range at."),
-    before: Optional[int] = Query(None, description="Unique ID of the memory to end the query range at."),
+    after: Optional[str] = Query(None, description="Unique ID of the memory to start the query range at."),
+    before: Optional[str] = Query(None, description="Unique ID of the memory to end the query range at."),
     limit: Optional[int] = Query(None, description="How many results to include in the response."),
+    search: Optional[str] = Query(None, description="Search passages by text"),
+    ascending: Optional[bool] = Query(
+        True, description="Whether to sort passages oldest to newest (True, default) or newest to oldest (False)"
+    ),
     actor_id: Optional[str] = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
 ):
     """
@@ -447,7 +456,9 @@ def list_passages(
         agent_id=agent_id,
         after=after,
         before=before,
+        query_text=search,
         limit=limit,
+        ascending=ascending,
     )
 
 

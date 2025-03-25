@@ -23,6 +23,7 @@ class Organization(SqlalchemyBase):
     __pydantic_model__ = PydanticOrganization
 
     name: Mapped[str] = mapped_column(doc="The display name of the organization.")
+    privileged_tools: Mapped[bool] = mapped_column(doc="Whether the organization has access to privileged tools.")
 
     # relationships
     users: Mapped[List["User"]] = relationship("User", back_populates="organization", cascade="all, delete-orphan")

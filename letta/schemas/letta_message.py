@@ -88,11 +88,13 @@ class ReasoningMessage(LettaMessage):
         source (Literal["reasoner_model", "non_reasoner_model"]): Whether the reasoning
             content was generated natively by a reasoner model or derived via prompting
         reasoning (str): The internal reasoning of the agent
+        signature (Optional[str]): The model-generated signature of the reasoning step
     """
 
     message_type: Literal["reasoning_message"] = "reasoning_message"
     source: Literal["reasoner_model", "non_reasoner_model"] = "non_reasoner_model"
     reasoning: str
+    signature: Optional[str] = None
 
 
 class HiddenReasoningMessage(LettaMessage):
@@ -106,12 +108,12 @@ class HiddenReasoningMessage(LettaMessage):
         name (Optional[str]): The name of the sender of the message
         state (Literal["redacted", "omitted"]): Whether the reasoning
             content was redacted by the provider or simply omitted by the API
-        reasoning (str): The internal reasoning of the agent
+        hidden_reasoning (Optional[str]): The internal reasoning of the agent
     """
 
-    message_type: Literal["reasoning_message"] = "reasoning_message"
+    message_type: Literal["hidden_reasoning_message"] = "hidden_reasoning_message"
     state: Literal["redacted", "omitted"]
-    reasoning: str
+    hidden_reasoning: Optional[str] = None
 
 
 class ToolCall(BaseModel):
@@ -229,7 +231,7 @@ class AssistantMessage(LettaMessage):
 
 # NOTE: use Pydantic's discriminated unions feature: https://docs.pydantic.dev/latest/concepts/unions/#discriminated-unions
 LettaMessageUnion = Annotated[
-    Union[SystemMessage, UserMessage, ReasoningMessage, ToolCallMessage, ToolReturnMessage, AssistantMessage],
+    Union[SystemMessage, UserMessage, ReasoningMessage, HiddenReasoningMessage, ToolCallMessage, ToolReturnMessage, AssistantMessage],
     Field(discriminator="message_type"),
 ]
 
@@ -240,6 +242,7 @@ def create_letta_message_union_schema():
             {"$ref": "#/components/schemas/SystemMessage"},
             {"$ref": "#/components/schemas/UserMessage"},
             {"$ref": "#/components/schemas/ReasoningMessage"},
+            {"$ref": "#/components/schemas/HiddenReasoningMessage"},
             {"$ref": "#/components/schemas/ToolCallMessage"},
             {"$ref": "#/components/schemas/ToolReturnMessage"},
             {"$ref": "#/components/schemas/AssistantMessage"},
@@ -250,6 +253,7 @@ def create_letta_message_union_schema():
                 "system_message": "#/components/schemas/SystemMessage",
                 "user_message": "#/components/schemas/UserMessage",
                 "reasoning_message": "#/components/schemas/ReasoningMessage",
+                "hidden_reasoning_message": "#/components/schemas/HiddenReasoningMessage",
                 "tool_call_message": "#/components/schemas/ToolCallMessage",
                 "tool_return_message": "#/components/schemas/ToolReturnMessage",
                 "assistant_message": "#/components/schemas/AssistantMessage",

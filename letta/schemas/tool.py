@@ -93,7 +93,11 @@ class Tool(BaseTool):
                         description=description,
                     )
                 else:
-                    self.json_schema = derive_openai_json_schema(source_code=self.source_code)
+                    try:
+                        self.json_schema = derive_openai_json_schema(source_code=self.source_code)
+                    except Exception as e:
+                        error_msg = f"Failed to derive json schema for tool with id={self.id} name={self.name}. Error: {str(e)}"
+                        logger.error(error_msg)
         elif self.tool_type in {ToolType.LETTA_CORE, ToolType.LETTA_MEMORY_CORE}:
             # If it's letta core tool, we generate the json_schema on the fly here
             self.json_schema = get_json_schema_from_module(module_name=LETTA_CORE_TOOL_MODULE_NAME, function_name=self.name)
