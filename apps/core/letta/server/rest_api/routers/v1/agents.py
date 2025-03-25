@@ -661,7 +661,7 @@ async def process_message_background(
         job_update = JobUpdate(
             status=JobStatus.completed,
             completed_at=datetime.utcnow(),
-            metadata={"result": result.model_dump()},  # Store the result in metadata
+            metadata={"result": result.model_dump(mode="json")},  # Store the result in metadata
         )
         server.job_manager.update_job_by_id(job_id=job_id, job_update=job_update, actor=actor)
 
