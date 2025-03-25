@@ -121,7 +121,7 @@
           "invalid": "Invalid connection string"
         },
         "placeholder": "postgresql://username:password@host:port/database",
-        "placeholderNone": "Embedded database does not have a connection string",
+        "placeholderNone": "N/A",
         "description": "Enter the connection string for your external database",
         "descriptionNone": "Embedded database does not have a connection string"
       }
@@ -129,9 +129,9 @@
   },
   "SetupProvider": {
     "title": "Setup Provider",
-    "welcome": "Welcome to Letta Desktop!",
-    "description": "Letta Desktop lets you build and manage agents locally on your machine. Before we begin, please select how you want your agents to be stored.",
-    "configureDatabase": "Configure Database",
+    "welcome": "Welcome to Letta Desktop",
+    "description": "Before we begin, please select how you want your agents to be stored.",
+    "configureDatabase": "Configure your database",
     "ConfigureExternalDatabaseStep": {
       "back": "Back",
       "next": "Save Configuration",
@@ -161,17 +161,17 @@
       "description": "Please enter the connection details for your external database. We use postgres as the database type. If you have a value that isn't required, you can leave it blank."
     },
     "ConfigureDatabaseTypeStep": {
-      "description": "Select the database type you would like to use to store your agents. You can choose to use an embedded database that comes with Letta, or connect to your own database.",
+      "description": "Select the database type you would like to use to store your agents:",
       "bringYourOwn": {
         "label": "Bring your own database",
-        "description": "Connect to your own postgres database to store your agents. This is the most flexible option, but requires you to have a database setup.",
+        "description": "Connect to your own postgres database to store your agents. This is the most flexible option, but requires you to have a database set up.",
         "badge": "Recommended"
       },
       "embedded": {
         "noSetup": "No setup required",
-        "label": "Embedded database",
-        "description": "This is the easiest option to get started with, but is in a alpha state, and should only be used for evaluation purposes.",
-        "badge": "Alpha"
+        "label": "Use an embedded database",
+        "description": "This is the easiest option to get started with, but it is in alpha testing and should only be used for evaluation purposes.",
+        "badge": "Experimental"
       }
     }
   },
