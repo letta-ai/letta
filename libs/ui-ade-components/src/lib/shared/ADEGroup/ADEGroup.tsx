@@ -33,7 +33,8 @@ export function ADEGroup(props: ADEGroupProps) {
               className="cursor-pointer"
               borderLeft={index !== 0}
               borderBottom={activeTab !== index}
-              padding="small"
+              paddingX="small"
+              paddingY="xsmall"
               color="background-grey"
               key={item.id}
               onClick={() => {
@@ -43,8 +44,9 @@ export function ADEGroup(props: ADEGroupProps) {
               <Typography
                 uppercase
                 bold
+                className="tracking-[0.04em]"
                 color={activeTab === index ? 'default' : 'muted'}
-                variant="body3"
+                variant="body4"
               >
                 {item.title}
               </Typography>
