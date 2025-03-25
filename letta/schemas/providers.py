@@ -198,7 +198,7 @@ class OpenAIProvider(Provider):
             EmbeddingConfig(
                 embedding_model="text-embedding-ada-002",
                 embedding_endpoint_type="openai",
-                embedding_endpoint="https://api.openai.com/v1",
+                embedding_endpoint=self.base_url,
                 embedding_dim=1536,
                 embedding_chunk_size=300,
                 handle=self.get_handle("text-embedding-ada-002", is_embedding=True),
@@ -206,7 +206,7 @@ class OpenAIProvider(Provider):
             EmbeddingConfig(
                 embedding_model="text-embedding-3-small",
                 embedding_endpoint_type="openai",
-                embedding_endpoint="https://api.openai.com/v1",
+                embedding_endpoint=self.base_url,
                 embedding_dim=2000,
                 embedding_chunk_size=300,
                 handle=self.get_handle("text-embedding-3-small", is_embedding=True),
@@ -214,7 +214,7 @@ class OpenAIProvider(Provider):
             EmbeddingConfig(
                 embedding_model="text-embedding-3-large",
                 embedding_endpoint_type="openai",
-                embedding_endpoint="https://api.openai.com/v1",
+                embedding_endpoint=self.base_url,
                 embedding_dim=2000,
                 embedding_chunk_size=300,
                 handle=self.get_handle("text-embedding-3-large", is_embedding=True),
