@@ -424,7 +424,7 @@ class Agent(BaseAgent):
             self.logger.debug(f"Function call message: {messages[-1]}")
 
             nonnull_content = False
-            if response_message.content:
+            if response_message.content or response_message.reasoning_content or response_message.redacted_reasoning_content:
                 # The content if then internal monologue, not chat
                 self.interface.internal_monologue(response_message.content, msg_obj=messages[-1])
                 # Flag to avoid printing a duplicate if inner thoughts get popped from the function call

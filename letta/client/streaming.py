@@ -9,7 +9,7 @@ from letta.constants import OPENAI_CONTEXT_WINDOW_ERROR_SUBSTRING
 from letta.errors import LLMError
 from letta.log import get_logger
 from letta.schemas.enums import MessageStreamStatus
-from letta.schemas.letta_message import AssistantMessage, ReasoningMessage, ToolCallMessage, ToolReturnMessage
+from letta.schemas.letta_message import AssistantMessage, HiddenReasoningMessage, ReasoningMessage, ToolCallMessage, ToolReturnMessage
 from letta.schemas.letta_response import LettaStreamingResponse
 from letta.schemas.usage import LettaUsageStatistics
 
@@ -57,6 +57,8 @@ def _sse_post(url: str, data: dict, headers: dict) -> Generator[Union[LettaStrea
                             yield ReasoningMessage(**chunk_data)
                         elif chunk_data.get("message_type") == "assistant_message":
                             yield AssistantMessage(**chunk_data)
+                        elif "hidden_reasoning" in chunk_data:
+                            yield HiddenReasoningMessage(**chunk_data)
                         elif "tool_call" in chunk_data:
                             yield ToolCallMessage(**chunk_data)
                         elif "tool_return" in chunk_data:

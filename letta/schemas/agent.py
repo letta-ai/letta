@@ -147,6 +147,14 @@ class CreateAgent(BaseModel, validate_assignment=True):  #
     )
     context_window_limit: Optional[int] = Field(None, description="The context window limit used by the agent.")
     embedding_chunk_size: Optional[int] = Field(DEFAULT_EMBEDDING_CHUNK_SIZE, description="The embedding chunk size used by the agent.")
+    max_tokens: Optional[int] = Field(
+        None,
+        description="The maximum number of tokens to generate, including reasoning step. If not set, the model will use its default value.",
+    )
+    max_reasoning_tokens: Optional[int] = Field(
+        None, description="The maximum number of tokens to generate for reasoning step. If not set, the model will use its default value."
+    )
+    enable_reasoner: Optional[bool] = Field(False, description="Whether to enable internal extended thinking step for a reasoner model.")
     from_template: Optional[str] = Field(None, description="The template id used to configure the agent")
     template: bool = Field(False, description="Whether the agent is a template")
     project: Optional[str] = Field(

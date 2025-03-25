@@ -406,6 +406,8 @@ def create(
                 chat_completion_request=chat_completion_request,
                 put_inner_thoughts_in_kwargs=llm_config.put_inner_thoughts_in_kwargs,
                 stream_interface=stream_interface,
+                extended_thinking=llm_config.enable_reasoner,
+                max_reasoning_tokens=llm_config.max_reasoning_tokens,
             )
 
         else:
@@ -413,6 +415,8 @@ def create(
             response = anthropic_chat_completions_request(
                 data=chat_completion_request,
                 put_inner_thoughts_in_kwargs=llm_config.put_inner_thoughts_in_kwargs,
+                extended_thinking=llm_config.enable_reasoner,
+                max_reasoning_tokens=llm_config.max_reasoning_tokens,
             )
 
         if llm_config.put_inner_thoughts_in_kwargs:
