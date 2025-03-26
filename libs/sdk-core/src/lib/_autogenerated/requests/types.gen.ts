@@ -3334,6 +3334,14 @@ export type UpdateAgent = {
    * If set to True, the agent will not remember previous messages (though the agent will still retain state via core memory blocks and archival/recall memory). Not recommended unless you have an advanced use case.
    */
   message_buffer_autoclear?: boolean | null;
+  /**
+   * The LLM configuration handle used by the agent, specified in the format provider/model-name, as an alternative to specifying llm_config.
+   */
+  model?: string | null;
+  /**
+   * The embedding configuration handle used by the agent, specified in the format provider/model-name.
+   */
+  embedding?: string | null;
 };
 
 export type UpdateAssistantMessage = {

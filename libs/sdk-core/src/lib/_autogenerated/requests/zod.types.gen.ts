@@ -4363,6 +4363,12 @@ export const UpdateAgent = z.object({
   message_buffer_autoclear: z
     .union([z.boolean(), z.null(), z.array(z.union([z.boolean(), z.null()]))])
     .optional(),
+  model: z
+    .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+    .optional(),
+  embedding: z
+    .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+    .optional(),
 });
 
 export type UpdateAssistantMessage = z.infer<typeof UpdateAssistantMessage>;
