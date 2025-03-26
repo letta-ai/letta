@@ -35,7 +35,7 @@ from letta.log import get_logger
 from letta.offline_memory_agent import OfflineMemoryAgent
 from letta.orm.errors import NoResultFound
 from letta.round_robin_multi_agent import RoundRobinMultiAgent
-from letta.schemas.agent import AgentState, AgentType, CreateAgent
+from letta.schemas.agent import AgentState, AgentType, CreateAgent, UpdateAgent
 from letta.schemas.block import BlockUpdate
 from letta.schemas.embedding_config import EmbeddingConfig
 
@@ -765,6 +765,25 @@ class SyncServer(Server):
         # Invoke manager
         return self.agent_manager.create_agent(
             agent_create=request,
+            actor=actor,
+        )
+
+    def update_agent(
+        self,
+        agent_id: str,
+        request: UpdateAgent,
+        actor: User,
+    ) -> AgentState:
+        if request.model is not None:
+            request.llm_config = self.get_llm_config_from_handle(handle=request.model)
+
+        if request.embedding is not None:
+            request.embedding_config = self.get_embedding_config_from_handle(handle=request.embedding)
+
+        # Invoke manager
+        return self.agent_manager.update_agent(
+            agent_id=agent_id,
+            agent_update=request,
             actor=actor,
         )
 

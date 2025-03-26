@@ -215,7 +215,7 @@ def modify_agent(
 ):
     """Update an existing agent"""
     actor = server.user_manager.get_user_or_default(user_id=actor_id)
-    return server.agent_manager.update_agent(agent_id=agent_id, agent_update=update_agent, actor=actor)
+    return server.update_agent(agent_id=agent_id, request=update_agent, actor=actor)
 
 
 @router.get("/{agent_id}/tools", response_model=List[Tool], operation_id="list_agent_tools")
