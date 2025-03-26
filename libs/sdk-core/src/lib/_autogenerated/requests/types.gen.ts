@@ -495,8 +495,6 @@ export type ChatCompletionAssistantMessageParam = {
   tool_calls?: Array<ChatCompletionMessageToolCallParam>;
 };
 
-export type role = 'assistant';
-
 export type ChatCompletionAudioParam = {
   format: 'wav' | 'mp3' | 'flac' | 'opus' | 'pcm16';
   voice:
@@ -527,36 +525,26 @@ export type ChatCompletionContentPartImageParam = {
   type: 'image_url';
 };
 
-export type type = 'image_url';
-
 export type ChatCompletionContentPartInputAudioParam = {
   input_audio: InputAudio;
   type: 'input_audio';
 };
-
-export type type2 = 'input_audio';
 
 export type ChatCompletionContentPartRefusalParam = {
   refusal: string;
   type: 'refusal';
 };
 
-export type type3 = 'refusal';
-
 export type ChatCompletionContentPartTextParam = {
   text: string;
   type: 'text';
 };
-
-export type type4 = 'text';
 
 export type ChatCompletionDeveloperMessageParam = {
   content: string | Array<ChatCompletionContentPartTextParam>;
   role: 'developer';
   name?: string;
 };
-
-export type role2 = 'developer';
 
 export type ChatCompletionFunctionCallOptionParam = {
   name: string;
@@ -568,16 +556,12 @@ export type ChatCompletionFunctionMessageParam = {
   role: 'function';
 };
 
-export type role3 = 'function';
-
 export type ChatCompletionMessageToolCall = {
   id: string;
   function: Function_Output;
   type: 'function';
-  [key: string]: unknown | string | Function_Output;
+  [key: string]: unknown | string | Function_Output | 'function';
 };
-
-export type type5 = 'function';
 
 export type ChatCompletionMessageToolCallParam = {
   id: string;
@@ -595,8 +579,6 @@ export type ChatCompletionPredictionContentParam = {
   type: 'content';
 };
 
-export type type6 = 'content';
-
 export type ChatCompletionStreamOptionsParam = {
   include_usage?: boolean;
 };
@@ -607,15 +589,11 @@ export type ChatCompletionSystemMessageParam = {
   name?: string;
 };
 
-export type role4 = 'system';
-
 export type ChatCompletionToolMessageParam = {
   content: string | Array<ChatCompletionContentPartTextParam>;
   role: 'tool';
   tool_call_id: string;
 };
-
-export type role5 = 'tool';
 
 export type ChatCompletionToolParam = {
   function: FunctionDefinition_Input;
@@ -635,8 +613,6 @@ export type ChatCompletionUserMessageParam = {
   name?: string;
 };
 
-export type role6 = 'user';
-
 /**
  * A ToolRule represents a tool that can be invoked by the agent.
  */
@@ -651,8 +627,6 @@ export type ChildToolRule = {
    */
   children: Array<string>;
 };
-
-export type type7 = 'constrain_child_tools';
 
 export type CompletionCreateParamsNonStreaming = {
   messages: Array<
@@ -871,8 +845,6 @@ export type ConditionalToolRule = {
   require_output_mapping?: boolean;
 };
 
-export type type8 = 'conditional';
-
 /**
  * Overview of the context window, including the number of messages and tokens.
  */
@@ -957,8 +929,6 @@ export type ContinueToolRule = {
   tool_name: string;
   type?: 'continue_loop';
 };
-
-export type type9 = 'continue_loop';
 
 export type CoreMemoryBlockSchema = {
   created_at: string;
@@ -1182,8 +1152,6 @@ export type DynamicManager = {
   max_turns?: number | null;
 };
 
-export type manager_type = 'dynamic';
-
 export type E2BSandboxConfig = {
   /**
    * Time limit for the sandbox (in seconds).
@@ -1299,8 +1267,6 @@ export type File = {
   type: 'file';
 };
 
-export type type10 = 'file';
-
 export type FileFile = {
   file_data?: string;
   file_id?: string;
@@ -1394,7 +1360,7 @@ export type FunctionDefinition_Output = {
 export type FunctionTool = {
   function: FunctionDefinition_Output;
   type: 'function';
-  [key: string]: unknown | FunctionDefinition_Output | string;
+  [key: string]: unknown | FunctionDefinition_Output | 'function';
 };
 
 export type Group = {
@@ -1603,8 +1569,6 @@ export type InitToolRule = {
   tool_name: string;
   type?: 'run_first';
 };
-
-export type type11 = 'run_first';
 
 export type InputAudio = {
   data: string;
@@ -1907,8 +1871,6 @@ export type LettaUsageStatistics = {
   steps_messages?: Array<Array<Message>> | null;
 };
 
-export type message_type = 'usage_statistics';
-
 export type LocalSandboxConfig = {
   /**
    * Directory for the sandbox environment.
@@ -1958,8 +1920,6 @@ export type MaxCountPerStepToolRule = {
    */
   max_count_limit: number;
 };
-
-export type type12 = 'max_count_per_step';
 
 /**
  * Represents the in-context memory (i.e. Core memory) of the agent. This includes both the `Block` objects (labelled by sections), as well as tools to edit the blocks.
@@ -2089,7 +2049,7 @@ export type MessageCreate = {
 /**
  * The role of the participant.
  */
-export type role7 = 'user' | 'system';
+export type role = 'user' | 'system';
 
 export type MessageRole = 'assistant' | 'user' | 'tool' | 'function' | 'system';
 
@@ -2421,14 +2381,10 @@ export type ResponseFormatJSONObject = {
   type: 'json_object';
 };
 
-export type type13 = 'json_object';
-
 export type ResponseFormatJSONSchema = {
   json_schema: JSONSchema;
   type: 'json_schema';
 };
-
-export type type14 = 'json_schema';
 
 export type ResponseFormatText = {
   type: 'text';
@@ -2438,8 +2394,6 @@ export type RoundRobinManager = {
   manager_type?: 'round_robin';
   max_turns?: number | null;
 };
-
-export type manager_type2 = 'round_robin';
 
 /**
  * Representation of a run, which is a job with a 'run' prefix in its ID.
@@ -2855,8 +2809,6 @@ export type SupervisorManager = {
   manager_agent_id: string;
 };
 
-export type manager_type3 = 'supervisor';
-
 /**
  * A message generated by the system. Never streamed back on a response, only used for cursor pagination.
  *
@@ -2891,8 +2843,6 @@ export type TerminalToolRule = {
   tool_name: string;
   type?: 'exit_loop';
 };
-
-export type type15 = 'exit_loop';
 
 export type TextContent = {
   /**
@@ -3352,14 +3302,10 @@ export type UpdateAssistantMessage = {
   content: Array<LettaAssistantMessageContentUnion> | string;
 };
 
-export type message_type2 = 'assistant_message';
-
 export type UpdateReasoningMessage = {
   reasoning: string;
   message_type?: 'reasoning_message';
 };
-
-export type message_type3 = 'reasoning_message';
 
 export type UpdateSystemMessage = {
   message_type?: 'system_message';
@@ -3369,8 +3315,6 @@ export type UpdateSystemMessage = {
   content: string;
 };
 
-export type message_type4 = 'system_message';
-
 export type UpdateUserMessage = {
   message_type?: 'user_message';
   /**
@@ -3378,8 +3322,6 @@ export type UpdateUserMessage = {
    */
   content: Array<LettaUserMessageContentUnion> | string;
 };
-
-export type message_type5 = 'user_message';
 
 export type UsageStatistics = {
   completion_tokens?: number;
@@ -3485,8 +3427,6 @@ export type WebSearchOptionsUserLocation = {
   approximate: WebSearchOptionsUserLocationApproximate;
   type: 'approximate';
 };
-
-export type type16 = 'approximate';
 
 export type WebSearchOptionsUserLocationApproximate = {
   city?: string;

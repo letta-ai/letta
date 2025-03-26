@@ -6530,7 +6530,7 @@
                 "type": "null"
               }
             ],
-            "title": "Metadata "
+            "title": "Metadata"
           },
           "multi_agent_group": {
             "anyOf": [
@@ -7178,7 +7178,6 @@
           },
           "message_type": {
             "type": "string",
-            "enum": ["assistant_message"],
             "const": "assistant_message",
             "title": "Message Type",
             "default": "assistant_message"
@@ -7533,7 +7532,6 @@
         "properties": {
           "role": {
             "type": "string",
-            "enum": ["assistant"],
             "const": "assistant",
             "title": "Role"
           },
@@ -7641,7 +7639,6 @@
           },
           "type": {
             "type": "string",
-            "enum": ["image_url"],
             "const": "image_url",
             "title": "Type"
           }
@@ -7657,7 +7654,6 @@
           },
           "type": {
             "type": "string",
-            "enum": ["input_audio"],
             "const": "input_audio",
             "title": "Type"
           }
@@ -7674,7 +7670,6 @@
           },
           "type": {
             "type": "string",
-            "enum": ["refusal"],
             "const": "refusal",
             "title": "Type"
           }
@@ -7691,7 +7686,6 @@
           },
           "type": {
             "type": "string",
-            "enum": ["text"],
             "const": "text",
             "title": "Type"
           }
@@ -7718,7 +7712,6 @@
           },
           "role": {
             "type": "string",
-            "enum": ["developer"],
             "const": "developer",
             "title": "Role"
           },
@@ -7761,7 +7754,6 @@
           },
           "role": {
             "type": "string",
-            "enum": ["function"],
             "const": "function",
             "title": "Role"
           }
@@ -7781,7 +7773,6 @@
           },
           "type": {
             "type": "string",
-            "enum": ["function"],
             "const": "function",
             "title": "Type"
           }
@@ -7802,7 +7793,6 @@
           },
           "type": {
             "type": "string",
-            "enum": ["function"],
             "const": "function",
             "title": "Type"
           }
@@ -7818,7 +7808,6 @@
           },
           "type": {
             "type": "string",
-            "enum": ["function"],
             "const": "function",
             "title": "Type"
           }
@@ -7845,7 +7834,6 @@
           },
           "type": {
             "type": "string",
-            "enum": ["content"],
             "const": "content",
             "title": "Type"
           }
@@ -7882,7 +7870,6 @@
           },
           "role": {
             "type": "string",
-            "enum": ["system"],
             "const": "system",
             "title": "Role"
           },
@@ -7913,7 +7900,6 @@
           },
           "role": {
             "type": "string",
-            "enum": ["tool"],
             "const": "tool",
             "title": "Role"
           },
@@ -7933,7 +7919,6 @@
           },
           "type": {
             "type": "string",
-            "enum": ["function"],
             "const": "function",
             "title": "Type"
           }
@@ -7973,7 +7958,6 @@
           },
           "role": {
             "type": "string",
-            "enum": ["user"],
             "const": "user",
             "title": "Role"
           },
@@ -7995,7 +7979,6 @@
           },
           "type": {
             "type": "string",
-            "enum": ["constrain_child_tools"],
             "const": "constrain_child_tools",
             "title": "Type",
             "default": "constrain_child_tools"
@@ -8401,7 +8384,6 @@
             "anyOf": [
               {
                 "type": "boolean",
-                "enum": [false],
                 "const": false
               },
               {
@@ -8799,7 +8781,6 @@
           },
           "stream": {
             "type": "boolean",
-            "enum": [true],
             "const": true,
             "title": "Stream"
           }
@@ -8817,7 +8798,6 @@
           },
           "type": {
             "type": "string",
-            "enum": ["conditional"],
             "const": "conditional",
             "title": "Type",
             "default": "conditional"
@@ -8994,7 +8974,6 @@
           },
           "type": {
             "type": "string",
-            "enum": ["continue_loop"],
             "const": "continue_loop",
             "title": "Type",
             "default": "continue_loop"
@@ -9044,7 +9023,7 @@
                 "type": "null"
               }
             ],
-            "title": "Metadata "
+            "title": "Metadata"
           },
           "template_name": {
             "anyOf": [
@@ -9607,7 +9586,6 @@
         "properties": {
           "manager_type": {
             "type": "string",
-            "enum": ["dynamic"],
             "const": "dynamic",
             "title": "Manager Type",
             "description": "",
@@ -9815,7 +9793,6 @@
           },
           "type": {
             "type": "string",
-            "enum": ["file"],
             "const": "file",
             "title": "Type"
           }
@@ -10080,7 +10057,6 @@
           },
           "type": {
             "type": "string",
-            "enum": ["function"],
             "const": "function",
             "title": "Type"
           }
@@ -10259,7 +10235,6 @@
           },
           "message_type": {
             "type": "string",
-            "enum": ["hidden_reasoning_message"],
             "const": "hidden_reasoning_message",
             "title": "Message Type",
             "default": "hidden_reasoning_message"
@@ -10599,7 +10574,6 @@
           },
           "type": {
             "type": "string",
-            "enum": ["run_first"],
             "const": "run_first",
             "title": "Type",
             "default": "run_first"
@@ -11015,7 +10989,6 @@
         "properties": {
           "message_type": {
             "type": "string",
-            "enum": ["usage_statistics"],
             "const": "usage_statistics",
             "title": "Message Type",
             "default": "usage_statistics"
@@ -11152,7 +11125,6 @@
           },
           "type": {
             "type": "string",
-            "enum": ["max_count_per_step"],
             "const": "max_count_per_step",
             "title": "Type",
             "default": "max_count_per_step"
@@ -11559,7 +11531,6 @@
         "properties": {
           "type": {
             "type": "string",
-            "enum": ["omitted_reasoning"],
             "const": "omitted_reasoning",
             "title": "Type",
             "description": "Indicates this is an omitted reasoning step.",
@@ -11981,7 +11952,7 @@
                 "type": "null"
               }
             ],
-            "title": "Metadata ",
+            "title": "Metadata",
             "description": "The metadata of the passage.",
             "default": {}
           },
@@ -12149,7 +12120,6 @@
         "properties": {
           "type": {
             "type": "string",
-            "enum": ["reasoning"],
             "const": "reasoning",
             "title": "Type",
             "description": "Indicates this is a reasoning/intermediate step.",
@@ -12206,7 +12176,6 @@
           },
           "message_type": {
             "type": "string",
-            "enum": ["reasoning_message"],
             "const": "reasoning_message",
             "title": "Message Type",
             "default": "reasoning_message"
@@ -12242,7 +12211,6 @@
         "properties": {
           "type": {
             "type": "string",
-            "enum": ["redacted_reasoning"],
             "const": "redacted_reasoning",
             "title": "Type",
             "description": "Indicates this is a redacted thinking step.",
@@ -12262,7 +12230,6 @@
         "properties": {
           "type": {
             "type": "string",
-            "enum": ["json_object"],
             "const": "json_object",
             "title": "Type"
           }
@@ -12278,7 +12245,6 @@
           },
           "type": {
             "type": "string",
-            "enum": ["json_schema"],
             "const": "json_schema",
             "title": "Type"
           }
@@ -12291,7 +12257,6 @@
         "properties": {
           "type": {
             "type": "string",
-            "enum": ["text"],
             "const": "text",
             "title": "Type"
           }
@@ -12304,7 +12269,6 @@
         "properties": {
           "manager_type": {
             "type": "string",
-            "enum": ["round_robin"],
             "const": "round_robin",
             "title": "Manager Type",
             "description": "",
@@ -13214,7 +13178,6 @@
         "properties": {
           "manager_type": {
             "type": "string",
-            "enum": ["supervisor"],
             "const": "supervisor",
             "title": "Manager Type",
             "description": "",
@@ -13254,7 +13217,6 @@
           },
           "message_type": {
             "type": "string",
-            "enum": ["system_message"],
             "const": "system_message",
             "title": "Message Type",
             "default": "system_message"
@@ -13290,7 +13252,6 @@
           },
           "type": {
             "type": "string",
-            "enum": ["exit_loop"],
             "const": "exit_loop",
             "title": "Type",
             "default": "exit_loop"
@@ -13306,7 +13267,6 @@
         "properties": {
           "type": {
             "type": "string",
-            "enum": ["text"],
             "const": "text",
             "title": "Type",
             "description": "The type of the message.",
@@ -13456,7 +13416,7 @@
                 "type": "null"
               }
             ],
-            "title": "Metadata ",
+            "title": "Metadata",
             "description": "A dictionary of additional metadata for the tool."
           }
         },
@@ -13488,7 +13448,6 @@
         "properties": {
           "type": {
             "type": "string",
-            "enum": ["tool_call"],
             "const": "tool_call",
             "title": "Type",
             "description": "Indicates this content represents a tool call event.",
@@ -13578,7 +13537,6 @@
           },
           "message_type": {
             "type": "string",
-            "enum": ["tool_call_message"],
             "const": "tool_call_message",
             "title": "Message Type",
             "default": "tool_call_message"
@@ -13794,7 +13752,6 @@
         "properties": {
           "type": {
             "type": "string",
-            "enum": ["tool_return"],
             "const": "tool_return",
             "title": "Type",
             "description": "Indicates this content represents a tool return event.",
@@ -13844,7 +13801,6 @@
           },
           "message_type": {
             "type": "string",
-            "enum": ["tool_return_message"],
             "const": "tool_return_message",
             "title": "Message Type",
             "default": "tool_return_message"
@@ -14054,7 +14010,7 @@
                 "type": "null"
               }
             ],
-            "title": "Metadata "
+            "title": "Metadata"
           }
         },
         "type": "object",
@@ -14481,7 +14437,6 @@
         "properties": {
           "message_type": {
             "type": "string",
-            "enum": ["assistant_message"],
             "const": "assistant_message",
             "title": "Message Type",
             "default": "assistant_message"
@@ -14514,7 +14469,6 @@
           },
           "message_type": {
             "type": "string",
-            "enum": ["reasoning_message"],
             "const": "reasoning_message",
             "title": "Message Type",
             "default": "reasoning_message"
@@ -14528,7 +14482,6 @@
         "properties": {
           "message_type": {
             "type": "string",
-            "enum": ["system_message"],
             "const": "system_message",
             "title": "Message Type",
             "default": "system_message"
@@ -14547,7 +14500,6 @@
         "properties": {
           "message_type": {
             "type": "string",
-            "enum": ["user_message"],
             "const": "user_message",
             "title": "Message Type",
             "default": "user_message"
@@ -14683,7 +14635,6 @@
           },
           "message_type": {
             "type": "string",
-            "enum": ["user_message"],
             "const": "user_message",
             "title": "Message Type",
             "default": "user_message"
@@ -14791,7 +14742,6 @@
           },
           "type": {
             "type": "string",
-            "enum": ["approximate"],
             "const": "approximate",
             "title": "Type"
           }

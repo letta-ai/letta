@@ -340,7 +340,7 @@ export const $AgentSchema = {
           type: 'null',
         },
       ],
-      title: 'Metadata ',
+      title: 'Metadata',
     },
     multi_agent_group: {
       anyOf: [
@@ -1013,7 +1013,6 @@ export const $AssistantMessage = {
     },
     message_type: {
       type: 'string',
-      enum: ['assistant_message'],
       const: 'assistant_message',
       title: 'Message Type',
       default: 'assistant_message',
@@ -1412,7 +1411,6 @@ export const $ChatCompletionAssistantMessageParam = {
   properties: {
     role: {
       type: 'string',
-      enum: ['assistant'],
       const: 'assistant',
       title: 'Role',
     },
@@ -1522,7 +1520,6 @@ export const $ChatCompletionContentPartImageParam = {
     },
     type: {
       type: 'string',
-      enum: ['image_url'],
       const: 'image_url',
       title: 'Type',
     },
@@ -1539,7 +1536,6 @@ export const $ChatCompletionContentPartInputAudioParam = {
     },
     type: {
       type: 'string',
-      enum: ['input_audio'],
       const: 'input_audio',
       title: 'Type',
     },
@@ -1557,7 +1553,6 @@ export const $ChatCompletionContentPartRefusalParam = {
     },
     type: {
       type: 'string',
-      enum: ['refusal'],
       const: 'refusal',
       title: 'Type',
     },
@@ -1575,7 +1570,6 @@ export const $ChatCompletionContentPartTextParam = {
     },
     type: {
       type: 'string',
-      enum: ['text'],
       const: 'text',
       title: 'Type',
     },
@@ -1603,7 +1597,6 @@ export const $ChatCompletionDeveloperMessageParam = {
     },
     role: {
       type: 'string',
-      enum: ['developer'],
       const: 'developer',
       title: 'Role',
     },
@@ -1648,7 +1641,6 @@ export const $ChatCompletionFunctionMessageParam = {
     },
     role: {
       type: 'string',
-      enum: ['function'],
       const: 'function',
       title: 'Role',
     },
@@ -1669,7 +1661,6 @@ export const $ChatCompletionMessageToolCall = {
     },
     type: {
       type: 'string',
-      enum: ['function'],
       const: 'function',
       title: 'Type',
     },
@@ -1691,7 +1682,6 @@ export const $ChatCompletionMessageToolCallParam = {
     },
     type: {
       type: 'string',
-      enum: ['function'],
       const: 'function',
       title: 'Type',
     },
@@ -1708,7 +1698,6 @@ export const $ChatCompletionNamedToolChoiceParam = {
     },
     type: {
       type: 'string',
-      enum: ['function'],
       const: 'function',
       title: 'Type',
     },
@@ -1736,7 +1725,6 @@ export const $ChatCompletionPredictionContentParam = {
     },
     type: {
       type: 'string',
-      enum: ['content'],
       const: 'content',
       title: 'Type',
     },
@@ -1775,7 +1763,6 @@ export const $ChatCompletionSystemMessageParam = {
     },
     role: {
       type: 'string',
-      enum: ['system'],
       const: 'system',
       title: 'Role',
     },
@@ -1807,7 +1794,6 @@ export const $ChatCompletionToolMessageParam = {
     },
     role: {
       type: 'string',
-      enum: ['tool'],
       const: 'tool',
       title: 'Role',
     },
@@ -1828,7 +1814,6 @@ export const $ChatCompletionToolParam = {
     },
     type: {
       type: 'string',
-      enum: ['function'],
       const: 'function',
       title: 'Type',
     },
@@ -1869,7 +1854,6 @@ export const $ChatCompletionUserMessageParam = {
     },
     role: {
       type: 'string',
-      enum: ['user'],
       const: 'user',
       title: 'Role',
     },
@@ -1893,7 +1877,6 @@ export const $ChildToolRule = {
     },
     type: {
       type: 'string',
-      enum: ['constrain_child_tools'],
       const: 'constrain_child_tools',
       title: 'Type',
       default: 'constrain_child_tools',
@@ -2300,7 +2283,6 @@ export const $CompletionCreateParamsNonStreaming = {
       anyOf: [
         {
           type: 'boolean',
-          enum: [false],
           const: false,
         },
         {
@@ -2699,7 +2681,6 @@ export const $CompletionCreateParamsStreaming = {
     },
     stream: {
       type: 'boolean',
-      enum: [true],
       const: true,
       title: 'Stream',
     },
@@ -2719,7 +2700,6 @@ export const $ConditionalToolRule = {
     },
     type: {
       type: 'string',
-      enum: ['conditional'],
       const: 'conditional',
       title: 'Type',
       default: 'conditional',
@@ -2905,7 +2885,6 @@ export const $ContinueToolRule = {
     },
     type: {
       type: 'string',
-      enum: ['continue_loop'],
       const: 'continue_loop',
       title: 'Type',
       default: 'continue_loop',
@@ -2957,7 +2936,7 @@ export const $CoreMemoryBlockSchema = {
           type: 'null',
         },
       ],
-      title: 'Metadata ',
+      title: 'Metadata',
     },
     template_name: {
       anyOf: [
@@ -3549,7 +3528,6 @@ export const $DynamicManager = {
   properties: {
     manager_type: {
       type: 'string',
-      enum: ['dynamic'],
       const: 'dynamic',
       title: 'Manager Type',
       description: '',
@@ -3767,7 +3745,6 @@ export const $File = {
     },
     type: {
       type: 'string',
-      enum: ['file'],
       const: 'file',
       title: 'Type',
     },
@@ -4053,7 +4030,6 @@ export const $FunctionTool = {
     },
     type: {
       type: 'string',
-      enum: ['function'],
       const: 'function',
       title: 'Type',
     },
@@ -4237,7 +4213,6 @@ export const $HiddenReasoningMessage = {
     },
     message_type: {
       type: 'string',
-      enum: ['hidden_reasoning_message'],
       const: 'hidden_reasoning_message',
       title: 'Message Type',
       default: 'hidden_reasoning_message',
@@ -4607,7 +4582,6 @@ export const $InitToolRule = {
     },
     type: {
       type: 'string',
-      enum: ['run_first'],
       const: 'run_first',
       title: 'Type',
       default: 'run_first',
@@ -5081,7 +5055,6 @@ export const $LettaUsageStatistics = {
   properties: {
     message_type: {
       type: 'string',
-      enum: ['usage_statistics'],
       const: 'usage_statistics',
       title: 'Message Type',
       default: 'usage_statistics',
@@ -5234,7 +5207,6 @@ export const $MaxCountPerStepToolRule = {
     },
     type: {
       type: 'string',
-      enum: ['max_count_per_step'],
       const: 'max_count_per_step',
       title: 'Type',
       default: 'max_count_per_step',
@@ -5680,7 +5652,6 @@ export const $OmittedReasoningContent = {
   properties: {
     type: {
       type: 'string',
-      enum: ['omitted_reasoning'],
       const: 'omitted_reasoning',
       title: 'Type',
       description: 'Indicates this is an omitted reasoning step.',
@@ -6150,7 +6121,7 @@ export const $PassageUpdate = {
           type: 'null',
         },
       ],
-      title: 'Metadata ',
+      title: 'Metadata',
       description: 'The metadata of the passage.',
       default: {},
     },
@@ -6337,7 +6308,6 @@ export const $ReasoningContent = {
   properties: {
     type: {
       type: 'string',
-      enum: ['reasoning'],
       const: 'reasoning',
       title: 'Type',
       description: 'Indicates this is a reasoning/intermediate step.',
@@ -6396,7 +6366,6 @@ export const $ReasoningMessage = {
     },
     message_type: {
       type: 'string',
-      enum: ['reasoning_message'],
       const: 'reasoning_message',
       title: 'Message Type',
       default: 'reasoning_message',
@@ -6442,7 +6411,6 @@ export const $RedactedReasoningContent = {
   properties: {
     type: {
       type: 'string',
-      enum: ['redacted_reasoning'],
       const: 'redacted_reasoning',
       title: 'Type',
       description: 'Indicates this is a redacted thinking step.',
@@ -6463,7 +6431,6 @@ export const $ResponseFormatJSONObject = {
   properties: {
     type: {
       type: 'string',
-      enum: ['json_object'],
       const: 'json_object',
       title: 'Type',
     },
@@ -6480,7 +6447,6 @@ export const $ResponseFormatJSONSchema = {
     },
     type: {
       type: 'string',
-      enum: ['json_schema'],
       const: 'json_schema',
       title: 'Type',
     },
@@ -6494,7 +6460,6 @@ export const $ResponseFormatText = {
   properties: {
     type: {
       type: 'string',
-      enum: ['text'],
       const: 'text',
       title: 'Type',
     },
@@ -6508,7 +6473,6 @@ export const $RoundRobinManager = {
   properties: {
     manager_type: {
       type: 'string',
-      enum: ['round_robin'],
       const: 'round_robin',
       title: 'Manager Type',
       description: '',
@@ -7520,7 +7484,6 @@ export const $SupervisorManager = {
   properties: {
     manager_type: {
       type: 'string',
-      enum: ['supervisor'],
       const: 'supervisor',
       title: 'Manager Type',
       description: '',
@@ -7561,7 +7524,6 @@ export const $SystemMessage = {
     },
     message_type: {
       type: 'string',
-      enum: ['system_message'],
       const: 'system_message',
       title: 'Message Type',
       default: 'system_message',
@@ -7606,7 +7568,6 @@ export const $TerminalToolRule = {
     },
     type: {
       type: 'string',
-      enum: ['exit_loop'],
       const: 'exit_loop',
       title: 'Type',
       default: 'exit_loop',
@@ -7624,7 +7585,6 @@ export const $TextContent = {
   properties: {
     type: {
       type: 'string',
-      enum: ['text'],
       const: 'text',
       title: 'Type',
       description: 'The type of the message.',
@@ -7788,7 +7748,7 @@ export const $Tool = {
           type: 'null',
         },
       ],
-      title: 'Metadata ',
+      title: 'Metadata',
       description: 'A dictionary of additional metadata for the tool.',
     },
   },
@@ -7829,7 +7789,6 @@ export const $ToolCallContent = {
   properties: {
     type: {
       type: 'string',
-      enum: ['tool_call'],
       const: 'tool_call',
       title: 'Type',
       description: 'Indicates this content represents a tool call event.',
@@ -7922,7 +7881,6 @@ export const $ToolCallMessage = {
     },
     message_type: {
       type: 'string',
-      enum: ['tool_call_message'],
       const: 'tool_call_message',
       title: 'Message Type',
       default: 'tool_call_message',
@@ -8151,7 +8109,6 @@ export const $ToolReturnContent = {
   properties: {
     type: {
       type: 'string',
-      enum: ['tool_return'],
       const: 'tool_return',
       title: 'Type',
       description: 'Indicates this content represents a tool return event.',
@@ -8203,7 +8160,6 @@ export const $ToolReturnMessage = {
     },
     message_type: {
       type: 'string',
-      enum: ['tool_return_message'],
       const: 'tool_return_message',
       title: 'Message Type',
       default: 'tool_return_message',
@@ -8427,7 +8383,7 @@ export const $ToolSchema = {
           type: 'null',
         },
       ],
-      title: 'Metadata ',
+      title: 'Metadata',
     },
   },
   type: 'object',
@@ -8864,7 +8820,6 @@ export const $UpdateAssistantMessage = {
   properties: {
     message_type: {
       type: 'string',
-      enum: ['assistant_message'],
       const: 'assistant_message',
       title: 'Message Type',
       default: 'assistant_message',
@@ -8899,7 +8854,6 @@ export const $UpdateReasoningMessage = {
     },
     message_type: {
       type: 'string',
-      enum: ['reasoning_message'],
       const: 'reasoning_message',
       title: 'Message Type',
       default: 'reasoning_message',
@@ -8914,7 +8868,6 @@ export const $UpdateSystemMessage = {
   properties: {
     message_type: {
       type: 'string',
-      enum: ['system_message'],
       const: 'system_message',
       title: 'Message Type',
       default: 'system_message',
@@ -8935,7 +8888,6 @@ export const $UpdateUserMessage = {
   properties: {
     message_type: {
       type: 'string',
-      enum: ['user_message'],
       const: 'user_message',
       title: 'Message Type',
       default: 'user_message',
@@ -9099,7 +9051,6 @@ export const $UserMessage = {
     },
     message_type: {
       type: 'string',
-      enum: ['user_message'],
       const: 'user_message',
       title: 'Message Type',
       default: 'user_message',
@@ -9230,7 +9181,6 @@ export const $WebSearchOptionsUserLocation = {
     },
     type: {
       type: 'string',
-      enum: ['approximate'],
       const: 'approximate',
       title: 'Type',
     },

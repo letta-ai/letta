@@ -611,8 +611,7 @@
                                     "type": {
                                       "oneOf": [
                                         {
-                                          "type": "string",
-                                          "enum": ["constrain_child_tools"]
+                                          "type": "string"
                                         },
                                         {}
                                       ]
@@ -635,8 +634,7 @@
                                     "type": {
                                       "oneOf": [
                                         {
-                                          "type": "string",
-                                          "enum": ["run_first"]
+                                          "type": "string"
                                         },
                                         {}
                                       ]
@@ -653,8 +651,7 @@
                                     "type": {
                                       "oneOf": [
                                         {
-                                          "type": "string",
-                                          "enum": ["exit_loop"]
+                                          "type": "string"
                                         },
                                         {}
                                       ]
@@ -671,8 +668,7 @@
                                     "type": {
                                       "oneOf": [
                                         {
-                                          "type": "string",
-                                          "enum": ["conditional"]
+                                          "type": "string"
                                         },
                                         {}
                                       ]
@@ -730,8 +726,7 @@
                                     "type": {
                                       "oneOf": [
                                         {
-                                          "type": "string",
-                                          "enum": ["continue_loop"]
+                                          "type": "string"
                                         },
                                         {}
                                       ]
@@ -748,8 +743,7 @@
                                     "type": {
                                       "oneOf": [
                                         {
-                                          "type": "string",
-                                          "enum": ["max_count_per_step"]
+                                          "type": "string"
                                         },
                                         {}
                                       ]
@@ -785,10 +779,7 @@
                                           "type": {
                                             "oneOf": [
                                               {
-                                                "type": "string",
-                                                "enum": [
-                                                  "constrain_child_tools"
-                                                ]
+                                                "type": "string"
                                               },
                                               {}
                                             ]
@@ -811,8 +802,7 @@
                                           "type": {
                                             "oneOf": [
                                               {
-                                                "type": "string",
-                                                "enum": ["run_first"]
+                                                "type": "string"
                                               },
                                               {}
                                             ]
@@ -829,8 +819,7 @@
                                           "type": {
                                             "oneOf": [
                                               {
-                                                "type": "string",
-                                                "enum": ["exit_loop"]
+                                                "type": "string"
                                               },
                                               {}
                                             ]
@@ -847,8 +836,7 @@
                                           "type": {
                                             "oneOf": [
                                               {
-                                                "type": "string",
-                                                "enum": ["conditional"]
+                                                "type": "string"
                                               },
                                               {}
                                             ]
@@ -906,8 +894,7 @@
                                           "type": {
                                             "oneOf": [
                                               {
-                                                "type": "string",
-                                                "enum": ["continue_loop"]
+                                                "type": "string"
                                               },
                                               {}
                                             ]
@@ -924,8 +911,7 @@
                                           "type": {
                                             "oneOf": [
                                               {
-                                                "type": "string",
-                                                "enum": ["max_count_per_step"]
+                                                "type": "string"
                                               },
                                               {}
                                             ]
@@ -3420,8 +3406,7 @@
                                         "type": {
                                           "oneOf": [
                                             {
-                                              "type": "string",
-                                              "enum": ["constrain_child_tools"]
+                                              "type": "string"
                                             },
                                             {}
                                           ]
@@ -3444,8 +3429,7 @@
                                         "type": {
                                           "oneOf": [
                                             {
-                                              "type": "string",
-                                              "enum": ["run_first"]
+                                              "type": "string"
                                             },
                                             {}
                                           ]
@@ -3462,8 +3446,7 @@
                                         "type": {
                                           "oneOf": [
                                             {
-                                              "type": "string",
-                                              "enum": ["exit_loop"]
+                                              "type": "string"
                                             },
                                             {}
                                           ]
@@ -3480,8 +3463,7 @@
                                         "type": {
                                           "oneOf": [
                                             {
-                                              "type": "string",
-                                              "enum": ["conditional"]
+                                              "type": "string"
                                             },
                                             {}
                                           ]
@@ -3539,8 +3521,7 @@
                                         "type": {
                                           "oneOf": [
                                             {
-                                              "type": "string",
-                                              "enum": ["continue_loop"]
+                                              "type": "string"
                                             },
                                             {}
                                           ]
@@ -3557,8 +3538,7 @@
                                         "type": {
                                           "oneOf": [
                                             {
-                                              "type": "string",
-                                              "enum": ["max_count_per_step"]
+                                              "type": "string"
                                             },
                                             {}
                                           ]
@@ -3597,10 +3577,7 @@
                                               "type": {
                                                 "oneOf": [
                                                   {
-                                                    "type": "string",
-                                                    "enum": [
-                                                      "constrain_child_tools"
-                                                    ]
+                                                    "type": "string"
                                                   },
                                                   {}
                                                 ]
@@ -3626,8 +3603,7 @@
                                               "type": {
                                                 "oneOf": [
                                                   {
-                                                    "type": "string",
-                                                    "enum": ["run_first"]
+                                                    "type": "string"
                                                   },
                                                   {}
                                                 ]
@@ -3644,8 +3620,7 @@
                                               "type": {
                                                 "oneOf": [
                                                   {
-                                                    "type": "string",
-                                                    "enum": ["exit_loop"]
+                                                    "type": "string"
                                                   },
                                                   {}
                                                 ]
@@ -3662,8 +3637,7 @@
                                               "type": {
                                                 "oneOf": [
                                                   {
-                                                    "type": "string",
-                                                    "enum": ["conditional"]
+                                                    "type": "string"
                                                   },
                                                   {}
                                                 ]
@@ -3721,8 +3695,7 @@
                                               "type": {
                                                 "oneOf": [
                                                   {
-                                                    "type": "string",
-                                                    "enum": ["continue_loop"]
+                                                    "type": "string"
                                                   },
                                                   {}
                                                 ]
@@ -3739,10 +3712,7 @@
                                               "type": {
                                                 "oneOf": [
                                                   {
-                                                    "type": "string",
-                                                    "enum": [
-                                                      "max_count_per_step"
-                                                    ]
+                                                    "type": "string"
                                                   },
                                                   {}
                                                 ]
@@ -6636,8 +6606,7 @@
                                         "type": {
                                           "oneOf": [
                                             {
-                                              "type": "string",
-                                              "enum": ["constrain_child_tools"]
+                                              "type": "string"
                                             },
                                             {}
                                           ]
@@ -6660,8 +6629,7 @@
                                         "type": {
                                           "oneOf": [
                                             {
-                                              "type": "string",
-                                              "enum": ["run_first"]
+                                              "type": "string"
                                             },
                                             {}
                                           ]
@@ -6678,8 +6646,7 @@
                                         "type": {
                                           "oneOf": [
                                             {
-                                              "type": "string",
-                                              "enum": ["exit_loop"]
+                                              "type": "string"
                                             },
                                             {}
                                           ]
@@ -6696,8 +6663,7 @@
                                         "type": {
                                           "oneOf": [
                                             {
-                                              "type": "string",
-                                              "enum": ["conditional"]
+                                              "type": "string"
                                             },
                                             {}
                                           ]
@@ -6755,8 +6721,7 @@
                                         "type": {
                                           "oneOf": [
                                             {
-                                              "type": "string",
-                                              "enum": ["continue_loop"]
+                                              "type": "string"
                                             },
                                             {}
                                           ]
@@ -6773,8 +6738,7 @@
                                         "type": {
                                           "oneOf": [
                                             {
-                                              "type": "string",
-                                              "enum": ["max_count_per_step"]
+                                              "type": "string"
                                             },
                                             {}
                                           ]
@@ -6813,10 +6777,7 @@
                                               "type": {
                                                 "oneOf": [
                                                   {
-                                                    "type": "string",
-                                                    "enum": [
-                                                      "constrain_child_tools"
-                                                    ]
+                                                    "type": "string"
                                                   },
                                                   {}
                                                 ]
@@ -6842,8 +6803,7 @@
                                               "type": {
                                                 "oneOf": [
                                                   {
-                                                    "type": "string",
-                                                    "enum": ["run_first"]
+                                                    "type": "string"
                                                   },
                                                   {}
                                                 ]
@@ -6860,8 +6820,7 @@
                                               "type": {
                                                 "oneOf": [
                                                   {
-                                                    "type": "string",
-                                                    "enum": ["exit_loop"]
+                                                    "type": "string"
                                                   },
                                                   {}
                                                 ]
@@ -6878,8 +6837,7 @@
                                               "type": {
                                                 "oneOf": [
                                                   {
-                                                    "type": "string",
-                                                    "enum": ["conditional"]
+                                                    "type": "string"
                                                   },
                                                   {}
                                                 ]
@@ -6937,8 +6895,7 @@
                                               "type": {
                                                 "oneOf": [
                                                   {
-                                                    "type": "string",
-                                                    "enum": ["continue_loop"]
+                                                    "type": "string"
                                                   },
                                                   {}
                                                 ]
@@ -6955,10 +6912,7 @@
                                               "type": {
                                                 "oneOf": [
                                                   {
-                                                    "type": "string",
-                                                    "enum": [
-                                                      "max_count_per_step"
-                                                    ]
+                                                    "type": "string"
                                                   },
                                                   {}
                                                 ]

@@ -310,7 +310,7 @@ export const LLMConfig = z.object({
 
 export type TextContent = z.infer<typeof TextContent>;
 export const TextContent = z.object({
-  type: z.union([z.literal('text'), z.undefined()]).optional(),
+  type: z.union([z.string(), z.undefined()]).optional(),
   text: z.string(),
 });
 
@@ -490,26 +490,26 @@ export const AgentSchema = z.object({
 export type ChildToolRule = z.infer<typeof ChildToolRule>;
 export const ChildToolRule = z.object({
   tool_name: z.string(),
-  type: z.union([z.literal('constrain_child_tools'), z.undefined()]).optional(),
+  type: z.union([z.string(), z.undefined()]).optional(),
   children: z.array(z.string()),
 });
 
 export type InitToolRule = z.infer<typeof InitToolRule>;
 export const InitToolRule = z.object({
   tool_name: z.string(),
-  type: z.union([z.literal('run_first'), z.undefined()]).optional(),
+  type: z.union([z.string(), z.undefined()]).optional(),
 });
 
 export type TerminalToolRule = z.infer<typeof TerminalToolRule>;
 export const TerminalToolRule = z.object({
   tool_name: z.string(),
-  type: z.union([z.literal('exit_loop'), z.undefined()]).optional(),
+  type: z.union([z.string(), z.undefined()]).optional(),
 });
 
 export type ConditionalToolRule = z.infer<typeof ConditionalToolRule>;
 export const ConditionalToolRule = z.object({
   tool_name: z.string(),
-  type: z.union([z.literal('conditional'), z.undefined()]).optional(),
+  type: z.union([z.string(), z.undefined()]).optional(),
   default_child: z
     .union([
       z.string(),
@@ -525,13 +525,13 @@ export const ConditionalToolRule = z.object({
 export type ContinueToolRule = z.infer<typeof ContinueToolRule>;
 export const ContinueToolRule = z.object({
   tool_name: z.string(),
-  type: z.union([z.literal('continue_loop'), z.undefined()]).optional(),
+  type: z.union([z.string(), z.undefined()]).optional(),
 });
 
 export type MaxCountPerStepToolRule = z.infer<typeof MaxCountPerStepToolRule>;
 export const MaxCountPerStepToolRule = z.object({
   tool_name: z.string(),
-  type: z.union([z.literal('max_count_per_step'), z.undefined()]).optional(),
+  type: z.union([z.string(), z.undefined()]).optional(),
   max_count_limit: z.number(),
 });
 
@@ -1098,7 +1098,7 @@ export type LettaAssistantMessageContentUnion = z.infer<
   typeof LettaAssistantMessageContentUnion
 >;
 export const LettaAssistantMessageContentUnion = z.object({
-  type: z.union([z.literal('text'), z.undefined()]).optional(),
+  type: z.union([z.string(), z.undefined()]).optional(),
   text: z.string(),
 });
 
@@ -1114,9 +1114,7 @@ export const AssistantMessage = z.object({
       z.undefined(),
     ])
     .optional(),
-  message_type: z
-    .union([z.literal('assistant_message'), z.undefined()])
-    .optional(),
+  message_type: z.union([z.string(), z.undefined()]).optional(),
   content: z.union([
     z.array(TextContent),
     z.string(),
@@ -1189,7 +1187,7 @@ export type ChatCompletionContentPartTextParam = z.infer<
 >;
 export const ChatCompletionContentPartTextParam = z.object({
   text: z.string(),
-  type: z.literal('text'),
+  type: z.string(),
 });
 
 export type ChatCompletionContentPartRefusalParam = z.infer<
@@ -1197,7 +1195,7 @@ export type ChatCompletionContentPartRefusalParam = z.infer<
 >;
 export const ChatCompletionContentPartRefusalParam = z.object({
   refusal: z.string(),
-  type: z.literal('refusal'),
+  type: z.string(),
 });
 
 export type FunctionCall = z.infer<typeof FunctionCall>;
@@ -1223,14 +1221,14 @@ export const ChatCompletionMessageToolCallParam = z.object({
   id: z.string(),
   function:
     openai__types__chat__chat_completion_message_tool_call_param__Function,
-  type: z.literal('function'),
+  type: z.string(),
 });
 
 export type ChatCompletionAssistantMessageParam = z.infer<
   typeof ChatCompletionAssistantMessageParam
 >;
 export const ChatCompletionAssistantMessageParam = z.object({
-  role: z.literal('assistant'),
+  role: z.string(),
   audio: z
     .union([
       Audio,
@@ -1337,7 +1335,7 @@ export type ChatCompletionContentPartImageParam = z.infer<
 >;
 export const ChatCompletionContentPartImageParam = z.object({
   image_url: ImageURL,
-  type: z.literal('image_url'),
+  type: z.string(),
 });
 
 export type InputAudio = z.infer<typeof InputAudio>;
@@ -1351,7 +1349,7 @@ export type ChatCompletionContentPartInputAudioParam = z.infer<
 >;
 export const ChatCompletionContentPartInputAudioParam = z.object({
   input_audio: InputAudio,
-  type: z.literal('input_audio'),
+  type: z.string(),
 });
 
 export type ChatCompletionDeveloperMessageParam = z.infer<
@@ -1363,7 +1361,7 @@ export const ChatCompletionDeveloperMessageParam = z.object({
     z.array(ChatCompletionContentPartTextParam),
     z.array(z.union([z.string(), z.array(ChatCompletionContentPartTextParam)])),
   ]),
-  role: z.literal('developer'),
+  role: z.string(),
   name: z.union([z.string(), z.undefined()]).optional(),
 });
 
@@ -1384,7 +1382,7 @@ export const ChatCompletionFunctionMessageParam = z.object({
     z.array(z.union([z.string(), z.null()])),
   ]),
   name: z.string(),
-  role: z.literal('function'),
+  role: z.string(),
 });
 
 export type Function_Output = z.infer<typeof Function_Output>;
@@ -1405,7 +1403,7 @@ export const ChatCompletionMessageToolCall = z.intersection(
   z.object({
     id: z.string(),
     function: Function_Output,
-    type: z.literal('function'),
+    type: z.string(),
   }),
   z.object({
     string: z.any(),
@@ -1427,7 +1425,7 @@ export type ChatCompletionNamedToolChoiceParam = z.infer<
 export const ChatCompletionNamedToolChoiceParam = z.object({
   function:
     openai__types__chat__chat_completion_named_tool_choice_param__Function,
-  type: z.literal('function'),
+  type: z.string(),
 });
 
 export type ChatCompletionPredictionContentParam = z.infer<
@@ -1439,7 +1437,7 @@ export const ChatCompletionPredictionContentParam = z.object({
     z.array(ChatCompletionContentPartTextParam),
     z.array(z.union([z.string(), z.array(ChatCompletionContentPartTextParam)])),
   ]),
-  type: z.literal('content'),
+  type: z.string(),
 });
 
 export type ChatCompletionStreamOptionsParam = z.infer<
@@ -1458,7 +1456,7 @@ export const ChatCompletionSystemMessageParam = z.object({
     z.array(ChatCompletionContentPartTextParam),
     z.array(z.union([z.string(), z.array(ChatCompletionContentPartTextParam)])),
   ]),
-  role: z.literal('system'),
+  role: z.string(),
   name: z.union([z.string(), z.undefined()]).optional(),
 });
 
@@ -1471,7 +1469,7 @@ export const ChatCompletionToolMessageParam = z.object({
     z.array(ChatCompletionContentPartTextParam),
     z.array(z.union([z.string(), z.array(ChatCompletionContentPartTextParam)])),
   ]),
-  role: z.literal('tool'),
+  role: z.string(),
   tool_call_id: z.string(),
 });
 
@@ -1493,7 +1491,7 @@ export const FunctionDefinition_Input = z.object({
 export type ChatCompletionToolParam = z.infer<typeof ChatCompletionToolParam>;
 export const ChatCompletionToolParam = z.object({
   function: FunctionDefinition_Input,
-  type: z.literal('function'),
+  type: z.string(),
 });
 
 export type FileFile = z.infer<typeof FileFile>;
@@ -1506,7 +1504,7 @@ export const FileFile = z.object({
 export type File = z.infer<typeof File>;
 export const File = z.object({
   file: FileFile,
-  type: z.literal('file'),
+  type: z.string(),
 });
 
 export type ChatCompletionUserMessageParam = z.infer<
@@ -1553,7 +1551,7 @@ export const ChatCompletionUserMessageParam = z.object({
       ]),
     ),
   ]),
-  role: z.literal('user'),
+  role: z.string(),
   name: z.union([z.string(), z.undefined()]).optional(),
 });
 
@@ -1570,7 +1568,7 @@ export const openai__types__chat__completion_create_params__Function = z.object(
 
 export type ResponseFormatText = z.infer<typeof ResponseFormatText>;
 export const ResponseFormatText = z.object({
-  type: z.literal('text'),
+  type: z.string(),
 });
 
 export type JSONSchema = z.infer<typeof JSONSchema>;
@@ -1591,12 +1589,12 @@ export const JSONSchema = z.object({
 export type ResponseFormatJSONSchema = z.infer<typeof ResponseFormatJSONSchema>;
 export const ResponseFormatJSONSchema = z.object({
   json_schema: JSONSchema,
-  type: z.literal('json_schema'),
+  type: z.string(),
 });
 
 export type ResponseFormatJSONObject = z.infer<typeof ResponseFormatJSONObject>;
 export const ResponseFormatJSONObject = z.object({
-  type: z.literal('json_object'),
+  type: z.string(),
 });
 
 export type WebSearchOptionsUserLocationApproximate = z.infer<
@@ -1614,7 +1612,7 @@ export type WebSearchOptionsUserLocation = z.infer<
 >;
 export const WebSearchOptionsUserLocation = z.object({
   approximate: WebSearchOptionsUserLocationApproximate,
-  type: z.literal('approximate'),
+  type: z.string(),
 });
 
 export type WebSearchOptions = z.infer<typeof WebSearchOptions>;
@@ -1984,9 +1982,9 @@ export const CompletionCreateParamsNonStreaming = z.object({
   web_search_options: z.union([WebSearchOptions, z.undefined()]).optional(),
   stream: z
     .union([
-      z.literal('false'),
+      z.boolean(),
       z.null(),
-      z.array(z.union([z.literal('false'), z.null()])),
+      z.array(z.union([z.boolean(), z.null()])),
       z.undefined(),
     ])
     .optional(),
@@ -2343,7 +2341,7 @@ export const CompletionCreateParamsStreaming = z.object({
     .optional(),
   user: z.union([z.string(), z.undefined()]).optional(),
   web_search_options: z.union([WebSearchOptions, z.undefined()]).optional(),
-  stream: z.literal('true'),
+  stream: z.boolean(),
 });
 
 export type FunctionDefinition_Output = z.infer<
@@ -2386,7 +2384,7 @@ export type FunctionTool = z.infer<typeof FunctionTool>;
 export const FunctionTool = z.intersection(
   z.object({
     function: FunctionDefinition_Output,
-    type: z.literal('function'),
+    type: z.string(),
   }),
   z.object({
     string: z.any(),
@@ -2404,7 +2402,7 @@ export const MessageRole = z.union([
 
 export type ToolCallContent = z.infer<typeof ToolCallContent>;
 export const ToolCallContent = z.object({
-  type: z.union([z.literal('tool_call'), z.undefined()]).optional(),
+  type: z.union([z.string(), z.undefined()]).optional(),
   id: z.string(),
   name: z.string(),
   input: z.unknown(),
@@ -2412,7 +2410,7 @@ export const ToolCallContent = z.object({
 
 export type ToolReturnContent = z.infer<typeof ToolReturnContent>;
 export const ToolReturnContent = z.object({
-  type: z.union([z.literal('tool_return'), z.undefined()]).optional(),
+  type: z.union([z.string(), z.undefined()]).optional(),
   tool_call_id: z.string(),
   content: z.string(),
   is_error: z.boolean(),
@@ -2420,7 +2418,7 @@ export const ToolReturnContent = z.object({
 
 export type ReasoningContent = z.infer<typeof ReasoningContent>;
 export const ReasoningContent = z.object({
-  type: z.union([z.literal('reasoning'), z.undefined()]).optional(),
+  type: z.union([z.string(), z.undefined()]).optional(),
   is_native: z.boolean(),
   reasoning: z.string(),
   signature: z
@@ -2435,13 +2433,13 @@ export const ReasoningContent = z.object({
 
 export type RedactedReasoningContent = z.infer<typeof RedactedReasoningContent>;
 export const RedactedReasoningContent = z.object({
-  type: z.union([z.literal('redacted_reasoning'), z.undefined()]).optional(),
+  type: z.union([z.string(), z.undefined()]).optional(),
   data: z.string(),
 });
 
 export type OmittedReasoningContent = z.infer<typeof OmittedReasoningContent>;
 export const OmittedReasoningContent = z.object({
-  type: z.union([z.literal('omitted_reasoning'), z.undefined()]).optional(),
+  type: z.union([z.string(), z.undefined()]).optional(),
   tokens: z.number(),
 });
 
@@ -2868,7 +2866,7 @@ export const CreateArchivalMemory = z.object({
 
 export type DynamicManager = z.infer<typeof DynamicManager>;
 export const DynamicManager = z.object({
-  manager_type: z.union([z.literal('dynamic'), z.undefined()]).optional(),
+  manager_type: z.union([z.string(), z.undefined()]).optional(),
   manager_agent_id: z.string(),
   termination_token: z
     .union([
@@ -2984,7 +2982,7 @@ export const FileMetadata = z.object({
 
 export type RoundRobinManager = z.infer<typeof RoundRobinManager>;
 export const RoundRobinManager = z.object({
-  manager_type: z.literal('round_robin').optional(),
+  manager_type: z.string().optional(),
   max_turns: z
     .union([z.number(), z.null(), z.array(z.union([z.number(), z.null()]))])
     .optional(),
@@ -2992,7 +2990,7 @@ export const RoundRobinManager = z.object({
 
 export type SupervisorManager = z.infer<typeof SupervisorManager>;
 export const SupervisorManager = z.object({
-  manager_type: z.union([z.literal('supervisor'), z.undefined()]).optional(),
+  manager_type: z.union([z.string(), z.undefined()]).optional(),
   manager_agent_id: z.string(),
 });
 
@@ -3055,9 +3053,7 @@ export const HiddenReasoningMessage = z.object({
       z.undefined(),
     ])
     .optional(),
-  message_type: z
-    .union([z.literal('hidden_reasoning_message'), z.undefined()])
-    .optional(),
+  message_type: z.union([z.string(), z.undefined()]).optional(),
   state: z.union([z.literal('redacted'), z.literal('omitted')]),
   hidden_reasoning: z
     .union([
@@ -3267,9 +3263,7 @@ export const SystemMessage = z.object({
       z.undefined(),
     ])
     .optional(),
-  message_type: z
-    .union([z.literal('system_message'), z.undefined()])
-    .optional(),
+  message_type: z.union([z.string(), z.undefined()]).optional(),
   content: z.string(),
 });
 
@@ -3277,7 +3271,7 @@ export type LettaUserMessageContentUnion = z.infer<
   typeof LettaUserMessageContentUnion
 >;
 export const LettaUserMessageContentUnion = z.object({
-  type: z.union([z.literal('text'), z.undefined()]).optional(),
+  type: z.union([z.string(), z.undefined()]).optional(),
   text: z.string(),
 });
 
@@ -3293,7 +3287,7 @@ export const UserMessage = z.object({
       z.undefined(),
     ])
     .optional(),
-  message_type: z.union([z.literal('user_message'), z.undefined()]).optional(),
+  message_type: z.union([z.string(), z.undefined()]).optional(),
   content: z.union([
     z.array(TextContent),
     z.string(),
@@ -3313,9 +3307,7 @@ export const ReasoningMessage = z.object({
       z.undefined(),
     ])
     .optional(),
-  message_type: z
-    .union([z.literal('reasoning_message'), z.undefined()])
-    .optional(),
+  message_type: z.union([z.string(), z.undefined()]).optional(),
   source: z
     .union([
       z.literal('reasoner_model'),
@@ -3372,9 +3364,7 @@ export const ToolCallMessage = z.object({
       z.undefined(),
     ])
     .optional(),
-  message_type: z
-    .union([z.literal('tool_call_message'), z.undefined()])
-    .optional(),
+  message_type: z.union([z.string(), z.undefined()]).optional(),
   tool_call: z.union([
     ToolCall,
     ToolCallDelta,
@@ -3394,9 +3384,7 @@ export const ToolReturnMessage = z.object({
       z.undefined(),
     ])
     .optional(),
-  message_type: z
-    .union([z.literal('tool_return_message'), z.undefined()])
-    .optional(),
+  message_type: z.union([z.string(), z.undefined()]).optional(),
   tool_return: z.string(),
   status: z.union([z.literal('success'), z.literal('error')]),
   tool_call_id: z.string(),
@@ -3431,7 +3419,7 @@ export const LettaMessageUnion = z.union([
 
 export type LettaUsageStatistics = z.infer<typeof LettaUsageStatistics>;
 export const LettaUsageStatistics = z.object({
-  message_type: z.literal('usage_statistics').optional(),
+  message_type: z.string().optional(),
   completion_tokens: z.number().optional(),
   prompt_tokens: z.number().optional(),
   total_tokens: z.number().optional(),
@@ -4373,9 +4361,7 @@ export const UpdateAgent = z.object({
 
 export type UpdateAssistantMessage = z.infer<typeof UpdateAssistantMessage>;
 export const UpdateAssistantMessage = z.object({
-  message_type: z
-    .union([z.literal('assistant_message'), z.undefined()])
-    .optional(),
+  message_type: z.union([z.string(), z.undefined()]).optional(),
   content: z.union([
     z.array(TextContent),
     z.string(),
@@ -4386,22 +4372,18 @@ export const UpdateAssistantMessage = z.object({
 export type UpdateReasoningMessage = z.infer<typeof UpdateReasoningMessage>;
 export const UpdateReasoningMessage = z.object({
   reasoning: z.string(),
-  message_type: z
-    .union([z.literal('reasoning_message'), z.undefined()])
-    .optional(),
+  message_type: z.union([z.string(), z.undefined()]).optional(),
 });
 
 export type UpdateSystemMessage = z.infer<typeof UpdateSystemMessage>;
 export const UpdateSystemMessage = z.object({
-  message_type: z
-    .union([z.literal('system_message'), z.undefined()])
-    .optional(),
+  message_type: z.union([z.string(), z.undefined()]).optional(),
   content: z.string(),
 });
 
 export type UpdateUserMessage = z.infer<typeof UpdateUserMessage>;
 export const UpdateUserMessage = z.object({
-  message_type: z.union([z.literal('user_message'), z.undefined()]).optional(),
+  message_type: z.union([z.string(), z.undefined()]).optional(),
   content: z.union([
     z.array(TextContent),
     z.string(),
