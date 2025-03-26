@@ -210,7 +210,12 @@ export function ToolsEditor(props: ToolsEditorProps) {
       <VStack fullWidth fullHeight gap={false}>
         <VisibleOnMobile>
           <HStack color="background-grey" borderBottom fullWidth>
-            <HStack paddingX="medium" height="header-sm" align="center">
+            <HStack
+              paddingX="medium"
+              minHeight="header-sm"
+              height="header-sm"
+              align="center"
+            >
               <Popover
                 className="max-h-[300px] overflow-auto"
                 triggerAsChild
