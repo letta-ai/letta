@@ -1060,9 +1060,6 @@ class SyncServer(Server):
 
         llm_models.extend(self.get_local_llm_configs())
 
-        # respect global maximum
-        for llm_config in llm_models:
-            llm_config.context_window = min(llm_config.context_window, model_settings.global_max_context_window_limit)
         return llm_models
 
     def list_embedding_models(self) -> List[EmbeddingConfig]:
