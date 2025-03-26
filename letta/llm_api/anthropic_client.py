@@ -1,6 +1,6 @@
 import json
 import re
-from typing import List, Optional
+from typing import List, Optional, Union
 
 import anthropic
 from anthropic.types import Message as AnthropicMessage
@@ -10,54 +10,51 @@ from letta.llm_api.helpers import add_inner_thoughts_to_functions, unpack_all_in
 from letta.llm_api.llm_api_tools import cast_message_to_subtype
 from letta.llm_api.llm_client_base import LLMClientBase
 from letta.local_llm.constants import INNER_THOUGHTS_KWARG, INNER_THOUGHTS_KWARG_DESCRIPTION
+from letta.log import get_logger
 from letta.schemas.message import Message as PydanticMessage
 from letta.schemas.openai.chat_completion_request import ChatCompletionRequest, Tool
 from letta.schemas.openai.chat_completion_response import ChatCompletionResponse, Choice, FunctionCall
 from letta.schemas.openai.chat_completion_response import Message as ChoiceMessage
 from letta.schemas.openai.chat_completion_response import ToolCall, UsageStatistics
 from letta.services.provider_manager import ProviderManager
-from letta.settings import model_settings
 
 DUMMY_FIRST_USER_MESSAGE = "User initializing bootup sequence."
+
+logger = get_logger(__name__)
 
 
 class AnthropicClient(LLMClientBase):
 
     def request(self, request_data: dict) -> dict:
-        """
-        Performs underlying request to llm and returns raw response.
-        """
-        anthropic_client = None
-        anthropic_override_key = ProviderManager().get_anthropic_override_key()
-        if anthropic_override_key:
-            anthropic_client = anthropic.Anthropic(api_key=anthropic_override_key)
-        elif model_settings.anthropic_api_key:
-            anthropic_client = anthropic.Anthropic()
-        else:
-            raise ValueError("No available Anthropic API key")
-        response = anthropic_client.beta.messages.create(
-            **request_data,
-            betas=["tools-2024-04-04"],
-        )
-        return response.model_dump()
+        try:
+            client = self._get_anthropic_client(async_client=False)
+            response = client.beta.messages.create(**request_data, betas=["tools-2024-04-04"])
+            return response.model_dump()
+        except Exception as e:
+            self._handle_anthropic_error(e)
 
     async def request_async(self, request_data: dict) -> dict:
-        """
-        Performs underlying async request to llm and returns raw response.
-        """
-        anthropic_client = None
-        anthropic_override_key = ProviderManager().get_anthropic_override_key()
-        if anthropic_override_key:
-            anthropic_client = anthropic.AsyncAnthropic(api_key=anthropic_override_key)
-        elif model_settings.anthropic_api_key:
-            anthropic_client = anthropic.AsyncAnthropic()
-        else:
-            raise ValueError("No available Anthropic API key")
-        response = await anthropic_client.beta.messages.create(
-            **request_data,
-            betas=["tools-2024-04-04"],
-        )
-        return response.model_dump()
+        try:
+            client = self._get_anthropic_client(async_client=True)
+            response = await client.beta.messages.create(**request_data, betas=["tools-2024-04-04"])
+            return response.model_dump()
+        except Exception as e:
+            self._handle_anthropic_error(e)
+
+    def _get_anthropic_client(self, async_client: bool = False) -> Union[anthropic.AsyncAnthropic, anthropic.Anthropic]:
+        override_key = ProviderManager().get_anthropic_override_key()
+        if async_client:
+            return anthropic.AsyncAnthropic(api_key=override_key) if override_key else anthropic.AsyncAnthropic()
+        return anthropic.Anthropic(api_key=override_key) if override_key else anthropic.Anthropic()
+
+    def _handle_anthropic_error(self, e: Exception):
+        if isinstance(e, anthropic.APIConnectionError):
+            logger.warning(f"[Anthropic] API connection error: {e.__cause__}")
+        elif isinstance(e, anthropic.RateLimitError):
+            logger.warning("[Anthropic] Rate limited (429). Consider backoff.")
+        elif isinstance(e, anthropic.APIStatusError):
+            logger.warning(f"[Anthropic] API status error: {e.status_code}, {e.response}")
+        raise e
 
     def build_request_data(
         self,
