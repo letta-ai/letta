@@ -71,12 +71,12 @@ class AnthropicClient(LLMClientBase):
 
         if tools is None:
             # Special case for summarization path
-            tools = None
+            available_tools = None
             tool_choice = None
         elif force_tool_call is not None:
+            assert tools is not None
             tool_choice = {"type": "tool", "name": force_tool_call}
-            tools = [{"type": "function", "function": f} for f in functions if f["name"] == force_tool_call]
-            assert functions is not None
+            available_tools = [{"type": "function", "function": f} for f in tools if f["name"] == force_tool_call]
 
             # need to have this setting to be able to put inner thoughts in kwargs
             self.llm_config.put_inner_thoughts_in_kwargs = True
@@ -86,12 +86,12 @@ class AnthropicClient(LLMClientBase):
                 tool_choice = {"type": "any", "disable_parallel_tool_use": True}
             else:
                 tool_choice = {"type": "auto", "disable_parallel_tool_use": True}
-            tools = [{"type": "function", "function": f} for f in tools]
+            available_tools = [{"type": "function", "function": f} for f in tools]
 
         chat_completion_request = ChatCompletionRequest(
             model=self.llm_config.model,
             messages=[cast_message_to_subtype(m.to_openai_dict()) for m in messages],
-            tools=tools,
+            tools=available_tools,
             tool_choice=tool_choice,
             max_tokens=self.llm_config.max_tokens,  # Note: max_tokens is required for Anthropic API
             temperature=self.llm_config.temperature,
