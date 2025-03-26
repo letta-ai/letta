@@ -10,11 +10,12 @@ interface ADEItem {
 
 interface ADEGroupProps {
   items: ADEItem[];
+  defaultTab?: number;
 }
 
 export function ADEGroup(props: ADEGroupProps) {
-  const { items } = props;
-  const [activeTab, setActiveTab] = useState(0);
+  const { items, defaultTab = 0 } = props;
+  const [activeTab, setActiveTab] = useState(defaultTab);
 
   return (
     <VStack

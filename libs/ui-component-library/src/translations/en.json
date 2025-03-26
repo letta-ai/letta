@@ -13,7 +13,7 @@
     "MemoryBlockViewer": {
       "title": "Memory Blocks",
       "noMemoryBlocks": "No memory blocks in this agent",
-      "limit": "{limit} chars"
+      "limit": "<limit></limit> chars"
     },
     "LLMConfig": {
       "title": "LLM Config"

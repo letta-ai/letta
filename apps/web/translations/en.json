@@ -82,6 +82,19 @@
     "CompareVersionDialog": {
       "title": "Compare versions",
       "compare": "Compare"
+    },
+    "title": "Version History",
+    "compare": "Compare",
+    "noVersions": "No versions found",
+    "loading": "Loading versions...",
+    "revert": "Revert to this version",
+    "noMessage": "No message",
+    "loadMore": "Load more",
+    "version": "Version {version}",
+    "workingVersion": "Working version",
+    "notSaved": {
+      "label": "Unsaved",
+      "tooltip": "This is the current template version, it has not been saved yet, to save it, press the save template button"
     }
   },
   "distribution/Instructions/TypescriptInstructions": {
@@ -98,6 +111,9 @@
     }
   },
   "pages/distribution": {
+    "VersionHistory": {
+      "title": "Version History"
+    },
     "DistributionOnboardingStepFinal": {
       "title": "Deploy your agent",
       "description": "You've made it to the end, now all you need to do is deploy your agent, you can do this either by following the instructions to the side, or manually creating an agent!",
@@ -109,14 +125,6 @@
     },
     "AgentIdentity": {
       "more": "and {count} more"
-    },
-    "VersionHistory": {
-      "title": "Version History",
-      "compare": "Compare",
-      "noVersions": "No versions found",
-      "loading": "Loading versions...",
-      "revert": "Revert to this version",
-      "noMessage": "No message"
     },
     "RecentAgents": {
       "title": "Recently deployed agents",

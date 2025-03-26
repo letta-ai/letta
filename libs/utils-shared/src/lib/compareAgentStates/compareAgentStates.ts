@@ -24,6 +24,7 @@ export interface CleanedAgentState {
 
 export function stateCleaner(state: AgentState): CleanedAgentState {
   // only compare the following properties
+
   return {
     tool_exec_environment_variables: state.tool_exec_environment_variables
       ?.map((item) => ({

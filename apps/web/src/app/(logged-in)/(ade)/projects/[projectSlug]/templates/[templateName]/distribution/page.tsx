@@ -40,7 +40,7 @@ import type { InfiniteData } from '@tanstack/query-core';
 import { useDebouncedValue } from '@mantine/hooks';
 import { useFeatureFlag, useSetOnboardingStep } from '@letta-cloud/sdk-web';
 import { LaunchLinks } from './LaunchLinks/LaunchLinks';
-import { VersionHistory } from './VersionHistory/VersionHistory';
+import { VersionHistorySection } from './VersionHistorySection/VersionHistorySection';
 import { useLatestAgentTemplate } from '$web/client/hooks/useLatestAgentTemplate/useLatestAgentTemplate';
 import { useDateFormatter } from '@letta-cloud/utils-client';
 import { CreateAgentFromTemplateDialog } from './CreateAgentFromTemplateDialog/CreateAgentFromTemplateDialog';
@@ -519,11 +519,11 @@ export default function DistributionPage() {
         autoSaveId="distribution"
       >
         <Panel
-          defaultSize={20}
-          defaultValue={20}
+          defaultSize={50}
+          defaultValue={50}
           /* eslint-disable-next-line react/forbid-component-props */
           className="h-full"
-          minSize={20}
+          minSize={50}
         >
           <VStack fullHeight gap="small">
             <ADEGroup
@@ -531,7 +531,7 @@ export default function DistributionPage() {
                 {
                   title: t('VersionList.title'),
                   id: 'versions',
-                  content: <VersionHistory />,
+                  content: <VersionHistorySection />,
                 },
               ]}
             ></ADEGroup>
@@ -542,11 +542,11 @@ export default function DistributionPage() {
           className="w-[4px]"
         />
         <Panel
-          defaultSize={60}
-          defaultValue={60}
+          defaultSize={50}
+          defaultValue={50}
           /* eslint-disable-next-line react/forbid-component-props */
           className="h-full"
-          minSize={20}
+          minSize={50}
         >
           <ADEGroup
             items={[
@@ -555,25 +555,9 @@ export default function DistributionPage() {
                 id: 'title',
                 content: <DeploymentInstructions />,
               },
-            ]}
-          ></ADEGroup>
-        </Panel>
-        <PanelResizeHandle
-          /* eslint-disable-next-line react/forbid-component-props */
-          className="w-[4px]"
-        />
-        <Panel
-          defaultSize={20}
-          defaultValue={20}
-          /* eslint-disable-next-line react/forbid-component-props */
-          className="h-full"
-          minSize={20}
-        >
-          <ADEGroup
-            items={[
               {
                 title: t('RecentAgents.title'),
-                id: 'title',
+                id: 'recent-agents',
                 content: <RecentAgents />,
               },
             ]}

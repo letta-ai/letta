@@ -8,6 +8,7 @@ import { HStack } from '../../framing/HStack/HStack';
 import { Typography } from '../Typography/Typography';
 import { makeInput, makeRawInput } from '../Form/Form';
 import { cn } from '@letta-cloud/ui-styles';
+import { RadioDot } from '../RadioDot/RadioDot';
 
 const radioGroupVariants = cva('flex flex-col gap-2', {
   variants: {
@@ -40,21 +41,6 @@ const radioGroupItemVariants = cva('flex items-center gap-2', {
   },
 });
 
-const radioItemIndicatorVariants = cva(
-  'border rounded-full h-2.5 w-2.5  justify-center',
-  {
-    variants: {
-      variant: {
-        blocky: 'w-5 h-5 bg-white',
-        default: '',
-      },
-    },
-    defaultVariants: {
-      variant: 'default',
-    },
-  },
-);
-
 interface RadioGroupItemType {
   label: React.ReactNode;
   detail?: React.ReactNode;
@@ -63,6 +49,7 @@ interface RadioGroupItemType {
 
 type Base = React.ComponentPropsWithoutRef<typeof RadioGroupPrimitive.Root> &
   VariantProps<typeof radioGroupVariants>;
+
 interface ExtendedRadioGroupProps extends Base {
   items: RadioGroupItemType[];
   fullWidth?: boolean;
@@ -92,15 +79,10 @@ function RadioGroupInput({ items, ...props }: ExtendedRadioGroupProps) {
             >
               <HStack fullWidth justify="spaceBetween" align="center">
                 <HStack fullWidth align="center" justify="start">
-                  <div className={cn(radioItemIndicatorVariants({ variant }))}>
-                    <RadioGroupPrimitive.Indicator>
-                      <div className="w-[100%] h-[100%] rounded-full bg-brand flex items-center justify-center">
-                        {isBlocky && (
-                          <div className="w-[50%] h-[50%] bg-white rounded-full " />
-                        )}
-                      </div>
-                    </RadioGroupPrimitive.Indicator>
-                  </div>
+                  <RadioDot
+                    Indicator={RadioGroupPrimitive.Indicator}
+                    variant={isBlocky ? 'bullseye' : 'default'}
+                  />
                   {isBlocky ? (
                     item.label
                   ) : (

@@ -173,7 +173,7 @@ interface SectionWrapperProps {
 
 function SectionWrapper(props: React.PropsWithChildren<SectionWrapperProps>) {
   const { title, base, hasDifference, compared } = props;
-  const [open, setOpen] = useState<boolean>(!!hasDifference);
+  const [open, setOpen] = useState<boolean>(!!hasDifference || !compared);
 
   const handleToggle = useCallback(() => {
     setOpen(!open);
@@ -466,7 +466,7 @@ function GenericCompare({ children }: GenericCompareProps) {
 }
 
 function StateViewer(props: StateViewerProps) {
-  const { state, toCompare, tools, sources } = props;
+  const { state, toCompare, tools, comparedName, baseName, sources } = props;
 
   const t = useTranslations('components/AgentStateViewer');
 
@@ -552,11 +552,9 @@ function StateViewer(props: StateViewerProps) {
       {hasNoDifference && <Alert title={t('noDifference')} variant="info" />}
       <VStack border className="w-fit min-w-full" overflowX="auto" gap={false}>
         <HStack fullWidth gap={false}>
-          <StateHeader name={props.baseName || t('StateViewer.base')} />
+          {baseName && <StateHeader name={baseName} />}
           {toCompare && (
-            <StateHeader
-              name={props.comparedName || t('StateViewer.compared')}
-            />
+            <StateHeader name={comparedName || t('StateViewer.compared')} />
           )}
         </HStack>
         <SectionWrapper
@@ -564,20 +562,24 @@ function StateViewer(props: StateViewerProps) {
           title={t('MemoryBlockViewer.title')}
           base={<MemoryBlockViewer memoryBlocks={state.memoryBlocks} />}
           compared={
-            <MemoryBlockViewer
-              memoryBlocks={state.memoryBlocks}
-              comparedMemoryBlocks={toCompare?.memoryBlocks}
-            />
+            toCompare && (
+              <MemoryBlockViewer
+                memoryBlocks={state.memoryBlocks}
+                comparedMemoryBlocks={toCompare?.memoryBlocks}
+              />
+            )
           }
         ></SectionWrapper>
         <SectionWrapper
           hasDifference={hasLLMConfigDifference}
           base={<KeyValueDiffViewer keyValuePairs={state.llmConfig || {}} />}
           compared={
-            <KeyValueDiffViewer
-              keyValuePairs={state.llmConfig || {}}
-              comparedKeyValuePairs={toCompare?.llmConfig}
-            />
+            toCompare && (
+              <KeyValueDiffViewer
+                keyValuePairs={state.llmConfig || {}}
+                comparedKeyValuePairs={toCompare?.llmConfig}
+              />
+            )
           }
           title={t('LLMConfig.title')}
         ></SectionWrapper>
@@ -587,10 +589,12 @@ function StateViewer(props: StateViewerProps) {
             <KeyValueDiffViewer keyValuePairs={state.embedding_config || {}} />
           }
           compared={
-            <KeyValueDiffViewer
-              keyValuePairs={state.embedding_config || {}}
-              comparedKeyValuePairs={toCompare?.embedding_config}
-            />
+            toCompare && (
+              <KeyValueDiffViewer
+                keyValuePairs={state.embedding_config || {}}
+                comparedKeyValuePairs={toCompare?.embedding_config}
+              />
+            )
           }
           title={t('EmbeddingConfig.title')}
         ></SectionWrapper>
@@ -598,10 +602,12 @@ function StateViewer(props: StateViewerProps) {
           hasDifference={hasToolIdsDifference}
           base={<ToolsViewer toolIds={state.toolIds} />}
           compared={
-            <ToolsViewer
-              toolIds={state.toolIds}
-              comparedToolIds={toCompare?.toolIds}
-            />
+            toCompare && (
+              <ToolsViewer
+                toolIds={state.toolIds}
+                comparedToolIds={toCompare?.toolIds}
+              />
+            )
           }
           title={t('ToolsViewer.title')}
         ></SectionWrapper>
@@ -609,10 +615,12 @@ function StateViewer(props: StateViewerProps) {
           hasDifference={hasSourceIdsDifference}
           base={<SourceViewer sourceIds={state.sourceIds} />}
           compared={
-            <SourceViewer
-              sourceIds={state.sourceIds}
-              comparedSourceIds={toCompare?.sourceIds}
-            />
+            toCompare && (
+              <SourceViewer
+                sourceIds={state.sourceIds}
+                comparedSourceIds={toCompare?.sourceIds}
+              />
+            )
           }
           title={t('SourceViewer.title')}
         ></SectionWrapper>
@@ -624,12 +632,14 @@ function StateViewer(props: StateViewerProps) {
             </GenericCompare>
           }
           compared={
-            <GenericCompare>
-              <InlineTextDiff
-                text={state.promptTemplate}
-                comparedText={toCompare?.promptTemplate}
-              />
-            </GenericCompare>
+            toCompare && (
+              <GenericCompare>
+                <InlineTextDiff
+                  text={state.promptTemplate}
+                  comparedText={toCompare?.promptTemplate}
+                />
+              </GenericCompare>
+            )
           }
           title={t('PromptTemplate.title')}
         ></SectionWrapper>
@@ -642,12 +652,14 @@ function StateViewer(props: StateViewerProps) {
             </GenericCompare>
           }
           compared={
-            <GenericCompare>
-              <InlineTextDiff
-                text={state.system}
-                comparedText={toCompare?.system}
-              />
-            </GenericCompare>
+            toCompare && (
+              <GenericCompare>
+                <InlineTextDiff
+                  text={state.system}
+                  comparedText={toCompare?.system}
+                />
+              </GenericCompare>
+            )
           }
           title={t('SystemPrompt.title')}
         ></SectionWrapper>
@@ -659,10 +671,12 @@ function StateViewer(props: StateViewerProps) {
             />
           }
           compared={
-            <ToolVariableViewer
-              toolVariables={state.tool_exec_environment_variables}
-              comparedVariables={toCompare?.tool_exec_environment_variables}
-            />
+            toCompare && (
+              <ToolVariableViewer
+                toolVariables={state.tool_exec_environment_variables}
+                comparedVariables={toCompare?.tool_exec_environment_variables}
+              />
+            )
           }
           title={t('ToolVariableViewer.title')}
         ></SectionWrapper>
