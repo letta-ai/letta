@@ -29,6 +29,7 @@ class LLMClientBase:
         self.llm_config = llm_config
         self.put_inner_thoughts_first = put_inner_thoughts_first
         self.actor_id = actor_id
+        self.use_tool_naming = use_tool_naming
 
     def send_llm_request(
         self,
@@ -82,6 +83,7 @@ class LLMClientBase:
         messages: List[Message],
         tools: List[dict],
         tool_call: Optional[str],
+        force_tool_call: Optional[str] = None,
     ) -> dict:
         """
         Constructs a request object in the expected data format for this client.
