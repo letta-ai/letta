@@ -18,6 +18,7 @@ import { LocalToolViewer } from '../LocalToolViewer/LocalToolViewer';
 import { ToolSearchInput } from '../ToolSearchInput/ToolSearchInput';
 import { useStagedCode } from '../../hooks/useStagedCode/useStagedCode';
 import { LettaToolViewer } from '../LettaToolViewer/LettaToolViewer';
+import { MCPToolViewer } from '../MCPToolViewer/MCPToolViewer';
 
 interface ToolButtonProps {
   tool: Tool;
@@ -41,12 +42,13 @@ function ToolButton(props: ToolButtonProps) {
       onClick={onClick}
       className={cn(selected ? 'bg-secondary-active' : '')}
     >
-      <HStack align="center">
+      <HStack gap="small" align="center">
         <div className="min-w-[20px] h-[24px] items-center justify-center">
           <SpecificToolIcon toolType={tool.tool_type} />
         </div>
         <Typography fullWidth overflow="ellipsis" noWrap variant="body2">
           {tool.name || 'unnamed'}
+          {tool.tool_type === 'custom' ? '.py' : ''}
         </Typography>
       </HStack>
       {isDirty && <div className="w-[8px] h-[8px] bg-primary rounded-full" />}
@@ -135,6 +137,15 @@ function SelectedToolViewer(props: SelectedToolViewerProps) {
         <ComposioToolViewer
           composioToolKey={selectedTool.name}
           name={selectedTool.name}
+          description={selectedTool.description || ''}
+        />
+      );
+    case 'external_mcp':
+      return (
+        <MCPToolViewer
+          tags={selectedTool.tags || []}
+          name={selectedTool.name || ''}
+          attachedId={selectedTool.id || ''}
           description={selectedTool.description || ''}
         />
       );

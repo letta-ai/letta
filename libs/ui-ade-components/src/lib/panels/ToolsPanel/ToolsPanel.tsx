@@ -20,7 +20,7 @@ import {
   PanelBar,
   PanelMainContent,
 } from '@letta-cloud/ui-component-library';
-import { useCurrentAgent } from '../../hooks';
+import { useCurrentAgent, useCurrentAgentMetaData } from '../../hooks';
 import type { AgentState } from '@letta-cloud/sdk-core';
 import { useAgentsServiceDetachTool } from '@letta-cloud/sdk-core';
 import { isLettaTool } from '@letta-cloud/sdk-core';
@@ -366,12 +366,12 @@ function ToolsOnboarding(props: ToolsOnboardingProps) {
 export function ToolsPanel() {
   const [search, setSearch] = useState('');
   const [canUpdateAgent] = useADEPermissions(ApplicationServices.UPDATE_AGENT);
-
+  const { agentName, isTemplate } = useCurrentAgentMetaData();
   return (
     <ToolManagerProvider>
       <ToolsOnboarding>
         <VStack overflow="hidden" gap={false}>
-          <ToolManager />
+          <ToolManager isTemplate={isTemplate} agentName={agentName} />
           <ToolsExplorer />
           <PanelBar
             searchValue={search}

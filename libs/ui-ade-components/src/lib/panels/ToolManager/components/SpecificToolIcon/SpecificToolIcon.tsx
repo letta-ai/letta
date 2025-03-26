@@ -3,7 +3,7 @@ import {
   ComposioLogoMarkDynamic,
   LettaLogoIcon,
   McpIcon,
-  ToolsIcon,
+  PythonIcon,
 } from '@letta-cloud/ui-component-library';
 
 interface SpecificToolIconProps {
@@ -23,6 +23,6 @@ export function SpecificToolIcon(props: SpecificToolIconProps) {
     case 'external_mcp':
       return <McpIcon />;
     default:
-      return <ToolsIcon />;
+      return <PythonIcon />;
   }
 }

@@ -1014,7 +1014,11 @@
       "placeholder": "Search tools"
     }
   },
+  "ToolManager/MCPToolViewer": {
+    "noServerFound": "We couldn't find a server for this tool, this usually means the tool tags have been edited unintentionally, please detach and reattach the tool to have this page work correctly."
+  },
   "ToolManager": {
+    "close": "Back to ADE",
     "title": "Tool Manager",
     "confirmLeave": {
       "title": "Unsaved changes",

@@ -1,23 +1,29 @@
 import { useToolManagerState } from './hooks/useToolManagerState/useToolManagerState';
 import {
+  Breadcrumb,
   Button,
+  CloseIcon,
   Dialog,
   FormField,
   FormProvider,
   HiddenOnMobile,
+  HR,
   HStack,
   Input,
   LeftPanelCloseIcon,
   LeftPanelOpenIcon,
+  LettaInvaderIcon,
+  LettaLogoIcon,
+  MacCommandButtonsSpacer,
   MiniApp,
   PlusIcon,
+  TemplateIcon,
   Typography,
   useForm,
   VStack,
 } from '@letta-cloud/ui-component-library';
 import React, { useCallback, useMemo } from 'react';
 import { useTranslations } from '@letta-cloud/translations';
-import { Hr } from '@react-email/components';
 import { getMatchingRoute } from './toolManagerRoutes';
 import { useToolManagerRouteCopy } from './hooks/useToolManagerRouteCopy/useToolManagerRouteCopy';
 import {
@@ -36,6 +42,7 @@ import { useLocalStorage } from '@mantine/hooks';
 import { useAtom } from 'jotai';
 import { myToolsSelectedId } from './routes/MyTools/MyTools';
 import { useIsComposioConnected } from './hooks/useIsComposioConnected/useIsComposioConnected';
+import { CURRENT_RUNTIME } from '@letta-cloud/config-runtime';
 
 interface CreateToolDialogProps {
   trigger: React.ReactNode;
@@ -296,7 +303,7 @@ function ToolManagerNavigationSidebar() {
         }
       />
 
-      <Hr />
+      <HR />
       {isExpanded && (
         <HStack>
           <Typography variant="body4" uppercase bold>
@@ -330,7 +337,13 @@ function ToolManagerContent() {
   return matchingRoute?.component;
 }
 
-export function ToolManager() {
+interface ToolManagerProps {
+  agentName: string;
+  isTemplate?: boolean;
+}
+
+export function ToolManager(props: ToolManagerProps) {
+  const { agentName, isTemplate } = props;
   const {
     closeToolManager,
     openToolManager,
@@ -349,6 +362,7 @@ export function ToolManager() {
       backdrop
       appName={t('title')}
       isOpen={isToolManagerOpen}
+      __use__rarely__className="h-full min-w-[100vw] min-h-[100vh]"
       onOpenChange={(open) => {
         if (!open) {
           closeToolManager();
@@ -368,12 +382,74 @@ export function ToolManager() {
       >
         {t('confirmLeave.description')}
       </Dialog>
-      <HStack gap={false} fullWidth fullHeight>
-        <HiddenOnMobile>
-          <ToolManagerNavigationSidebar />
-        </HiddenOnMobile>
-        <ToolManagerContent />
-      </HStack>
+      <VStack gap={false} fullHeight fullWidth>
+        <HStack
+          height="header-sm"
+          className="app-header"
+          align="center"
+          gap={false}
+          fullWidth
+          borderBottom
+        >
+          {CURRENT_RUNTIME === 'letta-desktop' ? (
+            <MacCommandButtonsSpacer />
+          ) : (
+            <HStack
+              as="button"
+              onClick={() => {
+                closeToolManager();
+              }}
+              fullHeight
+              className="w-[51.5px]"
+              align="center"
+              justify="center"
+              borderRight
+              color="background-grey"
+            >
+              <LettaLogoIcon color="brand" />
+            </HStack>
+          )}
+          <HStack fullWidth justify="spaceBetween" align="center">
+            <div className="px-1 disable-app-header">
+              <Breadcrumb
+                size="xsmall"
+                items={[
+                  {
+                    onClick: () => {
+                      closeToolManager();
+                    },
+                    preIcon: isTemplate ? (
+                      <TemplateIcon />
+                    ) : (
+                      <LettaInvaderIcon />
+                    ),
+                    label: agentName,
+                  },
+                  {
+                    label: t('title'),
+                  },
+                ]}
+              />
+            </div>
+            <Button
+              postIcon={<CloseIcon />}
+              size="small"
+              _use_rarely_className="disable-app-header"
+              color="tertiary"
+              label={t('close')}
+              onClick={() => {
+                closeToolManager();
+              }}
+            />
+          </HStack>
+        </HStack>
+        <HStack gap={false} fullWidth fullHeight>
+          <HiddenOnMobile>
+            <ToolManagerNavigationSidebar />
+          </HiddenOnMobile>
+          <ToolManagerContent />
+        </HStack>
+      </VStack>
     </MiniApp>
   );
 }

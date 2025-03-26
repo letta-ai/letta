@@ -123,7 +123,7 @@ interface BreadcrumbItemWrapperProps {
   item: BreadcrumbItemType;
   variant?: Variants;
   isLast?: boolean;
-  size?: 'default' | 'small';
+  size?: 'default' | 'small' | 'xsmall';
 }
 
 function BreadcrumbItemWrapper(props: BreadcrumbItemWrapperProps) {
@@ -157,7 +157,7 @@ function BreadcrumbItemWrapper(props: BreadcrumbItemWrapperProps) {
 export interface BreadcrumbProps {
   items: BreadcrumbItemType[];
   variant?: Variants;
-  size?: 'default' | 'small';
+  size?: 'default' | 'small' | 'xsmall';
 }
 
 export function Breadcrumb({ items, size, variant }: BreadcrumbProps) {
