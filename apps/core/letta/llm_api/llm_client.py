@@ -44,5 +44,11 @@ class LLMClient:
                 return GoogleVertexClient(
                     agent_id=agent_id, llm_config=llm_config, put_inner_thoughts_first=put_inner_thoughts_first, actor_id=actor_id
                 )
+            case "anthropic":
+                from letta.llm_api.anthropic_client import AnthropicClient
+
+                return AnthropicClient(
+                    agent_id=agent_id, llm_config=llm_config, put_inner_thoughts_first=put_inner_thoughts_first, actor_id=actor_id
+                )
             case _:
                 return None
