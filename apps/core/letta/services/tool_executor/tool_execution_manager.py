@@ -15,6 +15,7 @@ from letta.services.tool_executor.tool_executor import (
     SandboxToolExecutor,
     ToolExecutor,
 )
+from letta.tracing import trace_method
 from letta.utils import get_friendly_error_msg
 
 
@@ -71,4 +72,30 @@ class ToolExecutionManager:
         except Exception as e:
             self.logger.error(f"Error executing tool {function_name}: {str(e)}")
             error_message = get_friendly_error_msg(function_name=function_name, exception_name=type(e).__name__, exception_message=str(e))
+            return error_message, SandboxRunResult(status="error")
+
+    @trace_method
+    async def execute_tool_async(self, function_name: str, function_args: dict, tool: Tool) -> Tuple[Any, Optional[SandboxRunResult]]:
+        """
+        Execute a tool asynchronously and persist any state changes.
+        """
+        try:
+            # Get the appropriate executor for this tool type
+            # TODO: Extend this async model to composio
+
+            if tool.tool_type == ToolType.CUSTOM:
+                executor = SandboxToolExecutor()
+                result_tuple = await executor.execute(function_name, function_args, self.agent_state, tool, self.actor)
+            else:
+                executor = ToolExecutorFactory.get_executor(tool.tool_type)
+                result_tuple = executor.execute(function_name, function_args, self.agent_state, tool, self.actor)
+            return result_tuple
+
+        except Exception as e:
+            self.logger.error(f"Error executing tool {function_name}: {str(e)}")
+            error_message = get_friendly_error_msg(
+                function_name=function_name,
+                exception_name=type(e).__name__,
+                exception_message=str(e),
+            )
             return error_message, SandboxRunResult(status="error")

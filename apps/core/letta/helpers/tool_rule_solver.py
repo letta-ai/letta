@@ -62,7 +62,7 @@ class ToolRulesSolver(BaseModel):
                 assert isinstance(rule, MaxCountPerStepToolRule)
                 self.child_based_tool_rules.append(rule)
 
-    def update_tool_usage(self, tool_name: str):
+    def register_tool_call(self, tool_name: str):
         """Update the internal state to track tool call history."""
         self.tool_call_history.append(tool_name)
 

@@ -19,6 +19,7 @@ from letta.log import get_logger
 from letta.orm.enums import ToolType
 from letta.schemas.agent import AgentState
 from letta.schemas.block import BlockUpdate
+from letta.schemas.letta_response import LettaResponse
 from letta.schemas.message import Message, MessageUpdate
 from letta.schemas.openai.chat_completion_request import (
     AssistantMessage,
@@ -92,10 +93,10 @@ class VoiceAgent(BaseAgent):
             agent_id=agent_id, openai_client=openai_client, message_manager=message_manager, agent_manager=agent_manager, actor=actor
         )
 
-    async def step(self, input_message: UserMessage) -> List[Message]:
+    async def step(self, input_message: UserMessage, max_steps: int = 10) -> LettaResponse:
         raise NotImplementedError("LowLatencyAgent does not have a synchronous step implemented currently.")
 
-    async def step_stream(self, input_message: UserMessage) -> AsyncGenerator[str, None]:
+    async def step_stream(self, input_message: UserMessage, max_steps: int = 10) -> AsyncGenerator[str, None]:
         """
         Main streaming loop that yields partial tokens.
         Whenever we detect a tool call, we yield from _handle_ai_response as well.
@@ -107,7 +108,7 @@ class VoiceAgent(BaseAgent):
         in_memory_message_history = [input_message]
 
         # TODO: Define max steps here
-        while True:
+        for _ in range(max_steps):
             # Rebuild memory each loop
             in_context_messages = self._rebuild_memory(in_context_messages, agent_state)
             openai_messages = convert_letta_messages_to_openai(in_context_messages)
