@@ -18,7 +18,7 @@ router = APIRouter(prefix="/blocks", tags=["blocks"])
 def list_blocks(
     # query parameters
     label: Optional[str] = Query(None, description="Labels to include (e.g. human, persona)"),
-    templates_only: bool = Query(True, description="Whether to include only templates"),
+    templates_only: bool = Query(False, description="Whether to include only templates"),
     name: Optional[str] = Query(None, description="Name of the block"),
     identity_id: Optional[str] = Query(None, description="Search agents by identifier id"),
     identifier_keys: Optional[List[str]] = Query(None, description="Search agents by identifier keys"),
