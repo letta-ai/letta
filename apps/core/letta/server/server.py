@@ -166,7 +166,7 @@ class SyncServer(Server):
     def __init__(
         self,
         chaining: bool = True,
-        max_chaining_steps: Optional[bool] = None,
+        max_chaining_steps: Optional[int] = 100,
         default_interface_factory: Callable[[], AgentInterface] = lambda: CLIInterface(),
         init_with_default_org_and_user: bool = True,
         # default_interface: AgentInterface = CLIInterface(),
