@@ -282,7 +282,7 @@
   },
   "engines": {
     "node": "22.14.0",
-    "npm": "10.8.2"
+    "npm": "10.9.2"
   },
   "overrides": {
     "cypress-dotenv": {

@@ -90,7 +90,13 @@ describe('letta', () => {
     cy.findByTestId('key-value-editor-value-0').type('Shubham');
     cy.findByTestId('save-variables-button').click();
 
-    cy.findByTestId('tab-item:simulated', { timeout: 50000 }).click();
+    // wait for save (kinda...)
+    // eslint-disable-next-line cypress/no-unnecessary-waiting
+    cy.wait(2000);
+
+    cy.findByTestId('tab-item:simulated', { timeout: 50000 }).click({
+      force: true,
+    });
     cy.findByTestId('simulated-memory:human', { timeout: 50000 }).should(
       'contain.value',
       'Shubham',

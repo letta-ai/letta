@@ -1,10 +1,9 @@
-const Sentry = require('@sentry/node');
-const { nodeProfilingIntegration } = require('@sentry/profiling-node');
+import * as Sentry from '@sentry/node';
 
 // Ensure to call this before importing any other modules!
 Sentry.init({
   dsn: 'https://1cdfe89576ddfb44d4d0fe8c957d32fd@o4507986077810688.ingest.us.sentry.io/4509018480246784',
-  integrations: [nodeProfilingIntegration()],
+  integrations: [],
 
   // Set profilesSampleRate to 1.0 to profile 100%
   // of sampled transactions.

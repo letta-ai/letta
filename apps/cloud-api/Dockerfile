@@ -47,4 +47,4 @@ USER nodeserver
 EXPOSE 8080
 ENV PORT=8080
 
-CMD ["node", "--require", "./instrument.js", "main.js"]
+CMD ["node", "main.js"]
