@@ -10,7 +10,7 @@ class OptimisticJSONParser:
     tries to tolerate incomplete strings and incomplete numbers.
     """
 
-    def __init__(self, strict=True):
+    def __init__(self, strict=False):
         self.strict = strict
         self.parsers = {
             " ": self.parse_space,
