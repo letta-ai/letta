@@ -302,10 +302,8 @@ class Agent(BaseAgent):
                 log_telemetry(self.logger, "_get_ai_reply create start")
                 # New LLM client flow
                 llm_client = LLMClient.create(
-                    agent_id=self.agent_state.id,
                     llm_config=self.agent_state.llm_config,
                     put_inner_thoughts_first=put_inner_thoughts_first,
-                    actor_id=self.agent_state.created_by_id,
                 )
 
                 if llm_client and not stream:

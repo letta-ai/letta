@@ -9,21 +9,17 @@ class LLMClient:
 
     @staticmethod
     def create(
-        agent_id: str,
         llm_config: LLMConfig,
         put_inner_thoughts_first: bool = True,
-        actor_id: Optional[str] = None,
     ) -> Optional[LLMClientBase]:
         """
         Create an LLM client based on the model endpoint type.
 
         Args:
-            agent_id: Unique identifier for the agent
             llm_config: Configuration for the LLM model
             put_inner_thoughts_first: Whether to put inner thoughts first in the response
             use_structured_output: Whether to use structured output
             use_tool_naming: Whether to use tool naming
-            actor_id: Optional actor identifier
 
         Returns:
             An instance of LLMClientBase subclass
@@ -36,19 +32,22 @@ class LLMClient:
                 from letta.llm_api.google_ai_client import GoogleAIClient
 
                 return GoogleAIClient(
-                    agent_id=agent_id, llm_config=llm_config, put_inner_thoughts_first=put_inner_thoughts_first, actor_id=actor_id
+                    llm_config=llm_config,
+                    put_inner_thoughts_first=put_inner_thoughts_first,
                 )
             case "google_vertex":
                 from letta.llm_api.google_vertex_client import GoogleVertexClient
 
                 return GoogleVertexClient(
-                    agent_id=agent_id, llm_config=llm_config, put_inner_thoughts_first=put_inner_thoughts_first, actor_id=actor_id
+                    llm_config=llm_config,
+                    put_inner_thoughts_first=put_inner_thoughts_first,
                 )
             case "anthropic":
                 from letta.llm_api.anthropic_client import AnthropicClient
 
                 return AnthropicClient(
-                    agent_id=agent_id, llm_config=llm_config, put_inner_thoughts_first=put_inner_thoughts_first, actor_id=actor_id
+                    llm_config=llm_config,
+                    put_inner_thoughts_first=put_inner_thoughts_first,
                 )
             case _:
                 return None
