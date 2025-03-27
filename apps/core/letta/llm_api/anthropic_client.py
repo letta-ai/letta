@@ -89,7 +89,7 @@ class AnthropicClient(LLMClientBase):
         # Add inner thoughts kwarg
         if len(tools_for_request) > 0 and self.llm_config.put_inner_thoughts_in_kwargs:
             tools_with_inner_thoughts = add_inner_thoughts_to_functions(
-                functions=[t.function for t in tools_for_request],
+                functions=[t.function.model_dump() for t in tools_for_request],
                 inner_thoughts_key=INNER_THOUGHTS_KWARG,
                 inner_thoughts_description=INNER_THOUGHTS_KWARG_DESCRIPTION,
             )
