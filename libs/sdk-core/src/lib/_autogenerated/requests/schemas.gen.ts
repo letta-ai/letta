@@ -375,7 +375,20 @@ export const $AgentSchema = {
     },
     tool_rules: {
       items: {
-        $ref: '#/components/schemas/ToolRuleSchema',
+        anyOf: [
+          {
+            $ref: '#/components/schemas/BaseToolRuleSchema',
+          },
+          {
+            $ref: '#/components/schemas/ChildToolRuleSchema',
+          },
+          {
+            $ref: '#/components/schemas/MaxCountPerStepToolRuleSchema',
+          },
+          {
+            $ref: '#/components/schemas/ConditionalToolRuleSchema',
+          },
+        ],
       },
       type: 'array',
       title: 'Tool Rules',
@@ -1160,6 +1173,22 @@ export const $AuthSchemeField = {
   description: 'Auth scheme field.',
 } as const;
 
+export const $BaseToolRuleSchema = {
+  properties: {
+    tool_name: {
+      type: 'string',
+      title: 'Tool Name',
+    },
+    type: {
+      type: 'string',
+      title: 'Type',
+    },
+  },
+  type: 'object',
+  required: ['tool_name', 'type'],
+  title: 'BaseToolRuleSchema',
+} as const;
+
 export const $Block = {
   properties: {
     value: {
@@ -1895,6 +1924,29 @@ export const $ChildToolRule = {
   required: ['tool_name', 'children'],
   title: 'ChildToolRule',
   description: 'A ToolRule represents a tool that can be invoked by the agent.',
+} as const;
+
+export const $ChildToolRuleSchema = {
+  properties: {
+    tool_name: {
+      type: 'string',
+      title: 'Tool Name',
+    },
+    type: {
+      type: 'string',
+      title: 'Type',
+    },
+    children: {
+      items: {
+        type: 'string',
+      },
+      type: 'array',
+      title: 'Children',
+    },
+  },
+  type: 'object',
+  required: ['tool_name', 'type', 'children'],
+  title: 'ChildToolRuleSchema',
 } as const;
 
 export const $CompletionCreateParamsNonStreaming = {
@@ -2739,6 +2791,50 @@ export const $ConditionalToolRule = {
   title: 'ConditionalToolRule',
   description:
     'A ToolRule that conditionally maps to different child tools based on the output.',
+} as const;
+
+export const $ConditionalToolRuleSchema = {
+  properties: {
+    tool_name: {
+      type: 'string',
+      title: 'Tool Name',
+    },
+    type: {
+      type: 'string',
+      title: 'Type',
+    },
+    default_child: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Default Child',
+    },
+    child_output_mapping: {
+      additionalProperties: {
+        type: 'string',
+      },
+      type: 'object',
+      title: 'Child Output Mapping',
+    },
+    require_output_mapping: {
+      type: 'boolean',
+      title: 'Require Output Mapping',
+    },
+  },
+  type: 'object',
+  required: [
+    'tool_name',
+    'type',
+    'default_child',
+    'child_output_mapping',
+    'require_output_mapping',
+  ],
+  title: 'ConditionalToolRuleSchema',
 } as const;
 
 export const $ContextWindowOverview = {
@@ -5224,6 +5320,26 @@ export const $MaxCountPerStepToolRule = {
   title: 'MaxCountPerStepToolRule',
   description:
     'Represents a tool rule configuration which constrains the total number of times this tool can be invoked in a single step.',
+} as const;
+
+export const $MaxCountPerStepToolRuleSchema = {
+  properties: {
+    tool_name: {
+      type: 'string',
+      title: 'Tool Name',
+    },
+    type: {
+      type: 'string',
+      title: 'Type',
+    },
+    max_count_limit: {
+      type: 'integer',
+      title: 'Max Count Limit',
+    },
+  },
+  type: 'object',
+  required: ['tool_name', 'type', 'max_count_limit'],
+  title: 'MaxCountPerStepToolRuleSchema',
 } as const;
 
 export const $Memory = {
@@ -8220,22 +8336,6 @@ Args:
     tool_call_id (str): A unique identifier for the tool call that generated this message
     stdout (Optional[List(str)]): Captured stdout (e.g. prints, logs) from the tool invocation
     stderr (Optional[List(str)]): Captured stderr from the tool invocation`,
-} as const;
-
-export const $ToolRuleSchema = {
-  properties: {
-    tool_name: {
-      type: 'string',
-      title: 'Tool Name',
-    },
-    type: {
-      type: 'string',
-      title: 'Type',
-    },
-  },
-  type: 'object',
-  required: ['tool_name', 'type'],
-  title: 'ToolRuleSchema',
 } as const;
 
 export const $ToolRunFromSource = {

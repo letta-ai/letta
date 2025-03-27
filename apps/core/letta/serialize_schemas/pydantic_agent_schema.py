@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Union
 
 from pydantic import BaseModel, Field
 
@@ -45,9 +45,29 @@ class ToolEnvVarSchema(BaseModel):
     value: str
 
 
-class ToolRuleSchema(BaseModel):
+# Tool rules
+
+
+class BaseToolRuleSchema(BaseModel):
     tool_name: str
     type: str
+
+
+class ChildToolRuleSchema(BaseToolRuleSchema):
+    children: List[str]
+
+
+class MaxCountPerStepToolRuleSchema(BaseToolRuleSchema):
+    max_count_limit: int
+
+
+class ConditionalToolRuleSchema(BaseToolRuleSchema):
+    default_child: Optional[str]
+    child_output_mapping: Dict[Any, str]
+    require_output_mapping: bool
+
+
+ToolRuleSchema = Union[BaseToolRuleSchema, ChildToolRuleSchema, MaxCountPerStepToolRuleSchema, ConditionalToolRuleSchema]
 
 
 class ParameterProperties(BaseModel):

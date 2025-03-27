@@ -363,10 +363,41 @@ export const ToolEnvVarSchema = z.object({
   value: z.string(),
 });
 
-export type ToolRuleSchema = z.infer<typeof ToolRuleSchema>;
-export const ToolRuleSchema = z.object({
+export type BaseToolRuleSchema = z.infer<typeof BaseToolRuleSchema>;
+export const BaseToolRuleSchema = z.object({
   tool_name: z.string(),
   type: z.string(),
+});
+
+export type ChildToolRuleSchema = z.infer<typeof ChildToolRuleSchema>;
+export const ChildToolRuleSchema = z.object({
+  tool_name: z.string(),
+  type: z.string(),
+  children: z.array(z.string()),
+});
+
+export type MaxCountPerStepToolRuleSchema = z.infer<
+  typeof MaxCountPerStepToolRuleSchema
+>;
+export const MaxCountPerStepToolRuleSchema = z.object({
+  tool_name: z.string(),
+  type: z.string(),
+  max_count_limit: z.number(),
+});
+
+export type ConditionalToolRuleSchema = z.infer<
+  typeof ConditionalToolRuleSchema
+>;
+export const ConditionalToolRuleSchema = z.object({
+  tool_name: z.string(),
+  type: z.string(),
+  default_child: z.union([
+    z.string(),
+    z.null(),
+    z.array(z.union([z.string(), z.null()])),
+  ]),
+  child_output_mapping: z.unknown(),
+  require_output_mapping: z.boolean(),
 });
 
 export type ParameterProperties = z.infer<typeof ParameterProperties>;
@@ -481,7 +512,22 @@ export const AgentSchema = z.object({
   system: z.string(),
   tags: z.array(TagSchema),
   tool_exec_environment_variables: z.array(ToolEnvVarSchema),
-  tool_rules: z.array(ToolRuleSchema),
+  tool_rules: z.array(
+    z.union([
+      BaseToolRuleSchema,
+      ChildToolRuleSchema,
+      MaxCountPerStepToolRuleSchema,
+      ConditionalToolRuleSchema,
+      z.array(
+        z.union([
+          BaseToolRuleSchema,
+          ChildToolRuleSchema,
+          MaxCountPerStepToolRuleSchema,
+          ConditionalToolRuleSchema,
+        ]),
+      ),
+    ]),
+  ),
   tools: z.array(ToolSchema),
   updated_at: z.string(),
   version: z.string(),

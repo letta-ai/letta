@@ -32,6 +32,7 @@ class MarshmallowAgentSchema(BaseSchema):
 
     llm_config = LLMConfigField()
     embedding_config = EmbeddingConfigField()
+
     tool_rules = ToolRulesField()
 
     messages = fields.List(fields.Nested(SerializedMessageSchema))

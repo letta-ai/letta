@@ -104,7 +104,12 @@ export type AgentSchema = {
   system: string;
   tags: Array<TagSchema>;
   tool_exec_environment_variables: Array<ToolEnvVarSchema>;
-  tool_rules: Array<ToolRuleSchema>;
+  tool_rules: Array<
+    | BaseToolRuleSchema
+    | ChildToolRuleSchema
+    | MaxCountPerStepToolRuleSchema
+    | ConditionalToolRuleSchema
+  >;
   tools: Array<ToolSchema>;
   updated_at: string;
   version: string;
@@ -372,6 +377,11 @@ export type AuthSchemeField = {
   get_current_user_endpoint?: string | null;
 };
 
+export type BaseToolRuleSchema = {
+  tool_name: string;
+  type: string;
+};
+
 /**
  * A Block represents a reserved section of the LLM's context window which is editable. `Block` objects contained in the `Memory` object, which is able to edit the Block values.
  *
@@ -628,6 +638,12 @@ export type ChildToolRule = {
   children: Array<string>;
 };
 
+export type ChildToolRuleSchema = {
+  tool_name: string;
+  type: string;
+  children: Array<string>;
+};
+
 export type CompletionCreateParamsNonStreaming = {
   messages: Array<
     | ChatCompletionDeveloperMessageParam
@@ -843,6 +859,16 @@ export type ConditionalToolRule = {
    * Whether to throw an error when output doesn't match any case
    */
   require_output_mapping?: boolean;
+};
+
+export type ConditionalToolRuleSchema = {
+  tool_name: string;
+  type: string;
+  default_child: string | null;
+  child_output_mapping: {
+    [key: string]: string;
+  };
+  require_output_mapping: boolean;
 };
 
 /**
@@ -1918,6 +1944,12 @@ export type MaxCountPerStepToolRule = {
   /**
    * The max limit for the total number of times this tool can be invoked in a single step.
    */
+  max_count_limit: number;
+};
+
+export type MaxCountPerStepToolRuleSchema = {
+  tool_name: string;
+  type: string;
   max_count_limit: number;
 };
 
@@ -3093,11 +3125,6 @@ export type ToolReturnMessage = {
   tool_call_id: string;
   stdout?: Array<string> | null;
   stderr?: Array<string> | null;
-};
-
-export type ToolRuleSchema = {
-  tool_name: string;
-  type: string;
 };
 
 export type ToolRunFromSource = {
