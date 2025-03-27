@@ -206,3 +206,5 @@ export * from './lib/framing/DynamicStack/DynamicStack';
 export * from './lib/reusable/VersionHistory/VersionHistory';
 
 export * from './lib/core/RadioDot/RadioDot';
+
+export * from './lib/reusable/InteractiveSystemMessage/InteractiveSystemMessage';

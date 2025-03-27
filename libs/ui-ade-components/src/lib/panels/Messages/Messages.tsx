@@ -27,6 +27,7 @@ import {
   BlockQuote,
   InnerMonologueIcon,
   AnthropicLogoMarkDynamic,
+  InteractiveSystemMessage,
 } from '@letta-cloud/ui-component-library';
 import type {
   AgentMessage,
@@ -330,6 +331,23 @@ export function Messages(props: MessagesProps) {
       }
 
       switch (agentMessage.message_type) {
+        case 'system_message':
+          if (mode === 'simple') {
+            return null;
+          }
+
+          return {
+            id: `${agentMessage.id}-${agentMessage.message_type}`,
+            name: 'System',
+            timestamp: new Date(agentMessage.date).toISOString(),
+            content: (
+              <InteractiveSystemMessage
+                id={agentMessage.id}
+                message={agentMessage.content}
+              />
+            ),
+          };
+
         case 'tool_return_message':
           if (mode === 'simple') {
             return null;

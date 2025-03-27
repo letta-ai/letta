@@ -499,6 +499,11 @@
   "ui-component-library/hooks/useCopyToClipboard": {
     "copied": "Copied to clipboard"
   },
+  "ui-component-library/InteractiveSystemMessage": {
+    "title": "System Message",
+    "truncated": "This message is too long to display, click here to view the full message",
+    "collapse": "Collapse"
+  },
   "ui-component-library/KeyValueEditor": {
     "addVariable": "Add variable",
     "removeVariable": "Remove variable"
