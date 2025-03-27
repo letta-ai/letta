@@ -592,3 +592,60 @@ def test_agent_creation(client: LettaSDKClient):
     assert len(agent_tools) == 2
     tool_ids = {tool1.id, tool2.id}
     assert all(tool.id in tool_ids for tool in agent_tools)
+
+
+def test_many_blocks(client: LettaSDKClient):
+    users = ["user1", "user2"]
+    # Create agent with the blocks
+    agent1 = client.agents.create(
+        name=f"test_agent_{str(uuid.uuid4())}",
+        memory_blocks=[
+            CreateBlock(
+                label="user1",
+                value="user preferences: loud",
+            ),
+            CreateBlock(
+                label="user2",
+                value="user preferences: happy",
+            ),
+        ],
+        model="openai/gpt-4o-mini",
+        embedding="openai/text-embedding-ada-002",
+        include_base_tools=False,
+        tags=["test"],
+    )
+    agent2 = client.agents.create(
+        name=f"test_agent_{str(uuid.uuid4())}",
+        memory_blocks=[
+            CreateBlock(
+                label="user1",
+                value="user preferences: sneezy",
+            ),
+            CreateBlock(
+                label="user2",
+                value="user preferences: lively",
+            ),
+        ],
+        model="openai/gpt-4o-mini",
+        embedding="openai/text-embedding-ada-002",
+        include_base_tools=False,
+        tags=["test"],
+    )
+
+    # Verify the agent was created successfully
+    assert agent1 is not None
+    assert agent2 is not None
+
+    # Verify all memory blocks are properly attached
+    for user in users:
+        agent_block = client.agents.blocks.retrieve(agent_id=agent1.id, block_label=user)
+        assert agent_block is not None
+
+        blocks = client.blocks.list(label=user)
+        assert len(blocks) == 2
+
+        for block in blocks:
+            client.blocks.delete(block.id)
+
+    client.agents.delete(agent1.id)
+    client.agents.delete(agent2.id)

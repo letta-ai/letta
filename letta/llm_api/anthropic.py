@@ -352,7 +352,7 @@ def convert_anthropic_response_to_chatcompletion(
     redacted_reasoning_content = None
     tool_calls = None
 
-    if len(response.content) > 1:
+    if len(response.content) > 0:
         for content_part in response.content:
             if content_part.type == "text":
                 content = strip_xml_tags(string=content_part.text, tag=inner_thoughts_xml_tag)
@@ -743,6 +743,8 @@ def anthropic_chat_completions_request(
         anthropic_client = anthropic.Anthropic(api_key=anthropic_override_key)
     elif model_settings.anthropic_api_key:
         anthropic_client = anthropic.Anthropic()
+    else:
+        raise ValueError("No available Anthropic API key")
     data = _prepare_anthropic_request(
         data=data,
         inner_thoughts_xml_tag=inner_thoughts_xml_tag,

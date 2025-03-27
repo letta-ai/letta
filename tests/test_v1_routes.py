@@ -364,7 +364,7 @@ def test_list_blocks(client, mock_sync_server):
     Test the GET /v1/blocks endpoint to list blocks.
     """
     # Arrange: mock return from block_manager
-    mock_block = Block(label="human", value="Hi", is_template=True)
+    mock_block = Block(label="human", value="Hi")
     mock_sync_server.block_manager.get_blocks.return_value = [mock_block]
 
     # Act
@@ -378,7 +378,7 @@ def test_list_blocks(client, mock_sync_server):
     mock_sync_server.block_manager.get_blocks.assert_called_once_with(
         actor=mock_sync_server.user_manager.get_user_or_default.return_value,
         label=None,
-        is_template=True,
+        is_template=False,
         template_name=None,
         identity_id=None,
         identifier_keys=None,

@@ -760,6 +760,7 @@ class Agent(BaseAgent):
                 break
 
         if self.agent_state.message_buffer_autoclear:
+            self.logger.info("Autoclearing message buffer")
             self.agent_state = self.agent_manager.trim_all_in_context_messages_except_system(self.agent_state.id, actor=self.user)
 
         return LettaUsageStatistics(**total_usage.model_dump(), step_count=step_count, steps_messages=steps_messages)
@@ -933,8 +934,6 @@ class Agent(BaseAgent):
                         f"step() failed with an exception that looks like a context window overflow, but message buffer is set to autoclear, so skipping: '{str(e)}'"
                     )
                     raise e
-
-                summarize_attempt_count += 1
 
                 if summarize_attempt_count <= summarizer_settings.max_summarizer_retries:
                     logger.warning(

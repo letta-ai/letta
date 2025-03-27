@@ -35,7 +35,7 @@ from letta.log import get_logger
 from letta.offline_memory_agent import OfflineMemoryAgent
 from letta.orm.errors import NoResultFound
 from letta.round_robin_multi_agent import RoundRobinMultiAgent
-from letta.schemas.agent import AgentState, AgentType, CreateAgent
+from letta.schemas.agent import AgentState, AgentType, CreateAgent, UpdateAgent
 from letta.schemas.block import BlockUpdate
 from letta.schemas.embedding_config import EmbeddingConfig
 
@@ -166,7 +166,7 @@ class SyncServer(Server):
     def __init__(
         self,
         chaining: bool = True,
-        max_chaining_steps: Optional[bool] = None,
+        max_chaining_steps: Optional[int] = 100,
         default_interface_factory: Callable[[], AgentInterface] = lambda: CLIInterface(),
         init_with_default_org_and_user: bool = True,
         # default_interface: AgentInterface = CLIInterface(),
@@ -768,6 +768,25 @@ class SyncServer(Server):
             actor=actor,
         )
 
+    def update_agent(
+        self,
+        agent_id: str,
+        request: UpdateAgent,
+        actor: User,
+    ) -> AgentState:
+        if request.model is not None:
+            request.llm_config = self.get_llm_config_from_handle(handle=request.model)
+
+        if request.embedding is not None:
+            request.embedding_config = self.get_embedding_config_from_handle(handle=request.embedding)
+
+        # Invoke manager
+        return self.agent_manager.update_agent(
+            agent_id=agent_id,
+            agent_update=request,
+            actor=actor,
+        )
+
     # convert name->id
 
     # TODO: These can be moved to agent_manager
@@ -1041,9 +1060,6 @@ class SyncServer(Server):
 
         llm_models.extend(self.get_local_llm_configs())
 
-        # respect global maximum
-        for llm_config in llm_models:
-            llm_config.context_window = min(llm_config.context_window, model_settings.global_max_context_window_limit)
         return llm_models
 
     def list_embedding_models(self) -> List[EmbeddingConfig]:

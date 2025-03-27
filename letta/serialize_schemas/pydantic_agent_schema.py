@@ -10,8 +10,6 @@ from letta.schemas.llm_config import LLMConfig
 class CoreMemoryBlockSchema(BaseModel):
     created_at: str
     description: Optional[str]
-    identities: List[Any]
-    is_deleted: bool
     is_template: bool
     label: str
     limit: int
@@ -42,7 +40,6 @@ class TagSchema(BaseModel):
 class ToolEnvVarSchema(BaseModel):
     created_at: str
     description: Optional[str]
-    is_deleted: bool
     key: str
     updated_at: str
     value: str
@@ -76,7 +73,6 @@ class ToolSchema(BaseModel):
     args_json_schema: Optional[Any]
     created_at: str
     description: str
-    is_deleted: bool
     json_schema: ToolJSONSchema
     name: str
     return_char_limit: int
@@ -94,9 +90,6 @@ class AgentSchema(BaseModel):
     created_at: str
     description: Optional[str]
     embedding_config: EmbeddingConfig
-    groups: List[Any]
-    identities: List[Any]
-    is_deleted: bool
     llm_config: LLMConfig
     message_buffer_autoclear: bool
     messages: List[MessageSchema]

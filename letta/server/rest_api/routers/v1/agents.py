@@ -215,7 +215,7 @@ def modify_agent(
 ):
     """Update an existing agent"""
     actor = server.user_manager.get_user_or_default(user_id=actor_id)
-    return server.agent_manager.update_agent(agent_id=agent_id, agent_update=update_agent, actor=actor)
+    return server.update_agent(agent_id=agent_id, request=update_agent, actor=actor)
 
 
 @router.get("/{agent_id}/tools", response_model=List[Tool], operation_id="list_agent_tools")
@@ -661,7 +661,7 @@ async def process_message_background(
         job_update = JobUpdate(
             status=JobStatus.completed,
             completed_at=datetime.utcnow(),
-            metadata={"result": result.model_dump()},  # Store the result in metadata
+            metadata={"result": result.model_dump(mode="json")},  # Store the result in metadata
         )
         server.job_manager.update_job_by_id(job_id=job_id, job_update=job_update, actor=actor)
 
