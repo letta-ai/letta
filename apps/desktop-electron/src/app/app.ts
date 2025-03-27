@@ -5,7 +5,7 @@ import { join } from 'path';
 import { format } from 'url';
 import * as electron from 'electron';
 import * as fs from 'fs';
-import { execFile } from 'child_process';
+import { execFile, execFileSync } from 'child_process';
 import * as path from 'path';
 import type { ServerLogType } from '@letta-cloud/types';
 import * as todesktop from '@todesktop/runtime';
@@ -14,6 +14,7 @@ import { createWebServer, setServerId } from './web-server';
 import { getDesktopConfig } from './utils/desktop-config/desktop-config';
 todesktop.init();
 
+let postgresProcess: ReturnType<typeof execFile> | null = null;
 let lettaServer: ReturnType<typeof execFile> | null = null;
 
 class ServerLogs {
@@ -229,7 +230,7 @@ export default class App {
 
     lettaServerLogs.addLog({
       type: 'info',
-      message: 'Starting Letta server...',
+      message: 'Starting Letta Server...',
       timestamp: new Date().toISOString(),
     });
 
@@ -290,6 +291,202 @@ export default class App {
     }
   }
 
+  // NOTE: hardcoding for local dev testing
+  // If using postgres17:
+  //const postgresBinPath = '/opt/homebrew/opt/postgresql@17/bin/postgres';
+  //const initdbPath = '/opt/homebrew/opt/postgresql@17/bin/initdb';
+  // If using postgres16:
+  // NOTE: embedded pgserver was postgres16, so this matches better (no migration needed)
+  // const postgresBinPath = '/opt/homebrew/opt/postgresql@16/bin/postgres';
+  // const initdbPath = '/opt/homebrew/opt/postgresql@16/bin/initdb';
+  static async startPostgres() {
+    console.log(`[postgres] Platform: ${process.platform}`);
+
+    // Determine which PostgreSQL directory to use based on platform
+    const postgresDir =
+      process.platform === 'win32' ? 'postgres-16-windows-x64' : 'postgres-16';
+    const exeExt = process.platform === 'win32' ? '.exe' : '';
+    const pgPort = process.platform === 'win32' ? '54321' : '5433'; // Use higher port on Windows
+
+    let basePath;
+    if (!App.application.isPackaged) {
+      // In development, use our custom resources folder.
+      basePath = path.join(__dirname, '..', 'resources');
+    } else {
+      // In packaged mode, assume our custom resources were unpacked into app.asar.unpacked/resources.
+      const unpacked = path.join(
+        process.resourcesPath,
+        'app.asar.unpacked',
+        'resources',
+      );
+      if (fs.existsSync(unpacked)) {
+        basePath = unpacked;
+      } else {
+        basePath = process.resourcesPath || __dirname;
+      }
+      // Copy the postgres-16 folder from the unpacked resources to an external location
+      const targetBinDir = path.join(
+        os.homedir(),
+        '.letta',
+        'desktop_bin',
+        postgresDir,
+      );
+      if (fs.existsSync(targetBinDir)) {
+        console.log(
+          `[postgres] Removing existing desktop_bin at ${targetBinDir}`,
+        );
+        fs.rmSync(targetBinDir, { recursive: true, force: true });
+      }
+      console.log(
+        `[postgres] Copying postgres binaries from ${join(basePath, postgresDir)} to ${targetBinDir}`,
+      );
+      fs.cpSync(join(basePath, postgresDir), targetBinDir, {
+        recursive: true,
+      });
+      // Update basePath so that binaries are run from the external location.
+      basePath = path.join(os.homedir(), '.letta', 'desktop_bin');
+    }
+
+    const postgresBinPath = join(
+      basePath,
+      postgresDir,
+      'bin',
+      `postgres${exeExt}`,
+    );
+    const initdbPath = join(basePath, postgresDir, 'bin', `initdb${exeExt}`);
+    const dataDir = path.join(os.homedir(), '.letta', 'desktop_data');
+
+    console.log(`[postgres] process.resourcesPath: ${process.resourcesPath}`);
+    console.log(`[postgres] __dirname: ${__dirname}`);
+    console.log(`[postgres] Base path: ${basePath}`);
+    console.log(
+      `[postgres] Contents of base path:`,
+      fs.existsSync(basePath) ? fs.readdirSync(basePath) : 'not found',
+    );
+    console.log(`[postgres] BIN path: ${postgresBinPath}`);
+    console.log(`[postgres] INITDB path: ${initdbPath}`);
+    console.log(`[postgres] DATA dir: ${dataDir}`);
+    console.log(`[postgres] Environment PATH: ${process.env.PATH}`);
+
+    if (!fs.existsSync(postgresBinPath)) {
+      console.error(
+        `[postgres] ERROR: postgres binary not found at ${postgresBinPath}`,
+      );
+    }
+    if (!fs.existsSync(initdbPath)) {
+      console.error(
+        `[postgres] ERROR: initdb binary not found at ${initdbPath}`,
+      );
+    }
+
+    try {
+      if (!fs.existsSync(dataDir)) {
+        fs.mkdirSync(dataDir, { recursive: true });
+      }
+      if (!fs.existsSync(path.join(dataDir, 'PG_VERSION'))) {
+        console.log('[postgres] Running initdb...');
+        try {
+          execFileSync(initdbPath, ['-D', dataDir, '-U', 'postgres']);
+        } catch (err) {
+          console.error('[postgres] initdb error:', err);
+          throw err;
+        }
+      }
+
+      // Platform-specific environment setup
+      let spawnEnv;
+
+      if (process.platform === 'win32') {
+        // Windows environment setup - add lib directory to PATH
+        const libPath = join(
+          os.homedir(),
+          '.letta',
+          'desktop_bin',
+          postgresDir,
+          'lib',
+        );
+        spawnEnv = {
+          PATH: `${libPath};${process.env.PATH || ''}`,
+          HOME: process.env.HOME || os.homedir(),
+          LC_ALL: 'en_US.UTF-8',
+        };
+      } else {
+        // macOS environment setup - set DYLD_LIBRARY_PATH
+        const libPath = join(
+          os.homedir(),
+          '.letta',
+          'desktop_bin',
+          postgresDir,
+          'lib',
+        );
+
+        spawnEnv = {
+          PATH: '/usr/local/bin:/usr/bin:/bin',
+          DYLD_LIBRARY_PATH: libPath,
+          HOME: process.env.HOME || os.homedir(),
+          LC_ALL: 'en_US.UTF-8',
+        };
+      }
+
+      // Prepare a robust spawn environment.
+      // A minimal spawn environment tested on MacOS
+      // NOTE: on MacOS 14.4, everything actually works even just with only { LC_ALL: ... }
+      // const spawnEnv = {
+      //   PATH: '/usr/local/bin:/usr/bin:/bin',
+      //   DYLD_LIBRARY_PATH: join(os.homedir(), '.letta', 'desktop_bin', 'postgres-16', 'lib'),
+      //   HOME: process.env.HOME || os.homedir(),
+      //   LC_ALL: 'en_US.UTF-8'
+      // };
+      // A more generous spawn environment
+      // const spawnEnv = Object.assign({}, process.env, {
+      //   PATH: process.env.PATH || '/usr/local/bin:/usr/bin:/bin',
+      //   DYLD_LIBRARY_PATH:
+      //     process.env.DYLD_LIBRARY_PATH ||
+      //     join(os.homedir(), '.letta', 'desktop_bin', 'postgres-16', 'lib'),
+      //   HOME: process.env.HOME || os.homedir(),
+      //   LC_ALL: process.env.LC_ALL || 'en_US.UTF-8',
+      // });
+      console.log(`[postgres] Using spawn environment:`, spawnEnv);
+
+      // Launch the Postgres process with the explicit environment.
+      postgresProcess = execFile(
+        postgresBinPath,
+        ['-D', dataDir, '-p', pgPort],
+        { env: spawnEnv },
+      );
+
+      postgresProcess.stdout?.on('data', (data) => {
+        console.log(`[postgres] ${data}`);
+      });
+
+      postgresProcess.stderr?.on('data', (data) => {
+        console.error(`[postgres error] ${data}`);
+      });
+
+      postgresProcess.on('close', (code) => {
+        console.log(`Postgres exited with code ${code}`);
+      });
+
+      const uriPath = join(os.homedir(), '.letta', 'pg_uri');
+      const uri = `postgresql://postgres@localhost:${pgPort}/postgres`;
+      fs.writeFileSync(uriPath, uri);
+    } catch (err) {
+      console.error('Failed to start Postgres:', err);
+      electron.dialog.showErrorBox(
+        'Startup Error',
+        `Failed to launch Postgres at ${postgresBinPath}. Please check logs.`,
+      );
+      App.application.quit();
+    }
+  }
+
+  static async stopPostgres() {
+    if (postgresProcess) {
+      postgresProcess.kill();
+      postgresProcess = null;
+    }
+  }
+
   private static async onReady() {
     // This method will be called when Electron has finished
     // initialization and is ready to create browser windows.
@@ -297,6 +494,10 @@ export default class App {
     if (rendererAppName) {
       await App.killLettaServer();
 
+      // First start postgres (blocking)
+      await App.startPostgres();
+
+      // Then start the Letta Server
       App.startLettaServer();
       createWebServer();
 
@@ -433,6 +634,7 @@ export default class App {
     electron.app.once('window-all-closed', electron.app.quit);
     electron.app.once('before-quit', async () => {
       await App.killLettaServer();
+      await App.stopPostgres();
     });
     App.application.on('window-all-closed', App.onWindowAllClosed); // Quit when all windows are closed.
     App.application.on('ready', App.onReady); // App is ready to load data

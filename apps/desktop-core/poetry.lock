@@ -171,13 +171,13 @@ files = [
 
 [[package]]
 name = "anthropic"
-version = "0.43.1"
+version = "0.49.0"
 description = "The official Python library for the anthropic API"
 optional = false
 python-versions = ">=3.8"
 files = [
-    {file = "anthropic-0.43.1-py3-none-any.whl", hash = "sha256:20759c25cd0f4072eb966b0180a41c061c156473bbb674da6a3f1e92e1ad78f8"},
-    {file = "anthropic-0.43.1.tar.gz", hash = "sha256:c7f13e4b7b515ac4a3111142310b214527c0fc561485e5bc9b582e49fe3adba2"},
+    {file = "anthropic-0.49.0-py3-none-any.whl", hash = "sha256:bbc17ad4e7094988d2fa86b87753ded8dce12498f4b85fe5810f208f454a8375"},
+    {file = "anthropic-0.49.0.tar.gz", hash = "sha256:c09e885b0f674b9119b4f296d8508907f6cff0009bc20d5cf6b35936c40b4398"},
 ]
 
 [package.dependencies]
@@ -1039,16 +1039,6 @@ python-versions = ">=3.6,<4.0"
 files = [
     {file = "docstring_parser-0.16-py3-none-any.whl", hash = "sha256:bf0a1387354d3691d102edef7ec124f219ef639982d096e26e3b60aeffa90637"},
     {file = "docstring_parser-0.16.tar.gz", hash = "sha256:538beabd0af1e2db0146b6bd3caa526c35a34d61af9fd2887f3a8a27a739aa6e"},
-]
-
-[[package]]
-name = "docx2txt"
-version = "0.8"
-description = "A pure python-based utility to extract text and images from docx files."
-optional = false
-python-versions = "*"
-files = [
-    {file = "docx2txt-0.8.tar.gz", hash = "sha256:2c06d98d7cfe2d3947e5760a57d924e3ff07745b379c8737723922e7009236e5"},
 ]
 
 [[package]]
@@ -2255,7 +2245,7 @@ pytest = ["pytest (>=7.0.0)", "rich (>=13.9.4,<14.0.0)"]
 
 [[package]]
 name = "letta"
-version = "0.6.42"
+version = "0.6.44"
 description = "Create LLM agents with long-term memory and custom tools"
 optional = false
 python-versions = "<3.14,>=3.10"
@@ -2264,7 +2254,7 @@ develop = false
 
 [package.dependencies]
 alembic = "^1.13.3"
-anthropic = "^0.43.0"
+anthropic = "^0.49.0"
 brotli = "^1.1.0"
 colorama = "^0.4.6"
 composio-core = "^0.7.7"
@@ -2273,7 +2263,6 @@ datamodel-code-generator = {version = "^0.25.0", extras = ["http"]}
 demjson3 = "^3.0.6"
 docker = {version = "^7.1.0", optional = true}
 docstring-parser = ">=0.16,<0.17"
-docx2txt = "^0.8"
 faker = "^36.1.0"
 fastapi = {version = "^0.115.6", optional = true}
 grpcio = "^1.68.1"
@@ -6040,4 +6029,4 @@ cffi = ["cffi (>=1.11)"]
 [metadata]
 lock-version = "2.0"
 python-versions = "<3.14,>=3.10"
-content-hash = "fd2fe437268c1b23a789108aa21f843474d80baadbbbfb2327df2f135b4bf3d0"
+content-hash = "d378e063a0c5f796c4e01c9cd3b23b68d01d025567e823ec2c5baec4601f5cf0"

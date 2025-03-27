@@ -391,9 +391,69 @@ desktop:
     @echo "🚧 Starting up the desktop app..."
     npm run desktop:dev
 
-prepare-desktop:
-    @echo "🚧 Preparing the desktop app..."
-    node scripts/desktop-builders/src/generators/build-python-app/build-python-app.js  --rebuildDependencies
+clean-desktop-resources:
+    # TODO move the cleaning here / wiping here
+    # And in download-postgres-binaries, only download if they don't exist already
+    @echo "Cleaning existing bundled Postgres folder..."
+
+download-postgres-binaries-macos:
+    # Download the postgres binaries (MacOS) and place them into the resources directory
+    @echo "Cleaning existing bundled Postgres folder..."
+    @rm -rf $(git rev-parse --show-toplevel)/apps/desktop-electron/resources/postgres-16
+    @mkdir -p $(git rev-parse --show-toplevel)/apps/desktop-electron/resources/postgres-16
+    @echo "Downloading binaries into folder..."
+    ./scripts/desktop-builders/download-postgres.sh $(git rev-parse --show-toplevel)/apps/desktop-electron/resources/postgres-16
+    # Remove "pgAdmin 4.app" if it exists, costs ~700M
+    @rm -rf $(git rev-parse --show-toplevel)/apps/desktop-electron/resources/postgres-16/"pgAdmin 4.app"
+
+download-postgres-binaries-windows-sh:
+    # Download the postgres binaries (Windows x64) and place them into the resources directory
+    @echo "Cleaning existing bundled Postgres folder..."
+    @rm -rf $(git rev-parse --show-toplevel)/apps/desktop-electron/resources/postgres-16-windows-x64
+    @mkdir -p $(git rev-parse --show-toplevel)/apps/desktop-electron/resources/postgres-16-windows-x64
+    @echo "Downloading binaries into folder..."
+    ./scripts/desktop-builders/download-postgres-windows.sh $(git rev-parse --show-toplevel)/apps/desktop-electron/resources/postgres-16-windows-x64
+    # Remove "pgAdmin 4.app" if it exists, costs ~700M
+    @rm -rf $(git rev-parse --show-toplevel)/apps/desktop-electron/resources/postgres-16-windows-x64/"pgAdmin 4"
+
+download-postgres-binaries-windows:
+    # Download the postgres binaries (Windows x64) and place them into the resources directory
+    @echo "Cleaning existing bundled Postgres folder..."
+    @if [ -d "$(git rev-parse --show-toplevel)/apps/desktop-electron/resources/postgres-16-windows-x64" ]; then rm -rf "$(git rev-parse --show-toplevel)/apps/desktop-electron/resources/postgres-16-windows-x64"; fi
+    @mkdir -p "$(git rev-parse --show-toplevel)/apps/desktop-electron/resources/postgres-16-windows-x64"
+    @echo "Downloading binaries into folder..."
+    @./scripts/desktop-builders/download-postgres-windows.sh "$(git rev-parse --show-toplevel)/apps/desktop-electron/resources/postgres-16-windows-x64"
+    # Remove pgAdmin if it exists
+    @if [ -d "$(git rev-parse --show-toplevel)/apps/desktop-electron/resources/postgres-16-windows-x64/pgAdmin 4" ]; then rm -rf "$(git rev-parse --show-toplevel)/apps/desktop-electron/resources/postgres-16-windows-x64/pgAdmin 4"; fi
+
+build-pgvector-macos:
+    @echo "Building pgvector extension (v0.8.0) for portability..."
+    ./scripts/desktop-builders/build-pgvector.sh
+
+# Modified version of the build-pgvector-windows recipe that passes VS_PATH
+build-pgvector-windows:
+    @echo "Building pgvector extension (v0.8.0) for portability..."
+    @if [[ -n "${VS_PATH}" ]]; then \
+        echo "Using Visual Studio at: ${VS_PATH}"; \
+        export VS_PATH="${VS_PATH}"; \
+    fi
+    @cmd /c "scripts\desktop-builders\build-pgvector-windows.bat $(git rev-parse --show-toplevel)/apps/desktop-electron/resources/postgres-16-windows-x64"
+
+rebuild-deps:
+    # Rebuild Node/JS dependencies.
+    @echo "Rebuilding dependencies..."
+    @node scripts/desktop-builders/src/generators/build-python-app/build-python-app.js --rebuildDependencies
+
+prepare-desktop-postgres-windows: download-postgres-binaries-windows build-pgvector-windows
+    @echo "Downloaded and prepared Windows postgres+pgvector binaries"
+
+prepare-desktop-postgres-macos: download-postgres-binaries-macos build-pgvector-macos
+    @echo "Downloaded and prepared MacOS postgres+pgvector binaries"
+
+# TODO split out into two different builds, one for Mac, one for Windows
+prepare-desktop: rebuild-deps
+    # The master target that runs all steps sequentially.
+    @echo "Desktop app prepared (prod copies)."
 
 build-desktop:
     @echo "Packaging the desktop app..."
@@ -401,7 +461,7 @@ build-desktop:
 
 package-desktop:
     @echo "Packaging the desktop app..."
-    npx nx package desktop-electron
+    npx nx package desktop-electron --verbose
 
 release-desktop:
     @echo "Packaging the desktop app..."

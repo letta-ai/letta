@@ -1,9 +1,9 @@
 {
   "id": "250121l7z0c6n",
   "icon": "dist/assets/icon.png",
-  "appFiles": ["dist/**/*", "scripts/before-build.js"],
+  "appFiles": ["dist/**/*", "scripts/before-build.js", "resources/**"],
   "appPath": ".",
-  "uploadSizeLimit": 360,
+  "uploadSizeLimit": 900,
   "schemaVersion": 1,
   "nodeVersion": "22.11.0",
   "copyright": "Copyright © 2025 Letta",
@@ -16,6 +16,11 @@
       "name": "AgentFile",
       "mimeType": "application/json"
     }
+  ],
+  "asar": true,
+  "asarUnpack": [
+    "resources/postgres-16/**",
+    "resources/postgres-16-windows-x64/**"
   ],
   "dmg": {
     "background": "dist/assets/background.tiff",
@@ -36,6 +41,6 @@
     }
   },
   "windows": {
-    "publisherName": ["Letta AI"]
+    "publisherName": ["Letta"]
   }
 }

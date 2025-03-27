@@ -6,6 +6,7 @@ import sys
 import threading
 import asyncio
 import uvicorn
+import urllib.parse
 import requests
 import time
 from argparse import ArgumentParser
@@ -18,7 +19,7 @@ Path(dotenv_path).parent.mkdir(parents=True, exist_ok=True)
 Path(dotenv_path).touch(exist_ok=True)
 load_dotenv(dotenv_path)
 
-import pgserver
+# import pgserver
 import pg8000  # noqa
 from tiktoken_ext import openai_public  # noqa
 import tiktoken_ext  # noqa
@@ -34,90 +35,80 @@ import json
 
 print("Initializing Letta Desktop Service...")
 
+
 def get_desktop_config():
-  # Desktop config is a json located at ~/.letta/desktop_config.json
+    # Desktop config is a json located at ~/.letta/desktop_config.json
 
-  desktop_config_path = letta_dir / "desktop_config.json"
+    desktop_config_path = letta_dir / "desktop_config.json"
 
-  if not desktop_config_path.exists():
-    return {}
+    if not desktop_config_path.exists():
+        return {}
 
-  with open(desktop_config_path, "r") as f:
-    return json.load(f)
-
-
-def get_app_global_path():
-    if getattr(sys, "frozen", False):
-        return os.path.dirname(sys.executable)
-    elif __file__:
-        return os.path.dirname(__file__)
-
-
-def wait_for_psql(database, timeout=30, delay=1):
-    """Wait until the psql connection is available by repeatedly issuing a trivial query."""
-    start_time = time.time()
-    while True:
-        try:
-            database.psql("SELECT 1")
-            print("Postgres connection is ready.")
-            return
-        except Exception as e:
-            if time.time() - start_time > timeout:
-                raise TimeoutError("Timeout waiting for Postgres psql connection to be available.")
-            print("Waiting for Postgres connection to be ready...", e)
-            time.sleep(delay)
+    with open(desktop_config_path, "r") as f:
+        return json.load(f)
 
 
 def initialize_database():
-    """Initialize the Postgres binary database with dynamic_library_path set to the bundled binaries."""
-    pgdata = letta_dir / "desktop_data"
-    pgdata.mkdir(parents=True, exist_ok=True)
+    pg_uri_path = letta_dir / "pg_uri"
+    if not pg_uri_path.exists():
+        raise RuntimeError("Expected pg_uri file to exist (written by Electron app)")
 
-    # Use the bundled Postgres binaries path from pgserver.
-    from pgserver._commands import POSTGRES_BIN_PATH
+    with open(pg_uri_path, "r") as f:
+        pg_uri_string = f.read().strip()
 
-    lib_dir = POSTGRES_BIN_PATH
+    print("Connecting to Postgres at", pg_uri_string)
 
+    # Parse URI into connection parameters.
+    parsed = urllib.parse.urlparse(pg_uri_string)
+    username = parsed.username or "postgres"
+    password = parsed.password
+    host = parsed.hostname or "localhost"
+    port = parsed.port or 5433
+    dbname = parsed.path.lstrip("/") or "postgres"
+
+    # Log key environment information.
+    print(f"Environment PATH: {os.environ.get('PATH')}")
+    print(f"Current working directory: {os.getcwd()}")
+
+    # Retry logic for connection
+    retries = 5
+    delay = 2  # seconds between retries
+    for attempt in range(1, retries + 1):
+        try:
+            conn = pg8000.connect(user=username, password=password, host=host, port=port, database=dbname)
+            print(f"Successfully connected to Postgres on attempt {attempt}")
+            break
+        except Exception as e:
+            print(f"Attempt {attempt} to connect to Postgres failed: {e}")
+            if attempt < retries:
+                time.sleep(delay)
+            else:
+                print(f"FATAL: Could not connect to Postgres instance running at {pg_uri_string} after {retries} attempts.")
+                sys.exit(1)
+
+    # Create the pgvector extension if not already present.
     try:
-        database = pgserver.get_server(pgdata)
-
-        # Wait until the server socket file is present.
-        socket_file = pgdata / ".s.PGSQL.5432"
-        timeout = 30
-        start_time = time.time()
-        while not socket_file.exists():
-            if time.time() - start_time > timeout:
-                raise TimeoutError("Timeout waiting for Postgres server socket.")
-            print("Waiting for server socket file to appear...")
-            time.sleep(0.5)
-
-        # Now wait for the connection to be ready.
-        wait_for_psql(database, timeout=30, delay=1)
-
-        # Set the dynamic_library_path to include the bundled binary path and the default $libdir.
-        print(f"Setting dynamic_library_path to '{lib_dir},$libdir'")
-        database.psql(f"ALTER SYSTEM SET dynamic_library_path = '{lib_dir},$libdir'")
-        # Reload configuration so the new setting takes effect.
-        database.psql("SELECT pg_reload_conf()")
-
-        # Only create the extension if it doesn't exist.
-        ext_check = database.psql("SELECT extname FROM pg_extension WHERE extname = 'vector'")
-        if not ext_check or "vector" not in str(ext_check):
-            print("Creating vector extension...")
-            database.psql("CREATE EXTENSION vector")
-        else:
-            print("Vector extension already exists, skipping creation.")
-
-        print("Database initialized at", pgdata)
+        cursor = conn.cursor()
+        print("Attempting to create pgvector extension...")
+        cursor.execute("CREATE EXTENSION IF NOT EXISTS vector;")
+        conn.commit()
+        cursor.close()
     except Exception as e:
-        print("Database initialization failed:", e)
-        raise e
+        print(f"FATAL: Failed to create pgvector extension: {e}")
+        sys.exit(1)
 
-    print("Configuring app with database URI...")
-    pg_uri = database.get_uri()
-    with open(letta_dir / "pg_uri", "w") as f:
-        f.write(pg_uri)
-    return pg_uri
+    # Verify that the extension works.
+    try:
+        cursor = conn.cursor()
+        print("Testing pgvector functionality...")
+        cursor.execute("CREATE TEMP TABLE test_vector(vec vector(3));")
+        cursor.close()
+    except Exception as e:
+        print(f"FATAL: pgvector extension exists but is not functioning properly: {e}")
+        sys.exit(1)
+
+    print("Database is ready and pgvector is available")
+    return pg_uri_string
 
 
 def upgrade_db(pg_uri):
@@ -185,24 +176,22 @@ if __name__ == "__main__":
     config = get_desktop_config()
 
     try:
-      if config['databaseConfig']['type'] != 'embedded':
-        connection_string = config['databaseConfig']['connectionString']
-        with open(letta_dir / "pg_uri", "w") as f:
-          f.write(connection_string)
+        if config["databaseConfig"]["type"] != "embedded":
+            connection_string = config["databaseConfig"]["connectionString"]
+            with open(letta_dir / "pg_uri", "w") as f:
+                f.write(connection_string)
 
-        upgrade_db(connection_string)
-      else:
-        pg_uri = initialize_database()
-        upgrade_db(pg_uri)
+            upgrade_db(connection_string)
+        else:
+            pg_uri = initialize_database()
+            upgrade_db(pg_uri)
     except KeyError:
         pg_uri = initialize_database()
         upgrade_db(pg_uri)
 
-
-
     from letta.server.rest_api.app import app
 
-    print("Starting letta server...")
+    print("Starting the Letta Server...")
     config = uvicorn.Config(app, host="localhost", port=8283)
     server = ThreadedUvicorn(config)
     server.start()
