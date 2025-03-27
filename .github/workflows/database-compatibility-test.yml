@@ -176,14 +176,14 @@ jobs:
           path: ./main-code/apps/cloud-api/node_modules
           key: modules-${{ hashFiles('./main-code/apps/cloud-api/package-lock.json') }}
       - name: Turn on letta web on main branch
-        working-directory: main-code/apps/cloud-api
+        working-directory: main-code
         run: just setup-cloud-api
       - name: Migrate Cloud DB
         working-directory: main-code
         run:
           just migrate-cloud-db
       - name: Turn on letta web on main branch
-        working-directory: main-code/apps/cloud-api
+        working-directory: main-code
         run: just cloud-api &
         env:
           DATABASE_URL: postgres://postgres:postgres@localhost:5433/postgres
@@ -196,7 +196,7 @@ jobs:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           TEST_STAGE: main
       - name: Run database compatibility tests
-        working-directory: branch-code
+        working-directory: main-code
         run: just database-compatibility
         env:
           TEST_STAGE: main
