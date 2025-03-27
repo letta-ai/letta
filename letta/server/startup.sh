@@ -73,6 +73,6 @@ cleanup() {
 }
 trap cleanup EXIT
 
-echo "Starting Letta server at http://$HOST:$PORT..."
+echo "Starting Letta Server at http://$HOST:$PORT..."
 echo "Executing: $CMD"
 exec $CMD
