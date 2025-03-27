@@ -65,11 +65,25 @@ class MarshmallowAgentSchema(BaseSchema):
         data = super().sanitize_ids(data, **kwargs)
         data[self.FIELD_VERSION] = letta.__version__
 
-        message_ids = set(data.pop(self.FIELD_MESSAGE_IDS, []))  # Store and remove message_ids
+        message_ids = list(data.pop(self.FIELD_MESSAGE_IDS, []))
 
+        # NOTE: currently we don't support out-of-context messages since it has a bunch of system message spams
+        # TODO: support out-of-context messages
+        messages = []
+
+        # loop through message in the *same* order is the in-context message IDs
         for message in data.get(self.FIELD_MESSAGES, []):
-            message[self.FIELD_IN_CONTEXT] = message[self.FIELD_ID] in message_ids  # Mark messages as in-context
+            # if id matches in-context message ID, add to `messages`
+            if message[self.FIELD_ID] in message_ids:
+                message[self.FIELD_IN_CONTEXT] = True
+            else:
+                message[self.FIELD_IN_CONTEXT] = False
+            messages.append(message)
+
+        # remove ids
+        for message in messages:
             message.pop(self.FIELD_ID, None)  # Remove the id field
+        data[self.FIELD_MESSAGES] = messages
 
         return data
 
