@@ -58,7 +58,7 @@ from letta.services.message_manager import MessageManager
 from letta.services.passage_manager import PassageManager
 from letta.services.provider_manager import ProviderManager
 from letta.services.step_manager import StepManager
-from letta.services.tool_execution_sandbox import ToolExecutionSandbox
+from letta.services.tool_executor.tool_execution_sandbox import ToolExecutionSandbox
 from letta.services.tool_manager import ToolManager
 from letta.settings import summarizer_settings
 from letta.streaming_interface import StreamingRefreshCLIInterface
@@ -226,7 +226,7 @@ class Agent(BaseAgent):
         """
         # Update tool rules
         self.last_function_response = function_response
-        self.tool_rules_solver.update_tool_usage(function_name)
+        self.tool_rules_solver.register_tool_call(function_name)
 
         # Extend conversation with function response
         function_response = package_function_response(False, error_msg)
@@ -647,7 +647,7 @@ class Agent(BaseAgent):
         self.agent_state = self.agent_manager.rebuild_system_prompt(agent_id=self.agent_state.id, actor=self.user)
 
         # Update ToolRulesSolver state with last called function
-        self.tool_rules_solver.update_tool_usage(function_name)
+        self.tool_rules_solver.register_tool_call(function_name)
         # Update heartbeat request according to provided tool rules
         if self.tool_rules_solver.has_children_tools(function_name):
             heartbeat_request = True

@@ -14,7 +14,7 @@ from letta.schemas.user import User
 from letta.services.agent_manager import AgentManager
 from letta.services.message_manager import MessageManager
 from letta.services.passage_manager import PassageManager
-from letta.services.tool_execution_sandbox import ToolExecutionSandbox
+from letta.services.tool_executor.async_tool_execution_sandbox import AsyncToolExecutionSandbox
 from letta.utils import get_friendly_error_msg
 
 
@@ -59,7 +59,7 @@ class LettaCoreToolExecutor(ToolExecutor):
         Returns:
             Optional[str]: None is always returned as this function does not produce a response.
         """
-        return None
+        return "Sent message successfully."
 
     def conversation_search(self, agent_state: AgentState, actor: User, query: str, page: Optional[int] = 0) -> Optional[str]:
         """
@@ -320,7 +320,7 @@ class ExternalMCPToolExecutor(ToolExecutor):
 class SandboxToolExecutor(ToolExecutor):
     """Executor for sandboxed tools."""
 
-    def execute(
+    async def execute(
         self, function_name: str, function_args: dict, agent_state: AgentState, tool: Tool, actor: User
     ) -> Tuple[Any, Optional[SandboxRunResult]]:
         # Store original memory state
@@ -330,11 +330,11 @@ class SandboxToolExecutor(ToolExecutor):
             # Prepare function arguments
             function_args = self._prepare_function_args(function_args, tool, function_name)
 
-            # Create agent state copy for sandbox
+            # TODO: This is brittle, think about better way to do this?
             agent_state_copy = self._create_agent_state_copy(agent_state)
 
             # Execute in sandbox
-            sandbox_run_result = ToolExecutionSandbox(function_name, function_args, actor, tool_object=tool).run(
+            sandbox_run_result = await AsyncToolExecutionSandbox(function_name, function_args, actor, tool_object=tool).run(
                 agent_state=agent_state_copy
             )
 

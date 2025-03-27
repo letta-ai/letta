@@ -1,6 +1,6 @@
 from typing import Any, Dict, List, Literal, Optional, Union
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 
 class SystemMessage(BaseModel):
@@ -140,3 +140,8 @@ class ChatCompletionRequest(BaseModel):
     # deprecated scheme
     functions: Optional[List[FunctionSchema]] = None
     function_call: Optional[FunctionCallChoice] = None
+
+    @field_validator("messages", mode="before")
+    @classmethod
+    def cast_all_messages(cls, v):
+        return [cast_message_to_subtype(m) if isinstance(m, dict) else m for m in v]

@@ -9,6 +9,7 @@ from marshmallow import ValidationError
 from pydantic import Field
 from sqlalchemy.exc import IntegrityError, OperationalError
 
+from letta.agents.letta_agent import LettaAgent
 from letta.constants import DEFAULT_MESSAGE_TOOL, DEFAULT_MESSAGE_TOOL_KWARG
 from letta.log import get_logger
 from letta.orm.errors import NoResultFound
@@ -19,6 +20,8 @@ from letta.schemas.letta_message import LettaMessageUnion, LettaMessageUpdateUni
 from letta.schemas.letta_request import LettaRequest, LettaStreamingRequest
 from letta.schemas.letta_response import LettaResponse
 from letta.schemas.memory import ContextWindowOverview, CreateArchivalMemory, Memory
+from letta.schemas.message import MessageCreate
+from letta.schemas.openai.chat_completion_request import UserMessage
 from letta.schemas.passage import Passage, PassageUpdate
 from letta.schemas.run import Run
 from letta.schemas.source import Source
@@ -27,6 +30,7 @@ from letta.schemas.user import User
 from letta.serialize_schemas.pydantic_agent_schema import AgentSchema
 from letta.server.rest_api.utils import get_letta_server
 from letta.server.server import SyncServer
+from letta.settings import settings
 
 # These can be forward refs, but because Fastapi needs them at runtime the must be imported normally
 
@@ -579,17 +583,32 @@ async def send_message(
     This endpoint accepts a message from a user and processes it through the agent.
     """
     actor = server.user_manager.get_user_or_default(user_id=actor_id)
-    result = await server.send_message_to_agent(
-        agent_id=agent_id,
-        actor=actor,
-        messages=request.messages,
-        stream_steps=False,
-        stream_tokens=False,
-        # Support for AssistantMessage
-        use_assistant_message=request.use_assistant_message,
-        assistant_message_tool_name=request.assistant_message_tool_name,
-        assistant_message_tool_kwarg=request.assistant_message_tool_kwarg,
-    )
+    if settings.use_experimental:
+        logger.warning("USING EXPERIMENTAL!")
+        experimental_agent = LettaAgent(
+            agent_id=agent_id,
+            message_manager=server.message_manager,
+            agent_manager=server.agent_manager,
+            block_manager=server.block_manager,
+            passage_manager=server.passage_manager,
+            actor=actor,
+        )
+
+        messages = request.messages
+        content = messages[0].content[0].text if messages and not isinstance(messages[0].content, str) else messages[0].content
+        result = await experimental_agent.step(UserMessage(content=content), max_steps=10)
+    else:
+        result = await server.send_message_to_agent(
+            agent_id=agent_id,
+            actor=actor,
+            messages=request.messages,
+            stream_steps=False,
+            stream_tokens=False,
+            # Support for AssistantMessage
+            use_assistant_message=request.use_assistant_message,
+            assistant_message_tool_name=request.assistant_message_tool_name,
+            assistant_message_tool_kwarg=request.assistant_message_tool_kwarg,
+        )
     return result
 
 
@@ -637,7 +656,7 @@ async def process_message_background(
     server: SyncServer,
     actor: User,
     agent_id: str,
-    messages: list,
+    messages: List[MessageCreate],
     use_assistant_message: bool,
     assistant_message_tool_name: str,
     assistant_message_tool_kwarg: str,
@@ -645,17 +664,30 @@ async def process_message_background(
     """Background task to process the message and update job status."""
     try:
         # TODO(matt) we should probably make this stream_steps and log each step as it progresses, so the job update GET can see the total steps so far + partial usage?
-        result = await server.send_message_to_agent(
-            agent_id=agent_id,
-            actor=actor,
-            messages=messages,
-            stream_steps=False,  # NOTE(matt)
-            stream_tokens=False,
-            use_assistant_message=use_assistant_message,
-            assistant_message_tool_name=assistant_message_tool_name,
-            assistant_message_tool_kwarg=assistant_message_tool_kwarg,
-            metadata={"job_id": job_id},  # Pass job_id through metadata
-        )
+        if settings.use_experimental:
+            logger.warning("USING EXPERIMENTAL!")
+            experimental_agent = LettaAgent(
+                agent_id=agent_id,
+                message_manager=server.message_manager,
+                agent_manager=server.agent_manager,
+                block_manager=server.block_manager,
+                passage_manager=server.passage_manager,
+                actor=actor,
+            )
+            content = messages[0].content[0].text if messages and not isinstance(messages[0].content, str) else messages[0].content
+            result = await experimental_agent.step(UserMessage(content=content), max_steps=10)
+        else:
+            result = await server.send_message_to_agent(
+                agent_id=agent_id,
+                actor=actor,
+                messages=messages,
+                stream_steps=False,  # NOTE(matt)
+                stream_tokens=False,
+                use_assistant_message=use_assistant_message,
+                assistant_message_tool_name=assistant_message_tool_name,
+                assistant_message_tool_kwarg=assistant_message_tool_kwarg,
+                metadata={"job_id": job_id},  # Pass job_id through metadata
+            )
 
         # Update job status to completed
         job_update = JobUpdate(
