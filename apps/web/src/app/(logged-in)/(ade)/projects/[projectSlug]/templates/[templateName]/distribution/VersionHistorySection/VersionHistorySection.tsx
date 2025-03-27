@@ -35,7 +35,8 @@ function VersionDetails(props: VersionDetailsProps) {
     <VStack padding flex overflowY="auto" collapseHeight>
       <VStack gap="small" fullWidth>
         <HStack
-          minHeight="header-sm"
+          /* eslint-disable-next-line react/forbid-component-props */
+          className="min-h-[24px]"
           justify="spaceBetween"
           fullWidth
           align="center"
@@ -142,6 +143,7 @@ export function VersionHistorySection() {
         title: t('version', {
           version: version.version,
         }),
+        message: version.message,
         subtitle: formatDateAndTime(version.createdAt),
         details: (
           <VersionDetails key={version.version} version={version.version} />

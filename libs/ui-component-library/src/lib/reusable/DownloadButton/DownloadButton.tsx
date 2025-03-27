@@ -54,7 +54,7 @@ export function DownloadButton(props: CopyButtonProps) {
       fullWidth={fullWidth}
       size={size}
       type="button"
-      color="secondary"
+      color="tertiary"
       preIcon={isCopied ? <CheckIcon /> : <DownloadIcon />}
       label={isCopied ? 'Download started' : downloadButtonText}
       onClick={downloadFile}

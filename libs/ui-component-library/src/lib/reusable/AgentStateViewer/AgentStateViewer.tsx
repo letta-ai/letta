@@ -305,10 +305,10 @@ function KeyValueDiffViewer(props: KeyValueDiffViewerProps) {
               )}
               key={key}
             >
-              <td className="p-1 ">
+              <td className="p-2 ">
                 <Typography variant="body">{key}</Typography>
               </td>
-              <td className="p1">
+              <td className="p-2">
                 <Typography variant="body">
                   <InlineTextDiff
                     text={parsedValue}

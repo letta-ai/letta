@@ -13,6 +13,7 @@ import {
   OnboardingAsideFocus,
   PanelBar,
   PythonIcon,
+  type QueryBuilderQuery,
   RawCodeEditor,
   RocketIcon,
   Skeleton,
@@ -23,7 +24,7 @@ import {
   useCopyToClipboard,
   VStack,
 } from '@letta-cloud/ui-component-library';
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useMemo, useRef, useState } from 'react';
 import { useTranslations } from '@letta-cloud/translations';
 import { useCurrentProject } from '$web/client/hooks/useCurrentProject/useCurrentProject';
 import { useCurrentAgentMetaData } from '@letta-cloud/ui-ade-components';
@@ -232,6 +233,7 @@ function DeploymentInstructions() {
                 variant="chips"
                 border
                 color="dark"
+                bold
                 size="xxsmall"
                 value={deploymentMethod}
                 onValueChange={(value) => {
@@ -242,7 +244,11 @@ function DeploymentInstructions() {
             </HStack>
             <CreateAgentFromTemplateDialog
               trigger={
-                <Button size="small" color="primary" label={t('createAgent')} />
+                <Button
+                  size="small"
+                  color="secondary"
+                  label={t('createAgent')}
+                />
               }
               templateName={templateName}
             />
@@ -256,8 +262,6 @@ function DeploymentInstructions() {
     </VStack>
   );
 }
-
-const ROW_HEIGHT = 30;
 
 interface AgentIdentityProps {
   identityIds: string[];
@@ -296,78 +300,110 @@ function AgentIdentity(props: AgentIdentityProps) {
   );
 }
 
+interface UseRecentAgentsProps {
+  debouncedSearch: string;
+}
+
+const AGENT_LIMIT = 25;
+
+function useRecentAgents(props: UseRecentAgentsProps) {
+  const { id: projectId } = useCurrentProject();
+  const { agentId } = useCurrentAgentMetaData();
+  const { debouncedSearch } = props;
+
+  return useInfiniteQuery<
+    ListAgentsResponse,
+    unknown,
+    InfiniteData<ListAgentsResponse>,
+    unknown[],
+    { after?: string | null }
+  >({
+    queryKey: [
+      'infinite',
+      ...UseAgentsServiceListAgentsKeyFn({
+        projectId,
+        baseTemplateId: agentId,
+        queryText: debouncedSearch,
+        limit: AGENT_LIMIT + 1,
+      }),
+    ],
+    queryFn: ({ pageParam }) => {
+      return AgentsService.listAgents({
+        queryText: debouncedSearch,
+        limit: AGENT_LIMIT + 1,
+        after: pageParam?.after,
+        projectId,
+        baseTemplateId: agentId,
+      });
+    },
+    initialPageParam: { after: null },
+    getNextPageParam: (lastPage) => {
+      if (lastPage.length > AGENT_LIMIT) {
+        return {
+          after: lastPage[lastPage.length - 2].id,
+        };
+      }
+
+      return undefined;
+    },
+    enabled: !!AGENT_LIMIT,
+  });
+}
+
 function RecentAgents() {
   const [search, setSearch] = useState('');
   const t = useTranslations('pages/distribution');
-  const { id: projectId, slug } = useCurrentProject();
-  const { agentId } = useCurrentAgentMetaData();
   const [debouncedSearch] = useDebouncedValue(search, 500);
-  const [limit, setLimit] = useState(0);
   const { deployedAgentTemplate } = useLatestAgentTemplate();
+  const { slug } = useCurrentProject();
+  const { agentName } = useCurrentAgentMetaData();
 
   const { data, isFetchingNextPage, fetchNextPage, hasNextPage } =
-    useInfiniteQuery<
-      ListAgentsResponse,
-      unknown,
-      InfiniteData<ListAgentsResponse>,
-      unknown[],
-      { after?: string | null }
-    >({
-      queryKey: [
-        'infinite',
-        ...UseAgentsServiceListAgentsKeyFn({
-          projectId,
-          baseTemplateId: agentId,
-          queryText: debouncedSearch,
-          limit: limit + 1,
-        }),
-      ],
-      queryFn: ({ pageParam }) => {
-        return AgentsService.listAgents({
-          queryText: debouncedSearch,
-          limit: limit + 1,
-          after: pageParam?.after,
-          projectId,
-          baseTemplateId: agentId,
-        });
-      },
-      initialPageParam: { after: null },
-      getNextPageParam: (lastPage) => {
-        if (lastPage.length > limit) {
-          return {
-            after: lastPage[lastPage.length - 2].id,
-          };
-        }
-
-        return undefined;
-      },
-      enabled: !!limit,
+    useRecentAgents({
+      debouncedSearch,
     });
 
   const containerRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    // infer limit from container height / 30px (height of each row)
-    if (containerRef.current) {
-      const newLimit = Math.ceil(
-        containerRef.current.clientHeight / ROW_HEIGHT,
-      );
-      setLimit(newLimit);
-    }
-  }, []);
-
   const agents = useMemo(() => {
     if (!data) {
       return [];
     }
 
-    return data.pages?.flat() || [];
+    return data.pages?.flatMap((page) => page.slice(0, AGENT_LIMIT)) || [];
   }, [data]);
 
   const { formatDateAndTime } = useDateFormatter();
   return (
     <VStack gap="small" fullHeight>
-      <PanelBar searchValue={search} onSearch={setSearch} />
+      <PanelBar
+        searchValue={search}
+        onSearch={setSearch}
+        actions={
+          <Button
+            bold
+            label={t('viewAgents')}
+            target="_blank"
+            href={`/projects/${slug}/agents?query=${JSON.stringify({
+              root: {
+                combinator: 'AND',
+                items: [
+                  {
+                    field: 'version',
+                    queryData: {
+                      operator: { label: 'equals', value: 'eq' },
+                      value: {
+                        label: `${agentName}:latest`,
+                        value: `${agentName}:latest`,
+                      },
+                    },
+                  },
+                ],
+              },
+            } satisfies QueryBuilderQuery)}`}
+            color="secondary"
+          />
+        }
+      />
       <VStack
         paddingX="small"
         paddingBottom="small"
@@ -507,6 +543,72 @@ function DistributionOnboardingStepFinal(
   );
 }
 
+function AgentsPanel() {
+  const { data } = useRecentAgents({
+    debouncedSearch: '',
+  });
+
+  const agents = useMemo(() => {
+    if (!data) {
+      return [];
+    }
+
+    return data.pages?.flatMap((page) => page.slice(0, AGENT_LIMIT)) || [];
+  }, [data]);
+
+  if (!data) {
+    return (
+      <LoadingEmptyStatusComponent loaderVariant="grower" isLoading hideText />
+    );
+  }
+
+  return (
+    <AgentsPanelInner
+      defaultTab={agents.length === 0 ? 'distribute-agent' : 'recent-agents'}
+    />
+  );
+}
+
+type AgentPanelTabs = 'distribute-agent' | 'recent-agents';
+
+interface AgentsPanelInnerProps {
+  defaultTab: AgentPanelTabs;
+}
+
+function AgentsPanelInner(props: AgentsPanelInnerProps) {
+  const { defaultTab } = props;
+  const [tab, setTab] = useState<AgentPanelTabs>(defaultTab);
+  const t = useTranslations('pages/distribution');
+
+  return (
+    <VStack gap={false} fullWidth fullHeight>
+      <HStack fullWidth paddingX="small">
+        <TabGroup
+          extendBorder
+          value={tab}
+          items={[
+            {
+              value: 'recent-agents',
+              label: t('RecentAgents.title'),
+            },
+            {
+              value: 'distribute-agent',
+              label: t('DeploymentInstructions.title'),
+            },
+          ]}
+          onValueChange={(value) => {
+            setTab(value as AgentPanelTabs);
+          }}
+          bold
+          size="xsmall"
+        />
+      </HStack>
+      {tab === 'recent-agents' && <RecentAgents />}
+      {tab === 'distribute-agent' && <DeploymentInstructions />}
+    </VStack>
+  );
+}
+
 export default function DistributionPage() {
   const t = useTranslations('pages/distribution');
 
@@ -519,11 +621,11 @@ export default function DistributionPage() {
         autoSaveId="distribution"
       >
         <Panel
-          defaultSize={50}
-          defaultValue={50}
+          defaultSize={65}
+          defaultValue={65}
           /* eslint-disable-next-line react/forbid-component-props */
           className="h-full"
-          minSize={50}
+          minSize={20}
         >
           <VStack fullHeight gap="small">
             <ADEGroup
@@ -542,23 +644,18 @@ export default function DistributionPage() {
           className="w-[4px]"
         />
         <Panel
-          defaultSize={50}
-          defaultValue={50}
+          defaultSize={35}
+          defaultValue={35}
           /* eslint-disable-next-line react/forbid-component-props */
           className="h-full"
-          minSize={50}
+          minSize={20}
         >
           <ADEGroup
             items={[
               {
-                title: t('DeploymentInstructions.title'),
-                id: 'title',
-                content: <DeploymentInstructions />,
-              },
-              {
-                title: t('RecentAgents.title'),
-                id: 'recent-agents',
-                content: <RecentAgents />,
+                title: t('agents'),
+                id: 'agents',
+                content: <AgentsPanel />,
               },
             ]}
           ></ADEGroup>

@@ -6,6 +6,7 @@ import { RawSwitch } from '@letta-cloud/ui-component-library';
 import { Code } from '@letta-cloud/ui-component-library';
 import { webApi, webApiQueryKeys } from '$web/client';
 import { useGlobalSessionSettings } from '$web/client/hooks/session';
+import { useTranslations } from '@letta-cloud/translations';
 
 type CodeWithAPIKeyInjectionProps = CodeProps;
 
@@ -23,6 +24,8 @@ export function CodeWithAPIKeyInjection(props: CodeWithAPIKeyInjectionProps) {
     },
   });
 
+  const t = useTranslations('components/CodeWithAPIKeyInjection');
+
   const codeWithAPIKey = useMemo(() => {
     if (!data || !showAPIKeysInCode) {
       return props.code;
@@ -38,9 +41,11 @@ export function CodeWithAPIKeyInjection(props: CodeWithAPIKeyInjectionProps) {
         <HStack paddingTop="xsmall" align="center">
           {isLoading && showAPIKeysInCode && <LettaLoader size="small" />}
           <RawSwitch
+            labelFontVariant="body3"
             labelVariant="simple"
+            size="small"
             data-testid="show-api-key-switch"
-            label="Show API Key"
+            label={t('showAPIKey')}
             checked={showAPIKeysInCode}
             onClick={() => {
               setShowAPIKeysInCode((v) => !v);

@@ -299,7 +299,7 @@ export const ChatInput = forwardRef<ChatInputRef, ChatInputProps>(
               <Button
                 data-testid="chat-simulator-send"
                 type="submit"
-                color="primary"
+                color="secondary"
                 hideLabel
                 preIcon={<SendIcon />}
                 disabled={isSendingMessage || disabled}

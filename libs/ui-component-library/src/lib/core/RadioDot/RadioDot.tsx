@@ -9,6 +9,7 @@ const radioDotVariants = cva('rounded-full  flex items-center justify-center', {
       lsd: 'border-bone',
       bullseye: 'border bg-transparent',
       default: 'border bg-transparent',
+      filled: 'bg-background-grey3',
     },
     color: {
       brand: '',
@@ -35,9 +36,10 @@ const radioDotInnerVariants = cva(
         true: 'opacity-100',
       },
       variant: {
-        lsd: 'bg-background-grey3 w-[50%] h-[50%] opacity-100',
+        lsd: 'bg-background-grey3 w-[50%] h-[50%] opacity-100 min-w-[100%] min-h-[100%] border-background-grey3 border bg-transparent',
         bullseye: 'bg-brand w-[100%] h-[100%]',
         default: 'bg-brand w-[90%] h-[90%]',
+        filled: 'bg-brand w-[100%] h-[100%]',
       },
     },
     defaultVariants: {
@@ -47,8 +49,8 @@ const radioDotInnerVariants = cva(
       {
         checked: true,
         variant: 'lsd',
-        className:
-          'min-w-[100%] min-h-[100%] border-brand border bg-transparent ',
+        /* Hack to override the border color */
+        className: 'border-x-brand border-y-brand',
       },
     ],
   },
@@ -60,9 +62,10 @@ const radioDotEvenMoreInnerVariants = cva('rounded-full opacity-0', {
       true: 'opacity-100',
     },
     variant: {
-      lsd: 'opacity-0',
+      lsd: 'min-w-[60%] min-h-[60%] opacity-100 bg-background-grey3',
       bullseye: 'bg-white min-w-[50%] min-h-[50%]',
       default: 'hidden',
+      filled: 'hidden',
     },
   },
   defaultVariants: {
@@ -72,7 +75,7 @@ const radioDotEvenMoreInnerVariants = cva('rounded-full opacity-0', {
     {
       checked: true,
       variant: 'lsd',
-      className: 'min-w-[60%] min-h-[60%] opacity-100 bg-brand  ',
+      className: 'bg-brand',
     },
   ],
 });

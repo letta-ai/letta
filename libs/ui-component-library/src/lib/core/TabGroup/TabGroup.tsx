@@ -1,5 +1,5 @@
 'use client';
-import React from 'react';
+import React, { useMemo } from 'react';
 import * as Tabs from '@radix-ui/react-tabs';
 import { cn } from '@letta-cloud/ui-styles';
 import { Slot } from '@radix-ui/react-slot';
@@ -49,7 +49,7 @@ interface TabGroupProps extends TabAggregate {
   items: TabItemType[];
   fullWidth?: boolean;
   upperCase?: boolean;
-
+  bold?: boolean;
   extendBorder?: boolean;
   noBottomBorder?: boolean;
   border?: boolean;
@@ -63,6 +63,7 @@ export function TabGroup(props: TabGroupProps) {
     extendBorder,
     upperCase,
     value,
+    bold,
     color,
     variant = 'default',
     border,
@@ -71,6 +72,18 @@ export function TabGroup(props: TabGroupProps) {
     onValueChange,
     rightContent,
   } = props;
+
+  const fontVariant = useMemo(() => {
+    if (size === 'xsmall') {
+      return 'body3';
+    }
+
+    if (size === 'xxsmall') {
+      return 'body4';
+    }
+
+    return 'body2';
+  }, [size]);
 
   return (
     <Tabs.Root
@@ -103,7 +116,8 @@ export function TabGroup(props: TabGroupProps) {
           >
             <Slot className="w-4 h-4">{item.icon}</Slot>
             <Typography
-              variant={size === 'xsmall' ? 'body3' : 'body2'}
+              bold={bold}
+              variant={fontVariant}
               uppercase={upperCase}
               className="whitespace-nowrap"
             >

@@ -111,6 +111,7 @@
     }
   },
   "pages/distribution": {
+    "viewAgents": "View all",
     "VersionHistory": {
       "title": "Version History"
     },
@@ -119,15 +120,16 @@
       "description": "You've made it to the end, now all you need to do is deploy your agent, you can do this either by following the instructions to the side, or manually creating an agent!",
       "nextStep": "Complete onboarding"
     },
-    "createAgent": "Manually create an agent",
+    "createAgent": "Create manually",
+    "agents": "Agents",
     "DeploymentInstructions": {
-      "title": "Agent Distribution"
+      "title": "Distribution"
     },
     "AgentIdentity": {
       "more": "and {count} more"
     },
     "RecentAgents": {
-      "title": "Recently deployed agents",
+      "title": "Recently Deployed",
       "addAgent": "Deploy agent",
       "viewInADE": "View in ADE",
       "noIdentity": "No identity",
@@ -1662,6 +1664,9 @@
       "sourceInfo": "Source Info",
       "files": "Files"
     }
+  },
+  "components/CodeWithAPIKeyInjection": {
+    "showAPIKey": "Show API Key"
   },
   "data-sources/files/page": {
     "title": "Source Files",

@@ -100,6 +100,7 @@ export function buildConfig(appDir: string): Config {
             DEFAULT: 'hsl(var(--panel-input-background))',
             content: 'hsl(var(--panel-input-background-content))',
           },
+          'button-border': 'hsl(var(--button-border))',
           'brand-light': {
             DEFAULT: 'hsl(var(--brand-light))',
             content: 'hsl(var(--brand-light-content))',

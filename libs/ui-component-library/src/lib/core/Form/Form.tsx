@@ -11,7 +11,7 @@ import { cva, type VariantProps } from 'class-variance-authority';
 import type { PropsWithChildren } from 'react';
 import { useId, useMemo } from 'react';
 import { HStack } from '../../framing/HStack/HStack';
-import { Typography } from '../Typography/Typography';
+import { Typography, type TypographyProps } from '../Typography/Typography';
 import type { ArgTypes } from '@storybook/csf';
 import { omit } from 'lodash-es';
 import { InfoTooltip } from '../../reusable/InfoTooltip/InfoTooltip';
@@ -123,7 +123,7 @@ function InputWrapper({
       <div className={className}>
         <div
           className={cn(
-            'flex flex-wrap pt-2 sm:pt-0 sm:flex-nowrap gap-2 justify-between items-start',
+            'flex flex-wrap pt-2 sm:pt-0 sm:flex-nowrap gap-2 justify-between items-center',
             inline === 'reverse' && 'flex-row-reverse justify-end',
           )}
         >
@@ -161,6 +161,7 @@ type LabelVariant = 'default' | 'simple';
 interface InputContainerHeaderProps {
   preLabelIcon?: React.ReactNode;
   labelBadge?: React.ReactNode;
+  labelFontVariant?: TypographyProps['variant'];
   infoTooltip?: {
     text: string;
   };
@@ -173,9 +174,21 @@ function InputContainerHeader(props: InputContainerHeaderProps) {
     preLabelIcon,
     labelBadge,
     label,
+    labelFontVariant,
     infoTooltip,
     variant = 'default',
   } = props;
+
+  const typographyVariant = useMemo(() => {
+    let tv: TypographyProps['variant'] = 'body2';
+
+    if (variant === 'simple') {
+      tv = 'body';
+    }
+
+    return labelFontVariant || tv;
+  }, [labelFontVariant, variant]);
+
   return (
     <HStack>
       <HStack gap="small" align="center">
@@ -183,7 +196,7 @@ function InputContainerHeader(props: InputContainerHeaderProps) {
         <Typography
           align="left"
           className={variant === 'simple' ? 'leading-[1.35]' : ''}
-          variant={variant === 'default' ? 'body2' : 'body'}
+          variant={typographyVariant}
           color={variant === 'default' ? 'lighter' : 'default'}
           uppercase={variant === 'default'}
         >
@@ -199,6 +212,7 @@ function InputContainerHeader(props: InputContainerHeaderProps) {
 export interface InputContainerProps {
   label: string;
   ref?: any;
+  labelFontVariant?: 'body' | 'body2' | 'body3' | 'body4';
   preLabelIcon?: React.ReactNode;
   labelBadge?: React.ReactNode;
   labelVariant?: LabelVariant;
@@ -228,6 +242,7 @@ export function InputContainer(props: InputContainerProps) {
     flex,
     description,
     inline,
+    labelFontVariant,
     rightOfLabelContent,
     infoTooltip,
     children,
@@ -251,6 +266,7 @@ export function InputContainer(props: InputContainerProps) {
                 <InputContainerHeader
                   variant={labelVariant}
                   preLabelIcon={preLabelIcon}
+                  labelFontVariant={labelFontVariant}
                   labelBadge={labelBadge}
                   label={label}
                   infoTooltip={infoTooltip}
@@ -287,6 +303,7 @@ export function RawInputContainer(props: RawInputContainerProps) {
     flex,
     inline,
     fullWidth,
+    labelFontVariant,
     errorMessage,
     preLabelIcon,
     collapseHeight,
@@ -318,6 +335,7 @@ export function RawInputContainer(props: RawInputContainerProps) {
               <InputContainerHeader
                 preLabelIcon={preLabelIcon}
                 labelBadge={labelBadge}
+                labelFontVariant={labelFontVariant}
                 label={label}
                 variant={labelVariant}
                 infoTooltip={infoTooltip}
