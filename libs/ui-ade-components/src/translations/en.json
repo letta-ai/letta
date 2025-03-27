@@ -160,8 +160,8 @@
       "error": "Invalid temperature value, must be between 0 and 1"
     },
     "MaxTokensSlider": {
-      "label": "Max tokens",
-      "error": "Invalid max tokens value, minimum value is 1024"
+      "label": "Max output tokens",
+      "error": "Invalid max output tokens value, minimum value is 1024"
     },
     "MaxReasoningTokensSlider": {
       "label": "Max reasoning tokens",
