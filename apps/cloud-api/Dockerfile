@@ -38,7 +38,7 @@ RUN mkdir -p /app
 RUN chown -R nodeserver:nodejs /app
 
 COPY --from=builder --chown=nodeserver:nodejs /app/dist/apps/cloud-api /app
-COPY --from=builder --chown=nodeserver:nodejs /app/cloud-api/instrument.js /app
+COPY --from=builder --chown=nodeserver:nodejs /app/apps/cloud-api/instrument.js /app
 COPY --from=builder --chown=nodeserver:nodejs /app/node_modules /app/node_modules
 COPY --from=builder --chown=nodeserver:nodejs /app/package.json /app/package.json
 
