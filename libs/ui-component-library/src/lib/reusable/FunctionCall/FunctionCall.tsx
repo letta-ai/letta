@@ -101,8 +101,10 @@ export function FunctionCall(props: FunctionCallProps) {
       className="w-full"
       open={open}
       onClick={(e) => {
-        e.preventDefault();
-        toggleOpen();
+        if (e.target === e.currentTarget) {
+          e.preventDefault();
+          toggleOpen();
+        }
       }}
     >
       <HStack gap={false} as="summary">
