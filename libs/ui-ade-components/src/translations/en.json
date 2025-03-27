@@ -936,6 +936,7 @@
     }
   },
   "ToolsEditor/MCPServers": {
+    "notLocal": "This feature is only available on local instances of Letta. Coming to cloud soon!",
     "select": "Select a server",
     "error": "There was an error loading your MCP servers, please try again or contact support.",
     "loading": "Loading your MCP servers...",
