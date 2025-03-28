@@ -56,20 +56,20 @@ def server_url():
 @pytest.fixture(scope="session")
 def client(server_url):
     """Creates a REST client for testing."""
-    # client = Letta(base_url=server_url)
-    llm_config = LLMConfig(
-        model="claude-3-7-sonnet-latest",
-        model_endpoint_type="anthropic",
-        model_endpoint="https://api.anthropic.com/v1",
-        context_window=32000,
-        handle=f"anthropic/claude-3-7-sonnet-latest",
-        put_inner_thoughts_in_kwargs=True,
-        max_tokens=4096,
-    )
-
-    client = create_client(base_url=server_url, token=None)
-    client.set_default_llm_config(llm_config)
-    client.set_default_embedding_config(EmbeddingConfig.default_config(provider="openai"))
+    client = Letta(base_url=server_url)
+    # llm_config = LLMConfig(
+    #     model="claude-3-7-sonnet-latest",
+    #     model_endpoint_type="anthropic",
+    #     model_endpoint="https://api.anthropic.com/v1",
+    #     context_window=32000,
+    #     handle=f"anthropic/claude-3-7-sonnet-latest",
+    #     put_inner_thoughts_in_kwargs=True,
+    #     max_tokens=4096,
+    # )
+    #
+    # client = create_client(base_url=server_url, token=None)
+    # client.set_default_llm_config(llm_config)
+    # client.set_default_embedding_config(EmbeddingConfig.default_config(provider="openai"))
     yield client
 
 
@@ -87,8 +87,8 @@ def roll_dice_tool(client):
         time.sleep(1)
         return "Rolled a 10!"
 
-    tool = client.create_or_update_tool(func=roll_dice)
-    # tool = client.tools.upsert_from_function(func=roll_dice)
+    # tool = client.create_or_update_tool(func=roll_dice)
+    tool = client.tools.upsert_from_function(func=roll_dice)
     # Yield the created tool
     yield tool
 
@@ -123,8 +123,8 @@ def weather_tool(client):
         else:
             raise RuntimeError(f"Failed to get weather data, status code: {response.status_code}")
 
-    tool = client.create_or_update_tool(func=get_weather)
-    # tool = client.tools.upsert_from_function(func=get_weather)
+    # tool = client.create_or_update_tool(func=get_weather)
+    tool = client.tools.upsert_from_function(func=get_weather)
     # Yield the created tool
     yield tool
 
@@ -161,6 +161,15 @@ def composio_gmail_get_profile_tool(default_user):
 @pytest.fixture(scope="function")
 def agent_state(client, roll_dice_tool, weather_tool, rethink_tool):
     """Creates an agent and ensures cleanup after tests."""
+    llm_config = LLMConfig(
+        model="claude-3-7-sonnet-latest",
+        model_endpoint_type="anthropic",
+        model_endpoint="https://api.anthropic.com/v1",
+        context_window=32000,
+        handle=f"anthropic/claude-3-7-sonnet-latest",
+        put_inner_thoughts_in_kwargs=True,
+        max_tokens=4096,
+    )
     agent_state = client.agents.create(
         name=f"test_compl_{str(uuid.uuid4())[5:]}",
         tool_ids=[roll_dice_tool.id, weather_tool.id, rethink_tool.id],
@@ -175,6 +184,8 @@ def agent_state(client, roll_dice_tool, weather_tool, rethink_tool):
                 "value": "Friendly agent",
             },
         ],
+        llm_config=llm_config,
+        embedding_config=EmbeddingConfig.default_config(provider="openai")
     )
     yield agent_state
     client.agents.delete(agent_state.id)
