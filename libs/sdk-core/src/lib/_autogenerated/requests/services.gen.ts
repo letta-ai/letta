@@ -116,12 +116,14 @@ import type {
   CreateAgentMessageAsyncResponse,
   ResetMessagesData,
   ResetMessagesResponse,
-  CreateGroupData,
-  CreateGroupResponse,
   ListGroupsData,
   ListGroupsResponse,
-  UpsertGroupData,
-  UpsertGroupResponse,
+  CreateGroupData,
+  CreateGroupResponse,
+  RetrieveGroupData,
+  RetrieveGroupResponse,
+  ModifyGroupData,
+  ModifyGroupResponse,
   DeleteGroupData,
   DeleteGroupResponse,
   SendGroupMessageData,
@@ -130,6 +132,10 @@ import type {
   ListGroupMessagesResponse,
   SendGroupMessageStreamingData,
   SendGroupMessageStreamingResponse,
+  ModifyGroupMessageData,
+  ModifyGroupMessageResponse,
+  ResetGroupMessagesData,
+  ResetGroupMessagesResponse,
   ListIdentitiesData,
   ListIdentitiesResponse,
   CreateIdentityData,
@@ -1637,6 +1643,7 @@ export class AgentsService {
    * @param data.after Message after which to retrieve the returned messages.
    * @param data.before Message before which to retrieve the returned messages.
    * @param data.limit Maximum number of messages to retrieve.
+   * @param data.groupId Group ID to filter messages by.
    * @param data.useAssistantMessage Whether to use assistant messages
    * @param data.assistantMessageToolName The name of the designated message tool.
    * @param data.assistantMessageToolKwarg The name of the message argument.
@@ -1658,6 +1665,7 @@ export class AgentsService {
         after: data.after,
         before: data.before,
         limit: data.limit,
+        group_id: data.groupId,
         use_assistant_message: data.useAssistantMessage,
         assistant_message_tool_name: data.assistantMessageToolName,
         assistant_message_tool_kwarg: data.assistantMessageToolKwarg,
@@ -1824,32 +1832,6 @@ export class AgentsService {
 
 export class GroupsService {
   /**
-   * Create Group
-   * Create a new multi-agent group with the specified configuration.
-   * @param data The data for the request.
-   * @param data.requestBody
-   * @param data.userId
-   * @param data.xProject
-   * @returns Group Successful Response
-   * @throws ApiError
-   */
-  public static createGroup(
-    data: CreateGroupData,
-    headers?: { user_id: string },
-  ): CancelablePromise<CreateGroupResponse> {
-    return __request(OpenAPI, {
-      method: 'POST',
-      url: '/v1/groups/',
-      body: data.requestBody,
-      mediaType: 'application/json',
-      errors: {
-        422: 'Validation Error',
-      },
-      headers,
-    });
-  }
-
-  /**
    * List Groups
    * Fetch all multi-agent groups matching query.
    * @param data The data for the request.
@@ -1884,7 +1866,7 @@ export class GroupsService {
   }
 
   /**
-   * Upsert Group
+   * Create Group
    * Create a new multi-agent group with the specified configuration.
    * @param data The data for the request.
    * @param data.requestBody
@@ -1893,13 +1875,69 @@ export class GroupsService {
    * @returns Group Successful Response
    * @throws ApiError
    */
-  public static upsertGroup(
-    data: UpsertGroupData,
+  public static createGroup(
+    data: CreateGroupData,
     headers?: { user_id: string },
-  ): CancelablePromise<UpsertGroupResponse> {
+  ): CancelablePromise<CreateGroupResponse> {
+    return __request(OpenAPI, {
+      method: 'POST',
+      url: '/v1/groups/',
+      body: data.requestBody,
+      mediaType: 'application/json',
+      errors: {
+        422: 'Validation Error',
+      },
+      headers,
+    });
+  }
+
+  /**
+   * Retrieve Group
+   * Retrieve the group by id.
+   * @param data The data for the request.
+   * @param data.groupId
+   * @param data.userId
+   * @returns Group Successful Response
+   * @throws ApiError
+   */
+  public static retrieveGroup(
+    data: RetrieveGroupData,
+    headers?: { user_id: string },
+  ): CancelablePromise<RetrieveGroupResponse> {
+    return __request(OpenAPI, {
+      method: 'GET',
+      url: '/v1/groups/{group_id}',
+      path: {
+        group_id: data.groupId,
+      },
+      errors: {
+        422: 'Validation Error',
+      },
+      headers,
+    });
+  }
+
+  /**
+   * Modify Group
+   * Create a new multi-agent group with the specified configuration.
+   * @param data The data for the request.
+   * @param data.groupId
+   * @param data.requestBody
+   * @param data.userId
+   * @param data.xProject
+   * @returns Group Successful Response
+   * @throws ApiError
+   */
+  public static modifyGroup(
+    data: ModifyGroupData,
+    headers?: { user_id: string },
+  ): CancelablePromise<ModifyGroupResponse> {
     return __request(OpenAPI, {
       method: 'PUT',
-      url: '/v1/groups/',
+      url: '/v1/groups/{group_id}',
+      path: {
+        group_id: data.groupId,
+      },
       body: data.requestBody,
       mediaType: 'application/json',
       errors: {
@@ -1940,7 +1978,7 @@ export class GroupsService {
    * Process a user message and return the group's response.
    * This endpoint accepts a message from a user and processes it through through agents in the group based on the specified pattern
    * @param data The data for the request.
-   * @param data.agentId
+   * @param data.groupId
    * @param data.requestBody
    * @param data.userId
    * @returns LettaResponse Successful Response
@@ -1953,8 +1991,8 @@ export class GroupsService {
     return __request(OpenAPI, {
       method: 'POST',
       url: '/v1/groups/{group_id}/messages',
-      query: {
-        agent_id: data.agentId,
+      path: {
+        group_id: data.groupId,
       },
       body: data.requestBody,
       mediaType: 'application/json',
@@ -2029,6 +2067,63 @@ export class GroupsService {
       },
       body: data.requestBody,
       mediaType: 'application/json',
+      errors: {
+        422: 'Validation Error',
+      },
+      headers,
+    });
+  }
+
+  /**
+   * Modify Group Message
+   * Update the details of a message associated with an agent.
+   * @param data The data for the request.
+   * @param data.groupId
+   * @param data.messageId
+   * @param data.requestBody
+   * @param data.userId
+   * @returns unknown Successful Response
+   * @throws ApiError
+   */
+  public static modifyGroupMessage(
+    data: ModifyGroupMessageData,
+    headers?: { user_id: string },
+  ): CancelablePromise<ModifyGroupMessageResponse> {
+    return __request(OpenAPI, {
+      method: 'PATCH',
+      url: '/v1/groups/{group_id}/messages/{message_id}',
+      path: {
+        group_id: data.groupId,
+        message_id: data.messageId,
+      },
+      body: data.requestBody,
+      mediaType: 'application/json',
+      errors: {
+        422: 'Validation Error',
+      },
+      headers,
+    });
+  }
+
+  /**
+   * Reset Group Messages
+   * Delete the group messages for all agents that are part of the multi-agent group.
+   * @param data The data for the request.
+   * @param data.groupId
+   * @param data.userId
+   * @returns unknown Successful Response
+   * @throws ApiError
+   */
+  public static resetGroupMessages(
+    data: ResetGroupMessagesData,
+    headers?: { user_id: string },
+  ): CancelablePromise<ResetGroupMessagesResponse> {
+    return __request(OpenAPI, {
+      method: 'PATCH',
+      url: '/v1/groups/{group_id}/reset-messages',
+      path: {
+        group_id: data.groupId,
+      },
       errors: {
         422: 'Validation Error',
       },

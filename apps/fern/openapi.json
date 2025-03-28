@@ -2828,6 +2828,24 @@
             "description": "Maximum number of messages to retrieve."
           },
           {
+            "name": "group_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Group ID to filter messages by.",
+              "title": "Group Id"
+            },
+            "description": "Group ID to filter messages by."
+          },
+          {
             "name": "use_assistant_message",
             "in": "query",
             "required": false,
@@ -3207,62 +3225,6 @@
       }
     },
     "/v1/groups/": {
-      "post": {
-        "tags": ["groups"],
-        "summary": "Create Group",
-        "description": "Create a new multi-agent group with the specified configuration.",
-        "operationId": "create_group",
-        "parameters": [
-          {
-            "name": "X-Project",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "X-Project"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/GroupCreate"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Group"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      },
       "get": {
         "tags": ["groups"],
         "summary": "List Groups",
@@ -3387,11 +3349,11 @@
           }
         }
       },
-      "put": {
+      "post": {
         "tags": ["groups"],
-        "summary": "Upsert Group",
+        "summary": "Create Group",
         "description": "Create a new multi-agent group with the specified configuration.",
-        "operationId": "upsert_group",
+        "operationId": "create_group",
         "parameters": [
           {
             "name": "X-Project",
@@ -3445,6 +3407,110 @@
       }
     },
     "/v1/groups/{group_id}": {
+      "get": {
+        "tags": ["groups"],
+        "summary": "Retrieve Group",
+        "description": "Retrieve the group by id.",
+        "operationId": "retrieve_group",
+        "parameters": [
+          {
+            "name": "group_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Group Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Group"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": ["groups"],
+        "summary": "Modify Group",
+        "description": "Create a new multi-agent group with the specified configuration.",
+        "operationId": "modify_group",
+        "parameters": [
+          {
+            "name": "group_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Group Id"
+            }
+          },
+          {
+            "name": "X-Project",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Project"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GroupUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Group"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
       "delete": {
         "tags": ["groups"],
         "summary": "Delete Group",
@@ -3491,12 +3557,12 @@
         "operationId": "send_group_message",
         "parameters": [
           {
-            "name": "agent_id",
-            "in": "query",
+            "name": "group_id",
+            "in": "path",
             "required": true,
             "schema": {
               "type": "string",
-              "title": "Agent Id"
+              "title": "Group Id"
             }
           }
         ],
@@ -3697,6 +3763,154 @@
               },
               "text/event-stream": {
                 "description": "Server-Sent Events stream"
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/groups/{group_id}/messages/{message_id}": {
+      "patch": {
+        "tags": ["groups"],
+        "summary": "Modify Group Message",
+        "description": "Update the details of a message associated with an agent.",
+        "operationId": "modify_group_message",
+        "parameters": [
+          {
+            "name": "group_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Group Id"
+            }
+          },
+          {
+            "name": "message_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Message Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/UpdateSystemMessage"
+                  },
+                  {
+                    "$ref": "#/components/schemas/UpdateUserMessage"
+                  },
+                  {
+                    "$ref": "#/components/schemas/UpdateReasoningMessage"
+                  },
+                  {
+                    "$ref": "#/components/schemas/UpdateAssistantMessage"
+                  }
+                ],
+                "title": "Request"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/SystemMessage"
+                    },
+                    {
+                      "$ref": "#/components/schemas/UserMessage"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ReasoningMessage"
+                    },
+                    {
+                      "$ref": "#/components/schemas/HiddenReasoningMessage"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ToolCallMessage"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ToolReturnMessage"
+                    },
+                    {
+                      "$ref": "#/components/schemas/AssistantMessage"
+                    }
+                  ],
+                  "discriminator": {
+                    "propertyName": "message_type",
+                    "mapping": {
+                      "system_message": "#/components/schemas/SystemMessage",
+                      "user_message": "#/components/schemas/UserMessage",
+                      "reasoning_message": "#/components/schemas/ReasoningMessage",
+                      "hidden_reasoning_message": "#/components/schemas/HiddenReasoningMessage",
+                      "tool_call_message": "#/components/schemas/ToolCallMessage",
+                      "tool_return_message": "#/components/schemas/ToolReturnMessage",
+                      "assistant_message": "#/components/schemas/AssistantMessage"
+                    }
+                  },
+                  "title": "Response Modify Group Message"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/groups/{group_id}/reset-messages": {
+      "patch": {
+        "tags": ["groups"],
+        "summary": "Reset Group Messages",
+        "description": "Delete the group messages for all agents that are part of the multi-agent group.",
+        "operationId": "reset_group_messages",
+        "parameters": [
+          {
+            "name": "group_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Group Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
               }
             }
           },
@@ -10249,6 +10463,66 @@
             "description": ""
           },
           "manager_config": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/RoundRobinManager"
+              },
+              {
+                "$ref": "#/components/schemas/SupervisorManager"
+              },
+              {
+                "$ref": "#/components/schemas/DynamicManager"
+              }
+            ],
+            "title": "Manager Config",
+            "description": "",
+            "default": {
+              "manager_type": "round_robin"
+            },
+            "discriminator": {
+              "propertyName": "manager_type",
+              "mapping": {
+                "dynamic": "#/components/schemas/DynamicManager",
+                "round_robin": "#/components/schemas/RoundRobinManager",
+                "supervisor": "#/components/schemas/SupervisorManager"
+              }
+            }
+          }
+        },
+        "type": "object",
+        "required": ["agent_ids", "description"],
+        "title": "GroupCreate"
+      },
+      "GroupUpdate": {
+        "properties": {
+          "agent_ids": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Agent Ids",
+            "description": ""
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description",
+            "description": ""
+          },
+          "manager_config": {
             "anyOf": [
               {
                 "oneOf": [
@@ -10280,8 +10554,7 @@
           }
         },
         "type": "object",
-        "required": ["agent_ids", "description"],
-        "title": "GroupCreate"
+        "title": "GroupUpdate"
       },
       "HTTPValidationError": {
         "properties": {

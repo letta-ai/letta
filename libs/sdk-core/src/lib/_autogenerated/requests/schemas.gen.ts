@@ -4227,6 +4227,67 @@ export const $GroupCreate = {
       description: '',
     },
     manager_config: {
+      oneOf: [
+        {
+          $ref: '#/components/schemas/RoundRobinManager',
+        },
+        {
+          $ref: '#/components/schemas/SupervisorManager',
+        },
+        {
+          $ref: '#/components/schemas/DynamicManager',
+        },
+      ],
+      title: 'Manager Config',
+      description: '',
+      default: {
+        manager_type: 'round_robin',
+      },
+      discriminator: {
+        propertyName: 'manager_type',
+        mapping: {
+          dynamic: '#/components/schemas/DynamicManager',
+          round_robin: '#/components/schemas/RoundRobinManager',
+          supervisor: '#/components/schemas/SupervisorManager',
+        },
+      },
+    },
+  },
+  type: 'object',
+  required: ['agent_ids', 'description'],
+  title: 'GroupCreate',
+} as const;
+
+export const $GroupUpdate = {
+  properties: {
+    agent_ids: {
+      anyOf: [
+        {
+          items: {
+            type: 'string',
+          },
+          type: 'array',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Agent Ids',
+      description: '',
+    },
+    description: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Description',
+      description: '',
+    },
+    manager_config: {
       anyOf: [
         {
           oneOf: [
@@ -4258,8 +4319,7 @@ export const $GroupCreate = {
     },
   },
   type: 'object',
-  required: ['agent_ids', 'description'],
-  title: 'GroupCreate',
+  title: 'GroupUpdate',
 } as const;
 
 export const $HTTPValidationError = {

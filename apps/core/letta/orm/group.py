@@ -1,7 +1,7 @@
 import uuid
 from typing import List, Optional
 
-from sqlalchemy import ForeignKey, String
+from sqlalchemy import JSON, ForeignKey, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from letta.orm.mixins import OrganizationMixin
@@ -23,11 +23,8 @@ class Group(SqlalchemyBase, OrganizationMixin):
 
     # relationships
     organization: Mapped["Organization"] = relationship("Organization", back_populates="groups")
+    agent_ids: Mapped[List[str]] = mapped_column(JSON, nullable=False, doc="Ordered list of agent IDs in this group")
     agents: Mapped[List["Agent"]] = relationship(
         "Agent", secondary="groups_agents", lazy="selectin", passive_deletes=True, back_populates="groups"
     )
     manager_agent: Mapped["Agent"] = relationship("Agent", lazy="joined", back_populates="multi_agent_group")
-
-    @property
-    def agent_ids(self) -> List[str]:
-        return [agent.id for agent in self.agents]

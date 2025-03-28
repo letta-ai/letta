@@ -16,7 +16,7 @@ class DynamicMultiAgent(Agent):
         self,
         interface: AgentInterface,
         agent_state: AgentState,
-        user: User = None,
+        user: User,
         # custom
         group_id: str = "",
         agent_ids: List[str] = [],
@@ -128,7 +128,7 @@ class DynamicMultiAgent(Agent):
                     )
                     for message in assistant_messages
                 ]
-                message_index[agent_id] = len(chat_history) + len(new_messages)
+                message_index[speaker_id] = len(chat_history) + len(new_messages)
 
                 # sum usage
                 total_usage.prompt_tokens += usage_stats.prompt_tokens
@@ -251,10 +251,10 @@ class DynamicMultiAgent(Agent):
         chat_history: List[Message],
         agent_id_options: List[str],
     ) -> Message:
-        chat_history = [f"{message.name or 'user'}: {message.content[0].text}" for message in chat_history]
+        text_chat_history = [f"{message.name or 'user'}: {message.content[0].text}" for message in chat_history]
         for message in new_messages:
-            chat_history.append(f"{message.name or 'user'}: {message.content}")
-        context_messages = "\n".join(chat_history)
+            text_chat_history.append(f"{message.name or 'user'}: {message.content}")
+        context_messages = "\n".join(text_chat_history)
 
         message_text = (
             "Choose the most suitable agent to reply to the latest message in the "

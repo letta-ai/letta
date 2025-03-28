@@ -3049,6 +3049,28 @@ export const GroupCreate = z.object({
       RoundRobinManager,
       SupervisorManager,
       DynamicManager,
+      z.undefined(),
+    ])
+    .optional(),
+});
+
+export type GroupUpdate = z.infer<typeof GroupUpdate>;
+export const GroupUpdate = z.object({
+  agent_ids: z
+    .union([
+      z.array(z.string()),
+      z.null(),
+      z.array(z.union([z.array(z.string()), z.null()])),
+    ])
+    .optional(),
+  description: z
+    .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+    .optional(),
+  manager_config: z
+    .union([
+      RoundRobinManager,
+      SupervisorManager,
+      DynamicManager,
       z.null(),
       z.array(
         z.union([
@@ -3058,7 +3080,6 @@ export const GroupCreate = z.object({
           z.null(),
         ]),
       ),
-      z.undefined(),
     ])
     .optional(),
 });
@@ -5527,6 +5548,9 @@ export const get_List_messages = {
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
       limit: z.number().optional(),
+      group_id: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
       use_assistant_message: z.boolean().optional(),
       assistant_message_tool_name: z.string().optional(),
       assistant_message_tool_kwarg: z.string().optional(),
@@ -5664,25 +5688,6 @@ export const patch_Reset_messages = {
   response: AgentState,
 };
 
-export type post_Create_group = typeof post_Create_group;
-export const post_Create_group = {
-  method: z.literal('POST'),
-  path: z.literal('/v1/groups/'),
-  requestFormat: z.literal('json'),
-  parameters: z.object({
-    header: z.object({
-      user_id: z
-        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
-        .optional(),
-      'X-Project': z
-        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
-        .optional(),
-    }),
-    body: GroupCreate,
-  }),
-  response: Group,
-};
-
 export type get_List_groups = typeof get_List_groups;
 export const get_List_groups = {
   method: z.literal('GET'),
@@ -5719,9 +5724,9 @@ export const get_List_groups = {
   response: z.array(Group),
 };
 
-export type put_Upsert_group = typeof put_Upsert_group;
-export const put_Upsert_group = {
-  method: z.literal('PUT'),
+export type post_Create_group = typeof post_Create_group;
+export const post_Create_group = {
+  method: z.literal('POST'),
   path: z.literal('/v1/groups/'),
   requestFormat: z.literal('json'),
   parameters: z.object({
@@ -5734,6 +5739,46 @@ export const put_Upsert_group = {
         .optional(),
     }),
     body: GroupCreate,
+  }),
+  response: Group,
+};
+
+export type get_Retrieve_group = typeof get_Retrieve_group;
+export const get_Retrieve_group = {
+  method: z.literal('GET'),
+  path: z.literal('/v1/groups/{group_id}'),
+  requestFormat: z.literal('json'),
+  parameters: z.object({
+    path: z.object({
+      group_id: z.string(),
+    }),
+    header: z.object({
+      user_id: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+    }),
+  }),
+  response: Group,
+};
+
+export type put_Modify_group = typeof put_Modify_group;
+export const put_Modify_group = {
+  method: z.literal('PUT'),
+  path: z.literal('/v1/groups/{group_id}'),
+  requestFormat: z.literal('json'),
+  parameters: z.object({
+    path: z.object({
+      group_id: z.string(),
+    }),
+    header: z.object({
+      user_id: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'X-Project': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+    }),
+    body: GroupUpdate,
   }),
   response: Group,
 };
@@ -5762,8 +5807,8 @@ export const post_Send_group_message = {
   path: z.literal('/v1/groups/{group_id}/messages'),
   requestFormat: z.literal('json'),
   parameters: z.object({
-    query: z.object({
-      agent_id: z.string(),
+    path: z.object({
+      group_id: z.string(),
     }),
     header: z.object({
       user_id: z
@@ -5821,6 +5866,65 @@ export const post_Send_group_message_streaming = {
         .optional(),
     }),
     body: LettaStreamingRequest,
+  }),
+  response: z.unknown(),
+};
+
+export type patch_Modify_group_message = typeof patch_Modify_group_message;
+export const patch_Modify_group_message = {
+  method: z.literal('PATCH'),
+  path: z.literal('/v1/groups/{group_id}/messages/{message_id}'),
+  requestFormat: z.literal('json'),
+  parameters: z.object({
+    path: z.object({
+      group_id: z.string(),
+      message_id: z.string(),
+    }),
+    header: z.object({
+      user_id: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+    }),
+    body: z.union([
+      UpdateSystemMessage,
+      UpdateUserMessage,
+      UpdateReasoningMessage,
+      UpdateAssistantMessage,
+      z.array(
+        z.union([
+          UpdateSystemMessage,
+          UpdateUserMessage,
+          UpdateReasoningMessage,
+          UpdateAssistantMessage,
+        ]),
+      ),
+    ]),
+  }),
+  response: z.union([
+    SystemMessage,
+    UserMessage,
+    ReasoningMessage,
+    HiddenReasoningMessage,
+    ToolCallMessage,
+    ToolReturnMessage,
+    AssistantMessage,
+  ]),
+};
+
+export type patch_Reset_group_messages = typeof patch_Reset_group_messages;
+export const patch_Reset_group_messages = {
+  method: z.literal('PATCH'),
+  path: z.literal('/v1/groups/{group_id}/reset-messages'),
+  requestFormat: z.literal('json'),
+  parameters: z.object({
+    path: z.object({
+      group_id: z.string(),
+    }),
+    header: z.object({
+      user_id: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+    }),
   }),
   response: z.unknown(),
 };
@@ -7002,6 +7106,7 @@ export const EndpointByMethod = {
     '/v1/agents/{agent_id}/archival-memory': get_List_passages,
     '/v1/agents/{agent_id}/messages': get_List_messages,
     '/v1/groups/': get_List_groups,
+    '/v1/groups/{group_id}': get_Retrieve_group,
     '/v1/groups/{group_id}/messages': get_List_group_messages,
     '/v1/identities/': get_List_identities,
     '/v1/identities/{identity_id}': get_Retrieve_identity,
@@ -7049,6 +7154,8 @@ export const EndpointByMethod = {
     '/v1/agents/{agent_id}/archival-memory/{memory_id}': patch_Modify_passage,
     '/v1/agents/{agent_id}/messages/{message_id}': patch_Modify_message,
     '/v1/agents/{agent_id}/reset-messages': patch_Reset_messages,
+    '/v1/groups/{group_id}/messages/{message_id}': patch_Modify_group_message,
+    '/v1/groups/{group_id}/reset-messages': patch_Reset_group_messages,
     '/v1/identities/{identity_id}': patch_Update_identity,
     '/v1/blocks/{block_id}': patch_Modify_block,
     '/v1/sandbox-config/{sandbox_config_id}':
@@ -7101,7 +7208,7 @@ export const EndpointByMethod = {
   put: {
     '/v1/tools/': put_Upsert_tool,
     '/v1/tools/mcp/servers': put_Add_mcp_server,
-    '/v1/groups/': put_Upsert_group,
+    '/v1/groups/{group_id}': put_Modify_group,
     '/v1/identities/': put_Upsert_identity,
     '/v1/admin/users/': put_Update_user,
   },

@@ -675,6 +675,7 @@ export const prefetchUseAgentsServiceListPassages = (
  * @param data.after Message after which to retrieve the returned messages.
  * @param data.before Message before which to retrieve the returned messages.
  * @param data.limit Maximum number of messages to retrieve.
+ * @param data.groupId Group ID to filter messages by.
  * @param data.useAssistantMessage Whether to use assistant messages
  * @param data.assistantMessageToolName The name of the designated message tool.
  * @param data.assistantMessageToolKwarg The name of the message argument.
@@ -690,6 +691,7 @@ export const prefetchUseAgentsServiceListMessages = (
     assistantMessageToolKwarg,
     assistantMessageToolName,
     before,
+    groupId,
     limit,
     useAssistantMessage,
     userId,
@@ -699,6 +701,7 @@ export const prefetchUseAgentsServiceListMessages = (
     assistantMessageToolKwarg?: string;
     assistantMessageToolName?: string;
     before?: string;
+    groupId?: string;
     limit?: number;
     useAssistantMessage?: boolean;
     userId?: string;
@@ -711,6 +714,7 @@ export const prefetchUseAgentsServiceListMessages = (
       assistantMessageToolKwarg,
       assistantMessageToolName,
       before,
+      groupId,
       limit,
       useAssistantMessage,
       userId,
@@ -722,6 +726,7 @@ export const prefetchUseAgentsServiceListMessages = (
         assistantMessageToolKwarg,
         assistantMessageToolName,
         before,
+        groupId,
         limit,
         useAssistantMessage,
         userId,
@@ -776,6 +781,29 @@ export const prefetchUseGroupsServiceListGroups = (
         projectId,
         userId,
       }),
+  });
+/**
+ * Retrieve Group
+ * Retrieve the group by id.
+ * @param data The data for the request.
+ * @param data.groupId
+ * @param data.userId
+ * @returns Group Successful Response
+ * @throws ApiError
+ */
+export const prefetchUseGroupsServiceRetrieveGroup = (
+  queryClient: QueryClient,
+  {
+    groupId,
+    userId,
+  }: {
+    groupId: string;
+    userId?: string;
+  },
+) =>
+  queryClient.prefetchQuery({
+    queryKey: Common.UseGroupsServiceRetrieveGroupKeyFn({ groupId, userId }),
+    queryFn: () => GroupsService.retrieveGroup({ groupId, userId }),
   });
 /**
  * List Group Messages

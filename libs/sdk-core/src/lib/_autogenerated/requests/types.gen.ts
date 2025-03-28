@@ -1406,6 +1406,12 @@ export type Group = {
 export type GroupCreate = {
   agent_ids: Array<string>;
   description: string;
+  manager_config?: RoundRobinManager | SupervisorManager | DynamicManager;
+};
+
+export type GroupUpdate = {
+  agent_ids?: Array<string> | null;
+  description?: string | null;
   manager_config?:
     | RoundRobinManager
     | SupervisorManager
@@ -3988,6 +3994,10 @@ export type ListMessagesData = {
    */
   before?: string | null;
   /**
+   * Group ID to filter messages by.
+   */
+  groupId?: string | null;
+  /**
    * Maximum number of messages to retrieve.
    */
   limit?: number;
@@ -4055,14 +4065,6 @@ export type ResetMessagesData = {
 
 export type ResetMessagesResponse = AgentState;
 
-export type CreateGroupData = {
-  requestBody: GroupCreate;
-  userId?: string | null;
-  xProject?: string | null;
-};
-
-export type CreateGroupResponse = Group;
-
 export type ListGroupsData = {
   /**
    * Cursor for pagination
@@ -4089,13 +4091,29 @@ export type ListGroupsData = {
 
 export type ListGroupsResponse = Array<Group>;
 
-export type UpsertGroupData = {
+export type CreateGroupData = {
   requestBody: GroupCreate;
   userId?: string | null;
   xProject?: string | null;
 };
 
-export type UpsertGroupResponse = Group;
+export type CreateGroupResponse = Group;
+
+export type RetrieveGroupData = {
+  groupId: string;
+  userId?: string | null;
+};
+
+export type RetrieveGroupResponse = Group;
+
+export type ModifyGroupData = {
+  groupId: string;
+  requestBody: GroupUpdate;
+  userId?: string | null;
+  xProject?: string | null;
+};
+
+export type ModifyGroupResponse = Group;
 
 export type DeleteGroupData = {
   groupId: string;
@@ -4105,7 +4123,7 @@ export type DeleteGroupData = {
 export type DeleteGroupResponse = unknown;
 
 export type SendGroupMessageData = {
-  agentId: string;
+  groupId: string;
   requestBody: LettaRequest;
   userId?: string | null;
 };
@@ -4150,6 +4168,33 @@ export type SendGroupMessageStreamingData = {
 };
 
 export type SendGroupMessageStreamingResponse = unknown;
+
+export type ModifyGroupMessageData = {
+  groupId: string;
+  messageId: string;
+  requestBody:
+    | UpdateSystemMessage
+    | UpdateUserMessage
+    | UpdateReasoningMessage
+    | UpdateAssistantMessage;
+  userId?: string | null;
+};
+
+export type ModifyGroupMessageResponse =
+  | SystemMessage
+  | UserMessage
+  | ReasoningMessage
+  | HiddenReasoningMessage
+  | ToolCallMessage
+  | ToolReturnMessage
+  | AssistantMessage;
+
+export type ResetGroupMessagesData = {
+  groupId: string;
+  userId?: string | null;
+};
+
+export type ResetGroupMessagesResponse = unknown;
 
 export type ListIdentitiesData = {
   after?: string | null;
@@ -5493,19 +5538,6 @@ export type $OpenApiTs = {
     };
   };
   '/v1/groups/': {
-    post: {
-      req: CreateGroupData;
-      res: {
-        /**
-         * Successful Response
-         */
-        200: Group;
-        /**
-         * Validation Error
-         */
-        422: HTTPValidationError;
-      };
-    };
     get: {
       req: ListGroupsData;
       res: {
@@ -5519,8 +5551,8 @@ export type $OpenApiTs = {
         422: HTTPValidationError;
       };
     };
-    put: {
-      req: UpsertGroupData;
+    post: {
+      req: CreateGroupData;
       res: {
         /**
          * Successful Response
@@ -5534,6 +5566,32 @@ export type $OpenApiTs = {
     };
   };
   '/v1/groups/{group_id}': {
+    get: {
+      req: RetrieveGroupData;
+      res: {
+        /**
+         * Successful Response
+         */
+        200: Group;
+        /**
+         * Validation Error
+         */
+        422: HTTPValidationError;
+      };
+    };
+    put: {
+      req: ModifyGroupData;
+      res: {
+        /**
+         * Successful Response
+         */
+        200: Group;
+        /**
+         * Validation Error
+         */
+        422: HTTPValidationError;
+      };
+    };
     delete: {
       req: DeleteGroupData;
       res: {
@@ -5582,6 +5640,43 @@ export type $OpenApiTs = {
       res: {
         /**
          * Successful response
+         */
+        200: unknown;
+        /**
+         * Validation Error
+         */
+        422: HTTPValidationError;
+      };
+    };
+  };
+  '/v1/groups/{group_id}/messages/{message_id}': {
+    patch: {
+      req: ModifyGroupMessageData;
+      res: {
+        /**
+         * Successful Response
+         */
+        200:
+          | SystemMessage
+          | UserMessage
+          | ReasoningMessage
+          | HiddenReasoningMessage
+          | ToolCallMessage
+          | ToolReturnMessage
+          | AssistantMessage;
+        /**
+         * Validation Error
+         */
+        422: HTTPValidationError;
+      };
+    };
+  };
+  '/v1/groups/{group_id}/reset-messages': {
+    patch: {
+      req: ResetGroupMessagesData;
+      res: {
+        /**
+         * Successful Response
          */
         200: unknown;
         /**

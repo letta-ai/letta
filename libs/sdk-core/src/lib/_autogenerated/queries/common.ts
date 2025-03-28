@@ -543,6 +543,7 @@ export const UseAgentsServiceListMessagesKeyFn = (
     assistantMessageToolKwarg,
     assistantMessageToolName,
     before,
+    groupId,
     limit,
     useAssistantMessage,
     userId,
@@ -552,6 +553,7 @@ export const UseAgentsServiceListMessagesKeyFn = (
     assistantMessageToolKwarg?: string;
     assistantMessageToolName?: string;
     before?: string;
+    groupId?: string;
     limit?: number;
     useAssistantMessage?: boolean;
     userId?: string;
@@ -566,6 +568,7 @@ export const UseAgentsServiceListMessagesKeyFn = (
       assistantMessageToolKwarg,
       assistantMessageToolName,
       before,
+      groupId,
       limit,
       useAssistantMessage,
       userId,
@@ -601,6 +604,24 @@ export const UseGroupsServiceListGroupsKeyFn = (
   useGroupsServiceListGroupsKey,
   ...(queryKey ?? [{ after, before, limit, managerType, projectId, userId }]),
 ];
+export type GroupsServiceRetrieveGroupDefaultResponse = Awaited<
+  ReturnType<typeof GroupsService.retrieveGroup>
+>;
+export type GroupsServiceRetrieveGroupQueryResult<
+  TData = GroupsServiceRetrieveGroupDefaultResponse,
+  TError = unknown,
+> = UseQueryResult<TData, TError>;
+export const useGroupsServiceRetrieveGroupKey = 'GroupsServiceRetrieveGroup';
+export const UseGroupsServiceRetrieveGroupKeyFn = (
+  {
+    groupId,
+    userId,
+  }: {
+    groupId: string;
+    userId?: string;
+  },
+  queryKey?: Array<unknown>,
+) => [useGroupsServiceRetrieveGroupKey, ...(queryKey ?? [{ groupId, userId }])];
 export type GroupsServiceListGroupMessagesDefaultResponse = Awaited<
   ReturnType<typeof GroupsService.listGroupMessages>
 >;
@@ -1400,8 +1421,8 @@ export type ToolsServiceUpsertToolMutationResult = Awaited<
 export type ToolsServiceAddMcpServerMutationResult = Awaited<
   ReturnType<typeof ToolsService.addMcpServer>
 >;
-export type GroupsServiceUpsertGroupMutationResult = Awaited<
-  ReturnType<typeof GroupsService.upsertGroup>
+export type GroupsServiceModifyGroupMutationResult = Awaited<
+  ReturnType<typeof GroupsService.modifyGroup>
 >;
 export type IdentitiesServiceUpsertIdentityMutationResult = Awaited<
   ReturnType<typeof IdentitiesService.upsertIdentity>
@@ -1450,6 +1471,12 @@ export type AgentsServiceModifyMessageMutationResult = Awaited<
 >;
 export type AgentsServiceResetMessagesMutationResult = Awaited<
   ReturnType<typeof AgentsService.resetMessages>
+>;
+export type GroupsServiceModifyGroupMessageMutationResult = Awaited<
+  ReturnType<typeof GroupsService.modifyGroupMessage>
+>;
+export type GroupsServiceResetGroupMessagesMutationResult = Awaited<
+  ReturnType<typeof GroupsService.resetGroupMessages>
 >;
 export type IdentitiesServiceUpdateIdentityMutationResult = Awaited<
   ReturnType<typeof IdentitiesService.updateIdentity>

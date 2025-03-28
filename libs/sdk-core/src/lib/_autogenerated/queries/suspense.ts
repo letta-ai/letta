@@ -828,6 +828,7 @@ export const useAgentsServiceListPassagesSuspense = <
  * @param data.after Message after which to retrieve the returned messages.
  * @param data.before Message before which to retrieve the returned messages.
  * @param data.limit Maximum number of messages to retrieve.
+ * @param data.groupId Group ID to filter messages by.
  * @param data.useAssistantMessage Whether to use assistant messages
  * @param data.assistantMessageToolName The name of the designated message tool.
  * @param data.assistantMessageToolKwarg The name of the message argument.
@@ -846,6 +847,7 @@ export const useAgentsServiceListMessagesSuspense = <
     assistantMessageToolKwarg,
     assistantMessageToolName,
     before,
+    groupId,
     limit,
     useAssistantMessage,
     userId,
@@ -855,6 +857,7 @@ export const useAgentsServiceListMessagesSuspense = <
     assistantMessageToolKwarg?: string;
     assistantMessageToolName?: string;
     before?: string;
+    groupId?: string;
     limit?: number;
     useAssistantMessage?: boolean;
     userId?: string;
@@ -870,6 +873,7 @@ export const useAgentsServiceListMessagesSuspense = <
         assistantMessageToolKwarg,
         assistantMessageToolName,
         before,
+        groupId,
         limit,
         useAssistantMessage,
         userId,
@@ -883,6 +887,7 @@ export const useAgentsServiceListMessagesSuspense = <
         assistantMessageToolKwarg,
         assistantMessageToolName,
         before,
+        groupId,
         limit,
         useAssistantMessage,
         userId,
@@ -939,6 +944,38 @@ export const useGroupsServiceListGroupsSuspense = <
         projectId,
         userId,
       }) as TData,
+    ...options,
+  });
+/**
+ * Retrieve Group
+ * Retrieve the group by id.
+ * @param data The data for the request.
+ * @param data.groupId
+ * @param data.userId
+ * @returns Group Successful Response
+ * @throws ApiError
+ */
+export const useGroupsServiceRetrieveGroupSuspense = <
+  TData = Common.GroupsServiceRetrieveGroupDefaultResponse,
+  TError = unknown,
+  TQueryKey extends Array<unknown> = unknown[],
+>(
+  {
+    groupId,
+    userId,
+  }: {
+    groupId: string;
+    userId?: string;
+  },
+  queryKey?: TQueryKey,
+  options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>,
+) =>
+  useSuspenseQuery<TData, TError>({
+    queryKey: Common.UseGroupsServiceRetrieveGroupKeyFn(
+      { groupId, userId },
+      queryKey,
+    ),
+    queryFn: () => GroupsService.retrieveGroup({ groupId, userId }) as TData,
     ...options,
   });
 /**

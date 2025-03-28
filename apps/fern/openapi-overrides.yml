@@ -1658,3 +1658,69 @@ paths:
       x-fern-sdk-group-name:
         - identities
       x-fern-sdk-method-name: delete
+  /v1/groups/:
+    get:
+      x-fern-sdk-group-name:
+        - groups
+      x-fern-sdk-method-name: list
+    post:
+      x-fern-sdk-group-name:
+        - groups
+      x-fern-sdk-method-name: create
+  /v1/groups/{group_id}:
+    get:
+      x-fern-sdk-group-name:
+        - groups
+      x-fern-sdk-method-name: retrieve
+    patch:
+      x-fern-sdk-group-name:
+        - groups
+      x-fern-sdk-method-name: modify
+    delete:
+      x-fern-sdk-group-name:
+        - groups
+      x-fern-sdk-method-name: delete
+  /v1/groups/{group_id}/reset-messages:
+    patch:
+      x-fern-sdk-group-name:
+        - groups
+      x-fern-sdk-method-name: reset_messages
+  /v1/groups/{group_id}/messages:
+    get:
+      x-fern-sdk-group-name:
+        - groups
+        - messages
+      x-fern-sdk-method-name: list
+    post:
+      x-fern-sdk-group-name:
+        - groups
+        - messages
+      x-fern-sdk-method-name: create
+  /v1/groups/{group_id}/messages/{message_id}:
+    patch:
+      x-fern-sdk-group-name:
+        - groups
+        - messages
+      x-fern-sdk-method-name: modify
+  /v1/groups/{group_id}/messages/stream:
+    post:
+      x-fern-streaming:
+        format: sse
+      x-fern-sdk-group-name:
+        - groups
+        - messages
+      x-fern-sdk-method-name: create_stream
+      responses:
+        '200':
+          content:
+            text/event-stream:
+              schema:
+                x-fern-type-name: LettaStreamingResponse
+                oneOf:
+                  - $ref: '#/components/schemas/SystemMessage'
+                  - $ref: '#/components/schemas/UserMessage'
+                  - $ref: '#/components/schemas/ReasoningMessage'
+                  - $ref: '#/components/schemas/ToolCallMessage'
+                  - $ref: '#/components/schemas/ToolReturnMessage'
+                  - $ref: '#/components/schemas/AssistantMessage'
+                  - $ref: '#/components/schemas/LettaUsageStatistics'

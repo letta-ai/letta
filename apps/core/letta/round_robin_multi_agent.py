@@ -14,7 +14,7 @@ class RoundRobinMultiAgent(Agent):
         self,
         interface: AgentInterface,
         agent_state: AgentState,
-        user: User = None,
+        user: User,
         # custom
         group_id: str = "",
         agent_ids: List[str] = [],
@@ -45,7 +45,7 @@ class RoundRobinMultiAgent(Agent):
         for agent_id in self.agent_ids:
             agents[agent_id] = self.load_participant_agent(agent_id=agent_id)
 
-        message_index = {}
+        message_index = {agent_id: 0 for agent_id in self.agent_ids}
         chat_history: List[Message] = []
         new_messages = messages
         speaker_id = None
@@ -91,7 +91,7 @@ class RoundRobinMultiAgent(Agent):
                     MessageCreate(
                         role="system",
                         content=message.content,
-                        name=participant_agent.agent_state.name,
+                        name=message.name,
                     )
                     for message in assistant_messages
                 ]
@@ -138,10 +138,21 @@ class RoundRobinMultiAgent(Agent):
         agent_state = self.agent_manager.get_agent_by_id(agent_id=agent_id, actor=self.user)
         persona_block = agent_state.memory.get_block(label="persona")
         group_chat_participant_persona = (
-            "\n\n====Group Chat Contex===="
-            f"\nYou are speaking in a group chat with {len(self.agent_ids) - 1} other "
-            "agents and one user. Respond to new messages in the group chat when prompted. "
-            f"Description of the group: {self.description}"
+            f"%%% GROUP CHAT CONTEXT %%% "
+            f"You are speaking in a group chat with {len(self.agent_ids)} other participants. "
+            f"Group Description: {self.description} "
+            "INTERACTION GUIDELINES:\n"
+            "1. Be aware that others can see your messages - communicate as if in a real group conversation\n"
+            "2. Acknowledge and build upon others' contributions when relevant\n"
+            "3. Stay on topic while adding your unique perspective based on your role and personality\n"
+            "4. Be concise but engaging - give others space to contribute\n"
+            "5. Maintain your character's personality while being collaborative\n"
+            "6. Feel free to ask questions to other participants to encourage discussion\n"
+            "7. If someone addresses you directly, acknowledge their message\n"
+            "8. Share relevant experiences or knowledge that adds value to the conversation\n\n"
+            "Remember: This is a natural group conversation. Interact as you would in a real group setting, "
+            "staying true to your character while fostering meaningful dialogue. "
+            "%%% END GROUP CHAT CONTEXT %%%"
         )
         agent_state.memory.update_block_value(label="persona", value=persona_block.value + group_chat_participant_persona)
         return Agent(
