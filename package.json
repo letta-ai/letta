@@ -161,6 +161,7 @@
     "typed-openapi": "^0.10.1",
     "unique-names-generator": "^4.7.1",
     "uuid": "^11.0.3",
+    "winston": "^3.17.0",
     "zod": "^3.24.1"
   },
   "devDependencies": {

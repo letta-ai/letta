@@ -12,12 +12,24 @@ import { cloudApiRouter } from 'tmp-cloud-api-router';
 import { createExpressEndpoints, initServer } from '@ts-rest/express';
 import { OpenAPI } from '@letta-cloud/sdk-core';
 import * as Sentry from '@sentry/node';
+import winston from 'winston';
+import expressWinston from 'express-winston';
 
 export function startServer() {
   const host = process.env.HOST ?? 'localhost';
   const port = process.env.PORT ? Number(process.env.PORT) : 3006;
 
   const app = express();
+
+  app.use(
+    expressWinston.logger({
+      transports: [new winston.transports.Console()],
+      format: winston.format.combine(winston.format.json()),
+      meta: true, // optional: control whether you want to log the meta data about the request (default to true)
+      msg: 'HTTP {{req.method}} {{req.url}}', // optional: customize the default logging message. E.g. "{{res.statusCode}} {{req.method}} {{res.responseTime}}ms {{req.url}}"
+      colorize: false,
+    }),
+  );
 
   OpenAPI.interceptors.request.use((config) => {
     config.baseURL = environment.LETTA_AGENTS_ENDPOINT;

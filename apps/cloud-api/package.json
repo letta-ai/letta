@@ -39,6 +39,7 @@
     "dotenv": "^16.4.7",
     "drizzle-orm": "^0.38.3",
     "express": "^4.21.2",
+    "express-winston": "^4.2.0",
     "http-proxy": "^1.18.1",
     "http-proxy-middleware": "^3.0.3",
     "https-proxy-agent": "^7.0.6",
@@ -55,6 +56,7 @@
     "resend": "^4.1.2",
     "stripe": "^17.7.0",
     "unique-names-generator": "^4.7.1",
+    "winston": "^3.17.0",
     "zod": "^3.24.2"
   },
   "overrides": {
