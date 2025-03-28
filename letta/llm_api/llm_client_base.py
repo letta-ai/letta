@@ -42,7 +42,6 @@ class LLMClientBase:
         Otherwise returns a ChatCompletionResponse.
         """
         request_data = self.build_request_data(messages, tools, tool_call)
-        response_data = {}
 
         try:
             log_event(name="llm_request_sent", attributes=request_data)

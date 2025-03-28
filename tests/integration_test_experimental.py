@@ -337,9 +337,7 @@ def test_multi_agent_broadcast_client(client: Letta, weather_tool):
             }
         ],
     )
-    import ipdb
 
-    ipdb.set_trace()
     for message in response.messages:
         print(message)
 
