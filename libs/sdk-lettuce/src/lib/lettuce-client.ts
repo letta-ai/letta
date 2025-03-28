@@ -1,14 +1,13 @@
 import { Client, Connection } from '@temporalio/client';
 import { environment } from '@letta-cloud/config-environment-variables';
+import { getConnectionConfig } from './utils/getConnectionConfig/getConnectionConfig';
 
 const client: Client = makeClient();
 
 function makeClient(): Client {
-  const connection = Connection.lazy({
-    address: environment.TEMPORAL_API_HOST,
-  });
+  const connection = Connection.lazy(getConnectionConfig());
 
-  return new Client({ connection });
+  return new Client({ connection, namespace: 'lettuce.tmhou' });
 }
 
 export function getTemporalClient(): Client {

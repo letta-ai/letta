@@ -5,6 +5,9 @@ import { db, deployedAgentVariables } from '@letta-cloud/service-database';
 import { eq } from 'drizzle-orm';
 import { getDeployedTemplateByVersion } from '@letta-cloud/utils-server';
 import { updateAgentFromAgentId } from '@letta-cloud/utils-server';
+import { environment } from '@letta-cloud/config-environment-variables';
+import { startMigrateAgents } from '@letta-cloud/lettuce-client';
+import { getSingleFlag } from '@letta-cloud/service-feature-flags';
 
 type MigrateAgentRequest = ServerInferRequest<
   typeof cloudContracts.agents.migrateAgent
@@ -50,33 +53,49 @@ export async function migrateAgent(
     };
   }
 
-  if (!variables) {
-    const deployedAgentVariablesItem =
-      await db.query.deployedAgentVariables.findFirst({
-        where: eq(deployedAgentVariables.deployedAgentId, agentIdToMigrate),
-      });
+  const shouldUseTemporal = await getSingleFlag(
+    'USE_TEMPORAL_FOR_MIGRATIONS',
+    context.request.organizationId,
+  );
 
-    variables = deployedAgentVariablesItem?.value || {};
+  if (environment.TEMPORAL_LETTUCE_API_HOST && shouldUseTemporal) {
+    await startMigrateAgents({
+      agentIds: [agentIdToMigrate],
+      template: to_template,
+      memoryVariables: variables,
+      preserveCoreMemories: preserve_core_memories,
+      coreUserId: lettaAgentsUserId,
+      organizationId: context.request.organizationId,
+    });
+  } else {
+    if (!variables) {
+      const deployedAgentVariablesItem =
+        await db.query.deployedAgentVariables.findFirst({
+          where: eq(deployedAgentVariables.deployedAgentId, agentIdToMigrate),
+        });
+
+      variables = deployedAgentVariablesItem?.value || {};
+    }
+
+    if (!deployedAgentTemplate?.id) {
+      return {
+        status: 404,
+        body: {
+          message: 'Template version provided does not exist',
+        },
+      };
+    }
+
+    await updateAgentFromAgentId({
+      memoryVariables: variables || {},
+      baseAgentId: deployedAgentTemplate.id,
+      agentToUpdateId: agentIdToMigrate,
+      lettaAgentsUserId,
+      preserveCoreMemories: preserve_core_memories,
+      baseTemplateId: deployedAgentTemplate.agentTemplateId,
+      templateId: deployedAgentTemplate.id,
+    });
   }
-
-  if (!deployedAgentTemplate?.id) {
-    return {
-      status: 404,
-      body: {
-        message: 'Template version provided does not exist',
-      },
-    };
-  }
-
-  await updateAgentFromAgentId({
-    memoryVariables: variables || {},
-    baseAgentId: deployedAgentTemplate.id,
-    agentToUpdateId: agentIdToMigrate,
-    lettaAgentsUserId,
-    preserveCoreMemories: preserve_core_memories,
-    baseTemplateId: deployedAgentTemplate.agentTemplateId,
-    templateId: deployedAgentTemplate.id,
-  });
 
   return {
     status: 200,

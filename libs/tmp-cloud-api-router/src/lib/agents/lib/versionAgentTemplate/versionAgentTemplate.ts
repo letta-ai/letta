@@ -14,6 +14,9 @@ import { migrateAgent } from '../migrateAgent/migrateAgent';
 import { copyAgentById } from '@letta-cloud/utils-server';
 import { findMemoryBlockVariables } from '@letta-cloud/utils-shared';
 import type { cloudContracts } from '@letta-cloud/sdk-cloud-api';
+import { environment } from '@letta-cloud/config-environment-variables';
+import { startMigrateAgents } from '@letta-cloud/lettuce-client';
+import { getSingleFlag } from '@letta-cloud/service-feature-flags';
 
 type DeployAgentTemplateRequest = ServerInferRequest<
   typeof cloudContracts.agents.versionAgentTemplate
@@ -140,6 +143,8 @@ export async function versionAgentTemplate(
     version,
   });
 
+  const nextVersion = `${agentTemplateName}:${version}`;
+
   if (migrate_deployed_agents) {
     if (!agentTemplate?.id) {
       return {
@@ -150,44 +155,61 @@ export async function versionAgentTemplate(
       };
     }
 
-    const deployedAgentsList = await AgentsService.listAgents(
-      {
-        baseTemplateId: agentTemplate.id,
-      },
-      {
-        user_id: context.request.lettaAgentsUserId,
-      },
+    const shouldUseTemporal = await getSingleFlag(
+      'USE_TEMPORAL_FOR_MIGRATIONS',
+      context.request.organizationId,
     );
 
-    void Promise.all(
-      deployedAgentsList.map(async (deployedAgent) => {
-        const deployedAgentVariablesItem =
-          await db.query.deployedAgentVariables.findFirst({
-            where: eq(deployedAgentVariables.deployedAgentId, deployedAgent.id),
-          });
+    if (environment.TEMPORAL_LETTUCE_API_HOST && shouldUseTemporal) {
+      await startMigrateAgents({
+        template: nextVersion,
+        preserveCoreMemories: false,
+        coreUserId: context.request.lettaAgentsUserId,
+        organizationId: context.request.organizationId,
+      });
+    } else {
+      const deployedAgentsList = await AgentsService.listAgents(
+        {
+          baseTemplateId: agentTemplate.id,
+        },
+        {
+          user_id: context.request.lettaAgentsUserId,
+        },
+      );
 
-        return migrateAgent(
-          {
-            body: {
-              to_template: `${agentTemplateName}:${version}`,
-              variables: deployedAgentVariablesItem?.value || {},
-              preserve_core_memories: false,
+      void Promise.all(
+        deployedAgentsList.map(async (deployedAgent) => {
+          const deployedAgentVariablesItem =
+            await db.query.deployedAgentVariables.findFirst({
+              where: eq(
+                deployedAgentVariables.deployedAgentId,
+                deployedAgent.id,
+              ),
+            });
+
+          return migrateAgent(
+            {
+              body: {
+                to_template: `${agentTemplateName}:${version}`,
+                variables: deployedAgentVariablesItem?.value || {},
+                preserve_core_memories: false,
+              },
+              params: {
+                agent_id: deployedAgent.id,
+              },
             },
-            params: {
-              agent_id: deployedAgent.id,
-            },
-          },
-          context,
-        );
-      }),
-    );
+            context,
+          );
+        }),
+      );
+    }
   }
 
   return {
     status: 201,
     body: {
       version,
-      fullVersion: `${agentTemplateName}:${version}`,
+      fullVersion: nextVersion,
       id: deployedAgentTemplateId,
       ...(returnAgentState ? { state: createdAgent } : {}),
     },

@@ -41,6 +41,11 @@ export const featureFlags = {
     expiryDate: '2024-04-01',
     flagValue: z.boolean(),
   },
+  USE_TEMPORAL_FOR_MIGRATIONS: {
+    description: 'Use Temporal for migrations',
+    expiryDate: '2024-04-01',
+    flagValue: z.boolean(),
+  },
 } satisfies Record<string, FlagProperties>;
 
 export type Flag = keyof typeof featureFlags;

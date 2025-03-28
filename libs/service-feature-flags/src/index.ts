@@ -85,24 +85,14 @@ export async function getSingleFlag<SingleFlag extends Flag>(
 
   const ldClient = await getLaunchDarklyClient();
 
-  return new Promise((resolve) => {
-    return ldClient.variation(
-      flag,
-      {
-        key: orgId,
-        kind: 'org',
-      },
-      false,
-      (err, res) => {
-        if (err) {
-          resolve(undefined);
-          return;
-        }
-
-        resolve(res);
-      },
-    );
-  });
+  return ldClient.variation(
+    flag,
+    {
+      key: orgId,
+      kind: 'org',
+    },
+    false,
+  );
 }
 
 export async function getDefaultFlags(): Promise<Partial<FlagMap>> {
