@@ -31,11 +31,6 @@ export const featureFlags = {
     expiryDate: '2024-02-31',
     flagValue: z.boolean(),
   },
-  NEW_TOOLS: {
-    description: 'New tools',
-    expiryDate: '2024-02-31',
-    flagValue: z.boolean(),
-  },
   NEW_DEVELOPMENT_SERVER: {
     description: 'Switch between development servers',
     expiryDate: '2024-04-01',

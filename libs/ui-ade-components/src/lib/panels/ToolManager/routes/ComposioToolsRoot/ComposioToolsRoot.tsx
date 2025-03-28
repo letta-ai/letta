@@ -13,7 +13,7 @@ import { useTranslations } from '@letta-cloud/translations';
 import { ToolManagerPage } from '../../components/ToolManagerPage/ToolManagerPage';
 import { webApi, webApiQueryKeys } from '@letta-cloud/sdk-web';
 import { useMemo, useState } from 'react';
-import { SearchTools } from '../../../ToolsExplorer/shared/SearchTools/SearchTools';
+import { SearchTools } from '../../components/SearchTools/SearchTools';
 import { useToolManagerState } from '../../hooks/useToolManagerState/useToolManagerState';
 
 function AppsViewer() {

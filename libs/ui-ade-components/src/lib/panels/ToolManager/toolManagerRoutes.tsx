@@ -13,7 +13,7 @@ interface Routes {
   component: React.ReactNode;
 }
 
-export const toolManagerRoutes: Routes[] = [
+export const toolManagerRoutes = [
   {
     path: '/current-agent-tools',
     key: 'current',
@@ -50,7 +50,10 @@ export const toolManagerRoutes: Routes[] = [
     key: 'lettaTools',
     component: <LettaTools />,
   },
-];
+] satisfies Routes[];
+
+export type ToolManagerPaths<Key extends number = number> =
+  (typeof toolManagerRoutes)[Key]['path'];
 
 export function isValidToolManagerRoute(path: string): boolean {
   // account for :variable paths

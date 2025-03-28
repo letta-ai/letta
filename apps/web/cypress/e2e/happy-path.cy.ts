@@ -138,11 +138,13 @@ describe('letta', () => {
 
     cy.findByTestId('start-create-tool').click();
 
-    cy.findByTestId('submit-create-tool').click();
+    cy.findByTestId('create-tool-dialog-name').type('roll_d20');
+
+    cy.findByTestId('create-tool-dialog-confirm-button').click();
 
     cy.findByTestId('attach-tool-to-agent', { timeout: 50000 }).click();
 
-    cy.findByTestId('close-tool-explorer').click();
+    cy.findByTestId('close-tool-manager').click();
 
     cy.findByText('roll_d20', { timeout: 50000 }).should('exist');
 

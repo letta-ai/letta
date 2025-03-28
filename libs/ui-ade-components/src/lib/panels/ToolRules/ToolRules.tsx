@@ -1,12 +1,11 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslations } from '@letta-cloud/translations';
 import {
+  ArrowRightIcon,
   Badge,
   Button,
   Checkbox,
   ChildNodesIcon,
-  CloseIcon,
-  CloseMiniApp,
   ConditionalIcon,
   Dialog,
   DropdownDetailedMenuItem,
@@ -17,7 +16,6 @@ import {
   isMultiValue,
   KeyValueEditor,
   LoadingEmptyStatusComponent,
-  MiniApp,
   PlusIcon,
   RawInput,
   RefreshIcon,
@@ -34,11 +32,13 @@ import {
 } from '@letta-cloud/ui-component-library';
 import { useCurrentAgent } from '../../hooks';
 import {
+  type MaxCountPerStepToolRule,
   useAgentsServiceModifyAgent,
   UseAgentsServiceRetrieveAgentKeyFn,
 } from '@letta-cloud/sdk-core';
 import type {
   AgentState,
+  ContinueToolRule,
   ChildToolRule,
   ConditionalToolRule,
   InitToolRule,
@@ -63,6 +63,10 @@ function useToolTitleFromType(type: SupportedToolRuleNameTypes) {
         return t('toolTypes.exitLoop.title');
       case 'conditional':
         return t('toolTypes.conditional.title');
+      case 'continue_loop':
+        return t('toolTypes.continueLoop.title');
+      case 'max_count_per_step':
+        return t('toolTypes.maxCountPerStep.title');
     }
 
     return '';
@@ -80,6 +84,10 @@ function useToolIconsFromType(type: SupportedToolRuleNameTypes) {
         return <EndIcon />;
       case 'conditional':
         return <ConditionalIcon />;
+      case 'continue_loop':
+        return <ArrowRightIcon />;
+      case 'max_count_per_step':
+        return <RuleIcon />;
     }
 
     return null;
@@ -578,6 +586,96 @@ function ConditionalToolEditor(props: ConditionalToolEditorProps) {
   );
 }
 
+interface ContinueToolRuleEditorProps extends ToolEditorDefaultProps {
+  defaultRule: ContinueToolRule;
+}
+
+const continueLoopToolRuleSchema = z.object({
+  toolName: z.string(),
+  type: z.literal('continue_loop'),
+});
+
+type ContinueToolRuleRule = z.infer<typeof continueLoopToolRuleSchema>;
+
+function ContinueToolRuleComponent(props: ContinueToolRuleEditorProps) {
+  const { defaultRule, onRemove, onSubmit } = props;
+
+  const form = useForm<ContinueToolRuleRule>({
+    resolver: zodResolver(continueLoopToolRuleSchema),
+    defaultValues: {
+      toolName: defaultRule.tool_name,
+      type: 'continue_loop',
+    },
+  });
+  const { tools } = useCurrentAgent();
+
+  const t = useTranslations('ADE/ToolRules');
+
+  const handleSubmit = useCallback(
+    (data: ContinueToolRuleRule) => {
+      onSubmit({
+        tool_name: data.toolName,
+        type: 'continue_loop',
+      });
+      form.reset({
+        toolName: data.toolName,
+        type: 'continue_loop',
+      });
+    },
+    [form, onSubmit],
+  );
+
+  return (
+    <FormProvider {...form}>
+      <form onSubmit={form.handleSubmit(handleSubmit)}>
+        <ToolRuleItemWrapper
+          isValid={form.formState.isValid}
+          isDirty={form.formState.isDirty}
+          type="continue_loop"
+          onRemove={onRemove}
+        >
+          <FormField
+            name="toolName"
+            render={({ field }) => (
+              <HStack align="center">
+                {t.rich('ContinueToolRule.sentence', {
+                  tool: () => (
+                    <Select
+                      label={t('ContinueToolRule.toolName')}
+                      value={
+                        field.value
+                          ? {
+                              value: field.value,
+                              label: field.value,
+                            }
+                          : undefined
+                      }
+                      inline
+                      hideLabel
+                      placeholder={t('ContinueToolRule.toolName')}
+                      options={(tools || []).map((tool) => ({
+                        value: tool.name || '',
+                        label: tool.name || '',
+                      }))}
+                      onSelect={(value) => {
+                        if (isMultiValue(value)) {
+                          return;
+                        }
+
+                        field.onChange(value?.value);
+                      }}
+                    />
+                  ),
+                })}
+              </HStack>
+            )}
+          />
+        </ToolRuleItemWrapper>
+      </form>
+    </FormProvider>
+  );
+}
+
 interface ExitLoopToolEditorProps extends ToolEditorDefaultProps {
   defaultRule: TerminalToolRule;
 }
@@ -650,7 +748,6 @@ function ExitLoopToolEditor(props: ExitLoopToolEditorProps) {
                         label: tool.name || '',
                       }))}
                       onSelect={(value) => {
-                        console.log(value);
                         if (isMultiValue(value)) {
                           return;
                         }
@@ -663,6 +760,120 @@ function ExitLoopToolEditor(props: ExitLoopToolEditorProps) {
               </HStack>
             )}
           />
+        </ToolRuleItemWrapper>
+      </form>
+    </FormProvider>
+  );
+}
+
+interface MaxCountPerStepToolRuleEditorProps extends ToolEditorDefaultProps {
+  defaultRule: MaxCountPerStepToolRule;
+}
+
+const maxCountPerStepToolRuleSchema = z.object({
+  toolName: z.string(),
+  type: z.literal('max_count_per_step'),
+  maxCount: z.string().refine((value) => {
+    return !isNaN(Number(value));
+  }),
+});
+
+type MaxCountPerStepToolRuleType = z.infer<
+  typeof maxCountPerStepToolRuleSchema
+>;
+
+function MaxCountPerStepToolRuleEditor(
+  props: MaxCountPerStepToolRuleEditorProps,
+) {
+  const { defaultRule, onRemove, onSubmit } = props;
+
+  const form = useForm<MaxCountPerStepToolRuleType>({
+    resolver: zodResolver(maxCountPerStepToolRuleSchema),
+    defaultValues: {
+      toolName: defaultRule.tool_name,
+      type: 'max_count_per_step',
+      maxCount: defaultRule.max_count_limit.toString(),
+    },
+  });
+
+  const { tools } = useCurrentAgent();
+
+  const t = useTranslations('ADE/ToolRules');
+
+  const handleSubmit = useCallback(
+    (data: MaxCountPerStepToolRuleType) => {
+      onSubmit({
+        tool_name: data.toolName,
+        type: 'max_count_per_step',
+        max_count_limit: parseInt(data.maxCount, 10),
+      });
+      form.reset({
+        toolName: data.toolName,
+        type: 'max_count_per_step',
+        maxCount: data.maxCount,
+      });
+    },
+    [form, onSubmit],
+  );
+
+  return (
+    <FormProvider {...form}>
+      <form onSubmit={form.handleSubmit(handleSubmit)}>
+        <ToolRuleItemWrapper
+          isValid={form.formState.isValid}
+          isDirty={form.formState.isDirty}
+          type="max_count_per_step"
+          onRemove={onRemove}
+        >
+          <HStack align="center">
+            {t.rich('MaxCountPerStepToolRuleEditor.sentence', {
+              tool: () => (
+                <FormField
+                  name="toolName"
+                  render={({ field }) => (
+                    <Select
+                      label={t('MaxCountPerStepToolRuleEditor.toolName')}
+                      value={
+                        field.value
+                          ? {
+                              value: field.value,
+                              label: field.value,
+                            }
+                          : undefined
+                      }
+                      inline
+                      hideLabel
+                      placeholder={t('MaxCountPerStepToolRuleEditor.toolName')}
+                      options={(tools || []).map((tool) => ({
+                        value: tool.name || '',
+                        label: tool.name || '',
+                      }))}
+                      onSelect={(value) => {
+                        if (isMultiValue(value)) {
+                          return;
+                        }
+
+                        field.onChange(value?.value);
+                      }}
+                    />
+                  )}
+                />
+              ),
+              count: () => (
+                <FormField
+                  name="maxCount"
+                  render={({ field }) => (
+                    <RawInput
+                      hideLabel
+                      label={t('MaxCountPerStepToolRuleEditor.count')}
+                      value={field.value}
+                      onChange={field.onChange}
+                    />
+                  )}
+                />
+              ),
+            })}
+          </HStack>
         </ToolRuleItemWrapper>
       </form>
     </FormProvider>
@@ -693,12 +904,17 @@ function NewRuleButton(props: NewRuleButtonProps) {
 type SupportedToolRuleTypes =
   | ChildToolRule
   | ConditionalToolRule
+  | ContinueToolRule
   | InitToolRule
+  | MaxCountPerStepToolRule
   | TerminalToolRule;
+
 type SupportedToolRuleNameTypes =
   | 'conditional'
   | 'constrain_child_tools'
+  | 'continue_loop'
   | 'exit_loop'
+  | 'max_count_per_step'
   | 'run_first';
 
 interface NewToolRuleButtonProps {
@@ -714,6 +930,7 @@ function NewToolRuleButton(props: NewToolRuleButtonProps) {
       align="end"
       trigger={
         <Button
+          size="small"
           preIcon={<PlusIcon />}
           label={t('ToolRuleList.newRule')}
           color="secondary"
@@ -743,6 +960,22 @@ function NewToolRuleButton(props: NewToolRuleButtonProps) {
         title={t('toolTypes.constrainChildTools.title')}
         description={t('toolTypes.constrainChildTools.description')}
         icon={<ChildNodesIcon />}
+      />
+      <NewRuleButton
+        onSelect={() => {
+          onSelect('continue_loop');
+        }}
+        title={t('toolTypes.continueLoop.title')}
+        description={t('toolTypes.continueLoop.description')}
+        icon={<ArrowRightIcon />}
+      />
+      <NewRuleButton
+        onSelect={() => {
+          onSelect('max_count_per_step');
+        }}
+        title={t('toolTypes.maxCountPerStep.title')}
+        description={t('toolTypes.maxCountPerStep.description')}
+        icon={<RuleIcon />}
       />
       {/*<NewRuleButton*/}
       {/*  onSelect={() => {*/}
@@ -821,7 +1054,11 @@ export function ToolRuleList(props: ToolRuleListProps) {
         return [...prev, { type: rule, tool_name: '', children: [] }];
       }
 
-      if (rule === 'run_first' || rule === 'exit_loop') {
+      if (
+        rule === 'run_first' ||
+        rule === 'exit_loop' ||
+        rule === 'continue_loop'
+      ) {
         return [...prev, { type: rule, tool_name: '' }];
       }
 
@@ -834,6 +1071,17 @@ export function ToolRuleList(props: ToolRuleListProps) {
             default_child: '',
             require_output_mapping: false,
             child_output_mapping: {},
+          },
+        ];
+      }
+
+      if (rule === 'max_count_per_step') {
+        return [
+          ...prev,
+          {
+            type: rule,
+            tool_name: '',
+            max_count_limit: 1,
           },
         ];
       }
@@ -879,20 +1127,35 @@ export function ToolRuleList(props: ToolRuleListProps) {
   );
 
   return (
-    <VStack fullHeight padding fullWidth color="background-grey">
-      <VStack className="mx-auto  max-w-[800px] w-full">
-        <HStack border fullWidth padding width="centered" color="background">
-          <RawInput
-            hideLabel
-            fullWidth
-            placeholder={t('ToolRuleList.search')}
-            preIcon={<SearchIcon />}
-            label={t('ToolRuleList.search')}
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-          />
-          <NewToolRuleButton onSelect={handleSelectRule} />
-        </HStack>
+    <VStack
+      gap={false}
+      fullHeight
+      overflowY="hidden"
+      fullWidth
+      color="background-grey"
+    >
+      <HStack
+        align="center"
+        paddingX="medium"
+        borderBottom
+        height="header-sm"
+        fullWidth
+        color="background"
+      >
+        <RawInput
+          hideLabel
+          className="border-none"
+          size="small"
+          fullWidth
+          placeholder={t('ToolRuleList.search')}
+          preIcon={<SearchIcon />}
+          label={t('ToolRuleList.search')}
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+        />
+        <NewToolRuleButton onSelect={handleSelectRule} />
+      </HStack>
+      <VStack padding collapseHeight flex overflowY="auto">
         <VStack>
           {filteredRules.map((rule, index) => {
             if (rule.type === 'exit_loop') {
@@ -955,6 +1218,36 @@ export function ToolRuleList(props: ToolRuleListProps) {
               );
             }
 
+            if (rule.type === 'continue_loop') {
+              return (
+                <ContinueToolRuleComponent
+                  onRemove={() => {
+                    handleRemoveRule(index);
+                  }}
+                  key={index}
+                  onSubmit={(data) => {
+                    handleSaveRule(index, data);
+                  }}
+                  defaultRule={rule}
+                />
+              );
+            }
+
+            if (rule.type === 'max_count_per_step') {
+              return (
+                <MaxCountPerStepToolRuleEditor
+                  onRemove={() => {
+                    handleRemoveRule(index);
+                  }}
+                  key={index}
+                  onSubmit={(data) => {
+                    handleSaveRule(index, data);
+                  }}
+                  defaultRule={rule}
+                />
+              );
+            }
+
             return null;
           })}
         </VStack>
@@ -971,94 +1264,4 @@ export function ToolRulesEditor() {
   }
 
   return <LoadingEmptyStatusComponent />;
-}
-
-function ToolRuleHeader() {
-  const t = useTranslations('ADE/ToolRules');
-  return (
-    <HStack
-      height="header"
-      align="center"
-      justify="spaceBetween"
-      borderBottom
-      paddingX
-      fullWidth
-    >
-      <HStack>
-        <RuleIcon />
-        <Typography bold>{t('title')}</Typography>
-      </HStack>
-      <CloseMiniApp data-testid="close-tool-rule-editor">
-        <HStack>
-          <CloseIcon />
-        </HStack>
-      </CloseMiniApp>
-    </HStack>
-  );
-}
-
-export function OldToolRulesEditor() {
-  const [isToolRulesOpen, setIsToolRulesOpen] = React.useState(false);
-  const [isConfirmOpen, setIsConfirmOpen] = React.useState(false);
-
-  const onHandleVisibilityChange = useCallback(
-    (visibility: boolean, confirmed: boolean) => {
-      if (visibility) {
-        setIsToolRulesOpen(true);
-        return;
-      }
-
-      if (confirmed) {
-        setIsToolRulesOpen(false);
-        setIsConfirmOpen(false);
-        return;
-      }
-
-      setIsConfirmOpen(true);
-    },
-    [],
-  );
-
-  const t = useTranslations('ADE/ToolRules');
-
-  const { tool_rules, tools } = useCurrentAgent();
-
-  return (
-    <MiniApp
-      isOpen={isToolRulesOpen}
-      onOpenChange={(next) => {
-        onHandleVisibilityChange(next, false);
-      }}
-      appName={t('appName')}
-      trigger={
-        <Button
-          label={t('trigger')}
-          preIcon={<RuleIcon />}
-          hideLabel
-          color="secondary"
-        />
-      }
-    >
-      <Dialog
-        title={t('confirmLeave.title')}
-        isOpen={isConfirmOpen}
-        onOpenChange={setIsConfirmOpen}
-        onConfirm={() => {
-          onHandleVisibilityChange(false, true);
-        }}
-      >
-        {t('confirmLeave.description')}
-      </Dialog>
-      {isToolRulesOpen && (
-        <VStack gap={false} fullHeight fullWidth>
-          <ToolRuleHeader />
-          {Array.isArray(tools) ? (
-            <ToolRuleList defaultToolRules={tool_rules} />
-          ) : (
-            <LoadingEmptyStatusComponent />
-          )}
-        </VStack>
-      )}
-    </MiniApp>
-  );
 }

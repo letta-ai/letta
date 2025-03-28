@@ -164,6 +164,7 @@ function CreateToolDialog(props: CreateToolDialogProps) {
         onSubmit={form.handleSubmit(handleSubmit)}
         title={t('CreateToolDialog.title')}
         trigger={trigger}
+        testId="create-tool-dialog"
       >
         <FormField
           name="name"
@@ -171,6 +172,7 @@ function CreateToolDialog(props: CreateToolDialogProps) {
             <Input
               fullWidth
               {...field}
+              data-testid="create-tool-dialog-name"
               placeholder={t('CreateToolDialog.placeholder')}
               description={t('CreateToolDialog.description')}
               label={t('CreateToolDialog.label')}
@@ -232,6 +234,7 @@ function ToolManagerNavigationSidebar() {
     >
       <HStack
         height="header-sm"
+        minHeight="header-sm"
         justify="spaceBetween"
         fullWidth
         borderBottom
@@ -385,6 +388,7 @@ export function ToolManager(props: ToolManagerProps) {
       <VStack gap={false} fullHeight fullWidth>
         <HStack
           height="header-sm"
+          minHeight="header-sm"
           className="app-header"
           align="center"
           gap={false}
@@ -434,6 +438,7 @@ export function ToolManager(props: ToolManagerProps) {
             <Button
               postIcon={<CloseIcon />}
               size="small"
+              data-testId="close-tool-manager"
               _use_rarely_className="disable-app-header"
               color="tertiary"
               label={t('close')}
@@ -443,7 +448,7 @@ export function ToolManager(props: ToolManagerProps) {
             />
           </HStack>
         </HStack>
-        <HStack gap={false} fullWidth fullHeight>
+        <HStack collapseHeight flex gap={false} fullWidth fullHeight>
           <HiddenOnMobile>
             <ToolManagerNavigationSidebar />
           </HiddenOnMobile>

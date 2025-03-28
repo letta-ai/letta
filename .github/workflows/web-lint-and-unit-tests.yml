@@ -48,7 +48,7 @@ jobs:
         with:
           cache: npm
           cache-dependency-path: ./package.json
-          node-version: 22
+          node-version-file: '.nvmrc'
       - run: npm ci --legacy-peer-deps
       - run: npm run web:lint
       - run: npm run web:test

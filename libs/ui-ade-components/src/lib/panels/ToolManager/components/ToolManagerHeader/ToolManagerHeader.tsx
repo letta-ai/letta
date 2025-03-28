@@ -160,7 +160,7 @@ export function ToolManagerHeader(props: ToolManagerHeaderProps) {
           ]}
         />
       </HStack>
-      <CloseMiniApp data-testid="close-tool-explorer">
+      <CloseMiniApp data-testid="close-tool-manager">
         <HStack>
           <CloseIcon />
         </HStack>

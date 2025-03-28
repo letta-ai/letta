@@ -59,6 +59,11 @@
       "toolName": "Tool name",
       "save": "Save"
     },
+    "ContinueToolRule": {
+      "sentence": "Agent loop will not stop at <tool></tool>",
+      "toolName": "Tool name",
+      "save": "Save"
+    },
     "ChildToolRuleEditor": {
       "sentence": "<tool></tool> must be followed by calling the tool:",
       "toolName": "Tool name",
@@ -81,6 +86,12 @@
       "toolName": "Tool name",
       "save": "Save"
     },
+    "MaxCountPerStepToolRuleEditor": {
+      "sentence": "<tool></tool> can be called a maximum of <count></count> times in a loop",
+      "toolName": "Tool name",
+      "count": "Max count",
+      "save": "Save"
+    },
     "toolTypes": {
       "runFirst": {
         "title": "Start constraint",
@@ -97,6 +108,14 @@
       "conditional": {
         "title": "Conditional",
         "description": "Run a tool based on a condition from another tool"
+      },
+      "continueLoop": {
+        "title": "Continue loop",
+        "description": "Prevent a tool from being the start or end of a loop"
+      },
+      "maxCountPerStep": {
+        "title": "Max count per step",
+        "description": "Limit the number of times a tool can be called in a loop"
       }
     }
   },
@@ -1044,8 +1063,8 @@
       "title": "Tool Manager",
       "expand": "Expand",
       "collapse": "Close",
-      "toolRules": "Tool rules",
-      "current": "Current agent tools",
+      "toolRules": "Current rules",
+      "current": "Current tools",
       "codeTools": "Available Tools",
       "customTools": "Custom tools",
       "lettaTools": "Letta tools",
@@ -1242,6 +1261,7 @@
       "openExplorer": "Open tools explorer"
     },
     "ToolsList": {
+      "rules": "Tool rules ({ruleCount})",
       "removeTool": "Remove tool",
       "lettaCoreTools": "Letta core tools ({toolCount})",
       "lettaCoreToolsInfo": "Default tools added to agents to enable memory management",

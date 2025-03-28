@@ -4,6 +4,7 @@ import {
   ExploreIcon,
   HStack,
   OnboardingAsideFocus,
+  RuleIcon,
 } from '@letta-cloud/ui-component-library';
 import type { FileTreeContentsType } from '@letta-cloud/ui-component-library';
 import { VStack } from '@letta-cloud/ui-component-library';
@@ -35,11 +36,6 @@ import {
   ToolManagerProvider,
   useToolManagerState,
 } from '../ToolManager/hooks/useToolManagerState/useToolManagerState';
-import { ToolsExplorer } from '../ToolsExplorer/ToolsExplorer';
-import { useToolsExplorerState } from '../ToolsExplorer/useToolsExplorerState/useToolsExplorerState';
-import { useFeatureFlag } from '@letta-cloud/sdk-web';
-import { findProviderFromTags } from '../ToolsExplorer/findProviderFromTags/findProviderFromTags';
-import { OldToolRulesEditor } from '../ToolRules/ToolRules';
 import { useADETour } from '../../hooks/useADETour/useADETour';
 
 interface RemoveToolPayload {
@@ -111,26 +107,21 @@ function RemoveToolDialog(props: RemoveToolFromAgentDialogProps) {
   );
 }
 
-function useNewToolsUI() {
-  const { isLoading, data } = useFeatureFlag('NEW_TOOLS');
-
-  return !isLoading && data;
-}
-
 interface ToolsProps {
   search: string;
 }
 
 function ToolsList(props: ToolsProps) {
   const { search } = props;
-  const { tools: currentTools } = useCurrentAgent();
+  const { tools: currentTools, tool_rules } = useCurrentAgent();
   const { openToolManager } = useToolManagerState();
-  const { openToolExplorer } = useToolsExplorerState();
-  const showNewToolsUI = useNewToolsUI();
-
   const [canUpdateAgent] = useADEPermissions(ApplicationServices.UPDATE_AGENT);
 
   const t = useTranslations('ADE/Tools');
+
+  const toolRuleCount = useMemo(() => {
+    return tool_rules?.length || 0;
+  }, [tool_rules]);
 
   const [removeToolPayload, setRemoveToolPayload] =
     useState<RemoveToolPayload | null>(null);
@@ -144,6 +135,14 @@ function ToolsList(props: ToolsProps) {
     let otherToolCount = 0;
 
     const fileTreeTools: FileTreeContentsType = [
+      {
+        name: t('ToolsList.rules', { ruleCount: toolRuleCount }),
+        id: 'rules',
+        icon: <RuleIcon />,
+        onClick: () => {
+          openToolManager('/tool-rules');
+        },
+      },
       {
         name: '',
         id: 'core-tools',
@@ -164,24 +163,11 @@ function ToolsList(props: ToolsProps) {
 
       if (isLettaTool(tool)) {
         lettaCoreToolCount += 1;
-        if (getIsGenericFolder(fileTreeTools[0])) {
-          fileTreeTools[0].contents.push({
+        if (getIsGenericFolder(fileTreeTools[1])) {
+          fileTreeTools[1].contents.push({
             name: tool.name || '',
             id: tool.id || '',
             onClick: () => {
-              if (!showNewToolsUI) {
-                openToolExplorer({
-                  currentTool: {
-                    mode: 'view',
-                    data: {
-                      id: tool.id || '',
-                      provider: findProviderFromTags(tool),
-                    },
-                  },
-                });
-                return;
-              }
-
               openToolManager('/current-agent-tools', tool.id);
             },
             actions: canUpdateAgent
@@ -203,27 +189,13 @@ function ToolsList(props: ToolsProps) {
         }
       } else {
         otherToolCount += 1;
-        if (getIsGenericFolder(fileTreeTools[1])) {
+        if (getIsGenericFolder(fileTreeTools[2])) {
           const creator = tool.tags?.find((tag) => isBrandKey(tag)) || '';
 
-          fileTreeTools[1].contents.push({
+          fileTreeTools[2].contents.push({
             name: tool.name || '',
             id: tool.id,
             onClick: () => {
-              if (!showNewToolsUI) {
-                openToolExplorer({
-                  currentTool: {
-                    mode: 'view',
-                    data: {
-                      id: tool.id || '',
-                      providerId: tool.name || '',
-                      provider: findProviderFromTags(tool),
-                    },
-                  },
-                });
-                return;
-              }
-
               openToolManager('/current-agent-tools', tool.id);
             },
             icon: isBrandKey(creator) ? brandKeyToLogo(creator) : <ToolsIcon />,
@@ -246,26 +218,18 @@ function ToolsList(props: ToolsProps) {
       }
     });
 
-    fileTreeTools[0].name = t('ToolsList.lettaCoreTools', {
+    fileTreeTools[1].name = t('ToolsList.lettaCoreTools', {
       toolCount: lettaCoreToolCount,
     });
-    fileTreeTools[0].infoTooltip = {
+    fileTreeTools[1].infoTooltip = {
       text: t('ToolsList.lettaCoreToolsInfo'),
     };
-    fileTreeTools[1].name = t('ToolsList.otherTools', {
+    fileTreeTools[2].name = t('ToolsList.otherTools', {
       toolCount: otherToolCount,
     });
 
     return fileTreeTools;
-  }, [
-    currentTools,
-    showNewToolsUI,
-    openToolManager,
-    openToolExplorer,
-    search,
-    canUpdateAgent,
-    t,
-  ]);
+  }, [toolRuleCount, currentTools, openToolManager, search, canUpdateAgent, t]);
 
   return (
     <PanelMainContent>
@@ -285,40 +249,22 @@ function ToolsList(props: ToolsProps) {
 
 function OpenToolManagerButton() {
   const { openToolManager } = useToolManagerState();
-  const { openToolExplorer } = useToolsExplorerState();
-  const showNewToolsUI = useNewToolsUI();
 
   const t = useTranslations('ADE/Tools');
 
-  if (!showNewToolsUI) {
-    return (
-      <HStack>
-        <OldToolRulesEditor />
-        <Button
-          label={t('ToolsListPage.openExplorer')}
-          color="secondary"
-          data-testid="open-tool-explorer"
-          hideLabel
-          onClick={() => {
-            openToolExplorer();
-          }}
-          preIcon={<ExploreIcon />}
-        />
-      </HStack>
-    );
-  }
-
   return (
-    <Button
-      label={t('ToolsListPage.openExplorer')}
-      color="secondary"
-      data-testid="open-tool-explorer"
-      hideLabel
-      onClick={() => {
-        openToolManager('/current-agent-tools');
-      }}
-      preIcon={<ExploreIcon />}
-    />
+    <HStack>
+      <Button
+        label={t('ToolsListPage.openExplorer')}
+        color="secondary"
+        data-testid="open-tool-explorer"
+        hideLabel
+        onClick={() => {
+          openToolManager('/current-agent-tools');
+        }}
+        preIcon={<ExploreIcon />}
+      />
+    </HStack>
   );
 }
 
@@ -372,7 +318,6 @@ export function ToolsPanel() {
       <ToolsOnboarding>
         <VStack overflow="hidden" gap={false}>
           <ToolManager isTemplate={isTemplate} agentName={agentName} />
-          <ToolsExplorer />
           <PanelBar
             searchValue={search}
             onSearch={(value) => {

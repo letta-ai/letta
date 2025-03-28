@@ -8,10 +8,11 @@ import {
 import type { Dispatch, SetStateAction } from 'react';
 import { useAtom } from 'jotai';
 import { selectedCurrentAgentToolId } from '../../routes/CurrentAgentTools/CurrentAgentTools';
+import type { ToolManagerPaths } from '../../toolManagerRoutes';
 
 interface ToolManagerState {
   requireConfirmation: boolean;
-  path: string | null;
+  path: ToolManagerPaths | null;
   isConfirmationDialogOpen: boolean;
 }
 
@@ -81,7 +82,7 @@ export function useToolManagerState() {
   );
 
   const openToolManager = useCallback(
-    (initialPath: string, initialToolId?: string) => {
+    (initialPath: ToolManagerPaths, initialToolId?: string) => {
       // check if valid route
       setToolManagerState({
         ...initialState,
