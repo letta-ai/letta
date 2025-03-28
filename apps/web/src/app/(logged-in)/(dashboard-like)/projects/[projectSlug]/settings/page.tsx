@@ -11,6 +11,7 @@ import {
   FormProvider,
   Input,
   LoadingEmptyStatusComponent,
+  RawInput,
   Typography,
   useForm,
   VStack,
@@ -292,6 +293,15 @@ function EditSettingsSection(props: EditSettingsSectionProps) {
                 );
               }}
               name="slug"
+            />
+            <RawInput
+              fullWidth
+              autoComplete="false"
+              label={t('EditProjectSettings.id.name')}
+              placeholder={t('EditProjectSettings.id.placeholder')}
+              value={projectId}
+              disabled
+              allowCopy
             />
             <FormActions align="start" errorMessage={errorTranslation?.message}>
               <Button

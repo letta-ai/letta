@@ -521,6 +521,10 @@
     },
     "title": "Project settings",
     "EditProjectSettings": {
+      "id": {
+        "name": "Project ID",
+        "placeholder": "The project id"
+      },
       "name": {
         "label": "Project name"
       },
