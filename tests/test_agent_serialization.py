@@ -512,6 +512,48 @@ def test_agent_serialize_tool_calls(mock_e2b_api_key_none, local_client, server,
     assert copy_agent_response.completion_tokens > 0 and copy_agent_response.step_count > 0
 
 
+def test_agent_serialize_update_blocks(mock_e2b_api_key_none, local_client, server, serialize_test_agent, default_user, other_user):
+    """Test deserializing JSON into an Agent instance."""
+    append_copy_suffix = False
+    server.send_messages(
+        actor=default_user,
+        agent_id=serialize_test_agent.id,
+        messages=[MessageCreate(role=MessageRole.user, content="Append 'banana' to core_memory.")],
+    )
+    server.send_messages(
+        actor=default_user,
+        agent_id=serialize_test_agent.id,
+        messages=[MessageCreate(role=MessageRole.user, content="What do you think about that?")],
+    )
+
+    result = server.agent_manager.serialize(agent_id=serialize_test_agent.id, actor=default_user)
+
+    # Deserialize the agent
+    agent_copy = server.agent_manager.deserialize(serialized_agent=result, actor=other_user, append_copy_suffix=append_copy_suffix)
+
+    # Get most recent original agent instance
+    serialize_test_agent = server.agent_manager.get_agent_by_id(agent_id=serialize_test_agent.id, actor=default_user)
+
+    # Compare serialized representations to check for exact match
+    print_dict_diff(json.loads(serialize_test_agent.model_dump_json()), json.loads(agent_copy.model_dump_json()))
+    assert compare_agent_state(server, serialize_test_agent, agent_copy, append_copy_suffix, default_user, other_user)
+
+    # Make sure both agents can receive messages after
+    original_agent_response = server.send_messages(
+        actor=default_user,
+        agent_id=serialize_test_agent.id,
+        messages=[MessageCreate(role=MessageRole.user, content="Hi")],
+    )
+    copy_agent_response = server.send_messages(
+        actor=other_user,
+        agent_id=agent_copy.id,
+        messages=[MessageCreate(role=MessageRole.user, content="Hi")],
+    )
+
+    assert original_agent_response.completion_tokens > 0 and original_agent_response.step_count > 0
+    assert copy_agent_response.completion_tokens > 0 and copy_agent_response.step_count > 0
+
+
 # FastAPI endpoint tests
 
 

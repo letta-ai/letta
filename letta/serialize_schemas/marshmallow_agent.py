@@ -27,7 +27,7 @@ class MarshmallowAgentSchema(BaseSchema):
     FIELD_VERSION = "version"
     FIELD_MESSAGES = "messages"
     FIELD_MESSAGE_IDS = "message_ids"
-    FIELD_IN_CONTEXT = "in_context"
+    FIELD_IN_CONTEXT_INDICES = "in_context_message_indices"
     FIELD_ID = "id"
 
     llm_config = LLMConfigField()
@@ -72,12 +72,11 @@ class MarshmallowAgentSchema(BaseSchema):
         messages = []
 
         # loop through message in the *same* order is the in-context message IDs
-        for message in data.get(self.FIELD_MESSAGES, []):
+        data[self.FIELD_IN_CONTEXT_INDICES] = []
+        for i, message in enumerate(data.get(self.FIELD_MESSAGES, [])):
             # if id matches in-context message ID, add to `messages`
             if message[self.FIELD_ID] in message_ids:
-                message[self.FIELD_IN_CONTEXT] = True
-            else:
-                message[self.FIELD_IN_CONTEXT] = False
+                data[self.FIELD_IN_CONTEXT_INDICES].append(i)
             messages.append(message)
 
         # remove ids
@@ -111,13 +110,17 @@ class MarshmallowAgentSchema(BaseSchema):
         Restores `message_ids` by collecting message IDs where `in_context` is True,
         generates new IDs for all messages, and removes `in_context` from all messages.
         """
-        message_ids = []
-        for msg in data.get(self.FIELD_MESSAGES, []):
+        messages = data.get(self.FIELD_MESSAGES, [])
+        for msg in messages:
             msg[self.FIELD_ID] = SerializedMessageSchema.generate_id()  # Generate new ID
-            if msg.pop(self.FIELD_IN_CONTEXT, False):  # If it was in-context, track its new ID
-                message_ids.append(msg[self.FIELD_ID])
+
+        message_ids = []
+        in_context_message_indices = data.pop(self.FIELD_IN_CONTEXT_INDICES)
+        for idx in in_context_message_indices:
+            message_ids.append(messages[idx][self.FIELD_ID])
 
         data[self.FIELD_MESSAGE_IDS] = message_ids
+
         return data
 
     class Meta(BaseSchema.Meta):
