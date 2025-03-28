@@ -336,6 +336,10 @@ export function Messages(props: MessagesProps) {
             return null;
           }
 
+          if (mode == 'interactive') {
+            return null;
+          }
+
           return {
             id: `${agentMessage.id}-${agentMessage.message_type}`,
             name: 'System',
