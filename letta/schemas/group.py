@@ -62,4 +62,10 @@ ManagerConfigUnion = Annotated[
 class GroupCreate(BaseModel):
     agent_ids: List[str] = Field(..., description="")
     description: str = Field(..., description="")
+    manager_config: ManagerConfigUnion = Field(RoundRobinManager(), description="")
+
+
+class GroupUpdate(BaseModel):
+    agent_ids: Optional[List[str]] = Field(None, description="")
+    description: Optional[str] = Field(None, description="")
     manager_config: Optional[ManagerConfigUnion] = Field(None, description="")

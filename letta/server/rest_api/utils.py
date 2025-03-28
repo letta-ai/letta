@@ -211,7 +211,6 @@ def create_tool_call_messages_from_openai_response(
         tool_calls=[],
         tool_call_id=tool_call_id,
         created_at=get_utc_time(),
-        name=function_name,
     )
     messages.append(tool_message)
 

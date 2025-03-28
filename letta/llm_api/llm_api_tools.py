@@ -140,6 +140,7 @@ def create(
     stream_interface: Optional[Union[AgentRefreshStreamingInterface, AgentChunkStreamingInterface]] = None,
     model_settings: Optional[dict] = None,  # TODO: eventually pass from server
     put_inner_thoughts_first: bool = True,
+    name: Optional[str] = None,
 ) -> ChatCompletionResponse:
     """Return response to chat completion with backoff"""
     from letta.utils import printd
@@ -206,6 +207,7 @@ def create(
                 api_key=api_key,
                 chat_completion_request=data,
                 stream_interface=stream_interface,
+                name=name,
             )
         else:  # Client did not request token streaming (expect a blocking backend response)
             data.stream = False
@@ -255,6 +257,7 @@ def create(
                 api_key=api_key,
                 chat_completion_request=data,
                 stream_interface=stream_interface,
+                name=name,
             )
         else:  # Client did not request token streaming (expect a blocking backend response)
             data.stream = False
@@ -359,6 +362,7 @@ def create(
                 stream_interface=stream_interface,
                 extended_thinking=llm_config.enable_reasoner,
                 max_reasoning_tokens=llm_config.max_reasoning_tokens,
+                name=name,
             )
 
         else:
@@ -531,6 +535,7 @@ def create(
                 api_key=model_settings.deepseek_api_key,
                 chat_completion_request=data,
                 stream_interface=stream_interface,
+                name=name,
             )
         else:  # Client did not request token streaming (expect a blocking backend response)
             data.stream = False
