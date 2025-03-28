@@ -354,12 +354,10 @@ ready:
   npm install
   npx nx reset
   npm run core:install
+  just setup-cloud-api
   @echo "Migrating the database..."
   npm run web:database:migrate
   npm run core:database:migrate
-
-  just setup-cloud-api
-
 
 start-services:
     @echo "🚧 Starting up postgres, redis..."
