@@ -6,13 +6,11 @@ RUN apk add --no-cache libc6-compat
 WORKDIR /app
 
 # Copy necessary package files
-COPY package.json package-lock.json ./
-COPY apps/cloud-api/package.json ./apps/cloud-api/
+COPY apps/cloud-api/package-lock.json ./
+COPY apps/cloud-api/package.json ./
 
-# Install only production dependencies
-RUN npm ci --production --ignore-scripts --legacy-peer-deps
-# Install specific packages needed for the build
-RUN npm install --legacy-peer-deps @ts-rest/express@3.51.0 @ts-rest/react-query@3.51.0 lodash jsonrepair axios @tanstack/react-query
+# Install all dependencies
+RUN npm ci --ignore-scripts --legacy-peer-deps
 
 # Build the application
 FROM base AS builder
@@ -37,7 +35,7 @@ RUN adduser --system --uid 1001 nodeserver
 RUN mkdir -p /app
 RUN chown -R nodeserver:nodejs /app
 
-COPY --from=builder --chown=nodeserver:nodejs /app/dist/apps/cloud-api /app
+COPY --from=builder --chown=nodeserver:nodejs /app/apps/cloud-api/dist /app
 COPY --from=builder --chown=nodeserver:nodejs /app/node_modules /app/node_modules
 COPY --from=builder --chown=nodeserver:nodejs /app/package.json /app/package.json
 
