@@ -87,6 +87,15 @@ class MarshmallowAgentSchema(BaseSchema):
 
         return data
 
+    @post_dump
+    def hide_tool_exec_environment_variables(self, data: Dict, **kwargs):
+        """Hide the value of tool_exec_environment_variables"""
+
+        for env_var in data.get("tool_exec_environment_variables", []):
+            # need to be re-set at load time
+            env_var["value"] = ""
+        return data
+
     @pre_load
     def check_version(self, data, **kwargs):
         """Check version and remove it from the schema"""
