@@ -793,7 +793,7 @@ export function AgentSettingsPanel() {
         <HStack fullWidth align="end">
           <RawInput
             fullWidth
-            label={t('agentName.label', { baseName })}
+            label={t('agentName.label')}
             value={currentAgent.name}
             disabled
           />

@@ -198,7 +198,6 @@ function InputContainerHeader(props: InputContainerHeaderProps) {
           className={variant === 'simple' ? 'leading-[1.35]' : ''}
           variant={typographyVariant}
           color={variant === 'default' ? 'lighter' : 'default'}
-          uppercase={variant === 'default'}
         >
           {label}
         </Typography>

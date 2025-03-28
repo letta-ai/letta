@@ -315,7 +315,7 @@
     },
     "TemplateDescription": {
       "placeholder": "Enter a description for this template",
-      "label": "Template description"
+      "label": "Description"
     },
     "tags": {
       "label": "Agent Tags",
@@ -344,7 +344,7 @@
       "label": "Embedding model"
     },
     "agentName": {
-      "label": "{baseName} name",
+      "label": "Name",
       "edit": "Edit {baseName} name"
     },
     "AgentIdentifierToCopy": {
