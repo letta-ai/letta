@@ -324,6 +324,13 @@ export const $AgentSchema = {
       type: 'boolean',
       title: 'Message Buffer Autoclear',
     },
+    in_context_message_indices: {
+      items: {
+        type: 'integer',
+      },
+      type: 'array',
+      title: 'In Context Message Indices',
+    },
     messages: {
       items: {
         $ref: '#/components/schemas/MessageSchema',
@@ -418,6 +425,7 @@ export const $AgentSchema = {
     'embedding_config',
     'llm_config',
     'message_buffer_autoclear',
+    'in_context_message_indices',
     'messages',
     'multi_agent_group',
     'name',
@@ -5684,10 +5692,6 @@ export const $MessageSchema = {
       ],
       title: 'Group Id',
     },
-    in_context: {
-      type: 'boolean',
-      title: 'In Context',
-    },
     model: {
       anyOf: [
         {
@@ -5751,7 +5755,6 @@ export const $MessageSchema = {
   required: [
     'created_at',
     'group_id',
-    'in_context',
     'model',
     'name',
     'role',

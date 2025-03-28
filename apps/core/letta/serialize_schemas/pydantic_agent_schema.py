@@ -22,7 +22,6 @@ class CoreMemoryBlockSchema(BaseModel):
 class MessageSchema(BaseModel):
     created_at: str
     group_id: Optional[str]
-    in_context: bool
     model: Optional[str]
     name: Optional[str]
     role: str
@@ -112,6 +111,7 @@ class AgentSchema(BaseModel):
     embedding_config: EmbeddingConfig
     llm_config: LLMConfig
     message_buffer_autoclear: bool
+    in_context_message_indices: List[int]
     messages: List[MessageSchema]
     metadata_: Optional[Dict] = None
     multi_agent_group: Optional[Any]

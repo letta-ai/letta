@@ -6514,6 +6514,13 @@
             "type": "boolean",
             "title": "Message Buffer Autoclear"
           },
+          "in_context_message_indices": {
+            "items": {
+              "type": "integer"
+            },
+            "type": "array",
+            "title": "In Context Message Indices"
+          },
           "messages": {
             "items": {
               "$ref": "#/components/schemas/MessageSchema"
@@ -6608,6 +6615,7 @@
           "embedding_config",
           "llm_config",
           "message_buffer_autoclear",
+          "in_context_message_indices",
           "messages",
           "multi_agent_group",
           "name",
@@ -11560,10 +11568,6 @@
             ],
             "title": "Group Id"
           },
-          "in_context": {
-            "type": "boolean",
-            "title": "In Context"
-          },
           "model": {
             "anyOf": [
               {
@@ -11627,7 +11631,6 @@
         "required": [
           "created_at",
           "group_id",
-          "in_context",
           "model",
           "name",
           "role",

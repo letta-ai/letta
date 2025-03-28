@@ -95,6 +95,7 @@ export type AgentSchema = {
   embedding_config: EmbeddingConfig;
   llm_config: LLMConfig;
   message_buffer_autoclear: boolean;
+  in_context_message_indices: Array<number>;
   messages: Array<MessageSchema>;
   metadata_?: {
     [key: string]: unknown;
@@ -2088,7 +2089,6 @@ export type MessageRole = 'assistant' | 'user' | 'tool' | 'function' | 'system';
 export type MessageSchema = {
   created_at: string;
   group_id: string | null;
-  in_context: boolean;
   model: string | null;
   name: string | null;
   role: string;

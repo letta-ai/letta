@@ -322,7 +322,6 @@ export const MessageSchema = z.object({
     z.null(),
     z.array(z.union([z.string(), z.null()])),
   ]),
-  in_context: z.boolean(),
   model: z.union([
     z.string(),
     z.null(),
@@ -494,6 +493,7 @@ export const AgentSchema = z.object({
   embedding_config: EmbeddingConfig,
   llm_config: LLMConfig,
   message_buffer_autoclear: z.boolean(),
+  in_context_message_indices: z.array(z.number()),
   messages: z.array(MessageSchema),
   metadata_: z
     .union([
