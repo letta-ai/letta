@@ -566,7 +566,7 @@ class Message(BaseMessage):
                 text_content = text[0].text
                 parse_content_parts = True
         else:
-            text_content = None
+            text_content = ""
 
         # TODO(caren) we should eventually support multiple content parts here?
         # ie, actually make dict['content'] type list
@@ -594,16 +594,17 @@ class Message(BaseMessage):
                 openai_message["name"] = self.name
 
         elif self.role == "assistant":
-            assert self.tool_calls is not None or text_content is not None
+            assert self.tool_calls or text_content
             openai_message = {
-                "content": None if put_inner_thoughts_in_kwargs else text_content,
+                "content": text_content,
                 "role": self.role,
             }
             # Optional fields, do not include if null
             if self.name is not None:
                 openai_message["name"] = self.name
-            if self.tool_calls is not None:
+            if self.tool_calls:
                 if put_inner_thoughts_in_kwargs:
+                    openai_message["content"] = text_content
                     # put the inner thoughts inside the tool call before casting to a dict
                     openai_message["tool_calls"] = [
                         add_inner_thoughts_to_tool_call(
@@ -657,7 +658,7 @@ class Message(BaseMessage):
         if self.content and len(self.content) == 1 and isinstance(self.content[0], TextContent):
             text_content = self.content[0].text
         else:
-            text_content = None
+            text_content = ""
 
         def add_xml_tag(string: str, xml_tag: Optional[str]):
             # NOTE: Anthropic docs recommends using <thinking> tag when using CoT + tool use
@@ -769,7 +770,7 @@ class Message(BaseMessage):
         if self.content and len(self.content) == 1 and isinstance(self.content[0], TextContent):
             text_content = self.content[0].text
         else:
-            text_content = None
+            text_content = ""
 
         if self.role != "tool" and self.name is not None:
             warnings.warn(f"Using Google AI with non-null 'name' field ({self.name}) not yet supported.")
@@ -901,7 +902,7 @@ class Message(BaseMessage):
         if self.content and len(self.content) == 1 and isinstance(self.content[0], TextContent):
             text_content = self.content[0].text
         else:
-            text_content = None
+            text_content = ""
         if self.role == "system":
             """
             The chat_history parameter should not be used for SYSTEM messages in most cases.
