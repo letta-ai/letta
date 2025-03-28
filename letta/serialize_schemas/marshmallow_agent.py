@@ -59,29 +59,26 @@ class MarshmallowAgentSchema(BaseSchema):
         """
         - Removes `message_ids`
         - Adds versioning
-        - Marks messages as in-context
+        - Marks messages as in-context, preserving the order of the original `message_ids`
         - Removes individual message `id` fields
         """
         data = super().sanitize_ids(data, **kwargs)
         data[self.FIELD_VERSION] = letta.__version__
 
-        message_ids = list(data.pop(self.FIELD_MESSAGE_IDS, []))
+        original_message_ids = data.pop(self.FIELD_MESSAGE_IDS, [])
+        messages = data.get(self.FIELD_MESSAGES, [])
 
-        # NOTE: currently we don't support out-of-context messages since it has a bunch of system message spams
-        # TODO: support out-of-context messages
-        messages = []
+        # Build a mapping from message id to its first occurrence index and remove the id in one pass
+        id_to_index = {}
+        for idx, message in enumerate(messages):
+            msg_id = message.pop(self.FIELD_ID, None)
+            if msg_id is not None and msg_id not in id_to_index:
+                id_to_index[msg_id] = idx
 
-        # loop through message in the *same* order is the in-context message IDs
-        data[self.FIELD_IN_CONTEXT_INDICES] = []
-        for i, message in enumerate(data.get(self.FIELD_MESSAGES, [])):
-            # if id matches in-context message ID, add to `messages`
-            if message[self.FIELD_ID] in message_ids:
-                data[self.FIELD_IN_CONTEXT_INDICES].append(i)
-            messages.append(message)
+        # Build in-context indices in the same order as the original message_ids
+        in_context_indices = [id_to_index[msg_id] for msg_id in original_message_ids if msg_id in id_to_index]
 
-        # remove ids
-        for message in messages:
-            message.pop(self.FIELD_ID, None)  # Remove the id field
+        data[self.FIELD_IN_CONTEXT_INDICES] = in_context_indices
         data[self.FIELD_MESSAGES] = messages
 
         return data
