@@ -340,11 +340,9 @@ class SandboxToolExecutor(ToolExecutor):
             else:
                 inject_agent_state = False
 
-
             # Execute in sandbox
             sandbox_run_result = await AsyncToolExecutionSandbox(function_name, function_args, actor, tool_object=tool).run(
-                agent_state=agent_state_copy,
-                inject_agent_state=inject_agent_state
+                agent_state=agent_state_copy, inject_agent_state=inject_agent_state
             )
 
             function_response, updated_agent_state = sandbox_run_result.func_return, sandbox_run_result.agent_state

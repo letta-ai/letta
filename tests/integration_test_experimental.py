@@ -10,7 +10,6 @@ from dotenv import load_dotenv
 from letta_client import Letta
 from openai.types.chat.chat_completion_chunk import ChatCompletionChunk
 
-from letta import create_client
 from letta.agents.letta_agent import LettaAgent
 from letta.schemas.embedding_config import EmbeddingConfig
 from letta.schemas.enums import MessageStreamStatus
@@ -185,7 +184,7 @@ def agent_state(client, roll_dice_tool, weather_tool, rethink_tool):
             },
         ],
         llm_config=llm_config,
-        embedding_config=EmbeddingConfig.default_config(provider="openai")
+        embedding_config=EmbeddingConfig.default_config(provider="openai"),
     )
     yield agent_state
     client.agents.delete(agent_state.id)
