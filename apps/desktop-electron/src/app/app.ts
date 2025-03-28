@@ -289,6 +289,8 @@ export default class App {
       lettaServer.kill();
       lettaServer = null;
     }
+
+    await App.stopPostgres();
   }
 
   // NOTE: hardcoding for local dev testing
@@ -470,6 +472,11 @@ export default class App {
       const uriPath = join(os.homedir(), '.letta', 'pg_uri');
       const uri = `postgresql://postgres@localhost:${pgPort}/postgres`;
       fs.writeFileSync(uriPath, uri);
+
+      // Write the PID to a file (e.g., ~/.letta/postgres_pid)
+      // This is so that we can close it via the Python server
+      const pidFile = path.join(os.homedir(), '.letta', 'postgres_pid');
+      fs.writeFileSync(pidFile, String(postgresProcess.pid));
     } catch (err) {
       console.error('Failed to start Postgres:', err);
       electron.dialog.showErrorBox(
@@ -634,7 +641,6 @@ export default class App {
     electron.app.once('window-all-closed', electron.app.quit);
     electron.app.once('before-quit', async () => {
       await App.killLettaServer();
-      await App.stopPostgres();
     });
     App.application.on('window-all-closed', App.onWindowAllClosed); // Quit when all windows are closed.
     App.application.on('ready', App.onReady); // App is ready to load data

@@ -153,6 +153,22 @@ server = None
 def kill_app():
     if server:
         server.stop()
+
+    # Safely try to kill only the Postgres process we started
+    postgres_pid_file = Path.home() / ".letta" / "postgres_pid"
+    if postgres_pid_file.exists():
+        try:
+            pid = int(postgres_pid_file.read_text().strip())
+            print(f"Attempting to kill Postgres PID: {pid}")
+
+            # Kill that specific PID rather than all processes named "postgres"
+            if platform.system().lower().startswith("win"):
+                subprocess.run(["taskkill", "/F", "/PID", str(pid)])
+            else:
+                subprocess.run(["kill", "-9", str(pid)])
+        except Exception as e:
+            print(f"Failed to kill Postgres by PID: {e}")
+
     sys.exit(1)
 
 
