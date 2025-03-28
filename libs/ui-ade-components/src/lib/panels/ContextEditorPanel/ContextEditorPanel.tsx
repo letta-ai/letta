@@ -98,7 +98,7 @@ function useContextWindowDetails() {
   const externalSummary = contextWindow?.external_memory_summary;
   const coreMemorySummary = computedMemoryString;
   const recursiveMemorySummary = contextWindow?.summary_memory;
-  const messagesTokensSummary = contextWindow?.messages;
+  const messagesTokensSummary = contextWindow?.messages?.slice(1);
 
   const totalUsedLength = useMemo(() => {
     return (
