@@ -17,6 +17,8 @@ import {
   DotsVerticalIcon,
   VisibleOnMobile,
   ExternalLinkIcon,
+  WarningIcon,
+  Tooltip,
 } from '@letta-cloud/ui-component-library';
 import type { QueryBuilderQuery } from '@letta-cloud/ui-component-library';
 import { ProjectSelector } from '$web/client/components';
@@ -265,7 +267,7 @@ function DesktopADEHeader(props: DesktopADEHeaderProps) {
 
   const { template_id } = useCurrentAgent();
 
-  const { isTemplate } = useCurrentAgentMetaData();
+  const { isTemplate, isLocal } = useCurrentAgentMetaData();
   const t = useTranslations(
     'projects/(projectSlug)/agents/(agentId)/AgentPage',
   );
@@ -308,8 +310,24 @@ function DesktopADEHeader(props: DesktopADEHeaderProps) {
             size="small"
             items={[
               {
-                label: projectName,
+                label: isLocal ? t('nav.localDev') : projectName,
                 href: projectUrl,
+                contentOverride: isLocal ? (
+                  <Button
+                    href={projectUrl}
+                    color="tertiary"
+                    label={t('nav.localDev')}
+                    size="small"
+                    _use_rarely_className="text-text-lighter inline-flex items-center gap-1.5"
+                    postIcon={
+                      <Tooltip content={t('localAgentDevelopment')}>
+                        <span className="flex items-center justify-center">
+                          <WarningIcon color="inherit" size="small" />
+                        </span>
+                      </Tooltip>
+                    }
+                  />
+                ) : undefined,
               },
               ...(agentTemplate?.body.fullVersion
                 ? [

@@ -1420,6 +1420,9 @@
     }
   },
   "projects/(projectSlug)/agents/(agentId)/AgentPage": {
+    "nav": {
+      "localDev": "Self-hosted"
+    },
     "convertingToTemplate": "Converting to template...",
     "preparingAgent": "Preparing agent",
     "viewAgents": "View agents",

@@ -11,7 +11,7 @@ import {
   ADELayout,
   useCurrentAgentMetaData,
 } from '@letta-cloud/ui-ade-components';
-import React, { useMemo, useState } from 'react';
+import React, { useState } from 'react';
 import { useCurrentProject } from '../../hooks/useCurrentProject/useCurrentProject';
 import { useTranslations } from '@letta-cloud/translations';
 import { useCurrentUser } from '$web/client/hooks';
@@ -54,26 +54,14 @@ export function CloudAgentEditor() {
     'projects/(projectSlug)/agents/(agentId)/AgentPage',
   );
 
-  const fullPageWarning = useMemo(() => {
-    if (isLocal) {
-      return t('localAgentDevelopment');
-    }
-
-    if (!isTemplate) {
-      return t('liveAgentWarning');
-    }
-
-    return null;
-  }, [isLocal, isTemplate, t]);
-
   const user = useCurrentUser();
 
   return (
     <ADEPage>
       <HiddenOnMobile>
         <VStack overflow="hidden" position="relative" fullWidth fullHeight>
-          {fullPageWarning && (
-            <Alert variant="warning" title={fullPageWarning} />
+          {!isTemplate && !isLocal && (
+            <Alert variant="warning" title={t('liveAgentWarning')} />
           )}
           <Frame overflow="hidden" position="relative" fullWidth fullHeight>
             <HiddenOnMobile checkWithJs>
