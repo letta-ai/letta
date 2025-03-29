@@ -8,7 +8,7 @@ export interface DevelopmentServerConfig {
   id: string;
   name: string;
   url: string;
-  password: string;
+  password?: string;
 }
 
 export function useCurrentDevelopmentServerConfig(): DevelopmentServerConfig | null {

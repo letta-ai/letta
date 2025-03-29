@@ -54,9 +54,13 @@ function UserIsNotConnectedComponent() {
     >
       <LettaLoader variant="flipper" size="large" />
       <VStack gap="small" paddingTop>
-        <Typography variant="heading5">{t('connecting')}</Typography>
+        <Typography align="center" fullWidth variant="heading5">
+          {t('connecting')}
+        </Typography>
         <VStack align="center">
-          <Typography variant="heading6">{t('start')}</Typography>
+          <Typography align="center" fullWidth variant="heading6">
+            {t('start')}
+          </Typography>
           <HStack>
             <ConnectToLocalServerCommand />
           </HStack>

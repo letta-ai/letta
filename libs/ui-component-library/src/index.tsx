@@ -203,7 +203,7 @@ export * from './lib/core/MacCommandButtonsSpacer/MacCommandButtonsSpacer';
 
 export * from './lib/framing/DynamicStack/DynamicStack';
 
-export * from './lib/reusable/NavigationDropdown/NavigationDropdown';
+export * from './lib/reusable/ServerNavigationDropdown/ServerNavigationDropdown';
 
 export * from './lib/reusable/VersionHistory/VersionHistory';
 

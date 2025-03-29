@@ -40,7 +40,7 @@ export function isSubNavigationOverride(
 }
 
 export interface SubnavigationData {
-  items: Array<SubNavigationDataItem>;
+  items: SubNavigationDataItem[];
   title: React.ReactNode;
   returnPath: string;
   returnText?: string;

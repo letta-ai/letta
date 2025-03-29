@@ -1219,8 +1219,8 @@
     "disabledTooltip": "This field cannot be edited"
   },
   "development-servers/components/UserIsNotConnectedComponent": {
-    "connecting": "Attempting to connect to your local server...",
-    "start": "Enter the command below to start your local server",
+    "connecting": "Attempting to connect to your server...",
+    "start": "Enter the command below to start your server",
     "trouble": "Still trouble connecting or using Safari? Follow our <link>troubleshooting guide</link>."
   },
   "development-servers/layout": {
@@ -1273,11 +1273,11 @@
         "createAgent": {
           "title": "New Agent",
           "cta": "Create agent",
-          "description": "Create an agent to deploy to your local server"
+          "description": "Create an agent to deploy to on your server"
         },
         "viewAgents": {
-          "title": "Local agents",
-          "description": "View all of your agents on the local server",
+          "title": "View agents",
+          "description": "View all of your agents on your server",
           "cta": "View agents"
         }
       }

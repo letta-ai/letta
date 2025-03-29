@@ -15,6 +15,7 @@ import {
   TrashIcon,
   DropdownMenu,
   Dialog,
+  ServerNavigationDropdown,
   IdentitiesIcon,
 } from '@letta-cloud/ui-component-library';
 import React, { useCallback, useMemo, useState } from 'react';
@@ -26,9 +27,12 @@ import {
 } from '$web/constants';
 import { UpdateDevelopmentServerDetailsDialog } from './shared/UpdateDevelopmentServerDetailsDialog/UpdateDevelopmentServerDetailsDialog';
 import { useQueryClient } from '@tanstack/react-query';
-import { useRouter } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import type { ServerInferResponses } from '@ts-rest/core';
-import type { developmentServersContracts } from '$web/web-api/contracts';
+import {
+  useFeatureFlag,
+  type developmentServersContracts,
+} from '$web/web-api/contracts';
 import { useDevelopmentServerStatus } from '$web/client/hooks/useDevelopmentServerStatus/useDevelopmentServerStatus';
 import semver from 'semver/preload';
 import type { DevelopmentServerConfig } from '@letta-cloud/utils-client';
@@ -122,8 +126,24 @@ interface ServerStatusTitleProps {
 
 function ServerStatusTitle(props: ServerStatusTitleProps) {
   const { config, title } = props;
-  const t = useTranslations('development-servers/layout');
 
+  return (
+    <HStack align="center">
+      <ServerStatusIndicator config={config} />
+      <Typography bold variant="body2">
+        {title}
+      </Typography>
+    </HStack>
+  );
+}
+
+interface ServerStatusIndicatorProps {
+  config: DevelopmentServerConfig;
+}
+
+function ServerStatusIndicator(props: ServerStatusIndicatorProps) {
+  const { config } = props;
+  const t = useTranslations('development-servers/layout');
   const { isHealthy, version } = useDevelopmentServerStatus(config);
 
   const isNotCompatible = useMemo(() => {
@@ -159,13 +179,106 @@ function ServerStatusTitle(props: ServerStatusTitleProps) {
       : t('ServerStatusTitle.connecting');
   }, [isHealthy, isNotCompatible, t, version]);
 
+  return <StatusIndicator tooltipContent={statusText} status={status} />;
+}
+
+const localServerConfig: DevelopmentServerConfig = {
+  id: 'local',
+  name: 'Local',
+  url: LOCAL_PROJECT_SERVER_URL,
+  password: '',
+};
+
+interface NewDashboardLayoutProps {
+  children: React.ReactNode;
+}
+
+function NewDashboardLayout(props: NewDashboardLayoutProps) {
+  const { children } = props;
+
+  const { data: remoteConnections } =
+    webApi.developmentServers.getDevelopmentServers.useQuery({
+      queryKey: webApiQueryKeys.developmentServers.getDevelopmentServers,
+    });
+
+  const t = useTranslations('development-servers/layout');
+
+  const servers = useMemo(() => {
+    if (!remoteConnections) {
+      return [localServerConfig];
+    }
+
+    return [
+      localServerConfig,
+      ...remoteConnections.body.developmentServers,
+    ].map((server) => ({
+      id: server.id,
+      name: server.name,
+      url: server.url,
+      statusIndicator: <ServerStatusIndicator config={server} />,
+    }));
+  }, [remoteConnections]);
+
+  const { developmentServerId } = useParams<{ developmentServerId: string }>();
+
+  const selectedServer = useMemo(() => {
+    return servers.find((server) => server.id === developmentServerId);
+  }, [servers, developmentServerId]);
+
+  const { push } = useRouter();
+
+  const items = useMemo(() => {
+    return [
+      {
+        id: 'dashboard',
+        icon: <SpaceDashboardIcon />,
+        label: t('nav.dashboard'),
+        href: `/development-servers/${developmentServerId}/dashboard`,
+      },
+      {
+        id: 'agents',
+        icon: <LettaInvaderOutlineIcon />,
+        label: t('nav.agents'),
+        href: `/development-servers/${developmentServerId}/agents`,
+      },
+      {
+        id: 'identities',
+        icon: <IdentitiesIcon />,
+        label: t('nav.identities'),
+        href: `/development-servers/${developmentServerId}/identities`,
+      },
+      {
+        id: 'create',
+        icon: <PlusIcon />,
+        label: t('nav.create'),
+        href: '/development-servers/add',
+      },
+    ];
+  }, [developmentServerId, t]);
+
   return (
-    <HStack align="center">
-      <StatusIndicator tooltipContent={statusText} status={status} />
-      <Typography bold variant="body2">
-        {title}
-      </Typography>
-    </HStack>
+    <DashboardWithSidebarWrapper
+      baseUrl="/development-servers"
+      returnOverride="/"
+      navigationItems={[
+        {
+          override: (
+            <HStack fullWidth paddingBottom="small">
+              <ServerNavigationDropdown
+                servers={servers}
+                selectedServerUrl={selectedServer?.url || ''}
+                onSelect={(server) => {
+                  push(`/development-servers/${server.id}/dashboard`);
+                }}
+              />
+            </HStack>
+          ),
+        },
+        ...items,
+      ]}
+    >
+      {children}
+    </DashboardWithSidebarWrapper>
   );
 }
 
@@ -250,6 +363,14 @@ function LocalProjectLayout(props: LocalProjectLayoutProps) {
       ],
     }));
   }, [remoteConnections, t]);
+
+  const { isLoading: isLoadingFlag, data: isFlagEnabled } = useFeatureFlag(
+    'NEW_DEVELOPMENT_SERVER',
+  );
+
+  if (!isLoadingFlag && isFlagEnabled) {
+    return <NewDashboardLayout>{children}</NewDashboardLayout>;
+  }
 
   return (
     <DashboardWithSidebarWrapper
