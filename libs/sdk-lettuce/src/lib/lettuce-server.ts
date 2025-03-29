@@ -15,12 +15,13 @@ export async function startLettuceServer() {
   console.log(
     'Connected to Temporal API at',
     environment.TEMPORAL_LETTUCE_API_HOST,
+    environment.TEMPORAL_LETTUCE_NAMESPACE,
   );
 
   try {
     const worker = await Worker.create({
       connection,
-      namespace: 'lettuce.tmhou',
+      namespace: environment.TEMPORAL_LETTUCE_NAMESPACE || 'lettuce.tmhou',
       taskQueue: TASK_QUEUE_NAME,
       // Workflows are registered using a path as they run in a separate JS context.
       workflowsPath: require.resolve('./workflows/index.ts'),

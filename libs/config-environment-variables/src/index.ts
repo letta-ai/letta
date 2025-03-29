@@ -4,6 +4,8 @@ import { z } from 'zod';
 
 import { config } from 'dotenv';
 import { resolve } from 'path';
+
+// config({ path: resolve(__dirname, '../../../.env') });
 config({ path: resolve(__dirname, '.env') });
 
 /* eslint-disable @typescript-eslint/naming-convention */
@@ -27,6 +29,7 @@ export const environment = createEnv({
     TEMPORAL_LETTUCE_API_HOST: z.string().optional(),
     TEMPORAL_LETTUCE_CA_PEM: z.string().optional(),
     TEMPORAL_LETTUCE_CA_KEY: z.string().optional(),
+    TEMPORAL_LETTUCE_NAMESPACE: z.string().optional(),
     STRIPE_SECRET_KEY: z.string().optional(),
     CORE_DATABASE_URL: z.string().optional(),
     WORKOS_CLIENT_ID: z.string().optional(),
@@ -39,6 +42,7 @@ export const environment = createEnv({
     NEXT_PUBLIC_STRIPE_PUBLISH_KEY: z.string().optional(),
   },
   runtimeEnv: {
+    TEMPORAL_LETTUCE_NAMESPACE: process.env.TEMPORAL_LETTUCE_NAMESPACE,
     TEMPORAL_LETTUCE_API_HOST: process.env.TEMPORAL_LETTUCE_API_HOST,
     TEMPORAL_LETTUCE_CA_PEM: process.env.TEMPORAL_LETTUCE_CA_PEM,
     TEMPORAL_LETTUCE_CA_KEY: process.env.TEMPORAL_LETTUCE_CA_KEY,

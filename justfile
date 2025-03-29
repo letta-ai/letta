@@ -384,6 +384,14 @@ lettuce:
     @echo "🚧 Running lettuce..."
     npm run lettuce:dev
 
+build-lettuce:
+    @echo "🚧 Building cloud API Docker image with tag: {{TAG}}..."
+    docker buildx build --platform linux/amd64 --target lettuce -t {{DOCKER_REGISTRY}}/lettuce:{{TAG}} . --load --file apps/lettuce/Dockerfile
+
+push-lettuce:
+    @echo "🚀 Pushing Docker images to registry with tag: {{TAG}}..."
+    docker push {{DOCKER_REGISTRY}}/lettuce:{{TAG}}
+
 start-temporal:
     @echo "🚧 Starting Temporal server..."
     temporal server start-dev
