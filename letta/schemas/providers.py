@@ -7,11 +7,14 @@ from pydantic import Field, model_validator
 from letta.constants import LLM_MAX_TOKENS, MIN_CONTEXT_WINDOW
 from letta.llm_api.azure_openai import get_azure_chat_completions_endpoint, get_azure_embeddings_endpoint
 from letta.llm_api.azure_openai_constants import AZURE_MODEL_TO_CONTEXT_LENGTH
+from letta.log import get_logger
 from letta.schemas.embedding_config import EmbeddingConfig
 from letta.schemas.embedding_config_overrides import EMBEDDING_HANDLE_OVERRIDES
 from letta.schemas.letta_base import LettaBase
 from letta.schemas.llm_config import LLMConfig
 from letta.schemas.llm_config_overrides import LLM_HANDLE_OVERRIDES
+
+logger = get_logger(__name__)
 
 
 class ProviderBase(LettaBase):
@@ -226,6 +229,115 @@ class OpenAIProvider(Provider):
             return LLM_MAX_TOKENS[model_name]
         else:
             return LLM_MAX_TOKENS["DEFAULT"]
+
+
+class LiteLLMProvider(OpenAIProvider):
+    """Provider for LiteLLM proxy."""
+
+    name: str = "litellm"
+    api_key: str = Field(..., description="API key for the LiteLLM API.")
+    base_url: str = Field(..., description="Base URL for the LiteLLM API.")
+
+    def get_context_window_from_model_info(self, model_info: Optional[dict]) -> Optional[int]:
+        """
+        Determines the maximum context window size from the model_info dictionary.
+        Prioritizes explicit context length keys, then input tokens.
+        """
+        if not isinstance(model_info, dict):
+            return None
+
+        # Check keys in order of preference
+        keys_to_check = [
+            "context_length",
+            "max_context_length",
+            "max_input_tokens",
+            "max_tokens",  # Legacy, check before output
+            "max_output_tokens",  # Less ideal for input context, use as fallback
+        ]
+
+        for key in keys_to_check:
+            value = model_info.get(key)
+            if isinstance(value, int):
+                return value
+
+        return None
+
+    def get_model_context_window_size(self, model: dict, default_model_info: Optional[dict]) -> Optional[int]:
+        """
+        Determines the context window size for a given model, falling back to default info or a global default.
+        """
+        model_name = model.get("model_name", "unknown model")  # Get name if available, else default
+        try:
+            model_info = model.get("model_info")
+            context_window_size = self.get_context_window_from_model_info(model_info)
+            if context_window_size is not None:
+                return context_window_size
+
+            # Fallback to default model info if primary model info didn't yield tokens
+            if default_model_info is not None and isinstance(default_model_info, dict):
+                context_window_size = self.get_context_window_from_model_info(default_model_info)
+                # Or if get_max_tokens is the correct distinct method:
+                # max_tokens = self.get_max_tokens(default_model_info)
+                if context_window_size is not None:
+                    return context_window_size
+
+            # If still no tokens found, log warning and return global default
+            logger.warning(f"No context_window_size found for model '{model_name}' from primary or default info, returning global default.")
+            return LLM_MAX_TOKENS.get("DEFAULT")
+
+        except Exception as e:
+            # Log the specific model name
+            logger.warning(
+                f"Exception in get_model_context_window_size for model '{model_name}', returning global default context window size.",
+                exc_info=e,
+            )
+            return LLM_MAX_TOKENS.get("DEFAULT")
+
+    def supports_tool_calling(self, model: dict, default_model_info: dict) -> bool:
+        model_info = model["model_info"]
+
+        # Since the default is false, we only return false if there is a default_model_info that also returns false.
+        supports_function_calling = model_info.get("supports_function_calling", False)
+        if supports_function_calling is False and default_model_info is not None:
+            return default_model_info.get("supports_function_calling")
+
+        return True
+
+    def list_llm_models(self) -> List[LLMConfig]:
+        from letta.llm_api.litellm import litellm_get_model_info, litellm_get_models_prices_and_context_window
+
+        # Individual models may have model specific information
+        # https://docs.litellm.ai/docs/proxy/configs#model-specific-params-api-base-keys-temperature-max-tokens-organization-headers-etc
+        litellm_models = litellm_get_model_info(url=self.base_url, api_key=self.api_key)
+
+        # https://docs.litellm.ai/docs/completion/token_usage#7-get_max_tokens
+        # https://docs.litellm.ai/docs/completion/token_usage#8-model_cost
+        default_model_info_dict: dict[str, dict] = litellm_get_models_prices_and_context_window()
+
+        configs = []
+        for model in litellm_models:
+            model_name = model["model_name"]
+            default_model_info = default_model_info_dict.get(model_name)
+
+            # Filter out the models that explicitly don't support tool calling
+            if not self.supports_tool_calling(model, default_model_info):
+                continue
+
+            context_window_size = self.get_model_context_window_size(model, default_model_info)
+            if not context_window_size:
+                continue
+
+            configs.append(
+                LLMConfig(
+                    model=model_name,
+                    model_endpoint_type="litellm",
+                    model_endpoint=self.base_url,
+                    context_window=context_window_size,
+                    handle=self.get_handle(model_name),
+                )
+            )
+
+        return configs
 
 
 class xAIProvider(OpenAIProvider):

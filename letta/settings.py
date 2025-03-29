@@ -69,6 +69,10 @@ class ModelSettings(BaseSettings):
     openai_api_key: Optional[str] = None
     openai_api_base: str = "https://api.openai.com/v1"
 
+    # litellm
+    litellm_api_key: Optional[str] = None
+    litellm_api_base: Optional[str] = None
+
     # deepseek
     deepseek_api_key: Optional[str] = None
 

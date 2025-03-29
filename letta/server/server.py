@@ -61,6 +61,7 @@ from letta.schemas.providers import (
     GoogleVertexProvider,
     GroqProvider,
     LettaProvider,
+    LiteLLMProvider,
     LMStudioOpenAIProvider,
     OllamaProvider,
     OpenAIProvider,
@@ -237,6 +238,14 @@ class SyncServer(Server):
                     base_url=model_settings.openai_api_base,
                 )
             )
+        if model_settings.litellm_api_key:
+            self._enabled_providers.append(
+                LiteLLMProvider(
+                    api_key=model_settings.litellm_api_key,
+                    base_url=model_settings.litellm_api_base,
+                )
+            )
+
         if model_settings.anthropic_api_key:
             self._enabled_providers.append(
                 AnthropicProvider(
@@ -1056,7 +1065,8 @@ class SyncServer(Server):
             try:
                 llm_models.extend(provider.list_llm_models())
             except Exception as e:
-                warnings.warn(f"An error occurred while listing LLM models for provider {provider}: {e}")
+                raise e
+                # warnings.warn(f"An error occurred while listing LLM models for provider {provider}: {e}")
 
         llm_models.extend(self.get_local_llm_configs())
 

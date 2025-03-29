@@ -226,6 +226,65 @@ def create(
 
         return response
 
+    elif llm_config.model_endpoint_type == "litellm":
+
+        # This is very like openai, but uses litellm_api_key
+        if model_settings.litellm_api_key is None:
+            # the openai python client requires a dummy API key
+            api_key = "DUMMY_API_KEY"
+        else:
+            api_key = model_settings.litellm_api_key
+
+        if function_call is None and functions is not None and len(functions) > 0:
+            # force function calling for reliability, see https://platform.openai.com/docs/api-reference/chat/create#chat-create-tool_choice
+            # TODO(matt) move into LLMConfig
+            # TODO: This vllm checking is very brittle and is a patch at most
+            if llm_config.model_endpoint == "https://inference.memgpt.ai" or (llm_config.handle and "vllm" in llm_config.handle):
+                function_call = "auto"  # TODO change to "required" once proxy supports it
+            else:
+                function_call = "required"
+
+        data = build_openai_chat_completions_request(
+            llm_config,
+            messages,
+            user_id,
+            functions,
+            function_call,
+            use_tool_naming,
+            put_inner_thoughts_first=put_inner_thoughts_first,
+            use_structured_output=True,  # NOTE: turn on all the time for OpenAI API
+        )
+
+        if stream:  # Client requested token streaming
+            data.stream = True
+            assert isinstance(stream_interface, AgentChunkStreamingInterface) or isinstance(
+                stream_interface, AgentRefreshStreamingInterface
+            ), type(stream_interface)
+            response = openai_chat_completions_process_stream(
+                url=llm_config.model_endpoint,
+                api_key=api_key,
+                chat_completion_request=data,
+                stream_interface=stream_interface,
+            )
+        else:  # Client did not request token streaming (expect a blocking backend response)
+            data.stream = False
+            if isinstance(stream_interface, AgentChunkStreamingInterface):
+                stream_interface.stream_start()
+            try:
+                response = openai_chat_completions_request(
+                    url=llm_config.model_endpoint,
+                    api_key=api_key,
+                    chat_completion_request=data,
+                )
+            finally:
+                if isinstance(stream_interface, AgentChunkStreamingInterface):
+                    stream_interface.stream_end()
+
+        if llm_config.put_inner_thoughts_in_kwargs:
+            response = unpack_all_inner_thoughts_from_kwargs(response=response, inner_thoughts_key=INNER_THOUGHTS_KWARG)
+
+        return response
+
     elif llm_config.model_endpoint_type == "xai":
 
         api_key = model_settings.xai_api_key
