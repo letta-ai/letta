@@ -12,20 +12,35 @@ interface SubNavigationItem {
   icon?: React.ReactNode;
 }
 
+interface SubNavigationOverride {
+  override: React.ReactNode;
+}
+
 interface SubNavigationGroup {
   title: string;
   titleOverride?: React.ReactNode;
   items: SubNavigationItem[];
 }
 
+type SubNavigationDataItem =
+  | SubNavigationGroup
+  | SubNavigationItem
+  | SubNavigationOverride;
+
 export function isSubNavigationGroup(
-  item: SubNavigationGroup | SubNavigationItem,
+  item: SubNavigationDataItem,
 ): item is SubNavigationGroup {
   return Object.prototype.hasOwnProperty.call(item, 'title');
 }
 
+export function isSubNavigationOverride(
+  item: SubNavigationDataItem,
+): item is SubNavigationOverride {
+  return Object.prototype.hasOwnProperty.call(item, 'override');
+}
+
 export interface SubnavigationData {
-  items: Array<SubNavigationGroup | SubNavigationItem>;
+  items: Array<SubNavigationDataItem>;
   title: React.ReactNode;
   returnPath: string;
   returnText?: string;

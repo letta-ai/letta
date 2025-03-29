@@ -14,6 +14,7 @@ import {
   useForm,
   Breadcrumb,
   ExternalLinkIcon,
+  isSubNavigationOverride,
 } from '@letta-cloud/ui-component-library';
 import { HiddenOnMobile } from '@letta-cloud/ui-component-library';
 import {
@@ -377,6 +378,10 @@ function MainNavigationItems(props: MainNavigationItemsProps) {
                         </VStack>
                       </VStack>
                     );
+                  }
+
+                  if (isSubNavigationOverride(item)) {
+                    return item.override;
                   }
 
                   return (
