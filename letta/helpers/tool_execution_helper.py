@@ -10,7 +10,7 @@ from letta.schemas.agent import AgentState
 from letta.schemas.sandbox_config import SandboxRunResult
 from letta.schemas.tool import Tool
 from letta.schemas.user import User
-from letta.services.tool_execution_sandbox import ToolExecutionSandbox
+from letta.services.tool_executor.tool_execution_sandbox import ToolExecutionSandbox
 from letta.utils import get_friendly_error_msg
 
 

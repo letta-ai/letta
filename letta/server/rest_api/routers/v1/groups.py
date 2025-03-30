@@ -1,32 +1,19 @@
 from typing import Annotated, List, Optional
 
-from fastapi import APIRouter, Body, Depends, Header, Query
+from fastapi import APIRouter, Body, Depends, Header, HTTPException, Query, status
+from fastapi.responses import JSONResponse
 from pydantic import Field
 
 from letta.constants import DEFAULT_MESSAGE_TOOL, DEFAULT_MESSAGE_TOOL_KWARG
-from letta.schemas.group import Group, GroupCreate, ManagerType
-from letta.schemas.letta_message import LettaMessageUnion
+from letta.orm.errors import NoResultFound
+from letta.schemas.group import Group, GroupCreate, GroupUpdate, ManagerType
+from letta.schemas.letta_message import LettaMessageUnion, LettaMessageUpdateUnion
 from letta.schemas.letta_request import LettaRequest, LettaStreamingRequest
 from letta.schemas.letta_response import LettaResponse
 from letta.server.rest_api.utils import get_letta_server
 from letta.server.server import SyncServer
 
 router = APIRouter(prefix="/groups", tags=["groups"])
-
-
-@router.post("/", response_model=Group, operation_id="create_group")
-async def create_group(
-    server: SyncServer = Depends(get_letta_server),
-    request: GroupCreate = Body(...),
-    actor_id: Optional[str] = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
-):
-    """
-    Create a multi-agent group with a specified management pattern. When no
-    management config is specified, this endpoint will use round robin for
-    speaker selection.
-    """
-    actor = server.user_manager.get_user_or_default(user_id=actor_id)
-    return server.group_manager.create_group(request, actor=actor)
 
 
 @router.get("/", response_model=List[Group], operation_id="list_groups")
@@ -53,6 +40,23 @@ def list_groups(
     )
 
 
+@router.get("/{group_id}", response_model=Group, operation_id="retrieve_group")
+def retrieve_group(
+    group_id: str,
+    server: "SyncServer" = Depends(get_letta_server),
+    actor_id: Optional[str] = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
+):
+    """
+    Retrieve the group by id.
+    """
+    actor = server.user_manager.get_user_or_default(user_id=actor_id)
+
+    try:
+        return server.group_manager.retrieve_group(group_id=group_id, actor=actor)
+    except NoResultFound as e:
+        raise HTTPException(status_code=404, detail=str(e))
+
+
 @router.post("/", response_model=Group, operation_id="create_group")
 def create_group(
     group: GroupCreate = Body(...),
@@ -70,9 +74,10 @@ def create_group(
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.put("/", response_model=Group, operation_id="upsert_group")
-def upsert_group(
-    group: GroupCreate = Body(...),
+@router.put("/{group_id}", response_model=Group, operation_id="modify_group")
+def modify_group(
+    group_id: str,
+    group: GroupUpdate = Body(...),
     server: "SyncServer" = Depends(get_letta_server),
     actor_id: Optional[str] = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
     x_project: Optional[str] = Header(None, alias="X-Project"),  # Only handled by next js middleware
@@ -82,7 +87,7 @@ def upsert_group(
     """
     try:
         actor = server.user_manager.get_user_or_default(user_id=actor_id)
-        return server.group_manager.create_group(group, actor=actor)
+        return server.group_manager.modify_group(group_id=group_id, group_update=group, actor=actor)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -110,7 +115,7 @@ def delete_group(
     operation_id="send_group_message",
 )
 async def send_group_message(
-    agent_id: str,
+    group_id: str,
     server: SyncServer = Depends(get_letta_server),
     request: LettaRequest = Body(...),
     actor_id: Optional[str] = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
@@ -178,6 +183,22 @@ GroupMessagesResponse = Annotated[
 ]
 
 
+@router.patch("/{group_id}/messages/{message_id}", response_model=LettaMessageUnion, operation_id="modify_group_message")
+def modify_group_message(
+    group_id: str,
+    message_id: str,
+    request: LettaMessageUpdateUnion = Body(...),
+    server: "SyncServer" = Depends(get_letta_server),
+    actor_id: Optional[str] = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
+):
+    """
+    Update the details of a message associated with an agent.
+    """
+    # TODO: support modifying tool calls/returns
+    actor = server.user_manager.get_user_or_default(user_id=actor_id)
+    return server.message_manager.update_message_by_letta_message(message_id=message_id, letta_message_update=request, actor=actor)
+
+
 @router.get("/{group_id}/messages", response_model=GroupMessagesResponse, operation_id="list_group_messages")
 def list_group_messages(
     group_id: str,
@@ -194,40 +215,42 @@ def list_group_messages(
     Retrieve message history for an agent.
     """
     actor = server.user_manager.get_user_or_default(user_id=actor_id)
+    group = server.group_manager.retrieve_group(group_id=group_id, actor=actor)
+    if group.manager_agent_id:
+        return server.get_agent_recall(
+            user_id=actor.id,
+            agent_id=group.manager_agent_id,
+            after=after,
+            before=before,
+            limit=limit,
+            group_id=group_id,
+            reverse=True,
+            return_message_object=False,
+            use_assistant_message=use_assistant_message,
+            assistant_message_tool_name=assistant_message_tool_name,
+            assistant_message_tool_kwarg=assistant_message_tool_kwarg,
+        )
+    else:
+        return server.group_manager.list_group_messages(
+            group_id=group_id,
+            after=after,
+            before=before,
+            limit=limit,
+            actor=actor,
+            use_assistant_message=use_assistant_message,
+            assistant_message_tool_name=assistant_message_tool_name,
+            assistant_message_tool_kwarg=assistant_message_tool_kwarg,
+        )
 
-    return server.group_manager.list_group_messages(
-        group_id=group_id,
-        before=before,
-        after=after,
-        limit=limit,
-        actor=actor,
-        use_assistant_message=use_assistant_message,
-        assistant_message_tool_name=assistant_message_tool_name,
-        assistant_message_tool_kwarg=assistant_message_tool_kwarg,
-    )
 
-
-'''
 @router.patch("/{group_id}/reset-messages", response_model=None, operation_id="reset_group_messages")
 def reset_group_messages(
     group_id: str,
-    add_default_initial_messages: bool = Query(default=False, description="If true, adds the default initial messages after resetting."),
     server: "SyncServer" = Depends(get_letta_server),
     actor_id: Optional[str] = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
 ):
     """
-    Resets the messages for all agents that are part of the multi-agent group.
-    TODO: only delete group messages not all messages!
+    Delete the group messages for all agents that are part of the multi-agent group.
     """
     actor = server.user_manager.get_user_or_default(user_id=actor_id)
-    group = server.group_manager.retrieve_group(group_id=group_id, actor=actor)
-    agent_ids = group.agent_ids
-    if group.manager_agent_id:
-        agent_ids.append(group.manager_agent_id)
-    for agent_id in agent_ids:
-        server.agent_manager.reset_messages(
-            agent_id=agent_id,
-            actor=actor,
-            add_default_initial_messages=add_default_initial_messages,
-        )
-'''
+    server.group_manager.reset_messages(group_id=group_id, actor=actor)

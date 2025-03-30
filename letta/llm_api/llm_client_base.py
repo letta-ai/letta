@@ -18,17 +18,13 @@ class LLMClientBase:
 
     def __init__(
         self,
-        agent_id: str,
         llm_config: LLMConfig,
         put_inner_thoughts_first: Optional[bool] = True,
         use_structured_output: Optional[bool] = True,
         use_tool_naming: bool = True,
-        actor_id: Optional[str] = None,
     ):
-        self.agent_id = agent_id
         self.llm_config = llm_config
         self.put_inner_thoughts_first = put_inner_thoughts_first
-        self.actor_id = actor_id
         self.use_tool_naming = use_tool_naming
 
     def send_llm_request(
@@ -46,13 +42,18 @@ class LLMClientBase:
         Otherwise returns a ChatCompletionResponse.
         """
         request_data = self.build_request_data(messages, tools, tool_call)
-        log_event(name="llm_request_sent", attributes=request_data)
-        if stream:
-            return self.stream(request_data)
-        else:
-            response_data = self.request(request_data)
+
+        try:
+            log_event(name="llm_request_sent", attributes=request_data)
+            if stream:
+                return self.stream(request_data)
+            else:
+                response_data = self.request(request_data)
             log_event(name="llm_response_received", attributes=response_data)
-            return self.convert_response_to_chat_completion(response_data, messages)
+        except Exception as e:
+            raise self.handle_llm_error(e)
+
+        return self.convert_response_to_chat_completion(response_data, messages)
 
     async def send_llm_request_async(
         self,
@@ -68,14 +69,20 @@ class LLMClientBase:
         If stream=True, returns an AsyncStream[ChatCompletionChunk] that can be async iterated over.
         Otherwise returns a ChatCompletionResponse.
         """
-        request_data = self.build_request_data(messages, tools, tool_call)
-        log_event(name="llm_request_sent", attributes=request_data)
-        if stream:
-            return await self.stream_async(request_data)
-        else:
-            response_data = await self.request_async(request_data)
+        request_data = self.build_request_data(messages, tools, tool_call, force_tool_call)
+        response_data = {}
+
+        try:
+            log_event(name="llm_request_sent", attributes=request_data)
+            if stream:
+                return await self.stream_async(request_data)
+            else:
+                response_data = await self.request_async(request_data)
             log_event(name="llm_response_received", attributes=response_data)
-            return self.convert_response_to_chat_completion(response_data, messages)
+        except Exception as e:
+            raise self.handle_llm_error(e)
+
+        return self.convert_response_to_chat_completion(response_data, messages)
 
     @abstractmethod
     def build_request_data(
@@ -129,3 +136,17 @@ class LLMClientBase:
         Performs underlying streaming request to llm and returns raw response.
         """
         raise NotImplementedError(f"Streaming is not supported for {self.llm_config.model_endpoint_type}")
+
+    @abstractmethod
+    def handle_llm_error(self, e: Exception) -> Exception:
+        """
+        Maps provider-specific errors to common LLMError types.
+        Each LLM provider should implement this to translate their specific errors.
+
+        Args:
+            e: The original provider-specific exception
+
+        Returns:
+            An LLMError subclass that represents the error in a provider-agnostic way
+        """
+        return LLMError(f"Unhandled LLM error: {str(e)}")

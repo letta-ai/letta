@@ -226,6 +226,7 @@ class Message(BaseMessage):
                             id=self.id,
                             date=self.created_at,
                             reasoning=self.content[0].text,
+                            name=self.name,
                         )
                     )
                 # Otherwise, we may have a list of multiple types
@@ -239,6 +240,7 @@ class Message(BaseMessage):
                                     id=self.id,
                                     date=self.created_at,
                                     reasoning=content_part.text,
+                                    name=self.name,
                                 )
                             )
                         elif isinstance(content_part, ReasoningContent):
@@ -250,6 +252,7 @@ class Message(BaseMessage):
                                     reasoning=content_part.reasoning,
                                     source="reasoner_model",  # TODO do we want to tag like this?
                                     signature=content_part.signature,
+                                    name=self.name,
                                 )
                             )
                         elif isinstance(content_part, RedactedReasoningContent):
@@ -260,6 +263,7 @@ class Message(BaseMessage):
                                     date=self.created_at,
                                     state="redacted",
                                     hidden_reasoning=content_part.data,
+                                    name=self.name,
                                 )
                             )
                         else:
@@ -282,6 +286,7 @@ class Message(BaseMessage):
                                 id=self.id,
                                 date=self.created_at,
                                 content=message_string,
+                                name=self.name,
                             )
                         )
                     else:
@@ -294,6 +299,7 @@ class Message(BaseMessage):
                                     arguments=tool_call.function.arguments,
                                     tool_call_id=tool_call.id,
                                 ),
+                                name=self.name,
                             )
                         )
         elif self.role == MessageRole.tool:
@@ -334,6 +340,7 @@ class Message(BaseMessage):
                     tool_call_id=self.tool_call_id,
                     stdout=self.tool_returns[0].stdout if self.tool_returns else None,
                     stderr=self.tool_returns[0].stderr if self.tool_returns else None,
+                    name=self.name,
                 )
             )
         elif self.role == MessageRole.user:
@@ -349,6 +356,7 @@ class Message(BaseMessage):
                     id=self.id,
                     date=self.created_at,
                     content=message_str or text_content,
+                    name=self.name,
                 )
             )
         elif self.role == MessageRole.system:
@@ -363,6 +371,7 @@ class Message(BaseMessage):
                     id=self.id,
                     date=self.created_at,
                     content=text_content,
+                    name=self.name,
                 )
             )
         else:
@@ -379,6 +388,8 @@ class Message(BaseMessage):
         allow_functions_style: bool = False,  # allow deprecated functions style?
         created_at: Optional[datetime] = None,
         id: Optional[str] = None,
+        name: Optional[str] = None,
+        group_id: Optional[str] = None,
         tool_returns: Optional[List[ToolReturn]] = None,
     ):
         """Convert a ChatCompletion message object into a Message object (synced to DB)"""
@@ -426,12 +437,13 @@ class Message(BaseMessage):
                     # standard fields expected in an OpenAI ChatCompletion message object
                     role=MessageRole.tool,  # NOTE
                     content=content,
-                    name=openai_message_dict["name"] if "name" in openai_message_dict else None,
+                    name=name,
                     tool_calls=openai_message_dict["tool_calls"] if "tool_calls" in openai_message_dict else None,
                     tool_call_id=openai_message_dict["tool_call_id"] if "tool_call_id" in openai_message_dict else None,
                     created_at=created_at,
                     id=str(id),
                     tool_returns=tool_returns,
+                    group_id=group_id,
                 )
             else:
                 return Message(
@@ -440,11 +452,12 @@ class Message(BaseMessage):
                     # standard fields expected in an OpenAI ChatCompletion message object
                     role=MessageRole.tool,  # NOTE
                     content=content,
-                    name=openai_message_dict["name"] if "name" in openai_message_dict else None,
+                    name=name,
                     tool_calls=openai_message_dict["tool_calls"] if "tool_calls" in openai_message_dict else None,
                     tool_call_id=openai_message_dict["tool_call_id"] if "tool_call_id" in openai_message_dict else None,
                     created_at=created_at,
                     tool_returns=tool_returns,
+                    group_id=group_id,
                 )
 
         elif "function_call" in openai_message_dict and openai_message_dict["function_call"] is not None:
@@ -473,12 +486,13 @@ class Message(BaseMessage):
                     # standard fields expected in an OpenAI ChatCompletion message object
                     role=MessageRole(openai_message_dict["role"]),
                     content=content,
-                    name=openai_message_dict["name"] if "name" in openai_message_dict else None,
+                    name=name,
                     tool_calls=tool_calls,
                     tool_call_id=None,  # NOTE: None, since this field is only non-null for role=='tool'
                     created_at=created_at,
                     id=str(id),
                     tool_returns=tool_returns,
+                    group_id=group_id,
                 )
             else:
                 return Message(
@@ -492,6 +506,7 @@ class Message(BaseMessage):
                     tool_call_id=None,  # NOTE: None, since this field is only non-null for role=='tool'
                     created_at=created_at,
                     tool_returns=tool_returns,
+                    group_id=group_id,
                 )
 
         else:
@@ -520,12 +535,13 @@ class Message(BaseMessage):
                     # standard fields expected in an OpenAI ChatCompletion message object
                     role=MessageRole(openai_message_dict["role"]),
                     content=content,
-                    name=openai_message_dict["name"] if "name" in openai_message_dict else None,
+                    name=name,
                     tool_calls=tool_calls,
                     tool_call_id=openai_message_dict["tool_call_id"] if "tool_call_id" in openai_message_dict else None,
                     created_at=created_at,
                     id=str(id),
                     tool_returns=tool_returns,
+                    group_id=group_id,
                 )
             else:
                 return Message(
@@ -534,11 +550,12 @@ class Message(BaseMessage):
                     # standard fields expected in an OpenAI ChatCompletion message object
                     role=MessageRole(openai_message_dict["role"]),
                     content=content,
-                    name=openai_message_dict["name"] if "name" in openai_message_dict else None,
+                    name=name,
                     tool_calls=tool_calls,
                     tool_call_id=openai_message_dict["tool_call_id"] if "tool_call_id" in openai_message_dict else None,
                     created_at=created_at,
                     tool_returns=tool_returns,
+                    group_id=group_id,
                 )
 
     def to_openai_dict_search_results(self, max_tool_id_length: int = TOOL_CALL_ID_MAX_LEN) -> dict:
@@ -579,9 +596,6 @@ class Message(BaseMessage):
                 "content": text_content,
                 "role": self.role,
             }
-            # Optional field, do not include if null
-            if self.name is not None:
-                openai_message["name"] = self.name
 
         elif self.role == "user":
             assert all([v is not None for v in [text_content, self.role]]), vars(self)
@@ -589,9 +603,6 @@ class Message(BaseMessage):
                 "content": text_content,
                 "role": self.role,
             }
-            # Optional field, do not include if null
-            if self.name is not None:
-                openai_message["name"] = self.name
 
         elif self.role == "assistant":
             assert self.tool_calls is not None or text_content is not None
@@ -599,9 +610,7 @@ class Message(BaseMessage):
                 "content": None if put_inner_thoughts_in_kwargs else text_content,
                 "role": self.role,
             }
-            # Optional fields, do not include if null
-            if self.name is not None:
-                openai_message["name"] = self.name
+
             if self.tool_calls is not None:
                 if put_inner_thoughts_in_kwargs:
                     # put the inner thoughts inside the tool call before casting to a dict

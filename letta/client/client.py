@@ -546,6 +546,7 @@ class RESTClient(AbstractClient):
         tool_ids: Optional[List[str]] = None,
         tool_rules: Optional[List[BaseToolRule]] = None,
         include_base_tools: Optional[bool] = True,
+        include_multi_agent_tools: Optional[bool] = False,
         # metadata
         metadata: Optional[Dict] = {"human:": DEFAULT_HUMAN, "persona": DEFAULT_PERSONA},
         description: Optional[str] = None,
@@ -613,6 +614,7 @@ class RESTClient(AbstractClient):
             "tags": tags,
             "include_base_tools": include_base_tools,
             "message_buffer_autoclear": message_buffer_autoclear,
+            "include_multi_agent_tools": include_multi_agent_tools,
         }
 
         # Only add name if it's not None

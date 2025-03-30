@@ -264,6 +264,7 @@ class MessageManager:
         roles: Optional[Sequence[MessageRole]] = None,
         limit: Optional[int] = 50,
         ascending: bool = True,
+        group_id: Optional[str] = None,
     ) -> List[PydanticMessage]:
         """
         Most performant query to list messages for an agent by directly querying the Message table.
@@ -295,6 +296,10 @@ class MessageManager:
 
             # Build a query that directly filters the Message table by agent_id.
             query = session.query(MessageModel).filter(MessageModel.agent_id == agent_id)
+
+            # If group_id is provided, filter messages by group_id.
+            if group_id:
+                query = query.filter(MessageModel.group_id == group_id)
 
             # If query_text is provided, filter messages using subquery.
             if query_text:

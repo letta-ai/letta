@@ -104,11 +104,7 @@ def check_first_response_is_valid_for_llm_endpoint(filename: str, validate_inner
     messages = client.server.agent_manager.get_in_context_messages(agent_id=full_agent_state.id, actor=client.user)
     agent = Agent(agent_state=full_agent_state, interface=None, user=client.user)
 
-    llm_client = LLMClient.create(
-        agent_id=agent_state.id,
-        llm_config=agent_state.llm_config,
-        actor_id=str(uuid.UUID(int=1)),
-    )
+    llm_client = LLMClient.create(llm_config=agent_state.llm_config)
     if llm_client:
         response = llm_client.send_llm_request(
             messages=messages,

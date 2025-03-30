@@ -20,7 +20,7 @@ from letta.schemas.sandbox_config import E2BSandboxConfig, LocalSandboxConfig, P
 from letta.schemas.user import User
 from letta.services.organization_manager import OrganizationManager
 from letta.services.sandbox_config_manager import SandboxConfigManager
-from letta.services.tool_execution_sandbox import ToolExecutionSandbox
+from letta.services.tool_executor.tool_execution_sandbox import ToolExecutionSandbox
 from letta.services.tool_manager import ToolManager
 from letta.services.user_manager import UserManager
 from tests.helpers.utils import create_tool_from_func

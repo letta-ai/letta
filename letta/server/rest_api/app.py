@@ -1,3 +1,5 @@
+import asyncio
+import concurrent.futures
 import json
 import logging
 import os
@@ -134,6 +136,13 @@ def create_application() -> "FastAPI":
         version="1.0.0",  # TODO wire this up to the version in the package
         debug=debug_mode,  # if True, the stack trace will be printed in the response
     )
+
+    @app.on_event("startup")
+    async def configure_executor():
+        print(f"Configured event loop executor with {settings.event_loop_threadpool_max_workers} workers.")
+        loop = asyncio.get_running_loop()
+        executor = concurrent.futures.ThreadPoolExecutor(max_workers=settings.event_loop_threadpool_max_workers)
+        loop.set_default_executor(executor)
 
     @app.on_event("shutdown")
     def shutdown_mcp_clients():

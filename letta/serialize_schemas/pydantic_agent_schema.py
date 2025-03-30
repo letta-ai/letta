@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Union
 
 from pydantic import BaseModel, Field
 
@@ -22,7 +22,6 @@ class CoreMemoryBlockSchema(BaseModel):
 class MessageSchema(BaseModel):
     created_at: str
     group_id: Optional[str]
-    in_context: bool
     model: Optional[str]
     name: Optional[str]
     role: str
@@ -45,9 +44,29 @@ class ToolEnvVarSchema(BaseModel):
     value: str
 
 
-class ToolRuleSchema(BaseModel):
+# Tool rules
+
+
+class BaseToolRuleSchema(BaseModel):
     tool_name: str
     type: str
+
+
+class ChildToolRuleSchema(BaseToolRuleSchema):
+    children: List[str]
+
+
+class MaxCountPerStepToolRuleSchema(BaseToolRuleSchema):
+    max_count_limit: int
+
+
+class ConditionalToolRuleSchema(BaseToolRuleSchema):
+    default_child: Optional[str]
+    child_output_mapping: Dict[Any, str]
+    require_output_mapping: bool
+
+
+ToolRuleSchema = Union[BaseToolRuleSchema, ChildToolRuleSchema, MaxCountPerStepToolRuleSchema, ConditionalToolRuleSchema]
 
 
 class ParameterProperties(BaseModel):
@@ -92,6 +111,7 @@ class AgentSchema(BaseModel):
     embedding_config: EmbeddingConfig
     llm_config: LLMConfig
     message_buffer_autoclear: bool
+    in_context_message_indices: List[int]
     messages: List[MessageSchema]
     metadata_: Optional[Dict] = None
     multi_agent_group: Optional[Any]

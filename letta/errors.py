@@ -62,6 +62,26 @@ class LLMError(LettaError):
     pass
 
 
+class LLMConnectionError(LLMError):
+    """Error when unable to connect to LLM service"""
+
+
+class LLMRateLimitError(LLMError):
+    """Error when rate limited by LLM service"""
+
+
+class LLMPermissionDeniedError(LLMError):
+    """Error when permission is denied by LLM service"""
+
+
+class LLMNotFoundError(LLMError):
+    """Error when requested resource is not found"""
+
+
+class LLMUnprocessableEntityError(LLMError):
+    """Error when request is well-formed but semantically invalid"""
+
+
 class BedrockPermissionError(LettaError):
     """Exception raised for errors in the Bedrock permission process."""
 

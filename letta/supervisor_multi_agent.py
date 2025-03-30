@@ -22,7 +22,7 @@ class SupervisorMultiAgent(Agent):
         self,
         interface: AgentInterface,
         agent_state: AgentState,
-        user: User = None,
+        user: User,
         # custom
         group_id: str = "",
         agent_ids: List[str] = [],
@@ -65,6 +65,7 @@ class SupervisorMultiAgent(Agent):
             self.agent_state = self.agent_manager.attach_tool(agent_id=self.agent_state.id, tool_id=multi_agent_tool.id, actor=self.user)
 
         # override tool rules
+        old_tool_rules = self.agent_state.tool_rules
         self.agent_state.tool_rules = [
             InitToolRule(
                 tool_name="send_message_to_all_agents_in_group",
@@ -106,6 +107,7 @@ class SupervisorMultiAgent(Agent):
             raise e
         finally:
             self.interface.step_yield()
+            self.agent_state.tool_rules = old_tool_rules
 
         self.interface.step_complete()
 

@@ -29,7 +29,7 @@ def test_get_allowed_tool_names_with_subsequent_rule():
     rule_1 = ChildToolRule(tool_name=START_TOOL, children=[NEXT_TOOL, HELPER_TOOL])
     solver = ToolRulesSolver(tool_rules=[init_rule, rule_1])
 
-    solver.update_tool_usage(START_TOOL)
+    solver.register_tool_call(START_TOOL)
     allowed_tools = solver.get_allowed_tool_names({START_TOOL, NEXT_TOOL, HELPER_TOOL})
 
     assert sorted(allowed_tools) == sorted([NEXT_TOOL, HELPER_TOOL]), "Should allow only children of the last tool used"
@@ -48,7 +48,7 @@ def test_get_allowed_tool_names_no_matching_rule_error():
     init_rule = InitToolRule(tool_name=START_TOOL)
     solver = ToolRulesSolver(tool_rules=[init_rule])
 
-    solver.update_tool_usage(UNRECOGNIZED_TOOL)
+    solver.register_tool_call(UNRECOGNIZED_TOOL)
     with pytest.raises(ValueError, match=f"No valid tools found based on tool rules."):
         solver.get_allowed_tool_names(set(), error_on_empty=True)
 
@@ -62,10 +62,10 @@ def test_update_tool_usage_and_get_allowed_tool_names_combined():
 
     assert solver.get_allowed_tool_names({START_TOOL}) == [START_TOOL], "Initial allowed tool should be 'start_tool'"
 
-    solver.update_tool_usage(START_TOOL)
+    solver.register_tool_call(START_TOOL)
     assert solver.get_allowed_tool_names({NEXT_TOOL}) == [NEXT_TOOL], "After 'start_tool', should allow 'next_tool'"
 
-    solver.update_tool_usage(NEXT_TOOL)
+    solver.register_tool_call(NEXT_TOOL)
     assert solver.get_allowed_tool_names({FINAL_TOOL}) == [FINAL_TOOL], "After 'next_tool', should allow 'final_tool'"
 
     assert solver.is_terminal_tool(FINAL_TOOL) is True, "Should recognize 'final_tool' as terminal"
@@ -79,7 +79,7 @@ def test_conditional_tool_rule():
 
     assert solver.get_allowed_tool_names({START_TOOL}) == [START_TOOL], "Initial allowed tool should be 'start_tool'"
 
-    solver.update_tool_usage(START_TOOL)
+    solver.register_tool_call(START_TOOL)
     assert solver.get_allowed_tool_names({END_TOOL}, last_function_response='{"message": "true"}') == [
         END_TOOL
     ], "After 'start_tool' returns true, should allow 'end_tool'"
@@ -124,10 +124,10 @@ def test_max_count_per_step_tool_rule():
 
     assert solver.get_allowed_tool_names({START_TOOL}) == [START_TOOL], "Initially should allow 'start_tool'"
 
-    solver.update_tool_usage(START_TOOL)
+    solver.register_tool_call(START_TOOL)
     assert solver.get_allowed_tool_names({START_TOOL}) == [START_TOOL], "After first use, should still allow 'start_tool'"
 
-    solver.update_tool_usage(START_TOOL)
+    solver.register_tool_call(START_TOOL)
     assert solver.get_allowed_tool_names({START_TOOL}) == [], "After reaching max count, 'start_tool' should no longer be allowed"
 
 
@@ -138,13 +138,13 @@ def test_max_count_per_step_tool_rule_allows_usage_up_to_limit():
 
     assert solver.get_allowed_tool_names({START_TOOL}) == [START_TOOL], "Initially should allow 'start_tool'"
 
-    solver.update_tool_usage(START_TOOL)
+    solver.register_tool_call(START_TOOL)
     assert solver.get_allowed_tool_names({START_TOOL}) == [START_TOOL], "Should still allow 'start_tool' after 1 use"
 
-    solver.update_tool_usage(START_TOOL)
+    solver.register_tool_call(START_TOOL)
     assert solver.get_allowed_tool_names({START_TOOL}) == [START_TOOL], "Should still allow 'start_tool' after 2 uses"
 
-    solver.update_tool_usage(START_TOOL)
+    solver.register_tool_call(START_TOOL)
     assert solver.get_allowed_tool_names({START_TOOL}) == [], "Should no longer allow 'start_tool' after 3 uses"
 
 
@@ -154,8 +154,8 @@ def test_max_count_per_step_tool_rule_does_not_affect_other_tools():
     another_tool_rules = ChildToolRule(tool_name=NEXT_TOOL, children=[HELPER_TOOL])
     solver = ToolRulesSolver(tool_rules=[rule, another_tool_rules])
 
-    solver.update_tool_usage(START_TOOL)
-    solver.update_tool_usage(START_TOOL)
+    solver.register_tool_call(START_TOOL)
+    solver.register_tool_call(START_TOOL)
 
     assert sorted(solver.get_allowed_tool_names({START_TOOL, NEXT_TOOL, HELPER_TOOL})) == sorted(
         [NEXT_TOOL, HELPER_TOOL]
@@ -167,8 +167,8 @@ def test_max_count_per_step_tool_rule_resets_on_clear():
     rule = MaxCountPerStepToolRule(tool_name=START_TOOL, max_count_limit=2)
     solver = ToolRulesSolver(tool_rules=[rule])
 
-    solver.update_tool_usage(START_TOOL)
-    solver.update_tool_usage(START_TOOL)
+    solver.register_tool_call(START_TOOL)
+    solver.register_tool_call(START_TOOL)
 
     assert solver.get_allowed_tool_names({START_TOOL}) == [], "Should not allow 'start_tool' after reaching limit"
 
