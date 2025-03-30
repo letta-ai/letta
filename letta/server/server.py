@@ -1065,8 +1065,7 @@ class SyncServer(Server):
             try:
                 llm_models.extend(provider.list_llm_models())
             except Exception as e:
-                raise e
-                # warnings.warn(f"An error occurred while listing LLM models for provider {provider}: {e}")
+                warnings.warn(f"An error occurred while listing LLM models for provider {provider}: {e}")
 
         llm_models.extend(self.get_local_llm_configs())
 
