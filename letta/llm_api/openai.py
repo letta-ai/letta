@@ -185,6 +185,7 @@ def openai_chat_completions_process_stream(
     # however, we don't necessarily want to put these
     # expect_reasoning_content: bool = False,
     expect_reasoning_content: bool = True,
+    name: Optional[str] = None,
 ) -> ChatCompletionResponse:
     """Process a streaming completion response, and return a ChatCompletionRequest at the end.
 
@@ -272,6 +273,7 @@ def openai_chat_completions_process_stream(
                         message_id=chat_completion_response.id if create_message_id else chat_completion_chunk.id,
                         message_date=chat_completion_response.created if create_message_datetime else chat_completion_chunk.created,
                         expect_reasoning_content=expect_reasoning_content,
+                        name=name,
                     )
                 elif isinstance(stream_interface, AgentRefreshStreamingInterface):
                     stream_interface.process_refresh(chat_completion_response)

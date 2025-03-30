@@ -58,7 +58,7 @@ from letta.services.message_manager import MessageManager
 from letta.services.passage_manager import PassageManager
 from letta.services.provider_manager import ProviderManager
 from letta.services.step_manager import StepManager
-from letta.services.tool_execution_sandbox import ToolExecutionSandbox
+from letta.services.tool_executor.tool_execution_sandbox import ToolExecutionSandbox
 from letta.services.tool_manager import ToolManager
 from letta.settings import summarizer_settings
 from letta.streaming_interface import StreamingRefreshCLIInterface
@@ -220,13 +220,14 @@ class Agent(BaseAgent):
         messages: List[Message],
         tool_returns: Optional[List[ToolReturn]] = None,
         include_function_failed_message: bool = False,
+        group_id: Optional[str] = None,
     ) -> List[Message]:
         """
         Handle error from function call response
         """
         # Update tool rules
         self.last_function_response = function_response
-        self.tool_rules_solver.update_tool_usage(function_name)
+        self.tool_rules_solver.register_tool_call(function_name)
 
         # Extend conversation with function response
         function_response = package_function_response(False, error_msg)
@@ -240,7 +241,9 @@ class Agent(BaseAgent):
                 "content": function_response,
                 "tool_call_id": tool_call_id,
             },
+            name=self.agent_state.name,
             tool_returns=tool_returns,
+            group_id=group_id,
         )
         messages.append(new_message)
         self.interface.function_message(f"Error: {error_msg}", msg_obj=new_message)
@@ -302,10 +305,8 @@ class Agent(BaseAgent):
                 log_telemetry(self.logger, "_get_ai_reply create start")
                 # New LLM client flow
                 llm_client = LLMClient.create(
-                    agent_id=self.agent_state.id,
                     llm_config=self.agent_state.llm_config,
                     put_inner_thoughts_first=put_inner_thoughts_first,
-                    actor_id=self.agent_state.created_by_id,
                 )
 
                 if llm_client and not stream:
@@ -331,6 +332,7 @@ class Agent(BaseAgent):
                         stream=stream,
                         stream_interface=self.interface,
                         put_inner_thoughts_first=put_inner_thoughts_first,
+                        name=self.agent_state.name,
                     )
                 log_telemetry(self.logger, "_get_ai_reply create finish")
 
@@ -374,6 +376,7 @@ class Agent(BaseAgent):
         # and now we want to use it in the creation of the Message object
         # TODO figure out a cleaner way to do this
         response_message_id: Optional[str] = None,
+        group_id: Optional[str] = None,
     ) -> Tuple[List[Message], bool, bool]:
         """Handles parsing and function execution"""
         log_telemetry(self.logger, "_handle_ai_response start")
@@ -419,6 +422,8 @@ class Agent(BaseAgent):
                     user_id=self.agent_state.created_by_id,
                     model=self.model,
                     openai_message_dict=response_message.model_dump(),
+                    name=self.agent_state.name,
+                    group_id=group_id,
                 )
             )  # extend conversation with assistant's reply
             self.logger.debug(f"Function call message: {messages[-1]}")
@@ -451,7 +456,7 @@ class Agent(BaseAgent):
                 error_msg = f"No function named {function_name}"
                 function_response = "None"  # more like "never ran?"
                 messages = self._handle_function_error_response(
-                    error_msg, tool_call_id, function_name, function_args, function_response, messages
+                    error_msg, tool_call_id, function_name, function_args, function_response, messages, group_id=group_id
                 )
                 return messages, False, True  # force a heartbeat to allow agent to handle error
 
@@ -466,7 +471,7 @@ class Agent(BaseAgent):
                 error_msg = f"Error parsing JSON for function '{function_name}' arguments: {function_call.arguments}"
                 function_response = "None"  # more like "never ran?"
                 messages = self._handle_function_error_response(
-                    error_msg, tool_call_id, function_name, function_args, function_response, messages
+                    error_msg, tool_call_id, function_name, function_args, function_response, messages, group_id=group_id
                 )
                 return messages, False, True  # force a heartbeat to allow agent to handle error
 
@@ -537,6 +542,7 @@ class Agent(BaseAgent):
                         function_response,
                         messages,
                         [tool_return],
+                        group_id=group_id,
                     )
                     return messages, False, True  # force a heartbeat to allow agent to handle error
 
@@ -573,6 +579,7 @@ class Agent(BaseAgent):
                     messages,
                     [ToolReturn(status="error", stderr=[error_msg_user])],
                     include_function_failed_message=True,
+                    group_id=group_id,
                 )
                 return messages, False, True  # force a heartbeat to allow agent to handle error
 
@@ -597,6 +604,7 @@ class Agent(BaseAgent):
                     messages,
                     [tool_return],
                     include_function_failed_message=True,
+                    group_id=group_id,
                 )
                 return messages, False, True  # force a heartbeat to allow agent to handle error
 
@@ -622,7 +630,9 @@ class Agent(BaseAgent):
                         "content": function_response,
                         "tool_call_id": tool_call_id,
                     },
+                    name=self.agent_state.name,
                     tool_returns=[tool_return] if sandbox_run_result else None,
+                    group_id=group_id,
                 )
             )  # extend conversation with function response
             self.interface.function_message(f"Ran {function_name}({function_args})", msg_obj=messages[-1])
@@ -638,6 +648,8 @@ class Agent(BaseAgent):
                     user_id=self.agent_state.created_by_id,
                     model=self.model,
                     openai_message_dict=response_message.model_dump(),
+                    name=self.agent_state.name,
+                    group_id=group_id,
                 )
             )  # extend conversation with assistant's reply
             self.interface.internal_monologue(response_message.content, msg_obj=messages[-1])
@@ -649,7 +661,7 @@ class Agent(BaseAgent):
         self.agent_state = self.agent_manager.rebuild_system_prompt(agent_id=self.agent_state.id, actor=self.user)
 
         # Update ToolRulesSolver state with last called function
-        self.tool_rules_solver.update_tool_usage(function_name)
+        self.tool_rules_solver.register_tool_call(function_name)
         # Update heartbeat request according to provided tool rules
         if self.tool_rules_solver.has_children_tools(function_name):
             heartbeat_request = True
@@ -801,7 +813,11 @@ class Agent(BaseAgent):
             in_context_messages = self.agent_manager.get_in_context_messages(agent_id=self.agent_state.id, actor=self.user)
             input_message_sequence = in_context_messages + messages
 
-            if len(input_message_sequence) > 1 and input_message_sequence[-1].role != "user":
+            if (
+                len(input_message_sequence) > 1
+                and input_message_sequence[-1].role != "user"
+                and input_message_sequence[-1].group_id is None
+            ):
                 self.logger.warning(f"{CLI_WARNING_PREFIX}Attempting to run ChatCompletion without user as the last message in the queue")
 
             # Step 2: send the conversation and available functions to the LLM
@@ -834,6 +850,7 @@ class Agent(BaseAgent):
                 # TODO this is kind of hacky, find a better way to handle this
                 # the only time we set up message creation ahead of time is when streaming is on
                 response_message_id=response.id if stream else None,
+                group_id=input_message_sequence[-1].group_id,
             )
 
             # Step 6: extend the message history

@@ -859,6 +859,7 @@ def anthropic_chat_completions_process_stream(
     create_message_id: bool = True,
     create_message_datetime: bool = True,
     betas: List[str] = ["tools-2024-04-04"],
+    name: Optional[str] = None,
 ) -> ChatCompletionResponse:
     """Process a streaming completion response from Anthropic, similar to OpenAI's streaming.
 
@@ -951,6 +952,7 @@ def anthropic_chat_completions_process_stream(
                         # if extended_thinking is on, then reasoning_content will be flowing as chunks
                         # TODO handle emitting redacted reasoning content (e.g. as concat?)
                         expect_reasoning_content=extended_thinking,
+                        name=name,
                     )
                 elif isinstance(stream_interface, AgentRefreshStreamingInterface):
                     stream_interface.process_refresh(chat_completion_response)

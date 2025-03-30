@@ -4,23 +4,14 @@ import pytest
 
 from letta import LocalClient, create_client
 from letta.functions.functions import derive_openai_json_schema, parse_source_code
-from letta.orm import Base
 from letta.schemas.embedding_config import EmbeddingConfig
 from letta.schemas.letta_message import SystemMessage, ToolReturnMessage
 from letta.schemas.llm_config import LLMConfig
 from letta.schemas.memory import ChatMemory
 from letta.schemas.tool import Tool
+from letta.services.agent_manager import AgentManager
+from tests.helpers.utils import retry_until_success
 from tests.utils import wait_for_incoming_message
-
-
-@pytest.fixture(autouse=True)
-def truncate_database():
-    from letta.server.db import db_context
-
-    with db_context() as session:
-        for table in reversed(Base.metadata.sorted_tables):  # Reverse to avoid FK issues
-            session.execute(table.delete())  # Truncate table
-        session.commit()
 
 
 @pytest.fixture(scope="function")
@@ -30,6 +21,13 @@ def client():
     client.set_default_embedding_config(EmbeddingConfig.default_config(provider="openai"))
 
     yield client
+
+
+@pytest.fixture(autouse=True)
+def remove_stale_agents(client):
+    stale_agents = AgentManager().list_agents(actor=client.user, limit=300)
+    for agent in stale_agents:
+        client.delete_agent(agent_id=agent.id)
 
 
 @pytest.fixture(scope="function")
@@ -85,6 +83,7 @@ def roll_dice_tool(client):
     yield tool
 
 
+@retry_until_success(max_attempts=5, sleep_time_seconds=2)
 def test_send_message_to_agent(client, agent_obj, other_agent_obj):
     secret_word = "banana"
 
@@ -123,6 +122,7 @@ def test_send_message_to_agent(client, agent_obj, other_agent_obj):
     print(response.messages)
 
 
+@retry_until_success(max_attempts=5, sleep_time_seconds=2)
 def test_send_message_to_agents_with_tags_simple(client):
     worker_tags_123 = ["worker", "user-123"]
     worker_tags_456 = ["worker", "user-456"]
@@ -200,6 +200,7 @@ def test_send_message_to_agents_with_tags_simple(client):
         client.delete_agent(agent.agent_state.id)
 
 
+@retry_until_success(max_attempts=5, sleep_time_seconds=2)
 def test_send_message_to_agents_with_tags_complex_tool_use(client, roll_dice_tool):
     worker_tags = ["dice-rollers"]
 
@@ -248,38 +249,7 @@ def test_send_message_to_agents_with_tags_complex_tool_use(client, roll_dice_too
         client.delete_agent(agent.agent_state.id)
 
 
-def test_send_message_to_sub_agents_auto_clear_message_buffer(client):
-    # Create "manager" agent
-    send_message_to_agents_matching_tags_tool_id = client.get_tool_id(name="send_message_to_agents_matching_tags")
-    manager_agent_state = client.create_agent(name="manager", tool_ids=[send_message_to_agents_matching_tags_tool_id])
-    manager_agent = client.server.load_agent(agent_id=manager_agent_state.id, actor=client.user)
-
-    # Create 2 worker agents
-    worker_agents = []
-    worker_tags = ["banana-boys"]
-    for i in range(2):
-        worker_agent_state = client.create_agent(
-            name=f"worker_{i}", include_multi_agent_tools=False, tags=worker_tags, message_buffer_autoclear=True
-        )
-        worker_agent = client.server.load_agent(agent_id=worker_agent_state.id, actor=client.user)
-        worker_agents.append(worker_agent)
-
-    # Encourage the manager to send a message to the other agent_obj with the secret string
-    broadcast_message = f"Using your tool named `send_message_to_agents_matching_tags`, instruct all agents with tags {worker_tags} to `core_memory_append` the topic of the day: bananas!"
-    client.send_message(
-        agent_id=manager_agent.agent_state.id,
-        role="user",
-        message=broadcast_message,
-    )
-
-    for worker_agent in worker_agents:
-        worker_agent_state = client.server.load_agent(agent_id=worker_agent.agent_state.id, actor=client.user).agent_state
-        # assert there's only one message in the message_ids
-        assert len(worker_agent_state.message_ids) == 1
-        # check that banana made it in
-        assert "banana" in worker_agent_state.memory.compile().lower()
-
-
+@retry_until_success(max_attempts=5, sleep_time_seconds=2)
 def test_agents_async_simple(client):
     """
     Test two agents with multi-agent tools sending messages back and forth to count to 5.

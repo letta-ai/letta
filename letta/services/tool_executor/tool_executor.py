@@ -1,3 +1,4 @@
+import ast
 import math
 from abc import ABC, abstractmethod
 from typing import Any, Optional, Tuple
@@ -14,7 +15,7 @@ from letta.schemas.user import User
 from letta.services.agent_manager import AgentManager
 from letta.services.message_manager import MessageManager
 from letta.services.passage_manager import PassageManager
-from letta.services.tool_execution_sandbox import ToolExecutionSandbox
+from letta.services.tool_executor.async_tool_execution_sandbox import AsyncToolExecutionSandbox
 from letta.utils import get_friendly_error_msg
 
 
@@ -59,7 +60,7 @@ class LettaCoreToolExecutor(ToolExecutor):
         Returns:
             Optional[str]: None is always returned as this function does not produce a response.
         """
-        return None
+        return "Sent message successfully."
 
     def conversation_search(self, agent_state: AgentState, actor: User, query: str, page: Optional[int] = 0) -> Optional[str]:
         """
@@ -320,9 +321,10 @@ class ExternalMCPToolExecutor(ToolExecutor):
 class SandboxToolExecutor(ToolExecutor):
     """Executor for sandboxed tools."""
 
-    def execute(
+    async def execute(
         self, function_name: str, function_args: dict, agent_state: AgentState, tool: Tool, actor: User
     ) -> Tuple[Any, Optional[SandboxRunResult]]:
+
         # Store original memory state
         orig_memory_str = agent_state.memory.compile()
 
@@ -330,12 +332,17 @@ class SandboxToolExecutor(ToolExecutor):
             # Prepare function arguments
             function_args = self._prepare_function_args(function_args, tool, function_name)
 
-            # Create agent state copy for sandbox
             agent_state_copy = self._create_agent_state_copy(agent_state)
 
+            # TODO: This is brittle, think about better way to do this?
+            if "agent_state" in self.parse_function_arguments(tool.source_code, tool.name):
+                inject_agent_state = True
+            else:
+                inject_agent_state = False
+
             # Execute in sandbox
-            sandbox_run_result = ToolExecutionSandbox(function_name, function_args, actor, tool_object=tool).run(
-                agent_state=agent_state_copy
+            sandbox_run_result = await AsyncToolExecutionSandbox(function_name, function_args, actor, tool_object=tool).run(
+                agent_state=agent_state_copy, inject_agent_state=inject_agent_state
             )
 
             function_response, updated_agent_state = sandbox_run_result.func_return, sandbox_run_result.agent_state
@@ -363,6 +370,16 @@ class SandboxToolExecutor(ToolExecutor):
             # Just log the error and continue with original args
             # This is defensive programming - we try to coerce but fall back if it fails
             return function_args
+
+    def parse_function_arguments(self, source_code: str, tool_name: str):
+        """Get arguments of a function from its source code"""
+        tree = ast.parse(source_code)
+        args = []
+        for node in ast.walk(tree):
+            if isinstance(node, ast.FunctionDef) and node.name == tool_name:
+                for arg in node.args.args:
+                    args.append(arg.arg)
+        return args
 
     def _create_agent_state_copy(self, agent_state: AgentState):
         """Create a copy of agent state for sandbox execution."""

@@ -115,7 +115,7 @@ def agent(client, roll_dice_tool, weather_tool):
     agent_state = client.create_agent(
         name=f"test_compl_{str(uuid.uuid4())[5:]}",
         tool_ids=[roll_dice_tool.id, weather_tool.id],
-        include_base_tools=False,
+        include_base_tools=True,
     )
     yield agent_state
     client.delete_agent(agent_state.id)

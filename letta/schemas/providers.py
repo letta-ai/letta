@@ -1120,7 +1120,7 @@ class GoogleAIProvider(Provider):
     base_url: str = "https://generativelanguage.googleapis.com"
 
     def list_llm_models(self):
-        from letta.llm_api.google_ai import google_ai_get_model_list
+        from letta.llm_api.google_ai_client import google_ai_get_model_list
 
         model_options = google_ai_get_model_list(base_url=self.base_url, api_key=self.api_key)
         # filter by 'generateContent' models
@@ -1149,7 +1149,7 @@ class GoogleAIProvider(Provider):
         return configs
 
     def list_embedding_models(self):
-        from letta.llm_api.google_ai import google_ai_get_model_list
+        from letta.llm_api.google_ai_client import google_ai_get_model_list
 
         # TODO: use base_url instead
         model_options = google_ai_get_model_list(base_url=self.base_url, api_key=self.api_key)
@@ -1173,7 +1173,7 @@ class GoogleAIProvider(Provider):
         return configs
 
     def get_model_context_window(self, model_name: str) -> Optional[int]:
-        from letta.llm_api.google_ai import google_ai_get_model_context_window
+        from letta.llm_api.google_ai_client import google_ai_get_model_context_window
 
         return google_ai_get_model_context_window(self.base_url, self.api_key, model_name)
 

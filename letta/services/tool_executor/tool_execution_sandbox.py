@@ -3,7 +3,6 @@ import base64
 import io
 import os
 import pickle
-import runpy
 import subprocess
 import sys
 import tempfile
@@ -27,6 +26,7 @@ from letta.services.organization_manager import OrganizationManager
 from letta.services.sandbox_config_manager import SandboxConfigManager
 from letta.services.tool_manager import ToolManager
 from letta.settings import tool_settings
+from letta.tracing import log_event, trace_method
 from letta.utils import get_friendly_error_msg
 
 logger = get_logger(__name__)
@@ -112,6 +112,7 @@ class ToolExecutionSandbox:
             os.environ.clear()
             os.environ.update(original_env)  # Restore original environment variables
 
+    @trace_method
     def run_local_dir_sandbox(
         self, agent_state: Optional[AgentState] = None, additional_env_vars: Optional[Dict] = None
     ) -> SandboxRunResult:
@@ -152,7 +153,7 @@ class ToolExecutionSandbox:
             if local_configs.use_venv:
                 return self.run_local_dir_sandbox_venv(sbx_config, env, temp_file_path)
             else:
-                return self.run_local_dir_sandbox_runpy(sbx_config, env, temp_file_path)
+                return self.run_local_dir_sandbox_directly(sbx_config, env, temp_file_path)
         except Exception as e:
             logger.error(f"Executing tool {self.tool_name} has an unexpected error: {e}")
             logger.error(f"Logging out tool {self.tool_name} auto-generated code for debugging: \n\n{code}")
@@ -161,6 +162,7 @@ class ToolExecutionSandbox:
             # Clean up the temp file
             os.remove(temp_file_path)
 
+    @trace_method
     def run_local_dir_sandbox_venv(self, sbx_config: SandboxConfig, env: Dict[str, str], temp_file_path: str) -> SandboxRunResult:
         local_configs = sbx_config.get_local_config()
         sandbox_dir = os.path.expanduser(local_configs.sandbox_dir)  # Expand tilde
@@ -169,11 +171,15 @@ class ToolExecutionSandbox:
         # Recreate venv if required
         if self.force_recreate_venv or not os.path.isdir(venv_path):
             logger.warning(f"Virtual environment directory does not exist at: {venv_path}, creating one now...")
+            log_event(name="start create_venv_for_local_sandbox", attributes={"venv_path": venv_path})
             create_venv_for_local_sandbox(
                 sandbox_dir_path=sandbox_dir, venv_path=venv_path, env=env, force_recreate=self.force_recreate_venv
             )
+            log_event(name="finish create_venv_for_local_sandbox")
 
+        log_event(name="start install_pip_requirements_for_sandbox", attributes={"local_configs": local_configs.model_dump_json()})
         install_pip_requirements_for_sandbox(local_configs, env=env)
+        log_event(name="finish install_pip_requirements_for_sandbox", attributes={"local_configs": local_configs.model_dump_json()})
 
         # Ensure Python executable exists
         python_executable = find_python_executable(local_configs)
@@ -187,6 +193,7 @@ class ToolExecutionSandbox:
 
         # Execute the code
         try:
+            log_event(name="start subprocess")
             result = subprocess.run(
                 [python_executable, temp_file_path],
                 env=env,
@@ -195,6 +202,7 @@ class ToolExecutionSandbox:
                 capture_output=True,
                 text=True,
             )
+            log_event(name="finish subprocess")
             func_result, stdout = self.parse_out_function_results_markers(result.stdout)
             func_return, agent_state = self.parse_best_effort(func_result)
 
@@ -230,34 +238,54 @@ class ToolExecutionSandbox:
             logger.error(f"Executing tool {self.tool_name} has an unexpected error: {e}")
             raise e
 
-    def run_local_dir_sandbox_runpy(self, sbx_config: SandboxConfig, env: Dict[str, str], temp_file_path: str) -> SandboxRunResult:
+    @trace_method
+    def run_local_dir_sandbox_directly(self, sbx_config: SandboxConfig, env: Dict[str, str], temp_file_path: str) -> SandboxRunResult:
         status = "success"
-        agent_state, stderr = None, None
+        func_return, agent_state, stderr = None, None, None
 
-        # Redirect stdout and stderr to capture script output
         old_stdout = sys.stdout
         old_stderr = sys.stderr
         captured_stdout, captured_stderr = io.StringIO(), io.StringIO()
+
         sys.stdout = captured_stdout
         sys.stderr = captured_stderr
 
         try:
-            # Execute the temp file
             with self.temporary_env_vars(env):
-                result = runpy.run_path(temp_file_path, init_globals=env)
 
-            # Fetch the result
-            func_result = result.get(self.LOCAL_SANDBOX_RESULT_VAR_NAME)
-            func_return, agent_state = self.parse_best_effort(func_result)
+                # Read and compile the Python script
+                with open(temp_file_path, "r", encoding="utf-8") as f:
+                    source = f.read()
+                code_obj = compile(source, temp_file_path, "exec")
+
+                # Provide a dict for globals
+                globals_dict = dict(env)  # or {}
+                # If you need to mimic `__main__` behavior:
+                globals_dict["__name__"] = "__main__"
+                globals_dict["__file__"] = temp_file_path
+
+                # Execute the compiled code
+                log_event(name="start exec", attributes={"temp_file_path": temp_file_path})
+                exec(code_obj, globals_dict)
+                log_event(name="finish exec", attributes={"temp_file_path": temp_file_path})
+
+                # Get result from the global dict
+                func_result = globals_dict.get(self.LOCAL_SANDBOX_RESULT_VAR_NAME)
+                func_return, agent_state = self.parse_best_effort(func_result)
 
         except Exception as e:
-            func_return = get_friendly_error_msg(function_name=self.tool_name, exception_name=type(e).__name__, exception_message=str(e))
+            func_return = get_friendly_error_msg(
+                function_name=self.tool_name,
+                exception_name=type(e).__name__,
+                exception_message=str(e),
+            )
             traceback.print_exc(file=sys.stderr)
             status = "error"
 
-        # Restore stdout and stderr and collect captured output
+        # Restore stdout/stderr
         sys.stdout = old_stdout
         sys.stderr = old_stderr
+
         stdout_output = [captured_stdout.getvalue()] if captured_stdout.getvalue() else []
         stderr_output = [captured_stderr.getvalue()] if captured_stderr.getvalue() else []
 
