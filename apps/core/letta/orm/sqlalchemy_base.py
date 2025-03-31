@@ -370,17 +370,19 @@ class SqlalchemyBase(CommonSqlalchemyMetaMixins, Base):
         return []
 
     @handle_db_timeout
-    def create(self, db_session: "Session", actor: Optional["User"] = None) -> "SqlalchemyBase":
+    def create(self, db_session: "Session", actor: Optional["User"] = None, no_commit: bool = False) -> "SqlalchemyBase":
         logger.debug(f"Creating {self.__class__.__name__} with ID: {self.id} with actor={actor}")
 
         if actor:
             self._set_created_and_updated_by_fields(actor.id)
         try:
-            with db_session as session:
-                session.add(self)
-                session.commit()
-                session.refresh(self)
-                return self
+            db_session.add(self)
+            if no_commit:
+                db_session.flush()  # no commit, just flush to get PK
+            else:
+                db_session.commit()
+            db_session.refresh(self)
+            return self
         except (DBAPIError, IntegrityError) as e:
             self._handle_dbapi_error(e)
 
@@ -455,18 +457,20 @@ class SqlalchemyBase(CommonSqlalchemyMetaMixins, Base):
                 logger.debug(f"{self.__class__.__name__} with ID {self.id} successfully hard deleted")
 
     @handle_db_timeout
-    def update(self, db_session: "Session", actor: Optional["User"] = None) -> "SqlalchemyBase":
-        logger.debug(f"Updating {self.__class__.__name__} with ID: {self.id} with actor={actor}")
+    def update(self, db_session: Session, actor: Optional["User"] = None, no_commit: bool = False) -> "SqlalchemyBase":
+        logger.debug(...)
         if actor:
             self._set_created_and_updated_by_fields(actor.id)
-
         self.set_updated_at()
 
-        with db_session as session:
-            session.add(self)
-            session.commit()
-            session.refresh(self)
-            return self
+        # remove the context manager:
+        db_session.add(self)
+        if no_commit:
+            db_session.flush()  # no commit, just flush to get PK
+        else:
+            db_session.commit()
+        db_session.refresh(self)
+        return self
 
     @classmethod
     @handle_db_timeout

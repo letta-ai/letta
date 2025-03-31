@@ -22,3 +22,9 @@ class ToolSourceType(str, Enum):
 
     python = "python"
     json = "json"
+
+
+class ActorType(str, Enum):
+    LETTA_USER = "letta_user"
+    LETTA_AGENT = "letta_agent"
+    LETTA_SYSTEM = "letta_system"
