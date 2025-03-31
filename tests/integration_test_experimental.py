@@ -1,5 +1,6 @@
 import concurrent
 import os
+import threading
 import time
 import uuid
 
@@ -41,10 +42,10 @@ def server_url():
     """Ensures a server is running and returns its base URL."""
     url = os.getenv("LETTA_SERVER_URL", "http://localhost:8283")
 
-    # if not os.getenv("LETTA_SERVER_URL"):
-    #     thread = threading.Thread(target=_run_server, daemon=True)
-    #     thread.start()
-    #     time.sleep(5)  # Allow server startup time
+    if not os.getenv("LETTA_SERVER_URL"):
+        thread = threading.Thread(target=_run_server, daemon=True)
+        thread.start()
+        time.sleep(5)  # Allow server startup time
 
     return url
 
@@ -160,15 +161,15 @@ def composio_gmail_get_profile_tool(default_user):
 @pytest.fixture(scope="function")
 def agent_state(client, roll_dice_tool, weather_tool, rethink_tool):
     """Creates an agent and ensures cleanup after tests."""
-    llm_config = LLMConfig(
-        model="claude-3-7-sonnet-latest",
-        model_endpoint_type="anthropic",
-        model_endpoint="https://api.anthropic.com/v1",
-        context_window=32000,
-        handle=f"anthropic/claude-3-7-sonnet-latest",
-        put_inner_thoughts_in_kwargs=True,
-        max_tokens=4096,
-    )
+    # llm_config = LLMConfig(
+    #     model="claude-3-7-sonnet-latest",
+    #     model_endpoint_type="anthropic",
+    #     model_endpoint="https://api.anthropic.com/v1",
+    #     context_window=32000,
+    #     handle=f"anthropic/claude-3-7-sonnet-latest",
+    #     put_inner_thoughts_in_kwargs=True,
+    #     max_tokens=4096,
+    # )
     agent_state = client.agents.create(
         name=f"test_compl_{str(uuid.uuid4())[5:]}",
         tool_ids=[roll_dice_tool.id, weather_tool.id, rethink_tool.id],
@@ -183,7 +184,7 @@ def agent_state(client, roll_dice_tool, weather_tool, rethink_tool):
                 "value": "Friendly agent",
             },
         ],
-        llm_config=llm_config,
+        llm_config=LLMConfig.default_config(model_name="gpt-4o-mini"),
         embedding_config=EmbeddingConfig.default_config(provider="openai"),
     )
     yield agent_state
