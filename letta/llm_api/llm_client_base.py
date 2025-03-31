@@ -4,6 +4,7 @@ from typing import List, Optional, Union
 from openai import AsyncStream, Stream
 from openai.types.chat.chat_completion_chunk import ChatCompletionChunk
 
+from letta.errors import LLMError
 from letta.schemas.llm_config import LLMConfig
 from letta.schemas.message import Message
 from letta.schemas.openai.chat_completion_response import ChatCompletionResponse
