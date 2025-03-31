@@ -122,7 +122,7 @@ class AnthropicClient(LLMClientBase):
 
         # Move 'system' to the top level
         if data["messages"][0]["role"] != "system":
-            raise RuntimeError(f"First message is not a system message, instead has role {data["messages"][0]["role"]}")
+            raise RuntimeError(f'First message is not a system message, instead has role {data["messages"][0]["role"]}')
 
         data["system"] = data["messages"][0]["content"]
         data["messages"] = data["messages"][1:]
