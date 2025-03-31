@@ -1,10 +1,13 @@
 import os
 from typing import List, Optional
 
+from sqlalchemy import func
+
 from letta.orm.block import Block as BlockModel
+from letta.orm.block_history import BlockHistory
+from letta.orm.enums import ActorType
 from letta.orm.errors import NoResultFound
 from letta.schemas.agent import AgentState as PydanticAgentState
-from letta.schemas.block import Block
 from letta.schemas.block import Block as PydanticBlock
 from letta.schemas.block import BlockUpdate, Human, Persona
 from letta.schemas.user import User as PydanticUser
@@ -21,7 +24,7 @@ class BlockManager:
         self.session_maker = db_context
 
     @enforce_types
-    def create_or_update_block(self, block: Block, actor: PydanticUser) -> PydanticBlock:
+    def create_or_update_block(self, block: PydanticBlock, actor: PydanticUser) -> PydanticBlock:
         """Create a new block based on the Block schema."""
         db_block = self.get_block_by_id(block.id, actor)
         if db_block:
@@ -140,3 +143,59 @@ class BlockManager:
             agents_pydantic = [agent.to_pydantic() for agent in agents_orm]
 
             return agents_pydantic
+
+    # Block History Functions
+
+    @enforce_types
+    def checkpoint_block(
+        self,
+        block_id: str,
+        actor: PydanticUser,
+        agent_id: Optional[str] = None,
+        use_preloaded_block: Optional[BlockModel] = None,  # TODO: Useful for testing concurrency
+    ) -> PydanticBlock:
+        """
+        Create a new checkpoint for the given Block by copying its
+        current state into BlockHistory, using SQLAlchemy's built-in
+        version_id_col for concurrency checks.
+
+        Note: We only have a single commit at the end, to avoid weird intermediate states.
+        e.g. created a BlockHistory, but the block update failed
+        """
+        """If `use_preloaded_block` is given, skip re-reading from DB."""
+        with self.session_maker() as session:
+            # 1) Load the block via the ORM
+            if use_preloaded_block is not None:
+                block = session.merge(use_preloaded_block)
+            else:
+                block = BlockModel.read(db_session=session, identifier=block_id, actor=actor)
+
+            # 2) Create a new sequence number for BlockHistory
+            current_max_seq = session.query(func.max(BlockHistory.sequence_number)).filter(BlockHistory.block_id == block_id).scalar()
+            next_seq = (current_max_seq or 0) + 1
+
+            # 3) Create a snapshot in BlockHistory
+            history_entry = BlockHistory(
+                organization_id=actor.organization_id,
+                block_id=block.id,
+                sequence_number=next_seq,
+                description=block.description,
+                label=block.label,
+                value=block.value,
+                limit=block.limit,
+                metadata_=block.metadata_,
+                actor_type=ActorType.LETTA_AGENT if agent_id else ActorType.LETTA_USER,
+                actor_id=agent_id if agent_id else actor.id,
+            )
+            history_entry.create(session, actor=actor, no_commit=True)
+
+            # 4) Update the block’s pointer
+            block.current_history_entry_id = history_entry.id
+
+            # 5) Now just flush; SQLAlchemy will:
+            block = block.update(db_session=session, actor=actor, no_commit=True)
+
+            session.commit()
+
+            # Return the block’s new state
+            return block.to_pydantic()
