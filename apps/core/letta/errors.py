@@ -1,6 +1,6 @@
 import json
 from enum import Enum
-from typing import TYPE_CHECKING, List, Optional, Union
+from typing import TYPE_CHECKING, Dict, List, Optional, Union
 
 # Avoid circular imports
 if TYPE_CHECKING:
@@ -10,6 +10,10 @@ if TYPE_CHECKING:
 class ErrorCode(Enum):
     """Enum for error codes used by client."""
 
+    NOT_FOUND = "NOT_FOUND"
+    UNAUTHENTICATED = "UNAUTHENTICATED"
+    PERMISSION_DENIED = "PERMISSION_DENIED"
+    INVALID_ARGUMENT = "INVALID_ARGUMENT"
     INTERNAL_SERVER_ERROR = "INTERNAL_SERVER_ERROR"
     CONTEXT_WINDOW_EXCEEDED = "CONTEXT_WINDOW_EXCEEDED"
     RATE_LIMIT_EXCEEDED = "RATE_LIMIT_EXCEEDED"
@@ -18,7 +22,9 @@ class ErrorCode(Enum):
 class LettaError(Exception):
     """Base class for all Letta related errors."""
 
-    def __init__(self, message: str, code: Optional[ErrorCode] = None, details: dict = {}):
+    def __init__(self, message: str, code: Optional[ErrorCode] = None, details: Optional[Union[Dict, str, object]] = None):
+        if details is None:
+            details = {}
         self.message = message
         self.code = code
         self.details = details
@@ -91,7 +97,8 @@ class LLMUnprocessableEntityError(LLMError):
 
 
 class LLMServerError(LLMError):
-    """Error when LLM service encounters an internal error"""
+    """Error indicating an internal server error occurred within the LLM service itself
+    while processing the request."""
 
 
 class BedrockPermissionError(LettaError):
