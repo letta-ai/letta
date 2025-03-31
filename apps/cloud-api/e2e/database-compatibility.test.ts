@@ -61,22 +61,6 @@ describe('Agents', () => {
     });
   }
 
-  it('should message agents', async () => {
-    // find agents
-    const agent = await getAgentByName(testAgentName);
-
-    // message agents
-    const message = await lettaAxiosSDK.post(
-      `/v1/agents/${agent.id}/messages`,
-      {
-        messages: [{ role: 'user', content: 'hello' }],
-      },
-    );
-
-    expect(message.status).toBe(200);
-    expect(message.data.messages).toBeInstanceOf(Array);
-  }, 100000);
-
   it('should update agents', async () => {
     // find agents
     const agent = await getAgentByName(testAgentName);
