@@ -14,7 +14,8 @@
     {
       "ext": "af",
       "name": "AgentFile",
-      "mimeType": "application/json"
+      "mimeType": "application/json",
+      "icon": "dist/assets/agent-file"
     }
   ],
   "asar": true,
