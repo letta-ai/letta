@@ -129,7 +129,12 @@ const listAgentsContract = c.query({
   headers: AgentHeaderSchema,
   description:
     'List all agents associated with a given user. This endpoint retrieves a list of all agents and their configurations associated with the specified user ID',
-  query: get_List_agents.parameters.shape.query,
+  query: get_List_agents.parameters.shape.query
+    .omit({ ascending: true, match_all_tags: true })
+    .extend({
+      match_all_tags: z.literal('true').or(z.literal('false')).optional(),
+      ascending: z.literal('true').or(z.literal('false')).optional(),
+    }),
   responses: {
     200: get_List_agents.response,
   },
