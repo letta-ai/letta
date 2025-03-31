@@ -252,6 +252,8 @@ deploy-cloud-api: push-cloud-api
         --set livenessProbe.httpGet.port=8080 \
         --set readinessProbe.httpGet.path="/" \
         --set readinessProbe.httpGet.port=8080 \
+        --set env.DATABASE_URL="${DATABASE_URL}" \
+        --set env.LAUNCH_DARKLY_SDK_KEY="${LAUNCH_DARKLY_SDK_KEY}" \
         --set env.REDIS_HOST="${REDIS_HOST}"
 
     npm run slack-bot-says "Successfully deployed cloud API service with tag: {{TAG}}."
