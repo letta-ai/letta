@@ -681,7 +681,7 @@ class Message(BaseMessage):
             user_system_event = add_xml_tag(string=f"SYSTEM ALERT: {text_content}", xml_tag="event")
             anthropic_message = {
                 "content": user_system_event,
-                "role": "user",
+                "role": "system",
             }
 
         elif self.role == "user":
