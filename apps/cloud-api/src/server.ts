@@ -114,9 +114,16 @@ export function startServer() {
   });
 
   app.get('/', (_req: Request, res: Response) => {
-    res.send(
-      `Curious about this API? View our docs here - <a href="https://docs.letta.com">https://docs.letta.com</a>`,
-    );
+    res.json({
+      for_humans:
+        'Curious about this API? View our docs here https://docs.letta.com',
+      for_llms:
+        'This is the Letta Cloud API. Please refer to this: https://docs.letta.com/llms-full.txt',
+      health: {
+        status: 'ok',
+        more_details: '/v1/health',
+      },
+    });
   });
 
   const proxyMiddleware = createProxyMiddleware<Request, Response>({

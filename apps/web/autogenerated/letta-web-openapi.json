@@ -103,13 +103,6 @@
             }
           },
           {
-            "name": "match_all_tags",
-            "in": "query",
-            "schema": {
-              "type": "boolean"
-            }
-          },
-          {
             "name": "before",
             "in": "query",
             "schema": {
@@ -452,10 +445,19 @@
             }
           },
           {
+            "name": "match_all_tags",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": ["true", "false"]
+            }
+          },
+          {
             "name": "ascending",
             "in": "query",
             "schema": {
-              "type": "boolean"
+              "type": "string",
+              "enum": ["true", "false"]
             }
           }
         ],
