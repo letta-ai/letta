@@ -10,6 +10,10 @@
       "title": "Tool Variables",
       "noToolVariables": "No tool variables in this agent"
     },
+    "ToolRuleViewer": {
+      "title": "Tool Rules",
+      "rule": "Rule {index}"
+    },
     "MemoryBlockViewer": {
       "title": "Memory Blocks",
       "noMemoryBlocks": "No memory blocks in this agent",

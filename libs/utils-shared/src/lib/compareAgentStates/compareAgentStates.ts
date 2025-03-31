@@ -20,6 +20,7 @@ export interface CleanedAgentState {
   memoryBlocks: CleanedMemoryBlock[];
   promptTemplate: string;
   system: string;
+  toolRules: AgentState['tool_rules'];
 }
 
 export function stateCleaner(state: AgentState): CleanedAgentState {
@@ -56,6 +57,7 @@ export function stateCleaner(state: AgentState): CleanedAgentState {
       embedding_dim: state.embedding_config.embedding_dim,
       embedding_chunk_size: state.embedding_config.embedding_chunk_size,
     },
+    toolRules: state.tool_rules,
     memoryBlocks: state.memory
       ? state.memory.blocks
           .map((block) => ({

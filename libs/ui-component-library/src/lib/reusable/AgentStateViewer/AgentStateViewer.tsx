@@ -208,6 +208,47 @@ function SectionWrapper(props: React.PropsWithChildren<SectionWrapperProps>) {
   );
 }
 
+interface ToolRuleViewerProps {
+  toolRules: AgentState['tool_rules'];
+  comparedToolRules?: AgentState['tool_rules'];
+}
+
+function ToolRuleViewer(props: ToolRuleViewerProps) {
+  const { toolRules = [], comparedToolRules = [] } = props;
+  const t = useTranslations('components/AgentStateViewer');
+
+  const maxRules = Math.max(
+    toolRules?.length || 0,
+    comparedToolRules?.length || 0,
+  );
+
+  return (
+    <VStack gap={false}>
+      {new Array(maxRules).fill(0).map((_, index) => {
+        const comparedRule = comparedToolRules?.[index];
+        const rule = toolRules?.[index];
+        return (
+          <VStack borderBottom gap={false} key={index} fullWidth>
+            <HStack align="center" padding="small">
+              <Typography bold variant="body3">
+                {t('ToolRuleViewer.rule', { index: index + 1 })}
+              </Typography>
+            </HStack>
+            <VStack paddingTop={false} paddingX="small" paddingBottom="small">
+              <VStack border>
+                <KeyValueDiffViewer
+                  keyValuePairs={rule || {}}
+                  comparedKeyValuePairs={comparedRule}
+                />
+              </VStack>
+            </VStack>
+          </VStack>
+        );
+      })}
+    </VStack>
+  );
+}
+
 interface MemoryBlockViewerProps {
   memoryBlocks: CleanedAgentState['memoryBlocks'];
   comparedMemoryBlocks?: CleanedAgentState['memoryBlocks'];
@@ -286,14 +327,24 @@ interface KeyValueDiffViewerProps {
 function KeyValueDiffViewer(props: KeyValueDiffViewerProps) {
   const { keyValuePairs, comparedKeyValuePairs } = props;
 
+  const keyValueEntries = Object.entries(keyValuePairs);
+  const comparedKeyValueEntries = Object.entries(comparedKeyValuePairs || {});
+
+  const allKeys = new Set([
+    ...keyValueEntries.map(([key]) => key),
+    ...comparedKeyValueEntries.map(([key]) => key),
+  ]);
+
   return (
     <table>
       <tbody>
-        {Object.entries(keyValuePairs).map(([key, value], index) => {
-          const parsedValue = JSON.stringify(value);
-          const parsedComparedValue = JSON.stringify(
-            comparedKeyValuePairs?.[key],
-          );
+        {Array.from(allKeys).map((key, index) => {
+          const value = keyValuePairs[key];
+          const comparedValue = comparedKeyValuePairs?.[key];
+          const parsedValue = value ? JSON.stringify(value) : '';
+          const parsedComparedValue = comparedValue
+            ? JSON.stringify(comparedValue)
+            : '';
 
           return (
             <tr
@@ -523,6 +574,12 @@ function StateViewer(props: StateViewerProps) {
     toCompare?.tool_exec_environment_variables,
   ]);
 
+  const hasToolRulesDifference = useMemo(() => {
+    return (
+      toCompare?.toolRules && !isEqual(state.toolRules, toCompare.toolRules)
+    );
+  }, [state.toolRules, toCompare?.toolRules]);
+
   const hasNoDifference = useMemo(() => {
     return (
       !hasMemoryBlocksDifference &&
@@ -533,7 +590,8 @@ function StateViewer(props: StateViewerProps) {
       !hasPromptTemplateDifference &&
       !hasToolVariablesDifference &&
       !hasSystemDifference &&
-      !!toCompare
+      !!toCompare &&
+      !hasToolRulesDifference
     );
   }, [
     hasMemoryBlocksDifference,
@@ -544,6 +602,7 @@ function StateViewer(props: StateViewerProps) {
     hasSourceIdsDifference,
     hasPromptTemplateDifference,
     hasSystemDifference,
+    hasToolRulesDifference,
     toCompare,
   ]);
 
@@ -662,6 +721,19 @@ function StateViewer(props: StateViewerProps) {
             )
           }
           title={t('SystemPrompt.title')}
+        ></SectionWrapper>
+        <SectionWrapper
+          hasDifference={!!hasToolRulesDifference}
+          base={<ToolRuleViewer toolRules={state.toolRules} />}
+          compared={
+            toCompare && (
+              <ToolRuleViewer
+                toolRules={state.toolRules}
+                comparedToolRules={toCompare?.toolRules}
+              />
+            )
+          }
+          title={t('ToolRuleViewer.title')}
         ></SectionWrapper>
         <SectionWrapper
           hasDifference={hasToolVariablesDifference}
