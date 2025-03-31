@@ -1,8 +1,8 @@
+@use 'libs/ui-styles/src/global.scss' as *;
 @tailwind base;
 
 @tailwind components;
 @tailwind utilities;
-@import 'libs/ui-styles/src/global.scss';
 
 html {
   -webkit-text-size-adjust: 100%;
