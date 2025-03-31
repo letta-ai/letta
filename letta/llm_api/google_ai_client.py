@@ -276,6 +276,9 @@ class GoogleAIClient(LLMClientBase):
             func["parameters"]["type"] = "OBJECT"
             for param_name, param_fields in func["parameters"]["properties"].items():
                 param_fields["type"] = param_fields["type"].upper()
+                # Remove 'default' field from composio tool schema, as Gemini API does not support it
+                param_fields.pop("default", None)
+
             # Add inner thoughts
             if self.llm_config.put_inner_thoughts_in_kwargs:
                 from letta.local_llm.constants import INNER_THOUGHTS_KWARG, INNER_THOUGHTS_KWARG_DESCRIPTION
