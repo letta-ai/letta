@@ -2581,7 +2581,7 @@ def test_get_agents_for_block(server: SyncServer, sarah_agent, charles_agent, de
 
 
 # ======================================================================================================================
-# Block Manager Tests - History (Undo/Redo/Checkpoint)
+# Block Manager Tests - Checkpointing
 # ======================================================================================================================
 
 
@@ -2725,6 +2725,158 @@ def test_checkpoint_concurrency_stale(server: SyncServer, default_user):
                 actor=default_user,
                 use_preloaded_block=block_s2,
             )
+
+
+# ======================================================================================================================
+# Block Manager Tests - Undo
+# ======================================================================================================================
+
+
+def test_undo_checkpoint_block(server: SyncServer, default_user):
+    """
+    Verifies that we can undo to the previous checkpoint:
+      1) Create a block and checkpoint -> sequence_number=1
+      2) Update block content and checkpoint -> sequence_number=2
+      3) Undo -> should revert block to sequence_number=1's content
+    """
+    block_manager = BlockManager()
+
+    # 1) Create block
+    initial_value = "Version 1 content"
+    created_block = block_manager.create_or_update_block(PydanticBlock(label="undo_test", value=initial_value), actor=default_user)
+
+    # 2) First checkpoint => seq=1
+    block_manager.checkpoint_block(block_id=created_block.id, actor=default_user)
+
+    # 3) Update block content to "Version 2"
+    updated_data = PydanticBlock(**created_block.dict())
+    updated_data.value = "Version 2 content"
+    block_manager.create_or_update_block(updated_data, actor=default_user)
+
+    # 4) Second checkpoint => seq=2
+    block_manager.checkpoint_block(block_id=created_block.id, actor=default_user)
+
+    # 5) Undo => revert to seq=1
+    undone_block = block_manager.undo_checkpoint_block(block_id=created_block.id, actor=default_user)
+
+    # 6) Verify the block is now restored to "Version 1" content
+    assert undone_block.value == initial_value, "Block should revert to version 1 content"
+    assert undone_block.label == "undo_test", "Label should also revert if changed (or remain the same if unchanged)"
+
+
+def test_undo_no_history(server: SyncServer, default_user):
+    """
+    If a block has never been checkpointed (no current_history_entry_id),
+    undo_checkpoint_block should raise a ValueError.
+    """
+    block_manager = BlockManager()
+
+    # Create a block but don't checkpoint it
+    block = block_manager.create_or_update_block(PydanticBlock(label="no_history_test", value="initial"), actor=default_user)
+
+    # Attempt to undo
+    with pytest.raises(ValueError, match="has no history entry - cannot undo"):
+        block_manager.undo_checkpoint_block(block_id=block.id, actor=default_user)
+
+
+def test_undo_first_checkpoint(server: SyncServer, default_user):
+    """
+    If the block is at the first checkpoint (sequence_number=1),
+    undo should fail because there's no prior checkpoint.
+    """
+    block_manager = BlockManager()
+
+    # 1) Create the block
+    block_data = PydanticBlock(label="first_checkpoint", value="Version1")
+    block = block_manager.create_or_update_block(block_data, actor=default_user)
+
+    # 2) First checkpoint => seq=1
+    block_manager.checkpoint_block(block_id=block.id, actor=default_user)
+
+    # Attempt undo -> expect ValueError
+    with pytest.raises(ValueError, match="Cannot undo further"):
+        block_manager.undo_checkpoint_block(block_id=block.id, actor=default_user)
+
+
+def test_undo_multiple_checkpoints(server: SyncServer, default_user):
+    """
+    Tests multiple checkpoints in a row, then undo repeatedly
+    from seq=3 -> seq=2 -> seq=1, verifying each revert.
+    """
+    block_manager = BlockManager()
+
+    # Step 1: Create block
+    block_data = PydanticBlock(label="multi_checkpoint", value="v1")
+    block_v1 = block_manager.create_or_update_block(block_data, actor=default_user)
+    # checkpoint => seq=1
+    block_manager.checkpoint_block(block_id=block_v1.id, actor=default_user)
+
+    # Step 2: Update to v2, checkpoint => seq=2
+    block_data_v2 = PydanticBlock(**block_v1.dict())
+    block_data_v2.value = "v2"
+    block_manager.create_or_update_block(block_data_v2, actor=default_user)
+    block_manager.checkpoint_block(block_id=block_v1.id, actor=default_user)
+
+    # Step 3: Update to v3, checkpoint => seq=3
+    block_data_v3 = PydanticBlock(**block_v1.dict())
+    block_data_v3.value = "v3"
+    block_manager.create_or_update_block(block_data_v3, actor=default_user)
+    block_manager.checkpoint_block(block_id=block_v1.id, actor=default_user)
+
+    # Now we have 3 seq: v1, v2, v3
+    # Undo from seq=3 -> seq=2
+    undone_block = block_manager.undo_checkpoint_block(block_v1.id, actor=default_user)
+    assert undone_block.value == "v2"
+
+    # Undo from seq=2 -> seq=1
+    undone_block = block_manager.undo_checkpoint_block(block_v1.id, actor=default_user)
+    assert undone_block.value == "v1"
+
+    # Try once more -> fails because seq=1 is the earliest
+    with pytest.raises(ValueError, match="Cannot undo further"):
+        block_manager.undo_checkpoint_block(block_v1.id, actor=default_user)
+
+
+def test_undo_concurrency_stale(server: SyncServer, default_user):
+    """
+    Demonstrate concurrency: both sessions start with the block at seq=2,
+    one session undoes first -> block now seq=1, version increments,
+    the other session tries to undo with stale data -> StaleDataError.
+    """
+    block_manager = BlockManager()
+
+    # 1) create block
+    block_data = PydanticBlock(label="concurrency_undo", value="v1")
+    block_v1 = block_manager.create_or_update_block(block_data, actor=default_user)
+    # checkpoint => seq=1
+    block_manager.checkpoint_block(block_v1.id, actor=default_user)
+
+    # 2) update to v2
+    block_data_v2 = PydanticBlock(**block_v1.dict())
+    block_data_v2.value = "v2"
+    block_manager.create_or_update_block(block_data_v2, actor=default_user)
+    # checkpoint => seq=2
+    block_manager.checkpoint_block(block_v1.id, actor=default_user)
+
+    # Now block is at seq=2
+
+    # session1 preloads the block
+    with db_context() as s1:
+        block_s1 = s1.get(Block, block_v1.id)  # version=? let's say 2 in memory
+
+    # session2 also preloads the block
+    with db_context() as s2:
+        block_s2 = s2.get(Block, block_v1.id)  # also version=2
+
+    # Session1 -> undo to seq=1
+    block_manager.undo_checkpoint_block(
+        block_id=block_v1.id, actor=default_user, use_preloaded_block=block_s1  # stale object from session1
+    )
+    # This commits first => block now points to seq=1, version increments
+
+    # Session2 tries the same undo, but it's stale
+    with pytest.raises(StaleDataError):
+        block_manager.undo_checkpoint_block(block_id=block_v1.id, actor=default_user, use_preloaded_block=block_s2)  # also seq=2 in memory
 
 
 # ======================================================================================================================
