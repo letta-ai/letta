@@ -1,9 +1,10 @@
 from typing import TYPE_CHECKING, List, Optional, Type
 
-from sqlalchemy import JSON, BigInteger, Index, Integer, UniqueConstraint, event
-from sqlalchemy.orm import Mapped, attributes, mapped_column, relationship
+from sqlalchemy import JSON, BigInteger, ForeignKey, Index, Integer, String, UniqueConstraint, event
+from sqlalchemy.orm import Mapped, attributes, declared_attr, mapped_column, relationship
 
 from letta.constants import CORE_MEMORY_BLOCK_CHAR_LIMIT
+from letta.orm.block_history import BlockHistory
 from letta.orm.blocks_agents import BlocksAgents
 from letta.orm.mixins import OrganizationMixin
 from letta.orm.sqlalchemy_base import SqlalchemyBase
@@ -38,6 +39,17 @@ class Block(OrganizationMixin, SqlalchemyBase):
     limit: Mapped[BigInteger] = mapped_column(Integer, default=CORE_MEMORY_BLOCK_CHAR_LIMIT, doc="Character limit of the block.")
     metadata_: Mapped[Optional[dict]] = mapped_column(JSON, default={}, doc="arbitrary information related to the block.")
 
+    # history pointers / locking mechanisms
+    current_history_entry_id: Mapped[Optional[str]] = mapped_column(
+        String, ForeignKey("block_history.id", name="fk_block_current_history_entry", use_alter=True), nullable=True, index=True
+    )
+    version: Mapped[int] = mapped_column(
+        Integer, nullable=False, default=1, server_default="1", doc="Optimistic locking version counter, incremented on each state change."
+    )
+    # NOTE: This takes advantage of built-in optimistic locking functionality by SqlAlchemy
+    # https://docs.sqlalchemy.org/en/20/orm/versioning.html
+    __mapper_args__ = {"version_id_col": version}
+
     # relationships
     organization: Mapped[Optional["Organization"]] = relationship("Organization")
     agents: Mapped[List["Agent"]] = relationship(
@@ -67,6 +79,17 @@ class Block(OrganizationMixin, SqlalchemyBase):
         model_dict = {k: v for k, v in self.__dict__.items() if k in self.__pydantic_model__.model_fields}
         model_dict["metadata"] = self.metadata_
         return Schema.model_validate(model_dict)
+
+    @declared_attr
+    def current_history_entry(cls) -> Mapped[Optional["BlockHistory"]]:
+        # Relationship to easily load the specific history entry that is current
+        return relationship(
+            "BlockHistory",
+            primaryjoin=lambda: cls.current_history_entry_id == BlockHistory.id,
+            foreign_keys=[cls.current_history_entry_id],
+            lazy="joined",  # Typically want current history details readily available
+            post_update=True,
+        )  # Helps manage potential FK cycles
 
 
 @event.listens_for(Block, "after_update")  # Changed from 'before_update'

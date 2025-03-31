@@ -2,6 +2,7 @@ from letta.orm.agent import Agent
 from letta.orm.agents_tags import AgentsTags
 from letta.orm.base import Base
 from letta.orm.block import Block
+from letta.orm.block_history import BlockHistory
 from letta.orm.blocks_agents import BlocksAgents
 from letta.orm.file import FileMetadata
 from letta.orm.group import Group

@@ -3,19 +3,22 @@ import random
 import string
 import time
 from datetime import datetime, timedelta
+from typing import List
 
 import pytest
 from openai.types.chat.chat_completion_message_tool_call import ChatCompletionMessageToolCall as OpenAIToolCall
 from openai.types.chat.chat_completion_message_tool_call import Function as OpenAIFunction
 from sqlalchemy.exc import IntegrityError
+from sqlalchemy.orm.exc import StaleDataError
 
 from letta.config import LettaConfig
 from letta.constants import BASE_MEMORY_TOOLS, BASE_TOOLS, LETTA_TOOL_EXECUTION_DIR, MCP_TOOL_TAG_NAME_PREFIX, MULTI_AGENT_TOOLS
 from letta.embeddings import embedding_model
 from letta.functions.functions import derive_openai_json_schema, parse_source_code
 from letta.functions.mcp_client.types import MCPTool
-from letta.orm import Base
-from letta.orm.enums import JobType, ToolType
+from letta.orm import Base, Block
+from letta.orm.block_history import BlockHistory
+from letta.orm.enums import ActorType, JobType, ToolType
 from letta.orm.errors import NoResultFound, UniqueConstraintViolationError
 from letta.schemas.agent import CreateAgent, UpdateAgent
 from letta.schemas.block import Block as PydanticBlock
@@ -46,6 +49,7 @@ from letta.schemas.tool import ToolCreate, ToolUpdate
 from letta.schemas.tool_rule import InitToolRule
 from letta.schemas.user import User as PydanticUser
 from letta.schemas.user import UserUpdate
+from letta.server.db import db_context
 from letta.server.server import SyncServer
 from letta.services.block_manager import BlockManager
 from letta.services.organization_manager import OrganizationManager
@@ -67,11 +71,12 @@ USING_SQLITE = not bool(os.getenv("LETTA_PG_URI"))
 
 
 @pytest.fixture(autouse=True)
-def clear_tables():
-    from letta.server.db import db_context
-
+def _clear_tables():
     with db_context() as session:
         for table in reversed(Base.metadata.sorted_tables):  # Reverse to avoid FK issues
+            # If this is the block_history table, skip it
+            if table.name == "block_history":
+                continue
             session.execute(table.delete())  # Truncate table
         session.commit()
 
@@ -2366,7 +2371,7 @@ def test_message_listing_text_search(server: SyncServer, hello_world_message_fix
 
 
 # ======================================================================================================================
-# Block Manager Tests
+# Block Manager Tests - Basic
 # ======================================================================================================================
 
 
@@ -2573,6 +2578,153 @@ def test_get_agents_for_block(server: SyncServer, sarah_agent, charles_agent, de
     agent_state_ids = [a.id for a in agent_states]
     assert sarah_agent.id in agent_state_ids
     assert charles_agent.id in agent_state_ids
+
+
+# ======================================================================================================================
+# Block Manager Tests - History (Undo/Redo/Checkpoint)
+# ======================================================================================================================
+
+
+def test_checkpoint_creates_history(server: SyncServer, default_user):
+    """
+    Ensures that calling checkpoint_block creates a BlockHistory row and updates
+    the block's current_history_entry_id appropriately.
+    """
+
+    block_manager = BlockManager()
+
+    # Create a block
+    initial_value = "Initial block content"
+    created_block = block_manager.create_or_update_block(PydanticBlock(label="test_checkpoint", value=initial_value), actor=default_user)
+
+    # Act: checkpoint it
+    block_manager.checkpoint_block(block_id=created_block.id, actor=default_user)
+
+    with db_context() as session:
+        # Get BlockHistory entries for this block
+        history_entries: List[BlockHistory] = session.query(BlockHistory).filter(BlockHistory.block_id == created_block.id).all()
+        assert len(history_entries) == 1, "Exactly one history entry should be created"
+        hist = history_entries[0]
+
+        # Fetch ORM block for internal checks
+        db_block = session.get(Block, created_block.id)
+
+        assert hist.sequence_number == 1
+        assert hist.value == initial_value
+        assert hist.actor_type == ActorType.LETTA_USER
+        assert hist.actor_id == default_user.id
+        assert db_block.current_history_entry_id == hist.id
+
+
+def test_multiple_checkpoints(server: SyncServer, default_user):
+    block_manager = BlockManager()
+
+    # Create a block
+    block = block_manager.create_or_update_block(PydanticBlock(label="test_multi_checkpoint", value="v1"), actor=default_user)
+
+    # 1) First checkpoint
+    block_manager.checkpoint_block(block_id=block.id, actor=default_user)
+
+    # 2) Update block content
+    updated_block_data = PydanticBlock(**block.dict())
+    updated_block_data.value = "v2"
+    block_manager.create_or_update_block(updated_block_data, actor=default_user)
+
+    # 3) Second checkpoint
+    block_manager.checkpoint_block(block_id=block.id, actor=default_user)
+
+    with db_context() as session:
+        history_entries = (
+            session.query(BlockHistory).filter(BlockHistory.block_id == block.id).order_by(BlockHistory.sequence_number.asc()).all()
+        )
+        assert len(history_entries) == 2, "Should have two history entries"
+
+        # First is seq=1, value='v1'
+        assert history_entries[0].sequence_number == 1
+        assert history_entries[0].value == "v1"
+
+        # Second is seq=2, value='v2'
+        assert history_entries[1].sequence_number == 2
+        assert history_entries[1].value == "v2"
+
+        # The block should now point to the second entry
+        db_block = session.get(Block, block.id)
+        assert db_block.current_history_entry_id == history_entries[1].id
+
+
+def test_checkpoint_with_agent_id(server: SyncServer, default_user, sarah_agent):
+    """
+    Ensures that if we pass agent_id to checkpoint_block, we get
+    actor_type=LETTA_AGENT, actor_id=<agent.id> in BlockHistory.
+    """
+    block_manager = BlockManager()
+
+    # Create a block
+    block = block_manager.create_or_update_block(PydanticBlock(label="test_agent_checkpoint", value="Agent content"), actor=default_user)
+
+    # Checkpoint with agent_id
+    block_manager.checkpoint_block(block_id=block.id, actor=default_user, agent_id=sarah_agent.id)
+
+    # Verify
+    with db_context() as session:
+        hist_entry = session.query(BlockHistory).filter(BlockHistory.block_id == block.id).one()
+        assert hist_entry.actor_type == ActorType.LETTA_AGENT
+        assert hist_entry.actor_id == sarah_agent.id
+
+
+def test_checkpoint_with_no_state_change(server: SyncServer, default_user):
+    """
+    If we call checkpoint_block twice without any edits,
+    we expect two entries or only one, depending on your policy.
+    """
+    block_manager = BlockManager()
+
+    # Create block
+    block = block_manager.create_or_update_block(PydanticBlock(label="test_no_change", value="original"), actor=default_user)
+
+    # 1) checkpoint
+    block_manager.checkpoint_block(block_id=block.id, actor=default_user)
+    # 2) checkpoint again (no changes)
+    block_manager.checkpoint_block(block_id=block.id, actor=default_user)
+
+    with db_context() as session:
+        all_hist = session.query(BlockHistory).filter(BlockHistory.block_id == block.id).all()
+        assert len(all_hist) == 2
+
+
+def test_checkpoint_concurrency_stale(server: SyncServer, default_user):
+    block_manager = BlockManager()
+
+    # create block
+    block = block_manager.create_or_update_block(PydanticBlock(label="test_stale_checkpoint", value="hello"), actor=default_user)
+
+    # session1 loads
+    with db_context() as s1:
+        block_s1 = s1.get(Block, block.id)  # version=1
+
+    # session2 loads
+    with db_context() as s2:
+        block_s2 = s2.get(Block, block.id)  # also version=1
+
+    # session1 checkpoint => version=2
+    with db_context() as s1:
+        block_s1 = s1.merge(block_s1)
+        block_manager.checkpoint_block(
+            block_id=block_s1.id,
+            actor=default_user,
+            use_preloaded_block=block_s1,  # let manager use the object in memory
+        )
+        # commits inside checkpoint_block => version goes to 2
+
+    # session2 tries to checkpoint => sees old version=1 => stale error
+    with pytest.raises(StaleDataError):
+        with db_context() as s2:
+            block_s2 = s2.merge(block_s2)
+            block_manager.checkpoint_block(
+                block_id=block_s2.id,
+                actor=default_user,
+                use_preloaded_block=block_s2,
+            )
 
 
 # ======================================================================================================================
