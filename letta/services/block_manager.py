@@ -162,7 +162,6 @@ class BlockManager:
         Note: We only have a single commit at the end, to avoid weird intermediate states.
         e.g. created a BlockHistory, but the block update failed
         """
-        """If `use_preloaded_block` is given, skip re-reading from DB."""
         with self.session_maker() as session:
             # 1) Load the block via the ORM
             if use_preloaded_block is not None:
@@ -194,8 +193,71 @@ class BlockManager:
 
             # 5) Now just flush; SQLAlchemy will:
             block = block.update(db_session=session, actor=actor, no_commit=True)
-
             session.commit()
 
             # Return the block’s new state
+            return block.to_pydantic()
+
+    @enforce_types
+    def undo_checkpoint_block(self, block_id: str, actor: PydanticUser, use_preloaded_block: Optional[BlockModel] = None) -> PydanticBlock:
+        """
+        Move the block to the previous checkpoint by copying fields
+        from the immediately previous BlockHistory entry (sequence_number - 1).
+
+        1) Load the current block (either by merging a preloaded block or reading from DB).
+        2) Identify its current history entry. If none, there's nothing to undo.
+        3) Determine the previous checkpoint's sequence_number. If seq=1, we can't go earlier.
+        4) Copy state from that previous checkpoint into the block.
+        5) Commit transaction (optimistic lock check).
+        6) Return the updated block as Pydantic.
+
+        Raises:
+            ValueError: If no previous checkpoint exists or if we can't find the matching row.
+            NoResultFound: If the block or block history row do not exist.
+            StaleDataError: If another transaction updated the block concurrently (optimistic locking).
+        """
+        with self.session_maker() as session:
+            # 1) Load the block
+            if use_preloaded_block is not None:
+                block = session.merge(use_preloaded_block)
+            else:
+                block = BlockModel.read(db_session=session, identifier=block_id, actor=actor)
+
+            if not block.current_history_entry_id:
+                # There's no known history entry to revert from
+                raise ValueError(f"Block {block_id} has no history entry - cannot undo.")
+
+            # 2) Fetch the current history entry
+            current_entry = session.get(BlockHistory, block.current_history_entry_id)
+            if not current_entry:
+                raise NoResultFound(f"BlockHistory row not found for id={block.current_history_entry_id}")
+
+            current_seq = current_entry.sequence_number
+            if current_seq <= 1:
+                # This means there's no previous checkpoint
+                raise ValueError(f"Block {block_id} is at the first checkpoint (seq=1). Cannot undo further.")
+
+            # 3) The previous checkpoint is current_seq - 1
+            previous_seq = current_seq - 1
+            prev_entry = (
+                session.query(BlockHistory)
+                .filter(BlockHistory.block_id == block.id, BlockHistory.sequence_number == previous_seq)
+                .one_or_none()
+            )
+            if not prev_entry:
+                raise NoResultFound(f"No BlockHistory row for block_id={block.id} at sequence_number={previous_seq}")
+
+            # 4) Copy fields from the prev_entry back to the block
+            block.description = prev_entry.description
+            block.label = prev_entry.label
+            block.value = prev_entry.value
+            block.limit = prev_entry.limit
+            block.metadata_ = prev_entry.metadata_
+            block.current_history_entry_id = prev_entry.id
+
+            # 5) Commit with optimistic locking. We do a single commit at the end.
+            block = block.update(db_session=session, actor=actor, no_commit=True)
+            session.commit()
+
+            # 6) Return the block’s new state in Pydantic form
             return block.to_pydantic()
