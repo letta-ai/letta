@@ -15,19 +15,62 @@ import * as Sentry from '@sentry/node';
 import winston from 'winston';
 import expressWinston from 'express-winston';
 
+interface ExpressMeta {
+  req: {
+    headers: Record<string, string>;
+    url: string;
+    httpVersion: string;
+    originalUrl: string;
+    query: Record<string, string>;
+  };
+  res: {
+    statusCode: number;
+  };
+}
+
+function getIsExpressMeta(meta: unknown): meta is ExpressMeta {
+  return (
+    typeof meta === 'object' &&
+    meta !== null &&
+    typeof (meta as ExpressMeta).req === 'object' &&
+    (meta as ExpressMeta).req !== null
+  );
+}
+
 export function startServer() {
   const host = process.env.HOST ?? 'localhost';
   const port = process.env.PORT ? Number(process.env.PORT) : 3006;
 
   const app = express();
 
+  const obfuscateAuthorizationHeader = winston.format((info) => {
+    console.log('y', getIsExpressMeta(info.meta));
+    if (getIsExpressMeta(info.meta)) {
+      const { meta } = info;
+      const { headers } = meta.req;
+
+      const authorizationHeader = headers.authorization;
+      if (authorizationHeader) {
+        info.meta.req.headers.authorization = '[REDACTED]';
+      }
+
+      return info;
+    }
+
+    return info;
+  });
+
   app.use(
     expressWinston.logger({
       transports: [new winston.transports.Console()],
-      format: winston.format.combine(winston.format.json()),
+      format: winston.format.combine(
+        obfuscateAuthorizationHeader(),
+        winston.format.json(),
+      ),
       meta: true, // optional: control whether you want to log the meta data about the request (default to true)
       msg: 'HTTP {{req.method}} {{req.url}}', // optional: customize the default logging message. E.g. "{{res.statusCode}} {{req.method}} {{res.responseTime}}ms {{req.url}}"
       colorize: false,
+      level: 'info',
     }),
   );
 
