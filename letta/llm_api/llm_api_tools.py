@@ -340,7 +340,7 @@ def create(
                 tool_choice = {"type": "any", "disable_parallel_tool_use": True}
             else:
                 tool_choice = {"type": "auto", "disable_parallel_tool_use": True}
-            tools = [{"type": "function", "function": f} for f in functions]
+            tools = [{"type": "function", "function": f} for f in functions] if functions is not None else None
 
         chat_completion_request = ChatCompletionRequest(
             model=llm_config.model,
