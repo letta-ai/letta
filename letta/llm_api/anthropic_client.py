@@ -6,6 +6,7 @@ import anthropic
 from anthropic.types import Message as AnthropicMessage
 
 from letta.errors import (
+    ContextWindowExceededError,
     ErrorCode,
     LLMAuthenticationError,
     LLMBadRequestError,
@@ -164,10 +165,17 @@ class AnthropicClient(LLMClientBase):
 
         if isinstance(e, anthropic.BadRequestError):
             logger.warning(f"[Anthropic] Bad request: {str(e)}")
-            return LLMBadRequestError(
-                message=f"Bad request to Anthropic: {str(e)}",
-                code=ErrorCode.INTERNAL_SERVER_ERROR,
-            )
+            if "prompt is too long" in str(e).lower():
+                # If the context window is too large, we expect to receive:
+                # 400 - {'type': 'error', 'error': {'type': 'invalid_request_error', 'message': 'prompt is too long: 200758 tokens > 200000 maximum'}}
+                return ContextWindowExceededError(
+                    message=f"Bad request to Anthropic (context window exceeded): {str(e)}",
+                )
+            else:
+                return LLMBadRequestError(
+                    message=f"Bad request to Anthropic: {str(e)}",
+                    code=ErrorCode.INTERNAL_SERVER_ERROR,
+                )
 
         if isinstance(e, anthropic.AuthenticationError):
             logger.warning(f"[Anthropic] Authentication error: {str(e)}")
