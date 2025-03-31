@@ -2,10 +2,11 @@
 import { webApi, webApiQueryKeys } from '@letta-cloud/sdk-web';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslations } from '@letta-cloud/translations';
-import { useDebouncedValue } from '@mantine/hooks';
 import type { ColumnDef } from '@tanstack/react-table';
 import type { CostItemType } from '@letta-cloud/sdk-web';
 import {
+  brandKeyToLogo,
+  brandKeyToName,
   Button,
   DashboardPageLayout,
   DashboardPageSection,
@@ -13,7 +14,9 @@ import {
   Dialog,
   HStack,
   InfoIcon,
+  isBrandKey,
   LettaCoinIcon,
+  LoadingEmptyStatusComponent,
   RawInput,
   Typography,
   VStack,
@@ -26,6 +29,7 @@ import {
 } from '@letta-cloud/utils-client';
 import { creditsToDollars } from '@letta-cloud/utils-shared';
 import { useQueryClient } from '@tanstack/react-query';
+import { Slot } from '@radix-ui/react-slot';
 
 function CostSimulator() {
   const t = useTranslations('organization/costs');
@@ -209,30 +213,15 @@ function CostSimulator() {
 }
 
 function CostExplorer() {
-  const [search, setSearch] = useState('');
-  const [offset, setOffset] = useState(0);
-  const [limit, setLimit] = useState<number>();
+  const limit = 150;
   useInferenceModels();
 
   const t = useTranslations('organization/costs');
 
-  const [debouncedSearch] = useDebouncedValue(search, 500);
-
   const queryClient = useQueryClient();
 
   const { data: costs } = webApi.costs.getStepCosts.useQuery({
-    queryKey: webApiQueryKeys.costs.getStepCostsWithSearch({
-      search: debouncedSearch,
-      offset,
-      limit,
-    }),
-    queryData: {
-      query: {
-        search: debouncedSearch,
-        offset,
-        limit,
-      },
-    },
+    queryKey: webApiQueryKeys.costs.getStepCosts,
     enabled: !!limit,
   });
 
@@ -314,39 +303,74 @@ function CostExplorer() {
     ];
   }, [costs, t]);
 
-  const costList = useMemo(() => {
+  const costListByBrand = useMemo(() => {
     if (!costs) {
       return [];
     }
 
-    return costs.body.stepCosts;
+    const map = costs.body.stepCosts.reduce(
+      (acc, cost) => {
+        const brand = cost.brand;
+
+        if (!acc[brand]) {
+          acc[brand] = [] as CostItemType[];
+        }
+
+        acc[brand].push(cost);
+
+        return acc;
+      },
+      {} as Record<string, CostItemType[]>,
+    );
+
+    return Object.entries(map);
   }, [costs]);
 
   return (
     <DashboardPageLayout
       title={t('title')}
-      encapsulatedFullHeight
       actions={<CostSimulator />}
       subtitle={t.rich('description', {
         credit: () => <LettaCoinIcon size="small" />,
       })}
     >
-      <DashboardPageSection fullHeight>
-        <DataTable
-          autofitHeight
-          searchValue={search}
-          showPagination
-          onSearch={setSearch}
-          hasNextPage={costs?.body.hasNextPage}
-          offset={offset}
-          limit={limit}
-          onSetOffset={setOffset}
-          onLimitChange={setLimit}
-          columns={columns}
-          data={costList}
-          isLoading={!costs}
-        />
-      </DashboardPageSection>
+      {!costs ? (
+        <DashboardPageSection>
+          <LoadingEmptyStatusComponent isLoading />
+        </DashboardPageSection>
+      ) : (
+        <DashboardPageSection>
+          {costListByBrand.map(([brand, costList]) => {
+            const isBrand = isBrandKey(brand);
+
+            if (!isBrand) {
+              return null;
+            }
+
+            return (
+              <VStack key={brand} gap="large">
+                <HStack paddingX="small">
+                  <Slot
+                    /* eslint-disable-next-line react/forbid-component-props */
+                    className="w-6 h-6"
+                  >
+                    {brandKeyToLogo(brand)}
+                  </Slot>
+                  <Typography variant="heading5">
+                    {brandKeyToName(brand)}
+                  </Typography>
+                </HStack>
+                <DataTable
+                  key={brand}
+                  columns={columns}
+                  data={costList}
+                  isLoading={!costs}
+                />
+              </VStack>
+            );
+          })}
+        </DashboardPageSection>
+      )}
     </DashboardPageLayout>
   );
 }

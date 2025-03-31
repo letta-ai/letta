@@ -8,6 +8,7 @@ const c = initContract();
 const CostItem = z.object({
   modelId: z.string(),
   modelName: z.string(),
+  brand: z.string(),
   costMap: z.record(z.number()),
 });
 
@@ -21,7 +22,6 @@ const CostsResponseSchema = z.object({
 const getStepCostsContract = c.query({
   method: 'GET',
   path: '/costs',
-  query: GenericSearchSchema,
   responses: {
     200: CostsResponseSchema,
   },

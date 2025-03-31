@@ -1,36 +1,22 @@
 import type { ServerInferRequest, ServerInferResponses } from '@ts-rest/core';
 import type { contracts } from '@letta-cloud/sdk-web';
 import { db, inferenceModelsMetadata } from '@letta-cloud/service-database';
-import { and, eq, ilike, isNull } from 'drizzle-orm';
-
-type GetStepCostsRequest = ServerInferRequest<
-  typeof contracts.costs.getStepCosts
->;
+import { eq, isNull } from 'drizzle-orm';
 
 type GetStepCostsResponse = ServerInferResponses<
   typeof contracts.costs.getStepCosts
 >;
 
-async function getStepCosts(
-  req: GetStepCostsRequest,
-): Promise<GetStepCostsResponse> {
-  const { search, limit = 5, offset = 0 } = req.query;
-
+async function getStepCosts(): Promise<GetStepCostsResponse> {
   const inferenceModels = await db.query.inferenceModelsMetadata.findMany({
-    where: and(
-      ...[
-        ...(search ? [ilike(inferenceModelsMetadata.name, `%${search}%`)] : []),
-        isNull(inferenceModelsMetadata.disabledAt),
-      ],
-    ),
+    where: isNull(inferenceModelsMetadata.disabledAt),
     with: {
       stepCostSchema: true,
     },
-    offset,
-    limit: limit + 1,
     columns: {
       id: true,
       name: true,
+      brand: true,
       defaultRequestsPerMinutePerOrganization: true,
       defaultTokensPerMinutePerOrganization: true,
     },
@@ -43,6 +29,7 @@ async function getStepCosts(
         return {
           modelId: model.id,
           modelName: model.name,
+          brand: model.brand,
           costMap: model.stepCostSchema.stepCostSchema.data.reduce(
             (acc, cost) => {
               acc[`${cost.maxContextWindowSize}`] = cost.cost;
@@ -52,7 +39,7 @@ async function getStepCosts(
           ),
         };
       }),
-      hasNextPage: inferenceModels.length > limit,
+      hasNextPage: false,
     },
   };
 }
@@ -78,6 +65,7 @@ async function getStepCostByModelId(
     columns: {
       id: true,
       name: true,
+      brand: true,
       defaultRequestsPerMinutePerOrganization: true,
       defaultTokensPerMinutePerOrganization: true,
     },
@@ -97,6 +85,7 @@ async function getStepCostByModelId(
     body: {
       modelId: inferenceModel.id,
       modelName: inferenceModel.name,
+      brand: inferenceModel.brand,
       costMap: inferenceModel.stepCostSchema.stepCostSchema.data.reduce(
         (acc, cost) => {
           acc[`${cost.maxContextWindowSize}`] = cost.cost;
