@@ -5,6 +5,17 @@ from typing import List, Optional, Union
 import anthropic
 from anthropic.types import Message as AnthropicMessage
 
+from letta.errors import (
+    ErrorCode,
+    LLMAuthenticationError,
+    LLMBadRequestError,
+    LLMConnectionError,
+    LLMNotFoundError,
+    LLMPermissionDeniedError,
+    LLMRateLimitError,
+    LLMServerError,
+    LLMUnprocessableEntityError,
+)
 from letta.helpers.datetime_helpers import get_utc_time
 from letta.llm_api.helpers import add_inner_thoughts_to_functions, unpack_all_inner_thoughts_from_kwargs
 from letta.llm_api.llm_client_base import LLMClientBase
@@ -104,14 +115,14 @@ class AnthropicClient(LLMClientBase):
         data["messages"] = [
             m.to_anthropic_dict(
                 inner_thoughts_xml_tag=inner_thoughts_xml_tag,
-                put_inner_thoughts_in_kwargs=self.llm_config.put_inner_thoughts_in_kwargs,
+                put_inner_thoughts_in_kwargs=bool(self.llm_config.put_inner_thoughts_in_kwargs),
             )
             for m in messages
         ]
 
         # Move 'system' to the top level
         if data["messages"][0]["role"] != "system":
-            raise RuntimeError(f"First message is not a system message, instead has role {data["messages"][0]["role"]}")
+            raise RuntimeError(f'First message is not a system message, instead has role {data["messages"][0]["role"]}')
 
         data["system"] = data["messages"][0]["content"]
         data["messages"] = data["messages"][1:]
@@ -241,7 +252,7 @@ class AnthropicClient(LLMClientBase):
         response = AnthropicMessage(**response_data)
         prompt_tokens = response.usage.input_tokens
         completion_tokens = response.usage.output_tokens
-        finish_reason = remap_finish_reason(response.stop_reason)
+        finish_reason = remap_finish_reason(str(response.stop_reason))
 
         content = None
         reasoning_content = None
