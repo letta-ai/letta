@@ -254,7 +254,13 @@ deploy-cloud-api: push-cloud-api
         --set readinessProbe.httpGet.port=8080 \
         --set env.DATABASE_URL="${DATABASE_URL}" \
         --set env.LAUNCH_DARKLY_SDK_KEY="${LAUNCH_DARKLY_SDK_KEY}" \
-        --set env.REDIS_HOST="${REDIS_HOST}"
+        --set env.REDIS_HOST="${REDIS_HOST}" \
+        --set env.TEMPORAL_LETTUCE_API_HOST="${TEMPORAL_LETTUCE_API_HOST}" \
+        --set env.TEMPORAL_LETTUCE_CA_PEM="${TEMPORAL_LETTUCE_CA_PEM}" \
+        --set env.TEMPORAL_LETTUCE_CA_KEY="${TEMPORAL_LETTUCE_CA_KEY}" \
+        --set env.STRIPE_SECRET_KEY="${STRIPE_SECRET_KEY}" \
+        --set env.COMPOSIO_API_KEY="${COMPOSIO_API_KEY}"
+
 
     npm run slack-bot-says "Successfully deployed cloud API service with tag: {{TAG}}."
 
