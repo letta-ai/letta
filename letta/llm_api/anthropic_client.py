@@ -6,6 +6,7 @@ import anthropic
 from anthropic.types import Message as AnthropicMessage
 
 from letta.errors import (
+    ContextWindowExceededError,
     ErrorCode,
     LLMAuthenticationError,
     LLMBadRequestError,
@@ -112,20 +113,18 @@ class AnthropicClient(LLMClientBase):
 
         # Messages
         inner_thoughts_xml_tag = "thinking"
+
+        # Move 'system' to the top level
+        if messages[0].role != "system":
+            raise RuntimeError(f"First message is not a system message, instead has role {messages[0].role}")
+        data["system"] = messages[0].content if isinstance(messages[0].content, str) else messages[0].content[0].text
         data["messages"] = [
             m.to_anthropic_dict(
                 inner_thoughts_xml_tag=inner_thoughts_xml_tag,
                 put_inner_thoughts_in_kwargs=bool(self.llm_config.put_inner_thoughts_in_kwargs),
             )
-            for m in messages
+            for m in messages[1:]
         ]
-
-        # Move 'system' to the top level
-        if data["messages"][0]["role"] != "system":
-            raise RuntimeError(f'First message is not a system message, instead has role {data["messages"][0]["role"]}')
-
-        data["system"] = data["messages"][0]["content"]
-        data["messages"] = data["messages"][1:]
 
         # Ensure first message is user
         if data["messages"][0]["role"] != "user":
@@ -164,10 +163,17 @@ class AnthropicClient(LLMClientBase):
 
         if isinstance(e, anthropic.BadRequestError):
             logger.warning(f"[Anthropic] Bad request: {str(e)}")
-            return LLMBadRequestError(
-                message=f"Bad request to Anthropic: {str(e)}",
-                code=ErrorCode.INTERNAL_SERVER_ERROR,
-            )
+            if "prompt is too long" in str(e).lower():
+                # If the context window is too large, we expect to receive:
+                # 400 - {'type': 'error', 'error': {'type': 'invalid_request_error', 'message': 'prompt is too long: 200758 tokens > 200000 maximum'}}
+                return ContextWindowExceededError(
+                    message=f"Bad request to Anthropic (context window exceeded): {str(e)}",
+                )
+            else:
+                return LLMBadRequestError(
+                    message=f"Bad request to Anthropic: {str(e)}",
+                    code=ErrorCode.INTERNAL_SERVER_ERROR,
+                )
 
         if isinstance(e, anthropic.AuthenticationError):
             logger.warning(f"[Anthropic] Authentication error: {str(e)}")
