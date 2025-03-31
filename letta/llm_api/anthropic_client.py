@@ -113,20 +113,18 @@ class AnthropicClient(LLMClientBase):
 
         # Messages
         inner_thoughts_xml_tag = "thinking"
+
+        # Move 'system' to the top level
+        if messages[0].role != "system":
+            raise RuntimeError(f"First message is not a system message, instead has role {messages[0].role}")
+        data["system"] = messages[0].content if isinstance(messages[0].content, str) else messages[0].content[0].text
         data["messages"] = [
             m.to_anthropic_dict(
                 inner_thoughts_xml_tag=inner_thoughts_xml_tag,
                 put_inner_thoughts_in_kwargs=bool(self.llm_config.put_inner_thoughts_in_kwargs),
             )
-            for m in messages
+            for m in messages[1:]
         ]
-
-        # Move 'system' to the top level
-        if data["messages"][0]["role"] != "system":
-            raise RuntimeError(f'First message is not a system message, instead has role {data["messages"][0]["role"]}')
-
-        data["system"] = data["messages"][0]["content"]
-        data["messages"] = data["messages"][1:]
 
         # Ensure first message is user
         if data["messages"][0]["role"] != "user":
