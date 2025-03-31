@@ -70,6 +70,14 @@ class LLMRateLimitError(LLMError):
     """Error when rate limited by LLM service"""
 
 
+class LLMBadRequestError(LLMError):
+    """Error when LLM service cannot process request"""
+
+
+class LLMAuthenticationError(LLMError):
+    """Error when authentication fails with LLM service"""
+
+
 class LLMPermissionDeniedError(LLMError):
     """Error when permission is denied by LLM service"""
 
@@ -80,6 +88,10 @@ class LLMNotFoundError(LLMError):
 
 class LLMUnprocessableEntityError(LLMError):
     """Error when request is well-formed but semantically invalid"""
+
+
+class LLMServerError(LLMError):
+    """Error when LLM service encounters an internal error"""
 
 
 class BedrockPermissionError(LettaError):
