@@ -7,7 +7,10 @@ const client: Client = makeClient();
 function makeClient(): Client {
   const connection = Connection.lazy(getConnectionConfig());
 
-  return new Client({ connection, namespace: 'lettuce.tmhou' });
+  return new Client({
+    connection,
+    namespace: environment.TEMPORAL_LETTUCE_NAMESPACE || 'lettuce.tmhou',
+  });
 }
 
 export function getTemporalClient(): Client {

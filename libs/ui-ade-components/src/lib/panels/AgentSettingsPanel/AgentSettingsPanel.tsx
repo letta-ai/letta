@@ -27,6 +27,7 @@ import {
   Tooltip,
   LockClosedIcon,
   RawCreatableAsyncSelect,
+  OnboardingAsideFocus,
 } from '@letta-cloud/ui-component-library';
 import {
   useAgentBaseTypeName,
@@ -59,6 +60,7 @@ import { useADEAppContext } from '../../AppContext/AppContext';
 import { useIdentityTypeToTranslationMap } from '../../IdentitiesTable/hooks/useIdentityTypeToTranslationMap';
 import { getBrandFromModelName } from '@letta-cloud/utils-shared';
 import { useInferenceModels } from '../../hooks/useInferenceModels/useInferenceModels';
+import { useADETour } from '@letta-cloud/ui-ade-components';
 
 interface SelectedModelType {
   icon: React.ReactNode;
@@ -772,6 +774,46 @@ function AgentTags() {
         void handleUpdate(value.map((v) => v.value || '').filter((v) => !!v));
       }}
     />
+  );
+}
+
+interface AgentSettingsOnboarding {
+  children: React.ReactNode;
+}
+
+export function AgentSettingsOnboarding(props: AgentSettingsOnboarding) {
+  const t = useTranslations('ADE/AgentSettingsPanel');
+  const { children } = props;
+
+  const { currentStep, setStep } = useADETour();
+
+  if (currentStep !== 'template') {
+    return <>{children}</>;
+  }
+
+  return (
+    <OnboardingAsideFocus
+      className="w-full h-full"
+      title={t('AgentSettingsOnboarding.title')}
+      placement="right-start"
+      description={t('AgentSettingsOnboarding.description')}
+      isOpen
+      totalSteps={4}
+      nextStep={
+        <Button
+          fullWidth
+          size="large"
+          bold
+          onClick={() => {
+            setStep('core_memories');
+          }}
+          label={t('AgentSettingsOnboarding.next')}
+        />
+      }
+      currentStep={1}
+    >
+      {children}
+    </OnboardingAsideFocus>
   );
 }
 

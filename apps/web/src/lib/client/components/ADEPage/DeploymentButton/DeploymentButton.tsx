@@ -425,7 +425,6 @@ function OnboardingWrapper(props: OnboardingWrapperProps) {
 
   return (
     <OnboardingAsideFocus
-      difficulty="easy"
       reward={stepToRewardMap.save_version}
       totalSteps={TOTAL_PRIMARY_ONBOARDING_STEPS}
       currentStep={4}

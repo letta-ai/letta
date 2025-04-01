@@ -75,7 +75,6 @@ export function CreditsViewer() {
             </StyledLink>
           ),
         })}
-        difficulty="easy"
         isOpen
         totalSteps={TOTAL_PRIMARY_ONBOARDING_STEPS}
         currentStep={1}

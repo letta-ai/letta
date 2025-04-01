@@ -17,7 +17,7 @@ import {
 } from '@floating-ui/react';
 import { offset } from '@floating-ui/react';
 import { cn } from '@letta-cloud/ui-styles';
-import { usePauseOnboarding } from '@letta-cloud/sdk-web';
+import { ConfirmPauseOnboardingDialog } from '../ConfirmPauseOnboardingDialog/ConfirmPauseOnboardingDialog';
 
 interface OnboardingAsideFocusProps {
   children: React.ReactNode;
@@ -25,7 +25,6 @@ interface OnboardingAsideFocusProps {
   title: string;
   totalSteps: number;
   currentStep: number;
-  difficulty: 'easy' | 'hard' | 'medium';
   description: React.ReactNode;
   spotlight?: boolean;
   className?: string;
@@ -34,19 +33,12 @@ interface OnboardingAsideFocusProps {
   placement?: Placement;
 }
 
-const difficultyToBadgeVariant: Record<string, BadgeProps['variant']> = {
-  easy: 'success',
-  medium: 'warning',
-  hard: 'destructive',
-} as const;
-
 export function OnboardingAsideFocus(props: OnboardingAsideFocusProps) {
   const {
     children,
     title,
     className,
     description,
-    difficulty = 'easy',
     totalSteps = 1,
     currentStep = 1,
     isOpen,
@@ -57,17 +49,6 @@ export function OnboardingAsideFocus(props: OnboardingAsideFocusProps) {
   } = props;
 
   const t = useTranslations('onboarding/OnboardingAsideFocus');
-
-  const { pauseOnboarding } = usePauseOnboarding();
-
-  const onboardingDifficultyTranslationMap = useMemo(
-    () => ({
-      easy: t('difficulty.easy'),
-      medium: t('difficulty.medium'),
-      hard: t('difficulty.hard'),
-    }),
-    [t],
-  );
 
   const { refs, floatingStyles } = useFloating({
     placement,
@@ -140,10 +121,6 @@ export function OnboardingAsideFocus(props: OnboardingAsideFocusProps) {
         >
           <HStack justify="spaceBetween" align="center">
             {reward && <OnboardingRewardElement reward={reward} />}
-            <Badge
-              content={onboardingDifficultyTranslationMap[difficulty] || ''}
-              variant={difficultyToBadgeVariant[difficulty]}
-            />
           </HStack>
           <Typography variant="heading5">{title}</Typography>
           <Typography className="whitespace-pre-wrap" variant="large">
@@ -152,13 +129,16 @@ export function OnboardingAsideFocus(props: OnboardingAsideFocusProps) {
           <OnboardingSteps currentStep={currentStep} totalSteps={totalSteps} />
           <VStack align="center">
             {nextStep}
-            <Button
-              label={t('tryLater')}
-              onClick={pauseOnboarding}
-              color="tertiary"
-              bold
-              fullWidth
-            ></Button>
+            <ConfirmPauseOnboardingDialog
+              trigger={
+                <Button
+                  label={t('tryLater')}
+                  color="tertiary"
+                  bold
+                  fullWidth
+                ></Button>
+              }
+            />
           </VStack>
         </VStack>
       </FloatingPortal>

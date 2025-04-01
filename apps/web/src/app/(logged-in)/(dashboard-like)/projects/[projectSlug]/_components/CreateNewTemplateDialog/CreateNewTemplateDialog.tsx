@@ -44,7 +44,6 @@ function OnboardingWrapper(props: OnboardingWrapperProps) {
 
   return (
     <OnboardingAsideFocus
-      difficulty="easy"
       spotlight
       reward={stepToRewardMap.create_template}
       totalSteps={TOTAL_PRIMARY_ONBOARDING_STEPS}

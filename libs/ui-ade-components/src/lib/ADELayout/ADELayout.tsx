@@ -5,6 +5,7 @@ import {
   CloseIcon,
   CodeIcon,
   CogIcon,
+  ConfirmPauseOnboardingDialog,
   ContextWindowIcon,
   DatabaseIcon,
   EditIcon,
@@ -23,7 +24,10 @@ import {
   VisibleOnMobile,
   VStack,
 } from '@letta-cloud/ui-component-library';
-import { AgentSettingsPanel } from '../panels/AgentSettingsPanel/AgentSettingsPanel';
+import {
+  AgentSettingsOnboarding,
+  AgentSettingsPanel,
+} from '../panels/AgentSettingsPanel/AgentSettingsPanel';
 import { ADEGroup } from '../shared/ADEGroup/ADEGroup';
 import { useTranslations } from '@letta-cloud/translations';
 import { useAgentBaseTypeName } from '../hooks';
@@ -75,12 +79,12 @@ function useADETitleTranslations() {
     archivalMemoriesTitle,
   };
 }
+
 import { Panel, PanelGroup, PanelResizeHandle } from 'react-resizable-panels';
 import { Slot } from '@radix-ui/react-slot';
 import { createPortal } from 'react-dom';
 import { useADETour } from '../hooks/useADETour/useADETour';
 import { TOTAL_PRIMARY_ONBOARDING_STEPS } from '@letta-cloud/types';
-import { usePauseOnboarding } from '@letta-cloud/sdk-web';
 
 function DesktopLayout() {
   const t = useTranslations('ADELayout');
@@ -103,20 +107,22 @@ function DesktopLayout() {
         >
           <VStack gap={false} fullWidth fullHeight>
             <div className="h-[380px]">
-              <ADEGroup
-                items={[
-                  {
-                    title: t('settings', { baseName }),
-                    id: 'settings',
-                    content: <AgentSettingsPanel />,
-                  },
-                  {
-                    title: t('advancedSettings'),
-                    id: 'advanced-settings',
-                    content: <AdvancedSettingsPanel />,
-                  },
-                ]}
-              />
+              <AgentSettingsOnboarding>
+                <ADEGroup
+                  items={[
+                    {
+                      title: t('settings', { baseName }),
+                      id: 'settings',
+                      content: <AgentSettingsPanel />,
+                    },
+                    {
+                      title: t('advancedSettings'),
+                      id: 'advanced-settings',
+                      content: <AdvancedSettingsPanel />,
+                    },
+                  ]}
+                />
+              </AgentSettingsOnboarding>
             </div>
             <div className="h-[1px] w-full bg-border" />
             <ADEGroup
@@ -400,7 +406,6 @@ function ADEOnboarding() {
   const t = useTranslations('ADELayout');
 
   const { currentStep, setStep } = useADETour();
-  const { pauseOnboarding } = usePauseOnboarding();
 
   if (currentStep !== 'welcome') {
     return null;
@@ -414,17 +419,15 @@ function ADEOnboarding() {
       primaryAction={
         <Button
           onClick={() => {
-            setStep('core_memories');
+            setStep('template');
           }}
           label={t('ADEOnboarding.start')}
           color="primary"
         />
       }
       secondaryAction={
-        <Button
-          onClick={pauseOnboarding}
-          label={t('ADEOnboarding.skip')}
-          color="tertiary"
+        <ConfirmPauseOnboardingDialog
+          trigger={<Button label={t('ADEOnboarding.skip')} color="tertiary" />}
         />
       }
     >

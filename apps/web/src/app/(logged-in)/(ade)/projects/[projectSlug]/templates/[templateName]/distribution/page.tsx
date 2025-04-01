@@ -516,12 +516,11 @@ function DistributionOnboardingStepFinal(
   return (
     <OnboardingAsideFocus
       title={t('DistributionOnboardingStepFinal.title')}
-      placement="right-start"
+      placement="left-start"
       description={t('DistributionOnboardingStepFinal.description')}
       isOpen
       /* eslint-disable-next-line react/forbid-component-props */
       className="w-full h-full"
-      difficulty="easy"
       nextStep={
         <Button
           label={t('DistributionOnboardingStepFinal.nextStep')}

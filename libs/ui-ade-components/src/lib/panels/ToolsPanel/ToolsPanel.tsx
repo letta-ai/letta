@@ -289,8 +289,7 @@ function ToolsOnboarding(props: ToolsOnboardingProps) {
       placement="right-start"
       description={t('ToolsOnboarding.description')}
       isOpen
-      difficulty="medium"
-      totalSteps={3}
+      totalSteps={4}
       nextStep={
         <Button
           fullWidth
@@ -302,7 +301,7 @@ function ToolsOnboarding(props: ToolsOnboardingProps) {
           label={t('ToolsOnboarding.next')}
         />
       }
-      currentStep={2}
+      currentStep={3}
     >
       {children}
     </OnboardingAsideFocus>

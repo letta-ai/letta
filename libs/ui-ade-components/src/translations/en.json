@@ -308,6 +308,11 @@
     "IdentityElement": {
       "remove": "Remove"
     },
+    "AgentSettingsOnboarding": {
+      "title": "The Template",
+      "description": "At the heart of a productionized agent is the agent template, the view shown here let you control the core settings of an agent such as the LLM it uses, embedding settings and general template information.",
+      "next": "Next: Core Memories"
+    },
     "AgentType": {
       "label": "Agent Type",
       "tooltip": "Describes the core letta agent type, this cannot be changed after creation"
@@ -428,6 +433,12 @@
       "info": "This memory you create here is unique to the simulated agent. It will not be carried to agents created from this template."
     }
   },
+  "ConfirmPauseOnboardingDialog": {
+    "title": "Pause Onboarding",
+    "trigger": "Pause onboarding",
+    "confirm": "Pause",
+    "description": "Are you sure you want to pause the onboarding tour? You can always restart it later in the settings."
+  },
   "ADELayout": {
     "apps": "All apps",
     "contextWindow": "Context Window",
@@ -463,7 +474,7 @@
     "MemoryOnboarding": {
       "title": "Core Memory",
       "description": "Core Memory is the basis of how you create a letta agent, this content is unique to an agent and can be templated with variables. If you notice there are two tabs, Template, is the initial memory state for any agent you will deploy, and simulated shows off what the specific agent you're talking to's memory looks like.",
-      "next": "Next!"
+      "next": "Next: Tools"
     },
     "SimulatedMemory": {
       "error": "There was an error while reading the simulated memory block, please try again or contact support.",
@@ -1090,7 +1101,7 @@
     "ToolsOnboarding": {
       "title": "Tools",
       "description": "Tools are a way to extend the functionality of your agent. You can create custom tools, use Letta tools, or connect to external tools via Composio or MCP servers. Tools are essential for your agent to take custom actions.",
-      "next": "One more!"
+      "next": "Next: Agent Simulator"
     },
     "DeleteToolButton": {
       "title": "Delete tool",

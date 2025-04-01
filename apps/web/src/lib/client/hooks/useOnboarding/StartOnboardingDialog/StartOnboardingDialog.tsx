@@ -2,6 +2,7 @@ import Astronaut from './astronaut.webp';
 import {
   Badge,
   Button,
+  ConfirmPauseOnboardingDialog,
   HStack,
   LettaCoinIcon,
   OnboardingCheckbox,
@@ -15,7 +16,6 @@ import { useCurrentUser } from '$web/client/hooks';
 import { useCallback } from 'react';
 import { useSetOnboardingStep } from '@letta-cloud/sdk-web';
 import { stepToRewardMap } from '@letta-cloud/types';
-import { usePauseOnboarding } from '@letta-cloud/sdk-web';
 
 export function StartOnboardingDialog() {
   const t = useTranslations('onboarding/StartOnboardingDialog');
@@ -27,8 +27,6 @@ export function StartOnboardingDialog() {
       onboardingStep: 'about_credits',
     });
   }, [setOnboardingStep]);
-
-  const { pauseOnboarding } = usePauseOnboarding();
 
   const user = useCurrentUser();
 
@@ -42,11 +40,8 @@ export function StartOnboardingDialog() {
       title={t('title')}
       isOpen
       secondaryAction={
-        <Button
-          onClick={pauseOnboarding}
-          color="tertiary"
-          size="large"
-          label={t('skip')}
+        <ConfirmPauseOnboardingDialog
+          trigger={<Button color="tertiary" size="large" label={t('skip')} />}
         />
       }
       primaryAction={

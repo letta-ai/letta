@@ -190,7 +190,6 @@ export * from './lib/onboarding/OnboardingMiniMenu/OnboardingMiniMenu';
 export * from './lib/reusable/CrossedOut/CrossedOut';
 
 export * from './lib/reusable/BoxList/BoxList';
-
 export * from './lib/core/WrapNotificationDot/WrapNotificationDot';
 
 export * from './lib/reusable/PackageInstallerView/PackageInstallerView';
@@ -210,3 +209,4 @@ export * from './lib/reusable/VersionHistory/VersionHistory';
 export * from './lib/core/RadioDot/RadioDot';
 
 export * from './lib/reusable/InteractiveSystemMessage/InteractiveSystemMessage';
+export * from './lib/onboarding/ConfirmPauseOnboardingDialog/ConfirmPauseOnboardingDialog';

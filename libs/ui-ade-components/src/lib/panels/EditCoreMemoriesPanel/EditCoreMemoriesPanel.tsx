@@ -183,8 +183,7 @@ function MemoryOnboarding(props: MemoryOnboardingProps) {
       placement="left-start"
       description={t('MemoryOnboarding.description')}
       isOpen
-      difficulty="medium"
-      totalSteps={3}
+      totalSteps={4}
       nextStep={
         <Button
           fullWidth
@@ -196,7 +195,7 @@ function MemoryOnboarding(props: MemoryOnboardingProps) {
           label={t('MemoryOnboarding.next')}
         />
       }
-      currentStep={1}
+      currentStep={2}
     >
       {children}
     </OnboardingAsideFocus>

@@ -62,7 +62,7 @@ function DistributionOnboardingStep(props: DistributionOnboardingStepProps) {
       placement="right-start"
       description={t('DistributionOnboardingStep.description')}
       isOpen
-      difficulty="easy"
+      spotlight
       totalSteps={TOTAL_PRIMARY_ONBOARDING_STEPS}
       currentStep={5}
     >

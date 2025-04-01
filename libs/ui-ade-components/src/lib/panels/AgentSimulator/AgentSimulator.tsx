@@ -634,8 +634,7 @@ function AgentSimulatorOnboarding(props: AgentSimulatorOnboardingProps) {
       placement="left-start"
       description={t('AgentSimulatorOnboarding.description')}
       isOpen
-      difficulty="medium"
-      totalSteps={3}
+      totalSteps={4}
       nextStep={
         <Button
           fullWidth
@@ -650,7 +649,7 @@ function AgentSimulatorOnboarding(props: AgentSimulatorOnboardingProps) {
           label={t('AgentSimulatorOnboarding.next')}
         />
       }
-      currentStep={3}
+      currentStep={4}
     >
       {children}
     </OnboardingAsideFocus>
