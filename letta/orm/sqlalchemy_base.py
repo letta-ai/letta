@@ -15,7 +15,6 @@ from letta.orm.sqlite_functions import adapt_array
 
 if TYPE_CHECKING:
     from pydantic import BaseModel
-    from sqlalchemy.orm import Session
 
 
 logger = get_logger(__name__)

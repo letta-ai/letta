@@ -1,6 +1,8 @@
 import os
 from typing import List, Optional
 
+from sqlalchemy.orm import Session
+
 from letta.orm.block import Block as BlockModel
 from letta.orm.block_history import BlockHistory
 from letta.orm.enums import ActorType
@@ -210,64 +212,114 @@ class BlockManager:
             return block.to_pydantic()
 
     @enforce_types
-    def undo_checkpoint_block(self, block_id: str, actor: PydanticUser, use_preloaded_block: Optional[BlockModel] = None) -> PydanticBlock:
+    def _move_block_to_sequence(self, session: Session, block: BlockModel, target_seq: int, actor: PydanticUser) -> BlockModel:
         """
-        Move the block to the previous checkpoint by copying fields
-        from the immediately previous BlockHistory entry (sequence_number - 1).
-
-        1) Load the current block (either by merging a preloaded block or reading from DB).
-        2) Identify its current history entry. If none, there's nothing to undo.
-        3) Determine the previous checkpoint's sequence_number. If seq=1, we can't go earlier.
-        4) Copy state from that previous checkpoint into the block.
-        5) Commit transaction (optimistic lock check).
-        6) Return the updated block as Pydantic.
+        Internal helper that moves the 'block' to the specified 'target_seq' within BlockHistory.
+        1) Find the BlockHistory row at sequence_number=target_seq
+        2) Copy fields into the block
+        3) Update and flush (no_commit=True) - the caller is responsible for final commit
 
         Raises:
-            ValueError: If no previous checkpoint exists or if we can't find the matching row.
-            NoResultFound: If the block or block history row do not exist.
-            StaleDataError: If another transaction updated the block concurrently (optimistic locking).
+            NoResultFound: if no BlockHistory row for (block_id, target_seq)
+        """
+        if not block.id:
+            raise ValueError("Block is missing an ID. Cannot move sequence.")
+
+        target_entry = (
+            session.query(BlockHistory)
+            .filter(
+                BlockHistory.block_id == block.id,
+                BlockHistory.sequence_number == target_seq,
+            )
+            .one_or_none()
+        )
+        if not target_entry:
+            raise NoResultFound(f"No BlockHistory row found for block_id={block.id} at sequence={target_seq}")
+
+        # Copy fields from target_entry to block
+        block.description = target_entry.description  # type: ignore
+        block.label = target_entry.label  # type: ignore
+        block.value = target_entry.value  # type: ignore
+        block.limit = target_entry.limit  # type: ignore
+        block.metadata_ = target_entry.metadata_  # type: ignore
+        block.current_history_entry_id = target_entry.id  # type: ignore
+
+        # Update in DB (optimistic locking).
+        # We'll do a flush now; the caller does final commit.
+        updated_block = block.update(db_session=session, actor=actor, no_commit=True)
+        return updated_block
+
+    @enforce_types
+    def undo_checkpoint_block(self, block_id: str, actor: PydanticUser, use_preloaded_block: Optional[BlockModel] = None) -> PydanticBlock:
+        """
+        Move the block to the previous checkpoint (sequence_number - 1).
         """
         with self.session_maker() as session:
-            # 1) Load the block
-            if use_preloaded_block is not None:
-                block = session.merge(use_preloaded_block)
-            else:
-                block = BlockModel.read(db_session=session, identifier=block_id, actor=actor)
+            # 1) Load current block
+            block = (
+                session.merge(use_preloaded_block)
+                if use_preloaded_block
+                else BlockModel.read(db_session=session, identifier=block_id, actor=actor)
+            )
 
+            # 2) Ensure there's a current checkpoint to undo from
             if not block.current_history_entry_id:
-                # There's no known history entry to revert from
                 raise ValueError(f"Block {block_id} has no history entry - cannot undo.")
 
-            # 2) Fetch the current history entry
             current_entry = session.get(BlockHistory, block.current_history_entry_id)
             if not current_entry:
                 raise NoResultFound(f"BlockHistory row not found for id={block.current_history_entry_id}")
 
             current_seq = current_entry.sequence_number
             if current_seq <= 1:
-                # This means there's no previous checkpoint
                 raise ValueError(f"Block {block_id} is at the first checkpoint (seq=1). Cannot undo further.")
 
-            # 3) The previous checkpoint is current_seq - 1
+            # 3) Move to the previous sequence
             previous_seq = current_seq - 1
-            prev_entry = (
-                session.query(BlockHistory)
-                .filter(BlockHistory.block_id == block.id, BlockHistory.sequence_number == previous_seq)
-                .one_or_none()
-            )
-            if not prev_entry:
-                raise NoResultFound(f"No BlockHistory row for block_id={block.id} at sequence_number={previous_seq}")
+            block = self._move_block_to_sequence(session, block, previous_seq, actor)
 
-            # 4) Copy fields from the prev_entry back to the block
-            block.description = prev_entry.description
-            block.label = prev_entry.label
-            block.value = prev_entry.value
-            block.limit = prev_entry.limit
-            block.metadata_ = prev_entry.metadata_
-            block.current_history_entry_id = prev_entry.id
-
-            # 5) Commit with optimistic locking. We do a single commit at the end.
-            block = block.update(db_session=session, actor=actor, no_commit=True)
+            # 4) Commit once at the end
             session.commit()
+            return block.to_pydantic()  # type: ignore
 
-            return block.to_pydantic()
+    @enforce_types
+    def redo_checkpoint_block(self, block_id: str, actor: PydanticUser, use_preloaded_block: Optional[BlockModel] = None) -> PydanticBlock:
+        """
+        Move the block to the next checkpoint (sequence_number + 1).
+
+        Raises:
+            ValueError: if the block is not pointing to a known checkpoint,
+                        or if there's no higher sequence_number to move to.
+            NoResultFound: if the relevant BlockHistory row doesn't exist.
+            StaleDataError: on concurrency conflicts.
+        """
+        with self.session_maker() as session:
+            # 1) Load current block
+            block = (
+                session.merge(use_preloaded_block)
+                if use_preloaded_block
+                else BlockModel.read(db_session=session, identifier=block_id, actor=actor)
+            )
+
+            # 2) If no current_history_entry_id, can't redo
+            if not block.current_history_entry_id:
+                raise ValueError(f"Block {block_id} has no history entry - cannot redo.")
+
+            current_entry = session.get(BlockHistory, block.current_history_entry_id)
+            if not current_entry:
+                raise NoResultFound(f"BlockHistory row not found for id={block.current_history_entry_id}")
+
+            current_seq = current_entry.sequence_number
+
+            # We'll move to next_seq = current_seq + 1
+            next_seq = current_seq + 1
+
+            # 3) Move to the next sequence using our helper
+            try:
+                block = self._move_block_to_sequence(session, block, next_seq, actor)
+            except NoResultFound:
+                raise ValueError(f"Block {block_id} is at the highest checkpoint (seq={current_seq}). Cannot redo further.")
+
+            # 4) Commit once
+            session.commit()
+            return block.to_pydantic()  # type: ignore
