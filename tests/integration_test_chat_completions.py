@@ -158,7 +158,7 @@ def _assert_valid_chunk(chunk, idx, chunks):
 @pytest.mark.asyncio
 @pytest.mark.parametrize("message", ["Hi how are you today?"])
 @pytest.mark.parametrize("endpoint", ["v1/voice-beta"])
-async def test_latency(mock_e2b_api_key_none, client, agent, message, endpoint):
+async def test_latency(disable_e2b_api_key, client, agent, message, endpoint):
     """Tests chat completion streaming using the Async OpenAI client."""
     request = _get_chat_request(message)
 
@@ -172,7 +172,7 @@ async def test_latency(mock_e2b_api_key_none, client, agent, message, endpoint):
 @pytest.mark.asyncio
 @pytest.mark.parametrize("message", ["Use recall memory tool to recall what my name is."])
 @pytest.mark.parametrize("endpoint", ["v1/voice-beta"])
-async def test_voice_recall_memory(mock_e2b_api_key_none, client, agent, message, endpoint):
+async def test_voice_recall_memory(disable_e2b_api_key, client, agent, message, endpoint):
     """Tests chat completion streaming using the Async OpenAI client."""
     request = _get_chat_request(message)
 
@@ -193,7 +193,7 @@ async def test_voice_recall_memory(mock_e2b_api_key_none, client, agent, message
 @pytest.mark.asyncio
 @pytest.mark.parametrize("message", ["Tell me something interesting about bananas.", "What's the weather in SF?"])
 @pytest.mark.parametrize("endpoint", ["openai/v1", "v1/voice-beta"])
-async def test_chat_completions_streaming_openai_client(mock_e2b_api_key_none, client, agent, message, endpoint):
+async def test_chat_completions_streaming_openai_client(disable_e2b_api_key, client, agent, message, endpoint):
     """Tests chat completion streaming using the Async OpenAI client."""
     request = _get_chat_request(message)
 

@@ -1,4 +1,5 @@
 import logging
+from typing import Generator
 
 import pytest
 
@@ -12,19 +13,16 @@ def pytest_configure(config):
 
 
 @pytest.fixture
-def mock_e2b_api_key_none():
+def disable_e2b_api_key() -> Generator[None, None, None]:
+    """
+    Temporarily disables the E2B API key by setting `tool_settings.e2b_api_key` to None
+    for the duration of the test. Restores the original value afterward.
+    """
     from letta.settings import tool_settings
 
-    # Store the original value of e2b_api_key
     original_api_key = tool_settings.e2b_api_key
-
-    # Set e2b_api_key to None
     tool_settings.e2b_api_key = None
-
-    # Yield control to the test
     yield
-
-    # Restore the original value of e2b_api_key
     tool_settings.e2b_api_key = original_api_key
 
 
