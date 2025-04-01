@@ -38,6 +38,14 @@
       "lmstudio": {
         "keyLabel": "LM Studio Base URL",
         "description": "Connect to LM Studio to use LM Studio models in the ADE"
+      },
+      "gemini": {
+        "keyLabel": "Gemini API Key",
+        "description": "Connect to the Gemini API to use Gemini models in the ADE"
+      },
+      "other": {
+        "name": "Don't see an integration that's supported in the docs?",
+        "description": "You can update the environment variables in `[your-root-directory]/.letta/env` to connect to any other API"
       }
     }
   },

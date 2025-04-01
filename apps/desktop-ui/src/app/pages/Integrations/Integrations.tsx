@@ -8,6 +8,7 @@ import {
   ComposioLogoMarkDynamic,
   DesktopPageLayout,
   Dialog,
+  GeminiLogoMarkDynamic,
   HStack,
   Link,
   LmstudioLogoMarkDynamic,
@@ -255,6 +256,18 @@ function SettingsEditor(props: SettingsEditorProps) {
           },
         ],
       },
+      {
+        icon: <GeminiLogoMarkDynamic />,
+        name: 'Google Gemini',
+        description: t('integrations.gemini.description'),
+        docsLink: 'https://docs.letta.com/guides/server/providers/google',
+        configSchema: [
+          {
+            key: 'GEMINI_API_KEY',
+            label: t('integrations.gemini.keyLabel'),
+          },
+        ],
+      },
     ],
     [t],
   );
@@ -271,6 +284,29 @@ function SettingsEditor(props: SettingsEditorProps) {
           {...integration}
         />
       ))}
+      <HStack
+        color="background-grey"
+        align="center"
+        paddingY="small"
+        paddingX="large"
+        justify="spaceBetween"
+      >
+        <HStack gap="medium">
+          <Slot className="w-6 h-6">
+            <CommunicationsIcon />
+          </Slot>
+          <VStack gap="text">
+            <HStack>
+              <Typography align="left" variant="body" bold>
+                {t('integrations.other.name')}
+              </Typography>
+            </HStack>
+            <Typography align="left" color="lighter" variant="body2">
+              {t('integrations.other.description')}
+            </Typography>
+          </VStack>
+        </HStack>
+      </HStack>
     </VStack>
   );
 }
