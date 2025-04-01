@@ -245,9 +245,9 @@ export default class App {
         env: {
           // Keep the user's existing environment, but override to ensure UTF-8
           ...process.env,
-          LANG: 'C.UTF-8', // or "en_us.UTF-8"
-          LC_ALL: 'C.UTF-8', // or "en_us.UTF-8"
-          LANGUAGE: 'en_US:en', // optional, for good measure
+          LANG: 'en_US.UTF-8',
+          LC_ALL: 'en_US.UTF-8',
+          LANGUAGE: 'en_US:en',
         },
       },
     );
@@ -402,7 +402,7 @@ export default class App {
             dataDir,
             '-U',
             'postgres',
-            '--locale=C.UTF-8', // or "en_US.UTF-8"
+            '--locale=en_US.UTF-8',
             '--encoding=UTF8',
           ]);
         } catch (err) {
@@ -426,7 +426,7 @@ export default class App {
         spawnEnv = {
           PATH: `${libPath};${process.env.PATH || ''}`,
           HOME: process.env.HOME || os.homedir(),
-          LC_ALL: 'C.UTF-8', // or en_us.UTF-8
+          LC_ALL: 'en_US.UTF-8',
         };
       } else {
         // macOS environment setup - set DYLD_LIBRARY_PATH
