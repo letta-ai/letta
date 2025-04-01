@@ -110,7 +110,7 @@ function AdvancedMemoryEditorForm(props: AdvancedMemoryEditorProps) {
       label: z
         .string()
         .regex(
-          /^[a-zA-Z_][a-zA-Z0-9_]*$/,
+          /^[a-zA-Z_-][a-zA-Z0-9_-]*$/,
           t('AdvancedMemoryEditorForm.label.error'),
         ),
       maxCharacters: z.coerce
@@ -324,7 +324,7 @@ function CreateNewMemoryBlockForm(props: CreateNewMemoryBlockFormProps) {
         .string()
         .min(1, t('CreateNewMemoryBlockForm.label.error'))
         .regex(
-          /^[a-zA-Z_][a-zA-Z0-9_]*$/,
+          /^[a-zA-Z_-][a-zA-Z0-9_-]*$/,
           t('CreateNewMemoryBlockForm.label.error'),
         )
         .refine((value) => {

@@ -582,7 +582,7 @@
       "label": {
         "label": "Label",
         "placeholder": "my-label",
-        "error": "Labels must be alphanumeric and underscores only, and cannot start with a number"
+        "error": "Labels must be alphanumeric and underscores or dashes only, and cannot start with a number"
       },
       "maxCharacters": {
         "label": "Character Limit",
