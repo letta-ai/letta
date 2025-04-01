@@ -5,7 +5,7 @@ import {
 } from '@letta-cloud/ui-component-library';
 import React from 'react';
 import { useTranslations } from '@letta-cloud/translations';
-import { useCurrentAgent } from '$web/client/hooks/useCurrentAgent/useCurrentAgent';
+import { useCurrentAgent } from '../../../../hooks';
 
 export function AgentType() {
   const t = useTranslations('ADE/AgentSettingsPanel');

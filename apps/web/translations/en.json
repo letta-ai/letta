@@ -1524,6 +1524,10 @@
     "title": "Save a template"
   },
   "api-keys/page": {
+    "noCloudAccess": {
+      "title": "You do not have permission to view this page",
+      "description": "You need to have access to Letta Cloud to manage your API keys. If you are using a local deployment, you do not need to create API keys. If you want to secure your local/self-hosted letta instance, check out this <link>documentation</link>."
+    },
     "title": "API keys",
     "emptyMessage": "No API keys found",
     "errorMessage": "An error occurred while fetching your API keys. Please try again or contact support.",
