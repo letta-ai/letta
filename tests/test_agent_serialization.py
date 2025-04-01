@@ -476,7 +476,7 @@ def test_agent_serialize_with_user_messages(local_client, server, serialize_test
     )
 
 
-def test_agent_serialize_tool_calls(mock_e2b_api_key_none, local_client, server, serialize_test_agent, default_user, other_user):
+def test_agent_serialize_tool_calls(disable_e2b_api_key, local_client, server, serialize_test_agent, default_user, other_user):
     """Test deserializing JSON into an Agent instance."""
     append_copy_suffix = False
     server.send_messages(
@@ -512,7 +512,7 @@ def test_agent_serialize_tool_calls(mock_e2b_api_key_none, local_client, server,
     assert copy_agent_response.completion_tokens > 0 and copy_agent_response.step_count > 0
 
 
-def test_agent_serialize_update_blocks(mock_e2b_api_key_none, local_client, server, serialize_test_agent, default_user, other_user):
+def test_agent_serialize_update_blocks(disable_e2b_api_key, local_client, server, serialize_test_agent, default_user, other_user):
     """Test deserializing JSON into an Agent instance."""
     append_copy_suffix = False
     server.send_messages(

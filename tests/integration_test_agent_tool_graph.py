@@ -109,7 +109,7 @@ def auto_error():
 
 
 @pytest.mark.timeout(60)  # Sets a 60-second timeout for the test since this could loop infinitely
-def test_single_path_agent_tool_call_graph(mock_e2b_api_key_none):
+def test_single_path_agent_tool_call_graph(disable_e2b_api_key):
     client = create_client()
     cleanup(client=client, agent_uuid=agent_uuid)
 
@@ -162,7 +162,7 @@ def test_single_path_agent_tool_call_graph(mock_e2b_api_key_none):
     cleanup(client=client, agent_uuid=agent_uuid)
 
 
-def test_check_tool_rules_with_different_models(mock_e2b_api_key_none):
+def test_check_tool_rules_with_different_models(disable_e2b_api_key):
     """Test that tool rules are properly checked for different model configurations."""
     client = create_client()
 
@@ -211,7 +211,7 @@ def test_check_tool_rules_with_different_models(mock_e2b_api_key_none):
         cleanup(client=client, agent_uuid=agent_uuid)
 
 
-def test_claude_initial_tool_rule_enforced(mock_e2b_api_key_none):
+def test_claude_initial_tool_rule_enforced(disable_e2b_api_key):
     """Test that the initial tool rule is enforced for the first message."""
     client = create_client()
 
@@ -262,7 +262,7 @@ def test_claude_initial_tool_rule_enforced(mock_e2b_api_key_none):
 
 
 @pytest.mark.timeout(60)  # Sets a 60-second timeout for the test since this could loop infinitely
-def test_agent_no_structured_output_with_one_child_tool(mock_e2b_api_key_none):
+def test_agent_no_structured_output_with_one_child_tool(disable_e2b_api_key):
     client = create_client()
     cleanup(client=client, agent_uuid=agent_uuid)
 
@@ -327,7 +327,7 @@ def test_agent_no_structured_output_with_one_child_tool(mock_e2b_api_key_none):
 
 
 # @pytest.mark.timeout(60)  # Sets a 60-second timeout for the test since this could loop infinitely
-# def test_agent_conditional_tool_easy(mock_e2b_api_key_none):
+# def test_agent_conditional_tool_easy(disable_e2b_api_key):
 #     """
 #     Test the agent with a conditional tool that has a child tool.
 #
@@ -395,7 +395,7 @@ def test_agent_no_structured_output_with_one_child_tool(mock_e2b_api_key_none):
 
 
 # @pytest.mark.timeout(60)
-# def test_agent_conditional_tool_without_default_child(mock_e2b_api_key_none):
+# def test_agent_conditional_tool_without_default_child(disable_e2b_api_key):
 #     """
 #     Test the agent with a conditional tool that allows any child tool to be called if a function returns None.
 #
@@ -456,7 +456,7 @@ def test_agent_no_structured_output_with_one_child_tool(mock_e2b_api_key_none):
 
 
 # @pytest.mark.timeout(60)
-# def test_agent_reload_remembers_function_response(mock_e2b_api_key_none):
+# def test_agent_reload_remembers_function_response(disable_e2b_api_key):
 #     """
 #     Test that when an agent is reloaded, it remembers the last function response for conditional tool chaining.
 #
@@ -512,7 +512,7 @@ def test_agent_no_structured_output_with_one_child_tool(mock_e2b_api_key_none):
 
 
 # @pytest.mark.timeout(60)  # Sets a 60-second timeout for the test since this could loop infinitely
-# def test_simple_tool_rule(mock_e2b_api_key_none):
+# def test_simple_tool_rule(disable_e2b_api_key):
 #     """
 #     Test a simple tool rule where fourth_secret_word must be called after flip_coin.
 #
@@ -676,7 +676,7 @@ def test_continue_tool_rule():
 
 @pytest.mark.timeout(60)
 @retry_until_success(max_attempts=3, sleep_time_seconds=2)
-def test_max_count_per_step_tool_rule_integration(mock_e2b_api_key_none):
+def test_max_count_per_step_tool_rule_integration(disable_e2b_api_key):
     """
     Test an agent with MaxCountPerStepToolRule to ensure a tool can only be called a limited number of times.
 

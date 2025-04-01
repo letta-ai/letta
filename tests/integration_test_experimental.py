@@ -238,7 +238,7 @@ def _assert_valid_chunk(chunk, idx, chunks):
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize("message", ["What is the weather today in SF?"])
-async def test_new_agent_loop(mock_e2b_api_key_none, openai_client, agent_state, message):
+async def test_new_agent_loop(disable_e2b_api_key, openai_client, agent_state, message):
     actor = UserManager().get_user_or_default(user_id="asf")
     agent = LettaAgent(
         agent_id=agent_state.id,
@@ -254,7 +254,7 @@ async def test_new_agent_loop(mock_e2b_api_key_none, openai_client, agent_state,
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize("message", ["Use your rethink tool to rethink the human memory considering Matt likes chicken."])
-async def test_rethink_tool(mock_e2b_api_key_none, openai_client, agent_state, message):
+async def test_rethink_tool(disable_e2b_api_key, openai_client, agent_state, message):
     actor = UserManager().get_user_or_default(user_id="asf")
     agent = LettaAgent(
         agent_id=agent_state.id,
@@ -271,7 +271,7 @@ async def test_rethink_tool(mock_e2b_api_key_none, openai_client, agent_state, m
 
 
 @pytest.mark.asyncio
-async def test_multi_agent_broadcast(mock_e2b_api_key_none, client, openai_client, weather_tool):
+async def test_multi_agent_broadcast(disable_e2b_api_key, client, openai_client, weather_tool):
     actor = UserManager().get_user_or_default(user_id="asf")
 
     stale_agents = AgentManager().list_agents(actor=actor, limit=300)

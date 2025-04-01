@@ -28,7 +28,7 @@ def clear_agents(client):
         client.delete_agent(agent.id)
 
 
-def test_ripple_edit(client, mock_e2b_api_key_none):
+def test_ripple_edit(client, disable_e2b_api_key):
     trigger_rethink_memory_tool = client.create_or_update_tool(trigger_rethink_memory)
     send_message = client.server.tool_manager.get_tool_by_name(tool_name="send_message", actor=client.user)
 
@@ -120,7 +120,7 @@ def test_ripple_edit(client, mock_e2b_api_key_none):
     client.delete_agent(offline_memory_agent.id)
 
 
-def test_chat_only_agent(client, mock_e2b_api_key_none):
+def test_chat_only_agent(client, disable_e2b_api_key):
     from letta.offline_memory_agent import finish_rethinking_memory, rethink_memory
 
     send_message = client.server.tool_manager.get_tool_by_name(tool_name="send_message", actor=client.user)
@@ -202,7 +202,7 @@ def test_chat_only_agent(client, mock_e2b_api_key_none):
     client.delete_agent(offline_memory_agent.id)
 
 
-def test_initial_message_sequence(client, mock_e2b_api_key_none):
+def test_initial_message_sequence(client, disable_e2b_api_key):
     """
     Test that when we set the initial sequence to an empty list,
     we do not get the default initial message sequence.

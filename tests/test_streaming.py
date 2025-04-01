@@ -59,7 +59,7 @@ def agent(client: Letta):
     ],
 )
 def test_streaming_send_message(
-    mock_e2b_api_key_none,
+    disable_e2b_api_key,
     client: Letta,
     agent: AgentState,
     stream_tokens: bool,

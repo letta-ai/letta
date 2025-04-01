@@ -267,7 +267,7 @@ def test_agent_tags(client: Letta):
 # --------------------------------------------------------------------------------------------------------------------
 # Agent memory blocks
 # --------------------------------------------------------------------------------------------------------------------
-def test_shared_blocks(mock_e2b_api_key_none, client: Letta):
+def test_shared_blocks(disable_e2b_api_key, client: Letta):
     # create a block
     block = client.blocks.create(label="human", value="username: sarah")
 
