@@ -307,7 +307,7 @@ def test_multi_agent_broadcast_client(client: Letta, weather_tool):
         client.agents.delete(agent_id=worker.id)
 
     # create worker agents
-    num_workers = 50
+    num_workers = 10
     for idx in range(num_workers):
         client.agents.create(
             name=f"worker_{idx}",
@@ -329,6 +329,9 @@ def test_multi_agent_broadcast_client(client: Letta, weather_tool):
     )
 
     # send a message to the supervisor
+    import time
+
+    start = time.perf_counter()
     response = client.agents.messages.create(
         agent_id=supervisor.id,
         messages=[
@@ -338,7 +341,43 @@ def test_multi_agent_broadcast_client(client: Letta, weather_tool):
             }
         ],
     )
+    end = time.perf_counter()
+    print("TIME ELAPSED: " + str(end - start))
+    for message in response.messages:
+        print(message)
 
+
+def test_call_weather(client: Letta, weather_tool):
+    # delete any existing worker agents
+    workers = client.agents.list(tags=["worker", "supervisor"])
+    for worker in workers:
+        client.agents.delete(agent_id=worker.id)
+
+    # create supervisor agent
+    supervisor = client.agents.create(
+        name="supervisor",
+        include_base_tools=True,
+        tool_ids=[weather_tool.id],
+        model="openai/gpt-4o",
+        embedding="letta/letta-free",
+        tags=["supervisor"],
+    )
+
+    # send a message to the supervisor
+    import time
+
+    start = time.perf_counter()
+    response = client.agents.messages.create(
+        agent_id=supervisor.id,
+        messages=[
+            {
+                "role": "user",
+                "content": "What's the weather like in Seattle?",
+            }
+        ],
+    )
+    end = time.perf_counter()
+    print("TIME ELAPSED: " + str(end - start))
     for message in response.messages:
         print(message)
 

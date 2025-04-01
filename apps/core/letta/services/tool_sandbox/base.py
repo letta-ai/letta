@@ -174,8 +174,6 @@ class AsyncToolSandboxBase(ABC):
             return None, None
 
         result = pickle.loads(base64.b64decode(text))
-        print("LOOK HERE!")
-        print(result)
         agent_state = result["agent_state"]
         return result["results"], agent_state
 
