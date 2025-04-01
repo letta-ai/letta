@@ -61,6 +61,7 @@ from letta.schemas.providers import (
     GoogleVertexProvider,
     GroqProvider,
     LettaProvider,
+    LiteLLMProvider,
     LMStudioOpenAIProvider,
     OllamaProvider,
     OpenAIProvider,
@@ -237,6 +238,14 @@ class SyncServer(Server):
                     base_url=model_settings.openai_api_base,
                 )
             )
+        if model_settings.litellm_api_key:
+            self._enabled_providers.append(
+                LiteLLMProvider(
+                    api_key=model_settings.litellm_api_key,
+                    base_url=model_settings.litellm_api_base,
+                )
+            )
+
         if model_settings.anthropic_api_key:
             self._enabled_providers.append(
                 AnthropicProvider(

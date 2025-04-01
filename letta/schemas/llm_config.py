@@ -31,6 +31,7 @@ class LLMConfig(BaseModel):
         "ollama",
         "webui",
         "webui-legacy",
+        "litellm",
         "lmstudio",
         "lmstudio-legacy",
         "lmstudio-chatcompletions",
