@@ -67,6 +67,13 @@ class Block(OrganizationMixin, SqlalchemyBase):
         back_populates="blocks",
         passive_deletes=True,
     )
+    groups: Mapped[List["Group"]] = relationship(
+        "Group",
+        secondary="groups_blocks",
+        lazy="selectin",
+        back_populates="shared_blocks",
+        passive_deletes=True,
+    )
 
     def to_pydantic(self) -> Type:
         match self.label:

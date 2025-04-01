@@ -19,11 +19,11 @@ import letta.system as system
 from letta.agent import Agent, save_agent
 from letta.config import LettaConfig
 from letta.data_sources.connectors import DataConnector, load_data
-from letta.dynamic_multi_agent import DynamicMultiAgent
 from letta.functions.mcp_client.base_client import BaseMCPClient
 from letta.functions.mcp_client.sse_client import MCP_CONFIG_TOPLEVEL_KEY, SSEMCPClient
 from letta.functions.mcp_client.stdio_client import StdioMCPClient
 from letta.functions.mcp_client.types import MCPServerType, MCPTool, SSEServerConfig, StdioServerConfig
+from letta.groups.helpers import load_multi_agent
 from letta.helpers.datetime_helpers import get_utc_time
 from letta.helpers.json_helpers import json_dumps, json_loads
 from letta.helpers.message_helper import prepare_input_message_create
@@ -34,7 +34,6 @@ from letta.interface import CLIInterface  # for printing to terminal
 from letta.log import get_logger
 from letta.offline_memory_agent import OfflineMemoryAgent
 from letta.orm.errors import NoResultFound
-from letta.round_robin_multi_agent import RoundRobinMultiAgent
 from letta.schemas.agent import AgentState, AgentType, CreateAgent, UpdateAgent
 from letta.schemas.block import BlockUpdate
 from letta.schemas.embedding_config import EmbeddingConfig
@@ -42,7 +41,6 @@ from letta.schemas.embedding_config import EmbeddingConfig
 # openai schemas
 from letta.schemas.enums import JobStatus, MessageStreamStatus
 from letta.schemas.environment_variables import SandboxEnvironmentVariableCreate
-from letta.schemas.group import Group, ManagerType
 from letta.schemas.job import Job, JobUpdate
 from letta.schemas.letta_message import LegacyLettaMessage, LettaMessage, ToolReturnMessage
 from letta.schemas.letta_message_content import TextContent
@@ -94,7 +92,6 @@ from letta.services.tool_executor.tool_execution_sandbox import ToolExecutionSan
 from letta.services.tool_manager import ToolManager
 from letta.services.user_manager import UserManager
 from letta.settings import model_settings, settings, tool_settings
-from letta.supervisor_multi_agent import SupervisorMultiAgent
 from letta.tracing import trace_method
 from letta.utils import get_friendly_error_msg
 
@@ -352,7 +349,7 @@ class SyncServer(Server):
         """Updated method to load agents from persisted storage"""
         agent_state = self.agent_manager.get_agent_by_id(agent_id=agent_id, actor=actor)
         if agent_state.multi_agent_group:
-            return self.load_multi_agent(agent_state.multi_agent_group, actor, interface, agent_state)
+            return load_multi_agent(group=agent_state.multi_agent_group, agent_state=agent_state, actor=actor, interface=interface)
 
         interface = interface or self.default_interface_factory()
         if agent_state.agent_type == AgentType.memgpt_agent:
@@ -363,49 +360,6 @@ class SyncServer(Server):
             raise ValueError(f"Invalid agent type {agent_state.agent_type}")
 
         return agent
-
-    def load_multi_agent(
-        self, group: Group, actor: User, interface: Union[AgentInterface, None] = None, agent_state: Optional[AgentState] = None
-    ) -> Agent:
-        if len(group.agent_ids) == 0:
-            raise ValueError("Empty group: group must have at least one agent")
-
-        match group.manager_type:
-            case ManagerType.round_robin:
-                agent_state = agent_state or self.agent_manager.get_agent_by_id(agent_id=group.agent_ids[0], actor=actor)
-                return RoundRobinMultiAgent(
-                    agent_state=agent_state,
-                    interface=interface,
-                    user=actor,
-                    group_id=group.id,
-                    agent_ids=group.agent_ids,
-                    description=group.description,
-                    max_turns=group.max_turns,
-                )
-            case ManagerType.dynamic:
-                agent_state = agent_state or self.agent_manager.get_agent_by_id(agent_id=group.manager_agent_id, actor=actor)
-                return DynamicMultiAgent(
-                    agent_state=agent_state,
-                    interface=interface,
-                    user=actor,
-                    group_id=group.id,
-                    agent_ids=group.agent_ids,
-                    description=group.description,
-                    max_turns=group.max_turns,
-                    termination_token=group.termination_token,
-                )
-            case ManagerType.supervisor:
-                agent_state = agent_state or self.agent_manager.get_agent_by_id(agent_id=group.manager_agent_id, actor=actor)
-                return SupervisorMultiAgent(
-                    agent_state=agent_state,
-                    interface=interface,
-                    user=actor,
-                    group_id=group.id,
-                    agent_ids=group.agent_ids,
-                    description=group.description,
-                )
-            case _:
-                raise ValueError(f"Type {group.manager_type} is not supported.")
 
     def _step(
         self,
@@ -1599,7 +1553,9 @@ class SyncServer(Server):
             raise ValueError("stream_steps must be 'true' if stream_tokens is 'true'")
 
         group = self.group_manager.retrieve_group(group_id=group_id, actor=actor)
-        letta_multi_agent = self.load_multi_agent(group=group, actor=actor)
+        agent_state_id = group.manager_agent_id or (group.agent_ids[0] if len(group.agent_ids) > 0 else None)
+        agent_state = self.agent_manager.get_agent_by_id(agent_id=agent_state_id, actor=actor) if agent_state_id else None
+        letta_multi_agent = load_multi_agent(group=group, agent_state=agent_state, actor=actor)
 
         llm_config = letta_multi_agent.agent_state.llm_config
         supports_token_streaming = ["openai", "anthropic", "deepseek"]
