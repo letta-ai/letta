@@ -15,6 +15,7 @@ import {
   FloatingPortal,
 } from '@floating-ui/react';
 import type { Placement } from '@floating-ui/react';
+import { Slot } from '@radix-ui/react-slot';
 
 interface TooltipOptions {
   initialOpen?: boolean;
@@ -197,8 +198,7 @@ export function MaybeTooltip({
   ...props
 }: MaybeTooltipProps) {
   if (!renderTooltip) {
-    // eslint-disable-next-line react/jsx-no-useless-fragment
-    return <>{children}</>;
+    return <Slot ref={props.ref}>{children}</Slot>;
   }
 
   return <Tooltip {...props}>{children}</Tooltip>;

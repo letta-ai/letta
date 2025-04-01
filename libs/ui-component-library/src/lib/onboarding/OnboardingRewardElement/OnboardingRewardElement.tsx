@@ -4,7 +4,6 @@ import { ArrowUpwardAltIcon, LettaCoinIcon } from '../../icons';
 import { Typography } from '../../core/Typography/Typography';
 import { Tooltip } from '../../core/Tooltip/Tooltip';
 import { useTranslations } from '@letta-cloud/translations';
-import { CrossedOut } from '../../reusable/CrossedOut/CrossedOut';
 
 interface OnboardingRewardElementProps {
   showIndicator?: boolean;

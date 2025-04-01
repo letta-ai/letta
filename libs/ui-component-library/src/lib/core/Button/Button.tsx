@@ -177,14 +177,13 @@ export const Button = forwardRef<
 
   return (
     <MaybeTooltip
-      asChild
       ref={ref}
+      asChild
       placement={tooltipPlacement}
       renderTooltip={!!hideLabel && !_use_rarely_disableTooltip}
       content={label}
     >
       <ButtonPrimitive
-        ref={ref}
         className={cn(
           buttonVariants({
             color,
