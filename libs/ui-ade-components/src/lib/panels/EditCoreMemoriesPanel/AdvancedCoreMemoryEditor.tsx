@@ -44,7 +44,7 @@ import { useADEPermissions } from '../../hooks/useADEPermissions/useADEPermissio
 import { ApplicationServices } from '@letta-cloud/service-rbac';
 
 interface CurrentAdvancedCoreMemoryState {
-  selectedMemoryBlockLabel: string;
+  selectedMemoryBlockLabel?: string;
   isOpen: boolean;
 }
 
@@ -694,7 +694,7 @@ export function useAdvancedCoreMemoryEditor() {
   );
 
   const open = useCallback(
-    (selectedMemoryBlockLabel: string) => {
+    (selectedMemoryBlockLabel?: string) => {
       setIsAdvancedCoreMemoryEditorOpen({
         isOpen: true,
         selectedMemoryBlockLabel,

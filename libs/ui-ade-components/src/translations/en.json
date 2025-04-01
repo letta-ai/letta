@@ -459,6 +459,7 @@
   },
   "ADE/EditCoreMemoriesPanel": {
     "advancedEditor": "Advanced",
+    "advancedEditorDisabledDueToSimulated": "The advanced editor is not available for simulated memoires, switch back to template to edit",
     "MemoryOnboarding": {
       "title": "Core Memory",
       "description": "Core Memory is the basis of how you create a letta agent, this content is unique to an agent and can be templated with variables. If you notice there are two tabs, Template, is the initial memory state for any agent you will deploy, and simulated shows off what the specific agent you're talking to's memory looks like.",

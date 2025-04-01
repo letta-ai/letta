@@ -3,6 +3,7 @@ import {
   OnboardingAsideFocus,
   Spinner,
   TabGroup,
+  Tooltip,
 } from '@letta-cloud/ui-component-library';
 import { InfoTooltip } from '@letta-cloud/ui-component-library';
 import { LettaLoaderPanel } from '@letta-cloud/ui-component-library';
@@ -204,15 +205,66 @@ function MemoryOnboarding(props: MemoryOnboardingProps) {
 
 type MemoryType = 'simulated' | 'templated';
 
-export function EditMemory() {
-  const { isTemplate } = useCurrentAgentMetaData();
-  const [memoryType, setMemoryType] = useState<MemoryType>('templated');
+interface AdvancedEditorButtonProps {
+  memoryType: MemoryType;
+}
+
+function AdvancedEditorButton(props: AdvancedEditorButtonProps) {
+  const { memoryType } = props;
   const { open } = useAdvancedCoreMemoryEditor();
+  const t = useTranslations('ADE/EditCoreMemoriesPanel');
   const { memory } = useCurrentAgent();
 
   const firstLabel = useMemo(() => {
     return memory?.blocks?.[0]?.label;
   }, [memory]);
+
+  if (memoryType === 'simulated') {
+    return (
+      <HStack
+        fullWidth
+        fullHeight
+        paddingTop="xxsmall"
+        paddingBottom="xxsmall"
+        align="center"
+        justify="end"
+      >
+        <Tooltip asChild content={t('advancedEditorDisabledDueToSimulated')}>
+          <Button
+            color="tertiary"
+            size="small"
+            label={t('advancedEditor')}
+            disabled
+          />
+        </Tooltip>
+      </HStack>
+    );
+  }
+
+  return (
+    <HStack
+      fullWidth
+      fullHeight
+      paddingTop="xxsmall"
+      paddingBottom="xxsmall"
+      align="center"
+      justify="end"
+    >
+      <Button
+        color="tertiary"
+        size="small"
+        label={t('advancedEditor')}
+        onClick={() => {
+          open(firstLabel || undefined);
+        }}
+      />
+    </HStack>
+  );
+}
+
+export function EditMemory() {
+  const { isTemplate } = useCurrentAgentMetaData();
+  const [memoryType, setMemoryType] = useState<MemoryType>('templated');
 
   const t = useTranslations('ADE/EditCoreMemoriesPanel');
 
@@ -224,27 +276,7 @@ export function EditMemory() {
             <HStack align="end">
               <TabGroup
                 extendBorder
-                rightContent={
-                  firstLabel && (
-                    <HStack
-                      fullWidth
-                      fullHeight
-                      paddingTop="xxsmall"
-                      paddingBottom="xxsmall"
-                      align="center"
-                      justify="end"
-                    >
-                      <Button
-                        color="tertiary"
-                        size="small"
-                        label={t('advancedEditor')}
-                        onClick={() => {
-                          open(firstLabel);
-                        }}
-                      />
-                    </HStack>
-                  )
-                }
+                rightContent={<AdvancedEditorButton memoryType={memoryType} />}
                 size="small"
                 value={memoryType}
                 onValueChange={(value) => {
