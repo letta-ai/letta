@@ -1268,7 +1268,7 @@ export async function getOrganizationCreditsRoute(): Promise<GetOrganizationCred
 
   const credits = await getOrganizationCredits(activeOrganizationId);
 
-  if (!credits) {
+  if (isNaN(credits)) {
     return {
       status: 500,
       body: {
