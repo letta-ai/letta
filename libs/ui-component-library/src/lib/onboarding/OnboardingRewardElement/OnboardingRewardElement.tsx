@@ -32,7 +32,7 @@ export function OnboardingRewardElement(props: OnboardingRewardElementProps) {
 
   return (
     <Tooltip asChild content={t('claimed')}>
-      <CrossedOut>{child}</CrossedOut>
+      <div className="opacity-50">{child}</div>
     </Tooltip>
   );
 }

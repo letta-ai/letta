@@ -45,7 +45,9 @@ export function CreditsViewer() {
   const handleNextStep = useCallback(() => {
     setOnboardingStep({
       onboardingStep: 'create_template',
+      stepToClaim: 'about_credits',
     });
+
     push('/projects/default-project');
   }, [setOnboardingStep, push]);
 

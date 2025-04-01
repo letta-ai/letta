@@ -24,6 +24,7 @@ import {
   TOTAL_PRIMARY_ONBOARDING_STEPS,
 } from '@letta-cloud/types';
 import { useSetOnboardingStep } from '@letta-cloud/sdk-web';
+import { useADETourStep } from '@letta-cloud/ui-ade-components';
 
 interface CreateNewTemplateDialogProps {
   trigger: React.ReactNode;
@@ -71,6 +72,8 @@ export function CreateNewTemplateDialog(props: CreateNewTemplateDialogProps) {
 
   const { push } = useRouter();
 
+  const [_, setStep] = useADETourStep();
+
   const user = useCurrentUser();
   const { mutate, isPending, isSuccess, isError } =
     webApi.starterKits.createTemplateFromStarterKit.useMutation();
@@ -84,6 +87,7 @@ export function CreateNewTemplateDialog(props: CreateNewTemplateDialogProps) {
   const handleSelectStarterKit = useCallback(
     (starterKitId: string) => {
       if (user?.onboardingStatus?.currentStep === 'create_template') {
+        setStep('welcome');
         setOnboardingStep({
           onboardingStep: 'explore_ade',
           stepToClaim: 'create_template',
@@ -118,6 +122,7 @@ export function CreateNewTemplateDialog(props: CreateNewTemplateDialogProps) {
       queryClient,
       push,
       slug,
+      setStep,
       projectId,
     ],
   );
