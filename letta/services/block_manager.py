@@ -1,8 +1,6 @@
 import os
 from typing import List, Optional
 
-from sqlalchemy import func
-
 from letta.orm.block import Block as BlockModel
 from letta.orm.block_history import BlockHistory
 from letta.orm.enums import ActorType
@@ -152,28 +150,42 @@ class BlockManager:
         block_id: str,
         actor: PydanticUser,
         agent_id: Optional[str] = None,
-        use_preloaded_block: Optional[BlockModel] = None,  # TODO: Useful for testing concurrency
+        use_preloaded_block: Optional[BlockModel] = None,  # For concurrency tests
     ) -> PydanticBlock:
         """
         Create a new checkpoint for the given Block by copying its
         current state into BlockHistory, using SQLAlchemy's built-in
         version_id_col for concurrency checks.
 
-        Note: We only have a single commit at the end, to avoid weird intermediate states.
-        e.g. created a BlockHistory, but the block update failed
+        - If the block was undone to an earlier checkpoint, we remove
+          any "future" checkpoints beyond the current state to keep a
+          strictly linear history.
+        - A single commit at the end ensures atomicity.
         """
         with self.session_maker() as session:
-            # 1) Load the block via the ORM
+            # 1) Load the Block
             if use_preloaded_block is not None:
                 block = session.merge(use_preloaded_block)
             else:
                 block = BlockModel.read(db_session=session, identifier=block_id, actor=actor)
 
-            # 2) Create a new sequence number for BlockHistory
-            current_max_seq = session.query(func.max(BlockHistory.sequence_number)).filter(BlockHistory.block_id == block_id).scalar()
-            next_seq = (current_max_seq or 0) + 1
+            # 2) Identify the block's current checkpoint (if any)
+            current_entry = None
+            if block.current_history_entry_id:
+                current_entry = session.get(BlockHistory, block.current_history_entry_id)
 
-            # 3) Create a snapshot in BlockHistory
+            # The current sequence, or 0 if no checkpoints exist
+            current_seq = current_entry.sequence_number if current_entry else 0
+
+            # 3) Truncate any future checkpoints
+            #    If we are at seq=2, but there's a seq=3 or higher from a prior "redo chain",
+            #    remove those, so we maintain a strictly linear undo/redo stack.
+            session.query(BlockHistory).filter(BlockHistory.block_id == block.id, BlockHistory.sequence_number > current_seq).delete()
+
+            # 4) Determine the next sequence number
+            next_seq = current_seq + 1
+
+            # 5) Create a new BlockHistory row reflecting the block's current state
             history_entry = BlockHistory(
                 organization_id=actor.organization_id,
                 block_id=block.id,
@@ -188,14 +200,13 @@ class BlockManager:
             )
             history_entry.create(session, actor=actor, no_commit=True)
 
-            # 4) Update the block’s pointer
+            # 6) Update the block’s pointer to the new checkpoint
             block.current_history_entry_id = history_entry.id
 
-            # 5) Now just flush; SQLAlchemy will:
+            # 7) Flush changes, then commit once
             block = block.update(db_session=session, actor=actor, no_commit=True)
             session.commit()
 
-            # Return the block’s new state
             return block.to_pydantic()
 
     @enforce_types
@@ -259,5 +270,4 @@ class BlockManager:
             block = block.update(db_session=session, actor=actor, no_commit=True)
             session.commit()
 
-            # 6) Return the block’s new state in Pydantic form
             return block.to_pydantic()
