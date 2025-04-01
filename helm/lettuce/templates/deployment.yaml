@@ -35,6 +35,8 @@ spec:
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           env:
+            - name: NODE_OPTIONS
+              value: "--max-old-space-size=1536"
             - name: DATABASE_URL
               value: {{ .Values.env.DATABASE_URL | quote }}
             - name: LETTA_AGENTS_ENDPOINT

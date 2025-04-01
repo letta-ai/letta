@@ -55,11 +55,11 @@ env:
 
 resources:
   limits:
-    cpu: 500m
-    memory: 512Mi
+    cpu: 1000m
+    memory: 4096Mi
   requests:
-    cpu: 200m
-    memory: 256Mi
+    cpu: 400m
+    memory: 2048Mi
 
 # Additional volumes on the output Deployment definition.
 volumes: []
@@ -79,3 +79,10 @@ nodeSelector: {}
 tolerations: []
 
 affinity: {}
+
+autoscaling:
+  enabled: true
+  minReplicas: 1
+  maxReplicas: 5
+  targetCPUUtilizationPercentage: 80
+  targetMemoryUtilizationPercentage: 80
