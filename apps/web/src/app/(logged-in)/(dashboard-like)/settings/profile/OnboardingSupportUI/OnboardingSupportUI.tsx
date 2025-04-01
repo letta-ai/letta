@@ -22,7 +22,7 @@ function StatusUI(props: StatusUIProps) {
 
   return (
     <VStack border width="contained" padding fullWidth>
-      <Typography bold>Onboarding Status</Typography>
+      <Typography bold>Onboarding status</Typography>
       <Typography variant="body2">{title}</Typography>
       <div>{children}</div>
     </VStack>
