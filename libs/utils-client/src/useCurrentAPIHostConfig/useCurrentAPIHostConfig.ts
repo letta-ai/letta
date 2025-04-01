@@ -53,7 +53,7 @@ export function useCurrentAPIHostConfig(
   }
 
   return {
-    url: environment.NEXT_PUBLIC_CURRENT_HOST,
+    url: environment.NEXT_PUBLIC_CURRENT_HOST || '',
     headers: {
       Authorization: `Bearer ${apiKey}`,
     },

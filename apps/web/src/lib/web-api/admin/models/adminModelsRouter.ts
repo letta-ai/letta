@@ -23,7 +23,7 @@ type GetAdminInferenceModelsRequest = ServerInferRequest<
   typeof contracts.admin.models.getAdminInferenceModels
 >;
 
-async function getAdminInferenceModels(
+export async function getAdminInferenceModels(
   req: GetAdminInferenceModelsRequest,
 ): Promise<GetAdminInferenceModelsResponse> {
   const {
@@ -550,7 +550,7 @@ export type GetAdminEmbeddingModelsResponse = ServerInferResponses<
   typeof contracts.admin.models.getAdminEmbeddingModels
 >;
 
-async function getAdminEmbeddingModels(
+export async function getAdminEmbeddingModels(
   req: GetAdminEmbeddingModelsRequest,
 ): Promise<GetAdminEmbeddingModelsResponse> {
   const {

@@ -5,6 +5,13 @@
   "projectType": "application",
   "tags": [],
   "targets": {
+    "dev": {
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": "apps/web",
+        "command": "next dev --turbo"
+      }
+    },
     "type-check": {
       "executor": "nx:run-commands",
       "options": {

@@ -17,7 +17,10 @@ let nextConfig = {
   },
   serverExternalPackages: ['@react-email/components', '@react-email/tailwind'],
   experimental: {
-    swcPlugins: [['@swc-jotai/react-refresh', {}]],
+    turbo: {
+      minify: false,
+    },
+    // swcPlugins: [['@swc-jotai/react-refresh', {}]],
   },
   output: 'standalone',
 };

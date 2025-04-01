@@ -22,7 +22,7 @@ import { costsRoutes } from '$web/web-api/costs/costsRoutes';
 import { sharedAgentChatsRoutes } from '$web/web-api/shared-agent-chats/sharedAgentChatsRoutes';
 import { ssoRoutes } from '$web/web-api/sso/ssoRoutes';
 import { launchLinkRoutes } from '$web/web-api/launch-links/launchLinksRoutes';
-import { modelsRouter } from '$web/web-api/models/modelRoutes';
+import { modelsRouter } from './models/modelRoutes';
 import { cloudAccessCodeRouter } from '$web/web-api/cloud-access-code/cloudAccessCodeRouter';
 import { composioRouter } from '$web/web-api/composio/composioRouter';
 

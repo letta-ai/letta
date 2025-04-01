@@ -6,7 +6,11 @@ import { config } from 'dotenv';
 import { resolve } from 'path';
 
 // config({ path: resolve(__dirname, '../../../.env') });
-config({ path: resolve(__dirname, '.env') });
+
+// @ts-ignore
+if (typeof window === 'undefined') {
+  config({ path: resolve(__dirname, '.env') });
+}
 
 /* eslint-disable @typescript-eslint/naming-convention */
 export const environment = createEnv({

@@ -1,4 +1,3 @@
-import { createGlobPatternsForDependencies } from '@nx/react/tailwind';
 import { join } from 'node:path';
 import TailwindAnimate from 'tailwindcss-animate';
 
@@ -11,7 +10,7 @@ export function buildConfig(appDir: string): Config {
         appDir,
         '{src,pages,components,app}/**/*!(*.stories|*.spec).{ts,tsx,html}',
       ),
-      ...createGlobPatternsForDependencies(appDir),
+      join(appDir, '..', '..', 'libs', '**/*!(*.stories|*.spec).{ts,tsx,html}'),
     ],
     theme: {
       screens: {

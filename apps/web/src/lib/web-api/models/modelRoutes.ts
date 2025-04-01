@@ -1,13 +1,16 @@
 import type { ServerInferResponses } from '@ts-rest/core';
-import { router } from '$web/web-api/router';
 import type { contracts } from '@letta-cloud/sdk-web';
+import {
+  getAdminInferenceModels,
+  getAdminEmbeddingModels,
+} from '../admin/models/adminModelsRouter';
 
 type ListLLMBackendsResponseType = ServerInferResponses<
   typeof contracts.models.listInferenceModels
 >;
 
 async function listInferenceModels(): Promise<ListLLMBackendsResponseType> {
-  const llmBackends = await router.admin.models.getAdminInferenceModels({
+  const llmBackends = await getAdminInferenceModels({
     query: {
       limit: 250,
       disabled: false,
@@ -48,7 +51,7 @@ type ListEmbeddingBackendsResponseType = ServerInferResponses<
 >;
 
 async function listEmbeddingModels(): Promise<ListEmbeddingBackendsResponseType> {
-  const embeddingBackends = await router.admin.models.getAdminEmbeddingModels({
+  const embeddingBackends = await getAdminEmbeddingModels({
     query: {
       limit: 250,
       disabled: false,
