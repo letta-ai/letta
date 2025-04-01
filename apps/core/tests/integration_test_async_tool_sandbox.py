@@ -253,7 +253,7 @@ def core_memory_tools(test_user):
 
 @pytest.mark.asyncio
 @pytest.mark.local_sandbox
-async def test_local_sandbox_default(mock_e2b_api_key_none, add_integers_tool, test_user):
+async def test_local_sandbox_default(disable_e2b_api_key, add_integers_tool, test_user):
     args = {"x": 10, "y": 5}
 
     # Mock and assert correct pathway was invoked
@@ -270,7 +270,7 @@ async def test_local_sandbox_default(mock_e2b_api_key_none, add_integers_tool, t
 
 @pytest.mark.asyncio
 @pytest.mark.local_sandbox
-async def test_local_sandbox_stateful_tool(mock_e2b_api_key_none, clear_core_memory_tool, test_user, agent_state):
+async def test_local_sandbox_stateful_tool(disable_e2b_api_key, clear_core_memory_tool, test_user, agent_state):
     args = {}
     sandbox = AsyncToolSandboxLocal(clear_core_memory_tool.name, args, user=test_user)
     result = await sandbox.run(agent_state=agent_state)
@@ -282,7 +282,7 @@ async def test_local_sandbox_stateful_tool(mock_e2b_api_key_none, clear_core_mem
 
 @pytest.mark.asyncio
 @pytest.mark.local_sandbox
-async def test_local_sandbox_with_list_rv(mock_e2b_api_key_none, list_tool, test_user):
+async def test_local_sandbox_with_list_rv(disable_e2b_api_key, list_tool, test_user):
     sandbox = AsyncToolSandboxLocal(list_tool.name, {}, user=test_user)
     result = await sandbox.run()
     assert len(result.func_return) == 5
@@ -290,7 +290,7 @@ async def test_local_sandbox_with_list_rv(mock_e2b_api_key_none, list_tool, test
 
 @pytest.mark.asyncio
 @pytest.mark.local_sandbox
-async def test_local_sandbox_env(mock_e2b_api_key_none, get_env_tool, test_user):
+async def test_local_sandbox_env(disable_e2b_api_key, get_env_tool, test_user):
     manager = SandboxConfigManager()
     sandbox_dir = str(Path(__file__).parent / "test_tool_sandbox")
     config_create = SandboxConfigCreate(config=LocalSandboxConfig(sandbox_dir=sandbox_dir).model_dump())
@@ -309,7 +309,7 @@ async def test_local_sandbox_env(mock_e2b_api_key_none, get_env_tool, test_user)
 
 @pytest.mark.asyncio
 @pytest.mark.local_sandbox
-async def test_local_sandbox_per_agent_env(mock_e2b_api_key_none, get_env_tool, agent_state, test_user):
+async def test_local_sandbox_per_agent_env(disable_e2b_api_key, get_env_tool, agent_state, test_user):
     manager = SandboxConfigManager()
     key = "secret_word"
     sandbox_dir = str(Path(__file__).parent / "test_tool_sandbox")
@@ -331,7 +331,7 @@ async def test_local_sandbox_per_agent_env(mock_e2b_api_key_none, get_env_tool, 
 @pytest.mark.asyncio
 @pytest.mark.local_sandbox
 async def test_local_sandbox_external_codebase_with_venv(
-    mock_e2b_api_key_none, custom_test_sandbox_config, external_codebase_tool, test_user
+    disable_e2b_api_key, custom_test_sandbox_config, external_codebase_tool, test_user
 ):
     args = {"percentage": 10}
     sandbox = AsyncToolSandboxLocal(external_codebase_tool.name, args, user=test_user)
@@ -343,7 +343,7 @@ async def test_local_sandbox_external_codebase_with_venv(
 @pytest.mark.asyncio
 @pytest.mark.local_sandbox
 async def test_local_sandbox_with_venv_and_warnings_does_not_error(
-    mock_e2b_api_key_none, custom_test_sandbox_config, get_warning_tool, test_user
+    disable_e2b_api_key, custom_test_sandbox_config, get_warning_tool, test_user
 ):
     sandbox = AsyncToolSandboxLocal(get_warning_tool.name, {}, user=test_user)
     result = await sandbox.run()
@@ -352,7 +352,7 @@ async def test_local_sandbox_with_venv_and_warnings_does_not_error(
 
 @pytest.mark.asyncio
 @pytest.mark.e2b_sandbox
-async def test_local_sandbox_with_venv_errors(mock_e2b_api_key_none, custom_test_sandbox_config, always_err_tool, test_user):
+async def test_local_sandbox_with_venv_errors(disable_e2b_api_key, custom_test_sandbox_config, always_err_tool, test_user):
     sandbox = AsyncToolSandboxLocal(always_err_tool.name, {}, user=test_user)
     result = await sandbox.run()
     assert len(result.stdout) != 0
@@ -363,7 +363,7 @@ async def test_local_sandbox_with_venv_errors(mock_e2b_api_key_none, custom_test
 
 @pytest.mark.asyncio
 @pytest.mark.e2b_sandbox
-async def test_local_sandbox_with_venv_pip_installs_basic(mock_e2b_api_key_none, cowsay_tool, test_user):
+async def test_local_sandbox_with_venv_pip_installs_basic(disable_e2b_api_key, cowsay_tool, test_user):
     manager = SandboxConfigManager()
     config_create = SandboxConfigCreate(
         config=LocalSandboxConfig(use_venv=True, pip_requirements=[PipRequirement(name="cowsay")]).model_dump()
@@ -383,7 +383,7 @@ async def test_local_sandbox_with_venv_pip_installs_basic(mock_e2b_api_key_none,
 
 @pytest.mark.asyncio
 @pytest.mark.e2b_sandbox
-async def test_local_sandbox_with_venv_pip_installs_with_update(mock_e2b_api_key_none, cowsay_tool, test_user):
+async def test_local_sandbox_with_venv_pip_installs_with_update(disable_e2b_api_key, cowsay_tool, test_user):
     manager = SandboxConfigManager()
     config_create = SandboxConfigCreate(config=LocalSandboxConfig(use_venv=True).model_dump())
     config = manager.create_or_update_sandbox_config(config_create, test_user)
