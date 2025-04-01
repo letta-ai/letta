@@ -566,3 +566,35 @@ env:
 emails:
     @echo "🚧 Running the email viewer..."
     npm run emails:dev
+
+@deploy-lettuce: push-lettuce
+    @echo "🚧 Deploying lettuce Helm chart..."
+    npm run slack-bot-says "Deploying lettuce service with tag: {{TAG}}..."
+    helm upgrade --install lettuce {{HELM_CHARTS_DIR}}/lettuce \
+        --set image.repository={{DOCKER_REGISTRY}}/lettuce \
+        --set image.tag={{TAG}} \
+        --set-string "podAnnotations.kubectl\.kubernetes\.io/restartedAt"="$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+        --set env.DATABASE_URL="${DATABASE_URL}" \
+        --set env.LETTA_AGENTS_ENDPOINT="${LETTA_AGENTS_ENDPOINT}" \
+        --set env.RESEND_API_KEY="${RESEND_API_KEY}" \
+        --set env.NEXT_PUBLIC_CURRENT_HOST="${NEXT_PUBLIC_CURRENT_HOST}" \
+        --set env.REDIS_HOST="${REDIS_HOST}" \
+        --set env.REDIS_PORT="${REDIS_PORT}" \
+        --set env.PORT="${PORT}" \
+        --set env.TEMPORAL_LETTUCE_API_HOST="${TEMPORAL_LETTUCE_API_HOST}" \
+        --set env.TEMPORAL_LETTUCE_CA_PEM="${TEMPORAL_LETTUCE_CA_PEM}" \
+        --set env.TEMPORAL_LETTUCE_CA_KEY="${TEMPORAL_LETTUCE_CA_KEY}" \
+        --set env.TEMPORAL_LETTUCE_NAMESPACE="${TEMPORAL_LETTUCE_NAMESPACE:-lettuce.tmhou}"
+
+    npm run slack-bot-says "Successfully deployed lettuce service with tag: {{TAG}}."
+
+# Trigger the lettuce deployment workflow (defaults to current branch if none specified)
+trigger-lettuce-deploy branch="" deploy_message="":
+    #!/usr/bin/env bash
+    if [ -z "{{branch}}" ]; then
+        BRANCH=$(git branch --show-current)
+    else
+        BRANCH="{{branch}}"
+    fi
+    echo "🚀 Triggering lettuce deployment workflow on branch: $BRANCH"
+    gh workflow run "🕸️🚀 Deploy Lettuce" --ref $BRANCH

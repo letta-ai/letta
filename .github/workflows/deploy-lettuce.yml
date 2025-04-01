@@ -1,4 +1,4 @@
-name:  🕸🚀 Deploy Cloud API
+name:  🕸️🚀 Deploy Lettuce
 
 on:
   workflow_dispatch:
@@ -19,6 +19,7 @@ env:
   TEMPORAL_LETTUCE_API_HOST: ${{ secrets.TEMPORAL_LETTUCE_API_HOST }}
   TEMPORAL_LETTUCE_CA_PEM: ${{ secrets.TEMPORAL_LETTUCE_CA_PEM }}
   TEMPORAL_LETTUCE_CA_KEY: ${{ secrets.TEMPORAL_LETTUCE_CA_KEY }}
+  TEMPORAL_LETTUCE_NAMESPACE: "lettuce.tmhou"
 
 jobs:
   build-and-deploy:
@@ -40,11 +41,14 @@ jobs:
         with:
           node-version: 'lts/*'
 
+      - id: auth
+        name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+
       - name: Set up Cloud SDK
         uses: google-github-actions/setup-gcloud@v2
-        with:
-          project_id: ${{ env.PROJECT_ID }}
-          service_account_key: ${{ secrets.GCP_SA_KEY }}
 
       - name: Set active project
         run: |
