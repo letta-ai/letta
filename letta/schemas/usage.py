@@ -23,3 +23,4 @@ class LettaUsageStatistics(BaseModel):
     step_count: int = Field(0, description="The number of steps taken by the agent.")
     # TODO: Optional for now. This field makes everyone's lives easier
     steps_messages: Optional[List[List[Message]]] = Field(None, description="The messages generated per step")
+    run_ids: Optional[List[str]] = Field(None, description="The background task run IDs associated with the agent interaction")
