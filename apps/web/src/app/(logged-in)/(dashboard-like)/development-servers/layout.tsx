@@ -17,6 +17,7 @@ import {
   Dialog,
   ServerNavigationDropdown,
   IdentitiesIcon,
+  HR,
 } from '@letta-cloud/ui-component-library';
 import React, { useCallback, useMemo, useState } from 'react';
 import { useTranslations } from '@letta-cloud/translations';
@@ -247,12 +248,6 @@ function NewDashboardLayout(props: NewDashboardLayoutProps) {
         label: t('nav.identities'),
         href: `/development-servers/${developmentServerId}/identities`,
       },
-      {
-        id: 'create',
-        icon: <PlusIcon />,
-        label: t('nav.create'),
-        href: '/development-servers/add',
-      },
     ];
   }, [developmentServerId, t]);
 
@@ -275,6 +270,15 @@ function NewDashboardLayout(props: NewDashboardLayoutProps) {
           ),
         },
         ...items,
+        {
+          override: <HR />,
+        },
+        {
+          id: 'create',
+          icon: <PlusIcon />,
+          label: t('nav.create'),
+          href: '/development-servers/add',
+        },
       ]}
     >
       {children}
