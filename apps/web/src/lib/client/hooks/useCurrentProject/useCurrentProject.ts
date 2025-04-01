@@ -5,7 +5,7 @@ import type { PartialProjectType } from '$web/web-api/contracts';
 import { useTranslations } from '@letta-cloud/translations';
 
 export function useCurrentProject(): PartialProjectType {
-  const projectSlug = useParams<{ projectSlug: string }>().projectSlug;
+  const { projectSlug } = useParams<{ projectSlug: string }>();
   const pathname = usePathname();
   const t = useTranslations('projects/hooks');
 

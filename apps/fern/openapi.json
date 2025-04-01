@@ -5945,6 +5945,23 @@
                             }
                           },
                           "required": ["field", "operator", "value"]
+                        },
+                        {
+                          "type": "object",
+                          "properties": {
+                            "field": {
+                              "type": "string",
+                              "enum": ["identity"]
+                            },
+                            "operator": {
+                              "type": "string",
+                              "enum": ["eq"]
+                            },
+                            "value": {
+                              "type": "string"
+                            }
+                          },
+                          "required": ["field", "operator", "value"]
                         }
                       ]
                     }

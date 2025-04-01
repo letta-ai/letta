@@ -1134,6 +1134,25 @@
       "showAll": "+{count} more"
     },
     "useQueryDefinition": {
+      "identities": {
+        "name": "Identity",
+        "operator": {
+          "operators": {
+            "equals": "equals"
+          },
+          "label": "Operator"
+        },
+        "value": {
+          "label": "Value",
+          "placeholder": "my-identity-name",
+          "description": "The identity name to filter by",
+          "error": "Please enter a valid identity name",
+          "noResults": "No identities found",
+          "loading": "Searching identities...",
+          "search": "Search identities",
+          "searchPlaceholder": "Search identities"
+        }
+      },
       "agentTags": {
         "name": "Agent Tags",
         "operator": {

@@ -570,6 +570,10 @@ async function searchDeployedAgents(
 
   await Promise.all(
     search.map(async (searchTerm) => {
+      if (searchTerm.field === 'identity') {
+        query.identityId = searchTerm.value;
+      }
+
       if (searchTerm.field === 'name') {
         if (searchTerm.operator === 'eq') {
           query.name = searchTerm.value;

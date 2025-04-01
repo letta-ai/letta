@@ -34,7 +34,11 @@ import { webApi, webApiQueryKeys } from '$web/client';
 import { useCurrentProject } from '$web/client/hooks/useCurrentProject/useCurrentProject';
 import { useSearchParams } from 'next/navigation';
 import type { ColumnDef } from '@tanstack/react-table';
-import type { AgentState } from '@letta-cloud/sdk-core';
+import {
+  type AgentState,
+  IdentitiesService,
+  useIdentitiesServiceListIdentities,
+} from '@letta-cloud/sdk-core';
 
 import { TagService, useTagServiceListTags } from '@letta-cloud/sdk-core';
 import { useAgentsServiceRetrieveAgent } from '@letta-cloud/sdk-core';
@@ -163,6 +167,33 @@ function DeployedAgentView(props: DeployedAgentViewProps) {
   );
 }
 
+function useQueryIdentities() {
+  const { id: currentProjectId } = useCurrentProject();
+  const { data: defaultIdentities } = useIdentitiesServiceListIdentities({
+    projectId: currentProjectId,
+  });
+
+  const handleLoadIdentities = useCallback(async (query: string) => {
+    try {
+      const response = await IdentitiesService.listIdentities({
+        name: query,
+      });
+
+      return response.map((identity) => ({
+        label: identity.name,
+        value: identity.id,
+      }));
+    } catch {
+      return [];
+    }
+  }, []);
+
+  return {
+    handleLoadIdentities,
+    defaultIdentities,
+  };
+}
+
 interface UseQueryDefinitionResponse {
   fieldDefinitions: FieldDefinitions;
   initialQuery: QueryBuilderQuery;
@@ -220,6 +251,7 @@ function useQueryDefinition() {
     },
   });
 
+  const { defaultIdentities, handleLoadIdentities } = useQueryIdentities();
   const handleLoadOptions = useCallback(
     async (query: string) => {
       const response =
@@ -337,6 +369,44 @@ function useQueryDefinition() {
           },
         ],
       },
+      identity: {
+        id: 'identity',
+        name: t('useQueryDefinition.identities.name'),
+        queries: [
+          {
+            key: 'operator',
+            label: t('useQueryDefinition.identities.operator.label'),
+            display: 'select',
+            options: {
+              styleConfig: {
+                containerWidth: 100,
+              },
+              options: [
+                {
+                  label: t(
+                    'useQueryDefinition.identities.operator.operators.equals',
+                  ),
+                  value: 'eq',
+                },
+              ],
+            },
+          },
+          {
+            key: 'value',
+            label: t('useQueryDefinition.identities.value.label'),
+            display: 'async-select',
+            options: {
+              isMulti: false,
+              placeholder: t('useQueryDefinition.identities.value.placeholder'),
+              defaultOptions: (defaultIdentities || []).map((identity) => ({
+                label: identity.name,
+                value: identity.id,
+              })),
+              loadOptions: handleLoadIdentities,
+            },
+          },
+        ],
+      },
       version: {
         id: 'version',
         name: t('useQueryDefinition.agentTemplate.name'),
@@ -406,6 +476,8 @@ function useQueryDefinition() {
       initialQuery,
     } satisfies UseQueryDefinitionResponse;
   }, [
+    defaultIdentities,
+    handleLoadIdentities,
     defaultTemplateSearchOptions,
     queryFilter,
     handleLoadOptions,
@@ -558,6 +630,7 @@ function DeployedAgentsPage() {
 
       return response;
     },
+    enabled: !!currentProjectId,
     initialPageParam: { after: null },
     getNextPageParam: (lastPage) => {
       if (lastPage.body.nextCursor) {

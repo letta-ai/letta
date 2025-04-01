@@ -206,6 +206,12 @@ const SearchByAgentName = z.object({
   value: z.string(),
 });
 
+const SearchByIdentitySchema = z.object({
+  field: z.literal('identity'),
+  operator: z.enum(['eq']),
+  value: z.string(),
+});
+
 const SearchByAgentTag = z.object({
   field: z.literal('tags'),
   operator: z.enum(['contains']),
@@ -229,6 +235,7 @@ export const SearchDeployedAgentsSchema = z.object({
         SearchByAgentVersionSchema,
         SearchByAgentName,
         SearchByAgentTag,
+        SearchByIdentitySchema,
       ]),
     )
     .optional(),
