@@ -112,7 +112,7 @@ export function FunctionCall(props: FunctionCallProps) {
           <HStack
             gap="large"
             align="center"
-            className="px-2 pr-3 py-1 bg-border cursor-pointer"
+            className="px-2 pr-3 py-1 bg-background-grey3 text-background-grey3-content cursor-pointer"
           >
             <HStack gap="small">
               {!open ? (

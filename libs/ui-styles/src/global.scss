@@ -32,7 +32,7 @@
   --text-negative: 210, 10%, 96%;
 
   --grey3: 210, 10%, 92%;
-  --grey3-content: 0, 0%, 100%;
+  --grey3-content: 0, 0%, 0%;
 
   --brand: 240, 92%, 35%;
   --brand-content: 0 0% 98%;
@@ -144,20 +144,28 @@
   --font-sans: var(--font-mono);
 
   --background: 240, 100%, 33%;
+  --background-content: 0, 0%, 100%;
   --background-hover: 240, 54%, 48%;
 
   --panel-input-background: var(--background);
-  --panel-input-background-content: var(--text-default);
+  --panel-input-background-content: var(--background-content);
 
-  --background-grey: 0, 0%, 1%;
-  --background-grey-content: 0, 0, 100%;
-  --background-grey2: 0, 0%, 50%;
-  --backbround-grey2-content: 0, 0, 100%;
+  --background-grey: var(--background);
+  --background-grey-content: var(--background-content);
+  --background-grey2: var(--background);
+  --backbround-grey2-content: var(--background-content);
+
+  --grey3: 182, 100%, 30%;
+  --grey3-content: var(--background-content);
+
+  --element-focus: var(--background);
+
 
   --text-lighter: 0, 0%, 100%;
 
   --border: 0, 0%, 100%;
 
+  --violet: 278, 100%, 82%;
   --content: 0 0% 98%;
   --on-transparent: 0, 0%, 0%;
 
@@ -177,6 +185,8 @@
   --popover-content: 0, 0%, 100%;
   --accent: 240 4.8% 95.9%;
   --accent-content: 240 5.9% 10%;
+
+
 }
 
 /* darkmode.scss */

@@ -1064,7 +1064,8 @@
     "options": {
       "auto": "System default",
       "light": "Light",
-      "dark": "Dark"
+      "dark": "Dark",
+      "hacker": "Hacker"
     }
   },
   "ADE/ADESidebar": {

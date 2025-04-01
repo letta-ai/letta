@@ -3,6 +3,7 @@ import { useCurrentUser } from '$web/client/hooks';
 import {
   AutoThemeIcon,
   DarkModeIcon,
+  EmoticonIcon,
   LightModeIcon,
   RawToggleGroup,
 } from '@letta-cloud/ui-component-library';
@@ -99,6 +100,12 @@ export function ThemeSelector() {
           value: 'dark',
           label: t('options.dark'),
           icon: <DarkModeIcon />,
+          hideLabel: true,
+        },
+        {
+          value: 'hacker',
+          label: t('options.hacker'),
+          icon: <EmoticonIcon />,
           hideLabel: true,
         },
       ]}
