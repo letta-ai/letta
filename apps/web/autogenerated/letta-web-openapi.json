@@ -2889,6 +2889,7 @@
                                   "round_robin",
                                   "supervisor",
                                   "dynamic",
+                                  "background",
                                   "swarm"
                                 ]
                               },
@@ -2900,6 +2901,17 @@
                               },
                               "description": {
                                 "type": "string"
+                              },
+                              "shared_block_ids": {
+                                "oneOf": [
+                                  {
+                                    "type": "array",
+                                    "items": {
+                                      "type": "string"
+                                    }
+                                  },
+                                  {}
+                                ]
                               },
                               "manager_agent_id": {
                                 "oneOf": [
@@ -2990,6 +3002,96 @@
                                   {}
                                 ],
                                 "nullable": true
+                              },
+                              "background_agents_interval": {
+                                "oneOf": [
+                                  {
+                                    "type": "number"
+                                  },
+                                  {
+                                    "type": "string",
+                                    "format": "null",
+                                    "nullable": true
+                                  },
+                                  {
+                                    "type": "array",
+                                    "items": {
+                                      "oneOf": [
+                                        {
+                                          "type": "number"
+                                        },
+                                        {
+                                          "type": "string",
+                                          "format": "null",
+                                          "nullable": true
+                                        }
+                                      ],
+                                      "nullable": true
+                                    }
+                                  },
+                                  {}
+                                ],
+                                "nullable": true
+                              },
+                              "turns_counter": {
+                                "oneOf": [
+                                  {
+                                    "type": "number"
+                                  },
+                                  {
+                                    "type": "string",
+                                    "format": "null",
+                                    "nullable": true
+                                  },
+                                  {
+                                    "type": "array",
+                                    "items": {
+                                      "oneOf": [
+                                        {
+                                          "type": "number"
+                                        },
+                                        {
+                                          "type": "string",
+                                          "format": "null",
+                                          "nullable": true
+                                        }
+                                      ],
+                                      "nullable": true
+                                    }
+                                  },
+                                  {}
+                                ],
+                                "nullable": true
+                              },
+                              "last_processed_message_id": {
+                                "oneOf": [
+                                  {
+                                    "type": "string"
+                                  },
+                                  {
+                                    "type": "string",
+                                    "format": "null",
+                                    "nullable": true
+                                  },
+                                  {
+                                    "type": "array",
+                                    "items": {
+                                      "oneOf": [
+                                        {
+                                          "type": "string"
+                                        },
+                                        {
+                                          "type": "string",
+                                          "format": "null",
+                                          "nullable": true
+                                        }
+                                      ],
+                                      "nullable": true
+                                    }
+                                  },
+                                  {}
+                                ],
+                                "nullable": true
                               }
                             },
                             "required": [
@@ -3020,6 +3122,7 @@
                                         "round_robin",
                                         "supervisor",
                                         "dynamic",
+                                        "background",
                                         "swarm"
                                       ]
                                     },
@@ -3031,6 +3134,17 @@
                                     },
                                     "description": {
                                       "type": "string"
+                                    },
+                                    "shared_block_ids": {
+                                      "oneOf": [
+                                        {
+                                          "type": "array",
+                                          "items": {
+                                            "type": "string"
+                                          }
+                                        },
+                                        {}
+                                      ]
                                     },
                                     "manager_agent_id": {
                                       "oneOf": [
@@ -3108,6 +3222,96 @@
                                             "oneOf": [
                                               {
                                                 "type": "number"
+                                              },
+                                              {
+                                                "type": "string",
+                                                "format": "null",
+                                                "nullable": true
+                                              }
+                                            ],
+                                            "nullable": true
+                                          }
+                                        },
+                                        {}
+                                      ],
+                                      "nullable": true
+                                    },
+                                    "background_agents_interval": {
+                                      "oneOf": [
+                                        {
+                                          "type": "number"
+                                        },
+                                        {
+                                          "type": "string",
+                                          "format": "null",
+                                          "nullable": true
+                                        },
+                                        {
+                                          "type": "array",
+                                          "items": {
+                                            "oneOf": [
+                                              {
+                                                "type": "number"
+                                              },
+                                              {
+                                                "type": "string",
+                                                "format": "null",
+                                                "nullable": true
+                                              }
+                                            ],
+                                            "nullable": true
+                                          }
+                                        },
+                                        {}
+                                      ],
+                                      "nullable": true
+                                    },
+                                    "turns_counter": {
+                                      "oneOf": [
+                                        {
+                                          "type": "number"
+                                        },
+                                        {
+                                          "type": "string",
+                                          "format": "null",
+                                          "nullable": true
+                                        },
+                                        {
+                                          "type": "array",
+                                          "items": {
+                                            "oneOf": [
+                                              {
+                                                "type": "number"
+                                              },
+                                              {
+                                                "type": "string",
+                                                "format": "null",
+                                                "nullable": true
+                                              }
+                                            ],
+                                            "nullable": true
+                                          }
+                                        },
+                                        {}
+                                      ],
+                                      "nullable": true
+                                    },
+                                    "last_processed_message_id": {
+                                      "oneOf": [
+                                        {
+                                          "type": "string"
+                                        },
+                                        {
+                                          "type": "string",
+                                          "format": "null",
+                                          "nullable": true
+                                        },
+                                        {
+                                          "type": "array",
+                                          "items": {
+                                            "oneOf": [
+                                              {
+                                                "type": "string"
                                               },
                                               {
                                                 "type": "string",
@@ -5707,6 +5911,7 @@
                                       "round_robin",
                                       "supervisor",
                                       "dynamic",
+                                      "background",
                                       "swarm"
                                     ]
                                   },
@@ -5718,6 +5923,17 @@
                                   },
                                   "description": {
                                     "type": "string"
+                                  },
+                                  "shared_block_ids": {
+                                    "oneOf": [
+                                      {
+                                        "type": "array",
+                                        "items": {
+                                          "type": "string"
+                                        }
+                                      },
+                                      {}
+                                    ]
                                   },
                                   "manager_agent_id": {
                                     "oneOf": [
@@ -5808,6 +6024,96 @@
                                       {}
                                     ],
                                     "nullable": true
+                                  },
+                                  "background_agents_interval": {
+                                    "oneOf": [
+                                      {
+                                        "type": "number"
+                                      },
+                                      {
+                                        "type": "string",
+                                        "format": "null",
+                                        "nullable": true
+                                      },
+                                      {
+                                        "type": "array",
+                                        "items": {
+                                          "oneOf": [
+                                            {
+                                              "type": "number"
+                                            },
+                                            {
+                                              "type": "string",
+                                              "format": "null",
+                                              "nullable": true
+                                            }
+                                          ],
+                                          "nullable": true
+                                        }
+                                      },
+                                      {}
+                                    ],
+                                    "nullable": true
+                                  },
+                                  "turns_counter": {
+                                    "oneOf": [
+                                      {
+                                        "type": "number"
+                                      },
+                                      {
+                                        "type": "string",
+                                        "format": "null",
+                                        "nullable": true
+                                      },
+                                      {
+                                        "type": "array",
+                                        "items": {
+                                          "oneOf": [
+                                            {
+                                              "type": "number"
+                                            },
+                                            {
+                                              "type": "string",
+                                              "format": "null",
+                                              "nullable": true
+                                            }
+                                          ],
+                                          "nullable": true
+                                        }
+                                      },
+                                      {}
+                                    ],
+                                    "nullable": true
+                                  },
+                                  "last_processed_message_id": {
+                                    "oneOf": [
+                                      {
+                                        "type": "string"
+                                      },
+                                      {
+                                        "type": "string",
+                                        "format": "null",
+                                        "nullable": true
+                                      },
+                                      {
+                                        "type": "array",
+                                        "items": {
+                                          "oneOf": [
+                                            {
+                                              "type": "string"
+                                            },
+                                            {
+                                              "type": "string",
+                                              "format": "null",
+                                              "nullable": true
+                                            }
+                                          ],
+                                          "nullable": true
+                                        }
+                                      },
+                                      {}
+                                    ],
+                                    "nullable": true
                                   }
                                 },
                                 "required": [
@@ -5838,6 +6144,7 @@
                                             "round_robin",
                                             "supervisor",
                                             "dynamic",
+                                            "background",
                                             "swarm"
                                           ]
                                         },
@@ -5849,6 +6156,17 @@
                                         },
                                         "description": {
                                           "type": "string"
+                                        },
+                                        "shared_block_ids": {
+                                          "oneOf": [
+                                            {
+                                              "type": "array",
+                                              "items": {
+                                                "type": "string"
+                                              }
+                                            },
+                                            {}
+                                          ]
                                         },
                                         "manager_agent_id": {
                                           "oneOf": [
@@ -5926,6 +6244,96 @@
                                                 "oneOf": [
                                                   {
                                                     "type": "number"
+                                                  },
+                                                  {
+                                                    "type": "string",
+                                                    "format": "null",
+                                                    "nullable": true
+                                                  }
+                                                ],
+                                                "nullable": true
+                                              }
+                                            },
+                                            {}
+                                          ],
+                                          "nullable": true
+                                        },
+                                        "background_agents_interval": {
+                                          "oneOf": [
+                                            {
+                                              "type": "number"
+                                            },
+                                            {
+                                              "type": "string",
+                                              "format": "null",
+                                              "nullable": true
+                                            },
+                                            {
+                                              "type": "array",
+                                              "items": {
+                                                "oneOf": [
+                                                  {
+                                                    "type": "number"
+                                                  },
+                                                  {
+                                                    "type": "string",
+                                                    "format": "null",
+                                                    "nullable": true
+                                                  }
+                                                ],
+                                                "nullable": true
+                                              }
+                                            },
+                                            {}
+                                          ],
+                                          "nullable": true
+                                        },
+                                        "turns_counter": {
+                                          "oneOf": [
+                                            {
+                                              "type": "number"
+                                            },
+                                            {
+                                              "type": "string",
+                                              "format": "null",
+                                              "nullable": true
+                                            },
+                                            {
+                                              "type": "array",
+                                              "items": {
+                                                "oneOf": [
+                                                  {
+                                                    "type": "number"
+                                                  },
+                                                  {
+                                                    "type": "string",
+                                                    "format": "null",
+                                                    "nullable": true
+                                                  }
+                                                ],
+                                                "nullable": true
+                                              }
+                                            },
+                                            {}
+                                          ],
+                                          "nullable": true
+                                        },
+                                        "last_processed_message_id": {
+                                          "oneOf": [
+                                            {
+                                              "type": "string"
+                                            },
+                                            {
+                                              "type": "string",
+                                              "format": "null",
+                                              "nullable": true
+                                            },
+                                            {
+                                              "type": "array",
+                                              "items": {
+                                                "oneOf": [
+                                                  {
+                                                    "type": "string"
                                                   },
                                                   {
                                                     "type": "string",
@@ -8907,6 +9315,7 @@
                                       "round_robin",
                                       "supervisor",
                                       "dynamic",
+                                      "background",
                                       "swarm"
                                     ]
                                   },
@@ -8918,6 +9327,17 @@
                                   },
                                   "description": {
                                     "type": "string"
+                                  },
+                                  "shared_block_ids": {
+                                    "oneOf": [
+                                      {
+                                        "type": "array",
+                                        "items": {
+                                          "type": "string"
+                                        }
+                                      },
+                                      {}
+                                    ]
                                   },
                                   "manager_agent_id": {
                                     "oneOf": [
@@ -9008,6 +9428,96 @@
                                       {}
                                     ],
                                     "nullable": true
+                                  },
+                                  "background_agents_interval": {
+                                    "oneOf": [
+                                      {
+                                        "type": "number"
+                                      },
+                                      {
+                                        "type": "string",
+                                        "format": "null",
+                                        "nullable": true
+                                      },
+                                      {
+                                        "type": "array",
+                                        "items": {
+                                          "oneOf": [
+                                            {
+                                              "type": "number"
+                                            },
+                                            {
+                                              "type": "string",
+                                              "format": "null",
+                                              "nullable": true
+                                            }
+                                          ],
+                                          "nullable": true
+                                        }
+                                      },
+                                      {}
+                                    ],
+                                    "nullable": true
+                                  },
+                                  "turns_counter": {
+                                    "oneOf": [
+                                      {
+                                        "type": "number"
+                                      },
+                                      {
+                                        "type": "string",
+                                        "format": "null",
+                                        "nullable": true
+                                      },
+                                      {
+                                        "type": "array",
+                                        "items": {
+                                          "oneOf": [
+                                            {
+                                              "type": "number"
+                                            },
+                                            {
+                                              "type": "string",
+                                              "format": "null",
+                                              "nullable": true
+                                            }
+                                          ],
+                                          "nullable": true
+                                        }
+                                      },
+                                      {}
+                                    ],
+                                    "nullable": true
+                                  },
+                                  "last_processed_message_id": {
+                                    "oneOf": [
+                                      {
+                                        "type": "string"
+                                      },
+                                      {
+                                        "type": "string",
+                                        "format": "null",
+                                        "nullable": true
+                                      },
+                                      {
+                                        "type": "array",
+                                        "items": {
+                                          "oneOf": [
+                                            {
+                                              "type": "string"
+                                            },
+                                            {
+                                              "type": "string",
+                                              "format": "null",
+                                              "nullable": true
+                                            }
+                                          ],
+                                          "nullable": true
+                                        }
+                                      },
+                                      {}
+                                    ],
+                                    "nullable": true
                                   }
                                 },
                                 "required": [
@@ -9038,6 +9548,7 @@
                                             "round_robin",
                                             "supervisor",
                                             "dynamic",
+                                            "background",
                                             "swarm"
                                           ]
                                         },
@@ -9049,6 +9560,17 @@
                                         },
                                         "description": {
                                           "type": "string"
+                                        },
+                                        "shared_block_ids": {
+                                          "oneOf": [
+                                            {
+                                              "type": "array",
+                                              "items": {
+                                                "type": "string"
+                                              }
+                                            },
+                                            {}
+                                          ]
                                         },
                                         "manager_agent_id": {
                                           "oneOf": [
@@ -9126,6 +9648,96 @@
                                                 "oneOf": [
                                                   {
                                                     "type": "number"
+                                                  },
+                                                  {
+                                                    "type": "string",
+                                                    "format": "null",
+                                                    "nullable": true
+                                                  }
+                                                ],
+                                                "nullable": true
+                                              }
+                                            },
+                                            {}
+                                          ],
+                                          "nullable": true
+                                        },
+                                        "background_agents_interval": {
+                                          "oneOf": [
+                                            {
+                                              "type": "number"
+                                            },
+                                            {
+                                              "type": "string",
+                                              "format": "null",
+                                              "nullable": true
+                                            },
+                                            {
+                                              "type": "array",
+                                              "items": {
+                                                "oneOf": [
+                                                  {
+                                                    "type": "number"
+                                                  },
+                                                  {
+                                                    "type": "string",
+                                                    "format": "null",
+                                                    "nullable": true
+                                                  }
+                                                ],
+                                                "nullable": true
+                                              }
+                                            },
+                                            {}
+                                          ],
+                                          "nullable": true
+                                        },
+                                        "turns_counter": {
+                                          "oneOf": [
+                                            {
+                                              "type": "number"
+                                            },
+                                            {
+                                              "type": "string",
+                                              "format": "null",
+                                              "nullable": true
+                                            },
+                                            {
+                                              "type": "array",
+                                              "items": {
+                                                "oneOf": [
+                                                  {
+                                                    "type": "number"
+                                                  },
+                                                  {
+                                                    "type": "string",
+                                                    "format": "null",
+                                                    "nullable": true
+                                                  }
+                                                ],
+                                                "nullable": true
+                                              }
+                                            },
+                                            {}
+                                          ],
+                                          "nullable": true
+                                        },
+                                        "last_processed_message_id": {
+                                          "oneOf": [
+                                            {
+                                              "type": "string"
+                                            },
+                                            {
+                                              "type": "string",
+                                              "format": "null",
+                                              "nullable": true
+                                            },
+                                            {
+                                              "type": "array",
+                                              "items": {
+                                                "oneOf": [
+                                                  {
+                                                    "type": "string"
                                                   },
                                                   {
                                                     "type": "string",

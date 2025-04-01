@@ -378,6 +378,12 @@ export type AuthSchemeField = {
   get_current_user_endpoint?: string | null;
 };
 
+export type BackgroundManager = {
+  manager_type?: 'background';
+  manager_agent_id: string;
+  background_agents_interval?: number | null;
+};
+
 export type BaseToolRuleSchema = {
   tool_name: string;
   type: string;
@@ -1129,6 +1135,10 @@ export type CreateAgentRequest = {
    * If set to True, the agent will not remember previous messages (though the agent will still retain state via core memory blocks and archival/recall memory). Not recommended unless you have an advanced use case.
    */
   message_buffer_autoclear?: boolean;
+  /**
+   * If set to True, memory management will move to a background agent thread.
+   */
+  enable_sleeptime?: boolean | null;
   actor_id?: string | null;
 };
 
@@ -1398,15 +1408,24 @@ export type Group = {
   manager_type: ManagerType;
   agent_ids: Array<string>;
   description: string;
+  shared_block_ids?: Array<string>;
   manager_agent_id?: string | null;
   termination_token?: string | null;
   max_turns?: number | null;
+  background_agents_interval?: number | null;
+  turns_counter?: number | null;
+  last_processed_message_id?: string | null;
 };
 
 export type GroupCreate = {
   agent_ids: Array<string>;
   description: string;
-  manager_config?: RoundRobinManager | SupervisorManager | DynamicManager;
+  manager_config?:
+    | RoundRobinManager
+    | SupervisorManager
+    | DynamicManager
+    | BackgroundManager;
+  shared_block_ids?: Array<string>;
 };
 
 export type GroupUpdate = {
@@ -1416,7 +1435,9 @@ export type GroupUpdate = {
     | RoundRobinManager
     | SupervisorManager
     | DynamicManager
+    | BackgroundManager
     | null;
+  shared_block_ids?: Array<string> | null;
 };
 
 export type HTTPValidationError = {
@@ -1902,6 +1923,10 @@ export type LettaUsageStatistics = {
    * The messages generated per step
    */
   steps_messages?: Array<Array<Message>> | null;
+  /**
+   * The background task run IDs associated with the agent interaction
+   */
+  run_ids?: Array<string> | null;
 };
 
 export type LocalSandboxConfig = {
@@ -1937,7 +1962,12 @@ export type MCPTool = {
   [key: string]: unknown | string;
 };
 
-export type ManagerType = 'round_robin' | 'supervisor' | 'dynamic' | 'swarm';
+export type ManagerType =
+  | 'round_robin'
+  | 'supervisor'
+  | 'dynamic'
+  | 'background'
+  | 'swarm';
 
 /**
  * Represents a tool rule configuration which constrains the total number of times this tool can be invoked in a single step.
@@ -3325,6 +3355,10 @@ export type UpdateAgent = {
    * The embedding configuration handle used by the agent, specified in the format provider/model-name.
    */
   embedding?: string | null;
+  /**
+   * If set to True, memory management will move to a background agent thread.
+   */
+  enable_sleeptime?: boolean | null;
 };
 
 export type UpdateAssistantMessage = {

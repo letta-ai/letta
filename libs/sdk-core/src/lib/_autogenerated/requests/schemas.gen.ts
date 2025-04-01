@@ -1181,6 +1181,38 @@ export const $AuthSchemeField = {
   description: 'Auth scheme field.',
 } as const;
 
+export const $BackgroundManager = {
+  properties: {
+    manager_type: {
+      type: 'string',
+      const: 'background',
+      title: 'Manager Type',
+      description: '',
+      default: 'background',
+    },
+    manager_agent_id: {
+      type: 'string',
+      title: 'Manager Agent Id',
+      description: '',
+    },
+    background_agents_interval: {
+      anyOf: [
+        {
+          type: 'integer',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Background Agents Interval',
+      description: '',
+    },
+  },
+  type: 'object',
+  required: ['manager_agent_id'],
+  title: 'BackgroundManager',
+} as const;
+
 export const $BaseToolRuleSchema = {
   properties: {
     tool_name: {
@@ -3530,6 +3562,20 @@ export const $CreateAgentRequest = {
         'If set to True, the agent will not remember previous messages (though the agent will still retain state via core memory blocks and archival/recall memory). Not recommended unless you have an advanced use case.',
       default: false,
     },
+    enable_sleeptime: {
+      anyOf: [
+        {
+          type: 'boolean',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Enable Sleeptime',
+      description:
+        'If set to True, memory management will move to a background agent thread.',
+      default: false,
+    },
     actor_id: {
       anyOf: [
         {
@@ -4168,6 +4214,15 @@ export const $Group = {
       title: 'Description',
       description: '',
     },
+    shared_block_ids: {
+      items: {
+        type: 'string',
+      },
+      type: 'array',
+      title: 'Shared Block Ids',
+      description: '',
+      default: [],
+    },
     manager_agent_id: {
       anyOf: [
         {
@@ -4204,6 +4259,42 @@ export const $Group = {
       title: 'Max Turns',
       description: '',
     },
+    background_agents_interval: {
+      anyOf: [
+        {
+          type: 'integer',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Background Agents Interval',
+      description: '',
+    },
+    turns_counter: {
+      anyOf: [
+        {
+          type: 'integer',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Turns Counter',
+      description: '',
+    },
+    last_processed_message_id: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Last Processed Message Id',
+      description: '',
+    },
   },
   additionalProperties: false,
   type: 'object',
@@ -4237,6 +4328,9 @@ export const $GroupCreate = {
         {
           $ref: '#/components/schemas/DynamicManager',
         },
+        {
+          $ref: '#/components/schemas/BackgroundManager',
+        },
       ],
       title: 'Manager Config',
       description: '',
@@ -4246,11 +4340,21 @@ export const $GroupCreate = {
       discriminator: {
         propertyName: 'manager_type',
         mapping: {
+          background: '#/components/schemas/BackgroundManager',
           dynamic: '#/components/schemas/DynamicManager',
           round_robin: '#/components/schemas/RoundRobinManager',
           supervisor: '#/components/schemas/SupervisorManager',
         },
       },
+    },
+    shared_block_ids: {
+      items: {
+        type: 'string',
+      },
+      type: 'array',
+      title: 'Shared Block Ids',
+      description: '',
+      default: [],
     },
   },
   type: 'object',
@@ -4300,10 +4404,14 @@ export const $GroupUpdate = {
             {
               $ref: '#/components/schemas/DynamicManager',
             },
+            {
+              $ref: '#/components/schemas/BackgroundManager',
+            },
           ],
           discriminator: {
             propertyName: 'manager_type',
             mapping: {
+              background: '#/components/schemas/BackgroundManager',
               dynamic: '#/components/schemas/DynamicManager',
               round_robin: '#/components/schemas/RoundRobinManager',
               supervisor: '#/components/schemas/SupervisorManager',
@@ -4315,6 +4423,21 @@ export const $GroupUpdate = {
         },
       ],
       title: 'Manager Config',
+      description: '',
+    },
+    shared_block_ids: {
+      anyOf: [
+        {
+          items: {
+            type: 'string',
+          },
+          type: 'array',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Shared Block Ids',
       description: '',
     },
   },
@@ -5265,6 +5388,22 @@ export const $LettaUsageStatistics = {
       title: 'Steps Messages',
       description: 'The messages generated per step',
     },
+    run_ids: {
+      anyOf: [
+        {
+          items: {
+            type: 'string',
+          },
+          type: 'array',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Run Ids',
+      description:
+        'The background task run IDs associated with the agent interaction',
+    },
   },
   type: 'object',
   title: 'LettaUsageStatistics',
@@ -5357,7 +5496,7 @@ export const $MCPTool = {
 
 export const $ManagerType = {
   type: 'string',
-  enum: ['round_robin', 'supervisor', 'dynamic', 'swarm'],
+  enum: ['round_robin', 'supervisor', 'dynamic', 'background', 'swarm'],
   title: 'ManagerType',
 } as const;
 
@@ -8973,6 +9112,20 @@ export const $UpdateAgent = {
       title: 'Embedding',
       description:
         'The embedding configuration handle used by the agent, specified in the format provider/model-name.',
+    },
+    enable_sleeptime: {
+      anyOf: [
+        {
+          type: 'boolean',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Enable Sleeptime',
+      description:
+        'If set to True, memory management will move to a background agent thread.',
+      default: false,
     },
   },
   type: 'object',

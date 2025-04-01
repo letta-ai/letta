@@ -7565,6 +7565,37 @@
         "title": "AuthSchemeField",
         "description": "Auth scheme field."
       },
+      "BackgroundManager": {
+        "properties": {
+          "manager_type": {
+            "type": "string",
+            "const": "background",
+            "title": "Manager Type",
+            "description": "",
+            "default": "background"
+          },
+          "manager_agent_id": {
+            "type": "string",
+            "title": "Manager Agent Id",
+            "description": ""
+          },
+          "background_agents_interval": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Background Agents Interval",
+            "description": ""
+          }
+        },
+        "type": "object",
+        "required": ["manager_agent_id"],
+        "title": "BackgroundManager"
+      },
       "BaseToolRuleSchema": {
         "properties": {
           "tool_name": {
@@ -9830,6 +9861,19 @@
             "title": "Message Buffer Autoclear",
             "description": "If set to True, the agent will not remember previous messages (though the agent will still retain state via core memory blocks and archival/recall memory). Not recommended unless you have an advanced use case.",
             "default": false
+          },
+          "enable_sleeptime": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Enable Sleeptime",
+            "description": "If set to True, memory management will move to a background agent thread.",
+            "default": false
           }
         },
         "type": "object",
@@ -10422,6 +10466,15 @@
             "title": "Description",
             "description": ""
           },
+          "shared_block_ids": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Shared Block Ids",
+            "description": "",
+            "default": []
+          },
           "manager_agent_id": {
             "anyOf": [
               {
@@ -10457,6 +10510,42 @@
             ],
             "title": "Max Turns",
             "description": ""
+          },
+          "background_agents_interval": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Background Agents Interval",
+            "description": ""
+          },
+          "turns_counter": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Turns Counter",
+            "description": ""
+          },
+          "last_processed_message_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Processed Message Id",
+            "description": ""
           }
         },
         "additionalProperties": false,
@@ -10489,6 +10578,9 @@
               },
               {
                 "$ref": "#/components/schemas/DynamicManager"
+              },
+              {
+                "$ref": "#/components/schemas/BackgroundManager"
               }
             ],
             "title": "Manager Config",
@@ -10499,11 +10591,21 @@
             "discriminator": {
               "propertyName": "manager_type",
               "mapping": {
+                "background": "#/components/schemas/BackgroundManager",
                 "dynamic": "#/components/schemas/DynamicManager",
                 "round_robin": "#/components/schemas/RoundRobinManager",
                 "supervisor": "#/components/schemas/SupervisorManager"
               }
             }
+          },
+          "shared_block_ids": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Shared Block Ids",
+            "description": "",
+            "default": []
           }
         },
         "type": "object",
@@ -10551,11 +10653,15 @@
                   },
                   {
                     "$ref": "#/components/schemas/DynamicManager"
+                  },
+                  {
+                    "$ref": "#/components/schemas/BackgroundManager"
                   }
                 ],
                 "discriminator": {
                   "propertyName": "manager_type",
                   "mapping": {
+                    "background": "#/components/schemas/BackgroundManager",
                     "dynamic": "#/components/schemas/DynamicManager",
                     "round_robin": "#/components/schemas/RoundRobinManager",
                     "supervisor": "#/components/schemas/SupervisorManager"
@@ -10567,6 +10673,21 @@
               }
             ],
             "title": "Manager Config",
+            "description": ""
+          },
+          "shared_block_ids": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Shared Block Ids",
             "description": ""
           }
         },
@@ -11425,6 +11546,21 @@
             ],
             "title": "Steps Messages",
             "description": "The messages generated per step"
+          },
+          "run_ids": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Run Ids",
+            "description": "The background task run IDs associated with the agent interaction"
           }
         },
         "type": "object",
@@ -11504,7 +11640,7 @@
       },
       "ManagerType": {
         "type": "string",
-        "enum": ["round_robin", "supervisor", "dynamic", "swarm"],
+        "enum": ["round_robin", "supervisor", "dynamic", "background", "swarm"],
         "title": "ManagerType"
       },
       "MaxCountPerStepToolRule": {
@@ -14818,6 +14954,19 @@
             ],
             "title": "Embedding",
             "description": "The embedding configuration handle used by the agent, specified in the format provider/model-name."
+          },
+          "enable_sleeptime": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Enable Sleeptime",
+            "description": "If set to True, memory management will move to a background agent thread.",
+            "default": false
           }
         },
         "type": "object",

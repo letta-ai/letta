@@ -71,10 +71,19 @@ class GroupManager:
                 case ManagerType.supervisor:
                     new_group.manager_type = ManagerType.supervisor
                     new_group.manager_agent_id = group.manager_config.manager_agent_id
+                case ManagerType.background:
+                    new_group.manager_type = ManagerType.background
+                    new_group.manager_agent_id = group.manager_config.manager_agent_id
+                    new_group.background_agents_interval = group.manager_config.background_agents_interval
+                    if new_group.background_agents_interval:
+                        new_group.turns_counter = 0
                 case _:
                     raise ValueError(f"Unsupported manager type: {group.manager_config.manager_type}")
 
             self._process_agent_relationship(session=session, group=new_group, agent_ids=group.agent_ids, allow_partial=False)
+
+            if group.shared_block_ids:
+                self._process_shared_block_relationship(session=session, group=new_group, block_ids=group.shared_block_ids)
 
             new_group.create(session, actor=actor)
             return new_group.to_pydantic()
@@ -84,6 +93,7 @@ class GroupManager:
         with self.session_maker() as session:
             group = GroupModel.read(db_session=session, identifier=group_id, actor=actor)
 
+            background_agents_interval = None
             max_turns = None
             termination_token = None
             manager_agent_id = None
@@ -99,9 +109,16 @@ class GroupManager:
                         termination_token = group_update.manager_config.termination_token
                     case ManagerType.supervisor:
                         manager_agent_id = group_update.manager_config.manager_agent_id
+                    case ManagerType.background:
+                        manager_agent_id = group_update.manager_config.manager_agent_id
+                        background_agents_interval = group_update.manager_config.background_agents_interval
+                        if background_agents_interval and group.turns_counter is None:
+                            group.turns_counter = 0
                     case _:
                         raise ValueError(f"Unsupported manager type: {group_update.manager_config.manager_type}")
 
+            if background_agents_interval:
+                group.background_agents_interval = background_agents_interval
             if max_turns:
                 group.max_turns = max_turns
             if termination_token:
@@ -174,6 +191,30 @@ class GroupManager:
 
             session.commit()
 
+    @enforce_types
+    def bump_turns_counter(self, group_id: str, actor: PydanticUser) -> int:
+        with self.session_maker() as session:
+            # Ensure group is loadable by user
+            group = GroupModel.read(db_session=session, identifier=group_id, actor=actor)
+
+            # Update turns counter
+            group.turns_counter = (group.turns_counter + 1) % group.background_agents_interval
+            group.update(session, actor=actor)
+            return group.turns_counter
+
+    @enforce_types
+    def get_last_processed_message_id_and_update(self, group_id: str, last_processed_message_id: str, actor: PydanticUser) -> str:
+        with self.session_maker() as session:
+            # Ensure group is loadable by user
+            group = GroupModel.read(db_session=session, identifier=group_id, actor=actor)
+
+            # Update last processed message id
+            prev_last_processed_message_id = group.last_processed_message_id
+            group.last_processed_message_id = last_processed_message_id
+            group.update(session, actor=actor)
+
+            return prev_last_processed_message_id
+
     def _process_agent_relationship(self, session: Session, group: GroupModel, agent_ids: List[str], allow_partial=False, replace=True):
         if not agent_ids:
             if replace:
@@ -203,3 +244,30 @@ class GroupManager:
             setattr(group, "agent_ids", agent_ids)
         else:
             raise ValueError("Extend relationship is not supported for groups.")
+
+    def _process_shared_block_relationship(
+        self,
+        session: Session,
+        group: GroupModel,
+        block_ids: List[str],
+    ):
+        """Process shared block relationships for a group and its agents."""
+        from letta.orm import Agent, Block, BlocksAgents
+
+        # Add blocks to group
+        blocks = session.query(Block).filter(Block.id.in_(block_ids)).all()
+        group.shared_blocks = blocks
+
+        # Add blocks to all agents
+        if group.agent_ids:
+            agents = session.query(Agent).filter(Agent.id.in_(group.agent_ids)).all()
+            for agent in agents:
+                for block in blocks:
+                    session.add(BlocksAgents(agent_id=agent.id, block_id=block.id, block_label=block.label))
+
+        # Add blocks to manager agent if exists
+        if group.manager_agent_id:
+            manager_agent = session.query(Agent).filter(Agent.id == group.manager_agent_id).first()
+            if manager_agent:
+                for block in blocks:
+                    session.add(BlocksAgents(agent_id=manager_agent.id, block_id=block.id, block_label=block.label))

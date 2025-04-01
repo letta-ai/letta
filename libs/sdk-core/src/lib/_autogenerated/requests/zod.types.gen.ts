@@ -775,6 +775,7 @@ export const ManagerType = z.union([
   z.literal('round_robin'),
   z.literal('supervisor'),
   z.literal('dynamic'),
+  z.literal('background'),
   z.literal('swarm'),
 ]);
 
@@ -784,6 +785,7 @@ export const Group = z.object({
   manager_type: ManagerType,
   agent_ids: z.array(z.string()),
   description: z.string(),
+  shared_block_ids: z.union([z.array(z.string()), z.undefined()]).optional(),
   manager_agent_id: z
     .union([
       z.string(),
@@ -805,6 +807,30 @@ export const Group = z.object({
       z.number(),
       z.null(),
       z.array(z.union([z.number(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  background_agents_interval: z
+    .union([
+      z.number(),
+      z.null(),
+      z.array(z.union([z.number(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  turns_counter: z
+    .union([
+      z.number(),
+      z.null(),
+      z.array(z.union([z.number(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  last_processed_message_id: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
       z.undefined(),
     ])
     .optional(),
@@ -1186,6 +1212,20 @@ export const AuthResponse = z.object({
       z.boolean(),
       z.null(),
       z.array(z.union([z.boolean(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+});
+
+export type BackgroundManager = z.infer<typeof BackgroundManager>;
+export const BackgroundManager = z.object({
+  manager_type: z.union([z.string(), z.undefined()]).optional(),
+  manager_agent_id: z.string(),
+  background_agents_interval: z
+    .union([
+      z.number(),
+      z.null(),
+      z.array(z.union([z.number(), z.null()])),
       z.undefined(),
     ])
     .optional(),
@@ -2900,6 +2940,9 @@ export const CreateAgentRequest = z.object({
     ])
     .optional(),
   message_buffer_autoclear: z.boolean().optional(),
+  enable_sleeptime: z
+    .union([z.boolean(), z.null(), z.array(z.union([z.boolean(), z.null()]))])
+    .optional(),
   actor_id: z
     .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
     .optional(),
@@ -3049,9 +3092,11 @@ export const GroupCreate = z.object({
       RoundRobinManager,
       SupervisorManager,
       DynamicManager,
+      BackgroundManager,
       z.undefined(),
     ])
     .optional(),
+  shared_block_ids: z.union([z.array(z.string()), z.undefined()]).optional(),
 });
 
 export type GroupUpdate = z.infer<typeof GroupUpdate>;
@@ -3071,15 +3116,24 @@ export const GroupUpdate = z.object({
       RoundRobinManager,
       SupervisorManager,
       DynamicManager,
+      BackgroundManager,
       z.null(),
       z.array(
         z.union([
           RoundRobinManager,
           SupervisorManager,
           DynamicManager,
+          BackgroundManager,
           z.null(),
         ]),
       ),
+    ])
+    .optional(),
+  shared_block_ids: z
+    .union([
+      z.array(z.string()),
+      z.null(),
+      z.array(z.union([z.array(z.string()), z.null()])),
     ])
     .optional(),
 });
@@ -3496,6 +3550,13 @@ export const LettaUsageStatistics = z.object({
       z.array(z.array(Message)),
       z.null(),
       z.array(z.union([z.array(z.array(Message)), z.null()])),
+    ])
+    .optional(),
+  run_ids: z
+    .union([
+      z.array(z.string()),
+      z.null(),
+      z.array(z.union([z.array(z.string()), z.null()])),
     ])
     .optional(),
 });
@@ -4423,6 +4484,9 @@ export const UpdateAgent = z.object({
     .optional(),
   embedding: z
     .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+    .optional(),
+  enable_sleeptime: z
+    .union([z.boolean(), z.null(), z.array(z.union([z.boolean(), z.null()]))])
     .optional(),
 });
 
