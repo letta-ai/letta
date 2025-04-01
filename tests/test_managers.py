@@ -2727,6 +2727,42 @@ def test_checkpoint_concurrency_stale(server: SyncServer, default_user):
             )
 
 
+def test_checkpoint_no_future_states(server: SyncServer, default_user):
+    """
+    Ensures that if the block is already at the highest sequence,
+    creating a new checkpoint does NOT delete anything.
+    """
+
+    block_manager = BlockManager()
+
+    # 1) Create block with "v1" and checkpoint => seq=1
+    block_v1 = block_manager.create_or_update_block(PydanticBlock(label="no_future_test", value="v1"), actor=default_user)
+    block_manager.checkpoint_block(block_id=block_v1.id, actor=default_user)
+
+    # 2) Create "v2" and checkpoint => seq=2
+    updated_data = PydanticBlock(**block_v1.dict())
+    updated_data.value = "v2"
+    block_manager.create_or_update_block(updated_data, actor=default_user)
+    block_manager.checkpoint_block(block_id=block_v1.id, actor=default_user)
+
+    # So we have seq=1: v1, seq=2: v2. No "future" states.
+    # 3) Another checkpoint (no changes made) => should become seq=3, not delete anything
+    block_manager.checkpoint_block(block_id=block_v1.id, actor=default_user)
+
+    with db_context() as session:
+        # We expect 3 rows in block_history, none removed
+        history_rows = (
+            session.query(BlockHistory).filter(BlockHistory.block_id == block_v1.id).order_by(BlockHistory.sequence_number.asc()).all()
+        )
+        # Should be seq=1, seq=2, seq=3
+        assert len(history_rows) == 3
+        assert history_rows[0].value == "v1"
+        assert history_rows[1].value == "v2"
+        # The last is also "v2" if we didn't change it, or the same current fields
+        assert history_rows[2].sequence_number == 3
+        # There's no leftover row that was deleted
+
+
 # ======================================================================================================================
 # Block Manager Tests - Undo
 # ======================================================================================================================
@@ -2762,6 +2798,71 @@ def test_undo_checkpoint_block(server: SyncServer, default_user):
     # 6) Verify the block is now restored to "Version 1" content
     assert undone_block.value == initial_value, "Block should revert to version 1 content"
     assert undone_block.label == "undo_test", "Label should also revert if changed (or remain the same if unchanged)"
+
+
+def test_checkpoint_deletes_future_states_after_undo(server: SyncServer, default_user):
+    """
+    Verifies that once we've undone to an earlier checkpoint, creating a new
+    checkpoint removes any leftover 'future' states that existed beyond that sequence.
+    """
+    block_manager = BlockManager()
+
+    # 1) Create block
+    block_init = PydanticBlock(label="test_truncation", value="v1")
+    block_v1 = block_manager.create_or_update_block(block_init, actor=default_user)
+    # Checkpoint => seq=1
+    block_manager.checkpoint_block(block_id=block_v1.id, actor=default_user)
+
+    # 2) Update to "v2", checkpoint => seq=2
+    block_v2 = PydanticBlock(**block_v1.dict())
+    block_v2.value = "v2"
+    block_manager.create_or_update_block(block_v2, actor=default_user)
+    block_manager.checkpoint_block(block_id=block_v1.id, actor=default_user)
+
+    # 3) Update to "v3", checkpoint => seq=3
+    block_v3 = PydanticBlock(**block_v1.dict())
+    block_v3.value = "v3"
+    block_manager.create_or_update_block(block_v3, actor=default_user)
+    block_manager.checkpoint_block(block_id=block_v1.id, actor=default_user)
+
+    # We now have three states in history: seq=1 (v1), seq=2 (v2), seq=3 (v3).
+
+    # Undo from seq=3 -> seq=2
+    block_undo_1 = block_manager.undo_checkpoint_block(block_v1.id, actor=default_user)
+    assert block_undo_1.value == "v2"
+
+    # Undo from seq=2 -> seq=1
+    block_undo_2 = block_manager.undo_checkpoint_block(block_v1.id, actor=default_user)
+    assert block_undo_2.value == "v1"
+
+    # 4) Now we are at seq=1. If we checkpoint again, we should remove the old seq=2,3
+    #    because the new code truncates future states beyond seq=1.
+
+    # Let's do a new edit: "v1.5"
+    block_v1_5 = PydanticBlock(**block_undo_2.dict())
+    block_v1_5.value = "v1.5"
+    block_manager.create_or_update_block(block_v1_5, actor=default_user)
+
+    # 5) Checkpoint => new seq=2, removing the old seq=2 and seq=3
+    block_manager.checkpoint_block(block_id=block_v1.id, actor=default_user)
+
+    with db_context() as session:
+        # Let's see which BlockHistory rows remain
+        history_entries = (
+            session.query(BlockHistory).filter(BlockHistory.block_id == block_v1.id).order_by(BlockHistory.sequence_number.asc()).all()
+        )
+
+        # We expect two rows: seq=1 => "v1", seq=2 => "v1.5"
+        assert len(history_entries) == 2, f"Expected 2 entries, got {len(history_entries)}"
+        assert history_entries[0].sequence_number == 1
+        assert history_entries[0].value == "v1"
+        assert history_entries[1].sequence_number == 2
+        assert history_entries[1].value == "v1.5"
+
+        # No row should contain "v2" or "v3"
+        existing_values = {h.value for h in history_entries}
+        assert "v2" not in existing_values, "Old seq=2 should have been removed."
+        assert "v3" not in existing_values, "Old seq=3 should have been removed."
 
 
 def test_undo_no_history(server: SyncServer, default_user):
