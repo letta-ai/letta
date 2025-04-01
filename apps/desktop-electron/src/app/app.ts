@@ -238,10 +238,19 @@ export default class App {
     lettaServer = null;
     const serverId = Math.random().toString(36).substring(7);
     setServerId(serverId);
-    lettaServer = execFile(lettaServerPath, [
-      '--use-file-pg-uri',
-      `--look-for-server-id=${serverId}`,
-    ]);
+    lettaServer = execFile(
+      lettaServerPath,
+      ['--use-file-pg-uri', `--look-for-server-id=${serverId}`],
+      {
+        env: {
+          // Keep the user's existing environment, but override to ensure UTF-8
+          ...process.env,
+          LANG: 'C.UTF-8', // or "en_us.UTF-8"
+          LC_ALL: 'C.UTF-8', // or "en_us.UTF-8"
+          LANGUAGE: 'en_US:en', // optional, for good measure
+        },
+      },
+    );
 
     if (lettaServer.stdout) {
       lettaServer.stdout.on('data', (data) => {
@@ -388,7 +397,14 @@ export default class App {
       if (!fs.existsSync(path.join(dataDir, 'PG_VERSION'))) {
         console.log('[postgres] Running initdb...');
         try {
-          execFileSync(initdbPath, ['-D', dataDir, '-U', 'postgres']);
+          execFileSync(initdbPath, [
+            '-D',
+            dataDir,
+            '-U',
+            'postgres',
+            '--locale=C.UTF-8', // or "en_US.UTF-8"
+            '--encoding=UTF8',
+          ]);
         } catch (err) {
           console.error('[postgres] initdb error:', err);
           throw err;
@@ -410,7 +426,7 @@ export default class App {
         spawnEnv = {
           PATH: `${libPath};${process.env.PATH || ''}`,
           HOME: process.env.HOME || os.homedir(),
-          LC_ALL: 'en_US.UTF-8',
+          LC_ALL: 'C.UTF-8', // or en_us.UTF-8
         };
       } else {
         // macOS environment setup - set DYLD_LIBRARY_PATH
@@ -453,7 +469,17 @@ export default class App {
       // Launch the Postgres process with the explicit environment.
       postgresProcess = execFile(
         postgresBinPath,
-        ['-D', dataDir, '-p', pgPort],
+        // ['-D', dataDir, '-p', pgPort],
+        [
+          '-D',
+          dataDir,
+          '-p',
+          pgPort,
+          '-c',
+          'timezone=UTC',
+          '-c',
+          'client_encoding=UTF8',
+        ],
         { env: spawnEnv },
       );
 
