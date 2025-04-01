@@ -1,4 +1,3 @@
-import ast
 import math
 from abc import ABC, abstractmethod
 from typing import Any, Optional, Tuple
@@ -15,7 +14,9 @@ from letta.schemas.user import User
 from letta.services.agent_manager import AgentManager
 from letta.services.message_manager import MessageManager
 from letta.services.passage_manager import PassageManager
-from letta.services.tool_executor.async_tool_execution_sandbox import AsyncToolExecutionSandbox
+from letta.services.tool_sandbox.e2b_sandbox import AsyncToolSandboxE2B
+from letta.services.tool_sandbox.local_sandbox import AsyncToolSandboxLocal
+from letta.settings import tool_settings
 from letta.utils import get_friendly_error_msg
 
 
@@ -334,16 +335,13 @@ class SandboxToolExecutor(ToolExecutor):
 
             agent_state_copy = self._create_agent_state_copy(agent_state)
 
-            # TODO: This is brittle, think about better way to do this?
-            if "agent_state" in self.parse_function_arguments(tool.source_code, tool.name):
-                inject_agent_state = True
+            # Execute in sandbox depending on API key
+            if tool_settings.e2b_api_key:
+                sandbox = AsyncToolSandboxE2B(function_name, function_args, actor, tool_object=tool)
             else:
-                inject_agent_state = False
+                sandbox = AsyncToolSandboxLocal(function_name, function_args, actor, tool_object=tool)
 
-            # Execute in sandbox
-            sandbox_run_result = await AsyncToolExecutionSandbox(function_name, function_args, actor, tool_object=tool).run(
-                agent_state=agent_state_copy, inject_agent_state=inject_agent_state
-            )
+            sandbox_run_result = await sandbox.run(agent_state=agent_state_copy)
 
             function_response, updated_agent_state = sandbox_run_result.func_return, sandbox_run_result.agent_state
 
@@ -370,16 +368,6 @@ class SandboxToolExecutor(ToolExecutor):
             # Just log the error and continue with original args
             # This is defensive programming - we try to coerce but fall back if it fails
             return function_args
-
-    def parse_function_arguments(self, source_code: str, tool_name: str):
-        """Get arguments of a function from its source code"""
-        tree = ast.parse(source_code)
-        args = []
-        for node in ast.walk(tree):
-            if isinstance(node, ast.FunctionDef) and node.name == tool_name:
-                for arg in node.args.args:
-                    args.append(arg.arg)
-        return args
 
     def _create_agent_state_copy(self, agent_state: AgentState):
         """Create a copy of agent state for sandbox execution."""
