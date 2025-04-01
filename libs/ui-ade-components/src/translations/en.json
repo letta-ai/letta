@@ -157,6 +157,11 @@
     }
   },
   "ADE/AdvancedSettings": {
+    "views": {
+      "agent": "Agent",
+      "llmConfig": "LLM Config",
+      "embeddingConfig": "Embedding Config"
+    },
     "title": "Advanced",
     "model": "Model",
     "mobileTitle": "Advanced",
@@ -194,7 +199,8 @@
         "label": "Embedding chunk size"
       },
       "messageBufferAutoclear": {
-        "label": "Reset message buffer"
+        "label": "Reset message buffer",
+        "tooltip": "Resets the message buffer every time the agent is invoked, similar behavior to an basic llm agent"
       }
     }
   },
@@ -302,6 +308,10 @@
     "IdentityElement": {
       "remove": "Remove"
     },
+    "AgentType": {
+      "label": "Agent Type",
+      "tooltip": "Describes the core letta agent type, this cannot be changed after creation"
+    },
     "IdentitiesEditorDialog": {
       "error": "There was an error updating the identities, please try again or contact support.",
       "currentIdentities": "Current Identities",
@@ -344,10 +354,11 @@
     },
     "mobileTitle": "{baseName}",
     "SystemPromptEditor": {
-      "trigger": "Edit System Instructions",
+      "trigger": "Configure",
+      "title": "Core System Prompt",
       "characterCount": "{count} CHARS",
       "updatedAt": "Last updated on {date}",
-      "tooltip": "Configures the behavior of the agent, and placed in the context window",
+      "tooltip": "This is an advanced feature, you should generally edit core memories, editing the system prompt can lead to unexpected behavior as we've fine-tuned the prompt to work with our agent system.",
       "label": "System instructions",
       "error": "There was an error while updating the system prompt, please try again or contact support.",
       "expand": "Show full system prompt editor",

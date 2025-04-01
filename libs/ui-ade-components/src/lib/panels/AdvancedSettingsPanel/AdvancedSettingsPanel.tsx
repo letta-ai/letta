@@ -1,598 +1,30 @@
 import { useTranslations } from '@letta-cloud/translations';
-import { useCurrentAgent, useSyncUpdateCurrentAgent } from '../../hooks';
+import { useCurrentAgent, useCurrentAgentMetaData } from '../../hooks';
 import {
-  Dialog,
-  FormField,
-  FormProvider,
-  HStack,
-  RawSwitch,
-  TextArea,
-  tryParseSliderNumber,
-  Typography,
-  useForm,
-} from '@letta-cloud/ui-component-library';
-import type { OptionType } from '@letta-cloud/ui-component-library';
-
-import {
-  Alert,
-  brandKeyToLogo,
-  brandKeyToName,
-  isBrandKey,
-  isMultiValue,
   LoadingEmptyStatusComponent,
   PanelMainContent,
-  RawInput,
-  RawSelect,
-  Button,
-  RawSlider,
+  TabGroup,
   VStack,
 } from '@letta-cloud/ui-component-library';
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useMemo } from 'react';
+import { useModelsServiceListModels } from '@letta-cloud/sdk-core';
+import { TemperatureSlider } from './components/TemperatureSlider/TemperatureSlider';
 import {
-  type AgentState,
-  UseAgentsServiceRetrieveAgentKeyFn,
-  useAgentsServiceModifyAgent,
-  useModelsServiceListModels,
-} from '@letta-cloud/sdk-core';
-import { useDebouncedValue } from '@mantine/hooks';
-import { useQueryClient } from '@tanstack/react-query';
-import { z } from 'zod';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { useADEPermissions } from '../../hooks/useADEPermissions/useADEPermissions';
-import { ApplicationServices } from '@letta-cloud/service-rbac';
-import { useEmbeddingModels } from '../../hooks/useEmbeddingModels/useEmbeddingModels';
-
-interface EmbeddingConfig {
-  embeddingConfig?: AgentState['embedding_config'];
-}
-
-export function EmbeddingSelector(props: EmbeddingConfig) {
-  const { embeddingConfig } = props;
-  const t = useTranslations('ADE/AgentSettingsPanel');
-  const { syncUpdateCurrentAgent, error } = useSyncUpdateCurrentAgent();
-
-  const embeddingModels = useEmbeddingModels();
-
-  const formattedModelsList = useMemo(() => {
-    if (!embeddingModels) {
-      return [];
-    }
-
-    const modelEndpointMap = embeddingModels.reduce(
-      (acc, model) => {
-        acc[model.embedding_endpoint_type] =
-          acc[model.embedding_endpoint_type] || [];
-
-        acc[model.embedding_endpoint_type].push(model.embedding_model);
-
-        return acc;
-      },
-      {} as Record<string, string[]>,
-    );
-
-    return Object.entries(modelEndpointMap).map(([key, value]) => ({
-      icon: isBrandKey(key) ? brandKeyToLogo(key) : '',
-      label: isBrandKey(key) ? brandKeyToName(key) : key,
-      options: value.map((model) => ({
-        icon: isBrandKey(key) ? brandKeyToLogo(key) : '',
-        label: model,
-        value: model,
-      })),
-    }));
-  }, [embeddingModels]);
-
-  const [modelState, setModelState] = useState<OptionType | undefined>(
-    embeddingConfig
-      ? {
-          icon: isBrandKey(embeddingConfig.embedding_endpoint_type)
-            ? brandKeyToLogo(embeddingConfig.embedding_endpoint_type)
-            : '',
-          label: embeddingConfig.embedding_model,
-          value: embeddingConfig.embedding_model,
-        }
-      : undefined,
-  );
-
-  const [debouncedModelState] = useDebouncedValue(modelState, 500);
-
-  useEffect(() => {
-    if (!embeddingModels || !debouncedModelState) {
-      return;
-    }
-
-    if (debouncedModelState.value !== embeddingConfig?.embedding_model) {
-      syncUpdateCurrentAgent(() => ({
-        embedding_config: embeddingModels.find(
-          (model) => model.embedding_model === debouncedModelState.value,
-        ),
-      }));
-    }
-  }, [
-    embeddingConfig?.embedding_model,
-    debouncedModelState,
-    embeddingModels,
-    syncUpdateCurrentAgent,
-  ]);
-
-  return (
-    <>
-      {error && <Alert title={t('error')} variant="destructive" />}
-      <RawSelect
-        hideIconsOnOptions
-        fullWidth
-        onSelect={(value) => {
-          if (isMultiValue(value)) {
-            return;
-          }
-
-          setModelState({
-            value: value?.value || '',
-            label: value?.label || '',
-            icon: value?.icon || '',
-          });
-        }}
-        value={modelState}
-        label={t('embeddingInput.label')}
-        options={formattedModelsList}
-      />
-    </>
-  );
-}
-
-interface TemperatureSliderProps {
-  defaultTemperature: number;
-}
-
-function TemperatureSlider(props: TemperatureSliderProps) {
-  const { defaultTemperature } = props;
-  const currentAgent = useCurrentAgent();
-  const { syncUpdateCurrentAgent } = useSyncUpdateCurrentAgent();
-  const t = useTranslations('ADE/AdvancedSettings');
-
-  const [draftTemperature, setDraftTemperature] = useState<string>(
-    `${defaultTemperature || 0}`,
-  );
-
-  const handleTemperatureChange = useCallback(
-    (value: number) => {
-      if (!currentAgent.llm_config) {
-        return;
-      }
-
-      syncUpdateCurrentAgent((existing) => ({
-        llm_config: {
-          ...existing.llm_config,
-          temperature: value,
-        },
-      }));
-    },
-    [currentAgent.llm_config, syncUpdateCurrentAgent],
-  );
-
-  const parsedDraftTemperature = useMemo(() => {
-    const sliderNumber = tryParseSliderNumber(draftTemperature);
-
-    if (sliderNumber === false) {
-      return false;
-    }
-
-    if (sliderNumber < 0 || sliderNumber > 1) {
-      return false;
-    }
-
-    return sliderNumber;
-  }, [draftTemperature]);
-
-  return (
-    <RawSlider
-      fullWidth
-      label={t('TemperatureSlider.label')}
-      value={draftTemperature}
-      errorMessage={
-        parsedDraftTemperature === false
-          ? t('TemperatureSlider.error')
-          : undefined
-      }
-      onValueChange={(value) => {
-        setDraftTemperature(value);
-
-        const parsedNumber = tryParseSliderNumber(value);
-
-        if (parsedNumber) {
-          handleTemperatureChange(parsedNumber);
-        }
-      }}
-      min={0}
-      max={1}
-      step={0.01}
-    />
-  );
-}
-
-interface ContextWindowSliderProps {
-  defaultContextWindow: number;
-  maxContextWindow: number;
-}
-
-const MIN_CONTEXT_WINDOW = 4000;
-
-function ContextWindowSlider(props: ContextWindowSliderProps) {
-  const { defaultContextWindow, maxContextWindow } = props;
-  const currentAgent = useCurrentAgent();
-  const { syncUpdateCurrentAgent } = useSyncUpdateCurrentAgent();
-
-  const [draftContextWindow, setDraftContextWindow] = useState<string>(
-    `${defaultContextWindow || 0}`,
-  );
-
-  const t = useTranslations('ADE/AdvancedSettings');
-
-  const handleContextWindowChange = useCallback(
-    (value: number) => {
-      if (!currentAgent.llm_config) {
-        return;
-      }
-
-      syncUpdateCurrentAgent((existing) => ({
-        llm_config: {
-          ...existing.llm_config,
-          context_window: value,
-        },
-      }));
-    },
-    [currentAgent.llm_config, syncUpdateCurrentAgent],
-  );
-  const parsedDraftContextWindow = useMemo(() => {
-    return tryParseSliderNumber(draftContextWindow);
-  }, [draftContextWindow]);
-
-  return (
-    <RawSlider
-      fullWidth
-      label={t('ContextWindowSlider.label')}
-      errorMessage={
-        parsedDraftContextWindow === false
-          ? t('ContextWindowSlider.error')
-          : undefined
-      }
-      value={draftContextWindow}
-      onValueChange={(value) => {
-        setDraftContextWindow(value);
-
-        const parsedNumber = tryParseSliderNumber(value);
-        if (parsedNumber !== false) {
-          if (parsedNumber >= MIN_CONTEXT_WINDOW) {
-            handleContextWindowChange(parsedNumber);
-          }
-        }
-      }}
-      min={MIN_CONTEXT_WINDOW}
-      max={maxContextWindow}
-    />
-  );
-}
-
-interface MaxTokensSliderProps {
-  maxContextWindow: number;
-  defaultMaxTokens: number;
-}
-
-function MaxTokensSlider(props: MaxTokensSliderProps) {
-  const { maxContextWindow, defaultMaxTokens } = props;
-  const currentAgent = useCurrentAgent();
-  const { syncUpdateCurrentAgent } = useSyncUpdateCurrentAgent();
-  const t = useTranslations('ADE/AdvancedSettings');
-
-  const [draftMaxTokens, setDraftMaxTokens] = useState<string>(
-    `${defaultMaxTokens || 1024}`,
-  );
-
-  const handleMaxTokensChange = useCallback(
-    (value: number) => {
-      if (!currentAgent.llm_config) {
-        return;
-      }
-
-      syncUpdateCurrentAgent((existing) => ({
-        llm_config: {
-          ...existing.llm_config,
-          max_tokens: value,
-        },
-      }));
-    },
-    [currentAgent.llm_config, syncUpdateCurrentAgent],
-  );
-
-  const parsedDraftMaxTokens = useMemo(() => {
-    const sliderNumber = tryParseSliderNumber(draftMaxTokens);
-
-    if (sliderNumber === false) {
-      return false;
-    }
-
-    if (sliderNumber < 1024 || sliderNumber > maxContextWindow) {
-      return false;
-    }
-
-    return sliderNumber;
-  }, [draftMaxTokens, maxContextWindow]);
-
-  return (
-    <RawSlider
-      fullWidth
-      label={t('MaxTokensSlider.label')}
-      value={draftMaxTokens}
-      errorMessage={
-        parsedDraftMaxTokens === false ? t('MaxTokensSlider.error') : undefined
-      }
-      onValueChange={(value) => {
-        setDraftMaxTokens(value);
-
-        const parsedNumber = tryParseSliderNumber(value);
-
-        if (parsedNumber) {
-          handleMaxTokensChange(parsedNumber);
-        }
-      }}
-      min={1024}
-      max={maxContextWindow}
-    />
-  );
-}
-
-interface MaxReasoningTokensSliderProps {
-  maxTokens: number;
-  defaultMaxReasoningTokens: number;
-}
-
-function MaxReasoningTokensSlider(props: MaxReasoningTokensSliderProps) {
-  const { maxTokens, defaultMaxReasoningTokens } = props;
-  const currentAgent = useCurrentAgent();
-  const { syncUpdateCurrentAgent } = useSyncUpdateCurrentAgent();
-  const t = useTranslations('ADE/AdvancedSettings');
-
-  const [draftMaxReasoningTokens, setDraftMaxReasoningTokens] =
-    useState<string>(
-      `${currentAgent.llm_config?.max_reasoning_tokens || defaultMaxReasoningTokens}`,
-    );
-
-  const handleMaxReasoningTokensChange = useCallback(
-    (value: number) => {
-      if (!currentAgent.llm_config) {
-        return;
-      }
-
-      syncUpdateCurrentAgent((existing) => ({
-        llm_config: {
-          ...existing.llm_config,
-          max_reasoning_tokens: value,
-          enable_reasoner: value !== 0,
-          temperature: value !== 0 ? 1 : existing.llm_config.temperature,
-        },
-      }));
-    },
-    [currentAgent.llm_config, syncUpdateCurrentAgent],
-  );
-
-  const parsedDraftMaxReasoningTokens = useMemo(() => {
-    const sliderNumber = tryParseSliderNumber(draftMaxReasoningTokens);
-
-    if (sliderNumber === false) {
-      return false;
-    }
-
-    if (
-      (sliderNumber < 1024 || sliderNumber > maxTokens) &&
-      sliderNumber !== 0
-    ) {
-      return false;
-    }
-
-    return sliderNumber;
-  }, [draftMaxReasoningTokens, maxTokens]);
-
-  return (
-    <RawSlider
-      fullWidth
-      label={t('MaxReasoningTokensSlider.label')}
-      value={draftMaxReasoningTokens}
-      errorMessage={
-        parsedDraftMaxReasoningTokens === false
-          ? t('MaxReasoningTokensSlider.error')
-          : undefined
-      }
-      onValueChange={(value) => {
-        setDraftMaxReasoningTokens(value);
-
-        const parsedNumber = tryParseSliderNumber(value);
-
-        if (parsedNumber !== false) {
-          handleMaxReasoningTokensChange(parsedNumber);
-        }
-      }}
-      min={0}
-      max={maxTokens}
-    />
-  );
-}
-
-const systemPromptEditorForm = z.object({
-  system: z.string(),
-});
-
-type SystemPromptEditorFormType = z.infer<typeof systemPromptEditorForm>;
-
-interface SystemPromptEditorDialogProps {
-  isExpanded: boolean;
-  setIsExpanded: (value: boolean) => void;
-  system: string;
-}
-
-function SystemPromptEditorDialog(props: SystemPromptEditorDialogProps) {
-  const { isExpanded, setIsExpanded, system } = props;
-  const { mutate, isPending, isError } = useAgentsServiceModifyAgent();
-  const queryClient = useQueryClient();
-  const currentAgent = useCurrentAgent();
-  const t = useTranslations('ADE/AgentSettingsPanel');
-  const form = useForm<SystemPromptEditorFormType>({
-    resolver: zodResolver(systemPromptEditorForm),
-    defaultValues: {
-      system,
-    },
-  });
-
-  const [canUpdateAgent] = useADEPermissions(ApplicationServices.UPDATE_AGENT);
-
-  const handleSubmit = useCallback(
-    (data: SystemPromptEditorFormType) => {
-      mutate(
-        {
-          agentId: currentAgent.id,
-          requestBody: {
-            system: data.system,
-          },
-        },
-        {
-          onSuccess: (_r) => {
-            queryClient.setQueriesData<AgentState | undefined>(
-              {
-                queryKey: UseAgentsServiceRetrieveAgentKeyFn({
-                  agentId: currentAgent.id,
-                }),
-              },
-              (oldData) => {
-                if (!oldData) {
-                  return oldData;
-                }
-
-                return {
-                  ...oldData,
-                  system: data.system,
-                };
-              },
-            );
-            setIsExpanded(false);
-          },
-        },
-      );
-    },
-    [currentAgent.id, mutate, queryClient, setIsExpanded],
-  );
-
-  return (
-    <FormProvider {...form}>
-      <Dialog
-        size="full"
-        isOpen={isExpanded}
-        isConfirmBusy={isPending}
-        confirmText={t('SystemPromptEditor.dialog.save')}
-        onSubmit={form.handleSubmit(handleSubmit)}
-        onOpenChange={setIsExpanded}
-        hideFooter={!canUpdateAgent}
-        errorMessage={isError ? t('SystemPromptEditor.error') : ''}
-        title={t('SystemPromptEditor.dialog.title')}
-      >
-        <VStack collapseHeight flex gap="form">
-          <FormField
-            render={({ field }) => {
-              return (
-                <VStack fullHeight>
-                  <HStack gap="xlarge" align="center" justify="spaceBetween">
-                    <div>
-                      <Alert
-                        title={t('SystemPromptEditor.dialog.info')}
-                        variant="info"
-                      />
-                    </div>
-                    <Typography
-                      noWrap
-                      font="mono"
-                      color="muted"
-                      variant="body2"
-                    >
-                      {t('SystemPromptEditor.dialog.characterCount', {
-                        count: field.value.length,
-                      })}
-                    </Typography>
-                  </HStack>
-                  <TextArea
-                    fullWidth
-                    flex
-                    fullHeight
-                    disabled={!canUpdateAgent}
-                    autosize={false}
-                    hideLabel
-                    label={t('SystemPromptEditor.label')}
-                    onChange={(e) => {
-                      field.onChange(e.target.value);
-                    }}
-                    value={field.value}
-                  />
-                </VStack>
-              );
-            }}
-            name="system"
-          />
-        </VStack>
-      </Dialog>
-    </FormProvider>
-  );
-}
-
-function SystemPromptEditor() {
-  const t = useTranslations('ADE/AgentSettingsPanel');
-  const [isExpanded, setIsExpanded] = useState(false);
-
-  const currentAgent = useCurrentAgent();
-
-  const [canUpdateAgent] = useADEPermissions(ApplicationServices.UPDATE_AGENT);
-
-  return (
-    <>
-      {isExpanded && (
-        <SystemPromptEditorDialog
-          system={currentAgent.system || ''}
-          isExpanded={isExpanded}
-          setIsExpanded={setIsExpanded}
-        />
-      )}
-      <Button
-        disabled={!canUpdateAgent}
-        fullWidth
-        onClick={() => {
-          setIsExpanded(true);
-        }}
-        color="secondary"
-        label={t('SystemPromptEditor.trigger')}
-      />
-    </>
-  );
-}
-
-function MessageBufferAutoclearSwitch() {
-  const currentAgent = useCurrentAgent();
-  const { syncUpdateCurrentAgent } = useSyncUpdateCurrentAgent();
-  const t = useTranslations('ADE/AdvancedSettings');
-
-  return (
-    <RawSwitch
-      name="messageBufferAutoclear"
-      label={t('AdvancedSettingsPanel.messageBufferAutoclear.label')}
-      checked={currentAgent.message_buffer_autoclear || false}
-      onCheckedChange={(checked) => {
-        syncUpdateCurrentAgent((existing) => ({
-          ...existing,
-          message_buffer_autoclear: checked,
-        }));
-      }}
-    />
-  );
-}
-
-export function AdvancedSettingsPanel() {
-  const currentAgent = useCurrentAgent();
+  ContextWindowSlider,
+  MIN_CONTEXT_WINDOW,
+} from './components/ContextWindowSlider/ContextWindowSlider';
+import { MaxTokensSlider } from './components/MaxOutputTokensSlider/MaxOutputTokensSlider';
+import { MessageBufferAutoclearSwitch } from './components/MessageBufferAutoclearSwitch/MessageBufferAutoclearSwitch';
+import { EmbeddingConfiguration } from './components/EmbeddingConfiguration/EmbeddingConfiguration';
+import { MaxReasoningTokensSlider } from './components/MaxReasoningTokensSlider/MaxReasoningTokensSlider';
+import { SystemPromptEditor } from './components/SystemPromptEditor/SystemPromptEditor';
+import { AgentDescription } from './components/AgentDescription/AgentDescription';
+import { AgentType } from './components/AgentType/AgentType';
+
+function LLMConfigView() {
   const { data: modelsList } = useModelsServiceListModels();
-  const t = useTranslations('ADE/AdvancedSettings');
+
+  const currentAgent = useCurrentAgent();
 
   const currentBaseModel = useMemo(() => {
     if (!currentAgent.llm_config?.model) {
@@ -615,58 +47,111 @@ export function AdvancedSettingsPanel() {
   }
 
   return (
-    <PanelMainContent>
-      <VStack fullWidth paddingTop="small" gap="form" justify="start">
-        <TemperatureSlider
-          defaultTemperature={currentAgent.llm_config.temperature || 1}
+    <VStack>
+      <TemperatureSlider
+        defaultTemperature={currentAgent.llm_config.temperature || 1}
+      />
+      {currentBaseModel && (
+        <ContextWindowSlider
+          maxContextWindow={currentBaseModel.context_window}
+          defaultContextWindow={
+            currentAgent.llm_config.context_window || MIN_CONTEXT_WINDOW
+          }
         />
-        {currentBaseModel && (
-          <ContextWindowSlider
-            maxContextWindow={currentBaseModel.context_window}
-            defaultContextWindow={
-              currentAgent.llm_config.context_window || MIN_CONTEXT_WINDOW
-            }
-          />
-        )}
-        {currentBaseModel?.max_tokens && (
-          <MaxTokensSlider
-            maxContextWindow={
-              currentAgent.llm_config.context_window || MIN_CONTEXT_WINDOW
-            }
-            defaultMaxTokens={
+      )}
+      {currentBaseModel?.max_tokens && (
+        <MaxTokensSlider
+          maxContextWindow={
+            currentAgent.llm_config.context_window || MIN_CONTEXT_WINDOW
+          }
+          defaultMaxTokens={
+            currentAgent.llm_config.max_tokens || currentBaseModel.max_tokens
+          }
+        />
+      )}
+      {currentBaseModel?.max_tokens &&
+        currentBaseModel.model.startsWith('claude-3-7-sonnet') && (
+          <MaxReasoningTokensSlider
+            maxTokens={
               currentAgent.llm_config.max_tokens || currentBaseModel.max_tokens
             }
+            defaultMaxReasoningTokens={
+              currentAgent.llm_config.max_reasoning_tokens || 0
+            }
           />
         )}
-        {currentBaseModel?.max_tokens &&
-          currentBaseModel.model.startsWith('claude-3-7-sonnet') && (
-            <MaxReasoningTokensSlider
-              maxTokens={
-                currentAgent.llm_config.max_tokens ||
-                currentBaseModel.max_tokens
-              }
-              defaultMaxReasoningTokens={
-                currentAgent.llm_config.max_reasoning_tokens || 0
-              }
-            />
-          )}
-        <SystemPromptEditor />
-        <EmbeddingSelector embeddingConfig={currentAgent.embedding_config} />
-        <RawInput
-          fullWidth
-          label={t('AdvancedSettingsPanel.embeddingDimensions.label')}
-          value={currentAgent.embedding_config?.embedding_dim || '0'}
-          type="number"
-          disabled
-        />
-        <RawInput
-          fullWidth
-          label={t('AdvancedSettingsPanel.embeddingChunkSize.label')}
-          value={currentAgent.embedding_config?.embedding_chunk_size || '0'}
-          type="number"
-          disabled
-        />
+    </VStack>
+  );
+}
+
+function EmbeddingConfigView() {
+  return <EmbeddingConfiguration />;
+}
+
+function AgentAdvancedSettingsView() {
+  const { isTemplate } = useCurrentAgentMetaData();
+
+  return (
+    <VStack gap="large">
+      <VStack>
         <MessageBufferAutoclearSwitch />
+        <SystemPromptEditor />
+      </VStack>
+      <AgentType />
+      {!isTemplate && <AgentDescription />}
+    </VStack>
+  );
+}
+
+interface ViewSwitchProps {
+  view: Views;
+}
+
+function ViewSwitch({ view }: ViewSwitchProps) {
+  switch (view) {
+    case 'agent':
+      return <AgentAdvancedSettingsView />;
+    case 'llm-config':
+      return <LLMConfigView />;
+    case 'embedding-config':
+      return <EmbeddingConfigView />;
+    default:
+      return null;
+  }
+}
+
+type Views = 'agent' | 'embedding-config' | 'llm-config';
+
+export function AdvancedSettingsPanel() {
+  const t = useTranslations('ADE/AdvancedSettings');
+  useModelsServiceListModels();
+
+  const [view, setView] = React.useState<Views>('agent');
+
+  return (
+    <PanelMainContent>
+      <VStack fullWidth gap="form" justify="start">
+        <TabGroup
+          size="xsmall"
+          extendBorder
+          items={[
+            {
+              label: t('views.agent'),
+              value: 'agent',
+            },
+            {
+              label: t('views.llmConfig'),
+              value: 'llm-config',
+            },
+            {
+              label: t('views.embeddingConfig'),
+              value: 'embedding-config',
+            },
+          ]}
+          value={view}
+          onValueChange={(value) => setView(value as Views)}
+        />
+        <ViewSwitch view={view} />
       </VStack>
     </PanelMainContent>
   );
