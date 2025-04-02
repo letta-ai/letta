@@ -313,9 +313,7 @@ class Agent(BaseAgent):
                     response = llm_client.send_llm_request(
                         messages=message_sequence,
                         tools=allowed_functions,
-                        tool_call=function_call,
                         stream=stream,
-                        first_message=first_message,
                         force_tool_call=force_tool_call,
                     )
                 else:

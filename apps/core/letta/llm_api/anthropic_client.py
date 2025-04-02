@@ -56,7 +56,6 @@ class AnthropicClient(LLMClientBase):
         self,
         messages: List[PydanticMessage],
         tools: List[dict],
-        tool_call: Optional[str],
         force_tool_call: Optional[str] = None,
     ) -> dict:
         prefix_fill = True
