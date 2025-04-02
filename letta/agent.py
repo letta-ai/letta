@@ -1243,7 +1243,7 @@ class Agent(BaseAgent):
                 callable_func = get_function_from_module(LETTA_MULTI_AGENT_TOOL_MODULE_NAME, function_name)
                 function_args["self"] = self  # need to attach self to arg since it's dynamically linked
                 function_response = callable_func(**function_args)
-            elif target_letta_tool.tool_type == ToolType.LETTA_MEMORY_CORE:
+            elif target_letta_tool.tool_type == ToolType.LETTA_MEMORY_CORE or target_letta_tool.tool_type == ToolType.LETTA_SLEEPTIME_CORE:
                 callable_func = get_function_from_module(LETTA_CORE_TOOL_MODULE_NAME, function_name)
                 agent_state_copy = self.agent_state.__deepcopy__()
                 function_args["agent_state"] = agent_state_copy  # need to attach self to arg since it's dynamically linked

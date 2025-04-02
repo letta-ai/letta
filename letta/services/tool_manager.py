@@ -2,7 +2,14 @@ import importlib
 import warnings
 from typing import List, Optional
 
-from letta.constants import BASE_FUNCTION_RETURN_CHAR_LIMIT, BASE_MEMORY_TOOLS, BASE_TOOLS, MCP_TOOL_TAG_NAME_PREFIX, MULTI_AGENT_TOOLS
+from letta.constants import (
+    BASE_FUNCTION_RETURN_CHAR_LIMIT,
+    BASE_MEMORY_TOOLS,
+    BASE_SLEEPTIME_TOOLS,
+    BASE_TOOLS,
+    MCP_TOOL_TAG_NAME_PREFIX,
+    MULTI_AGENT_TOOLS,
+)
 from letta.functions.functions import derive_openai_json_schema, load_function_set
 from letta.log import get_logger
 from letta.orm.enums import ToolType
@@ -194,7 +201,7 @@ class ToolManager:
         # create tool in db
         tools = []
         for name, schema in functions_to_schema.items():
-            if name in BASE_TOOLS + BASE_MEMORY_TOOLS + MULTI_AGENT_TOOLS:
+            if name in BASE_TOOLS + BASE_MEMORY_TOOLS + MULTI_AGENT_TOOLS + BASE_SLEEPTIME_TOOLS:
                 if name in BASE_TOOLS:
                     tool_type = ToolType.LETTA_CORE
                     tags = [tool_type.value]
@@ -204,9 +211,12 @@ class ToolManager:
                 elif name in MULTI_AGENT_TOOLS:
                     tool_type = ToolType.LETTA_MULTI_AGENT_CORE
                     tags = [tool_type.value]
+                elif name in BASE_SLEEPTIME_TOOLS:
+                    tool_type = ToolType.LETTA_SLEEPTIME_CORE
+                    tags = [tool_type.value]
                 else:
                     raise ValueError(
-                        f"Tool name {name} is not in the list of base tool names: {BASE_TOOLS + BASE_MEMORY_TOOLS + MULTI_AGENT_TOOLS}"
+                        f"Tool name {name} is not in the list of base tool names: {BASE_TOOLS + BASE_MEMORY_TOOLS + MULTI_AGENT_TOOLS + BASE_SLEEPTIME_TOOLS}"
                     )
 
                 # create to tool

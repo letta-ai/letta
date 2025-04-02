@@ -28,7 +28,7 @@ class Group(GroupBase):
     manager_agent_id: Optional[str] = Field(None, description="")
     termination_token: Optional[str] = Field(None, description="")
     max_turns: Optional[int] = Field(None, description="")
-    background_agents_interval: Optional[int] = Field(None, description="")
+    background_agents_frequency: Optional[int] = Field(None, description="")
     turns_counter: Optional[int] = Field(None, description="")
     last_processed_message_id: Optional[str] = Field(None, description="")
 
@@ -57,7 +57,7 @@ class DynamicManager(ManagerConfig):
 class BackgroundManager(ManagerConfig):
     manager_type: Literal[ManagerType.background] = Field(ManagerType.background, description="")
     manager_agent_id: str = Field(..., description="")
-    background_agents_interval: Optional[int] = Field(None, description="")
+    background_agents_frequency: Optional[int] = Field(None, description="")
 
 
 # class SwarmGroup(ManagerConfig):

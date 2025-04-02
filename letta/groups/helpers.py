@@ -1,7 +1,8 @@
 import json
-from typing import Optional, Union
+from typing import Dict, Optional, Union
 
 from letta.agent import Agent
+from letta.functions.mcp_client.base_client import BaseMCPClient
 from letta.interface import AgentInterface
 from letta.orm.group import Group
 from letta.orm.user import User
@@ -15,6 +16,7 @@ def load_multi_agent(
     agent_state: Optional[AgentState],
     actor: User,
     interface: Union[AgentInterface, None] = None,
+    mcp_clients: Optional[Dict[str, BaseMCPClient]] = None,
 ) -> Agent:
     if len(group.agent_ids) == 0:
         raise ValueError("Empty group: group must have at least one agent")
@@ -60,6 +62,14 @@ def load_multi_agent(
                 description=group.description,
             )
         case ManagerType.background:
+            if not agent_state.enable_sleeptime:
+                return Agent(
+                    agent_state=agent_state,
+                    interface=interface,
+                    user=actor,
+                    mcp_clients=mcp_clients,
+                )
+
             from letta.groups.background_multi_agent import BackgroundMultiAgent
 
             return BackgroundMultiAgent(
@@ -69,7 +79,7 @@ def load_multi_agent(
                 group_id=group.id,
                 agent_ids=group.agent_ids,
                 description=group.description,
-                background_agents_interval=group.background_agents_interval,
+                background_agents_frequency=group.background_agents_frequency,
             )
         case _:
             raise ValueError(f"Type {group.manager_type} is not supported.")

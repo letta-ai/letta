@@ -74,8 +74,8 @@ class GroupManager:
                 case ManagerType.background:
                     new_group.manager_type = ManagerType.background
                     new_group.manager_agent_id = group.manager_config.manager_agent_id
-                    new_group.background_agents_interval = group.manager_config.background_agents_interval
-                    if new_group.background_agents_interval:
+                    new_group.background_agents_frequency = group.manager_config.background_agents_frequency
+                    if new_group.background_agents_frequency:
                         new_group.turns_counter = 0
                 case _:
                     raise ValueError(f"Unsupported manager type: {group.manager_config.manager_type}")
@@ -93,7 +93,7 @@ class GroupManager:
         with self.session_maker() as session:
             group = GroupModel.read(db_session=session, identifier=group_id, actor=actor)
 
-            background_agents_interval = None
+            background_agents_frequency = None
             max_turns = None
             termination_token = None
             manager_agent_id = None
@@ -111,14 +111,14 @@ class GroupManager:
                         manager_agent_id = group_update.manager_config.manager_agent_id
                     case ManagerType.background:
                         manager_agent_id = group_update.manager_config.manager_agent_id
-                        background_agents_interval = group_update.manager_config.background_agents_interval
-                        if background_agents_interval and group.turns_counter is None:
+                        background_agents_frequency = group_update.manager_config.background_agents_frequency
+                        if background_agents_frequency and group.turns_counter is None:
                             group.turns_counter = 0
                     case _:
                         raise ValueError(f"Unsupported manager type: {group_update.manager_config.manager_type}")
 
-            if background_agents_interval:
-                group.background_agents_interval = background_agents_interval
+            if background_agents_frequency:
+                group.background_agents_frequency = background_agents_frequency
             if max_turns:
                 group.max_turns = max_turns
             if termination_token:
@@ -198,7 +198,7 @@ class GroupManager:
             group = GroupModel.read(db_session=session, identifier=group_id, actor=actor)
 
             # Update turns counter
-            group.turns_counter = (group.turns_counter + 1) % group.background_agents_interval
+            group.turns_counter = (group.turns_counter + 1) % group.background_agents_frequency
             group.update(session, actor=actor)
             return group.turns_counter
 

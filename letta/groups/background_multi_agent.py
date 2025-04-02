@@ -13,6 +13,7 @@ from letta.schemas.letta_message_content import TextContent
 from letta.schemas.message import Message, MessageCreate
 from letta.schemas.run import Run
 from letta.schemas.usage import LettaUsageStatistics
+from letta.server.rest_api.interface import StreamingServerInterface
 from letta.services.group_manager import GroupManager
 from letta.services.job_manager import JobManager
 from letta.services.message_manager import MessageManager
@@ -29,13 +30,13 @@ class BackgroundMultiAgent(Agent):
         group_id: str = "",
         agent_ids: List[str] = [],
         description: str = "",
-        background_agents_interval: Optional[int] = None,
+        background_agents_frequency: Optional[int] = None,
     ):
         super().__init__(interface, agent_state, user)
         self.group_id = group_id
         self.agent_ids = agent_ids
         self.description = description
-        self.background_agents_interval = background_agents_interval
+        self.background_agents_frequency = background_agents_frequency
         self.group_manager = GroupManager()
         self.message_manager = MessageManager()
         self.job_manager = JobManager()
@@ -112,12 +113,12 @@ class BackgroundMultiAgent(Agent):
             participant_agent_state = self.agent_manager.get_agent_by_id(participant_agent_id, actor=self.user)
             participant_agent = Agent(
                 agent_state=participant_agent_state,
-                interface=self.interface,
+                interface=StreamingServerInterface(),
                 user=self.user,
             )
 
             prior_messages = []
-            if self.background_agents_interval:
+            if self.background_agents_frequency:
                 try:
                     prior_messages = self.message_manager.list_messages_for_agent(
                         agent_id=self.agent_state.id,
@@ -212,11 +213,11 @@ class BackgroundMultiAgent(Agent):
             )
 
             turns_counter = None
-            if self.background_agents_interval is not None and self.background_agents_interval > 0:
+            if self.background_agents_frequency is not None and self.background_agents_frequency > 0:
                 turns_counter = self.group_manager.bump_turns_counter(group_id=self.group_id, actor=self.user)
 
-            if self.background_agents_interval is None or (
-                turns_counter is not None and turns_counter % self.background_agents_interval == 0
+            if self.background_agents_frequency is None or (
+                turns_counter is not None and turns_counter % self.background_agents_frequency == 0
             ):
                 last_response_messages = [message for sublist in usage_stats.steps_messages for message in sublist]
                 last_processed_message_id = self.group_manager.get_last_processed_message_id_and_update(
