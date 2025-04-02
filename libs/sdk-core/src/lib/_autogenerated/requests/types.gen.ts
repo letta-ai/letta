@@ -241,6 +241,10 @@ export type AgentState = {
    */
   message_buffer_autoclear?: boolean;
   /**
+   * If set to True, memory management will move to a background agent thread.
+   */
+  enable_sleeptime?: boolean | null;
+  /**
    * The multi-agent group that this agent manages
    */
   multi_agent_group?: Group | null;
@@ -252,7 +256,7 @@ export type AgentState = {
 export type AgentType =
   | 'memgpt_agent'
   | 'split_thread_agent'
-  | 'offline_memory_agent';
+  | 'sleeptime_agent';
 
 /**
  * App authenticatio scheme.
@@ -381,7 +385,7 @@ export type AuthSchemeField = {
 export type BackgroundManager = {
   manager_type?: 'background';
   manager_agent_id: string;
-  background_agents_interval?: number | null;
+  background_agents_frequency?: number | null;
 };
 
 export type BaseToolRuleSchema = {
@@ -1412,7 +1416,7 @@ export type Group = {
   manager_agent_id?: string | null;
   termination_token?: string | null;
   max_turns?: number | null;
-  background_agents_interval?: number | null;
+  background_agents_frequency?: number | null;
   turns_counter?: number | null;
   last_processed_message_id?: string | null;
 };
@@ -3224,6 +3228,7 @@ export type ToolType =
   | 'letta_core'
   | 'letta_memory_core'
   | 'letta_multi_agent_core'
+  | 'letta_sleeptime_core'
   | 'external_composio'
   | 'external_langchain'
   | 'external_mcp';

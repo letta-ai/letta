@@ -585,7 +585,7 @@ export type AgentType = z.infer<typeof AgentType>;
 export const AgentType = z.union([
   z.literal('memgpt_agent'),
   z.literal('split_thread_agent'),
-  z.literal('offline_memory_agent'),
+  z.literal('sleeptime_agent'),
 ]);
 
 export type Block = z.infer<typeof Block>;
@@ -664,6 +664,7 @@ export const ToolType = z.union([
   z.literal('letta_core'),
   z.literal('letta_memory_core'),
   z.literal('letta_multi_agent_core'),
+  z.literal('letta_sleeptime_core'),
   z.literal('external_composio'),
   z.literal('external_langchain'),
   z.literal('external_mcp'),
@@ -810,7 +811,7 @@ export const Group = z.object({
       z.undefined(),
     ])
     .optional(),
-  background_agents_interval: z
+  background_agents_frequency: z
     .union([
       z.number(),
       z.null(),
@@ -972,6 +973,14 @@ export const AgentState = z.object({
     .optional(),
   identity_ids: z.union([z.array(z.string()), z.undefined()]).optional(),
   message_buffer_autoclear: z.union([z.boolean(), z.undefined()]).optional(),
+  enable_sleeptime: z
+    .union([
+      z.boolean(),
+      z.null(),
+      z.array(z.union([z.boolean(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
   multi_agent_group: z
     .union([
       Group,
@@ -1221,7 +1230,7 @@ export type BackgroundManager = z.infer<typeof BackgroundManager>;
 export const BackgroundManager = z.object({
   manager_type: z.union([z.string(), z.undefined()]).optional(),
   manager_agent_id: z.string(),
-  background_agents_interval: z
+  background_agents_frequency: z
     .union([
       z.number(),
       z.null(),

@@ -13,9 +13,12 @@ export function LettaTools() {
   const lettaTools = useMemo(() => {
     return (
       tools?.filter((tool) =>
-        ['letta_memory_core', 'letta_multi_agent_core', 'letta_core'].includes(
-          tool.tool_type || '',
-        ),
+        [
+          'letta_memory_core',
+          'letta_multi_agent_core',
+          'letta_core',
+          'letta_sleeptime_core',
+        ].includes(tool.tool_type || ''),
       ) || []
     );
   }, [tools]);

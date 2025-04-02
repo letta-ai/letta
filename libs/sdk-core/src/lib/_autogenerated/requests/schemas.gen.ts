@@ -706,6 +706,19 @@ export const $AgentState = {
         'If set to True, the agent will not remember previous messages (though the agent will still retain state via core memory blocks and archival/recall memory). Not recommended unless you have an advanced use case.',
       default: false,
     },
+    enable_sleeptime: {
+      anyOf: [
+        {
+          type: 'boolean',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Enable Sleeptime',
+      description:
+        'If set to True, memory management will move to a background agent thread.',
+    },
     multi_agent_group: {
       anyOf: [
         {
@@ -749,7 +762,7 @@ Parameters:
 
 export const $AgentType = {
   type: 'string',
-  enum: ['memgpt_agent', 'split_thread_agent', 'offline_memory_agent'],
+  enum: ['memgpt_agent', 'split_thread_agent', 'sleeptime_agent'],
   title: 'AgentType',
   description: 'Enum to represent the type of agent.',
 } as const;
@@ -1195,7 +1208,7 @@ export const $BackgroundManager = {
       title: 'Manager Agent Id',
       description: '',
     },
-    background_agents_interval: {
+    background_agents_frequency: {
       anyOf: [
         {
           type: 'integer',
@@ -1204,7 +1217,7 @@ export const $BackgroundManager = {
           type: 'null',
         },
       ],
-      title: 'Background Agents Interval',
+      title: 'Background Agents Frequency',
       description: '',
     },
   },
@@ -3574,7 +3587,6 @@ export const $CreateAgentRequest = {
       title: 'Enable Sleeptime',
       description:
         'If set to True, memory management will move to a background agent thread.',
-      default: false,
     },
     actor_id: {
       anyOf: [
@@ -4259,7 +4271,7 @@ export const $Group = {
       title: 'Max Turns',
       description: '',
     },
-    background_agents_interval: {
+    background_agents_frequency: {
       anyOf: [
         {
           type: 'integer',
@@ -4268,7 +4280,7 @@ export const $Group = {
           type: 'null',
         },
       ],
-      title: 'Background Agents Interval',
+      title: 'Background Agents Frequency',
       description: '',
     },
     turns_counter: {
@@ -8712,6 +8724,7 @@ export const $ToolType = {
     'letta_core',
     'letta_memory_core',
     'letta_multi_agent_core',
+    'letta_sleeptime_core',
     'external_composio',
     'external_langchain',
     'external_mcp',
@@ -9125,7 +9138,6 @@ export const $UpdateAgent = {
       title: 'Enable Sleeptime',
       description:
         'If set to True, memory management will move to a background agent thread.',
-      default: false,
     },
   },
   type: 'object',

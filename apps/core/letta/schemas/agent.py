@@ -26,7 +26,7 @@ class AgentType(str, Enum):
 
     memgpt_agent = "memgpt_agent"
     split_thread_agent = "split_thread_agent"
-    offline_memory_agent = "offline_memory_agent"
+    sleeptime_agent = "sleeptime_agent"
 
 
 class AgentState(OrmMetadataBase, validate_assignment=True):
@@ -89,6 +89,10 @@ class AgentState(OrmMetadataBase, validate_assignment=True):
     message_buffer_autoclear: bool = Field(
         False,
         description="If set to True, the agent will not remember previous messages (though the agent will still retain state via core memory blocks and archival/recall memory). Not recommended unless you have an advanced use case.",
+    )
+    enable_sleeptime: Optional[bool] = Field(
+        None,
+        description="If set to True, memory management will move to a background agent thread.",
     )
 
     multi_agent_group: Optional[Group] = Field(None, description="The multi-agent group that this agent manages")
@@ -174,7 +178,7 @@ class CreateAgent(BaseModel, validate_assignment=True):  #
         False,
         description="If set to True, the agent will not remember previous messages (though the agent will still retain state via core memory blocks and archival/recall memory). Not recommended unless you have an advanced use case.",
     )
-    enable_sleeptime: Optional[bool] = Field(False, description="If set to True, memory management will move to a background agent thread.")
+    enable_sleeptime: Optional[bool] = Field(None, description="If set to True, memory management will move to a background agent thread.")
 
     @field_validator("name")
     @classmethod
@@ -253,7 +257,7 @@ class UpdateAgent(BaseModel):
     embedding: Optional[str] = Field(
         None, description="The embedding configuration handle used by the agent, specified in the format provider/model-name."
     )
-    enable_sleeptime: Optional[bool] = Field(False, description="If set to True, memory management will move to a background agent thread.")
+    enable_sleeptime: Optional[bool] = Field(None, description="If set to True, memory management will move to a background agent thread.")
 
     class Config:
         extra = "ignore"  # Ignores extra fields

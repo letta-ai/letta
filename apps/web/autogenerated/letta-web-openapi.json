@@ -987,7 +987,7 @@
                         "enum": [
                           "memgpt_agent",
                           "split_thread_agent",
-                          "offline_memory_agent"
+                          "sleeptime_agent"
                         ]
                       },
                       "llm_config": {
@@ -1792,6 +1792,7 @@
                                 "letta_core",
                                 "letta_memory_core",
                                 "letta_multi_agent_core",
+                                "letta_sleeptime_core",
                                 "external_composio",
                                 "external_langchain",
                                 "external_mcp"
@@ -2875,6 +2876,36 @@
                           {}
                         ]
                       },
+                      "enable_sleeptime": {
+                        "oneOf": [
+                          {
+                            "type": "boolean"
+                          },
+                          {
+                            "type": "string",
+                            "format": "null",
+                            "nullable": true
+                          },
+                          {
+                            "type": "array",
+                            "items": {
+                              "oneOf": [
+                                {
+                                  "type": "boolean"
+                                },
+                                {
+                                  "type": "string",
+                                  "format": "null",
+                                  "nullable": true
+                                }
+                              ],
+                              "nullable": true
+                            }
+                          },
+                          {}
+                        ],
+                        "nullable": true
+                      },
                       "multi_agent_group": {
                         "oneOf": [
                           {
@@ -3003,7 +3034,7 @@
                                 ],
                                 "nullable": true
                               },
-                              "background_agents_interval": {
+                              "background_agents_frequency": {
                                 "oneOf": [
                                   {
                                     "type": "number"
@@ -3236,7 +3267,7 @@
                                       ],
                                       "nullable": true
                                     },
-                                    "background_agents_interval": {
+                                    "background_agents_frequency": {
                                       "oneOf": [
                                         {
                                           "type": "number"
@@ -4009,7 +4040,7 @@
                             "enum": [
                               "memgpt_agent",
                               "split_thread_agent",
-                              "offline_memory_agent"
+                              "sleeptime_agent"
                             ]
                           },
                           "llm_config": {
@@ -4814,6 +4845,7 @@
                                     "letta_core",
                                     "letta_memory_core",
                                     "letta_multi_agent_core",
+                                    "letta_sleeptime_core",
                                     "external_composio",
                                     "external_langchain",
                                     "external_mcp"
@@ -5897,6 +5929,36 @@
                               {}
                             ]
                           },
+                          "enable_sleeptime": {
+                            "oneOf": [
+                              {
+                                "type": "boolean"
+                              },
+                              {
+                                "type": "string",
+                                "format": "null",
+                                "nullable": true
+                              },
+                              {
+                                "type": "array",
+                                "items": {
+                                  "oneOf": [
+                                    {
+                                      "type": "boolean"
+                                    },
+                                    {
+                                      "type": "string",
+                                      "format": "null",
+                                      "nullable": true
+                                    }
+                                  ],
+                                  "nullable": true
+                                }
+                              },
+                              {}
+                            ],
+                            "nullable": true
+                          },
                           "multi_agent_group": {
                             "oneOf": [
                               {
@@ -6025,7 +6087,7 @@
                                     ],
                                     "nullable": true
                                   },
-                                  "background_agents_interval": {
+                                  "background_agents_frequency": {
                                     "oneOf": [
                                       {
                                         "type": "number"
@@ -6258,7 +6320,7 @@
                                           ],
                                           "nullable": true
                                         },
-                                        "background_agents_interval": {
+                                        "background_agents_frequency": {
                                           "oneOf": [
                                             {
                                               "type": "number"
@@ -7413,7 +7475,7 @@
                             "enum": [
                               "memgpt_agent",
                               "split_thread_agent",
-                              "offline_memory_agent"
+                              "sleeptime_agent"
                             ]
                           },
                           "llm_config": {
@@ -8218,6 +8280,7 @@
                                     "letta_core",
                                     "letta_memory_core",
                                     "letta_multi_agent_core",
+                                    "letta_sleeptime_core",
                                     "external_composio",
                                     "external_langchain",
                                     "external_mcp"
@@ -9301,6 +9364,36 @@
                               {}
                             ]
                           },
+                          "enable_sleeptime": {
+                            "oneOf": [
+                              {
+                                "type": "boolean"
+                              },
+                              {
+                                "type": "string",
+                                "format": "null",
+                                "nullable": true
+                              },
+                              {
+                                "type": "array",
+                                "items": {
+                                  "oneOf": [
+                                    {
+                                      "type": "boolean"
+                                    },
+                                    {
+                                      "type": "string",
+                                      "format": "null",
+                                      "nullable": true
+                                    }
+                                  ],
+                                  "nullable": true
+                                }
+                              },
+                              {}
+                            ],
+                            "nullable": true
+                          },
                           "multi_agent_group": {
                             "oneOf": [
                               {
@@ -9429,7 +9522,7 @@
                                     ],
                                     "nullable": true
                                   },
-                                  "background_agents_interval": {
+                                  "background_agents_frequency": {
                                     "oneOf": [
                                       {
                                         "type": "number"
@@ -9662,7 +9755,7 @@
                                           ],
                                           "nullable": true
                                         },
-                                        "background_agents_interval": {
+                                        "background_agents_frequency": {
                                           "oneOf": [
                                             {
                                               "type": "number"

@@ -7110,6 +7110,18 @@
             "description": "If set to True, the agent will not remember previous messages (though the agent will still retain state via core memory blocks and archival/recall memory). Not recommended unless you have an advanced use case.",
             "default": false
           },
+          "enable_sleeptime": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Enable Sleeptime",
+            "description": "If set to True, memory management will move to a background agent thread."
+          },
           "multi_agent_group": {
             "anyOf": [
               {
@@ -7141,7 +7153,7 @@
       },
       "AgentType": {
         "type": "string",
-        "enum": ["memgpt_agent", "split_thread_agent", "offline_memory_agent"],
+        "enum": ["memgpt_agent", "split_thread_agent", "sleeptime_agent"],
         "title": "AgentType",
         "description": "Enum to represent the type of agent."
       },
@@ -7579,7 +7591,7 @@
             "title": "Manager Agent Id",
             "description": ""
           },
-          "background_agents_interval": {
+          "background_agents_frequency": {
             "anyOf": [
               {
                 "type": "integer"
@@ -7588,7 +7600,7 @@
                 "type": "null"
               }
             ],
-            "title": "Background Agents Interval",
+            "title": "Background Agents Frequency",
             "description": ""
           }
         },
@@ -9872,8 +9884,7 @@
               }
             ],
             "title": "Enable Sleeptime",
-            "description": "If set to True, memory management will move to a background agent thread.",
-            "default": false
+            "description": "If set to True, memory management will move to a background agent thread."
           }
         },
         "type": "object",
@@ -10511,7 +10522,7 @@
             "title": "Max Turns",
             "description": ""
           },
-          "background_agents_interval": {
+          "background_agents_frequency": {
             "anyOf": [
               {
                 "type": "integer"
@@ -10520,7 +10531,7 @@
                 "type": "null"
               }
             ],
-            "title": "Background Agents Interval",
+            "title": "Background Agents Frequency",
             "description": ""
           },
           "turns_counter": {
@@ -14562,6 +14573,7 @@
           "letta_core",
           "letta_memory_core",
           "letta_multi_agent_core",
+          "letta_sleeptime_core",
           "external_composio",
           "external_langchain",
           "external_mcp"
@@ -14965,8 +14977,7 @@
               }
             ],
             "title": "Enable Sleeptime",
-            "description": "If set to True, memory management will move to a background agent thread.",
-            "default": false
+            "description": "If set to True, memory management will move to a background agent thread."
           }
         },
         "type": "object",

@@ -104,6 +104,9 @@ class Tool(BaseTool):
         elif self.tool_type in {ToolType.LETTA_MULTI_AGENT_CORE}:
             # If it's letta multi-agent tool, we also generate the json_schema on the fly here
             self.json_schema = get_json_schema_from_module(module_name=LETTA_MULTI_AGENT_TOOL_MODULE_NAME, function_name=self.name)
+        elif self.tool_type in {ToolType.LETTA_SLEEPTIME_CORE}:
+            # If it's letta sleeptime core tool, we generate the json_schema on the fly here
+            self.json_schema = get_json_schema_from_module(module_name=LETTA_CORE_TOOL_MODULE_NAME, function_name=self.name)
 
         # At this point, we need to validate that at least json_schema is populated
         if not self.json_schema:

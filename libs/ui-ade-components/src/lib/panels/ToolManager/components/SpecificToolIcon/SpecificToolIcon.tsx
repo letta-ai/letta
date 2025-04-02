@@ -17,6 +17,7 @@ export function SpecificToolIcon(props: SpecificToolIconProps) {
     case 'letta_memory_core':
     case 'letta_core':
     case 'letta_multi_agent_core':
+    case 'letta_sleeptime_core':
       return <LettaLogoIcon />;
     case 'external_composio':
       return <ComposioLogoMarkDynamic />;

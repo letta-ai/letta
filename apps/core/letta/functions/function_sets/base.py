@@ -164,3 +164,34 @@ def core_memory_replace(agent_state: "AgentState", label: str, old_content: str,
     new_value = current_value.replace(str(old_content), str(new_content))
     agent_state.memory.update_block_value(label=label, value=new_value)
     return None
+
+
+def rethink_memory(agent_state: "AgentState", new_memory: str, target_block_label: str) -> None:  # type: ignore
+    """
+    Re-evaluate the memory in block_name, integrating new and updated facts.
+    Replace outdated information with the most likely truths, avoiding redundancy with original memories.
+    Ensure consistency with other memory blocks.
+
+    Args:
+        new_memory (str): The new memory with information integrated from the memory block. If there is no new information, then this should be the same as the content in the source block.
+        target_block_label (str): The name of the block to write to.
+
+    Returns:
+        None: None is always returned as this function does not produce a response.
+    """
+
+    if target_block_label is not None:
+        if agent_state.memory.get_block(target_block_label) is None:
+            agent_state.memory.create_block(label=target_block_label, value=new_memory)
+        agent_state.memory.update_block_value(label=target_block_label, value=new_memory)
+    return None
+
+
+def finish_rethinking_memory(agent_state: "AgentState") -> None:  # type: ignore
+    """
+    This function is called when the agent is done rethinking the memory.
+
+    Returns:
+        Optional[str]: None is always returned as this function does not produce a response.
+    """
+    return None

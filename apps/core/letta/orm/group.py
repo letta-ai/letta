@@ -20,7 +20,7 @@ class Group(SqlalchemyBase, OrganizationMixin):
     manager_agent_id: Mapped[Optional[str]] = mapped_column(String, ForeignKey("agents.id", ondelete="RESTRICT"), nullable=True, doc="")
     termination_token: Mapped[Optional[str]] = mapped_column(nullable=True, doc="")
     max_turns: Mapped[Optional[int]] = mapped_column(nullable=True, doc="")
-    background_agents_interval: Mapped[Optional[int]] = mapped_column(nullable=True, doc="")
+    background_agents_frequency: Mapped[Optional[int]] = mapped_column(nullable=True, doc="")
     turns_counter: Mapped[Optional[int]] = mapped_column(nullable=True, doc="")
     last_processed_message_id: Mapped[Optional[str]] = mapped_column(nullable=True, doc="")
 

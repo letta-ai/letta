@@ -120,7 +120,7 @@ def finish_rethinking_memory_convo(agent_state: "AgentState") -> None:  # type: 
     return None
 
 
-class OfflineMemoryAgent(Agent):
+class SleeptimeAgent(Agent):
     def __init__(
         self,
         interface: AgentInterface,

@@ -4,12 +4,10 @@ import pytest
 from sqlalchemy import delete
 
 from letta.config import LettaConfig
-from letta.constants import BASE_MEMORY_TOOLS, BASE_TOOLS
-from letta.functions.functions import parse_source_code
-from letta.functions.schema_generator import generate_schema
 from letta.orm import Provider, Step
+from letta.orm.errors import NoResultFound
 from letta.schemas.agent import CreateAgent
-from letta.schemas.block import Block, CreateBlock
+from letta.schemas.block import CreateBlock
 from letta.schemas.enums import JobStatus
 from letta.schemas.group import (
     BackgroundManager,
@@ -21,8 +19,6 @@ from letta.schemas.group import (
     SupervisorManager,
 )
 from letta.schemas.message import MessageCreate
-from letta.schemas.tool import Tool
-from letta.schemas.tool_rule import TerminalToolRule
 from letta.server.server import SyncServer
 
 
@@ -446,17 +442,7 @@ async def test_dynamic_group_chat(server, actor, manager_agent, participant_agen
 
 @pytest.mark.asyncio
 async def test_background_group_chat(server, actor):
-    # 1. create shared block
-    shared_memory_block = server.block_manager.create_or_update_block(
-        Block(
-            label="human",
-            value="",
-            limit=1000,
-        ),
-        actor=actor,
-    )
-
-    # 2. create main agent
+    # 1. create sleeptime agent
     main_agent = server.create_agent(
         request=CreateAgent(
             name="main_agent",
@@ -465,75 +451,44 @@ async def test_background_group_chat(server, actor):
                     label="persona",
                     value="You are a personal assistant that helps users with requests.",
                 ),
-            ],
-            model="openai/gpt-4o-mini",
-            embedding="openai/text-embedding-ada-002",
-            include_base_tools=False,
-            tools=BASE_TOOLS,
-        ),
-        actor=actor,
-    )
-
-    # 3. create background memory agent
-    def skip_memory_update():
-        """
-        Perform no memory updates. This function is used when the transcript
-        does not require any changes to the memory.
-        """
-
-    skip_memory_update = Tool(
-        name=skip_memory_update.__name__,
-        description="",
-        source_type="python",
-        tags=[],
-        source_code=parse_source_code(skip_memory_update),
-        json_schema=generate_schema(skip_memory_update, None),
-    )
-    skip_memory_update = server.tool_manager.create_or_update_tool(
-        pydantic_tool=skip_memory_update,
-        actor=actor,
-    )
-
-    background_memory_agent = server.create_agent(
-        request=CreateAgent(
-            name="memory_agent",
-            memory_blocks=[
                 CreateBlock(
-                    label="persona",
-                    value="You manage memory for the main agent. You are a background agent and you are not expected to respond to messages. When you receive a conversation snippet from the main thread, perform memory updates only if there are meaningful changes, and otherwise call the skip_memory_update tool.",
+                    label="human",
+                    value="",
                 ),
             ],
             model="openai/gpt-4o-mini",
             embedding="openai/text-embedding-ada-002",
-            include_base_tools=False,
-            include_base_tool_rules=False,
-            tools=BASE_MEMORY_TOOLS + [skip_memory_update.name],
-            tool_rules=[
-                TerminalToolRule(tool_name="core_memory_append"),
-                TerminalToolRule(tool_name="core_memory_replace"),
-                TerminalToolRule(tool_name="skip_memory_update"),
-            ],
+            enable_sleeptime=True,
         ),
         actor=actor,
     )
 
-    # 4. create group
-    group = server.group_manager.create_group(
-        group=GroupCreate(
-            description="",
-            agent_ids=[background_memory_agent.id],
+    # 2. Change frequency for test
+    group = server.group_manager.modify_group(
+        group_id=main_agent.multi_agent_group.id,
+        group_update=GroupUpdate(
             manager_config=BackgroundManager(
                 manager_agent_id=main_agent.id,
-                background_agents_interval=2,
+                background_agents_frequency=2,
             ),
-            shared_block_ids=[shared_memory_block.id],
         ),
         actor=actor,
     )
 
-    agents = server.block_manager.get_agents_for_block(block_id=shared_memory_block.id, actor=actor)
-    assert len(agents) == 2
+    assert group.manager_type == ManagerType.background
+    assert group.background_agents_frequency == 2
+    assert len(group.agent_ids) == 1
 
+    sleeptime_agent_id = group.agent_ids[0]
+    shared_block = server.agent_manager.get_block_with_label(agent_id=main_agent.id, block_label="human", actor=actor)
+    agents = server.block_manager.get_agents_for_block(block_id=shared_block.id, actor=actor)
+    assert len(agents) == 2
+    assert sleeptime_agent_id in [agent.id for agent in agents]
+    assert main_agent.id in [agent.id for agent in agents]
+
+    assert main_agent.enable_sleeptime == True
+
+    # 6. Send messages
     message_text = [
         "my favorite color is orange",
         "not particularly. today is a good day",
@@ -556,8 +511,8 @@ async def test_background_group_chat(server, actor):
         )
 
         assert len(response.messages) > 0
-        assert len(response.usage.run_ids) == i % 2
-        run_ids.extend(response.usage.run_ids)
+        assert len(response.usage.run_ids or []) == i % 2
+        run_ids.extend(response.usage.run_ids or [])
 
     time.sleep(5)
 
@@ -565,6 +520,9 @@ async def test_background_group_chat(server, actor):
         job = server.job_manager.get_job_by_id(job_id=run_id, actor=actor)
         assert job.status == JobStatus.completed
 
-    server.group_manager.delete_group(group_id=group.id, actor=actor)
-    server.agent_manager.delete_agent(agent_id=background_memory_agent.id, actor=actor)
     server.agent_manager.delete_agent(agent_id=main_agent.id, actor=actor)
+
+    with pytest.raises(NoResultFound):
+        server.group_manager.retrieve_group(group_id=group.id, actor=actor)
+    with pytest.raises(NoResultFound):
+        server.agent_manager.get_agent_by_id(agent_id=sleeptime_agent_id, actor=actor)
