@@ -46,7 +46,6 @@ class OpenAIClient(LLMClientBase):
         self,
         messages: List[PydanticMessage],
         tools: Optional[List[dict]] = None,  # Keep as dict for now as per base class
-        tool_call: Optional[str] = None,  # Note: OpenAI uses tool_choice
         force_tool_call: Optional[str] = None,
     ) -> dict:
         """
@@ -76,25 +75,22 @@ class OpenAIClient(LLMClientBase):
             logger.warning(f"Model type not set in llm_config: {self.llm_config.model_dump_json(indent=4)}")
             model = None
 
-        if tool_call is None and tools is not None and len(tools) > 0:
-            # force function calling for reliability, see https://platform.openai.com/docs/api-reference/chat/create#chat-create-tool_choice
-            # TODO(matt) move into LLMConfig
-            # TODO: This vllm checking is very brittle and is a patch at most
-            if self.llm_config.model_endpoint == "https://inference.memgpt.ai" or (
-                self.llm_config.handle and "vllm" in self.llm_config.handle
-            ):
-                tool_call = "auto"  # TODO change to "required" once proxy supports it
-            else:
-                tool_call = "required"
+        # force function calling for reliability, see https://platform.openai.com/docs/api-reference/chat/create#chat-create-tool_choice
+        # TODO(matt) move into LLMConfig
+        # TODO: This vllm checking is very brittle and is a patch at most
+        if self.llm_config.model_endpoint == "https://inference.memgpt.ai" or (self.llm_config.handle and "vllm" in self.llm_config.handle):
+            tool_choice = "auto"  # TODO change to "required" once proxy supports it
+        else:
+            tool_choice = "required"
 
-        if tool_call not in ["none", "auto", "required"]:
-            tool_call = ToolFunctionChoice(type="function", function=ToolFunctionChoiceFunctionCall(name=tool_call))
+        if force_tool_call is not None:
+            tool_choice = ToolFunctionChoice(type="function", function=ToolFunctionChoiceFunctionCall(name=force_tool_call))
 
         data = ChatCompletionRequest(
             model=model,
             messages=openai_message_list,
             tools=[OpenAITool(type="function", function=f) for f in tools] if tools else None,
-            tool_choice=tool_call,
+            tool_choice=tool_choice,
             user=str(),
             max_completion_tokens=self.llm_config.max_tokens,
             temperature=self.llm_config.temperature,
