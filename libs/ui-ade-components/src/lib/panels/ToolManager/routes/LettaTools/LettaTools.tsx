@@ -5,7 +5,11 @@ import { LoadingEmptyStatusComponent } from '@letta-cloud/ui-component-library';
 import { useTranslations } from '@letta-cloud/translations';
 
 export function LettaTools() {
-  const { data: tools, isError, isLoading } = useToolsServiceListTools();
+  const {
+    data: tools,
+    isError,
+    isLoading,
+  } = useToolsServiceListTools({ limit: 100 });
   const [search, setSearch] = useState<string>('');
 
   const t = useTranslations('ToolsEditor/LettaTools');
