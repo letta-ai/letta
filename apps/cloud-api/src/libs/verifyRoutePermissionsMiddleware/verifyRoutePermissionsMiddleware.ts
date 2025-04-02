@@ -5,6 +5,7 @@ import {
   type MethodType,
 } from '@letta-cloud/utils-server';
 import { roleToServicesMap } from '@letta-cloud/service-rbac';
+import { DEFAULT_UNAUTHORIZED_MESSAGE } from '../constants';
 
 export async function verifyRoutePermissionsMiddleware(
   req: Request,
@@ -28,7 +29,7 @@ export async function verifyRoutePermissionsMiddleware(
   );
 
   if (!user) {
-    res.status(401).send('Unauthorized');
+    res.status(401).send(DEFAULT_UNAUTHORIZED_MESSAGE);
     return;
   }
 
@@ -37,7 +38,7 @@ export async function verifyRoutePermissionsMiddleware(
   const userPermissions = new Set(roleToServicesMap[user.role || 'custom']);
 
   if (!permission || userPermissions.has(permission)) {
-    res.status(401).send('Unauthorized');
+    res.status(401).send(DEFAULT_UNAUTHORIZED_MESSAGE);
     return;
   }
 

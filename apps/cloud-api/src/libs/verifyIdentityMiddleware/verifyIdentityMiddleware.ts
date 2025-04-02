@@ -4,6 +4,7 @@ import { z } from 'zod';
 import type { ActorIdentity } from '../../types';
 import { verifyAndReturnAPIKeyDetails } from '@letta-cloud/utils-server';
 import { findOrCreateUserAndOrganizationFromProviderLogin } from '@letta-cloud/service-auth';
+import { DEFAULT_UNAUTHORIZED_MESSAGE } from '../constants';
 
 const publicRoutes = [new RegExp('/v1/heath')];
 
@@ -133,5 +134,5 @@ export async function verifyIdentityMiddleware(
     return;
   }
 
-  res.status(401).send('Unauthorized');
+  res.status(401).send(DEFAULT_UNAUTHORIZED_MESSAGE);
 }
