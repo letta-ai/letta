@@ -232,7 +232,7 @@ function AttachLocalTool(props: AttachLocalToolProps) {
 
   return (
     <Button
-      data-testId="attach-tool-to-agent"
+      data-testid="attach-tool-to-agent"
       color="tertiary"
       size="small"
       preIcon={<AddLinkIcon />}

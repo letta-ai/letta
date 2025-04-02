@@ -5,8 +5,7 @@ import { useShouldUserSeeOnboarding } from '@letta-cloud/utils-client';
 import { useCurrentAgentMetaData } from '../useCurrentAgentMetaData/useCurrentAgentMetaData';
 import { useLocalStorage } from '@mantine/hooks';
 
-type Steps = 'core_memories' | 'chat' | 'tools' | 'template' | 'welcome';
-
+type Steps = 'chat' | 'core_memories' | 'template' | 'tools' | 'welcome';
 export function useADETourStep() {
   return useLocalStorage<Steps>({
     key: 'ade_tour_step',

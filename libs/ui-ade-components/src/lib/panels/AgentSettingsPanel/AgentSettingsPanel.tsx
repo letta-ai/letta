@@ -60,7 +60,7 @@ import { useADEAppContext } from '../../AppContext/AppContext';
 import { useIdentityTypeToTranslationMap } from '../../IdentitiesTable/hooks/useIdentityTypeToTranslationMap';
 import { getBrandFromModelName } from '@letta-cloud/utils-shared';
 import { useInferenceModels } from '../../hooks/useInferenceModels/useInferenceModels';
-import { useADETour } from '@letta-cloud/ui-ade-components';
+import { useADETour } from '../../hooks/useADETour/useADETour';
 
 interface SelectedModelType {
   icon: React.ReactNode;
@@ -777,11 +777,11 @@ function AgentTags() {
   );
 }
 
-interface AgentSettingsOnboarding {
+interface AgentSettingsOnboardingProps {
   children: React.ReactNode;
 }
 
-export function AgentSettingsOnboarding(props: AgentSettingsOnboarding) {
+export function AgentSettingsOnboarding(props: AgentSettingsOnboardingProps) {
   const t = useTranslations('ADE/AgentSettingsPanel');
   const { children } = props;
 

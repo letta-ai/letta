@@ -438,7 +438,7 @@ export function ToolManager(props: ToolManagerProps) {
             <Button
               postIcon={<CloseIcon />}
               size="small"
-              data-testId="close-tool-manager"
+              data-testid="close-tool-manager"
               _use_rarely_className="disable-app-header"
               color="tertiary"
               label={t('close')}
