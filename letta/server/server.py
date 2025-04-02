@@ -32,7 +32,6 @@ from letta.helpers.message_helper import prepare_input_message_create
 from letta.interface import AgentInterface  # abstract
 from letta.interface import CLIInterface  # for printing to terminal
 from letta.log import get_logger
-from letta.offline_memory_agent import OfflineMemoryAgent
 from letta.orm.errors import NoResultFound
 from letta.schemas.agent import AgentState, AgentType, CreateAgent, UpdateAgent
 from letta.schemas.block import BlockUpdate
@@ -41,6 +40,7 @@ from letta.schemas.embedding_config import EmbeddingConfig
 # openai schemas
 from letta.schemas.enums import JobStatus, MessageStreamStatus
 from letta.schemas.environment_variables import SandboxEnvironmentVariableCreate
+from letta.schemas.group import BackgroundManager, GroupCreate
 from letta.schemas.job import Job, JobUpdate
 from letta.schemas.letta_message import LegacyLettaMessage, LettaMessage, ToolReturnMessage
 from letta.schemas.letta_message_content import TextContent
@@ -92,6 +92,7 @@ from letta.services.tool_executor.tool_execution_sandbox import ToolExecutionSan
 from letta.services.tool_manager import ToolManager
 from letta.services.user_manager import UserManager
 from letta.settings import model_settings, settings, tool_settings
+from letta.sleeptime_agent import SleeptimeAgent
 from letta.tracing import trace_method
 from letta.utils import get_friendly_error_msg
 
@@ -349,13 +350,15 @@ class SyncServer(Server):
         """Updated method to load agents from persisted storage"""
         agent_state = self.agent_manager.get_agent_by_id(agent_id=agent_id, actor=actor)
         if agent_state.multi_agent_group:
-            return load_multi_agent(group=agent_state.multi_agent_group, agent_state=agent_state, actor=actor, interface=interface)
+            return load_multi_agent(
+                group=agent_state.multi_agent_group, agent_state=agent_state, actor=actor, interface=interface, mcp_clients=self.mcp_clients
+            )
 
         interface = interface or self.default_interface_factory()
         if agent_state.agent_type == AgentType.memgpt_agent:
             agent = Agent(agent_state=agent_state, interface=interface, user=actor, mcp_clients=self.mcp_clients)
-        elif agent_state.agent_type == AgentType.offline_memory_agent:
-            agent = OfflineMemoryAgent(agent_state=agent_state, interface=interface, user=actor)
+        elif agent_state.agent_type == AgentType.sleeptime_agent:
+            agent = SleeptimeAgent(agent_state=agent_state, interface=interface, user=actor)
         else:
             raise ValueError(f"Invalid agent type {agent_state.agent_type}")
 
@@ -718,12 +721,15 @@ class SyncServer(Server):
                 handle=request.embedding, embedding_chunk_size=request.embedding_chunk_size or constants.DEFAULT_EMBEDDING_CHUNK_SIZE
             )
 
-        """Create a new agent using a config"""
-        # Invoke manager
-        return self.agent_manager.create_agent(
+        main_agent = self.agent_manager.create_agent(
             agent_create=request,
             actor=actor,
         )
+
+        if request.enable_sleeptime:
+            main_agent = self.create_sleeptime_agent(main_agent=main_agent, actor=actor)
+
+        return main_agent
 
     def update_agent(
         self,
@@ -737,12 +743,41 @@ class SyncServer(Server):
         if request.embedding is not None:
             request.embedding_config = self.get_embedding_config_from_handle(handle=request.embedding)
 
-        # Invoke manager
+        if request.enable_sleeptime:
+            agent = self.agent_manager.get_agent_by_id(agent_id=agent_id, actor=actor)
+            if agent.multi_agent_group is None:
+                self.create_sleeptime_agent(main_agent=agent, actor=actor)
+
         return self.agent_manager.update_agent(
             agent_id=agent_id,
             agent_update=request,
             actor=actor,
         )
+
+    def create_sleeptime_agent(self, main_agent: AgentState, actor: User) -> AgentState:
+        request = CreateAgent(
+            name=main_agent.name,
+            agent_type=AgentType.sleeptime_agent,
+            block_ids=[block.id for block in main_agent.memory.blocks],
+            llm_config=main_agent.llm_config,
+            embedding_config=main_agent.embedding_config,
+            project_id=main_agent.project_id,
+        )
+        sleeptime_agent = self.agent_manager.create_agent(
+            agent_create=request,
+            actor=actor,
+        )
+        self.group_manager.create_group(
+            group=GroupCreate(
+                description="",
+                agent_ids=[sleeptime_agent.id],
+                manager_config=BackgroundManager(
+                    manager_agent_id=main_agent.id,
+                ),
+            ),
+            actor=actor,
+        )
+        return self.agent_manager.get_agent_by_id(agent_id=main_agent.id, actor=actor)
 
     # convert name->id
 

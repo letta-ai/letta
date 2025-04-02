@@ -101,9 +101,8 @@ def test_shared_blocks(client: LettaSDKClient):
     )
 
     # check agent 2 memory
-    assert (
-        "charles" in client.blocks.retrieve(block_id=block.id).value.lower()
-    ), f"Shared block update failed {client.retrieve_block(block.id).value}"
+    block_value = client.blocks.retrieve(block_id=block.id).value
+    assert "charles" in block_value.lower(), f"Shared block update failed {block_value}"
 
     client.agents.messages.create(
         agent_id=agent_state2.id,

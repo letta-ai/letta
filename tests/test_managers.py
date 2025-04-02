@@ -12,7 +12,14 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm.exc import StaleDataError
 
 from letta.config import LettaConfig
-from letta.constants import BASE_MEMORY_TOOLS, BASE_TOOLS, LETTA_TOOL_EXECUTION_DIR, MCP_TOOL_TAG_NAME_PREFIX, MULTI_AGENT_TOOLS
+from letta.constants import (
+    BASE_MEMORY_TOOLS,
+    BASE_SLEEPTIME_TOOLS,
+    BASE_TOOLS,
+    LETTA_TOOL_EXECUTION_DIR,
+    MCP_TOOL_TAG_NAME_PREFIX,
+    MULTI_AGENT_TOOLS,
+)
 from letta.embeddings import embedding_model
 from letta.functions.functions import derive_openai_json_schema, parse_source_code
 from letta.functions.mcp_client.types import MCPTool
@@ -2168,7 +2175,7 @@ def test_delete_tool_by_id(server: SyncServer, print_tool, default_user):
 
 def test_upsert_base_tools(server: SyncServer, default_user):
     tools = server.tool_manager.upsert_base_tools(actor=default_user)
-    expected_tool_names = sorted(BASE_TOOLS + BASE_MEMORY_TOOLS + MULTI_AGENT_TOOLS)
+    expected_tool_names = sorted(BASE_TOOLS + BASE_MEMORY_TOOLS + MULTI_AGENT_TOOLS + BASE_SLEEPTIME_TOOLS)
     assert sorted([t.name for t in tools]) == expected_tool_names
 
     # Call it again to make sure it doesn't create duplicates
@@ -2183,6 +2190,8 @@ def test_upsert_base_tools(server: SyncServer, default_user):
             assert t.tool_type == ToolType.LETTA_MEMORY_CORE
         elif t.name in MULTI_AGENT_TOOLS:
             assert t.tool_type == ToolType.LETTA_MULTI_AGENT_CORE
+        elif t.name in BASE_SLEEPTIME_TOOLS:
+            assert t.tool_type == ToolType.LETTA_SLEEPTIME_CORE
         else:
             pytest.fail(f"The tool name is unrecognized as a base tool: {t.name}")
         assert t.source_code is None
