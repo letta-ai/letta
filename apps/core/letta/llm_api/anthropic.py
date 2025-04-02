@@ -1107,4 +1107,9 @@ def anthropic_chat_completions_process_stream(
 
     log_event(name="llm_response_received", attributes=chat_completion_response.model_dump())
 
+    for choice in chat_completion_response.choices:
+        if choice.message.content is not None:
+            choice.message.content = choice.message.content.replace(f"<{inner_thoughts_xml_tag}>", "")
+            choice.message.content = choice.message.content.replace(f"</{inner_thoughts_xml_tag}>", "")
+
     return chat_completion_response
