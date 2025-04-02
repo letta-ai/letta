@@ -85,7 +85,20 @@ export function FunctionCall(props: FunctionCallProps) {
   const responseData = useMemo(() => {
     switch (responseView) {
       case 'response':
-        return response?.tool_return;
+        const raw = response?.tool_return;
+        if (!raw) return raw;
+
+        // Try parse the tool_return as JSON, see if there's a 'message' key
+        try {
+          const parsed = JSON.parse(raw);
+          // If parsed is an object and has 'message' key, return that; otherwise fallback to raw
+          if (parsed && typeof parsed === 'object' && 'message' in parsed) {
+            return parsed.message;
+          }
+          return raw;
+        } catch {
+          return raw;
+        }
       case 'stdout':
         return response?.stdout?.join('\n');
       case 'stderr':
