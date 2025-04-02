@@ -36,8 +36,8 @@ def azure_openai_get_deployed_model_list(base_url: str, api_key: str, api_versio
 
     try:
         models_list = client.models.list()
-    except requests.RequestException as e:
-        raise RuntimeError(f"Failed to retrieve model list: {e}")
+    except Exception as e:
+        return []
 
     all_available_models = [model.to_dict() for model in models_list.data]
 
