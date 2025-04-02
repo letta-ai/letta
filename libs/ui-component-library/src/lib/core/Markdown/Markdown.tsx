@@ -82,7 +82,7 @@ export function Markdown(props: MarkdownProps) {
           return <ol className="list-decimal pl-6">{children}</ol>;
         },
         p({ children }) {
-          return <Typography className="block">{children}</Typography>;
+          return <Typography className="block mb-6">{children}</Typography>;
         },
         code(props) {
           const { children, className } = props;
