@@ -360,6 +360,7 @@ web:
 
 ready:
   @echo "🚧 Updating your local environment..."
+  source ~/.nvm/nvm.sh && nvm use
   npm install
   npx nx reset
   npm run core:install
