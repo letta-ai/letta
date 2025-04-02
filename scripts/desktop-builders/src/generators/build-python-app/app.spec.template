@@ -17,7 +17,7 @@ a = Analysis(
         ('DEP_PATH/letta/prompts/system', 'letta/prompts/system'),
         ('DEP_PATH/letta/functions/function_sets', 'letta/functions/function_sets'),
         ('letta_desktop', 'letta_desktop'),
-    ] + collect_data_files('blib2to3'),
+    ] + collect_data_files('blib2to3') + collect_data_files('datamodel_code_generator.model.template.pydantic_v2'),
     hiddenimports=[
         'tiktoken_ext',
         'tiktoken_ext.openai_public'
