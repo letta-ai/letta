@@ -110,6 +110,13 @@ jobs:
 
       - name: Test Google Vertex Basic
         working-directory: apps/core
+        env:
+          LETTA_PG_PORT: 5432
+          LETTA_PG_USER: postgres
+          LETTA_PG_PASSWORD: postgres
+          LETTA_PG_DB: postgres
+          LETTA_PG_HOST: localhost
+          LETTA_SERVER_PASS: test_server_token
         run: |
           echo "${{ secrets.GOOGLE_SERVICE_ACCOUNT_JSON }}" > gcp_service_account_secrets.json
           export GOOGLE_APPLICATION_CREDENTIALS=gcp_service_account_secrets.json
@@ -117,25 +124,60 @@ jobs:
 
       - name: Test OpenAI Basic
         working-directory: apps/core
+        env:
+          LETTA_PG_PORT: 5432
+          LETTA_PG_USER: postgres
+          LETTA_PG_PASSWORD: postgres
+          LETTA_PG_DB: postgres
+          LETTA_PG_HOST: localhost
+          LETTA_SERVER_PASS: test_server_token
         run: |
           poetry run pytest -s -vv tests/test_model_letta_performance.py -m openai_basic
 
       - name: Test Anthropic Basic
         working-directory: apps/core
+        env:
+          LETTA_PG_PORT: 5432
+          LETTA_PG_USER: postgres
+          LETTA_PG_PASSWORD: postgres
+          LETTA_PG_DB: postgres
+          LETTA_PG_HOST: localhost
+          LETTA_SERVER_PASS: test_server_token
         run: |
           poetry run pytest -s -vv tests/test_model_letta_performance.py -m anthropic_basic
 
       - name: Test Azure Basic
         working-directory: apps/core
+        env:
+          LETTA_PG_PORT: 5432
+          LETTA_PG_USER: postgres
+          LETTA_PG_PASSWORD: postgres
+          LETTA_PG_DB: postgres
+          LETTA_PG_HOST: localhost
+          LETTA_SERVER_PASS: test_server_token
         run: |
           poetry run pytest -s -vv tests/test_model_letta_performance.py -m azure_basic
 
       - name: Test Gemini Basic
         working-directory: apps/core
+        env:
+          LETTA_PG_PORT: 5432
+          LETTA_PG_USER: postgres
+          LETTA_PG_PASSWORD: postgres
+          LETTA_PG_DB: postgres
+          LETTA_PG_HOST: localhost
+          LETTA_SERVER_PASS: test_server_token
         run: |
           poetry run pytest -s -vv tests/test_model_letta_performance.py -m gemini_basic
 
       - name: Test DeepSeek Basic
         working-directory: apps/core
+        env:
+          LETTA_PG_PORT: 5432
+          LETTA_PG_USER: postgres
+          LETTA_PG_PASSWORD: postgres
+          LETTA_PG_DB: postgres
+          LETTA_PG_HOST: localhost
+          LETTA_SERVER_PASS: test_server_token
         run: |
           poetry run pytest -s -vv tests/test_model_letta_performance.py -m deepseek_basic
