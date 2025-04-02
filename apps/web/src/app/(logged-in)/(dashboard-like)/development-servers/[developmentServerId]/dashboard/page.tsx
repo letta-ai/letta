@@ -29,7 +29,6 @@ import {
   SUPPORTED_LETTA_AGENTS_VERSIONS,
 } from '$web/constants';
 import { useHealthServiceHealthCheck } from '@letta-cloud/sdk-core';
-import { useWelcomeText } from '$web/client/hooks/useWelcomeText/useWelcomeText';
 import { cn } from '@letta-cloud/ui-styles';
 
 import AdBannerTwo from './ad_banner_two.webp';
@@ -37,6 +36,8 @@ import Image from 'next/image';
 import semver from 'semver/preload';
 import Link from 'next/link';
 import CreateAgentDialog from '../components/CreateAgentDialog/CreateAgentDialog';
+import { webApi, webApiQueryKeys } from '@letta-cloud/sdk-web';
+import { useParams } from 'next/navigation';
 
 function UserIsNotConnectedComponent() {
   const t = useTranslations(
@@ -146,15 +147,20 @@ function DevelopmentServersDashboardPage() {
     );
   }, [isLocalServiceOnline]);
 
-  const welcomeText = useWelcomeText();
+  const { developmentServerId } = useParams<{ developmentServerId: string }>();
 
-  const title = useMemo(() => {
-    if (user?.hasCloudAccess) {
-      return t('title');
-    }
-
-    return welcomeText || t('title');
-  }, [t, user?.hasCloudAccess, welcomeText]);
+  const { data: currentServer } =
+    webApi.developmentServers.getDevelopmentServer.useQuery({
+      queryData: {
+        params: {
+          developmentServerId,
+        },
+      },
+      queryKey:
+        webApiQueryKeys.developmentServers.getDevelopmentServer(
+          developmentServerId,
+        ),
+    });
 
   const [isDismissed, setIsDismissed, isLoadingDismissed] =
     useLocalStorageWithLoadingState<boolean>(
@@ -166,7 +172,7 @@ function DevelopmentServersDashboardPage() {
     <DashboardPageLayout
       headerBottomPadding="large"
       cappedWidth
-      title={title}
+      title={currentServer?.body.developmentServer.name || t('title')}
       subtitle={t('description')}
     >
       <VStack paddingX="large">
