@@ -42,7 +42,7 @@ def server_url() -> str:
     return url
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture
 def client(server_url: str) -> Letta:
     """
     Creates and returns a synchronous Letta REST client for testing.
@@ -51,7 +51,7 @@ def client(server_url: str) -> Letta:
     yield client_instance
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture
 def async_client(server_url: str) -> AsyncLetta:
     """
     Creates and returns an asynchronous Letta REST client for testing.
@@ -60,7 +60,7 @@ def async_client(server_url: str) -> AsyncLetta:
     yield async_client_instance
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture
 def roll_dice_tool(client: Letta) -> Tool:
     """
     Registers a simple roll dice tool with the provided client.
@@ -82,7 +82,7 @@ def roll_dice_tool(client: Letta) -> Tool:
     yield tool
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture
 def agent_state(client: Letta, roll_dice_tool: Tool) -> AgentState:
     """
     Creates and returns an agent state for testing with a pre-configured agent.
