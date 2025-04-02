@@ -103,6 +103,8 @@ navigation:
               path: pages/agents/multiagent_memory.mdx
           - page: Multi-User (Identities)
             path: pages/agents/multiuser.mdx
+          - page: Agent File (.af)
+            path: pages/agents/agentfile.mdx
       - section: Model Context Protocol
         contents:
           - page: What is MCP?
