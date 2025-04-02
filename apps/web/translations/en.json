@@ -1614,13 +1614,16 @@
     "evenMore": "When you're ready to create agents from your template, you can visit the <templateVersionButton></templateVersionButton> and create a new version of your template, then follow the instructions on that page to deploy your agents."
   },
   "login/LoginComponent": {
-    "title": "Sign in to Letta Cloud",
-    "corporateLogin": "Enterprise options:",
+    "login": "Login",
+    "signup": "Sign up",
+    "title": "Welcome to Letta Cloud",
+    "corporateLogin": "Enterprise options",
     "loginWithSSO": "Sign in with SSO",
     "loginWithPassword": "Sign in with password",
-    "google": "Continue with Google",
-    "github": "Continue with GitHub",
-    "terms": "By clicking the button above, you agree to our <terms>Terms of Service</terms> and <privacy>Privacy Policy</privacy>."
+    "google": "{type} with Google",
+    "github": "{type} with GitHub",
+    "info": "By clicking the button above, you will be signed in to an existing account or have an new account created for you.",
+    "terms": "This will also mean you agree to our <terms>Terms of Service</terms> and <privacy>Privacy Policy</privacy>."
   },
   "sso-login": {
     "title": "Sign in to Letta via SSO",

@@ -287,7 +287,7 @@ export default function SignupViaInvite() {
 
                 {mode === 'oauth' ? (
                   <>
-                    <OAuthButtons searchParams={searchCode} />
+                    <OAuthButtons type="signup" searchParams={searchCode} />
                     <Button
                       onClick={() => setMode('email')}
                       fullWidth

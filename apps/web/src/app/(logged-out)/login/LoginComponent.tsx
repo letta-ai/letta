@@ -6,8 +6,11 @@ import {
   Button,
   KeyIcon,
   OfficesIcon,
+  HR,
+  HStack,
+  TabGroup,
 } from '@letta-cloud/ui-component-library';
-import { Suspense } from 'react';
+import { Suspense, useState } from 'react';
 import { useMemo } from 'react';
 import { useCallback, useRef } from 'react';
 import { isNull } from 'lodash-es';
@@ -39,6 +42,8 @@ function LoginErrorBanner() {
   );
 }
 
+type Mode = 'login' | 'signup';
+
 export function LoginComponent() {
   const t = useTranslations('login/LoginComponent');
   const logoRef = useRef<HTMLDivElement>(null);
@@ -54,6 +59,10 @@ export function LoginComponent() {
 
   const searchParams = useSearchParams();
 
+  const [mode, setMode] = useState<Mode>(() => {
+    return searchParams.get('signup') === 'true' ? 'signup' : 'login';
+  });
+
   return (
     <VStack align="center" position="relative" fullWidth>
       <Suspense>
@@ -61,7 +70,7 @@ export function LoginComponent() {
       </Suspense>
       <VStack
         /* eslint-disable-next-line react/forbid-component-props */
-        className="max-w-[350px] w-full py-[48px] h-full max-h-[498px] gap-[36px]"
+        className="max-w-[400px] w-full py-[48px] h-full max-h-[608px] gap-[36px]"
         align="center"
         justify="center"
         color="background-grey"
@@ -69,7 +78,7 @@ export function LoginComponent() {
         <VStack
           /* eslint-disable-next-line react/forbid-component-props */
           className="max-w-[262px]"
-          gap="xlarge"
+          gap="large"
           align="center"
         >
           <VStack align="center" gap="xlarge">
@@ -80,9 +89,54 @@ export function LoginComponent() {
               {t('title')}
             </Typography>
           </VStack>
-          <OAuthButtons spinOnClick={spinOnClick} searchParams={searchParams} />
-          <VStack paddingX="small">
-            <Typography variant="body3">{t('corporateLogin')}</Typography>
+          <HStack fullWidth>
+            <TabGroup
+              fullWidth
+              value={mode}
+              onValueChange={(value) => {
+                setMode(value as Mode);
+              }}
+              items={[
+                { label: t('login'), value: 'login' },
+                { label: t('signup'), value: 'signup' },
+              ]}
+            />
+          </HStack>
+          <OAuthButtons
+            type={mode}
+            spinOnClick={spinOnClick}
+            searchParams={searchParams}
+          />
+          <VStack>
+            <Typography variant="body3">{t('info')}</Typography>
+            <Typography variant="body3">
+              {t.rich('terms', {
+                terms: (chunks) => (
+                  <a
+                    className="underline"
+                    href="https://letta.com/terms-of-service"
+                  >
+                    {chunks}
+                  </a>
+                ),
+                privacy: (chunks) => (
+                  <a
+                    className="underline"
+                    href="https://letta.com/privacy-policy"
+                  >
+                    {chunks}
+                  </a>
+                ),
+              })}
+            </Typography>
+          </VStack>
+          <HR />
+          <VStack fullWidth>
+            <HStack paddingBottom="xsmall" fullWidth justify="center">
+              <Typography align="center" bold variant="body2">
+                {t('corporateLogin')}
+              </Typography>
+            </HStack>
             <Button
               label={t('loginWithPassword')}
               fullWidth
@@ -98,26 +152,6 @@ export function LoginComponent() {
               href="/login/sso"
             />
           </VStack>
-          <Typography variant="body3">
-            {t.rich('terms', {
-              terms: (chunks) => (
-                <a
-                  className="underline"
-                  href="https://letta.com/terms-of-service"
-                >
-                  {chunks}
-                </a>
-              ),
-              privacy: (chunks) => (
-                <a
-                  className="underline"
-                  href="https://letta.com/privacy-policy"
-                >
-                  {chunks}
-                </a>
-              ),
-            })}
-          </Typography>
         </VStack>
       </VStack>
     </VStack>
