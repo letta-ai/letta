@@ -16,7 +16,8 @@ logger = get_logger(__name__)
 class SSEMCPClient(BaseMCPClient):
     def _initialize_connection(self, server_config: SSEServerConfig, timeout: float) -> bool:
         try:
-            sse_cm = sse_client(url=server_config.server_url)
+            sse_headers = {'Authorization': f'Bearer {server_config.token}'} if server_config.token else None
+            sse_cm = sse_client(url=server_config.server_url, headers=sse_headers)
             sse_transport = self.loop.run_until_complete(asyncio.wait_for(sse_cm.__aenter__(), timeout=timeout))
             self.stdio, self.write = sse_transport
             self.cleanup_funcs.append(lambda: self.loop.run_until_complete(sse_cm.__aexit__(None, None, None)))

@@ -1314,6 +1314,7 @@ class SyncServer(Server):
                                 server_params = SSEServerConfig(
                                     server_name=server_name,
                                     server_url=server_params_raw["url"],
+                                    token=server_params_raw.get("token"),
                                 )
                                 mcp_server_list[server_name] = server_params
                             except Exception as e:
