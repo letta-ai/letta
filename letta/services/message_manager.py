@@ -1,7 +1,7 @@
 import json
 from typing import List, Optional, Sequence
 
-from sqlalchemy import and_, exists, func, or_, select, text
+from sqlalchemy import exists, func, select, text
 
 from letta.log import get_logger
 from letta.orm.agent import Agent as AgentModel
@@ -270,19 +270,20 @@ class MessageManager:
         Most performant query to list messages for an agent by directly querying the Message table.
 
         This function filters by the agent_id (leveraging the index on messages.agent_id)
-        and applies efficient pagination using (created_at, id) as the cursor.
+        and applies pagination using sequence_id as the cursor.
         If query_text is provided, it will filter messages whose text content partially matches the query.
         If role is provided, it will filter messages by the specified role.
 
         Args:
             agent_id: The ID of the agent whose messages are queried.
             actor: The user performing the action (used for permission checks).
-            after: A message ID; if provided, only messages *after* this message (per sort order) are returned.
-            before: A message ID; if provided, only messages *before* this message are returned.
+            after: A message ID; if provided, only messages *after* this message (by sequence_id) are returned.
+            before: A message ID; if provided, only messages *before* this message (by sequence_id) are returned.
             query_text: Optional string to partially match the message text content.
             roles: Optional MessageRole to filter messages by role.
             limit: Maximum number of messages to return.
-            ascending: If True, sort by (created_at, id) ascending; if False, sort descending.
+            ascending: If True, sort by sequence_id ascending; if False, sort descending.
+            group_id: Optional group ID to filter messages by group_id.
 
         Returns:
             List[PydanticMessage]: A list of messages (converted via .to_pydantic()).
@@ -290,6 +291,7 @@ class MessageManager:
         Raises:
             NoResultFound: If the provided after/before message IDs do not exist.
         """
+
         with self.session_maker() as session:
             # Permission check: raise if the agent doesn't exist or actor is not allowed.
             AgentModel.read(db_session=session, identifier=agent_id, actor=actor)
@@ -301,7 +303,7 @@ class MessageManager:
             if group_id:
                 query = query.filter(MessageModel.group_id == group_id)
 
-            # If query_text is provided, filter messages using subquery.
+            # If query_text is provided, filter messages using subquery + json_array_elements.
             if query_text:
                 content_element = func.json_array_elements(MessageModel.content).alias("content_element")
                 query = query.filter(
@@ -313,48 +315,32 @@ class MessageManager:
                     )
                 )
 
-            # If role is provided, filter messages by role.
+            # If role(s) are provided, filter messages by those roles.
             if roles:
                 role_values = [r.value for r in roles]
                 query = query.filter(MessageModel.role.in_(role_values))
 
             # Apply 'after' pagination if specified.
             if after:
-                after_ref = session.query(MessageModel.created_at, MessageModel.id).filter(MessageModel.id == after).limit(1).one_or_none()
+                after_ref = session.query(MessageModel.sequence_id).filter(MessageModel.id == after).one_or_none()
                 if not after_ref:
                     raise NoResultFound(f"No message found with id '{after}' for agent '{agent_id}'.")
-                query = query.filter(
-                    or_(
-                        MessageModel.created_at > after_ref.created_at,
-                        and_(
-                            MessageModel.created_at == after_ref.created_at,
-                            MessageModel.id > after_ref.id,
-                        ),
-                    )
-                )
+                # Filter out any messages with a sequence_id <= after_ref.sequence_id
+                query = query.filter(MessageModel.sequence_id > after_ref.sequence_id)
 
             # Apply 'before' pagination if specified.
             if before:
-                before_ref = (
-                    session.query(MessageModel.created_at, MessageModel.id).filter(MessageModel.id == before).limit(1).one_or_none()
-                )
+                before_ref = session.query(MessageModel.sequence_id).filter(MessageModel.id == before).one_or_none()
                 if not before_ref:
                     raise NoResultFound(f"No message found with id '{before}' for agent '{agent_id}'.")
-                query = query.filter(
-                    or_(
-                        MessageModel.created_at < before_ref.created_at,
-                        and_(
-                            MessageModel.created_at == before_ref.created_at,
-                            MessageModel.id < before_ref.id,
-                        ),
-                    )
-                )
+                # Filter out any messages with a sequence_id >= before_ref.sequence_id
+                query = query.filter(MessageModel.sequence_id < before_ref.sequence_id)
 
             # Apply ordering based on the ascending flag.
             if ascending:
-                query = query.order_by(MessageModel.created_at.asc(), MessageModel.id.asc())
+                query = query.order_by(MessageModel.sequence_id.asc())
             else:
-                query = query.order_by(MessageModel.created_at.desc(), MessageModel.id.desc())
+                query = query.order_by(MessageModel.sequence_id.desc())
 
             # Limit the number of results.
             query = query.limit(limit)
