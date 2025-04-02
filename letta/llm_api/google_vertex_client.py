@@ -38,12 +38,12 @@ class GoogleVertexClient(GoogleAIClient):
         self,
         messages: List[PydanticMessage],
         tools: List[dict],
-        tool_call: Optional[str],
+        force_tool_call: Optional[str] = None,
     ) -> dict:
         """
         Constructs a request object in the expected data format for this client.
         """
-        request_data = super().build_request_data(messages, tools, tool_call)
+        request_data = super().build_request_data(messages, tools, force_tool_call)
         request_data["config"] = request_data.pop("generation_config")
         request_data["config"]["tools"] = request_data.pop("tools")
 

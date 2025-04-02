@@ -36,7 +36,7 @@ class GoogleAIClient(LLMClientBase):
         self,
         messages: List[PydanticMessage],
         tools: List[dict],
-        tool_call: Optional[str],
+        force_tool_call: Optional[str] = None,
     ) -> dict:
         """
         Constructs a request object in the expected data format for this client.
