@@ -1124,20 +1124,25 @@ class SyncServer(Server):
     def get_embedding_config_from_handle(
         self, handle: str, embedding_chunk_size: int = constants.DEFAULT_EMBEDDING_CHUNK_SIZE
     ) -> EmbeddingConfig:
-        provider_name, model_name = handle.split("/", 1)
-        provider = self.get_provider_from_name(provider_name)
+        try:
+            provider_name, model_name = handle.split("/", 1)
+            provider = self.get_provider_from_name(provider_name)
 
-        embedding_configs = [config for config in provider.list_embedding_models() if config.handle == handle]
-        if len(embedding_configs) == 1:
-            embedding_config = embedding_configs[0]
-        else:
-            embedding_configs = [config for config in provider.list_embedding_models() if config.embedding_model == model_name]
+            embedding_configs = [config for config in provider.list_embedding_models() if config.handle == handle]
             if not embedding_configs:
                 raise ValueError(f"Embedding model {model_name} is not supported by {provider_name}")
-            elif len(embedding_configs) > 1:
-                raise ValueError(f"Multiple embedding models with name {model_name} supported by {provider_name}")
-            else:
-                embedding_config = embedding_configs[0]
+        except ValueError as e:
+            # search local configs
+            embedding_configs = [config for config in self.get_local_embedding_configs() if config.handle == handle]
+            if not embedding_configs:
+                raise e
+
+        if len(embedding_configs) == 1:
+            embedding_config = embedding_configs[0]
+        elif len(embedding_configs) > 1:
+            raise ValueError(f"Multiple embedding models with name {model_name} supported by {provider_name}")
+        else:
+            embedding_config = embedding_configs[0]
 
         if embedding_chunk_size:
             embedding_config.embedding_chunk_size = embedding_chunk_size
@@ -1173,6 +1178,25 @@ class SyncServer(Server):
         except Exception as e:
             warnings.warn(f"Error reading LLM configs directory: {e}")
         return llm_models
+
+    def get_local_embedding_configs(self):
+        embedding_models = []
+        try:
+            embedding_configs_dir = os.path.expanduser("~/.letta/embedding_configs")
+            if os.path.exists(embedding_configs_dir):
+                for filename in os.listdir(embedding_configs_dir):
+                    if filename.endswith(".json"):
+                        filepath = os.path.join(embedding_configs_dir, filename)
+                        try:
+                            with open(filepath, "r") as f:
+                                config_data = json.load(f)
+                                embedding_config = EmbeddingConfig(**config_data)
+                                embedding_models.append(embedding_config)
+                        except (json.JSONDecodeError, ValueError) as e:
+                            warnings.warn(f"Error parsing embedding config file {filename}: {e}")
+        except Exception as e:
+            warnings.warn(f"Error reading embedding configs directory: {e}")
+        return embedding_models
 
     def add_llm_model(self, request: LLMConfig) -> LLMConfig:
         """Add a new LLM model"""
