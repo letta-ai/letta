@@ -1057,6 +1057,8 @@ class SyncServer(Server):
         except ValueError as e:
             llm_configs = [config for config in self.get_local_llm_configs() if config.handle == handle]
             if not llm_configs:
+                llm_configs = [config for config in self.get_local_llm_configs() if config.model == model_name]
+            if not llm_configs:
                 raise e
 
         if len(llm_configs) == 1:
