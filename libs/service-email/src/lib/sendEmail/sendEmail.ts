@@ -49,9 +49,9 @@ export async function sendEmail<
     .send({
       from: 'no-reply@mail.letta.com',
       to,
-      // @ts-expect-error - this works, my typings are just bad
+      // @ts-ignore - this works, my typings are just bad
       subject: getSubject(options),
-      // @ts-expect-error - this works, my typings are just bad
+      // @ts-ignore - this works, my typings are just bad
       react: createElement(Component, options),
     })
     .then((res) => {

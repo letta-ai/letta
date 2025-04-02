@@ -22,6 +22,7 @@ import { AnalyticsEvent } from '@letta-cloud/service-analytics';
 import { eq } from 'drizzle-orm';
 import { generateAPIKey } from '../generateApiKey/generateApiKey';
 import { createOrganization } from '../createOrganization/createOrganization';
+import { getDefaultProject } from '@letta-cloud/utils-server';
 
 export const ERRORS = {
   EMAIL_ALREADY_EXISTS: 'email-already-exists',
@@ -31,32 +32,6 @@ export const ERRORS = {
 
 function isLettaEmail(email: string) {
   return email.endsWith('@letta.com') || email.endsWith('@memgpt.ai');
-}
-
-interface GetDefaultProjectArgs {
-  organizationId: string;
-}
-
-async function getDefaultProject(args: GetDefaultProjectArgs) {
-  const { organizationId } = args;
-
-  const orgPreferences = await db.query.organizationPreferences.findFirst({
-    where: eq(organizationPreferences.organizationId, organizationId),
-  });
-
-  if (!orgPreferences?.defaultProjectId) {
-    throw new Error('Organization preferences not found');
-  }
-
-  const createdProject = await db.query.projects.findFirst({
-    where: eq(projects.id, orgPreferences.defaultProjectId),
-  });
-
-  if (!createdProject) {
-    throw new Error('Project not found');
-  }
-
-  return createdProject.slug;
 }
 
 interface CreateUserAndOrganizationResponse {

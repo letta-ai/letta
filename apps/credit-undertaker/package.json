@@ -10,6 +10,7 @@
   "license": "ISC",
   "description": "",
   "devDependencies": {
+    "@types/lodash-es": "^4.17.12",
     "esbuild": "~0.19.2",
     "esbuild-node-externals": "^1.16.0"
   },

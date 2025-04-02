@@ -15,12 +15,13 @@ export default {
   testEnvironment: 'node',
   moduleDirectories: ['node_modules', '../../node_modules'],
   transform: {
-    '^.+\\.[tj]s$': ['ts-jest', { tsconfig: '<rootDir>/tsconfig.spec.json' }],
+    '^.+\\.[tj]sx?$': ['ts-jest', { tsconfig: '<rootDir>/tsconfig.spec.json' }],
   },
-  moduleFileExtensions: ['ts', 'js', 'html'],
+  moduleFileExtensions: ['ts', 'js', 'html', 'tsx'],
   moduleNameMapper: {
     ...moduleNameMapper,
     '@t3-oss/env-nextjs': '<rootDir>/__mocks__/empty.ts',
+    'lodash-es': 'lodash',
   },
   coverageDirectory: '../../coverage/libs/service-auth',
 };

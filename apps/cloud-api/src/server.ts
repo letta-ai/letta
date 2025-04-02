@@ -92,13 +92,17 @@ export function startServer() {
   // @ts-expect-error - this is a valid
   const router = s.router(cloudContracts, cloudApiRouter);
 
-  // @ts-expect-error - this is a valid
+  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+  // @ts-ignore - this is a valid
   createExpressEndpoints(cloudContracts, router, app, {
     globalMiddleware: [
       bodyParser.json(),
       bodyParser.urlencoded({ extended: false }),
+      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+      // @ts-ignore - this is a valid
       (req: Request, _res: Response, next: NextFunction) => {
-        // @ts-expect-error - transform request to match the expected type
+        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+        // @ts-ignore - this is a valid
         req.request = {
           headers: req.headers,
           organizationId: req.actor?.cloudOrganizationId,

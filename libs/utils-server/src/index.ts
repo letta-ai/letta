@@ -15,3 +15,4 @@ export * from './lib/copyAgentById/copyAgentById';
 export * from './lib/attachVariablesToTemplates/attachVariablesToTemplates';
 export * from './lib/findUniqueAgentTemplateName/findUniqueAgentTemplateName';
 export * from './lib/goToNextOnboardingStep/goToNextOnboardingStep';
+export * from './lib/getDefaultProject/getDefaultProject';

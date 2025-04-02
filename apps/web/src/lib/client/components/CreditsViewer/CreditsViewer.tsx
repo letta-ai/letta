@@ -21,8 +21,7 @@ import {
   TOTAL_PRIMARY_ONBOARDING_STEPS,
 } from '@letta-cloud/types';
 import { useSetOnboardingStep } from '@letta-cloud/sdk-web';
-import { useCallback, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useCallback } from 'react';
 import Link from 'next/link';
 
 export function CreditsViewer() {
@@ -40,7 +39,6 @@ export function CreditsViewer() {
   const showOnboarding = useShowOnboarding('about_credits');
 
   const { setOnboardingStep } = useSetOnboardingStep();
-  const { push, prefetch } = useRouter();
 
   const handleNextStep = useCallback(() => {
     setOnboardingStep({
@@ -48,14 +46,8 @@ export function CreditsViewer() {
       stepToClaim: 'about_credits',
     });
 
-    push('/projects/default-project');
-  }, [setOnboardingStep, push]);
-
-  useEffect(() => {
-    if (showOnboarding) {
-      prefetch('/projects/default-project');
-    }
-  }, [showOnboarding, prefetch]);
+    window.location.href = '/default-project';
+  }, [setOnboardingStep]);
 
   if (showOnboarding) {
     return (
