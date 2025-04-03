@@ -60,7 +60,7 @@ function EditMemoryForm(props: EditMemoryFormProps) {
             rightOfLabelContent={
               <HStack align="center">
                 {isUpdating && <Spinner size="xsmall" />}
-                <Typography variant="body2" color="muted">
+                <Typography variant="body3" color="muted">
                   {t('EditMemoryForm.characterLimit', {
                     count: value.length,
                     limit: memory.limit,

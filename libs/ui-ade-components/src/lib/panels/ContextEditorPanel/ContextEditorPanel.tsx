@@ -391,7 +391,12 @@ export function ContextWindowPanel() {
   return (
     <VStack fullWidth gap="small" paddingX="small" paddingY="xsmall">
       <HStack fullWidth justify="spaceBetween">
-        <Typography variant="body3" uppercase bold>
+        <Typography
+          variant="body4"
+          uppercase
+          bold
+          className="tracking-[0.04em]"
+        >
           {t('title')}
         </Typography>
         <div className="pointer-events-none">
@@ -400,7 +405,7 @@ export function ContextWindowPanel() {
             <div className="pointer-events-auto">
               <Typography
                 color={totalUsedLength > totalLength ? 'destructive' : 'muted'}
-                variant="body2"
+                variant="body3"
               >
                 {t('ContextWindowPreview.usage', {
                   used: totalUsedLength,
