@@ -670,6 +670,9 @@ class Message(BaseMessage):
 
         def add_xml_tag(string: str, xml_tag: Optional[str]):
             # NOTE: Anthropic docs recommends using <thinking> tag when using CoT + tool use
+            if f"<{xml_tag}>" in string and f"</{xml_tag}>" in string:
+                # don't nest if tags already exist
+                return string
             return f"<{xml_tag}>{string}</{xml_tag}" if xml_tag else string
 
         if self.role == "system":
