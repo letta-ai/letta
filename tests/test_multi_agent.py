@@ -442,7 +442,10 @@ async def test_dynamic_group_chat(server, actor, manager_agent, participant_agen
 
 @pytest.mark.asyncio
 async def test_background_group_chat(server, actor):
-    # 1. create sleeptime agent
+    # 0. Refresh base tools
+    server.tool_manager.upsert_base_tools(actor=actor)
+
+    # 1. Create sleeptime agent
     main_agent = server.create_agent(
         request=CreateAgent(
             name="main_agent",
@@ -463,7 +466,9 @@ async def test_background_group_chat(server, actor):
         actor=actor,
     )
 
-    # 2. Change frequency for test
+    assert main_agent.enable_sleeptime == True
+
+    # 2. Override frequency for test
     group = server.group_manager.modify_group(
         group_id=main_agent.multi_agent_group.id,
         group_update=GroupUpdate(
@@ -479,6 +484,7 @@ async def test_background_group_chat(server, actor):
     assert group.background_agents_frequency == 2
     assert len(group.agent_ids) == 1
 
+    # 3. Verify shared blocks
     sleeptime_agent_id = group.agent_ids[0]
     shared_block = server.agent_manager.get_block_with_label(agent_id=main_agent.id, block_label="human", actor=actor)
     agents = server.block_manager.get_agents_for_block(block_id=shared_block.id, actor=actor)
@@ -486,9 +492,7 @@ async def test_background_group_chat(server, actor):
     assert sleeptime_agent_id in [agent.id for agent in agents]
     assert main_agent.id in [agent.id for agent in agents]
 
-    assert main_agent.enable_sleeptime == True
-
-    # 6. Send messages
+    # 4. Send messages and verify run ids
     message_text = [
         "my favorite color is orange",
         "not particularly. today is a good day",
@@ -520,6 +524,7 @@ async def test_background_group_chat(server, actor):
         job = server.job_manager.get_job_by_id(job_id=run_id, actor=actor)
         assert job.status == JobStatus.completed
 
+    # 5. Delete agent
     server.agent_manager.delete_agent(agent_id=main_agent.id, actor=actor)
 
     with pytest.raises(NoResultFound):

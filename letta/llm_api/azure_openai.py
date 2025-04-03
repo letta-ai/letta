@@ -36,7 +36,7 @@ def azure_openai_get_deployed_model_list(base_url: str, api_key: str, api_versio
 
     try:
         models_list = client.models.list()
-    except Exception as e:
+    except Exception:
         return []
 
     all_available_models = [model.to_dict() for model in models_list.data]
