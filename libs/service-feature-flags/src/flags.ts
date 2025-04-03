@@ -41,6 +41,11 @@ export const featureFlags = {
     expiryDate: '2024-04-01',
     flagValue: z.boolean(),
   },
+  SLEEP_TIME_AGENTS: {
+    description: 'Sleep time agents',
+    expiryDate: '2024-04-01',
+    flagValue: z.boolean(),
+  },
 } satisfies Record<string, FlagProperties>;
 
 export type Flag = keyof typeof featureFlags;
