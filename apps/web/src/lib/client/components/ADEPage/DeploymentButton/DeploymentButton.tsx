@@ -425,6 +425,7 @@ function OnboardingWrapper(props: OnboardingWrapperProps) {
 
   return (
     <OnboardingAsideFocus
+      spotlight
       reward={stepToRewardMap.save_version}
       totalSteps={TOTAL_PRIMARY_ONBOARDING_STEPS}
       currentStep={4}
@@ -483,6 +484,7 @@ function TemplateVersionDisplay() {
         trigger={
           <Button
             size="small"
+            _use_rarely_className="shine bg-primary"
             preIcon={<SaveIcon />}
             data-testid="stage-new-version-button"
             color="primary"

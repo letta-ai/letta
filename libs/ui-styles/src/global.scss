@@ -327,6 +327,33 @@ body {
   border-radius: 0px;
 }
 
+
+.shine {
+  position: relative;
+  overflow: hidden;
+}
+.shine:before {
+    content: '';
+    position: absolute;
+    width: 100px;
+    height: 100%;
+    background-image: linear-gradient(
+        120deg,
+        rgba(255,255,255, 0) 30%,
+        rgba(255,255,255, .8),
+        rgba(255,255,255, 0) 70%
+    );
+    top: 0;
+    left: -100px;
+    animation: shine 2s infinite linear 1s;
+}
+
+@keyframes shine {
+  0% {left: -50%}
+  60% {left: 100%}
+  100% {left: 100%}
+}
+
 @font-face {
   font-family: 'Manrope';
   src:
