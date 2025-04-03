@@ -89,13 +89,15 @@ def _process_tags(agent: AgentModel, tags: List[str], replace=True):
         agent.tags.extend([tag for tag in new_tags if tag.tag not in existing_tags])
 
 
-def derive_system_message(agent_type: AgentType, system: Optional[str] = None):
+def derive_system_message(agent_type: AgentType, enable_sleeptime: Optional[bool] = None, system: Optional[str] = None):
     if system is None:
         # TODO: don't hardcode
-        if agent_type == AgentType.memgpt_agent:
+        if agent_type == AgentType.memgpt_agent and not enable_sleeptime:
             system = gpt_system.get_system_text("memgpt_chat")
+        elif agent_type == AgentType.memgpt_agent and enable_sleeptime:
+            system = gpt_system.get_system_text("memgpt_sleeptime_chat")
         elif agent_type == AgentType.sleeptime_agent:
-            system = gpt_system.get_system_text("memgpt_offline_memory")
+            system = gpt_system.get_system_text("sleeptime")
         else:
             raise ValueError(f"Invalid agent type: {agent_type}")
 

@@ -34,7 +34,7 @@ from letta.interface import CLIInterface  # for printing to terminal
 from letta.log import get_logger
 from letta.orm.errors import NoResultFound
 from letta.schemas.agent import AgentState, AgentType, CreateAgent, UpdateAgent
-from letta.schemas.block import BlockUpdate
+from letta.schemas.block import BlockUpdate, CreateBlock
 from letta.schemas.embedding_config import EmbeddingConfig
 
 # openai schemas
@@ -759,6 +759,17 @@ class SyncServer(Server):
             name=main_agent.name,
             agent_type=AgentType.sleeptime_agent,
             block_ids=[block.id for block in main_agent.memory.blocks],
+            memory_blocks=[
+                CreateBlock(
+                    label="memory_persona",
+                    value=(
+                        "I am an expert conversation memory manager. "
+                        "I manage the memory blocks such that they "
+                        "contain everything that is important about "
+                        "the conversation."
+                    ),
+                ),
+            ],
             llm_config=main_agent.llm_config,
             embedding_config=main_agent.embedding_config,
             project_id=main_agent.project_id,
