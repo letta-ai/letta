@@ -148,83 +148,85 @@ export function FunctionCall(props: FunctionCallProps) {
           </HStack>
         </HStack>
       </HStack>
-      <VStack color="background-grey" border gap={false}>
-        <VStack gap={false}>
-          <VStack
-            borderBottom
-            paddingX="medium"
-            paddingBottom="xsmall"
-            paddingTop="medium"
-          >
-            <Typography variant="body3">{t('request')}</Typography>
-          </VStack>
-          <RawCodeEditor
-            hideLabel
-            color="background"
-            variant="minimal"
-            fullWidth
-            showLineNumbers={false}
-            fontSize="small"
-            label=""
-            language="javascript"
-            code={inputs}
-          />
-        </VStack>
-        {response && (
-          <VStack borderTop gap={false}>
+      {open && (
+        <VStack color="background-grey" border gap={false}>
+          <VStack gap={false}>
             <VStack
-              paddingTop="xsmall"
-              onClick={(e) => {
-                e.stopPropagation();
-                e.preventDefault();
-              }}
+              borderBottom
+              paddingX="medium"
+              paddingBottom="xsmall"
+              paddingTop="medium"
             >
-              <TabGroup
-                size="xsmall"
-                extendBorder
-                value={responseView}
-                onValueChange={(value) => {
-                  if (!value) return;
-                  setResponseView(value as ResponseViews);
-                }}
-                items={[
-                  {
-                    label: t('response'),
-                    value: 'response',
-                  },
-                  {
-                    label: 'stdout',
-                    value: 'stdout',
-                  },
-                  {
-                    label: 'stderr',
-                    value: 'stderr',
-                  },
-                ]}
-              />
+              <Typography variant="body3">{t('request')}</Typography>
             </VStack>
-            {responseData ? (
-              <RawCodeEditor
-                hideLabel
-                color="background"
-                variant="minimal"
-                fullWidth
-                label=""
-                language="javascript"
-                showLineNumbers={false}
-                fontSize="small"
-                code={responseData}
-              />
-            ) : (
-              <HStack padding="small">
-                <Typography italic variant="body3">
-                  {t('empty')}
-                </Typography>
-              </HStack>
-            )}
+            <RawCodeEditor
+              hideLabel
+              color="background"
+              variant="minimal"
+              fullWidth
+              showLineNumbers={false}
+              fontSize="small"
+              label=""
+              language="javascript"
+              code={inputs}
+            />
           </VStack>
-        )}
-      </VStack>
+          {response && (
+            <VStack borderTop gap={false}>
+              <VStack
+                paddingTop="xsmall"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  e.preventDefault();
+                }}
+              >
+                <TabGroup
+                  size="xsmall"
+                  extendBorder
+                  value={responseView}
+                  onValueChange={(value) => {
+                    if (!value) return;
+                    setResponseView(value as ResponseViews);
+                  }}
+                  items={[
+                    {
+                      label: t('response'),
+                      value: 'response',
+                    },
+                    {
+                      label: 'stdout',
+                      value: 'stdout',
+                    },
+                    {
+                      label: 'stderr',
+                      value: 'stderr',
+                    },
+                  ]}
+                />
+              </VStack>
+              {responseData ? (
+                <RawCodeEditor
+                  hideLabel
+                  color="background"
+                  variant="minimal"
+                  fullWidth
+                  label=""
+                  language="javascript"
+                  showLineNumbers={false}
+                  fontSize="small"
+                  code={responseData}
+                />
+              ) : (
+                <HStack padding="small">
+                  <Typography italic variant="body3">
+                    {t('empty')}
+                  </Typography>
+                </HStack>
+              )}
+            </VStack>
+          )}
+        </VStack>
+      )}
     </details>
   );
 }

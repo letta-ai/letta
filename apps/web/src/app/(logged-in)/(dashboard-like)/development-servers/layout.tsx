@@ -258,7 +258,7 @@ function NewDashboardLayout(props: NewDashboardLayoutProps) {
       navigationItems={[
         {
           override: (
-            <HStack fullWidth paddingBottom="small">
+            <HStack key={selectedServer?.url || ''} fullWidth paddingBottom="small">
               <ServerNavigationDropdown
                 servers={servers}
                 selectedServerUrl={selectedServer?.url || ''}
