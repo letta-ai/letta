@@ -5,7 +5,6 @@ import {
   Dialog,
   Frame,
   LoadingEmptyStatusComponent,
-  NiceGridDisplay,
   RawCodeEditor,
   Section,
   toast,
@@ -229,9 +228,7 @@ function CreateAgentDialog(props: CreateAgentDialogProps) {
                   </VStack>
                 </Alert>
               ) : (
-                <NiceGridDisplay itemWidth="250px" itemHeight="260px">
-                  <StarterKitSelector onSelectStarterKit={handleCreateAgent} />
-                </NiceGridDisplay>
+                <StarterKitSelector onSelectStarterKit={handleCreateAgent} />
               )}
             </VStack>
           </VStack>
