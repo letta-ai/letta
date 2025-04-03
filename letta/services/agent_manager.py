@@ -525,6 +525,7 @@ class AgentManager:
         append_copy_suffix: bool = True,
         override_existing_tools: bool = True,
         project_id: Optional[str] = None,
+        strip_messages: Optional[bool] = False,
     ) -> PydanticAgentState:
         serialized_agent = serialized_agent.model_dump()
         tool_data_list = serialized_agent.pop("tools", [])
@@ -536,6 +537,10 @@ class AgentManager:
                 agent.name += "_copy"
             if project_id:
                 agent.project_id = project_id
+
+            if strip_messages:
+                # we want to strip all but the first (system) message
+                agent.message_ids = [agent.message_ids[0]]
             agent = agent.create(session, actor=actor)
             pydantic_agent = agent.to_pydantic()
 

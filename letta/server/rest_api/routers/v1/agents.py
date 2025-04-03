@@ -130,6 +130,10 @@ async def import_agent_serialized(
         description="If set to True, existing tools can get their source code overwritten by the uploaded tool definitions. Note that Letta core tools can never be updated externally.",
     ),
     project_id: Optional[str] = Query(None, description="The project ID to associate the uploaded agent with."),
+    strip_messages: bool = Query(
+        False,
+        description="If set to True, strips all messages from the agent before importing.",
+    ),
 ):
     """
     Import a serialized agent file and recreate the agent in the system.
@@ -149,6 +153,7 @@ async def import_agent_serialized(
             append_copy_suffix=append_copy_suffix,
             override_existing_tools=override_existing_tools,
             project_id=project_id,
+            strip_messages=strip_messages,
         )
         return new_agent
 
