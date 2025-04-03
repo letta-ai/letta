@@ -7,20 +7,18 @@ import {
   useToolsServiceListTools,
 } from '@letta-cloud/sdk-core';
 import { useCurrentDevelopmentServerConfig } from '@letta-cloud/utils-client';
-import { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import {
   Alert,
   Dialog,
   LoadingEmptyStatusComponent,
-  NiceGridDisplay,
   RawCodeEditor,
   Section,
-  StarterKitItems,
   VStack,
 } from '@letta-cloud/ui-component-library';
 import { useNavigate } from 'react-router-dom';
-import { STARTER_KITS } from '@letta-cloud/config-agent-starter-kits';
 import type { StarterKit } from '@letta-cloud/config-agent-starter-kits';
+import { StarterKitSelector } from '@letta-cloud/ui-ade-components';
 
 interface CreateAgentDialogProps {
   trigger: React.ReactNode;
@@ -130,10 +128,6 @@ export function CreateLocalAgentDialog(props: CreateAgentDialogProps) {
     ],
   );
 
-  const starterKits = useMemo(() => {
-    return Object.entries(STARTER_KITS);
-  }, []);
-
   const loadingCopy = useMemo(() => {
     if (isSuccess || isPending) {
       return t('creating');
@@ -177,15 +171,7 @@ export function CreateLocalAgentDialog(props: CreateAgentDialogProps) {
               </Alert>
             )}
             <VStack>
-              <NiceGridDisplay itemWidth="250px" itemHeight="260px">
-                {starterKits.map(([id, starterKit]) => (
-                  <StarterKitItems
-                    onSelectStarterKit={handleCreateAgent}
-                    key={id}
-                    starterKit={starterKit}
-                  />
-                ))}
-              </NiceGridDisplay>
+              <StarterKitSelector onSelectStarterKit={handleCreateAgent} />
             </VStack>
           </VStack>
         )}

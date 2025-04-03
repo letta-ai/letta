@@ -1,5 +1,5 @@
 import { useTranslations } from '@letta-cloud/translations';
-import { ImageCard, Typography, VStack } from '../../../';
+import { Badge, ImageCard, Typography, VStack, WarningIcon } from '../../../';
 import type { StarterKit } from '@letta-cloud/config-agent-starter-kits';
 
 interface StarterKitItemProps {
@@ -24,6 +24,15 @@ export function StarterKitItems(props: StarterKitItemProps) {
       }}
       imageUrl={image}
       altText=""
+      badge={
+        starterKit.id === 'sleepTime' ? (
+          <Badge
+            content={t('newArchitecture')}
+            preIcon={<WarningIcon />}
+            variant="info"
+          />
+        ) : undefined
+      }
       title={title}
       description={description}
     >

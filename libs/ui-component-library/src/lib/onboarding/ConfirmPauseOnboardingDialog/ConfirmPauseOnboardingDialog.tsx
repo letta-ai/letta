@@ -1,6 +1,6 @@
 import { usePauseOnboarding } from '@letta-cloud/sdk-web';
 import { useTranslations } from '@letta-cloud/translations';
-import { Dialog } from '@letta-cloud/ui-component-library';
+import { Dialog } from '../../core/Dialog/Dialog';
 
 interface ConfirmPauseOnboardingDialogProps {
   trigger: React.ReactNode;

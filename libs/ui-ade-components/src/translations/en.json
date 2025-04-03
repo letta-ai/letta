@@ -23,10 +23,16 @@
     "companion": {
       "title": "Companion",
       "description": "Chat between a user an an AI companion named Sam, designed to learn and adapt over time"
+    },
+    "sleepTime": {
+      "title": "Sleep-Time Personal Assistant",
+      "description": "A personal assistant that uses our new sleep-time architecture",
+      "badge": "New Architecture!"
     }
   },
   "components/StarterKitItems": {
-    "tools": "<strong>Tools included:</strong> {toolsList}"
+    "tools": "<strong>Tools included:</strong> {toolsList}",
+    "newArchitecture": "New Architecture"
   },
   "AgentMobileNavigation": {
     "more": "More panels",

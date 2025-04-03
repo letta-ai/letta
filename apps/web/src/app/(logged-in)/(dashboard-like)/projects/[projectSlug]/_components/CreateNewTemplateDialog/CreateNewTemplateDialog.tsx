@@ -7,10 +7,8 @@ import {
   Alert,
   Dialog,
   LoadingEmptyStatusComponent,
-  NiceGridDisplay,
   OnboardingAsideFocus,
   Section,
-  StarterKitItems,
   VStack,
 } from '@letta-cloud/ui-component-library';
 import { STARTER_KITS } from '@letta-cloud/config-agent-starter-kits';
@@ -24,7 +22,10 @@ import {
   TOTAL_PRIMARY_ONBOARDING_STEPS,
 } from '@letta-cloud/types';
 import { useSetOnboardingStep } from '@letta-cloud/sdk-web';
-import { useADETourStep } from '@letta-cloud/ui-ade-components';
+import {
+  StarterKitSelector,
+  useADETourStep,
+} from '@letta-cloud/ui-ade-components';
 
 interface CreateNewTemplateDialogProps {
   trigger: React.ReactNode;
@@ -64,10 +65,6 @@ export function CreateNewTemplateDialog(props: CreateNewTemplateDialogProps) {
     'projects/(projectSlug)/components/CreateNewTemplateDialog',
   );
   const { slug, id: projectId } = useCurrentProject();
-
-  const starterKits = useMemo(() => {
-    return Object.entries(STARTER_KITS);
-  }, []);
 
   const { push } = useRouter();
 
@@ -169,19 +166,12 @@ export function CreateNewTemplateDialog(props: CreateNewTemplateDialogProps) {
           ) : (
             <VStack>
               {isError && <Alert title={t('error')} />}
-              <NiceGridDisplay itemWidth="250px" itemHeight="260px">
-                {starterKits.map(([id, starterKit]) => {
-                  return (
-                    <StarterKitItems
-                      onSelectStarterKit={() => {
-                        handleSelectStarterKit(starterKit.id);
-                      }}
-                      key={id}
-                      starterKit={starterKit}
-                    />
-                  );
-                })}
-              </NiceGridDisplay>
+              <StarterKitSelector
+                starterKitsToExclude={['sleepTime']}
+                onSelectStarterKit={(_, kit) => {
+                  handleSelectStarterKit(kit.id);
+                }}
+              />
             </VStack>
           )}
         </VStack>

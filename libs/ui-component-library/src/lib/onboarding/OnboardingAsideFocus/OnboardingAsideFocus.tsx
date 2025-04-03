@@ -4,9 +4,8 @@ import { VStack } from '../../framing/VStack/VStack';
 import { HStack } from '../../framing/HStack/HStack';
 import { Typography } from '../../core/Typography/Typography';
 import { OnboardingRewardElement } from '../OnboardingRewardElement/OnboardingRewardElement';
-import { Badge, type BadgeProps } from '../../core/Badge/Badge';
 import { useTranslations } from '@letta-cloud/translations';
-import { useEffect, useId, useMemo } from 'react';
+import { useEffect, useId } from 'react';
 import { Button } from '../../core/Button/Button';
 import { OnboardingSteps } from '../OnboardingSteps/OnboardingSteps';
 import {

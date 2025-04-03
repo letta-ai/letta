@@ -84,8 +84,9 @@ export function FunctionCall(props: FunctionCallProps) {
 
   const responseData = useMemo(() => {
     switch (responseView) {
-      case 'response':
+      case 'response': {
         const raw = response?.tool_return;
+
         if (!raw) return raw;
 
         // Try parse the tool_return as JSON, see if there's a 'message' key
@@ -99,6 +100,7 @@ export function FunctionCall(props: FunctionCallProps) {
         } catch {
           return raw;
         }
+      }
       case 'stdout':
         return response?.stdout?.join('\n');
       case 'stderr':

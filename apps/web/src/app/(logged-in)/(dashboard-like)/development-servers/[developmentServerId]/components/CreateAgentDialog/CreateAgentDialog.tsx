@@ -8,7 +8,6 @@ import {
   NiceGridDisplay,
   RawCodeEditor,
   Section,
-  StarterKitItems,
   toast,
   Typography,
   VStack,
@@ -28,7 +27,7 @@ import { trackClientSideEvent } from '@letta-cloud/service-analytics/client';
 import { AnalyticsEvent } from '@letta-cloud/service-analytics';
 import { useCurrentUser } from '$web/client/hooks';
 import { ConnectToLocalServerCommand } from '$web/client/components';
-import { STARTER_KITS } from '@letta-cloud/config-agent-starter-kits';
+import { StarterKitSelector } from '@letta-cloud/ui-ade-components';
 
 interface CreateAgentDialogProps {
   trigger: React.ReactNode;
@@ -161,10 +160,6 @@ function CreateAgentDialog(props: CreateAgentDialogProps) {
     ],
   );
 
-  const starterKits = useMemo(() => {
-    return Object.entries(STARTER_KITS);
-  }, []);
-
   const loadingCopy = useMemo(() => {
     if (isSuccess || isPending) {
       return t('creating');
@@ -235,13 +230,7 @@ function CreateAgentDialog(props: CreateAgentDialogProps) {
                 </Alert>
               ) : (
                 <NiceGridDisplay itemWidth="250px" itemHeight="260px">
-                  {starterKits.map(([id, starterKit]) => (
-                    <StarterKitItems
-                      onSelectStarterKit={handleCreateAgent}
-                      key={id}
-                      starterKit={starterKit}
-                    />
-                  ))}
+                  <StarterKitSelector onSelectStarterKit={handleCreateAgent} />
                 </NiceGridDisplay>
               )}
             </VStack>

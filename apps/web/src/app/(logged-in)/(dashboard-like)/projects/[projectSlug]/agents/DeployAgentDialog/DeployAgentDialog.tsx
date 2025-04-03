@@ -15,7 +15,6 @@ import {
   PlusIcon,
   RawKeyValueEditor,
   Section,
-  StarterKitItems,
   Typography,
   VStack,
 } from '@letta-cloud/ui-component-library';
@@ -25,11 +24,11 @@ import { useCurrentProject } from '$web/client/hooks/useCurrentProject/useCurren
 import { webApi, webApiQueryKeys } from '$web/client';
 import { useRouter } from 'next/navigation';
 import { findMemoryBlockVariables } from '@letta-cloud/utils-shared';
-import { STARTER_KITS } from '@letta-cloud/config-agent-starter-kits';
 import type { AgentState } from '@letta-cloud/sdk-core';
 import { useUserHasPermission } from '$web/client/hooks';
 import { ApplicationServices } from '@letta-cloud/service-rbac';
 import { cloudAPI } from '@letta-cloud/sdk-cloud-api';
+import { StarterKitSelector } from '@letta-cloud/ui-ade-components';
 
 const elementWidth = '204px';
 const elementHeight = '166px';
@@ -156,10 +155,6 @@ function FromStarterKit(props: FromStarterKitProps) {
 
   const { slug, id: projectId } = useCurrentProject();
 
-  const starterKits = useMemo(() => {
-    return Object.entries(STARTER_KITS);
-  }, []);
-
   const { push } = useRouter();
 
   const { mutate } = webApi.starterKits.createAgentFromStarterKit.useMutation({
@@ -193,17 +188,11 @@ function FromStarterKit(props: FromStarterKitProps) {
       title={t('FromStarterKit.title')}
       description={t('FromStarterKit.description')}
     >
-      <NiceGridDisplay itemWidth={elementWidth} itemHeight={elementHeight}>
-        {starterKits.map(([id, starterKit]) => (
-          <StarterKitItems
-            onSelectStarterKit={() => {
-              handleSelectStarterKit(starterKit.id);
-            }}
-            key={id}
-            starterKit={starterKit}
-          />
-        ))}
-      </NiceGridDisplay>
+      <StarterKitSelector
+        onSelectStarterKit={(_, kit) => {
+          handleSelectStarterKit(kit.id);
+        }}
+      />
     </Section>
   );
 }
