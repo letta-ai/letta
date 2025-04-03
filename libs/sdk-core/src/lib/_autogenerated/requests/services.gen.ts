@@ -1045,6 +1045,7 @@ export class AgentsService {
    * @param data.appendCopySuffix If set to True, appends "_copy" to the end of the agent name.
    * @param data.overrideExistingTools If set to True, existing tools can get their source code overwritten by the uploaded tool definitions. Note that Letta core tools can never be updated externally.
    * @param data.projectId The project ID to associate the uploaded agent with.
+   * @param data.stripMessages If set to True, strips all messages from the agent before importing.
    * @param data.userId
    * @returns AgentState Successful Response
    * @throws ApiError
@@ -1060,6 +1061,7 @@ export class AgentsService {
         append_copy_suffix: data.appendCopySuffix,
         override_existing_tools: data.overrideExistingTools,
         project_id: data.projectId,
+        strip_messages: data.stripMessages,
       },
       formData: data.formData,
       mediaType: 'multipart/form-data',

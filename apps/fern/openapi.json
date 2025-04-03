@@ -1676,6 +1676,18 @@
               "title": "Project Id"
             },
             "description": "The project ID to associate the uploaded agent with."
+          },
+          {
+            "name": "strip_messages",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "description": "If set to True, strips all messages from the agent before importing.",
+              "default": false,
+              "title": "Strip Messages"
+            },
+            "description": "If set to True, strips all messages from the agent before importing."
           }
         ],
         "requestBody": {

@@ -1,5 +1,5 @@
 'use client';
-import React, { useCallback, useEffect, useMemo } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import {
   UseAgentsServiceListAgentsKeyFn,
@@ -34,18 +34,24 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useTranslations } from '@letta-cloud/translations';
 import { cn } from '@letta-cloud/ui-styles';
+import { webApi } from '@letta-cloud/sdk-web';
 
 interface ImportAgentsDialogProps {
   trigger: React.ReactNode;
+  supportTemplateUploading?: boolean;
+  defaultTemplateImport?: boolean;
+  projectId?: string;
+  onSuccess?: (redirectId: string, template?: boolean) => void;
 }
 
 interface AgentsDialogSidebarProps {
   isImporting: boolean;
+  supportTemplateUploading: boolean;
   onReset: () => void;
 }
 
 function AgentsDialogSidebar(props: AgentsDialogSidebarProps) {
-  const { isImporting, onReset } = props;
+  const { isImporting, supportTemplateUploading, onReset } = props;
   const t = useTranslations('ImportAgentsDialog');
 
   return (
@@ -100,6 +106,23 @@ function AgentsDialogSidebar(props: AgentsDialogSidebarProps) {
             )}
             name="overrideExistingTools"
           />
+          {supportTemplateUploading && (
+            <FormField
+              render={({ field }) => (
+                <Switch
+                  fullWidth
+                  infoTooltip={{
+                    text: t('AgentsDialogSidebar.importAsTemplate.info'),
+                  }}
+                  labelVariant="simple"
+                  label={t('AgentsDialogSidebar.importAsTemplate.label')}
+                  onCheckedChange={field.onChange}
+                  checked={field.value}
+                />
+              )}
+              name="importAsTemplate"
+            />
+          )}
         </VStack>
         <Button
           color="primary"
@@ -387,9 +410,16 @@ function AgentPreview(props: AgentPreviewProps) {
 }
 
 export function ImportAgentsDialog(props: ImportAgentsDialogProps) {
-  const { trigger } = props;
-  const [isOpen, setIsOpen] = React.useState(false);
+  const {
+    trigger,
+    projectId,
+    onSuccess,
+    supportTemplateUploading = false,
+    defaultTemplateImport = false,
+  } = props;
+  const [isOpen, setIsOpen] = useState(false);
   const queryClient = useQueryClient();
+
   const t = useTranslations('ImportAgentsDialog');
 
   const UploadToFormValuesSchema = useMemo(
@@ -402,17 +432,22 @@ export function ImportAgentsDialog(props: ImportAgentsDialogProps) {
           .nullable(),
         overrideExistingTools: z.boolean(),
         appendCopySuffix: z.boolean(),
+        importAsTemplate: z.boolean().optional(),
       }),
     [t],
   );
 
   type UploadToFormValues = z.infer<typeof UploadToFormValuesSchema>;
 
-  const { mutate, reset, isPending } = useAgentsServiceImportAgentSerialized({
+  const {
+    mutate: importAgent,
+    reset: resetImportAgent,
+    isPending: isImportAgentPending,
+  } = useAgentsServiceImportAgentSerialized({
     onError: () => {
       toast.error(t('errors.failedToImport'));
     },
-    onSuccess: async () => {
+    onSuccess: async (res) => {
       await queryClient.refetchQueries({
         queryKey: ['infinite', ...UseAgentsServiceListAgentsKeyFn()].slice(
           0,
@@ -421,7 +456,27 @@ export function ImportAgentsDialog(props: ImportAgentsDialogProps) {
         exact: false,
       });
 
+      if (onSuccess) {
+        onSuccess(res.id, false);
+      }
+
       handleDialogOpenChange(false);
+    },
+  });
+
+  const {
+    mutate: importTemplate,
+    reset: resetImportTemplate,
+    isPending: isImportTemplatePending,
+  } = webApi.agentTemplates.importAgentFileAsTemplate.useMutation({
+    onError: () => {
+      toast.error(t('errors.failedToImport'));
+    },
+    onSuccess: async (res) => {
+      handleDialogOpenChange(false);
+      if (onSuccess) {
+        onSuccess(res.body.name, true);
+      }
     },
   });
 
@@ -432,20 +487,9 @@ export function ImportAgentsDialog(props: ImportAgentsDialogProps) {
       file: null,
       overrideExistingTools: false,
       appendCopySuffix: false,
+      importAsTemplate: defaultTemplateImport,
     },
   });
-
-  const handleDialogOpenChange = useCallback(
-    (nextOpen: boolean) => {
-      if (!nextOpen) {
-        form.reset();
-        reset();
-      }
-
-      setIsOpen(nextOpen);
-    },
-    [form, reset],
-  );
 
   useEffect(() => {
     return () => {
@@ -454,13 +498,11 @@ export function ImportAgentsDialog(props: ImportAgentsDialogProps) {
   }, [form]);
   //
 
-  const [draggedOver, setDraggedOver] = React.useState(false);
+  const [draggedOver, setDraggedOver] = useState(false);
 
-  const [file, setFile] = React.useState<File | null>(null);
-  const [fileData, setFileData] = React.useState<Partial<AgentSchema> | null>(
-    null,
-  );
-  const [fileReadError, setFileReadError] = React.useState<string | null>(null);
+  const [file, setFile] = useState<File | null>(null);
+  const [fileData, setFileData] = useState<Partial<AgentSchema> | null>(null);
+  const [fileReadError, setFileReadError] = useState<string | null>(null);
 
   const onSubmit = useCallback(
     (values: UploadToFormValues) => {
@@ -468,15 +510,30 @@ export function ImportAgentsDialog(props: ImportAgentsDialogProps) {
         return;
       }
 
-      mutate({
+      if (values.importAsTemplate) {
+        importTemplate({
+          body: {
+            file: file,
+          },
+          query: {
+            append_copy_suffix: values.appendCopySuffix,
+            override_existing_tools: values.overrideExistingTools,
+            ...(projectId ? { project_id: projectId } : {}),
+          },
+        });
+        return;
+      }
+
+      importAgent({
         formData: {
           file: file,
         },
+        ...(projectId ? { projectId } : {}),
         appendCopySuffix: values.appendCopySuffix,
         overrideExistingTools: values.overrideExistingTools,
       });
     },
-    [mutate, file],
+    [importAgent, file],
   );
 
   useEffect(() => {
@@ -543,16 +600,29 @@ export function ImportAgentsDialog(props: ImportAgentsDialogProps) {
     setFile(null);
     setFileData(null);
     setFileReadError(null);
+    resetImportTemplate();
     fileInputRef.current?.value && (fileInputRef.current.value = '');
     form.reset();
+    resetImportAgent();
   }, [form]);
+
+  const handleDialogOpenChange = useCallback(
+    (nextOpen: boolean) => {
+      if (!nextOpen) {
+        handleReset();
+      }
+
+      setIsOpen(nextOpen);
+    },
+    [form, handleReset],
+  );
 
   return (
     <FormProvider {...form}>
       <MiniApp
         trigger={trigger}
         isOpen={isOpen}
-        onOpenChange={setIsOpen}
+        onOpenChange={handleDialogOpenChange}
         appName={t('title')}
       >
         <form className="contents" onSubmit={form.handleSubmit(onSubmit)}>
@@ -625,8 +695,9 @@ export function ImportAgentsDialog(props: ImportAgentsDialogProps) {
             </VStack>
             {fileData && (
               <AgentsDialogSidebar
+                supportTemplateUploading={supportTemplateUploading}
                 onReset={handleReset}
-                isImporting={isPending}
+                isImporting={isImportAgentPending || isImportTemplatePending}
               />
             )}
           </HStack>

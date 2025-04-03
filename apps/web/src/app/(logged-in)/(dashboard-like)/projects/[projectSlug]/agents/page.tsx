@@ -32,7 +32,7 @@ import {
 } from '@letta-cloud/ui-component-library';
 import { webApi, webApiQueryKeys } from '$web/client';
 import { useCurrentProject } from '$web/client/hooks/useCurrentProject/useCurrentProject';
-import { useSearchParams } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import type { ColumnDef } from '@tanstack/react-table';
 import {
   type AgentState,
@@ -47,7 +47,7 @@ import { DeployAgentDialog } from './DeployAgentDialog/DeployAgentDialog';
 import { useDateFormatter } from '@letta-cloud/utils-client';
 import { useInfiniteQuery } from '@tanstack/react-query';
 import type { ServerInferResponses } from '@ts-rest/core';
-import { Messages } from '@letta-cloud/ui-ade-components';
+import { ImportAgentsDialog, Messages } from '@letta-cloud/ui-ade-components';
 import type { InfiniteData } from '@tanstack/query-core';
 import {
   type ExtendedAgentState,
@@ -812,9 +812,31 @@ function DeployedAgentsPage() {
     [currentProjectSlug, filterByVersion, formatDateAndTime, t],
   );
 
+  const { push } = useRouter();
+
   return (
     <DashboardPageLayout
-      actions={<DeployAgentDialog />}
+      actions={
+        <HStack>
+          <ImportAgentsDialog
+            onSuccess={(id, isTemplate) => {
+              if (isTemplate) {
+                push(`/projects/${currentProjectSlug}/templates/${id}`);
+
+                return;
+              }
+
+              push(`/projects/${currentProjectSlug}/agents/${id}`);
+            }}
+            supportTemplateUploading
+            projectId={currentProjectId}
+            trigger={
+              <Button label={t('importAgents.title')} color="tertiary" />
+            }
+          />
+          <DeployAgentDialog />
+        </HStack>
+      }
       encapsulatedFullHeight
       title="Agents"
     >

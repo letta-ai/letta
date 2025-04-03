@@ -1,7 +1,10 @@
 import { AgentsService } from '@letta-cloud/sdk-core';
 import type { CreateAgentData } from '@letta-cloud/sdk-core';
 import { agentTemplates, db } from '@letta-cloud/service-database';
-import { findUniqueAgentTemplateName } from '@letta-cloud/utils-server';
+import {
+  findUniqueAgentTemplateName,
+  getTemplateProjectId,
+} from '@letta-cloud/utils-server';
 import { and, eq, isNull } from 'drizzle-orm';
 import { cloudApiRouter } from '../router';
 
@@ -58,7 +61,7 @@ export async function createTemplate(props: CreateTemplateOptions) {
       requestBody: {
         ...createAgentState,
         name,
-        project_id: `templates-${projectId}`,
+        project_id: getTemplateProjectId(projectId),
       },
     },
     {

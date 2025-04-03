@@ -18,6 +18,7 @@ import { copyAgentById } from '@letta-cloud/utils-server';
 import { updateAgentFromAgentId } from '@letta-cloud/utils-server';
 import { ApplicationServices } from '@letta-cloud/service-rbac';
 import { createTemplate } from 'tmp-cloud-api-router';
+import type { GeneralRequestContext } from '../../server';
 
 function randomThreeDigitNumber() {
   return Math.floor(Math.random() * 1000);
@@ -890,6 +891,96 @@ async function listTemplateVersions(
   };
 }
 
+type ImportAgentFileAsTemplateRequest = ServerInferRequest<
+  typeof contracts.agentTemplates.importAgentFileAsTemplate
+>;
+
+type ImportAgentFileAsTemplateResponse = ServerInferResponses<
+  typeof contracts.agentTemplates.importAgentFileAsTemplate
+>;
+
+async function importAgentFileAsTemplate(
+  req: ImportAgentFileAsTemplateRequest,
+  context: GeneralRequestContext,
+): Promise<ImportAgentFileAsTemplateResponse> {
+  const {
+    activeOrganizationId,
+    permissions,
+    id: userId,
+    lettaAgentsId,
+  } = await getUserWithActiveOrganizationIdOrThrow();
+
+  const { append_copy_suffix, override_existing_tools, project_id } = req.query;
+
+  if (!permissions.has(ApplicationServices.CREATE_UPDATE_DELETE_TEMPLATES)) {
+    return {
+      status: 403,
+      body: {},
+    };
+  }
+
+  if (typeof project_id !== 'string') {
+    return {
+      status: 400,
+      body: {
+        message: 'project_id is required',
+      },
+    };
+  }
+
+  const form = await context.request.formData();
+
+  const file = form.get('file');
+
+  if (!file) {
+    return {
+      status: 400,
+      body: {
+        message: 'file is required',
+      },
+    };
+  }
+
+  const agent = await AgentsService.importAgentSerialized({
+    formData: {
+      file: file as Blob,
+    },
+    projectId: `templates-${project_id}`,
+    appendCopySuffix: append_copy_suffix,
+    stripMessages: true,
+    overrideExistingTools: override_existing_tools,
+  });
+
+  const response = await createTemplate({
+    projectId: project_id,
+    organizationId: activeOrganizationId,
+    userId,
+    lettaAgentsId: lettaAgentsId,
+    createAgentState: {
+      llm_config: agent.llm_config,
+      embedding_config: agent.embedding_config,
+      system: agent.system,
+      tool_ids: agent.tools.map((tool) => tool.id || '').filter(Boolean),
+      tool_rules: agent.tool_rules,
+      memory_blocks: agent.memory.blocks.map((block) => {
+        return {
+          limit: block.limit,
+          label: block.label || '',
+          value: block.value,
+        };
+      }),
+    },
+  });
+
+  return {
+    status: 201,
+    body: {
+      id: response.templateId,
+      name: response.templateName,
+    },
+  };
+}
+
 export const agentTemplateRoutes = {
   listAgentTemplates,
   getAgentTemplateByVersion,
@@ -901,4 +992,5 @@ export const agentTemplateRoutes = {
   getAgentTemplateById,
   getDeployedAgentTemplateById,
   listTemplateVersions,
+  importAgentFileAsTemplate,
 };

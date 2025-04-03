@@ -111,11 +111,13 @@ async function handleEventStreamRequest(options: RequestOptions) {
 }
 
 async function handleMultipartFileUpload(options: RequestOptions) {
-  const { pathname, method, lettaAgentsUserId, formData } = options;
+  const { pathname, method, lettaAgentsUserId, formData, query } = options;
+
+  const queryParam = new URLSearchParams(query);
 
   const response = await axios({
     method: method,
-    url: `${environment.LETTA_AGENTS_ENDPOINT}${pathname}`,
+    url: `${environment.LETTA_AGENTS_ENDPOINT}${pathname}?${queryParam.toString()}`,
     data: formData,
     headers: {
       user_id: lettaAgentsUserId,

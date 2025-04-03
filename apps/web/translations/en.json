@@ -1133,6 +1133,9 @@
     "TagsShorthand": {
       "showAll": "+{count} more"
     },
+    "importAgents": {
+      "title": "Import Agents"
+    },
     "useQueryDefinition": {
       "identities": {
         "name": "Identity",

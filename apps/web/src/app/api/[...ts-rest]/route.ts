@@ -38,6 +38,7 @@ const publicApis = [
 const handler = createNextHandler(contracts, router, {
   basePath: '/api',
   jsonQuery: true,
+
   responseValidation: false,
   cors: {
     allowMethods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],

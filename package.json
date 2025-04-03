@@ -48,6 +48,7 @@
     "undertaker:build": "esbuild apps/credit-undertaker/src/main.ts --bundle --platform=node --outfile=dist/apps/credit-undertaker/main.js",
     "undertaker:serve": "node dist/apps/credit-undertaker/main.js",
     "web:dev": "nx dev web",
+    "web:dev:slow": "nx dev:slow web",
     "web:lint": "npx nx run-many --all --exclude=core --skip-nx-cache --parallel --targets=lint",
     "web:generate-web-only-openapi-spec": "nx generate-openapi web",
     "web:database:check": "nx run service-database:check",

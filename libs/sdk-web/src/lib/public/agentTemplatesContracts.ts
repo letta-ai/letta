@@ -241,6 +241,22 @@ const listTemplateVersionsContract = c.query({
   },
 });
 
+const importAgentFileAsTemplateContract = c.mutation({
+  method: 'POST',
+  contentType: 'multipart/form-data',
+  path: '/agent-template/import',
+  body: c.type<{
+    file: File;
+  }>(),
+  query: zodTypes.post_Import_agent_serialized.parameters.shape.query,
+  responses: {
+    201: z.object({
+      name: z.string(),
+      id: z.string(),
+    }),
+  },
+});
+
 export const agentTemplatesContracts = c.router({
   listAgentTemplates: listAgentTemplatesContract,
   forkAgentTemplate: forkAgentTemplateContract,
@@ -255,6 +271,7 @@ export const agentTemplatesContracts = c.router({
   getAgentTemplateById: getAgentTemplateByIdContract,
   getDeployedAgentTemplateById: getDeployedAgentTemplateByIdContract,
   listTemplateVersions: listTemplateVersionsContract,
+  importAgentFileAsTemplate: importAgentFileAsTemplateContract,
 });
 
 export const agentTemplatesQueryClientKeys = {

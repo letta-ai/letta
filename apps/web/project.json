@@ -12,6 +12,13 @@
         "command": "next dev --turbo"
       }
     },
+    "dev:slow": {
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": "apps/web",
+        "command": "next dev"
+      }
+    },
     "type-check": {
       "executor": "nx:run-commands",
       "options": {

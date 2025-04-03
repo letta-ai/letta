@@ -358,6 +358,9 @@ core:
 web:
     npm run web:dev
 
+web-slow:
+    npm run web:dev:slow
+
 ready:
   @echo "🚧 Updating your local environment..."
   source ~/.nvm/nvm.sh && nvm use

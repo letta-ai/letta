@@ -1485,6 +1485,10 @@
     },
     "AgentsDialogSidebar": {
       "reset": "Reset",
+      "importAsTemplate": {
+        "label": "Import as template",
+        "info": "Import this agent as a template"
+      },
       "appendCopySuffix": {
         "label": "Add -copy to end of agent name",
         "info": "If an agent with the same name already exists, this will append -copy to the end of the agent name"

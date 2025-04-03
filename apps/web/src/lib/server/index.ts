@@ -2,10 +2,16 @@
 /*
   Record<string, string>
  */
+import type { TsRestRequest } from '@ts-rest/serverless/next.cjs';
+
 type StreamedDataOutput = Record<string, string>;
 
 interface StreamedArgumentsParserGeneratorOptions {
   dataTransfer?: any;
+}
+
+export interface GeneralRequestContext {
+  request: TsRestRequest;
 }
 
 export function streamedArgumentsParserGenerator() {

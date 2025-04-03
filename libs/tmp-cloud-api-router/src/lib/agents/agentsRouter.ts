@@ -731,6 +731,7 @@ async function createTemplateFromAgent(
       embedding_config: agent.embedding_config,
       system: agent.system,
       tool_ids: agent.tools.map((tool) => tool.id || '').filter(Boolean),
+      tool_rules: agent.tool_rules,
       memory_blocks: agent.memory.blocks.map((block) => {
         return {
           limit: block.limit,

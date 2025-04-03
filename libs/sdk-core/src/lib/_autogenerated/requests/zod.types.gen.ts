@@ -5195,6 +5195,7 @@ export const post_Import_agent_serialized = {
       project_id: z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
+      strip_messages: z.boolean().optional(),
     }),
     header: z.object({
       user_id: z
