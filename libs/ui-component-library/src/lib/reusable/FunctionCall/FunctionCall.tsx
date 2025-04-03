@@ -6,6 +6,7 @@ import {
   CheckCircleFilledIcon,
   ChevronDownIcon,
   ChevronRightIcon,
+  ContextWindowIcon,
   FunctionIcon,
   WarningIcon,
 } from '../../icons';
@@ -19,6 +20,31 @@ import { Badge } from '../../core/Badge/Badge';
 import type { ToolReturnMessageSchemaType } from '@letta-cloud/sdk-core';
 import { TabGroup } from '../../core/TabGroup/TabGroup';
 import { functionCallOpenStatusAtom } from './functionCallOpenStatusAtom';
+import { Dialog } from '../../core/Dialog/Dialog';
+import { VirtualizedCodeViewer } from '../../core/VirtualizedCodeViewer/VirtualizedCodeViewer';
+import { Button } from '../../core/Button/Button';
+
+interface FunctionCallDataViewerDialogProps {
+  content: string;
+  trigger?: React.ReactNode;
+}
+
+function FunctionCallDataViewerDialog(
+  props: FunctionCallDataViewerDialogProps,
+) {
+  const { content, trigger } = props;
+
+  const t = useTranslations('ui-component-library/FunctionCall');
+
+  console.log(content);
+  return (
+    <Dialog hideConfirm size="xlarge" trigger={trigger} title={t('response')}>
+      <div className="min-h-[300px] h-[300px] w-full border">
+        <VirtualizedCodeViewer content={content} fontSize="small" />
+      </div>
+    </Dialog>
+  );
+}
 
 interface FunctionCallProps {
   name: string;
@@ -29,6 +55,8 @@ interface FunctionCallProps {
 }
 
 type ResponseViews = 'response' | 'stderr' | 'stdout';
+
+const FUNCTION_CALL_LIMIT = 10_000;
 
 export function FunctionCall(props: FunctionCallProps) {
   const { id, name, inputs, response, status } = props;
@@ -111,18 +139,23 @@ export function FunctionCall(props: FunctionCallProps) {
     }
   }, [response, responseView]);
 
+  const partialResponseData = useMemo(() => {
+    if (!responseData) return null;
+
+    // first 10_000 characters
+
+    const first10k = responseData.slice(0, FUNCTION_CALL_LIMIT);
+
+    if (responseData.length >= FUNCTION_CALL_LIMIT) {
+      return `${first10k}...`;
+    }
+
+    return first10k;
+  }, [responseData]);
+
   return (
-    <details
-      className="w-full"
-      open={open}
-      onClick={(e) => {
-        if (e.target === e.currentTarget) {
-          e.preventDefault();
-          toggleOpen();
-        }
-      }}
-    >
-      <HStack gap={false} as="summary">
+    <div className="w-full">
+      <HStack onClick={toggleOpen} gap={false}>
         <HStack align="center" className="h-[24px]" gap="medium">
           <HStack
             gap="large"
@@ -205,17 +238,32 @@ export function FunctionCall(props: FunctionCallProps) {
                 />
               </VStack>
               {responseData ? (
-                <RawCodeEditor
-                  hideLabel
-                  color="background"
-                  variant="minimal"
-                  fullWidth
-                  label=""
-                  language="javascript"
-                  showLineNumbers={false}
-                  fontSize="small"
-                  code={responseData}
-                />
+                <>
+                  <RawCodeEditor
+                    hideLabel
+                    color="background"
+                    variant="minimal"
+                    fullWidth
+                    label=""
+                    language="javascript"
+                    showLineNumbers={false}
+                    fontSize="small"
+                    code={partialResponseData}
+                  />
+                  {responseData.length >= FUNCTION_CALL_LIMIT && (
+                    <FunctionCallDataViewerDialog
+                      trigger={
+                        <Button
+                          label={t('seeMore')}
+                          color="tertiary"
+                          fullWidth
+                          preIcon={<ContextWindowIcon size="small" />}
+                        />
+                      }
+                      content={responseData}
+                    />
+                  )}
+                </>
               ) : (
                 <HStack padding="small">
                   <Typography italic variant="body3">
@@ -227,6 +275,6 @@ export function FunctionCall(props: FunctionCallProps) {
           )}
         </VStack>
       )}
-    </details>
+    </div>
   );
 }

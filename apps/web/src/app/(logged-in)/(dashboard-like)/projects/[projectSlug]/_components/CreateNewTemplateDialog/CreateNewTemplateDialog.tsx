@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo } from 'react';
+import React, { useCallback } from 'react';
 import { useTranslations } from '@letta-cloud/translations';
 import { useCurrentProject } from '$web/client/hooks/useCurrentProject/useCurrentProject';
 import { webApi, webApiQueryKeys } from '$web/client';
@@ -11,7 +11,6 @@ import {
   Section,
   VStack,
 } from '@letta-cloud/ui-component-library';
-import { STARTER_KITS } from '@letta-cloud/config-agent-starter-kits';
 import { useQueryClient } from '@tanstack/react-query';
 import { useCurrentUser, useUserHasPermission } from '$web/client/hooks';
 import { ApplicationServices } from '@letta-cloud/service-rbac';

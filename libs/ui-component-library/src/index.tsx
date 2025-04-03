@@ -210,3 +210,5 @@ export * from './lib/core/RadioDot/RadioDot';
 
 export * from './lib/reusable/InteractiveSystemMessage/InteractiveSystemMessage';
 export * from './lib/onboarding/ConfirmPauseOnboardingDialog/ConfirmPauseOnboardingDialog';
+
+export * from './lib/core/VirtualizedCodeViewer/VirtualizedCodeViewer';

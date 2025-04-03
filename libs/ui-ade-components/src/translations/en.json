@@ -570,7 +570,11 @@
     "empty": "None",
     "success": "Success",
     "request": "Tool input",
-    "response": "Tool output"
+    "seeMore": "Tool output truncated, click to view all",
+    "response": "Tool output",
+    "FunctionCallDataViewerDialog": {
+      "title": "View response"
+    }
   },
   "ui-component-library/CopyWithCodePreview": {
     "description": "The code below will be copied to your clipboard:"
