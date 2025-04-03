@@ -450,6 +450,8 @@ function TemplateVersionDisplay() {
     ApplicationServices.CREATE_UPDATE_DELETE_TEMPLATES,
   );
 
+  const show = useShowOnboarding('save_version');
+
   const versionNumber = deployedAgentTemplate?.version;
   if (otherError) {
     return (
@@ -484,7 +486,7 @@ function TemplateVersionDisplay() {
         trigger={
           <Button
             size="small"
-            _use_rarely_className="shine bg-primary"
+            _use_rarely_className={show ? 'shine' : ''}
             preIcon={<SaveIcon />}
             data-testid="stage-new-version-button"
             color="primary"
