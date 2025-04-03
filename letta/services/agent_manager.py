@@ -97,7 +97,11 @@ class AgentManager:
         agent_create: CreateAgent,
         actor: PydanticUser,
     ) -> PydanticAgentState:
-        system = derive_system_message(agent_type=agent_create.agent_type, system=agent_create.system)
+        system = derive_system_message(
+            agent_type=agent_create.agent_type,
+            enable_sleeptime=agent_create.enable_sleeptime,
+            system=agent_create.system,
+        )
 
         if not agent_create.llm_config or not agent_create.embedding_config:
             raise ValueError("llm_config and embedding_config are required")
@@ -287,6 +291,12 @@ class AgentManager:
             )
 
         # Rebuild the system prompt if it's different
+        if agent_update.enable_sleeptime and agent_update.system is None:
+            agent_update.system = derive_system_message(
+                agent_type=agent_state.agent_type,
+                enable_sleeptime=agent_update.enable_sleeptime,
+                system=agent_update.system,
+            )
         if agent_update.system and agent_update.system != agent_state.system:
             agent_state = self.rebuild_system_prompt(agent_id=agent_state.id, actor=actor, force=True, update_timestamp=False)
 

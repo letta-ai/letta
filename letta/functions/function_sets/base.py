@@ -166,7 +166,7 @@ def core_memory_replace(agent_state: "AgentState", label: str, old_content: str,
     return None
 
 
-def rethink_memory(agent_state: "AgentState", new_memory: str, target_block_label: str) -> None:  # type: ignore
+def rethink_memory(agent_state: "AgentState", new_memory: str, target_block_label: str) -> None:
     """
     Re-evaluate the memory in block_name, integrating new and updated facts.
     Replace outdated information with the most likely truths, avoiding redundancy with original memories.
@@ -180,10 +180,10 @@ def rethink_memory(agent_state: "AgentState", new_memory: str, target_block_labe
         None: None is always returned as this function does not produce a response.
     """
 
-    if target_block_label is not None:
-        if agent_state.memory.get_block(target_block_label) is None:
-            agent_state.memory.create_block(label=target_block_label, value=new_memory)
-        agent_state.memory.update_block_value(label=target_block_label, value=new_memory)
+    if agent_state.memory.get_block(target_block_label) is None:
+        agent_state.memory.create_block(label=target_block_label, value=new_memory)
+
+    agent_state.memory.update_block_value(label=target_block_label, value=new_memory)
     return None
 
 
