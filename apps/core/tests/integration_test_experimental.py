@@ -465,3 +465,41 @@ def test_anthropic_streaming(client: Letta):
     )
 
     print(list(response))
+
+
+import time
+
+
+def test_create_agents_telemetry(client: Letta):
+    start_total = time.perf_counter()
+
+    # delete any existing worker agents
+    start_delete = time.perf_counter()
+    workers = client.agents.list(tags=["worker"])
+    for worker in workers:
+        client.agents.delete(agent_id=worker.id)
+    end_delete = time.perf_counter()
+    print(f"[telemetry] Deleted {len(workers)} existing worker agents in {end_delete - start_delete:.2f}s")
+
+    # create worker agents
+    num_workers = 100
+    agent_times = []
+    for idx in range(num_workers):
+        start = time.perf_counter()
+        client.agents.create(
+            name=f"worker_{idx}",
+            include_base_tools=True,
+            model="anthropic/claude-3-5-sonnet-20241022",
+            embedding="letta/letta-free",
+        )
+        end = time.perf_counter()
+        duration = end - start
+        agent_times.append(duration)
+        print(f"[telemetry] Created worker_{idx} in {duration:.2f}s")
+
+    total_duration = time.perf_counter() - start_total
+    avg_duration = sum(agent_times) / len(agent_times)
+
+    print(f"[telemetry] Total time to create {num_workers} agents: {total_duration:.2f}s")
+    print(f"[telemetry] Average agent creation time: {avg_duration:.2f}s")
+    print(f"[telemetry] Fastest agent: {min(agent_times):.2f}s, Slowest agent: {max(agent_times):.2f}s")
