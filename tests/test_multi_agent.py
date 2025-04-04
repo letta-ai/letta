@@ -1,10 +1,9 @@
-import time
-
 import pytest
 from sqlalchemy import delete
 
 from letta.config import LettaConfig
 from letta.orm import Provider, Step
+from letta.orm.enums import JobType
 from letta.orm.errors import NoResultFound
 from letta.schemas.agent import CreateAgent
 from letta.schemas.block import CreateBlock
@@ -19,6 +18,7 @@ from letta.schemas.group import (
     SupervisorManager,
 )
 from letta.schemas.message import MessageCreate
+from letta.schemas.run import Run
 from letta.server.server import SyncServer
 
 
@@ -518,7 +518,10 @@ async def test_sleeptime_group_chat(server, actor):
         assert len(response.usage.run_ids or []) == i % 2
         run_ids.extend(response.usage.run_ids or [])
 
-    time.sleep(5)
+        jobs = server.job_manager.list_jobs(actor=actor, job_type=JobType.RUN)
+        runs = [Run.from_job(job) for job in jobs]
+        agent_runs = [run for run in runs if "agent_id" in run.metadata and run.metadata["agent_id"] == sleeptime_agent_id]
+        assert len(agent_runs) == len(run_ids)
 
     for run_id in run_ids:
         job = server.job_manager.get_job_by_id(job_id=run_id, actor=actor)
