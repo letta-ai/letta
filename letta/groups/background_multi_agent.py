@@ -192,6 +192,7 @@ class BackgroundMultiAgent(Agent):
                 tool_calls=None,
                 tool_call_id=None,
                 group_id=self.group_id,
+                otid=message.otid,
             )
             for message in messages
         ]

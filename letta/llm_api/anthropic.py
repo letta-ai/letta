@@ -953,6 +953,7 @@ def anthropic_chat_completions_process_stream(
                         # TODO handle emitting redacted reasoning content (e.g. as concat?)
                         expect_reasoning_content=extended_thinking,
                         name=name,
+                        chunk_index=chunk_idx,
                     )
                 elif isinstance(stream_interface, AgentRefreshStreamingInterface):
                     stream_interface.process_refresh(chat_completion_response)
