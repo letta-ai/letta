@@ -6788,6 +6788,15 @@ export const get_List_runs = {
   path: z.literal('/v1/runs/'),
   requestFormat: z.literal('json'),
   parameters: z.object({
+    query: z.object({
+      agent_ids: z
+        .union([
+          z.array(z.string()),
+          z.null(),
+          z.array(z.union([z.array(z.string()), z.null()])),
+        ])
+        .optional(),
+    }),
     header: z.object({
       user_id: z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
@@ -6803,6 +6812,15 @@ export const get_List_active_runs = {
   path: z.literal('/v1/runs/active'),
   requestFormat: z.literal('json'),
   parameters: z.object({
+    query: z.object({
+      agent_ids: z
+        .union([
+          z.array(z.string()),
+          z.null(),
+          z.array(z.union([z.array(z.string()), z.null()])),
+        ])
+        .optional(),
+    }),
     header: z.object({
       user_id: z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])

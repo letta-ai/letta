@@ -1275,6 +1275,7 @@ export const prefetchUseProvidersServiceListProviders = (
  * List Runs
  * List all runs.
  * @param data The data for the request.
+ * @param data.agentIds The unique identifier of the agent associated with the run.
  * @param data.userId
  * @returns Run Successful Response
  * @throws ApiError
@@ -1282,19 +1283,22 @@ export const prefetchUseProvidersServiceListProviders = (
 export const prefetchUseRunsServiceListRuns = (
   queryClient: QueryClient,
   {
+    agentIds,
     userId,
   }: {
+    agentIds?: string[];
     userId?: string;
   } = {},
 ) =>
   queryClient.prefetchQuery({
-    queryKey: Common.UseRunsServiceListRunsKeyFn({ userId }),
-    queryFn: () => RunsService.listRuns({ userId }),
+    queryKey: Common.UseRunsServiceListRunsKeyFn({ agentIds, userId }),
+    queryFn: () => RunsService.listRuns({ agentIds, userId }),
   });
 /**
  * List Active Runs
  * List all active runs.
  * @param data The data for the request.
+ * @param data.agentIds The unique identifier of the agent associated with the run.
  * @param data.userId
  * @returns Run Successful Response
  * @throws ApiError
@@ -1302,14 +1306,16 @@ export const prefetchUseRunsServiceListRuns = (
 export const prefetchUseRunsServiceListActiveRuns = (
   queryClient: QueryClient,
   {
+    agentIds,
     userId,
   }: {
+    agentIds?: string[];
     userId?: string;
   } = {},
 ) =>
   queryClient.prefetchQuery({
-    queryKey: Common.UseRunsServiceListActiveRunsKeyFn({ userId }),
-    queryFn: () => RunsService.listActiveRuns({ userId }),
+    queryKey: Common.UseRunsServiceListActiveRunsKeyFn({ agentIds, userId }),
+    queryFn: () => RunsService.listActiveRuns({ agentIds, userId }),
   });
 /**
  * Retrieve Run

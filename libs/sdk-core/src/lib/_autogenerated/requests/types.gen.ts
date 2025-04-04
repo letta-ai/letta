@@ -4551,12 +4551,20 @@ export type DeleteProviderData = {
 export type DeleteProviderResponse = unknown;
 
 export type ListRunsData = {
+  /**
+   * The unique identifier of the agent associated with the run.
+   */
+  agentIds?: Array<string> | null;
   userId?: string | null;
 };
 
 export type ListRunsResponse = Array<Run>;
 
 export type ListActiveRunsData = {
+  /**
+   * The unique identifier of the agent associated with the run.
+   */
+  agentIds?: Array<string> | null;
   userId?: string | null;
 };
 

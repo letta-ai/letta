@@ -5080,7 +5080,29 @@
         "summary": "List Runs",
         "description": "List all runs.",
         "operationId": "list_runs",
-        "parameters": [],
+        "parameters": [
+          {
+            "name": "agent_ids",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "The unique identifier of the agent associated with the run.",
+              "title": "Agent Ids"
+            },
+            "description": "The unique identifier of the agent associated with the run."
+          }
+        ],
         "responses": {
           "200": {
             "description": "Successful Response",
@@ -5115,7 +5137,29 @@
         "summary": "List Active Runs",
         "description": "List all active runs.",
         "operationId": "list_active_runs",
-        "parameters": [],
+        "parameters": [
+          {
+            "name": "agent_ids",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "The unique identifier of the agent associated with the run.",
+              "title": "Agent Ids"
+            },
+            "description": "The unique identifier of the agent associated with the run."
+          }
+        ],
         "responses": {
           "200": {
             "description": "Successful Response",

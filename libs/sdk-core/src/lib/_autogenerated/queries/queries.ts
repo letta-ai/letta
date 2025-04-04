@@ -1616,6 +1616,7 @@ export const useProvidersServiceListProviders = <
  * List Runs
  * List all runs.
  * @param data The data for the request.
+ * @param data.agentIds The unique identifier of the agent associated with the run.
  * @param data.userId
  * @returns Run Successful Response
  * @throws ApiError
@@ -1626,22 +1627,28 @@ export const useRunsServiceListRuns = <
   TQueryKey extends Array<unknown> = unknown[],
 >(
   {
+    agentIds,
     userId,
   }: {
+    agentIds?: string[];
     userId?: string;
   } = {},
   queryKey?: TQueryKey,
   options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>,
 ) =>
   useQuery<TData, TError>({
-    queryKey: Common.UseRunsServiceListRunsKeyFn({ userId }, queryKey),
-    queryFn: () => RunsService.listRuns({ userId }) as TData,
+    queryKey: Common.UseRunsServiceListRunsKeyFn(
+      { agentIds, userId },
+      queryKey,
+    ),
+    queryFn: () => RunsService.listRuns({ agentIds, userId }) as TData,
     ...options,
   });
 /**
  * List Active Runs
  * List all active runs.
  * @param data The data for the request.
+ * @param data.agentIds The unique identifier of the agent associated with the run.
  * @param data.userId
  * @returns Run Successful Response
  * @throws ApiError
@@ -1652,16 +1659,21 @@ export const useRunsServiceListActiveRuns = <
   TQueryKey extends Array<unknown> = unknown[],
 >(
   {
+    agentIds,
     userId,
   }: {
+    agentIds?: string[];
     userId?: string;
   } = {},
   queryKey?: TQueryKey,
   options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>,
 ) =>
   useQuery<TData, TError>({
-    queryKey: Common.UseRunsServiceListActiveRunsKeyFn({ userId }, queryKey),
-    queryFn: () => RunsService.listActiveRuns({ userId }) as TData,
+    queryKey: Common.UseRunsServiceListActiveRunsKeyFn(
+      { agentIds, userId },
+      queryKey,
+    ),
+    queryFn: () => RunsService.listActiveRuns({ agentIds, userId }) as TData,
     ...options,
   });
 /**

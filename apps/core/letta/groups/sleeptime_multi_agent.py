@@ -155,7 +155,10 @@ class SleeptimeMultiAgent(Agent):
             job_update = JobUpdate(
                 status=JobStatus.completed,
                 completed_at=datetime.utcnow(),
-                metadata={"result": result.model_dump(mode="json")},  # Store the result in metadata
+                metadata={
+                    "result": result.model_dump(mode="json"),
+                    "agent_id": participant_agent.agent_state.id,
+                },
             )
             self.job_manager.update_job_by_id(job_id=run_id, job_update=job_update, actor=self.user)
             return result

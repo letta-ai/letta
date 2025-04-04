@@ -3071,6 +3071,7 @@ export class RunsService {
    * List Runs
    * List all runs.
    * @param data The data for the request.
+   * @param data.agentIds The unique identifier of the agent associated with the run.
    * @param data.userId
    * @returns Run Successful Response
    * @throws ApiError
@@ -3082,6 +3083,9 @@ export class RunsService {
     return __request(OpenAPI, {
       method: 'GET',
       url: '/v1/runs/',
+      query: {
+        agent_ids: data.agentIds,
+      },
       errors: {
         422: 'Validation Error',
       },
@@ -3093,6 +3097,7 @@ export class RunsService {
    * List Active Runs
    * List all active runs.
    * @param data The data for the request.
+   * @param data.agentIds The unique identifier of the agent associated with the run.
    * @param data.userId
    * @returns Run Successful Response
    * @throws ApiError
@@ -3104,6 +3109,9 @@ export class RunsService {
     return __request(OpenAPI, {
       method: 'GET',
       url: '/v1/runs/active',
+      query: {
+        agent_ids: data.agentIds,
+      },
       errors: {
         422: 'Validation Error',
       },
