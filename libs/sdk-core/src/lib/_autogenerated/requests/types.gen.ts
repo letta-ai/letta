@@ -3038,9 +3038,9 @@ export type ToolCallContent = {
 };
 
 export type ToolCallDelta = {
-  name: string | null;
-  arguments: string | null;
-  tool_call_id: string | null;
+  name?: string | null;
+  arguments?: string | null;
+  tool_call_id?: string | null;
 };
 
 /**

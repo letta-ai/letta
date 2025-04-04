@@ -3513,21 +3513,15 @@ export const ToolCall = z.object({
 
 export type ToolCallDelta = z.infer<typeof ToolCallDelta>;
 export const ToolCallDelta = z.object({
-  name: z.union([
-    z.string(),
-    z.null(),
-    z.array(z.union([z.string(), z.null()])),
-  ]),
-  arguments: z.union([
-    z.string(),
-    z.null(),
-    z.array(z.union([z.string(), z.null()])),
-  ]),
-  tool_call_id: z.union([
-    z.string(),
-    z.null(),
-    z.array(z.union([z.string(), z.null()])),
-  ]),
+  name: z
+    .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+    .optional(),
+  arguments: z
+    .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+    .optional(),
+  tool_call_id: z
+    .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+    .optional(),
 });
 
 export type ToolCallMessage = z.infer<typeof ToolCallMessage>;

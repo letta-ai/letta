@@ -8239,7 +8239,6 @@ export const $ToolCallDelta = {
     },
   },
   type: 'object',
-  required: ['name', 'arguments', 'tool_call_id'],
   title: 'ToolCallDelta',
 } as const;
 
