@@ -22,7 +22,7 @@ export async function submitCloudAccessCode(
   const { activeOrganizationId } =
     await getUserWithActiveOrganizationIdOrThrow();
 
-  if (code.toLowerCase() !== 'hackmerced-rocks') {
+  if (code.toLowerCase() !== 'diamonhacks-rocks') {
     return {
       status: 400,
       body: {
@@ -31,9 +31,7 @@ export async function submitCloudAccessCode(
     };
   }
 
-  // expires at 2025-03-10
-
-  if (new Date() > new Date('2025-03-09')) {
+  if (new Date() > new Date('2025-04-07')) {
     return {
       status: 400,
       body: {
@@ -73,9 +71,9 @@ export async function submitCloudAccessCode(
 
   await addCreditsToOrganization({
     organizationId: activeOrganizationId,
-    amount: dollarsToCredits(5),
+    amount: dollarsToCredits(25),
     source: 'cloud-access-code',
-    note: 'HackMerced',
+    note: 'SDHacks',
   });
 
   return {
