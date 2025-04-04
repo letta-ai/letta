@@ -1,11 +1,14 @@
 import json
 import re
-from typing import List, Optional, Union
+from typing import Dict, List, Optional, Union
 
 import anthropic
 from anthropic import AsyncStream
 from anthropic.types import Message as AnthropicMessage
 from anthropic.types.beta import BetaRawMessageStreamEvent
+from anthropic.types.beta.message_create_params import MessageCreateParamsNonStreaming
+from anthropic.types.beta.messages import BetaMessageBatch
+from anthropic.types.beta.messages.batch_create_params import Request
 
 from letta.errors import (
     ContextWindowExceededError,
@@ -54,6 +57,27 @@ class AnthropicClient(LLMClientBase):
         client = self._get_anthropic_client(async_client=True)
         request_data["stream"] = True
         return await client.beta.messages.create(**request_data, betas=["tools-2024-04-04"])
+
+    @trace_method
+    async def batch_async(self, requests: Dict[str, dict]) -> BetaMessageBatch:
+        """
+        Send a batch of requests to the Anthropic API asynchronously.
+
+        Args:
+            requests (Dict[str, dict]): A mapping from custom_id to request parameter dicts.
+
+        Returns:
+            List[dict]: A list of response dictionaries corresponding to each request.
+        """
+        client = self._get_anthropic_client(async_client=True)
+
+        anthropic_requests = [
+            Request(custom_id=custom_id, params=MessageCreateParamsNonStreaming(**params)) for custom_id, params in requests.items()
+        ]
+
+        batch_response = await client.beta.messages.batches.create(requests=anthropic_requests)
+
+        return batch_response
 
     @trace_method
     def _get_anthropic_client(self, async_client: bool = False) -> Union[anthropic.AsyncAnthropic, anthropic.Anthropic]:
