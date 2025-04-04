@@ -533,7 +533,7 @@ export function ImportAgentsDialog(props: ImportAgentsDialogProps) {
         overrideExistingTools: values.overrideExistingTools,
       });
     },
-    [importAgent, file],
+    [importAgent, file, importTemplate, projectId],
   );
 
   useEffect(() => {
@@ -604,7 +604,7 @@ export function ImportAgentsDialog(props: ImportAgentsDialogProps) {
     fileInputRef.current?.value && (fileInputRef.current.value = '');
     form.reset();
     resetImportAgent();
-  }, [form]);
+  }, [form, resetImportAgent, resetImportTemplate]);
 
   const handleDialogOpenChange = useCallback(
     (nextOpen: boolean) => {
@@ -614,7 +614,7 @@ export function ImportAgentsDialog(props: ImportAgentsDialogProps) {
 
       setIsOpen(nextOpen);
     },
-    [form, handleReset],
+    [handleReset],
   );
 
   return (

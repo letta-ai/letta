@@ -212,3 +212,5 @@ export * from './lib/reusable/InteractiveSystemMessage/InteractiveSystemMessage'
 export * from './lib/onboarding/ConfirmPauseOnboardingDialog/ConfirmPauseOnboardingDialog';
 
 export * from './lib/core/VirtualizedCodeViewer/VirtualizedCodeViewer';
+
+export * from './lib/core/LettaAgentTypeIcon/LettaAgentTypeIcon';

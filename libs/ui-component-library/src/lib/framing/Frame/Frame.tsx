@@ -191,6 +191,8 @@ export type FrameProps = React.HTMLAttributes<HTMLDivElement> &
   VariantProps<typeof frameVariants> & {
     as?: React.ElementType;
     type?: string;
+    target?: string;
+    href?: string;
   };
 
 export const Frame = forwardRef<HTMLElement, PropsWithChildren<FrameProps>>(

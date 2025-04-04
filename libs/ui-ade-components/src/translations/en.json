@@ -1309,6 +1309,10 @@
       "confirmation": "Are you sure you want to remove this tool?"
     }
   },
+  "ADE/SharedMemoryIndicator": {
+    "trigger": "Multiple agents are using this memory block, click to view all agents",
+    "thisAgent": "Current"
+  },
   "ADE/ContextEditorPanel": {
     "infoTooltip": "Current status of the LLM context window (Letta will automatically compress on overflow)",
     "title": "Context Window",

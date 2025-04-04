@@ -4,7 +4,7 @@ import {
 } from '@letta-cloud/ui-component-library';
 import {
   STARTER_KITS,
-  StarterKit,
+  type StarterKit,
 } from '@letta-cloud/config-agent-starter-kits';
 import { useMemo } from 'react';
 import { useFeatureFlag } from '@letta-cloud/sdk-web';

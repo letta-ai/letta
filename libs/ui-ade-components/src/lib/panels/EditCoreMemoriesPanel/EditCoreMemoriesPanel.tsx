@@ -30,6 +30,7 @@ import {
 import { useADEPermissions } from '../../hooks/useADEPermissions/useADEPermissions';
 import { ApplicationServices } from '@letta-cloud/service-rbac';
 import { useADETour } from '../../hooks/useADETour/useADETour';
+import { SharedMemoryIndicator } from './SharedMemoryIndicator/SharedMemoryIndicator';
 
 interface AdvancedEditorPayload {
   label: string;
@@ -57,6 +58,7 @@ function EditMemoryForm(props: EditMemoryFormProps) {
           <RawTextArea
             disabled={!canUpdateAgent}
             variant="secondary"
+            labelBadge={<SharedMemoryIndicator memory={memory} />}
             rightOfLabelContent={
               <HStack align="center">
                 {isUpdating && <Spinner size="xsmall" />}
