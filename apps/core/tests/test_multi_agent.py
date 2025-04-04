@@ -10,12 +10,12 @@ from letta.schemas.agent import CreateAgent
 from letta.schemas.block import CreateBlock
 from letta.schemas.enums import JobStatus
 from letta.schemas.group import (
-    BackgroundManager,
     DynamicManager,
     GroupCreate,
     GroupUpdate,
     ManagerType,
     RoundRobinManager,
+    SleeptimeManager,
     SupervisorManager,
 )
 from letta.schemas.message import MessageCreate
@@ -441,7 +441,7 @@ async def test_dynamic_group_chat(server, actor, manager_agent, participant_agen
 
 
 @pytest.mark.asyncio
-async def test_background_group_chat(server, actor):
+async def test_sleeptime_group_chat(server, actor):
     # 0. Refresh base tools
     server.tool_manager.upsert_base_tools(actor=actor)
 
@@ -472,16 +472,16 @@ async def test_background_group_chat(server, actor):
     group = server.group_manager.modify_group(
         group_id=main_agent.multi_agent_group.id,
         group_update=GroupUpdate(
-            manager_config=BackgroundManager(
+            manager_config=SleeptimeManager(
                 manager_agent_id=main_agent.id,
-                background_agents_frequency=2,
+                sleeptime_agent_frequency=2,
             ),
         ),
         actor=actor,
     )
 
-    assert group.manager_type == ManagerType.background
-    assert group.background_agents_frequency == 2
+    assert group.manager_type == ManagerType.sleeptime
+    assert group.sleeptime_agent_frequency == 2
     assert len(group.agent_ids) == 1
 
     # 3. Verify shared blocks

@@ -40,7 +40,7 @@ from letta.schemas.embedding_config import EmbeddingConfig
 # openai schemas
 from letta.schemas.enums import JobStatus, MessageStreamStatus
 from letta.schemas.environment_variables import SandboxEnvironmentVariableCreate
-from letta.schemas.group import BackgroundManager, GroupCreate
+from letta.schemas.group import GroupCreate, SleeptimeManager
 from letta.schemas.job import Job, JobUpdate
 from letta.schemas.letta_message import LegacyLettaMessage, LettaMessage, ToolReturnMessage
 from letta.schemas.letta_message_content import TextContent
@@ -782,7 +782,7 @@ class SyncServer(Server):
             group=GroupCreate(
                 description="",
                 agent_ids=[sleeptime_agent.id],
-                manager_config=BackgroundManager(
+                manager_config=SleeptimeManager(
                     manager_agent_id=main_agent.id,
                 ),
             ),

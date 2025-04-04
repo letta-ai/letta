@@ -776,7 +776,7 @@ export const ManagerType = z.union([
   z.literal('round_robin'),
   z.literal('supervisor'),
   z.literal('dynamic'),
-  z.literal('background'),
+  z.literal('sleeptime'),
   z.literal('swarm'),
 ]);
 
@@ -811,7 +811,7 @@ export const Group = z.object({
       z.undefined(),
     ])
     .optional(),
-  background_agents_frequency: z
+  sleeptime_agent_frequency: z
     .union([
       z.number(),
       z.null(),
@@ -1229,20 +1229,6 @@ export const AuthResponse = z.object({
       z.boolean(),
       z.null(),
       z.array(z.union([z.boolean(), z.null()])),
-      z.undefined(),
-    ])
-    .optional(),
-});
-
-export type BackgroundManager = z.infer<typeof BackgroundManager>;
-export const BackgroundManager = z.object({
-  manager_type: z.union([z.string(), z.undefined()]).optional(),
-  manager_agent_id: z.string(),
-  background_agents_frequency: z
-    .union([
-      z.number(),
-      z.null(),
-      z.array(z.union([z.number(), z.null()])),
       z.undefined(),
     ])
     .optional(),
@@ -3108,6 +3094,20 @@ export const SupervisorManager = z.object({
   manager_agent_id: z.string(),
 });
 
+export type SleeptimeManager = z.infer<typeof SleeptimeManager>;
+export const SleeptimeManager = z.object({
+  manager_type: z.union([z.string(), z.undefined()]).optional(),
+  manager_agent_id: z.string(),
+  sleeptime_agent_frequency: z
+    .union([
+      z.number(),
+      z.null(),
+      z.array(z.union([z.number(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+});
+
 export type GroupCreate = z.infer<typeof GroupCreate>;
 export const GroupCreate = z.object({
   agent_ids: z.array(z.string()),
@@ -3117,7 +3117,7 @@ export const GroupCreate = z.object({
       RoundRobinManager,
       SupervisorManager,
       DynamicManager,
-      BackgroundManager,
+      SleeptimeManager,
       z.undefined(),
     ])
     .optional(),
@@ -3141,14 +3141,14 @@ export const GroupUpdate = z.object({
       RoundRobinManager,
       SupervisorManager,
       DynamicManager,
-      BackgroundManager,
+      SleeptimeManager,
       z.null(),
       z.array(
         z.union([
           RoundRobinManager,
           SupervisorManager,
           DynamicManager,
-          BackgroundManager,
+          SleeptimeManager,
           z.null(),
         ]),
       ),

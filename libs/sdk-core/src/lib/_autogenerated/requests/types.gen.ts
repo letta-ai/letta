@@ -383,12 +383,6 @@ export type AuthSchemeField = {
   get_current_user_endpoint?: string | null;
 };
 
-export type BackgroundManager = {
-  manager_type?: 'background';
-  manager_agent_id: string;
-  background_agents_frequency?: number | null;
-};
-
 export type BaseToolRuleSchema = {
   tool_name: string;
   type: string;
@@ -1417,7 +1411,7 @@ export type Group = {
   manager_agent_id?: string | null;
   termination_token?: string | null;
   max_turns?: number | null;
-  background_agents_frequency?: number | null;
+  sleeptime_agent_frequency?: number | null;
   turns_counter?: number | null;
   last_processed_message_id?: string | null;
 };
@@ -1429,7 +1423,7 @@ export type GroupCreate = {
     | RoundRobinManager
     | SupervisorManager
     | DynamicManager
-    | BackgroundManager;
+    | SleeptimeManager;
   shared_block_ids?: Array<string>;
 };
 
@@ -1440,7 +1434,7 @@ export type GroupUpdate = {
     | RoundRobinManager
     | SupervisorManager
     | DynamicManager
-    | BackgroundManager
+    | SleeptimeManager
     | null;
   shared_block_ids?: Array<string> | null;
 };
@@ -1972,7 +1966,7 @@ export type ManagerType =
   | 'round_robin'
   | 'supervisor'
   | 'dynamic'
-  | 'background'
+  | 'sleeptime'
   | 'swarm';
 
 /**
@@ -2671,6 +2665,12 @@ export type SandboxEnvironmentVariableUpdate = {
 };
 
 export type SandboxType = 'e2b' | 'local';
+
+export type SleeptimeManager = {
+  manager_type?: 'sleeptime';
+  manager_agent_id: string;
+  sleeptime_agent_frequency?: number | null;
+};
 
 /**
  * Representation of a source, which is a collection of files and passages.

@@ -61,7 +61,7 @@ def load_multi_agent(
                 agent_ids=group.agent_ids,
                 description=group.description,
             )
-        case ManagerType.background:
+        case ManagerType.sleeptime:
             if not agent_state.enable_sleeptime:
                 return Agent(
                     agent_state=agent_state,
@@ -70,16 +70,16 @@ def load_multi_agent(
                     mcp_clients=mcp_clients,
                 )
 
-            from letta.groups.background_multi_agent import BackgroundMultiAgent
+            from letta.groups.sleeptime_multi_agent import SleeptimeMultiAgent
 
-            return BackgroundMultiAgent(
+            return SleeptimeMultiAgent(
                 agent_state=agent_state,
                 interface=interface,
                 user=actor,
                 group_id=group.id,
                 agent_ids=group.agent_ids,
                 description=group.description,
-                background_agents_frequency=group.background_agents_frequency,
+                sleeptime_agent_frequency=group.sleeptime_agent_frequency,
             )
         case _:
             raise ValueError(f"Type {group.manager_type} is not supported.")

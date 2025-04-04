@@ -1205,38 +1205,6 @@ export const $AuthSchemeField = {
   description: 'Auth scheme field.',
 } as const;
 
-export const $BackgroundManager = {
-  properties: {
-    manager_type: {
-      type: 'string',
-      const: 'background',
-      title: 'Manager Type',
-      description: '',
-      default: 'background',
-    },
-    manager_agent_id: {
-      type: 'string',
-      title: 'Manager Agent Id',
-      description: '',
-    },
-    background_agents_frequency: {
-      anyOf: [
-        {
-          type: 'integer',
-        },
-        {
-          type: 'null',
-        },
-      ],
-      title: 'Background Agents Frequency',
-      description: '',
-    },
-  },
-  type: 'object',
-  required: ['manager_agent_id'],
-  title: 'BackgroundManager',
-} as const;
-
 export const $BaseToolRuleSchema = {
   properties: {
     tool_name: {
@@ -4282,7 +4250,7 @@ export const $Group = {
       title: 'Max Turns',
       description: '',
     },
-    background_agents_frequency: {
+    sleeptime_agent_frequency: {
       anyOf: [
         {
           type: 'integer',
@@ -4291,7 +4259,7 @@ export const $Group = {
           type: 'null',
         },
       ],
-      title: 'Background Agents Frequency',
+      title: 'Sleeptime Agent Frequency',
       description: '',
     },
     turns_counter: {
@@ -4352,7 +4320,7 @@ export const $GroupCreate = {
           $ref: '#/components/schemas/DynamicManager',
         },
         {
-          $ref: '#/components/schemas/BackgroundManager',
+          $ref: '#/components/schemas/SleeptimeManager',
         },
       ],
       title: 'Manager Config',
@@ -4363,9 +4331,9 @@ export const $GroupCreate = {
       discriminator: {
         propertyName: 'manager_type',
         mapping: {
-          background: '#/components/schemas/BackgroundManager',
           dynamic: '#/components/schemas/DynamicManager',
           round_robin: '#/components/schemas/RoundRobinManager',
+          sleeptime: '#/components/schemas/SleeptimeManager',
           supervisor: '#/components/schemas/SupervisorManager',
         },
       },
@@ -4428,15 +4396,15 @@ export const $GroupUpdate = {
               $ref: '#/components/schemas/DynamicManager',
             },
             {
-              $ref: '#/components/schemas/BackgroundManager',
+              $ref: '#/components/schemas/SleeptimeManager',
             },
           ],
           discriminator: {
             propertyName: 'manager_type',
             mapping: {
-              background: '#/components/schemas/BackgroundManager',
               dynamic: '#/components/schemas/DynamicManager',
               round_robin: '#/components/schemas/RoundRobinManager',
+              sleeptime: '#/components/schemas/SleeptimeManager',
               supervisor: '#/components/schemas/SupervisorManager',
             },
           },
@@ -5530,7 +5498,7 @@ export const $MCPTool = {
 
 export const $ManagerType = {
   type: 'string',
-  enum: ['round_robin', 'supervisor', 'dynamic', 'background', 'swarm'],
+  enum: ['round_robin', 'supervisor', 'dynamic', 'sleeptime', 'swarm'],
   title: 'ManagerType',
 } as const;
 
@@ -7339,6 +7307,38 @@ export const $SandboxType = {
   type: 'string',
   enum: ['e2b', 'local'],
   title: 'SandboxType',
+} as const;
+
+export const $SleeptimeManager = {
+  properties: {
+    manager_type: {
+      type: 'string',
+      const: 'sleeptime',
+      title: 'Manager Type',
+      description: '',
+      default: 'sleeptime',
+    },
+    manager_agent_id: {
+      type: 'string',
+      title: 'Manager Agent Id',
+      description: '',
+    },
+    sleeptime_agent_frequency: {
+      anyOf: [
+        {
+          type: 'integer',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Sleeptime Agent Frequency',
+      description: '',
+    },
+  },
+  type: 'object',
+  required: ['manager_agent_id'],
+  title: 'SleeptimeManager',
 } as const;
 
 export const $Source = {
