@@ -36,7 +36,6 @@ function FunctionCallDataViewerDialog(
 
   const t = useTranslations('ui-component-library/FunctionCall');
 
-  console.log(content);
   return (
     <Dialog hideConfirm size="xlarge" trigger={trigger} title={t('response')}>
       <div className="min-h-[300px] h-[300px] w-full border">
@@ -122,7 +121,7 @@ export function FunctionCall(props: FunctionCallProps) {
           const parsed = JSON.parse(raw);
           // If parsed is an object and has 'message' key, return that; otherwise fallback to raw
           if (parsed && typeof parsed === 'object' && 'message' in parsed) {
-            return parsed.message;
+            return JSON.stringify(parsed.message, null, 2);
           }
           return raw;
         } catch {
@@ -248,7 +247,7 @@ export function FunctionCall(props: FunctionCallProps) {
                     language="javascript"
                     showLineNumbers={false}
                     fontSize="small"
-                    code={partialResponseData}
+                    code={partialResponseData || ''}
                   />
                   {responseData.length >= FUNCTION_CALL_LIMIT && (
                     <FunctionCallDataViewerDialog
