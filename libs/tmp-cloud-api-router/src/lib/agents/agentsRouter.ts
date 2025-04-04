@@ -730,6 +730,19 @@ async function createTemplateFromAgent(
       llm_config: agent.llm_config,
       embedding_config: agent.embedding_config,
       system: agent.system,
+      enable_sleeptime: agent.enable_sleeptime,
+      include_base_tool_rules: false,
+      include_multi_agent_tools: false,
+      agent_type: agent.agent_type,
+      tool_exec_environment_variables:
+        agent.tool_exec_environment_variables?.reduce(
+          (v, c) => ({
+            ...v,
+            [c.key]: c.value,
+          }),
+          {} as Record<string, string>,
+        ),
+      description: agent.description,
       tool_ids: agent.tools.map((tool) => tool.id || '').filter(Boolean),
       tool_rules: agent.tool_rules,
       memory_blocks: agent.memory.blocks.map((block) => {
