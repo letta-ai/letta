@@ -1070,3 +1070,7 @@ def log_telemetry(logger: Logger, event: str, **kwargs):
         timestamp = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S,%f UTC")  # More readable timestamp
         extra_data = " | ".join(f"{key}={value}" for key, value in kwargs.items() if value is not None)
         logger.info(f"[{timestamp}] EVENT: {event} | {extra_data}")
+
+
+def make_key(*args, **kwargs):
+    return str((args, tuple(sorted(kwargs.items()))))

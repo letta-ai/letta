@@ -94,7 +94,7 @@ from letta.services.user_manager import UserManager
 from letta.settings import model_settings, settings, tool_settings
 from letta.sleeptime_agent import SleeptimeAgent
 from letta.tracing import trace_method
-from letta.utils import get_friendly_error_msg
+from letta.utils import get_friendly_error_msg, make_key
 
 config = LettaConfig.load()
 logger = get_logger(__name__)
@@ -345,6 +345,10 @@ class SyncServer(Server):
             mcp_tools = client.list_tools()
             logger.info(f"MCP tools connected: {', '.join([t.name for t in mcp_tools])}")
             logger.debug(f"MCP tools: {', '.join([str(t) for t in mcp_tools])}")
+
+        # TODO: Remove these in memory caches
+        self._llm_config_cache = {}
+        self._embedding_config_cache = {}
 
     def load_agent(self, agent_id: str, actor: User, interface: Union[AgentInterface, None] = None) -> Agent:
         """Updated method to load agents from persisted storage"""
@@ -696,6 +700,18 @@ class SyncServer(Server):
                 command = command[1:]  # strip the prefix
         return self._command(user_id=user_id, agent_id=agent_id, command=command)
 
+    def get_cached_llm_config(self, **kwargs):
+        key = make_key(**kwargs)
+        if key not in self._llm_config_cache:
+            self._llm_config_cache[key] = self.get_llm_config_from_handle(**kwargs)
+        return self._llm_config_cache[key]
+
+    def get_cached_embedding_config(self, **kwargs):
+        key = make_key(**kwargs)
+        if key not in self._embedding_config_cache:
+            self._embedding_config_cache[key] = self.get_embedding_config_from_handle(**kwargs)
+        return self._embedding_config_cache[key]
+
     def create_agent(
         self,
         request: CreateAgent,
@@ -706,7 +722,7 @@ class SyncServer(Server):
         if request.llm_config is None:
             if request.model is None:
                 raise ValueError("Must specify either model or llm_config in request")
-            request.llm_config = self.get_llm_config_from_handle(
+            request.llm_config = self.get_cached_llm_config(
                 handle=request.model,
                 context_window_limit=request.context_window_limit,
                 max_tokens=request.max_tokens,
@@ -717,8 +733,9 @@ class SyncServer(Server):
         if request.embedding_config is None:
             if request.embedding is None:
                 raise ValueError("Must specify either embedding or embedding_config in request")
-            request.embedding_config = self.get_embedding_config_from_handle(
-                handle=request.embedding, embedding_chunk_size=request.embedding_chunk_size or constants.DEFAULT_EMBEDDING_CHUNK_SIZE
+            request.embedding_config = self.get_cached_embedding_config(
+                handle=request.embedding,
+                embedding_chunk_size=request.embedding_chunk_size or constants.DEFAULT_EMBEDDING_CHUNK_SIZE,
             )
 
         main_agent = self.agent_manager.create_agent(
