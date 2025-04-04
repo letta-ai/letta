@@ -30,9 +30,10 @@ class JobStatus(str, Enum):
 
 
 class MessageStreamStatus(str, Enum):
-    # done_generation = "[DONE_GEN]"
-    # done_step = "[DONE_STEP]"
     done = "[DONE]"
+
+    def model_dump_json(self):
+        return "[DONE]"
 
 
 class ToolRuleType(str, Enum):

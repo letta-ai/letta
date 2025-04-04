@@ -1,4 +1,3 @@
-import concurrent
 import os
 import threading
 import time
@@ -8,7 +7,7 @@ import httpx
 import openai
 import pytest
 from dotenv import load_dotenv
-from letta_client import Letta
+from letta_client import CreateBlock, Letta
 from openai.types.chat.chat_completion_chunk import ChatCompletionChunk
 
 from letta.agents.letta_agent import LettaAgent
@@ -425,23 +424,44 @@ def run_supervisor_worker_group(client: Letta, weather_tool, group_id: str):
     return response
 
 
-import concurrent.futures
+def test_anthropic_streaming(client: Letta):
+    agent_name = "anthropic_tester"
 
+    existing_agents = client.agents.list(tags=[agent_name])
+    for worker in existing_agents:
+        client.agents.delete(agent_id=worker.id)
 
-def test_multi_agent_broadcast_parallel(client: Letta, weather_tool):
-    start_time = time.time()
-    num_groups = 5
+    llm_config = LLMConfig(
+        model="claude-3-7-sonnet-20250219",
+        model_endpoint_type="anthropic",
+        model_endpoint="https://api.anthropic.com/v1",
+        context_window=32000,
+        handle=f"anthropic/claude-3-5-sonnet-20241022",
+        put_inner_thoughts_in_kwargs=False,
+        max_tokens=4096,
+        enable_reasoner=True,
+        max_reasoning_tokens=1024,
+    )
 
-    with concurrent.futures.ThreadPoolExecutor(max_workers=num_groups) as executor:
-        futures = []
-        for i in range(num_groups):
-            group_id = str(uuid.uuid4())[:8]
-            futures.append(executor.submit(run_supervisor_worker_group, client, weather_tool, group_id))
+    agent = client.agents.create(
+        name=agent_name,
+        tags=[agent_name],
+        include_base_tools=True,
+        embedding="letta/letta-free",
+        llm_config=llm_config,
+        memory_blocks=[CreateBlock(label="human", value="")],
+        # tool_rules=[InitToolRule(tool_name="core_memory_append")]
+    )
 
-        results = [f.result() for f in futures]
+    response = client.agents.messages.create_stream(
+        agent_id=agent.id,
+        messages=[
+            {
+                "role": "user",
+                "content": "Use core memory append to append `banana` to the persona core memory.",
+            }
+        ],
+        stream_tokens=True,
+    )
 
-    # Optionally: assert something or log runtimes
-    print(f"Executed {num_groups} supervisor-worker groups in parallel.")
-    print(f"Total runtime: {time.time() - start_time:.2f} seconds")
-    for idx, r in enumerate(results):
-        assert r is not None, f"Group {idx} returned no response"
+    print(list(response))

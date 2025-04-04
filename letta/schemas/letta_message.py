@@ -123,9 +123,9 @@ class ToolCall(BaseModel):
 
 
 class ToolCallDelta(BaseModel):
-    name: Optional[str]
-    arguments: Optional[str]
-    tool_call_id: Optional[str]
+    name: Optional[str] = None
+    arguments: Optional[str] = None
+    tool_call_id: Optional[str] = None
 
     def model_dump(self, *args, **kwargs):
         """

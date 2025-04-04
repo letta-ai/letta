@@ -1,27 +1,32 @@
 import asyncio
 import json
 import uuid
-from typing import Any, AsyncGenerator, Dict, List, Tuple
+from typing import Any, AsyncGenerator, Dict, List, Optional, Tuple, Union
 
 from openai import AsyncStream
 from openai.types.chat import ChatCompletion, ChatCompletionChunk
 
 from letta.agents.base_agent import BaseAgent
-from letta.constants import DEFAULT_MESSAGE_TOOL
+from letta.agents.helpers import _create_letta_response, _prepare_in_context_messages
 from letta.helpers import ToolRulesSolver
 from letta.helpers.datetime_helpers import get_utc_time
 from letta.helpers.tool_execution_helper import enable_strict_mode
+from letta.interfaces.anthropic_streaming_interface import AnthropicStreamingInterface
 from letta.llm_api.llm_client import LLMClient
+from letta.llm_api.llm_client_base import LLMClientBase
+from letta.local_llm.constants import INNER_THOUGHTS_KWARG
 from letta.log import get_logger
 from letta.orm.enums import ToolType
 from letta.schemas.agent import AgentState
+from letta.schemas.enums import MessageStreamStatus
 from letta.schemas.letta_message import AssistantMessage
+from letta.schemas.letta_message_content import OmittedReasoningContent, ReasoningContent, RedactedReasoningContent, TextContent
 from letta.schemas.letta_response import LettaResponse
 from letta.schemas.message import Message, MessageUpdate
 from letta.schemas.openai.chat_completion_request import UserMessage
-from letta.schemas.usage import LettaUsageStatistics
+from letta.schemas.openai.chat_completion_response import ToolCall
 from letta.schemas.user import User
-from letta.server.rest_api.utils import create_tool_call_messages_from_openai_response, create_user_message
+from letta.server.rest_api.utils import create_letta_messages_from_llm_response
 from letta.services.agent_manager import AgentManager
 from letta.services.block_manager import BlockManager
 from letta.services.helpers.agent_manager_helper import compile_system_message
@@ -58,76 +63,130 @@ class LettaAgent(BaseAgent):
     async def step(self, input_message: UserMessage, max_steps: int = 10) -> LettaResponse:
         input_message = self.pre_process_input_message(input_message)
         agent_state = self.agent_manager.get_agent_by_id(self.agent_id, actor=self.actor)
-        # TODO: Extend to beyond just system message
-        system_message = [self.message_manager.get_messages_by_ids(message_ids=agent_state.message_ids, actor=self.actor)[0]]
-        persisted_letta_messages = self.message_manager.create_many_messages(
-            [create_user_message(input_message=input_message, agent_id=agent_state.id, actor=self.actor)], actor=self.actor
+        current_in_context_messages, new_in_context_messages = _prepare_in_context_messages(
+            input_message, agent_state, self.message_manager, self.actor
         )
         tool_rules_solver = ToolRulesSolver(agent_state.tool_rules)
-
-        # TODO: Note that we do absolutely 0 pulling in of in-context messages here
-        # TODO: This is specific to B, and needs to be changed
+        llm_client = LLMClient.create(
+            llm_config=agent_state.llm_config,
+            put_inner_thoughts_first=True,
+        )
         for step in range(max_steps):
             response = await self._get_ai_reply(
-                in_context_messages=system_message + persisted_letta_messages,
+                llm_client=llm_client,
+                in_context_messages=current_in_context_messages + new_in_context_messages,
                 agent_state=agent_state,
                 tool_rules_solver=tool_rules_solver,
+                stream=False,
             )
-            persisted_messages, should_continue = await self._handle_ai_response(response, agent_state, tool_rules_solver)
-            persisted_letta_messages.extend(persisted_messages)
+
+            tool_call = response.choices[0].message.tool_calls[0]
+            persisted_messages, should_continue = await self._handle_ai_response(tool_call, agent_state, tool_rules_solver)
+            new_in_context_messages.extend(persisted_messages)
 
             if not should_continue:
                 break
 
-        # Persist messages
-        # Translate to letta response messages
-        response_messages = []
-        for message in persisted_letta_messages:
-            response_messages += message.to_letta_message(use_assistant_message=self.use_assistant_message)
+        # Extend the in context message ids
+        if not agent_state.message_buffer_autoclear:
+            message_ids = [m.id for m in (current_in_context_messages + new_in_context_messages)]
+            self.agent_manager.set_in_context_messages(agent_id=self.agent_id, message_ids=message_ids, actor=self.actor)
 
-        return LettaResponse(
-            messages=response_messages,
-            # TODO: Actually populate this
-            usage=LettaUsageStatistics(),
-        )
+        return _create_letta_response(new_in_context_messages=new_in_context_messages, use_assistant_message=self.use_assistant_message)
 
-    async def step_stream(self, input_message: UserMessage, max_steps: int = 10) -> AsyncGenerator[str, None]:
+    @trace_method
+    async def step_stream(
+        self, input_message: UserMessage, max_steps: int = 10, use_assistant_message: bool = False
+    ) -> AsyncGenerator[str, None]:
         """
         Main streaming loop that yields partial tokens.
         Whenever we detect a tool call, we yield from _handle_ai_response as well.
         """
-        raise NotImplementedError("Not implemented for letta agent")
+        input_message = self.pre_process_input_message(input_message)
+        agent_state = self.agent_manager.get_agent_by_id(self.agent_id, actor=self.actor)
+        current_in_context_messages, new_in_context_messages = _prepare_in_context_messages(
+            input_message, agent_state, self.message_manager, self.actor
+        )
+        tool_rules_solver = ToolRulesSolver(agent_state.tool_rules)
+        llm_client = LLMClient.create(
+            llm_config=agent_state.llm_config,
+            put_inner_thoughts_first=True,
+        )
+
+        for step in range(max_steps):
+            stream = await self._get_ai_reply(
+                llm_client=llm_client,
+                in_context_messages=current_in_context_messages + new_in_context_messages,
+                agent_state=agent_state,
+                tool_rules_solver=tool_rules_solver,
+                stream=True,
+            )
+
+            # TODO: THIS IS INCREDIBLY UGLY
+            # TODO: THERE ARE MULTIPLE COPIES OF THE LLM_CONFIG EVERYWHERE THAT ARE GETTING MANIPULATED
+            interface = AnthropicStreamingInterface(
+                use_assistant_message=use_assistant_message, put_inner_thoughts_in_kwarg=llm_client.llm_config.put_inner_thoughts_in_kwargs
+            )
+            async for chunk in interface.process(stream):
+                yield f"data: {chunk.model_dump_json()}\n\n"
+
+            # Process resulting stream content
+            tool_call = interface.get_tool_call_object()
+            reasoning_content = interface.get_reasoning_content()
+            persisted_messages, should_continue = await self._handle_ai_response(
+                tool_call,
+                agent_state,
+                tool_rules_solver,
+                reasoning_content=reasoning_content,
+                pre_computed_assistant_message_id=interface.letta_assistant_message_id,
+                pre_computed_tool_message_id=interface.letta_tool_message_id,
+            )
+            new_in_context_messages.extend(persisted_messages)
+
+            if not should_continue:
+                break
+
+        # Extend the in context message ids
+        if not agent_state.message_buffer_autoclear:
+            message_ids = [m.id for m in (current_in_context_messages + new_in_context_messages)]
+            self.agent_manager.set_in_context_messages(agent_id=self.agent_id, message_ids=message_ids, actor=self.actor)
+
+        # TODO: Also yield out a letta usage stats SSE
+
+        yield f"data: {MessageStreamStatus.done.model_dump_json()}\n\n"
 
     @trace_method
     async def _get_ai_reply(
         self,
+        llm_client: LLMClientBase,
         in_context_messages: List[Message],
         agent_state: AgentState,
         tool_rules_solver: ToolRulesSolver,
+        stream: bool,
     ) -> ChatCompletion | AsyncStream[ChatCompletionChunk]:
         in_context_messages = self._rebuild_memory(in_context_messages, agent_state)
 
         tools = [
             t
             for t in agent_state.tools
-            if t.tool_type in {ToolType.CUSTOM}
-            or (t.tool_type == ToolType.LETTA_CORE and t.name == DEFAULT_MESSAGE_TOOL)
+            if t.tool_type in {ToolType.CUSTOM, ToolType.LETTA_CORE, ToolType.LETTA_MEMORY_CORE}
             or (t.tool_type == ToolType.LETTA_MULTI_AGENT_CORE and t.name == "send_message_to_agents_matching_tags")
         ]
 
-        valid_tool_names = set(tool_rules_solver.get_allowed_tool_names(available_tools=set([t.name for t in tools])))
-        allowed_tools = [enable_strict_mode(t.json_schema) for t in tools if t.name in valid_tool_names]
+        valid_tool_names = tool_rules_solver.get_allowed_tool_names(available_tools=set([t.name for t in tools]))
+        # TODO: Copied from legacy agent loop, so please be cautious
+        # Set force tool
+        force_tool_call = None
+        if len(valid_tool_names) == 1:
+            force_tool_call = valid_tool_names[0]
 
-        llm_client = LLMClient.create(
-            llm_config=agent_state.llm_config,
-            put_inner_thoughts_first=True,
-        )
+        allowed_tools = [enable_strict_mode(t.json_schema) for t in tools if t.name in set(valid_tool_names)]
 
         response = await llm_client.send_llm_request_async(
             messages=in_context_messages,
             tools=allowed_tools,
-            tool_call=None,
-            stream=False,
+            force_tool_call=force_tool_call,
+            stream=stream,
         )
 
         return response
@@ -135,19 +194,18 @@ class LettaAgent(BaseAgent):
     @trace_method
     async def _handle_ai_response(
         self,
-        chat_completion_response: ChatCompletion,
+        tool_call: ToolCall,
         agent_state: AgentState,
         tool_rules_solver: ToolRulesSolver,
+        reasoning_content: Optional[List[Union[TextContent, ReasoningContent, RedactedReasoningContent, OmittedReasoningContent]]] = None,
+        pre_computed_assistant_message_id: Optional[str] = None,
+        pre_computed_tool_message_id: Optional[str] = None,
     ) -> Tuple[List[Message], bool]:
         """
         Now that streaming is done, handle the final AI response.
         This might yield additional SSE tokens if we do stalling.
         At the end, set self._continue_execution accordingly.
         """
-        # TODO: Some key assumptions here.
-        # TODO: Assume every call has a tool call, i.e. tool_choice is REQUIRED
-        tool_call = chat_completion_response.choices[0].message.tool_calls[0]
-
         tool_call_name = tool_call.function.name
         tool_call_args_str = tool_call.function.arguments
 
@@ -158,6 +216,8 @@ class LettaAgent(BaseAgent):
 
         # Get request heartbeats and coerce to bool
         request_heartbeat = tool_args.pop("request_heartbeat", False)
+        # Pre-emptively pop out inner_thoughts
+        tool_args.pop(INNER_THOUGHTS_KWARG, "")
 
         # So this is necessary, because sometimes non-structured outputs makes mistakes
         if not isinstance(request_heartbeat, bool):
@@ -186,7 +246,7 @@ class LettaAgent(BaseAgent):
             continue_stepping = True
 
         # 5. Persist to DB
-        tool_call_messages = create_tool_call_messages_from_openai_response(
+        tool_call_messages = create_letta_messages_from_llm_response(
             agent_id=agent_state.id,
             model=agent_state.llm_config.model,
             function_name=tool_call_name,
@@ -196,6 +256,9 @@ class LettaAgent(BaseAgent):
             function_response=tool_result,
             actor=self.actor,
             add_heartbeat_request_system_message=continue_stepping,
+            reasoning_content=reasoning_content,
+            pre_computed_assistant_message_id=pre_computed_assistant_message_id,
+            pre_computed_tool_message_id=pre_computed_tool_message_id,
         )
         persisted_messages = self.message_manager.create_many_messages(tool_call_messages, actor=self.actor)
 

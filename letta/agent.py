@@ -295,6 +295,7 @@ class Agent(BaseAgent):
             and not self.supports_structured_output
             and len(self.tool_rules_solver.init_tool_rules) > 0
         ):
+            # TODO: This just seems wrong? What if there are more than 1 init tool rules?
             force_tool_call = self.tool_rules_solver.init_tool_rules[0].tool_name
         # Force a tool call if exactly one tool is specified
         elif step_count is not None and step_count > 0 and len(allowed_tool_names) == 1:
