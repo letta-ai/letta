@@ -10,7 +10,7 @@ class ManagerType(str, Enum):
     round_robin = "round_robin"
     supervisor = "supervisor"
     dynamic = "dynamic"
-    background = "background"
+    sleeptime = "sleeptime"
     swarm = "swarm"
 
 
@@ -28,7 +28,7 @@ class Group(GroupBase):
     manager_agent_id: Optional[str] = Field(None, description="")
     termination_token: Optional[str] = Field(None, description="")
     max_turns: Optional[int] = Field(None, description="")
-    background_agents_frequency: Optional[int] = Field(None, description="")
+    sleeptime_agent_frequency: Optional[int] = Field(None, description="")
     turns_counter: Optional[int] = Field(None, description="")
     last_processed_message_id: Optional[str] = Field(None, description="")
 
@@ -54,10 +54,10 @@ class DynamicManager(ManagerConfig):
     max_turns: Optional[int] = Field(None, description="")
 
 
-class BackgroundManager(ManagerConfig):
-    manager_type: Literal[ManagerType.background] = Field(ManagerType.background, description="")
+class SleeptimeManager(ManagerConfig):
+    manager_type: Literal[ManagerType.sleeptime] = Field(ManagerType.sleeptime, description="")
     manager_agent_id: str = Field(..., description="")
-    background_agents_frequency: Optional[int] = Field(None, description="")
+    sleeptime_agent_frequency: Optional[int] = Field(None, description="")
 
 
 # class SwarmGroup(ManagerConfig):
@@ -65,7 +65,7 @@ class BackgroundManager(ManagerConfig):
 
 
 ManagerConfigUnion = Annotated[
-    Union[RoundRobinManager, SupervisorManager, DynamicManager, BackgroundManager],
+    Union[RoundRobinManager, SupervisorManager, DynamicManager, SleeptimeManager],
     Field(discriminator="manager_type"),
 ]
 

@@ -498,7 +498,7 @@ class AgentManager:
             # Delete sleeptime agent and group
             if agent.multi_agent_group:
                 participant_agent_ids = agent.multi_agent_group.agent_ids
-                if agent.multi_agent_group.manager_type == ManagerType.background and len(participant_agent_ids) == 1:
+                if agent.multi_agent_group.manager_type == ManagerType.sleeptime and len(participant_agent_ids) == 1:
                     sleeptime_agent = AgentModel.read(db_session=session, identifier=participant_agent_ids[0], actor=actor)
                     if sleeptime_agent.agent_type == AgentType.sleeptime_agent:
                         sleeptime_agent_group = GroupModel.read(db_session=session, identifier=agent.multi_agent_group.id, actor=actor)
