@@ -19,7 +19,7 @@ from letta.services.job_manager import JobManager
 from letta.services.message_manager import MessageManager
 
 
-class BackgroundMultiAgent(Agent):
+class SleeptimeMultiAgent(Agent):
 
     def __init__(
         self,
@@ -30,13 +30,13 @@ class BackgroundMultiAgent(Agent):
         group_id: str = "",
         agent_ids: List[str] = [],
         description: str = "",
-        background_agents_frequency: Optional[int] = None,
+        sleeptime_agent_frequency: Optional[int] = None,
     ):
         super().__init__(interface, agent_state, user)
         self.group_id = group_id
         self.agent_ids = agent_ids
         self.description = description
-        self.background_agents_frequency = background_agents_frequency
+        self.sleeptime_agent_frequency = sleeptime_agent_frequency
         self.group_manager = GroupManager()
         self.message_manager = MessageManager()
         self.job_manager = JobManager()
@@ -118,7 +118,7 @@ class BackgroundMultiAgent(Agent):
             )
 
             prior_messages = []
-            if self.background_agents_frequency:
+            if self.sleeptime_agent_frequency:
                 try:
                     prior_messages = self.message_manager.list_messages_for_agent(
                         agent_id=self.agent_state.id,
@@ -214,11 +214,11 @@ class BackgroundMultiAgent(Agent):
             )
 
             turns_counter = None
-            if self.background_agents_frequency is not None and self.background_agents_frequency > 0:
+            if self.sleeptime_agent_frequency is not None and self.sleeptime_agent_frequency > 0:
                 turns_counter = self.group_manager.bump_turns_counter(group_id=self.group_id, actor=self.user)
 
-            if self.background_agents_frequency is None or (
-                turns_counter is not None and turns_counter % self.background_agents_frequency == 0
+            if self.sleeptime_agent_frequency is None or (
+                turns_counter is not None and turns_counter % self.sleeptime_agent_frequency == 0
             ):
                 last_response_messages = [message for sublist in usage_stats.steps_messages for message in sublist]
                 last_processed_message_id = self.group_manager.get_last_processed_message_id_and_update(
