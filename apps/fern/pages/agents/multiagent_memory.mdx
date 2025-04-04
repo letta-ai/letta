@@ -37,7 +37,7 @@ supervisor_agent = client.agents.create(
     model="anthropic/claude-3-5-sonnet-20241022",
     embedding="openai/text-embedding-ada-002",
     # blocks created for this agentj
-    memory_blocks=[{"persona": "I am a supervisor"}],
+    memory_blocks=[{"label": "persona", "value": "I am a supervisor"}],
     # pre-existing shared block that is "attached" to this agent
     block_ids=[shared_block.id],
 )
@@ -47,10 +47,11 @@ worker_agent = client.agents.create(
     model="anthropic/claude-3-5-sonnet-20241022",
     embedding="openai/text-embedding-ada-002",
     # blocks created for this agent
-    memory_blocks=[{"persona": "I am a worker"}],
+    memory_blocks=[{"label": "persona", "value": "I am a worker"}],
     # pre-existing shared block that is "attached" to this agent
     block_ids=[shared_block.id],
 )
+
 ```
 
 Memory blocks can also be accessed by other agents, even if not shared.
