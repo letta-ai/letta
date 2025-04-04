@@ -34,7 +34,7 @@ from letta.schemas.user import User
 from letta.server.rest_api.utils import (
     convert_letta_messages_to_openai,
     create_assistant_messages_from_openai_response,
-    create_tool_call_messages_from_openai_response,
+    create_letta_messages_from_llm_response,
     create_user_message,
 )
 from letta.services.agent_manager import AgentManager
@@ -207,7 +207,7 @@ class VoiceAgent(BaseAgent):
             in_memory_message_history.append(heartbeat_user_message.model_dump())
 
             # 5. Also store in DB
-            tool_call_messages = create_tool_call_messages_from_openai_response(
+            tool_call_messages = create_letta_messages_from_llm_response(
                 agent_id=agent_state.id,
                 model=agent_state.llm_config.model,
                 function_name=tool_call_name,

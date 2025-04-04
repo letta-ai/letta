@@ -41,6 +41,7 @@ class LettaCoreToolExecutor(ToolExecutor):
             "send_message": self.send_message,
             "conversation_search": self.conversation_search,
             "archival_memory_search": self.archival_memory_search,
+            "archival_memory_insert": self.archival_memory_insert,
         }
 
         if function_name not in function_map:
