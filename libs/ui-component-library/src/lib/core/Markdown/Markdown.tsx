@@ -6,6 +6,7 @@ import { InlineCode } from '../InlineCode/InlineCode';
 import { Typography } from '../Typography/Typography';
 import remarkGfm from 'remark-gfm';
 import { LettaInvaderIcon } from '../../icons';
+import './Markdown.scss';
 
 interface MarkdownProps {
   text: string;
@@ -82,7 +83,11 @@ export function Markdown(props: MarkdownProps) {
           return <ol className="list-decimal pl-6">{children}</ol>;
         },
         p({ children }) {
-          return <Typography className="block mb-6">{children}</Typography>;
+          return (
+            <Typography className="block markdown-paragraph">
+              {children}
+            </Typography>
+          );
         },
         code(props) {
           const { children, className } = props;
