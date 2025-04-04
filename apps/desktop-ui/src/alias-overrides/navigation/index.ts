@@ -1,7 +1,11 @@
-import { useLocation, useNavigation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 
 export function useRouter() {
-  return useNavigation();
+  const navigate = useNavigate();
+
+  return {
+    push: navigate,
+  };
 }
 
 export function useParams() {

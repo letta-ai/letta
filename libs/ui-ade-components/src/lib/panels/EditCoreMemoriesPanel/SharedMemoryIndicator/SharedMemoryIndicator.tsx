@@ -15,7 +15,29 @@ import {
 } from '@letta-cloud/ui-component-library';
 import { useTranslations } from '@letta-cloud/translations';
 import { useCurrentAgentMetaData } from '../../../hooks';
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { CURRENT_RUNTIME } from '@letta-cloud/config-runtime';
+
+interface AgentBadgeProps {
+  isCurrentAgent: boolean;
+}
+
+function AgentBadge(props: AgentBadgeProps) {
+  const { isCurrentAgent } = props;
+
+  const t = useTranslations('ADE/SharedMemoryIndicator');
+
+  if (isCurrentAgent) {
+    return <Badge content={t('thisAgent')} size="small" />;
+  }
+
+  if (CURRENT_RUNTIME === 'letta-desktop') {
+    return <div />;
+  }
+
+  return <ExternalLinkIcon />;
+}
 
 interface SharedMemoryIndicatorProps {
   memory: Block;
@@ -28,7 +50,18 @@ export function SharedMemoryIndicator(props: SharedMemoryIndicatorProps) {
     return window.location.href;
   });
 
+  const { push } = useRouter();
+
   const pathUntilAgents = currentUrl.split('/').slice(0, -1).join('/');
+
+  const handleMoveToAgent = useCallback(
+    (agentId: string) => {
+      if (CURRENT_RUNTIME === 'letta-desktop') {
+        push(`/dashboard/agents/${agentId}`);
+      }
+    },
+    [push],
+  );
 
   const { agentId, isTemplate } = useCurrentAgentMetaData();
   const t = useTranslations('ADE/SharedMemoryIndicator');
@@ -77,6 +110,27 @@ export function SharedMemoryIndicator(props: SharedMemoryIndicatorProps) {
         {agents.map((agent, index) => {
           const isCurrentAgent = agentId === agent.id;
 
+          const payload = (() => {
+            if (isCurrentAgent) {
+              return {};
+            }
+
+            if (CURRENT_RUNTIME === 'letta-desktop') {
+              return {
+                as: 'button' as const,
+                onClick: () => {
+                  handleMoveToAgent(agent.id);
+                },
+              };
+            }
+
+            return {
+              as: 'a' as const,
+              href: `${pathUntilAgents}/${agent.id}`,
+              target: '_blank',
+            };
+          })();
+
           return (
             <HStack
               padding="small"
@@ -84,13 +138,7 @@ export function SharedMemoryIndicator(props: SharedMemoryIndicatorProps) {
               align="center"
               borderBottom={index !== agents.length - 1 ? true : undefined}
               key={agent.id}
-              {...(isCurrentAgent
-                ? {}
-                : {
-                    as: 'a',
-                    href: `${pathUntilAgents}/${agent.id}`,
-                    target: '_blank',
-                  })}
+              {...payload}
             >
               <LettaAgentTypeIcon type={agent.agent_type} />
               <VStack collapseWidth flex gap={false}>
@@ -112,11 +160,7 @@ export function SharedMemoryIndicator(props: SharedMemoryIndicatorProps) {
                   {agent.id}
                 </Typography>
               </VStack>
-              {isCurrentAgent ? (
-                <Badge content={t('thisAgent')} size="small" />
-              ) : (
-                <ExternalLinkIcon />
-              )}
+              <AgentBadge isCurrentAgent={isCurrentAgent} />
             </HStack>
           );
         })}
