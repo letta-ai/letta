@@ -99,6 +99,7 @@ class DynamicMultiAgent(Agent):
                             tool_calls=None,
                             tool_call_id=None,
                             group_id=self.group_id,
+                            otid=message.otid,
                         )
                     )
 
@@ -125,6 +126,7 @@ class DynamicMultiAgent(Agent):
                         role="system",
                         content=message.content,
                         name=participant_agent.agent_state.name,
+                        otid=message.otid,
                     )
                     for message in assistant_messages
                 ]
@@ -271,4 +273,5 @@ class DynamicMultiAgent(Agent):
             tool_calls=None,
             tool_call_id=None,
             group_id=self.group_id,
+            otid=Message.generate_otid(),
         )

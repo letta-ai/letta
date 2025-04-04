@@ -1045,6 +1045,17 @@ export const $AssistantMessage = {
       ],
       title: 'Name',
     },
+    otid: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Otid',
+    },
     message_type: {
       type: 'string',
       const: 'assistant_message',
@@ -4510,6 +4521,17 @@ export const $HiddenReasoningMessage = {
       ],
       title: 'Name',
     },
+    otid: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Otid',
+    },
     message_type: {
       type: 'string',
       const: 'hidden_reasoning_message',
@@ -5873,6 +5895,18 @@ export const $MessageCreate = {
       title: 'Name',
       description: 'The name of the participant.',
     },
+    otid: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Otid',
+      description: 'The offline threading id associated with this message',
+    },
   },
   type: 'object',
   required: ['role', 'content'],
@@ -6693,6 +6727,17 @@ export const $ReasoningMessage = {
         },
       ],
       title: 'Name',
+    },
+    otid: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Otid',
     },
     message_type: {
       type: 'string',
@@ -7852,6 +7897,17 @@ export const $SystemMessage = {
       ],
       title: 'Name',
     },
+    otid: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Otid',
+    },
     message_type: {
       type: 'string',
       const: 'system_message',
@@ -8209,6 +8265,17 @@ export const $ToolCallMessage = {
       ],
       title: 'Name',
     },
+    otid: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Otid',
+    },
     message_type: {
       type: 'string',
       const: 'tool_call_message',
@@ -8487,6 +8554,17 @@ export const $ToolReturnMessage = {
         },
       ],
       title: 'Name',
+    },
+    otid: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Otid',
     },
     message_type: {
       type: 'string',
@@ -9376,6 +9454,17 @@ export const $UserMessage = {
         },
       ],
       title: 'Name',
+    },
+    otid: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Otid',
     },
     message_type: {
       type: 'string',

@@ -339,6 +339,7 @@ export type AssistantMessage = {
   id: string;
   date: string;
   name?: string | null;
+  otid?: string | null;
   message_type?: 'assistant_message';
   /**
    * The message content sent by the agent (can be a string or an array of content parts)
@@ -1472,6 +1473,7 @@ export type HiddenReasoningMessage = {
   id: string;
   date: string;
   name?: string | null;
+  otid?: string | null;
   message_type?: 'hidden_reasoning_message';
   state: 'redacted' | 'omitted';
   hidden_reasoning?: string | null;
@@ -2117,6 +2119,10 @@ export type MessageCreate = {
    * The name of the participant.
    */
   name?: string | null;
+  /**
+   * The offline threading id associated with this message
+   */
+  otid?: string | null;
 };
 
 /**
@@ -2430,6 +2436,7 @@ export type ReasoningMessage = {
   id: string;
   date: string;
   name?: string | null;
+  otid?: string | null;
   message_type?: 'reasoning_message';
   source?: 'reasoner_model' | 'non_reasoner_model';
   reasoning: string;
@@ -2894,6 +2901,7 @@ export type SystemMessage = {
   id: string;
   date: string;
   name?: string | null;
+  otid?: string | null;
   message_type?: 'system_message';
   /**
    * The message content sent by the system
@@ -3048,6 +3056,7 @@ export type ToolCallMessage = {
   id: string;
   date: string;
   name?: string | null;
+  otid?: string | null;
   message_type?: 'tool_call_message';
   tool_call: ToolCall | ToolCallDelta;
 };
@@ -3159,6 +3168,7 @@ export type ToolReturnMessage = {
   id: string;
   date: string;
   name?: string | null;
+  otid?: string | null;
   message_type?: 'tool_return_message';
   tool_return: string;
   status: 'success' | 'error';
@@ -3460,6 +3470,7 @@ export type UserMessage = {
   id: string;
   date: string;
   name?: string | null;
+  otid?: string | null;
   message_type?: 'user_message';
   /**
    * The message content sent by the user (can be a string or an array of multi-modal content parts)

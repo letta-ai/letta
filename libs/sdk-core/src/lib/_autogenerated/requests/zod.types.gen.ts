@@ -1195,6 +1195,14 @@ export const AssistantMessage = z.object({
       z.undefined(),
     ])
     .optional(),
+  otid: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
   message_type: z.union([z.string(), z.undefined()]).optional(),
   content: z.union([
     z.array(TextContent),
@@ -2791,6 +2799,14 @@ export const MessageCreate = z.object({
       z.undefined(),
     ])
     .optional(),
+  otid: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
 });
 
 export type CreateAgentRequest = z.infer<typeof CreateAgentRequest>;
@@ -3183,6 +3199,14 @@ export const HiddenReasoningMessage = z.object({
       z.undefined(),
     ])
     .optional(),
+  otid: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
   message_type: z.union([z.string(), z.undefined()]).optional(),
   state: z.union([z.literal('redacted'), z.literal('omitted')]),
   hidden_reasoning: z
@@ -3393,6 +3417,14 @@ export const SystemMessage = z.object({
       z.undefined(),
     ])
     .optional(),
+  otid: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
   message_type: z.union([z.string(), z.undefined()]).optional(),
   content: z.string(),
 });
@@ -3417,6 +3449,14 @@ export const UserMessage = z.object({
       z.undefined(),
     ])
     .optional(),
+  otid: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
   message_type: z.union([z.string(), z.undefined()]).optional(),
   content: z.union([
     z.array(TextContent),
@@ -3430,6 +3470,14 @@ export const ReasoningMessage = z.object({
   id: z.string(),
   date: z.string(),
   name: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  otid: z
     .union([
       z.string(),
       z.null(),
@@ -3494,6 +3542,14 @@ export const ToolCallMessage = z.object({
       z.undefined(),
     ])
     .optional(),
+  otid: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
   message_type: z.union([z.string(), z.undefined()]).optional(),
   tool_call: z.union([
     ToolCall,
@@ -3507,6 +3563,14 @@ export const ToolReturnMessage = z.object({
   id: z.string(),
   date: z.string(),
   name: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  otid: z
     .union([
       z.string(),
       z.null(),

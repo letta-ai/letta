@@ -274,6 +274,7 @@ def openai_chat_completions_process_stream(
                         message_date=chat_completion_response.created if create_message_datetime else chat_completion_chunk.created,
                         expect_reasoning_content=expect_reasoning_content,
                         name=name,
+                        chunk_index=chunk_idx,
                     )
                 elif isinstance(stream_interface, AgentRefreshStreamingInterface):
                     stream_interface.process_refresh(chat_completion_response)

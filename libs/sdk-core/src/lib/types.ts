@@ -42,6 +42,8 @@ export const UserMessageSchema = z.object({
   message_type: z.literal('user_message'),
   formattedMessage: z.record(z.unknown()).optional(),
   content: z.string(),
+  otid: z.string().nullable().optional(),
+  name: z.string().nullable().optional(),
   date: z.string(),
   id: z.string(),
 });
@@ -51,6 +53,8 @@ export const ReasoningMessageSchema = z.object({
   source: z.enum(['reasoner_model', 'non_reasoner_model']),
   signature: z.string().nullable().optional(),
   reasoning: z.string(),
+  otid: z.string().nullable().optional(),
+  name: z.string().nullable().optional(),
   date: z.string(),
   id: z.string(),
 });
@@ -59,6 +63,8 @@ export const HiddenReasoningMessageSchema = z.object({
   message_type: z.literal('hidden_reasoning_message'),
   state: z.enum(['redacted', 'omitted']),
   hidden_reasoning: z.string().nullable().optional(),
+  otid: z.string().nullable().optional(),
+  name: z.string().nullable().optional(),
   date: z.string(),
   id: z.string(),
 });
@@ -77,19 +83,23 @@ export const ToolCallMessageSchema = z.object({
     arguments: z.string().optional(),
     formattedArguments: z.record(z.unknown()).optional(),
   }),
+  otid: z.string().nullable().optional(),
+  name: z.string().nullable().optional(),
   date: z.string(),
   id: z.string(),
 });
 
 export const ToolReturnMessageSchema = z.object({
   message_type: z.literal('tool_return_message'),
+  stderr: z.array(z.string()).optional(),
+  stdout: z.array(z.string()).optional(),
   tool_return: z.string(),
   tool_call_id: z.string(),
   status: z.string(),
+  otid: z.string().nullable().optional(),
+  name: z.string().nullable().optional(),
   date: z.string(),
   id: z.string(),
-  stdout: z.array(z.string()).optional(),
-  stderr: z.array(z.string()).optional(),
 });
 
 export type ToolReturnMessageSchemaType = z.infer<

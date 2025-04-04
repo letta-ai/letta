@@ -33,7 +33,7 @@ import type { Dispatch, SetStateAction } from 'react';
 import { useMemo } from 'react';
 import React, { useCallback, useRef, useState } from 'react';
 import type { AgentMessage, AgentState } from '@letta-cloud/sdk-core';
-
+import { v4 as uuidv4 } from 'uuid';
 import { useAgentsServiceResetMessages } from '@letta-cloud/sdk-core';
 import { isAgentState } from '@letta-cloud/sdk-core';
 import { ErrorMessageSchema } from '@letta-cloud/sdk-core';
@@ -129,8 +129,11 @@ export function useSendMessage(
       setFailedToSendMessage(false);
       setErrorCode(undefined);
 
+      const userMessageOtid = uuidv4();
+
       const newMessage: AgentMessage = {
         message_type: role === 'user' ? 'user_message' : 'system_message',
+        otid: userMessageOtid,
         content:
           role === 'user'
             ? message
@@ -189,6 +192,7 @@ export function useSendMessage(
               {
                 role,
                 content: message,
+                otid: userMessageOtid,
               },
             ],
           }),

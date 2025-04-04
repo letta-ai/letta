@@ -892,6 +892,7 @@ class SyncServer(Server):
                 use_assistant_message=use_assistant_message,
                 assistant_message_tool_name=assistant_message_tool_name,
                 assistant_message_tool_kwarg=assistant_message_tool_kwarg,
+                reverse=reverse,
             )
 
         if reverse:

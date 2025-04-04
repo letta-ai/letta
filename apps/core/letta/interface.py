@@ -30,7 +30,7 @@ class AgentInterface(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    def internal_monologue(self, msg: str, msg_obj: Optional[Message] = None):
+    def internal_monologue(self, msg: str, msg_obj: Optional[Message] = None, chunk_index: Optional[int] = None):
         """Letta generates some internal monologue"""
         raise NotImplementedError
 
@@ -40,7 +40,7 @@ class AgentInterface(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    def function_message(self, msg: str, msg_obj: Optional[Message] = None):
+    def function_message(self, msg: str, msg_obj: Optional[Message] = None, chunk_index: Optional[int] = None):
         """Letta calls a function"""
         raise NotImplementedError
 
@@ -79,7 +79,7 @@ class CLIInterface(AgentInterface):
             print(fstr.format(msg=msg))
 
     @staticmethod
-    def internal_monologue(msg: str, msg_obj: Optional[Message] = None):
+    def internal_monologue(msg: str, msg_obj: Optional[Message] = None, chunk_index: Optional[int] = None):
         # ANSI escape code for italic is '\x1B[3m'
         fstr = f"\x1B[3m{Fore.LIGHTBLACK_EX}{INNER_THOUGHTS_CLI_SYMBOL} {{msg}}{Style.RESET_ALL}"
         if STRIP_UI:
@@ -108,7 +108,14 @@ class CLIInterface(AgentInterface):
         print(fstr.format(msg=msg))
 
     @staticmethod
-    def user_message(msg: str, msg_obj: Optional[Message] = None, raw: bool = False, dump: bool = False, debug: bool = DEBUG):
+    def user_message(
+        msg: str,
+        msg_obj: Optional[Message] = None,
+        raw: bool = False,
+        dump: bool = False,
+        debug: bool = DEBUG,
+        chunk_index: Optional[int] = None,
+    ):
         def print_user_message(icon, msg, printf=print):
             if STRIP_UI:
                 printf(f"{icon} {msg}")
@@ -154,7 +161,7 @@ class CLIInterface(AgentInterface):
             printd_user_message("🧑", msg_json)
 
     @staticmethod
-    def function_message(msg: str, msg_obj: Optional[Message] = None, debug: bool = DEBUG):
+    def function_message(msg: str, msg_obj: Optional[Message] = None, debug: bool = DEBUG, chunk_index: Optional[int] = None):
         def print_function_message(icon, msg, color=Fore.RED, printf=print):
             if STRIP_UI:
                 printf(f"⚡{icon} [function] {msg}")

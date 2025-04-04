@@ -6,6 +6,8 @@ import pytest
 from dotenv import load_dotenv
 from letta_client import AgentState, Letta, LlmConfig, MessageCreate
 
+from letta.schemas.message import Message
+
 
 def run_server():
     load_dotenv()
@@ -73,9 +75,16 @@ def test_streaming_send_message(
     client.agents.modify(agent_id=agent.id, llm_config=config)
 
     # Send streaming message
+    user_message_otid = Message.generate_otid()
     response = client.agents.messages.create_stream(
         agent_id=agent.id,
-        messages=[MessageCreate(role="user", content="This is a test. Repeat after me: 'banana'")],
+        messages=[
+            MessageCreate(
+                role="user",
+                content="This is a test. Repeat after me: 'banana'",
+                otid=user_message_otid,
+            ),
+        ],
         stream_tokens=stream_tokens,
     )
 
@@ -84,6 +93,8 @@ def test_streaming_send_message(
     inner_thoughts_count = 0
     send_message_ran = False
     done = False
+    last_message_id = client.agents.messages.list(agent_id=agent.id, limit=1)[0].id
+    letta_message_otids = [user_message_otid]
 
     assert response, "Sending message failed"
     for chunk in response:
@@ -104,6 +115,8 @@ def test_streaming_send_message(
             assert chunk.prompt_tokens > 1000
             assert chunk.total_tokens > 1000
             done = True
+        else:
+            letta_message_otids.append(chunk.otid)
         print(chunk)
 
     # If stream tokens, we expect at least one inner thought
@@ -111,3 +124,6 @@ def test_streaming_send_message(
     assert inner_thoughts_exist, "No inner thoughts found"
     assert send_message_ran, "send_message function call not found"
     assert done, "Message stream not done"
+
+    messages = client.agents.messages.list(agent_id=agent.id, after=last_message_id)
+    assert [message.otid for message in messages] == letta_message_otids

@@ -7452,6 +7452,17 @@
             ],
             "title": "Name"
           },
+          "otid": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Otid"
+          },
           "message_type": {
             "type": "string",
             "const": "assistant_message",
@@ -10768,6 +10779,17 @@
             ],
             "title": "Name"
           },
+          "otid": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Otid"
+          },
           "message_type": {
             "type": "string",
             "const": "hidden_reasoning_message",
@@ -11988,6 +12010,18 @@
             ],
             "title": "Name",
             "description": "The name of the participant."
+          },
+          "otid": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Otid",
+            "description": "The offline threading id associated with this message"
           }
         },
         "type": "object",
@@ -12737,6 +12771,17 @@
               }
             ],
             "title": "Name"
+          },
+          "otid": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Otid"
           },
           "message_type": {
             "type": "string",
@@ -13779,6 +13824,17 @@
             ],
             "title": "Name"
           },
+          "otid": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Otid"
+          },
           "message_type": {
             "type": "string",
             "const": "system_message",
@@ -14099,6 +14155,17 @@
             ],
             "title": "Name"
           },
+          "otid": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Otid"
+          },
           "message_type": {
             "type": "string",
             "const": "tool_call_message",
@@ -14362,6 +14429,17 @@
               }
             ],
             "title": "Name"
+          },
+          "otid": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Otid"
           },
           "message_type": {
             "type": "string",
@@ -15194,6 +15272,17 @@
               }
             ],
             "title": "Name"
+          },
+          "otid": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Otid"
           },
           "message_type": {
             "type": "string",

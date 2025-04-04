@@ -26,11 +26,13 @@ class LettaMessage(BaseModel):
         id (str): The ID of the message
         date (datetime): The date the message was created in ISO format
         name (Optional[str]): The name of the sender of the message
+        otid (Optional[str]): The offline threading id associated with this message
     """
 
     id: str
     date: datetime
     name: Optional[str] = None
+    otid: Optional[str] = None
 
     @field_serializer("date")
     def serialize_datetime(self, dt: datetime, _info):
