@@ -1,6 +1,6 @@
 from typing import Literal, Optional
 
-from pydantic import BaseModel, ConfigDict, Field, root_validator
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 
 class LLMConfig(BaseModel):
@@ -70,7 +70,8 @@ class LLMConfig(BaseModel):
     # FIXME hack to silence pydantic protected namespace warning
     model_config = ConfigDict(protected_namespaces=())
 
-    @root_validator(pre=True)
+    @model_validator(mode="before")
+    @classmethod
     def set_default_put_inner_thoughts(cls, values):
         """
         Dynamically set the default for put_inner_thoughts_in_kwargs based on the model field,
@@ -79,14 +80,23 @@ class LLMConfig(BaseModel):
         model = values.get("model")
 
         # Define models where we want put_inner_thoughts_in_kwargs to be False
-        # For now it is gpt-4
         avoid_put_inner_thoughts_in_kwargs = ["gpt-4"]
 
-        # Only modify the value if it's None or not provided
         if values.get("put_inner_thoughts_in_kwargs") is None:
             values["put_inner_thoughts_in_kwargs"] = False if model in avoid_put_inner_thoughts_in_kwargs else True
 
         return values
+
+    @model_validator(mode="after")
+    def validate_reasoning_constraints(self) -> "LLMConfig":
+        if self.enable_reasoner:
+            if self.max_reasoning_tokens is None:
+                raise ValueError("max_reasoning_tokens must be set when enable_reasoner is True")
+            if self.max_tokens is not None and self.max_reasoning_tokens >= self.max_tokens:
+                raise ValueError("max_tokens must be greater than max_reasoning_tokens (thinking budget)")
+            if self.put_inner_thoughts_in_kwargs:
+                raise ValueError("Extended thinking is not compatible with put_inner_thoughts_in_kwargs")
+        return self
 
     @classmethod
     def default_config(cls, model_name: str):
