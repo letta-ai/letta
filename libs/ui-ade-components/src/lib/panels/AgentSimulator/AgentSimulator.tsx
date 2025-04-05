@@ -32,7 +32,13 @@ import { useEffect } from 'react';
 import type { Dispatch, SetStateAction } from 'react';
 import { useMemo } from 'react';
 import React, { useCallback, useRef, useState } from 'react';
-import type { AgentMessage, AgentState } from '@letta-cloud/sdk-core';
+import type {
+  AgentState,
+  LettaMessageUnion,
+  ListMessagesResponse,
+  SystemMessage,
+  UserMessage,
+} from '@letta-cloud/sdk-core';
 import { v4 as uuidv4 } from 'uuid';
 import { useAgentsServiceResetMessages } from '@letta-cloud/sdk-core';
 import { isAgentState } from '@letta-cloud/sdk-core';
@@ -61,12 +67,11 @@ import {
 } from '@letta-cloud/utils-shared';
 import { useCurrentSimulatedAgent } from '../../hooks/useCurrentSimulatedAgent/useCurrentSimulatedAgent';
 import { useCurrentAgentMetaData } from '../../hooks';
-import { useAtom, useSetAtom } from 'jotai';
+import { useAtom } from 'jotai';
 import { trackClientSideEvent } from '@letta-cloud/service-analytics/client';
 import { AnalyticsEvent } from '@letta-cloud/service-analytics';
 import { jsonToCurl } from '@letta-cloud/utils-shared';
 import type { GetAgentTemplateSimulatorSessionResponseBody } from '@letta-cloud/sdk-web';
-import { messagesInFlightCacheAtom } from '../Messages/messagesInFlightCacheAtom/messagesInFlightCacheAtom';
 import { Messages } from '../Messages/Messages';
 import type { MessagesDisplayMode } from '../Messages/Messages';
 import {
@@ -78,6 +83,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { ShareAgentDialog } from './ShareAgentDialog/ShareAgentDialog';
 import { isSendingMessageAtom } from './atoms';
 import { useADETour } from '../../hooks/useADETour/useADETour';
+import type { InfiniteData } from '@tanstack/query-core';
 
 type ErrorCode = z.infer<typeof ErrorMessageSchema>['code'];
 
@@ -110,17 +116,15 @@ export function useSendMessage(
   const [errorCode, setErrorCode] = useState<ErrorCode | undefined>(undefined);
 
   const { baseUrl, password } = useLettaAgentsAPI();
-  const setMessagesInFlightCache = useSetAtom(messagesInFlightCacheAtom);
 
   useEffect(() => {
     return () => {
       if (abortController.current) {
         console.log('aborting');
         abortController.current.abort();
-        setMessagesInFlightCache({});
       }
     };
-  }, [setMessagesInFlightCache]);
+  }, []);
 
   const sendMessage: SendMessageType = useCallback(
     (payload: SendMessagePayload) => {
@@ -131,7 +135,7 @@ export function useSendMessage(
 
       const userMessageOtid = uuidv4();
 
-      const newMessage: AgentMessage = {
+      const newMessage: SystemMessage | UserMessage = {
         message_type: role === 'user' ? 'user_message' : 'system_message',
         otid: userMessageOtid,
         content:
@@ -146,9 +150,24 @@ export function useSendMessage(
         id: `${new Date().getTime()}-user_message`,
       };
 
-      setMessagesInFlightCache({
-        [agentId]: [newMessage],
-      });
+      queryClient.setQueriesData<InfiniteData<ListMessagesResponse>>(
+        {
+          queryKey: UseAgentsServiceListMessagesKeyFn({ agentId }),
+        },
+        (data) => {
+          if (!data) {
+            return data;
+          }
+
+          return {
+            ...data,
+            pages: data.pages.map((page) => [
+              newMessage,
+              ...(page as LettaMessageUnion[]),
+            ]),
+          };
+        },
+      );
 
       if (isLocal) {
         trackClientSideEvent(AnalyticsEvent.LOCAL_AGENT_MESSAGE_CREATED, {
@@ -251,82 +270,92 @@ export function useSendMessage(
         try {
           const extracted = AgentMessageSchema.parse(JSON.parse(e.data));
 
-          setMessagesInFlightCache((obj) => {
-            const messages = obj[agentId];
-
-            if (!messages) {
-              return messages;
-            }
-
-            let hasExistingMessage = false;
-
-            let transformedMessages = messages.map((message) => {
-              if (
-                `${message.id}-${message.message_type}` ===
-                `${extracted.id}-${extracted.message_type}`
-              ) {
-                hasExistingMessage = true;
-
-                const newMessage: Record<string, any> = {
-                  ...message,
-                };
-
-                // explicit handlers for each message type
-                switch (extracted.message_type) {
-                  case 'tool_call_message': {
-                    const maybeArguments = get(
-                      newMessage,
-                      'tool_call.arguments',
-                      '',
-                    );
-
-                    newMessage.tool_call = {
-                      tool_call_id:
-                        newMessage.tool_call.tool_call_id ||
-                        extracted.tool_call.tool_call_id,
-                      message_type:
-                        newMessage.tool_call.message_type ||
-                        extracted.tool_call.message_type,
-                      name:
-                        newMessage.tool_call.name || extracted.tool_call.name,
-                      arguments: maybeArguments + extracted.tool_call.arguments,
-                    };
-                    break;
-                  }
-                  case 'tool_return_message': {
-                    newMessage.tool_return = extracted.tool_return;
-                    break;
-                  }
-                  case 'reasoning_message': {
-                    newMessage.reasoning =
-                      (newMessage.reasoning || '') + extracted.reasoning;
-                    break;
-                  }
-                  default: {
-                    return newMessage;
-                  }
-                }
-
-                return newMessage;
+          queryClient.setQueriesData<InfiniteData<ListMessagesResponse>>(
+            {
+              queryKey: UseAgentsServiceListMessagesKeyFn({ agentId }),
+            },
+            (data) => {
+              if (!data) {
+                return data;
               }
 
-              return message;
-            });
+              const messages = data.pages[0] as LettaMessageUnion[];
 
-            if (!hasExistingMessage) {
-              transformedMessages = [
-                {
-                  ...extracted,
-                  date: new Date().toISOString(),
-                },
-                ...transformedMessages,
-              ];
-            }
+              let hasExistingMessage = false;
 
-            return {
-              [agentId]: transformedMessages as AgentMessage[],
-            };
-          });
+              let transformedMessages = messages.map((message) => {
+                if (
+                  `${message.id}-${message.message_type}` ===
+                  `${extracted.id}-${extracted.message_type}`
+                ) {
+                  hasExistingMessage = true;
+
+                  const newMessage: Record<string, any> = {
+                    ...message,
+                  };
+
+                  // explicit handlers for each message type
+                  switch (extracted.message_type) {
+                    case 'tool_call_message': {
+                      const maybeArguments = get(
+                        newMessage,
+                        'tool_call.arguments',
+                        '',
+                      );
+
+                      newMessage.tool_call = {
+                        tool_call_id:
+                          newMessage.tool_call.tool_call_id ||
+                          extracted.tool_call.tool_call_id,
+                        message_type:
+                          newMessage.tool_call.message_type ||
+                          extracted.tool_call.message_type,
+                        name:
+                          newMessage.tool_call.name || extracted.tool_call.name,
+                        arguments:
+                          maybeArguments + extracted.tool_call.arguments,
+                      };
+                      break;
+                    }
+                    case 'tool_return_message': {
+                      newMessage.tool_return = extracted.tool_return;
+                      break;
+                    }
+                    case 'reasoning_message': {
+                      newMessage.reasoning =
+                        (newMessage.reasoning || '') + extracted.reasoning;
+                      break;
+                    }
+                    default: {
+                      return newMessage;
+                    }
+                  }
+
+                  return newMessage;
+                }
+
+                return message;
+              });
+
+              if (!hasExistingMessage) {
+                transformedMessages = [
+                  {
+                    ...extracted,
+                    date: new Date().toISOString(),
+                  },
+                  ...transformedMessages,
+                ];
+              }
+
+              return {
+                ...data,
+                pages: [
+                  transformedMessages as LettaMessageUnion[],
+                  ...data.pages.slice(1),
+                ],
+              };
+            },
+          );
         } catch (_e) {
           // ignore
         }
@@ -345,16 +374,7 @@ export function useSendMessage(
         setIsPending(false);
       };
     },
-    [
-      agentId,
-      baseUrl,
-      isLocal,
-      options,
-      password,
-      queryClient,
-      setMessagesInFlightCache,
-      setIsPending,
-    ],
+    [agentId, baseUrl, isLocal, options, password, queryClient, setIsPending],
   );
 
   return { isPending, isError: failedToSendMessage, sendMessage, errorCode };
@@ -514,7 +534,6 @@ function AgentResetMessagesDialog() {
   });
 
   const { id: agentId } = useCurrentSimulatedAgent();
-  const setMessagesInFlightCache = useSetAtom(messagesInFlightCacheAtom);
 
   const {
     mutate: resetMessages,
@@ -525,7 +544,6 @@ function AgentResetMessagesDialog() {
       toast.success(t('AgentResetMessagesDialog.success'));
       form.reset();
       reset();
-      setMessagesInFlightCache({});
       setIsOpen(false);
     },
     onError: () => {

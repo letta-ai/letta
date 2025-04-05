@@ -49,8 +49,6 @@ import { jsonrepair } from 'jsonrepair';
 import { useTranslations } from '@letta-cloud/translations';
 import { get } from 'lodash-es';
 import { useGetMessagesWorker } from './useGetMessagesWorker/useGetMessagesWorker';
-import { useAtom } from 'jotai';
-import { messagesInFlightCacheAtom } from './messagesInFlightCacheAtom/messagesInFlightCacheAtom';
 import { useCurrentDevelopmentServerConfig } from '@letta-cloud/utils-client';
 import { CURRENT_RUNTIME } from '@letta-cloud/config-runtime';
 
@@ -223,8 +221,6 @@ export function Messages(props: MessagesProps) {
 
     return 5000;
   }, [isSendingMessage, lastMessageReceived]);
-
-  const [messagesInFlight] = useAtom(messagesInFlightCacheAtom);
 
   const { data, hasNextPage, fetchNextPage, isFetching } = useInfiniteQuery<
     AgentMessage[],
@@ -702,23 +698,31 @@ export function Messages(props: MessagesProps) {
       return [];
     }
 
-    const anIdFromMessagesInFlight = messagesInFlight?.[agentId]?.[1]?.id;
-    const firstPage = Array.isArray(data.pages[0]) ? data.pages[0] : [];
+    let firstPage = Array.isArray(data.pages[0]) ? data.pages[0] : [];
+    const messageExistingMap = new Set<string>();
 
-    const firstPageHasAnIdFromMessagesInFlight = firstPage?.some(
-      (message) => message.id === anIdFromMessagesInFlight,
-    );
+    firstPage = firstPage.filter((message) => {
+      if (!message.otid) {
+        return true;
+      }
 
-    const preMessages = [
-      ...(!firstPageHasAnIdFromMessagesInFlight
-        ? messagesInFlight?.[agentId] || []
-        : []),
-      ...data.pages.flat(),
-    ]
+      if (messageExistingMap.has(message.otid)) {
+        return false;
+      }
+
+      messageExistingMap.add(message.otid);
+
+      return true;
+    });
+
+    const preMessages = [...firstPage, ...(data.pages.slice(1).flat() || [])]
+      // deduplicate messages on otid
+
       .map((message, _, allMessages) =>
         // @ts-expect-error - the typing is wrong
         extractMessage(message, mode, allMessages),
       )
+
       .filter((message) => !!message)
       .sort(
         (a, b) =>
@@ -750,7 +754,7 @@ export function Messages(props: MessagesProps) {
     });
 
     return groupedMessages;
-  }, [messagesInFlight, agentId, extractMessage, mode, data]);
+  }, [extractMessage, mode, data]);
 
   useEffect(() => {
     if (ref.current) {
