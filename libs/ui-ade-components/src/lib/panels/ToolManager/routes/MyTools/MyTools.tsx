@@ -8,7 +8,13 @@ import { atom, useAtom } from 'jotai';
 export const myToolsSelectedId = atom<string | null>(null);
 
 export function MyTools() {
-  const { data: tools, isError, isLoading } = useToolsServiceListTools();
+  const {
+    data: tools,
+    isError,
+    isLoading,
+  } = useToolsServiceListTools({
+    limit: 250,
+  });
   const [search, setSearch] = useState<string>('');
 
   const t = useTranslations('ToolsEditor/MyTools');
