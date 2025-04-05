@@ -1,10 +1,11 @@
 'use client';
 import React, { useCallback, useMemo, useState } from 'react';
 import {
-  ExploreIcon,
   HStack,
   OnboardingAsideFocus,
+  PlusIcon,
   RuleIcon,
+  ToolManagerIcon,
 } from '@letta-cloud/ui-component-library';
 import type { FileTreeContentsType } from '@letta-cloud/ui-component-library';
 import { VStack } from '@letta-cloud/ui-component-library';
@@ -151,7 +152,16 @@ function ToolsList(props: ToolsProps) {
       {
         id: 'other-tools',
         name: '',
-        contents: [],
+        contents: [
+          {
+            id: 'add-tool',
+            icon: <PlusIcon />,
+            name: t('ToolsList.addNewTool'),
+            onClick: () => {
+              openToolManager('/my-tools');
+            },
+          },
+        ],
         defaultOpen: true,
       },
     ];
@@ -262,7 +272,7 @@ function OpenToolManagerButton() {
         onClick={() => {
           openToolManager('/current-agent-tools');
         }}
-        preIcon={<ExploreIcon />}
+        preIcon={<ToolManagerIcon />}
       />
     </HStack>
   );

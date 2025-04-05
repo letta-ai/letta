@@ -1,8 +1,8 @@
 import { useTranslations } from '@letta-cloud/translations';
 import {
   ComposioLogoMarkDynamic,
-  LettaInvaderIcon,
-  LettaLogoIcon,
+  CustomToolIcon,
+  LettaToolIcon,
   McpIcon,
   RuleIcon,
   ToolsIcon,
@@ -14,11 +14,11 @@ export function useToolManagerRouteCopy() {
   return {
     current: {
       title: t('ToolManagerNavigationSidebar.current'),
-      icon: <LettaInvaderIcon />,
+      icon: <ToolsIcon />,
     },
     customTools: {
       title: t('ToolManagerNavigationSidebar.customTools'),
-      icon: <ToolsIcon />,
+      icon: <CustomToolIcon />,
     },
     toolRules: {
       title: t('ToolManagerNavigationSidebar.toolRules'),
@@ -26,7 +26,7 @@ export function useToolManagerRouteCopy() {
     },
     lettaTools: {
       title: t('ToolManagerNavigationSidebar.lettaTools'),
-      icon: <LettaLogoIcon />,
+      icon: <LettaToolIcon />,
     },
     composioTool: {
       title: '',

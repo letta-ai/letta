@@ -211,6 +211,30 @@ function SidebarButton(props: SidebarButtonProps) {
   );
 }
 
+interface SidebarSectionProps {
+  title: string;
+  isExpanded?: boolean;
+  children: React.ReactNode;
+}
+
+function SidebarSection(props: SidebarSectionProps) {
+  const { title, children, isExpanded } = props;
+
+  return (
+    <VStack>
+      {isExpanded && (
+        <>
+          <Typography variant="body4" bold>
+            {title}
+          </Typography>
+        </>
+      )}
+
+      <VStack>{children}</VStack>
+    </VStack>
+  );
+}
+
 function ToolManagerNavigationSidebar() {
   const t = useTranslations('ToolManager');
   const details = useToolManagerRouteCopy();
@@ -264,68 +288,73 @@ function ToolManagerNavigationSidebar() {
           />
         </HiddenOnMobile>
       </HStack>
-      <SidebarButton
-        hideLabel={!isExpanded}
-        label={details.current.title}
-        path="/current-agent-tools"
-        icon={details.current.icon}
-      />
-      <SidebarButton
-        hideLabel={!isExpanded}
-        label={details.toolRules.title}
-        path="/tool-rules"
-        icon={details.toolRules.icon}
-      />
-      {isExpanded && (
-        <Typography variant="body4" uppercase bold>
-          {t('ToolManagerNavigationSidebar.codeTools')}
-        </Typography>
-      )}
-      <SidebarButton
-        hideLabel={!isExpanded}
-        label={details.customTools.title}
-        path="/my-tools"
-        icon={details.customTools.icon}
-      />
-      <SidebarButton
-        hideLabel={!isExpanded}
-        label={details.lettaTools.title}
-        path="/letta-tools"
-        icon={details.lettaTools.icon}
-      />
-      <CreateToolDialog
-        trigger={
-          <Button
-            hideLabel={!isExpanded}
-            size="small"
-            data-testid="start-create-tool"
-            preIcon={<PlusIcon />}
-            label={t('ToolManagerNavigationSidebar.create')}
-            color={isExpanded ? 'primary' : 'tertiary'}
-          />
-        }
-      />
-
+      <SidebarSection
+        isExpanded={isExpanded}
+        title={t('ToolManagerNavigationSidebar.attachedToAgent')}
+      >
+        <SidebarButton
+          hideLabel={!isExpanded}
+          label={details.current.title}
+          path="/current-agent-tools"
+          icon={details.current.icon}
+        />
+        <SidebarButton
+          hideLabel={!isExpanded}
+          label={details.toolRules.title}
+          path="/tool-rules"
+          icon={details.toolRules.icon}
+        />
+      </SidebarSection>
       <HR />
-      {isExpanded && (
-        <HStack>
-          <Typography variant="body4" uppercase bold>
-            {t('ToolManagerNavigationSidebar.integrationTools')}
-          </Typography>
-        </HStack>
-      )}
-      <SidebarButton
-        hideLabel={!isExpanded}
-        label={details.composioTools.title}
-        path="/composio"
-        icon={details.composioTools.icon}
-      />
-      <SidebarButton
-        hideLabel={!isExpanded}
-        label={details.mcpServers.title}
-        path="/mcp-servers"
-        icon={details.mcpServers.icon}
-      />
+      <SidebarSection
+        isExpanded={isExpanded}
+        title={t('ToolManagerNavigationSidebar.codeTools')}
+      >
+        <SidebarButton
+          hideLabel={!isExpanded}
+          label={details.customTools.title}
+          path="/my-tools"
+          icon={details.customTools.icon}
+        />
+        <SidebarButton
+          hideLabel={!isExpanded}
+          label={details.lettaTools.title}
+          path="/letta-tools"
+          icon={details.lettaTools.icon}
+        />
+        <CreateToolDialog
+          trigger={
+            <Button
+              hideLabel={!isExpanded}
+              size="small"
+              data-testid="start-create-tool"
+              preIcon={<PlusIcon />}
+              label={t('ToolManagerNavigationSidebar.create')}
+              color="tertiary"
+              bold
+            />
+          }
+        />
+      </SidebarSection>
+      <HR />
+
+      <SidebarSection
+        isExpanded={isExpanded}
+        title={t('ToolManagerNavigationSidebar.integrationTools')}
+      >
+        <SidebarButton
+          hideLabel={!isExpanded}
+          label={details.composioTools.title}
+          path="/composio"
+          icon={details.composioTools.icon}
+        />
+        <SidebarButton
+          hideLabel={!isExpanded}
+          label={details.mcpServers.title}
+          path="/mcp-servers"
+          icon={details.mcpServers.icon}
+        />
+      </SidebarSection>
     </VStack>
   );
 }
