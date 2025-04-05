@@ -3,8 +3,17 @@ import { useQueryClient } from '@tanstack/react-query';
 import { useCallback } from 'react';
 import type { ServerInferResponses } from '@ts-rest/core';
 
-export function useUnpauseOnboarding() {
-  const { mutate } = webApi.user.unpauseUserOnboarding.useMutation();
+interface UseUnpauseOnboardingOptions {
+  onSuccess?: () => void;
+}
+
+export function useUnpauseOnboarding(
+  options: UseUnpauseOnboardingOptions = {},
+) {
+  const { onSuccess } = options;
+  const { mutate } = webApi.user.unpauseUserOnboarding.useMutation({
+    onSuccess,
+  });
 
   const queryClient = useQueryClient();
 

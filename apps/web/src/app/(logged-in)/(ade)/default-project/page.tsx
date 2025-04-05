@@ -11,7 +11,7 @@ export default async function DefaultProjectRedirect() {
     return;
   }
 
-  const defaultProject = await getDefaultProject({
+  const { slug: defaultProject } = await getDefaultProject({
     organizationId: user.activeOrganizationId,
   });
 

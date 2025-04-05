@@ -47,6 +47,10 @@ export function SharedMemoryIndicator(props: SharedMemoryIndicatorProps) {
   const { memory } = props;
 
   const [currentUrl] = useState(() => {
+    if (typeof window === 'undefined') {
+      return '';
+    }
+
     return window.location.href;
   });
 

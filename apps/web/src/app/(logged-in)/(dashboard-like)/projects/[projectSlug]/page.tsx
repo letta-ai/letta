@@ -20,10 +20,11 @@ import { useTranslations } from '@letta-cloud/translations';
 import { Tutorials } from '$web/client/components';
 import { useWelcomeText } from '$web/client/hooks/useWelcomeText/useWelcomeText';
 import { CreateNewTemplateDialog } from './_components/CreateNewTemplateDialog/CreateNewTemplateDialog';
-import { useUserHasPermission } from '$web/client/hooks';
+import { useCurrentUser, useUserHasPermission } from '$web/client/hooks';
 import { ApplicationServices } from '@letta-cloud/service-rbac';
 import { useAgentsServiceListAgents } from '@letta-cloud/sdk-core';
 import { useDateFormatter } from '@letta-cloud/utils-client';
+import { PausedOnboardingView } from '$web/client/hooks/useOnboarding/PausedOnboardingView/PausedOnboardingView';
 
 function RecentAgentsSection() {
   const { slug, id } = useCurrentProject();
@@ -184,6 +185,7 @@ function ProjectPage() {
   const { name } = useCurrentProject();
 
   const welcomeText = useWelcomeText();
+  const user = useCurrentUser();
 
   return (
     <DashboardPageLayout
@@ -194,6 +196,11 @@ function ProjectPage() {
     >
       <DashboardPageSection>
         <HStack wrap>
+          {user?.onboardingStatus?.pausedAt && (
+            <VStack minWidth="mobile" collapseWidth flex>
+              <PausedOnboardingView />
+            </VStack>
+          )}
           <VStack minWidth="mobile" collapseWidth flex>
             <RecentTemplatesSection />
           </VStack>

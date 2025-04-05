@@ -33,16 +33,22 @@ export function useSetOnboardingStep() {
           return oldData;
         }
 
+        let completedSteps = [
+          ...(oldData.body.onboardingStatus?.completedSteps ?? []),
+          onboardingStep,
+        ];
+
+        if (onboardingStep === 'restarted') {
+          completedSteps = [];
+        }
+
         return {
           ...oldData,
           body: {
             ...oldData.body,
             onboardingStatus: {
               pausedAt: null,
-              completedSteps: [
-                ...(oldData.body.onboardingStatus?.completedSteps ?? []),
-                onboardingStep,
-              ],
+              completedSteps,
               claimedSteps: oldData.body.onboardingStatus?.claimedSteps ?? [],
               currentStep: onboardingStep,
             },

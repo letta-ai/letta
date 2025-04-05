@@ -75,13 +75,18 @@ export async function goToNextOnboardingStep(
     }
   }
 
-  const nextCompletedSteps = Array.from(
+  console.log(currentOnboardingSteps);
+  let nextCompletedSteps = Array.from(
     new Set(
       nextStep
         ? [...currentOnboardingSteps, stepToClaim]
         : currentOnboardingSteps,
     ),
   ).filter((step) => !!step);
+
+  if (nextStep === 'restarted') {
+    nextCompletedSteps = [];
+  }
 
   await db
     .update(userProductOnboarding)

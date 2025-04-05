@@ -28,5 +28,8 @@ export async function getDefaultProject(args: GetDefaultProjectArgs) {
     throw new Error('Project not found');
   }
 
-  return createdProject.slug;
+  return {
+    slug: createdProject.slug,
+    id: createdProject.id,
+  };
 }

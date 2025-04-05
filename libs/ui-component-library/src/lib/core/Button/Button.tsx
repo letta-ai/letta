@@ -161,7 +161,7 @@ export const Button = forwardRef<
     }
 
     if (size === 'large') {
-      return 'h-6 w-6';
+      return 'h-5 w-5';
     }
 
     return 'h-5 w-5';

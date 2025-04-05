@@ -5,10 +5,8 @@ import {
   ConfirmPauseOnboardingDialog,
   HStack,
   LettaCoinIcon,
-  OnboardingCheckbox,
   OnboardingPrimaryDialog,
   OnboardingPrimaryHeading,
-  OnboardingRewardElement,
   VStack,
 } from '@letta-cloud/ui-component-library';
 import { useTranslations } from '@letta-cloud/translations';
@@ -16,6 +14,7 @@ import { useCurrentUser } from '$web/client/hooks';
 import { useCallback } from 'react';
 import { useSetOnboardingStep } from '@letta-cloud/sdk-web';
 import { stepToRewardMap } from '@letta-cloud/types';
+import { MainOnboardingSteps } from '$web/client/hooks/useOnboarding/components/MainOnboardingSteps/MainOnboardingSteps';
 
 export function StartOnboardingDialog() {
   const t = useTranslations('onboarding/StartOnboardingDialog');
@@ -79,53 +78,7 @@ export function StartOnboardingDialog() {
           title={t('title')}
           description={t('description')}
         ></OnboardingPrimaryHeading>
-        <VStack paddingTop gap="medium">
-          <HStack>
-            <OnboardingCheckbox label={t('steps.creditsAndCloud')} />
-            <OnboardingRewardElement
-              isClaimed={user.onboardingStatus?.claimedSteps.includes(
-                'about_credits',
-              )}
-              reward={stepToRewardMap.about_credits}
-            />
-          </HStack>
-          <HStack>
-            <OnboardingCheckbox label={t('steps.createATemplate')} />
-            <OnboardingRewardElement
-              isClaimed={user.onboardingStatus?.claimedSteps.includes(
-                'create_template',
-              )}
-              reward={stepToRewardMap.create_template}
-            />
-          </HStack>
-          <HStack>
-            <OnboardingCheckbox label={t('steps.exploreTheADE')} />
-            <OnboardingRewardElement
-              isClaimed={user.onboardingStatus?.claimedSteps.includes(
-                'explore_ade',
-              )}
-              reward={stepToRewardMap.explore_ade}
-            />
-          </HStack>
-          <HStack>
-            <OnboardingCheckbox label={t('steps.saveATemplate')} />
-            <OnboardingRewardElement
-              isClaimed={user.onboardingStatus?.claimedSteps.includes(
-                'save_version',
-              )}
-              reward={stepToRewardMap.save_version}
-            />
-          </HStack>
-          <HStack>
-            <OnboardingCheckbox label={t('steps.deployAnAgent')} />
-            <OnboardingRewardElement
-              isClaimed={user.onboardingStatus?.claimedSteps.includes(
-                'deploy_agent',
-              )}
-              reward={stepToRewardMap.deploy_agent}
-            />
-          </HStack>
-        </VStack>
+        <MainOnboardingSteps />
       </VStack>
     </OnboardingPrimaryDialog>
   );

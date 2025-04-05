@@ -221,9 +221,11 @@ async function createUserAndOrganization(
   let firstProjectSlug = '';
 
   if (isNewOrganization) {
-    firstProjectSlug = await getDefaultProject({
+    const { slug } = await getDefaultProject({
       organizationId,
     });
+
+    firstProjectSlug = slug;
   }
 
   return {

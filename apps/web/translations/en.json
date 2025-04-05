@@ -6,6 +6,11 @@
   "components/PauseOnboardingSlot": {
     "error": "There was an error pausing the onboarding, please try again or contact support."
   },
+  "onboarding/PausedOnboardingView": {
+    "title": "Finish onboarding!",
+    "description": "You can continue your onboarding at any time. Click the button below to continue.",
+    "trigger": "Continue onboarding"
+  },
   "onboarding/StartOnboardingDialog": {
     "skip": "Skip onboarding",
     "start": "Learn about credits",
