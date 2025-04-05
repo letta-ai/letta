@@ -467,6 +467,10 @@ async def test_sleeptime_group_chat(server, actor):
     )
 
     assert main_agent.enable_sleeptime == True
+    main_agent_tools = [tool.name for tool in main_agent.tools]
+    assert "core_memory_append" not in main_agent_tools
+    assert "core_memory_replace" not in main_agent_tools
+    assert "archival_memory_insert" not in main_agent_tools
 
     # 2. Override frequency for test
     group = server.group_manager.modify_group(

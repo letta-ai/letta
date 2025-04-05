@@ -801,6 +801,7 @@ class SyncServer(Server):
                 agent_ids=[sleeptime_agent.id],
                 manager_config=SleeptimeManager(
                     manager_agent_id=main_agent.id,
+                    sleeptime_agent_frequency=5,
                 ),
             ),
             actor=actor,

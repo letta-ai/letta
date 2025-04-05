@@ -85,7 +85,8 @@ def load_multi_agent(
             raise ValueError(f"Type {group.manager_type} is not supported.")
 
 
-def stringify_message(message: Message) -> str | None:
+def stringify_message(message: Message, use_assistant_name: bool = False) -> str | None:
+    assistant_name = message.name or "assistant" if use_assistant_name else "assistant"
     if message.role == "user":
         content = json.loads(message.content[0].text)
         if content["type"] == "user_message":
@@ -95,20 +96,20 @@ def stringify_message(message: Message) -> str | None:
     elif message.role == "assistant":
         messages = []
         if message.content:
-            messages.append(f"{message.name or 'assistant'}: *thinking* {message.content[0].text}")
+            messages.append(f"{assistant_name}: *thinking* {message.content[0].text}")
         if message.tool_calls:
             if message.tool_calls[0].function.name == "send_message":
-                messages.append(f"{message.name or 'assistant'}: {json.loads(message.tool_calls[0].function.arguments)['message']}")
+                messages.append(f"{assistant_name}: {json.loads(message.tool_calls[0].function.arguments)['message']}")
             else:
-                messages.append(f"{message.name or 'assistant'}: Calling tool {message.tool_calls[0].function.name}")
+                messages.append(f"{assistant_name}: Calling tool {message.tool_calls[0].function.name}")
         return "\n".join(messages)
     elif message.role == "tool":
         if message.content:
             content = json.loads(message.content[0].text)
             if content["message"] != "None" and content["message"] != None:
-                return f"{message.name or 'assistant'}: Tool call returned {content['message']}"
+                return f"{assistant_name}: Tool call returned {content['message']}"
         return None
     elif message.role == "system":
         return None
-
-    return f"{message.name or 'user'}: {message.content[0].text}"
+    else:
+        return f"{message.name or 'user'}: {message.content[0].text}"

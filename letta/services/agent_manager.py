@@ -6,6 +6,7 @@ from sqlalchemy import Select, and_, func, literal, or_, select, union_all
 
 from letta.constants import (
     BASE_MEMORY_TOOLS,
+    BASE_SLEEPTIME_CHAT_TOOLS,
     BASE_SLEEPTIME_TOOLS,
     BASE_TOOLS,
     DATA_SOURCE_ATTACH_ALERT,
@@ -121,7 +122,7 @@ class AgentManager:
                 tool_names.extend(BASE_SLEEPTIME_TOOLS)
             else:
                 if agent_create.enable_sleeptime:
-                    tool_names.extend(BASE_TOOLS)
+                    tool_names.extend(BASE_SLEEPTIME_CHAT_TOOLS)
                 else:
                     tool_names.extend(BASE_TOOLS + BASE_MEMORY_TOOLS)
         if agent_create.include_multi_agent_tools:

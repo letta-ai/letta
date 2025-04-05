@@ -195,3 +195,23 @@ def finish_rethinking_memory(agent_state: "AgentState") -> None:  # type: ignore
         Optional[str]: None is always returned as this function does not produce a response.
     """
     return None
+
+
+def core_memory_insert(agent_state: "AgentState", target_block_label: str, line_number: int, new_memory: str) -> None:  # type: ignore
+    """
+    Insert new memory content into a core memory block at a specific line number.
+
+    Args:
+        target_block_label (str): The name of the block to write to.
+        line_number (int): Line number to insert content into (0 for beginning of file).
+        new_memory (str): The new memory content to insert.
+
+    Returns:
+        None: None is always returned as this function does not produce a response.
+    """
+    current_value = str(agent_state.memory.get_block(target_block_label).value)
+    current_value_list = current_value.split("\n")
+    current_value_list.insert(line_number, new_memory)
+    new_value = "\n".join(current_value_list)
+    agent_state.memory.update_block_value(label=target_block_label, value=new_value)
+    return None
