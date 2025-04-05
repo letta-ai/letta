@@ -1057,6 +1057,12 @@
       "attach": "Attach tool",
       "detach": "Detach tool",
       "attached": "Attached"
+    },
+    "connectComposio": {
+      "title": "To attach this tool and 4000+ other tools to your agent, connect to Composio",
+      "descriptionLocal": "To enable Composio tools to your agent, add the <code>COMPOSIO_API_KEY</code> to your server environment variables",
+      "descriptionRemote": "To enable Composio tools to your agent, visit the Composio integration page",
+      "connect": "Setup Composio"
     }
   },
   "ToolsEditor": {
