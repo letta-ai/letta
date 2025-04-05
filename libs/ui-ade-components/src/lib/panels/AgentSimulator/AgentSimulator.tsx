@@ -120,7 +120,6 @@ export function useSendMessage(
   useEffect(() => {
     return () => {
       if (abortController.current) {
-        console.log('aborting');
         abortController.current.abort();
       }
     };

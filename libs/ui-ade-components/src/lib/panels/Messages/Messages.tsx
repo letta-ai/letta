@@ -43,7 +43,7 @@ import type {
   AgentSimulatorMessageType,
 } from '../AgentSimulator/types';
 import { FunctionIcon } from '@letta-cloud/ui-component-library';
-import { useInfiniteQuery } from '@tanstack/react-query';
+import { useInfiniteQuery, useQueryClient } from '@tanstack/react-query';
 import type { InfiniteData } from '@tanstack/query-core';
 import { jsonrepair } from 'jsonrepair';
 import { useTranslations } from '@letta-cloud/translations';
@@ -222,6 +222,8 @@ export function Messages(props: MessagesProps) {
     return 5000;
   }, [isSendingMessage, lastMessageReceived]);
 
+  const queryClient = useQueryClient();
+
   const { data, hasNextPage, fetchNextPage, isFetching } = useInfiniteQuery<
     AgentMessage[],
     Error,
@@ -248,7 +250,36 @@ export function Messages(props: MessagesProps) {
         ...(query.pageParam.before ? { cursor: query.pageParam.before } : {}),
       })) as unknown as AgentMessage[];
 
-      return res;
+      const data = queryClient.getQueriesData<
+        InfiniteData<ListMessagesResponse>
+      >({
+        queryKey: UseAgentsServiceListMessagesKeyFn({ agentId }),
+      });
+
+      const firstPage = data[0]?.[1]?.pages[0] || [];
+      const messageExistingMap = new Set<string>();
+
+      return [
+        ...(firstPage as AgentMessage[]).filter(
+          (v) => v.message_type === 'user_message',
+        ),
+        ...(Array.isArray(res) ? res : []),
+      ].filter((message) => {
+        // dedupe user_message by otid or id
+        if (message.message_type !== 'user_message') {
+          return true;
+        }
+
+        const uid = message.otid || message.id;
+
+        if (messageExistingMap.has(uid)) {
+          return false;
+        }
+
+        messageExistingMap.add(uid);
+
+        return true;
+      });
     },
     getNextPageParam: (lastPage) => {
       if (!Array.isArray(lastPage)) {
