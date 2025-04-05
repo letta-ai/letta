@@ -43,7 +43,7 @@ import type {
   AgentSimulatorMessageType,
 } from '../AgentSimulator/types';
 import { FunctionIcon } from '@letta-cloud/ui-component-library';
-import { useInfiniteQuery, useQueryClient } from '@tanstack/react-query';
+import { useInfiniteQuery } from '@tanstack/react-query';
 import type { InfiniteData } from '@tanstack/query-core';
 import { jsonrepair } from 'jsonrepair';
 import { useTranslations } from '@letta-cloud/translations';
@@ -222,8 +222,6 @@ export function Messages(props: MessagesProps) {
     return 5000;
   }, [isSendingMessage, lastMessageReceived]);
 
-  const queryClient = useQueryClient();
-
   const { data, hasNextPage, fetchNextPage, isFetching } = useInfiniteQuery<
     AgentMessage[],
     Error,
@@ -250,32 +248,7 @@ export function Messages(props: MessagesProps) {
         ...(query.pageParam.before ? { cursor: query.pageParam.before } : {}),
       })) as unknown as AgentMessage[];
 
-      const data = queryClient.getQueriesData<
-        InfiniteData<ListMessagesResponse>
-      >({
-        queryKey: UseAgentsServiceListMessagesKeyFn({ agentId }),
-      });
-
-      const firstPage = data[0]?.[1]?.pages[0] || [];
-      const messageExistingMap = new Set<string>();
-
-      return [
-        ...(firstPage as AgentMessage[]),
-        ...(Array.isArray(res) ? res : []),
-      ].filter((message) => {
-        const otid = get(message, 'otid');
-        if (!otid) {
-          return true;
-        }
-
-        if (messageExistingMap.has(otid)) {
-          return false;
-        }
-
-        messageExistingMap.add(otid);
-
-        return true;
-      });
+      return res;
     },
     getNextPageParam: (lastPage) => {
       if (!Array.isArray(lastPage)) {
