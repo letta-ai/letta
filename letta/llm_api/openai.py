@@ -252,6 +252,8 @@ def openai_chat_completions_process_stream(
 
     n_chunks = 0  # approx == n_tokens
     chunk_idx = 0
+    prev_message_type = None
+    message_idx = 0
     try:
         for chat_completion_chunk in openai_chat_completions_request_stream(
             url=url, api_key=api_key, chat_completion_request=chat_completion_request
@@ -268,14 +270,17 @@ def openai_chat_completions_process_stream(
 
             if stream_interface:
                 if isinstance(stream_interface, AgentChunkStreamingInterface):
-                    stream_interface.process_chunk(
+                    message_type = stream_interface.process_chunk(
                         chat_completion_chunk,
                         message_id=chat_completion_response.id if create_message_id else chat_completion_chunk.id,
                         message_date=chat_completion_response.created if create_message_datetime else chat_completion_chunk.created,
                         expect_reasoning_content=expect_reasoning_content,
                         name=name,
-                        chunk_index=chunk_idx,
+                        message_index=message_idx,
                     )
+                    if message_type != prev_message_type and message_type is not None:
+                        message_idx += 1
+                    prev_message_type = message_type
                 elif isinstance(stream_interface, AgentRefreshStreamingInterface):
                     stream_interface.process_refresh(chat_completion_response)
                 else:

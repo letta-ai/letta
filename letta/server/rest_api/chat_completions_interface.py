@@ -155,7 +155,12 @@ class ChatCompletionsStreamingInterface(AgentChunkStreamingInterface):
         return
 
     def process_chunk(
-        self, chunk: ChatCompletionChunkResponse, message_id: str, message_date: datetime, expect_reasoning_content: bool = False
+        self,
+        chunk: ChatCompletionChunkResponse,
+        message_id: str,
+        message_date: datetime,
+        expect_reasoning_content: bool = False,
+        message_index: int = 0,
     ) -> None:
         """
         Called externally with a ChatCompletionChunkResponse. Transforms

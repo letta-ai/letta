@@ -468,7 +468,7 @@ class StreamingServerInterface(AgentChunkStreamingInterface):
         # and `content` needs to be handled outside the interface
         expect_reasoning_content: bool = False,
         name: Optional[str] = None,
-        chunk_index: int = 0,
+        message_index: int = 0,
     ) -> Optional[Union[ReasoningMessage, ToolCallMessage, AssistantMessage]]:
         """
         Example data from non-streaming response looks like:
@@ -481,7 +481,7 @@ class StreamingServerInterface(AgentChunkStreamingInterface):
         """
         choice = chunk.choices[0]
         message_delta = choice.delta
-        otid = Message.generate_otid_from_id(message_id, chunk_index)
+        otid = Message.generate_otid_from_id(message_id, message_index)
 
         if (
             message_delta.content is None
@@ -1065,7 +1065,7 @@ class StreamingServerInterface(AgentChunkStreamingInterface):
         message_date: datetime,
         expect_reasoning_content: bool = False,
         name: Optional[str] = None,
-        chunk_index: int = 0,
+        message_index: int = 0,
     ):
         """Process a streaming chunk from an OpenAI-compatible server.
 
@@ -1092,13 +1092,14 @@ class StreamingServerInterface(AgentChunkStreamingInterface):
                 message_date=message_date,
                 expect_reasoning_content=expect_reasoning_content,
                 name=name,
-                chunk_index=chunk_index,
+                message_index=message_index,
             )
-
         if processed_chunk is None:
             return
 
         self._push_to_buffer(processed_chunk)
+
+        return processed_chunk.message_type
 
     def user_message(self, msg: str, msg_obj: Optional[Message] = None):
         """Letta receives a user message"""
