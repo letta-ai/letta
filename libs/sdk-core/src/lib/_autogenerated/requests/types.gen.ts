@@ -273,7 +273,6 @@ export type AppAuthScheme = {
     | 'GOOGLE_SERVICE_ACCOUNT'
     | 'GOOGLEADS_AUTH'
     | 'NO_AUTH'
-    | 'COMPOSIO_LINK'
     | 'CALCOM_AUTH';
   fields: Array<AuthSchemeField>;
   proxy?: {
@@ -297,7 +296,6 @@ export type auth_mode =
   | 'GOOGLE_SERVICE_ACCOUNT'
   | 'GOOGLEADS_AUTH'
   | 'NO_AUTH'
-  | 'COMPOSIO_LINK'
   | 'CALCOM_AUTH';
 
 /**
@@ -514,27 +512,21 @@ export type ChatCompletionAssistantMessageParam = {
 export type ChatCompletionAudioParam = {
   format: 'wav' | 'mp3' | 'flac' | 'opus' | 'pcm16';
   voice:
+    | string
     | 'alloy'
     | 'ash'
     | 'ballad'
     | 'coral'
     | 'echo'
+    | 'fable'
+    | 'onyx'
+    | 'nova'
     | 'sage'
     | 'shimmer'
     | 'verse';
 };
 
 export type format = 'wav' | 'mp3' | 'flac' | 'opus' | 'pcm16';
-
-export type voice =
-  | 'alloy'
-  | 'ash'
-  | 'ballad'
-  | 'coral'
-  | 'echo'
-  | 'sage'
-  | 'shimmer'
-  | 'verse';
 
 export type ChatCompletionContentPartImageParam = {
   image_url: ImageURL;

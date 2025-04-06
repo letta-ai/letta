@@ -6582,6 +6582,7 @@
       "ActionParametersModel": {
         "properties": {
           "properties": {
+            "additionalProperties": true,
             "type": "object",
             "title": "Properties"
           },
@@ -6628,6 +6629,7 @@
       "ActionResponseModel": {
         "properties": {
           "properties": {
+            "additionalProperties": true,
             "type": "object",
             "title": "Properties"
           },
@@ -6818,6 +6820,7 @@
           "metadata_": {
             "anyOf": [
               {
+                "additionalProperties": true,
                 "type": "object"
               },
               {
@@ -7070,6 +7073,7 @@
           "metadata": {
             "anyOf": [
               {
+                "additionalProperties": true,
                 "type": "object"
               },
               {
@@ -7231,7 +7235,6 @@
               "GOOGLE_SERVICE_ACCOUNT",
               "GOOGLEADS_AUTH",
               "NO_AUTH",
-              "COMPOSIO_LINK",
               "CALCOM_AUTH"
             ],
             "title": "Auth Mode"
@@ -7246,6 +7249,7 @@
           "proxy": {
             "anyOf": [
               {
+                "additionalProperties": true,
                 "type": "object"
               },
               {
@@ -7354,6 +7358,7 @@
             "title": "Categories"
           },
           "meta": {
+            "additionalProperties": true,
             "type": "object",
             "title": "Meta"
           },
@@ -7429,6 +7434,7 @@
             "anyOf": [
               {
                 "items": {
+                  "additionalProperties": true,
                   "type": "object"
                 },
                 "type": "array"
@@ -7717,6 +7723,7 @@
           "metadata": {
             "anyOf": [
               {
+                "additionalProperties": true,
                 "type": "object"
               },
               {
@@ -7835,6 +7842,7 @@
           "metadata": {
             "anyOf": [
               {
+                "additionalProperties": true,
                 "type": "object"
               },
               {
@@ -7960,16 +7968,26 @@
             "title": "Format"
           },
           "voice": {
-            "type": "string",
-            "enum": [
-              "alloy",
-              "ash",
-              "ballad",
-              "coral",
-              "echo",
-              "sage",
-              "shimmer",
-              "verse"
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "string",
+                "enum": [
+                  "alloy",
+                  "ash",
+                  "ballad",
+                  "coral",
+                  "echo",
+                  "fable",
+                  "onyx",
+                  "nova",
+                  "sage",
+                  "shimmer",
+                  "verse"
+                ]
+              }
             ],
             "title": "Voice"
           }
@@ -9428,6 +9446,7 @@
           "metadata_": {
             "anyOf": [
               {
+                "additionalProperties": true,
                 "type": "object"
               },
               {
@@ -9697,6 +9716,7 @@
           "metadata": {
             "anyOf": [
               {
+                "additionalProperties": true,
                 "type": "object"
               },
               {
@@ -9989,6 +10009,7 @@
           "metadata": {
             "anyOf": [
               {
+                "additionalProperties": true,
                 "type": "object"
               },
               {
@@ -10409,6 +10430,7 @@
             "title": "Description"
           },
           "parameters": {
+            "additionalProperties": true,
             "type": "object",
             "title": "Parameters"
           },
@@ -10448,6 +10470,7 @@
           "parameters": {
             "anyOf": [
               {
+                "additionalProperties": true,
                 "type": "object"
               },
               {
@@ -11003,6 +11026,7 @@
                 "type": "boolean"
               },
               {
+                "additionalProperties": true,
                 "type": "object"
               }
             ],
@@ -11182,6 +11206,7 @@
             "title": "Description"
           },
           "schema": {
+            "additionalProperties": true,
             "type": "object",
             "title": "Schema"
           },
@@ -11274,6 +11299,7 @@
           "metadata": {
             "anyOf": [
               {
+                "additionalProperties": true,
                 "type": "object"
               },
               {
@@ -11686,6 +11712,7 @@
             "title": "Description"
           },
           "inputSchema": {
+            "additionalProperties": true,
             "type": "object",
             "title": "Inputschema"
           }
@@ -12405,6 +12432,7 @@
           "metadata": {
             "anyOf": [
               {
+                "additionalProperties": true,
                 "type": "object"
               },
               {
@@ -12557,6 +12585,7 @@
           "metadata_": {
             "anyOf": [
               {
+                "additionalProperties": true,
                 "type": "object"
               },
               {
@@ -12985,6 +13014,7 @@
           "metadata": {
             "anyOf": [
               {
+                "additionalProperties": true,
                 "type": "object"
               },
               {
@@ -13107,6 +13137,7 @@
             "description": "The type of sandbox."
           },
           "config": {
+            "additionalProperties": true,
             "type": "object",
             "title": "Config",
             "description": "The JSON sandbox settings data."
@@ -13390,6 +13421,7 @@
           "metadata": {
             "anyOf": [
               {
+                "additionalProperties": true,
                 "type": "object"
               },
               {
@@ -13513,6 +13545,7 @@
           "metadata": {
             "anyOf": [
               {
+                "additionalProperties": true,
                 "type": "object"
               },
               {
@@ -13558,6 +13591,7 @@
           "metadata": {
             "anyOf": [
               {
+                "additionalProperties": true,
                 "type": "object"
               },
               {
@@ -13770,6 +13804,7 @@
           "completion_tokens_details": {
             "anyOf": [
               {
+                "additionalProperties": true,
                 "type": "object"
               },
               {
@@ -14020,6 +14055,7 @@
           "json_schema": {
             "anyOf": [
               {
+                "additionalProperties": true,
                 "type": "object"
               },
               {
@@ -14032,6 +14068,7 @@
           "args_json_schema": {
             "anyOf": [
               {
+                "additionalProperties": true,
                 "type": "object"
               },
               {
@@ -14074,6 +14111,7 @@
           "metadata_": {
             "anyOf": [
               {
+                "additionalProperties": true,
                 "type": "object"
               },
               {
@@ -14128,6 +14166,7 @@
             "description": "The name of the tool being called."
           },
           "input": {
+            "additionalProperties": true,
             "type": "object",
             "title": "Input",
             "description": "The parameters being passed to the tool, structured as a dictionary of parameter names to values."
@@ -14269,6 +14308,7 @@
           "json_schema": {
             "anyOf": [
               {
+                "additionalProperties": true,
                 "type": "object"
               },
               {
@@ -14281,6 +14321,7 @@
           "args_json_schema": {
             "anyOf": [
               {
+                "additionalProperties": true,
                 "type": "object"
               },
               {
@@ -14545,6 +14586,7 @@
             "description": "The source code of the function."
           },
           "args": {
+            "additionalProperties": true,
             "type": "object",
             "title": "Args",
             "description": "The arguments to pass to the tool."
@@ -14584,6 +14626,7 @@
           "args_json_schema": {
             "anyOf": [
               {
+                "additionalProperties": true,
                 "type": "object"
               },
               {
@@ -14596,6 +14639,7 @@
           "json_schema": {
             "anyOf": [
               {
+                "additionalProperties": true,
                 "type": "object"
               },
               {
@@ -14674,6 +14718,7 @@
           "metadata_": {
             "anyOf": [
               {
+                "additionalProperties": true,
                 "type": "object"
               },
               {
@@ -14769,6 +14814,7 @@
           "json_schema": {
             "anyOf": [
               {
+                "additionalProperties": true,
                 "type": "object"
               },
               {
@@ -14781,6 +14827,7 @@
           "args_json_schema": {
             "anyOf": [
               {
+                "additionalProperties": true,
                 "type": "object"
               },
               {
@@ -14989,6 +15036,7 @@
           "metadata": {
             "anyOf": [
               {
+                "additionalProperties": true,
                 "type": "object"
               },
               {
@@ -15503,6 +15551,7 @@
             "title": "Description"
           },
           "parameters": {
+            "additionalProperties": true,
             "type": "object",
             "title": "Parameters"
           }

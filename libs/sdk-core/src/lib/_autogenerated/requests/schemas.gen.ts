@@ -89,6 +89,7 @@ export const $ActionModel = {
 export const $ActionParametersModel = {
   properties: {
     properties: {
+      additionalProperties: true,
       type: 'object',
       title: 'Properties',
     },
@@ -136,6 +137,7 @@ export const $ActionParametersModel = {
 export const $ActionResponseModel = {
   properties: {
     properties: {
+      additionalProperties: true,
       type: 'object',
       title: 'Properties',
     },
@@ -341,6 +343,7 @@ export const $AgentSchema = {
     metadata_: {
       anyOf: [
         {
+          additionalProperties: true,
           type: 'object',
         },
         {
@@ -608,6 +611,7 @@ export const $AgentState = {
     metadata: {
       anyOf: [
         {
+          additionalProperties: true,
           type: 'object',
         },
         {
@@ -785,7 +789,6 @@ export const $AppAuthScheme = {
         'GOOGLE_SERVICE_ACCOUNT',
         'GOOGLEADS_AUTH',
         'NO_AUTH',
-        'COMPOSIO_LINK',
         'CALCOM_AUTH',
       ],
       title: 'Auth Mode',
@@ -800,6 +803,7 @@ export const $AppAuthScheme = {
     proxy: {
       anyOf: [
         {
+          additionalProperties: true,
           type: 'object',
         },
         {
@@ -909,6 +913,7 @@ export const $AppModel = {
       title: 'Categories',
     },
     meta: {
+      additionalProperties: true,
       type: 'object',
       title: 'Meta',
     },
@@ -984,6 +989,7 @@ export const $AppModel = {
       anyOf: [
         {
           items: {
+            additionalProperties: true,
             type: 'object',
           },
           type: 'array',
@@ -1281,6 +1287,7 @@ export const $Block = {
     metadata: {
       anyOf: [
         {
+          additionalProperties: true,
           type: 'object',
         },
         {
@@ -1426,6 +1433,7 @@ export const $BlockUpdate = {
     metadata: {
       anyOf: [
         {
+          additionalProperties: true,
           type: 'object',
         },
         {
@@ -1555,16 +1563,26 @@ export const $ChatCompletionAudioParam = {
       title: 'Format',
     },
     voice: {
-      type: 'string',
-      enum: [
-        'alloy',
-        'ash',
-        'ballad',
-        'coral',
-        'echo',
-        'sage',
-        'shimmer',
-        'verse',
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'string',
+          enum: [
+            'alloy',
+            'ash',
+            'ballad',
+            'coral',
+            'echo',
+            'fable',
+            'onyx',
+            'nova',
+            'sage',
+            'shimmer',
+            'verse',
+          ],
+        },
       ],
       title: 'Voice',
     },
@@ -3058,6 +3076,7 @@ export const $CoreMemoryBlockSchema = {
     metadata_: {
       anyOf: [
         {
+          additionalProperties: true,
           type: 'object',
         },
         {
@@ -3333,6 +3352,7 @@ export const $CreateAgentRequest = {
     metadata: {
       anyOf: [
         {
+          additionalProperties: true,
           type: 'object',
         },
         {
@@ -3648,6 +3668,7 @@ export const $CreateBlock = {
     metadata: {
       anyOf: [
         {
+          additionalProperties: true,
           type: 'object',
         },
         {
@@ -4098,6 +4119,7 @@ export const $FunctionDefinition_Input = {
       title: 'Description',
     },
     parameters: {
+      additionalProperties: true,
       type: 'object',
       title: 'Parameters',
     },
@@ -4138,6 +4160,7 @@ export const $FunctionDefinition_Output = {
     parameters: {
       anyOf: [
         {
+          additionalProperties: true,
           type: 'object',
         },
         {
@@ -4724,6 +4747,7 @@ export const $IdentityProperty = {
           type: 'boolean',
         },
         {
+          additionalProperties: true,
           type: 'object',
         },
       ],
@@ -4911,6 +4935,7 @@ export const $JSONSchema = {
       title: 'Description',
     },
     schema: {
+      additionalProperties: true,
       type: 'object',
       title: 'Schema',
     },
@@ -5004,6 +5029,7 @@ export const $Job = {
     metadata: {
       anyOf: [
         {
+          additionalProperties: true,
           type: 'object',
         },
         {
@@ -5484,6 +5510,7 @@ export const $MCPTool = {
       title: 'Description',
     },
     inputSchema: {
+      additionalProperties: true,
       type: 'object',
       title: 'Inputschema',
     },
@@ -6269,6 +6296,7 @@ export const $Passage = {
     metadata: {
       anyOf: [
         {
+          additionalProperties: true,
           type: 'object',
         },
         {
@@ -6447,6 +6475,7 @@ export const $PassageUpdate = {
     metadata_: {
       anyOf: [
         {
+          additionalProperties: true,
           type: 'object',
         },
         {
@@ -6911,6 +6940,7 @@ export const $Run = {
     metadata: {
       anyOf: [
         {
+          additionalProperties: true,
           type: 'object',
         },
         {
@@ -7069,6 +7099,7 @@ export const $SandboxConfig = {
         'The unique identifier of the organization associated with the sandbox.',
     },
     config: {
+      additionalProperties: true,
       type: 'object',
       title: 'Config',
       description: 'The JSON sandbox settings data.',
@@ -7386,6 +7417,7 @@ export const $Source = {
     metadata: {
       anyOf: [
         {
+          additionalProperties: true,
           type: 'object',
         },
         {
@@ -7518,6 +7550,7 @@ export const $SourceCreate = {
     metadata: {
       anyOf: [
         {
+          additionalProperties: true,
           type: 'object',
         },
         {
@@ -7564,6 +7597,7 @@ export const $SourceUpdate = {
     metadata: {
       anyOf: [
         {
+          additionalProperties: true,
           type: 'object',
         },
         {
@@ -7796,6 +7830,7 @@ export const $Step = {
     completion_tokens_details: {
       anyOf: [
         {
+          additionalProperties: true,
           type: 'object',
         },
         {
@@ -8074,6 +8109,7 @@ export const $Tool = {
     json_schema: {
       anyOf: [
         {
+          additionalProperties: true,
           type: 'object',
         },
         {
@@ -8086,6 +8122,7 @@ export const $Tool = {
     args_json_schema: {
       anyOf: [
         {
+          additionalProperties: true,
           type: 'object',
         },
         {
@@ -8128,6 +8165,7 @@ export const $Tool = {
     metadata_: {
       anyOf: [
         {
+          additionalProperties: true,
           type: 'object',
         },
         {
@@ -8191,6 +8229,7 @@ export const $ToolCallContent = {
       description: 'The name of the tool being called.',
     },
     input: {
+      additionalProperties: true,
       type: 'object',
       title: 'Input',
       description:
@@ -8342,6 +8381,7 @@ export const $ToolCreate = {
     json_schema: {
       anyOf: [
         {
+          additionalProperties: true,
           type: 'object',
         },
         {
@@ -8355,6 +8395,7 @@ export const $ToolCreate = {
     args_json_schema: {
       anyOf: [
         {
+          additionalProperties: true,
           type: 'object',
         },
         {
@@ -8637,6 +8678,7 @@ export const $ToolRunFromSource = {
       description: 'The source code of the function.',
     },
     args: {
+      additionalProperties: true,
       type: 'object',
       title: 'Args',
       description: 'The arguments to pass to the tool.',
@@ -8676,6 +8718,7 @@ export const $ToolRunFromSource = {
     args_json_schema: {
       anyOf: [
         {
+          additionalProperties: true,
           type: 'object',
         },
         {
@@ -8688,6 +8731,7 @@ export const $ToolRunFromSource = {
     json_schema: {
       anyOf: [
         {
+          additionalProperties: true,
           type: 'object',
         },
         {
@@ -8768,6 +8812,7 @@ export const $ToolSchema = {
     metadata_: {
       anyOf: [
         {
+          additionalProperties: true,
           type: 'object',
         },
         {
@@ -8865,6 +8910,7 @@ export const $ToolUpdate = {
     json_schema: {
       anyOf: [
         {
+          additionalProperties: true,
           type: 'object',
         },
         {
@@ -8878,6 +8924,7 @@ export const $ToolUpdate = {
     args_json_schema: {
       anyOf: [
         {
+          additionalProperties: true,
           type: 'object',
         },
         {
@@ -9088,6 +9135,7 @@ export const $UpdateAgent = {
     metadata: {
       anyOf: [
         {
+          additionalProperties: true,
           type: 'object',
         },
         {
@@ -9670,6 +9718,7 @@ export const $openai__types__chat__completion_create_params__Function = {
       title: 'Description',
     },
     parameters: {
+      additionalProperties: true,
       type: 'object',
       title: 'Parameters',
     },
