@@ -532,6 +532,8 @@ function AgentResetMessagesDialog() {
     },
   });
 
+  const queryClient = useQueryClient();
+
   const { id: agentId } = useCurrentSimulatedAgent();
 
   const {
@@ -539,7 +541,10 @@ function AgentResetMessagesDialog() {
     isPending,
     reset,
   } = useAgentsServiceResetMessages({
-    onSuccess: () => {
+    onSuccess: async () => {
+      await queryClient.resetQueries({
+        queryKey: UseAgentsServiceListMessagesKeyFn({ agentId }),
+      });
       toast.success(t('AgentResetMessagesDialog.success'));
       form.reset();
       reset();
@@ -621,7 +626,7 @@ function AgentSimulatorOptionsMenu() {
             color="secondary"
             preIcon={<DotsHorizontalIcon />}
             hideLabel
-            title={t('AgentSimulatorOptionsMenu.trigger')}
+            label={t('AgentSimulatorOptionsMenu.trigger')}
           />
         }
       >
