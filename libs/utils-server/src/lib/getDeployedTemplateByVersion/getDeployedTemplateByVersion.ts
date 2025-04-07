@@ -10,7 +10,7 @@ export async function getDeployedTemplateByVersion(
   organizationId: string,
   projectId?: string,
 ): Promise<ReturnType<typeof db.query.deployedAgentTemplates.findFirst>> {
-  const split = versionString.split(':');
+  const split = versionString.split(/:|%3A/);
   const templateName = split[0];
   const version = split[1];
 

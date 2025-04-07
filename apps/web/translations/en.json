@@ -103,6 +103,24 @@
     }
   },
   "distribution/Instructions/TypescriptInstructions": {
+    "NextJSInstructions": {
+      "warning": "These instructs are for Next.js setups with the app router",
+      "install": "1. Install the Letta SDK and Vercel's AI packages",
+      "setupEnvironment": "2. Create or append a .env.local file at the root of your application, and add the following environment values:",
+
+      "setupStreaming": {
+        "title": "3. Create a file at /api/chat/route.ts, this endpoint will be used to stream messages back via an agentId",
+        "label": "Code"
+      },
+      "chatOnTheClient": {
+        "title": "4. Create a client-component called <Chat /> that will be used to chat with the agent",
+        "label": "Code"
+      },
+      "createAgent": {
+        "title": "5. Create a server component-page with the following code, this will create an agent based on a user's cookie",
+        "label": "Code"
+      }
+    },
     "PureServerInstructions": {
       "warning": "The code below should only be used on the server, check out other frameworks for usage with client side code",
       "install": "1. Install the Letta SDK",
