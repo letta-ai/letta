@@ -144,6 +144,7 @@ class Agent(SqlalchemyBase, OrganizationMixin):
         viewonly=True,
         back_populates="manager_agent",
     )
+    batch_items: Mapped[List["LLMBatchItem"]] = relationship("LLMBatchItem", back_populates="agent", lazy="selectin")
 
     def to_pydantic(self, include_relationships: Optional[Set[str]] = None) -> PydanticAgentState:
         """

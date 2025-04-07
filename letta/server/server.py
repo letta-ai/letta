@@ -81,6 +81,7 @@ from letta.services.block_manager import BlockManager
 from letta.services.group_manager import GroupManager
 from letta.services.identity_manager import IdentityManager
 from letta.services.job_manager import JobManager
+from letta.services.llm_batch_manager import LLMBatchManager
 from letta.services.message_manager import MessageManager
 from letta.services.organization_manager import OrganizationManager
 from letta.services.passage_manager import PassageManager
@@ -207,6 +208,7 @@ class SyncServer(Server):
         self.step_manager = StepManager()
         self.identity_manager = IdentityManager()
         self.group_manager = GroupManager()
+        self.batch_manager = LLMBatchManager()
 
         # Make default user and org
         if init_with_default_org_and_user:

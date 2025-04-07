@@ -13,6 +13,8 @@ from letta.orm.identities_blocks import IdentitiesBlocks
 from letta.orm.identity import Identity
 from letta.orm.job import Job
 from letta.orm.job_messages import JobMessage
+from letta.orm.llm_batch_items import LLMBatchItem
+from letta.orm.llm_batch_job import LLMBatchJob
 from letta.orm.message import Message
 from letta.orm.organization import Organization
 from letta.orm.passage import AgentPassage, BasePassage, SourcePassage
