@@ -320,4 +320,10 @@ class AnthropicStreamingInterface:
         if current_group:
             merged.append(_process_group(current_group, current_group_type))
 
+        # Strip out XML from any text content fields
+        for content in merged:
+            if isinstance(content, TextContent) and content.text.endswith("</thinking>"):
+                cutoff = len(content.text) - len("</thinking>")
+                content.text = content.text[:cutoff]
+
         return merged
