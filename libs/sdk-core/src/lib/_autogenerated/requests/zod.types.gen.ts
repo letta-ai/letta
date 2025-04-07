@@ -1037,6 +1037,7 @@ export const AppAuthScheme = z.object({
     z.literal('GOOGLE_SERVICE_ACCOUNT'),
     z.literal('GOOGLEADS_AUTH'),
     z.literal('NO_AUTH'),
+    z.literal('COMPOSIO_LINK'),
     z.literal('CALCOM_AUTH'),
   ]),
   fields: z.array(AuthSchemeField),
@@ -1394,34 +1395,14 @@ export const ChatCompletionAudioParam = z.object({
     z.literal('pcm16'),
   ]),
   voice: z.union([
-    z.string(),
     z.literal('alloy'),
     z.literal('ash'),
     z.literal('ballad'),
     z.literal('coral'),
     z.literal('echo'),
-    z.literal('fable'),
-    z.literal('onyx'),
-    z.literal('nova'),
     z.literal('sage'),
     z.literal('shimmer'),
     z.literal('verse'),
-    z.array(
-      z.union([
-        z.string(),
-        z.literal('alloy'),
-        z.literal('ash'),
-        z.literal('ballad'),
-        z.literal('coral'),
-        z.literal('echo'),
-        z.literal('fable'),
-        z.literal('onyx'),
-        z.literal('nova'),
-        z.literal('sage'),
-        z.literal('shimmer'),
-        z.literal('verse'),
-      ]),
-    ),
   ]),
 });
 
@@ -3371,6 +3352,7 @@ export const IdentityUpdate = z.object({
 
 export type JobStatus = z.infer<typeof JobStatus>;
 export const JobStatus = z.union([
+  z.literal('not_started'),
   z.literal('created'),
   z.literal('running'),
   z.literal('completed'),

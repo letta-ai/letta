@@ -2,10 +2,17 @@ import os
 import random
 import string
 import time
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import List
 
 import pytest
+from anthropic.types.beta import BetaMessage
+from anthropic.types.beta.messages import (
+    BetaMessageBatch,
+    BetaMessageBatchIndividualResponse,
+    BetaMessageBatchRequestCounts,
+    BetaMessageBatchSucceededResult,
+)
 from openai.types.chat.chat_completion_message_tool_call import ChatCompletionMessageToolCall as OpenAIToolCall
 from openai.types.chat.chat_completion_message_tool_call import Function as OpenAIFunction
 from sqlalchemy.exc import IntegrityError
@@ -23,15 +30,16 @@ from letta.constants import (
 from letta.embeddings import embedding_model
 from letta.functions.functions import derive_openai_json_schema, parse_source_code
 from letta.functions.mcp_client.types import MCPTool
+from letta.helpers import ToolRulesSolver
 from letta.orm import Base, Block
 from letta.orm.block_history import BlockHistory
 from letta.orm.enums import ActorType, JobType, ToolType
 from letta.orm.errors import NoResultFound, UniqueConstraintViolationError
-from letta.schemas.agent import CreateAgent, UpdateAgent
+from letta.schemas.agent import AgentStepState, CreateAgent, UpdateAgent
 from letta.schemas.block import Block as PydanticBlock
 from letta.schemas.block import BlockUpdate, CreateBlock
 from letta.schemas.embedding_config import EmbeddingConfig
-from letta.schemas.enums import JobStatus, MessageRole
+from letta.schemas.enums import AgentStepStatus, JobStatus, MessageRole
 from letta.schemas.environment_variables import SandboxEnvironmentVariableCreate, SandboxEnvironmentVariableUpdate
 from letta.schemas.file import FileMetadata as PydanticFileMetadata
 from letta.schemas.identity import IdentityCreate, IdentityProperty, IdentityPropertyType, IdentityType, IdentityUpdate
@@ -568,6 +576,62 @@ def agent_with_tags(server: SyncServer, default_user):
     )
 
     return [agent1, agent2, agent3]
+
+
+@pytest.fixture
+def dummy_beta_message_batch() -> BetaMessageBatch:
+    return BetaMessageBatch(
+        id="msgbatch_013Zva2CMHLNnXjNJJKqJ2EF",
+        archived_at=datetime(2024, 8, 20, 18, 37, 24, 100435, tzinfo=timezone.utc),
+        cancel_initiated_at=datetime(2024, 8, 20, 18, 37, 24, 100435, tzinfo=timezone.utc),
+        created_at=datetime(2024, 8, 20, 18, 37, 24, 100435, tzinfo=timezone.utc),
+        ended_at=datetime(2024, 8, 20, 18, 37, 24, 100435, tzinfo=timezone.utc),
+        expires_at=datetime(2024, 8, 20, 18, 37, 24, 100435, tzinfo=timezone.utc),
+        processing_status="in_progress",
+        request_counts=BetaMessageBatchRequestCounts(
+            canceled=10,
+            errored=30,
+            expired=10,
+            processing=100,
+            succeeded=50,
+        ),
+        results_url="https://api.anthropic.com/v1/messages/batches/msgbatch_013Zva2CMHLNnXjNJJKqJ2EF/results",
+        type="message_batch",
+    )
+
+
+@pytest.fixture
+def dummy_llm_config() -> LLMConfig:
+    return LLMConfig.default_config("gpt-4")
+
+
+@pytest.fixture
+def dummy_tool_rules_solver() -> ToolRulesSolver:
+    return ToolRulesSolver(tool_rules=[InitToolRule(tool_name="send_message")])
+
+
+@pytest.fixture
+def dummy_step_state(dummy_tool_rules_solver: ToolRulesSolver) -> AgentStepState:
+    return AgentStepState(step_number=1, tool_rules_solver=dummy_tool_rules_solver)
+
+
+@pytest.fixture
+def dummy_successful_response() -> BetaMessageBatchIndividualResponse:
+    return BetaMessageBatchIndividualResponse(
+        custom_id="my-second-request",
+        result=BetaMessageBatchSucceededResult(
+            type="succeeded",
+            message=BetaMessage(
+                id="msg_abc123",
+                role="assistant",
+                type="message",
+                model="claude-3-5-sonnet-20240620",
+                content=[{"type": "text", "text": "hi!"}],
+                usage={"input_tokens": 5, "output_tokens": 7},
+                stop_reason="end_turn",
+            ),
+        ),
+    )
 
 
 # ======================================================================================================================
@@ -4614,3 +4678,123 @@ def test_list_tags(server: SyncServer, default_user, default_organization):
     # Cleanup
     for agent in agents:
         server.agent_manager.delete_agent(agent.id, actor=default_user)
+
+
+# ======================================================================================================================
+# LLMBatchManager Tests
+# ======================================================================================================================
+
+
+def test_create_and_get_batch_request(server, default_user, dummy_beta_message_batch):
+    batch = server.batch_manager.create_batch_request(
+        llm_provider="anthropic",
+        status=JobStatus.created,
+        create_batch_response=dummy_beta_message_batch,
+        actor=default_user,
+    )
+    assert batch.id.startswith("batch_req-")
+    assert batch.create_batch_response == dummy_beta_message_batch
+    fetched = server.batch_manager.get_batch_request_by_id(batch.id, actor=default_user)
+    assert fetched.id == batch.id
+
+
+def test_update_batch_status(server, default_user, dummy_beta_message_batch):
+    batch = server.batch_manager.create_batch_request(
+        llm_provider="anthropic",
+        status=JobStatus.created,
+        create_batch_response=dummy_beta_message_batch,
+        actor=default_user,
+    )
+    before = datetime.now(timezone.utc)
+
+    server.batch_manager.update_batch_status(
+        batch_id=batch.id,
+        status=JobStatus.completed,
+        latest_polling_response=dummy_beta_message_batch,
+        actor=default_user,
+    )
+
+    updated = server.batch_manager.get_batch_request_by_id(batch.id, actor=default_user)
+    assert updated.status == JobStatus.completed
+    assert updated.latest_polling_response == dummy_beta_message_batch
+    assert updated.last_polled_at >= before
+
+
+def test_create_and_get_batch_item(server, default_user, sarah_agent, dummy_beta_message_batch, dummy_llm_config, dummy_step_state):
+    batch = server.batch_manager.create_batch_request(
+        llm_provider="anthropic",
+        status=JobStatus.created,
+        create_batch_response=dummy_beta_message_batch,
+        actor=default_user,
+    )
+
+    item = server.batch_manager.create_batch_item(
+        batch_id=batch.id,
+        agent_id=sarah_agent.id,
+        llm_config=dummy_llm_config,
+        step_state=dummy_step_state,
+        actor=default_user,
+    )
+
+    assert item.batch_id == batch.id
+    assert item.agent_id == sarah_agent.id
+    assert item.step_state == dummy_step_state
+
+    fetched = server.batch_manager.get_batch_item_by_id(item.id, actor=default_user)
+    assert fetched.id == item.id
+
+
+def test_update_batch_item(
+    server, default_user, sarah_agent, dummy_beta_message_batch, dummy_llm_config, dummy_step_state, dummy_successful_response
+):
+    batch = server.batch_manager.create_batch_request(
+        llm_provider="anthropic",
+        status=JobStatus.created,
+        create_batch_response=dummy_beta_message_batch,
+        actor=default_user,
+    )
+
+    item = server.batch_manager.create_batch_item(
+        batch_id=batch.id,
+        agent_id=sarah_agent.id,
+        llm_config=dummy_llm_config,
+        step_state=dummy_step_state,
+        actor=default_user,
+    )
+
+    updated_step_state = AgentStepState(step_number=2, tool_rules_solver=dummy_step_state.tool_rules_solver)
+
+    server.batch_manager.update_batch_item(
+        item_id=item.id,
+        request_status=JobStatus.completed,
+        step_status=AgentStepStatus.running,
+        llm_request_response=dummy_successful_response,
+        step_state=updated_step_state,
+        actor=default_user,
+    )
+
+    updated = server.batch_manager.get_batch_item_by_id(item.id, actor=default_user)
+    assert updated.request_status == JobStatus.completed
+    assert updated.batch_request_result == dummy_successful_response
+
+
+def test_delete_batch_item(server, default_user, sarah_agent, dummy_beta_message_batch, dummy_llm_config, dummy_step_state):
+    batch = server.batch_manager.create_batch_request(
+        llm_provider="anthropic",
+        status=JobStatus.created,
+        create_batch_response=dummy_beta_message_batch,
+        actor=default_user,
+    )
+
+    item = server.batch_manager.create_batch_item(
+        batch_id=batch.id,
+        agent_id=sarah_agent.id,
+        llm_config=dummy_llm_config,
+        step_state=dummy_step_state,
+        actor=default_user,
+    )
+
+    server.batch_manager.delete_batch_item(item_id=item.id, actor=default_user)
+
+    with pytest.raises(NoResultFound):
+        server.batch_manager.get_batch_item_by_id(item.id, actor=default_user)

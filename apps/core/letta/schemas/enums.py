@@ -1,6 +1,10 @@
 from enum import Enum
 
 
+class ProviderType(str, Enum):
+    anthropic = "anthropic"
+
+
 class MessageRole(str, Enum):
     assistant = "assistant"
     user = "user"
@@ -22,11 +26,21 @@ class JobStatus(str, Enum):
     Status of the job.
     """
 
+    not_started = "not_started"
     created = "created"
     running = "running"
     completed = "completed"
     failed = "failed"
     pending = "pending"
+
+
+class AgentStepStatus(str, Enum):
+    """
+    Status of the job.
+    """
+
+    paused = "paused"
+    running = "running"
 
 
 class MessageStreamStatus(str, Enum):
