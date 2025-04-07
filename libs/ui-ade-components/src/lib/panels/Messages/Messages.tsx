@@ -774,7 +774,7 @@ export function Messages(props: MessagesProps) {
       };
 
       if (index !== 0 && lastGroup.name === message.name) {
-        lastGroup.messages.unshift(nextMessage);
+        lastGroup.messages.push(nextMessage);
       } else {
         groupedMessages.push({
           id: message.id || '1',
