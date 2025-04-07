@@ -118,6 +118,7 @@
     "express": "4.21.2",
     "extended-eventsource": "^2.0.0",
     "fern-api": "^0.46.13",
+    "fix-path": "^3.0.0",
     "gsap": "^3.12.5",
     "http-proxy": "^1.18.1",
     "http-proxy-middleware": "^3.0.3",

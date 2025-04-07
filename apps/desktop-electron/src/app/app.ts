@@ -3,6 +3,7 @@ import { rendererAppName, rendererAppPort } from './constants';
 import { environment } from '../environments/environment';
 import { join } from 'path';
 import { format } from 'url';
+const fixPath = require('fix-path'); // This works with fix-path@3 (CJS)
 import * as electron from 'electron';
 import * as fs from 'fs';
 import { execFile, execFileSync } from 'child_process';
@@ -539,6 +540,13 @@ export default class App {
   private static async onReady() {
     // Intercept logs first so that everything after is captured
     interceptMainProcessLogs();
+    
+    // Log PATH before fix-path
+    console.log('[fix-path] PATH before fixPath:', process.env.PATH);
+    // ensures PATH matches user’s login shell (on macOS/Linux)
+    fixPath();
+    // Log PATH after fix-path
+    console.log('[fix-path] PATH after fixPath:', process.env.PATH);
 
     // This method will be called when Electron has finished
     // initialization and is ready to create browser windows.
