@@ -593,7 +593,7 @@ async def send_message(
     # TODO: This is redundant, remove soon
     agent = server.agent_manager.get_agent_by_id(agent_id, actor)
 
-    if agent.llm_config.model_endpoint_type == "anthropic":
+    if agent.llm_config.model_endpoint_type == "anthropic" and not agent.enable_sleeptime and not agent.multi_agent_group:
         experimental_agent = LettaAgent(
             agent_id=agent_id,
             message_manager=server.message_manager,
@@ -649,8 +649,7 @@ async def send_message_streaming(
     # TODO: This is redundant, remove soon
     agent = server.agent_manager.get_agent_by_id(agent_id, actor)
 
-    if agent.llm_config.model_endpoint_type == "anthropic":
-        logger.warning("USING EXPERIMENTAL!")
+    if agent.llm_config.model_endpoint_type == "anthropic" and not agent.enable_sleeptime and not agent.multi_agent_group:
         experimental_agent = LettaAgent(
             agent_id=agent_id,
             message_manager=server.message_manager,
