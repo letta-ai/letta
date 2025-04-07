@@ -168,9 +168,7 @@ def core_memory_replace(agent_state: "AgentState", label: str, old_content: str,
 
 def rethink_memory(agent_state: "AgentState", new_memory: str, target_block_label: str) -> None:
     """
-    Re-evaluate the memory in block_name, integrating new and updated facts.
-    Replace outdated information with the most likely truths, avoiding redundancy with original memories.
-    Ensure consistency with other memory blocks.
+    Rewrite memory block for the main agent, new_memory should contain all current information from the block that is not outdated or inconsistent, integrating any new information, resulting in a new memory block that is organized, readable, and comprehensive.
 
     Args:
         new_memory (str): The new memory with information integrated from the memory block. If there is no new information, then this should be the same as the content in the source block.
