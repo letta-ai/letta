@@ -17,6 +17,48 @@ todesktop.init();
 let postgresProcess: ReturnType<typeof execFile> | null = null;
 let lettaServer: ReturnType<typeof execFile> | null = null;
 
+function interceptMainProcessLogs() {
+  // Method that pipes console.log and console.error to the Electron server log viewer
+  const originalLog = console.log;
+  const originalError = console.error;
+  // const originalWarn = console.warn;
+  // ... and so on for info, debug, etc., if desired.
+
+  console.log = (...args: any[]) => {
+    // Send the console log output to your existing ServerLogs
+    lettaServerLogs.addLog({
+      type: 'info',
+      message: args.join(' '),
+      timestamp: new Date().toLocaleString(),
+    });
+
+    // Also call the original console.log so you still see it in dev tools
+    originalLog(...args);
+  };
+
+  console.error = (...args: any[]) => {
+    lettaServerLogs.addLog({
+      type: 'error',
+      message: args.join(' '),
+      timestamp: new Date().toLocaleString(),
+    });
+
+    originalError(...args);
+  };
+
+  // ... etc. for console.info, console.debug, if you want them too
+
+  // console.warn = (...args: any[]) => {
+  //   lettaServerLogs.addLog({
+  //     type: 'warn',
+  //     message: args.join(' '),
+  //     timestamp: new Date().toISOString(),
+  //   });
+
+  //   originalWarn(...args);
+  // };
+}
+
 class ServerLogs {
   logs: ServerLogType[] = [];
   limit: number = 1000;
@@ -193,11 +235,7 @@ export default class App {
     if (lettaServer) {
       lettaServerLogs.clearLogs();
 
-      lettaServerLogs.addLog({
-        type: 'info',
-        message: 'Stopping letta server...',
-        timestamp: new Date().toISOString(),
-      });
+      console.log('Stopping letta server...');
 
       lettaServer.kill();
 
@@ -214,11 +252,7 @@ export default class App {
     lettaServerLogs.clearLogs();
 
     if (!config) {
-      lettaServerLogs.addLog({
-        type: 'info',
-        message: 'No desktop config found. Please set one up...',
-        timestamp: new Date().toISOString(),
-      });
+      console.log('No desktop config found. Please set one up...');
 
       return;
     }
@@ -228,11 +262,7 @@ export default class App {
       copyLettaServerToLettaDir();
     }
 
-    lettaServerLogs.addLog({
-      type: 'info',
-      message: 'Starting Letta Server...',
-      timestamp: new Date().toISOString(),
-    });
+    console.log('Starting Letta Server...');
 
     let lettaServerPath = path.join(homeDir || '/', '.letta', 'bin', 'letta');
     lettaServer = null;
@@ -258,34 +288,18 @@ export default class App {
           return;
         }
 
-        lettaServerLogs.addLog({
-          type: 'info',
-          message: data.toString(),
-          timestamp: new Date().toISOString(),
-        });
+        console.log(data.toString());
       });
     }
 
     if (lettaServer.stderr) {
       lettaServer.stderr.on('data', (data) => {
-        console.error(`stderr: ${data}`);
-
-        lettaServerLogs.addLog({
-          type: 'info',
-          message: data.toString(),
-          timestamp: new Date().toISOString(),
-        });
+        console.log(`stderr: ${data}`);
       });
     }
 
     lettaServer.on('close', (code) => {
-      console.log(`child process exited with code ${code}`);
-
-      lettaServerLogs.addLog({
-        type: 'info',
-        message: `child process exited with code ${code}`,
-        timestamp: new Date().toISOString(),
-      });
+      console.error(`child process exited with code ${code}`);
     });
   }
 
@@ -488,7 +502,9 @@ export default class App {
       });
 
       postgresProcess.stderr?.on('data', (data) => {
-        console.error(`[postgres error] ${data}`);
+        // Using log instead of error since Postgres will dump messages to stderr that aren't errors:
+        // e.g.: 'LOG: starting PostgreSQL 16.8 on x86_64-apple-darwin23.6.0, compiled by ...'
+        console.log(`[postgres stderr] ${data}`);
       });
 
       postgresProcess.on('close', (code) => {
@@ -521,6 +537,9 @@ export default class App {
   }
 
   private static async onReady() {
+    // Intercept logs first so that everything after is captured
+    interceptMainProcessLogs();
+
     // This method will be called when Electron has finished
     // initialization and is ready to create browser windows.
     // Some APIs can only be used after this event occurs.

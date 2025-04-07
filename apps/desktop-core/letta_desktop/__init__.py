@@ -33,7 +33,7 @@ import mcp  # noqa
 import json
 
 
-print("Initializing Letta Desktop Service...")
+print("Initializing Letta Desktop Service...", flush=True)
 
 
 def get_desktop_config():
@@ -56,7 +56,7 @@ def initialize_database():
     with open(pg_uri_path, "r") as f:
         pg_uri_string = f.read().strip()
 
-    print("Connecting to Postgres at", pg_uri_string)
+    print("Connecting to Postgres at", pg_uri_string, flush=True)
 
     # Parse URI into connection parameters.
     parsed = urllib.parse.urlparse(pg_uri_string)
@@ -67,8 +67,8 @@ def initialize_database():
     dbname = parsed.path.lstrip("/") or "postgres"
 
     # Log key environment information.
-    print(f"Environment PATH: {os.environ.get('PATH')}")
-    print(f"Current working directory: {os.getcwd()}")
+    print(f"Environment PATH: {os.environ.get('PATH')}", flush=True)
+    print(f"Current working directory: {os.getcwd()}", flush=True)
 
     # Retry logic for connection
     retries = 5
@@ -76,38 +76,38 @@ def initialize_database():
     for attempt in range(1, retries + 1):
         try:
             conn = pg8000.connect(user=username, password=password, host=host, port=port, database=dbname)
-            print(f"Successfully connected to Postgres on attempt {attempt}")
+            print(f"Successfully connected to Postgres on attempt {attempt}", flush=True)
             break
         except Exception as e:
-            print(f"Attempt {attempt} to connect to Postgres failed: {e}")
+            print(f"Attempt {attempt} to connect to Postgres failed: {e}", flush=True)
             if attempt < retries:
                 time.sleep(delay)
             else:
-                print(f"FATAL: Could not connect to Postgres instance running at {pg_uri_string} after {retries} attempts.")
+                print(f"FATAL: Could not connect to Postgres instance running at {pg_uri_string} after {retries} attempts.", flush=True)
                 sys.exit(1)
 
     # Create the pgvector extension if not already present.
     try:
         cursor = conn.cursor()
-        print("Attempting to create pgvector extension...")
+        print("Attempting to create pgvector extension...", flush=True)
         cursor.execute("CREATE EXTENSION IF NOT EXISTS vector;")
         conn.commit()
         cursor.close()
     except Exception as e:
-        print(f"FATAL: Failed to create pgvector extension: {e}")
+        print(f"FATAL: Failed to create pgvector extension: {e}", flush=True)
         sys.exit(1)
 
     # Verify that the extension works.
     try:
         cursor = conn.cursor()
-        print("Testing pgvector functionality...")
+        print("Testing pgvector functionality...", flush=True)
         cursor.execute("CREATE TEMP TABLE test_vector(vec vector(3));")
         cursor.close()
     except Exception as e:
-        print(f"FATAL: pgvector extension exists but is not functioning properly: {e}")
+        print(f"FATAL: pgvector extension exists but is not functioning properly: {e}", flush=True)
         sys.exit(1)
 
-    print("Database is ready and pgvector is available")
+    print("Database is ready and pgvector is available", flush=True)
     return pg_uri_string
 
 
@@ -119,7 +119,7 @@ def upgrade_db(pg_uri):
     alembic_cfg.set_main_option("script_location", str(letta_dir / "migrations" / "alembic"))
     alembic_cfg.set_main_option("sqlalchemy.url", pg_uri)
     command.upgrade(alembic_cfg, "head")
-    print("Database upgraded")
+    print("Database upgraded", flush=True)
 
 
 argparser = ArgumentParser()
@@ -159,7 +159,7 @@ def kill_app():
     if postgres_pid_file.exists():
         try:
             pid = int(postgres_pid_file.read_text().strip())
-            print(f"Attempting to kill Postgres PID: {pid}")
+            print(f"Attempting to kill Postgres PID: {pid}", flush=True)
 
             # Kill that specific PID rather than all processes named "postgres"
             if platform.system().lower().startswith("win"):
@@ -167,24 +167,24 @@ def kill_app():
             else:
                 subprocess.run(["kill", "-9", str(pid)])
         except Exception as e:
-            print(f"Failed to kill Postgres by PID: {e}")
+            print(f"Failed to kill Postgres by PID: {e}", flush=True)
 
     sys.exit(1)
 
 
 def check_if_web_server_running():
-    print("Checking if web server is running...")
+    print("Checking if web server is running...", flush=True)
     while True:
         try:
             res = requests.get("http://localhost:8285/health", timeout=5)
             res.raise_for_status()
             args = argparser.parse_args()
             if args.look_for_server_id and args.look_for_server_id not in res.text:
-                print("Server id not found in response text, exiting...")
+                print("Server id not found in response text, exiting...", flush=True)
                 kill_app()
             time.sleep(5)
         except Exception as e:
-            print("Web server is down, exiting...")
+            print("Web server is down, exiting...", flush=True)
             kill_app()
 
 
