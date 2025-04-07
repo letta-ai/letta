@@ -2,16 +2,24 @@ from sqlalchemy import JSON
 from sqlalchemy.types import BINARY, TypeDecorator
 
 from letta.helpers.converters import (
+    deserialize_agent_step_state,
+    deserialize_batch_request_result,
+    deserialize_create_batch_response,
     deserialize_embedding_config,
     deserialize_llm_config,
     deserialize_message_content,
+    deserialize_poll_batch_response,
     deserialize_tool_calls,
     deserialize_tool_returns,
     deserialize_tool_rules,
     deserialize_vector,
+    serialize_agent_step_state,
+    serialize_batch_request_result,
+    serialize_create_batch_response,
     serialize_embedding_config,
     serialize_llm_config,
     serialize_message_content,
+    serialize_poll_batch_response,
     serialize_tool_calls,
     serialize_tool_returns,
     serialize_tool_rules,
@@ -108,3 +116,55 @@ class CommonVector(TypeDecorator):
 
     def process_result_value(self, value, dialect):
         return deserialize_vector(value, dialect)
+
+
+class CreateBatchResponseColumn(TypeDecorator):
+    """Custom SQLAlchemy column type for storing a list of ToolRules as JSON."""
+
+    impl = JSON
+    cache_ok = True
+
+    def process_bind_param(self, value, dialect):
+        return serialize_create_batch_response(value)
+
+    def process_result_value(self, value, dialect):
+        return deserialize_create_batch_response(value)
+
+
+class PollBatchResponseColumn(TypeDecorator):
+    """Custom SQLAlchemy column type for storing a list of ToolRules as JSON."""
+
+    impl = JSON
+    cache_ok = True
+
+    def process_bind_param(self, value, dialect):
+        return serialize_poll_batch_response(value)
+
+    def process_result_value(self, value, dialect):
+        return deserialize_poll_batch_response(value)
+
+
+class BatchRequestResultColumn(TypeDecorator):
+    """Custom SQLAlchemy column type for storing a list of ToolRules as JSON."""
+
+    impl = JSON
+    cache_ok = True
+
+    def process_bind_param(self, value, dialect):
+        return serialize_batch_request_result(value)
+
+    def process_result_value(self, value, dialect):
+        return deserialize_batch_request_result(value)
+
+
+class AgentStepStateColumn(TypeDecorator):
+    """Custom SQLAlchemy column type for storing a list of ToolRules as JSON."""
+
+    impl = JSON
+    cache_ok = True
+
+    def process_bind_param(self, value, dialect):
+        return serialize_agent_step_state(value)
+
+    def process_result_value(self, value, dialect):
+        return deserialize_agent_step_state(value)

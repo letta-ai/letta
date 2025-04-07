@@ -38,29 +38,46 @@ class ToolRulesSolver(BaseModel):
     )
     tool_call_history: List[str] = Field(default_factory=list, description="History of tool calls, updated with each tool call.")
 
-    def __init__(self, tool_rules: List[BaseToolRule], **kwargs):
-        super().__init__(**kwargs)
-        # Separate the provided tool rules into init, standard, and terminal categories
-        for rule in tool_rules:
-            if rule.type == ToolRuleType.run_first:
-                assert isinstance(rule, InitToolRule)
-                self.init_tool_rules.append(rule)
-            elif rule.type == ToolRuleType.constrain_child_tools:
-                assert isinstance(rule, ChildToolRule)
-                self.child_based_tool_rules.append(rule)
-            elif rule.type == ToolRuleType.conditional:
-                assert isinstance(rule, ConditionalToolRule)
-                self.validate_conditional_tool(rule)
-                self.child_based_tool_rules.append(rule)
-            elif rule.type == ToolRuleType.exit_loop:
-                assert isinstance(rule, TerminalToolRule)
-                self.terminal_tool_rules.append(rule)
-            elif rule.type == ToolRuleType.continue_loop:
-                assert isinstance(rule, ContinueToolRule)
-                self.continue_tool_rules.append(rule)
-            elif rule.type == ToolRuleType.max_count_per_step:
-                assert isinstance(rule, MaxCountPerStepToolRule)
-                self.child_based_tool_rules.append(rule)
+    def __init__(
+        self,
+        tool_rules: Optional[List[BaseToolRule]] = None,
+        init_tool_rules: Optional[List[InitToolRule]] = None,
+        continue_tool_rules: Optional[List[ContinueToolRule]] = None,
+        child_based_tool_rules: Optional[List[Union[ChildToolRule, ConditionalToolRule, MaxCountPerStepToolRule]]] = None,
+        terminal_tool_rules: Optional[List[TerminalToolRule]] = None,
+        tool_call_history: Optional[List[str]] = None,
+        **kwargs,
+    ):
+        super().__init__(
+            init_tool_rules=init_tool_rules or [],
+            continue_tool_rules=continue_tool_rules or [],
+            child_based_tool_rules=child_based_tool_rules or [],
+            terminal_tool_rules=terminal_tool_rules or [],
+            tool_call_history=tool_call_history or [],
+            **kwargs,
+        )
+
+        if tool_rules:
+            for rule in tool_rules:
+                if rule.type == ToolRuleType.run_first:
+                    assert isinstance(rule, InitToolRule)
+                    self.init_tool_rules.append(rule)
+                elif rule.type == ToolRuleType.constrain_child_tools:
+                    assert isinstance(rule, ChildToolRule)
+                    self.child_based_tool_rules.append(rule)
+                elif rule.type == ToolRuleType.conditional:
+                    assert isinstance(rule, ConditionalToolRule)
+                    self.validate_conditional_tool(rule)
+                    self.child_based_tool_rules.append(rule)
+                elif rule.type == ToolRuleType.exit_loop:
+                    assert isinstance(rule, TerminalToolRule)
+                    self.terminal_tool_rules.append(rule)
+                elif rule.type == ToolRuleType.continue_loop:
+                    assert isinstance(rule, ContinueToolRule)
+                    self.continue_tool_rules.append(rule)
+                elif rule.type == ToolRuleType.max_count_per_step:
+                    assert isinstance(rule, MaxCountPerStepToolRule)
+                    self.child_based_tool_rules.append(rule)
 
     def register_tool_call(self, tool_name: str):
         """Update the internal state to track tool call history."""
