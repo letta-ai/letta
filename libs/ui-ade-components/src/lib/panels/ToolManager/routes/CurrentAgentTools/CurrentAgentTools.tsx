@@ -1,10 +1,8 @@
 import { useCurrentAgent } from '../../../../hooks';
 import { ToolsEditor } from '../../components/ToolsEditor/ToolsEditor';
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { LoadingEmptyStatusComponent } from '@letta-cloud/ui-component-library';
-import { atom, useAtom } from 'jotai';
-
-export const selectedCurrentAgentToolId = atom<string | null>(null);
+import { useToolManagerState } from '../../hooks/useToolManagerState/useToolManagerState';
 
 export function CurrentAgentTools() {
   const { tools } = useCurrentAgent();
@@ -16,19 +14,7 @@ export function CurrentAgentTools() {
     );
   }, [search, tools]);
 
-  const [selectedToolId, setSelectedToolId] = useAtom(
-    selectedCurrentAgentToolId,
-  );
-
-  const selectedTool = useMemo(() => {
-    return tools?.find((tool) => tool.id === selectedToolId);
-  }, [selectedToolId, tools]);
-
-  useEffect(() => {
-    if (tools && tools.length >= 1 && !selectedTool && tools?.[0]?.id) {
-      setSelectedToolId(tools[0].id);
-    }
-  }, [tools, selectedTool, setSelectedToolId]);
+  const { setSelectedToolId, currentToolId } = useToolManagerState();
 
   if (!tools) {
     return <LoadingEmptyStatusComponent isLoading />;
@@ -36,7 +22,7 @@ export function CurrentAgentTools() {
 
   return (
     <ToolsEditor
-      selectedToolId={selectedToolId}
+      selectedToolId={currentToolId}
       setSelectedToolId={setSelectedToolId}
       allTools={tools || []}
       filteredTools={filteredTools}

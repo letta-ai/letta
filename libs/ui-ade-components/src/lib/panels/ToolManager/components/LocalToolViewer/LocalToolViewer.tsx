@@ -1,7 +1,6 @@
 import {
   type Tool,
   type ToolJSONSchema,
-  useToolsServiceDeleteTool,
   UseToolsServiceListToolsKeyFn,
   useToolsServiceModifyTool,
   UseToolsServiceRetrieveToolKeyFn,
@@ -12,7 +11,6 @@ import {
   CodeIcon,
   CogIcon,
   DataObjectIcon,
-  Dialog,
   ErrorIcon,
   HistoryIcon,
   HStack,
@@ -59,6 +57,7 @@ import {
   pythonCodeParser,
 } from '@letta-cloud/utils-shared';
 import { atom, useAtom } from 'jotai';
+import { DeleteToolButton } from './DeleteToolButton/DeleteToolButton';
 
 interface CurrentToolContextState {
   tool: Tool;
@@ -833,63 +832,6 @@ function SchemaChangeWarning() {
         />
       </button>
     </Tooltip>
-  );
-}
-
-interface DeleteToolButtonProps {
-  currentToolId: string;
-}
-
-function DeleteToolButton(props: DeleteToolButtonProps) {
-  const { currentToolId } = props;
-  const t = useTranslations('ADE/Tools');
-  const queryClient = useQueryClient();
-
-  const [isOpened, setIsOpened] = useState(false);
-
-  const {
-    mutate: deleteTool,
-    isError,
-    isPending,
-  } = useToolsServiceDeleteTool({
-    onSuccess: () => {
-      queryClient.setQueriesData<Tool[]>(
-        {
-          queryKey: UseToolsServiceListToolsKeyFn(),
-        },
-        (oldData) => {
-          if (!oldData) {
-            return oldData;
-          }
-
-          return oldData.filter((tool) => tool.id !== currentToolId);
-        },
-      );
-    },
-  });
-
-  const handleDelete = useCallback(() => {
-    deleteTool({
-      toolId: currentToolId,
-    });
-  }, [currentToolId, deleteTool]);
-
-  return (
-    <Dialog
-      isConfirmBusy={isPending}
-      isOpen={isOpened}
-      confirmColor="destructive"
-      onOpenChange={setIsOpened}
-      errorMessage={isError ? t('DeleteToolButton.error') : undefined}
-      title={t('DeleteToolButton.title')}
-      confirmText={t('DeleteToolButton.confirm')}
-      onConfirm={handleDelete}
-      trigger={
-        <Button color="destructive" label={t('DeleteToolButton.trigger')} />
-      }
-    >
-      {t('DeleteToolButton.description')}
-    </Dialog>
   );
 }
 

@@ -6,20 +6,20 @@ import {
   useState,
 } from 'react';
 import type { Dispatch, SetStateAction } from 'react';
-import { useAtom } from 'jotai';
-import { selectedCurrentAgentToolId } from '../../routes/CurrentAgentTools/CurrentAgentTools';
 import type { ToolManagerPaths } from '../../toolManagerRoutes';
 
 interface ToolManagerState {
   requireConfirmation: boolean;
   path: ToolManagerPaths | null;
   isConfirmationDialogOpen: boolean;
+  currentToolId: string | null;
 }
 
 const initialState: ToolManagerState = {
   requireConfirmation: false,
   isConfirmationDialogOpen: false,
   path: null,
+  currentToolId: null,
 };
 
 interface ToolManagerContextState {
@@ -62,7 +62,6 @@ function useToolManagerContext() {
 
 export function useToolManagerState() {
   const { toolManagerState, setToolManagerState } = useToolManagerContext();
-  const [_, setCurrentSelectedToolId] = useAtom(selectedCurrentAgentToolId);
 
   const closeToolManager = useCallback(
     (confirmed?: boolean) => {
@@ -87,13 +86,10 @@ export function useToolManagerState() {
       setToolManagerState({
         ...initialState,
         path: initialPath,
+        currentToolId: initialToolId || null,
       });
-
-      if (initialToolId) {
-        setCurrentSelectedToolId(initialToolId);
-      }
     },
-    [setToolManagerState, setCurrentSelectedToolId],
+    [setToolManagerState],
   );
 
   const setDialogOpen = useCallback(
@@ -113,9 +109,18 @@ export function useToolManagerState() {
     [setToolManagerState],
   );
 
+  const setSelectedToolId = useCallback(
+    (toolId: string | null) => {
+      setToolManagerState((prev) => ({ ...prev, currentToolId: toolId }));
+    },
+    [setToolManagerState],
+  );
+
   return useMemo(
     () => ({
       setPath,
+      setSelectedToolId,
+      currentToolId: toolManagerState.currentToolId,
       currentPath: toolManagerState.path,
       isConfirmationDialogOpen: toolManagerState.isConfirmationDialogOpen,
       setDialogOpen,
@@ -124,6 +129,8 @@ export function useToolManagerState() {
       openToolManager,
     }),
     [
+      setSelectedToolId,
+      toolManagerState.currentToolId,
       toolManagerState.path,
       toolManagerState.isConfirmationDialogOpen,
       closeToolManager,

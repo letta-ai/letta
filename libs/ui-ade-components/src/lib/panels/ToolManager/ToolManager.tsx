@@ -39,10 +39,9 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useQueryClient } from '@tanstack/react-query';
 import { cn } from '@letta-cloud/ui-styles';
 import { useLocalStorage } from '@mantine/hooks';
-import { useAtom } from 'jotai';
-import { myToolsSelectedId } from './routes/MyTools/MyTools';
 import { useIsComposioConnected } from './hooks/useIsComposioConnected/useIsComposioConnected';
 import { CURRENT_RUNTIME } from '@letta-cloud/config-runtime';
+import { LIST_TOOLS_PAYLOAD } from './routes/MyTools/MyTools';
 
 interface CreateToolDialogProps {
   trigger: React.ReactNode;
@@ -84,7 +83,7 @@ function CreateToolDialog(props: CreateToolDialogProps) {
   });
 
   const queryClient = useQueryClient();
-  const [_, setMyToolsSelectedId] = useAtom(myToolsSelectedId);
+  const { setSelectedToolId } = useToolManagerState();
 
   const { mutate, isPending, isError, error, reset } =
     useToolsServiceCreateTool({
@@ -98,7 +97,7 @@ function CreateToolDialog(props: CreateToolDialogProps) {
 
         queryClient.setQueriesData<Tool[]>(
           {
-            queryKey: UseToolsServiceListToolsKeyFn(),
+            queryKey: UseToolsServiceListToolsKeyFn(LIST_TOOLS_PAYLOAD),
           },
           (oldData) => {
             if (!oldData) {
@@ -118,7 +117,7 @@ function CreateToolDialog(props: CreateToolDialogProps) {
           () => data,
         );
 
-        setMyToolsSelectedId(data.id);
+        setSelectedToolId(data.id);
       },
     });
 

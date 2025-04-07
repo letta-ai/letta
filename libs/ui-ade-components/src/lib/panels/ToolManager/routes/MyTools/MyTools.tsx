@@ -3,18 +3,18 @@ import { useEffect, useMemo, useState } from 'react';
 import { useToolsServiceListTools } from '@letta-cloud/sdk-core';
 import { LoadingEmptyStatusComponent } from '@letta-cloud/ui-component-library';
 import { useTranslations } from '@letta-cloud/translations';
-import { atom, useAtom } from 'jotai';
+import { useToolManagerState } from '../../hooks/useToolManagerState/useToolManagerState';
 
-export const myToolsSelectedId = atom<string | null>(null);
+export const LIST_TOOLS_PAYLOAD = {
+  limit: 250,
+};
 
 export function MyTools() {
   const {
     data: tools,
     isError,
     isLoading,
-  } = useToolsServiceListTools({
-    limit: 250,
-  });
+  } = useToolsServiceListTools(LIST_TOOLS_PAYLOAD);
   const [search, setSearch] = useState<string>('');
 
   const t = useTranslations('ToolsEditor/MyTools');
@@ -29,9 +29,8 @@ export function MyTools() {
     );
   }, [search, customTools]);
 
-  const [selectedToolId, setSelectedToolId] = useAtom<string | null>(
-    myToolsSelectedId,
-  );
+  const { setSelectedToolId, currentToolId: selectedToolId } =
+    useToolManagerState();
 
   const selectedTool = useMemo(() => {
     return customTools?.find((tool) => tool.id === selectedToolId);
