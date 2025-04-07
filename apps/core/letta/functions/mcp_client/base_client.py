@@ -2,6 +2,7 @@ import asyncio
 from typing import List, Optional, Tuple
 
 from mcp import ClientSession
+from mcp.types import TextContent
 
 from letta.functions.mcp_client.exceptions import MCPTimeoutError
 from letta.functions.mcp_client.types import BaseServerConfig, MCPTool
@@ -60,7 +61,23 @@ class BaseMCPClient:
             result = self.loop.run_until_complete(
                 asyncio.wait_for(self.session.call_tool(tool_name, tool_args), timeout=tool_settings.mcp_execute_tool_timeout)
             )
-            return str(result.content), result.isError
+
+            parsed_content = []
+            for content_piece in result.content:
+                if isinstance(content_piece, TextContent):
+                    parsed_content.append(content_piece.text)
+                    print("parsed_content (text)", parsed_content)
+                else:
+                    parsed_content.append(str(content_piece))
+                    print("parsed_content (other)", parsed_content)
+
+            if len(parsed_content) > 0:
+                final_content = " ".join(parsed_content)
+            else:
+                # TODO move hardcoding to constants
+                final_content = "Empty response from tool"
+
+            return final_content, result.isError
         except asyncio.TimeoutError:
             logger.error(
                 f"Timed out while executing tool '{tool_name}' for MCP server {self.server_config.server_name} (timeout={tool_settings.mcp_execute_tool_timeout}s)."
