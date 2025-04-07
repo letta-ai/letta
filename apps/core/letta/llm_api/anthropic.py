@@ -930,6 +930,8 @@ def anthropic_chat_completions_process_stream(
         stream_interface.stream_start()
 
     completion_tokens = 0
+    prev_message_type = None
+    message_idx = 0
     try:
         for chunk_idx, chat_completion_chunk in enumerate(
             anthropic_chat_completions_request_stream(
@@ -945,7 +947,7 @@ def anthropic_chat_completions_process_stream(
 
             if stream_interface:
                 if isinstance(stream_interface, AgentChunkStreamingInterface):
-                    stream_interface.process_chunk(
+                    message_type = stream_interface.process_chunk(
                         chat_completion_chunk,
                         message_id=chat_completion_response.id if create_message_id else chat_completion_chunk.id,
                         message_date=chat_completion_response.created if create_message_datetime else chat_completion_chunk.created,
@@ -953,8 +955,11 @@ def anthropic_chat_completions_process_stream(
                         # TODO handle emitting redacted reasoning content (e.g. as concat?)
                         expect_reasoning_content=extended_thinking,
                         name=name,
-                        chunk_index=chunk_idx,
+                        message_index=message_idx,
                     )
+                    if message_type != prev_message_type and message_type is not None:
+                        message_idx += 1
+                    prev_message_type = message_type
                 elif isinstance(stream_interface, AgentRefreshStreamingInterface):
                     stream_interface.process_refresh(chat_completion_response)
                 else:
