@@ -1,31 +1,22 @@
-import path from 'node:path';
-import { fileURLToPath } from 'node:url';
-import js from '@eslint/js';
-import { FlatCompat } from '@eslint/eslintrc';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-const compat = new FlatCompat({
-  baseDirectory: __dirname,
-  recommendedConfig: js.configs.recommended,
-  allConfig: js.configs.all,
-});
+import baseConfig from '../../eslint.config.mjs';
 
 export default [
   {
-    ignores: ['!**/*', '**/*.config.ts'],
+    ignores: ['**/dist'],
   },
-  ...compat.extends('../../.eslintrc.json'),
+  ...baseConfig,
   {
-    files: ['**/*.ts', '**/*.tsx', '**/*.js', '**/*.jsx'],
+    files: ['**/*.ts', '**/*.tsx'],
+    // Override or add rules here
     rules: {},
   },
   {
     files: ['**/*.ts', '**/*.tsx'],
+    // Override or add rules here
     rules: {},
   },
+
   {
-    files: ['**/*.js', '**/*.jsx'],
-    rules: {},
+    ignores: ['**/*.config.ts'],
   },
 ];

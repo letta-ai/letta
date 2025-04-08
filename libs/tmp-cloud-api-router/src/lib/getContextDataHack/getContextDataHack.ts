@@ -1,5 +1,5 @@
 import { get } from 'lodash-es';
-import { SDKContext } from '../types';
+import type { SDKContext } from '../types';
 
 export function getContextDataHack(
   req: any,

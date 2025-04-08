@@ -15,7 +15,7 @@ import {
 } from '@letta-cloud/ui-component-library';
 import { useTranslations } from '@letta-cloud/translations';
 import { useCurrentAgentMetaData } from '../../../hooks';
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { CURRENT_RUNTIME } from '@letta-cloud/config-runtime';
 import { useADEAppContext } from '../../../AppContext/AppContext';
@@ -46,14 +46,6 @@ interface SharedMemoryIndicatorProps {
 
 export function SharedMemoryIndicator(props: SharedMemoryIndicatorProps) {
   const { memory } = props;
-
-  const [currentUrl] = useState(() => {
-    if (typeof window === 'undefined') {
-      return '';
-    }
-
-    return window.location.href;
-  });
 
   const { push } = useRouter();
 

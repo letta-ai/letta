@@ -1,56 +1,40 @@
-import nx from '@nx/eslint-plugin';
-import tsParser from '@typescript-eslint/parser';
-import parser from 'jsonc-eslint-parser';
-import path from 'node:path';
-import { fileURLToPath } from 'node:url';
-import js from '@eslint/js';
 import { FlatCompat } from '@eslint/eslintrc';
+import { dirname } from 'path';
+import { fileURLToPath } from 'url';
+import js from '@eslint/js';
+import nxEslintPlugin from '@nx/eslint-plugin';
+import typescriptEslintParser from '@typescript-eslint/parser';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
 const compat = new FlatCompat({
-  baseDirectory: __dirname,
+  baseDirectory: dirname(fileURLToPath(import.meta.url)),
   recommendedConfig: js.configs.recommended,
-  allConfig: js.configs.all,
 });
 
 export default [
   {
-    ignores: [
-      '**/*',
-      '**/node_modules',
-      '**/*.config.js',
-      '**/vite.config.*.timestamp*',
-      '**/vitest.config.*.timestamp*',
-    ],
+    ignores: ['**/dist', '**/*.config.js', '**/*.config.mjs', '**/*.d.ts', '**/node_modules/**', '**/*.json', "**/*.js"],
   },
+  { plugins: { '@nx': nxEslintPlugin } },
   {
-    plugins: {
-      '@nx': nx,
-    },
-
     languageOptions: {
-      parser: tsParser,
-      ecmaVersion: 2020,
-      sourceType: 'module',
-
+      parser: typescriptEslintParser,
       parserOptions: {
         project: ['tsconfig.*?.json'],
+        sourceType: 'module',
+        ecmaVersion: 2020,
       },
     },
   },
   {
     files: ['**/*.json'],
-
-    languageOptions: {
-      parser: parser,
-    },
-
+    // Override or add rules here
     rules: {},
+    languageOptions: {
+      parser: await import('jsonc-eslint-parser'),
+    },
   },
   {
-    files: ['**/*.ts', '**/*.tsx', '**/*.js', '**/*.jsx'],
-
+    files: ['**/*.ts', '**/*.tsx'],
     rules: {
       '@typescript-eslint/consistent-type-imports': 'error',
       '@typescript-eslint/explicit-function-return-type': 'error',
@@ -62,7 +46,6 @@ export default [
       '@typescript-eslint/consistent-indexed-object-style': ['error', 'record'],
       '@typescript-eslint/consistent-type-assertions': 'error',
       '@typescript-eslint/consistent-type-definitions': 'error',
-
       'func-style': [
         'error',
         'declaration',
@@ -70,16 +53,13 @@ export default [
           allowArrowFunctions: false,
         },
       ],
-
       'max-params': 'off',
-
       '@typescript-eslint/max-params': [
         'error',
         {
           max: 3,
         },
       ],
-
       '@typescript-eslint/naming-convention': [
         'error',
         {
@@ -124,7 +104,6 @@ export default [
           format: null,
         },
       ],
-
       '@typescript-eslint/no-unused-vars': [
         'error',
         {
@@ -137,7 +116,6 @@ export default [
           ignoreRestSiblings: true,
         },
       ],
-
       '@typescript-eslint/no-base-to-string': 'error',
       '@typescript-eslint/no-confusing-non-null-assertion': 'error',
       '@typescript-eslint/no-confusing-void-expression': 'error',
@@ -197,20 +175,17 @@ export default [
       '@typescript-eslint/require-array-sort-compare': 'error',
       '@typescript-eslint/restrict-plus-operands': 'error',
       '@typescript-eslint/sort-type-constituents': 'error',
-
       '@typescript-eslint/array-type': [
         'error',
         {
           default: 'array-simple',
         },
       ],
-
       '@nx/enforce-module-boundaries': [
         'error',
         {
           enforceBuildableLibDependency: true,
           allow: ['$web/**'],
-
           depConstraints: [
             {
               sourceTag: '*',
@@ -221,20 +196,18 @@ export default [
       ],
     },
   },
-  ...compat.extends('plugin:@nx/typescript').map((config) => ({
-    ...config,
-    files: ['**/*.ts', '**/*.tsx'],
-  })),
+  ...compat
+    .config({
+      extends: ['plugin:@nx/typescript'],
+    })
+    .map((config) => ({
+      ...config,
+      files: ['**/*.ts', '**/*.tsx', '**/*.cts', '**/*.mts'],
+      rules: {
+        ...config.rules,
+      },
+    })),
   {
-    files: ['**/*.ts', '**/*.tsx'],
-    rules: {},
-  },
-  ...compat.extends('plugin:@nx/javascript').map((config) => ({
-    ...config,
-    files: ['**/*.js', '**/*.jsx'],
-  })),
-  {
-    files: ['**/*.js', '**/*.jsx'],
-    rules: {},
+    ignores: ['**/*.config.js', '**/*.d.ts'],
   },
 ];

@@ -14,5 +14,5 @@
   ```
  */
 
-type Runtime = 'letta-web' | 'letta-desktop' | 'please-stub-this-in-your-app';
+type Runtime = 'letta-desktop' | 'letta-web' | 'please-stub-this-in-your-app';
 export const CURRENT_RUNTIME: Runtime = 'please-stub-this-in-your-app';

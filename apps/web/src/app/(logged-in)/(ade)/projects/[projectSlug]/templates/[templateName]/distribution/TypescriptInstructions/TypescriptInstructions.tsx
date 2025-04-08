@@ -365,9 +365,9 @@ export function TypescriptInstructions() {
 
   const tabs = useMemo(() => {
     return Object.keys(submethods).map((key) => ({
-      label: submethods[key as SubmethodTypes].label,
+      label: submethods[key].label,
       value: key,
-      icon: submethods[key as SubmethodTypes].icon,
+      icon: submethods[key].icon,
     }));
   }, [submethods]);
 
@@ -390,7 +390,7 @@ export function TypescriptInstructions() {
           size="xxsmall"
           value={submethod}
           onValueChange={(value) => {
-            setSubmethod(value as SubmethodTypes);
+            setSubmethod(value);
           }}
           items={tabs}
         />

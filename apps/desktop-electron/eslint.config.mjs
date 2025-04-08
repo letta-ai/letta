@@ -13,7 +13,7 @@ const compat = new FlatCompat({
 
 export default [{
   ignores: ["!**/*"],
-}, ...compat.extends("../../.eslintrc.json"), {
+}, {
   files: ["**/*.ts", "**/*.tsx", "**/*.js", "**/*.jsx"],
   rules: {},
 }, {

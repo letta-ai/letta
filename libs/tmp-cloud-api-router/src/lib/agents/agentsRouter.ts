@@ -17,10 +17,11 @@ import { versionAgentTemplate } from './lib/versionAgentTemplate/versionAgentTem
 import { getDeployedTemplateByVersion } from '@letta-cloud/utils-server';
 import { LRUCache } from 'lru-cache';
 import { camelCaseKeys } from '@letta-cloud/utils-shared';
-import { cloudApiRouter, createTemplate } from 'tmp-cloud-api-router';
-import { cloudContracts } from '@letta-cloud/sdk-cloud-api';
+import { cloudApiRouter } from '../router';
+import { createTemplate } from '../createTemplate/createTemplate';
+import type { cloudContracts } from '@letta-cloud/sdk-cloud-api';
 import { migrateAgent } from './lib/migrateAgent/migrateAgent';
-import { SDKContext } from '../types';
+import type { SDKContext } from '../types';
 import { getContextDataHack } from '../getContextDataHack/getContextDataHack';
 
 type CreateAgentRequest = ServerInferRequest<

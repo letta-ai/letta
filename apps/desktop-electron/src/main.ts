@@ -3,6 +3,7 @@ import ElectronEvents from './app/events/electron.events';
 import { app, BrowserWindow } from 'electron';
 import App from './app/app';
 
+/* eslint-disable @typescript-eslint/no-extraneous-class */
 export default class Main {
   static initialize() {
     if (SquirrelEvents.handleEvents()) {

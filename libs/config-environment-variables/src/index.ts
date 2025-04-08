@@ -1,4 +1,5 @@
-// @ts-expect-error - we know that parsedData is valid
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-ignore - causing some weird typescript error
 import { createEnv } from '@t3-oss/env-nextjs';
 import { z } from 'zod';
 
@@ -7,7 +8,8 @@ import { resolve } from 'path';
 
 // config({ path: resolve(__dirname, '../../../.env') });
 
-// @ts-ignore
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-ignore - sometimes this code is run on the server
 if (typeof window === 'undefined') {
   config({ path: resolve(__dirname, '.env') });
 }

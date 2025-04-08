@@ -4,8 +4,8 @@ import * as path from 'path';
 import { omit } from 'lodash';
 import { execSync } from 'child_process';
 import { merge, isErrorResult } from 'openapi-merge';
-import { Swagger } from 'atlassian-openapi';
-import { RESTRICTED_ROUTE_BASE_PATHS } from '../../../libs/sdk-core/src/lib/constants';
+import type { Swagger } from 'atlassian-openapi';
+import { RESTRICTED_ROUTE_BASE_PATHS } from '@letta-cloud/sdk-core';
 
 const lettaWebOpenAPIPath = path.join(
   __dirname,
@@ -71,9 +71,9 @@ const agentStatePathsToOverride: Array<[string, string]> = [
 for (const [path, responseCode] of agentStatePathsToOverride) {
   if (lettaWebOpenAPI.paths[path]?.post?.responses?.[responseCode]) {
     // Get direct reference to the schema object
-    let responseSchema =
+    const responseSchema =
       lettaWebOpenAPI.paths[path].post.responses[responseCode];
-    let contentSchema = responseSchema.content['application/json'].schema;
+    const contentSchema = responseSchema.content['application/json'].schema;
 
     // Replace the entire agents array schema with the reference
     if (contentSchema.properties?.agents) {
@@ -153,10 +153,7 @@ result.output.security = [
 ];
 
 // omit all instances of "user_id" from the openapi.json file
-function deepOmitPreserveArrays(
-  obj: unknown,
-  key: string,
-): Record<string, unknown> | unknown {
+function deepOmitPreserveArrays(obj: unknown, key: string): unknown {
   if (Array.isArray(obj)) {
     return obj.map((item) => deepOmitPreserveArrays(item, key));
   }
@@ -174,17 +171,21 @@ function deepOmitPreserveArrays(
   );
 }
 
+// eslint-disable-next-line  @typescript-eslint/ban-ts-comment
 // @ts-ignore
 result.output.components = deepOmitPreserveArrays(
   result.output.components,
   'user_id',
 );
+
+// eslint-disable-next-line  @typescript-eslint/ban-ts-comment
 // @ts-ignore
 result.output.components = deepOmitPreserveArrays(
   result.output.components,
   'actor_id',
 );
 
+// eslint-disable-next-line  @typescript-eslint/ban-ts-comment
 // @ts-ignore
 result.output.components = deepOmitPreserveArrays(
   result.output.components,

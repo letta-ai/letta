@@ -1,31 +1,27 @@
-import globals from 'globals';
-import path from 'node:path';
-import { fileURLToPath } from 'node:url';
-import js from '@eslint/js';
 import { FlatCompat } from '@eslint/eslintrc';
+import { dirname } from 'path';
+import { fileURLToPath } from 'url';
+import js from '@eslint/js';
+import baseConfig from '../../eslint.config.mjs';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
 const compat = new FlatCompat({
-  baseDirectory: __dirname,
+  baseDirectory: dirname(fileURLToPath(import.meta.url)),
   recommendedConfig: js.configs.recommended,
-  allConfig: js.configs.all,
 });
 
 export default [
   {
-    ignores: ['!**/*', '.next/**/*', '**/*.config.js'],
+    ignores: ['**/dist'],
   },
+  ...baseConfig,
   ...compat.extends(
     'plugin:cypress/recommended',
-    'plugin:@nx/react-typescript',
+    //'plugin:@nx/react-typescript',
     'next',
     'next/core-web-vitals',
-    '../../.eslintrc.json',
   ),
   {
-    files: ['**/*.ts', '**/*.tsx', '**/*.js', '**/*.jsx'],
-
+    files: ['**/*.ts', '**/*.tsx'],
     rules: {
       'react/forbid-component-props': [
         'error',
@@ -33,7 +29,6 @@ export default [
           forbid: ['style'],
         },
       ],
-
       '@next/next/no-html-link-for-pages': ['error', 'apps/letta/pages'],
       '@typescript-eslint/no-unused-vars': 'error',
       'react-hooks/exhaustive-deps': 'error',
@@ -41,23 +36,29 @@ export default [
   },
   {
     files: ['**/*.ts', '**/*.tsx'],
+    // Override or add rules here
     rules: {},
   },
-  {
-    files: ['**/*.js', '**/*.jsx'],
-    rules: {},
-  },
-  {
-    files: ['**/*.spec.ts', '**/*.spec.tsx', '**/*.spec.js', '**/*.spec.jsx'],
 
-    languageOptions: {
-      globals: {
-        ...globals.jest,
+  ...compat
+    .config({
+      env: {
+        jest: true,
       },
-    },
-  },
+    })
+    .map((config) => ({
+      ...config,
+      files: ['**/*.spec.ts', '**/*.spec.tsx', '**/*.spec.js', '**/*.spec.jsx'],
+      rules: {
+        ...config.rules,
+      },
+    })),
   {
     files: ['**/*.cy.{ts,js,tsx,jsx}', 'cypress/**/*.{ts,js,tsx,jsx}'],
+    // Override or add rules here
     rules: {},
+  },
+  {
+    ignores: ['.next/**/*', '**/*.config.js'],
   },
 ];

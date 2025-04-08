@@ -31,7 +31,28 @@ jobs:
         with:
           files: |
             apps/web/**
+            apps/cloud-api/**
+            apps/desktop-ui/**
+            apps/desktop-electron/**
+            apps/lettuce/**
             libs/ui-component-library/**
+            libs/ui-ade-components/**
+            libs/ui-styles/**
+            libs/sdk-web/**
+            libs/service-database/**
+            libs/service-email/**
+            libs/service-feature-flags/**
+            libs/service-payments/**
+            libs/service-rbac/**
+            libs/service-redis/**
+            libs/sdk-lettuce/**
+            libs/types/**
+            libs/utils-client/**
+            libs/utils-server/**
+            libs/utils-shared/**
+            libs/service-analytics/**
+            libs/config-agent-starter-kits/**
+            libs/service-auth/**
             .github/workflows/web-tests.yml
   main:
     env:

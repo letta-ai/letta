@@ -1,52 +1,64 @@
-import globals from "globals";
-import path from "node:path";
-import { fileURLToPath } from "node:url";
-import js from "@eslint/js";
-import { FlatCompat } from "@eslint/eslintrc";
+import { FlatCompat } from '@eslint/eslintrc';
+import { dirname } from 'path';
+import { fileURLToPath } from 'url';
+import js from '@eslint/js';
+import baseConfig from '../../eslint.config.mjs';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
 const compat = new FlatCompat({
-    baseDirectory: __dirname,
-    recommendedConfig: js.configs.recommended,
-    allConfig: js.configs.all
+  baseDirectory: dirname(fileURLToPath(import.meta.url)),
+  recommendedConfig: js.configs.recommended,
 });
 
-export default [{
-    ignores: ["!**/*", ".next/**/*", "**/*.config.js"],
-}, ...compat.extends(
-    "plugin:cypress/recommended",
-    "plugin:@nx/react-typescript",
-    "next",
-    "next/core-web-vitals",
-    "../../.eslintrc.json",
-), {
-    files: ["**/*.ts", "**/*.tsx", "**/*.js", "**/*.jsx"],
-
+export default [
+  {
+    ignores: ['**/dist'],
+  },
+  ...baseConfig,
+  ...compat.extends(
+    'plugin:cypress/recommended',
+    //'plugin:@nx/react-typescript',
+    'next',
+    'next/core-web-vitals',
+  ),
+  {
+    files: ['**/*.ts', '**/*.tsx'],
     rules: {
-        "react/forbid-component-props": ["error", {
-            forbid: ["style", "className"],
-        }],
-
-        "@next/next/no-html-link-for-pages": ["error", "apps/letta/pages"],
-        "@typescript-eslint/no-unused-vars": "error",
-        "react-hooks/exhaustive-deps": "error",
-    },
-}, {
-    files: ["**/*.ts", "**/*.tsx"],
-    rules: {},
-}, {
-    files: ["**/*.js", "**/*.jsx"],
-    rules: {},
-}, {
-    files: ["**/*.spec.ts", "**/*.spec.tsx", "**/*.spec.js", "**/*.spec.jsx"],
-
-    languageOptions: {
-        globals: {
-            ...globals.jest,
+      'react/forbid-component-props': [
+        'error',
+        {
+          forbid: ['style', 'className'],
         },
+      ],
+      '@next/next/no-html-link-for-pages': ['error', 'apps/letta/pages'],
+      '@typescript-eslint/no-unused-vars': 'error',
+      'react-hooks/exhaustive-deps': 'error',
     },
-}, {
-    files: ["**/*.cy.{ts,js,tsx,jsx}", "cypress/**/*.{ts,js,tsx,jsx}"],
+  },
+  {
+    files: ['**/*.ts', '**/*.tsx'],
+    // Override or add rules here
     rules: {},
-}];
+  },
+
+  ...compat
+    .config({
+      env: {
+        jest: true,
+      },
+    })
+    .map((config) => ({
+      ...config,
+      files: ['**/*.spec.ts', '**/*.spec.tsx', '**/*.spec.js', '**/*.spec.jsx'],
+      rules: {
+        ...config.rules,
+      },
+    })),
+  {
+    files: ['**/*.cy.{ts,js,tsx,jsx}', 'cypress/**/*.{ts,js,tsx,jsx}'],
+    // Override or add rules here
+    rules: {},
+  },
+  {
+    ignores: ['.next/**/*', '**/*.config.js'],
+  },
+];

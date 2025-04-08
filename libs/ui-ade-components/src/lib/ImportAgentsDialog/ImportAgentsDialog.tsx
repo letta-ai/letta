@@ -601,7 +601,9 @@ export function ImportAgentsDialog(props: ImportAgentsDialogProps) {
     setFileData(null);
     setFileReadError(null);
     resetImportTemplate();
-    fileInputRef.current?.value && (fileInputRef.current.value = '');
+    if (fileInputRef.current?.value) {
+      fileInputRef.current.value = '';
+    }
     form.reset();
     resetImportAgent();
   }, [form, resetImportAgent, resetImportTemplate]);

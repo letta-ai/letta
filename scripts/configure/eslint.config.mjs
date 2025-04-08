@@ -14,7 +14,6 @@ export default [
     ignores: ['**/dist'],
   },
   ...baseConfig,
-  ...compat.extends('plugin:@nx/react'),
   {
     files: ['**/*.ts', '**/*.tsx'],
     // Override or add rules here
@@ -27,6 +26,21 @@ export default [
   },
 
   {
-    ignores: ['**/*.config.js', '**/*.config.ts'],
+    files: ['**/*.json'],
+    rules: {
+      '@nx/dependency-checks': 'error',
+    },
+    languageOptions: {
+      parser: await import('jsonc-eslint-parser'),
+    },
+  },
+  {
+    files: ['./package.json', './generators.json'],
+    rules: {
+      '@nx/nx-plugin-checks': 'error',
+    },
+    languageOptions: {
+      parser: await import('jsonc-eslint-parser'),
+    },
   },
 ];

@@ -49,8 +49,10 @@ export async function sendEmail<
     .send({
       from: 'no-reply@mail.letta.com',
       to,
+      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
       // @ts-ignore - this works, my typings are just bad
       subject: getSubject(options),
+      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
       // @ts-ignore - this works, my typings are just bad
       react: createElement(Component, options),
     })
