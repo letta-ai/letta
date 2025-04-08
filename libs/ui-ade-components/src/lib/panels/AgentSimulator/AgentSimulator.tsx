@@ -92,6 +92,8 @@ interface SendMessagePayload {
   content: string;
 }
 
+
+const FAILED_ID = 'failed';
 export type SendMessageType = (payload: SendMessagePayload) => void;
 
 interface UseSendMessageOptions {
@@ -125,6 +127,9 @@ export function useSendMessage(
     };
   }, []);
 
+
+
+
   const sendMessage: SendMessageType = useCallback(
     (payload: SendMessagePayload) => {
       const { content: message, role } = payload;
@@ -133,6 +138,45 @@ export function useSendMessage(
       setErrorCode(undefined);
 
       const userMessageOtid = uuidv4();
+
+
+      function handleError(message: string, errorCode: ErrorCode) {
+        setIsPending(false);
+        setFailedToSendMessage(true);
+        setErrorCode(errorCode);
+        options?.onFailedToSendMessage?.(message);
+
+        queryClient.setQueriesData<InfiniteData<ListMessagesResponse>>(
+          {
+            queryKey: UseAgentsServiceListMessagesKeyFn({ agentId }),
+          },
+          (data) => {
+            if (!data) {
+              return data;
+            }
+
+            return {
+              ...data,
+              pages: data.pages.map((page) => {
+                const messages = page as LettaMessageUnion[];
+
+                return messages.map((message) => {
+                  if (
+                    message.message_type === 'user_message' &&
+                    message.otid === userMessageOtid
+                  ) {
+                    return {
+                      ...message,
+                      id: FAILED_ID
+                    };
+                  }
+                  return message;
+                });
+              }),
+            };
+          },
+        );
+      }
 
       const newMessage: SystemMessage | UserMessage = {
         message_type: role === 'user' ? 'user_message' : 'system_message',
@@ -162,7 +206,14 @@ export function useSendMessage(
             ...data,
             pages: data.pages.map((page) => [
               newMessage,
-              ...(page as LettaMessageUnion[]),
+              ...(page as LettaMessageUnion[]).filter(v => {
+                // remove any failed messages
+                if (v.id === FAILED_ID) {
+                  return false;
+                }
+
+                return true;
+              }),
             ]),
           };
         },
@@ -220,21 +271,20 @@ export function useSendMessage(
       eventsource.addEventListener('error', (e) => {
         e.stopPropagation();
         e.preventDefault();
+        // tag user sent message as errored
+
 
         if (errorHasResponseAndStatus(e)) {
+
+
+
           if (e.response.status === 429) {
-            setIsPending(false);
-            setFailedToSendMessage(true);
-            setErrorCode('RATE_LIMIT_EXCEEDED');
-            options?.onFailedToSendMessage?.(message);
+            handleError(message, 'RATE_LIMIT_EXCEEDED');
             return;
           }
 
           if (e.response.status === 402) {
-            setIsPending(false);
-            setFailedToSendMessage(true);
-            setErrorCode('CREDIT_LIMIT_EXCEEDED');
-            options?.onFailedToSendMessage?.(message);
+            handleError(message, 'CREDIT_LIMIT_EXCEEDED');
             return;
           }
         }
@@ -257,10 +307,7 @@ export function useSendMessage(
 
         try {
           const errorMessage = ErrorMessageSchema.parse(JSON.parse(e.data));
-          setIsPending(false);
-          setFailedToSendMessage(!!errorMessage.error);
-          setErrorCode(errorMessage.code);
-          options?.onFailedToSendMessage?.(message);
+          handleError(message, errorMessage.code);
           return;
         } catch (_e) {
           // ignore
