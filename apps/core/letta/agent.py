@@ -52,7 +52,11 @@ from letta.schemas.tool_rule import TerminalToolRule
 from letta.schemas.usage import LettaUsageStatistics
 from letta.services.agent_manager import AgentManager
 from letta.services.block_manager import BlockManager
-from letta.services.helpers.agent_manager_helper import check_supports_structured_output, compile_memory_metadata_block
+from letta.services.helpers.agent_manager_helper import (
+    check_supports_structured_output,
+    compile_memory_metadata_block,
+    compile_system_message,
+)
 from letta.services.job_manager import JobManager
 from letta.services.message_manager import MessageManager
 from letta.services.passage_manager import PassageManager
@@ -303,6 +307,29 @@ class Agent(BaseAgent):
         # Force a tool call if exactly one tool is specified
         elif step_count is not None and step_count > 0 and len(allowed_tool_names) == 1:
             force_tool_call = allowed_tool_names[0]
+
+        if force_tool_call == "core_memory_insert":
+            current_system_message = message_sequence[0]
+            new_memory = Memory(
+                blocks=self.agent_state.memory.blocks,
+                prompt_template=(
+                    "{% for block in blocks %}"
+                    '<{{ block.label }} characters="{{ block.value|length }}/{{ block.limit }}">\n'
+                    "{% for line in block.value.splitlines() %}"
+                    "{{ loop.index0 }}: {{ line }}\n"
+                    "{% endfor %}"
+                    "</{{ block.label }}>"
+                    "{% if not loop.last %}\n{% endif %}"
+                    "{% endfor %}"
+                ),
+            )
+            new_system_message_str = compile_system_message(
+                system_prompt=self.agent_state.system,
+                in_context_memory=new_memory,
+                in_context_memory_last_edit=current_system_message.created_at,
+                previous_message_count=len(message_sequence),
+            )
+            message_sequence[0].content = [TextContent(text=new_system_message_str)]
 
         for attempt in range(1, empty_response_retry_limit + 1):
             try:

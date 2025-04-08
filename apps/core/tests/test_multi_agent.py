@@ -456,10 +456,11 @@ async def test_sleeptime_group_chat(server, actor):
                 ),
                 CreateBlock(
                     label="human",
-                    value="",
+                    value="My favorite plant is the fiddle leaf\nMy favorite color is lavender",
                 ),
             ],
-            model="openai/gpt-4o-mini",
+            # model="openai/gpt-4o-mini",
+            model="anthropic/claude-3-5-sonnet-20240620",
             embedding="openai/text-embedding-ada-002",
             enable_sleeptime=True,
         ),
@@ -496,12 +497,22 @@ async def test_sleeptime_group_chat(server, actor):
     assert sleeptime_agent_id in [agent.id for agent in agents]
     assert main_agent.id in [agent.id for agent in agents]
 
-    # 4. Send messages and verify run ids
+    # 4 Verify sleeptime agent tools
+    sleeptime_agent = server.agent_manager.get_agent_by_id(agent_id=sleeptime_agent_id, actor=actor)
+    sleeptime_agent_tools = [tool.name for tool in sleeptime_agent.tools]
+    assert "rethink_memory" in sleeptime_agent_tools
+    assert "finish_rethinking_memory" in sleeptime_agent_tools
+    assert "view_core_memory_with_line_numbers" in sleeptime_agent_tools
+    assert "core_memory_insert" in sleeptime_agent_tools
+
+    # 5. Send messages and verify run ids
     message_text = [
         "my favorite color is orange",
         "not particularly. today is a good day",
         "actually my favorite color is coral",
-        "sorry gotta run",
+        "let's change the subject",
+        "actually my fav plant is the the african spear",
+        "indeed",
     ]
     run_ids = []
     for i, text in enumerate(message_text):
@@ -531,7 +542,7 @@ async def test_sleeptime_group_chat(server, actor):
         job = server.job_manager.get_job_by_id(job_id=run_id, actor=actor)
         assert job.status == JobStatus.completed
 
-    # 5. Delete agent
+    # 6. Delete agent
     server.agent_manager.delete_agent(agent_id=main_agent.id, actor=actor)
 
     with pytest.raises(NoResultFound):

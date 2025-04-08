@@ -58,6 +58,7 @@ BASE_SLEEPTIME_CHAT_TOOLS = ["send_message", "conversation_search", "archival_me
 BASE_SLEEPTIME_TOOLS = [
     "rethink_memory",
     "finish_rethinking_memory",
+    "view_core_memory_with_line_numbers",
     "core_memory_insert",
     "archival_memory_insert",
     "archival_memory_search",
