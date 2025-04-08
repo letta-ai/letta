@@ -54,6 +54,7 @@ class AgentChunkStreamingInterface(ABC):
         message_id: str,
         message_date: datetime,
         expect_reasoning_content: bool = False,
+        name: Optional[str] = None,
         message_index: int = 0,
     ):
         """Process a streaming chunk from an OpenAI-compatible server"""
@@ -105,6 +106,7 @@ class StreamingCLIInterface(AgentChunkStreamingInterface):
         message_id: str,
         message_date: datetime,
         expect_reasoning_content: bool = False,
+        name: Optional[str] = None,
         message_index: int = 0,
     ):
         assert len(chunk.choices) == 1, chunk
