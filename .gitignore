@@ -50,7 +50,8 @@ out
 storybook-static
 
 .env
-.env.backup
+.env.*
+!.env.template
 deployment_env.yaml
 
 data/dump.rdb

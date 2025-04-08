@@ -376,10 +376,18 @@ start-services:
     @echo "🚧 Starting up postgres, redis..."
     docker compose up -d redis postgres
 
-setup:
-    @echo "🚧 Setting up the project..."
+build-local-env:
     @echo "Attaching environment variables..."
     op inject -i .env.template -o .env
+
+test-build-local-env:
+    @echo "Attaching environment variables..."
+    op inject -i .env.template -o .env.test
+
+
+setup:
+    @echo "🚧 Setting up the project..."
+    just build-local-env
     @echo "Installing dependencies..."
     npm install
     npm run core:install
