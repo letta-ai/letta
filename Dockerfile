@@ -67,7 +67,6 @@ ENV LETTA_ENVIRONMENT=${LETTA_ENVIRONMENT} \
     COMPOSIO_DISABLE_VERSION_CHECK=true \
     LETTA_OTEL_EXPORTER_OTLP_ENDPOINT="http://localhost:4317"
 
-
 WORKDIR /app
 
 # Copy virtual environment and app from builder
