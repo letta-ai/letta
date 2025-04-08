@@ -775,7 +775,7 @@ class SyncServer(Server):
 
     def create_sleeptime_agent(self, main_agent: AgentState, actor: User) -> AgentState:
         request = CreateAgent(
-            name=main_agent.name,
+            name=main_agent.name + "-sleeptime",
             agent_type=AgentType.sleeptime_agent,
             block_ids=[block.id for block in main_agent.memory.blocks],
             memory_blocks=[
