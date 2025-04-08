@@ -29,19 +29,23 @@ export function StatusIndicator(props: StatusIndicatorProps) {
   if (rest.status === 'warning') {
     return (
       <div className="w-2 relative">
-        <MaybeTooltip content={tooltipContent}>
-          <WarningIcon
-            size="small"
-            className="text-warning w-2 left-[-4px] absolute top-[4px] "
-          />
+        <MaybeTooltip asChild content={tooltipContent}>
+          <div>
+            <WarningIcon
+              size="small"
+              className="text-warning w-2 left-[-4px] absolute top-[4px] "
+            />
+          </div>
         </MaybeTooltip>
       </div>
     );
   }
 
   return (
-    <MaybeTooltip content={tooltipContent}>
-      <div className={statusIndicatorVariants(rest)} />
+    <MaybeTooltip asChild content={tooltipContent}>
+      <div>
+        <div className={statusIndicatorVariants(rest)} />
+      </div>
     </MaybeTooltip>
   );
 }

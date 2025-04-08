@@ -13,6 +13,7 @@ const AppContext = React.createContext<
   | {
       user?: UserContextData['user'];
       projectId?: string;
+      projectSlug?: string;
     }
   | undefined
 >(undefined);
@@ -20,6 +21,7 @@ const AppContext = React.createContext<
 interface AppProviderProps {
   user?: UserContextData['user'];
   projectId?: string;
+  projectSlug?: string;
   children: React.ReactNode;
 }
 
@@ -27,9 +29,10 @@ export function AppContextProvider({
   user,
   projectId,
   children,
+  projectSlug,
 }: AppProviderProps) {
   return (
-    <AppContext.Provider value={{ user, projectId }}>
+    <AppContext.Provider value={{ user, projectId, projectSlug }}>
       {children}
     </AppContext.Provider>
   );
@@ -43,5 +46,6 @@ export function useADEAppContext() {
   return {
     user: context.user,
     projectId: context.projectId || '',
+    projectSlug: context.projectSlug || '',
   };
 }

@@ -62,6 +62,7 @@ import WelcomeWebp from './welcome-to-ade.webp';
 interface ADELayoutProps {
   user?: UserContextData['user'];
   projectId?: string;
+  projectSlug?: string;
 }
 
 function useADETitleTranslations() {
@@ -446,10 +447,14 @@ function ADEOnboarding() {
 }
 
 export function ADELayout(props: ADELayoutProps) {
-  const { user, projectId } = props;
+  const { user, projectId, projectSlug } = props;
 
   return (
-    <AppContextProvider user={user} projectId={projectId}>
+    <AppContextProvider
+      projectSlug={projectSlug}
+      user={user}
+      projectId={projectId}
+    >
       <Frame
         overflow="hidden"
         position="relative"

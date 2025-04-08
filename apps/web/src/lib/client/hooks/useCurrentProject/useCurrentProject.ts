@@ -28,7 +28,7 @@ export function useCurrentProject(): PartialProjectType {
       updatedAt: '',
       id: '',
       name: t('remoteDevelopment'),
-      slug: '/development-servers/local/dashboard',
+      slug: '/development-servers/local',
     };
   }
 

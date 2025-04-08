@@ -31,7 +31,7 @@ export function Server(props: ServerProps) {
       onClick={() => onSelect?.(server)}
     >
       <VStack flex collapseWidth gap={false}>
-        <HStack>
+        <HStack align="center">
           {server.statusIndicator}
           <Typography fullWidth noWrap overflow="ellipsis" variant="body2">
             {server.name}

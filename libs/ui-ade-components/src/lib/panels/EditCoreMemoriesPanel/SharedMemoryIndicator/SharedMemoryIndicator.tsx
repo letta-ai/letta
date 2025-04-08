@@ -15,9 +15,10 @@ import {
 } from '@letta-cloud/ui-component-library';
 import { useTranslations } from '@letta-cloud/translations';
 import { useCurrentAgentMetaData } from '../../../hooks';
-import { useCallback, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { CURRENT_RUNTIME } from '@letta-cloud/config-runtime';
+import { useADEAppContext } from '../../../AppContext/AppContext';
 
 interface AgentBadgeProps {
   isCurrentAgent: boolean;
@@ -56,8 +57,6 @@ export function SharedMemoryIndicator(props: SharedMemoryIndicatorProps) {
 
   const { push } = useRouter();
 
-  const pathUntilAgents = currentUrl.split('/').slice(0, -1).join('/');
-
   const handleMoveToAgent = useCallback(
     (agentId: string) => {
       if (CURRENT_RUNTIME === 'letta-desktop') {
@@ -67,7 +66,9 @@ export function SharedMemoryIndicator(props: SharedMemoryIndicatorProps) {
     [push],
   );
 
-  const { agentId, isTemplate } = useCurrentAgentMetaData();
+  const { projectSlug } = useADEAppContext();
+
+  const { agentId, isTemplate, isLocal } = useCurrentAgentMetaData();
   const t = useTranslations('ADE/SharedMemoryIndicator');
   const { data: agents } = useBlocksServiceListAgentsForBlock(
     {
@@ -78,6 +79,18 @@ export function SharedMemoryIndicator(props: SharedMemoryIndicatorProps) {
       enabled: !!memory.id,
     },
   );
+
+  const pathUntilAgents = useMemo(() => {
+    if (projectSlug) {
+      if (!isLocal) {
+        return `/projects/${projectSlug}/agents`;
+      }
+
+      return `${projectSlug}/agents`;
+    }
+
+    return '/agents';
+  }, [projectSlug, isLocal]);
 
   if (isTemplate) {
     // not supported for templates just yet!

@@ -48,7 +48,7 @@ function MobileNavigationProvider(props: MobileNavigationProviderProps) {
 }
 
 export function CloudAgentEditor() {
-  const { id: projectId } = useCurrentProject();
+  const { id: projectId, slug } = useCurrentProject();
   const { isTemplate, isLocal } = useCurrentAgentMetaData();
   const t = useTranslations(
     'projects/(projectSlug)/agents/(agentId)/AgentPage',
@@ -65,7 +65,7 @@ export function CloudAgentEditor() {
           )}
           <Frame overflow="hidden" position="relative" fullWidth fullHeight>
             <HiddenOnMobile checkWithJs>
-              <ADELayout user={user} projectId={projectId} />
+              <ADELayout user={user} projectId={projectId} projectSlug={slug} />
             </HiddenOnMobile>
           </Frame>
         </VStack>
@@ -74,7 +74,7 @@ export function CloudAgentEditor() {
         <MobileNavigationProvider>
           <VStack fullHeight fullWidth flex>
             <VisibleOnMobile checkWithJs>
-              <ADELayout user={user} projectId={projectId} />
+              <ADELayout user={user} projectId={projectId} projectSlug={slug} />
             </VisibleOnMobile>
           </VStack>
         </MobileNavigationProvider>
