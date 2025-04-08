@@ -540,7 +540,7 @@ export default class App {
   private static async onReady() {
     // Intercept logs first so that everything after is captured
     interceptMainProcessLogs();
-    
+
     // Log PATH before fix-path
     console.log('[fix-path] PATH before fixPath:', process.env.PATH);
     // ensures PATH matches user’s login shell (on macOS/Linux)
