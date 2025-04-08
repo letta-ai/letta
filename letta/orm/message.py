@@ -1,7 +1,7 @@
 from typing import List, Optional
 
 from openai.types.chat.chat_completion_message_tool_call import ChatCompletionMessageToolCall as OpenAIToolCall
-from sqlalchemy import ForeignKey, Index
+from sqlalchemy import BigInteger, ForeignKey, Index, Sequence
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from letta.orm.custom_columns import MessageContentColumn, ToolCallColumn, ToolReturnColumn
@@ -20,6 +20,7 @@ class Message(SqlalchemyBase, OrganizationMixin, AgentMixin):
     __table_args__ = (
         Index("ix_messages_agent_created_at", "agent_id", "created_at"),
         Index("ix_messages_created_at", "created_at", "id"),
+        Index("ix_messages_agent_sequence", "agent_id", "sequence_id"),
     )
     __pydantic_model__ = PydanticMessage
 
@@ -39,6 +40,11 @@ class Message(SqlalchemyBase, OrganizationMixin, AgentMixin):
         ToolReturnColumn, nullable=True, doc="Tool execution return information for prior tool calls"
     )
     group_id: Mapped[Optional[str]] = mapped_column(nullable=True, doc="The multi-agent group that the message was sent in")
+
+    # Monotonically increasing sequence for efficient/correct listing
+    sequence_id: Mapped[int] = mapped_column(
+        BigInteger, Sequence("message_seq_id"), unique=True, nullable=False, doc="Global monotonically increasing ID"
+    )
 
     # Relationships
     agent: Mapped["Agent"] = relationship("Agent", back_populates="messages", lazy="selectin")

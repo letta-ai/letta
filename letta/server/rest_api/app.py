@@ -139,7 +139,7 @@ def create_application() -> "FastAPI":
 
     @app.on_event("startup")
     async def configure_executor():
-        print(f"Configured event loop executor with {settings.event_loop_threadpool_max_workers} workers.")
+        print(f"INFO:     Configured event loop executor with {settings.event_loop_threadpool_max_workers} workers.")
         loop = asyncio.get_running_loop()
         executor = concurrent.futures.ThreadPoolExecutor(max_workers=settings.event_loop_threadpool_max_workers)
         loop.set_default_executor(executor)

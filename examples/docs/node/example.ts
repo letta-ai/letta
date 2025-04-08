@@ -102,8 +102,8 @@ let agentCopy = await client.agents.create({
   model: 'openai/gpt-4o-mini',
   embedding: 'openai/text-embedding-ada-002',
 });
-let block = await client.agents.coreMemory.retrieveBlock(agent.id, 'human');
-agentCopy = await client.agents.coreMemory.attachBlock(agentCopy.id, block.id!);
+let block = await client.agents.blocks.retrieve(agent.id, 'human');
+agentCopy = await client.agents.blocks.attach(agentCopy.id, block.id!);
 
 console.log('Created agent copy with shared memory named', agentCopy.name);
 
@@ -120,7 +120,7 @@ response = await client.agents.messages.create(agentCopy.id, {
 
 console.log(`Sent message to agent ${agentCopy.name}: ${messageText}`);
 
-block = await client.agents.coreMemory.retrieveBlock(agentCopy.id, 'human');
+block = await client.agents.blocks.retrieve(agentCopy.id, 'human');
 console.log(`New core memory for agent ${agentCopy.name}: ${block.value}`);
 
 messageText = "What's my name?";

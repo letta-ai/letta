@@ -18,13 +18,13 @@ class MultiAgentMessagingInterface(AgentInterface):
         self._captured_messages: List[AssistantMessage] = []
         self.metadata = {}
 
-    def internal_monologue(self, msg: str, msg_obj: Optional[Message] = None):
+    def internal_monologue(self, msg: str, msg_obj: Optional[Message] = None, chunk_index: Optional[int] = None):
         """Ignore internal monologue."""
 
     def assistant_message(self, msg: str, msg_obj: Optional[Message] = None):
         """Ignore normal assistant messages (only capturing send_message calls)."""
 
-    def function_message(self, msg: str, msg_obj: Optional[Message] = None):
+    def function_message(self, msg: str, msg_obj: Optional[Message] = None, chunk_index: Optional[int] = None):
         """
         Called whenever the agent logs a function call. We'll inspect msg_obj.tool_calls:
           - If tool_calls include a function named 'send_message', parse its arguments

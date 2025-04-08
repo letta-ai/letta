@@ -115,7 +115,7 @@ def test_cutoff_calculation(mocker):
     assert messages[cutoff - 1].role == MessageRole.user
 
 
-def test_summarize_many_messages_basic(client, mock_e2b_api_key_none):
+def test_summarize_many_messages_basic(client, disable_e2b_api_key):
     small_context_llm_config = LLMConfig.default_config("gpt-4o-mini")
     small_context_llm_config.context_window = 3000
     small_agent_state = client.create_agent(
@@ -130,7 +130,7 @@ def test_summarize_many_messages_basic(client, mock_e2b_api_key_none):
     client.delete_agent(small_agent_state.id)
 
 
-def test_summarize_large_message_does_not_loop_infinitely(client, mock_e2b_api_key_none):
+def test_summarize_large_message_does_not_loop_infinitely(client, disable_e2b_api_key):
     small_context_llm_config = LLMConfig.default_config("gpt-4o-mini")
     small_context_llm_config.context_window = 2000
     small_agent_state = client.create_agent(
@@ -145,7 +145,7 @@ def test_summarize_large_message_does_not_loop_infinitely(client, mock_e2b_api_k
     client.delete_agent(small_agent_state.id)
 
 
-def test_summarize_messages_inplace(client, agent_state, mock_e2b_api_key_none):
+def test_summarize_messages_inplace(client, agent_state, disable_e2b_api_key):
     """Test summarization via sending the summarize CLI command or via a direct call to the agent object"""
     # First send a few messages (5)
     response = client.user_message(
@@ -179,7 +179,7 @@ def test_summarize_messages_inplace(client, agent_state, mock_e2b_api_key_none):
     agent_obj.summarize_messages_inplace()
 
 
-def test_auto_summarize(client, mock_e2b_api_key_none):
+def test_auto_summarize(client, disable_e2b_api_key):
     """Test that the summarizer triggers by itself"""
     small_context_llm_config = LLMConfig.default_config("gpt-4o-mini")
     small_context_llm_config.context_window = 4000

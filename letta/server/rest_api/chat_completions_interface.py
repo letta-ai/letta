@@ -155,7 +155,12 @@ class ChatCompletionsStreamingInterface(AgentChunkStreamingInterface):
         return
 
     def process_chunk(
-        self, chunk: ChatCompletionChunkResponse, message_id: str, message_date: datetime, expect_reasoning_content: bool = False
+        self,
+        chunk: ChatCompletionChunkResponse,
+        message_id: str,
+        message_date: datetime,
+        expect_reasoning_content: bool = False,
+        message_index: int = 0,
     ) -> None:
         """
         Called externally with a ChatCompletionChunkResponse. Transforms
@@ -172,7 +177,7 @@ class ChatCompletionsStreamingInterface(AgentChunkStreamingInterface):
         """
         return
 
-    def internal_monologue(self, msg: str, msg_obj: Optional[Message] = None) -> None:
+    def internal_monologue(self, msg: str, msg_obj: Optional[Message] = None, chunk_index: Optional[int] = None) -> None:
         """
         Handle LLM reasoning or internal monologue. Example usage: if you want
         to capture chain-of-thought for debugging in a non-streaming scenario.
@@ -186,7 +191,7 @@ class ChatCompletionsStreamingInterface(AgentChunkStreamingInterface):
         """
         return
 
-    def function_message(self, msg: str, msg_obj: Optional[Message] = None) -> None:
+    def function_message(self, msg: str, msg_obj: Optional[Message] = None, chunk_index: Optional[int] = None) -> None:
         """
         Handle function-related log messages, typically of the form:
         It's a no-op by default.

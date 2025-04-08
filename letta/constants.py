@@ -52,10 +52,22 @@ DEFAULT_PRESET = "memgpt_chat"
 BASE_TOOLS = ["send_message", "conversation_search", "archival_memory_insert", "archival_memory_search"]
 # Base memory tools CAN be edited, and are added by default by the server
 BASE_MEMORY_TOOLS = ["core_memory_append", "core_memory_replace"]
+# Base tools if the memgpt agent has enable_sleeptime on
+BASE_SLEEPTIME_CHAT_TOOLS = ["send_message", "conversation_search", "archival_memory_search"]
+# Base memory tools for sleeptime agent
+BASE_SLEEPTIME_TOOLS = [
+    "rethink_memory",
+    "finish_rethinking_memory",
+    "view_core_memory_with_line_numbers",
+    "core_memory_insert",
+    "archival_memory_insert",
+    "archival_memory_search",
+    "conversation_search",
+]
 # Multi agent tools
 MULTI_AGENT_TOOLS = ["send_message_to_agent_and_wait_for_reply", "send_message_to_agents_matching_tags", "send_message_to_agent_async"]
 # Set of all built-in Letta tools
-LETTA_TOOL_SET = set(BASE_TOOLS + BASE_MEMORY_TOOLS + MULTI_AGENT_TOOLS)
+LETTA_TOOL_SET = set(BASE_TOOLS + BASE_MEMORY_TOOLS + MULTI_AGENT_TOOLS + BASE_SLEEPTIME_TOOLS)
 
 # The name of the tool used to send message to the user
 # May not be relevant in cases where the agent has multiple ways to message to user (send_imessage, send_discord_mesasge, ...)

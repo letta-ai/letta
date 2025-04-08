@@ -69,6 +69,7 @@ class RoundRobinMultiAgent(Agent):
                             tool_calls=None,
                             tool_call_id=None,
                             group_id=self.group_id,
+                            otid=message.otid,
                         )
                     )
 
@@ -92,6 +93,7 @@ class RoundRobinMultiAgent(Agent):
                         role="system",
                         content=message.content,
                         name=message.name,
+                        otid=message.otid,
                     )
                     for message in assistant_messages
                 ]

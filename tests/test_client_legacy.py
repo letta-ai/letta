@@ -11,7 +11,7 @@ from sqlalchemy import delete
 
 from letta import create_client
 from letta.client.client import LocalClient, RESTClient
-from letta.constants import BASE_MEMORY_TOOLS, BASE_TOOLS, DEFAULT_PRESET, MULTI_AGENT_TOOLS
+from letta.constants import BASE_MEMORY_TOOLS, BASE_SLEEPTIME_TOOLS, BASE_TOOLS, DEFAULT_PRESET, MULTI_AGENT_TOOLS
 from letta.helpers.datetime_helpers import get_utc_time
 from letta.orm import FileMetadata, Source
 from letta.schemas.agent import AgentState
@@ -124,7 +124,7 @@ def default_user(default_organization):
     yield user
 
 
-def test_agent(mock_e2b_api_key_none, client: Union[LocalClient, RESTClient], agent: AgentState):
+def test_agent(disable_e2b_api_key, client: Union[LocalClient, RESTClient], agent: AgentState):
 
     # test client.rename_agent
     new_name = "RenamedTestAgent"
@@ -143,7 +143,7 @@ def test_agent(mock_e2b_api_key_none, client: Union[LocalClient, RESTClient], ag
     assert client.agent_exists(agent_id=delete_agent.id) == False, "Agent deletion failed"
 
 
-def test_memory(mock_e2b_api_key_none, client: Union[LocalClient, RESTClient], agent: AgentState):
+def test_memory(disable_e2b_api_key, client: Union[LocalClient, RESTClient], agent: AgentState):
     # _reset_config()
 
     memory_response = client.get_in_context_memory(agent_id=agent.id)
@@ -159,7 +159,7 @@ def test_memory(mock_e2b_api_key_none, client: Union[LocalClient, RESTClient], a
     ), "Memory update failed"
 
 
-def test_agent_interactions(mock_e2b_api_key_none, client: Union[LocalClient, RESTClient], agent: AgentState):
+def test_agent_interactions(disable_e2b_api_key, client: Union[LocalClient, RESTClient], agent: AgentState):
     # test that it is a LettaMessage
     message = "Hello again, agent!"
     print("Sending message", message)
@@ -182,7 +182,7 @@ def test_agent_interactions(mock_e2b_api_key_none, client: Union[LocalClient, RE
     # TODO: add streaming tests
 
 
-def test_archival_memory(mock_e2b_api_key_none, client: Union[LocalClient, RESTClient], agent: AgentState):
+def test_archival_memory(disable_e2b_api_key, client: Union[LocalClient, RESTClient], agent: AgentState):
     # _reset_config()
 
     memory_content = "Archival memory content"
@@ -216,7 +216,7 @@ def test_archival_memory(mock_e2b_api_key_none, client: Union[LocalClient, RESTC
     client.get_archival_memory(agent.id)
 
 
-def test_core_memory(mock_e2b_api_key_none, client: Union[LocalClient, RESTClient], agent: AgentState):
+def test_core_memory(disable_e2b_api_key, client: Union[LocalClient, RESTClient], agent: AgentState):
     response = client.send_message(agent_id=agent.id, message="Update your core memory to remember that my name is Timber!", role="user")
     print("Response", response)
 
@@ -234,7 +234,7 @@ def test_core_memory(mock_e2b_api_key_none, client: Union[LocalClient, RESTClien
     ],
 )
 def test_streaming_send_message(
-    mock_e2b_api_key_none,
+    disable_e2b_api_key,
     client: RESTClient,
     agent: AgentState,
     stream_tokens: bool,
@@ -347,7 +347,7 @@ def test_list_tools_pagination(client: Union[LocalClient, RESTClient]):
 def test_list_tools(client: Union[LocalClient, RESTClient]):
     tools = client.upsert_base_tools()
     tool_names = [t.name for t in tools]
-    expected = BASE_TOOLS + BASE_MEMORY_TOOLS + MULTI_AGENT_TOOLS
+    expected = set(BASE_TOOLS + BASE_MEMORY_TOOLS + MULTI_AGENT_TOOLS + BASE_SLEEPTIME_TOOLS)
     assert sorted(tool_names) == sorted(expected)
 
 

@@ -1,6 +1,10 @@
 from enum import Enum
 
 
+class ProviderType(str, Enum):
+    anthropic = "anthropic"
+
+
 class MessageRole(str, Enum):
     assistant = "assistant"
     user = "user"
@@ -22,6 +26,7 @@ class JobStatus(str, Enum):
     Status of the job.
     """
 
+    not_started = "not_started"
     created = "created"
     running = "running"
     completed = "completed"
@@ -29,10 +34,20 @@ class JobStatus(str, Enum):
     pending = "pending"
 
 
+class AgentStepStatus(str, Enum):
+    """
+    Status of the job.
+    """
+
+    paused = "paused"
+    running = "running"
+
+
 class MessageStreamStatus(str, Enum):
-    # done_generation = "[DONE_GEN]"
-    # done_step = "[DONE_STEP]"
     done = "[DONE]"
+
+    def model_dump_json(self):
+        return "[DONE]"
 
 
 class ToolRuleType(str, Enum):

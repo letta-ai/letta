@@ -32,7 +32,7 @@ def test_openai_gpt_4o_returns_valid_first_message():
 
 @pytest.mark.openai_basic
 @retry_until_success(max_attempts=5, sleep_time_seconds=2)
-def test_openai_gpt_4o_uses_external_tool(mock_e2b_api_key_none):
+def test_openai_gpt_4o_uses_external_tool(disable_e2b_api_key):
     filename = os.path.join(llm_config_dir, "openai-gpt-4o.json")
     response = check_agent_uses_external_tool(filename)
     # Log out successful response
@@ -96,7 +96,7 @@ def test_azure_gpt_4o_mini_returns_valid_first_message():
 
 @pytest.mark.azure_basic
 @retry_until_success(max_attempts=5, sleep_time_seconds=2)
-def test_azure_gpt_4o_mini_uses_external_tool(mock_e2b_api_key_none):
+def test_azure_gpt_4o_mini_uses_external_tool(disable_e2b_api_key):
     filename = os.path.join(llm_config_dir, "azure-gpt-4o-mini.json")
     response = check_agent_uses_external_tool(filename)
     # Log out successful response
@@ -182,7 +182,7 @@ def test_claude_haiku_3_5_returns_valid_first_message():
 
 @pytest.mark.anthropic_basic
 @retry_until_success(max_attempts=5, sleep_time_seconds=2)
-def test_claude_haiku_3_5_uses_external_tool(mock_e2b_api_key_none):
+def test_claude_haiku_3_5_uses_external_tool(disable_e2b_api_key):
     filename = os.path.join(llm_config_dir, "claude-3-5-haiku.json")
     response = check_agent_uses_external_tool(filename)
     # Log out successful response
@@ -226,7 +226,7 @@ def test_groq_llama31_70b_returns_valid_first_message():
     print(f"Got successful response from client: \n\n{response}")
 
 
-def test_groq_llama31_70b_uses_external_tool(mock_e2b_api_key_none):
+def test_groq_llama31_70b_uses_external_tool(disable_e2b_api_key):
     filename = os.path.join(llm_config_dir, "groq.json")
     response = check_agent_uses_external_tool(filename)
     # Log out successful response
@@ -269,7 +269,7 @@ def test_gemini_pro_15_returns_valid_first_message():
 
 @pytest.mark.gemini_basic
 @retry_until_success(max_attempts=5, sleep_time_seconds=2)
-def test_gemini_pro_15_uses_external_tool(mock_e2b_api_key_none):
+def test_gemini_pro_15_uses_external_tool(disable_e2b_api_key):
     filename = os.path.join(llm_config_dir, "gemini-pro.json")
     response = check_agent_uses_external_tool(filename)
     # Log out successful response
@@ -349,7 +349,7 @@ def test_together_llama_3_70b_returns_valid_first_message():
     print(f"Got successful response from client: \n\n{response}")
 
 
-def test_together_llama_3_70b_uses_external_tool(mock_e2b_api_key_none):
+def test_together_llama_3_70b_uses_external_tool(disable_e2b_api_key):
     filename = os.path.join(llm_config_dir, "together-llama-3-70b.json")
     response = check_agent_uses_external_tool(filename)
     # Log out successful response
@@ -405,7 +405,7 @@ def test_bedrock_claude_sonnet_3_5_returns_valid_first_message():
 
 @pytest.mark.anthropic_bedrock_basic
 @retry_until_success(max_attempts=5, sleep_time_seconds=2)
-def test_bedrock_claude_sonnet_3_5_uses_external_tool(mock_e2b_api_key_none):
+def test_bedrock_claude_sonnet_3_5_uses_external_tool(disable_e2b_api_key):
     filename = os.path.join(llm_config_dir, "bedrock-claude-3-5-sonnet.json")
     response = check_agent_uses_external_tool(filename)
     # Log out successful response

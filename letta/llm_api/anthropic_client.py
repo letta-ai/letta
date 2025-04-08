@@ -1,9 +1,14 @@
 import json
 import re
-from typing import List, Optional, Union
+from typing import Dict, List, Optional, Union
 
 import anthropic
+from anthropic import AsyncStream
 from anthropic.types import Message as AnthropicMessage
+from anthropic.types.beta import BetaRawMessageStreamEvent
+from anthropic.types.beta.message_create_params import MessageCreateParamsNonStreaming
+from anthropic.types.beta.messages import BetaMessageBatch
+from anthropic.types.beta.messages.batch_create_params import Request
 
 from letta.errors import (
     ContextWindowExceededError,
@@ -28,6 +33,7 @@ from letta.schemas.openai.chat_completion_response import ChatCompletionResponse
 from letta.schemas.openai.chat_completion_response import Message as ChoiceMessage
 from letta.schemas.openai.chat_completion_response import ToolCall, UsageStatistics
 from letta.services.provider_manager import ProviderManager
+from letta.tracing import trace_method
 
 DUMMY_FIRST_USER_MESSAGE = "User initializing bootup sequence."
 
@@ -46,19 +52,49 @@ class AnthropicClient(LLMClientBase):
         response = await client.beta.messages.create(**request_data, betas=["tools-2024-04-04"])
         return response.model_dump()
 
+    @trace_method
+    async def stream_async(self, request_data: dict) -> AsyncStream[BetaRawMessageStreamEvent]:
+        client = self._get_anthropic_client(async_client=True)
+        request_data["stream"] = True
+        return await client.beta.messages.create(**request_data, betas=["tools-2024-04-04"])
+
+    @trace_method
+    async def batch_async(self, requests: Dict[str, dict]) -> BetaMessageBatch:
+        """
+        Send a batch of requests to the Anthropic API asynchronously.
+
+        Args:
+            requests (Dict[str, dict]): A mapping from custom_id to request parameter dicts.
+
+        Returns:
+            List[dict]: A list of response dictionaries corresponding to each request.
+        """
+        client = self._get_anthropic_client(async_client=True)
+
+        anthropic_requests = [
+            Request(custom_id=custom_id, params=MessageCreateParamsNonStreaming(**params)) for custom_id, params in requests.items()
+        ]
+
+        batch_response = await client.beta.messages.batches.create(requests=anthropic_requests)
+
+        return batch_response
+
+    @trace_method
     def _get_anthropic_client(self, async_client: bool = False) -> Union[anthropic.AsyncAnthropic, anthropic.Anthropic]:
         override_key = ProviderManager().get_anthropic_override_key()
         if async_client:
             return anthropic.AsyncAnthropic(api_key=override_key) if override_key else anthropic.AsyncAnthropic()
         return anthropic.Anthropic(api_key=override_key) if override_key else anthropic.Anthropic()
 
+    @trace_method
     def build_request_data(
         self,
         messages: List[PydanticMessage],
         tools: List[dict],
-        tool_call: Optional[str],
         force_tool_call: Optional[str] = None,
     ) -> dict:
+        # TODO: This needs to get cleaned up. The logic here is pretty confusing.
+        # TODO: I really want to get rid of prefixing, it's a recipe for disaster code maintenance wise
         prefix_fill = True
         if not self.use_tool_naming:
             raise NotImplementedError("Only tool calling supported on Anthropic API requests")
@@ -74,11 +110,6 @@ class AnthropicClient(LLMClientBase):
 
         # Extended Thinking
         if self.llm_config.enable_reasoner:
-            assert (
-                self.llm_config.max_reasoning_tokens is not None and self.llm_config.max_reasoning_tokens < self.llm_config.max_tokens
-            ), "max tokens must be greater than thinking budget"
-            assert not self.llm_config.put_inner_thoughts_in_kwargs, "extended thinking not compatible with put_inner_thoughts_in_kwargs"
-
             data["thinking"] = {
                 "type": "enabled",
                 "budget_tokens": self.llm_config.max_reasoning_tokens,
@@ -90,15 +121,35 @@ class AnthropicClient(LLMClientBase):
             prefix_fill = False
 
         # Tools
-        tools_for_request = (
-            [Tool(function=f) for f in tools if f["name"] == force_tool_call]
-            if force_tool_call is not None
-            else [Tool(function=f) for f in tools]
-        )
-        if force_tool_call is not None:
-            self.llm_config.put_inner_thoughts_in_kwargs = True  # why do we do this ?
+        # For an overview on tool choice:
+        # https://docs.anthropic.com/en/docs/build-with-claude/tool-use/overview
+        if not tools:
+            # Special case for summarization path
+            tools_for_request = None
+            tool_choice = None
+        elif force_tool_call is not None:
+            tool_choice = {"type": "tool", "name": force_tool_call}
+            tools_for_request = [Tool(function=f) for f in tools if f["name"] == force_tool_call]
+
+            # need to have this setting to be able to put inner thoughts in kwargs
+            if not self.llm_config.put_inner_thoughts_in_kwargs:
+                logger.warning(
+                    f"Force setting put_inner_thoughts_in_kwargs to True for Claude because there is a forced tool call: {force_tool_call}"
+                )
+                self.llm_config.put_inner_thoughts_in_kwargs = True
+        else:
+            if self.llm_config.put_inner_thoughts_in_kwargs:
+                # tool_choice_type other than "auto" only plays nice if thinking goes inside the tool calls
+                tool_choice = {"type": "any", "disable_parallel_tool_use": True}
+            else:
+                tool_choice = {"type": "auto", "disable_parallel_tool_use": True}
+            tools_for_request = [Tool(function=f) for f in tools] if tools is not None else None
+
+        # Add tool choice
+        data["tool_choice"] = tool_choice
 
         # Add inner thoughts kwarg
+        # TODO: Can probably make this more efficient
         if len(tools_for_request) > 0 and self.llm_config.put_inner_thoughts_in_kwargs:
             tools_with_inner_thoughts = add_inner_thoughts_to_functions(
                 functions=[t.function.model_dump() for t in tools_for_request],

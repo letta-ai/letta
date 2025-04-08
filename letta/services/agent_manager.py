@@ -4,13 +4,22 @@ from typing import Dict, List, Optional
 import numpy as np
 from sqlalchemy import Select, and_, func, literal, or_, select, union_all
 
-from letta.constants import BASE_MEMORY_TOOLS, BASE_TOOLS, DATA_SOURCE_ATTACH_ALERT, MAX_EMBEDDING_DIM, MULTI_AGENT_TOOLS
+from letta.constants import (
+    BASE_MEMORY_TOOLS,
+    BASE_SLEEPTIME_CHAT_TOOLS,
+    BASE_SLEEPTIME_TOOLS,
+    BASE_TOOLS,
+    DATA_SOURCE_ATTACH_ALERT,
+    MAX_EMBEDDING_DIM,
+    MULTI_AGENT_TOOLS,
+)
 from letta.embeddings import embedding_model
 from letta.helpers.datetime_helpers import get_utc_time
 from letta.log import get_logger
 from letta.orm import Agent as AgentModel
 from letta.orm import AgentPassage, AgentsTags
 from letta.orm import Block as BlockModel
+from letta.orm import Group as GroupModel
 from letta.orm import Identity as IdentityModel
 from letta.orm import Source as SourceModel
 from letta.orm import SourcePassage, SourcesAgents
@@ -25,6 +34,7 @@ from letta.schemas.agent import AgentType, CreateAgent, UpdateAgent
 from letta.schemas.block import Block as PydanticBlock
 from letta.schemas.block import BlockUpdate
 from letta.schemas.embedding_config import EmbeddingConfig
+from letta.schemas.group import ManagerType
 from letta.schemas.llm_config import LLMConfig
 from letta.schemas.memory import Memory
 from letta.schemas.message import Message as PydanticMessage
@@ -32,6 +42,7 @@ from letta.schemas.message import MessageCreate
 from letta.schemas.passage import Passage as PydanticPassage
 from letta.schemas.source import Source as PydanticSource
 from letta.schemas.tool import Tool as PydanticTool
+from letta.schemas.tool_rule import ChildToolRule as PydanticChildToolRule
 from letta.schemas.tool_rule import ContinueToolRule as PydanticContinueToolRule
 from letta.schemas.tool_rule import TerminalToolRule as PydanticTerminalToolRule
 from letta.schemas.tool_rule import ToolRule as PydanticToolRule
@@ -88,7 +99,11 @@ class AgentManager:
         agent_create: CreateAgent,
         actor: PydanticUser,
     ) -> PydanticAgentState:
-        system = derive_system_message(agent_type=agent_create.agent_type, system=agent_create.system)
+        system = derive_system_message(
+            agent_type=agent_create.agent_type,
+            enable_sleeptime=agent_create.enable_sleeptime,
+            system=agent_create.system,
+        )
 
         if not agent_create.llm_config or not agent_create.embedding_config:
             raise ValueError("llm_config and embedding_config are required")
@@ -104,7 +119,13 @@ class AgentManager:
         # create passed in `tools`
         tool_names = []
         if agent_create.include_base_tools:
-            tool_names.extend(BASE_TOOLS + BASE_MEMORY_TOOLS)
+            if agent_create.agent_type == AgentType.sleeptime_agent:
+                tool_names.extend(BASE_SLEEPTIME_TOOLS)
+            else:
+                if agent_create.enable_sleeptime:
+                    tool_names.extend(BASE_SLEEPTIME_CHAT_TOOLS)
+                else:
+                    tool_names.extend(BASE_TOOLS + BASE_MEMORY_TOOLS)
         if agent_create.include_multi_agent_tools:
             tool_names.extend(MULTI_AGENT_TOOLS)
         if agent_create.tools:
@@ -121,10 +142,14 @@ class AgentManager:
 
             # apply default tool rules
             for tool_name in tool_names:
-                if tool_name == "send_message" or tool_name == "send_message_to_agent_async":
+                if tool_name == "send_message" or tool_name == "send_message_to_agent_async" or tool_name == "finish_rethinking_memory":
                     tool_rules.append(PydanticTerminalToolRule(tool_name=tool_name))
                 elif tool_name in BASE_TOOLS:
                     tool_rules.append(PydanticContinueToolRule(tool_name=tool_name))
+
+            if agent_create.agent_type == AgentType.sleeptime_agent:
+                tool_rules.append(PydanticChildToolRule(tool_name="view_core_memory_with_line_numbers", children=["core_memory_insert"]))
+
         else:
             tool_rules = agent_create.tool_rules
         # Check tool rules are valid
@@ -159,6 +184,7 @@ class AgentManager:
             template_id=agent_create.template_id,
             base_template_id=agent_create.base_template_id,
             message_buffer_autoclear=agent_create.message_buffer_autoclear,
+            enable_sleeptime=agent_create.enable_sleeptime,
         )
 
         # If there are provided environment variables, add them in
@@ -223,6 +249,7 @@ class AgentManager:
         template_id: Optional[str] = None,
         base_template_id: Optional[str] = None,
         message_buffer_autoclear: bool = False,
+        enable_sleeptime: Optional[bool] = None,
     ) -> PydanticAgentState:
         """Create a new agent."""
         with self.session_maker() as session:
@@ -241,6 +268,7 @@ class AgentManager:
                 "template_id": template_id,
                 "base_template_id": base_template_id,
                 "message_buffer_autoclear": message_buffer_autoclear,
+                "enable_sleeptime": enable_sleeptime,
             }
 
             # Create the new agent using SqlalchemyBase.create
@@ -269,6 +297,12 @@ class AgentManager:
             )
 
         # Rebuild the system prompt if it's different
+        if agent_update.enable_sleeptime and agent_update.system is None:
+            agent_update.system = derive_system_message(
+                agent_type=agent_state.agent_type,
+                enable_sleeptime=agent_update.enable_sleeptime,
+                system=agent_update.system,
+            )
         if agent_update.system and agent_update.system != agent_state.system:
             agent_state = self.rebuild_system_prompt(agent_id=agent_state.id, actor=actor, force=True, update_timestamp=False)
 
@@ -305,6 +339,7 @@ class AgentManager:
                 "template_id",
                 "base_template_id",
                 "message_buffer_autoclear",
+                "enable_sleeptime",
             }
             for field in scalar_fields:
                 value = getattr(agent_update, field, None)
@@ -461,9 +496,33 @@ class AgentManager:
         """
         with self.session_maker() as session:
             # Retrieve the agent
+            logger.debug(f"Hard deleting Agent with ID: {agent_id} with actor={actor}")
             agent = AgentModel.read(db_session=session, identifier=agent_id, actor=actor)
-            # TODO check if it is managing a group
-            agent.hard_delete(session)
+            agents_to_delete = [agent]
+            sleeptime_group_to_delete = None
+
+            # Delete sleeptime agent and group
+            if agent.multi_agent_group:
+                participant_agent_ids = agent.multi_agent_group.agent_ids
+                if agent.multi_agent_group.manager_type == ManagerType.sleeptime and len(participant_agent_ids) == 1:
+                    sleeptime_agent = AgentModel.read(db_session=session, identifier=participant_agent_ids[0], actor=actor)
+                    if sleeptime_agent.agent_type == AgentType.sleeptime_agent:
+                        sleeptime_agent_group = GroupModel.read(db_session=session, identifier=agent.multi_agent_group.id, actor=actor)
+                        sleeptime_group_to_delete = sleeptime_agent_group
+                        agents_to_delete.append(sleeptime_agent)
+            try:
+                if sleeptime_group_to_delete is not None:
+                    session.delete(sleeptime_group_to_delete)
+                    session.commit()
+                for agent in agents_to_delete:
+                    session.delete(agent)
+                session.commit()
+            except Exception as e:
+                session.rollback()
+                logger.exception(f"Failed to hard delete Agent with ID {agent_id}")
+                raise ValueError(f"Failed to hard delete Agent with ID {agent_id}: {e}")
+            else:
+                logger.debug(f"Agent with ID {agent_id} successfully hard deleted")
 
     @enforce_types
     def serialize(self, agent_id: str, actor: PydanticUser) -> AgentSchema:
@@ -482,6 +541,7 @@ class AgentManager:
         append_copy_suffix: bool = True,
         override_existing_tools: bool = True,
         project_id: Optional[str] = None,
+        strip_messages: Optional[bool] = False,
     ) -> PydanticAgentState:
         serialized_agent = serialized_agent.model_dump()
         tool_data_list = serialized_agent.pop("tools", [])
@@ -493,6 +553,10 @@ class AgentManager:
                 agent.name += "_copy"
             if project_id:
                 agent.project_id = project_id
+
+            if strip_messages:
+                # we want to strip all but the first (system) message
+                agent.message_ids = [agent.message_ids[0]]
             agent = agent.create(session, actor=actor)
             pydantic_agent = agent.to_pydantic()
 

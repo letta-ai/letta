@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import copy
 import json
+import uuid
 import warnings
 from collections import OrderedDict
 from datetime import datetime, timezone
@@ -78,6 +79,7 @@ class MessageCreate(BaseModel):
         json_schema_extra=get_letta_message_content_union_str_json_schema(),
     )
     name: Optional[str] = Field(None, description="The name of the participant.")
+    otid: Optional[str] = Field(None, description="The offline threading id associated with this message")
 
     def model_dump(self, to_orm: bool = False, **kwargs) -> Dict[str, Any]:
         data = super().model_dump(**kwargs)
@@ -169,11 +171,16 @@ class Message(BaseMessage):
         return json_message
 
     @staticmethod
+    def generate_otid():
+        return str(uuid.uuid4())
+
+    @staticmethod
     def to_letta_messages_from_list(
         messages: List[Message],
         use_assistant_message: bool = True,
         assistant_message_tool_name: str = DEFAULT_MESSAGE_TOOL,
         assistant_message_tool_kwarg: str = DEFAULT_MESSAGE_TOOL_KWARG,
+        reverse: bool = True,
     ) -> List[LettaMessage]:
         if use_assistant_message:
             message_ids_to_remove = []
@@ -203,6 +210,7 @@ class Message(BaseMessage):
                 use_assistant_message=use_assistant_message,
                 assistant_message_tool_name=assistant_message_tool_name,
                 assistant_message_tool_kwarg=assistant_message_tool_kwarg,
+                reverse=reverse,
             )
         ]
 
@@ -211,6 +219,7 @@ class Message(BaseMessage):
         use_assistant_message: bool = False,
         assistant_message_tool_name: str = DEFAULT_MESSAGE_TOOL,
         assistant_message_tool_kwarg: str = DEFAULT_MESSAGE_TOOL_KWARG,
+        reverse: bool = True,
     ) -> List[LettaMessage]:
         """Convert message object (in DB format) to the style used by the original Letta API"""
         messages = []
@@ -221,18 +230,21 @@ class Message(BaseMessage):
             if self.content:
                 # Check for ReACT-style COT inside of TextContent
                 if len(self.content) == 1 and isinstance(self.content[0], TextContent):
+                    otid = Message.generate_otid_from_id(self.id, len(messages))
                     messages.append(
                         ReasoningMessage(
                             id=self.id,
                             date=self.created_at,
                             reasoning=self.content[0].text,
                             name=self.name,
+                            otid=otid,
                         )
                     )
                 # Otherwise, we may have a list of multiple types
                 else:
                     # TODO we can probably collapse these two cases into a single loop
                     for content_part in self.content:
+                        otid = Message.generate_otid_from_id(self.id, len(messages))
                         if isinstance(content_part, TextContent):
                             # COT
                             messages.append(
@@ -241,6 +253,7 @@ class Message(BaseMessage):
                                     date=self.created_at,
                                     reasoning=content_part.text,
                                     name=self.name,
+                                    otid=otid,
                                 )
                             )
                         elif isinstance(content_part, ReasoningContent):
@@ -253,6 +266,7 @@ class Message(BaseMessage):
                                     source="reasoner_model",  # TODO do we want to tag like this?
                                     signature=content_part.signature,
                                     name=self.name,
+                                    otid=otid,
                                 )
                             )
                         elif isinstance(content_part, RedactedReasoningContent):
@@ -264,6 +278,7 @@ class Message(BaseMessage):
                                     state="redacted",
                                     hidden_reasoning=content_part.data,
                                     name=self.name,
+                                    otid=otid,
                                 )
                             )
                         else:
@@ -272,6 +287,7 @@ class Message(BaseMessage):
             if self.tool_calls is not None:
                 # This is type FunctionCall
                 for tool_call in self.tool_calls:
+                    otid = Message.generate_otid_from_id(self.id, len(messages))
                     # If we're supporting using assistant message,
                     # then we want to treat certain function calls as a special case
                     if use_assistant_message and tool_call.function.name == assistant_message_tool_name:
@@ -287,6 +303,7 @@ class Message(BaseMessage):
                                 date=self.created_at,
                                 content=message_string,
                                 name=self.name,
+                                otid=otid,
                             )
                         )
                     else:
@@ -300,6 +317,7 @@ class Message(BaseMessage):
                                     tool_call_id=tool_call.id,
                                 ),
                                 name=self.name,
+                                otid=otid,
                             )
                         )
         elif self.role == MessageRole.tool:
@@ -341,6 +359,7 @@ class Message(BaseMessage):
                     stdout=self.tool_returns[0].stdout if self.tool_returns else None,
                     stderr=self.tool_returns[0].stderr if self.tool_returns else None,
                     name=self.name,
+                    otid=self.id.replace("message-", ""),
                 )
             )
         elif self.role == MessageRole.user:
@@ -357,6 +376,7 @@ class Message(BaseMessage):
                     date=self.created_at,
                     content=message_str or text_content,
                     name=self.name,
+                    otid=self.otid,
                 )
             )
         elif self.role == MessageRole.system:
@@ -372,10 +392,14 @@ class Message(BaseMessage):
                     date=self.created_at,
                     content=text_content,
                     name=self.name,
+                    otid=self.otid,
                 )
             )
         else:
             raise ValueError(self.role)
+
+        if reverse:
+            messages.reverse()
 
         return messages
 
@@ -670,6 +694,9 @@ class Message(BaseMessage):
 
         def add_xml_tag(string: str, xml_tag: Optional[str]):
             # NOTE: Anthropic docs recommends using <thinking> tag when using CoT + tool use
+            if f"<{xml_tag}>" in string and f"</{xml_tag}>" in string:
+                # don't nest if tags already exist
+                return string
             return f"<{xml_tag}>{string}</{xml_tag}" if xml_tag else string
 
         if self.role == "system":
@@ -987,6 +1014,23 @@ class Message(BaseMessage):
             raise ValueError(self.role)
 
         return cohere_message
+
+    @staticmethod
+    def generate_otid_from_id(message_id: str, index: int) -> str:
+        """
+        Convert message id to bits and change the list bit to the index
+        """
+        if not 0 <= index < 128:
+            raise ValueError("Index must be between 0 and 127")
+
+        message_uuid = message_id.replace("message-", "")
+        uuid_int = int(message_uuid.replace("-", ""), 16)
+
+        # Clear last 7 bits and set them to index; supports up to 128 unique indices
+        uuid_int = (uuid_int & ~0x7F) | (index & 0x7F)
+
+        hex_str = f"{uuid_int:032x}"
+        return f"{hex_str[:8]}-{hex_str[8:12]}-{hex_str[12:16]}-{hex_str[16:20]}-{hex_str[20:]}"
 
 
 class ToolReturn(BaseModel):

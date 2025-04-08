@@ -2,26 +2,44 @@ import os
 import random
 import string
 import time
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
+from typing import List
 
 import pytest
+from anthropic.types.beta import BetaMessage
+from anthropic.types.beta.messages import (
+    BetaMessageBatch,
+    BetaMessageBatchIndividualResponse,
+    BetaMessageBatchRequestCounts,
+    BetaMessageBatchSucceededResult,
+)
 from openai.types.chat.chat_completion_message_tool_call import ChatCompletionMessageToolCall as OpenAIToolCall
 from openai.types.chat.chat_completion_message_tool_call import Function as OpenAIFunction
 from sqlalchemy.exc import IntegrityError
+from sqlalchemy.orm.exc import StaleDataError
 
 from letta.config import LettaConfig
-from letta.constants import BASE_MEMORY_TOOLS, BASE_TOOLS, LETTA_TOOL_EXECUTION_DIR, MCP_TOOL_TAG_NAME_PREFIX, MULTI_AGENT_TOOLS
+from letta.constants import (
+    BASE_MEMORY_TOOLS,
+    BASE_SLEEPTIME_TOOLS,
+    BASE_TOOLS,
+    LETTA_TOOL_EXECUTION_DIR,
+    MCP_TOOL_TAG_NAME_PREFIX,
+    MULTI_AGENT_TOOLS,
+)
 from letta.embeddings import embedding_model
 from letta.functions.functions import derive_openai_json_schema, parse_source_code
 from letta.functions.mcp_client.types import MCPTool
-from letta.orm import Base
-from letta.orm.enums import JobType, ToolType
+from letta.helpers import ToolRulesSolver
+from letta.orm import Base, Block
+from letta.orm.block_history import BlockHistory
+from letta.orm.enums import ActorType, JobType, ToolType
 from letta.orm.errors import NoResultFound, UniqueConstraintViolationError
-from letta.schemas.agent import CreateAgent, UpdateAgent
+from letta.schemas.agent import AgentStepState, CreateAgent, UpdateAgent
 from letta.schemas.block import Block as PydanticBlock
 from letta.schemas.block import BlockUpdate, CreateBlock
 from letta.schemas.embedding_config import EmbeddingConfig
-from letta.schemas.enums import JobStatus, MessageRole
+from letta.schemas.enums import AgentStepStatus, JobStatus, MessageRole
 from letta.schemas.environment_variables import SandboxEnvironmentVariableCreate, SandboxEnvironmentVariableUpdate
 from letta.schemas.file import FileMetadata as PydanticFileMetadata
 from letta.schemas.identity import IdentityCreate, IdentityProperty, IdentityPropertyType, IdentityType, IdentityUpdate
@@ -46,6 +64,7 @@ from letta.schemas.tool import ToolCreate, ToolUpdate
 from letta.schemas.tool_rule import InitToolRule
 from letta.schemas.user import User as PydanticUser
 from letta.schemas.user import UserUpdate
+from letta.server.db import db_context
 from letta.server.server import SyncServer
 from letta.services.block_manager import BlockManager
 from letta.services.organization_manager import OrganizationManager
@@ -67,11 +86,12 @@ USING_SQLITE = not bool(os.getenv("LETTA_PG_URI"))
 
 
 @pytest.fixture(autouse=True)
-def clear_tables():
-    from letta.server.db import db_context
-
+def _clear_tables():
     with db_context() as session:
         for table in reversed(Base.metadata.sorted_tables):  # Reverse to avoid FK issues
+            # If this is the block_history table, skip it
+            if table.name == "block_history":
+                continue
             session.execute(table.delete())  # Truncate table
         session.commit()
 
@@ -556,6 +576,62 @@ def agent_with_tags(server: SyncServer, default_user):
     )
 
     return [agent1, agent2, agent3]
+
+
+@pytest.fixture
+def dummy_beta_message_batch() -> BetaMessageBatch:
+    return BetaMessageBatch(
+        id="msgbatch_013Zva2CMHLNnXjNJJKqJ2EF",
+        archived_at=datetime(2024, 8, 20, 18, 37, 24, 100435, tzinfo=timezone.utc),
+        cancel_initiated_at=datetime(2024, 8, 20, 18, 37, 24, 100435, tzinfo=timezone.utc),
+        created_at=datetime(2024, 8, 20, 18, 37, 24, 100435, tzinfo=timezone.utc),
+        ended_at=datetime(2024, 8, 20, 18, 37, 24, 100435, tzinfo=timezone.utc),
+        expires_at=datetime(2024, 8, 20, 18, 37, 24, 100435, tzinfo=timezone.utc),
+        processing_status="in_progress",
+        request_counts=BetaMessageBatchRequestCounts(
+            canceled=10,
+            errored=30,
+            expired=10,
+            processing=100,
+            succeeded=50,
+        ),
+        results_url="https://api.anthropic.com/v1/messages/batches/msgbatch_013Zva2CMHLNnXjNJJKqJ2EF/results",
+        type="message_batch",
+    )
+
+
+@pytest.fixture
+def dummy_llm_config() -> LLMConfig:
+    return LLMConfig.default_config("gpt-4")
+
+
+@pytest.fixture
+def dummy_tool_rules_solver() -> ToolRulesSolver:
+    return ToolRulesSolver(tool_rules=[InitToolRule(tool_name="send_message")])
+
+
+@pytest.fixture
+def dummy_step_state(dummy_tool_rules_solver: ToolRulesSolver) -> AgentStepState:
+    return AgentStepState(step_number=1, tool_rules_solver=dummy_tool_rules_solver)
+
+
+@pytest.fixture
+def dummy_successful_response() -> BetaMessageBatchIndividualResponse:
+    return BetaMessageBatchIndividualResponse(
+        custom_id="my-second-request",
+        result=BetaMessageBatchSucceededResult(
+            type="succeeded",
+            message=BetaMessage(
+                id="msg_abc123",
+                role="assistant",
+                type="message",
+                model="claude-3-5-sonnet-20240620",
+                content=[{"type": "text", "text": "hi!"}],
+                usage={"input_tokens": 5, "output_tokens": 7},
+                stop_reason="end_turn",
+            ),
+        ),
+    )
 
 
 # ======================================================================================================================
@@ -2163,7 +2239,7 @@ def test_delete_tool_by_id(server: SyncServer, print_tool, default_user):
 
 def test_upsert_base_tools(server: SyncServer, default_user):
     tools = server.tool_manager.upsert_base_tools(actor=default_user)
-    expected_tool_names = sorted(BASE_TOOLS + BASE_MEMORY_TOOLS + MULTI_AGENT_TOOLS)
+    expected_tool_names = sorted(set(BASE_TOOLS + BASE_MEMORY_TOOLS + MULTI_AGENT_TOOLS + BASE_SLEEPTIME_TOOLS))
     assert sorted([t.name for t in tools]) == expected_tool_names
 
     # Call it again to make sure it doesn't create duplicates
@@ -2178,6 +2254,8 @@ def test_upsert_base_tools(server: SyncServer, default_user):
             assert t.tool_type == ToolType.LETTA_MEMORY_CORE
         elif t.name in MULTI_AGENT_TOOLS:
             assert t.tool_type == ToolType.LETTA_MULTI_AGENT_CORE
+        elif t.name in BASE_SLEEPTIME_TOOLS:
+            assert t.tool_type == ToolType.LETTA_SLEEPTIME_CORE
         else:
             pytest.fail(f"The tool name is unrecognized as a base tool: {t.name}")
         assert t.source_code is None
@@ -2366,7 +2444,7 @@ def test_message_listing_text_search(server: SyncServer, hello_world_message_fix
 
 
 # ======================================================================================================================
-# Block Manager Tests
+# Block Manager Tests - Basic
 # ======================================================================================================================
 
 
@@ -2573,6 +2651,572 @@ def test_get_agents_for_block(server: SyncServer, sarah_agent, charles_agent, de
     agent_state_ids = [a.id for a in agent_states]
     assert sarah_agent.id in agent_state_ids
     assert charles_agent.id in agent_state_ids
+
+
+# ======================================================================================================================
+# Block Manager Tests - Checkpointing
+# ======================================================================================================================
+
+
+def test_checkpoint_creates_history(server: SyncServer, default_user):
+    """
+    Ensures that calling checkpoint_block creates a BlockHistory row and updates
+    the block's current_history_entry_id appropriately.
+    """
+
+    block_manager = BlockManager()
+
+    # Create a block
+    initial_value = "Initial block content"
+    created_block = block_manager.create_or_update_block(PydanticBlock(label="test_checkpoint", value=initial_value), actor=default_user)
+
+    # Act: checkpoint it
+    block_manager.checkpoint_block(block_id=created_block.id, actor=default_user)
+
+    with db_context() as session:
+        # Get BlockHistory entries for this block
+        history_entries: List[BlockHistory] = session.query(BlockHistory).filter(BlockHistory.block_id == created_block.id).all()
+        assert len(history_entries) == 1, "Exactly one history entry should be created"
+        hist = history_entries[0]
+
+        # Fetch ORM block for internal checks
+        db_block = session.get(Block, created_block.id)
+
+        assert hist.sequence_number == 1
+        assert hist.value == initial_value
+        assert hist.actor_type == ActorType.LETTA_USER
+        assert hist.actor_id == default_user.id
+        assert db_block.current_history_entry_id == hist.id
+
+
+def test_multiple_checkpoints(server: SyncServer, default_user):
+    block_manager = BlockManager()
+
+    # Create a block
+    block = block_manager.create_or_update_block(PydanticBlock(label="test_multi_checkpoint", value="v1"), actor=default_user)
+
+    # 1) First checkpoint
+    block_manager.checkpoint_block(block_id=block.id, actor=default_user)
+
+    # 2) Update block content
+    updated_block_data = PydanticBlock(**block.dict())
+    updated_block_data.value = "v2"
+    block_manager.create_or_update_block(updated_block_data, actor=default_user)
+
+    # 3) Second checkpoint
+    block_manager.checkpoint_block(block_id=block.id, actor=default_user)
+
+    with db_context() as session:
+        history_entries = (
+            session.query(BlockHistory).filter(BlockHistory.block_id == block.id).order_by(BlockHistory.sequence_number.asc()).all()
+        )
+        assert len(history_entries) == 2, "Should have two history entries"
+
+        # First is seq=1, value='v1'
+        assert history_entries[0].sequence_number == 1
+        assert history_entries[0].value == "v1"
+
+        # Second is seq=2, value='v2'
+        assert history_entries[1].sequence_number == 2
+        assert history_entries[1].value == "v2"
+
+        # The block should now point to the second entry
+        db_block = session.get(Block, block.id)
+        assert db_block.current_history_entry_id == history_entries[1].id
+
+
+def test_checkpoint_with_agent_id(server: SyncServer, default_user, sarah_agent):
+    """
+    Ensures that if we pass agent_id to checkpoint_block, we get
+    actor_type=LETTA_AGENT, actor_id=<agent.id> in BlockHistory.
+    """
+    block_manager = BlockManager()
+
+    # Create a block
+    block = block_manager.create_or_update_block(PydanticBlock(label="test_agent_checkpoint", value="Agent content"), actor=default_user)
+
+    # Checkpoint with agent_id
+    block_manager.checkpoint_block(block_id=block.id, actor=default_user, agent_id=sarah_agent.id)
+
+    # Verify
+    with db_context() as session:
+        hist_entry = session.query(BlockHistory).filter(BlockHistory.block_id == block.id).one()
+        assert hist_entry.actor_type == ActorType.LETTA_AGENT
+        assert hist_entry.actor_id == sarah_agent.id
+
+
+def test_checkpoint_with_no_state_change(server: SyncServer, default_user):
+    """
+    If we call checkpoint_block twice without any edits,
+    we expect two entries or only one, depending on your policy.
+    """
+    block_manager = BlockManager()
+
+    # Create block
+    block = block_manager.create_or_update_block(PydanticBlock(label="test_no_change", value="original"), actor=default_user)
+
+    # 1) checkpoint
+    block_manager.checkpoint_block(block_id=block.id, actor=default_user)
+    # 2) checkpoint again (no changes)
+    block_manager.checkpoint_block(block_id=block.id, actor=default_user)
+
+    with db_context() as session:
+        all_hist = session.query(BlockHistory).filter(BlockHistory.block_id == block.id).all()
+        assert len(all_hist) == 2
+
+
+def test_checkpoint_concurrency_stale(server: SyncServer, default_user):
+    block_manager = BlockManager()
+
+    # create block
+    block = block_manager.create_or_update_block(PydanticBlock(label="test_stale_checkpoint", value="hello"), actor=default_user)
+
+    # session1 loads
+    with db_context() as s1:
+        block_s1 = s1.get(Block, block.id)  # version=1
+
+    # session2 loads
+    with db_context() as s2:
+        block_s2 = s2.get(Block, block.id)  # also version=1
+
+    # session1 checkpoint => version=2
+    with db_context() as s1:
+        block_s1 = s1.merge(block_s1)
+        block_manager.checkpoint_block(
+            block_id=block_s1.id,
+            actor=default_user,
+            use_preloaded_block=block_s1,  # let manager use the object in memory
+        )
+        # commits inside checkpoint_block => version goes to 2
+
+    # session2 tries to checkpoint => sees old version=1 => stale error
+    with pytest.raises(StaleDataError):
+        with db_context() as s2:
+            block_s2 = s2.merge(block_s2)
+            block_manager.checkpoint_block(
+                block_id=block_s2.id,
+                actor=default_user,
+                use_preloaded_block=block_s2,
+            )
+
+
+def test_checkpoint_no_future_states(server: SyncServer, default_user):
+    """
+    Ensures that if the block is already at the highest sequence,
+    creating a new checkpoint does NOT delete anything.
+    """
+
+    block_manager = BlockManager()
+
+    # 1) Create block with "v1" and checkpoint => seq=1
+    block_v1 = block_manager.create_or_update_block(PydanticBlock(label="no_future_test", value="v1"), actor=default_user)
+    block_manager.checkpoint_block(block_id=block_v1.id, actor=default_user)
+
+    # 2) Create "v2" and checkpoint => seq=2
+    updated_data = PydanticBlock(**block_v1.dict())
+    updated_data.value = "v2"
+    block_manager.create_or_update_block(updated_data, actor=default_user)
+    block_manager.checkpoint_block(block_id=block_v1.id, actor=default_user)
+
+    # So we have seq=1: v1, seq=2: v2. No "future" states.
+    # 3) Another checkpoint (no changes made) => should become seq=3, not delete anything
+    block_manager.checkpoint_block(block_id=block_v1.id, actor=default_user)
+
+    with db_context() as session:
+        # We expect 3 rows in block_history, none removed
+        history_rows = (
+            session.query(BlockHistory).filter(BlockHistory.block_id == block_v1.id).order_by(BlockHistory.sequence_number.asc()).all()
+        )
+        # Should be seq=1, seq=2, seq=3
+        assert len(history_rows) == 3
+        assert history_rows[0].value == "v1"
+        assert history_rows[1].value == "v2"
+        # The last is also "v2" if we didn't change it, or the same current fields
+        assert history_rows[2].sequence_number == 3
+        # There's no leftover row that was deleted
+
+
+# ======================================================================================================================
+# Block Manager Tests - Undo
+# ======================================================================================================================
+
+
+def test_undo_checkpoint_block(server: SyncServer, default_user):
+    """
+    Verifies that we can undo to the previous checkpoint:
+      1) Create a block and checkpoint -> sequence_number=1
+      2) Update block content and checkpoint -> sequence_number=2
+      3) Undo -> should revert block to sequence_number=1's content
+    """
+    block_manager = BlockManager()
+
+    # 1) Create block
+    initial_value = "Version 1 content"
+    created_block = block_manager.create_or_update_block(PydanticBlock(label="undo_test", value=initial_value), actor=default_user)
+
+    # 2) First checkpoint => seq=1
+    block_manager.checkpoint_block(block_id=created_block.id, actor=default_user)
+
+    # 3) Update block content to "Version 2"
+    updated_data = PydanticBlock(**created_block.dict())
+    updated_data.value = "Version 2 content"
+    block_manager.create_or_update_block(updated_data, actor=default_user)
+
+    # 4) Second checkpoint => seq=2
+    block_manager.checkpoint_block(block_id=created_block.id, actor=default_user)
+
+    # 5) Undo => revert to seq=1
+    undone_block = block_manager.undo_checkpoint_block(block_id=created_block.id, actor=default_user)
+
+    # 6) Verify the block is now restored to "Version 1" content
+    assert undone_block.value == initial_value, "Block should revert to version 1 content"
+    assert undone_block.label == "undo_test", "Label should also revert if changed (or remain the same if unchanged)"
+
+
+def test_checkpoint_deletes_future_states_after_undo(server: SyncServer, default_user):
+    """
+    Verifies that once we've undone to an earlier checkpoint, creating a new
+    checkpoint removes any leftover 'future' states that existed beyond that sequence.
+    """
+    block_manager = BlockManager()
+
+    # 1) Create block
+    block_init = PydanticBlock(label="test_truncation", value="v1")
+    block_v1 = block_manager.create_or_update_block(block_init, actor=default_user)
+    # Checkpoint => seq=1
+    block_manager.checkpoint_block(block_id=block_v1.id, actor=default_user)
+
+    # 2) Update to "v2", checkpoint => seq=2
+    block_v2 = PydanticBlock(**block_v1.dict())
+    block_v2.value = "v2"
+    block_manager.create_or_update_block(block_v2, actor=default_user)
+    block_manager.checkpoint_block(block_id=block_v1.id, actor=default_user)
+
+    # 3) Update to "v3", checkpoint => seq=3
+    block_v3 = PydanticBlock(**block_v1.dict())
+    block_v3.value = "v3"
+    block_manager.create_or_update_block(block_v3, actor=default_user)
+    block_manager.checkpoint_block(block_id=block_v1.id, actor=default_user)
+
+    # We now have three states in history: seq=1 (v1), seq=2 (v2), seq=3 (v3).
+
+    # Undo from seq=3 -> seq=2
+    block_undo_1 = block_manager.undo_checkpoint_block(block_v1.id, actor=default_user)
+    assert block_undo_1.value == "v2"
+
+    # Undo from seq=2 -> seq=1
+    block_undo_2 = block_manager.undo_checkpoint_block(block_v1.id, actor=default_user)
+    assert block_undo_2.value == "v1"
+
+    # 4) Now we are at seq=1. If we checkpoint again, we should remove the old seq=2,3
+    #    because the new code truncates future states beyond seq=1.
+
+    # Let's do a new edit: "v1.5"
+    block_v1_5 = PydanticBlock(**block_undo_2.dict())
+    block_v1_5.value = "v1.5"
+    block_manager.create_or_update_block(block_v1_5, actor=default_user)
+
+    # 5) Checkpoint => new seq=2, removing the old seq=2 and seq=3
+    block_manager.checkpoint_block(block_id=block_v1.id, actor=default_user)
+
+    with db_context() as session:
+        # Let's see which BlockHistory rows remain
+        history_entries = (
+            session.query(BlockHistory).filter(BlockHistory.block_id == block_v1.id).order_by(BlockHistory.sequence_number.asc()).all()
+        )
+
+        # We expect two rows: seq=1 => "v1", seq=2 => "v1.5"
+        assert len(history_entries) == 2, f"Expected 2 entries, got {len(history_entries)}"
+        assert history_entries[0].sequence_number == 1
+        assert history_entries[0].value == "v1"
+        assert history_entries[1].sequence_number == 2
+        assert history_entries[1].value == "v1.5"
+
+        # No row should contain "v2" or "v3"
+        existing_values = {h.value for h in history_entries}
+        assert "v2" not in existing_values, "Old seq=2 should have been removed."
+        assert "v3" not in existing_values, "Old seq=3 should have been removed."
+
+
+def test_undo_no_history(server: SyncServer, default_user):
+    """
+    If a block has never been checkpointed (no current_history_entry_id),
+    undo_checkpoint_block should raise a ValueError.
+    """
+    block_manager = BlockManager()
+
+    # Create a block but don't checkpoint it
+    block = block_manager.create_or_update_block(PydanticBlock(label="no_history_test", value="initial"), actor=default_user)
+
+    # Attempt to undo
+    with pytest.raises(ValueError, match="has no history entry - cannot undo"):
+        block_manager.undo_checkpoint_block(block_id=block.id, actor=default_user)
+
+
+def test_undo_first_checkpoint(server: SyncServer, default_user):
+    """
+    If the block is at the first checkpoint (sequence_number=1),
+    undo should fail because there's no prior checkpoint.
+    """
+    block_manager = BlockManager()
+
+    # 1) Create the block
+    block_data = PydanticBlock(label="first_checkpoint", value="Version1")
+    block = block_manager.create_or_update_block(block_data, actor=default_user)
+
+    # 2) First checkpoint => seq=1
+    block_manager.checkpoint_block(block_id=block.id, actor=default_user)
+
+    # Attempt undo -> expect ValueError
+    with pytest.raises(ValueError, match="Cannot undo further"):
+        block_manager.undo_checkpoint_block(block_id=block.id, actor=default_user)
+
+
+def test_undo_multiple_checkpoints(server: SyncServer, default_user):
+    """
+    Tests multiple checkpoints in a row, then undo repeatedly
+    from seq=3 -> seq=2 -> seq=1, verifying each revert.
+    """
+    block_manager = BlockManager()
+
+    # Step 1: Create block
+    block_data = PydanticBlock(label="multi_checkpoint", value="v1")
+    block_v1 = block_manager.create_or_update_block(block_data, actor=default_user)
+    # checkpoint => seq=1
+    block_manager.checkpoint_block(block_id=block_v1.id, actor=default_user)
+
+    # Step 2: Update to v2, checkpoint => seq=2
+    block_data_v2 = PydanticBlock(**block_v1.dict())
+    block_data_v2.value = "v2"
+    block_manager.create_or_update_block(block_data_v2, actor=default_user)
+    block_manager.checkpoint_block(block_id=block_v1.id, actor=default_user)
+
+    # Step 3: Update to v3, checkpoint => seq=3
+    block_data_v3 = PydanticBlock(**block_v1.dict())
+    block_data_v3.value = "v3"
+    block_manager.create_or_update_block(block_data_v3, actor=default_user)
+    block_manager.checkpoint_block(block_id=block_v1.id, actor=default_user)
+
+    # Now we have 3 seq: v1, v2, v3
+    # Undo from seq=3 -> seq=2
+    undone_block = block_manager.undo_checkpoint_block(block_v1.id, actor=default_user)
+    assert undone_block.value == "v2"
+
+    # Undo from seq=2 -> seq=1
+    undone_block = block_manager.undo_checkpoint_block(block_v1.id, actor=default_user)
+    assert undone_block.value == "v1"
+
+    # Try once more -> fails because seq=1 is the earliest
+    with pytest.raises(ValueError, match="Cannot undo further"):
+        block_manager.undo_checkpoint_block(block_v1.id, actor=default_user)
+
+
+def test_undo_concurrency_stale(server: SyncServer, default_user):
+    """
+    Demonstrate concurrency: both sessions start with the block at seq=2,
+    one session undoes first -> block now seq=1, version increments,
+    the other session tries to undo with stale data -> StaleDataError.
+    """
+    block_manager = BlockManager()
+
+    # 1) create block
+    block_data = PydanticBlock(label="concurrency_undo", value="v1")
+    block_v1 = block_manager.create_or_update_block(block_data, actor=default_user)
+    # checkpoint => seq=1
+    block_manager.checkpoint_block(block_v1.id, actor=default_user)
+
+    # 2) update to v2
+    block_data_v2 = PydanticBlock(**block_v1.dict())
+    block_data_v2.value = "v2"
+    block_manager.create_or_update_block(block_data_v2, actor=default_user)
+    # checkpoint => seq=2
+    block_manager.checkpoint_block(block_v1.id, actor=default_user)
+
+    # Now block is at seq=2
+
+    # session1 preloads the block
+    with db_context() as s1:
+        block_s1 = s1.get(Block, block_v1.id)  # version=? let's say 2 in memory
+
+    # session2 also preloads the block
+    with db_context() as s2:
+        block_s2 = s2.get(Block, block_v1.id)  # also version=2
+
+    # Session1 -> undo to seq=1
+    block_manager.undo_checkpoint_block(
+        block_id=block_v1.id, actor=default_user, use_preloaded_block=block_s1  # stale object from session1
+    )
+    # This commits first => block now points to seq=1, version increments
+
+    # Session2 tries the same undo, but it's stale
+    with pytest.raises(StaleDataError):
+        block_manager.undo_checkpoint_block(block_id=block_v1.id, actor=default_user, use_preloaded_block=block_s2)  # also seq=2 in memory
+
+
+# ======================================================================================================================
+# Block Manager Tests - Redo
+# ======================================================================================================================
+
+
+def test_redo_checkpoint_block(server: SyncServer, default_user):
+    """
+    1) Create a block with value v1 -> checkpoint => seq=1
+    2) Update to v2 -> checkpoint => seq=2
+    3) Update to v3 -> checkpoint => seq=3
+    4) Undo once (seq=3 -> seq=2)
+    5) Redo once (seq=2 -> seq=3)
+    """
+
+    block_manager = BlockManager()
+
+    # 1) Create block, set value='v1'; checkpoint => seq=1
+    block_v1 = block_manager.create_or_update_block(PydanticBlock(label="redo_test", value="v1"), actor=default_user)
+    block_manager.checkpoint_block(block_id=block_v1.id, actor=default_user)
+
+    # 2) Update to 'v2'; checkpoint => seq=2
+    block_v2 = PydanticBlock(**block_v1.dict())
+    block_v2.value = "v2"
+    block_manager.create_or_update_block(block_v2, actor=default_user)
+    block_manager.checkpoint_block(block_id=block_v1.id, actor=default_user)
+
+    # 3) Update to 'v3'; checkpoint => seq=3
+    block_v3 = PydanticBlock(**block_v1.dict())
+    block_v3.value = "v3"
+    block_manager.create_or_update_block(block_v3, actor=default_user)
+    block_manager.checkpoint_block(block_id=block_v1.id, actor=default_user)
+
+    # Undo from seq=3 -> seq=2
+    undone_block = block_manager.undo_checkpoint_block(block_v1.id, actor=default_user)
+    assert undone_block.value == "v2", "After undo, block should revert to v2"
+
+    # Redo from seq=2 -> seq=3
+    redone_block = block_manager.redo_checkpoint_block(block_v1.id, actor=default_user)
+    assert redone_block.value == "v3", "After redo, block should go back to v3"
+
+
+def test_redo_no_history(server: SyncServer, default_user):
+    """
+    If a block has no current_history_entry_id (never checkpointed),
+    then redo_checkpoint_block should raise ValueError.
+    """
+    block_manager = BlockManager()
+
+    # Create block with no checkpoint
+    block = block_manager.create_or_update_block(PydanticBlock(label="redo_no_history", value="v0"), actor=default_user)
+
+    # Attempt to redo => expect ValueError
+    with pytest.raises(ValueError, match="no history entry - cannot redo"):
+        block_manager.redo_checkpoint_block(block.id, actor=default_user)
+
+
+def test_redo_at_highest_checkpoint(server: SyncServer, default_user):
+    """
+    If the block is at the maximum sequence number, there's no higher checkpoint to move to.
+    redo_checkpoint_block should raise ValueError.
+    """
+    block_manager = BlockManager()
+
+    # 1) Create block => checkpoint => seq=1
+    b_init = block_manager.create_or_update_block(PydanticBlock(label="redo_highest", value="v1"), actor=default_user)
+    block_manager.checkpoint_block(b_init.id, actor=default_user)
+
+    # 2) Another edit => seq=2
+    b_next = PydanticBlock(**b_init.dict())
+    b_next.value = "v2"
+    block_manager.create_or_update_block(b_next, actor=default_user)
+    block_manager.checkpoint_block(b_init.id, actor=default_user)
+
+    # We are at seq=2, which is the highest checkpoint.
+    # Attempt redo => there's no seq=3
+    with pytest.raises(ValueError, match="Cannot redo further"):
+        block_manager.redo_checkpoint_block(b_init.id, actor=default_user)
+
+
+def test_redo_after_multiple_undo(server: SyncServer, default_user):
+    """
+    1) Create and checkpoint versions: v1 -> seq=1, v2 -> seq=2, v3 -> seq=3, v4 -> seq=4
+    2) Undo thrice => from seq=4 to seq=1
+    3) Redo thrice => from seq=1 back to seq=4
+    """
+    block_manager = BlockManager()
+
+    # Step 1: create initial block => seq=1
+    b_init = block_manager.create_or_update_block(PydanticBlock(label="redo_multi", value="v1"), actor=default_user)
+    block_manager.checkpoint_block(b_init.id, actor=default_user)
+
+    # seq=2
+    b_v2 = PydanticBlock(**b_init.dict())
+    b_v2.value = "v2"
+    block_manager.create_or_update_block(b_v2, actor=default_user)
+    block_manager.checkpoint_block(b_init.id, actor=default_user)
+
+    # seq=3
+    b_v3 = PydanticBlock(**b_init.dict())
+    b_v3.value = "v3"
+    block_manager.create_or_update_block(b_v3, actor=default_user)
+    block_manager.checkpoint_block(b_init.id, actor=default_user)
+
+    # seq=4
+    b_v4 = PydanticBlock(**b_init.dict())
+    b_v4.value = "v4"
+    block_manager.create_or_update_block(b_v4, actor=default_user)
+    block_manager.checkpoint_block(b_init.id, actor=default_user)
+
+    # We have 4 checkpoints: v1...v4. Current is seq=4.
+
+    # 2) Undo thrice => from seq=4 -> seq=1
+    for expected_value in ["v3", "v2", "v1"]:
+        undone_block = block_manager.undo_checkpoint_block(b_init.id, actor=default_user)
+        assert undone_block.value == expected_value, f"Undo should get us back to {expected_value}"
+
+    # 3) Redo thrice => from seq=1 -> seq=4
+    for expected_value in ["v2", "v3", "v4"]:
+        redone_block = block_manager.redo_checkpoint_block(b_init.id, actor=default_user)
+        assert redone_block.value == expected_value, f"Redo should get us forward to {expected_value}"
+
+
+def test_redo_concurrency_stale(server: SyncServer, default_user):
+    block_manager = BlockManager()
+
+    # 1) Create block => checkpoint => seq=1
+    block = block_manager.create_or_update_block(PydanticBlock(label="redo_concurrency", value="v1"), actor=default_user)
+    block_manager.checkpoint_block(block.id, actor=default_user)
+
+    # 2) Another edit => checkpoint => seq=2
+    block_v2 = PydanticBlock(**block.dict())
+    block_v2.value = "v2"
+    block_manager.create_or_update_block(block_v2, actor=default_user)
+    block_manager.checkpoint_block(block.id, actor=default_user)
+
+    # 3) Another edit => checkpoint => seq=3
+    block_v3 = PydanticBlock(**block.dict())
+    block_v3.value = "v3"
+    block_manager.create_or_update_block(block_v3, actor=default_user)
+    block_manager.checkpoint_block(block.id, actor=default_user)
+    # Now the block is at seq=3 in the DB
+
+    # 4) Undo from seq=3 -> seq=2 so that we have a known future state at seq=3
+    undone_block = block_manager.undo_checkpoint_block(block.id, actor=default_user)
+    assert undone_block.value == "v2"
+
+    # At this point the block is physically at seq=2 in DB,
+    # but there's a valid row for seq=3 in block_history (the 'v3' state).
+
+    # 5) Simulate concurrency: two sessions each read the block at seq=2
+    with db_context() as s1:
+        block_s1 = s1.get(Block, block.id)
+    with db_context() as s2:
+        block_s2 = s2.get(Block, block.id)
+
+    # 6) Session1 redoes to seq=3 first -> success
+    block_manager.redo_checkpoint_block(block_id=block.id, actor=default_user, use_preloaded_block=block_s1)
+    # commits => block is now seq=3 in DB, version increments
+
+    # 7) Session2 tries to do the same from stale version
+    # => we expect StaleDataError, because the second session is using
+    #    an out-of-date version of the block
+    with pytest.raises(StaleDataError):
+        block_manager.redo_checkpoint_block(block_id=block.id, actor=default_user, use_preloaded_block=block_s2)
 
 
 # ======================================================================================================================
@@ -4034,3 +4678,123 @@ def test_list_tags(server: SyncServer, default_user, default_organization):
     # Cleanup
     for agent in agents:
         server.agent_manager.delete_agent(agent.id, actor=default_user)
+
+
+# ======================================================================================================================
+# LLMBatchManager Tests
+# ======================================================================================================================
+
+
+def test_create_and_get_batch_request(server, default_user, dummy_beta_message_batch):
+    batch = server.batch_manager.create_batch_request(
+        llm_provider="anthropic",
+        status=JobStatus.created,
+        create_batch_response=dummy_beta_message_batch,
+        actor=default_user,
+    )
+    assert batch.id.startswith("batch_req-")
+    assert batch.create_batch_response == dummy_beta_message_batch
+    fetched = server.batch_manager.get_batch_request_by_id(batch.id, actor=default_user)
+    assert fetched.id == batch.id
+
+
+def test_update_batch_status(server, default_user, dummy_beta_message_batch):
+    batch = server.batch_manager.create_batch_request(
+        llm_provider="anthropic",
+        status=JobStatus.created,
+        create_batch_response=dummy_beta_message_batch,
+        actor=default_user,
+    )
+    before = datetime.now(timezone.utc)
+
+    server.batch_manager.update_batch_status(
+        batch_id=batch.id,
+        status=JobStatus.completed,
+        latest_polling_response=dummy_beta_message_batch,
+        actor=default_user,
+    )
+
+    updated = server.batch_manager.get_batch_request_by_id(batch.id, actor=default_user)
+    assert updated.status == JobStatus.completed
+    assert updated.latest_polling_response == dummy_beta_message_batch
+    assert updated.last_polled_at >= before
+
+
+def test_create_and_get_batch_item(server, default_user, sarah_agent, dummy_beta_message_batch, dummy_llm_config, dummy_step_state):
+    batch = server.batch_manager.create_batch_request(
+        llm_provider="anthropic",
+        status=JobStatus.created,
+        create_batch_response=dummy_beta_message_batch,
+        actor=default_user,
+    )
+
+    item = server.batch_manager.create_batch_item(
+        batch_id=batch.id,
+        agent_id=sarah_agent.id,
+        llm_config=dummy_llm_config,
+        step_state=dummy_step_state,
+        actor=default_user,
+    )
+
+    assert item.batch_id == batch.id
+    assert item.agent_id == sarah_agent.id
+    assert item.step_state == dummy_step_state
+
+    fetched = server.batch_manager.get_batch_item_by_id(item.id, actor=default_user)
+    assert fetched.id == item.id
+
+
+def test_update_batch_item(
+    server, default_user, sarah_agent, dummy_beta_message_batch, dummy_llm_config, dummy_step_state, dummy_successful_response
+):
+    batch = server.batch_manager.create_batch_request(
+        llm_provider="anthropic",
+        status=JobStatus.created,
+        create_batch_response=dummy_beta_message_batch,
+        actor=default_user,
+    )
+
+    item = server.batch_manager.create_batch_item(
+        batch_id=batch.id,
+        agent_id=sarah_agent.id,
+        llm_config=dummy_llm_config,
+        step_state=dummy_step_state,
+        actor=default_user,
+    )
+
+    updated_step_state = AgentStepState(step_number=2, tool_rules_solver=dummy_step_state.tool_rules_solver)
+
+    server.batch_manager.update_batch_item(
+        item_id=item.id,
+        request_status=JobStatus.completed,
+        step_status=AgentStepStatus.running,
+        llm_request_response=dummy_successful_response,
+        step_state=updated_step_state,
+        actor=default_user,
+    )
+
+    updated = server.batch_manager.get_batch_item_by_id(item.id, actor=default_user)
+    assert updated.request_status == JobStatus.completed
+    assert updated.batch_request_result == dummy_successful_response
+
+
+def test_delete_batch_item(server, default_user, sarah_agent, dummy_beta_message_batch, dummy_llm_config, dummy_step_state):
+    batch = server.batch_manager.create_batch_request(
+        llm_provider="anthropic",
+        status=JobStatus.created,
+        create_batch_response=dummy_beta_message_batch,
+        actor=default_user,
+    )
+
+    item = server.batch_manager.create_batch_item(
+        batch_id=batch.id,
+        agent_id=sarah_agent.id,
+        llm_config=dummy_llm_config,
+        step_state=dummy_step_state,
+        actor=default_user,
+    )
+
+    server.batch_manager.delete_batch_item(item_id=item.id, actor=default_user)
+
+    with pytest.raises(NoResultFound):
+        server.batch_manager.get_batch_item_by_id(item.id, actor=default_user)

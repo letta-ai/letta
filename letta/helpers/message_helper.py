@@ -38,4 +38,5 @@ def prepare_input_message_create(
         model=None,  # assigned later?
         tool_calls=None,  # irrelevant
         tool_call_id=None,
+        otid=message.otid,
     )
