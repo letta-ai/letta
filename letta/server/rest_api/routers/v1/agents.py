@@ -31,6 +31,7 @@ from letta.schemas.user import User
 from letta.serialize_schemas.pydantic_agent_schema import AgentSchema
 from letta.server.rest_api.utils import get_letta_server
 from letta.server.server import SyncServer
+from letta.settings import settings
 
 # These can be forward refs, but because Fastapi needs them at runtime the must be imported normally
 
@@ -598,6 +599,7 @@ async def send_message(
         and not agent.enable_sleeptime
         and not agent.multi_agent_group
         and not agent.agent_type == AgentType.sleeptime_agent
+        and settings.use_experimental
     ):
         experimental_agent = LettaAgent(
             agent_id=agent_id,
@@ -659,6 +661,7 @@ async def send_message_streaming(
         and not agent.enable_sleeptime
         and not agent.multi_agent_group
         and not agent.agent_type == AgentType.sleeptime_agent
+        and settings.use_experimental
     ):
         experimental_agent = LettaAgent(
             agent_id=agent_id,
