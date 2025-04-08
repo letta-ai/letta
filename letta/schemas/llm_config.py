@@ -2,6 +2,10 @@ from typing import Literal, Optional
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
+from letta.log import get_logger
+
+logger = get_logger(__name__)
+
 
 class LLMConfig(BaseModel):
     """
@@ -88,14 +92,14 @@ class LLMConfig(BaseModel):
         return values
 
     @model_validator(mode="after")
-    def validate_reasoning_constraints(self) -> "LLMConfig":
+    def issue_warning_for_reasoning_constraints(self) -> "LLMConfig":
         if self.enable_reasoner:
             if self.max_reasoning_tokens is None:
-                raise ValueError("max_reasoning_tokens must be set when enable_reasoner is True")
+                logger.warning("max_reasoning_tokens must be set when enable_reasoner is True")
             if self.max_tokens is not None and self.max_reasoning_tokens >= self.max_tokens:
-                raise ValueError("max_tokens must be greater than max_reasoning_tokens (thinking budget)")
+                logger.warning("max_tokens must be greater than max_reasoning_tokens (thinking budget)")
             if self.put_inner_thoughts_in_kwargs:
-                raise ValueError("Extended thinking is not compatible with put_inner_thoughts_in_kwargs")
+                logger.warning("Extended thinking is not compatible with put_inner_thoughts_in_kwargs")
         return self
 
     @classmethod
