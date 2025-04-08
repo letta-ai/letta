@@ -338,11 +338,11 @@ export function useSendMessage(
 
               if (!hasExistingMessage) {
                 transformedMessages = [
+                  ...transformedMessages,
                   {
                     ...extracted,
                     date: new Date().toISOString(),
                   },
-                  ...transformedMessages,
                 ];
               }
 
