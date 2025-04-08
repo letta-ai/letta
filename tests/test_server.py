@@ -1116,7 +1116,47 @@ def test_load_file_to_source(server: SyncServer, user_id: str, agent_id: str, ot
     assert any("Anna".lower() in passage.text.lower() for passage in passages2)
 
 
-def test_add_remove_tools_update_agent(server: SyncServer, user_id: str, base_tools):
+def test_add_nonexisting_tool(server: SyncServer, user_id: str, base_tools):
+    actor = server.user_manager.get_user_or_default(user_id)
+
+    # create agent
+    with pytest.raises(ValueError, match="not found"):
+        agent_state = server.create_agent(
+            request=CreateAgent(
+                name="memory_rebuild_test_agent",
+                tools=["fake_nonexisting_tool"],
+                memory_blocks=[
+                    CreateBlock(label="human", value="The human's name is Bob."),
+                    CreateBlock(label="persona", value="My name is Alice."),
+                ],
+                model="openai/gpt-4o-mini",
+                embedding="openai/text-embedding-ada-002",
+                include_base_tools=True,
+            ),
+            actor=actor,
+        )
+
+
+def test_default_tool_rules(server: SyncServer, user_id: str, base_tools, base_memory_tools):
+    actor = server.user_manager.get_user_or_default(user_id)
+
+    # create agent
+    agent_state = server.create_agent(
+        request=CreateAgent(
+            name="tool_rules_test_agent",
+            tool_ids=[t.id for t in base_tools + base_memory_tools],
+            memory_blocks=[],
+            model="openai/gpt-4o-mini",
+            embedding="openai/text-embedding-ada-002",
+            include_base_tools=False,
+        ),
+        actor=actor,
+    )
+
+    assert len(agent_state.tool_rules) == len(base_tools + base_memory_tools)
+
+
+def test_add_remove_tools_update_agent(server: SyncServer, user_id: str, base_tools, base_memory_tools):
     """Test that the memory rebuild is generating the correct number of role=system messages"""
     actor = server.user_manager.get_user_or_default(user_id)
 
