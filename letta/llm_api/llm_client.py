@@ -49,5 +49,12 @@ class LLMClient:
                     llm_config=llm_config,
                     put_inner_thoughts_first=put_inner_thoughts_first,
                 )
+            case "openai":
+                from letta.llm_api.openai_client import OpenAIClient
+
+                return OpenAIClient(
+                    llm_config=llm_config,
+                    put_inner_thoughts_first=put_inner_thoughts_first,
+                )
             case _:
                 return None

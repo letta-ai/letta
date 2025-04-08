@@ -18,7 +18,7 @@ from letta.errors import ContextWindowExceededError, RateLimitExceededError
 from letta.helpers.datetime_helpers import get_utc_time
 from letta.log import get_logger
 from letta.schemas.enums import MessageRole
-from letta.schemas.letta_message_content import TextContent
+from letta.schemas.letta_message_content import OmittedReasoningContent, ReasoningContent, RedactedReasoningContent, TextContent
 from letta.schemas.message import Message
 from letta.schemas.usage import LettaUsageStatistics
 from letta.schemas.user import User
@@ -167,7 +167,7 @@ def create_user_message(input_message: dict, agent_id: str, actor: User) -> Mess
     return user_message
 
 
-def create_tool_call_messages_from_openai_response(
+def create_letta_messages_from_llm_response(
     agent_id: str,
     model: str,
     function_name: str,
@@ -177,6 +177,9 @@ def create_tool_call_messages_from_openai_response(
     function_response: Optional[str],
     actor: User,
     add_heartbeat_request_system_message: bool = False,
+    reasoning_content: Optional[List[Union[TextContent, ReasoningContent, RedactedReasoningContent, OmittedReasoningContent]]] = None,
+    pre_computed_assistant_message_id: Optional[str] = None,
+    pre_computed_tool_message_id: Optional[str] = None,
 ) -> List[Message]:
     messages = []
 
@@ -190,9 +193,11 @@ def create_tool_call_messages_from_openai_response(
         ),
         type="function",
     )
+    # TODO: Use ToolCallContent instead of tool_calls
+    # TODO: This helps preserve ordering
     assistant_message = Message(
         role=MessageRole.assistant,
-        content=[],
+        content=reasoning_content if reasoning_content else [],
         organization_id=actor.organization_id,
         agent_id=agent_id,
         model=model,
@@ -200,8 +205,12 @@ def create_tool_call_messages_from_openai_response(
         tool_call_id=tool_call_id,
         created_at=get_utc_time(),
     )
+    if pre_computed_assistant_message_id:
+        assistant_message.id = pre_computed_assistant_message_id
     messages.append(assistant_message)
 
+    # TODO: Use ToolReturnContent instead of TextContent
+    # TODO: This helps preserve ordering
     tool_message = Message(
         role=MessageRole.tool,
         content=[TextContent(text=package_function_response(function_call_success, function_response))],
@@ -212,6 +221,8 @@ def create_tool_call_messages_from_openai_response(
         tool_call_id=tool_call_id,
         created_at=get_utc_time(),
     )
+    if pre_computed_tool_message_id:
+        tool_message.id = pre_computed_tool_message_id
     messages.append(tool_message)
 
     if add_heartbeat_request_system_message:
@@ -243,7 +254,7 @@ def create_assistant_messages_from_openai_response(
     """
     tool_call_id = str(uuid.uuid4())
 
-    return create_tool_call_messages_from_openai_response(
+    return create_letta_messages_from_llm_response(
         agent_id=agent_id,
         model=model,
         function_name=DEFAULT_MESSAGE_TOOL,

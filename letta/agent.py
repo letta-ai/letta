@@ -52,7 +52,11 @@ from letta.schemas.tool_rule import TerminalToolRule
 from letta.schemas.usage import LettaUsageStatistics
 from letta.services.agent_manager import AgentManager
 from letta.services.block_manager import BlockManager
-from letta.services.helpers.agent_manager_helper import check_supports_structured_output, compile_memory_metadata_block
+from letta.services.helpers.agent_manager_helper import (
+    check_supports_structured_output,
+    compile_memory_metadata_block,
+    compile_system_message,
+)
 from letta.services.job_manager import JobManager
 from letta.services.message_manager import MessageManager
 from letta.services.passage_manager import PassageManager
@@ -130,6 +134,7 @@ class Agent(BaseAgent):
         # Different interfaces can handle events differently
         # e.g., print in CLI vs send a discord message with a discord bot
         self.interface = interface
+        self.chunk_index = 0
 
         # Create the persistence manager object based on the AgentState info
         self.message_manager = MessageManager()
@@ -246,9 +251,11 @@ class Agent(BaseAgent):
             group_id=group_id,
         )
         messages.append(new_message)
-        self.interface.function_message(f"Error: {error_msg}", msg_obj=new_message)
+        self.interface.function_message(f"Error: {error_msg}", msg_obj=new_message, chunk_index=self.chunk_index)
+        self.chunk_index += 1
         if include_function_failed_message:
-            self.interface.function_message(f"Ran {function_name}({function_args})", msg_obj=new_message)
+            self.interface.function_message(f"Ran {function_name}({function_args})", msg_obj=new_message, chunk_index=self.chunk_index)
+            self.chunk_index += 1
 
         # Return updated messages
         return messages
@@ -295,10 +302,34 @@ class Agent(BaseAgent):
             and not self.supports_structured_output
             and len(self.tool_rules_solver.init_tool_rules) > 0
         ):
+            # TODO: This just seems wrong? What if there are more than 1 init tool rules?
             force_tool_call = self.tool_rules_solver.init_tool_rules[0].tool_name
         # Force a tool call if exactly one tool is specified
         elif step_count is not None and step_count > 0 and len(allowed_tool_names) == 1:
             force_tool_call = allowed_tool_names[0]
+
+        if force_tool_call == "core_memory_insert":
+            current_system_message = message_sequence[0]
+            new_memory = Memory(
+                blocks=self.agent_state.memory.blocks,
+                prompt_template=(
+                    "{% for block in blocks %}"
+                    '<{{ block.label }} characters="{{ block.value|length }}/{{ block.limit }}">\n'
+                    "{% for line in block.value.splitlines() %}"
+                    "{{ loop.index0 }}: {{ line }}\n"
+                    "{% endfor %}"
+                    "</{{ block.label }}>"
+                    "{% if not loop.last %}\n{% endif %}"
+                    "{% endfor %}"
+                ),
+            )
+            new_system_message_str = compile_system_message(
+                system_prompt=self.agent_state.system,
+                in_context_memory=new_memory,
+                in_context_memory_last_edit=current_system_message.created_at,
+                previous_message_count=len(message_sequence),
+            )
+            message_sequence[0].content = [TextContent(text=new_system_message_str)]
 
         for attempt in range(1, empty_response_retry_limit + 1):
             try:
@@ -313,9 +344,7 @@ class Agent(BaseAgent):
                     response = llm_client.send_llm_request(
                         messages=message_sequence,
                         tools=allowed_functions,
-                        tool_call=function_call,
                         stream=stream,
-                        first_message=first_message,
                         force_tool_call=force_tool_call,
                     )
                 else:
@@ -431,7 +460,8 @@ class Agent(BaseAgent):
             nonnull_content = False
             if response_message.content or response_message.reasoning_content or response_message.redacted_reasoning_content:
                 # The content if then internal monologue, not chat
-                self.interface.internal_monologue(response_message.content, msg_obj=messages[-1])
+                self.interface.internal_monologue(response_message.content, msg_obj=messages[-1], chunk_index=self.chunk_index)
+                self.chunk_index += 1
                 # Flag to avoid printing a duplicate if inner thoughts get popped from the function call
                 nonnull_content = True
 
@@ -480,7 +510,8 @@ class Agent(BaseAgent):
                 response_message.content = function_args.pop("inner_thoughts")
             # The content if then internal monologue, not chat
             if response_message.content and not nonnull_content:
-                self.interface.internal_monologue(response_message.content, msg_obj=messages[-1])
+                self.interface.internal_monologue(response_message.content, msg_obj=messages[-1], chunk_index=self.chunk_index)
+                self.chunk_index += 1
 
             # (Still parsing function args)
             # Handle requests for immediate heartbeat
@@ -502,7 +533,8 @@ class Agent(BaseAgent):
             # Failure case 3: function failed during execution
             # NOTE: the msg_obj associated with the "Running " message is the prior assistant message, not the function/tool role message
             #       this is because the function/tool role message is only created once the function/tool has executed/returned
-            self.interface.function_message(f"Running {function_name}({function_args})", msg_obj=messages[-1])
+            self.interface.function_message(f"Running {function_name}({function_args})", msg_obj=messages[-1], chunk_index=self.chunk_index)
+            self.chunk_index += 1
             try:
                 # handle tool execution (sandbox) and state updates
                 log_telemetry(
@@ -635,8 +667,10 @@ class Agent(BaseAgent):
                     group_id=group_id,
                 )
             )  # extend conversation with function response
-            self.interface.function_message(f"Ran {function_name}({function_args})", msg_obj=messages[-1])
-            self.interface.function_message(f"Success: {function_response_string}", msg_obj=messages[-1])
+            self.interface.function_message(f"Ran {function_name}({function_args})", msg_obj=messages[-1], chunk_index=self.chunk_index)
+            self.chunk_index += 1
+            self.interface.function_message(f"Success: {function_response_string}", msg_obj=messages[-1], chunk_index=self.chunk_index)
+            self.chunk_index += 1
             self.last_function_response = function_response
 
         else:
@@ -652,7 +686,8 @@ class Agent(BaseAgent):
                     group_id=group_id,
                 )
             )  # extend conversation with assistant's reply
-            self.interface.internal_monologue(response_message.content, msg_obj=messages[-1])
+            self.interface.internal_monologue(response_message.content, msg_obj=messages[-1], chunk_index=self.chunk_index)
+            self.chunk_index += 1
             heartbeat_request = False
             function_failed = False
 
@@ -1243,7 +1278,7 @@ class Agent(BaseAgent):
                 callable_func = get_function_from_module(LETTA_MULTI_AGENT_TOOL_MODULE_NAME, function_name)
                 function_args["self"] = self  # need to attach self to arg since it's dynamically linked
                 function_response = callable_func(**function_args)
-            elif target_letta_tool.tool_type == ToolType.LETTA_MEMORY_CORE:
+            elif target_letta_tool.tool_type == ToolType.LETTA_MEMORY_CORE or target_letta_tool.tool_type == ToolType.LETTA_SLEEPTIME_CORE:
                 callable_func = get_function_from_module(LETTA_CORE_TOOL_MODULE_NAME, function_name)
                 agent_state_copy = self.agent_state.__deepcopy__()
                 function_args["agent_state"] = agent_state_copy  # need to attach self to arg since it's dynamically linked

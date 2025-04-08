@@ -32,9 +32,7 @@ class LLMClientBase:
         self,
         messages: List[Message],
         tools: Optional[List[dict]] = None,  # TODO: change to Tool object
-        tool_call: Optional[str] = None,
         stream: bool = False,
-        first_message: bool = False,
         force_tool_call: Optional[str] = None,
     ) -> Union[ChatCompletionResponse, Stream[ChatCompletionChunk]]:
         """
@@ -42,7 +40,7 @@ class LLMClientBase:
         If stream=True, returns a Stream[ChatCompletionChunk] that can be iterated over.
         Otherwise returns a ChatCompletionResponse.
         """
-        request_data = self.build_request_data(messages, tools, tool_call)
+        request_data = self.build_request_data(messages, tools, force_tool_call)
 
         try:
             log_event(name="llm_request_sent", attributes=request_data)
@@ -60,9 +58,7 @@ class LLMClientBase:
         self,
         messages: List[Message],
         tools: Optional[List[dict]] = None,  # TODO: change to Tool object
-        tool_call: Optional[str] = None,
         stream: bool = False,
-        first_message: bool = False,
         force_tool_call: Optional[str] = None,
     ) -> Union[ChatCompletionResponse, AsyncStream[ChatCompletionChunk]]:
         """
@@ -70,7 +66,7 @@ class LLMClientBase:
         If stream=True, returns an AsyncStream[ChatCompletionChunk] that can be async iterated over.
         Otherwise returns a ChatCompletionResponse.
         """
-        request_data = self.build_request_data(messages, tools, tool_call, force_tool_call)
+        request_data = self.build_request_data(messages, tools, force_tool_call)
         response_data = {}
 
         try:
@@ -90,7 +86,6 @@ class LLMClientBase:
         self,
         messages: List[Message],
         tools: List[dict],
-        tool_call: Optional[str],
         force_tool_call: Optional[str] = None,
     ) -> dict:
         """

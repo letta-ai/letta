@@ -1,9 +1,10 @@
 from abc import ABC, abstractmethod
-from typing import Any, AsyncGenerator, Optional
+from typing import Any, AsyncGenerator, Optional, Union
 
 import openai
 
-from letta.schemas.letta_message import UserMessage
+from letta.schemas.enums import MessageStreamStatus
+from letta.schemas.letta_message import LegacyLettaMessage, LettaMessage, UserMessage
 from letta.schemas.letta_response import LettaResponse
 from letta.schemas.user import User
 from letta.services.agent_manager import AgentManager
@@ -39,9 +40,11 @@ class BaseAgent(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    async def step_stream(self, input_message: UserMessage, max_steps: int = 10) -> AsyncGenerator[str, None]:
+    async def step_stream(
+        self, input_message: UserMessage, max_steps: int = 10
+    ) -> AsyncGenerator[Union[LettaMessage, LegacyLettaMessage, MessageStreamStatus], None]:
         """
-        Main async execution loop for the agent. Implementations must yield messages as SSE events.
+        Main streaming execution loop for the agent.
         """
         raise NotImplementedError
 

@@ -33,7 +33,7 @@ class AgentChunkStreamingInterface(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    def internal_monologue(self, msg: str, msg_obj: Optional[Message] = None):
+    def internal_monologue(self, msg: str, msg_obj: Optional[Message] = None, chunk_index: Optional[int] = None):
         """Letta generates some internal monologue"""
         raise NotImplementedError
 
@@ -43,13 +43,18 @@ class AgentChunkStreamingInterface(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    def function_message(self, msg: str, msg_obj: Optional[Message] = None):
+    def function_message(self, msg: str, msg_obj: Optional[Message] = None, chunk_index: Optional[int] = None):
         """Letta calls a function"""
         raise NotImplementedError
 
     @abstractmethod
     def process_chunk(
-        self, chunk: ChatCompletionChunkResponse, message_id: str, message_date: datetime, expect_reasoning_content: bool = False
+        self,
+        chunk: ChatCompletionChunkResponse,
+        message_id: str,
+        message_date: datetime,
+        expect_reasoning_content: bool = False,
+        message_index: int = 0,
     ):
         """Process a streaming chunk from an OpenAI-compatible server"""
         raise NotImplementedError
@@ -95,7 +100,12 @@ class StreamingCLIInterface(AgentChunkStreamingInterface):
         pass
 
     def process_chunk(
-        self, chunk: ChatCompletionChunkResponse, message_id: str, message_date: datetime, expect_reasoning_content: bool = False
+        self,
+        chunk: ChatCompletionChunkResponse,
+        message_id: str,
+        message_date: datetime,
+        expect_reasoning_content: bool = False,
+        message_index: int = 0,
     ):
         assert len(chunk.choices) == 1, chunk
 
@@ -166,7 +176,7 @@ class StreamingCLIInterface(AgentChunkStreamingInterface):
         StreamingCLIInterface.nonstreaming_interface(msg)
 
     @staticmethod
-    def internal_monologue(msg: str, msg_obj: Optional[Message] = None):
+    def internal_monologue(msg: str, msg_obj: Optional[Message] = None, chunk_index: Optional[int] = None):
         StreamingCLIInterface.nonstreaming_interface(msg, msg_obj)
 
     @staticmethod
@@ -186,7 +196,7 @@ class StreamingCLIInterface(AgentChunkStreamingInterface):
         StreamingCLIInterface.nonstreaming_interface(msg, msg_obj)
 
     @staticmethod
-    def function_message(msg: str, msg_obj: Optional[Message] = None, debug: bool = DEBUG):
+    def function_message(msg: str, msg_obj: Optional[Message] = None, debug: bool = DEBUG, chunk_index: Optional[int] = None):
         StreamingCLIInterface.nonstreaming_interface(msg, msg_obj)
 
     @staticmethod
@@ -218,7 +228,7 @@ class AgentRefreshStreamingInterface(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    def internal_monologue(self, msg: str, msg_obj: Optional[Message] = None):
+    def internal_monologue(self, msg: str, msg_obj: Optional[Message] = None, chunk_index: Optional[int] = None):
         """Letta generates some internal monologue"""
         raise NotImplementedError
 
@@ -228,7 +238,7 @@ class AgentRefreshStreamingInterface(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    def function_message(self, msg: str, msg_obj: Optional[Message] = None):
+    def function_message(self, msg: str, msg_obj: Optional[Message] = None, chunk_index: Optional[int] = None):
         """Letta calls a function"""
         raise NotImplementedError
 
@@ -355,7 +365,7 @@ class StreamingRefreshCLIInterface(AgentRefreshStreamingInterface):
     def warning_message(msg: str):
         StreamingCLIInterface.nonstreaming_interface.warning_message(msg)
 
-    def internal_monologue(self, msg: str, msg_obj: Optional[Message] = None):
+    def internal_monologue(self, msg: str, msg_obj: Optional[Message] = None, chunk_index: Optional[int] = None):
         if self.disable_inner_mono_call:
             return
         StreamingCLIInterface.nonstreaming_interface.internal_monologue(msg, msg_obj)
@@ -378,7 +388,7 @@ class StreamingRefreshCLIInterface(AgentRefreshStreamingInterface):
         StreamingCLIInterface.nonstreaming_interface.user_message(msg, msg_obj)
 
     @staticmethod
-    def function_message(msg: str, msg_obj: Optional[Message] = None, debug: bool = DEBUG):
+    def function_message(msg: str, msg_obj: Optional[Message] = None, debug: bool = DEBUG, chunk_index: Optional[int] = None):
         StreamingCLIInterface.nonstreaming_interface.function_message(msg, msg_obj)
 
     @staticmethod

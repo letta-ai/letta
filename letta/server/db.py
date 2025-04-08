@@ -59,11 +59,13 @@ if settings.letta_pg_uri_no_default:
     # create engine
     engine = create_engine(
         settings.letta_pg_uri,
+        # f"{settings.letta_pg_uri}?options=-c%20client_encoding=UTF8",
         pool_size=settings.pg_pool_size,
         max_overflow=settings.pg_max_overflow,
         pool_timeout=settings.pg_pool_timeout,
         pool_recycle=settings.pg_pool_recycle,
         echo=settings.pg_echo,
+        # connect_args={"client_encoding": "utf8"},
     )
 else:
     # TODO: don't rely on config storage

@@ -2,6 +2,7 @@ import uuid
 from typing import List, Optional, Tuple
 
 import requests
+from google.genai.types import FunctionCallingConfig, FunctionCallingConfigMode, ToolConfig
 
 from letta.constants import NON_USER_MSG_PREFIX
 from letta.helpers.datetime_helpers import get_utc_time
@@ -36,7 +37,7 @@ class GoogleAIClient(LLMClientBase):
         self,
         messages: List[PydanticMessage],
         tools: List[dict],
-        tool_call: Optional[str],
+        force_tool_call: Optional[str] = None,
     ) -> dict:
         """
         Constructs a request object in the expected data format for this client.
@@ -50,7 +51,7 @@ class GoogleAIClient(LLMClientBase):
             [m.to_google_ai_dict() for m in messages],
         )
 
-        return {
+        request_data = {
             "contents": contents,
             "tools": tools,
             "generation_config": {
@@ -58,6 +59,16 @@ class GoogleAIClient(LLMClientBase):
                 "max_output_tokens": self.llm_config.max_tokens,
             },
         }
+
+        # write tool config
+        tool_config = ToolConfig(
+            function_calling_config=FunctionCallingConfig(
+                # ANY mode forces the model to predict only function calls
+                mode=FunctionCallingConfigMode.ANY,
+            )
+        )
+        request_data["tool_config"] = tool_config.model_dump()
+        return request_data
 
     def convert_response_to_chat_completion(
         self,

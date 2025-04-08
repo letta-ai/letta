@@ -3,13 +3,13 @@ import pytest
 from letta import BasicBlockMemory
 from letta.client.client import create_client
 from letta.constants import DEFAULT_HUMAN, DEFAULT_PERSONA
-from letta.offline_memory_agent import finish_rethinking_memory, rethink_memory, trigger_rethink_memory
 from letta.prompts import gpt_system
 from letta.schemas.agent import AgentType
 from letta.schemas.embedding_config import EmbeddingConfig
 from letta.schemas.llm_config import LLMConfig
 from letta.schemas.memory import BasicBlockMemory, Block
 from letta.schemas.tool_rule import TerminalToolRule
+from letta.sleeptime_agent import finish_rethinking_memory, rethink_memory, trigger_rethink_memory
 from letta.utils import get_human_text, get_persona_text
 
 
@@ -28,7 +28,7 @@ def clear_agents(client):
         client.delete_agent(agent.id)
 
 
-def test_ripple_edit(client, mock_e2b_api_key_none):
+def test_ripple_edit(client, disable_e2b_api_key):
     trigger_rethink_memory_tool = client.create_or_update_tool(trigger_rethink_memory)
     send_message = client.server.tool_manager.get_tool_by_name(tool_name="send_message", actor=client.user)
 
@@ -94,7 +94,7 @@ def test_ripple_edit(client, mock_e2b_api_key_none):
     finish_rethinking_memory_tool = client.create_or_update_tool(finish_rethinking_memory)
     offline_memory_agent = client.create_agent(
         name="offline_memory_agent",
-        agent_type=AgentType.offline_memory_agent,
+        agent_type=AgentType.sleeptime_agent,
         system=gpt_system.get_system_text("memgpt_offline_memory"),
         memory=offline_memory,
         llm_config=LLMConfig.default_config("gpt-4"),
@@ -120,7 +120,7 @@ def test_ripple_edit(client, mock_e2b_api_key_none):
     client.delete_agent(offline_memory_agent.id)
 
 
-def test_chat_only_agent(client, mock_e2b_api_key_none):
+def test_chat_only_agent(client, disable_e2b_api_key):
     from letta.offline_memory_agent import finish_rethinking_memory, rethink_memory
 
     send_message = client.server.tool_manager.get_tool_by_name(tool_name="send_message", actor=client.user)
@@ -146,7 +146,7 @@ def test_chat_only_agent(client, mock_e2b_api_key_none):
 
     offline_memory_agent = client.create_agent(
         name="offline_memory_agent",
-        agent_type=AgentType.offline_memory_agent,
+        agent_type=AgentType.sleeptime_agent,
         system=gpt_system.get_system_text("memgpt_memory_only"),
         memory=offline_memory,
         llm_config=LLMConfig.default_config("gpt-4"),
@@ -202,14 +202,14 @@ def test_chat_only_agent(client, mock_e2b_api_key_none):
     client.delete_agent(offline_memory_agent.id)
 
 
-def test_initial_message_sequence(client, mock_e2b_api_key_none):
+def test_initial_message_sequence(client, disable_e2b_api_key):
     """
     Test that when we set the initial sequence to an empty list,
     we do not get the default initial message sequence.
     """
     offline_memory_agent = client.create_agent(
         name="offline_memory_agent",
-        agent_type=AgentType.offline_memory_agent,
+        agent_type=AgentType.sleeptime_agent,
         system=gpt_system.get_system_text("memgpt_offline_memory"),
         llm_config=LLMConfig.default_config("gpt-4"),
         embedding_config=EmbeddingConfig.default_config("text-embedding-ada-002"),

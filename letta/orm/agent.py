@@ -68,6 +68,9 @@ class Agent(SqlalchemyBase, OrganizationMixin):
     message_buffer_autoclear: Mapped[bool] = mapped_column(
         Boolean, doc="If set to True, the agent will not remember previous messages. Not recommended unless you have an advanced use case."
     )
+    enable_sleeptime: Mapped[Optional[bool]] = mapped_column(
+        Boolean, doc="If set to True, memory management will move to a background agent thread."
+    )
 
     # relationships
     organization: Mapped["Organization"] = relationship("Organization", back_populates="agents")
@@ -141,6 +144,7 @@ class Agent(SqlalchemyBase, OrganizationMixin):
         viewonly=True,
         back_populates="manager_agent",
     )
+    batch_items: Mapped[List["LLMBatchItem"]] = relationship("LLMBatchItem", back_populates="agent", lazy="selectin")
 
     def to_pydantic(self, include_relationships: Optional[Set[str]] = None) -> PydanticAgentState:
         """
@@ -190,6 +194,7 @@ class Agent(SqlalchemyBase, OrganizationMixin):
             "identity_ids": [],
             "multi_agent_group": None,
             "tool_exec_environment_variables": [],
+            "enable_sleeptime": None,
         }
 
         # Optional fields: only included if requested
@@ -201,6 +206,7 @@ class Agent(SqlalchemyBase, OrganizationMixin):
             "identity_ids": lambda: [i.id for i in self.identities],
             "multi_agent_group": lambda: self.multi_agent_group,
             "tool_exec_environment_variables": lambda: self.tool_exec_environment_variables,
+            "enable_sleeptime": lambda: self.enable_sleeptime,
         }
 
         include_relationships = set(optional_fields.keys() if include_relationships is None else include_relationships)

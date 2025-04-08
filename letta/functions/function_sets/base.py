@@ -164,3 +164,68 @@ def core_memory_replace(agent_state: "AgentState", label: str, old_content: str,
     new_value = current_value.replace(str(old_content), str(new_content))
     agent_state.memory.update_block_value(label=label, value=new_value)
     return None
+
+
+def rethink_memory(agent_state: "AgentState", new_memory: str, target_block_label: str) -> None:
+    """
+    Rewrite memory block for the main agent, new_memory should contain all current information from the block that is not outdated or inconsistent, integrating any new information, resulting in a new memory block that is organized, readable, and comprehensive.
+
+    Args:
+        new_memory (str): The new memory with information integrated from the memory block. If there is no new information, then this should be the same as the content in the source block.
+        target_block_label (str): The name of the block to write to.
+
+    Returns:
+        None: None is always returned as this function does not produce a response.
+    """
+
+    if agent_state.memory.get_block(target_block_label) is None:
+        agent_state.memory.create_block(label=target_block_label, value=new_memory)
+
+    agent_state.memory.update_block_value(label=target_block_label, value=new_memory)
+    return None
+
+
+def finish_rethinking_memory(agent_state: "AgentState") -> None:  # type: ignore
+    """
+    This function is called when the agent is done rethinking the memory.
+
+    Returns:
+        Optional[str]: None is always returned as this function does not produce a response.
+    """
+    return None
+
+
+def view_core_memory_with_line_numbers(agent_state: "AgentState", target_block_label: str) -> None:  # type: ignore
+    """
+    View the contents of core memory in editor mode with line numbers. Called before `core_memory_insert` to see line numbers of memory block.
+
+    Args:
+        target_block_label (str): The name of the block to view.
+
+    Returns:
+        None: None is always returned as this function does not produce a response.
+    """
+    return None
+
+
+def core_memory_insert(agent_state: "AgentState", target_block_label: str, new_memory: str, line_number: Optional[int] = None, replace: bool = False) -> None:  # type: ignore
+    """
+    Insert new memory content into a core memory block at a specific line number. Call `view_core_memory_with_line_numbers` to see line numbers of the memory block before using this tool.
+
+    Args:
+        target_block_label (str): The name of the block to write to.
+        new_memory (str): The new memory content to insert.
+        line_number (Optional[int]): Line number to insert content into, 0 indexed (None for end of file).
+        replace (bool): Whether to overwrite the content at the specified line number.
+
+    Returns:
+        None: None is always returned as this function does not produce a response.
+    """
+    current_value = str(agent_state.memory.get_block(target_block_label).value)
+    current_value_list = current_value.split("\n")
+    if line_number is None:
+        line_number = len(current_value_list)
+    current_value_list.insert(line_number, new_memory)
+    new_value = "\n".join(current_value_list)
+    agent_state.memory.update_block_value(label=target_block_label, value=new_value)
+    return None

@@ -78,7 +78,7 @@ agent_copy = client.agents.create(
     model="openai/gpt-4o-mini",
     embedding="openai/text-embedding-ada-002",
 )
-block = client.agents.blocks.retrieve(agent.id, "human")
+block = client.agents.blocks.retrieve(agent.id, block_label="human")
 agent_copy = client.agents.blocks.attach(agent_copy.id, block.id)
 
 print(f"Created agent copy with shared memory named {agent_copy.name}")
@@ -96,7 +96,7 @@ response = client.agents.messages.create(
 
 print(f"Sent message to agent {agent_copy.name}: {message_text}")
 
-block = client.agents.blocks.retrieve(agent_copy.id, "human")
+block = client.agents.blocks.retrieve(agent_copy.id, block_label="human")
 print(f"New core memory for agent {agent_copy.name}: {block.value}")
 
 message_text = "What's my name?"
