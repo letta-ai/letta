@@ -39,7 +39,7 @@ from letta.schemas.agent import AgentStepState, CreateAgent, UpdateAgent
 from letta.schemas.block import Block as PydanticBlock
 from letta.schemas.block import BlockUpdate, CreateBlock
 from letta.schemas.embedding_config import EmbeddingConfig
-from letta.schemas.enums import AgentStepStatus, JobStatus, MessageRole
+from letta.schemas.enums import AgentStepStatus, JobStatus, MessageRole, ProviderType
 from letta.schemas.environment_variables import SandboxEnvironmentVariableCreate, SandboxEnvironmentVariableUpdate
 from letta.schemas.file import FileMetadata as PydanticFileMetadata
 from letta.schemas.identity import IdentityCreate, IdentityProperty, IdentityPropertyType, IdentityType, IdentityUpdate
@@ -4708,20 +4708,20 @@ def test_list_tags(server: SyncServer, default_user, default_organization):
 
 def test_create_and_get_batch_request(server, default_user, dummy_beta_message_batch):
     batch = server.batch_manager.create_batch_request(
-        llm_provider="anthropic",
+        llm_provider=ProviderType.anthropic,
         status=JobStatus.created,
         create_batch_response=dummy_beta_message_batch,
         actor=default_user,
     )
     assert batch.id.startswith("batch_req-")
     assert batch.create_batch_response == dummy_beta_message_batch
-    fetched = server.batch_manager.get_batch_request_by_id(batch.id, actor=default_user)
+    fetched = server.batch_manager.get_batch_job_by_id(batch.id, actor=default_user)
     assert fetched.id == batch.id
 
 
 def test_update_batch_status(server, default_user, dummy_beta_message_batch):
     batch = server.batch_manager.create_batch_request(
-        llm_provider="anthropic",
+        llm_provider=ProviderType.anthropic,
         status=JobStatus.created,
         create_batch_response=dummy_beta_message_batch,
         actor=default_user,
@@ -4735,7 +4735,7 @@ def test_update_batch_status(server, default_user, dummy_beta_message_batch):
         actor=default_user,
     )
 
-    updated = server.batch_manager.get_batch_request_by_id(batch.id, actor=default_user)
+    updated = server.batch_manager.get_batch_job_by_id(batch.id, actor=default_user)
     assert updated.status == JobStatus.completed
     assert updated.latest_polling_response == dummy_beta_message_batch
     assert updated.last_polled_at >= before
@@ -4743,7 +4743,7 @@ def test_update_batch_status(server, default_user, dummy_beta_message_batch):
 
 def test_create_and_get_batch_item(server, default_user, sarah_agent, dummy_beta_message_batch, dummy_llm_config, dummy_step_state):
     batch = server.batch_manager.create_batch_request(
-        llm_provider="anthropic",
+        llm_provider=ProviderType.anthropic,
         status=JobStatus.created,
         create_batch_response=dummy_beta_message_batch,
         actor=default_user,
@@ -4769,7 +4769,7 @@ def test_update_batch_item(
     server, default_user, sarah_agent, dummy_beta_message_batch, dummy_llm_config, dummy_step_state, dummy_successful_response
 ):
     batch = server.batch_manager.create_batch_request(
-        llm_provider="anthropic",
+        llm_provider=ProviderType.anthropic,
         status=JobStatus.created,
         create_batch_response=dummy_beta_message_batch,
         actor=default_user,
@@ -4801,7 +4801,7 @@ def test_update_batch_item(
 
 def test_delete_batch_item(server, default_user, sarah_agent, dummy_beta_message_batch, dummy_llm_config, dummy_step_state):
     batch = server.batch_manager.create_batch_request(
-        llm_provider="anthropic",
+        llm_provider=ProviderType.anthropic,
         status=JobStatus.created,
         create_batch_response=dummy_beta_message_batch,
         actor=default_user,
