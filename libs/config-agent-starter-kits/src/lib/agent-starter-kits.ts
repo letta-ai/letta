@@ -16,6 +16,7 @@ export interface StarterKitTool {
 export interface StarterKit {
   image: StaticImport | string;
   id: string;
+  name?: string;
   useGetTitle: () => string;
   useGetDescription: () => string;
   agentState: Partial<CreateAgentRequest>;
@@ -333,6 +334,7 @@ export const STARTER_KITS = {
   },
   sleepTime: {
     id: 'sleepTime',
+    name: 'companion',
     useGetTitle: () => {
       const t = useTranslations('starter-kits');
 
@@ -343,11 +345,11 @@ export const STARTER_KITS = {
 
       return t('sleepTime.description');
     },
-    image: personalAssistant,
+    image: companion,
     agentState: {
       enable_sleeptime: true,
       description:
-        'Act as a companion to the user, providing emotional support and companionship.',
+        'Act as a companion to the user, providing emotional support and companionship. This agent has a corresponding sleep-time agent that manages its memory.',
       memory_blocks: [
         {
           label: 'persona',
@@ -357,7 +359,7 @@ export const STARTER_KITS = {
         {
           label: 'human',
           value:
-            "This is my section of core memory devoted to information about the human.\nI don't yet know anything about them.\nWhat's their name? Where are they from? What do they do? Who are they?\nI should update this memory over time as I interact with the human and learn more about them.",
+            "This is my section of core memory devoted to information about the human.\nI don't yet know anything about them.\nWhat's their name?\nWhere are they from?\nWhat do they do?\nWho are they?\nI should update this memory over time as I interact with the human and learn more about them.",
         },
       ],
     },

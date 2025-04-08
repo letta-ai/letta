@@ -127,7 +127,7 @@ async function createAgentFromStarterKit(
     {
       body: {
         ...starterKit.agentState,
-        name: starterKit.id,
+        name: 'name' in starterKit ? starterKit.name : starterKit.id,
         llm_config: defaultLLMConfig,
         embedding_config: defaultEmbeddingConfig,
         tool_ids: toolIds,
