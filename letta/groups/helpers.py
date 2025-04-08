@@ -95,8 +95,6 @@ def stringify_message(message: Message, use_assistant_name: bool = False) -> str
             return None
     elif message.role == "assistant":
         messages = []
-        if message.content:
-            messages.append(f"{assistant_name}: *thinking* {message.content[0].text}")
         if message.tool_calls:
             if message.tool_calls[0].function.name == "send_message":
                 messages.append(f"{assistant_name}: {json.loads(message.tool_calls[0].function.arguments)['message']}")

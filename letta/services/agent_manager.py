@@ -42,6 +42,7 @@ from letta.schemas.message import MessageCreate
 from letta.schemas.passage import Passage as PydanticPassage
 from letta.schemas.source import Source as PydanticSource
 from letta.schemas.tool import Tool as PydanticTool
+from letta.schemas.tool_rule import ChildToolRule as PydanticChildToolRule
 from letta.schemas.tool_rule import ContinueToolRule as PydanticContinueToolRule
 from letta.schemas.tool_rule import TerminalToolRule as PydanticTerminalToolRule
 from letta.schemas.tool_rule import ToolRule as PydanticToolRule
@@ -145,6 +146,10 @@ class AgentManager:
                     tool_rules.append(PydanticTerminalToolRule(tool_name=tool_name))
                 elif tool_name in BASE_TOOLS:
                     tool_rules.append(PydanticContinueToolRule(tool_name=tool_name))
+
+            if agent_create.agent_type == AgentType.sleeptime_agent:
+                tool_rules.append(PydanticChildToolRule(tool_name="view_core_memory_with_line_numbers", children=["core_memory_insert"]))
+
         else:
             tool_rules = agent_create.tool_rules
         # Check tool rules are valid
