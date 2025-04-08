@@ -1,8 +1,8 @@
 from typing import List, Optional
 
 from openai.types.chat.chat_completion_message_tool_call import ChatCompletionMessageToolCall as OpenAIToolCall
-from sqlalchemy import BigInteger, ForeignKey, Index, Sequence
-from sqlalchemy.orm import Mapped, mapped_column, relationship
+from sqlalchemy import BigInteger, ForeignKey, Index, Sequence, event, text
+from sqlalchemy.orm import Mapped, Session, mapped_column, relationship
 
 from letta.orm.custom_columns import MessageContentColumn, ToolCallColumn, ToolReturnColumn
 from letta.orm.mixins import AgentMixin, OrganizationMixin
@@ -67,3 +67,16 @@ class Message(SqlalchemyBase, OrganizationMixin, AgentMixin):
         if self.text and not model.content:
             model.content = [PydanticTextContent(text=self.text)]
         return model
+
+
+@event.listens_for(Message, "before_insert")
+def set_sequence_id_for_sqlite(mapper, connection, target):
+    session = Session.object_session(target)
+
+    if not hasattr(session, "_sequence_id_counter"):
+        # Initialize counter for this flush
+        max_seq = connection.scalar(text("SELECT MAX(sequence_id) FROM messages"))
+        session._sequence_id_counter = max_seq or 0
+
+    session._sequence_id_counter += 1
+    target.sequence_id = session._sequence_id_counter
