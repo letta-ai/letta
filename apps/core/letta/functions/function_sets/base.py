@@ -225,7 +225,10 @@ def core_memory_insert(agent_state: "AgentState", target_block_label: str, new_m
     current_value_list = current_value.split("\n")
     if line_number is None:
         line_number = len(current_value_list)
-    current_value_list.insert(line_number, new_memory)
+    if replace:
+        current_value_list[line_number] = new_memory
+    else:
+        current_value_list.insert(line_number, new_memory)
     new_value = "\n".join(current_value_list)
     agent_state.memory.update_block_value(label=target_block_label, value=new_value)
     return None
