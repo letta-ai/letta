@@ -38,7 +38,7 @@ from letta.schemas.group import ManagerType
 from letta.schemas.llm_config import LLMConfig
 from letta.schemas.memory import Memory
 from letta.schemas.message import Message as PydanticMessage
-from letta.schemas.message import MessageCreate
+from letta.schemas.message import MessageCreate, MessageUpdate
 from letta.schemas.passage import Passage as PydanticPassage
 from letta.schemas.source import Source as PydanticSource
 from letta.schemas.tool import Tool as PydanticTool
@@ -718,10 +718,12 @@ class AgentManager:
                 model=agent_state.llm_config.model,
                 openai_message_dict={"role": "system", "content": new_system_message_str},
             )
-            # TODO: This seems kind of silly, why not just update the message?
-            message = self.message_manager.create_message(message, actor=actor)
-            message_ids = [message.id] + agent_state.message_ids[1:]  # swap index 0 (system)
-            return self.set_in_context_messages(agent_id=agent_id, message_ids=message_ids, actor=actor)
+            message = self.message_manager.update_message_by_id(
+                message_id=curr_system_message.id,
+                message_update=MessageUpdate(**message.model_dump()),
+                actor=actor,
+            )
+            return self.set_in_context_messages(agent_id=agent_id, message_ids=agent_state.message_ids, actor=actor)
         else:
             return agent_state
 

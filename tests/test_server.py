@@ -279,8 +279,6 @@ def server():
 def org_id(server):
     # create org
     org = server.organization_manager.create_default_organization()
-    print(f"Created org\n{org.id}")
-
     yield org.id
 
     # cleanup
@@ -338,7 +336,6 @@ def agent_id(server, user_id, base_tools):
         ),
         actor=actor,
     )
-    print(f"Created agent\n{agent_state}")
     yield agent_state.id
 
     # cleanup
@@ -359,7 +356,6 @@ def other_agent_id(server, user_id, base_tools):
         ),
         actor=actor,
     )
-    print(f"Created agent\n{agent_state}")
     yield agent_state.id
 
     # cleanup
@@ -953,7 +949,6 @@ def test_memory_rebuild_count(server, user, disable_e2b_api_key, base_tools, bas
         ),
         actor=actor,
     )
-    print(f"Created agent\n{agent_state}")
 
     def count_system_messages_in_recall() -> Tuple[int, List[LettaMessage]]:
 
@@ -966,10 +961,6 @@ def test_memory_rebuild_count(server, user, disable_e2b_api_key, base_tools, bas
             return_message_object=False,
         )
         assert all(isinstance(m, LettaMessage) for m in letta_messages)
-
-        print("LETTA_MESSAGES:")
-        for i, m in enumerate(letta_messages):
-            print(f"{i}: {type(m)} ...{str(m)[-50:]}")
 
         # Collect system messages and their texts
         system_messages = [m for m in letta_messages if m.message_type == "system_message"]
