@@ -1,3 +1,5 @@
+import type { OnboardingStepsType } from '@letta-cloud/types';
+
 export enum AnalyticsEvent {
   USER_CREATED = 'User Created',
   USER_LOGGED_IN = 'User Logged In',
@@ -20,6 +22,8 @@ export enum AnalyticsEvent {
   AGENT_DEPLOYED = 'Agent Deployed',
   APP_ERROR = 'App Error',
   ANSWERED_ONBOARDING_SURVEY = 'Answered Onboarding Survey',
+  MOVED_ONBOARDING_STEP = 'Moved Onboarding Step',
+  PAUSED_ONBOARDING = 'Paused Onboarding',
 }
 
 export interface BaseProperty {
@@ -38,6 +42,10 @@ interface AnsweredOnboardingSurveyProperty extends BaseProperty {
   consentedToEmailMarketing: boolean;
   reasonsForUsingLetta: string[];
   usecasesForUsingLetta: string[];
+}
+
+interface MovedOnboardingStepProperty extends BaseProperty {
+  step: OnboardingStepsType;
 }
 
 export interface AnalyticsEventProperties {
@@ -62,4 +70,6 @@ export interface AnalyticsEventProperties {
   [AnalyticsEvent.CLOUD_AGENT_DELETED]: BaseProperty;
   [AnalyticsEvent.APP_ERROR]: BaseProperty;
   [AnalyticsEvent.ANSWERED_ONBOARDING_SURVEY]: AnsweredOnboardingSurveyProperty;
+  [AnalyticsEvent.MOVED_ONBOARDING_STEP]: MovedOnboardingStepProperty;
+  [AnalyticsEvent.PAUSED_ONBOARDING]: BaseProperty;
 }

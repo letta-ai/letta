@@ -507,6 +507,13 @@ async function updateUserOnboardingStep(
     };
   }
 
+  if (stepToClaim) {
+    trackServerSideEvent(AnalyticsEvent.MOVED_ONBOARDING_STEP, {
+      step: stepToClaim,
+      userId: user.id,
+    });
+  }
+
   await goToNextOnboardingStep({
     userId: user.id,
     nextStep: onboardingStep,
@@ -536,6 +543,10 @@ async function pauseUserOnboarding(): Promise<PauseUserOnboardingResponse> {
       },
     };
   }
+
+  trackServerSideEvent(AnalyticsEvent.PAUSED_ONBOARDING, {
+    userId: user.id,
+  });
 
   await db
     .update(userProductOnboarding)
