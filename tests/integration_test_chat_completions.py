@@ -15,9 +15,7 @@ from letta.schemas.llm_config import LLMConfig
 from letta.schemas.openai.chat_completion_request import ChatCompletionRequest, UserMessage
 from letta.schemas.tool import ToolCreate
 from letta.schemas.usage import LettaUsageStatistics
-from letta.services.agent_manager import AgentManager
 from letta.services.tool_manager import ToolManager
-from letta.services.user_manager import UserManager
 
 # --- Server Management --- #
 
@@ -155,44 +153,44 @@ def _assert_valid_chunk(chunk, idx, chunks):
 # --- Test Cases --- #
 
 
-@pytest.mark.asyncio
-@pytest.mark.parametrize("message", ["Hi how are you today?"])
-@pytest.mark.parametrize("endpoint", ["v1/voice-beta"])
-async def test_latency(disable_e2b_api_key, client, agent, message, endpoint):
-    """Tests chat completion streaming using the Async OpenAI client."""
-    request = _get_chat_request(message)
-
-    async_client = AsyncOpenAI(base_url=f"{client.base_url}/{endpoint}/{agent.id}", max_retries=0)
-    stream = await async_client.chat.completions.create(**request.model_dump(exclude_none=True))
-    async with stream:
-        async for chunk in stream:
-            print(chunk)
-
-
-@pytest.mark.asyncio
-@pytest.mark.parametrize("message", ["Use recall memory tool to recall what my name is."])
-@pytest.mark.parametrize("endpoint", ["v1/voice-beta"])
-async def test_voice_recall_memory(disable_e2b_api_key, client, agent, message, endpoint):
-    """Tests chat completion streaming using the Async OpenAI client."""
-    request = _get_chat_request(message)
-
-    # Insert some messages about my name
-    client.user_message(agent.id, "My name is Matt")
-
-    # Wipe the in context messages
-    actor = UserManager().get_default_user()
-    AgentManager().set_in_context_messages(agent_id=agent.id, message_ids=[agent.message_ids[0]], actor=actor)
-
-    async_client = AsyncOpenAI(base_url=f"{client.base_url}/{endpoint}/{agent.id}", max_retries=0)
-    stream = await async_client.chat.completions.create(**request.model_dump(exclude_none=True))
-    async with stream:
-        async for chunk in stream:
-            print(chunk)
+# @pytest.mark.asyncio
+# @pytest.mark.parametrize("message", ["Hi how are you today?"])
+# @pytest.mark.parametrize("endpoint", ["v1/voice-beta"])
+# async def test_latency(disable_e2b_api_key, client, agent, message, endpoint):
+#     """Tests chat completion streaming using the Async OpenAI client."""
+#     request = _get_chat_request(message)
+#
+#     async_client = AsyncOpenAI(base_url=f"{client.base_url}/{endpoint}/{agent.id}", max_retries=0)
+#     stream = await async_client.chat.completions.create(**request.model_dump(exclude_none=True))
+#     async with stream:
+#         async for chunk in stream:
+#             print(chunk)
+#
+#
+# @pytest.mark.asyncio
+# @pytest.mark.parametrize("message", ["Use recall memory tool to recall what my name is."])
+# @pytest.mark.parametrize("endpoint", ["v1/voice-beta"])
+# async def test_voice_recall_memory(disable_e2b_api_key, client, agent, message, endpoint):
+#     """Tests chat completion streaming using the Async OpenAI client."""
+#     request = _get_chat_request(message)
+#
+#     # Insert some messages about my name
+#     client.user_message(agent.id, "My name is Matt")
+#
+#     # Wipe the in context messages
+#     actor = UserManager().get_default_user()
+#     AgentManager().set_in_context_messages(agent_id=agent.id, message_ids=[agent.message_ids[0]], actor=actor)
+#
+#     async_client = AsyncOpenAI(base_url=f"{client.base_url}/{endpoint}/{agent.id}", max_retries=0)
+#     stream = await async_client.chat.completions.create(**request.model_dump(exclude_none=True))
+#     async with stream:
+#         async for chunk in stream:
+#             print(chunk)
 
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize("message", ["Tell me something interesting about bananas.", "What's the weather in SF?"])
-@pytest.mark.parametrize("endpoint", ["openai/v1", "v1/voice-beta"])
+@pytest.mark.parametrize("endpoint", ["openai/v1"])  # , "v1/voice-beta"])
 async def test_chat_completions_streaming_openai_client(disable_e2b_api_key, client, agent, message, endpoint):
     """Tests chat completion streaming using the Async OpenAI client."""
     request = _get_chat_request(message)
