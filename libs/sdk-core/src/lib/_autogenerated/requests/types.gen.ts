@@ -1696,7 +1696,8 @@ export type JobStatus =
   | 'running'
   | 'completed'
   | 'failed'
-  | 'pending';
+  | 'pending'
+  | 'cancelled';
 
 export type JobType = 'job' | 'run';
 

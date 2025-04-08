@@ -3377,6 +3377,7 @@ export const JobStatus = z.union([
   z.literal('completed'),
   z.literal('failed'),
   z.literal('pending'),
+  z.literal('cancelled'),
 ]);
 
 export type JobType = z.infer<typeof JobType>;

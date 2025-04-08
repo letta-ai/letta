@@ -52,6 +52,7 @@ jobs:
           - "integration_test_composio.py"
           - "integration_test_chat_completions.py"
           - "integration_test_multi_agent.py"
+          - "integration_test_batch_api.py"
     services:
       qdrant:
         image: qdrant/qdrant

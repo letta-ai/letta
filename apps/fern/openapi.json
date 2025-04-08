@@ -11335,7 +11335,8 @@
           "running",
           "completed",
           "failed",
-          "pending"
+          "pending",
+          "cancelled"
         ],
         "title": "JobStatus",
         "description": "Status of the job."

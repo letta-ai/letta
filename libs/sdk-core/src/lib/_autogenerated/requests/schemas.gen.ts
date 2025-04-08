@@ -5079,7 +5079,15 @@ Parameters:
 
 export const $JobStatus = {
   type: 'string',
-  enum: ['not_started', 'created', 'running', 'completed', 'failed', 'pending'],
+  enum: [
+    'not_started',
+    'created',
+    'running',
+    'completed',
+    'failed',
+    'pending',
+    'cancelled',
+  ],
   title: 'JobStatus',
   description: 'Status of the job.',
 } as const;
