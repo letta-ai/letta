@@ -32,6 +32,7 @@ class JobStatus(str, Enum):
     completed = "completed"
     failed = "failed"
     pending = "pending"
+    cancelled = "cancelled"
 
 
 class AgentStepStatus(str, Enum):

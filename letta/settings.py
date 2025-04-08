@@ -203,6 +203,9 @@ class Settings(BaseSettings):
     httpx_max_keepalive_connections: int = 500
     httpx_keepalive_expiry: float = 120.0
 
+    # cron job parameters
+    poll_running_llm_batches_interval_seconds: int = 5 * 60
+
     @property
     def letta_pg_uri(self) -> str:
         if self.pg_uri:
