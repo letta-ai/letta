@@ -74,7 +74,7 @@ def create_group(
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.put("/{group_id}", response_model=Group, operation_id="modify_group")
+@router.patch("/{group_id}", response_model=Group, operation_id="modify_group")
 def modify_group(
     group_id: str,
     group: GroupUpdate = Body(...),
