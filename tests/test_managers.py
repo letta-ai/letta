@@ -7,12 +7,7 @@ from typing import List
 
 import pytest
 from anthropic.types.beta import BetaMessage
-from anthropic.types.beta.messages import (
-    BetaMessageBatch,
-    BetaMessageBatchIndividualResponse,
-    BetaMessageBatchRequestCounts,
-    BetaMessageBatchSucceededResult,
-)
+from anthropic.types.beta.messages import BetaMessageBatchIndividualResponse, BetaMessageBatchSucceededResult
 from openai.types.chat.chat_completion_message_tool_call import ChatCompletionMessageToolCall as OpenAIToolCall
 from openai.types.chat.chat_completion_message_tool_call import Function as OpenAIFunction
 from sqlalchemy.exc import IntegrityError
@@ -582,28 +577,6 @@ def agent_with_tags(server: SyncServer, default_user):
     )
 
     return [agent1, agent2, agent3]
-
-
-@pytest.fixture
-def dummy_beta_message_batch() -> BetaMessageBatch:
-    return BetaMessageBatch(
-        id="msgbatch_013Zva2CMHLNnXjNJJKqJ2EF",
-        archived_at=datetime(2024, 8, 20, 18, 37, 24, 100435, tzinfo=timezone.utc),
-        cancel_initiated_at=datetime(2024, 8, 20, 18, 37, 24, 100435, tzinfo=timezone.utc),
-        created_at=datetime(2024, 8, 20, 18, 37, 24, 100435, tzinfo=timezone.utc),
-        ended_at=datetime(2024, 8, 20, 18, 37, 24, 100435, tzinfo=timezone.utc),
-        expires_at=datetime(2024, 8, 20, 18, 37, 24, 100435, tzinfo=timezone.utc),
-        processing_status="in_progress",
-        request_counts=BetaMessageBatchRequestCounts(
-            canceled=10,
-            errored=30,
-            expired=10,
-            processing=100,
-            succeeded=50,
-        ),
-        results_url="https://api.anthropic.com/v1/messages/batches/msgbatch_013Zva2CMHLNnXjNJJKqJ2EF/results",
-        type="message_batch",
-    )
 
 
 @pytest.fixture

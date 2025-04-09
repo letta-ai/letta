@@ -59,25 +59,49 @@ class AnthropicClient(LLMClientBase):
         return await client.beta.messages.create(**request_data, betas=["tools-2024-04-04"])
 
     @trace_method
-    async def batch_async(self, requests: Dict[str, dict]) -> BetaMessageBatch:
+    async def send_llm_batch_request_async(
+        self,
+        agent_messages_mapping: Dict[str, List[PydanticMessage]],
+        agent_tools_mapping: Dict[str, List[dict]],
+    ) -> BetaMessageBatch:
         """
-        Send a batch of requests to the Anthropic API asynchronously.
+        Sends a batch request to the Anthropic API using the provided agent messages and tools mappings.
 
         Args:
-            requests (Dict[str, dict]): A mapping from custom_id to request parameter dicts.
+            agent_messages_mapping: A dict mapping agent_id to their list of PydanticMessages.
+            agent_tools_mapping: A dict mapping agent_id to their list of tool dicts.
 
         Returns:
-            List[dict]: A list of response dictionaries corresponding to each request.
+            BetaMessageBatch: The batch response from the Anthropic API.
+
+        Raises:
+            ValueError: If the sets of agent_ids in the two mappings do not match.
+            Exception: Transformed errors from the underlying API call.
         """
-        client = self._get_anthropic_client(async_client=True)
+        # Validate that both mappings use the same set of agent_ids.
+        if set(agent_messages_mapping.keys()) != set(agent_tools_mapping.keys()):
+            raise ValueError("Agent mappings for messages and tools must use the same agent_ids.")
 
-        anthropic_requests = [
-            Request(custom_id=custom_id, params=MessageCreateParamsNonStreaming(**params)) for custom_id, params in requests.items()
-        ]
+        try:
+            requests = {
+                agent_id: self.build_request_data(messages=agent_messages_mapping[agent_id], tools=agent_tools_mapping[agent_id])
+                for agent_id in agent_messages_mapping
+            }
 
-        batch_response = await client.beta.messages.batches.create(requests=anthropic_requests)
+            client = self._get_anthropic_client(async_client=True)
 
-        return batch_response
+            anthropic_requests = [
+                Request(custom_id=agent_id, params=MessageCreateParamsNonStreaming(**params)) for agent_id, params in requests.items()
+            ]
+
+            batch_response = await client.beta.messages.batches.create(requests=anthropic_requests)
+
+            return batch_response
+
+        except Exception as e:
+            # Enhance logging here if additional context is needed
+            logger.error("Error during send_llm_batch_request_async.", exc_info=True)
+            raise self.handle_llm_error(e)
 
     @trace_method
     def _get_anthropic_client(self, async_client: bool = False) -> Union[anthropic.AsyncAnthropic, anthropic.Anthropic]:
