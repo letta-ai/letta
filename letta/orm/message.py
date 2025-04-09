@@ -67,7 +67,6 @@ class Message(SqlalchemyBase, OrganizationMixin, AgentMixin):
             model.content = [PydanticTextContent(text=self.text)]
         return model
 
-
 # listener
 
 
