@@ -17,6 +17,7 @@ class ToolSettings(BaseSettings):
 
     # Local Sandbox configurations
     local_sandbox_dir: Optional[str] = None
+    local_sandbox_timeout: float = 180
 
     # MCP settings
     mcp_connect_to_server_timeout: float = 30.0

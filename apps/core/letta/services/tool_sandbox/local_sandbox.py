@@ -12,6 +12,7 @@ from letta.services.helpers.tool_execution_helper import (
     install_pip_requirements_for_sandbox,
 )
 from letta.services.tool_sandbox.base import AsyncToolSandboxBase
+from letta.settings import tool_settings
 from letta.tracing import log_event, trace_method
 from letta.utils import get_friendly_error_msg
 
@@ -152,7 +153,7 @@ class AsyncToolSandboxLocal(AsyncToolSandboxBase):
             )
 
             try:
-                stdout_bytes, stderr_bytes = await asyncio.wait_for(process.communicate(), timeout=60)
+                stdout_bytes, stderr_bytes = await asyncio.wait_for(process.communicate(), timeout=tool_settings.local_sandbox_timeout)
             except asyncio.TimeoutError:
                 # Terminate the process on timeout
                 if process.returncode is None:
