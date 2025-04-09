@@ -9,6 +9,7 @@ from letta.helpers.json_helpers import json_dumps
 from letta.llm_api.google_ai_client import GoogleAIClient
 from letta.local_llm.json_parser import clean_json_string_extra_backslash
 from letta.local_llm.utils import count_tokens
+from letta.schemas.llm_config import LLMConfig
 from letta.schemas.message import Message as PydanticMessage
 from letta.schemas.openai.chat_completion_response import ChatCompletionResponse, Choice, FunctionCall, Message, ToolCall, UsageStatistics
 from letta.settings import model_settings
@@ -37,13 +38,14 @@ class GoogleVertexClient(GoogleAIClient):
     def build_request_data(
         self,
         messages: List[PydanticMessage],
+        llm_config: LLMConfig,
         tools: List[dict],
         force_tool_call: Optional[str] = None,
     ) -> dict:
         """
         Constructs a request object in the expected data format for this client.
         """
-        request_data = super().build_request_data(messages, tools, force_tool_call)
+        request_data = super().build_request_data(messages, self.llm_config, tools, force_tool_call)
         request_data["config"] = request_data.pop("generation_config")
         request_data["config"]["tools"] = request_data.pop("tools")
 

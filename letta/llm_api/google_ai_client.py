@@ -11,6 +11,7 @@ from letta.llm_api.helpers import make_post_request
 from letta.llm_api.llm_client_base import LLMClientBase
 from letta.local_llm.json_parser import clean_json_string_extra_backslash
 from letta.local_llm.utils import count_tokens
+from letta.schemas.llm_config import LLMConfig
 from letta.schemas.message import Message as PydanticMessage
 from letta.schemas.openai.chat_completion_request import Tool
 from letta.schemas.openai.chat_completion_response import ChatCompletionResponse, Choice, FunctionCall, Message, ToolCall, UsageStatistics
@@ -36,6 +37,7 @@ class GoogleAIClient(LLMClientBase):
     def build_request_data(
         self,
         messages: List[PydanticMessage],
+        llm_config: LLMConfig,
         tools: List[dict],
         force_tool_call: Optional[str] = None,
     ) -> dict:
@@ -55,8 +57,8 @@ class GoogleAIClient(LLMClientBase):
             "contents": contents,
             "tools": tools,
             "generation_config": {
-                "temperature": self.llm_config.temperature,
-                "max_output_tokens": self.llm_config.max_tokens,
+                "temperature": llm_config.temperature,
+                "max_output_tokens": llm_config.max_tokens,
             },
         }
 
