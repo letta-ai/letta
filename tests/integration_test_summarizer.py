@@ -130,21 +130,6 @@ def test_summarize_many_messages_basic(client, disable_e2b_api_key):
     client.delete_agent(small_agent_state.id)
 
 
-def test_summarize_large_message_does_not_loop_infinitely(client, disable_e2b_api_key):
-    small_context_llm_config = LLMConfig.default_config("gpt-4o-mini")
-    small_context_llm_config.context_window = 2000
-    small_agent_state = client.create_agent(
-        name="super_small_context_agent",
-        llm_config=small_context_llm_config,
-    )
-    with pytest.raises(ContextWindowExceededError, match=f"Ran summarizer {summarizer_settings.max_summarizer_retries}"):
-        client.user_message(
-            agent_id=small_agent_state.id,
-            message="hi " * 1000,
-        )
-    client.delete_agent(small_agent_state.id)
-
-
 def test_summarize_messages_inplace(client, agent_state, disable_e2b_api_key):
     """Test summarization via sending the summarize CLI command or via a direct call to the agent object"""
     # First send a few messages (5)

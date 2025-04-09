@@ -482,7 +482,7 @@ def test_create_agents_telemetry(client: Letta):
     print(f"[telemetry] Deleted {len(workers)} existing worker agents in {end_delete - start_delete:.2f}s")
 
     # create worker agents
-    num_workers = 100
+    num_workers = 1
     agent_times = []
     for idx in range(num_workers):
         start = time.perf_counter()

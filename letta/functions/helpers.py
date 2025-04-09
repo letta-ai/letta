@@ -629,8 +629,22 @@ def _get_field_type(field_schema: Dict[str, Any], nested_models: Dict[str, Type[
             if nested_models and ref_type in nested_models:
                 return nested_models[ref_type]
         elif "additionalProperties" in field_schema:
-            value_type = _get_field_type(field_schema["additionalProperties"], nested_models)
-            return Dict[str, value_type]
+            # TODO: This is totally GPT generated and I'm not sure it works
+            # TODO: This is done to quickly patch some tests, we should nuke this whole pathway asap
+            ap = field_schema["additionalProperties"]
+
+            if ap is True:
+                return dict
+            elif ap is False:
+                raise ValueError("additionalProperties=false is not supported.")
+            else:
+                # Try resolving nested type
+                nested_type = _get_field_type(ap, nested_models)
+                # If nested_type is Any, fall back to `dict`, or raise, depending on how strict you want to be
+                if nested_type == Any:
+                    return dict
+                return Dict[str, nested_type]
+
         return dict
     elif field_schema.get("$ref") is not None:
         ref_type = field_schema["$ref"].split("/")[-1]

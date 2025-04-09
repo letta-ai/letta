@@ -37,6 +37,7 @@ from letta.schemas.letta_message_content import (
     get_letta_message_content_union_str_json_schema,
 )
 from letta.system import unpack_message
+from letta.utils import parse_json
 
 
 def add_inner_thoughts_to_tool_call(
@@ -47,7 +48,7 @@ def add_inner_thoughts_to_tool_call(
     """Add inner thoughts (arg + value) to a tool call"""
     try:
         # load the args list
-        func_args = json.loads(tool_call.function.arguments)
+        func_args = parse_json(tool_call.function.arguments)
         # create new ordered dict with inner thoughts first
         ordered_args = OrderedDict({inner_thoughts_key: inner_thoughts})
         # update with remaining args
@@ -293,7 +294,7 @@ class Message(BaseMessage):
                     if use_assistant_message and tool_call.function.name == assistant_message_tool_name:
                         # We need to unpack the actual message contents from the function call
                         try:
-                            func_args = json.loads(tool_call.function.arguments)
+                            func_args = parse_json(tool_call.function.arguments)
                             message_string = func_args[assistant_message_tool_kwarg]
                         except KeyError:
                             raise ValueError(f"Function call {tool_call.function.name} missing {assistant_message_tool_kwarg} argument")
@@ -336,7 +337,7 @@ class Message(BaseMessage):
                 raise ValueError(f"Invalid tool return (no text object on message): {self.content}")
 
             try:
-                function_return = json.loads(text_content)
+                function_return = parse_json(text_content)
                 status = function_return["status"]
                 if status == "OK":
                     status_enum = "success"
@@ -760,7 +761,7 @@ class Message(BaseMessage):
                             inner_thoughts_key=INNER_THOUGHTS_KWARG,
                         ).model_dump()
                     else:
-                        tool_call_input = json.loads(tool_call.function.arguments)
+                        tool_call_input = parse_json(tool_call.function.arguments)
 
                     content.append(
                         {
@@ -846,7 +847,7 @@ class Message(BaseMessage):
                     function_args = tool_call.function.arguments
                     try:
                         # NOTE: Google AI wants actual JSON objects, not strings
-                        function_args = json.loads(function_args)
+                        function_args = parse_json(function_args)
                     except:
                         raise UserWarning(f"Failed to parse JSON function args: {function_args}")
                         function_args = {"args": function_args}
@@ -881,7 +882,7 @@ class Message(BaseMessage):
 
             # NOTE: Google AI API wants the function response as JSON only, no string
             try:
-                function_response = json.loads(text_content)
+                function_response = parse_json(text_content)
             except:
                 function_response = {"function_response": text_content}
 
@@ -970,7 +971,7 @@ class Message(BaseMessage):
                 ]
                 for tc in self.tool_calls:
                     function_name = tc.function["name"]
-                    function_args = json.loads(tc.function["arguments"])
+                    function_args = parse_json(tc.function["arguments"])
                     function_args_str = ",".join([f"{k}={v}" for k, v in function_args.items()])
                     function_call_text = f"{function_name}({function_args_str})"
                     cohere_message.append(

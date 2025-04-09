@@ -11,6 +11,7 @@ from letta.schemas.letta_message_content import MessageContent
 from letta.schemas.letta_message_content import TextContent as PydanticTextContent
 from letta.schemas.message import Message as PydanticMessage
 from letta.schemas.message import ToolReturn
+from letta.settings import settings
 
 
 class Message(SqlalchemyBase, OrganizationMixin, AgentMixin):
@@ -42,9 +43,7 @@ class Message(SqlalchemyBase, OrganizationMixin, AgentMixin):
     group_id: Mapped[Optional[str]] = mapped_column(nullable=True, doc="The multi-agent group that the message was sent in")
 
     # Monotonically increasing sequence for efficient/correct listing
-    sequence_id: Mapped[int] = mapped_column(
-        BigInteger, Sequence("message_seq_id"), unique=True, nullable=False, doc="Global monotonically increasing ID"
-    )
+    sequence_id = mapped_column(BigInteger, Sequence("message_seq_id"), unique=True, nullable=False)
 
     # Relationships
     agent: Mapped["Agent"] = relationship("Agent", back_populates="messages", lazy="selectin")
@@ -68,15 +67,19 @@ class Message(SqlalchemyBase, OrganizationMixin, AgentMixin):
             model.content = [PydanticTextContent(text=self.text)]
         return model
 
+# listener
+
 
 @event.listens_for(Message, "before_insert")
 def set_sequence_id_for_sqlite(mapper, connection, target):
-    session = Session.object_session(target)
+    # TODO: Kind of hacky, used to detect if we are using sqlite or not
+    if not settings.pg_uri:
+        session = Session.object_session(target)
 
-    if not hasattr(session, "_sequence_id_counter"):
-        # Initialize counter for this flush
-        max_seq = connection.scalar(text("SELECT MAX(sequence_id) FROM messages"))
-        session._sequence_id_counter = max_seq or 0
+        if not hasattr(session, "_sequence_id_counter"):
+            # Initialize counter for this flush
+            max_seq = connection.scalar(text("SELECT MAX(sequence_id) FROM messages"))
+            session._sequence_id_counter = max_seq or 0
 
-    session._sequence_id_counter += 1
-    target.sequence_id = session._sequence_id_counter
+        session._sequence_id_counter += 1
+        target.sequence_id = session._sequence_id_counter

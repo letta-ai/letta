@@ -238,7 +238,9 @@ def initialize_message_sequence(
     first_user_message = get_login_event()  # event letting Letta know the user just logged in
 
     if include_initial_boot_message:
-        if agent_state.llm_config.model is not None and "gpt-3.5" in agent_state.llm_config.model:
+        if agent_state.agent_type == AgentType.sleeptime_agent:
+            initial_boot_messages = []
+        elif agent_state.llm_config.model is not None and "gpt-3.5" in agent_state.llm_config.model:
             initial_boot_messages = get_initial_boot_messages("startup_with_send_message_gpt35")
         else:
             initial_boot_messages = get_initial_boot_messages("startup_with_send_message")
