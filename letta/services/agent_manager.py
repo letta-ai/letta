@@ -212,7 +212,6 @@ class AgentManager:
             # We always need the system prompt up front
             system_message_obj = PydanticMessage.dict_to_message(
                 agent_id=agent_state.id,
-                user_id=agent_state.created_by_id,
                 model=agent_state.llm_config.model,
                 openai_message_dict=init_messages[0],
             )
@@ -223,9 +222,7 @@ class AgentManager:
             )
         else:
             init_messages = [
-                PydanticMessage.dict_to_message(
-                    agent_id=agent_state.id, user_id=agent_state.created_by_id, model=agent_state.llm_config.model, openai_message_dict=msg
-                )
+                PydanticMessage.dict_to_message(agent_id=agent_state.id, model=agent_state.llm_config.model, openai_message_dict=msg)
                 for msg in init_messages
             ]
 
@@ -713,7 +710,6 @@ class AgentManager:
             # Swap the system message out (only if there is a diff)
             message = PydanticMessage.dict_to_message(
                 agent_id=agent_id,
-                user_id=actor.id,
                 model=agent_state.llm_config.model,
                 openai_message_dict={"role": "system", "content": new_system_message_str},
             )
@@ -800,7 +796,6 @@ class AgentManager:
             )
             system_message = PydanticMessage.dict_to_message(
                 agent_id=agent_state.id,
-                user_id=agent_state.created_by_id,
                 model=agent_state.llm_config.model,
                 openai_message_dict=init_messages[0],
             )
@@ -902,7 +897,7 @@ class AgentManager:
         # get the agent
         agent = self.get_agent_by_id(agent_id=agent_id, actor=actor)
         message = PydanticMessage.dict_to_message(
-            agent_id=agent.id, user_id=actor.id, model=agent.llm_config.model, openai_message_dict={"role": "system", "content": content}
+            agent_id=agent.id, model=agent.llm_config.model, openai_message_dict={"role": "system", "content": content}
         )
 
         # update agent in-context message IDs

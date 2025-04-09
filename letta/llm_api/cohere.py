@@ -315,7 +315,7 @@ def cohere_chat_completions_request(
         data.pop("tool_choice", None)  # extra safe,  should exist always (default="auto")
 
     # Convert messages to Cohere format
-    msg_objs = [Message.dict_to_message(user_id=uuid.uuid4(), agent_id=uuid.uuid4(), openai_message_dict=m) for m in data["messages"]]
+    msg_objs = [Message.dict_to_message(agent_id=uuid.uuid4(), openai_message_dict=m) for m in data["messages"]]
 
     # System message 0 should instead be a "preamble"
     # See: https://docs.cohere.com/reference/chat
