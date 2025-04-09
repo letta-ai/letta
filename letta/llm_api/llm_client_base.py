@@ -1,5 +1,5 @@
 from abc import abstractmethod
-from typing import List, Optional, Union
+from typing import Dict, List, Optional, Union
 
 from openai import AsyncStream, Stream
 from openai.types.chat.chat_completion_chunk import ChatCompletionChunk
@@ -21,7 +21,6 @@ class LLMClientBase:
         self,
         llm_config: LLMConfig,
         put_inner_thoughts_first: Optional[bool] = True,
-        use_structured_output: Optional[bool] = True,
         use_tool_naming: bool = True,
     ):
         self.llm_config = llm_config
@@ -67,7 +66,6 @@ class LLMClientBase:
         Otherwise returns a ChatCompletionResponse.
         """
         request_data = self.build_request_data(messages, tools, force_tool_call)
-        response_data = {}
 
         try:
             log_event(name="llm_request_sent", attributes=request_data)
@@ -80,6 +78,11 @@ class LLMClientBase:
             raise self.handle_llm_error(e)
 
         return self.convert_response_to_chat_completion(response_data, messages)
+
+    async def send_llm_batch_request_async(
+        self, agent_messages_mapping: Dict[str, List[Message]], agent_tools_mapping: Dict[str, List[dict]]
+    ):
+        raise NotImplementedError
 
     @abstractmethod
     def build_request_data(
