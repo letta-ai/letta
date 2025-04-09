@@ -25,6 +25,7 @@ from letta.llm_api.aws_bedrock import get_bedrock_client
 from letta.llm_api.helpers import add_inner_thoughts_to_functions
 from letta.local_llm.constants import INNER_THOUGHTS_KWARG, INNER_THOUGHTS_KWARG_DESCRIPTION
 from letta.local_llm.utils import num_tokens_from_functions, num_tokens_from_messages
+from letta.log import get_logger
 from letta.schemas.message import Message as _Message
 from letta.schemas.message import MessageRole as _MessageRole
 from letta.schemas.openai.chat_completion_request import ChatCompletionRequest, Tool
@@ -43,6 +44,8 @@ from letta.services.provider_manager import ProviderManager
 from letta.settings import model_settings
 from letta.streaming_interface import AgentChunkStreamingInterface, AgentRefreshStreamingInterface
 from letta.tracing import log_event
+
+logger = get_logger(__name__)
 
 BASE_URL = "https://api.anthropic.com/v1"
 
@@ -620,9 +623,9 @@ def _prepare_anthropic_request(
     data: ChatCompletionRequest,
     inner_thoughts_xml_tag: Optional[str] = "thinking",
     # if true, prefix fill the generation with the thinking tag
-    prefix_fill: bool = True,
+    prefix_fill: bool = False,
     # if true, put COT inside the tool calls instead of inside the content
-    put_inner_thoughts_in_kwargs: bool = False,
+    put_inner_thoughts_in_kwargs: bool = True,
     bedrock: bool = False,
     # extended thinking related fields
     # https://docs.anthropic.com/en/docs/build-with-claude/extended-thinking
@@ -634,7 +637,9 @@ def _prepare_anthropic_request(
         assert (
             max_reasoning_tokens is not None and max_reasoning_tokens < data.max_tokens
         ), "max tokens must be greater than thinking budget"
-        assert not put_inner_thoughts_in_kwargs, "extended thinking not compatible with put_inner_thoughts_in_kwargs"
+        if put_inner_thoughts_in_kwargs:
+            logger.warning("Extended thinking not compatible with put_inner_thoughts_in_kwargs")
+            put_inner_thoughts_in_kwargs = False
         # assert not prefix_fill, "extended thinking not compatible with prefix_fill"
         # Silently disable prefix_fill for now
         prefix_fill = False
