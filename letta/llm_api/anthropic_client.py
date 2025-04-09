@@ -90,7 +90,7 @@ class AnthropicClient(LLMClientBase):
     def build_request_data(
         self,
         messages: List[PydanticMessage],
-        tools: List[dict],
+        tools: Optional[List[dict]] = None,
         force_tool_call: Optional[str] = None,
     ) -> dict:
         # TODO: This needs to get cleaned up. The logic here is pretty confusing.
@@ -146,11 +146,12 @@ class AnthropicClient(LLMClientBase):
             tools_for_request = [Tool(function=f) for f in tools] if tools is not None else None
 
         # Add tool choice
-        data["tool_choice"] = tool_choice
+        if tool_choice:
+            data["tool_choice"] = tool_choice
 
         # Add inner thoughts kwarg
         # TODO: Can probably make this more efficient
-        if len(tools_for_request) > 0 and self.llm_config.put_inner_thoughts_in_kwargs:
+        if tools_for_request and len(tools_for_request) > 0 and self.llm_config.put_inner_thoughts_in_kwargs:
             tools_with_inner_thoughts = add_inner_thoughts_to_functions(
                 functions=[t.function.model_dump() for t in tools_for_request],
                 inner_thoughts_key=INNER_THOUGHTS_KWARG,
@@ -158,7 +159,7 @@ class AnthropicClient(LLMClientBase):
             )
             tools_for_request = [Tool(function=f) for f in tools_with_inner_thoughts]
 
-        if len(tools_for_request) > 0:
+        if tools_for_request and len(tools_for_request) > 0:
             # TODO eventually enable parallel tool use
             data["tools"] = convert_tools_to_anthropic_format(tools_for_request)
 

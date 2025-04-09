@@ -376,7 +376,6 @@ class Agent(BaseAgent):
                     else:
                         raise ValueError(f"Bad finish reason from API: {response.choices[0].finish_reason}")
                 log_telemetry(self.logger, "_handle_ai_response finish")
-                return response
 
             except ValueError as ve:
                 if attempt >= empty_response_retry_limit:
@@ -392,6 +391,14 @@ class Agent(BaseAgent):
                 # For non-retryable errors, exit immediately
                 log_telemetry(self.logger, "_handle_ai_response finish generic Exception")
                 raise e
+
+            # check if we are going over the context window: this allows for articifial constraints
+            if response.usage.total_tokens > self.agent_state.llm_config.context_window:
+                # trigger summarization
+                log_telemetry(self.logger, "_get_ai_reply summarize_messages_inplace")
+                self.summarize_messages_inplace()
+            # return the response
+            return response
 
         log_telemetry(self.logger, "_handle_ai_response finish catch-all exception")
         raise Exception("Retries exhausted and no valid response received.")

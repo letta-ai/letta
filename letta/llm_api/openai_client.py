@@ -78,9 +78,11 @@ class OpenAIClient(LLMClientBase):
         # force function calling for reliability, see https://platform.openai.com/docs/api-reference/chat/create#chat-create-tool_choice
         # TODO(matt) move into LLMConfig
         # TODO: This vllm checking is very brittle and is a patch at most
+        tool_choice = None
         if self.llm_config.model_endpoint == "https://inference.memgpt.ai" or (self.llm_config.handle and "vllm" in self.llm_config.handle):
             tool_choice = "auto"  # TODO change to "required" once proxy supports it
-        else:
+        elif tools:
+            # only set if tools is non-Null
             tool_choice = "required"
 
         if force_tool_call is not None:
