@@ -205,6 +205,7 @@ class Settings(BaseSettings):
     httpx_keepalive_expiry: float = 120.0
 
     # cron job parameters
+    enable_batch_job_polling: bool = False
     poll_running_llm_batches_interval_seconds: int = 5 * 60
 
     @property
