@@ -4,8 +4,8 @@ from typing import List, Tuple
 
 from letta.agents.base_agent import BaseAgent
 from letta.schemas.enums import MessageRole
-from letta.schemas.message import Message
-from letta.schemas.openai.chat_completion_request import UserMessage
+from letta.schemas.letta_message_content import TextContent
+from letta.schemas.message import Message, MessageCreate
 from letta.services.summarizer.enums import SummarizationMode
 
 
@@ -95,8 +95,15 @@ class Summarizer:
             "It should be in note-taking format in natural English. You are to return the new, updated memory only."
         )
 
-        messages = await self.summarizer_agent.step(UserMessage(content=summary_request_text))
-        current_summary = "\n".join([m.content[0].text for m in messages])
+        response = await self.summarizer_agent.step(
+            input_messages=[
+                MessageCreate(
+                    role=MessageRole.user,
+                    content=[TextContent(text=summary_request_text)],
+                ),
+            ],
+        )
+        current_summary = "\n".join([m.content[0].text for m in response.messages if m.message_type == "assistant_message"])
         current_summary = f"{self.summary_prefix}{current_summary}"
 
         return updated_in_context_messages, current_summary, True
