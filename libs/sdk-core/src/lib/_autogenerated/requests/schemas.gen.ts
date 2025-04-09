@@ -528,6 +528,9 @@ export const $AgentState = {
               {
                 $ref: '#/components/schemas/MaxCountPerStepToolRule',
               },
+              {
+                $ref: '#/components/schemas/ParentToolRule',
+              },
             ],
             discriminator: {
               propertyName: 'type',
@@ -538,6 +541,7 @@ export const $AgentState = {
                 exit_loop: '#/components/schemas/TerminalToolRule',
                 max_count_per_step:
                   '#/components/schemas/MaxCountPerStepToolRule',
+                parent_last_tool: '#/components/schemas/ParentToolRule',
                 run_first: '#/components/schemas/InitToolRule',
               },
             },
@@ -3224,6 +3228,9 @@ export const $CreateAgentRequest = {
               {
                 $ref: '#/components/schemas/MaxCountPerStepToolRule',
               },
+              {
+                $ref: '#/components/schemas/ParentToolRule',
+              },
             ],
             discriminator: {
               propertyName: 'type',
@@ -3234,6 +3241,7 @@ export const $CreateAgentRequest = {
                 exit_loop: '#/components/schemas/TerminalToolRule',
                 max_count_per_step:
                   '#/components/schemas/MaxCountPerStepToolRule',
+                parent_last_tool: '#/components/schemas/ParentToolRule',
                 run_first: '#/components/schemas/InitToolRule',
               },
             },
@@ -6201,6 +6209,37 @@ export const $ParametersSchema = {
   title: 'ParametersSchema',
 } as const;
 
+export const $ParentToolRule = {
+  properties: {
+    tool_name: {
+      type: 'string',
+      title: 'Tool Name',
+      description:
+        "The name of the tool. Must exist in the database for the user's organization.",
+    },
+    type: {
+      type: 'string',
+      const: 'parent_last_tool',
+      title: 'Type',
+      default: 'parent_last_tool',
+    },
+    children: {
+      items: {
+        type: 'string',
+      },
+      type: 'array',
+      title: 'Children',
+      description: 'The children tools that can be invoked.',
+    },
+  },
+  additionalProperties: false,
+  type: 'object',
+  required: ['tool_name', 'children'],
+  title: 'ParentToolRule',
+  description:
+    'A ToolRule that only allows a child tool to be called if the parent has been called.',
+} as const;
+
 export const $Passage = {
   properties: {
     created_by_id: {
@@ -9070,6 +9109,9 @@ export const $UpdateAgent = {
               {
                 $ref: '#/components/schemas/MaxCountPerStepToolRule',
               },
+              {
+                $ref: '#/components/schemas/ParentToolRule',
+              },
             ],
             discriminator: {
               propertyName: 'type',
@@ -9080,6 +9122,7 @@ export const $UpdateAgent = {
                 exit_loop: '#/components/schemas/TerminalToolRule',
                 max_count_per_step:
                   '#/components/schemas/MaxCountPerStepToolRule',
+                parent_last_tool: '#/components/schemas/ParentToolRule',
                 run_first: '#/components/schemas/InitToolRule',
               },
             },

@@ -581,6 +581,13 @@ export const MaxCountPerStepToolRule = z.object({
   max_count_limit: z.number(),
 });
 
+export type ParentToolRule = z.infer<typeof ParentToolRule>;
+export const ParentToolRule = z.object({
+  tool_name: z.string(),
+  type: z.union([z.string(), z.undefined()]).optional(),
+  children: z.array(z.string()),
+});
+
 export type AgentType = z.infer<typeof AgentType>;
 export const AgentType = z.union([
   z.literal('memgpt_agent'),
@@ -883,6 +890,7 @@ export const AgentState = z.object({
           ConditionalToolRule,
           ContinueToolRule,
           MaxCountPerStepToolRule,
+          ParentToolRule,
         ]),
       ),
       z.null(),
@@ -896,6 +904,7 @@ export const AgentState = z.object({
               ConditionalToolRule,
               ContinueToolRule,
               MaxCountPerStepToolRule,
+              ParentToolRule,
             ]),
           ),
           z.null(),
@@ -2862,6 +2871,7 @@ export const CreateAgentRequest = z.object({
           ConditionalToolRule,
           ContinueToolRule,
           MaxCountPerStepToolRule,
+          ParentToolRule,
         ]),
       ),
       z.null(),
@@ -2875,6 +2885,7 @@ export const CreateAgentRequest = z.object({
               ConditionalToolRule,
               ContinueToolRule,
               MaxCountPerStepToolRule,
+              ParentToolRule,
             ]),
           ),
           z.null(),
@@ -4502,6 +4513,7 @@ export const UpdateAgent = z.object({
           ConditionalToolRule,
           ContinueToolRule,
           MaxCountPerStepToolRule,
+          ParentToolRule,
         ]),
       ),
       z.null(),
@@ -4515,6 +4527,7 @@ export const UpdateAgent = z.object({
               ConditionalToolRule,
               ContinueToolRule,
               MaxCountPerStepToolRule,
+              ParentToolRule,
             ]),
           ),
           z.null(),

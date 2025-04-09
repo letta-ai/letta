@@ -165,6 +165,7 @@ export type AgentState = {
     | ConditionalToolRule
     | ContinueToolRule
     | MaxCountPerStepToolRule
+    | ParentToolRule
   > | null;
   /**
    * The ids of the messages in the agent's in-context memory.
@@ -1006,6 +1007,7 @@ export type CreateAgentRequest = {
     | ConditionalToolRule
     | ContinueToolRule
     | MaxCountPerStepToolRule
+    | ParentToolRule
   > | null;
   /**
    * The tags associated with the agent.
@@ -2199,6 +2201,21 @@ export type ParametersSchema = {
 };
 
 /**
+ * A ToolRule that only allows a child tool to be called if the parent has been called.
+ */
+export type ParentToolRule = {
+  /**
+   * The name of the tool. Must exist in the database for the user's organization.
+   */
+  tool_name: string;
+  type?: 'parent_last_tool';
+  /**
+   * The children tools that can be invoked.
+   */
+  children: Array<string>;
+};
+
+/**
  * Representation of a passage, which is stored in archival memory.
  *
  * Parameters:
@@ -3307,6 +3324,7 @@ export type UpdateAgent = {
     | ConditionalToolRule
     | ContinueToolRule
     | MaxCountPerStepToolRule
+    | ParentToolRule
   > | null;
   /**
    * The LLM configuration used by the agent.

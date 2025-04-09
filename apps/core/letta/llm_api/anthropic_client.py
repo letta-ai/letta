@@ -347,13 +347,19 @@ class AnthropicClient(LLMClientBase):
                 if content_part.type == "text":
                     content = strip_xml_tags(string=content_part.text, tag="thinking")
                 if content_part.type == "tool_use":
+                    # hack for tool rules
+                    input = json.loads(json.dumps(content_part.input))
+                    if "id" in input and input["id"].startswith("toolu_") and "function" in input:
+                        arguments = str(input["function"]["arguments"])
+                    else:
+                        arguments = json.dumps(content_part.input, indent=2)
                     tool_calls = [
                         ToolCall(
                             id=content_part.id,
                             type="function",
                             function=FunctionCall(
                                 name=content_part.name,
-                                arguments=json.dumps(content_part.input, indent=2),
+                                arguments=arguments,
                             ),
                         )
                     ]

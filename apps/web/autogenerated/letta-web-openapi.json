@@ -755,6 +755,29 @@
                                     }
                                   },
                                   "required": ["tool_name", "max_count_limit"]
+                                },
+                                {
+                                  "type": "object",
+                                  "properties": {
+                                    "tool_name": {
+                                      "type": "string"
+                                    },
+                                    "type": {
+                                      "oneOf": [
+                                        {
+                                          "type": "string"
+                                        },
+                                        {}
+                                      ]
+                                    },
+                                    "children": {
+                                      "type": "array",
+                                      "items": {
+                                        "type": "string"
+                                      }
+                                    }
+                                  },
+                                  "required": ["tool_name", "children"]
                                 }
                               ]
                             }
@@ -926,6 +949,29 @@
                                           "tool_name",
                                           "max_count_limit"
                                         ]
+                                      },
+                                      {
+                                        "type": "object",
+                                        "properties": {
+                                          "tool_name": {
+                                            "type": "string"
+                                          },
+                                          "type": {
+                                            "oneOf": [
+                                              {
+                                                "type": "string"
+                                              },
+                                              {}
+                                            ]
+                                          },
+                                          "children": {
+                                            "type": "array",
+                                            "items": {
+                                              "type": "string"
+                                            }
+                                          }
+                                        },
+                                        "required": ["tool_name", "children"]
                                       }
                                     ]
                                   }
@@ -3805,6 +3851,29 @@
                                         "tool_name",
                                         "max_count_limit"
                                       ]
+                                    },
+                                    {
+                                      "type": "object",
+                                      "properties": {
+                                        "tool_name": {
+                                          "type": "string"
+                                        },
+                                        "type": {
+                                          "oneOf": [
+                                            {
+                                              "type": "string"
+                                            },
+                                            {}
+                                          ]
+                                        },
+                                        "children": {
+                                          "type": "array",
+                                          "items": {
+                                            "type": "string"
+                                          }
+                                        }
+                                      },
+                                      "required": ["tool_name", "children"]
                                     }
                                   ]
                                 }
@@ -3978,6 +4047,32 @@
                                             "required": [
                                               "tool_name",
                                               "max_count_limit"
+                                            ]
+                                          },
+                                          {
+                                            "type": "object",
+                                            "properties": {
+                                              "tool_name": {
+                                                "type": "string"
+                                              },
+                                              "type": {
+                                                "oneOf": [
+                                                  {
+                                                    "type": "string"
+                                                  },
+                                                  {}
+                                                ]
+                                              },
+                                              "children": {
+                                                "type": "array",
+                                                "items": {
+                                                  "type": "string"
+                                                }
+                                              }
+                                            },
+                                            "required": [
+                                              "tool_name",
+                                              "children"
                                             ]
                                           }
                                         ]
@@ -7240,6 +7335,29 @@
                                         "tool_name",
                                         "max_count_limit"
                                       ]
+                                    },
+                                    {
+                                      "type": "object",
+                                      "properties": {
+                                        "tool_name": {
+                                          "type": "string"
+                                        },
+                                        "type": {
+                                          "oneOf": [
+                                            {
+                                              "type": "string"
+                                            },
+                                            {}
+                                          ]
+                                        },
+                                        "children": {
+                                          "type": "array",
+                                          "items": {
+                                            "type": "string"
+                                          }
+                                        }
+                                      },
+                                      "required": ["tool_name", "children"]
                                     }
                                   ]
                                 }
@@ -7413,6 +7531,32 @@
                                             "required": [
                                               "tool_name",
                                               "max_count_limit"
+                                            ]
+                                          },
+                                          {
+                                            "type": "object",
+                                            "properties": {
+                                              "tool_name": {
+                                                "type": "string"
+                                              },
+                                              "type": {
+                                                "oneOf": [
+                                                  {
+                                                    "type": "string"
+                                                  },
+                                                  {}
+                                                ]
+                                              },
+                                              "children": {
+                                                "type": "array",
+                                                "items": {
+                                                  "type": "string"
+                                                }
+                                              }
+                                            },
+                                            "required": [
+                                              "tool_name",
+                                              "children"
                                             ]
                                           }
                                         ]
