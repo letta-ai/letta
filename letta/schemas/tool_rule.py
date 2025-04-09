@@ -29,6 +29,19 @@ class ChildToolRule(BaseToolRule):
         return set(self.children) if last_tool == self.tool_name else available_tools
 
 
+class ParentToolRule(BaseToolRule):
+    """
+    A ToolRule that only allows a child tool to be called if the parent has been called.
+    """
+
+    type: Literal[ToolRuleType.parent_last_tool] = ToolRuleType.parent_last_tool
+    children: List[str] = Field(..., description="The children tools that can be invoked.")
+
+    def get_valid_tools(self, tool_call_history: List[str], available_tools: Set[str], last_function_response: Optional[str]) -> Set[str]:
+        last_tool = tool_call_history[-1] if tool_call_history else None
+        return set(self.children) if last_tool == self.tool_name else available_tools - set(self.children)
+
+
 class ConditionalToolRule(BaseToolRule):
     """
     A ToolRule that conditionally maps to different child tools based on the output.
@@ -128,6 +141,6 @@ class MaxCountPerStepToolRule(BaseToolRule):
 
 
 ToolRule = Annotated[
-    Union[ChildToolRule, InitToolRule, TerminalToolRule, ConditionalToolRule, ContinueToolRule, MaxCountPerStepToolRule],
+    Union[ChildToolRule, InitToolRule, TerminalToolRule, ConditionalToolRule, ContinueToolRule, MaxCountPerStepToolRule, ParentToolRule],
     Field(discriminator="type"),
 ]

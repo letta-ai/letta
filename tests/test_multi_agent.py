@@ -9,7 +9,7 @@ from letta.orm.enums import JobType
 from letta.orm.errors import NoResultFound
 from letta.schemas.agent import CreateAgent
 from letta.schemas.block import CreateBlock
-from letta.schemas.enums import JobStatus
+from letta.schemas.enums import JobStatus, ToolRuleType
 from letta.schemas.group import (
     DynamicManager,
     GroupCreate,
@@ -506,6 +506,8 @@ async def test_sleeptime_group_chat(server, actor):
     assert "finish_rethinking_memory" in sleeptime_agent_tools
     assert "view_core_memory_with_line_numbers" in sleeptime_agent_tools
     assert "core_memory_insert" in sleeptime_agent_tools
+
+    assert len([rule for rule in sleeptime_agent.tool_rules if rule.type == ToolRuleType.parent_last_tool]) > 0
 
     # 5. Send messages and verify run ids
     message_text = [
