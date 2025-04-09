@@ -5,9 +5,8 @@ import openai
 from letta.agents.base_agent import BaseAgent
 from letta.schemas.agent import AgentState
 from letta.schemas.enums import MessageRole
-from letta.schemas.letta_message import UserMessage
 from letta.schemas.letta_message_content import TextContent
-from letta.schemas.message import Message
+from letta.schemas.message import Message, MessageCreate
 from letta.schemas.openai.chat_completion_request import ChatCompletionRequest
 from letta.schemas.user import User
 from letta.services.agent_manager import AgentManager
@@ -37,15 +36,15 @@ class EphemeralAgent(BaseAgent):
             actor=actor,
         )
 
-    async def step(self, input_message: UserMessage) -> List[Message]:
+    async def step(self, input_messages: List[MessageCreate]) -> List[Message]:
         """
         Synchronous method that takes a user's input text and returns a summary from OpenAI.
         Returns a list of ephemeral Message objects containing both the user text and the assistant summary.
         """
         agent_state = self.agent_manager.get_agent_by_id(agent_id=self.agent_id, actor=self.actor)
 
-        input_message = self.pre_process_input_message(input_message=input_message)
-        request = self._build_openai_request([input_message], agent_state)
+        openai_messages = self.pre_process_input_message(input_messages=input_messages)
+        request = self._build_openai_request(openai_messages, agent_state)
 
         chat_completion = await self.openai_client.chat.completions.create(**request.model_dump(exclude_unset=True))
 
@@ -66,7 +65,7 @@ class EphemeralAgent(BaseAgent):
         )
         return openai_request
 
-    async def step_stream(self, input_message: UserMessage) -> AsyncGenerator[str, None]:
+    async def step_stream(self, input_messages: List[MessageCreate]) -> AsyncGenerator[str, None]:
         """
         This agent is synchronous-only. If called in an async context, raise an error.
         """
