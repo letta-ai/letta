@@ -279,8 +279,6 @@ def server():
 def org_id(server):
     # create org
     org = server.organization_manager.create_default_organization()
-    print(f"Created org\n{org.id}")
-
     yield org.id
 
     # cleanup
@@ -338,7 +336,6 @@ def agent_id(server, user_id, base_tools):
         ),
         actor=actor,
     )
-    print(f"Created agent\n{agent_state}")
     yield agent_state.id
 
     # cleanup
@@ -359,7 +356,6 @@ def other_agent_id(server, user_id, base_tools):
         ),
         actor=actor,
     )
-    print(f"Created agent\n{agent_state}")
     yield agent_state.id
 
     # cleanup
@@ -953,7 +949,6 @@ def test_memory_rebuild_count(server, user, disable_e2b_api_key, base_tools, bas
         ),
         actor=actor,
     )
-    print(f"Created agent\n{agent_state}")
 
     def count_system_messages_in_recall() -> Tuple[int, List[LettaMessage]]:
 
@@ -966,10 +961,6 @@ def test_memory_rebuild_count(server, user, disable_e2b_api_key, base_tools, bas
             return_message_object=False,
         )
         assert all(isinstance(m, LettaMessage) for m in letta_messages)
-
-        print("LETTA_MESSAGES:")
-        for i, m in enumerate(letta_messages):
-            print(f"{i}: {type(m)} ...{str(m)[-50:]}")
 
         # Collect system messages and their texts
         system_messages = [m for m in letta_messages if m.message_type == "system_message"]
@@ -1116,7 +1107,47 @@ def test_load_file_to_source(server: SyncServer, user_id: str, agent_id: str, ot
     assert any("Anna".lower() in passage.text.lower() for passage in passages2)
 
 
-def test_add_remove_tools_update_agent(server: SyncServer, user_id: str, base_tools):
+def test_add_nonexisting_tool(server: SyncServer, user_id: str, base_tools):
+    actor = server.user_manager.get_user_or_default(user_id)
+
+    # create agent
+    with pytest.raises(ValueError, match="not found"):
+        agent_state = server.create_agent(
+            request=CreateAgent(
+                name="memory_rebuild_test_agent",
+                tools=["fake_nonexisting_tool"],
+                memory_blocks=[
+                    CreateBlock(label="human", value="The human's name is Bob."),
+                    CreateBlock(label="persona", value="My name is Alice."),
+                ],
+                model="openai/gpt-4o-mini",
+                embedding="openai/text-embedding-ada-002",
+                include_base_tools=True,
+            ),
+            actor=actor,
+        )
+
+
+def test_default_tool_rules(server: SyncServer, user_id: str, base_tools, base_memory_tools):
+    actor = server.user_manager.get_user_or_default(user_id)
+
+    # create agent
+    agent_state = server.create_agent(
+        request=CreateAgent(
+            name="tool_rules_test_agent",
+            tool_ids=[t.id for t in base_tools + base_memory_tools],
+            memory_blocks=[],
+            model="openai/gpt-4o-mini",
+            embedding="openai/text-embedding-ada-002",
+            include_base_tools=False,
+        ),
+        actor=actor,
+    )
+
+    assert len(agent_state.tool_rules) == len(base_tools + base_memory_tools)
+
+
+def test_add_remove_tools_update_agent(server: SyncServer, user_id: str, base_tools, base_memory_tools):
     """Test that the memory rebuild is generating the correct number of role=system messages"""
     actor = server.user_manager.get_user_or_default(user_id)
 

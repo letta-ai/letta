@@ -14,7 +14,7 @@ from letta.agents.letta_agent import LettaAgent
 from letta.constants import DEFAULT_MESSAGE_TOOL, DEFAULT_MESSAGE_TOOL_KWARG
 from letta.log import get_logger
 from letta.orm.errors import NoResultFound
-from letta.schemas.agent import AgentState, CreateAgent, UpdateAgent
+from letta.schemas.agent import AgentState, AgentType, CreateAgent, UpdateAgent
 from letta.schemas.block import Block, BlockUpdate
 from letta.schemas.job import JobStatus, JobUpdate, LettaRequestConfig
 from letta.schemas.letta_message import LettaMessageUnion, LettaMessageUpdateUnion
@@ -31,6 +31,7 @@ from letta.schemas.user import User
 from letta.serialize_schemas.pydantic_agent_schema import AgentSchema
 from letta.server.rest_api.utils import get_letta_server
 from letta.server.server import SyncServer
+from letta.settings import settings
 
 # These can be forward refs, but because Fastapi needs them at runtime the must be imported normally
 
@@ -593,7 +594,13 @@ async def send_message(
     # TODO: This is redundant, remove soon
     agent = server.agent_manager.get_agent_by_id(agent_id, actor)
 
-    if agent.llm_config.model_endpoint_type == "anthropic" and not agent.enable_sleeptime and not agent.multi_agent_group:
+    if (
+        agent.llm_config.model_endpoint_type == "anthropic"
+        and not agent.enable_sleeptime
+        and not agent.multi_agent_group
+        and not agent.agent_type == AgentType.sleeptime_agent
+        and settings.use_experimental
+    ):
         experimental_agent = LettaAgent(
             agent_id=agent_id,
             message_manager=server.message_manager,
@@ -649,7 +656,13 @@ async def send_message_streaming(
     # TODO: This is redundant, remove soon
     agent = server.agent_manager.get_agent_by_id(agent_id, actor)
 
-    if agent.llm_config.model_endpoint_type == "anthropic" and not agent.enable_sleeptime and not agent.multi_agent_group:
+    if (
+        agent.llm_config.model_endpoint_type == "anthropic"
+        and not agent.enable_sleeptime
+        and not agent.multi_agent_group
+        and not agent.agent_type == AgentType.sleeptime_agent
+        and settings.use_experimental
+    ):
         experimental_agent = LettaAgent(
             agent_id=agent_id,
             message_manager=server.message_manager,

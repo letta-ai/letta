@@ -8,6 +8,7 @@ from abc import abstractmethod
 from datetime import datetime
 from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 
+from anthropic import AsyncAnthropic
 from composio.client import Composio
 from composio.client.collections import ActionModel, AppModel
 from fastapi import HTTPException
@@ -351,6 +352,9 @@ class SyncServer(Server):
         # TODO: Remove these in memory caches
         self._llm_config_cache = {}
         self._embedding_config_cache = {}
+
+        # TODO: Replace this with the Anthropic client we have in house
+        self.anthropic_async_client = AsyncAnthropic()
 
     def load_agent(self, agent_id: str, actor: User, interface: Union[AgentInterface, None] = None) -> Agent:
         """Updated method to load agents from persisted storage"""
@@ -775,7 +779,7 @@ class SyncServer(Server):
 
     def create_sleeptime_agent(self, main_agent: AgentState, actor: User) -> AgentState:
         request = CreateAgent(
-            name=main_agent.name,
+            name=main_agent.name + "-sleeptime",
             agent_type=AgentType.sleeptime_agent,
             block_ids=[block.id for block in main_agent.memory.blocks],
             memory_blocks=[

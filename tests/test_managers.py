@@ -39,7 +39,7 @@ from letta.schemas.agent import AgentStepState, CreateAgent, UpdateAgent
 from letta.schemas.block import Block as PydanticBlock
 from letta.schemas.block import BlockUpdate, CreateBlock
 from letta.schemas.embedding_config import EmbeddingConfig
-from letta.schemas.enums import AgentStepStatus, JobStatus, MessageRole
+from letta.schemas.enums import AgentStepStatus, JobStatus, MessageRole, ProviderType
 from letta.schemas.environment_variables import SandboxEnvironmentVariableCreate, SandboxEnvironmentVariableUpdate
 from letta.schemas.file import FileMetadata as PydanticFileMetadata
 from letta.schemas.identity import IdentityCreate, IdentityProperty, IdentityPropertyType, IdentityType, IdentityUpdate
@@ -437,6 +437,7 @@ def sarah_agent(server: SyncServer, default_user, default_organization):
             memory_blocks=[],
             llm_config=LLMConfig.default_config("gpt-4"),
             embedding_config=EmbeddingConfig.default_config(provider="openai"),
+            include_base_tools=False,
         ),
         actor=default_user,
     )
@@ -452,6 +453,7 @@ def charles_agent(server: SyncServer, default_user, default_organization):
             memory_blocks=[CreateBlock(label="human", value="Charles"), CreateBlock(label="persona", value="I am a helpful assistant")],
             llm_config=LLMConfig.default_config("gpt-4"),
             embedding_config=EmbeddingConfig.default_config(provider="openai"),
+            include_base_tools=False,
         ),
         actor=default_user,
     )
@@ -476,6 +478,7 @@ def comprehensive_test_agent_fixture(server: SyncServer, default_user, print_too
         initial_message_sequence=[MessageCreate(role=MessageRole.user, content="hello world")],
         tool_exec_environment_variables={"test_env_var_key_a": "test_env_var_value_a", "test_env_var_key_b": "test_env_var_value_b"},
         message_buffer_autoclear=True,
+        include_base_tools=False,
     )
     created_agent = server.agent_manager.create_agent(
         create_agent_request,
@@ -549,6 +552,7 @@ def agent_with_tags(server: SyncServer, default_user):
             llm_config=LLMConfig.default_config("gpt-4o-mini"),
             embedding_config=EmbeddingConfig.default_config(provider="openai"),
             memory_blocks=[],
+            include_base_tools=False,
         ),
         actor=default_user,
     )
@@ -560,6 +564,7 @@ def agent_with_tags(server: SyncServer, default_user):
             llm_config=LLMConfig.default_config("gpt-4o-mini"),
             embedding_config=EmbeddingConfig.default_config(provider="openai"),
             memory_blocks=[],
+            include_base_tools=False,
         ),
         actor=default_user,
     )
@@ -571,6 +576,7 @@ def agent_with_tags(server: SyncServer, default_user):
             llm_config=LLMConfig.default_config("gpt-4o-mini"),
             embedding_config=EmbeddingConfig.default_config(provider="openai"),
             memory_blocks=[],
+            include_base_tools=False,
         ),
         actor=default_user,
     )
@@ -672,6 +678,7 @@ def test_create_agent_passed_in_initial_messages(server: SyncServer, default_use
         tags=["a", "b"],
         description="test_description",
         initial_message_sequence=[MessageCreate(role=MessageRole.user, content="hello world")],
+        include_base_tools=False,
     )
     agent_state = server.agent_manager.create_agent(
         create_agent_request,
@@ -697,6 +704,7 @@ def test_create_agent_default_initial_message(server: SyncServer, default_user, 
         block_ids=[default_block.id],
         tags=["a", "b"],
         description="test_description",
+        include_base_tools=False,
     )
     agent_state = server.agent_manager.create_agent(
         create_agent_request,
@@ -841,6 +849,7 @@ def test_list_agents_ascending(server: SyncServer, default_user):
             llm_config=LLMConfig.default_config("gpt-4"),
             embedding_config=EmbeddingConfig.default_config(provider="openai"),
             memory_blocks=[],
+            include_base_tools=False,
         ),
         actor=default_user,
     )
@@ -854,6 +863,7 @@ def test_list_agents_ascending(server: SyncServer, default_user):
             llm_config=LLMConfig.default_config("gpt-4"),
             embedding_config=EmbeddingConfig.default_config(provider="openai"),
             memory_blocks=[],
+            include_base_tools=False,
         ),
         actor=default_user,
     )
@@ -871,6 +881,7 @@ def test_list_agents_descending(server: SyncServer, default_user):
             llm_config=LLMConfig.default_config("gpt-4"),
             embedding_config=EmbeddingConfig.default_config(provider="openai"),
             memory_blocks=[],
+            include_base_tools=False,
         ),
         actor=default_user,
     )
@@ -884,6 +895,7 @@ def test_list_agents_descending(server: SyncServer, default_user):
             llm_config=LLMConfig.default_config("gpt-4"),
             embedding_config=EmbeddingConfig.default_config(provider="openai"),
             memory_blocks=[],
+            include_base_tools=False,
         ),
         actor=default_user,
     )
@@ -905,6 +917,7 @@ def test_list_agents_ordering_and_pagination(server: SyncServer, default_user):
                 memory_blocks=[],
                 llm_config=LLMConfig.default_config("gpt-4"),
                 embedding_config=EmbeddingConfig.default_config(provider="openai"),
+                include_base_tools=False,
             ),
             actor=default_user,
         )
@@ -1266,6 +1279,7 @@ def test_list_agents_by_tags_pagination(server: SyncServer, default_user, defaul
             llm_config=LLMConfig.default_config("gpt-4"),
             embedding_config=EmbeddingConfig.default_config(provider="openai"),
             memory_blocks=[],
+            include_base_tools=False,
         ),
         actor=default_user,
     )
@@ -1281,6 +1295,7 @@ def test_list_agents_by_tags_pagination(server: SyncServer, default_user, defaul
             llm_config=LLMConfig.default_config("gpt-4"),
             embedding_config=EmbeddingConfig.default_config(provider="openai"),
             memory_blocks=[],
+            include_base_tools=False,
         ),
         actor=default_user,
     )
@@ -1321,6 +1336,7 @@ def test_list_agents_query_text_pagination(server: SyncServer, default_user, def
             description="This is a search agent for testing",
             llm_config=LLMConfig.default_config("gpt-4"),
             embedding_config=EmbeddingConfig.default_config(provider="openai"),
+            include_base_tools=False,
         ),
         actor=default_user,
     )
@@ -1332,6 +1348,7 @@ def test_list_agents_query_text_pagination(server: SyncServer, default_user, def
             description="Another search agent for testing",
             llm_config=LLMConfig.default_config("gpt-4"),
             embedding_config=EmbeddingConfig.default_config(provider="openai"),
+            include_base_tools=False,
         ),
         actor=default_user,
     )
@@ -1343,6 +1360,7 @@ def test_list_agents_query_text_pagination(server: SyncServer, default_user, def
             description="This is a different agent",
             llm_config=LLMConfig.default_config("gpt-4"),
             embedding_config=EmbeddingConfig.default_config(provider="openai"),
+            include_base_tools=False,
         ),
         actor=default_user,
     )
@@ -3351,6 +3369,7 @@ def test_get_set_agents_for_identities(server: SyncServer, sarah_agent, charles_
             llm_config=LLMConfig.default_config("gpt-4"),
             embedding_config=EmbeddingConfig.default_config(provider="openai"),
             identity_ids=[identity.id],
+            include_base_tools=False,
         ),
         actor=default_user,
     )
@@ -3359,6 +3378,7 @@ def test_get_set_agents_for_identities(server: SyncServer, sarah_agent, charles_
             memory_blocks=[],
             llm_config=LLMConfig.default_config("gpt-4"),
             embedding_config=EmbeddingConfig.default_config(provider="openai"),
+            include_base_tools=False,
         ),
         actor=default_user,
     )
@@ -4643,6 +4663,7 @@ def test_list_tags(server: SyncServer, default_user, default_organization):
                 llm_config=LLMConfig.default_config("gpt-4"),
                 embedding_config=EmbeddingConfig.default_config(provider="openai"),
                 tags=tags[i : i + 3],  # Each agent gets 3 consecutive tags
+                include_base_tools=False,
             ),
         )
         agents.append(agent)
@@ -4687,20 +4708,20 @@ def test_list_tags(server: SyncServer, default_user, default_organization):
 
 def test_create_and_get_batch_request(server, default_user, dummy_beta_message_batch):
     batch = server.batch_manager.create_batch_request(
-        llm_provider="anthropic",
+        llm_provider=ProviderType.anthropic,
         status=JobStatus.created,
         create_batch_response=dummy_beta_message_batch,
         actor=default_user,
     )
     assert batch.id.startswith("batch_req-")
     assert batch.create_batch_response == dummy_beta_message_batch
-    fetched = server.batch_manager.get_batch_request_by_id(batch.id, actor=default_user)
+    fetched = server.batch_manager.get_batch_job_by_id(batch.id, actor=default_user)
     assert fetched.id == batch.id
 
 
 def test_update_batch_status(server, default_user, dummy_beta_message_batch):
     batch = server.batch_manager.create_batch_request(
-        llm_provider="anthropic",
+        llm_provider=ProviderType.anthropic,
         status=JobStatus.created,
         create_batch_response=dummy_beta_message_batch,
         actor=default_user,
@@ -4714,7 +4735,7 @@ def test_update_batch_status(server, default_user, dummy_beta_message_batch):
         actor=default_user,
     )
 
-    updated = server.batch_manager.get_batch_request_by_id(batch.id, actor=default_user)
+    updated = server.batch_manager.get_batch_job_by_id(batch.id, actor=default_user)
     assert updated.status == JobStatus.completed
     assert updated.latest_polling_response == dummy_beta_message_batch
     assert updated.last_polled_at >= before
@@ -4722,7 +4743,7 @@ def test_update_batch_status(server, default_user, dummy_beta_message_batch):
 
 def test_create_and_get_batch_item(server, default_user, sarah_agent, dummy_beta_message_batch, dummy_llm_config, dummy_step_state):
     batch = server.batch_manager.create_batch_request(
-        llm_provider="anthropic",
+        llm_provider=ProviderType.anthropic,
         status=JobStatus.created,
         create_batch_response=dummy_beta_message_batch,
         actor=default_user,
@@ -4748,7 +4769,7 @@ def test_update_batch_item(
     server, default_user, sarah_agent, dummy_beta_message_batch, dummy_llm_config, dummy_step_state, dummy_successful_response
 ):
     batch = server.batch_manager.create_batch_request(
-        llm_provider="anthropic",
+        llm_provider=ProviderType.anthropic,
         status=JobStatus.created,
         create_batch_response=dummy_beta_message_batch,
         actor=default_user,
@@ -4780,7 +4801,7 @@ def test_update_batch_item(
 
 def test_delete_batch_item(server, default_user, sarah_agent, dummy_beta_message_batch, dummy_llm_config, dummy_step_state):
     batch = server.batch_manager.create_batch_request(
-        llm_provider="anthropic",
+        llm_provider=ProviderType.anthropic,
         status=JobStatus.created,
         create_batch_response=dummy_beta_message_batch,
         actor=default_user,

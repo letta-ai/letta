@@ -38,7 +38,7 @@ from letta.schemas.group import ManagerType
 from letta.schemas.llm_config import LLMConfig
 from letta.schemas.memory import Memory
 from letta.schemas.message import Message as PydanticMessage
-from letta.schemas.message import MessageCreate
+from letta.schemas.message import MessageCreate, MessageUpdate
 from letta.schemas.passage import Passage as PydanticPassage
 from letta.schemas.source import Source as PydanticSource
 from letta.schemas.tool import Tool as PydanticTool
@@ -115,9 +115,10 @@ class AgentManager:
                 block = self.block_manager.create_or_update_block(PydanticBlock(**create_block.model_dump(to_orm=True)), actor=actor)
                 block_ids.append(block.id)
 
-        # TODO: Remove this block once we deprecate the legacy `tools` field
-        # create passed in `tools`
-        tool_names = []
+        # add passed in `tools`
+        tool_names = agent_create.tools or []
+
+        # add base tools
         if agent_create.include_base_tools:
             if agent_create.agent_type == AgentType.sleeptime_agent:
                 tool_names.extend(BASE_SLEEPTIME_TOOLS)
@@ -128,41 +129,44 @@ class AgentManager:
                     tool_names.extend(BASE_TOOLS + BASE_MEMORY_TOOLS)
         if agent_create.include_multi_agent_tools:
             tool_names.extend(MULTI_AGENT_TOOLS)
-        if agent_create.tools:
-            tool_names.extend(agent_create.tools)
-        # Remove duplicates
+
+        # remove duplicates
         tool_names = list(set(tool_names))
 
-        # add default tool rules
-        if agent_create.include_base_tool_rules:
-            if not agent_create.tool_rules:
-                tool_rules = []
-            else:
-                tool_rules = agent_create.tool_rules
+        # convert tool names to ids
+        tool_ids = []
+        for tool_name in tool_names:
+            tool = self.tool_manager.get_tool_by_name(tool_name=tool_name, actor=actor)
+            if not tool:
+                raise ValueError(f"Tool {tool_name} not found")
+            tool_ids.append(tool.id)
 
+        # add passed in `tool_ids`
+        for tool_id in agent_create.tool_ids or []:
+            if tool_id not in tool_ids:
+                tool = self.tool_manager.get_tool_by_id(tool_id=tool_id, actor=actor)
+                if tool:
+                    tool_ids.append(tool.id)
+                    tool_names.append(tool.name)
+                else:
+                    raise ValueError(f"Tool {tool_id} not found")
+
+        # add default tool rules
+        tool_rules = agent_create.tool_rules or []
+        if agent_create.include_base_tool_rules:
             # apply default tool rules
             for tool_name in tool_names:
                 if tool_name == "send_message" or tool_name == "send_message_to_agent_async" or tool_name == "finish_rethinking_memory":
                     tool_rules.append(PydanticTerminalToolRule(tool_name=tool_name))
-                elif tool_name in BASE_TOOLS:
+                elif tool_name in BASE_TOOLS + BASE_MEMORY_TOOLS + BASE_SLEEPTIME_TOOLS:
                     tool_rules.append(PydanticContinueToolRule(tool_name=tool_name))
 
             if agent_create.agent_type == AgentType.sleeptime_agent:
                 tool_rules.append(PydanticChildToolRule(tool_name="view_core_memory_with_line_numbers", children=["core_memory_insert"]))
 
-        else:
-            tool_rules = agent_create.tool_rules
-        # Check tool rules are valid
+        # if custom rules, check tool rules are valid
         if agent_create.tool_rules:
             check_supports_structured_output(model=agent_create.llm_config.model, tool_rules=agent_create.tool_rules)
-
-        tool_ids = agent_create.tool_ids or []
-        for tool_name in tool_names:
-            tool = self.tool_manager.get_tool_by_name(tool_name=tool_name, actor=actor)
-            if tool:
-                tool_ids.append(tool.id)
-        # Remove duplicates
-        tool_ids = list(set(tool_ids))
 
         # Create the agent
         agent_state = self._create_agent(
@@ -714,10 +718,12 @@ class AgentManager:
                 model=agent_state.llm_config.model,
                 openai_message_dict={"role": "system", "content": new_system_message_str},
             )
-            # TODO: This seems kind of silly, why not just update the message?
-            message = self.message_manager.create_message(message, actor=actor)
-            message_ids = [message.id] + agent_state.message_ids[1:]  # swap index 0 (system)
-            return self.set_in_context_messages(agent_id=agent_id, message_ids=message_ids, actor=actor)
+            message = self.message_manager.update_message_by_id(
+                message_id=curr_system_message.id,
+                message_update=MessageUpdate(**message.model_dump()),
+                actor=actor,
+            )
+            return self.set_in_context_messages(agent_id=agent_id, message_ids=agent_state.message_ids, actor=actor)
         else:
             return agent_state
 

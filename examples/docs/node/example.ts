@@ -1,5 +1,5 @@
-import { LettaClient } from '@letta-ai/letta-client';
-import {
+import type { LettaClient } from '@letta-ai/letta-client';
+import type {
   AssistantMessage,
   ReasoningMessage,
   ToolCallMessage,
@@ -52,17 +52,17 @@ console.log(
   (response.messages[1] as AssistantMessage).content,
 );
 
-const custom_tool_source_code = `
+const CUSTOM_TOOL_SOURCE_CODE = `
 def secret_message():
     """Return a secret message."""
     return "Hello world!"
     `.trim();
 
 const tool = await client.tools.upsert({
-  sourceCode: custom_tool_source_code,
+  sourceCode: CUSTOM_TOOL_SOURCE_CODE,
 });
 
-await client.agents.tools.attach(agent.id, tool.id!);
+await client.agents.tools.attach(agent.id, tool.id);
 
 console.log(`Created tool ${tool.name} and attached to agent ${agent.name}`);
 
@@ -103,7 +103,7 @@ let agentCopy = await client.agents.create({
   embedding: 'openai/text-embedding-ada-002',
 });
 let block = await client.agents.blocks.retrieve(agent.id, 'human');
-agentCopy = await client.agents.blocks.attach(agentCopy.id, block.id!);
+agentCopy = await client.agents.blocks.attach(agentCopy.id, block.id);
 
 console.log('Created agent copy with shared memory named', agentCopy.name);
 

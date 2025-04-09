@@ -16,6 +16,7 @@ from starlette.middleware.cors import CORSMiddleware
 from letta.__init__ import __version__
 from letta.constants import ADMIN_PREFIX, API_PREFIX, OPENAI_API_PREFIX
 from letta.errors import BedrockPermissionError, LettaAgentNotFoundError, LettaUserNotFoundError
+from letta.jobs.scheduler import shutdown_cron_scheduler, start_cron_jobs
 from letta.log import get_logger
 from letta.orm.errors import DatabaseTimeoutError, ForeignKeyConstraintViolationError, NoResultFound, UniqueConstraintViolationError
 from letta.schemas.letta_message import create_letta_message_union_schema
@@ -144,6 +145,12 @@ def create_application() -> "FastAPI":
         executor = concurrent.futures.ThreadPoolExecutor(max_workers=settings.event_loop_threadpool_max_workers)
         loop.set_default_executor(executor)
 
+    @app.on_event("startup")
+    def on_startup():
+        global server
+
+        start_cron_jobs(server)
+
     @app.on_event("shutdown")
     def shutdown_mcp_clients():
         global server
@@ -158,6 +165,10 @@ def create_application() -> "FastAPI":
         t = threading.Thread(target=cleanup_clients)
         t.start()
         t.join()
+
+    @app.on_event("shutdown")
+    def shutdown_scheduler():
+        shutdown_cron_scheduler()
 
     @app.exception_handler(Exception)
     async def generic_error_handler(request: Request, exc: Exception):
