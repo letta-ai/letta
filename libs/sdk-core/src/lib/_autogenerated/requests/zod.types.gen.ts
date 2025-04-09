@@ -2600,6 +2600,30 @@ export const Message = z.object({
     ])
     .optional(),
   id: z.union([z.string(), z.undefined()]).optional(),
+  organization_id: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  agent_id: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  model: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
   role: MessageRole,
   content: z
     .union([
@@ -2629,30 +2653,6 @@ export const Message = z.object({
           z.null(),
         ]),
       ),
-      z.undefined(),
-    ])
-    .optional(),
-  organization_id: z
-    .union([
-      z.string(),
-      z.null(),
-      z.array(z.union([z.string(), z.null()])),
-      z.undefined(),
-    ])
-    .optional(),
-  agent_id: z
-    .union([
-      z.string(),
-      z.null(),
-      z.array(z.union([z.string(), z.null()])),
-      z.undefined(),
-    ])
-    .optional(),
-  model: z
-    .union([
-      z.string(),
-      z.null(),
-      z.array(z.union([z.string(), z.null()])),
       z.undefined(),
     ])
     .optional(),

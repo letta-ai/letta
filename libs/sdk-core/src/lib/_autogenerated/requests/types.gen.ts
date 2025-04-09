@@ -2035,6 +2035,18 @@ export type Message = {
    */
   id?: string;
   /**
+   * The unique identifier of the organization.
+   */
+  organization_id?: string | null;
+  /**
+   * The unique identifier of the agent.
+   */
+  agent_id?: string | null;
+  /**
+   * The model used to make the function call.
+   */
+  model?: string | null;
+  /**
    * The role of the participant.
    */
   role: MessageRole;
@@ -2050,27 +2062,15 @@ export type Message = {
     | OmittedReasoningContent
   > | null;
   /**
-   * The unique identifier of the organization.
-   */
-  organization_id?: string | null;
-  /**
-   * The unique identifier of the agent.
-   */
-  agent_id?: string | null;
-  /**
-   * The model used to make the function call.
-   */
-  model?: string | null;
-  /**
-   * The name of the participant.
+   * For role user/assistant: the (optional) name of the participant. For role tool/function: the name of the function called.
    */
   name?: string | null;
   /**
-   * The list of tool calls requested.
+   * The list of tool calls requested. Only applicable for role assistant.
    */
   tool_calls?: Array<ChatCompletionMessageToolCall> | null;
   /**
-   * The id of the tool call.
+   * The ID of the tool call. Only applicable for role tool.
    */
   tool_call_id?: string | null;
   /**
