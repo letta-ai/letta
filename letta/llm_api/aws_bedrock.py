@@ -14,7 +14,7 @@ def has_valid_aws_credentials() -> bool:
     Check if AWS credentials are properly configured.
     """
     valid_aws_credentials = (
-        os.getenv("AWS_ACCESS_KEY") is not None and os.getenv("AWS_SECRET_ACCESS_KEY") is not None and os.getenv("AWS_REGION") is not None
+        os.getenv("AWS_ACCESS_KEY_ID") is not None and os.getenv("AWS_SECRET_ACCESS_KEY") is not None and os.getenv("AWS_REGION") is not None
     )
     return valid_aws_credentials
 
@@ -28,7 +28,7 @@ def get_bedrock_client():
     logger.debug(f"Getting Bedrock client for {model_settings.aws_region}")
     sts_client = boto3.client(
         "sts",
-        aws_access_key_id=model_settings.aws_access_key,
+        aws_access_key_id=model_settings.aws_access_key_id,
         aws_secret_access_key=model_settings.aws_secret_access_key,
         region_name=model_settings.aws_region,
     )

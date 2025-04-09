@@ -80,7 +80,7 @@ class ModelSettings(BaseSettings):
     groq_api_key: Optional[str] = None
 
     # Bedrock
-    aws_access_key: Optional[str] = None
+    aws_access_key_id: Optional[str] = None
     aws_secret_access_key: Optional[str] = None
     aws_region: Optional[str] = None
     bedrock_anthropic_version: Optional[str] = "bedrock-2023-05-31"
