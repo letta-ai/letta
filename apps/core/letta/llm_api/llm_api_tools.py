@@ -322,6 +322,7 @@ def create(
 
         # Force tool calling
         tool_call = None
+        llm_config.put_inner_thoughts_in_kwargs = True
         if functions is None:
             # Special case for summarization path
             tools = None
@@ -356,6 +357,7 @@ def create(
         if stream:  # Client requested token streaming
             assert isinstance(stream_interface, (AgentChunkStreamingInterface, AgentRefreshStreamingInterface)), type(stream_interface)
 
+            stream_interface.inner_thoughts_in_kwargs = True
             response = anthropic_chat_completions_process_stream(
                 chat_completion_request=chat_completion_request,
                 put_inner_thoughts_in_kwargs=llm_config.put_inner_thoughts_in_kwargs,
