@@ -115,7 +115,7 @@ def test_shared_blocks(client: LettaSDKClient):
     )
     assert (
         "charles" in client.agents.blocks.retrieve(agent_id=agent_state2.id, block_label="human").value.lower()
-    ), f"Shared block update failed {client.agents.blocks.retrieve(agent_id=agent_state2.id, block_label="human").value}"
+    ), f"Shared block update failed {client.agents.blocks.retrieve(agent_id=agent_state2.id, block_label='human').value}"
 
     # cleanup
     client.agents.delete(agent_state1.id)
