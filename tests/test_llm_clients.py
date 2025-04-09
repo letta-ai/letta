@@ -11,8 +11,8 @@ from letta.schemas.message import Message as PydanticMessage
 
 
 @pytest.fixture
-def anthropic_client():
-    llm_config = LLMConfig(
+def llm_config():
+    yield LLMConfig(
         model="claude-3-7-sonnet-20250219",
         model_endpoint_type="anthropic",
         model_endpoint="https://api.anthropic.com/v1",
@@ -23,6 +23,10 @@ def anthropic_client():
         enable_reasoner=True,
         max_reasoning_tokens=1024,
     )
+
+
+@pytest.fixture
+def anthropic_client(llm_config):
     return AnthropicClient(llm_config=llm_config)
 
 
@@ -57,8 +61,15 @@ def mock_agent_tools():
     }
 
 
+@pytest.fixture
+def mock_agent_llm_config(llm_config):
+    return {"agent-1": llm_config}
+
+
 @pytest.mark.asyncio
-async def test_send_llm_batch_request_async_success(anthropic_client, mock_agent_messages, mock_agent_tools, dummy_beta_message_batch):
+async def test_send_llm_batch_request_async_success(
+    anthropic_client, mock_agent_messages, mock_agent_tools, mock_agent_llm_config, dummy_beta_message_batch
+):
     """Test a successful batch request using mocked Anthropic client responses."""
     # Patch the _get_anthropic_client method so that it returns a mock client.
     with patch.object(anthropic_client, "_get_anthropic_client") as mock_get_client:
@@ -68,7 +79,7 @@ async def test_send_llm_batch_request_async_success(anthropic_client, mock_agent
         mock_get_client.return_value = mock_client
 
         # Call the method under test.
-        response = await anthropic_client.send_llm_batch_request_async(mock_agent_messages, mock_agent_tools)
+        response = await anthropic_client.send_llm_batch_request_async(mock_agent_messages, mock_agent_tools, mock_agent_llm_config)
 
         # Assert that the response is our dummy response.
         assert response.id == dummy_beta_message_batch.id
