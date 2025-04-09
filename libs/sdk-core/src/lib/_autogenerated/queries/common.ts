@@ -1425,9 +1425,6 @@ export type ToolsServiceUpsertToolMutationResult = Awaited<
 export type ToolsServiceAddMcpServerMutationResult = Awaited<
   ReturnType<typeof ToolsService.addMcpServer>
 >;
-export type GroupsServiceModifyGroupMutationResult = Awaited<
-  ReturnType<typeof GroupsService.modifyGroup>
->;
 export type IdentitiesServiceUpsertIdentityMutationResult = Awaited<
   ReturnType<typeof IdentitiesService.upsertIdentity>
 >;
@@ -1475,6 +1472,9 @@ export type AgentsServiceModifyMessageMutationResult = Awaited<
 >;
 export type AgentsServiceResetMessagesMutationResult = Awaited<
   ReturnType<typeof AgentsService.resetMessages>
+>;
+export type GroupsServiceModifyGroupMutationResult = Awaited<
+  ReturnType<typeof GroupsService.modifyGroup>
 >;
 export type GroupsServiceModifyGroupMessageMutationResult = Awaited<
   ReturnType<typeof GroupsService.modifyGroupMessage>

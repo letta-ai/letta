@@ -5927,9 +5927,9 @@ export const get_Retrieve_group = {
   response: Group,
 };
 
-export type put_Modify_group = typeof put_Modify_group;
-export const put_Modify_group = {
-  method: z.literal('PUT'),
+export type patch_Modify_group = typeof patch_Modify_group;
+export const patch_Modify_group = {
+  method: z.literal('PATCH'),
   path: z.literal('/v1/groups/{group_id}'),
   requestFormat: z.literal('json'),
   parameters: z.object({
@@ -7338,6 +7338,7 @@ export const EndpointByMethod = {
     '/v1/agents/{agent_id}/archival-memory/{memory_id}': patch_Modify_passage,
     '/v1/agents/{agent_id}/messages/{message_id}': patch_Modify_message,
     '/v1/agents/{agent_id}/reset-messages': patch_Reset_messages,
+    '/v1/groups/{group_id}': patch_Modify_group,
     '/v1/groups/{group_id}/messages/{message_id}': patch_Modify_group_message,
     '/v1/groups/{group_id}/reset-messages': patch_Reset_group_messages,
     '/v1/identities/{identity_id}': patch_Update_identity,
@@ -7392,7 +7393,6 @@ export const EndpointByMethod = {
   put: {
     '/v1/tools/': put_Upsert_tool,
     '/v1/tools/mcp/servers': put_Add_mcp_server,
-    '/v1/groups/{group_id}': put_Modify_group,
     '/v1/identities/': put_Upsert_identity,
     '/v1/admin/users/': put_Update_user,
   },

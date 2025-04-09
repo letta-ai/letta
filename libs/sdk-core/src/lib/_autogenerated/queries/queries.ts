@@ -3637,57 +3637,6 @@ export const useToolsServiceAddMcpServer = <
     ...options,
   });
 /**
- * Modify Group
- * Create a new multi-agent group with the specified configuration.
- * @param data The data for the request.
- * @param data.groupId
- * @param data.requestBody
- * @param data.userId
- * @param data.xProject
- * @returns Group Successful Response
- * @throws ApiError
- */
-export const useGroupsServiceModifyGroup = <
-  TData = Common.GroupsServiceModifyGroupMutationResult,
-  TError = unknown,
-  TContext = unknown,
->(
-  options?: Omit<
-    UseMutationOptions<
-      TData,
-      TError,
-      {
-        groupId: string;
-        requestBody: GroupUpdate;
-        userId?: string;
-        xProject?: string;
-      },
-      TContext
-    >,
-    'mutationFn'
-  >,
-) =>
-  useMutation<
-    TData,
-    TError,
-    {
-      groupId: string;
-      requestBody: GroupUpdate;
-      userId?: string;
-      xProject?: string;
-    },
-    TContext
-  >({
-    mutationFn: ({ groupId, requestBody, userId, xProject }) =>
-      GroupsService.modifyGroup({
-        groupId,
-        requestBody,
-        userId,
-        xProject,
-      }) as unknown as Promise<TData>,
-    ...options,
-  });
-/**
  * Upsert Identity
  * @param data The data for the request.
  * @param data.requestBody
@@ -4435,6 +4384,57 @@ export const useAgentsServiceResetMessages = <
         addDefaultInitialMessages,
         agentId,
         userId,
+      }) as unknown as Promise<TData>,
+    ...options,
+  });
+/**
+ * Modify Group
+ * Create a new multi-agent group with the specified configuration.
+ * @param data The data for the request.
+ * @param data.groupId
+ * @param data.requestBody
+ * @param data.userId
+ * @param data.xProject
+ * @returns Group Successful Response
+ * @throws ApiError
+ */
+export const useGroupsServiceModifyGroup = <
+  TData = Common.GroupsServiceModifyGroupMutationResult,
+  TError = unknown,
+  TContext = unknown,
+>(
+  options?: Omit<
+    UseMutationOptions<
+      TData,
+      TError,
+      {
+        groupId: string;
+        requestBody: GroupUpdate;
+        userId?: string;
+        xProject?: string;
+      },
+      TContext
+    >,
+    'mutationFn'
+  >,
+) =>
+  useMutation<
+    TData,
+    TError,
+    {
+      groupId: string;
+      requestBody: GroupUpdate;
+      userId?: string;
+      xProject?: string;
+    },
+    TContext
+  >({
+    mutationFn: ({ groupId, requestBody, userId, xProject }) =>
+      GroupsService.modifyGroup({
+        groupId,
+        requestBody,
+        userId,
+        xProject,
       }) as unknown as Promise<TData>,
     ...options,
   });

@@ -3458,7 +3458,7 @@
           }
         }
       },
-      "put": {
+      "patch": {
         "tags": ["groups"],
         "summary": "Modify Group",
         "description": "Create a new multi-agent group with the specified configuration.",

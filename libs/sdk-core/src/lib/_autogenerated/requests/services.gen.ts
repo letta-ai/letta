@@ -1935,7 +1935,7 @@ export class GroupsService {
     headers?: { user_id: string },
   ): CancelablePromise<ModifyGroupResponse> {
     return __request(OpenAPI, {
-      method: 'PUT',
+      method: 'PATCH',
       url: '/v1/groups/{group_id}',
       path: {
         group_id: data.groupId,

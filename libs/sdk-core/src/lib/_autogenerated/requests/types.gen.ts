@@ -5653,7 +5653,7 @@ export type $OpenApiTs = {
         422: HTTPValidationError;
       };
     };
-    put: {
+    patch: {
       req: ModifyGroupData;
       res: {
         /**
