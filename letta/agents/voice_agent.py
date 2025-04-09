@@ -19,8 +19,9 @@ from letta.log import get_logger
 from letta.orm.enums import ToolType
 from letta.schemas.agent import AgentState
 from letta.schemas.block import BlockUpdate
+from letta.schemas.letta_message_content import TextContent
 from letta.schemas.letta_response import LettaResponse
-from letta.schemas.message import Message, MessageUpdate
+from letta.schemas.message import Message, MessageCreate, MessageUpdate
 from letta.schemas.openai.chat_completion_request import (
     AssistantMessage,
     ChatCompletionRequest,
@@ -34,8 +35,8 @@ from letta.schemas.user import User
 from letta.server.rest_api.utils import (
     convert_letta_messages_to_openai,
     create_assistant_messages_from_openai_response,
+    create_input_messages,
     create_letta_messages_from_llm_response,
-    create_user_message,
 )
 from letta.services.agent_manager import AgentManager
 from letta.services.block_manager import BlockManager
@@ -93,19 +94,18 @@ class VoiceAgent(BaseAgent):
             agent_id=agent_id, openai_client=openai_client, message_manager=message_manager, agent_manager=agent_manager, actor=actor
         )
 
-    async def step(self, input_message: UserMessage, max_steps: int = 10) -> LettaResponse:
+    async def step(self, input_messages: List[MessageCreate], max_steps: int = 10) -> LettaResponse:
         raise NotImplementedError("LowLatencyAgent does not have a synchronous step implemented currently.")
 
-    async def step_stream(self, input_message: UserMessage, max_steps: int = 10) -> AsyncGenerator[str, None]:
+    async def step_stream(self, input_messages: List[MessageCreate], max_steps: int = 10) -> AsyncGenerator[str, None]:
         """
         Main streaming loop that yields partial tokens.
         Whenever we detect a tool call, we yield from _handle_ai_response as well.
         """
-        input_message = self.pre_process_input_message(input_message)
         agent_state = self.agent_manager.get_agent_by_id(self.agent_id, actor=self.actor)
         in_context_messages = self.message_manager.get_messages_by_ids(message_ids=agent_state.message_ids, actor=self.actor)
-        letta_message_db_queue = [create_user_message(input_message=input_message, agent_id=agent_state.id, actor=self.actor)]
-        in_memory_message_history = [input_message]
+        letta_message_db_queue = [create_input_messages(input_messages=input_messages, agent_id=agent_state.id, actor=self.actor)]
+        in_memory_message_history = self.pre_process_input_message(input_messages)
 
         # TODO: Define max steps here
         for _ in range(max_steps):
@@ -372,7 +372,7 @@ class VoiceAgent(BaseAgent):
                 return f"Failed to call tool. Error: {e}", False
 
     async def _recall_memory(self, query, agent_state: AgentState) -> None:
-        results = await self.offline_memory_agent.step(UserMessage(content=query))
+        results = await self.offline_memory_agent.step([MessageCreate(role="user", content=[TextContent(text=query)])])
         target_block = next(b for b in agent_state.memory.blocks if b.label == self.summary_block_label)
         self.block_manager.update_block(
             block_id=target_block.id, block_update=BlockUpdate(value=results[0].content[0].text), actor=self.actor

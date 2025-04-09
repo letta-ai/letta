@@ -22,7 +22,6 @@ from letta.schemas.letta_request import LettaRequest, LettaStreamingRequest
 from letta.schemas.letta_response import LettaResponse
 from letta.schemas.memory import ContextWindowOverview, CreateArchivalMemory, Memory
 from letta.schemas.message import MessageCreate
-from letta.schemas.openai.chat_completion_request import UserMessage
 from letta.schemas.passage import Passage, PassageUpdate
 from letta.schemas.run import Run
 from letta.schemas.source import Source
@@ -610,9 +609,7 @@ async def send_message(
             actor=actor,
         )
 
-        messages = request.messages
-        content = messages[0].content[0].text if messages and not isinstance(messages[0].content, str) else messages[0].content
-        result = await experimental_agent.step(UserMessage(content=content), max_steps=10)
+        result = await experimental_agent.step(request.messages, max_steps=10)
     else:
         result = await server.send_message_to_agent(
             agent_id=agent_id,
@@ -672,10 +669,8 @@ async def send_message_streaming(
             actor=actor,
         )
 
-        messages = request.messages
-        content = messages[0].content[0].text if messages and not isinstance(messages[0].content, str) else messages[0].content
         result = StreamingResponse(
-            experimental_agent.step_stream(UserMessage(content=content), max_steps=10, use_assistant_message=request.use_assistant_message),
+            experimental_agent.step_stream(request.messages, max_steps=10, use_assistant_message=request.use_assistant_message),
             media_type="text/event-stream",
         )
     else:
