@@ -137,19 +137,26 @@ class Message(BaseMessage):
     """
 
     id: str = BaseMessage.generate_id_field()
-    role: MessageRole = Field(..., description="The role of the participant.")
-    content: Optional[List[LettaMessageContentUnion]] = Field(None, description="The content of the message.")
     organization_id: Optional[str] = Field(None, description="The unique identifier of the organization.")
     agent_id: Optional[str] = Field(None, description="The unique identifier of the agent.")
     model: Optional[str] = Field(None, description="The model used to make the function call.")
-    name: Optional[str] = Field(None, description="The name of the participant.")
-    tool_calls: Optional[List[OpenAIToolCall]] = Field(None, description="The list of tool calls requested.")
-    tool_call_id: Optional[str] = Field(None, description="The id of the tool call.")
+    # Basic OpenAI-style fields
+    role: MessageRole = Field(..., description="The role of the participant.")
+    content: Optional[List[LettaMessageContentUnion]] = Field(None, description="The content of the message.")
+    # NOTE: in OpenAI, this field is only used for roles 'user', 'assistant', and 'function' (now deprecated). 'tool' does not use it.
+    name: Optional[str] = Field(
+        None,
+        description="For role user/assistant: the (optional) name of the participant. For role tool/function: the name of the function called.",
+    )
+    tool_calls: Optional[List[OpenAIToolCall]] = Field(
+        None, description="The list of tool calls requested. Only applicable for role assistant."
+    )
+    tool_call_id: Optional[str] = Field(None, description="The ID of the tool call. Only applicable for role tool.")
+    # Extras
     step_id: Optional[str] = Field(None, description="The id of the step that this message was created in.")
     otid: Optional[str] = Field(None, description="The offline threading id associated with this message")
     tool_returns: Optional[List[ToolReturn]] = Field(None, description="Tool execution return information for prior tool calls")
     group_id: Optional[str] = Field(None, description="The multi-agent group that the message was sent in")
-
     # This overrides the optional base orm schema, created_at MUST exist on all messages objects
     created_at: datetime = Field(default_factory=get_utc_time, description="The timestamp when the object was created.")
 
@@ -406,7 +413,6 @@ class Message(BaseMessage):
 
     @staticmethod
     def dict_to_message(
-        user_id: str,
         agent_id: str,
         openai_message_dict: dict,
         model: Optional[str] = None,  # model used to make function call
@@ -560,7 +566,7 @@ class Message(BaseMessage):
                     # standard fields expected in an OpenAI ChatCompletion message object
                     role=MessageRole(openai_message_dict["role"]),
                     content=content,
-                    name=name,
+                    name=openai_message_dict["name"] if "name" in openai_message_dict else name,
                     tool_calls=tool_calls,
                     tool_call_id=openai_message_dict["tool_call_id"] if "tool_call_id" in openai_message_dict else None,
                     created_at=created_at,
@@ -575,7 +581,7 @@ class Message(BaseMessage):
                     # standard fields expected in an OpenAI ChatCompletion message object
                     role=MessageRole(openai_message_dict["role"]),
                     content=content,
-                    name=name,
+                    name=openai_message_dict["name"] if "name" in openai_message_dict else name,
                     tool_calls=tool_calls,
                     tool_call_id=openai_message_dict["tool_call_id"] if "tool_call_id" in openai_message_dict else None,
                     created_at=created_at,
@@ -809,7 +815,7 @@ class Message(BaseMessage):
             text_content = None
 
         if self.role != "tool" and self.name is not None:
-            warnings.warn(f"Using Google AI with non-null 'name' field ({self.name}) not yet supported.")
+            warnings.warn(f"Using Google AI with non-null 'name' field (name={self.name} role={self.role}), not yet supported.")
 
         if self.role == "system":
             # NOTE: Gemini API doesn't have a 'system' role, use 'user' instead
@@ -908,7 +914,9 @@ class Message(BaseMessage):
         if "parts" not in google_ai_message or not google_ai_message["parts"]:
             # If parts is empty, add a default text part
             google_ai_message["parts"] = [{"text": "empty message"}]
-            warnings.warn(f"Empty 'parts' detected in message with role '{self.role}'. Added default empty text part.")
+            warnings.warn(
+                f"Empty 'parts' detected in message with role '{self.role}'. Added default empty text part. Full message:\n{vars(self)}"
+            )
 
         return google_ai_message
 
