@@ -28,6 +28,7 @@ from letta.schemas.tool_rule import (
     ContinueToolRule,
     InitToolRule,
     MaxCountPerStepToolRule,
+    ParentToolRule,
     TerminalToolRule,
     ToolRule,
 )
@@ -89,7 +90,7 @@ def serialize_tool_rules(tool_rules: Optional[List[ToolRule]]) -> List[Dict[str,
     return data
 
 
-def deserialize_tool_rules(data: Optional[List[Dict]]) -> List[Union[ChildToolRule, InitToolRule, TerminalToolRule, ConditionalToolRule]]:
+def deserialize_tool_rules(data: Optional[List[Dict]]) -> List[ToolRule]:
     """Convert a list of dictionaries back into ToolRule objects."""
     if not data:
         return []
@@ -99,7 +100,7 @@ def deserialize_tool_rules(data: Optional[List[Dict]]) -> List[Union[ChildToolRu
 
 def deserialize_tool_rule(
     data: Dict,
-) -> Union[ChildToolRule, InitToolRule, TerminalToolRule, ConditionalToolRule, ContinueToolRule, MaxCountPerStepToolRule]:
+) -> ToolRule:
     """Deserialize a dictionary to the appropriate ToolRule subclass based on 'type'."""
     rule_type = ToolRuleType(data.get("type"))
 
@@ -118,6 +119,8 @@ def deserialize_tool_rule(
         return ContinueToolRule(**data)
     elif rule_type == ToolRuleType.max_count_per_step:
         return MaxCountPerStepToolRule(**data)
+    elif rule_type == ToolRuleType.parent_last_tool:
+        return ParentToolRule(**data)
     raise ValueError(f"Unknown ToolRule type: {rule_type}")
 
 
