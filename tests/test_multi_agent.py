@@ -1,3 +1,5 @@
+import time
+
 import pytest
 from sqlalchemy import delete
 
@@ -537,12 +539,80 @@ async def test_sleeptime_group_chat(server, actor):
         runs = [Run.from_job(job) for job in jobs]
         agent_runs = [run for run in runs if "agent_id" in run.metadata and run.metadata["agent_id"] == sleeptime_agent_id]
         assert len(agent_runs) == len(run_ids)
-
     for run_id in run_ids:
         job = server.job_manager.get_job_by_id(job_id=run_id, actor=actor)
         assert job.status == JobStatus.completed
 
     # 6. Delete agent
+    server.agent_manager.delete_agent(agent_id=main_agent.id, actor=actor)
+
+    with pytest.raises(NoResultFound):
+        server.group_manager.retrieve_group(group_id=group.id, actor=actor)
+    with pytest.raises(NoResultFound):
+        server.agent_manager.get_agent_by_id(agent_id=sleeptime_agent_id, actor=actor)
+
+
+@pytest.mark.asyncio
+async def test_sleeptime_removes_redundant_information(server, actor):
+    # 1. set up sleep-time agent as in test_sleeptime_group_chat
+    server.tool_manager.upsert_base_tools(actor=actor)
+    main_agent = server.create_agent(
+        request=CreateAgent(
+            name="main_agent",
+            memory_blocks=[
+                CreateBlock(
+                    label="persona",
+                    value="You are a personal assistant that helps users with requests.",
+                ),
+                CreateBlock(
+                    label="human",
+                    value="My favorite plant is the fiddle leaf\nMy favorite dog is the husky\nMy favorite plant is the fiddle leaf\nMy favorite plant is the fiddle leaf",
+                ),
+            ],
+            model="anthropic/claude-3-5-sonnet-20240620",
+            embedding="openai/text-embedding-ada-002",
+            enable_sleeptime=True,
+        ),
+        actor=actor,
+    )
+
+    group = server.group_manager.modify_group(
+        group_id=main_agent.multi_agent_group.id,
+        group_update=GroupUpdate(
+            manager_config=SleeptimeManager(
+                manager_agent_id=main_agent.id,
+                sleeptime_agent_frequency=1,
+            ),
+        ),
+        actor=actor,
+    )
+    sleeptime_agent_id = group.agent_ids[0]
+    shared_block = server.agent_manager.get_block_with_label(agent_id=main_agent.id, block_label="human", actor=actor)
+    count_before_memory_edits = shared_block.value.count("fiddle leaf")
+    test_messages = ["hello there", "my favorite bird is the sparrow"]
+
+    for test_message in test_messages:
+        _ = await server.send_message_to_agent(
+            agent_id=main_agent.id,
+            actor=actor,
+            messages=[
+                MessageCreate(
+                    role="user",
+                    content=test_message,
+                ),
+            ],
+            stream_steps=False,
+            stream_tokens=False,
+        )
+    # 2. Allow memory blocks time to update
+    time.sleep(5)
+
+    # 3. Check that the memory blocks have been collapsed
+    shared_block = server.agent_manager.get_block_with_label(agent_id=main_agent.id, block_label="human", actor=actor)
+    count_after_memory_edits = shared_block.value.count("fiddle leaf")
+    assert count_after_memory_edits < count_before_memory_edits
+
+    # 4. Delete agent
     server.agent_manager.delete_agent(agent_id=main_agent.id, actor=actor)
 
     with pytest.raises(NoResultFound):
