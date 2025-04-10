@@ -1,5 +1,6 @@
 import time
 import uuid
+import os
 from typing import Dict, List, Any, Union, Optional
 
 import letta.functions.function_sets.base as base_functions
@@ -8,6 +9,19 @@ from letta.benchmark.base import Benchmark
 from letta.benchmark.constants import HUMAN, PERSONA, TRIES
 from letta.errors import LLMJSONParsingError
 from letta.utils import get_human_text, get_persona_text
+
+# Check if we're using SQLite or PostgreSQL
+USING_SQLITE = not bool(os.getenv("LETTA_PG_URI"))
+# Add a small delay for SQLite to avoid timestamp collisions
+CREATE_DELAY_SQLITE = 0.1 if USING_SQLITE else 0
+
+
+def query_in_search_results(search_results, query):
+    """Check if a query term appears in search results."""
+    for result in search_results:
+        if query.lower() in result["content"].lower():
+            return True
+    return False
 
 
 class ArchivalMemoryBenchmark(Benchmark):
@@ -23,52 +37,125 @@ class ArchivalMemoryBenchmark(Benchmark):
         """
         super().__init__(models, client)
         self.n_tries = n_tries
-        self.prompts = {
-            "archival_memory_insert": "Can you make sure to remember that I like programming for me so you can look it up later?",
-            "archival_memory_search": "Can you retrieve information about programming that I asked you to remember?",
-        }
+        self.test_cases = [
+            "basic_insertion_retrieval",
+            "semantic_search",
+            "pagination",
+            "complex_text_patterns",
+            "error_handling"
+        ]
         
-    def send_message(
-        self, 
-        client: Union[LocalClient, RESTClient], 
-        message: str, 
-        agent_id: str, 
-        turn: int, 
-        fn_type: str, 
-        print_msg: bool = False
-    ) -> tuple:
-        """Send a message to the agent and check if the expected function is called.
+    def test_archival(self, agent_obj):
+        """Test archival memory functions comprehensively.
         
         Args:
-            client: Client instance to use
-            message: Message to send
-            agent_id: ID of the agent to send the message to
-            turn: Current turn number
-            fn_type: Function type to check for
-            print_msg: Whether to print messages
+            agent_obj: Agent object to test
             
         Returns:
-            Tuple of (success, message)
+            Dictionary with test results
         """
+        results = {
+            "basic_insertion_retrieval": False,
+            "semantic_search": False,
+            "pagination": False,
+            "complex_text_patterns": False,
+            "error_handling": False
+        }
+        
         try:
-            print_msg = f"\t-> Now running {fn_type}. Progress: {turn}/{self.n_tries}"
-            print(print_msg, end="\r", flush=True)
-            response = client.user_message(agent_id=agent_id, message=message)
+            # Test 1: Basic insertion and retrieval
+            base_functions.archival_memory_insert(agent_obj, "The cat sleeps on the mat")
+            
+            # Add a small delay for SQLite between operations
+            if USING_SQLITE:
+                time.sleep(CREATE_DELAY_SQLITE)
+                
+            base_functions.archival_memory_insert(agent_obj, "The dog plays in the park")
+            
+            if USING_SQLITE:
+                time.sleep(CREATE_DELAY_SQLITE)
+                
+            base_functions.archival_memory_insert(agent_obj, "Python is a programming language")
 
-            if turn + 1 == self.n_tries:
-                print(" " * len(print_msg), end="\r", flush=True)
+            # Test exact text search
+            results_data, _ = base_functions.archival_memory_search(agent_obj, "cat")
+            basic_test_1 = query_in_search_results(results_data, "cat")
 
-            for r in response:
-                if "function_call" in r and fn_type in r["function_call"] and any("assistant_message" in re for re in response):
-                    return True, r["function_call"]
+            # Test semantic search (should return animal-related content)
+            results_data, _ = base_functions.archival_memory_search(agent_obj, "animal pets")
+            basic_test_2 = query_in_search_results(results_data, "cat") or query_in_search_results(results_data, "dog")
 
-            return False, "No function called."
-        except LLMJSONParsingError as e:
-            print(f"Error in parsing Letta JSON: {e}")
-            return False, "Failed to decode valid Letta JSON from LLM output."
+            # Test unrelated search (should not return animal content)
+            results_data, _ = base_functions.archival_memory_search(agent_obj, "programming computers")
+            basic_test_3 = query_in_search_results(results_data, "python")
+            
+            results["basic_insertion_retrieval"] = basic_test_1 and basic_test_2 and basic_test_3
+            
+            # Test 2: Test pagination
+            # Insert more items to test pagination
+            for i in range(10):
+                base_functions.archival_memory_insert(agent_obj, f"Test passage number {i}")
+                # Add a small delay for SQLite between insertions
+                if USING_SQLITE:
+                    time.sleep(CREATE_DELAY_SQLITE)
+
+            # Get first page
+            page0_results, next_page = base_functions.archival_memory_search(agent_obj, "Test passage", page=0)
+            # Get second page
+            page1_results, _ = base_functions.archival_memory_search(agent_obj, "Test passage", page=1, start=next_page)
+
+            pagination_test_1 = page0_results != page1_results
+            pagination_test_2 = query_in_search_results(page0_results, "Test passage")
+            pagination_test_3 = query_in_search_results(page1_results, "Test passage")
+            
+            results["pagination"] = pagination_test_1 and pagination_test_2 and pagination_test_3
+
+            # Test 3: Test complex text patterns
+            base_functions.archival_memory_insert(agent_obj, "Important meeting on 2024-01-15 with John")
+            
+            if USING_SQLITE:
+                time.sleep(CREATE_DELAY_SQLITE)
+                
+            base_functions.archival_memory_insert(agent_obj, "Follow-up meeting scheduled for next week")
+            
+            if USING_SQLITE:
+                time.sleep(CREATE_DELAY_SQLITE)
+                
+            base_functions.archival_memory_insert(agent_obj, "Project deadline is approaching")
+
+            # Search for meeting-related content
+            results_data, _ = base_functions.archival_memory_search(agent_obj, "meeting schedule")
+            complex_test_1 = query_in_search_results(results_data, "meeting")
+            complex_test_2 = query_in_search_results(results_data, "2024-01-15") or query_in_search_results(results_data, "next week")
+            
+            results["complex_text_patterns"] = complex_test_1 and complex_test_2
+
+            # Test 4: Test semantic search capabilities
+            base_functions.archival_memory_insert(agent_obj, "The feline was resting on the carpet")
+            
+            if USING_SQLITE:
+                time.sleep(CREATE_DELAY_SQLITE)
+                
+            base_functions.archival_memory_insert(agent_obj, "The canine was playing in the garden")
+            
+            results_data, _ = base_functions.archival_memory_search(agent_obj, "cat dog")
+            semantic_test = query_in_search_results(results_data, "feline") or query_in_search_results(results_data, "canine")
+            
+            results["semantic_search"] = semantic_test
+
+            # Test 5: Test error handling
+            # Test invalid page number
+            try:
+                base_functions.archival_memory_search(agent_obj, "test", page="invalid")
+                results["error_handling"] = False
+            except ValueError:
+                results["error_handling"] = True
+                
         except Exception as e:
-            print(f"An unexpected error occurred: {e}")
-            return False, "An unexpected error occurred."
+            print(f"Error during archival memory test: {e}")
+            # Mark any remaining tests as failed
+            
+        return results
             
     def run(self, **kwargs) -> Dict[str, Dict[str, Any]]:
         """Run the archival memory benchmark tests.
@@ -76,8 +163,8 @@ class ArchivalMemoryBenchmark(Benchmark):
         Returns:
             Dictionary containing benchmark results
         """
-        print(f"\nRunning archival memory benchmark on {len(self.models)} models with {self.n_tries} tries per function.")
-        print(f"This will create {self.n_tries * len(self.prompts) * len(self.models)} new agents.\n")
+        print(f"\nRunning archival memory benchmark on {len(self.models)} models with {self.n_tries} tries per test case.")
+        print(f"This will create {self.n_tries * len(self.models)} new agents.\n")
         
         # Store results for each model
         for model in self.models:
@@ -86,55 +173,58 @@ class ArchivalMemoryBenchmark(Benchmark):
             total_score = 0
             total_time = 0
             
-            # Test each function type
-            for fn_type, message in self.prompts.items():
-                score = 0
+            # Run multiple tries for each model
+            for i in range(self.n_tries):
                 start_time = time.time()
                 bench_id = uuid.uuid4()
                 
-                # Run multiple tries
-                for i in range(self.n_tries):
-                    # Create a new agent for each try
-                    agent = self.client.create_agent(
-                        name=f"benchmark_{bench_id}_agent_{i}",
-                        embedding_config=self.client.list_embedding_configs()[0],
-                        llm_config=self.client.list_llm_configs()[0],
-                    )
+                print(f"\t-> Running test {i+1}/{self.n_tries}")
+                
+                # Create a new agent for each try
+                agent = self.client.create_agent(
+                    name=f"benchmark_{bench_id}_agent_{i}",
+                    embedding_config=self.client.list_embedding_configs()[0],
+                    llm_config=self.client.list_llm_configs()[0],
+                )
+                
+                # Load the agent object for direct function testing
+                agent_obj = self.client.server.load_agent(agent_id=agent.id, actor=self.client.user)
+                
+                # Run the archival memory tests
+                test_results = self.test_archival(agent_obj)
+                
+                # Update scores for each test case
+                for test_case, result in test_results.items():
+                    if test_case not in model_results:
+                        model_results[test_case] = {"score": 0, "total": self.n_tries}
                     
-                    agent_id = agent.id
-                    result, msg = self.send_message(
-                        client=self.client, 
-                        message=message, 
-                        agent_id=agent_id, 
-                        turn=i, 
-                        fn_type=fn_type, 
-                        print_msg=kwargs.get("print_messages", False)
-                    )
-                    
-                    if kwargs.get("print_messages", False):
-                        print(f"\t{msg}")
-                        
                     if result:
-                        score += 1
-                        
+                        model_results[test_case]["score"] += 1
+                        total_score += 1
+                
+                # Clean up the agent
+                try:
+                    self.client.delete_agent(agent.id)
+                except Exception as e:
+                    print(f"Warning: Failed to delete agent: {e}")
+                
                 elapsed_time = round(time.time() - start_time, 2)
-                print(f"Score for {fn_type}: {score}/{self.n_tries}, took {elapsed_time} seconds")
-                
-                # Store results for this function
-                model_results[fn_type] = {
-                    "score": score,
-                    "total": self.n_tries,
-                    "time": elapsed_time,
-                }
-                
-                total_score += score
                 total_time += elapsed_time
                 
             # Calculate overall results
+            for test_case in self.test_cases:
+                if test_case in model_results:
+                    success_rate = round(model_results[test_case]["score"] / model_results[test_case]["total"] * 100, 2)
+                    model_results[test_case]["success_rate"] = success_rate
+                    print(f"Score for {test_case}: {model_results[test_case]['score']}/{model_results[test_case]['total']} ({success_rate}%)")
+            
+            # Calculate overall results
             model_results["total_score"] = total_score
-            model_results["total_tries"] = len(self.prompts) * self.n_tries
+            model_results["total_tries"] = len(self.test_cases) * self.n_tries
             model_results["total_time"] = total_time
-            model_results["success_rate"] = round(total_score / (len(self.prompts) * self.n_tries) * 100, 2)
+            model_results["success_rate"] = round(total_score / (len(self.test_cases) * self.n_tries) * 100, 2)
+            
+            print(f"Overall success rate: {model_results['success_rate']}% (took {total_time} seconds)")
             
             # Store results for this model
             self.results[model] = model_results
