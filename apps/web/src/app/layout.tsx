@@ -8,6 +8,8 @@ import { Body } from './_components/ThemeProvider/Body';
 import { Manrope } from 'next/font/google';
 import { cn } from '@letta-cloud/ui-styles';
 import 'array.prototype.tosorted';
+import { cookies } from 'next/headers';
+import { CookieNames } from '$web/server/cookies/types';
 
 export const metadata = {
   title: 'Letta',
@@ -28,8 +30,14 @@ export default async function RootLayout({
 
   const messages = await getMessages();
 
+  const theme = (await cookies()).get(CookieNames.THEME);
+
   return (
-    <html lang={locale} className={cn(manrope.className, 'overflow-x-hidden')}>
+    <html
+      lang={locale}
+      data-mode={theme?.value}
+      className={cn(manrope.className, 'overflow-x-hidden', theme?.value)}
+    >
       <head>
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <link

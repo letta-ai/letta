@@ -6,6 +6,7 @@
 @tailwind components;
 @tailwind utilities;
 
+
 :root {
   --default-gap: 0.5rem;
 
@@ -270,6 +271,16 @@
   --background-violet: 278, 44%, 25%;
   --background-violet-content: var(--content);
 }
+
+
+html {
+  background: hsl(var(--background));
+}
+
+html.dark {
+  background: hsl(var(--background-black));
+}
+
 
 /* use the dark mode when OS interface is light */
 @media (prefers-color-scheme: light) {

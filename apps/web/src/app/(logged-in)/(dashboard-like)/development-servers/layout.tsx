@@ -258,7 +258,11 @@ function NewDashboardLayout(props: NewDashboardLayoutProps) {
       navigationItems={[
         {
           override: (
-            <HStack key={selectedServer?.url || ''} fullWidth paddingBottom="small">
+            <HStack
+              key={selectedServer?.url || ''}
+              fullWidth
+              paddingBottom="small"
+            >
               <ServerNavigationDropdown
                 servers={servers}
                 selectedServerUrl={selectedServer?.url || ''}
@@ -271,7 +275,7 @@ function NewDashboardLayout(props: NewDashboardLayoutProps) {
         },
         ...items,
         {
-          override: <HR />,
+          override: <HR key="hr" />,
         },
         {
           id: 'create',

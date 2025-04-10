@@ -23,8 +23,8 @@ export function ThemeSelector() {
   const theme = user?.theme || 'auto';
 
   useEffect(() => {
-    document.body.className = theme || '';
-    document.body.dataset['mode'] = theme || '';
+    document.documentElement.className = theme || '';
+    document.documentElement.dataset['mode'] = theme || '';
   }, [theme]);
 
   const handleThemeChange = useCallback(

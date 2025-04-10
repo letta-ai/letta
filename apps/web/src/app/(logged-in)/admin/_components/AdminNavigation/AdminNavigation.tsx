@@ -33,8 +33,8 @@ function NavigationItem(props: AdminNavigationItemProps) {
 
 export function AdminNavigation() {
   useEffect(() => {
-    document.body.className = 'hacker';
-    document.body.dataset['mode'] = 'hacker';
+    document.documentElement.className = 'hacker';
+    document.documentElement.dataset['mode'] = 'hacker';
   }, []);
 
   return (
