@@ -137,8 +137,10 @@ class IdentityManager:
             if replace:
                 existing_identity.properties = [prop.model_dump() for prop in identity.properties]
             else:
-                new_properties = existing_identity.properties + [prop.model_dump() for prop in identity.properties]
-                existing_identity.properties = new_properties
+                new_properties = {old_prop["key"]: old_prop for old_prop in existing_identity.properties} | {
+                    new_prop.key: new_prop.model_dump() for new_prop in identity.properties
+                }
+                existing_identity.properties = list(new_properties.values())
 
         if identity.agent_ids is not None:
             self._process_relationship(
