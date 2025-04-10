@@ -1,6 +1,9 @@
 import time
 import uuid
 import os
+import csv
+import datetime
+from pathlib import Path
 from typing import Dict, List, Any, Union, Optional
 
 import letta.functions.function_sets.base as base_functions
@@ -133,9 +136,71 @@ class ArchivalMemoryBenchmark(Benchmark):
             
         return results
             
+    def write_results_to_csv(self, results: Dict[str, Dict[str, Any]], csv_path: str = None) -> None:
+        """Write benchmark results to a CSV file.
+        
+        Args:
+            results: Dictionary containing benchmark results
+            csv_path: Path to the CSV file to write to, defaults to benchmark/results.csv
+        """
+        if csv_path is None:
+            # Use the default path in the benchmark directory
+            csv_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "benchmark", "results.csv")
+        
+        # Create the directory if it doesn't exist
+        os.makedirs(os.path.dirname(csv_path), exist_ok=True)
+        
+        # Check if the file exists to determine if we need to write headers
+        file_exists = os.path.isfile(csv_path)
+        
+        # Get the current timestamp
+        timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        
+        with open(csv_path, mode='a', newline='') as file:
+            # Define the CSV writer
+            writer = csv.writer(file)
+            
+            # Write headers if the file doesn't exist
+            if not file_exists:
+                headers = ["timestamp", "model", "test_case", "score", "total", "success_rate", "time"]
+                writer.writerow(headers)
+            
+            # Write results for each model and test case
+            for model, model_data in results.items():
+                # Write individual test case results
+                for test_case in self.test_cases:
+                    if test_case in model_data:
+                        test_data = model_data[test_case]
+                        writer.writerow([
+                            timestamp,
+                            model,
+                            test_case,
+                            test_data["score"],
+                            test_data["total"],
+                            test_data["success_rate"],
+                            test_data.get("time", "N/A")
+                        ])
+                
+                # Write overall results
+                writer.writerow([
+                    timestamp,
+                    model,
+                    "overall",
+                    model_data["total_score"],
+                    model_data["total_tries"],
+                    model_data["success_rate"],
+                    model_data["total_time"]
+                ])
+        
+        print(f"Results written to {csv_path}")
+    
     def run(self, **kwargs) -> Dict[str, Dict[str, Any]]:
         """Run the archival memory benchmark tests.
         
+        Args:
+            **kwargs: Additional keyword arguments
+                csv_path: Path to the CSV file to write results to
+                
         Returns:
             Dictionary containing benchmark results
         """
@@ -204,5 +269,9 @@ class ArchivalMemoryBenchmark(Benchmark):
             
             # Store results for this model
             self.results[model] = model_results
+        
+        # Write results to CSV file
+        csv_path = kwargs.get("csv_path", None)
+        self.write_results_to_csv(self.results, csv_path)
             
         return self.results
