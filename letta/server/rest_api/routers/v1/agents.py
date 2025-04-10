@@ -102,19 +102,25 @@ def list_agents(
     )
 
 
-@router.get("/{agent_id}/export", operation_id="export_agent_serialized", response_model=AgentSchema)
+@router.get("/{agent_id}/export", operation_id="export_agent_serialized")
 def export_agent_serialized(
     agent_id: str,
     server: "SyncServer" = Depends(get_letta_server),
     actor_id: Optional[str] = Header(None, alias="user_id"),
-) -> AgentSchema:
+    # do not remove, used to autogeneration of spec
+    # TODO: Think of a better way to export AgentSchema
+    spec: Optional[AgentSchema] = None,
+) -> JSONResponse:
     """
-    Export the serialized JSON representation of an agent.
+    Export the serialized JSON representation of an agent, formatted with indentation.
     """
     actor = server.user_manager.get_user_or_default(user_id=actor_id)
 
     try:
-        return server.agent_manager.serialize(agent_id=agent_id, actor=actor)
+        agent = server.agent_manager.serialize(agent_id=agent_id, actor=actor)
+        # Convert to JSON with 2-space indentation
+        content = agent.model_dump_json(indent=2)
+        return JSONResponse(content=content, media_type="application/json")
     except NoResultFound:
         raise HTTPException(status_code=404, detail=f"Agent with id={agent_id} not found for user_id={actor.id}.")
 
