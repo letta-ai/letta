@@ -1,5 +1,6 @@
 import difflib
 import json
+import os
 from datetime import datetime, timezone
 from io import BytesIO
 from typing import Any, Dict, List, Mapping
@@ -24,6 +25,7 @@ from letta.schemas.user import User
 from letta.serialize_schemas.pydantic_agent_schema import AgentSchema
 from letta.server.rest_api.app import app
 from letta.server.server import SyncServer
+from letta.utils import parse_json
 
 console = Console()
 
@@ -570,7 +572,9 @@ def test_agent_download_upload_flow(fastapi_client, server, serialize_test_agent
     assert response.status_code == 200, f"Download failed: {response.text}"
 
     # Ensure response matches expected schema
-    agent_schema = AgentSchema.model_validate(response.json())  # Validate as Pydantic model
+    response_json = response.json()
+    parsed_response = parse_json(response_json)
+    agent_schema = AgentSchema.model_validate(parsed_response)  # Validate as Pydantic model
     agent_json = agent_schema.model_dump(mode="json")  # Convert back to serializable JSON
 
     # Step 2: Upload the serialized agent as a copy
@@ -603,4 +607,42 @@ def test_agent_download_upload_flow(fastapi_client, server, serialize_test_agent
         actor=other_user,
         agent_id=copied_agent_id,
         messages=[MessageCreate(role=MessageRole.user, content="Hello copied agent!")],
+    )
+
+
+@pytest.mark.parametrize(
+    "filename",
+    [
+        "composio_github_star_agent.af",
+        "outreach_workflow_agent.af",
+        "customer_service.af",
+        "deep_research_agent.af",
+        "memgpt_agent_with_convo.af",
+    ],
+)
+def test_upload_agentfile_from_disk(server, disable_e2b_api_key, fastapi_client, other_user, filename):
+    """
+    Test uploading each .af file from the test_agent_files directory via FastAPI.
+    """
+    file_path = os.path.join(os.path.dirname(__file__), "test_agent_files", filename)
+
+    with open(file_path, "rb") as f:
+        files = {"file": (filename, f, "application/json")}
+        response = fastapi_client.post(
+            "/v1/agents/import",
+            headers={"user_id": other_user.id},
+            params={"append_copy_suffix": True, "override_existing_tools": False},
+            files=files,
+        )
+
+    assert response.status_code == 200, f"Failed to upload {filename}: {response.text}"
+    json_response = response.json()
+    assert "id" in json_response and json_response["id"].startswith("agent-"), "Uploaded agent response is malformed"
+
+    copied_agent_id = json_response["id"]
+
+    server.send_messages(
+        actor=other_user,
+        agent_id=copied_agent_id,
+        messages=[MessageCreate(role=MessageRole.user, content="Hello there!")],
     )
