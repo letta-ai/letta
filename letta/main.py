@@ -14,6 +14,7 @@ import letta.system as system
 # import benchmark
 from letta import create_client
 from letta.benchmark.benchmark import bench
+from letta.benchmark.cli import app as benchmark_app
 from letta.cli.cli import delete_agent, open_folder, run, server, version
 from letta.cli.cli_config import add, add_tool, configure, delete, list, list_tools
 from letta.cli.cli_load import app as load_app
@@ -41,8 +42,9 @@ app.command(name="server")(server)
 app.command(name="folder")(open_folder)
 # load data commands
 app.add_typer(load_app, name="load")
-# benchmark command
-app.command(name="benchmark")(bench)
+# benchmark commands
+app.command(name="bench")(bench)  # keep old benchmark command for backward compatibility
+app.add_typer(benchmark_app, name="benchmark")  # add new benchmark command
 # delete agents
 app.command(name="delete-agent")(delete_agent)
 
