@@ -1649,6 +1649,29 @@ def test_get_block_with_label(server: SyncServer, sarah_agent, default_block, de
     assert block.label == default_block.label
 
 
+def test_refresh_memory(server: SyncServer, default_user):
+    block = server.block_manager.create_or_update_block(
+        PydanticBlock(
+            label="test",
+            value="test",
+            limit=1000,
+        ),
+        actor=default_user,
+    )
+    agent = server.agent_manager.create_agent(
+        CreateAgent(
+            name="test",
+            llm_config=LLMConfig.default_config("gpt-4"),
+            embedding_config=EmbeddingConfig.default_config(provider="openai"),
+            include_base_tools=False,
+        ),
+        actor=default_user,
+    )
+    assert len(agent.memory.blocks) == 0
+    agent = server.agent_manager.refresh_memory(agent_state=agent, actor=default_user)
+    assert len(agent.memory.blocks) == 0
+
+
 # ======================================================================================================================
 # Agent Manager - Passages Tests
 # ======================================================================================================================
