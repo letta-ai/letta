@@ -85,7 +85,6 @@ def process_example_task(args):
         if isinstance(answers, str):
             answers = [answers]
         
-        client.delete_agent(agent_id)
         if answer_in_search_results(results_data, answers):
             print(f"    [PASS] Test passed")
             return 1
