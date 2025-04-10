@@ -4,6 +4,7 @@ import os
 import csv
 import datetime
 import requests
+import concurrent.futures
 from pathlib import Path
 from typing import Dict, List, Any, Union, Optional, Tuple
 from datasets import load_dataset # TODO: add to the requirements
@@ -225,12 +226,68 @@ class ArchivalMemoryBenchmark(Benchmark):
         
         print(f"Results written to {csv_path}")
     
+    def _run_subset_test(self, model: str, subset: str) -> Dict[str, Any]:
+        """Run tests for a single subset.
+        
+        Args:
+            model: Model name to use for testing
+            subset: Subset name to test
+            
+        Returns:
+            Dictionary with test results
+        """
+        start_time = time.time()
+        bench_id = uuid.uuid4()
+        
+        print(f"\n-> Testing subset: {subset} with model: {model}")
+        
+        # Create a new agent for this subset
+        agent = self.client.create_agent(
+            name=f"benchmark_{bench_id}_agent_{subset}",
+            embedding_config=self.client.list_embedding_configs()[0],
+            llm_config=self.client.list_llm_configs()[0],
+        )
+        
+        # Load the agent object for direct function testing
+        agent_obj = self.client.server.load_agent(agent_id=agent.id, actor=self.client.user)
+        
+        # Run the tests for this subset
+        score, total = self.test_longbench_subset(agent_obj, subset)
+        
+        # Create results dictionary
+        if total > 0:
+            success_rate = round(score / total * 100, 2)
+            result = {
+                "score": score,
+                "total": total,
+                "success_rate": success_rate,
+                "time": round(time.time() - start_time, 2)
+            }
+            print(f"Score for {subset} with {model}: {score}/{total} ({success_rate}%)")
+        else:
+            result = {
+                "score": 0,
+                "total": 0,
+                "success_rate": 0,
+                "time": round(time.time() - start_time, 2)
+            }
+            print(f"No tests run for {subset} with {model}")
+        
+        # Clean up the agent
+        try:
+            self.client.delete_agent(agent.id)
+        except Exception as e:
+            print(f"Warning: Failed to delete agent: {e}")
+        
+        return result
+    
     def run(self, **kwargs) -> Dict[str, Dict[str, Any]]:
         """Run the archival memory benchmark tests.
         
         Args:
             **kwargs: Additional keyword arguments
                 csv_path: Path to the CSV file to write results to
+                workers: Number of parallel workers (default: 1)
                 
         Returns:
             Dictionary containing benchmark results
@@ -238,10 +295,15 @@ class ArchivalMemoryBenchmark(Benchmark):
         # Import the context manager to silence httpx logs
         from letta.benchmark.base import SilenceHttpxLogs
         
+        # Get number of workers
+        workers = kwargs.get("workers", 1)
+        print_messages = kwargs.get("print_messages", False)
+        
         # LongBench benchmark
         print(f"\nRunning LongBench memory benchmark on {len(self.models)} models.")
         print(f"Testing with subsets: {', '.join(self.test_cases)}")
-        print(f"Minimum context length: {MIN_TOKEN_CONTEXT_LENGTH} characters\n")
+        print(f"Minimum context length: {MIN_TOKEN_CONTEXT_LENGTH} characters")
+        print(f"Using {workers} parallel workers\n")
         
         # Store results for each model
         # Use the context manager to silence httpx logs during benchmark execution
@@ -252,56 +314,46 @@ class ArchivalMemoryBenchmark(Benchmark):
                 total_score = 0
                 total_tries = 0
                 total_time = 0
+                start_time = time.time()
                 
-                # Run tests for each subset
-                for subset in self.test_cases:
-                    start_time = time.time()
-                    bench_id = uuid.uuid4()
-                    
-                    print(f"\n-> Testing subset: {subset}")
-                    
-                    # Create a new agent for each subset
-                    agent = self.client.create_agent(
-                        name=f"benchmark_{bench_id}_agent_{subset}",
-                        embedding_config=self.client.list_embedding_configs()[0],
-                        llm_config=self.client.list_llm_configs()[0],
-                    )
-                    
-                    # Load the agent object for direct function testing
-                    agent_obj = self.client.server.load_agent(agent_id=agent.id, actor=self.client.user)
-                    
-                    # Run the tests for this subset
-                    score, total = self.test_longbench_subset(agent_obj, subset)
-                    
-                    # Update scores for this subset
-                    if total > 0:
-                        success_rate = round(score / total * 100, 2)
-                        model_results[subset] = {
-                            "score": score,
-                            "total": total,
-                            "success_rate": success_rate,
-                            "time": round(time.time() - start_time, 2)
+                # Create a list of tasks to run in parallel
+                tasks = [(model, subset) for subset in self.test_cases]
+                
+                # Run tasks in parallel using ThreadPoolExecutor
+                if workers > 1:
+                    with concurrent.futures.ThreadPoolExecutor(max_workers=min(workers, len(tasks))) as executor:
+                        # Submit all tasks
+                        future_to_subset = {
+                            executor.submit(self._run_subset_test, model, subset): subset 
+                            for model, subset in tasks
                         }
-                        total_score += score
-                        total_tries += total
-                        print(f"Score for {subset}: {score}/{total} ({success_rate}%)")
-                    else:
-                        model_results[subset] = {
-                            "score": 0,
-                            "total": 0,
-                            "success_rate": 0,
-                            "time": round(time.time() - start_time, 2)
-                        }
-                        print(f"No tests run for {subset}")
-                    
-                    # Clean up the agent
-                    try:
-                        self.client.delete_agent(agent.id)
-                    except Exception as e:
-                        print(f"Warning: Failed to delete agent: {e}")
-                    
-                    elapsed_time = round(time.time() - start_time, 2)
-                    total_time += elapsed_time
+                        
+                        # Process results as they complete
+                        for future in concurrent.futures.as_completed(future_to_subset):
+                            subset = future_to_subset[future]
+                            try:
+                                result = future.result()
+                                model_results[subset] = result
+                                total_score += result["score"]
+                                total_tries += result["total"]
+                            except Exception as e:
+                                print(f"Error processing subset {subset}: {e}")
+                                model_results[subset] = {
+                                    "score": 0,
+                                    "total": 0,
+                                    "success_rate": 0,
+                                    "time": 0
+                                }
+                else:
+                    # Run sequentially if workers = 1
+                    for model_name, subset in tasks:
+                        result = self._run_subset_test(model_name, subset)
+                        model_results[subset] = result
+                        total_score += result["score"]
+                        total_tries += result["total"]
+                
+                # Calculate total time
+                total_time = round(time.time() - start_time, 2)
                 
                 # Calculate overall results
                 if total_tries > 0:
