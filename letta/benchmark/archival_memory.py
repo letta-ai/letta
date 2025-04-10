@@ -12,7 +12,7 @@ from datasets import load_dataset # TODO: add to the requirements
 import letta.functions.function_sets.base as base_functions
 from letta import LocalClient, RESTClient
 from letta.benchmark.base import Benchmark
-from letta.benchmark.constants import HUMAN, PERSONA, TRIES
+from letta.benchmark.constants import HUMAN, PERSONA, TRIES, LONGBENCH_SUBSETS, MIN_TOKEN_CONTEXT_LENGTH
 from letta.errors import LLMJSONParsingError
 from letta.orm.agent import Agent
 from letta.utils import get_human_text, get_persona_text
@@ -21,20 +21,6 @@ from letta.utils import get_human_text, get_persona_text
 USING_SQLITE = not bool(os.getenv("LETTA_PG_URI"))
 # Add a small delay for SQLite to avoid timestamp collisions
 CREATE_DELAY_SQLITE = 0.1 if USING_SQLITE else 0
-
-# LongBench subsets to use
-LONGBENCH_SUBSETS = [
-    #"2wikimqa_e", 
-    #"trec_e",
-    #"samsum_e", 
-    #"qasper_e", 
-    #"triviaqa_e", 
-    #"narrativeqa", 
-    "musique"
-]
-
-# Minimum context length to include in benchmark
-MIN_TOKEN_CONTEXT_LENGTH = 10000
 
 
 def query_in_search_results(search_results: List[Dict[str, Any]], query: str) -> bool:
@@ -115,18 +101,19 @@ class ArchivalMemoryBenchmark(Benchmark):
         
 
     
-    def download_subset_sample(self, subset_name: str, split: str = "test", max_samples: int = -1) -> List[Dict]:
+    def download_subset_sample(self, subset_name: str, split: str = "test", max_samples: int = -1, min_context_length: int = MIN_TOKEN_CONTEXT_LENGTH) -> List[Dict]:
         """Download a sample of examples from a LongBench subset.
         
         Args:
             subset_name: Name of the LongBench subset
             split: Dataset split to use (default: "test")
             max_samples: Maximum number of samples to download
+            min_context_length: Minimum context length to include in benchmark
             
         Returns:
             List of examples from the subset
         """
-        cache_key = f"{subset_name}_{split}"
+        cache_key = f"{subset_name}_{split}_{min_context_length}"
         if cache_key in self.dataset_cache:
             return self.dataset_cache[cache_key]
             
@@ -138,7 +125,7 @@ class ArchivalMemoryBenchmark(Benchmark):
             examples = []
             for example in dataset:
                 # Check if the context is long enough
-                if "context" in example and int(example["length"]) >= MIN_TOKEN_CONTEXT_LENGTH:
+                if "context" in example and int(example["length"]) >= min_context_length:
                     # Make sure we have the required fields
                     if "input" in example and "answers" in example:
                         examples.append(example)
@@ -155,17 +142,18 @@ class ArchivalMemoryBenchmark(Benchmark):
             print(f"Error downloading subset {subset_name}: {e}")
             return []
     
-    def test_longbench_subset(self, agent_ids: List[str], subset_name: str) -> Tuple[int, int]:
+    def test_longbench_subset(self, agent_ids: List[str], subset_name: str, min_context_length: int = MIN_TOKEN_CONTEXT_LENGTH) -> Tuple[int, int]:
         """Test archival memory using examples from a LongBench subset.
         
         Args:
             agent_ids: List of agent ids to test
             subset_name: Name of the LongBench subset
+            min_context_length: Minimum context length to include in benchmark
             
         Returns:
             Tuple of (number of successful tests, total number of tests)
         """
-        examples = self.download_subset_sample(subset_name)
+        examples = self.download_subset_sample(subset_name, min_context_length=min_context_length)
         if not examples:
             print(f"No examples found for subset {subset_name}")
             return 0, 0
@@ -247,13 +235,14 @@ class ArchivalMemoryBenchmark(Benchmark):
         
         print(f"Results written to {csv_path}")
     
-    def _run_subset_test(self, model: str, subset: str, workers: int = 1) -> Dict[str, Any]:
+    def _run_subset_test(self, model: str, subset: str, workers: int = 1, min_context_length: int = MIN_TOKEN_CONTEXT_LENGTH) -> Dict[str, Any]:
         """Run tests for a single subset.
         
         Args:
             model: Model name to use for testing
             subset: Subset name to test
             workers: Number of parallel workers to use (determines number of agents)
+            min_context_length: Minimum context length to include in benchmark
             
         Returns:
             Dictionary with test results
@@ -273,7 +262,7 @@ class ArchivalMemoryBenchmark(Benchmark):
             agent_ids.append(agent_state.id)
         
         # Run the tests for this subset
-        score, total = self.test_longbench_subset(agent_ids, subset)
+        score, total = self.test_longbench_subset(agent_ids, subset, min_context_length=min_context_length)
         
         # Create results dictionary
         if total > 0:
@@ -313,11 +302,12 @@ class ArchivalMemoryBenchmark(Benchmark):
         # Get parameters
         print_messages = kwargs.get("print_messages", False)
         workers = kwargs.get("workers", 1)
+        min_context_length = kwargs.get("min_context_length", MIN_TOKEN_CONTEXT_LENGTH)
         
         # LongBench benchmark
         print(f"\nRunning LongBench memory benchmark on {len(self.models)} models.")
         print(f"Testing with subsets: {', '.join(self.test_cases)}")
-        print(f"Minimum context length: {MIN_TOKEN_CONTEXT_LENGTH} characters")
+        print(f"Minimum context length: {min_context_length} characters")
         print(f"Using {workers} workers for parallel execution")
         
         # Store results for each model
@@ -333,7 +323,7 @@ class ArchivalMemoryBenchmark(Benchmark):
                 
                 # Run tests sequentially for each subset
                 for subset in self.test_cases:
-                    result = self._run_subset_test(model, subset, workers=workers)
+                    result = self._run_subset_test(model, subset, workers=workers, min_context_length=min_context_length)
                     model_results[subset] = result
                     total_score += result["score"]
                     total_tries += result["total"]

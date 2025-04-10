@@ -25,7 +25,7 @@ from typing import List, Optional
 
 # from letta.interface import CLIInterface as interface  # for printing to terminal
 from letta.streaming_interface import AgentRefreshStreamingInterface
-from letta.benchmark.constants import TRIES
+from letta.benchmark.constants import TRIES, MIN_TOKEN_CONTEXT_LENGTH
 
 
 def benchmark(
@@ -41,6 +41,9 @@ def benchmark(
     workers: int = typer.Option(
         1, "--workers", help="Number of parallel workers for benchmark execution"
     ),
+    min_context_length: int = typer.Option(
+        MIN_TOKEN_CONTEXT_LENGTH, "--min-context-length", help="Minimum context length to include in benchmark"
+    ),
     output: Optional[str] = typer.Option(
         "benchmark_results.csv", "--output", help="Output CSV file path"
     ),
@@ -50,11 +53,11 @@ def benchmark(
 ):
     """Run benchmarks for model function calling.
     
-    Example: letta benchmark gpt-4o gpt-3.5-turbo --target archival_memory --workers 20
+    Example: letta benchmark gpt-4o gpt-3.5-turbo --target archival_memory --workers 20 --min-context-length 5000
     """
     if target == BenchmarkTarget.ARCHIVAL_MEMORY:
         benchmark = ArchivalMemoryBenchmark(models=models, n_tries=n_tries)
-        benchmark.run(print_messages=print_messages, workers=workers)
+        benchmark.run(print_messages=print_messages, workers=workers, min_context_length=min_context_length)
         benchmark.save_results(output_file=output)
     else:
         typer.echo(f"Unknown benchmark target: {target}")
