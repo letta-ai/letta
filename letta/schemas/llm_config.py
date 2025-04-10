@@ -76,6 +76,13 @@ class LLMConfig(BaseModel):
 
     @model_validator(mode="before")
     @classmethod
+    def set_default_enable_reasoner(cls, values):
+        if any(openai_reasoner_model in values.get("model", "") for openai_reasoner_model in ["o3-mini", "o1"]):
+            values["enable_reasoner"] = True
+        return values
+
+    @model_validator(mode="before")
+    @classmethod
     def set_default_put_inner_thoughts(cls, values):
         """
         Dynamically set the default for put_inner_thoughts_in_kwargs based on the model field,
@@ -100,6 +107,9 @@ class LLMConfig(BaseModel):
                 logger.warning("max_tokens must be greater than max_reasoning_tokens (thinking budget)")
             if self.put_inner_thoughts_in_kwargs:
                 logger.warning("Extended thinking is not compatible with put_inner_thoughts_in_kwargs")
+        elif self.max_reasoning_tokens and not self.enable_reasoner:
+            logger.warning("model will not use reasoning unless enable_reasoner is set to True")
+
         return self
 
     @classmethod
