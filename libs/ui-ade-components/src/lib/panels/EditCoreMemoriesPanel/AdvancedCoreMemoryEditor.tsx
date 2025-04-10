@@ -589,7 +589,14 @@ function CoreMemorySidebar() {
   const [canUpdateAgent] = useADEPermissions(ApplicationServices.UPDATE_AGENT);
 
   return (
-    <VStack minWidth="sidebar" gap={false} borderRight width="sidebar">
+    <VStack
+      overflow="hidden"
+      fullHeight
+      minWidth="sidebar"
+      gap={false}
+      borderRight
+      width="sidebar"
+    >
       <HStack align="center" padding="small" fullWidth>
         <RawInput
           size="default"
@@ -617,49 +624,52 @@ function CoreMemorySidebar() {
           }
         />
       </HStack>
-      {!blocks.length && (
-        <HStack fullWidth justify="center" padding align="center">
-          <Typography color="muted">
-            {t('CoreMemorySidebar.noResults')}
-          </Typography>
-        </HStack>
-      )}
-      {blocks.map((block) => {
-        const isSelected = block.label === selectedMemoryBlockLabel;
+      <VStack collapseHeight flex overflowY="auto">
+        <VStack>
+          {!blocks.length && (
+            <HStack fullWidth justify="center" padding align="center">
+              <Typography color="muted">
+                {t('CoreMemorySidebar.noResults')}
+              </Typography>
+            </HStack>
+          )}
+          {blocks.map((block) => {
+            const isSelected = block.label === selectedMemoryBlockLabel;
+            return (
+              <VStack
+                aria-selected={isSelected}
+                as="button"
+                data-testid={`memory-block-${block.label}`}
+                key={block.id}
+                gap={false}
+                onClick={() => {
+                  if (!block.label) return;
 
-        return (
-          <VStack
-            aria-selected={isSelected}
-            as="button"
-            data-testid={`memory-block-${block.label}`}
-            key={block.id}
-            gap={false}
-            onClick={() => {
-              if (!block.label) return;
-
-              handleBlockClick(block.label);
-            }}
-            paddingX
-            overflowX="hidden"
-            align="start"
-            wrap={false}
-            paddingY="small"
-            color={isSelected ? 'background-grey' : 'background'}
-          >
-            <Typography>{block.label}</Typography>
-            <Typography
-              overflow="ellipsis"
-              inline
-              noWrap
-              align="left"
-              color="muted"
-              variant="body3"
-            >
-              {block.id}
-            </Typography>
-          </VStack>
-        );
-      })}
+                  handleBlockClick(block.label);
+                }}
+                paddingX
+                overflowX="hidden"
+                align="start"
+                wrap={false}
+                paddingY="small"
+                color={isSelected ? 'background-grey' : 'background'}
+              >
+                <Typography>{block.label}</Typography>
+                <Typography
+                  overflow="ellipsis"
+                  inline
+                  noWrap
+                  align="left"
+                  color="muted"
+                  variant="body3"
+                >
+                  {block.id}
+                </Typography>
+              </VStack>
+            );
+          })}
+        </VStack>
+      </VStack>
     </VStack>
   );
 }
@@ -764,7 +774,7 @@ export function AdvancedCoreMemoryEditor() {
     >
       <VStack fullWidth fullHeight gap={false}>
         <EditorHeader />
-        <HStack fullHeight fullWidth>
+        <HStack flex collapseHeight overflow="hidden" fullWidth>
           <CoreMemorySidebar />
           <EditorContent />
         </HStack>
