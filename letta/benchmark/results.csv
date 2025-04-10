@@ -1,0 +1,11 @@
+timestamp,model,test_case,score,total,success_rate,time
+2025-04-10 14:26:36,gpt-4o-mini,musique,0,0,0,0
+2025-04-10 14:26:36,gpt-4o-mini,overall,0,0,0,2.66
+2025-04-10 14:27:32,gpt-4o-mini,musique,0,176,0.0,4.44
+2025-04-10 14:27:32,gpt-4o-mini,overall,0,176,0.0,4.46
+2025-04-10 14:41:42,gpt-4o-mini,musique,0,176,0.0,17.11
+2025-04-10 14:41:42,gpt-4o-mini,overall,0,176,0.0,17.41
+2025-04-10 14:44:20,gpt-4o-mini,musique,0,176,0.0,18.59
+2025-04-10 14:44:20,gpt-4o-mini,overall,0,176,0.0,18.94
+2025-04-10 15:12:46,gpt-4o-mini,musique,1,176,0.57,112.86
+2025-04-10 15:12:46,gpt-4o-mini,overall,1,176,0.57,112.86

@@ -14,14 +14,54 @@ import letta.system as system
 # import benchmark
 from letta import create_client
 from letta.benchmark.benchmark import bench
+from letta.benchmark.constants import BenchmarkTarget
+from letta.benchmark.archival_memory import ArchivalMemoryBenchmark
 from letta.cli.cli import delete_agent, open_folder, run, server, version
 from letta.cli.cli_config import add, add_tool, configure, delete, list, list_tools
 from letta.cli.cli_load import app as load_app
 from letta.config import LettaConfig
 from letta.constants import FUNC_FAILED_HEARTBEAT_MESSAGE, REQ_HEARTBEAT_MESSAGE
+from typing import List, Optional
 
 # from letta.interface import CLIInterface as interface  # for printing to terminal
 from letta.streaming_interface import AgentRefreshStreamingInterface
+from letta.benchmark.constants import TRIES, MIN_TOKEN_CONTEXT_LENGTH
+
+
+def benchmark(
+    models: List[str] = typer.Argument(
+        ..., help="Models to benchmark (can specify multiple)"
+    ),
+    target: BenchmarkTarget = typer.Option(
+        BenchmarkTarget.ARCHIVAL_MEMORY, "--target", help="Benchmark target to run"
+    ),
+    n_tries: int = typer.Option(
+        TRIES, "--n-tries", help="Number of benchmark tries to perform for each function"
+    ),
+    workers: int = typer.Option(
+        1, "--workers", help="Number of parallel workers for benchmark execution"
+    ),
+    min_context_length: int = typer.Option(
+        MIN_TOKEN_CONTEXT_LENGTH, "--min-context-length", help="Minimum context length to include in benchmark"
+    ),
+    output: Optional[str] = typer.Option(
+        "benchmark_results.csv", "--output", help="Output CSV file path"
+    ),
+    print_messages: bool = typer.Option(
+        False, "--messages", help="Print functions calls and messages from the agent"
+    ),
+):
+    """Run benchmarks for model function calling.
+    
+    Example: letta benchmark gpt-4o gpt-3.5-turbo --target archival_memory --workers 20 --min-context-length 5000
+    """
+    if target == BenchmarkTarget.ARCHIVAL_MEMORY:
+        benchmark = ArchivalMemoryBenchmark(models=models, n_tries=n_tries)
+        benchmark.run(print_messages=print_messages, workers=workers, min_context_length=min_context_length)
+        benchmark.save_results(output_file=output)
+    else:
+        typer.echo(f"Unknown benchmark target: {target}")
+        raise typer.Exit(code=1)
 
 # interface = interface()
 
@@ -41,8 +81,9 @@ app.command(name="server")(server)
 app.command(name="folder")(open_folder)
 # load data commands
 app.add_typer(load_app, name="load")
-# benchmark command
-app.command(name="benchmark")(bench)
+# benchmark commands
+app.command(name="bench")(bench)  # keep old benchmark command for backward compatibility
+app.command(name="benchmark")(benchmark)  # new benchmark command
 # delete agents
 app.command(name="delete-agent")(delete_agent)
 

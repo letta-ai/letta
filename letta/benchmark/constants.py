@@ -1,8 +1,28 @@
+from enum import Enum
+
 # Basic
 TRIES = 3
 AGENT_NAME = "benchmark"
 PERSONA = "sam_pov"
 HUMAN = "cs_phd"
+
+# Benchmark targets
+class BenchmarkTarget(str, Enum):
+    ARCHIVAL_MEMORY = "archival_memory"
+
+# LongBench subsets to use
+LONGBENCH_SUBSETS = [
+    "2wikimqa_e", 
+    "trec_e",
+    "samsum_e", 
+    "qasper_e", 
+    "triviaqa_e", 
+    "narrativeqa", 
+    "musique"
+]
+
+# Minimum context length to include in benchmark
+MIN_TOKEN_CONTEXT_LENGTH = 10000
 
 # Prompts
 PROMPTS = {
