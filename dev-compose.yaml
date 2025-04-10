@@ -1,6 +1,6 @@
 services:
   letta_db:
-    image: ankane/pgvector:v0.5.1
+    image: ${LETTA_PG_IMAGE:-pgvector/pgvector:0.6.0-pg15}
     networks:
       default:
         aliases:
