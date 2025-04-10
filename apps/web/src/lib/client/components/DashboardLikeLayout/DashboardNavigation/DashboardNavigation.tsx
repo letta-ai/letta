@@ -814,7 +814,7 @@ export function DashboardHeader() {
                       ? [
                           {
                             label: currentProject.name,
-                            href: `/projects/${currentProject.slug}`,
+                            href: currentProject.path,
                           },
                         ]
                       : []),

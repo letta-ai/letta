@@ -4,7 +4,11 @@ import { webApi, webApiQueryKeys } from '$web/client';
 import type { PartialProjectType } from '$web/web-api/contracts';
 import { useTranslations } from '@letta-cloud/translations';
 
-export function useCurrentProject(): PartialProjectType {
+interface UseCurrentProjectReturnType extends PartialProjectType {
+  path: string;
+}
+
+export function useCurrentProject(): UseCurrentProjectReturnType {
   const { projectSlug } = useParams<{ projectSlug: string }>();
   const pathname = usePathname();
   const t = useTranslations('projects/hooks');
@@ -29,6 +33,7 @@ export function useCurrentProject(): PartialProjectType {
       id: '',
       name: t('remoteDevelopment'),
       slug: '/development-servers/local',
+      path: '/development-servers/local',
     };
   }
 
@@ -38,8 +43,12 @@ export function useCurrentProject(): PartialProjectType {
       id: '',
       name: '',
       slug: '',
+      path: '',
     };
   }
 
-  return data.body;
+  return {
+    ...data.body,
+    path: `/projects/${data.body.slug}`,
+  };
 }

@@ -309,26 +309,35 @@ function DesktopADEHeader(props: DesktopADEHeaderProps) {
           <Breadcrumb
             size="small"
             items={[
-              {
-                label: isLocal ? t('nav.localDev') : projectName,
-                href: projectUrl,
-                contentOverride: isLocal ? (
-                  <Button
-                    href={projectUrl}
-                    color="tertiary"
-                    label={t('nav.localDev')}
-                    size="small"
-                    _use_rarely_className="text-text-lighter inline-flex items-center gap-1.5"
-                    postIcon={
-                      <Tooltip content={t('localAgentDevelopment')}>
-                        <span className="flex items-center justify-center">
-                          <WarningIcon color="inherit" size="small" />
-                        </span>
-                      </Tooltip>
-                    }
-                  />
-                ) : undefined,
-              },
+              ...(isLocal
+                ? [
+                    {
+                      label: t('nav.localDev'),
+                      href: '/development-servers',
+                      contentOverride: (
+                        <Button
+                          href={projectUrl}
+                          color="tertiary"
+                          label={t('nav.localDev')}
+                          size="small"
+                          _use_rarely_className="text-text-lighter inline-flex items-center gap-1.5"
+                          postIcon={
+                            <Tooltip content={t('localAgentDevelopment')}>
+                              <span className="flex items-center justify-center">
+                                <WarningIcon color="inherit" size="small" />
+                              </span>
+                            </Tooltip>
+                          }
+                        />
+                      ),
+                    },
+                  ]
+                : [
+                    {
+                      label: projectName,
+                      href: projectUrl,
+                    },
+                  ]),
               ...(agentTemplate?.body.fullVersion
                 ? [
                     {
