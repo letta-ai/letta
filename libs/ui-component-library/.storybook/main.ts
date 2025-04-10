@@ -23,10 +23,12 @@ const config: StorybookConfig = {
   viteFinal: async (config) => {
     const nextConfig = mergeConfig(config, {
       plugins: [react(), nxViteTsPaths()],
+      define: { 'process.env': {} },
     });
 
     nextConfig.resolve.alias = {
       ...nextConfig.resolve.alias,
+      path: () => require.resolve('path-browserify'),
       'next/image': path.resolve(__dirname, '..', 'src', 'stubs', 'Image.tsx'),
       'next/link': path.resolve(__dirname, '..', 'src', 'stubs', 'Link.tsx'),
     };

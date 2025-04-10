@@ -63,7 +63,8 @@ export function pythonCodeParser(pythonCode: string) {
     if (argsString) {
       const argsList = argsString.split(',');
       for (const arg of argsList) {
-        const argParts = arg.trim().split(':');
+        const [argNameAndType] = arg.split('=').map((part) => part.trim());
+        const argParts = argNameAndType.split(':');
         const argName = argParts[0].trim();
         let argType = 'any';
 

@@ -58,7 +58,7 @@ export function Badge(props: BadgeProps) {
       gap="small"
     >
       {preIcon && <Slot className="w-3 h-3">{preIcon}</Slot>}
-      <span className="bold">{content}</span>
+      <span className="whitespace-nowrap bold">{content}</span>
     </HStack>
   );
 }

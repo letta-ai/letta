@@ -10,7 +10,7 @@ import { en as adeEn } from '@letta-cloud/ui-ade-components';
 import en from './translations/en.json';
 import { ServerStatusProvider } from './app/hooks/useServerStatus/useServerStatus';
 import {
-  componentTranslations,
+  en as componentTranslations,
   Toaster,
 } from '@letta-cloud/ui-component-library';
 

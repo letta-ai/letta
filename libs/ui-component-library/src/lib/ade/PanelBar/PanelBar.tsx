@@ -26,6 +26,7 @@ function PanelSearch(props: PanelSearchProps) {
     <HStack align="center" paddingLeft="small" fullWidth>
       <RawInput
         label="search"
+        className="bg-transparent border-t-0 w border-l-0 border-r-0"
         hideLabel
         fullWidth
         postIcon={<SearchIcon />}

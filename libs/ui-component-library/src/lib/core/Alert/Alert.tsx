@@ -29,7 +29,12 @@ const alertVariants = cva(
   },
 );
 
-export type AlertVariants = 'destructive' | 'info' | 'success' | 'warning';
+export type AlertVariants =
+  | 'brand'
+  | 'destructive'
+  | 'info'
+  | 'success'
+  | 'warning';
 
 interface AlertProps extends VariantProps<typeof alertVariants> {
   children?: React.ReactNode;
@@ -45,6 +50,7 @@ const iconMap: Partial<Record<AlertVariants, React.ReactNode>> = {
   destructive: <WarningIcon color="destructive" />,
   info: <InfoIcon color="muted" />,
   success: <CheckIcon color="black" />,
+  brand: <InfoIcon color="brand" />,
 };
 
 function isInIconMap(icon: unknown): icon is keyof typeof iconMap {

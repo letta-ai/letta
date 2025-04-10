@@ -1,5 +1,3 @@
-import * as en from './translations/en.json';
-
 export * from './lib/core/Typography/Typography';
 export * from './lib/marketing/MarketingButton/MarketingButton';
 export * from './lib/core/Button/Button';
@@ -137,8 +135,6 @@ export * from './lib/reusable/InfoTooltip/InfoTooltip';
 
 export * from './lib/reusable/FunctionCall/FunctionCall';
 
-export * from './lib/core/Debugger/Debugger';
-
 export * from './lib/reusable/MaybeLink/MaybeLink';
 
 export * from './lib/core/ChipSelect/ChipSelect';
@@ -169,7 +165,7 @@ export * from './lib/core/VerticalDelineatedTextChunker/VerticalDelineatedTextCh
 
 export * from './lib/reusable/AgentStateViewer/AgentStateViewer';
 
-export { en as componentTranslations };
+export * from './translations';
 
 export * from './lib/core/RadioGroup/RadioGroup';
 
@@ -214,3 +210,7 @@ export * from './lib/onboarding/ConfirmPauseOnboardingDialog/ConfirmPauseOnboard
 export * from './lib/core/VirtualizedCodeViewer/VirtualizedCodeViewer';
 
 export * from './lib/core/LettaAgentTypeIcon/LettaAgentTypeIcon';
+
+export * from './lib/core/VariableInput/VariableInput';
+
+export * from './lib/core/ResizableKeyValueEditor/ResizableKeyValueEditor';

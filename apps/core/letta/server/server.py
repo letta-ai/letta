@@ -1259,16 +1259,16 @@ class SyncServer(Server):
         if tool_source_type is not None and tool_source_type != "python":
             raise ValueError("Only Python source code is supported at this time")
 
-        # NOTE: we're creating a floating Tool object and NOT persisting to DB
-        tool = Tool(
-            name=tool_name,
-            source_code=tool_source,
-            args_json_schema=tool_args_json_schema,
-        )
-
         # If tools_json_schema is explicitly passed in, override it on the created Tool object
         if tool_json_schema:
-            tool.json_schema = tool_json_schema
+            tool = Tool(name=tool_name, source_code=tool_source, json_schema=tool_json_schema)
+        else:
+            # NOTE: we're creating a floating Tool object and NOT persisting to DB
+            tool = Tool(
+                name=tool_name,
+                source_code=tool_source,
+                args_json_schema=tool_args_json_schema,
+            )
 
         assert tool.name is not None, "Failed to create tool object"
 

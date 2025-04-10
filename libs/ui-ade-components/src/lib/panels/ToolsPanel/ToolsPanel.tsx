@@ -1,11 +1,14 @@
 'use client';
 import React, { useCallback, useMemo, useState } from 'react';
 import {
+  AddLinkIcon,
+  EditIcon,
   HStack,
+  LinkOffIcon,
   OnboardingAsideFocus,
-  PlusIcon,
   RuleIcon,
   ToolManagerIcon,
+  VariableIcon,
 } from '@letta-cloud/ui-component-library';
 import type { FileTreeContentsType } from '@letta-cloud/ui-component-library';
 import { VStack } from '@letta-cloud/ui-component-library';
@@ -17,11 +20,7 @@ import {
   Logo,
   ToolsIcon,
 } from '@letta-cloud/ui-component-library';
-import {
-  Button,
-  PanelBar,
-  PanelMainContent,
-} from '@letta-cloud/ui-component-library';
+import { Button, PanelMainContent } from '@letta-cloud/ui-component-library';
 import { useCurrentAgent, useCurrentAgentMetaData } from '../../hooks';
 import type { AgentState } from '@letta-cloud/sdk-core';
 import { useAgentsServiceDetachTool } from '@letta-cloud/sdk-core';
@@ -30,8 +29,6 @@ import { UseAgentsServiceRetrieveAgentKeyFn } from '@letta-cloud/sdk-core';
 
 import { useQueryClient } from '@tanstack/react-query';
 import { useTranslations } from '@letta-cloud/translations';
-import { ApplicationServices } from '@letta-cloud/service-rbac';
-import { useADEPermissions } from '../../hooks/useADEPermissions/useADEPermissions';
 import { ToolManager } from '../ToolManager/ToolManager';
 import {
   ToolManagerProvider,
@@ -108,21 +105,12 @@ function RemoveToolDialog(props: RemoveToolFromAgentDialogProps) {
   );
 }
 
-interface ToolsProps {
-  search: string;
-}
-
-function ToolsList(props: ToolsProps) {
-  const { search } = props;
-  const { tools: currentTools, tool_rules } = useCurrentAgent();
+function ToolsList() {
+  const { tools: currentTools } = useCurrentAgent();
   const { openToolManager } = useToolManagerState();
-  const [canUpdateAgent] = useADEPermissions(ApplicationServices.UPDATE_AGENT);
 
+  const search = '';
   const t = useTranslations('ADE/Tools');
-
-  const toolRuleCount = useMemo(() => {
-    return tool_rules?.length || 0;
-  }, [tool_rules]);
 
   const [removeToolPayload, setRemoveToolPayload] =
     useState<RemoveToolPayload | null>(null);
@@ -137,32 +125,41 @@ function ToolsList(props: ToolsProps) {
 
     const fileTreeTools: FileTreeContentsType = [
       {
-        name: t('ToolsList.rules', { ruleCount: toolRuleCount }),
-        id: 'rules',
-        icon: <RuleIcon />,
-        onClick: () => {
-          openToolManager('/tool-rules');
-        },
-      },
-      {
         name: '',
         id: 'core-tools',
         contents: [],
+        actionNode: (
+          <Button
+            hideLabel
+            size="xsmall"
+            _use_rarely_className="p-1"
+            color="tertiary"
+            preIcon={<AddLinkIcon />}
+            label={t('ToolsList.attachCoreTool')}
+            onClick={() => {
+              openToolManager('/letta-tools');
+            }}
+          />
+        ),
       },
       {
         id: 'other-tools',
         name: '',
-        contents: [
-          {
-            id: 'add-tool',
-            icon: <PlusIcon />,
-            name: t('ToolsList.addNewTool'),
-            onClick: () => {
-              openToolManager('/my-tools');
-            },
-          },
-        ],
+        contents: [],
         defaultOpen: true,
+        actionNode: (
+          <Button
+            hideLabel
+            size="xsmall"
+            _use_rarely_className="p-1"
+            color="tertiary"
+            preIcon={<AddLinkIcon />}
+            label={t('ToolsList.attachCustomTool')}
+            onClick={() => {
+              openToolManager('/my-tools');
+            }}
+          />
+        ),
       },
     ];
 
@@ -173,76 +170,93 @@ function ToolsList(props: ToolsProps) {
 
       if (isLettaTool(tool)) {
         lettaCoreToolCount += 1;
-        if (getIsGenericFolder(fileTreeTools[1])) {
-          fileTreeTools[1].contents.push({
+        if (getIsGenericFolder(fileTreeTools[0])) {
+          fileTreeTools[0].contents.push({
             name: tool.name || '',
             id: tool.id || '',
             onClick: () => {
               openToolManager('/current-agent-tools', tool.id);
             },
-            actions: canUpdateAgent
-              ? [
-                  {
-                    id: 'remove-tool',
-                    label: t('ToolsList.removeTool'),
-                    onClick: () => {
-                      setRemoveToolPayload({
-                        toolName: tool.name || '',
-                        toolId: tool.id || '',
-                      });
-                    },
-                  },
-                ]
-              : undefined,
+            actionNode: (
+              <Button
+                hideLabel
+                size="xsmall"
+                _use_rarely_className="p-1"
+                color="tertiary"
+                preIcon={<LinkOffIcon />}
+                label={t('ToolsList.removeTool')}
+                onClick={() => {
+                  setRemoveToolPayload({
+                    toolName: tool.name || '',
+                    toolId: tool.id || '',
+                  });
+                }}
+              />
+            ),
             icon: <Logo size="small" />,
           });
         }
       } else {
         otherToolCount += 1;
-        if (getIsGenericFolder(fileTreeTools[2])) {
+        if (getIsGenericFolder(fileTreeTools[1])) {
           const creator = tool.tags?.find((tag) => isBrandKey(tag)) || '';
 
-          fileTreeTools[2].contents.push({
+          fileTreeTools[1].contents.push({
             name: tool.name || '',
             id: tool.id,
             onClick: () => {
               openToolManager('/current-agent-tools', tool.id);
             },
             icon: isBrandKey(creator) ? brandKeyToLogo(creator) : <ToolsIcon />,
-            actions: canUpdateAgent
-              ? [
-                  {
-                    id: 'remove-tool',
-                    label: t('ToolsList.removeTool'),
-                    onClick: () => {
-                      setRemoveToolPayload({
-                        toolName: tool.name || '',
-                        toolId: tool.id || '',
-                      });
-                    },
-                  },
-                ]
-              : undefined,
+            actionNode: (
+              <HStack gap={false}>
+                <Button
+                  hideLabel
+                  size="xsmall"
+                  _use_rarely_className="p-1"
+                  color="tertiary"
+                  preIcon={<EditIcon />}
+                  label={t('ToolsList.editTool')}
+                  onClick={() => {
+                    openToolManager('/current-agent-tools', tool.id);
+                  }}
+                />
+                <Button
+                  hideLabel
+                  size="xsmall"
+                  _use_rarely_className="p-1"
+                  color="tertiary"
+                  preIcon={<LinkOffIcon />}
+                  label={t('ToolsList.removeTool')}
+                  onClick={() => {
+                    setRemoveToolPayload({
+                      toolName: tool.name || '',
+                      toolId: tool.id || '',
+                    });
+                  }}
+                />
+              </HStack>
+            ),
           });
         }
       }
     });
 
-    fileTreeTools[1].name = t('ToolsList.lettaCoreTools', {
+    fileTreeTools[0].name = t('ToolsList.lettaCoreTools', {
       toolCount: lettaCoreToolCount,
     });
-    fileTreeTools[1].infoTooltip = {
+    fileTreeTools[0].infoTooltip = {
       text: t('ToolsList.lettaCoreToolsInfo'),
     };
-    fileTreeTools[2].name = t('ToolsList.otherTools', {
+    fileTreeTools[1].name = t('ToolsList.otherTools', {
       toolCount: otherToolCount,
     });
 
     return fileTreeTools;
-  }, [toolRuleCount, currentTools, openToolManager, search, canUpdateAgent, t]);
+  }, [currentTools, openToolManager, search, t]);
 
   return (
-    <PanelMainContent>
+    <VStack gap={false} paddingX="small">
       {removeToolPayload && (
         <RemoveToolDialog
           toolId={removeToolPayload.toolId}
@@ -253,28 +267,7 @@ function ToolsList(props: ToolsProps) {
         />
       )}
       <FileTree root={toolsList} />
-    </PanelMainContent>
-  );
-}
-
-function OpenToolManagerButton() {
-  const { openToolManager } = useToolManagerState();
-
-  const t = useTranslations('ADE/Tools');
-
-  return (
-    <HStack>
-      <Button
-        label={t('ToolsListPage.openExplorer')}
-        color="secondary"
-        data-testid="open-tool-explorer"
-        hideLabel
-        onClick={() => {
-          openToolManager('/current-agent-tools');
-        }}
-        preIcon={<ToolManagerIcon />}
-      />
-    </HStack>
+    </VStack>
   );
 }
 
@@ -318,30 +311,61 @@ function ToolsOnboarding(props: ToolsOnboardingProps) {
   );
 }
 
+function ToolUtilities() {
+  const { openToolManager } = useToolManagerState();
+
+  const t = useTranslations('ADE/Tools');
+
+  return (
+    <HStack gap="small" align="center" paddingX="small" paddingY="xsmall">
+      <Button
+        label={t('ToolsListPage.openExplorer')}
+        color="secondary"
+        size="xsmall"
+        bold
+        data-testid="open-tool-explorer"
+        preIcon={<ToolManagerIcon />}
+        onClick={() => {
+          openToolManager('/current-agent-tools');
+        }}
+      />
+      <Button
+        label={t('ToolsListPage.openVariables')}
+        color="tertiary"
+        bold
+        size="xsmall"
+        preIcon={<VariableIcon />}
+        onClick={() => {
+          openToolManager('/tool-variables');
+        }}
+      />
+      <Button
+        bold
+        label={t('ToolsListPage.openRules')}
+        color="tertiary"
+        size="xsmall"
+        preIcon={<RuleIcon />}
+        onClick={() => {
+          openToolManager('/tool-rules');
+        }}
+      />
+    </HStack>
+  );
+}
+
 export function ToolsPanel() {
-  const [search, setSearch] = useState('');
-  const [canUpdateAgent] = useADEPermissions(ApplicationServices.UPDATE_AGENT);
   const { agentName, isTemplate } = useCurrentAgentMetaData();
   return (
     <ToolManagerProvider>
       <ToolsOnboarding>
-        <VStack overflow="hidden" gap={false}>
+        <PanelMainContent variant="noPadding">
           <ToolManager isTemplate={isTemplate} agentName={agentName} />
-          <PanelBar
-            searchValue={search}
-            onSearch={(value) => {
-              setSearch(value);
-            }}
-            actions={
-              canUpdateAgent && (
-                <HStack>
-                  <OpenToolManagerButton />
-                </HStack>
-              )
-            }
-          />
-          <ToolsList search={search} />
-        </VStack>
+
+          <VStack gap={false}>
+            <ToolUtilities />
+            <ToolsList />
+          </VStack>
+        </PanelMainContent>
       </ToolsOnboarding>
     </ToolManagerProvider>
   );

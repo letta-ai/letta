@@ -107,7 +107,7 @@ function useToolErrors() {
   };
 }
 
-function useCurrentTool() {
+export function useCurrentTool() {
   const response = useContext(CurrentToolContext);
 
   if (!response) {
@@ -134,14 +134,14 @@ function CodeAndSimulator() {
       autoSaveId="code-and-simulator"
     >
       <Panel defaultSize={70} defaultValue={70} className="h-full" minSize={20}>
-        <CodeEditor tool={tool} />
+        <CodeEditor key={tool.id} tool={tool} />
       </Panel>
       <PanelResizeHandle
         /* eslint-disable-next-line react/forbid-component-props */
         className={isMobile ? 'h-[1px] w-full bg-border' : 'w-[1px] h-full'}
       />
       <Panel defaultSize={30} defaultValue={30} className="h-full" minSize={20}>
-        <ToolSimulator tool={tool} />
+        <ToolSimulator key={tool.id} tool={tool} />
       </Panel>
     </PanelGroup>
   );

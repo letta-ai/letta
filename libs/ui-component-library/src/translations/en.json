@@ -39,6 +39,31 @@
       "title": "Source"
     }
   },
+  "components/VariableInput": {
+    "key": "Key",
+    "value": "Value",
+    "show": "View overrides",
+    "hide": "Close overrides",
+    "delete": "Delete",
+    "valueInput": "{scope} value",
+    "InlineInput": {
+      "placeholder": "Enter a value"
+    },
+    "scopes": {
+      "global": {
+        "label": "Global",
+        "tooltip": "This variable was defined in the global scope and is available to all agents"
+      },
+      "simulator": {
+        "label": "Simulator",
+        "tooltip": "This variable is only available in the simulator"
+      },
+      "agent": {
+        "label": "Agent",
+        "tooltip": "This variable was defined on the agent level and is available to all tools attached to this agent"
+      }
+    }
+  },
   "components/SingleFileUpload": {
     "dropFile": "Drop a file here",
     "chooseFileText": "Choose a file",

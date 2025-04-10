@@ -42,7 +42,7 @@
     "start:e2e": "cd apps/web && next start -p 3000",
     "start:api-stability": "nx start web -p 3000",
     "stress": "nx run stress:test --skip-nx-cache",
-    "test": "npx nx run-many -p web ui-component-library  --skip-nx-cache --parallel --targets=test",
+    "test": "npx nx run-many -p web ui-component-library utils-shared  --skip-nx-cache --parallel --targets=test",
     "type-check": "nx run-many --all --skip-nx-cache --parallel --targets=type-check",
     "undertaker:dev": "nx dev credit-undertaker",
     "undertaker:build": "esbuild apps/credit-undertaker/src/main.ts --bundle --platform=node --outfile=dist/apps/credit-undertaker/main.js",

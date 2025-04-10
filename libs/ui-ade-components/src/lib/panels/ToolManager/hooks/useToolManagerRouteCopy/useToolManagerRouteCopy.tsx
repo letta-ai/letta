@@ -6,6 +6,7 @@ import {
   McpIcon,
   RuleIcon,
   ToolsIcon,
+  VariableIcon,
 } from '@letta-cloud/ui-component-library';
 
 export function useToolManagerRouteCopy() {
@@ -19,6 +20,11 @@ export function useToolManagerRouteCopy() {
     customTools: {
       title: t('ToolManagerNavigationSidebar.customTools'),
       icon: <CustomToolIcon />,
+    },
+
+    toolVariables: {
+      title: t('ToolManagerNavigationSidebar.toolVariables'),
+      icon: <VariableIcon />,
     },
     toolRules: {
       title: t('ToolManagerNavigationSidebar.toolRules'),

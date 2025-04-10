@@ -28,6 +28,9 @@ const buttonVariants = cva(
         left: 'justify-start',
         right: 'justify-end',
       },
+      square: {
+        true: '',
+      },
       variant: {
         'inline-panel':
           'h-full px-3 text-base first:border-l-0 border-l last:border-r-0 border-r',
@@ -96,6 +99,30 @@ const buttonVariants = cva(
         className:
           'w-biWidth min-w-biWidth p-0 items-center justify-center flex',
       },
+      {
+        square: true,
+        size: 'small',
+        className:
+          'w-biWidth-sm min-w-biWidth-sm p-0 items-center justify-center flex',
+      },
+      {
+        square: true,
+        size: 'default',
+        className:
+          'w-biWidth min-w-biWidth p-0 items-center justify-center flex',
+      },
+      {
+        square: true,
+        size: 'large',
+        className:
+          'w-biWidth-lg min-w-biWidth-lg p-0 items-center justify-center flex',
+      },
+      {
+        square: true,
+        size: 'xsmall',
+        className:
+          'w-biWidth-xs min-w-biWidth-xs p-0 items-center justify-center flex',
+      },
     ],
     defaultVariants: {
       color: 'primary',
@@ -144,6 +171,7 @@ export const Button = forwardRef<
     bold,
     align,
     fullHeight,
+    square,
     size,
     hideLabel,
     _use_rarely_className,
@@ -190,6 +218,7 @@ export const Button = forwardRef<
             hideLabel,
             animate,
             align,
+            square,
             size,
             variant,
             fullWidth,

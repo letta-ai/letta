@@ -13,11 +13,10 @@ import {
   LeftPanelCloseIcon,
   LeftPanelOpenIcon,
   LettaInvaderIcon,
-  LettaLogoIcon,
-  MacCommandButtonsSpacer,
   MiniApp,
   PlusIcon,
   TemplateIcon,
+  ToolManagerIcon,
   Typography,
   useForm,
   VStack,
@@ -222,11 +221,11 @@ function SidebarSection(props: SidebarSectionProps) {
   return (
     <VStack>
       {isExpanded && (
-        <>
+        <HStack paddingX="medium">
           <Typography variant="body4" bold>
             {title}
           </Typography>
-        </>
+        </HStack>
       )}
 
       <VStack>{children}</VStack>
@@ -252,25 +251,26 @@ function ToolManagerNavigationSidebar() {
           : 'w-[50px] max-w-[50px]',
       )}
       gap="medium"
-      paddingX="medium"
       paddingBottom="xxsmall"
     >
       <HStack
-        height="header-sm"
         minHeight="header-sm"
+        height="header-sm"
         justify="spaceBetween"
         fullWidth
-        borderBottom
+        borderBottom={isExpanded}
+        paddingX={isExpanded ? 'large' : 'small'}
         align="center"
       >
         {isExpanded && (
-          <Typography variant="body3" bold>
+          <Typography uppercase color="lighter" className="text-[10px]" bold>
             {t('ToolManagerNavigationSidebar.title')}
           </Typography>
         )}
         <HiddenOnMobile>
           <Button
             size="small"
+            _use_rarely_className="text-text-lighter"
             hideLabel
             onClick={() => {
               setExpanded(!isExpanded);
@@ -287,73 +287,81 @@ function ToolManagerNavigationSidebar() {
           />
         </HiddenOnMobile>
       </HStack>
-      <SidebarSection
-        isExpanded={isExpanded}
-        title={t('ToolManagerNavigationSidebar.attachedToAgent')}
-      >
-        <SidebarButton
-          hideLabel={!isExpanded}
-          label={details.current.title}
-          path="/current-agent-tools"
-          icon={details.current.icon}
-        />
-        <SidebarButton
-          hideLabel={!isExpanded}
-          label={details.toolRules.title}
-          path="/tool-rules"
-          icon={details.toolRules.icon}
-        />
-      </SidebarSection>
-      <HR />
-      <SidebarSection
-        isExpanded={isExpanded}
-        title={t('ToolManagerNavigationSidebar.codeTools')}
-      >
-        <SidebarButton
-          hideLabel={!isExpanded}
-          label={details.customTools.title}
-          path="/my-tools"
-          icon={details.customTools.icon}
-        />
-        <SidebarButton
-          hideLabel={!isExpanded}
-          label={details.lettaTools.title}
-          path="/letta-tools"
-          icon={details.lettaTools.icon}
-        />
-        <CreateToolDialog
-          trigger={
-            <Button
-              hideLabel={!isExpanded}
-              size="small"
-              data-testid="start-create-tool"
-              preIcon={<PlusIcon />}
-              label={t('ToolManagerNavigationSidebar.create')}
-              color="tertiary"
-              bold
-            />
-          }
-        />
-      </SidebarSection>
-      <HR />
+      <VStack overflowY="auto" gap="medium" paddingX="small">
+        <SidebarSection
+          isExpanded={isExpanded}
+          title={t('ToolManagerNavigationSidebar.attachedToAgent')}
+        >
+          <SidebarButton
+            hideLabel={!isExpanded}
+            label={details.current.title}
+            path="/current-agent-tools"
+            icon={details.current.icon}
+          />
+          <SidebarButton
+            hideLabel={!isExpanded}
+            label={details.toolRules.title}
+            path="/tool-rules"
+            icon={details.toolRules.icon}
+          />
+          <SidebarButton
+            hideLabel={!isExpanded}
+            label={details.toolVariables.title}
+            path="/tool-variables"
+            icon={details.toolVariables.icon}
+          />
+        </SidebarSection>
+        <HR />
+        <SidebarSection
+          isExpanded={isExpanded}
+          title={t('ToolManagerNavigationSidebar.codeTools')}
+        >
+          <SidebarButton
+            hideLabel={!isExpanded}
+            label={details.customTools.title}
+            path="/my-tools"
+            icon={details.customTools.icon}
+          />
+          <SidebarButton
+            hideLabel={!isExpanded}
+            label={details.lettaTools.title}
+            path="/letta-tools"
+            icon={details.lettaTools.icon}
+          />
+          <CreateToolDialog
+            trigger={
+              <Button
+                hideLabel={!isExpanded}
+                size="small"
+                data-testid="start-create-tool"
+                preIcon={<PlusIcon />}
+                label={t('ToolManagerNavigationSidebar.create')}
+                color="tertiary"
+                bold
+              />
+            }
+          />
+        </SidebarSection>
+        <HR />
 
-      <SidebarSection
-        isExpanded={isExpanded}
-        title={t('ToolManagerNavigationSidebar.integrationTools')}
-      >
-        <SidebarButton
-          hideLabel={!isExpanded}
-          label={details.composioTools.title}
-          path="/composio"
-          icon={details.composioTools.icon}
-        />
-        <SidebarButton
-          hideLabel={!isExpanded}
-          label={details.mcpServers.title}
-          path="/mcp-servers"
-          icon={details.mcpServers.icon}
-        />
-      </SidebarSection>
+        <SidebarSection
+          isExpanded={isExpanded}
+          title={t('ToolManagerNavigationSidebar.integrationTools')}
+        >
+          <SidebarButton
+            hideLabel={!isExpanded}
+            label={details.composioTools.title}
+            path="/composio"
+            icon={details.composioTools.icon}
+          />
+          <SidebarButton
+            hideLabel={!isExpanded}
+            label={details.mcpServers.title}
+            path="/mcp-servers"
+            icon={details.mcpServers.icon}
+          />
+        </SidebarSection>
+      </VStack>
     </VStack>
   );
 }
@@ -393,7 +401,7 @@ export function ToolManager(props: ToolManagerProps) {
       backdrop
       appName={t('title')}
       isOpen={isToolManagerOpen}
-      __use__rarely__className="h-full min-w-[100vw] min-h-[100vh]"
+      __use__rarely__className="h-full min-w-[100vw] min-h-[100vh] p-2 bg-background-grey3"
       onOpenChange={(open) => {
         if (!open) {
           closeToolManager();
@@ -413,7 +421,14 @@ export function ToolManager(props: ToolManagerProps) {
       >
         {t('confirmLeave.description')}
       </Dialog>
-      <VStack gap={false} fullHeight fullWidth>
+      <VStack
+        className="shadow-lg"
+        color="background"
+        gap={false}
+        fullHeight
+        fullWidth
+      >
+        {CURRENT_RUNTIME === 'letta-desktop' && <div className="h-[18px]" />}
         <HStack
           height="header-sm"
           minHeight="header-sm"
@@ -423,29 +438,16 @@ export function ToolManager(props: ToolManagerProps) {
           fullWidth
           borderBottom
         >
-          {CURRENT_RUNTIME === 'letta-desktop' ? (
-            <MacCommandButtonsSpacer />
-          ) : (
-            <HStack
-              as="button"
-              onClick={() => {
-                closeToolManager();
-              }}
-              fullHeight
-              className="w-[51.5px]"
-              align="center"
-              justify="center"
-              borderRight
-              color="background-grey"
-            >
-              <LettaLogoIcon color="brand" />
-            </HStack>
-          )}
           <HStack fullWidth justify="spaceBetween" align="center">
             <div className="px-1 disable-app-header">
               <Breadcrumb
                 size="xsmall"
                 items={[
+                  {
+                    preIcon: <ToolManagerIcon size="medium" />,
+                    label: t('title'),
+                    bold: true,
+                  },
                   {
                     onClick: () => {
                       closeToolManager();
@@ -456,9 +458,6 @@ export function ToolManager(props: ToolManagerProps) {
                       <LettaInvaderIcon />
                     ),
                     label: agentName,
-                  },
-                  {
-                    label: t('title'),
                   },
                 ]}
               />

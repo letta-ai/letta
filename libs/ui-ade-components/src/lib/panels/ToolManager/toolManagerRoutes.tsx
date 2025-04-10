@@ -6,6 +6,7 @@ import { ComposioToolsRoot } from './routes/ComposioToolsRoot/ComposioToolsRoot'
 import { ComposioSpecificAppTools } from './routes/ComposioSpecificAppTools/ComposioSpecificAppTools';
 import { MCPServers } from './routes/MCPServers/MCPServers';
 import { ToolRulesEditor } from '../ToolRules/ToolRules';
+import { ToolVariables } from './routes/ToolVariables/ToolVariables';
 
 interface Routes {
   path: string;
@@ -44,6 +45,11 @@ export const toolManagerRoutes = [
     path: '/my-tools',
     key: 'customTools',
     component: <MyTools />,
+  },
+  {
+    path: '/tool-variables',
+    key: 'toolVariables',
+    component: <ToolVariables />,
   },
   {
     path: '/letta-tools',

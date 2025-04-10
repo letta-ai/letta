@@ -655,6 +655,15 @@
   "ADE/useCurrentSimulatedAgent": {
     "error": "There was an error fetching the simulated agent, please try again or contact support."
   },
+  "components/ResizableKeyValueEditor": {
+    "placeholder": "Enter a value",
+    "key": "Key",
+    "keyPlaceholder": "Enter a key",
+    "value": "Value",
+    "addDefinition": "Add",
+    "deleteDefinition": "Delete",
+    "overrides": "Show overrides"
+  },
   "components/Messages": {
     "reasoning": "Reasoning",
     "loadingMessages": "Connecting to agent...",
@@ -941,6 +950,35 @@
     "loading": "Loading your tools...",
     "error": "There was an error loading your tools, please try again or contact support."
   },
+  "ToolsEditor/ToolsSimulator": {
+    "UpdateAgentEnvironmentValue": {
+      "label": "This will update the agent scoped environment variable, you can also configure this in variables"
+    },
+    "StatusBadge": {
+      "error": "Error",
+      "success": "Success"
+    },
+    "ToolOutput": {
+      "stdout": "stdout",
+      "stderr": "stderr",
+      "toolReturn": "Response",
+      "noOutput": "Press 'Run tool' to see the output of your tool"
+    },
+    "ArgumentEditor": {
+      "newArgument": "A new argument has been detected in your code, but has not been added to the schema. Please add it to the schema to use it in the simulator."
+    },
+    "HowToUseEnvironmentVariables": {
+      "trigger": "Usage",
+      "description": "Environment variables are used to pass data to your tool. You can access them similar to how you would access an environment variable in your code. See below for an example:"
+    },
+    "ToolInput": {
+      "title": "Tool input",
+      "run": "Run tool",
+      "args": "Arguments",
+      "environment": "Environment"
+    },
+    "restore": "This variable has been updated, reset environment variable to the original value"
+  },
   "ToolsEditor/LocalToolsViewer": {
     "SchemaChangeWarning": {
       "title": "The primary function {functionName} does not match your json schema, your tool may not work as expected.",
@@ -950,7 +988,7 @@
     },
     "JSONSchemaViewer": {
       "different": "Your JSON schema does not match your code, this may cause issues with your tool",
-      "fix": "Fix schema",
+      "fix": "Build schema from code",
       "descriptionPlaceholder": "Please provide descriptions for your schema args, your tool may not work as expected without them"
     },
     "RestoreToolButton": {
@@ -967,7 +1005,7 @@
     "ToolSimulator": {
       "label": "Debugger",
       "inputLabel": "Tool input",
-      "outputLabel": "Tool output"
+      "outputLabel": "Response"
     },
     "SaveToolButton": {
       "label": "Save"
@@ -1081,6 +1119,13 @@
   "ToolManager/MCPToolViewer": {
     "noServerFound": "We couldn't find a server for this tool, this usually means the tool tags have been edited unintentionally, please detach and reattach the tool to have this page work correctly."
   },
+  "ToolManager/ToolVariables": {
+    "title": "Tool Variables",
+    "save": "Save",
+    "reset": "Reset",
+    "addVariable": "Add variable",
+    "description": "Tool variables can be used to store arbitrary data that can be used in your agent. This is useful for storing data that is not part of the agent's memory, such as API keys or other configuration data."
+  },
   "ToolManager": {
     "close": "Back to ADE",
     "title": "Tool Manager",
@@ -1099,13 +1144,14 @@
       "error": "There was an error creating this tool, please try again or contact support."
     },
     "ToolManagerNavigationSidebar": {
-      "title": "Tool Manager",
+      "title": "Tool browser",
       "expand": "Expand",
       "collapse": "Close",
       "toolRules": "Rules",
       "current": "Tools",
       "attachedToAgent": "Attached to agent",
       "codeTools": "All available tools",
+      "toolVariables": "Variables",
       "customTools": "Custom tools",
       "lettaTools": "Letta tools",
       "integrationTools": "External tools",
@@ -1115,6 +1161,7 @@
     }
   },
   "ADE/Tools": {
+    "allTools": "Attached tools",
     "ToolsOnboarding": {
       "title": "Tools",
       "description": "Tools are a way to extend the functionality of your agent. You can create custom tools, use Letta tools, or connect to external tools via Composio or MCP servers. Tools are essential for your agent to take custom actions.",
@@ -1298,22 +1345,26 @@
       }
     },
     "ToolsListPage": {
-      "openExplorer": "Open tools explorer"
+      "openExplorer": "Tool Manager",
+      "openRules": "Rules",
+      "openVariables": "Variables"
     },
     "ToolsList": {
+      "editTool": "Edit tool",
+      "attachCoreTool": "Attach core tool",
+      "attachCustomTool": "Attach custom tool",
       "rules": "Tool rules ({ruleCount})",
-      "removeTool": "Remove tool",
+      "removeTool": "Detach tool",
       "lettaCoreTools": "Letta core tools ({toolCount})",
       "lettaCoreToolsInfo": "Default tools added to agents to enable memory management",
-      "otherTools": "Other tools ({toolCount})",
-      "addNewTool": "Attach more tools"
+      "otherTools": "Other tools ({toolCount})"
     },
     "RemoveToolDialog": {
-      "title": "Remove {toolName}",
-      "trigger": "Remove tool",
-      "confirm": "Remove",
+      "title": "Detach {toolName}",
+      "trigger": "Detach tool",
+      "confirm": "Detach",
       "error": "There was an error removing this tool, please try again or contact support.",
-      "confirmation": "Are you sure you want to remove this tool?"
+      "confirmation": "Are you sure you want to detach this tool from your agent?"
     }
   },
   "ADE/SharedMemoryIndicator": {

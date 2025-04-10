@@ -6,7 +6,9 @@ import {
   FolderIcon,
   FolderOpenIcon,
   FileIcon,
-  DotsHorizontalIcon,
+  CaretDownIcon,
+  CaretRightIcon,
+  DotsVerticalIcon,
 } from '../../icons';
 import { LettaLoader } from '../LettaLoader/LettaLoader';
 import { useTranslations } from '@letta-cloud/translations';
@@ -32,6 +34,7 @@ interface RootType {
     text: string;
   };
   actions?: Action[];
+  actionNode?: React.ReactNode;
 }
 
 interface FileType extends RootType {
@@ -52,11 +55,12 @@ interface RowItemProps {
   children: React.ReactNode;
   onClick?: () => void;
   actions?: Action[];
+  actionNode?: React.ReactNode;
   index: number;
 }
 
 function RowItem(props: RowItemProps) {
-  const { depth, index, badge, onClick, actions } = props;
+  const { depth, index, badge, onClick, actions, actionNode } = props;
 
   return (
     <li className="w-full relative block">
@@ -67,44 +71,49 @@ function RowItem(props: RowItemProps) {
         onClick={onClick}
         paddingRight
         style={{
-          paddingLeft: `${depth * 20}px`,
+          paddingLeft: `${(depth - 1) * 20}px`,
         }}
-        className="hover:bg-secondary-hover cursor-pointer"
+        className="hover:bg-secondary-hover py-1.5 cursor-pointer"
         fullWidth
         overflow="hidden"
-        paddingY="small"
       >
         <HStack overflow="hidden" collapseWidth justify="start" align="center">
           {props.children}
         </HStack>
         <HStack align="center">{badge}</HStack>
       </HStack>
-      {actions && (
-        <DropdownMenu
-          triggerAsChild
-          trigger={
-            <Button
-              label="Actions"
-              color="tertiary"
-              size="small"
-              hideLabel
-              _use_rarely_className="absolute right-5 top-0 h-full"
-              data-testid={`filetree-actions:${depth}-${index}`}
-              preIcon={<DotsHorizontalIcon className="w-4" />}
-            />
-          }
-        >
-          {actions.map((action) => (
-            <DropdownMenuItem
-              data-testid={`filetree-action-${action.id}`}
-              key={action.id || action.label}
-              onClick={action.onClick}
-              preIcon={action.icon}
-              label={action.label}
-            />
-          ))}
-        </DropdownMenu>
-      )}
+      <HStack
+        className="absolute right-5 top-0 h-full"
+        align="center"
+        gap="small"
+      >
+        {actionNode}
+        {actions && (
+          <DropdownMenu
+            triggerAsChild
+            trigger={
+              <Button
+                label="Actions"
+                color="tertiary"
+                size="small"
+                hideLabel
+                data-testid={`filetree-actions:${depth}-${index}`}
+                preIcon={<DotsVerticalIcon className="w-4" />}
+              />
+            }
+          >
+            {actions.map((action) => (
+              <DropdownMenuItem
+                data-testid={`filetree-action-${action.id}`}
+                key={action.id || action.label}
+                onClick={action.onClick}
+                preIcon={action.icon}
+                label={action.label}
+              />
+            ))}
+          </DropdownMenu>
+        )}
+      </HStack>
     </li>
   );
 }
@@ -150,7 +159,7 @@ function RenderFolderInnerContent(props: RenderFolderContentProps) {
           );
         }
 
-        const { name, onClick, icon, actions } = content;
+        const { name, onClick, icon, actionNode, actions } = content;
         let innerContent = (
           <HStack justify="start" fullWidth align="center" fullHeight>
             <HStack justify="start" align="center">
@@ -175,6 +184,7 @@ function RenderFolderInnerContent(props: RenderFolderContentProps) {
             index={index}
             onClick={onClick}
             actions={actions}
+            actionNode={actionNode}
             depth={depth + 1}
             key={index}
           >
@@ -227,6 +237,7 @@ export function FolderComponent(props: FolderComponentProps) {
     name,
     badge,
     actions,
+    actionNode,
     infoTooltip,
     defaultOpen,
     openIcon: openIconOverride,
@@ -237,18 +248,38 @@ export function FolderComponent(props: FolderComponentProps) {
 
   const openIcon = useMemo(() => {
     if (openIconOverride) {
-      return <Slot className="w-4">{openIconOverride}</Slot>;
+      return (
+        <HStack gap="text">
+          <CaretDownIcon />
+          <Slot className="w-4">{openIconOverride}</Slot>
+        </HStack>
+      );
     }
 
-    return <FolderOpenIcon className="w-4" />;
+    return (
+      <HStack gap="text">
+        <CaretDownIcon />
+        <FolderOpenIcon className="w-4" />
+      </HStack>
+    );
   }, [openIconOverride]);
 
   const icon = useMemo(() => {
     if (iconOverride) {
-      return <Slot className="w-4">{iconOverride}</Slot>;
+      return (
+        <HStack gap="text">
+          <CaretRightIcon />
+          <Slot className="w-4">{iconOverride}</Slot>;
+        </HStack>
+      );
     }
 
-    return <FolderIcon className="w-4" />;
+    return (
+      <HStack gap="text">
+        <CaretRightIcon />
+        <FolderIcon className="w-4" />
+      </HStack>
+    );
   }, [iconOverride]);
 
   return (
@@ -261,7 +292,13 @@ export function FolderComponent(props: FolderComponentProps) {
       }}
     >
       <HStack as="summary" className="w-full cursor-pointer" align="center">
-        <RowItem index={index} badge={badge} actions={actions} depth={depth}>
+        <RowItem
+          index={index}
+          badge={badge}
+          actionNode={actionNode}
+          actions={actions}
+          depth={depth}
+        >
           {isOpen ? openIcon : icon}
           <HStack align="center">
             <Typography overflow="ellipsis" fullWidth noWrap align="left">

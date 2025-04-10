@@ -116,6 +116,7 @@ export interface BreadcrumbItemType {
   onClick?: () => void;
   label: string;
   preIcon?: React.ReactNode;
+  bold?: boolean;
   contentOverride?: React.ReactNode;
 }
 
@@ -129,7 +130,7 @@ interface BreadcrumbItemWrapperProps {
 function BreadcrumbItemWrapper(props: BreadcrumbItemWrapperProps) {
   const { item, isLast, size } = props;
 
-  const { href, preIcon, contentOverride, label, onClick } = item;
+  const { href, preIcon, contentOverride, bold, label, onClick } = item;
 
   if (contentOverride) {
     return contentOverride;
@@ -144,6 +145,7 @@ function BreadcrumbItemWrapper(props: BreadcrumbItemWrapperProps) {
         color="tertiary"
         preIcon={preIcon}
         label={label}
+        bold={bold}
         size={size}
         _use_rarely_className={cn(
           !isLast ? 'text-text-lighter' : '',
