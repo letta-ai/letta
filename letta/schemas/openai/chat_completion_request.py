@@ -133,7 +133,7 @@ class ChatCompletionRequest(BaseModel):
     temperature: Optional[float] = 1
     top_p: Optional[float] = 1
     user: Optional[str] = None  # unique ID of the end-user (for monitoring)
-    parallel_tool_calls: Optional[bool] = False
+    parallel_tool_calls: Optional[bool] = None
 
     # function-calling related
     tools: Optional[List[Tool]] = None
