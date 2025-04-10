@@ -48,6 +48,130 @@ class ArchivalMemoryBenchmark(Benchmark):
             "error_handling"
         ]
         
+    def test_basic_insertion_retrieval(self, agent_obj: Any) -> bool:
+        """Test basic insertion and retrieval of archival memory.
+        
+        Args:
+            agent_obj: Agent object to test
+            
+        Returns:
+            True if all tests pass, False otherwise
+        """
+        try:
+            base_functions.archival_memory_insert(agent_obj, "The cat sleeps on the mat")
+            base_functions.archival_memory_insert(agent_obj, "The dog plays in the park")
+            base_functions.archival_memory_insert(agent_obj, "Python is a programming language")
+
+            # Test exact text search
+            results_data, _ = base_functions.archival_memory_search(agent_obj, "cat")
+            basic_test_1 = query_in_search_results(results_data, "cat")
+
+            # Test semantic search (should return animal-related content)
+            results_data, _ = base_functions.archival_memory_search(agent_obj, "animal pets")
+            basic_test_2 = query_in_search_results(results_data, "cat") or query_in_search_results(results_data, "dog")
+
+            # Test unrelated search (should not return animal content)
+            results_data, _ = base_functions.archival_memory_search(agent_obj, "programming computers")
+            basic_test_3 = query_in_search_results(results_data, "python")
+            
+            return basic_test_1 and basic_test_2 and basic_test_3
+        except Exception as e:
+            print(f"Error during basic insertion and retrieval test: {e}")
+            return False
+    
+    def test_pagination(self, agent_obj: Any) -> bool:
+        """Test pagination functionality in archival memory search.
+        
+        Args:
+            agent_obj: Agent object to test
+            
+        Returns:
+            True if all tests pass, False otherwise
+        """
+        try:
+            # Insert items to test pagination
+            for i in range(10):
+                base_functions.archival_memory_insert(agent_obj, f"Test passage number {i}")
+
+            # Get first page
+            page0_results, next_page = base_functions.archival_memory_search(agent_obj, "Test passage", page=0)
+            # Get second page
+            page1_results, _ = base_functions.archival_memory_search(agent_obj, "Test passage", page=1, start=next_page)
+
+            pagination_test_1 = page0_results != page1_results
+            pagination_test_2 = query_in_search_results(page0_results, "Test passage")
+            pagination_test_3 = query_in_search_results(page1_results, "Test passage")
+            
+            return pagination_test_1 and pagination_test_2 and pagination_test_3
+        except Exception as e:
+            print(f"Error during pagination test: {e}")
+            return False
+    
+    def test_complex_text_patterns(self, agent_obj: Any) -> bool:
+        """Test searching for complex text patterns in archival memory.
+        
+        Args:
+            agent_obj: Agent object to test
+            
+        Returns:
+            True if all tests pass, False otherwise
+        """
+        try:
+            base_functions.archival_memory_insert(agent_obj, "Important meeting on 2024-01-15 with John")
+            base_functions.archival_memory_insert(agent_obj, "Follow-up meeting scheduled for next week")
+            base_functions.archival_memory_insert(agent_obj, "Project deadline is approaching")
+
+            # Search for meeting-related content
+            results_data, _ = base_functions.archival_memory_search(agent_obj, "meeting schedule")
+            complex_test_1 = query_in_search_results(results_data, "meeting")
+            complex_test_2 = query_in_search_results(results_data, "2024-01-15") or query_in_search_results(results_data, "next week")
+            
+            return complex_test_1 and complex_test_2
+        except Exception as e:
+            print(f"Error during complex text patterns test: {e}")
+            return False
+    
+    def test_semantic_search(self, agent_obj: Any) -> bool:
+        """Test semantic search capabilities in archival memory.
+        
+        Args:
+            agent_obj: Agent object to test
+            
+        Returns:
+            True if all tests pass, False otherwise
+        """
+        try:
+            base_functions.archival_memory_insert(agent_obj, "The feline was resting on the carpet")
+            base_functions.archival_memory_insert(agent_obj, "The canine was playing in the garden")
+            
+            results_data, _ = base_functions.archival_memory_search(agent_obj, "cat dog")
+            semantic_test = query_in_search_results(results_data, "feline") or query_in_search_results(results_data, "canine")
+            
+            return semantic_test
+        except Exception as e:
+            print(f"Error during semantic search test: {e}")
+            return False
+    
+    def test_error_handling(self, agent_obj: Any) -> bool:
+        """Test error handling in archival memory functions.
+        
+        Args:
+            agent_obj: Agent object to test
+            
+        Returns:
+            True if all tests pass, False otherwise
+        """
+        try:
+            # Test invalid page number
+            try:
+                base_functions.archival_memory_search(agent_obj, "test", page="invalid")
+                return False  # Should have raised ValueError
+            except ValueError:
+                return True
+        except Exception as e:
+            print(f"Error during error handling test: {e}")
+            return False
+    
     def test_archival(self, agent_obj: Any) -> Dict[str, bool]:
         """Test archival memory functions comprehensively.
         
@@ -66,69 +190,12 @@ class ArchivalMemoryBenchmark(Benchmark):
         }
         
         try:
-            # Test 1: Basic insertion and retrieval
-            base_functions.archival_memory_insert(agent_obj, "The cat sleeps on the mat")
-            base_functions.archival_memory_insert(agent_obj, "The dog plays in the park")
-            base_functions.archival_memory_insert(agent_obj, "Python is a programming language")
-
-            # Test exact text search
-            results_data, _ = base_functions.archival_memory_search(agent_obj, "cat")
-            basic_test_1 = query_in_search_results(results_data, "cat")
-
-            # Test semantic search (should return animal-related content)
-            results_data, _ = base_functions.archival_memory_search(agent_obj, "animal pets")
-            basic_test_2 = query_in_search_results(results_data, "cat") or query_in_search_results(results_data, "dog")
-
-            # Test unrelated search (should not return animal content)
-            results_data, _ = base_functions.archival_memory_search(agent_obj, "programming computers")
-            basic_test_3 = query_in_search_results(results_data, "python")
-            
-            results["basic_insertion_retrieval"] = basic_test_1 and basic_test_2 and basic_test_3
-            
-            # Test 2: Test pagination
-            # Insert more items to test pagination
-            for i in range(10):
-                base_functions.archival_memory_insert(agent_obj, f"Test passage number {i}")
-
-            # Get first page
-            page0_results, next_page = base_functions.archival_memory_search(agent_obj, "Test passage", page=0)
-            # Get second page
-            page1_results, _ = base_functions.archival_memory_search(agent_obj, "Test passage", page=1, start=next_page)
-
-            pagination_test_1 = page0_results != page1_results
-            pagination_test_2 = query_in_search_results(page0_results, "Test passage")
-            pagination_test_3 = query_in_search_results(page1_results, "Test passage")
-            
-            results["pagination"] = pagination_test_1 and pagination_test_2 and pagination_test_3
-
-            # Test 3: Test complex text patterns
-            base_functions.archival_memory_insert(agent_obj, "Important meeting on 2024-01-15 with John")
-            base_functions.archival_memory_insert(agent_obj, "Follow-up meeting scheduled for next week")
-            base_functions.archival_memory_insert(agent_obj, "Project deadline is approaching")
-
-            # Search for meeting-related content
-            results_data, _ = base_functions.archival_memory_search(agent_obj, "meeting schedule")
-            complex_test_1 = query_in_search_results(results_data, "meeting")
-            complex_test_2 = query_in_search_results(results_data, "2024-01-15") or query_in_search_results(results_data, "next week")
-            
-            results["complex_text_patterns"] = complex_test_1 and complex_test_2
-
-            # Test 4: Test semantic search capabilities
-            base_functions.archival_memory_insert(agent_obj, "The feline was resting on the carpet")
-            base_functions.archival_memory_insert(agent_obj, "The canine was playing in the garden")
-            
-            results_data, _ = base_functions.archival_memory_search(agent_obj, "cat dog")
-            semantic_test = query_in_search_results(results_data, "feline") or query_in_search_results(results_data, "canine")
-            
-            results["semantic_search"] = semantic_test
-
-            # Test 5: Test error handling
-            # Test invalid page number
-            try:
-                base_functions.archival_memory_search(agent_obj, "test", page="invalid")
-                results["error_handling"] = False
-            except ValueError:
-                results["error_handling"] = True
+            # Run each test section separately
+            results["basic_insertion_retrieval"] = self.test_basic_insertion_retrieval(agent_obj)
+            results["pagination"] = self.test_pagination(agent_obj)
+            results["complex_text_patterns"] = self.test_complex_text_patterns(agent_obj)
+            results["semantic_search"] = self.test_semantic_search(agent_obj)
+            results["error_handling"] = self.test_error_handling(agent_obj)
                 
         except Exception as e:
             print(f"Error during archival memory test: {e}")
