@@ -157,7 +157,7 @@ No, the data in your Letta server database stays on your machine. The Letta ADE 
 
 > _"Do I have to use your ADE? Can I build my own?"_
 
-The ADE is built on top of the (fully open source) Letta server and Letta Agents API. You can build your own application like the ADE on top of the REST API (view the documention [here](https://docs.letta.com/api-reference)).
+The ADE is built on top of the (fully open source) Letta server and Letta Agents API. You can build your own application like the ADE on top of the REST API (view the documentation [here](https://docs.letta.com/api-reference)).
 
 > _"Can I interact with Letta agents via the CLI?"_
 
