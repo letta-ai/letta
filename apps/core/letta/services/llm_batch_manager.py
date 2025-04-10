@@ -172,6 +172,26 @@ class LLMBatchManager:
 
             return item.update(db_session=session, actor=actor).to_pydantic()
 
+    @enforce_types
+    def list_batch_items(
+        self,
+        batch_id: str,
+        limit: Optional[int] = None,
+        actor: Optional[PydanticUser] = None,
+    ) -> List[PydanticLLMBatchItem]:
+        """List all batch items for a given batch_id, optionally filtered by organization and limited in count."""
+        with self.session_maker() as session:
+            query = session.query(LLMBatchItem).filter(LLMBatchItem.batch_id == batch_id)
+
+            if actor is not None:
+                query = query.filter(LLMBatchItem.organization_id == actor.organization_id)
+
+            if limit:
+                query = query.limit(limit)
+
+            results = query.all()
+            return [item.to_pydantic() for item in results]
+
     def bulk_update_batch_items_by_agent(
         self,
         updates: List[ItemUpdateInfo],

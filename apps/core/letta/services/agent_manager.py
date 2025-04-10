@@ -845,6 +845,10 @@ class AgentManager:
 
     @enforce_types
     def refresh_memory(self, agent_state: PydanticAgentState, actor: PydanticUser) -> PydanticAgentState:
+        block_ids = [b.id for b in agent_state.memory.blocks]
+        if not block_ids:
+            return agent_state
+
         agent_state.memory.blocks = self.block_manager.get_all_blocks_by_ids(
             block_ids=[b.id for b in agent_state.memory.blocks], actor=actor
         )
