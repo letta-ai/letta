@@ -84,6 +84,7 @@ import { ShareAgentDialog } from './ShareAgentDialog/ShareAgentDialog';
 import { isSendingMessageAtom } from './atoms';
 import { useADETour } from '../../hooks/useADETour/useADETour';
 import type { InfiniteData } from '@tanstack/query-core';
+import { ErrorBoundary } from 'react-error-boundary';
 
 type ErrorCode = z.infer<typeof ErrorMessageSchema>['code'];
 
@@ -91,7 +92,6 @@ interface SendMessagePayload {
   role: string;
   content: string;
 }
-
 
 const FAILED_ID = 'failed';
 export type SendMessageType = (payload: SendMessagePayload) => void;
@@ -127,9 +127,6 @@ export function useSendMessage(
     };
   }, []);
 
-
-
-
   const sendMessage: SendMessageType = useCallback(
     (payload: SendMessagePayload) => {
       const { content: message, role } = payload;
@@ -138,7 +135,6 @@ export function useSendMessage(
       setErrorCode(undefined);
 
       const userMessageOtid = uuidv4();
-
 
       function handleError(message: string, errorCode: ErrorCode) {
         setIsPending(false);
@@ -167,7 +163,7 @@ export function useSendMessage(
                   ) {
                     return {
                       ...message,
-                      id: FAILED_ID
+                      id: FAILED_ID,
                     };
                   }
                   return message;
@@ -206,7 +202,7 @@ export function useSendMessage(
             ...data,
             pages: data.pages.map((page) => [
               newMessage,
-              ...(page as LettaMessageUnion[]).filter(v => {
+              ...(page as LettaMessageUnion[]).filter((v) => {
                 // remove any failed messages
                 if (v.id === FAILED_ID) {
                   return false;
@@ -273,11 +269,7 @@ export function useSendMessage(
         e.preventDefault();
         // tag user sent message as errored
 
-
         if (errorHasResponseAndStatus(e)) {
-
-
-
           if (e.response.status === 429) {
             handleError(message, 'RATE_LIMIT_EXCEEDED');
             return;
@@ -729,6 +721,19 @@ function AgentSimulatorOnboarding(props: AgentSimulatorOnboardingProps) {
   );
 }
 
+function InvalidMessages() {
+  const t = useTranslations('ADE/AgentSimulator');
+
+  return (
+    <VStack padding fullHeight fullWidth>
+      <WarningIcon size="xxlarge" color="destructive" />
+      <Typography variant="heading5">{t('InvalidMessages.title')}</Typography>
+      <Typography>{t('InvalidMessages.description')}</Typography>
+      {/*<Code fullHeight language="javascript" code={JSON.stringify(error, null, 2)} />*/}
+    </VStack>
+  );
+}
+
 export function AgentSimulator() {
   const t = useTranslations('ADE/AgentSimulator');
   const agentState = useCurrentAgent();
@@ -930,13 +935,15 @@ export function AgentSimulator() {
           <VStack collapseHeight gap={false} fullWidth>
             <VStack gap="large" collapseHeight>
               <VStack collapseHeight position="relative">
-                <Messages
-                  renderAgentsLink
-                  mode={renderMode}
-                  isPanelActive
-                  isSendingMessage={isPending}
-                  agentId={agentIdToUse || ''}
-                />
+                <ErrorBoundary fallback={<InvalidMessages />}>
+                  <Messages
+                    renderAgentsLink
+                    mode={renderMode}
+                    isPanelActive
+                    isSendingMessage={isPending}
+                    agentId={agentIdToUse || ''}
+                  />
+                </ErrorBoundary>
               </VStack>
               <ChatInput
                 disabled={!agentIdToUse}

@@ -688,6 +688,10 @@
     }
   },
   "ADE/AgentSimulator": {
+    "InvalidMessages": {
+      "title": "There was an error processing the message response",
+      "description": "This is usually caused by an LLM returning bad data or an improper configuration of your LLM config, you can read the unprocessed response in your server logs or browser inspect element."
+    },
     "AgentSimulatorOnboarding": {
       "title": "Agent Simulator",
       "description": "The agent simulator is where you can test your agent's responses and see how it interacts with your agent setup\n\nThat's the core part of the ADE, now let's save this template and create an agent from it.",
