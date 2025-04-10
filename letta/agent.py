@@ -384,6 +384,7 @@ class Agent(BaseAgent):
                     delay = min(backoff_factor * (2 ** (attempt - 1)), max_delay)
                     warnings.warn(f"Attempt {attempt} failed: {ve}. Retrying in {delay} seconds...")
                     time.sleep(delay)
+                    continue
 
             except Exception as e:
                 # For non-retryable errors, exit immediately
@@ -395,6 +396,7 @@ class Agent(BaseAgent):
                 # trigger summarization
                 log_telemetry(self.logger, "_get_ai_reply summarize_messages_inplace")
                 self.summarize_messages_inplace()
+
             # return the response
             return response
 

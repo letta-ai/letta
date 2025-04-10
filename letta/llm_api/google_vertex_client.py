@@ -49,10 +49,13 @@ class GoogleVertexClient(GoogleAIClient):
         request_data["config"] = request_data.pop("generation_config")
         request_data["config"]["tools"] = request_data.pop("tools")
 
+        tool_names = [t["name"] for t in tools]
         tool_config = ToolConfig(
             function_calling_config=FunctionCallingConfig(
                 # ANY mode forces the model to predict only function calls
                 mode=FunctionCallingConfigMode.ANY,
+                # Provide the list of tools (though empty should also work, it seems not to)
+                allowed_function_names=tool_names,
             )
         )
         request_data["config"]["tool_config"] = tool_config.model_dump()
@@ -88,6 +91,8 @@ class GoogleVertexClient(GoogleAIClient):
         }
         }
         """
+        # print(response_data)
+
         response = GenerateContentResponse(**response_data)
         try:
             choices = []
@@ -99,6 +104,17 @@ class GoogleVertexClient(GoogleAIClient):
                 assert role == "model", f"Unknown role in response: {role}"
 
                 parts = content.parts
+
+                # NOTE: we aren't properly supported multi-parts here anyways (we're just appending choices),
+                #       so let's disable it for now
+
+                # NOTE(Apr 9, 2025): there's a very strange bug on 2.5 where the response has a part with broken text
+                # {'candidates': [{'content': {'parts': [{'functionCall': {'name': 'send_message', 'args': {'request_heartbeat': False, 'message': 'Hello! How can I make your day better?', 'inner_thoughts': 'User has initiated contact. Sending a greeting.'}}}], 'role': 'model'}, 'finishReason': 'STOP', 'avgLogprobs': -0.25891534213362066}], 'usageMetadata': {'promptTokenCount': 2493, 'candidatesTokenCount': 29, 'totalTokenCount': 2522, 'promptTokensDetails': [{'modality': 'TEXT', 'tokenCount': 2493}], 'candidatesTokensDetails': [{'modality': 'TEXT', 'tokenCount': 29}]}, 'modelVersion': 'gemini-1.5-pro-002'}
+                # To patch this, if we have multiple parts we can take the last one
+                if len(parts) > 1:
+                    logger.warning(f"Unexpected multiple parts in response from Google AI: {parts}")
+                    parts = [parts[-1]]
+
                 # TODO support parts / multimodal
                 # TODO support parallel tool calling natively
                 # TODO Alternative here is to throw away everything else except for the first part
