@@ -135,7 +135,7 @@ def build_openai_chat_completions_request(
             tool_choice=tool_choice,
             user=str(user_id),
             max_completion_tokens=llm_config.max_tokens,
-            temperature=llm_config.temperature,
+            temperature=1.0 if llm_config.enable_reasoner else llm_config.temperature,
         )
     else:
         data = ChatCompletionRequest(
@@ -145,7 +145,7 @@ def build_openai_chat_completions_request(
             function_call=function_call,
             user=str(user_id),
             max_completion_tokens=llm_config.max_tokens,
-            temperature=llm_config.temperature,
+            temperature=1.0 if llm_config.enable_reasoner else llm_config.temperature,
         )
         # https://platform.openai.com/docs/guides/text-generation/json-mode
         # only supported by gpt-4o, gpt-4-turbo, or gpt-3.5-turbo
@@ -168,7 +168,6 @@ def build_openai_chat_completions_request(
                 tool.function = FunctionSchema(**structured_output_version)
             except ValueError as e:
                 warnings.warn(f"Failed to convert tool function to structured output, tool={tool}, error={e}")
-
     return data
 
 
@@ -488,4 +487,6 @@ def prepare_openai_payload(chat_completion_request: ChatCompletionRequest):
     #         except ValueError as e:
     #             warnings.warn(f"Failed to convert tool function to structured output, tool={tool}, error={e}")
 
+    if "o3-mini" in chat_completion_request.model or "o1" in chat_completion_request.model:
+        data.pop("parallel_tool_calls", None)
     return data
