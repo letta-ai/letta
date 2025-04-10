@@ -1,5 +1,6 @@
 from abc import ABC, abstractmethod
 import csv
+import logging
 import os
 import time
 from typing import Dict, List, Optional, Any
@@ -7,6 +8,23 @@ from typing import Dict, List, Optional, Any
 from letta import LocalClient, RESTClient, create_client
 from letta.schemas.llm_config import LLMConfig
 from letta.schemas.embedding_config import EmbeddingConfig
+
+
+class SilenceHttpxLogs:
+    """Context manager to temporarily silence httpx logs during benchmark runs."""
+    
+    def __init__(self):
+        self.httpx_logger = logging.getLogger("httpx")
+        self.original_level = self.httpx_logger.level
+        
+    def __enter__(self):
+        # Set httpx logger level to WARNING to silence INFO messages
+        self.httpx_logger.setLevel(logging.WARNING)
+        return self
+        
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        # Restore original logging level
+        self.httpx_logger.setLevel(self.original_level)
 
 
 class Benchmark(ABC):

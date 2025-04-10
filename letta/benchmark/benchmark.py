@@ -7,6 +7,7 @@ from typing import Annotated, Union
 import typer
 
 from letta import LocalClient, RESTClient, create_client
+from letta.benchmark.base import SilenceHttpxLogs
 from letta.benchmark.constants import HUMAN, PERSONA, PROMPTS, TRIES
 from letta.config import LettaConfig
 
@@ -52,38 +53,40 @@ def bench(
     print(f"version = {config.letta_version}")
 
     total_score, total_tokens_accumulated, elapsed_time = 0, 0, 0
+    
+    # Use context manager to silence httpx logs during benchmark
+    with SilenceHttpxLogs():
+        for fn_type, message in PROMPTS.items():
+            score = 0
+            start_time_run = time.time()
+            bench_id = uuid.uuid4()
 
-    for fn_type, message in PROMPTS.items():
-        score = 0
-        start_time_run = time.time()
-        bench_id = uuid.uuid4()
+            for i in range(n_tries):
+                agent = client.create_agent(
+                    name=f"benchmark_{bench_id}_agent_{i}",
+                    persona=get_persona_text(PERSONA),
+                    human=get_human_text(HUMAN),
+                )
 
-        for i in range(n_tries):
-            agent = client.create_agent(
-                name=f"benchmark_{bench_id}_agent_{i}",
-                persona=get_persona_text(PERSONA),
-                human=get_human_text(HUMAN),
-            )
+                agent_id = agent.id
+                result, msg = send_message(
+                    client=client, message=message, agent_id=agent_id, turn=i, fn_type=fn_type, print_msg=print_messages, n_tries=n_tries
+                )
 
-            agent_id = agent.id
-            result, msg = send_message(
-                client=client, message=message, agent_id=agent_id, turn=i, fn_type=fn_type, print_msg=print_messages, n_tries=n_tries
-            )
+                if print_messages:
+                    print(f"\t{msg}")
 
-            if print_messages:
-                print(f"\t{msg}")
+                if result:
+                    score += 1
 
-            if result:
-                score += 1
+                # TODO: add back once we start tracking usage via the client
+                # total_tokens_accumulated += tokens_accumulated
 
-            # TODO: add back once we start tracking usage via the client
-            # total_tokens_accumulated += tokens_accumulated
+            elapsed_time_run = round(time.time() - start_time_run, 2)
+            print(f"Score for {fn_type}: {score}/{n_tries}, took {elapsed_time_run} seconds")
 
-        elapsed_time_run = round(time.time() - start_time_run, 2)
-        print(f"Score for {fn_type}: {score}/{n_tries}, took {elapsed_time_run} seconds")
-
-        elapsed_time += elapsed_time_run
-        total_score += score
+            elapsed_time += elapsed_time_run
+            total_score += score
 
     print(f"\nMEMGPT VERSION: {config.letta_version}")
     print(f"CONTEXT WINDOW: {config.default_llm_config.context_window}")

@@ -255,87 +255,92 @@ class ArchivalMemoryBenchmark(Benchmark):
         Returns:
             Dictionary containing benchmark results
         """
+        # Import the context manager to silence httpx logs
+        from letta.benchmark.base import SilenceHttpxLogs
+        
         # LongBench benchmark
         print(f"\nRunning LongBench memory benchmark on {len(self.models)} models.")
         print(f"Testing with subsets: {', '.join(self.test_cases)}")
         print(f"Minimum context length: {MIN_CONTEXT_LENGTH} characters\n")
         
         # Store results for each model
-        for model in self.models:
-            print(f"\nBenchmarking model: {model}")
-            model_results = {}
-            total_score = 0
-            total_tries = 0
-            total_time = 0
-            
-            # Run tests for each subset
-            for subset in self.test_cases:
-                start_time = time.time()
-                bench_id = uuid.uuid4()
+        # Use the context manager to silence httpx logs during benchmark execution
+        with SilenceHttpxLogs():
+            for model in self.models:
+                print(f"\nBenchmarking model: {model}")
+                model_results = {}
+                total_score = 0
+                total_tries = 0
+                total_time = 0
                 
-                print(f"\n-> Testing subset: {subset}")
+                # Run tests for each subset
+                for subset in self.test_cases:
+                    start_time = time.time()
+                    bench_id = uuid.uuid4()
+                    
+                    print(f"\n-> Testing subset: {subset}")
+                    
+                    # Create a new agent for each subset
+                    agent = self.client.create_agent(
+                        name=f"benchmark_{bench_id}_agent_{subset}",
+                        embedding_config=self.client.list_embedding_configs()[0],
+                        llm_config=self.client.list_llm_configs()[0],
+                    )
+                    
+                    # Load the agent object for direct function testing
+                    agent_obj = self.client.server.load_agent(agent_id=agent.id, actor=self.client.user)
+                    
+                    # Run the tests for this subset
+                    score, total = self.test_longbench_subset(agent_obj, subset)
+                    
+                    # Update scores for this subset
+                    if total > 0:
+                        success_rate = round(score / total * 100, 2)
+                        model_results[subset] = {
+                            "score": score,
+                            "total": total,
+                            "success_rate": success_rate,
+                            "time": round(time.time() - start_time, 2)
+                        }
+                        total_score += score
+                        total_tries += total
+                        print(f"Score for {subset}: {score}/{total} ({success_rate}%)")
+                    else:
+                        model_results[subset] = {
+                            "score": 0,
+                            "total": 0,
+                            "success_rate": 0,
+                            "time": round(time.time() - start_time, 2)
+                        }
+                        print(f"No tests run for {subset}")
+                    
+                    # Clean up the agent
+                    try:
+                        self.client.delete_agent(agent.id)
+                    except Exception as e:
+                        print(f"Warning: Failed to delete agent: {e}")
+                    
+                    elapsed_time = round(time.time() - start_time, 2)
+                    total_time += elapsed_time
                 
-                # Create a new agent for each subset
-                agent = self.client.create_agent(
-                    name=f"benchmark_{bench_id}_agent_{subset}",
-                    embedding_config=self.client.list_embedding_configs()[0],
-                    llm_config=self.client.list_llm_configs()[0],
-                )
-                
-                # Load the agent object for direct function testing
-                agent_obj = self.client.server.load_agent(agent_id=agent.id, actor=self.client.user)
-                
-                # Run the tests for this subset
-                score, total = self.test_longbench_subset(agent_obj, subset)
-                
-                # Update scores for this subset
-                if total > 0:
-                    success_rate = round(score / total * 100, 2)
-                    model_results[subset] = {
-                        "score": score,
-                        "total": total,
-                        "success_rate": success_rate,
-                        "time": round(time.time() - start_time, 2)
-                    }
-                    total_score += score
-                    total_tries += total
-                    print(f"Score for {subset}: {score}/{total} ({success_rate}%)")
+                # Calculate overall results
+                if total_tries > 0:
+                    model_results["total_score"] = total_score
+                    model_results["total_tries"] = total_tries
+                    model_results["total_time"] = total_time
+                    model_results["success_rate"] = round(total_score / total_tries * 100, 2)
+                    
+                    print(f"\nOverall success rate: {model_results['success_rate']}% (took {total_time} seconds)")
                 else:
-                    model_results[subset] = {
-                        "score": 0,
-                        "total": 0,
-                        "success_rate": 0,
-                        "time": round(time.time() - start_time, 2)
-                    }
-                    print(f"No tests run for {subset}")
+                    model_results["total_score"] = 0
+                    model_results["total_tries"] = 0
+                    model_results["total_time"] = total_time
+                    model_results["success_rate"] = 0
+                    
+                    print(f"\nNo tests were run successfully")
                 
-                # Clean up the agent
-                try:
-                    self.client.delete_agent(agent.id)
-                except Exception as e:
-                    print(f"Warning: Failed to delete agent: {e}")
-                
-                elapsed_time = round(time.time() - start_time, 2)
-                total_time += elapsed_time
-            
-            # Calculate overall results
-            if total_tries > 0:
-                model_results["total_score"] = total_score
-                model_results["total_tries"] = total_tries
-                model_results["total_time"] = total_time
-                model_results["success_rate"] = round(total_score / total_tries * 100, 2)
-                
-                print(f"\nOverall success rate: {model_results['success_rate']}% (took {total_time} seconds)")
-            else:
-                model_results["total_score"] = 0
-                model_results["total_tries"] = 0
-                model_results["total_time"] = total_time
-                model_results["success_rate"] = 0
-                
-                print(f"\nNo tests were run successfully")
-            
-            # Store results for this model
-            self.results[model] = model_results
+                # Store results for this model
+                self.results[model] = model_results
         
         # Write results to CSV file
         csv_path = kwargs.get("csv_path", None)
