@@ -3,8 +3,9 @@ import uuid
 import os
 import csv
 import datetime
+import requests
 from pathlib import Path
-from typing import Dict, List, Any, Union, Optional
+from typing import Dict, List, Any, Union, Optional, Tuple
 
 import letta.functions.function_sets.base as base_functions
 from letta import LocalClient, RESTClient
@@ -18,12 +19,36 @@ USING_SQLITE = not bool(os.getenv("LETTA_PG_URI"))
 # Add a small delay for SQLite to avoid timestamp collisions
 CREATE_DELAY_SQLITE = 0.1 if USING_SQLITE else 0
 
+# LongBench subsets to use
+LONGBENCH_SUBSETS = [
+    "2wikimqa_e", 
+    "rec_e",
+    "samsum_e", 
+    "qasper_e", 
+    "triviaqa_e", 
+    "narrativeqa", 
+    "musique"
+]
+
+# Minimum context length to include in benchmark
+MIN_CONTEXT_LENGTH = 10000
+
 
 def query_in_search_results(search_results: List[Dict[str, Any]], query: str) -> bool:
     """Check if a query term appears in search results."""
     for result in search_results:
         if query.lower() in result["content"].lower():
             return True
+    return False
+
+
+def answer_in_search_results(search_results: List[Dict[str, Any]], answers: List[str]) -> bool:
+    """Check if at least one of the answers appears in search results."""
+    for result in search_results:
+        content = result["content"].lower()
+        for answer in answers:
+            if answer.lower() in content:
+                return True
     return False
 
 
@@ -40,137 +65,115 @@ class ArchivalMemoryBenchmark(Benchmark):
         """
         super().__init__(models, client)
         self.n_tries = n_tries
-        self.test_cases = [
-            "basic_insertion_retrieval",
-            "semantic_search",
-            "pagination",
-            "complex_text_patterns",
-            "error_handling"
-        ]
+        self.test_cases = LONGBENCH_SUBSETS
+        self.dataset_cache = {}
         
-    def test_basic_insertion_retrieval(self, agent_obj: Any) -> bool:
-        """Test basic insertion and retrieval of archival memory.
-        
-        Args:
-            agent_obj: Agent object to test
-            
-        Returns:
-            True if all tests pass, False otherwise
-        """
-        try:
-            base_functions.archival_memory_insert(agent_obj, "The cat sleeps on the mat")
-            base_functions.archival_memory_insert(agent_obj, "The dog plays in the park")
-            base_functions.archival_memory_insert(agent_obj, "Python is a programming language")
 
-            # Test exact text search
-            results_data, _ = base_functions.archival_memory_search(agent_obj, "cat")
-            basic_test_1 = query_in_search_results(results_data, "cat")
-
-            # Test semantic search (should return animal-related content)
-            results_data, _ = base_functions.archival_memory_search(agent_obj, "animal pets")
-            basic_test_2 = query_in_search_results(results_data, "cat") or query_in_search_results(results_data, "dog")
-
-            # Test unrelated search (should not return animal content)
-            results_data, _ = base_functions.archival_memory_search(agent_obj, "programming computers")
-            basic_test_3 = query_in_search_results(results_data, "python")
-            
-            return basic_test_1 and basic_test_2 and basic_test_3
-        except Exception as e:
-            print(f"Error during basic insertion and retrieval test: {e}")
-            return False
     
-    def test_pagination(self, agent_obj: Any) -> bool:
-        """Test pagination functionality in archival memory search.
+    def download_subset_sample(self, subset_name: str, split: str = "test", max_samples: int = 5) -> List[Dict]:
+        """Download a sample of examples from a LongBench subset.
         
         Args:
-            agent_obj: Agent object to test
+            subset_name: Name of the LongBench subset
+            split: Dataset split to use (default: "test")
+            max_samples: Maximum number of samples to download
             
         Returns:
-            True if all tests pass, False otherwise
+            List of examples from the subset
         """
-        try:
-            # Insert items to test pagination
-            for i in range(10):
-                base_functions.archival_memory_insert(agent_obj, f"Test passage number {i}")
-
-            # Get first page
-            page0_results, next_page = base_functions.archival_memory_search(agent_obj, "Test passage", page=0)
-            # Get second page
-            page1_results, _ = base_functions.archival_memory_search(agent_obj, "Test passage", page=1, start=next_page)
-
-            pagination_test_1 = page0_results != page1_results
-            pagination_test_2 = query_in_search_results(page0_results, "Test passage")
-            pagination_test_3 = query_in_search_results(page1_results, "Test passage")
+        cache_key = f"{subset_name}_{split}"
+        if cache_key in self.dataset_cache:
+            return self.dataset_cache[cache_key]
             
-            return pagination_test_1 and pagination_test_2 and pagination_test_3
+        # HuggingFace API endpoint for dataset info
+        api_url = f"https://huggingface.co/api/datasets/THUDM/LongBench/parquet/{subset_name}/{split}"
+        
+        try:
+            # Get dataset info
+            response = requests.get(api_url)
+            response.raise_for_status()
+            
+            # Get the first few rows that match our criteria
+            examples = []
+            count = 0
+            
+            # Download and process the data in chunks to avoid memory issues
+            for i in range(min(3, len(response.json()))):  # Limit to first 3 chunks to avoid downloading too much
+                chunk_url = f"{api_url}/{i}"
+                chunk_response = requests.get(chunk_url)
+                chunk_response.raise_for_status()
+                
+                # Parse the chunk data
+                chunk_data = chunk_response.json()
+                
+                # Process each example in the chunk
+                for example in chunk_data:
+                    # Check if the context is long enough
+                    if "context" in example and len(example["context"]) >= MIN_CONTEXT_LENGTH:
+                        # Make sure we have the required fields
+                        if "input" in example and "answers" in example:
+                            examples.append(example)
+                            count += 1
+                            
+                            # Stop if we have enough examples
+                            if count >= max_samples:
+                                break
+                
+                # Stop if we have enough examples
+                if count >= max_samples:
+                    break
+            
+            # Cache the examples
+            self.dataset_cache[cache_key] = examples
+            return examples
+            
         except Exception as e:
-            print(f"Error during pagination test: {e}")
-            return False
+            print(f"Error downloading subset {subset_name}: {e}")
+            return []
     
-    def test_complex_text_patterns(self, agent_obj: Any) -> bool:
-        """Test searching for complex text patterns in archival memory.
+    def test_longbench_subset(self, agent_obj: Any, subset_name: str) -> Tuple[int, int]:
+        """Test archival memory using examples from a LongBench subset.
         
         Args:
             agent_obj: Agent object to test
+            subset_name: Name of the LongBench subset
             
         Returns:
-            True if all tests pass, False otherwise
+            Tuple of (number of successful tests, total number of tests)
         """
-        try:
-            base_functions.archival_memory_insert(agent_obj, "Important meeting on 2024-01-15 with John")
-            base_functions.archival_memory_insert(agent_obj, "Follow-up meeting scheduled for next week")
-            base_functions.archival_memory_insert(agent_obj, "Project deadline is approaching")
-
-            # Search for meeting-related content
-            results_data, _ = base_functions.archival_memory_search(agent_obj, "meeting schedule")
-            complex_test_1 = query_in_search_results(results_data, "meeting")
-            complex_test_2 = query_in_search_results(results_data, "2024-01-15") or query_in_search_results(results_data, "next week")
+        examples = self.download_subset_sample(subset_name)
+        if not examples:
+            print(f"No examples found for subset {subset_name}")
+            return 0, 0
             
-            return complex_test_1 and complex_test_2
-        except Exception as e:
-            print(f"Error during complex text patterns test: {e}")
-            return False
-    
-    def test_semantic_search(self, agent_obj: Any) -> bool:
-        """Test semantic search capabilities in archival memory.
+        successful = 0
+        total = len(examples)
         
-        Args:
-            agent_obj: Agent object to test
-            
-        Returns:
-            True if all tests pass, False otherwise
-        """
-        try:
-            base_functions.archival_memory_insert(agent_obj, "The feline was resting on the carpet")
-            base_functions.archival_memory_insert(agent_obj, "The canine was playing in the garden")
-            
-            results_data, _ = base_functions.archival_memory_search(agent_obj, "cat dog")
-            semantic_test = query_in_search_results(results_data, "feline") or query_in_search_results(results_data, "canine")
-            
-            return semantic_test
-        except Exception as e:
-            print(f"Error during semantic search test: {e}")
-            return False
-    
-    def test_error_handling(self, agent_obj: Any) -> bool:
-        """Test error handling in archival memory functions.
-        
-        Args:
-            agent_obj: Agent object to test
-            
-        Returns:
-            True if all tests pass, False otherwise
-        """
-        try:
-            # Test invalid page number
+        for i, example in enumerate(examples):
             try:
-                base_functions.archival_memory_search(agent_obj, "test", page="invalid")
-                return False  # Should have raised ValueError
-            except ValueError:
-                return True
-        except Exception as e:
-            print(f"Error during error handling test: {e}")
-            return False
+                print(f"  Testing example {i+1}/{total} from {subset_name}")
+                
+                # Insert the context into archival memory
+                base_functions.archival_memory_insert(agent_obj, example["context"])
+                
+                # Search for the input in archival memory
+                results_data, _ = base_functions.archival_memory_search(agent_obj, example["input"])
+                
+                # Check if at least one of the answers is in the search results
+                answers = example["answers"]
+                if isinstance(answers, str):
+                    answers = [answers]
+                
+                if answer_in_search_results(results_data, answers):
+                    successful += 1
+                    print(f"    [PASS] Test passed")
+                else:
+                    print(f"    [FAIL] Test failed - answer not found in search results")
+                    
+            except Exception as e:
+                print(f"    [ERROR] Error during test: {e}")
+                
+        return successful, total
     
     def test_archival(self, agent_obj: Any) -> Dict[str, bool]:
         """Test archival memory functions comprehensively.
@@ -181,27 +184,8 @@ class ArchivalMemoryBenchmark(Benchmark):
         Returns:
             Dictionary with test results
         """
-        results = {
-            "basic_insertion_retrieval": False,
-            "semantic_search": False,
-            "pagination": False,
-            "complex_text_patterns": False,
-            "error_handling": False
-        }
-        
-        try:
-            # Run each test section separately
-            results["basic_insertion_retrieval"] = self.test_basic_insertion_retrieval(agent_obj)
-            results["pagination"] = self.test_pagination(agent_obj)
-            results["complex_text_patterns"] = self.test_complex_text_patterns(agent_obj)
-            results["semantic_search"] = self.test_semantic_search(agent_obj)
-            results["error_handling"] = self.test_error_handling(agent_obj)
-                
-        except Exception as e:
-            print(f"Error during archival memory test: {e}")
-            # Mark any remaining tests as failed
-            
-        return results
+        # For LongBench, we'll return an empty dict since we handle the tests differently
+        return {}
             
     def write_results_to_csv(self, results: Dict[str, Dict[str, Any]], csv_path: str = None) -> None:
         """Write benchmark results to a CSV file.
@@ -271,26 +255,29 @@ class ArchivalMemoryBenchmark(Benchmark):
         Returns:
             Dictionary containing benchmark results
         """
-        print(f"\nRunning archival memory benchmark on {len(self.models)} models with {self.n_tries} tries per test case.")
-        print(f"This will create {self.n_tries * len(self.models)} new agents.\n")
+        # LongBench benchmark
+        print(f"\nRunning LongBench memory benchmark on {len(self.models)} models.")
+        print(f"Testing with subsets: {', '.join(self.test_cases)}")
+        print(f"Minimum context length: {MIN_CONTEXT_LENGTH} characters\n")
         
         # Store results for each model
         for model in self.models:
             print(f"\nBenchmarking model: {model}")
             model_results = {}
             total_score = 0
+            total_tries = 0
             total_time = 0
             
-            # Run multiple tries for each model
-            for i in range(self.n_tries):
+            # Run tests for each subset
+            for subset in self.test_cases:
                 start_time = time.time()
                 bench_id = uuid.uuid4()
                 
-                print(f"\t-> Running test {i+1}/{self.n_tries}")
+                print(f"\n-> Testing subset: {subset}")
                 
-                # Create a new agent for each try
+                # Create a new agent for each subset
                 agent = self.client.create_agent(
-                    name=f"benchmark_{bench_id}_agent_{i}",
+                    name=f"benchmark_{bench_id}_agent_{subset}",
                     embedding_config=self.client.list_embedding_configs()[0],
                     llm_config=self.client.list_llm_configs()[0],
                 )
@@ -298,17 +285,29 @@ class ArchivalMemoryBenchmark(Benchmark):
                 # Load the agent object for direct function testing
                 agent_obj = self.client.server.load_agent(agent_id=agent.id, actor=self.client.user)
                 
-                # Run the archival memory tests
-                test_results = self.test_archival(agent_obj)
+                # Run the tests for this subset
+                score, total = self.test_longbench_subset(agent_obj, subset)
                 
-                # Update scores for each test case
-                for test_case, result in test_results.items():
-                    if test_case not in model_results:
-                        model_results[test_case] = {"score": 0, "total": self.n_tries}
-                    
-                    if result:
-                        model_results[test_case]["score"] += 1
-                        total_score += 1
+                # Update scores for this subset
+                if total > 0:
+                    success_rate = round(score / total * 100, 2)
+                    model_results[subset] = {
+                        "score": score,
+                        "total": total,
+                        "success_rate": success_rate,
+                        "time": round(time.time() - start_time, 2)
+                    }
+                    total_score += score
+                    total_tries += total
+                    print(f"Score for {subset}: {score}/{total} ({success_rate}%)")
+                else:
+                    model_results[subset] = {
+                        "score": 0,
+                        "total": 0,
+                        "success_rate": 0,
+                        "time": round(time.time() - start_time, 2)
+                    }
+                    print(f"No tests run for {subset}")
                 
                 # Clean up the agent
                 try:
@@ -318,21 +317,22 @@ class ArchivalMemoryBenchmark(Benchmark):
                 
                 elapsed_time = round(time.time() - start_time, 2)
                 total_time += elapsed_time
+            
+            # Calculate overall results
+            if total_tries > 0:
+                model_results["total_score"] = total_score
+                model_results["total_tries"] = total_tries
+                model_results["total_time"] = total_time
+                model_results["success_rate"] = round(total_score / total_tries * 100, 2)
                 
-            # Calculate overall results
-            for test_case in self.test_cases:
-                if test_case in model_results:
-                    success_rate = round(model_results[test_case]["score"] / model_results[test_case]["total"] * 100, 2)
-                    model_results[test_case]["success_rate"] = success_rate
-                    print(f"Score for {test_case}: {model_results[test_case]['score']}/{model_results[test_case]['total']} ({success_rate}%)")
-            
-            # Calculate overall results
-            model_results["total_score"] = total_score
-            model_results["total_tries"] = len(self.test_cases) * self.n_tries
-            model_results["total_time"] = total_time
-            model_results["success_rate"] = round(total_score / (len(self.test_cases) * self.n_tries) * 100, 2)
-            
-            print(f"Overall success rate: {model_results['success_rate']}% (took {total_time} seconds)")
+                print(f"\nOverall success rate: {model_results['success_rate']}% (took {total_time} seconds)")
+            else:
+                model_results["total_score"] = 0
+                model_results["total_tries"] = 0
+                model_results["total_time"] = total_time
+                model_results["success_rate"] = 0
+                
+                print(f"\nNo tests were run successfully")
             
             # Store results for this model
             self.results[model] = model_results
