@@ -13,10 +13,16 @@ class BenchmarkTarget(str, Enum):
 app = typer.Typer()
 
 
+@app.callback()
+def callback():
+    """Benchmark model performance on function calling."""
+    pass
+
+
 @app.command()
-def benchmark(
-    models: List[str] = typer.Option(
-        ..., "--models", help="Models to benchmark (can specify multiple)"
+def run(
+    models: List[str] = typer.Argument(
+        ..., help="Models to benchmark (can specify multiple)"
     ),
     target: BenchmarkTarget = typer.Option(
         BenchmarkTarget.ARCHIVAL_MEMORY, "--target", help="Benchmark target to run"
@@ -31,9 +37,9 @@ def benchmark(
         False, "--messages", help="Print functions calls and messages from the agent"
     ),
 ):
-    """Benchmark model performance on function calling.
+    """Run benchmarks for model function calling.
     
-    Example: letta benchmark --models gpt-4o gpt-3.5-turbo --target archival_memory
+    Example: letta benchmark run gpt-4o gpt-3.5-turbo --target archival_memory
     """
     if target == BenchmarkTarget.ARCHIVAL_MEMORY:
         benchmark = ArchivalMemoryBenchmark(models=models, n_tries=n_tries)
