@@ -6,6 +6,7 @@ import datetime
 import requests
 from pathlib import Path
 from typing import Dict, List, Any, Union, Optional, Tuple
+from datasets import load_dataset # TODO: add to the requirements
 
 import letta.functions.function_sets.base as base_functions
 from letta import LocalClient, RESTClient
@@ -31,7 +32,7 @@ LONGBENCH_SUBSETS = [
 ]
 
 # Minimum context length to include in benchmark
-MIN_CONTEXT_LENGTH = 10000
+MIN_TOKEN_CONTEXT_LENGTH = 10000
 
 
 def query_in_search_results(search_results: List[Dict[str, Any]], query: str) -> bool:
@@ -70,7 +71,7 @@ class ArchivalMemoryBenchmark(Benchmark):
         
 
     
-    def download_subset_sample(self, subset_name: str, split: str = "test", max_samples: int = 5) -> List[Dict]:
+    def download_subset_sample(self, subset_name: str, split: str = "test", max_samples: int = -1) -> List[Dict]:
         """Download a sample of examples from a LongBench subset.
         
         Args:
@@ -85,43 +86,22 @@ class ArchivalMemoryBenchmark(Benchmark):
         if cache_key in self.dataset_cache:
             return self.dataset_cache[cache_key]
             
-        # HuggingFace API endpoint for dataset info
-        api_url = f"https://huggingface.co/api/datasets/THUDM/LongBench/parquet/{subset_name}/{split}"
-        
         try:
-            # Get dataset info
-            response = requests.get(api_url)
-            response.raise_for_status()
+            # Load the dataset directly using the datasets library
+            dataset = load_dataset("THUDM/LongBench", subset_name, split=split)
             
-            # Get the first few rows that match our criteria
+            # Filter examples based on criteria
             examples = []
-            count = 0
-            
-            # Download and process the data in chunks to avoid memory issues
-            for i in range(min(3, len(response.json()))):  # Limit to first 3 chunks to avoid downloading too much
-                chunk_url = f"{api_url}/{i}"
-                chunk_response = requests.get(chunk_url)
-                chunk_response.raise_for_status()
-                
-                # Parse the chunk data
-                chunk_data = chunk_response.json()
-                
-                # Process each example in the chunk
-                for example in chunk_data:
-                    # Check if the context is long enough
-                    if "context" in example and len(example["context"]) >= MIN_CONTEXT_LENGTH:
-                        # Make sure we have the required fields
-                        if "input" in example and "answers" in example:
-                            examples.append(example)
-                            count += 1
-                            
-                            # Stop if we have enough examples
-                            if count >= max_samples:
-                                break
-                
-                # Stop if we have enough examples
-                if count >= max_samples:
-                    break
+            for example in dataset:
+                # Check if the context is long enough
+                if "context" in example and int(example["length"]) >= MIN_TOKEN_CONTEXT_LENGTH:
+                    # Make sure we have the required fields
+                    if "input" in example and "answers" in example:
+                        examples.append(example)
+                        
+                        # Stop if we have enough examples
+                        if max_samples != -1 and len(examples) >= max_samples:
+                            break
             
             # Cache the examples
             self.dataset_cache[cache_key] = examples
@@ -258,7 +238,7 @@ class ArchivalMemoryBenchmark(Benchmark):
         # LongBench benchmark
         print(f"\nRunning LongBench memory benchmark on {len(self.models)} models.")
         print(f"Testing with subsets: {', '.join(self.test_cases)}")
-        print(f"Minimum context length: {MIN_CONTEXT_LENGTH} characters\n")
+        print(f"Minimum context length: {MIN_TOKEN_CONTEXT_LENGTH} characters\n")
         
         # Store results for each model
         for model in self.models:
