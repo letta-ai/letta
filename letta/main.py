@@ -29,11 +29,8 @@ from letta.benchmark.constants import TRIES
 
 
 def benchmark(
-    models: List[str] = typer.Option(
-        None, "--models", help="Models to benchmark (can specify multiple)"
-    ),
-    model_args: List[str] = typer.Argument(
-        None, help="Models to benchmark (can specify multiple)"
+    models: List[str] = typer.Argument(
+        ..., help="Models to benchmark (can specify multiple)"
     ),
     target: BenchmarkTarget = typer.Option(
         BenchmarkTarget.ARCHIVAL_MEMORY, "--target", help="Benchmark target to run"
@@ -50,23 +47,10 @@ def benchmark(
 ):
     """Run benchmarks for model function calling.
     
-    Examples:
-    - Using options: letta benchmark --models gpt-4o --models gpt-3.5-turbo --target archival_memory
-    - Using arguments: letta benchmark gpt-4o gpt-3.5-turbo --target archival_memory
+    Example: letta benchmark gpt-4o gpt-3.5-turbo --target archival_memory
     """
-    # Combine models from both options and arguments
-    all_models = []
-    if models:
-        all_models.extend(models)
-    if model_args:
-        all_models.extend(model_args)
-    
-    if not all_models:
-        typer.echo("Error: No models specified. Please provide at least one model.")
-        raise typer.Exit(code=1)
-    
     if target == BenchmarkTarget.ARCHIVAL_MEMORY:
-        benchmark = ArchivalMemoryBenchmark(models=all_models, n_tries=n_tries)
+        benchmark = ArchivalMemoryBenchmark(models=models, n_tries=n_tries)
         benchmark.run(print_messages=print_messages)
         benchmark.save_results(output_file=output)
     else:

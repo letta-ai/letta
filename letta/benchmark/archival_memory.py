@@ -97,9 +97,8 @@ class ArchivalMemoryBenchmark(Benchmark):
                     # Create a new agent for each try
                     agent = self.client.create_agent(
                         name=f"benchmark_{bench_id}_agent_{i}",
-                        persona=get_persona_text(PERSONA),
-                        human=get_human_text(HUMAN),
-                        llm_config=self.client.get_llm_config(model),
+                        embedding_config=self.client.list_embedding_configs()[0],
+                        llm_config=self.client.list_llm_configs()[0],
                     )
                     
                     agent_id = agent.id
