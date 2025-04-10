@@ -14,6 +14,7 @@ from letta import LocalClient, RESTClient
 from letta.benchmark.base import Benchmark
 from letta.benchmark.constants import HUMAN, PERSONA, TRIES
 from letta.errors import LLMJSONParsingError
+from letta.orm.agent import Agent
 from letta.utils import get_human_text, get_persona_text
 
 # Check if we're using SQLite or PostgreSQL
@@ -23,12 +24,12 @@ CREATE_DELAY_SQLITE = 0.1 if USING_SQLITE else 0
 
 # LongBench subsets to use
 LONGBENCH_SUBSETS = [
-    "2wikimqa_e", 
-    "rec_e",
-    "samsum_e", 
-    "qasper_e", 
-    "triviaqa_e", 
-    "narrativeqa", 
+    #"2wikimqa_e", 
+    #"trec_e",
+    #"samsum_e", 
+    #"qasper_e", 
+    #"triviaqa_e", 
+    #"narrativeqa", 
     "musique"
 ]
 
@@ -52,6 +53,49 @@ def answer_in_search_results(search_results: List[Dict[str, Any]], answers: List
             if answer.lower() in content:
                 return True
     return False
+
+
+def process_example_task(args):
+    """Process a single example for archival memory testing.
+    
+    Args:
+        args: Tuple containing (agent_id, example, example_idx, context_length)
+        
+    Returns:
+        1 if the test passed, 0 otherwise
+    """
+    agent_id, example, example_idx, total = args
+    try:
+        # Create a fresh client instance for this process
+        from letta import LocalClient
+        client = LocalClient()
+        agent = client.server.load_agent(agent_id=agent_id, actor=client.user)
+        
+        print(f"  Testing example {example_idx+1}/{total} from subset")
+        
+        # Insert the context into archival memory
+        from letta.functions.function_sets import base as base_functions
+        base_functions.archival_memory_insert(agent, example["context"])
+        
+        # Search for the input in archival memory
+        results_data, _ = base_functions.archival_memory_search(agent, example["input"])
+        
+        # Check if at least one of the answers is in the search results
+        answers = example["answers"]
+        if isinstance(answers, str):
+            answers = [answers]
+        
+        client.delete_agent(agent_id)
+        if answer_in_search_results(results_data, answers):
+            print(f"    [PASS] Test passed")
+            return 1
+        else:
+            print(f"    [FAIL] Test failed - answer not found in search results")
+            return 0
+            
+    except Exception as e:
+        print(f"    [ERROR] Error during test: {e}")
+        return 0
 
 
 class ArchivalMemoryBenchmark(Benchmark):
@@ -112,11 +156,11 @@ class ArchivalMemoryBenchmark(Benchmark):
             print(f"Error downloading subset {subset_name}: {e}")
             return []
     
-    def test_longbench_subset(self, agent_obj: Any, subset_name: str) -> Tuple[int, int]:
+    def test_longbench_subset(self, agent_ids: List[str], subset_name: str) -> Tuple[int, int]:
         """Test archival memory using examples from a LongBench subset.
         
         Args:
-            agent_obj: Agent object to test
+            agent_ids: List of agent ids to test
             subset_name: Name of the LongBench subset
             
         Returns:
@@ -127,46 +171,24 @@ class ArchivalMemoryBenchmark(Benchmark):
             print(f"No examples found for subset {subset_name}")
             return 0, 0
             
-        successful = 0
         total = len(examples)
         
+        # Create task list - distribute examples across available agents
+        tasks = []
         for i, example in enumerate(examples):
-            try:
-                print(f"  Testing example {i+1}/{total} from {subset_name}")
-                
-                # Insert the context into archival memory
-                base_functions.archival_memory_insert(agent_obj, example["context"])
-                
-                # Search for the input in archival memory
-                results_data, _ = base_functions.archival_memory_search(agent_obj, example["input"])
-                
-                # Check if at least one of the answers is in the search results
-                answers = example["answers"]
-                if isinstance(answers, str):
-                    answers = [answers]
-                
-                if answer_in_search_results(results_data, answers):
-                    successful += 1
-                    print(f"    [PASS] Test passed")
-                else:
-                    print(f"    [FAIL] Test failed - answer not found in search results")
-                    
-            except Exception as e:
-                print(f"    [ERROR] Error during test: {e}")
+            # Use agents in a round-robin fashion
+            agent_id = agent_ids[i % len(agent_ids)]
+            # Pass agent ID instead of agent object
+            tasks.append((agent_id, example, i, total))
+        
+        # Run tasks in parallel
+        with concurrent.futures.ProcessPoolExecutor(max_workers=len(agent_ids)) as executor:
+            results = list(executor.map(process_example_task, tasks))
+            
+        # Sum up the results
+        successful = sum(results)
                 
         return successful, total
-    
-    def test_archival(self, agent_obj: Any) -> Dict[str, bool]:
-        """Test archival memory functions comprehensively.
-        
-        Args:
-            agent_obj: Agent object to test
-            
-        Returns:
-            Dictionary with test results
-        """
-        # For LongBench, we'll return an empty dict since we handle the tests differently
-        return {}
             
     def write_results_to_csv(self, results: Dict[str, Dict[str, Any]], csv_path: str = None) -> None:
         """Write benchmark results to a CSV file.
@@ -237,22 +259,21 @@ class ArchivalMemoryBenchmark(Benchmark):
             Dictionary with test results
         """
         start_time = time.time()
-        bench_id = uuid.uuid4()
         
         print(f"\n-> Testing subset: {subset} with model: {model}")
         
-        # Create a new agent for this subset
-        agent = self.client.create_agent(
-            name=f"benchmark_{bench_id}_agent_{subset}",
-            embedding_config=self.client.list_embedding_configs()[0],
-            llm_config=self.client.list_llm_configs()[0],
-        )
-        
-        # Load the agent object for direct function testing
-        agent_obj = self.client.server.load_agent(agent_id=agent.id, actor=self.client.user)
+        # Create multiple agents for this subset
+        agent_ids = []
+        for _ in range(20):
+            agent_state = self.client.create_agent(
+                name=f"benchmark_{uuid.uuid4()}_agent_{subset}",
+                embedding_config=self.client.list_embedding_configs()[0],
+                llm_config=self.client.list_llm_configs()[0],
+            )
+            agent_ids.append(agent_state.id)
         
         # Run the tests for this subset
-        score, total = self.test_longbench_subset(agent_obj, subset)
+        score, total = self.test_longbench_subset(agent_ids, subset)
         
         # Create results dictionary
         if total > 0:
@@ -273,12 +294,6 @@ class ArchivalMemoryBenchmark(Benchmark):
             }
             print(f"No tests run for {subset} with {model}")
         
-        # Clean up the agent
-        try:
-            self.client.delete_agent(agent.id)
-        except Exception as e:
-            print(f"Warning: Failed to delete agent: {e}")
-        
         return result
     
     def run(self, **kwargs) -> Dict[str, Dict[str, Any]]:
@@ -287,7 +302,6 @@ class ArchivalMemoryBenchmark(Benchmark):
         Args:
             **kwargs: Additional keyword arguments
                 csv_path: Path to the CSV file to write results to
-                workers: Number of parallel workers (default: 1)
                 
         Returns:
             Dictionary containing benchmark results
@@ -295,15 +309,13 @@ class ArchivalMemoryBenchmark(Benchmark):
         # Import the context manager to silence httpx logs
         from letta.benchmark.base import SilenceHttpxLogs
         
-        # Get number of workers
-        workers = kwargs.get("workers", 1)
+        # Get parameters
         print_messages = kwargs.get("print_messages", False)
         
         # LongBench benchmark
         print(f"\nRunning LongBench memory benchmark on {len(self.models)} models.")
         print(f"Testing with subsets: {', '.join(self.test_cases)}")
         print(f"Minimum context length: {MIN_TOKEN_CONTEXT_LENGTH} characters")
-        print(f"Using {workers} parallel workers\n")
         
         # Store results for each model
         # Use the context manager to silence httpx logs during benchmark execution
@@ -316,41 +328,12 @@ class ArchivalMemoryBenchmark(Benchmark):
                 total_time = 0
                 start_time = time.time()
                 
-                # Create a list of tasks to run in parallel
-                tasks = [(model, subset) for subset in self.test_cases]
-                
-                # Run tasks in parallel using ThreadPoolExecutor
-                if workers > 1:
-                    with concurrent.futures.ThreadPoolExecutor(max_workers=min(workers, len(tasks))) as executor:
-                        # Submit all tasks
-                        future_to_subset = {
-                            executor.submit(self._run_subset_test, model, subset): subset 
-                            for model, subset in tasks
-                        }
-                        
-                        # Process results as they complete
-                        for future in concurrent.futures.as_completed(future_to_subset):
-                            subset = future_to_subset[future]
-                            try:
-                                result = future.result()
-                                model_results[subset] = result
-                                total_score += result["score"]
-                                total_tries += result["total"]
-                            except Exception as e:
-                                print(f"Error processing subset {subset}: {e}")
-                                model_results[subset] = {
-                                    "score": 0,
-                                    "total": 0,
-                                    "success_rate": 0,
-                                    "time": 0
-                                }
-                else:
-                    # Run sequentially if workers = 1
-                    for model_name, subset in tasks:
-                        result = self._run_subset_test(model_name, subset)
-                        model_results[subset] = result
-                        total_score += result["score"]
-                        total_tries += result["total"]
+                # Run tests sequentially for each subset
+                for subset in self.test_cases:
+                    result = self._run_subset_test(model, subset)
+                    model_results[subset] = result
+                    total_score += result["score"]
+                    total_tries += result["total"]
                 
                 # Calculate total time
                 total_time = round(time.time() - start_time, 2)
