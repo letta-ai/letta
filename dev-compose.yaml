@@ -10,6 +10,7 @@ services:
       - POSTGRES_USER=${LETTA_PG_USER:-letta}
       - POSTGRES_PASSWORD=${LETTA_PG_PASSWORD:-letta}
       - POSTGRES_DB=${LETTA_PG_DB:-letta}
+      - POSTGRES_SCHEMA=${LETTA_PG_SCHEMA:-letta}
     volumes:
       - ./.persist/pgdata-test:/var/lib/postgresql/data
       - ./init.sql:/docker-entrypoint-initdb.d/init.sql
