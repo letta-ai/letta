@@ -1,0 +1,2 @@
+model,basic_insertion_retrieval,semantic_search,pagination,complex_text_patterns,error_handling,total_score,total_tries,total_time,success_rate
+gpt-4o-mini,"{'score': 3, 'total': 3, 'success_rate': 100.0}","{'score': 0, 'total': 3, 'success_rate': 0.0}","{'score': 3, 'total': 3, 'success_rate': 100.0}","{'score': 3, 'total': 3, 'success_rate': 100.0}","{'score': 3, 'total': 3, 'success_rate': 100.0}",12,15,20.5,80.0

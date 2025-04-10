@@ -16,7 +16,7 @@ USING_SQLITE = not bool(os.getenv("LETTA_PG_URI"))
 CREATE_DELAY_SQLITE = 0.1 if USING_SQLITE else 0
 
 
-def query_in_search_results(search_results, query):
+def query_in_search_results(search_results: List[Dict[str, Any]], query: str) -> bool:
     """Check if a query term appears in search results."""
     for result in search_results:
         if query.lower() in result["content"].lower():
@@ -45,7 +45,7 @@ class ArchivalMemoryBenchmark(Benchmark):
             "error_handling"
         ]
         
-    def test_archival(self, agent_obj):
+    def test_archival(self, agent_obj: Any) -> Dict[str, bool]:
         """Test archival memory functions comprehensively.
         
         Args:
@@ -65,16 +65,7 @@ class ArchivalMemoryBenchmark(Benchmark):
         try:
             # Test 1: Basic insertion and retrieval
             base_functions.archival_memory_insert(agent_obj, "The cat sleeps on the mat")
-            
-            # Add a small delay for SQLite between operations
-            if USING_SQLITE:
-                time.sleep(CREATE_DELAY_SQLITE)
-                
             base_functions.archival_memory_insert(agent_obj, "The dog plays in the park")
-            
-            if USING_SQLITE:
-                time.sleep(CREATE_DELAY_SQLITE)
-                
             base_functions.archival_memory_insert(agent_obj, "Python is a programming language")
 
             # Test exact text search
@@ -95,9 +86,6 @@ class ArchivalMemoryBenchmark(Benchmark):
             # Insert more items to test pagination
             for i in range(10):
                 base_functions.archival_memory_insert(agent_obj, f"Test passage number {i}")
-                # Add a small delay for SQLite between insertions
-                if USING_SQLITE:
-                    time.sleep(CREATE_DELAY_SQLITE)
 
             # Get first page
             page0_results, next_page = base_functions.archival_memory_search(agent_obj, "Test passage", page=0)
@@ -112,15 +100,7 @@ class ArchivalMemoryBenchmark(Benchmark):
 
             # Test 3: Test complex text patterns
             base_functions.archival_memory_insert(agent_obj, "Important meeting on 2024-01-15 with John")
-            
-            if USING_SQLITE:
-                time.sleep(CREATE_DELAY_SQLITE)
-                
             base_functions.archival_memory_insert(agent_obj, "Follow-up meeting scheduled for next week")
-            
-            if USING_SQLITE:
-                time.sleep(CREATE_DELAY_SQLITE)
-                
             base_functions.archival_memory_insert(agent_obj, "Project deadline is approaching")
 
             # Search for meeting-related content
@@ -132,10 +112,6 @@ class ArchivalMemoryBenchmark(Benchmark):
 
             # Test 4: Test semantic search capabilities
             base_functions.archival_memory_insert(agent_obj, "The feline was resting on the carpet")
-            
-            if USING_SQLITE:
-                time.sleep(CREATE_DELAY_SQLITE)
-                
             base_functions.archival_memory_insert(agent_obj, "The canine was playing in the garden")
             
             results_data, _ = base_functions.archival_memory_search(agent_obj, "cat dog")
