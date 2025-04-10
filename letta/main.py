@@ -14,7 +14,7 @@ import letta.system as system
 # import benchmark
 from letta import create_client
 from letta.benchmark.benchmark import bench
-from letta.benchmark.cli import BenchmarkTarget
+from letta.benchmark.constants import BenchmarkTarget
 from letta.benchmark.archival_memory import ArchivalMemoryBenchmark
 from letta.cli.cli import delete_agent, open_folder, run, server, version
 from letta.cli.cli_config import add, add_tool, configure, delete, list, list_tools

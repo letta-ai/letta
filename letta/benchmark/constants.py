@@ -1,8 +1,14 @@
+from enum import Enum
+
 # Basic
 TRIES = 3
 AGENT_NAME = "benchmark"
 PERSONA = "sam_pov"
 HUMAN = "cs_phd"
+
+# Benchmark targets
+class BenchmarkTarget(str, Enum):
+    ARCHIVAL_MEMORY = "archival_memory"
 
 # Prompts
 PROMPTS = {
