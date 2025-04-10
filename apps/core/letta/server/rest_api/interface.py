@@ -29,6 +29,7 @@ from letta.schemas.openai.chat_completion_response import ChatCompletionChunkRes
 from letta.server.rest_api.optimistic_json_parser import OptimisticJSONParser
 from letta.streaming_interface import AgentChunkStreamingInterface
 from letta.streaming_utils import FunctionArgumentsStreamHandler, JSONInnerThoughtsExtractor
+from letta.utils import parse_json
 
 
 # TODO strip from code / deprecate
@@ -408,7 +409,7 @@ class StreamingServerInterface(AgentChunkStreamingInterface):
         # if self.expect_reasoning_content_buffer is not None:
         #     try:
         #         # NOTE: this is hardcoded for our DeepSeek API integration
-        #         json_reasoning_content = json.loads(self.expect_reasoning_content_buffer)
+        #         json_reasoning_content = parse_json(self.expect_reasoning_content_buffer)
 
         #         if "name" in json_reasoning_content:
         #             self._push_to_buffer(
@@ -528,7 +529,7 @@ class StreamingServerInterface(AgentChunkStreamingInterface):
 
             try:
                 # NOTE: this is hardcoded for our DeepSeek API integration
-                json_reasoning_content = json.loads(self.expect_reasoning_content_buffer)
+                json_reasoning_content = parse_json(self.expect_reasoning_content_buffer)
                 print(f"json_reasoning_content: {json_reasoning_content}")
 
                 processed_chunk = ToolCallMessage(
@@ -1188,7 +1189,7 @@ class StreamingServerInterface(AgentChunkStreamingInterface):
                     #   "date": "2024-06-22T23:04:32.141923+00:00"
                     # }
                     try:
-                        func_args = json.loads(function_call.function.arguments)
+                        func_args = parse_json(function_call.function.arguments)
                     except:
                         func_args = function_call.function.arguments
                     # processed_chunk = {
@@ -1224,7 +1225,7 @@ class StreamingServerInterface(AgentChunkStreamingInterface):
                 else:
 
                     try:
-                        func_args = json.loads(function_call.function.arguments)
+                        func_args = parse_json(function_call.function.arguments)
                     except:
                         warnings.warn(f"Failed to parse function arguments: {function_call.function.arguments}")
                         func_args = {}
