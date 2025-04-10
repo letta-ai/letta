@@ -1,6 +1,7 @@
 from abc import abstractmethod
 from typing import Dict, List, Optional, Union
 
+from anthropic.types.beta.messages import BetaMessageBatch
 from openai import AsyncStream, Stream
 from openai.types.chat.chat_completion_chunk import ChatCompletionChunk
 
@@ -80,8 +81,11 @@ class LLMClientBase:
         return self.convert_response_to_chat_completion(response_data, messages)
 
     async def send_llm_batch_request_async(
-        self, agent_messages_mapping: Dict[str, List[Message]], agent_tools_mapping: Dict[str, List[dict]]
-    ):
+        self,
+        agent_messages_mapping: Dict[str, List[Message]],
+        agent_tools_mapping: Dict[str, List[dict]],
+        agent_llm_config_mapping: Dict[str, LLMConfig],
+    ) -> Union[BetaMessageBatch]:
         raise NotImplementedError
 
     @abstractmethod

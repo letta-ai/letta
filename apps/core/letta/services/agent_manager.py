@@ -658,6 +658,9 @@ class AgentManager:
         message_ids = self.get_agent_by_id(agent_id=agent_id, actor=actor).message_ids
         return self.message_manager.get_message_by_id(message_id=message_ids[0], actor=actor)
 
+    # TODO: This is duplicated below
+    # TODO: This is legacy code and should be cleaned up
+    # TODO: A lot of the memory "compilation" should be offset to a separate class
     @enforce_types
     def rebuild_system_prompt(self, agent_id: str, actor: PydanticUser, force=False, update_timestamp=True) -> PydanticAgentState:
         """Rebuilds the system message with the latest memory object and any shared memory block updates
