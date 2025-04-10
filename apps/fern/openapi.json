@@ -1591,7 +1591,7 @@
       "get": {
         "tags": ["agents"],
         "summary": "Export Agent Serialized",
-        "description": "Export the serialized JSON representation of an agent.",
+        "description": "Export the serialized JSON representation of an agent, formatted with indentation.",
         "operationId": "export_agent_serialized",
         "parameters": [
           {
@@ -1604,14 +1604,29 @@
             }
           }
         ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/AgentSchema"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Spec"
+              }
+            }
+          }
+        },
         "responses": {
           "200": {
             "description": "Successful Response",
             "content": {
               "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/AgentSchema"
-                }
+                "schema": {}
               }
             }
           },

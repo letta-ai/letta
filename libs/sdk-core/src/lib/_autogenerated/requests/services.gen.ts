@@ -1013,11 +1013,12 @@ export class AgentsService {
 
   /**
    * Export Agent Serialized
-   * Export the serialized JSON representation of an agent.
+   * Export the serialized JSON representation of an agent, formatted with indentation.
    * @param data The data for the request.
    * @param data.agentId
    * @param data.userId
-   * @returns AgentSchema Successful Response
+   * @param data.requestBody
+   * @returns unknown Successful Response
    * @throws ApiError
    */
   public static exportAgentSerialized(
@@ -1030,6 +1031,8 @@ export class AgentsService {
       path: {
         agent_id: data.agentId,
       },
+      body: data.requestBody,
+      mediaType: 'application/json',
       errors: {
         422: 'Validation Error',
       },

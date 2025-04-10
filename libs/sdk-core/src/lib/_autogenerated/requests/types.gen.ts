@@ -3839,10 +3839,11 @@ export type CreateAgentResponse = AgentState;
 
 export type ExportAgentSerializedData = {
   agentId: string;
+  requestBody?: AgentSchema | null;
   userId?: string | null;
 };
 
-export type ExportAgentSerializedResponse = AgentSchema;
+export type ExportAgentSerializedResponse = unknown;
 
 export type ImportAgentSerializedData = {
   /**
@@ -5203,7 +5204,7 @@ export type $OpenApiTs = {
         /**
          * Successful Response
          */
-        200: AgentSchema;
+        200: unknown;
         /**
          * Validation Error
          */

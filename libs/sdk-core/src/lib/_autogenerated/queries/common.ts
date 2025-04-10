@@ -24,6 +24,7 @@ import {
   VoiceService,
 } from '../requests/services.gen';
 import {
+  AgentSchema,
   IdentityType,
   ManagerType,
   MessageRole,
@@ -334,15 +335,17 @@ export const useAgentsServiceExportAgentSerializedKey =
 export const UseAgentsServiceExportAgentSerializedKeyFn = (
   {
     agentId,
+    requestBody,
     userId,
   }: {
     agentId: string;
+    requestBody?: AgentSchema;
     userId?: string;
   },
   queryKey?: Array<unknown>,
 ) => [
   useAgentsServiceExportAgentSerializedKey,
-  ...(queryKey ?? [{ agentId, userId }]),
+  ...(queryKey ?? [{ agentId, requestBody, userId }]),
 ];
 export type AgentsServiceRetrieveAgentContextWindowDefaultResponse = Awaited<
   ReturnType<typeof AgentsService.retrieveAgentContextWindow>

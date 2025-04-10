@@ -22,6 +22,7 @@ import {
   UsersService,
 } from '../requests/services.gen';
 import {
+  AgentSchema,
   IdentityType,
   ManagerType,
   MessageRole,
@@ -497,11 +498,12 @@ export const useAgentsServiceListAgentsSuspense = <
   });
 /**
  * Export Agent Serialized
- * Export the serialized JSON representation of an agent.
+ * Export the serialized JSON representation of an agent, formatted with indentation.
  * @param data The data for the request.
  * @param data.agentId
  * @param data.userId
- * @returns AgentSchema Successful Response
+ * @param data.requestBody
+ * @returns unknown Successful Response
  * @throws ApiError
  */
 export const useAgentsServiceExportAgentSerializedSuspense = <
@@ -511,9 +513,11 @@ export const useAgentsServiceExportAgentSerializedSuspense = <
 >(
   {
     agentId,
+    requestBody,
     userId,
   }: {
     agentId: string;
+    requestBody?: AgentSchema;
     userId?: string;
   },
   queryKey?: TQueryKey,
@@ -521,11 +525,15 @@ export const useAgentsServiceExportAgentSerializedSuspense = <
 ) =>
   useSuspenseQuery<TData, TError>({
     queryKey: Common.UseAgentsServiceExportAgentSerializedKeyFn(
-      { agentId, userId },
+      { agentId, requestBody, userId },
       queryKey,
     ),
     queryFn: () =>
-      AgentsService.exportAgentSerialized({ agentId, userId }) as TData,
+      AgentsService.exportAgentSerialized({
+        agentId,
+        requestBody,
+        userId,
+      }) as TData,
     ...options,
   });
 /**

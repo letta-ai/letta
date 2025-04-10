@@ -22,6 +22,7 @@ import {
   UsersService,
 } from '../requests/services.gen';
 import {
+  AgentSchema,
   IdentityType,
   ManagerType,
   MessageRole,
@@ -408,29 +409,34 @@ export const prefetchUseAgentsServiceListAgents = (
   });
 /**
  * Export Agent Serialized
- * Export the serialized JSON representation of an agent.
+ * Export the serialized JSON representation of an agent, formatted with indentation.
  * @param data The data for the request.
  * @param data.agentId
  * @param data.userId
- * @returns AgentSchema Successful Response
+ * @param data.requestBody
+ * @returns unknown Successful Response
  * @throws ApiError
  */
 export const prefetchUseAgentsServiceExportAgentSerialized = (
   queryClient: QueryClient,
   {
     agentId,
+    requestBody,
     userId,
   }: {
     agentId: string;
+    requestBody?: AgentSchema;
     userId?: string;
   },
 ) =>
   queryClient.prefetchQuery({
     queryKey: Common.UseAgentsServiceExportAgentSerializedKeyFn({
       agentId,
+      requestBody,
       userId,
     }),
-    queryFn: () => AgentsService.exportAgentSerialized({ agentId, userId }),
+    queryFn: () =>
+      AgentsService.exportAgentSerialized({ agentId, requestBody, userId }),
   });
 /**
  * Retrieve Agent Context Window

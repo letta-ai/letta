@@ -5271,8 +5271,13 @@ export const get_Export_agent_serialized = {
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
     }),
+    body: z.union([
+      AgentSchema,
+      z.null(),
+      z.array(z.union([AgentSchema, z.null()])),
+    ]),
   }),
-  response: AgentSchema,
+  response: z.unknown(),
 };
 
 export type post_Import_agent_serialized = typeof post_Import_agent_serialized;
