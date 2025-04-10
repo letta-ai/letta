@@ -74,6 +74,10 @@ export function useSetOnboardingStep() {
         },
         {
           onSuccess: () => {
+            void queryClient.invalidateQueries({
+              queryKey: webApiQueryKeys.organizations.getOrganizationCredits,
+            });
+
             if (payload.onSuccess) {
               payload.onSuccess();
             }
@@ -81,7 +85,7 @@ export function useSetOnboardingStep() {
         },
       );
     },
-    [mutate, handleUpdateStatus],
+    [mutate, queryClient, handleUpdateStatus],
   );
 
   return { setOnboardingStep, isPending, isSuccess };
