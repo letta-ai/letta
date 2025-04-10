@@ -8,8 +8,10 @@ import {
   VStack,
 } from '@letta-cloud/ui-component-library';
 import {
+  AgentsService,
   type AgentState,
-  useAgentsServiceListAgents,
+  type ListAgentsResponse,
+  UseAgentsServiceListAgentsKeyFn,
 } from '@letta-cloud/sdk-core';
 import type { ColumnDef } from '@tanstack/react-table';
 import React, { useEffect, useMemo, useState } from 'react';
@@ -18,53 +20,97 @@ import { useTranslations } from '@letta-cloud/translations';
 import { CreateLocalAgentDialog } from './CreateLocalAgentDialog/CreateLocalAgentDialog';
 import { useServerStatus } from '../../hooks/useServerStatus/useServerStatus';
 import { ImportAgentsDialog } from '@letta-cloud/ui-ade-components';
-
-const LIMIT = 10;
+import { useDebouncedValue } from '@mantine/hooks';
+import { useInfiniteQuery } from '@tanstack/react-query';
+import type { InfiniteData } from '@tanstack/query-core';
 
 export function Agents() {
   const t = useTranslations('Agents');
   const { formatDateAndTime } = useDateFormatter();
   const status = useServerStatus();
 
-  const { data, isError } = useAgentsServiceListAgents(
-    { limit: 1000 },
-    undefined,
-    {
-      enabled: status,
-      refetchInterval: 2500,
-    },
-  );
-
   const [search, setSearch] = useState<string>('');
 
-  const [offset, setOffset] = useState(0);
-  const [limit, setLimit] = useState(LIMIT);
+  const [page, setPage] = useState<number>(0);
+  const [limit, setLimit] = useState(9);
+
+  const [debouncedSearch] = useDebouncedValue(search, 500);
+  const { data, isFetchingNextPage, isError, fetchNextPage } = useInfiniteQuery<
+    ListAgentsResponse,
+    unknown,
+    InfiniteData<ListAgentsResponse>,
+    unknown[],
+    { after?: string | null }
+  >({
+    queryKey: [
+      'infinite',
+      ...UseAgentsServiceListAgentsKeyFn({
+        queryText: debouncedSearch,
+        limit: limit + 1,
+      }),
+    ],
+    queryFn: ({ pageParam }) => {
+      return AgentsService.listAgents({
+        queryText: debouncedSearch,
+        limit: limit + 1,
+        after: pageParam?.after,
+      });
+    },
+    enabled: status && limit > 0,
+    initialPageParam: { after: null },
+    getNextPageParam: (lastPage) => {
+      if (lastPage.length > limit) {
+        return {
+          after: lastPage[lastPage.length - 2].id,
+        };
+      }
+
+      return undefined;
+    },
+  });
 
   useEffect(() => {
-    setOffset(0);
+    if (!data?.pages) {
+      return;
+    }
+
+    if (page === data.pages.length) {
+      void fetchNextPage();
+    }
+  }, [page, data, fetchNextPage]);
+
+  useEffect(() => {
+    setPage(0);
   }, [search]);
+
+  const isLoadingPage = useMemo(() => {
+    if (!data) {
+      return true;
+    }
+
+    if (isFetchingNextPage && !data.pages[page]) {
+      return true;
+    }
+
+    return false;
+  }, [data, isFetchingNextPage, page]);
+
+  const hasNextPage = useMemo(() => {
+    if (!data?.pages?.[page]) {
+      return false;
+    }
+
+    return data.pages[page].length > limit;
+  }, [data, page, limit]);
 
   const filteredData = useMemo(() => {
     if (!data) {
       return [];
     }
 
-    return data?.filter(({ name }) =>
-      name.toLowerCase().includes(search.toLowerCase()),
-    );
-  }, [data, search]);
+    return data.pages?.[page]?.slice(0, limit) || [];
+  }, [data, page, limit]);
 
-  const pagedData = useMemo(() => {
-    return filteredData.slice(offset, offset + limit);
-  }, [filteredData, offset, limit]);
-
-  const hasNextPage = useMemo(() => {
-    if (!data) {
-      return false;
-    }
-
-    return data.length > offset + LIMIT;
-  }, [data, offset]);
   const columns: Array<ColumnDef<AgentState>> = useMemo(
     () => [
       {
@@ -124,17 +170,17 @@ export function Agents() {
       <VStack fullWidth fullHeight paddingX="small" paddingTop="small">
         <DataTable
           autofitHeight
-          offset={offset}
+          onSetPage={setPage}
+          page={page}
           searchValue={search}
           onSearch={!isError ? setSearch : undefined}
           onLimitChange={setLimit}
           limit={limit}
           hasNextPage={hasNextPage}
           showPagination
-          onSetOffset={setOffset}
           columns={columns}
-          data={pagedData}
-          isLoading={!data}
+          data={filteredData}
+          isLoading={isLoadingPage}
           loadingText={t('table.loading')}
           noResultsText={t('table.noResults')}
         />
