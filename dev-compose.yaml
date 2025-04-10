@@ -1,11 +1,6 @@
 services:
   letta_db:
     image: ${LETTA_PG_IMAGE:-pgvector/pgvector:0.6.0-pg15}
-    networks:
-      default:
-        aliases:
-          - pgvector_db
-          - letta-db
     environment:
       - POSTGRES_USER=${LETTA_PG_USER:-letta}
       - POSTGRES_PASSWORD=${LETTA_PG_PASSWORD:-letta}
@@ -33,8 +28,8 @@ services:
       - LETTA_PG_DB=${LETTA_PG_DB:-letta}
       - LETTA_PG_USER=${LETTA_PG_USER:-letta}
       - LETTA_PG_PASSWORD=${LETTA_PG_PASSWORD:-letta}
-      - LETTA_PG_HOST=pgvector_db
-      - LETTA_PG_PORT=5432
+      - LETTA_PG_HOST=${LETTA_PG_HOST:-letta_db}
+      - LETTA_PG_PORT=${LETTA_PG_PORT:-5432}
       - LETTA_DEBUG=True
       - OPENAI_API_KEY=${OPENAI_API_KEY}
       - GROQ_API_KEY=${GROQ_API_KEY}
