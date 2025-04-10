@@ -28,7 +28,7 @@ class LLMBatchManager:
         self.session_maker = db_context
 
     @enforce_types
-    def create_batch_request(
+    def create_batch_job(
         self,
         llm_provider: ProviderType,
         create_batch_response: BetaMessageBatch,

@@ -27,3 +27,7 @@ class LettaStreamingRequest(LettaRequest):
         default=False,
         description="Flag to determine if individual tokens should be streamed. Set to True for token streaming (requires stream_steps = True).",
     )
+
+
+class LettaBatchRequest(LettaRequest):
+    agent_id: str = Field(..., description="The ID of the agent to send this batch request for")

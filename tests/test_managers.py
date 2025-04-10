@@ -4680,7 +4680,7 @@ def test_list_tags(server: SyncServer, default_user, default_organization):
 
 
 def test_create_and_get_batch_request(server, default_user, dummy_beta_message_batch):
-    batch = server.batch_manager.create_batch_request(
+    batch = server.batch_manager.create_batch_job(
         llm_provider=ProviderType.anthropic,
         status=JobStatus.created,
         create_batch_response=dummy_beta_message_batch,
@@ -4693,7 +4693,7 @@ def test_create_and_get_batch_request(server, default_user, dummy_beta_message_b
 
 
 def test_update_batch_status(server, default_user, dummy_beta_message_batch):
-    batch = server.batch_manager.create_batch_request(
+    batch = server.batch_manager.create_batch_job(
         llm_provider=ProviderType.anthropic,
         status=JobStatus.created,
         create_batch_response=dummy_beta_message_batch,
@@ -4715,7 +4715,7 @@ def test_update_batch_status(server, default_user, dummy_beta_message_batch):
 
 
 def test_create_and_get_batch_item(server, default_user, sarah_agent, dummy_beta_message_batch, dummy_llm_config, dummy_step_state):
-    batch = server.batch_manager.create_batch_request(
+    batch = server.batch_manager.create_batch_job(
         llm_provider=ProviderType.anthropic,
         status=JobStatus.created,
         create_batch_response=dummy_beta_message_batch,
@@ -4741,7 +4741,7 @@ def test_create_and_get_batch_item(server, default_user, sarah_agent, dummy_beta
 def test_update_batch_item(
     server, default_user, sarah_agent, dummy_beta_message_batch, dummy_llm_config, dummy_step_state, dummy_successful_response
 ):
-    batch = server.batch_manager.create_batch_request(
+    batch = server.batch_manager.create_batch_job(
         llm_provider=ProviderType.anthropic,
         status=JobStatus.created,
         create_batch_response=dummy_beta_message_batch,
@@ -4773,7 +4773,7 @@ def test_update_batch_item(
 
 
 def test_delete_batch_item(server, default_user, sarah_agent, dummy_beta_message_batch, dummy_llm_config, dummy_step_state):
-    batch = server.batch_manager.create_batch_request(
+    batch = server.batch_manager.create_batch_job(
         llm_provider=ProviderType.anthropic,
         status=JobStatus.created,
         create_batch_response=dummy_beta_message_batch,
