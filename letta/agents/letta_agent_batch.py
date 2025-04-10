@@ -59,7 +59,7 @@ class LettaAgentBatch:
 
         for batch_request in batch_requests:
             agent_id = batch_request.agent_id
-            agent_state = self.agent_manager.get_agent_by_id(agent_id)
+            agent_state = self.agent_manager.get_agent_by_id(agent_id, actor=self.actor)
             agent_states.append(agent_state)
             agent_messages_mapping[agent_id] = self.get_in_context_messages_per_agent(
                 agent_state=agent_state, input_messages=batch_request.messages
@@ -102,7 +102,7 @@ class LettaAgentBatch:
             )
 
         return LettaBatchResponse(
-            batch_id=batch_job.id, statue=batch_job.status, last_polled_at=batch_job.last_polled_at, created_at=batch_job.created_at
+            batch_id=batch_job.id, status=batch_job.status, last_polled_at=get_utc_time(), created_at=batch_job.created_at
         )
 
     async def resume_step_after_request(self, batch_id: str):
@@ -123,7 +123,7 @@ class LettaAgentBatch:
 
     # TODO: Make this a bullk function
     def _rebuild_memory(self, in_context_messages: List[Message], agent_state: AgentState) -> List[Message]:
-        self.agent_manager.refresh_memory(agent_state=agent_state, actor=self.actor)
+        agent_state = self.agent_manager.refresh_memory(agent_state=agent_state, actor=self.actor)
 
         # TODO: This is a pretty brittle pattern established all over our code, need to get rid of this
         curr_system_message = in_context_messages[0]
