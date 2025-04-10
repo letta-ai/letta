@@ -3739,6 +3739,56 @@ export const $DynamicManager = {
   title: 'DynamicManager',
 } as const;
 
+export const $DynamicManagerUpdate = {
+  properties: {
+    manager_type: {
+      type: 'string',
+      const: 'dynamic',
+      title: 'Manager Type',
+      description: '',
+      default: 'dynamic',
+    },
+    manager_agent_id: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Manager Agent Id',
+      description: '',
+    },
+    termination_token: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Termination Token',
+      description: '',
+    },
+    max_turns: {
+      anyOf: [
+        {
+          type: 'integer',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Max Turns',
+      description: '',
+    },
+  },
+  type: 'object',
+  title: 'DynamicManagerUpdate',
+} as const;
+
 export const $E2BSandboxConfig = {
   properties: {
     timeout: {
@@ -4418,25 +4468,25 @@ export const $GroupUpdate = {
         {
           oneOf: [
             {
-              $ref: '#/components/schemas/RoundRobinManager',
+              $ref: '#/components/schemas/RoundRobinManagerUpdate',
             },
             {
-              $ref: '#/components/schemas/SupervisorManager',
+              $ref: '#/components/schemas/SupervisorManagerUpdate',
             },
             {
-              $ref: '#/components/schemas/DynamicManager',
+              $ref: '#/components/schemas/DynamicManagerUpdate',
             },
             {
-              $ref: '#/components/schemas/SleeptimeManager',
+              $ref: '#/components/schemas/SleeptimeManagerUpdate',
             },
           ],
           discriminator: {
             propertyName: 'manager_type',
             mapping: {
-              dynamic: '#/components/schemas/DynamicManager',
-              round_robin: '#/components/schemas/RoundRobinManager',
-              sleeptime: '#/components/schemas/SleeptimeManager',
-              supervisor: '#/components/schemas/SupervisorManager',
+              dynamic: '#/components/schemas/DynamicManagerUpdate',
+              round_robin: '#/components/schemas/RoundRobinManagerUpdate',
+              sleeptime: '#/components/schemas/SleeptimeManagerUpdate',
+              supervisor: '#/components/schemas/SupervisorManagerUpdate',
             },
           },
         },
@@ -6916,6 +6966,32 @@ export const $RoundRobinManager = {
   title: 'RoundRobinManager',
 } as const;
 
+export const $RoundRobinManagerUpdate = {
+  properties: {
+    manager_type: {
+      type: 'string',
+      const: 'round_robin',
+      title: 'Manager Type',
+      description: '',
+      default: 'round_robin',
+    },
+    max_turns: {
+      anyOf: [
+        {
+          type: 'integer',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Max Turns',
+      description: '',
+    },
+  },
+  type: 'object',
+  title: 'RoundRobinManagerUpdate',
+} as const;
+
 export const $Run = {
   properties: {
     created_by_id: {
@@ -7419,6 +7495,44 @@ export const $SleeptimeManager = {
   type: 'object',
   required: ['manager_agent_id'],
   title: 'SleeptimeManager',
+} as const;
+
+export const $SleeptimeManagerUpdate = {
+  properties: {
+    manager_type: {
+      type: 'string',
+      const: 'sleeptime',
+      title: 'Manager Type',
+      description: '',
+      default: 'sleeptime',
+    },
+    manager_agent_id: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Manager Agent Id',
+      description: '',
+    },
+    sleeptime_agent_frequency: {
+      anyOf: [
+        {
+          type: 'integer',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Sleeptime Agent Frequency',
+      description: '',
+    },
+  },
+  type: 'object',
+  title: 'SleeptimeManagerUpdate',
 } as const;
 
 export const $Source = {
@@ -7957,6 +8071,33 @@ export const $SupervisorManager = {
   type: 'object',
   required: ['manager_agent_id'],
   title: 'SupervisorManager',
+} as const;
+
+export const $SupervisorManagerUpdate = {
+  properties: {
+    manager_type: {
+      type: 'string',
+      const: 'supervisor',
+      title: 'Manager Type',
+      description: '',
+      default: 'supervisor',
+    },
+    manager_agent_id: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Manager Agent Id',
+      description: '',
+    },
+  },
+  type: 'object',
+  required: ['manager_agent_id'],
+  title: 'SupervisorManagerUpdate',
 } as const;
 
 export const $SystemMessage = {

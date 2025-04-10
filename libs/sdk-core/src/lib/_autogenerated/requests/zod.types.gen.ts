@@ -3016,6 +3016,20 @@ export const DynamicManager = z.object({
     .optional(),
 });
 
+export type DynamicManagerUpdate = z.infer<typeof DynamicManagerUpdate>;
+export const DynamicManagerUpdate = z.object({
+  manager_type: z.string().optional(),
+  manager_agent_id: z
+    .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+    .optional(),
+  termination_token: z
+    .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+    .optional(),
+  max_turns: z
+    .union([z.number(), z.null(), z.array(z.union([z.number(), z.null()]))])
+    .optional(),
+});
+
 export type E2BSandboxConfig = z.infer<typeof E2BSandboxConfig>;
 export const E2BSandboxConfig = z.object({
   timeout: z.number().optional(),
@@ -3154,6 +3168,35 @@ export const GroupCreate = z.object({
   shared_block_ids: z.union([z.array(z.string()), z.undefined()]).optional(),
 });
 
+export type RoundRobinManagerUpdate = z.infer<typeof RoundRobinManagerUpdate>;
+export const RoundRobinManagerUpdate = z.object({
+  manager_type: z.string().optional(),
+  max_turns: z
+    .union([z.number(), z.null(), z.array(z.union([z.number(), z.null()]))])
+    .optional(),
+});
+
+export type SupervisorManagerUpdate = z.infer<typeof SupervisorManagerUpdate>;
+export const SupervisorManagerUpdate = z.object({
+  manager_type: z.union([z.string(), z.undefined()]).optional(),
+  manager_agent_id: z.union([
+    z.string(),
+    z.null(),
+    z.array(z.union([z.string(), z.null()])),
+  ]),
+});
+
+export type SleeptimeManagerUpdate = z.infer<typeof SleeptimeManagerUpdate>;
+export const SleeptimeManagerUpdate = z.object({
+  manager_type: z.string().optional(),
+  manager_agent_id: z
+    .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+    .optional(),
+  sleeptime_agent_frequency: z
+    .union([z.number(), z.null(), z.array(z.union([z.number(), z.null()]))])
+    .optional(),
+});
+
 export type GroupUpdate = z.infer<typeof GroupUpdate>;
 export const GroupUpdate = z.object({
   agent_ids: z
@@ -3168,17 +3211,17 @@ export const GroupUpdate = z.object({
     .optional(),
   manager_config: z
     .union([
-      RoundRobinManager,
-      SupervisorManager,
-      DynamicManager,
-      SleeptimeManager,
+      RoundRobinManagerUpdate,
+      SupervisorManagerUpdate,
+      DynamicManagerUpdate,
+      SleeptimeManagerUpdate,
       z.null(),
       z.array(
         z.union([
-          RoundRobinManager,
-          SupervisorManager,
-          DynamicManager,
-          SleeptimeManager,
+          RoundRobinManagerUpdate,
+          SupervisorManagerUpdate,
+          DynamicManagerUpdate,
+          SleeptimeManagerUpdate,
           z.null(),
         ]),
       ),

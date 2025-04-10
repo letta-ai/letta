@@ -1182,6 +1182,13 @@ export type DynamicManager = {
   max_turns?: number | null;
 };
 
+export type DynamicManagerUpdate = {
+  manager_type?: 'dynamic';
+  manager_agent_id?: string | null;
+  termination_token?: string | null;
+  max_turns?: number | null;
+};
+
 export type E2BSandboxConfig = {
   /**
    * Time limit for the sandbox (in seconds).
@@ -1425,10 +1432,10 @@ export type GroupUpdate = {
   agent_ids?: Array<string> | null;
   description?: string | null;
   manager_config?:
-    | RoundRobinManager
-    | SupervisorManager
-    | DynamicManager
-    | SleeptimeManager
+    | RoundRobinManagerUpdate
+    | SupervisorManagerUpdate
+    | DynamicManagerUpdate
+    | SleeptimeManagerUpdate
     | null;
   shared_block_ids?: Array<string> | null;
 };
@@ -2479,6 +2486,11 @@ export type RoundRobinManager = {
   max_turns?: number | null;
 };
 
+export type RoundRobinManagerUpdate = {
+  manager_type?: 'round_robin';
+  max_turns?: number | null;
+};
+
 /**
  * Representation of a run, which is a job with a 'run' prefix in its ID.
  * Inherits all fields and behavior from Job except for the ID prefix.
@@ -2680,6 +2692,12 @@ export type SandboxType = 'e2b' | 'local';
 export type SleeptimeManager = {
   manager_type?: 'sleeptime';
   manager_agent_id: string;
+  sleeptime_agent_frequency?: number | null;
+};
+
+export type SleeptimeManagerUpdate = {
+  manager_type?: 'sleeptime';
+  manager_agent_id?: string | null;
   sleeptime_agent_frequency?: number | null;
 };
 
@@ -2897,6 +2915,11 @@ export type Step = {
 export type SupervisorManager = {
   manager_type?: 'supervisor';
   manager_agent_id: string;
+};
+
+export type SupervisorManagerUpdate = {
+  manager_type?: 'supervisor';
+  manager_agent_id: string | null;
 };
 
 /**

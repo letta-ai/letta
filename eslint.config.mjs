@@ -12,7 +12,7 @@ const compat = new FlatCompat({
 
 export default [
   {
-    ignores: ['**/dist', '**/*.config.js', '**/*.config.mjs', '**/*.d.ts', '**/node_modules/**', '**/*.json', "**/*.js"],
+    ignores: ['**/dist', '**/*.config.js', '**/*.config.mjs', '**/*.d.ts', '**/node_modules/**', '**/*.json', "**/*.js", "**/.preview/**"],
   },
   { plugins: { '@nx': nxEslintPlugin } },
   {
