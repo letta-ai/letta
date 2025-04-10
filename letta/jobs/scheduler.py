@@ -17,7 +17,7 @@ def start_cron_jobs(server: SyncServer):
             poll_running_llm_batches,
             args=[server],
             trigger=IntervalTrigger(seconds=settings.poll_running_llm_batches_interval_seconds),
-            next_run_time=datetime.datetime.now(datetime.UTC),
+            next_run_time=datetime.datetime.now(datetime.timezone.utc),
             id="poll_llm_batches",
             name="Poll LLM API batch jobs and update status",
             replace_existing=True,
