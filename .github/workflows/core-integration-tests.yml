@@ -47,7 +47,7 @@ jobs:
           - "integration_test_summarizer.py"
           - "integration_test_tool_execution_sandbox.py"
           - "integration_test_async_tool_sandbox.py"
-          - "integration_test_offline_memory_agent.py"
+          - "integration_test_sleeptime_agent.py"
           - "integration_test_agent_tool_graph.py"
           - "integration_test_composio.py"
           - "integration_test_chat_completions.py"
