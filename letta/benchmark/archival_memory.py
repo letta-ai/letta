@@ -247,12 +247,13 @@ class ArchivalMemoryBenchmark(Benchmark):
         
         print(f"Results written to {csv_path}")
     
-    def _run_subset_test(self, model: str, subset: str) -> Dict[str, Any]:
+    def _run_subset_test(self, model: str, subset: str, workers: int = 1) -> Dict[str, Any]:
         """Run tests for a single subset.
         
         Args:
             model: Model name to use for testing
             subset: Subset name to test
+            workers: Number of parallel workers to use (determines number of agents)
             
         Returns:
             Dictionary with test results
@@ -261,9 +262,9 @@ class ArchivalMemoryBenchmark(Benchmark):
         
         print(f"\n-> Testing subset: {subset} with model: {model}")
         
-        # Create multiple agents for this subset
+        # Create multiple agents for this subset based on the number of workers
         agent_ids = []
-        for _ in range(20):
+        for _ in range(workers):
             agent_state = self.client.create_agent(
                 name=f"benchmark_{uuid.uuid4()}_agent_{subset}",
                 embedding_config=self.client.list_embedding_configs()[0],
@@ -301,6 +302,7 @@ class ArchivalMemoryBenchmark(Benchmark):
         Args:
             **kwargs: Additional keyword arguments
                 csv_path: Path to the CSV file to write results to
+                workers: Number of parallel workers for benchmark execution
                 
         Returns:
             Dictionary containing benchmark results
@@ -310,11 +312,13 @@ class ArchivalMemoryBenchmark(Benchmark):
         
         # Get parameters
         print_messages = kwargs.get("print_messages", False)
+        workers = kwargs.get("workers", 1)
         
         # LongBench benchmark
         print(f"\nRunning LongBench memory benchmark on {len(self.models)} models.")
         print(f"Testing with subsets: {', '.join(self.test_cases)}")
         print(f"Minimum context length: {MIN_TOKEN_CONTEXT_LENGTH} characters")
+        print(f"Using {workers} workers for parallel execution")
         
         # Store results for each model
         # Use the context manager to silence httpx logs during benchmark execution
@@ -329,7 +333,7 @@ class ArchivalMemoryBenchmark(Benchmark):
                 
                 # Run tests sequentially for each subset
                 for subset in self.test_cases:
-                    result = self._run_subset_test(model, subset)
+                    result = self._run_subset_test(model, subset, workers=workers)
                     model_results[subset] = result
                     total_score += result["score"]
                     total_tries += result["total"]
