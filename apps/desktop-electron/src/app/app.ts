@@ -522,12 +522,54 @@ export default class App {
       fs.writeFileSync(pidFile, String(postgresProcess.pid));
     } catch (err) {
       console.error('Failed to start Postgres:', err);
-      electron.dialog.showErrorBox(
-        'Startup Error',
-        `Failed to launch Postgres at ${postgresBinPath}. Please check logs.`,
-      );
-      App.application.quit();
+      throw err;
     }
+  }
+
+  private static async waitForPostgresReady(timeoutMs = 20000): Promise<void> {
+    return new Promise<void>((resolve, reject) => {
+      if (!postgresProcess) {
+        return reject(new Error('No Postgres process to wait on.'));
+      }
+
+      // Example: 'LOG:  database system is ready to accept connections'
+      // const readyRegex = /pineapple to accept connections/i;
+      const readyRegex = /ready to accept connections/i;
+      let resolved = false;
+
+      const timer = setTimeout(() => {
+        if (!resolved) {
+          reject(
+            new Error(
+              `Postgres did not report readiness within ${timeoutMs}ms.`,
+            ),
+          );
+        }
+      }, timeoutMs);
+
+      const onData = (data: Buffer) => {
+        const text = data.toString();
+        console.log(`[postgres] ${text}`);
+        if (readyRegex.test(text)) {
+          // Found the magic "ready to accept connections" line
+          clearTimeout(timer);
+          resolved = true;
+          resolve();
+        }
+      };
+
+      // Postgres often logs to stderr, so watch both
+      postgresProcess.stdout?.on('data', onData);
+      postgresProcess.stderr?.on('data', onData);
+
+      // If Postgres exits before we see "ready", fail
+      postgresProcess.on('close', (code) => {
+        if (!resolved) {
+          clearTimeout(timer);
+          reject(new Error(`Postgres closed prematurely with code ${code}`));
+        }
+      });
+    });
   }
 
   static async stopPostgres() {
@@ -542,30 +584,43 @@ export default class App {
     interceptMainProcessLogs();
 
     // Log PATH before fix-path
-    console.log('[fix-path] PATH before fixPath:', process.env.PATH);
+    console.log('[fp] PATH pre-patch:', process.env.PATH);
     // ensures PATH matches user’s login shell (on macOS/Linux)
     fixPath();
     // Log PATH after fix-path
-    console.log('[fix-path] PATH after fixPath:', process.env.PATH);
+    console.log('[fp] PATH post-patch:', process.env.PATH);
 
     // This method will be called when Electron has finished
     // initialization and is ready to create browser windows.
     // Some APIs can only be used after this event occurs.
-    if (rendererAppName) {
-      await App.killLettaServer();
+    try {
+      if (rendererAppName) {
+        await App.killLettaServer();
 
-      // First start postgres (blocking)
-      await App.startPostgres();
+        App.initMainWindow();
+        App.loadMainWindow();
+        App.mainWindow.webContents.on('did-finish-load', function () {
+          App.lettaStartupRouting();
+        });
 
-      // Then start the Letta Server
-      App.startLettaServer();
-      createWebServer();
+        // First start postgres (blocking)
+        await App.startPostgres();
 
-      App.initMainWindow();
-      App.loadMainWindow();
-      App.mainWindow.webContents.on('did-finish-load', function () {
-        App.lettaStartupRouting();
-      });
+        // Wait until we see "ready to accept connections"
+        await App.waitForPostgresReady();
+
+        // Then start the Letta Server
+        App.startLettaServer();
+        createWebServer();
+      }
+    } catch (err) {
+      console.error('[fatal] Startup Error:', err);
+      electron.dialog.showErrorBox(
+        'Error',
+        `An error occured while trying to start Letta Desktop (${err}). ` +
+          'Please check your logs or contact Letta support via Discord.',
+      );
+      App.application.quit();
     }
   }
 
