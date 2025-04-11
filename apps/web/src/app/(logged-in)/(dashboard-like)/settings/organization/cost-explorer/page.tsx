@@ -212,37 +212,18 @@ function CostSimulator() {
   );
 }
 
-function CostExplorer() {
-  const limit = 150;
-  useInferenceModels();
+interface BrandTableProps {
+  brand: string;
+  costList: CostItemType[];
+}
+
+function BrandTable(props: BrandTableProps) {
+  const { brand, costList } = props;
+  const isBrand = isBrandKey(brand);
 
   const t = useTranslations('organization/costs');
-
-  const queryClient = useQueryClient();
-
-  const { data: costs } = webApi.costs.getStepCosts.useQuery({
-    queryKey: webApiQueryKeys.costs.getStepCosts,
-    enabled: !!limit,
-  });
-
-  useEffect(() => {
-    if (!costs) {
-      return;
-    }
-
-    costs.body.stepCosts.forEach((cost) => {
-      queryClient.setQueryData(
-        webApiQueryKeys.costs.getStepCostByModelId(cost.modelId),
-        {
-          status: 200,
-          body: cost,
-        },
-      );
-    });
-  }, [costs, queryClient]);
-
   const columns: Array<ColumnDef<CostItemType>> = useMemo(() => {
-    if (!costs) {
+    if (!costList) {
       return [];
     }
 
@@ -256,7 +237,7 @@ function CostExplorer() {
 
     const columnSet = new Set<string>();
 
-    costs.body.stepCosts.forEach((cost) => {
+    costList.forEach((cost) => {
       Object.keys(cost.costMap).forEach((windowSize) => {
         columnSet.add(windowSize);
       });
@@ -301,7 +282,56 @@ function CostExplorer() {
         };
       }),
     ];
-  }, [costs, t]);
+  }, [costList, t]);
+
+  if (!isBrand) {
+    return null;
+  }
+
+  return (
+    <VStack key={brand} gap="large">
+      <HStack paddingX="small">
+        <Slot
+          /* eslint-disable-next-line react/forbid-component-props */
+          className="w-6 h-6"
+        >
+          {brandKeyToLogo(brand)}
+        </Slot>
+        <Typography variant="heading5">{brandKeyToName(brand)}</Typography>
+      </HStack>
+      <DataTable key={brand} columns={columns} data={costList} />
+    </VStack>
+  );
+}
+
+function CostExplorer() {
+  const limit = 150;
+  useInferenceModels();
+
+  const t = useTranslations('organization/costs');
+
+  const queryClient = useQueryClient();
+
+  const { data: costs } = webApi.costs.getStepCosts.useQuery({
+    queryKey: webApiQueryKeys.costs.getStepCosts,
+    enabled: !!limit,
+  });
+
+  useEffect(() => {
+    if (!costs) {
+      return;
+    }
+
+    costs.body.stepCosts.forEach((cost) => {
+      queryClient.setQueryData(
+        webApiQueryKeys.costs.getStepCostByModelId(cost.modelId),
+        {
+          status: 200,
+          body: cost,
+        },
+      );
+    });
+  }, [costs, queryClient]);
 
   const costListByBrand = useMemo(() => {
     if (!costs) {
@@ -340,35 +370,13 @@ function CostExplorer() {
         </DashboardPageSection>
       ) : (
         <DashboardPageSection>
-          {costListByBrand.map(([brand, costList]) => {
-            const isBrand = isBrandKey(brand);
-
-            if (!isBrand) {
-              return null;
-            }
-
-            return (
-              <VStack key={brand} gap="large">
-                <HStack paddingX="small">
-                  <Slot
-                    /* eslint-disable-next-line react/forbid-component-props */
-                    className="w-6 h-6"
-                  >
-                    {brandKeyToLogo(brand)}
-                  </Slot>
-                  <Typography variant="heading5">
-                    {brandKeyToName(brand)}
-                  </Typography>
-                </HStack>
-                <DataTable
-                  key={brand}
-                  columns={columns}
-                  data={costList}
-                  isLoading={!costs}
-                />
-              </VStack>
-            );
-          })}
+          <VStack gap="large">
+            {costListByBrand.map(([brand, costList]) => {
+              return (
+                <BrandTable key={brand} brand={brand} costList={costList} />
+              );
+            })}
+          </VStack>
         </DashboardPageSection>
       )}
     </DashboardPageLayout>
