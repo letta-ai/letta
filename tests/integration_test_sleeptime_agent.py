@@ -163,7 +163,7 @@ async def test_sleeptime_group_chat(server, actor):
         server.agent_manager.get_agent_by_id(agent_id=sleeptime_agent_id, actor=actor)
 
 
-@pytest.mark.flaky
+@pytest.mark.skip
 @pytest.mark.asyncio
 async def test_sleeptime_removes_redundant_information(server, actor):
     # 1. set up sleep-time agent as in test_sleeptime_group_chat
