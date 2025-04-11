@@ -139,8 +139,8 @@
       "title": "Version History"
     },
     "DistributionOnboardingStepFinal": {
-      "title": "Deploy your agent",
-      "description": "You've made it to the end, now all you need to do is deploy your agent, you can do this either by following the instructions to the side, or manually creating an agent!",
+      "title": "Deploy Your Agent",
+      "description": "Congratulations! You're ready to deploy your first agent. Follow the guided instructions to use the Letta API to programmatically deploy agents.\n\nOnce deployed, your agent will be ready to chat with users and perform the tasks you've configured.",
       "nextStep": "Complete onboarding"
     },
     "createAgent": "Create manually",
@@ -1465,8 +1465,8 @@
   },
   "DeploymentButton": {
     "OnboardingWrapper": {
-      "title": "Save a template",
-      "description": "Once you've made changes to your template you're happy with, you should save a new version of the template."
+      "title": "Save Your Template",
+      "description": "Save your changes by creating a new version of your template.\n\nEach version is preserved, allowing you to track changes over time and upgrade agents to newer versions when ready."
     }
   },
   "projects/(projectSlug)/agents/(agentId)/AgentPage": {
@@ -1745,8 +1745,8 @@
   },
   "components/TemplateNavigationSidebar": {
     "DistributionOnboardingStep": {
-      "title": "Distribute your agent",
-      "description": "Now that you've saved a template, let's head to the distribution tab to learn how to deploy your agent to Letta Cloud."
+      "title": "Distribute Your Agent",
+      "description": "Ready to deploy your agent to production? The distribution tab lets you create agents from your template and manage them in Letta Cloud.\n\nYou'll find options for API keys, framework integrations, and usage tracking."
     },
     "nav": {
       "templateEditor": "Template Editor",

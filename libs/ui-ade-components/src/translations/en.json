@@ -315,9 +315,9 @@
       "remove": "Remove"
     },
     "AgentSettingsOnboarding": {
-      "title": "The Template",
-      "description": "At the heart of a productionized agent is the agent template, the view shown here let you control the core settings of an agent such as the LLM it uses, embedding settings and general template information.",
-      "next": "Next: Core Memories"
+      "title": "Agent Templates",
+      "description": "Define your agent's blueprint here. Configure the LLM model, tools, and system prompts that form your template - perfect for deploying multiple agents that share the same core design but with personalized information.",
+      "next": "Next: Core Memory (Blocks)"
     },
     "AgentType": {
       "label": "Agent Type",
@@ -453,10 +453,10 @@
     "settings": "{baseName} Settings",
     "advancedSettings": "Advanced settings",
     "ADEOnboarding": {
-      "welcome": "Welcome to your Agent Development Environment (ADE)",
+      "welcome": "Your Agent Development Environment (ADE)",
       "skip": "Pause onboarding",
       "start": "Start tour",
-      "description": "The ADE is where you can create, edit and deploy your agents. This is your workspace to build and test your agents. Press the button below to take a quick tour of the ADE."
+      "description": "Welcome to your workspace for creating, editing and deploying AI agents. Let's start with a quick tour."
     },
     "MobileAppSelector": {
       "apps": "All Apps",
@@ -479,7 +479,7 @@
     "advancedEditorDisabledDueToSimulated": "The advanced editor is not available for simulated memoires, switch back to template to edit",
     "MemoryOnboarding": {
       "title": "Core Memory",
-      "description": "Core Memory is the basis of how you create a letta agent, this content is unique to an agent and can be templated with variables. If you notice there are two tabs, Template, is the initial memory state for any agent you will deploy, and simulated shows off what the specific agent you're talking to's memory looks like.",
+      "description": "Core Memory consists of blocks that form persistent knowledge always available in your agent's context window.\n\nThe 'Template' tab shows the initial memory blocks for agents deployed from this template, while the 'Simulated' tab displays the memory of the current simulated agent (in your ADE).",
       "next": "Next: Tools"
     },
     "SimulatedMemory": {
@@ -694,8 +694,8 @@
     },
     "AgentSimulatorOnboarding": {
       "title": "Agent Simulator",
-      "description": "The agent simulator is where you can test your agent's responses and see how it interacts with your agent setup\n\nThat's the core part of the ADE, now let's save this template and create an agent from it.",
-      "next": "Complete"
+      "description": "Test your agent in real-time before deployment. The simulator lets you chat with your agent, observe how it uses tools, and verify that memory edits are working correctly.\n\nYou've now seen all the core parts of the ADE! Save your template and deploy your first agent to get started.",
+      "next": "Save template and deploy"
     },
     "ShareAgentDialog": {
       "launchLinkDescription": "This agent is managed by a launch link, and cannot be shared.",
@@ -1167,8 +1167,8 @@
   "ADE/Tools": {
     "allTools": "Attached tools",
     "ToolsOnboarding": {
-      "title": "Tools",
-      "description": "Tools are a way to extend the functionality of your agent. You can create custom tools, use Letta tools, or connect to external tools via Composio or MCP servers. Tools are essential for your agent to take custom actions.",
+      "title": "Connect Agents to Tools",
+      "description": "Tools allow your agent to take actions in the real world. Configure custom tools, use built-in Letta tools, or connect to external services via MCP servers.\n\nWith tools, your agent can search the web, access external databases, help users complete tasks, and connect with other applications.",
       "next": "Next: Agent Simulator"
     },
     "DeleteToolButton": {
