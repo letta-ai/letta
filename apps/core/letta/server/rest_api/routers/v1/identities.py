@@ -3,7 +3,7 @@ from typing import TYPE_CHECKING, List, Optional
 from fastapi import APIRouter, Body, Depends, Header, HTTPException, Query
 
 from letta.orm.errors import NoResultFound, UniqueConstraintViolationError
-from letta.schemas.identity import Identity, IdentityCreate, IdentityType, IdentityUpdate
+from letta.schemas.identity import Identity, IdentityCreate, IdentityProperty, IdentityType, IdentityUpdate
 from letta.server.rest_api.utils import get_letta_server
 
 if TYPE_CHECKING:
@@ -122,6 +122,24 @@ def modify_identity(
         import traceback
 
         print(traceback.format_exc())
+        raise HTTPException(status_code=500, detail=f"{e}")
+
+
+@router.put("/{identity_id}/properties", tags=["identities"], operation_id="upsert_identity_properties")
+def upsert_identity_properties(
+    identity_id: str,
+    properties: List[IdentityProperty] = Body(...),
+    server: "SyncServer" = Depends(get_letta_server),
+    actor_id: Optional[str] = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
+):
+    try:
+        actor = server.user_manager.get_user_or_default(user_id=actor_id)
+        return server.identity_manager.upsert_identity_properties(identity_id=identity_id, properties=properties, actor=actor)
+    except HTTPException:
+        raise
+    except NoResultFound as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except Exception as e:
         raise HTTPException(status_code=500, detail=f"{e}")
 
 

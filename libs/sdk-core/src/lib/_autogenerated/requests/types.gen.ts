@@ -4337,6 +4337,14 @@ export type DeleteIdentityData = {
 
 export type DeleteIdentityResponse = unknown;
 
+export type UpsertIdentityPropertiesData = {
+  identityId: string;
+  requestBody: Array<IdentityProperty>;
+  userId?: string | null;
+};
+
+export type UpsertIdentityPropertiesResponse = unknown;
+
 export type ListModelsResponse = Array<LLMConfig>;
 
 export type ListEmbeddingModelsResponse = Array<EmbeddingConfig>;
@@ -5854,6 +5862,21 @@ export type $OpenApiTs = {
     };
     delete: {
       req: DeleteIdentityData;
+      res: {
+        /**
+         * Successful Response
+         */
+        200: unknown;
+        /**
+         * Validation Error
+         */
+        422: HTTPValidationError;
+      };
+    };
+  };
+  '/v1/identities/{identity_id}/properties': {
+    put: {
+      req: UpsertIdentityPropertiesData;
       res: {
         /**
          * Successful Response

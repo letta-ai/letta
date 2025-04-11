@@ -42,6 +42,7 @@ import {
   GroupCreate,
   GroupUpdate,
   IdentityCreate,
+  IdentityProperty,
   IdentityType,
   IdentityUpdate,
   LettaRequest,
@@ -3687,6 +3688,52 @@ export const useIdentitiesServiceUpsertIdentity = <
         requestBody,
         userId,
         xProject,
+      }) as unknown as Promise<TData>,
+    ...options,
+  });
+/**
+ * Upsert Identity Properties
+ * @param data The data for the request.
+ * @param data.identityId
+ * @param data.requestBody
+ * @param data.userId
+ * @returns unknown Successful Response
+ * @throws ApiError
+ */
+export const useIdentitiesServiceUpsertIdentityProperties = <
+  TData = Common.IdentitiesServiceUpsertIdentityPropertiesMutationResult,
+  TError = unknown,
+  TContext = unknown,
+>(
+  options?: Omit<
+    UseMutationOptions<
+      TData,
+      TError,
+      {
+        identityId: string;
+        requestBody: IdentityProperty[];
+        userId?: string;
+      },
+      TContext
+    >,
+    'mutationFn'
+  >,
+) =>
+  useMutation<
+    TData,
+    TError,
+    {
+      identityId: string;
+      requestBody: IdentityProperty[];
+      userId?: string;
+    },
+    TContext
+  >({
+    mutationFn: ({ identityId, requestBody, userId }) =>
+      IdentitiesService.upsertIdentityProperties({
+        identityId,
+        requestBody,
+        userId,
       }) as unknown as Promise<TData>,
     ...options,
   });

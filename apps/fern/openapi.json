@@ -4338,6 +4338,58 @@
         }
       }
     },
+    "/v1/identities/{identity_id}/properties": {
+      "put": {
+        "tags": ["identities", "identities"],
+        "summary": "Upsert Identity Properties",
+        "operationId": "upsert_identity_properties",
+        "parameters": [
+          {
+            "name": "identity_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Identity Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/IdentityProperty"
+                },
+                "title": "Properties"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/models/": {
       "get": {
         "tags": ["models", "llms"],

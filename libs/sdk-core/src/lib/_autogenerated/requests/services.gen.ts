@@ -148,6 +148,8 @@ import type {
   UpdateIdentityResponse,
   DeleteIdentityData,
   DeleteIdentityResponse,
+  UpsertIdentityPropertiesData,
+  UpsertIdentityPropertiesResponse,
   ListModelsResponse,
   ListEmbeddingModelsResponse,
   ListBlocksData,
@@ -2298,6 +2300,34 @@ export class IdentitiesService {
       path: {
         identity_id: data.identityId,
       },
+      errors: {
+        422: 'Validation Error',
+      },
+      headers,
+    });
+  }
+
+  /**
+   * Upsert Identity Properties
+   * @param data The data for the request.
+   * @param data.identityId
+   * @param data.requestBody
+   * @param data.userId
+   * @returns unknown Successful Response
+   * @throws ApiError
+   */
+  public static upsertIdentityProperties(
+    data: UpsertIdentityPropertiesData,
+    headers?: { user_id: string },
+  ): CancelablePromise<UpsertIdentityPropertiesResponse> {
+    return __request(OpenAPI, {
+      method: 'PUT',
+      url: '/v1/identities/{identity_id}/properties',
+      path: {
+        identity_id: data.identityId,
+      },
+      body: data.requestBody,
+      mediaType: 'application/json',
       errors: {
         422: 'Validation Error',
       },

@@ -6278,6 +6278,26 @@ export const delete_Delete_identity = {
   response: z.unknown(),
 };
 
+export type put_Upsert_identity_properties =
+  typeof put_Upsert_identity_properties;
+export const put_Upsert_identity_properties = {
+  method: z.literal('PUT'),
+  path: z.literal('/v1/identities/{identity_id}/properties'),
+  requestFormat: z.literal('json'),
+  parameters: z.object({
+    path: z.object({
+      identity_id: z.string(),
+    }),
+    header: z.object({
+      user_id: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+    }),
+    body: z.array(IdentityProperty),
+  }),
+  response: z.unknown(),
+};
+
 export type get_List_models = typeof get_List_models;
 export const get_List_models = {
   method: z.literal('GET'),
@@ -7442,6 +7462,7 @@ export const EndpointByMethod = {
     '/v1/tools/': put_Upsert_tool,
     '/v1/tools/mcp/servers': put_Add_mcp_server,
     '/v1/identities/': put_Upsert_identity,
+    '/v1/identities/{identity_id}/properties': put_Upsert_identity_properties,
     '/v1/admin/users/': put_Update_user,
   },
 };

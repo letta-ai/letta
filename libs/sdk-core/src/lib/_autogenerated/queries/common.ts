@@ -1431,6 +1431,9 @@ export type ToolsServiceAddMcpServerMutationResult = Awaited<
 export type IdentitiesServiceUpsertIdentityMutationResult = Awaited<
   ReturnType<typeof IdentitiesService.upsertIdentity>
 >;
+export type IdentitiesServiceUpsertIdentityPropertiesMutationResult = Awaited<
+  ReturnType<typeof IdentitiesService.upsertIdentityProperties>
+>;
 export type AdminServiceUpdateUserMutationResult = Awaited<
   ReturnType<typeof AdminService.updateUser>
 >;
