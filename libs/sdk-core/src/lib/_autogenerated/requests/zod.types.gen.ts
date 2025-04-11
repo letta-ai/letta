@@ -3423,6 +3423,45 @@ export const IdentityUpdate = z.object({
     .optional(),
 });
 
+export type IdentityUpsert = z.infer<typeof IdentityUpsert>;
+export const IdentityUpsert = z.object({
+  identifier_key: z.string(),
+  name: z.string(),
+  identity_type: IdentityType,
+  project_id: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  agent_ids: z
+    .union([
+      z.array(z.string()),
+      z.null(),
+      z.array(z.union([z.array(z.string()), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  block_ids: z
+    .union([
+      z.array(z.string()),
+      z.null(),
+      z.array(z.union([z.array(z.string()), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  properties: z
+    .union([
+      z.array(IdentityProperty),
+      z.null(),
+      z.array(z.union([z.array(IdentityProperty), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+});
+
 export type JobStatus = z.infer<typeof JobStatus>;
 export const JobStatus = z.union([
   z.literal('not_started'),
@@ -6218,7 +6257,7 @@ export const put_Upsert_identity = {
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
     }),
-    body: IdentityCreate,
+    body: IdentityUpsert,
   }),
   response: Identity,
 };

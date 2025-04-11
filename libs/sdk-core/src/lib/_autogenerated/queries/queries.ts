@@ -45,6 +45,7 @@ import {
   IdentityProperty,
   IdentityType,
   IdentityUpdate,
+  IdentityUpsert,
   LettaRequest,
   LettaStreamingRequest,
   LocalSandboxConfig,
@@ -3664,7 +3665,7 @@ export const useIdentitiesServiceUpsertIdentity = <
       TData,
       TError,
       {
-        requestBody: IdentityCreate;
+        requestBody: IdentityUpsert;
         userId?: string;
         xProject?: string;
       },
@@ -3677,7 +3678,7 @@ export const useIdentitiesServiceUpsertIdentity = <
     TData,
     TError,
     {
-      requestBody: IdentityCreate;
+      requestBody: IdentityUpsert;
       userId?: string;
       xProject?: string;
     },

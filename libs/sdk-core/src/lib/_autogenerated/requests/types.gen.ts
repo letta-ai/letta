@@ -1607,6 +1607,37 @@ export type IdentityUpdate = {
   properties?: Array<IdentityProperty> | null;
 };
 
+export type IdentityUpsert = {
+  /**
+   * External, user-generated identifier key of the identity.
+   */
+  identifier_key: string;
+  /**
+   * The name of the identity.
+   */
+  name: string;
+  /**
+   * The type of the identity.
+   */
+  identity_type: IdentityType;
+  /**
+   * The project id of the identity, if applicable.
+   */
+  project_id?: string | null;
+  /**
+   * The agent ids that are associated with the identity.
+   */
+  agent_ids?: Array<string> | null;
+  /**
+   * The IDs of the blocks associated with the identity.
+   */
+  block_ids?: Array<string> | null;
+  /**
+   * List of properties associated with the identity.
+   */
+  properties?: Array<IdentityProperty> | null;
+};
+
 export type ImageURL = {
   url: string;
   detail?: 'auto' | 'low' | 'high';
@@ -4308,7 +4339,7 @@ export type CreateIdentityData = {
 export type CreateIdentityResponse = Identity;
 
 export type UpsertIdentityData = {
-  requestBody: IdentityCreate;
+  requestBody: IdentityUpsert;
   userId?: string | null;
   xProject?: string | null;
 };
