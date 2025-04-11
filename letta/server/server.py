@@ -95,7 +95,7 @@ from letta.services.tool_manager import ToolManager
 from letta.services.user_manager import UserManager
 from letta.settings import model_settings, settings, tool_settings
 from letta.sleeptime_agent import SleeptimeAgent
-from letta.tracing import trace_method
+from letta.tracing import log_event, trace_method
 from letta.utils import get_friendly_error_msg, make_key
 
 config = LettaConfig.load()
@@ -706,18 +706,21 @@ class SyncServer(Server):
                 command = command[1:]  # strip the prefix
         return self._command(user_id=user_id, agent_id=agent_id, command=command)
 
+    @trace_method
     def get_cached_llm_config(self, **kwargs):
         key = make_key(**kwargs)
         if key not in self._llm_config_cache:
             self._llm_config_cache[key] = self.get_llm_config_from_handle(**kwargs)
         return self._llm_config_cache[key]
 
+    @trace_method
     def get_cached_embedding_config(self, **kwargs):
         key = make_key(**kwargs)
         if key not in self._embedding_config_cache:
             self._embedding_config_cache[key] = self.get_embedding_config_from_handle(**kwargs)
         return self._embedding_config_cache[key]
 
+    @trace_method
     def create_agent(
         self,
         request: CreateAgent,
@@ -728,26 +731,34 @@ class SyncServer(Server):
         if request.llm_config is None:
             if request.model is None:
                 raise ValueError("Must specify either model or llm_config in request")
-            request.llm_config = self.get_cached_llm_config(
-                handle=request.model,
-                context_window_limit=request.context_window_limit,
-                max_tokens=request.max_tokens,
-                max_reasoning_tokens=request.max_reasoning_tokens,
-                enable_reasoner=request.enable_reasoner,
-            )
+            config_params = {
+                "handle": request.model,
+                "context_window_limit": request.context_window_limit,
+                "max_tokens": request.max_tokens,
+                "max_reasoning_tokens": request.max_reasoning_tokens,
+                "enable_reasoner": request.enable_reasoner,
+            }
+            log_event(name="start get_cached_llm_config", attributes=config_params)
+            request.llm_config = self.get_cached_llm_config(**config_params)
+            log_event(name="end get_cached_llm_config", attributes=config_params)
 
         if request.embedding_config is None:
             if request.embedding is None:
                 raise ValueError("Must specify either embedding or embedding_config in request")
-            request.embedding_config = self.get_cached_embedding_config(
-                handle=request.embedding,
-                embedding_chunk_size=request.embedding_chunk_size or constants.DEFAULT_EMBEDDING_CHUNK_SIZE,
-            )
+            embedding_config_params = {
+                "handle": request.embedding,
+                "embedding_chunk_size": request.embedding_chunk_size or constants.DEFAULT_EMBEDDING_CHUNK_SIZE,
+            }
+            log_event(name="start get_cached_embedding_config", attributes=embedding_config_params)
+            request.embedding_config = self.get_cached_embedding_config(**embedding_config_params)
+            log_event(name="end get_cached_embedding_config", attributes=embedding_config_params)
 
+        log_event(name="start create_agent db")
         main_agent = self.agent_manager.create_agent(
             agent_create=request,
             actor=actor,
         )
+        log_event(name="end create_agent db")
 
         if request.enable_sleeptime:
             main_agent = self.create_sleeptime_agent(main_agent=main_agent, actor=actor)
@@ -1108,6 +1119,7 @@ class SyncServer(Server):
         # Merge the two dictionaries, keeping the values from providers_from_db where conflicts occur
         return {**providers_from_env, **providers_from_db}.values()
 
+    @trace_method
     def get_llm_config_from_handle(
         self,
         handle: str,
@@ -1157,6 +1169,7 @@ class SyncServer(Server):
 
         return llm_config
 
+    @trace_method
     def get_embedding_config_from_handle(
         self, handle: str, embedding_chunk_size: int = constants.DEFAULT_EMBEDDING_CHUNK_SIZE
     ) -> EmbeddingConfig:
@@ -1259,16 +1272,16 @@ class SyncServer(Server):
         if tool_source_type is not None and tool_source_type != "python":
             raise ValueError("Only Python source code is supported at this time")
 
-        # NOTE: we're creating a floating Tool object and NOT persisting to DB
-        tool = Tool(
-            name=tool_name,
-            source_code=tool_source,
-            args_json_schema=tool_args_json_schema,
-        )
-
         # If tools_json_schema is explicitly passed in, override it on the created Tool object
         if tool_json_schema:
-            tool.json_schema = tool_json_schema
+            tool = Tool(name=tool_name, source_code=tool_source, json_schema=tool_json_schema)
+        else:
+            # NOTE: we're creating a floating Tool object and NOT persisting to DB
+            tool = Tool(
+                name=tool_name,
+                source_code=tool_source,
+                args_json_schema=tool_args_json_schema,
+            )
 
         assert tool.name is not None, "Failed to create tool object"
 

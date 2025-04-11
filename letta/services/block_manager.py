@@ -109,11 +109,9 @@ class BlockManager:
 
     @enforce_types
     def get_all_blocks_by_ids(self, block_ids: List[str], actor: Optional[PydanticUser] = None) -> List[PydanticBlock]:
-        """Retrieve blocks by their names."""
+        """Retrieve blocks by their ids."""
         with self.session_maker() as session:
-            blocks = list(
-                map(lambda obj: obj.to_pydantic(), BlockModel.read_multiple(db_session=session, identifiers=block_ids, actor=actor))
-            )
+            blocks = [block.to_pydantic() for block in BlockModel.read_multiple(db_session=session, identifiers=block_ids, actor=actor)]
             # backwards compatibility. previous implementation added None for every block not found.
             blocks.extend([None for _ in range(len(block_ids) - len(blocks))])
             return blocks

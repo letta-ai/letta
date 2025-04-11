@@ -691,7 +691,6 @@ def _prepare_anthropic_request(
     # Convert to Anthropic format
     msg_objs = [
         _Message.dict_to_message(
-            user_id=None,
             agent_id=None,
             openai_message_dict=m,
         )

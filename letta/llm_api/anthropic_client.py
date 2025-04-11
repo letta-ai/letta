@@ -27,6 +27,7 @@ from letta.llm_api.helpers import add_inner_thoughts_to_functions, unpack_all_in
 from letta.llm_api.llm_client_base import LLMClientBase
 from letta.local_llm.constants import INNER_THOUGHTS_KWARG, INNER_THOUGHTS_KWARG_DESCRIPTION
 from letta.log import get_logger
+from letta.schemas.llm_config import LLMConfig
 from letta.schemas.message import Message as PydanticMessage
 from letta.schemas.openai.chat_completion_request import Tool
 from letta.schemas.openai.chat_completion_response import ChatCompletionResponse, Choice, FunctionCall
@@ -59,25 +60,55 @@ class AnthropicClient(LLMClientBase):
         return await client.beta.messages.create(**request_data, betas=["tools-2024-04-04"])
 
     @trace_method
-    async def batch_async(self, requests: Dict[str, dict]) -> BetaMessageBatch:
+    async def send_llm_batch_request_async(
+        self,
+        agent_messages_mapping: Dict[str, List[PydanticMessage]],
+        agent_tools_mapping: Dict[str, List[dict]],
+        agent_llm_config_mapping: Dict[str, LLMConfig],
+    ) -> BetaMessageBatch:
         """
-        Send a batch of requests to the Anthropic API asynchronously.
+        Sends a batch request to the Anthropic API using the provided agent messages and tools mappings.
 
         Args:
-            requests (Dict[str, dict]): A mapping from custom_id to request parameter dicts.
+            agent_messages_mapping: A dict mapping agent_id to their list of PydanticMessages.
+            agent_tools_mapping: A dict mapping agent_id to their list of tool dicts.
+            agent_llm_config_mapping: A dict mapping agent_id to their LLM config
 
         Returns:
-            List[dict]: A list of response dictionaries corresponding to each request.
+            BetaMessageBatch: The batch response from the Anthropic API.
+
+        Raises:
+            ValueError: If the sets of agent_ids in the two mappings do not match.
+            Exception: Transformed errors from the underlying API call.
         """
-        client = self._get_anthropic_client(async_client=True)
+        # Validate that both mappings use the same set of agent_ids.
+        if set(agent_messages_mapping.keys()) != set(agent_tools_mapping.keys()):
+            raise ValueError("Agent mappings for messages and tools must use the same agent_ids.")
 
-        anthropic_requests = [
-            Request(custom_id=custom_id, params=MessageCreateParamsNonStreaming(**params)) for custom_id, params in requests.items()
-        ]
+        try:
+            requests = {
+                agent_id: self.build_request_data(
+                    messages=agent_messages_mapping[agent_id],
+                    llm_config=agent_llm_config_mapping[agent_id],
+                    tools=agent_tools_mapping[agent_id],
+                )
+                for agent_id in agent_messages_mapping
+            }
 
-        batch_response = await client.beta.messages.batches.create(requests=anthropic_requests)
+            client = self._get_anthropic_client(async_client=True)
 
-        return batch_response
+            anthropic_requests = [
+                Request(custom_id=agent_id, params=MessageCreateParamsNonStreaming(**params)) for agent_id, params in requests.items()
+            ]
+
+            batch_response = await client.beta.messages.batches.create(requests=anthropic_requests)
+
+            return batch_response
+
+        except Exception as e:
+            # Enhance logging here if additional context is needed
+            logger.error("Error during send_llm_batch_request_async.", exc_info=True)
+            raise self.handle_llm_error(e)
 
     @trace_method
     def _get_anthropic_client(self, async_client: bool = False) -> Union[anthropic.AsyncAnthropic, anthropic.Anthropic]:
@@ -90,6 +121,7 @@ class AnthropicClient(LLMClientBase):
     def build_request_data(
         self,
         messages: List[PydanticMessage],
+        llm_config: LLMConfig,
         tools: Optional[List[dict]] = None,
         force_tool_call: Optional[str] = None,
     ) -> dict:
@@ -99,20 +131,20 @@ class AnthropicClient(LLMClientBase):
         if not self.use_tool_naming:
             raise NotImplementedError("Only tool calling supported on Anthropic API requests")
 
-        if not self.llm_config.max_tokens:
+        if not llm_config.max_tokens:
             raise ValueError("Max  tokens must be set for anthropic")
 
         data = {
-            "model": self.llm_config.model,
-            "max_tokens": self.llm_config.max_tokens,
-            "temperature": self.llm_config.temperature,
+            "model": llm_config.model,
+            "max_tokens": llm_config.max_tokens,
+            "temperature": llm_config.temperature,
         }
 
         # Extended Thinking
-        if self.llm_config.enable_reasoner:
+        if llm_config.enable_reasoner:
             data["thinking"] = {
                 "type": "enabled",
-                "budget_tokens": self.llm_config.max_reasoning_tokens,
+                "budget_tokens": llm_config.max_reasoning_tokens,
             }
             # `temperature` may only be set to 1 when thinking is enabled. Please consult our documentation at https://docs.anthropic.com/en/docs/build-with-claude/extended-thinking#important-considerations-when-using-extended-thinking'
             data["temperature"] = 1.0
@@ -132,13 +164,13 @@ class AnthropicClient(LLMClientBase):
             tools_for_request = [Tool(function=f) for f in tools if f["name"] == force_tool_call]
 
             # need to have this setting to be able to put inner thoughts in kwargs
-            if not self.llm_config.put_inner_thoughts_in_kwargs:
+            if not llm_config.put_inner_thoughts_in_kwargs:
                 logger.warning(
                     f"Force setting put_inner_thoughts_in_kwargs to True for Claude because there is a forced tool call: {force_tool_call}"
                 )
-                self.llm_config.put_inner_thoughts_in_kwargs = True
+                llm_config.put_inner_thoughts_in_kwargs = True
         else:
-            if self.llm_config.put_inner_thoughts_in_kwargs:
+            if llm_config.put_inner_thoughts_in_kwargs:
                 # tool_choice_type other than "auto" only plays nice if thinking goes inside the tool calls
                 tool_choice = {"type": "any", "disable_parallel_tool_use": True}
             else:
@@ -151,7 +183,7 @@ class AnthropicClient(LLMClientBase):
 
         # Add inner thoughts kwarg
         # TODO: Can probably make this more efficient
-        if tools_for_request and len(tools_for_request) > 0 and self.llm_config.put_inner_thoughts_in_kwargs:
+        if tools_for_request and len(tools_for_request) > 0 and llm_config.put_inner_thoughts_in_kwargs:
             tools_with_inner_thoughts = add_inner_thoughts_to_functions(
                 functions=[t.function.model_dump() for t in tools_for_request],
                 inner_thoughts_key=INNER_THOUGHTS_KWARG,
@@ -173,7 +205,7 @@ class AnthropicClient(LLMClientBase):
         data["messages"] = [
             m.to_anthropic_dict(
                 inner_thoughts_xml_tag=inner_thoughts_xml_tag,
-                put_inner_thoughts_in_kwargs=bool(self.llm_config.put_inner_thoughts_in_kwargs),
+                put_inner_thoughts_in_kwargs=bool(llm_config.put_inner_thoughts_in_kwargs),
             )
             for m in messages[1:]
         ]
@@ -189,7 +221,7 @@ class AnthropicClient(LLMClientBase):
         # https://docs.anthropic.com/en/api/messages#body-messages
         # NOTE: cannot prefill with tools for opus:
         # Your API request included an `assistant` message in the final position, which would pre-fill the `assistant` response. When using tools with "claude-3-opus-20240229"
-        if prefix_fill and not self.llm_config.put_inner_thoughts_in_kwargs and "opus" not in data["model"]:
+        if prefix_fill and not llm_config.put_inner_thoughts_in_kwargs and "opus" not in data["model"]:
             data["messages"].append(
                 # Start the thinking process for the assistant
                 {"role": "assistant", "content": f"<{inner_thoughts_xml_tag}>"},
@@ -323,13 +355,19 @@ class AnthropicClient(LLMClientBase):
                 if content_part.type == "text":
                     content = strip_xml_tags(string=content_part.text, tag="thinking")
                 if content_part.type == "tool_use":
+                    # hack for tool rules
+                    input = json.loads(json.dumps(content_part.input))
+                    if "id" in input and input["id"].startswith("toolu_") and "function" in input:
+                        arguments = str(input["function"]["arguments"])
+                    else:
+                        arguments = json.dumps(content_part.input, indent=2)
                     tool_calls = [
                         ToolCall(
                             id=content_part.id,
                             type="function",
                             function=FunctionCall(
                                 name=content_part.name,
-                                arguments=json.dumps(content_part.input, indent=2),
+                                arguments=arguments,
                             ),
                         )
                     ]

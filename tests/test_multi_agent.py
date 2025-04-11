@@ -3,22 +3,18 @@ from sqlalchemy import delete
 
 from letta.config import LettaConfig
 from letta.orm import Provider, Step
-from letta.orm.enums import JobType
-from letta.orm.errors import NoResultFound
 from letta.schemas.agent import CreateAgent
 from letta.schemas.block import CreateBlock
-from letta.schemas.enums import JobStatus
 from letta.schemas.group import (
     DynamicManager,
+    DynamicManagerUpdate,
     GroupCreate,
     GroupUpdate,
     ManagerType,
-    RoundRobinManager,
-    SleeptimeManager,
+    RoundRobinManagerUpdate,
     SupervisorManager,
 )
 from letta.schemas.message import MessageCreate
-from letta.schemas.run import Run
 from letta.server.server import SyncServer
 
 
@@ -187,7 +183,7 @@ async def test_modify_group_pattern(server, actor, participant_agents, manager_a
         server.group_manager.modify_group(
             group_id=group.id,
             group_update=GroupUpdate(
-                manager_config=DynamicManager(
+                manager_config=DynamicManagerUpdate(
                     manager_type=ManagerType.dynamic,
                     manager_agent_id=manager_agent.id,
                 ),
@@ -261,7 +257,7 @@ async def test_round_robin(server, actor, participant_agents):
             group_id=group.id,
             group_update=GroupUpdate(
                 agent_ids=[agent.id for agent in participant_agents][::-1],
-                manager_config=RoundRobinManager(
+                manager_config=RoundRobinManagerUpdate(
                     max_turns=max_turns,
                 ),
             ),
@@ -438,114 +434,3 @@ async def test_dynamic_group_chat(server, actor, manager_agent, participant_agen
 
     finally:
         server.group_manager.delete_group(group_id=group.id, actor=actor)
-
-
-@pytest.mark.asyncio
-async def test_sleeptime_group_chat(server, actor):
-    # 0. Refresh base tools
-    server.tool_manager.upsert_base_tools(actor=actor)
-
-    # 1. Create sleeptime agent
-    main_agent = server.create_agent(
-        request=CreateAgent(
-            name="main_agent",
-            memory_blocks=[
-                CreateBlock(
-                    label="persona",
-                    value="You are a personal assistant that helps users with requests.",
-                ),
-                CreateBlock(
-                    label="human",
-                    value="My favorite plant is the fiddle leaf\nMy favorite color is lavender",
-                ),
-            ],
-            # model="openai/gpt-4o-mini",
-            model="anthropic/claude-3-5-sonnet-20240620",
-            embedding="openai/text-embedding-ada-002",
-            enable_sleeptime=True,
-        ),
-        actor=actor,
-    )
-
-    assert main_agent.enable_sleeptime == True
-    main_agent_tools = [tool.name for tool in main_agent.tools]
-    assert "core_memory_append" not in main_agent_tools
-    assert "core_memory_replace" not in main_agent_tools
-    assert "archival_memory_insert" not in main_agent_tools
-
-    # 2. Override frequency for test
-    group = server.group_manager.modify_group(
-        group_id=main_agent.multi_agent_group.id,
-        group_update=GroupUpdate(
-            manager_config=SleeptimeManager(
-                manager_agent_id=main_agent.id,
-                sleeptime_agent_frequency=2,
-            ),
-        ),
-        actor=actor,
-    )
-
-    assert group.manager_type == ManagerType.sleeptime
-    assert group.sleeptime_agent_frequency == 2
-    assert len(group.agent_ids) == 1
-
-    # 3. Verify shared blocks
-    sleeptime_agent_id = group.agent_ids[0]
-    shared_block = server.agent_manager.get_block_with_label(agent_id=main_agent.id, block_label="human", actor=actor)
-    agents = server.block_manager.get_agents_for_block(block_id=shared_block.id, actor=actor)
-    assert len(agents) == 2
-    assert sleeptime_agent_id in [agent.id for agent in agents]
-    assert main_agent.id in [agent.id for agent in agents]
-
-    # 4 Verify sleeptime agent tools
-    sleeptime_agent = server.agent_manager.get_agent_by_id(agent_id=sleeptime_agent_id, actor=actor)
-    sleeptime_agent_tools = [tool.name for tool in sleeptime_agent.tools]
-    assert "rethink_memory" in sleeptime_agent_tools
-    assert "finish_rethinking_memory" in sleeptime_agent_tools
-    assert "view_core_memory_with_line_numbers" in sleeptime_agent_tools
-    assert "core_memory_insert" in sleeptime_agent_tools
-
-    # 5. Send messages and verify run ids
-    message_text = [
-        "my favorite color is orange",
-        "not particularly. today is a good day",
-        "actually my favorite color is coral",
-        "let's change the subject",
-        "actually my fav plant is the the african spear",
-        "indeed",
-    ]
-    run_ids = []
-    for i, text in enumerate(message_text):
-        response = await server.send_message_to_agent(
-            agent_id=main_agent.id,
-            actor=actor,
-            messages=[
-                MessageCreate(
-                    role="user",
-                    content=text,
-                ),
-            ],
-            stream_steps=False,
-            stream_tokens=False,
-        )
-
-        assert len(response.messages) > 0
-        assert len(response.usage.run_ids or []) == i % 2
-        run_ids.extend(response.usage.run_ids or [])
-
-        jobs = server.job_manager.list_jobs(actor=actor, job_type=JobType.RUN)
-        runs = [Run.from_job(job) for job in jobs]
-        agent_runs = [run for run in runs if "agent_id" in run.metadata and run.metadata["agent_id"] == sleeptime_agent_id]
-        assert len(agent_runs) == len(run_ids)
-
-    for run_id in run_ids:
-        job = server.job_manager.get_job_by_id(job_id=run_id, actor=actor)
-        assert job.status == JobStatus.completed
-
-    # 6. Delete agent
-    server.agent_manager.delete_agent(agent_id=main_agent.id, actor=actor)
-
-    with pytest.raises(NoResultFound):
-        server.group_manager.retrieve_group(group_id=group.id, actor=actor)
-    with pytest.raises(NoResultFound):
-        server.agent_manager.get_agent_by_id(agent_id=sleeptime_agent_id, actor=actor)

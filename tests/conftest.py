@@ -1,7 +1,9 @@
 import logging
+from datetime import datetime, timezone
 from typing import Generator
 
 import pytest
+from anthropic.types.beta.messages import BetaMessageBatch, BetaMessageBatchRequestCounts
 
 from letta.services.organization_manager import OrganizationManager
 from letta.services.user_manager import UserManager
@@ -103,3 +105,25 @@ def print_tool_func():
         return message
 
     yield print_tool
+
+
+@pytest.fixture
+def dummy_beta_message_batch() -> BetaMessageBatch:
+    return BetaMessageBatch(
+        id="msgbatch_013Zva2CMHLNnXjNJJKqJ2EF",
+        archived_at=datetime(2024, 8, 20, 18, 37, 24, 100435, tzinfo=timezone.utc),
+        cancel_initiated_at=datetime(2024, 8, 20, 18, 37, 24, 100435, tzinfo=timezone.utc),
+        created_at=datetime(2024, 8, 20, 18, 37, 24, 100435, tzinfo=timezone.utc),
+        ended_at=datetime(2024, 8, 20, 18, 37, 24, 100435, tzinfo=timezone.utc),
+        expires_at=datetime(2024, 8, 20, 18, 37, 24, 100435, tzinfo=timezone.utc),
+        processing_status="in_progress",
+        request_counts=BetaMessageBatchRequestCounts(
+            canceled=10,
+            errored=30,
+            expired=10,
+            processing=100,
+            succeeded=50,
+        ),
+        results_url="https://api.anthropic.com/v1/messages/batches/msgbatch_013Zva2CMHLNnXjNJJKqJ2EF/results",
+        type="message_batch",
+    )

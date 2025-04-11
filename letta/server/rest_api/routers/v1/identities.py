@@ -3,7 +3,7 @@ from typing import TYPE_CHECKING, List, Optional
 from fastapi import APIRouter, Body, Depends, Header, HTTPException, Query
 
 from letta.orm.errors import NoResultFound, UniqueConstraintViolationError
-from letta.schemas.identity import Identity, IdentityCreate, IdentityType, IdentityUpdate
+from letta.schemas.identity import Identity, IdentityCreate, IdentityProperty, IdentityType, IdentityUpdate, IdentityUpsert
 from letta.server.rest_api.utils import get_letta_server
 
 if TYPE_CHECKING:
@@ -88,7 +88,7 @@ def create_identity(
 
 @router.put("/", tags=["identities"], response_model=Identity, operation_id="upsert_identity")
 def upsert_identity(
-    identity: IdentityCreate = Body(...),
+    identity: IdentityUpsert = Body(...),
     server: "SyncServer" = Depends(get_letta_server),
     actor_id: Optional[str] = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
     x_project: Optional[str] = Header(None, alias="X-Project"),  # Only handled by next js middleware
@@ -114,6 +114,27 @@ def modify_identity(
     try:
         actor = server.user_manager.get_user_or_default(user_id=actor_id)
         return server.identity_manager.update_identity(identity_id=identity_id, identity=identity, actor=actor)
+    except HTTPException:
+        raise
+    except NoResultFound as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except Exception as e:
+        import traceback
+
+        print(traceback.format_exc())
+        raise HTTPException(status_code=500, detail=f"{e}")
+
+
+@router.put("/{identity_id}/properties", tags=["identities"], operation_id="upsert_identity_properties")
+def upsert_identity_properties(
+    identity_id: str,
+    properties: List[IdentityProperty] = Body(...),
+    server: "SyncServer" = Depends(get_letta_server),
+    actor_id: Optional[str] = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
+):
+    try:
+        actor = server.user_manager.get_user_or_default(user_id=actor_id)
+        return server.identity_manager.upsert_identity_properties(identity_id=identity_id, properties=properties, actor=actor)
     except HTTPException:
         raise
     except NoResultFound as e:

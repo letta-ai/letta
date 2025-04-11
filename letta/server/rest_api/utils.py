@@ -19,7 +19,7 @@ from letta.helpers.datetime_helpers import get_utc_time
 from letta.log import get_logger
 from letta.schemas.enums import MessageRole
 from letta.schemas.letta_message_content import OmittedReasoningContent, ReasoningContent, RedactedReasoningContent, TextContent
-from letta.schemas.message import Message
+from letta.schemas.message import Message, MessageCreate
 from letta.schemas.usage import LettaUsageStatistics
 from letta.schemas.user import User
 from letta.server.rest_api.interface import StreamingServerInterface
@@ -140,31 +140,29 @@ def log_error_to_sentry(e):
         sentry_sdk.capture_exception(e)
 
 
-def create_user_message(input_message: dict, agent_id: str, actor: User) -> Message:
+def create_input_messages(input_messages: List[MessageCreate], agent_id: str, actor: User) -> List[Message]:
     """
     Converts a user input message into the internal structured format.
     """
-    # Generate timestamp in the correct format
-    # Skip pytz for performance reasons
-    now = get_utc_time().isoformat()
+    new_messages = []
+    for input_message in input_messages:
+        # Construct the Message object
+        new_message = Message(
+            id=f"message-{uuid.uuid4()}",
+            role=input_message.role,
+            content=input_message.content,
+            name=input_message.name,
+            otid=input_message.otid,
+            organization_id=actor.organization_id,
+            agent_id=agent_id,
+            model=None,
+            tool_calls=None,
+            tool_call_id=None,
+            created_at=get_utc_time(),
+        )
+        new_messages.append(new_message)
 
-    # Format message as structured JSON
-    structured_message = {"type": "user_message", "message": input_message["content"], "time": now}
-
-    # Construct the Message object
-    user_message = Message(
-        id=f"message-{uuid.uuid4()}",
-        role=MessageRole.user,
-        content=[TextContent(text=json.dumps(structured_message, indent=2))],  # Store structured JSON
-        organization_id=actor.organization_id,
-        agent_id=agent_id,
-        model=None,
-        tool_calls=None,
-        tool_call_id=None,
-        created_at=get_utc_time(),
-    )
-
-    return user_message
+    return new_messages
 
 
 def create_letta_messages_from_llm_response(

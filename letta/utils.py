@@ -828,7 +828,7 @@ def parse_json(string) -> dict:
             raise ValueError(f"JSON from string input ({string}) is not a dictionary (type {type(result)}): {result}")
         return result
     except Exception as e:
-        print(f"Error parsing json with json package: {e}")
+        print(f"Error parsing json with json package, falling back to demjson: {e}")
 
     try:
         result = demjson.decode(string)
@@ -836,7 +836,7 @@ def parse_json(string) -> dict:
             raise ValueError(f"JSON from string input ({string}) is not a dictionary (type {type(result)}): {result}")
         return result
     except demjson.JSONDecodeError as e:
-        print(f"Error parsing json with demjson package: {e}")
+        print(f"Error parsing json with demjson package (fatal): {e}")
         raise e
 
 

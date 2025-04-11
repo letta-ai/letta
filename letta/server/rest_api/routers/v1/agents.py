@@ -22,7 +22,6 @@ from letta.schemas.letta_request import LettaRequest, LettaStreamingRequest
 from letta.schemas.letta_response import LettaResponse
 from letta.schemas.memory import ContextWindowOverview, CreateArchivalMemory, Memory
 from letta.schemas.message import MessageCreate
-from letta.schemas.openai.chat_completion_request import UserMessage
 from letta.schemas.passage import Passage, PassageUpdate
 from letta.schemas.run import Run
 from letta.schemas.source import Source
@@ -103,19 +102,25 @@ def list_agents(
     )
 
 
-@router.get("/{agent_id}/export", operation_id="export_agent_serialized", response_model=AgentSchema)
+@router.get("/{agent_id}/export", operation_id="export_agent_serialized")
 def export_agent_serialized(
     agent_id: str,
     server: "SyncServer" = Depends(get_letta_server),
     actor_id: Optional[str] = Header(None, alias="user_id"),
-) -> AgentSchema:
+    # do not remove, used to autogeneration of spec
+    # TODO: Think of a better way to export AgentSchema
+    spec: Optional[AgentSchema] = None,
+) -> JSONResponse:
     """
-    Export the serialized JSON representation of an agent.
+    Export the serialized JSON representation of an agent, formatted with indentation.
     """
     actor = server.user_manager.get_user_or_default(user_id=actor_id)
 
     try:
-        return server.agent_manager.serialize(agent_id=agent_id, actor=actor)
+        agent = server.agent_manager.serialize(agent_id=agent_id, actor=actor)
+        # Convert to JSON with 2-space indentation
+        content = agent.model_dump_json(indent=2)
+        return JSONResponse(content=content, media_type="application/json")
     except NoResultFound:
         raise HTTPException(status_code=404, detail=f"Agent with id={agent_id} not found for user_id={actor.id}.")
 
@@ -610,9 +615,7 @@ async def send_message(
             actor=actor,
         )
 
-        messages = request.messages
-        content = messages[0].content[0].text if messages and not isinstance(messages[0].content, str) else messages[0].content
-        result = await experimental_agent.step(UserMessage(content=content), max_steps=10)
+        result = await experimental_agent.step(request.messages, max_steps=10)
     else:
         result = await server.send_message_to_agent(
             agent_id=agent_id,
@@ -672,10 +675,8 @@ async def send_message_streaming(
             actor=actor,
         )
 
-        messages = request.messages
-        content = messages[0].content[0].text if messages and not isinstance(messages[0].content, str) else messages[0].content
         result = StreamingResponse(
-            experimental_agent.step_stream(UserMessage(content=content), max_steps=10, use_assistant_message=request.use_assistant_message),
+            experimental_agent.step_stream(request.messages, max_steps=10, use_assistant_message=request.use_assistant_message),
             media_type="text/event-stream",
         )
     else:
