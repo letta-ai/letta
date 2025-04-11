@@ -10,6 +10,12 @@
       "options": {
         "command": "tsc --noEmit -p libs/ui-ade-components/tsconfig.json"
       }
+    },
+    "test": {
+      "executor": "@nx/jest:jest",
+      "options": {
+        "jestConfig": "libs/ui-ade-components/jest.config.ts"
+      }
     }
   }
 }

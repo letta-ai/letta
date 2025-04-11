@@ -61,6 +61,7 @@ import { useIdentityTypeToTranslationMap } from '../../IdentitiesTable/hooks/use
 import { getBrandFromModelName } from '@letta-cloud/utils-shared';
 import { useInferenceModels } from '../../hooks/useInferenceModels/useInferenceModels';
 import { useADETour } from '../../hooks/useADETour/useADETour';
+import { getMergedLLMConfig } from './utils/getMergedLLMConfig/getMergedLLMConfig';
 
 interface SelectedModelType {
   icon: React.ReactNode;
@@ -189,9 +190,15 @@ function ModelSelector(props: ModelSelectorProps) {
         (model) => model.model === debouncedModelState.value,
       );
 
-      syncUpdateCurrentAgent(() => ({
-        llm_config: selectedLLMConfig,
-      }));
+      if (!selectedLLMConfig) {
+        return;
+      }
+
+      syncUpdateCurrentAgent((prev) => {
+        return {
+          llm_config: getMergedLLMConfig(selectedLLMConfig, prev.llm_config),
+        };
+      });
     }
   }, [
     llmConfig.model,

@@ -1,10 +1,21 @@
-export default {
-  displayName: 'ui-ade-components',
+/* eslint-disable */
+import type { Config } from 'jest';
+import { pathsToModuleNameMapper } from 'ts-jest';
+
+const config: Config = {
+  displayName: 'letta',
   preset: '../../jest.preset.js',
-  testEnvironment: 'node',
+  testMatch: ['<rootDir>/src/**/*.test.{ts,tsx}'],
   transform: {
-    '^.+\\.[tj]s$': ['ts-jest', { tsconfig: '<rootDir>/tsconfig.spec.json' }],
+    '^(?!.*\\.(js|jsx|ts|tsx|css|json)$)': '@nx/react/plugins/jest',
+    '^.+\\.[tj]sx?$': ['babel-jest', { presets: ['@nx/next/babel'] }],
   },
-  moduleFileExtensions: ['ts', 'js', 'html'],
-  coverageDirectory: '../../coverage/libs/ui-ade-components',
+  moduleNameMapper: pathsToModuleNameMapper({
+    '@letta-cloud/ui-styles': ['../../libs/ui-styles/src/index.ts'],
+  }),
+  testEnvironment: 'jsdom',
+  moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx'],
+  coverageDirectory: '../../coverage/apps/letta',
 };
+
+export default config;
