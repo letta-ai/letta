@@ -1415,7 +1415,10 @@
 
       "properties": {
         "label": "Identity Properties",
-        "tooltip": "Identity properties are used to store additional information about the identity"
+        "tooltip": "Identity properties are used to store additional information about the identity",
+        "errors": {
+          "duplicateKeys": "You have provided duplicate keys, please remove them"
+        }
       },
       "identifierKey": {
         "label": "Unique Key"

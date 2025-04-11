@@ -7,6 +7,7 @@ import { CloseIcon, PlusIcon } from '../../icons';
 import { Button } from '../Button/Button';
 import { useTranslations } from '@letta-cloud/translations';
 import { makeInput, makeRawInput } from '../Form/Form';
+import { cn } from '@letta-cloud/ui-styles';
 
 export interface KeyValue {
   key: string;
@@ -22,6 +23,7 @@ interface KeyValueEditorProps {
   disableKey?: boolean;
   defaultValue?: KeyValue[];
   valuePlaceholder?: string;
+  highlightDuplicateKeys?: boolean;
   disabled?: boolean;
   freezeRows?: boolean;
 }
@@ -34,6 +36,7 @@ function KeyValueEditorPrimitive(props: KeyValueEditorProps) {
     onValueChange: setValue,
     disableKey,
     value,
+    highlightDuplicateKeys,
     freezeRows,
     removeVariableLabel,
     valuePlaceholder,
@@ -87,6 +90,11 @@ function KeyValueEditorPrimitive(props: KeyValueEditorProps) {
     [setValue, keyValuePairs],
   );
 
+  const duplicateKeys = useMemo(() => {
+    const keys = keyValuePairs.map((pair) => pair.key);
+    const duplicates = keys.filter((key, index) => keys.indexOf(key) !== index);
+    return new Set(duplicates);
+  }, [keyValuePairs]);
   const t = useTranslations('ui-component-library/KeyValueEditor');
 
   return (
@@ -102,11 +110,23 @@ function KeyValueEditorPrimitive(props: KeyValueEditorProps) {
         />
       )}
       {keyValuePairs.map(({ key, value }, index) => {
+        const isDuplicateKey = duplicateKeys.has(key) && highlightDuplicateKeys;
+
         return (
           <HStack key={index} gap="small" fullWidth>
-            <HStack className="min-h-biHeight" fullWidth gap={false} border>
+            <HStack
+              className={cn(
+                isDuplicateKey ? 'border-destructive' : '',
+                'min-h-biHeight',
+              )}
+              fullWidth
+              gap={false}
+              border
+            >
               <input
-                className="text-base min-w-[200px] border-r px-2 bg-transparent disabled:bg-background-grey"
+                className={cn(
+                  'text-base min-w-[200px] border-r px-2 bg-transparent disabled:bg-background-grey',
+                )}
                 type="text"
                 value={key}
                 data-testid={`key-value-editor-key-${index}`}

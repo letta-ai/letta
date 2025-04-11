@@ -603,11 +603,13 @@ export default class App {
           App.lettaStartupRouting();
         });
 
-        // First start postgres (blocking)
-        await App.startPostgres();
-
         // Wait until we see "ready to accept connections"
-        await App.waitForPostgresReady();
+        if (!process.env.IGNORE_POSTGRES) {
+          // First start postgres (blocking)
+          await App.startPostgres();
+
+          await App.waitForPostgresReady();
+        }
 
         // Then start the Letta Server
         App.startLettaServer();

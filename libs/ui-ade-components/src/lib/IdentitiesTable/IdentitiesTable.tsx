@@ -6,6 +6,7 @@ import {
   isAPIError,
   useIdentitiesServiceDeleteIdentity,
   useIdentitiesServiceUpdateIdentity,
+  useIdentitiesServiceUpsertIdentityProperties,
 } from '@letta-cloud/sdk-core';
 import type {
   Identity,
@@ -203,8 +204,20 @@ function BasicDetailsEditor(props: BasicDetailsEditorProps) {
 
   const { identity } = props;
 
-  const { mutate, reset, isPending, error } =
-    useIdentitiesServiceUpdateIdentity();
+  const {
+    mutate: updateIdentity,
+    reset: resetUpdateIdentity,
+    isPending: isUpdateIdentityUpdating,
+    error: updateIdentityError,
+  } = useIdentitiesServiceUpdateIdentity();
+
+  const {
+    mutate: updateIdentityProperties,
+    reset: resetUpdateIdentityProperties,
+    isPending: isUpdateIdentityPropertiesUpdating,
+    error: updateIdentityPropertiesError,
+  } = useIdentitiesServiceUpsertIdentityProperties();
+
   const queryClient = useQueryClient();
   const form = useForm<BasicDetailsFormValues>({
     resolver: zodResolver(basicDetailsFormSchema),
@@ -224,66 +237,113 @@ function BasicDetailsEditor(props: BasicDetailsEditorProps) {
     },
   });
 
+  const isPending = useMemo(() => {
+    return isUpdateIdentityPropertiesUpdating || isUpdateIdentityUpdating;
+  }, [isUpdateIdentityPropertiesUpdating, isUpdateIdentityUpdating]);
+
+  const error = useMemo(() => {
+    if (updateIdentityPropertiesError) {
+      return updateIdentityPropertiesError;
+    }
+
+    if (updateIdentityError) {
+      return updateIdentityError;
+    }
+
+    return null;
+  }, [updateIdentityPropertiesError, updateIdentityError]);
+
   const handleSubmit = useCallback(
     (values: BasicDetailsFormValues) => {
-      mutate(
+      // check for duplicate keys
+      const keys = values.properties.map((property) => property.key);
+      const uniqueKeys = new Set(keys);
+
+      if (uniqueKeys.size !== keys.length) {
+        form.setError('properties', {
+          type: 'custom',
+          message: t('BasicDetailsEditor.properties.errors.duplicateKeys'),
+        });
+        return;
+      }
+
+      updateIdentityProperties(
         {
           identityId: identity.id || '',
-          requestBody: {
-            identifier_key: values.identifierKey.trim(),
-            identity_type: values.identityType,
-            name: values.name.trim(),
-            properties: values.properties.map((property) => ({
-              key: property.key.trim(),
-              value: property.value.trim(),
-              type: property.type,
-            })),
-          },
+          requestBody: values.properties.map((property) => ({
+            key: property.key.trim(),
+            value: property.value.trim(),
+            type: property.type,
+          })),
         },
         {
           onSuccess: () => {
-            queryClient.setQueriesData<
-              InfiniteData<ListIdentitiesResponse> | undefined
-            >(
+            updateIdentity(
               {
-                queryKey: UseInfiniteIdentitiesQueryFn([]).slice(0, 1),
-                exact: false,
+                identityId: identity.id || '',
+                requestBody: {
+                  identifier_key: values.identifierKey.trim(),
+                  identity_type: values.identityType,
+                  name: values.name.trim(),
+                },
               },
-              (data) => {
-                if (!data) {
-                  return data;
-                }
-
-                return {
-                  ...data,
-                  pages: data.pages.map((page) => {
-                    return page.map((ide) => {
-                      if (ide.id === identity.id) {
-                        return {
-                          ...identity,
-                          ...values,
-                        };
+              {
+                onSuccess: () => {
+                  queryClient.setQueriesData<
+                    InfiniteData<ListIdentitiesResponse> | undefined
+                  >(
+                    {
+                      queryKey: UseInfiniteIdentitiesQueryFn([]).slice(0, 1),
+                      exact: false,
+                    },
+                    (data) => {
+                      if (!data) {
+                        return data;
                       }
 
-                      return ide;
-                    });
-                  }),
-                };
+                      return {
+                        ...data,
+                        pages: data.pages.map((page) => {
+                          return page.map((ide) => {
+                            if (ide.id === identity.id) {
+                              return {
+                                ...identity,
+                                ...values,
+                              };
+                            }
+
+                            return ide;
+                          });
+                        }),
+                      };
+                    },
+                  );
+
+                  form.reset({
+                    name: values.name,
+                    identifierKey: values.identifierKey,
+                    identityType: values.identityType,
+                    properties: values.properties,
+                  });
+                  resetUpdateIdentity();
+                  resetUpdateIdentityProperties();
+                },
               },
             );
-
-            form.reset({
-              name: values.name,
-              identifierKey: values.identifierKey,
-              identityType: values.identityType,
-              properties: values.properties,
-            });
-            reset();
           },
         },
       );
     },
-    [mutate, queryClient, reset, form, identity],
+    [
+      updateIdentityProperties,
+      identity,
+      updateIdentity,
+      form,
+      t,
+      queryClient,
+      resetUpdateIdentity,
+      resetUpdateIdentityProperties,
+    ],
   );
 
   const errorMessage = useMemo(() => {
@@ -351,6 +411,7 @@ function BasicDetailsEditor(props: BasicDetailsEditorProps) {
             render={({ field }) => (
               <KeyValueEditor
                 fullWidth
+                highlightDuplicateKeys
                 infoTooltip={{
                   text: t('BasicDetailsEditor.properties.tooltip'),
                 }}
