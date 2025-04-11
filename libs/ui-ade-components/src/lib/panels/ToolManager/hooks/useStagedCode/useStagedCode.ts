@@ -1,3 +1,4 @@
+'use client';
 import { atom, useAtom } from 'jotai';
 import { useToolsServiceRetrieveTool } from '@letta-cloud/sdk-core';
 import type { Tool } from '@letta-cloud/sdk-core';
@@ -38,6 +39,17 @@ export function useStagedCode(defaultTool: Tool) {
     [setStagedToolMap, toolId, defaultTool],
   );
 
+  const resetStagedTool = useCallback(() => {
+    document.dispatchEvent(new Event('resetStagedTool'));
+
+    setStagedToolMap((prev) => {
+      return {
+        ...prev,
+        [toolId]: defaultTool,
+      };
+    });
+  }, [setStagedToolMap, toolId, defaultTool]);
+
   const isDirty = useMemo(() => {
     return !isEqual(stagedTool, state);
   }, [stagedTool, state]);
@@ -46,5 +58,6 @@ export function useStagedCode(defaultTool: Tool) {
     isDirty,
     stagedTool,
     setStagedTool,
+    resetStagedTool,
   };
 }

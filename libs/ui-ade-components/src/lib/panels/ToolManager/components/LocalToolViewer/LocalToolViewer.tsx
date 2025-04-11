@@ -43,7 +43,7 @@ import {
   type PythonValidatorError,
   usePythonValidator,
 } from '@letta-cloud/utils-client';
-import { useDebouncedValue } from '@mantine/hooks';
+import { useDebouncedCallback, useDebouncedValue } from '@mantine/hooks';
 import { useTranslations } from '@letta-cloud/translations';
 import { ToolSimulator } from '../ToolSimulator/ToolSimulator';
 import { Panel, PanelGroup, PanelResizeHandle } from 'react-resizable-panels';
@@ -180,7 +180,7 @@ function ErrorViewer() {
 function RestoreToolButton() {
   const tool = useCurrentTool();
   const { setError } = useToolErrors();
-  const { isDirty, setStagedTool } = useStagedCode(tool);
+  const { isDirty, resetStagedTool } = useStagedCode(tool);
 
   const [_, setJsonSchemaString] = useAtom<string>(jsonSchemaAtom);
 
@@ -193,8 +193,8 @@ function RestoreToolButton() {
 
     setError(null);
     setJsonSchemaString(JSON.stringify(tool.json_schema || {}, null, 2));
-    setStagedTool(() => tool);
-  }, [setStagedTool, tool, setError, setJsonSchemaString]);
+    resetStagedTool();
+  }, [resetStagedTool, tool, setError, setJsonSchemaString]);
 
   if (!isDirty) {
     return null;
@@ -252,6 +252,8 @@ function CodeEditor(props: CodeEditorProps) {
   const { validatePython } = usePythonValidator();
 
   const [debouncedCode] = useDebouncedValue(stagedTool.source_code || '', 500);
+
+  const debouncedSetStagedTool = useDebouncedCallback(setStagedTool, 500);
   const [validationErrors, setValidationErrors] = useState<
     PythonValidatorError[]
   >([]);
@@ -276,14 +278,32 @@ function CodeEditor(props: CodeEditorProps) {
     }, {});
   }, [validationErrors]);
 
+  const [localCode, setLocalCode] = useState<string>(
+    stagedTool.source_code || '',
+  );
+
+  const handleResetLocalCode = useCallback(() => {
+    setLocalCode(tool.source_code || '');
+  }, [tool.source_code]);
+
+  useEffect(() => {
+    document.addEventListener('resetStagedTool', handleResetLocalCode);
+
+    return () => {
+      document.removeEventListener('resetStagedTool', handleResetLocalCode);
+    };
+  }, [handleResetLocalCode]);
+
   const handleCodeChange = useCallback(
     (code: string) => {
-      setStagedTool((prev) => ({
+      setLocalCode(code);
+
+      debouncedSetStagedTool((prev) => ({
         ...prev,
         source_code: code,
       }));
     },
-    [setStagedTool],
+    [debouncedSetStagedTool],
   );
 
   return (
@@ -300,7 +320,7 @@ function CodeEditor(props: CodeEditorProps) {
         variant="minimal"
         label=""
         language="python"
-        code={stagedTool.source_code || ''}
+        code={localCode}
       />
     </VStack>
   );

@@ -37,6 +37,7 @@ import { useCurrentAgent, useSyncUpdateCurrentAgent } from '../../../../hooks';
 import { pythonCodeParser } from '@letta-cloud/utils-shared';
 import { useCurrentTool } from '../LocalToolViewer/LocalToolViewer';
 import { Panel, PanelGroup, PanelResizeHandle } from 'react-resizable-panels';
+import { useDebouncedValue } from '@mantine/hooks';
 
 interface ArgumentEditorProps {
   defaultArguments: ResizableKeyValueEditorDefinition[];
@@ -51,9 +52,11 @@ function ArgumentEditor(props: ArgumentEditorProps) {
   const tool = useCurrentTool();
   const { stagedTool } = useStagedCode(tool);
 
+  const [debouncedStagedTool] = useDebouncedValue(stagedTool, 500);
+
   const pythonMetadata = useMemo(() => {
-    return pythonCodeParser(stagedTool.source_code || '');
-  }, [stagedTool.source_code]);
+    return pythonCodeParser(debouncedStagedTool.source_code || '');
+  }, [debouncedStagedTool.source_code]);
 
   const lastFunction = useMemo(() => {
     // the last function is the main function in our code

@@ -25,6 +25,7 @@ async function loadPyodideAndPackages() {
   }
 
   self.pyodide = await loadPyodide();
+  await self.pyodide.loadPackage(['pydantic']);
 }
 
 const pyodideReadyPromise = loadPyodideAndPackages();
@@ -41,8 +42,11 @@ registerPromiseWorker(
 
     let errors: PythonValidatorError[] = [];
 
+    const preCode = `from pydantic import BaseModel, Field
+from typing import List, Dict, Union, Optional`;
+
     try {
-      await self.pyodide.runPythonAsync(message.code);
+      await self.pyodide.runPythonAsync(`${preCode}\n${message.code}`);
     } catch (e) {
       console.log(e);
 
@@ -58,17 +62,19 @@ registerPromiseWorker(
           line = detectedRexp.exec(e.message)?.[1];
         }
 
+        let parsedLine = parseInt(line || '', 10) - preCode.split('\n').length;
+
         if (line) {
           const message = errorRexp.exec(e.message)?.[1] || '';
 
           if (message.includes('triple-quoted string')) {
-            line = `${parseInt(line, 10) - 2}`;
+            parsedLine = parsedLine - 2;
           }
 
           if (line && message) {
             errors = [
               {
-                line: parseInt(line, 10),
+                line: parsedLine,
                 message,
               },
             ];
