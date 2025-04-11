@@ -11,7 +11,7 @@ import { stateCleaner } from '@letta-cloud/utils-shared';
 import type { CleanedAgentState } from '@letta-cloud/utils-shared';
 import { diffWords } from 'diff';
 import { ChevronDownIcon, ChevronUpIcon } from '../../icons';
-import { isEqual } from 'lodash-es';
+import { isEqual } from 'lodash';
 import { Alert } from '../../core/Alert/Alert';
 import { Badge } from '../../core/Badge/Badge';
 

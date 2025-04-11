@@ -20,7 +20,7 @@ import {
 } from '@letta-cloud/service-analytics/server';
 import { AnalyticsEvent } from '@letta-cloud/service-analytics';
 import { eq } from 'drizzle-orm';
-import { generateAPIKey } from '../generateApiKey/generateApiKey';
+import { generateServerSideAPIKey } from '../generateServerSideAPIKey/generateServerSideAPIKey';
 import { createOrganization } from '../createOrganization/createOrganization';
 import { getDefaultProject } from '@letta-cloud/utils-server';
 
@@ -197,7 +197,7 @@ async function createUserAndOrganization(
   const userFullName = userData.name;
 
   await Promise.all([
-    generateAPIKey({
+    generateServerSideAPIKey({
       name: `${userFullName}'s API Key`,
       organizationId,
       creatorUserId: createdUser.userId,

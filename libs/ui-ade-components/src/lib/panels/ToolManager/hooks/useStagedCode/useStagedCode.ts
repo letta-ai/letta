@@ -3,7 +3,7 @@ import { atom, useAtom } from 'jotai';
 import { useToolsServiceRetrieveTool } from '@letta-cloud/sdk-core';
 import type { Tool } from '@letta-cloud/sdk-core';
 import { useCallback, useMemo } from 'react';
-import { isEqual } from 'lodash-es';
+import { isEqual } from 'lodash';
 
 const stagedToolAtom = atom<Record<string, Tool>>({});
 

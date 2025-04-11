@@ -6,7 +6,7 @@ import { and, eq, isNull } from 'drizzle-orm';
 import { ApplicationServices } from '@letta-cloud/service-rbac';
 import { deleteRedisData } from '@letta-cloud/service-redis';
 import { AdminService } from '@letta-cloud/sdk-core';
-import { generateAPIKey } from '@letta-cloud/service-auth';
+import { generateServerSideAPIKey } from '@letta-cloud/service-auth';
 
 type CreateAPIKeyPayload = ServerInferRequest<
   typeof contracts.apiKeys.createAPIKey
@@ -33,7 +33,7 @@ export async function createAPIKey(
     };
   }
 
-  const apiKey = await generateAPIKey({
+  const apiKey = await generateServerSideAPIKey({
     name,
     creatorUserId: userId,
     organizationId: organizationId,

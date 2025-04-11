@@ -85,3 +85,15 @@ export const stepToRewardMap: Record<OnboardingStepsType, number> = {
 
 export const TOTAL_PRIMARY_ONBOARDING_STEPS =
   Object.keys(stepToRewardMap).length - 1;
+
+export type AccessTokenTypes = 'client-side' | 'server-side';
+
+export const accessTokenTypeToPrefix: Record<AccessTokenTypes, string> = {
+  'client-side': 'ck-let',
+  'server-side': 'sk-let',
+};
+
+export const accessTokenPrefixToType: Record<string, AccessTokenTypes> = {
+  'ck-let': 'client-side',
+  'sk-let': 'server-side',
+};

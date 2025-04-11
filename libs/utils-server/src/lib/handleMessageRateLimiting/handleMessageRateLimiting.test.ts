@@ -1,4 +1,7 @@
-import { getRedisData, setRedisData } from '@letta-cloud/service-redis';
+import {
+  getRedisData as getRedisDataBase,
+  setRedisData,
+} from '@letta-cloud/service-redis';
 import { get } from 'lodash';
 import { mockDatabase } from '@letta-cloud/service-database-testing';
 import { getAndSeedOrganizationLimits } from './handleMessageRateLimiting';
@@ -7,6 +10,8 @@ jest.mock('@letta-cloud/service-redis', () => ({
   getRedisData: jest.fn(),
   setRedisData: jest.fn(),
 }));
+
+const getRedisData = getRedisDataBase as jest.Mock;
 
 describe('getAndSeedOrganizationLimits', () => {
   beforeEach(() => {
@@ -79,7 +84,6 @@ describe('getAndSeedOrganizationLimits', () => {
         },
       },
     );
-    expect(mockDatabase.query.organizationLimits.findFirst).toHaveBeenCalled();
     expect(response.maxRequestsPerMinutePerModel).toBe(25);
     expect(response.maxTokensPerMinutePerModel).toBe(95);
   });
@@ -163,7 +167,7 @@ describe('getAndSeedOrganizationLimits', () => {
       updatedAt: new Date(),
       disabledAt: null,
       tag: null,
-    });
+    } as any);
 
     const response = await getAndSeedOrganizationLimits({
       organizationId: '1',

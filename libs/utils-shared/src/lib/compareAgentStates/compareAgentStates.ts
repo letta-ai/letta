@@ -3,7 +3,7 @@ import type {
   EmbeddingConfig,
   LLMConfig,
 } from '@letta-cloud/sdk-core';
-import { isEqual } from 'lodash-es';
+import { isEqual } from 'lodash';
 
 interface CleanedMemoryBlock {
   value: string;

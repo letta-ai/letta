@@ -3,7 +3,7 @@ import type {
   ToolJSONSchema,
 } from '@letta-cloud/sdk-core';
 import { pythonCodeParser } from '../pythonCodeParser/pythonCodeParser';
-import { get } from 'lodash-es';
+import { get } from 'lodash';
 
 export const jsonSchemaTypeMap: Record<string, string> = {
   str: 'string',

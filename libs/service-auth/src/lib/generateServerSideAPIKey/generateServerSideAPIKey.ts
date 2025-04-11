@@ -1,6 +1,10 @@
 import { db, lettaAPIKeys, organizations } from '@letta-cloud/service-database';
 import { UsersService } from '@letta-cloud/sdk-core';
 import { eq } from 'drizzle-orm';
+import {
+  type AccessTokenTypes,
+  accessTokenTypeToPrefix,
+} from '@letta-cloud/types';
 
 interface GenerateAPIKeyOptions {
   organizationId: string;
@@ -8,7 +12,7 @@ interface GenerateAPIKeyOptions {
   creatorUserId: string;
 }
 
-export async function generateAPIKey(options: GenerateAPIKeyOptions) {
+export async function generateServerSideAPIKey(options: GenerateAPIKeyOptions) {
   const { organizationId, name, creatorUserId } = options;
   const apiKey = crypto.randomUUID();
 
@@ -36,13 +40,15 @@ export async function generateAPIKey(options: GenerateAPIKeyOptions) {
     throw new Error('Failed to create user');
   }
 
+  const fullKey = `${accessTokenTypeToPrefix['server-side']}-${key}`;
+
   await db.insert(lettaAPIKeys).values({
     name,
     organizationId,
     userId: creatorUserId,
     coreUserId: coreUser.id,
-    apiKey: key,
+    apiKey: fullKey,
   });
 
-  return key;
+  return fullKey;
 }
