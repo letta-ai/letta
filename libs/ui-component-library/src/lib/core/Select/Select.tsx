@@ -470,6 +470,7 @@ function SelectPrimitive(_props: SelectProps) {
         onMenuOpen={() => {
           setOpen(true);
         }}
+        menuPlacement="auto"
         onMenuClose={() => {
           setOpen(false);
         }}
