@@ -118,7 +118,7 @@ function DefinitionRow(props: DefinitionRowProps) {
             placeholder={t('placeholder')}
             disabled={disableValueInput || definition.disableValueInput}
             className={cn(
-              'py-2  pt-3 w-full min-w-[100px] resize-none  focus:outline-0 text-xs font-mono  bg-transparent',
+              'py-2  pt-3 w-full min-w-[100px] resize-none focus:outline-none  focus:outline-0 text-xs font-mono  bg-transparent',
             )}
             value={definition.value}
             onChange={(e) => {
