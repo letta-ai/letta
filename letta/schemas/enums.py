@@ -64,3 +64,4 @@ class ToolRuleType(str, Enum):
     conditional = "conditional"
     constrain_child_tools = "constrain_child_tools"
     max_count_per_step = "max_count_per_step"
+    parent_last_tool = "parent_last_tool"

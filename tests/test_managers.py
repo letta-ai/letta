@@ -7,12 +7,7 @@ from typing import List
 
 import pytest
 from anthropic.types.beta import BetaMessage
-from anthropic.types.beta.messages import (
-    BetaMessageBatch,
-    BetaMessageBatchIndividualResponse,
-    BetaMessageBatchRequestCounts,
-    BetaMessageBatchSucceededResult,
-)
+from anthropic.types.beta.messages import BetaMessageBatchIndividualResponse, BetaMessageBatchSucceededResult
 from openai.types.chat.chat_completion_message_tool_call import ChatCompletionMessageToolCall as OpenAIToolCall
 from openai.types.chat.chat_completion_message_tool_call import Function as OpenAIFunction
 from sqlalchemy.exc import IntegrityError
@@ -42,7 +37,7 @@ from letta.schemas.embedding_config import EmbeddingConfig
 from letta.schemas.enums import AgentStepStatus, JobStatus, MessageRole, ProviderType
 from letta.schemas.environment_variables import SandboxEnvironmentVariableCreate, SandboxEnvironmentVariableUpdate
 from letta.schemas.file import FileMetadata as PydanticFileMetadata
-from letta.schemas.identity import IdentityCreate, IdentityProperty, IdentityPropertyType, IdentityType, IdentityUpdate
+from letta.schemas.identity import IdentityCreate, IdentityProperty, IdentityPropertyType, IdentityType, IdentityUpdate, IdentityUpsert
 from letta.schemas.job import Job as PydanticJob
 from letta.schemas.job import JobUpdate, LettaRequestConfig
 from letta.schemas.letta_message import UpdateAssistantMessage, UpdateReasoningMessage, UpdateSystemMessage, UpdateUserMessage
@@ -582,28 +577,6 @@ def agent_with_tags(server: SyncServer, default_user):
     )
 
     return [agent1, agent2, agent3]
-
-
-@pytest.fixture
-def dummy_beta_message_batch() -> BetaMessageBatch:
-    return BetaMessageBatch(
-        id="msgbatch_013Zva2CMHLNnXjNJJKqJ2EF",
-        archived_at=datetime(2024, 8, 20, 18, 37, 24, 100435, tzinfo=timezone.utc),
-        cancel_initiated_at=datetime(2024, 8, 20, 18, 37, 24, 100435, tzinfo=timezone.utc),
-        created_at=datetime(2024, 8, 20, 18, 37, 24, 100435, tzinfo=timezone.utc),
-        ended_at=datetime(2024, 8, 20, 18, 37, 24, 100435, tzinfo=timezone.utc),
-        expires_at=datetime(2024, 8, 20, 18, 37, 24, 100435, tzinfo=timezone.utc),
-        processing_status="in_progress",
-        request_counts=BetaMessageBatchRequestCounts(
-            canceled=10,
-            errored=30,
-            expired=10,
-            processing=100,
-            succeeded=50,
-        ),
-        results_url="https://api.anthropic.com/v1/messages/batches/msgbatch_013Zva2CMHLNnXjNJJKqJ2EF/results",
-        type="message_batch",
-    )
 
 
 @pytest.fixture
@@ -1674,6 +1647,29 @@ def test_get_block_with_label(server: SyncServer, sarah_agent, default_block, de
 
     assert block.id == default_block.id
     assert block.label == default_block.label
+
+
+def test_refresh_memory(server: SyncServer, default_user):
+    block = server.block_manager.create_or_update_block(
+        PydanticBlock(
+            label="test",
+            value="test",
+            limit=1000,
+        ),
+        actor=default_user,
+    )
+    agent = server.agent_manager.create_agent(
+        CreateAgent(
+            name="test",
+            llm_config=LLMConfig.default_config("gpt-4"),
+            embedding_config=EmbeddingConfig.default_config(provider="openai"),
+            include_base_tools=False,
+        ),
+        actor=default_user,
+    )
+    assert len(agent.memory.blocks) == 0
+    agent = server.agent_manager.refresh_memory(agent_state=agent, actor=default_user)
+    assert len(agent.memory.blocks) == 0
 
 
 # ======================================================================================================================
@@ -3271,7 +3267,7 @@ def test_create_and_upsert_identity(server: SyncServer, default_user):
 
     identity_create.properties = [(IdentityProperty(key="age", value=29, type=IdentityPropertyType.number))]
 
-    identity = server.identity_manager.upsert_identity(identity_create, actor=default_user)
+    identity = server.identity_manager.upsert_identity(identity=IdentityUpsert(**identity_create.model_dump()), actor=default_user)
 
     identity = server.identity_manager.get_identity(identity_id=identity.id, actor=default_user)
     assert len(identity.properties) == 1
@@ -3488,6 +3484,34 @@ def test_get_set_blocks_for_identities(server: SyncServer, default_block, defaul
     assert default_block.id in block_ids
     assert not block_with_identity.id in block_ids
     assert not block_without_identity.id in block_ids
+
+    server.identity_manager.delete_identity(identity.id, actor=default_user)
+
+
+def test_upsert_properties(server: SyncServer, default_user):
+    identity_create = IdentityCreate(
+        identifier_key="1234",
+        name="caren",
+        identity_type=IdentityType.user,
+        properties=[
+            IdentityProperty(key="email", value="caren@letta.com", type=IdentityPropertyType.string),
+            IdentityProperty(key="age", value=28, type=IdentityPropertyType.number),
+        ],
+    )
+
+    identity = server.identity_manager.create_identity(identity_create, actor=default_user)
+    properties = [
+        IdentityProperty(key="email", value="caren@gmail.com", type=IdentityPropertyType.string),
+        IdentityProperty(key="age", value="28", type=IdentityPropertyType.string),
+        IdentityProperty(key="test", value=123, type=IdentityPropertyType.number),
+    ]
+
+    updated_identity = server.identity_manager.upsert_identity_properties(
+        identity_id=identity.id,
+        properties=properties,
+        actor=default_user,
+    )
+    assert updated_identity.properties == properties
 
     server.identity_manager.delete_identity(identity.id, actor=default_user)
 
@@ -4707,7 +4731,7 @@ def test_list_tags(server: SyncServer, default_user, default_organization):
 
 
 def test_create_and_get_batch_request(server, default_user, dummy_beta_message_batch):
-    batch = server.batch_manager.create_batch_request(
+    batch = server.batch_manager.create_batch_job(
         llm_provider=ProviderType.anthropic,
         status=JobStatus.created,
         create_batch_response=dummy_beta_message_batch,
@@ -4720,7 +4744,7 @@ def test_create_and_get_batch_request(server, default_user, dummy_beta_message_b
 
 
 def test_update_batch_status(server, default_user, dummy_beta_message_batch):
-    batch = server.batch_manager.create_batch_request(
+    batch = server.batch_manager.create_batch_job(
         llm_provider=ProviderType.anthropic,
         status=JobStatus.created,
         create_batch_response=dummy_beta_message_batch,
@@ -4742,7 +4766,7 @@ def test_update_batch_status(server, default_user, dummy_beta_message_batch):
 
 
 def test_create_and_get_batch_item(server, default_user, sarah_agent, dummy_beta_message_batch, dummy_llm_config, dummy_step_state):
-    batch = server.batch_manager.create_batch_request(
+    batch = server.batch_manager.create_batch_job(
         llm_provider=ProviderType.anthropic,
         status=JobStatus.created,
         create_batch_response=dummy_beta_message_batch,
@@ -4768,7 +4792,7 @@ def test_create_and_get_batch_item(server, default_user, sarah_agent, dummy_beta
 def test_update_batch_item(
     server, default_user, sarah_agent, dummy_beta_message_batch, dummy_llm_config, dummy_step_state, dummy_successful_response
 ):
-    batch = server.batch_manager.create_batch_request(
+    batch = server.batch_manager.create_batch_job(
         llm_provider=ProviderType.anthropic,
         status=JobStatus.created,
         create_batch_response=dummy_beta_message_batch,
@@ -4800,7 +4824,7 @@ def test_update_batch_item(
 
 
 def test_delete_batch_item(server, default_user, sarah_agent, dummy_beta_message_batch, dummy_llm_config, dummy_step_state):
-    batch = server.batch_manager.create_batch_request(
+    batch = server.batch_manager.create_batch_job(
         llm_provider=ProviderType.anthropic,
         status=JobStatus.created,
         create_batch_response=dummy_beta_message_batch,

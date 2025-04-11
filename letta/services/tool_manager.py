@@ -54,7 +54,7 @@ class ToolManager:
 
             # If there's anything to update
             if update_data:
-                self.update_tool_by_id(tool.id, ToolUpdate(**update_data), actor)
+                tool = self.update_tool_by_id(tool.id, ToolUpdate(**update_data), actor)
             else:
                 printd(
                     f"`create_or_update_tool` was called with user_id={actor.id}, organization_id={actor.organization_id}, name={pydantic_tool.name}, but found existing tool with nothing to update."

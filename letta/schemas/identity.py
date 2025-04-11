@@ -61,6 +61,16 @@ class IdentityCreate(LettaBase):
     properties: Optional[List[IdentityProperty]] = Field(None, description="List of properties associated with the identity.")
 
 
+class IdentityUpsert(LettaBase):
+    identifier_key: str = Field(..., description="External, user-generated identifier key of the identity.")
+    name: str = Field(..., description="The name of the identity.")
+    identity_type: IdentityType = Field(..., description="The type of the identity.")
+    project_id: Optional[str] = Field(None, description="The project id of the identity, if applicable.")
+    agent_ids: Optional[List[str]] = Field(None, description="The agent ids that are associated with the identity.")
+    block_ids: Optional[List[str]] = Field(None, description="The IDs of the blocks associated with the identity.")
+    properties: Optional[List[IdentityProperty]] = Field(None, description="List of properties associated with the identity.")
+
+
 class IdentityUpdate(LettaBase):
     identifier_key: Optional[str] = Field(None, description="External, user-generated identifier key of the identity.")
     name: Optional[str] = Field(None, description="The name of the identity.")

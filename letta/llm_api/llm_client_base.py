@@ -1,6 +1,7 @@
 from abc import abstractmethod
-from typing import List, Optional, Union
+from typing import Dict, List, Optional, Union
 
+from anthropic.types.beta.messages import BetaMessageBatch
 from openai import AsyncStream, Stream
 from openai.types.chat.chat_completion_chunk import ChatCompletionChunk
 
@@ -21,7 +22,6 @@ class LLMClientBase:
         self,
         llm_config: LLMConfig,
         put_inner_thoughts_first: Optional[bool] = True,
-        use_structured_output: Optional[bool] = True,
         use_tool_naming: bool = True,
     ):
         self.llm_config = llm_config
@@ -40,7 +40,7 @@ class LLMClientBase:
         If stream=True, returns a Stream[ChatCompletionChunk] that can be iterated over.
         Otherwise returns a ChatCompletionResponse.
         """
-        request_data = self.build_request_data(messages, tools, force_tool_call)
+        request_data = self.build_request_data(messages, self.llm_config, tools, force_tool_call)
 
         try:
             log_event(name="llm_request_sent", attributes=request_data)
@@ -66,8 +66,7 @@ class LLMClientBase:
         If stream=True, returns an AsyncStream[ChatCompletionChunk] that can be async iterated over.
         Otherwise returns a ChatCompletionResponse.
         """
-        request_data = self.build_request_data(messages, tools, force_tool_call)
-        response_data = {}
+        request_data = self.build_request_data(messages, self.llm_config, tools, force_tool_call)
 
         try:
             log_event(name="llm_request_sent", attributes=request_data)
@@ -81,10 +80,19 @@ class LLMClientBase:
 
         return self.convert_response_to_chat_completion(response_data, messages)
 
+    async def send_llm_batch_request_async(
+        self,
+        agent_messages_mapping: Dict[str, List[Message]],
+        agent_tools_mapping: Dict[str, List[dict]],
+        agent_llm_config_mapping: Dict[str, LLMConfig],
+    ) -> Union[BetaMessageBatch]:
+        raise NotImplementedError
+
     @abstractmethod
     def build_request_data(
         self,
         messages: List[Message],
+        llm_config: LLMConfig,
         tools: List[dict],
         force_tool_call: Optional[str] = None,
     ) -> dict:

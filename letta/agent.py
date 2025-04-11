@@ -110,18 +110,18 @@ class Agent(BaseAgent):
         self.user = user
 
         # initialize a tool rules solver
-        if agent_state.tool_rules:
-            # if there are tool rules, print out a warning
-            for rule in agent_state.tool_rules:
-                if not isinstance(rule, TerminalToolRule):
-                    warnings.warn("Tool rules only work reliably for the latest OpenAI models that support structured outputs.")
-                    break
-
         self.tool_rules_solver = ToolRulesSolver(tool_rules=agent_state.tool_rules)
 
         # gpt-4, gpt-3.5-turbo, ...
         self.model = self.agent_state.llm_config.model
         self.supports_structured_output = check_supports_structured_output(model=self.model, tool_rules=agent_state.tool_rules)
+
+        # if there are tool rules, print out a warning
+        if not self.supports_structured_output and agent_state.tool_rules:
+            for rule in agent_state.tool_rules:
+                if not isinstance(rule, TerminalToolRule):
+                    warnings.warn("Tool rules only work reliably for model backends that support structured outputs (e.g. OpenAI gpt-4o).")
+                    break
 
         # state managers
         self.block_manager = BlockManager()
@@ -236,17 +236,15 @@ class Agent(BaseAgent):
 
         # Extend conversation with function response
         function_response = package_function_response(False, error_msg)
-        new_message = Message.dict_to_message(
+        new_message = Message(
             agent_id=self.agent_state.id,
-            user_id=self.agent_state.created_by_id,
+            # Base info OpenAI-style
             model=self.model,
-            openai_message_dict={
-                "role": "tool",
-                "name": function_name,
-                "content": function_response,
-                "tool_call_id": tool_call_id,
-            },
-            name=self.agent_state.name,
+            role="tool",
+            name=function_name,  # NOTE: when role is 'tool', the 'name' is the function name, not agent name
+            content=[TextContent(text=function_response)],
+            tool_call_id=tool_call_id,
+            # Letta extras
             tool_returns=tool_returns,
             group_id=group_id,
         )
@@ -386,6 +384,7 @@ class Agent(BaseAgent):
                     delay = min(backoff_factor * (2 ** (attempt - 1)), max_delay)
                     warnings.warn(f"Attempt {attempt} failed: {ve}. Retrying in {delay} seconds...")
                     time.sleep(delay)
+                    continue
 
             except Exception as e:
                 # For non-retryable errors, exit immediately
@@ -397,6 +396,7 @@ class Agent(BaseAgent):
                 # trigger summarization
                 log_telemetry(self.logger, "_get_ai_reply summarize_messages_inplace")
                 self.summarize_messages_inplace()
+
             # return the response
             return response
 
@@ -455,7 +455,6 @@ class Agent(BaseAgent):
                 Message.dict_to_message(
                     id=response_message_id,
                     agent_id=self.agent_state.id,
-                    user_id=self.agent_state.created_by_id,
                     model=self.model,
                     openai_message_dict=response_message.model_dump(),
                     name=self.agent_state.name,
@@ -659,17 +658,15 @@ class Agent(BaseAgent):
                 else None
             )
             messages.append(
-                Message.dict_to_message(
+                Message(
                     agent_id=self.agent_state.id,
-                    user_id=self.agent_state.created_by_id,
+                    # Base info OpenAI-style
                     model=self.model,
-                    openai_message_dict={
-                        "role": "tool",
-                        "name": function_name,
-                        "content": function_response,
-                        "tool_call_id": tool_call_id,
-                    },
-                    name=self.agent_state.name,
+                    role="tool",
+                    name=function_name,  # NOTE: when role is 'tool', the 'name' is the function name, not agent name
+                    content=[TextContent(text=function_response)],
+                    tool_call_id=tool_call_id,
+                    # Letta extras
                     tool_returns=[tool_return] if sandbox_run_result else None,
                     group_id=group_id,
                 )
@@ -686,7 +683,6 @@ class Agent(BaseAgent):
                 Message.dict_to_message(
                     id=response_message_id,
                     agent_id=self.agent_state.id,
-                    user_id=self.agent_state.created_by_id,
                     model=self.model,
                     openai_message_dict=response_message.model_dump(),
                     name=self.agent_state.name,
@@ -777,7 +773,6 @@ class Agent(BaseAgent):
                 assert self.agent_state.created_by_id is not None
                 next_input_message = Message.dict_to_message(
                     agent_id=self.agent_state.id,
-                    user_id=self.agent_state.created_by_id,
                     model=self.model,
                     openai_message_dict={
                         "role": "user",  # TODO: change to system?
@@ -789,7 +784,6 @@ class Agent(BaseAgent):
                 assert self.agent_state.created_by_id is not None
                 next_input_message = Message.dict_to_message(
                     agent_id=self.agent_state.id,
-                    user_id=self.agent_state.created_by_id,
                     model=self.model,
                     openai_message_dict={
                         "role": "user",  # TODO: change to system?
@@ -801,7 +795,6 @@ class Agent(BaseAgent):
                 assert self.agent_state.created_by_id is not None
                 next_input_message = Message.dict_to_message(
                     agent_id=self.agent_state.id,
-                    user_id=self.agent_state.created_by_id,
                     model=self.model,
                     openai_message_dict={
                         "role": "user",  # TODO: change to system?
@@ -1057,7 +1050,6 @@ class Agent(BaseAgent):
         assert self.agent_state.created_by_id is not None, "User ID is not set"
         user_message = Message.dict_to_message(
             agent_id=self.agent_state.id,
-            user_id=self.agent_state.created_by_id,
             model=self.model,
             openai_message_dict=openai_message_dict,
             # created_at=timestamp,
@@ -1117,7 +1109,6 @@ class Agent(BaseAgent):
             messages=[
                 Message.dict_to_message(
                     agent_id=self.agent_state.id,
-                    user_id=self.agent_state.created_by_id,
                     model=self.model,
                     openai_message_dict=packed_summary_message,
                 )

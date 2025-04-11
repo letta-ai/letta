@@ -42,9 +42,19 @@ class RoundRobinManager(ManagerConfig):
     max_turns: Optional[int] = Field(None, description="")
 
 
+class RoundRobinManagerUpdate(ManagerConfig):
+    manager_type: Literal[ManagerType.round_robin] = Field(ManagerType.round_robin, description="")
+    max_turns: Optional[int] = Field(None, description="")
+
+
 class SupervisorManager(ManagerConfig):
     manager_type: Literal[ManagerType.supervisor] = Field(ManagerType.supervisor, description="")
     manager_agent_id: str = Field(..., description="")
+
+
+class SupervisorManagerUpdate(ManagerConfig):
+    manager_type: Literal[ManagerType.supervisor] = Field(ManagerType.supervisor, description="")
+    manager_agent_id: Optional[str] = Field(..., description="")
 
 
 class DynamicManager(ManagerConfig):
@@ -54,9 +64,22 @@ class DynamicManager(ManagerConfig):
     max_turns: Optional[int] = Field(None, description="")
 
 
+class DynamicManagerUpdate(ManagerConfig):
+    manager_type: Literal[ManagerType.dynamic] = Field(ManagerType.dynamic, description="")
+    manager_agent_id: Optional[str] = Field(None, description="")
+    termination_token: Optional[str] = Field(None, description="")
+    max_turns: Optional[int] = Field(None, description="")
+
+
 class SleeptimeManager(ManagerConfig):
     manager_type: Literal[ManagerType.sleeptime] = Field(ManagerType.sleeptime, description="")
     manager_agent_id: str = Field(..., description="")
+    sleeptime_agent_frequency: Optional[int] = Field(None, description="")
+
+
+class SleeptimeManagerUpdate(ManagerConfig):
+    manager_type: Literal[ManagerType.sleeptime] = Field(ManagerType.sleeptime, description="")
+    manager_agent_id: Optional[str] = Field(None, description="")
     sleeptime_agent_frequency: Optional[int] = Field(None, description="")
 
 
@@ -66,6 +89,12 @@ class SleeptimeManager(ManagerConfig):
 
 ManagerConfigUnion = Annotated[
     Union[RoundRobinManager, SupervisorManager, DynamicManager, SleeptimeManager],
+    Field(discriminator="manager_type"),
+]
+
+
+ManagerConfigUpdateUnion = Annotated[
+    Union[RoundRobinManagerUpdate, SupervisorManagerUpdate, DynamicManagerUpdate, SleeptimeManagerUpdate],
     Field(discriminator="manager_type"),
 ]
 
@@ -80,5 +109,5 @@ class GroupCreate(BaseModel):
 class GroupUpdate(BaseModel):
     agent_ids: Optional[List[str]] = Field(None, description="")
     description: Optional[str] = Field(None, description="")
-    manager_config: Optional[ManagerConfigUnion] = Field(None, description="")
+    manager_config: Optional[ManagerConfigUpdateUnion] = Field(None, description="")
     shared_block_ids: Optional[List[str]] = Field(None, description="")

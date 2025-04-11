@@ -147,7 +147,7 @@ def create_test_agent(client, name, model="anthropic/claude-3-5-sonnet-20241022"
 
 def create_test_batch_job(server, batch_response, default_user):
     """Create a test batch job with the given batch response."""
-    return server.batch_manager.create_batch_request(
+    return server.batch_manager.create_batch_job(
         llm_provider=ProviderType.anthropic,
         create_batch_response=batch_response,
         actor=default_user,

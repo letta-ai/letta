@@ -42,8 +42,8 @@ from letta.schemas.message import MessageCreate, MessageUpdate
 from letta.schemas.passage import Passage as PydanticPassage
 from letta.schemas.source import Source as PydanticSource
 from letta.schemas.tool import Tool as PydanticTool
-from letta.schemas.tool_rule import ChildToolRule as PydanticChildToolRule
 from letta.schemas.tool_rule import ContinueToolRule as PydanticContinueToolRule
+from letta.schemas.tool_rule import ParentToolRule as PydanticParentToolRule
 from letta.schemas.tool_rule import TerminalToolRule as PydanticTerminalToolRule
 from letta.schemas.tool_rule import ToolRule as PydanticToolRule
 from letta.schemas.user import User as PydanticUser
@@ -70,6 +70,7 @@ from letta.services.passage_manager import PassageManager
 from letta.services.source_manager import SourceManager
 from letta.services.tool_manager import ToolManager
 from letta.settings import settings
+from letta.tracing import trace_method
 from letta.utils import enforce_types, united_diff
 
 logger = get_logger(__name__)
@@ -93,6 +94,7 @@ class AgentManager:
     # ======================================================================================================================
     # Basic CRUD operations
     # ======================================================================================================================
+    @trace_method
     @enforce_types
     def create_agent(
         self,
@@ -162,7 +164,7 @@ class AgentManager:
                     tool_rules.append(PydanticContinueToolRule(tool_name=tool_name))
 
             if agent_create.agent_type == AgentType.sleeptime_agent:
-                tool_rules.append(PydanticChildToolRule(tool_name="view_core_memory_with_line_numbers", children=["core_memory_insert"]))
+                tool_rules.append(PydanticParentToolRule(tool_name="view_core_memory_with_line_numbers", children=["core_memory_insert"]))
 
         # if custom rules, check tool rules are valid
         if agent_create.tool_rules:
@@ -213,7 +215,6 @@ class AgentManager:
             # We always need the system prompt up front
             system_message_obj = PydanticMessage.dict_to_message(
                 agent_id=agent_state.id,
-                user_id=agent_state.created_by_id,
                 model=agent_state.llm_config.model,
                 openai_message_dict=init_messages[0],
             )
@@ -224,9 +225,7 @@ class AgentManager:
             )
         else:
             init_messages = [
-                PydanticMessage.dict_to_message(
-                    agent_id=agent_state.id, user_id=agent_state.created_by_id, model=agent_state.llm_config.model, openai_message_dict=msg
-                )
+                PydanticMessage.dict_to_message(agent_id=agent_state.id, model=agent_state.llm_config.model, openai_message_dict=msg)
                 for msg in init_messages
             ]
 
@@ -661,6 +660,9 @@ class AgentManager:
         message_ids = self.get_agent_by_id(agent_id=agent_id, actor=actor).message_ids
         return self.message_manager.get_message_by_id(message_id=message_ids[0], actor=actor)
 
+    # TODO: This is duplicated below
+    # TODO: This is legacy code and should be cleaned up
+    # TODO: A lot of the memory "compilation" should be offset to a separate class
     @enforce_types
     def rebuild_system_prompt(self, agent_id: str, actor: PydanticUser, force=False, update_timestamp=True) -> PydanticAgentState:
         """Rebuilds the system message with the latest memory object and any shared memory block updates
@@ -714,7 +716,6 @@ class AgentManager:
             # Swap the system message out (only if there is a diff)
             message = PydanticMessage.dict_to_message(
                 agent_id=agent_id,
-                user_id=actor.id,
                 model=agent_state.llm_config.model,
                 openai_message_dict={"role": "system", "content": new_system_message_str},
             )
@@ -801,7 +802,6 @@ class AgentManager:
             )
             system_message = PydanticMessage.dict_to_message(
                 agent_id=agent_state.id,
-                user_id=agent_state.created_by_id,
                 model=agent_state.llm_config.model,
                 openai_message_dict=init_messages[0],
             )
@@ -845,6 +845,10 @@ class AgentManager:
 
     @enforce_types
     def refresh_memory(self, agent_state: PydanticAgentState, actor: PydanticUser) -> PydanticAgentState:
+        block_ids = [b.id for b in agent_state.memory.blocks]
+        if not block_ids:
+            return agent_state
+
         agent_state.memory.blocks = self.block_manager.get_all_blocks_by_ids(
             block_ids=[b.id for b in agent_state.memory.blocks], actor=actor
         )
@@ -903,7 +907,7 @@ class AgentManager:
         # get the agent
         agent = self.get_agent_by_id(agent_id=agent_id, actor=actor)
         message = PydanticMessage.dict_to_message(
-            agent_id=agent.id, user_id=actor.id, model=agent.llm_config.model, openai_message_dict={"role": "system", "content": content}
+            agent_id=agent.id, model=agent.llm_config.model, openai_message_dict={"role": "system", "content": content}
         )
 
         # update agent in-context message IDs

@@ -7,14 +7,15 @@ import httpx
 import openai
 import pytest
 from dotenv import load_dotenv
-from letta_client import CreateBlock, Letta
+from letta_client import CreateBlock, Letta, MessageCreate, TextContent
 from openai.types.chat.chat_completion_chunk import ChatCompletionChunk
 
 from letta.agents.letta_agent import LettaAgent
 from letta.schemas.embedding_config import EmbeddingConfig
 from letta.schemas.enums import MessageStreamStatus
+from letta.schemas.letta_message_content import TextContent as LettaTextContent
 from letta.schemas.llm_config import LLMConfig
-from letta.schemas.openai.chat_completion_request import UserMessage
+from letta.schemas.message import MessageCreate as LettaMessageCreate
 from letta.schemas.tool import ToolCreate
 from letta.schemas.usage import LettaUsageStatistics
 from letta.services.agent_manager import AgentManager
@@ -248,7 +249,7 @@ async def test_new_agent_loop(disable_e2b_api_key, openai_client, agent_state, m
         actor=actor,
     )
 
-    response = await agent.step(UserMessage(content=message))
+    response = await agent.step([LettaMessageCreate(role="user", content=[LettaTextContent(text=message)])])
 
 
 @pytest.mark.asyncio
@@ -265,7 +266,7 @@ async def test_rethink_tool(disable_e2b_api_key, openai_client, agent_state, mes
     )
 
     assert "chicken" not in AgentManager().get_agent_by_id(agent_state.id, actor).memory.get_block("human").value
-    response = await agent.step(UserMessage(content=message))
+    response = await agent.step([LettaMessageCreate(role="user", content=[LettaTextContent(text=message)])])
     assert "chicken" in AgentManager().get_agent_by_id(agent_state.id, actor).memory.get_block("human").value
 
 
@@ -275,9 +276,16 @@ async def test_multi_agent_broadcast(disable_e2b_api_key, client, openai_client,
 
     stale_agents = AgentManager().list_agents(actor=actor, limit=300)
     for agent in stale_agents:
-        client.delete_agent(agent_id=agent.id)
+        AgentManager().delete_agent(agent_id=agent.id, actor=actor)
 
-    manager_agent_state = client.create_agent(name=f"manager", include_base_tools=True, include_multi_agent_tools=True, tags=["manager"])
+    manager_agent_state = client.agents.create(
+        name=f"manager",
+        include_base_tools=True,
+        include_multi_agent_tools=True,
+        tags=["manager"],
+        model="openai/gpt-4o",
+        embedding="letta/letta-free",
+    )
     manager_agent = LettaAgent(
         agent_id=manager_agent_state.id,
         message_manager=MessageManager(),
@@ -290,12 +298,31 @@ async def test_multi_agent_broadcast(disable_e2b_api_key, client, openai_client,
     tag = "subagent"
     workers = []
     for idx in range(30):
-        workers.append(client.create_agent(name=f"worker_{idx}", include_base_tools=True, tags=[tag], tool_ids=[weather_tool.id]))
+        workers.append(
+            client.agents.create(
+                name=f"worker_{idx}",
+                include_base_tools=True,
+                tags=[tag],
+                tool_ids=[weather_tool.id],
+                model="openai/gpt-4o",
+                embedding="letta/letta-free",
+            ),
+        )
 
     response = await manager_agent.step(
-        UserMessage(
-            content="Use the `send_message_to_agents_matching_tags` tool to send a message to agents with tag 'subagent' asking them to check the weather in Seattle.",
-        )
+        [
+            LettaMessageCreate(
+                role="user",
+                content=[
+                    LettaTextContent(
+                        text=(
+                            "Use the `send_message_to_agents_matching_tags` tool to send a message to agents with "
+                            "tag 'subagent' asking them to check the weather in Seattle."
+                        )
+                    ),
+                ],
+            ),
+        ]
     )
 
 
@@ -334,10 +361,14 @@ def test_multi_agent_broadcast_client(client: Letta, weather_tool):
     response = client.agents.messages.create(
         agent_id=supervisor.id,
         messages=[
-            {
-                "role": "user",
-                "content": "Use the `send_message_to_agents_matching_tags` tool to send a message to agents with tag 'worker' asking them to check the weather in Seattle.",
-            }
+            MessageCreate(
+                role="user",
+                content=[
+                    TextContent(
+                        text="Use the `send_message_to_agents_matching_tags` tool to send a message to agents with tag 'worker' asking them to check the weather in Seattle."
+                    )
+                ],
+            )
         ],
     )
     end = time.perf_counter()
@@ -456,10 +487,10 @@ def test_anthropic_streaming(client: Letta):
     response = client.agents.messages.create_stream(
         agent_id=agent.id,
         messages=[
-            {
-                "role": "user",
-                "content": "Use core memory append to append `banana` to the persona core memory.",
-            }
+            MessageCreate(
+                role="user",
+                content=[TextContent(text="Use the core memory append tool to append `banana` to the persona core memory.")],
+            ),
         ],
         stream_tokens=True,
     )

@@ -334,6 +334,9 @@ class SqlalchemyBase(CommonSqlalchemyMetaMixins, Base):
         if len(identifiers) > 0:
             query = query.where(cls.id.in_(identifiers))
             query_conditions.append(f"id='{identifiers}'")
+        elif not kwargs:
+            logger.debug(f"No identifiers provided for {cls.__name__}, returning empty list")
+            return []
 
         if kwargs:
             query = query.filter_by(**kwargs)
