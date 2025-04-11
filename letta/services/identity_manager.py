@@ -8,7 +8,7 @@ from letta.orm.agent import Agent as AgentModel
 from letta.orm.block import Block as BlockModel
 from letta.orm.identity import Identity as IdentityModel
 from letta.schemas.identity import Identity as PydanticIdentity
-from letta.schemas.identity import IdentityCreate, IdentityProperty, IdentityType, IdentityUpdate
+from letta.schemas.identity import IdentityCreate, IdentityProperty, IdentityType, IdentityUpdate, IdentityUpsert
 from letta.schemas.user import User as PydanticUser
 from letta.utils import enforce_types
 
@@ -81,7 +81,7 @@ class IdentityManager:
             return new_identity.to_pydantic()
 
     @enforce_types
-    def upsert_identity(self, identity: IdentityCreate, actor: PydanticUser) -> PydanticIdentity:
+    def upsert_identity(self, identity: IdentityUpsert, actor: PydanticUser) -> PydanticIdentity:
         with self.session_maker() as session:
             existing_identity = IdentityModel.read(
                 db_session=session,
@@ -92,7 +92,7 @@ class IdentityManager:
             )
 
         if existing_identity is None:
-            return self.create_identity(identity=identity, actor=actor)
+            return self.create_identity(identity=IdentityCreate(**identity.model_dump()), actor=actor)
         else:
             identity_update = IdentityUpdate(
                 name=identity.name,

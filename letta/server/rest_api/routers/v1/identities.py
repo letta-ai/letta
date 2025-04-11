@@ -3,7 +3,7 @@ from typing import TYPE_CHECKING, List, Optional
 from fastapi import APIRouter, Body, Depends, Header, HTTPException, Query
 
 from letta.orm.errors import NoResultFound, UniqueConstraintViolationError
-from letta.schemas.identity import Identity, IdentityCreate, IdentityProperty, IdentityType, IdentityUpdate
+from letta.schemas.identity import Identity, IdentityCreate, IdentityProperty, IdentityType, IdentityUpdate, IdentityUpsert
 from letta.server.rest_api.utils import get_letta_server
 
 if TYPE_CHECKING:
@@ -88,7 +88,7 @@ def create_identity(
 
 @router.put("/", tags=["identities"], response_model=Identity, operation_id="upsert_identity")
 def upsert_identity(
-    identity: IdentityCreate = Body(...),
+    identity: IdentityUpsert = Body(...),
     server: "SyncServer" = Depends(get_letta_server),
     actor_id: Optional[str] = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
     x_project: Optional[str] = Header(None, alias="X-Project"),  # Only handled by next js middleware
