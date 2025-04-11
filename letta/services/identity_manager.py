@@ -8,7 +8,7 @@ from letta.orm.agent import Agent as AgentModel
 from letta.orm.block import Block as BlockModel
 from letta.orm.identity import Identity as IdentityModel
 from letta.schemas.identity import Identity as PydanticIdentity
-from letta.schemas.identity import IdentityCreate, IdentityType, IdentityUpdate
+from letta.schemas.identity import IdentityCreate, IdentityProperty, IdentityType, IdentityUpdate
 from letta.schemas.user import User as PydanticUser
 from letta.utils import enforce_types
 
@@ -164,6 +164,20 @@ class IdentityManager:
             )
         existing_identity.update(session, actor=actor)
         return existing_identity.to_pydantic()
+
+    @enforce_types
+    def upsert_identity_properties(self, identity_id: str, properties: List[IdentityProperty], actor: PydanticUser) -> PydanticIdentity:
+        with self.session_maker() as session:
+            existing_identity = IdentityModel.read(db_session=session, identifier=identity_id, actor=actor)
+            if existing_identity is None:
+                raise HTTPException(status_code=404, detail="Identity not found")
+            return self._update_identity(
+                session=session,
+                existing_identity=existing_identity,
+                identity=IdentityUpdate(properties=properties),
+                actor=actor,
+                replace=True,
+            )
 
     @enforce_types
     def delete_identity(self, identity_id: str, actor: PydanticUser) -> None:

@@ -3488,6 +3488,34 @@ def test_get_set_blocks_for_identities(server: SyncServer, default_block, defaul
     server.identity_manager.delete_identity(identity.id, actor=default_user)
 
 
+def test_upsert_properties(server: SyncServer, default_user):
+    identity_create = IdentityCreate(
+        identifier_key="1234",
+        name="caren",
+        identity_type=IdentityType.user,
+        properties=[
+            IdentityProperty(key="email", value="caren@letta.com", type=IdentityPropertyType.string),
+            IdentityProperty(key="age", value=28, type=IdentityPropertyType.number),
+        ],
+    )
+
+    identity = server.identity_manager.create_identity(identity_create, actor=default_user)
+    properties = [
+        IdentityProperty(key="email", value="caren@gmail.com", type=IdentityPropertyType.string),
+        IdentityProperty(key="age", value="28", type=IdentityPropertyType.string),
+        IdentityProperty(key="test", value=123, type=IdentityPropertyType.number),
+    ]
+
+    updated_identity = server.identity_manager.upsert_identity_properties(
+        identity_id=identity.id,
+        properties=properties,
+        actor=default_user,
+    )
+    assert updated_identity.properties == properties
+
+    server.identity_manager.delete_identity(identity.id, actor=default_user)
+
+
 # ======================================================================================================================
 # SourceManager Tests - Sources
 # ======================================================================================================================
