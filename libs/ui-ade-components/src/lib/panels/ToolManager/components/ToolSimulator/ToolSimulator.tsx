@@ -106,10 +106,16 @@ function ArgumentEditor(props: ArgumentEditorProps) {
       });
   }, [lastFunction.args, stagedArguments, t]);
 
+  const definitions = useMemo(() => {
+    return [...stagedArguments, ...newToolArgs].filter(
+      (v) => v.key !== 'request_heartbeat',
+    );
+  }, [stagedArguments, newToolArgs]);
+
   return (
     <VStack>
       <ResizableKeyValueEditor
-        definitions={[...stagedArguments, ...newToolArgs]}
+        definitions={definitions}
         disableKeyInput
         disableNewDefinition
         disableDeleteDefinition
