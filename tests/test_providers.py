@@ -12,6 +12,7 @@ from letta.schemas.providers import (
     OllamaProvider,
     OpenAIProvider,
     TogetherProvider,
+    VoyageAIProvider,
 )
 from letta.settings import model_settings
 
@@ -108,6 +109,12 @@ def test_anthropic_bedrock():
     models = provider.list_llm_models()
     print([m.model for m in models])
 
+    embedding_models = provider.list_embedding_models()
+    print([m.embedding_model for m in embedding_models])
+
+
+def test_voyageai():
+    provider = VoyageAIProvider(api_key=os.getenv("VOYAGEAI_API_KEY"))
     embedding_models = provider.list_embedding_models()
     print([m.embedding_model for m in embedding_models])
 
