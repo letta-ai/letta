@@ -1,14 +1,15 @@
 import json
 import traceback
 from datetime import datetime
-from typing import Annotated, List, Optional
+from typing import Annotated, Any, List, Optional
 
 from fastapi import APIRouter, BackgroundTasks, Body, Depends, File, Header, HTTPException, Query, UploadFile, status
 from fastapi.responses import JSONResponse
 from marshmallow import ValidationError
+from orjson import orjson
 from pydantic import Field
 from sqlalchemy.exc import IntegrityError, OperationalError
-from starlette.responses import StreamingResponse
+from starlette.responses import Response, StreamingResponse
 
 from letta.agents.letta_agent import LettaAgent
 from letta.constants import DEFAULT_MESSAGE_TOOL, DEFAULT_MESSAGE_TOOL_KWARG
@@ -102,7 +103,14 @@ def list_agents(
     )
 
 
-@router.get("/{agent_id}/export", operation_id="export_agent_serialized")
+class IndentedORJSONResponse(Response):
+    media_type = "application/json"
+
+    def render(self, content: Any) -> bytes:
+        return orjson.dumps(content, option=orjson.OPT_INDENT_2)
+
+
+@router.get("/{agent_id}/export", response_class=IndentedORJSONResponse, operation_id="export_agent_serialized")
 def export_agent_serialized(
     agent_id: str,
     server: "SyncServer" = Depends(get_letta_server),
@@ -118,9 +126,7 @@ def export_agent_serialized(
 
     try:
         agent = server.agent_manager.serialize(agent_id=agent_id, actor=actor)
-        # Convert to JSON with 2-space indentation
-        content = agent.model_dump_json(indent=2)
-        return JSONResponse(content=content, media_type="application/json")
+        return agent.model_dump()
     except NoResultFound:
         raise HTTPException(status_code=404, detail=f"Agent with id={agent_id} not found for user_id={actor.id}.")
 

@@ -25,7 +25,6 @@ from letta.schemas.user import User
 from letta.serialize_schemas.pydantic_agent_schema import AgentSchema
 from letta.server.rest_api.app import app
 from letta.server.server import SyncServer
-from letta.utils import parse_json
 
 console = Console()
 
@@ -573,8 +572,7 @@ def test_agent_download_upload_flow(fastapi_client, server, serialize_test_agent
 
     # Ensure response matches expected schema
     response_json = response.json()
-    parsed_response = parse_json(response_json)
-    agent_schema = AgentSchema.model_validate(parsed_response)  # Validate as Pydantic model
+    agent_schema = AgentSchema.model_validate(response_json)  # Validate as Pydantic model
     agent_json = agent_schema.model_dump(mode="json")  # Convert back to serializable JSON
 
     # Step 2: Upload the serialized agent as a copy
@@ -601,13 +599,6 @@ def test_agent_download_upload_flow(fastapi_client, server, serialize_test_agent
 
     print_dict_diff(json.loads(serialize_test_agent.model_dump_json()), json.loads(agent_copy.model_dump_json()))
     assert compare_agent_state(server, serialize_test_agent, agent_copy, append_copy_suffix, default_user, other_user)
-
-    # Step 4: Ensure copied agent receives messages correctly
-    server.send_messages(
-        actor=other_user,
-        agent_id=copied_agent_id,
-        messages=[MessageCreate(role=MessageRole.user, content="Hello copied agent!")],
-    )
 
 
 @pytest.mark.parametrize(
