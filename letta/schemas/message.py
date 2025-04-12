@@ -598,6 +598,7 @@ class Message(BaseMessage):
         self,
         max_tool_id_length: int = TOOL_CALL_ID_MAX_LEN,
         put_inner_thoughts_in_kwargs: bool = False,
+        use_developer_message: bool = False,
     ) -> dict:
         """Go from Message class to ChatCompletion message object"""
 
@@ -625,7 +626,7 @@ class Message(BaseMessage):
             assert all([v is not None for v in [self.role]]), vars(self)
             openai_message = {
                 "content": text_content,
-                "role": self.role,
+                "role": "developer" if use_developer_message else self.role,
             }
 
         elif self.role == "user":
