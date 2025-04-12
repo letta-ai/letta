@@ -66,8 +66,14 @@ class OpenAIClient(LLMClientBase):
                 put_inner_thoughts_first=True,
             )
 
+        use_developer_message = llm_config.model.startswith("o1") or llm_config.model.startswith("o3")  # o-series models
         openai_message_list = [
-            cast_message_to_subtype(m.to_openai_dict(put_inner_thoughts_in_kwargs=llm_config.put_inner_thoughts_in_kwargs))
+            cast_message_to_subtype(
+                m.to_openai_dict(
+                    put_inner_thoughts_in_kwargs=llm_config.put_inner_thoughts_in_kwargs,
+                    use_developer_message=use_developer_message,
+                )
+            )
             for m in messages
         ]
 
