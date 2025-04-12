@@ -318,17 +318,16 @@ class GoogleAIClient(LLMClientBase):
             for t in tools
         ]
 
-        # Correct casing + add inner thoughts if needed
+        # Add inner thoughts if needed
         for func in function_list:
-            func["parameters"]["type"] = "OBJECT"
-            for param_name, param_fields in func["parameters"]["properties"].items():
-                param_fields["type"] = param_fields["type"].upper()
+            # Note: Google AI API used to have weird casing requirements, but not any more
+
             # Add inner thoughts
             if self.llm_config.put_inner_thoughts_in_kwargs:
                 from letta.local_llm.constants import INNER_THOUGHTS_KWARG, INNER_THOUGHTS_KWARG_DESCRIPTION
 
                 func["parameters"]["properties"][INNER_THOUGHTS_KWARG] = {
-                    "type": "STRING",
+                    "type": "string",
                     "description": INNER_THOUGHTS_KWARG_DESCRIPTION,
                 }
                 func["parameters"]["required"].append(INNER_THOUGHTS_KWARG)
