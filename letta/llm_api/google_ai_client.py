@@ -267,6 +267,41 @@ class GoogleAIClient(LLMClientBase):
         except KeyError as e:
             raise e
 
+    def _clean_google_ai_schema_properties(self, schema_part: dict):
+        """Recursively clean schema parts to remove unsupported Google AI keywords."""
+        if not isinstance(schema_part, dict):
+            return
+
+        # Per https://ai.google.dev/gemini-api/docs/function-calling?example=meeting#notes_and_limitations
+        # * Only a subset of the OpenAPI schema is supported.
+        # * Supported parameter types in Python are limited.
+        unsupported_keys = ["default", "exclusiveMaximum", "exclusiveMinimum"]
+        keys_to_remove_at_this_level = [key for key in unsupported_keys if key in schema_part]
+        for key_to_remove in keys_to_remove_at_this_level:
+            logger.warning(f"Removing unsupported keyword 	'{key_to_remove}' from schema part.")
+            del schema_part[key_to_remove]
+
+        if schema_part.get("type") == "string" and "format" in schema_part:
+            allowed_formats = ["enum", "date-time"]
+            if schema_part["format"] not in allowed_formats:
+                logger.warning(f"Removing unsupported format 	'{schema_part['format']}' for string type. Allowed: {allowed_formats}")
+                del schema_part["format"]
+
+        # Check properties within the current level
+        if "properties" in schema_part and isinstance(schema_part["properties"], dict):
+            for prop_name, prop_schema in schema_part["properties"].items():
+                self._clean_google_ai_schema_properties(prop_schema)
+
+        # Check items within arrays
+        if "items" in schema_part and isinstance(schema_part["items"], dict):
+            self._clean_google_ai_schema_properties(schema_part["items"])
+
+        # Check within anyOf, allOf, oneOf lists
+        for key in ["anyOf", "allOf", "oneOf"]:
+            if key in schema_part and isinstance(schema_part[key], list):
+                for item_schema in schema_part[key]:
+                    self._clean_google_ai_schema_properties(item_schema)
+
     def convert_tools_to_google_ai_format(self, tools: List[Tool], llm_config: LLMConfig) -> List[dict]:
         """
         OpenAI style:
