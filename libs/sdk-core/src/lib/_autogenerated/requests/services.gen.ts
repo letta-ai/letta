@@ -1020,7 +1020,7 @@ export class AgentsService {
    * @param data.agentId
    * @param data.userId
    * @param data.requestBody
-   * @returns unknown Successful Response
+   * @returns string Successful Response
    * @throws ApiError
    */
   public static exportAgentSerialized(

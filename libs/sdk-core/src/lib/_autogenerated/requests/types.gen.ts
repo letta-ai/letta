@@ -3897,7 +3897,7 @@ export type ExportAgentSerializedData = {
   userId?: string | null;
 };
 
-export type ExportAgentSerializedResponse = unknown;
+export type ExportAgentSerializedResponse = string;
 
 export type ImportAgentSerializedData = {
   /**
@@ -5266,7 +5266,7 @@ export type $OpenApiTs = {
         /**
          * Successful Response
          */
-        200: unknown;
+        200: string;
         /**
          * Validation Error
          */

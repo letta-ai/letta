@@ -414,7 +414,7 @@ export const prefetchUseAgentsServiceListAgents = (
  * @param data.agentId
  * @param data.userId
  * @param data.requestBody
- * @returns unknown Successful Response
+ * @returns string Successful Response
  * @throws ApiError
  */
 export const prefetchUseAgentsServiceExportAgentSerialized = (
