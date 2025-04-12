@@ -65,6 +65,9 @@ class Message(SqlalchemyBase, OrganizationMixin, AgentMixin):
         model = self.__pydantic_model__.model_validate(self)
         if self.text and not model.content:
             model.content = [PydanticTextContent(text=self.text)]
+        # If there are no tool calls, set tool_calls to None
+        if len(self.tool_calls) == 0:
+            model.tool_calls = None
         return model
 
 
