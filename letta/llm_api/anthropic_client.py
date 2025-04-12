@@ -159,6 +159,10 @@ class AnthropicClient(LLMClientBase):
             # Special case for summarization path
             tools_for_request = None
             tool_choice = None
+        elif llm_config.enable_reasoner:
+            # NOTE: reasoning models currently do not allow for `any`
+            tool_choice = {"type": "auto", "disable_parallel_tool_use": True}
+            tools_for_request = [Tool(function=f) for f in tools]
         elif force_tool_call is not None:
             tool_choice = {"type": "tool", "name": force_tool_call}
             tools_for_request = [Tool(function=f) for f in tools if f["name"] == force_tool_call]
