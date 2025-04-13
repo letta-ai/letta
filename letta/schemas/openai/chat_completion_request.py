@@ -9,6 +9,12 @@ class SystemMessage(BaseModel):
     name: Optional[str] = None
 
 
+class DeveloperMessage(BaseModel):
+    content: str
+    role: str = "developer"
+    name: Optional[str] = None
+
+
 class UserMessage(BaseModel):
     content: Union[str, List[str]]
     role: str = "user"
@@ -48,6 +54,8 @@ def cast_message_to_subtype(m_dict: dict) -> ChatMessage:
     role = m_dict.get("role")
     if role == "system":
         return SystemMessage(**m_dict)
+    elif role == 'developer':
+        return DeveloperMessage(**m_dict)
     elif role == "user":
         return UserMessage(**m_dict)
     elif role == "assistant":
