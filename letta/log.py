@@ -58,6 +58,11 @@ DEVELOPMENT_LOGGING = {
             "handlers": ["console"],
             "propagate": True,
         },
+        "httpx": {
+        "level": "WARNING",  # This will suppress INFO level messages
+        "handlers": ["console"],
+        "propagate": True,
+        },
     },
 }
 
