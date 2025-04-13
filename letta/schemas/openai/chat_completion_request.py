@@ -45,7 +45,7 @@ class ToolMessage(BaseModel):
     tool_call_id: str
 
 
-ChatMessage = Union[SystemMessage, UserMessage, AssistantMessage, ToolMessage]
+ChatMessage = Union[SystemMessage, DeveloperMessage, UserMessage, AssistantMessage, ToolMessage]
 
 
 # TODO: this might not be necessary with the validator
