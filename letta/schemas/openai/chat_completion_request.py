@@ -63,7 +63,7 @@ def cast_message_to_subtype(m_dict: dict) -> ChatMessage:
     elif role == "tool":
         return ToolMessage(**m_dict)
     else:
-        raise ValueError("Unknown message role")
+        raise ValueError(f"Unknown message role: {role}")
 
 
 class ResponseFormat(BaseModel):
