@@ -110,7 +110,7 @@ class GoogleAIClient(LLMClientBase):
             }
         }
         """
-        # print("[google_ai response]", json.dumps(response_data, indent=2))
+        logger.debug("[google_ai response]", json.dumps(response_data, indent=2))
 
         try:
             choices = []
@@ -118,8 +118,9 @@ class GoogleAIClient(LLMClientBase):
             for candidate in response_data["candidates"]:
                 content = candidate["content"]
 
-                role = content["role"]
-                assert role == "model", f"Unknown role in response: {role}"
+                if "role" in content:
+                    role = content["role"]
+                    assert role == "model", f"Unknown role in response: {role}"
 
                 parts = content["parts"]
 
