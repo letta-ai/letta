@@ -9,6 +9,12 @@ class SystemMessage(BaseModel):
     name: Optional[str] = None
 
 
+class DeveloperMessage(BaseModel):
+    content: str
+    role: str = "developer"
+    name: Optional[str] = None
+
+
 class UserMessage(BaseModel):
     content: Union[str, List[str]]
     role: str = "user"
@@ -39,7 +45,7 @@ class ToolMessage(BaseModel):
     tool_call_id: str
 
 
-ChatMessage = Union[SystemMessage, UserMessage, AssistantMessage, ToolMessage]
+ChatMessage = Union[SystemMessage, DeveloperMessage, UserMessage, AssistantMessage, ToolMessage]
 
 
 # TODO: this might not be necessary with the validator
@@ -48,6 +54,8 @@ def cast_message_to_subtype(m_dict: dict) -> ChatMessage:
     role = m_dict.get("role")
     if role == "system":
         return SystemMessage(**m_dict)
+    elif role == 'developer':
+        return DeveloperMessage(**m_dict)
     elif role == "user":
         return UserMessage(**m_dict)
     elif role == "assistant":
@@ -55,7 +63,7 @@ def cast_message_to_subtype(m_dict: dict) -> ChatMessage:
     elif role == "tool":
         return ToolMessage(**m_dict)
     else:
-        raise ValueError("Unknown message role")
+        raise ValueError(f"Unknown message role: {role}")
 
 
 class ResponseFormat(BaseModel):
