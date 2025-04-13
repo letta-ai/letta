@@ -67,6 +67,7 @@ from letta.schemas.providers import (
     TogetherProvider,
     VLLMChatCompletionsProvider,
     VLLMCompletionsProvider,
+    VoyageAIProvider,
     xAIProvider,
 )
 from letta.schemas.sandbox_config import SandboxType
@@ -242,6 +243,12 @@ class SyncServer(Server):
             self._enabled_providers.append(
                 AnthropicProvider(
                     api_key=model_settings.anthropic_api_key,
+                )
+            )
+        if model_settings.voyage_api_key:
+            self._enabled_providers.append(
+                VoyageAIProvider(
+                    api_key=model_settings.voyage_api_key,
                 )
             )
         if model_settings.ollama_base_url:

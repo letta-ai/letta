@@ -812,6 +812,38 @@ class AnthropicProvider(Provider):
         return []
 
 
+class VoyageAIProvider(Provider):
+    name: str = "voyageai"
+    api_key: str = Field(..., description="API key for the VoyageAI API.")
+    base_url: str = "https://api.voyageai.com/v1"
+
+    def list_llm_models(self) -> List[LLMConfig]:
+        return []
+
+    def list_embedding_models(self) -> List[EmbeddingConfig]:
+        # NOTE: currently there is no GET /models, so we need to hardcode the embedding models
+        voyageai_model_config = [
+            ("voyage-3-large", 1024, 3),
+            ("voyage-3", 1024, 10),
+            ("voyage-3-lite", 512, 31),
+            ("voyage-code-3", 1024, 3),
+            ("voyage-finance-2", 1024, 3),
+            ("voyage-law-2", 1024, 7),
+            ("voyage-code-2", 1536, 7),
+        ]
+        return [
+            EmbeddingConfig(
+                embedding_model=model[0],
+                embedding_endpoint_type="voyageai",
+                embedding_endpoint=self.base_url,
+                embedding_dim=model[1],
+                embedding_chunk_size=model[2],  # NOTE: max is 2048
+                handle=self.get_handle(model[0], True),
+            )
+            for model in voyageai_model_config
+        ]
+
+
 class MistralProvider(Provider):
     name: str = "mistral"
     api_key: str = Field(..., description="API key for the Mistral API.")
