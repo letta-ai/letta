@@ -34,6 +34,7 @@ from letta.schemas.agent import AgentType, CreateAgent, UpdateAgent
 from letta.schemas.block import Block as PydanticBlock
 from letta.schemas.block import BlockUpdate
 from letta.schemas.embedding_config import EmbeddingConfig
+from letta.schemas.group import Group as PydanticGroup
 from letta.schemas.group import ManagerType
 from letta.schemas.llm_config import LLMConfig
 from letta.schemas.memory import Memory
@@ -641,6 +642,14 @@ class AgentManager:
 
             # Return the updated agent state
             return agent.to_pydantic()
+
+    @enforce_types
+    def list_groups(self, agent_id: str, actor: PydanticUser, manager_type: Optional[str] = None) -> List[PydanticGroup]:
+        with self.session_maker() as session:
+            agent = AgentModel.read(db_session=session, identifier=agent_id, actor=actor)
+            if manager_type:
+                return [group.to_pydantic() for group in agent.groups if group.manager_type == manager_type]
+            return [group.to_pydantic() for group in agent.groups]
 
     # ======================================================================================================================
     # In Context Messages Management
