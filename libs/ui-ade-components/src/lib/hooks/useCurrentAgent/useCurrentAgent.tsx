@@ -3,7 +3,7 @@ import { useAgentsServiceRetrieveAgent } from '@letta-cloud/sdk-core';
 import { useCurrentAgentMetaData } from '../useCurrentAgentMetaData/useCurrentAgentMetaData';
 
 export function useCurrentAgent() {
-  const { agentId, agentName, isLocal } = useCurrentAgentMetaData();
+  const { agentId, agentName } = useCurrentAgentMetaData();
 
   const { data: agent } = useAgentsServiceRetrieveAgent(
     {
@@ -14,7 +14,7 @@ export function useCurrentAgent() {
       refetchOnWindowFocus: false,
       refetchOnReconnect: false,
       refetchOnMount: false,
-      refetchInterval: isLocal ? 5000 : false,
+      refetchInterval: 5000,
     },
   );
 

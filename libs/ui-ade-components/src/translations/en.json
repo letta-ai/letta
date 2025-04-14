@@ -508,6 +508,7 @@
     },
     "mobileTitle": "Core Memory",
     "EditMemoryForm": {
+      "hasChangedRemotely": "Memory has been changed from another location",
       "characterLimit": "{count}/{limit} CHARS"
     },
     "AdvancedEditMemory": {

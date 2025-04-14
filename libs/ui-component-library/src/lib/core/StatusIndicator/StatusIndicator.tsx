@@ -11,6 +11,11 @@ const statusIndicatorVariants = cva('relative w-2 h-2 rounded-full', {
       processing: 'bg-warning animate-pulse',
       inactive: 'bg-destructive',
       warning: 'bg-warning',
+      brand: 'bg-brand',
+    },
+    animate: {
+      true: 'animate-pulse',
+      false: '',
     },
   },
 });

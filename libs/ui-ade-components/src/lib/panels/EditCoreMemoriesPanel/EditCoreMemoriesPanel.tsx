@@ -2,6 +2,7 @@ import {
   Button,
   OnboardingAsideFocus,
   Spinner,
+  StatusIndicator,
   TabGroup,
   Tooltip,
 } from '@letta-cloud/ui-component-library';
@@ -42,12 +43,15 @@ type EditMemoryFormProps = AdvancedEditorPayload;
 function EditMemoryForm(props: EditMemoryFormProps) {
   const { label, memory } = props;
 
+  const { isTemplate } = useCurrentAgentMetaData();
+
   const t = useTranslations('ADE/EditCoreMemoriesPanel');
   const { open } = useAdvancedCoreMemoryEditor();
 
-  const { value, onChange, error, isUpdating } = useUpdateMemory({
-    label,
-  });
+  const { value, onChange, hasChangedRemotely, error, isUpdating } =
+    useUpdateMemory({
+      label,
+    });
 
   const [canUpdateAgent] = useADEPermissions(ApplicationServices.UPDATE_AGENT);
 
@@ -61,6 +65,11 @@ function EditMemoryForm(props: EditMemoryFormProps) {
             labelBadge={<SharedMemoryIndicator memory={memory} />}
             rightOfLabelContent={
               <HStack align="center">
+                {!isTemplate && hasChangedRemotely && (
+                  <Tooltip content={t('EditMemoryForm.hasChangedRemotely')}>
+                    <StatusIndicator status="brand" animate />
+                  </Tooltip>
+                )}
                 {isUpdating && <Spinner size="xsmall" />}
                 <Typography variant="body3" color="muted">
                   {t('EditMemoryForm.characterLimit', {
@@ -77,6 +86,7 @@ function EditMemoryForm(props: EditMemoryFormProps) {
             fullWidth
             label={label}
             onChange={(e) => {
+              // originalMemory.current.value = e.target.value;
               onChange(e.target.value);
             }}
             expandable={{

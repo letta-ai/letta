@@ -83,11 +83,15 @@ describe('letta', () => {
       { parseSpecialCharSequences: false },
     );
 
+    // wait for debounce save
+    // eslint-disable-next-line cypress/no-unnecessary-waiting
+    cy.wait(3000);
+
     cy.findByTestId('toggle-variables-button', { timeout: 50000 })
       .first()
       .click();
 
-    cy.findByTestId('key-value-editor-value-0').type('Shubham');
+    cy.findByTestId('key-value-editor-value-0', { timeout: 50000 }).type('Shubham');
     cy.findByTestId('save-variables-button').click();
 
     // wait for save (kinda...)

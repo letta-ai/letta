@@ -1,12 +1,12 @@
 import { useCurrentAgent } from '../useCurrentAgent/useCurrentAgent';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   type AgentState,
   UseAgentsServiceRetrieveAgentKeyFn,
   useAgentsServiceModifyCoreMemoryBlock,
 } from '@letta-cloud/sdk-core';
 import { useQueryClient } from '@tanstack/react-query';
-import { useDebouncedCallback } from '@mantine/hooks';
+import { useDebouncedValue } from '@mantine/hooks';
 
 interface UseUpdateMemoryPayload {
   label: string;
@@ -27,71 +27,92 @@ export function useUpdateMemory(payload: UseUpdateMemoryPayload) {
     return memory.blocks.find((block) => block.label === label)?.value;
   }, [memory, label]);
 
+  const originalMemory = useRef(value);
+
   const {
     mutate,
     error,
     isPending: isUpdating,
   } = useAgentsServiceModifyCoreMemoryBlock();
 
-  const debouncedMutation = useDebouncedCallback(mutate, 500);
+  const updateMessageLock = useRef(false);
 
   const [localValue, setLocalValue] = useState(value || '');
 
-  const handleChange = useCallback(
-    (nextValue: string) => {
-      setLocalValue(nextValue);
+  const [valueToSave, setValueToSave] = useState(value || '');
 
-      queryClient.setQueriesData<AgentState | undefined>(
-        {
-          queryKey: UseAgentsServiceRetrieveAgentKeyFn({
-            agentId: id,
-          }),
-        },
-        (oldData) => {
-          if (!oldData) {
-            return oldData;
-          }
-
-          const newMemory = oldData.memory.blocks.map((block) => {
-            if (block.label === label) {
-              return {
-                ...block,
-                value: nextValue,
-              };
-            }
-
-            return block;
-          });
-
-          return {
-            ...oldData,
-            memory: {
-              ...oldData.memory,
-              blocks: newMemory,
-            },
-          };
-        },
-      );
-
-      debouncedMutation(
-        {
-          agentId: id,
-          blockLabel: label,
-          requestBody: {
-            value: nextValue,
-          },
-        },
-        {
-          onSuccess: () => {
-            setLastUpdatedAt(new Date().toISOString());
-          },
-        },
-      );
-    },
-    [debouncedMutation, id, label, queryClient],
-  );
+  const [debouncedValueToSave] = useDebouncedValue(valueToSave, 500);
 
   useEffect(() => {
+    if (debouncedValueToSave === value) {
+      return;
+    }
+
+    mutate(
+      {
+        agentId: id,
+        blockLabel: label,
+        requestBody: {
+          value: debouncedValueToSave,
+        },
+      },
+      {
+        onSuccess: () => {
+          queryClient.setQueriesData<AgentState | undefined>(
+            {
+              queryKey: UseAgentsServiceRetrieveAgentKeyFn({
+                agentId: id,
+              }),
+            },
+            (oldData) => {
+              if (!oldData) {
+                return oldData;
+              }
+
+              const newMemory = oldData.memory.blocks.map((block) => {
+                if (block.label === label) {
+                  return {
+                    ...block,
+                    value: debouncedValueToSave,
+                  };
+                }
+
+                return block;
+              });
+
+              return {
+                ...oldData,
+                memory: {
+                  ...oldData.memory,
+                  blocks: newMemory,
+                },
+              };
+            },
+          );
+
+          updateMessageLock.current = false;
+          setLastUpdatedAt(new Date().toISOString());
+        },
+        onError: () => {
+          updateMessageLock.current = false;
+        },
+      },
+    );
+  }, [debouncedValueToSave, id, label, mutate, queryClient, value]);
+
+  const handleChange = useCallback((nextValue: string) => {
+    setLocalValue(nextValue);
+    originalMemory.current = nextValue;
+
+    updateMessageLock.current = true;
+    setValueToSave(nextValue);
+  }, []);
+
+  useEffect(() => {
+    if (updateMessageLock.current) {
+      return;
+    }
+
     if (value !== localValue) {
       setLocalValue(value || '');
     }
@@ -100,6 +121,7 @@ export function useUpdateMemory(payload: UseUpdateMemoryPayload) {
   return {
     value: localValue,
     onChange: handleChange,
+    hasChangedRemotely: originalMemory.current !== localValue,
     error,
     lastUpdatedAt,
     isUpdating,
