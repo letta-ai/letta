@@ -111,6 +111,30 @@ describe('pythonCodeParser', () => {
     ]);
   });
 
+  it('should handle arguments with commas in their typedef like dict[str, int]', () => {
+    const pythonCode = `
+      def with_comma(a: dict[str, int], b: list[int]) -> None:
+          """
+          Function with arguments containing commas
+          """
+          pass
+    `;
+
+    const result = pythonCodeParser(pythonCode);
+
+    expect(result).toEqual([
+      {
+        name: 'with_comma',
+        args: [
+          { name: 'a', type: 'dict[str, int]' },
+          { name: 'b', type: 'list[int]' },
+        ],
+        returnType: 'None',
+        description: 'Function with arguments containing commas',
+      },
+    ]);
+  });
+
   it('should handle arguments with default values', () => {
     const pythonCode = `
     def with_defaults(a: int = 10, b: str = "default") -> str:

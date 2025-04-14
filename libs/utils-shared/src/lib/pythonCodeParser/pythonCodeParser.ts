@@ -41,12 +41,11 @@ def no_description(a: int) -> int:
 def ambiguous_return_value(a: int):
   return a
  */
-
 export function pythonCodeParser(pythonCode: string) {
   const functions: FunctionConfig[] = [];
   const functionRegex =
     // eslint-disable-next-line no-useless-escape
-    /def\s+([a-zA-Z_][a-zA-Z0-9_]*)\s*\(([\s\S]*?)\)(?:\s*->\s*([a-zA-Z0-9_\[\]]*))?\s*:\s*(?:"""([\s\S]*?)""")?/g;
+    /def\s+([a-zA-Z_][a-zA-Z0-9_]*)\s*\(([\s\S]*?)\)(?:\s*->\s*([a-zA-Z0-9_\[\], ]*))?\s*:\s*(?:"""([\s\S]*?)""")?/g;
 
   let match;
   while ((match = functionRegex.exec(pythonCode)) !== null) {
@@ -61,7 +60,10 @@ export function pythonCodeParser(pythonCode: string) {
     // Parse arguments
     const args: Args[] = [];
     if (argsString) {
-      const argsList = argsString.split(',');
+      // Split by commas, but ignore commas inside brackets
+      const argsList = argsString
+        .split(/,(?![^[\]]*\])/)
+        .map((arg) => arg.trim());
       for (const arg of argsList) {
         const [argNameAndType] = arg.split('=').map((part) => part.trim());
         const argParts = argNameAndType.split(':');
@@ -70,6 +72,12 @@ export function pythonCodeParser(pythonCode: string) {
 
         if (argParts.length > 1) {
           argType = argParts[1].trim();
+
+          // Handle complex types like dict[str, str]
+          const complexTypeRegex = /^[a-zA-Z_][a-zA-Z0-9_]*(\[[^\]]+\])?$/;
+          if (!complexTypeRegex.test(argType)) {
+            argType = 'any'; // Fallback to 'any' if the type is invalid
+          }
         }
 
         if (argName && argName !== 'self') {
