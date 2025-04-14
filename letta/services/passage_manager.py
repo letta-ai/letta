@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import List, Optional
 
 from openai import OpenAI
@@ -49,7 +49,7 @@ class PassageManager:
             "organization_id": data["organization_id"],
             "metadata_": data.get("metadata", {}),
             "is_deleted": data.get("is_deleted", False),
-            "created_at": data.get("created_at", datetime.utcnow()),
+            "created_at": data.get("created_at", datetime.now(timezone.utc)),
         }
 
         if "agent_id" in data and data["agent_id"]:

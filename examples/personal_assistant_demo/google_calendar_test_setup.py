@@ -40,7 +40,7 @@ def main():
         service = build("calendar", "v3", credentials=creds)
 
         # Call the Calendar API
-        now = datetime.datetime.utcnow().isoformat() + "Z"  # 'Z' indicates UTC time
+        now = datetime.datetime.now(datetime.timezone.utc).isoformat() + "Z"  # 'Z' indicates UTC time
         print("Getting the upcoming 10 events")
         events_result = (
             service.events()

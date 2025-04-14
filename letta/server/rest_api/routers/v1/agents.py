@@ -1,6 +1,6 @@
 import json
 import traceback
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Annotated, Any, List, Optional
 
 from fastapi import APIRouter, BackgroundTasks, Body, Depends, File, Header, HTTPException, Query, UploadFile, status
@@ -729,7 +729,7 @@ async def process_message_background(
         # Update job status to completed
         job_update = JobUpdate(
             status=JobStatus.completed,
-            completed_at=datetime.utcnow(),
+            completed_at=datetime.now(timezone.utc),
             metadata={"result": result.model_dump(mode="json")},  # Store the result in metadata
         )
         server.job_manager.update_job_by_id(job_id=job_id, job_update=job_update, actor=actor)
@@ -738,7 +738,7 @@ async def process_message_background(
         # Update job status to failed
         job_update = JobUpdate(
             status=JobStatus.failed,
-            completed_at=datetime.utcnow(),
+            completed_at=datetime.now(timezone.utc),
             metadata={"error": str(e)},
         )
         server.job_manager.update_job_by_id(job_id=job_id, job_update=job_update, actor=actor)

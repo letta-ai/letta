@@ -1,5 +1,5 @@
 import json
-from datetime import datetime
+from datetime import datetime, timezone
 from unittest.mock import AsyncMock
 
 import pytest
@@ -31,7 +31,7 @@ def messages():
         Message(
             role=MessageRole.user if i % 2 == 0 else MessageRole.assistant,
             content=[TextContent(type="text", text=json.dumps({"message": f"Test message {i}"}))],
-            created_at=datetime.utcnow(),
+            created_at=datetime.now(timezone.utc),
         )
         for i in range(15)
     ]

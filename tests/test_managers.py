@@ -1768,7 +1768,7 @@ def test_agent_list_passages_filtering(server, default_user, sarah_agent, defaul
     assert len(source_filtered) == 3
 
     # Test date filtering
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
     future_date = now + timedelta(days=1)
     past_date = now - timedelta(days=1)
 
@@ -4302,7 +4302,7 @@ def test_job_messages_pagination(server: SyncServer, default_run, default_user, 
 def test_job_messages_ordering(server: SyncServer, default_run, default_user, sarah_agent):
     """Test that messages are ordered by created_at."""
     # Create messages with different timestamps
-    base_time = datetime.utcnow()
+    base_time = datetime.now(timezone.utc)
     message_times = [
         base_time - timedelta(minutes=2),
         base_time - timedelta(minutes=1),
