@@ -116,6 +116,8 @@ import type {
   CreateAgentMessageAsyncResponse,
   ResetMessagesData,
   ResetMessagesResponse,
+  ListAgentGroupsData,
+  ListAgentGroupsResponse,
   ListGroupsData,
   ListGroupsResponse,
   CreateGroupData,
@@ -1828,6 +1830,36 @@ export class AgentsService {
       },
       query: {
         add_default_initial_messages: data.addDefaultInitialMessages,
+      },
+      errors: {
+        422: 'Validation Error',
+      },
+      headers,
+    });
+  }
+
+  /**
+   * List Agent Groups
+   * Lists the groups for an agent
+   * @param data The data for the request.
+   * @param data.agentId
+   * @param data.managerType Manager type to filter groups by
+   * @param data.userId
+   * @returns Group Successful Response
+   * @throws ApiError
+   */
+  public static listAgentGroups(
+    data: ListAgentGroupsData,
+    headers?: { user_id: string },
+  ): CancelablePromise<ListAgentGroupsResponse> {
+    return __request(OpenAPI, {
+      method: 'GET',
+      url: '/v1/agents/{agent_id}/groups',
+      path: {
+        agent_id: data.agentId,
+      },
+      query: {
+        manager_type: data.managerType,
       },
       errors: {
         422: 'Validation Error',

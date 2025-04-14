@@ -5958,6 +5958,29 @@ export const patch_Reset_messages = {
   response: AgentState,
 };
 
+export type get_List_agent_groups = typeof get_List_agent_groups;
+export const get_List_agent_groups = {
+  method: z.literal('GET'),
+  path: z.literal('/v1/agents/{agent_id}/groups'),
+  requestFormat: z.literal('json'),
+  parameters: z.object({
+    query: z.object({
+      manager_type: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+    }),
+    path: z.object({
+      agent_id: z.string(),
+    }),
+    header: z.object({
+      user_id: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+    }),
+  }),
+  response: z.array(Group),
+};
+
 export type get_List_groups = typeof get_List_groups;
 export const get_List_groups = {
   method: z.literal('GET'),
@@ -7413,6 +7436,7 @@ export const EndpointByMethod = {
     '/v1/agents/{agent_id}/core-memory/blocks': get_List_core_memory_blocks,
     '/v1/agents/{agent_id}/archival-memory': get_List_passages,
     '/v1/agents/{agent_id}/messages': get_List_messages,
+    '/v1/agents/{agent_id}/groups': get_List_agent_groups,
     '/v1/groups/': get_List_groups,
     '/v1/groups/{group_id}': get_Retrieve_group,
     '/v1/groups/{group_id}/messages': get_List_group_messages,

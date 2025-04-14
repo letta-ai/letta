@@ -207,6 +207,11 @@
       "messageBufferAutoclear": {
         "label": "Reset message buffer",
         "tooltip": "Resets the message buffer every time the agent is invoked, similar behavior to an basic llm agent"
+      },
+      "sleeptimeAgentFrequency": {
+        "label": "Sleeptime agent frequency",
+        "tooltip": "The step frequency at which the sleeptime agent should be invoked",
+        "error": "Failed to update sleeptime agent frequency value"
       }
     }
   },
@@ -320,7 +325,7 @@
       "next": "Next: Core Memory (Blocks)"
     },
     "AgentType": {
-      "label": "Agent Type",
+      "label": "Agent type",
       "tooltip": "Describes the core letta agent type, this cannot be changed after creation"
     },
     "IdentitiesEditorDialog": {

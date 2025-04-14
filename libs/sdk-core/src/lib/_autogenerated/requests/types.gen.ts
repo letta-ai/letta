@@ -4190,6 +4190,17 @@ export type ResetMessagesData = {
 
 export type ResetMessagesResponse = AgentState;
 
+export type ListAgentGroupsData = {
+  agentId: string;
+  /**
+   * Manager type to filter groups by
+   */
+  managerType?: string | null;
+  userId?: string | null;
+};
+
+export type ListAgentGroupsResponse = Array<Group>;
+
 export type ListGroupsData = {
   /**
    * Cursor for pagination
@@ -5671,6 +5682,21 @@ export type $OpenApiTs = {
          * Successful Response
          */
         200: AgentState;
+        /**
+         * Validation Error
+         */
+        422: HTTPValidationError;
+      };
+    };
+  };
+  '/v1/agents/{agent_id}/groups': {
+    get: {
+      req: ListAgentGroupsData;
+      res: {
+        /**
+         * Successful Response
+         */
+        200: Array<Group>;
         /**
          * Validation Error
          */

@@ -951,6 +951,42 @@ export const useAgentsServiceListMessages = <
     ...options,
   });
 /**
+ * List Agent Groups
+ * Lists the groups for an agent
+ * @param data The data for the request.
+ * @param data.agentId
+ * @param data.managerType Manager type to filter groups by
+ * @param data.userId
+ * @returns Group Successful Response
+ * @throws ApiError
+ */
+export const useAgentsServiceListAgentGroups = <
+  TData = Common.AgentsServiceListAgentGroupsDefaultResponse,
+  TError = unknown,
+  TQueryKey extends Array<unknown> = unknown[],
+>(
+  {
+    agentId,
+    managerType,
+    userId,
+  }: {
+    agentId: string;
+    managerType?: string;
+    userId?: string;
+  },
+  queryKey?: TQueryKey,
+  options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>,
+) =>
+  useQuery<TData, TError>({
+    queryKey: Common.UseAgentsServiceListAgentGroupsKeyFn(
+      { agentId, managerType, userId },
+      queryKey,
+    ),
+    queryFn: () =>
+      AgentsService.listAgentGroups({ agentId, managerType, userId }) as TData,
+    ...options,
+  });
+/**
  * List Groups
  * Fetch all multi-agent groups matching query.
  * @param data The data for the request.

@@ -578,6 +578,30 @@ export const UseAgentsServiceListMessagesKeyFn = (
     },
   ]),
 ];
+export type AgentsServiceListAgentGroupsDefaultResponse = Awaited<
+  ReturnType<typeof AgentsService.listAgentGroups>
+>;
+export type AgentsServiceListAgentGroupsQueryResult<
+  TData = AgentsServiceListAgentGroupsDefaultResponse,
+  TError = unknown,
+> = UseQueryResult<TData, TError>;
+export const useAgentsServiceListAgentGroupsKey =
+  'AgentsServiceListAgentGroups';
+export const UseAgentsServiceListAgentGroupsKeyFn = (
+  {
+    agentId,
+    managerType,
+    userId,
+  }: {
+    agentId: string;
+    managerType?: string;
+    userId?: string;
+  },
+  queryKey?: Array<unknown>,
+) => [
+  useAgentsServiceListAgentGroupsKey,
+  ...(queryKey ?? [{ agentId, managerType, userId }]),
+];
 export type GroupsServiceListGroupsDefaultResponse = Awaited<
   ReturnType<typeof GroupsService.listGroups>
 >;

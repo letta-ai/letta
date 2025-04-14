@@ -9,3 +9,4 @@ export * from './useCurrentBasePathname/useCurrentBasePathname';
 export * from './useCurrentAgent/useCurrentAgent';
 export * from './useAgentBaseNameType/useAgentBaseNameType';
 export * from './useCurrentAgentMetaData/useCurrentAgentMetaData';
+export * from './useCurrentGroup/useCurrentGroup';

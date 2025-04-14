@@ -3253,6 +3253,69 @@
         }
       }
     },
+    "/v1/agents/{agent_id}/groups": {
+      "get": {
+        "tags": ["agents"],
+        "summary": "List Agent Groups",
+        "description": "Lists the groups for an agent",
+        "operationId": "list_agent_groups",
+        "parameters": [
+          {
+            "name": "agent_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Agent Id"
+            }
+          },
+          {
+            "name": "manager_type",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Manager type to filter groups by",
+              "title": "Manager Type"
+            },
+            "description": "Manager type to filter groups by"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Group"
+                  },
+                  "title": "Response List Agent Groups"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/groups/": {
       "get": {
         "tags": ["groups"],

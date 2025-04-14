@@ -17,6 +17,7 @@ from letta.log import get_logger
 from letta.orm.errors import NoResultFound
 from letta.schemas.agent import AgentState, AgentType, CreateAgent, UpdateAgent
 from letta.schemas.block import Block, BlockUpdate
+from letta.schemas.group import Group
 from letta.schemas.job import JobStatus, JobUpdate, LettaRequestConfig
 from letta.schemas.letta_message import LettaMessageUnion, LettaMessageUpdateUnion
 from letta.schemas.letta_request import LettaRequest, LettaStreamingRequest
@@ -804,3 +805,16 @@ def reset_messages(
     """Resets the messages for an agent"""
     actor = server.user_manager.get_user_or_default(user_id=actor_id)
     return server.agent_manager.reset_messages(agent_id=agent_id, actor=actor, add_default_initial_messages=add_default_initial_messages)
+
+
+@router.get("/{agent_id}/groups", response_model=List[Group], operation_id="list_agent_groups")
+async def list_agent_groups(
+    agent_id: str,
+    manager_type: Optional[str] = Query(None, description="Manager type to filter groups by"),
+    server: "SyncServer" = Depends(get_letta_server),
+    actor_id: Optional[str] = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
+):
+    """Lists the groups for an agent"""
+    actor = server.user_manager.get_user_or_default(user_id=actor_id)
+    print("in list agents with manager_type", manager_type)
+    return server.agent_manager.list_groups(agent_id=agent_id, manager_type=manager_type, actor=actor)

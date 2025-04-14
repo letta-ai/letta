@@ -739,6 +739,37 @@ export const prefetchUseAgentsServiceListMessages = (
       }),
   });
 /**
+ * List Agent Groups
+ * Lists the groups for an agent
+ * @param data The data for the request.
+ * @param data.agentId
+ * @param data.managerType Manager type to filter groups by
+ * @param data.userId
+ * @returns Group Successful Response
+ * @throws ApiError
+ */
+export const prefetchUseAgentsServiceListAgentGroups = (
+  queryClient: QueryClient,
+  {
+    agentId,
+    managerType,
+    userId,
+  }: {
+    agentId: string;
+    managerType?: string;
+    userId?: string;
+  },
+) =>
+  queryClient.prefetchQuery({
+    queryKey: Common.UseAgentsServiceListAgentGroupsKeyFn({
+      agentId,
+      managerType,
+      userId,
+    }),
+    queryFn: () =>
+      AgentsService.listAgentGroups({ agentId, managerType, userId }),
+  });
+/**
  * List Groups
  * Fetch all multi-agent groups matching query.
  * @param data The data for the request.

@@ -12,6 +12,7 @@ interface UseCurrentAgentMetaDataResponse {
   templateName?: string;
   isTemplate: boolean;
   isLocal: boolean;
+  isSleeptimeAgent: boolean;
 }
 
 export function useCurrentAgentMetaData(): UseCurrentAgentMetaDataResponse {
@@ -47,6 +48,7 @@ export function useCurrentAgentMetaData(): UseCurrentAgentMetaDataResponse {
       isTemplate: false,
       isLocal: false,
       isFromTemplate: false,
+      isSleeptimeAgent: false,
     };
   }
 
@@ -57,12 +59,14 @@ export function useCurrentAgentMetaData(): UseCurrentAgentMetaDataResponse {
       isTemplate: false,
       isLocal: true,
       isFromTemplate: false,
+      isSleeptimeAgent: localAgent?.data?.enable_sleeptime || false,
     };
   }
 
   let agentName = '';
   let isTemplate = false;
   let isFromTemplate = false;
+  let isSleeptimeAgent = false;
 
   if (templateName) {
     isTemplate = true;
@@ -100,6 +104,7 @@ export function useCurrentAgentMetaData(): UseCurrentAgentMetaDataResponse {
     agentId = deployedAgent?.body.id || '';
     agentName = deployedAgent?.body.name || '';
     isFromTemplate = !!deployedAgent?.body.base_template_id;
+    isSleeptimeAgent = deployedAgent?.body.enable_sleeptime || false;
   }
 
   return {
@@ -108,6 +113,7 @@ export function useCurrentAgentMetaData(): UseCurrentAgentMetaDataResponse {
     templateName,
     isTemplate,
     isFromTemplate,
+    isSleeptimeAgent,
     isLocal: false,
   };
 }
