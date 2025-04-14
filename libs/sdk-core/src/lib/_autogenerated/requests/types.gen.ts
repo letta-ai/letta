@@ -1818,6 +1818,10 @@ export type LLMConfig = {
    */
   enable_reasoner?: boolean;
   /**
+   * The reasoning effort to use when generating text reasoning models
+   */
+  reasoning_effort?: 'low' | 'medium' | 'high' | null;
+  /**
    * Configurable thinking budget for extended thinking, only used if enable_reasoner is True. Minimum value is 1024.
    */
   max_reasoning_tokens?: number;

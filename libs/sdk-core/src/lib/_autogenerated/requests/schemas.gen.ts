@@ -5356,6 +5356,20 @@ export const $LLMConfig = {
         "Whether or not the model should use extended thinking if it is a 'reasoning' style model",
       default: false,
     },
+    reasoning_effort: {
+      anyOf: [
+        {
+          type: 'string',
+          enum: ['low', 'medium', 'high'],
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Reasoning Effort',
+      description:
+        'The reasoning effort to use when generating text reasoning models',
+    },
     max_reasoning_tokens: {
       type: 'integer',
       title: 'Max Reasoning Tokens',

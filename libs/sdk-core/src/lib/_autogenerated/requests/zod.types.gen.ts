@@ -305,6 +305,23 @@ export const LLMConfig = z.object({
     ])
     .optional(),
   enable_reasoner: z.union([z.boolean(), z.undefined()]).optional(),
+  reasoning_effort: z
+    .union([
+      z.literal('low'),
+      z.literal('medium'),
+      z.literal('high'),
+      z.null(),
+      z.array(
+        z.union([
+          z.literal('low'),
+          z.literal('medium'),
+          z.literal('high'),
+          z.null(),
+        ]),
+      ),
+      z.undefined(),
+    ])
+    .optional(),
   max_reasoning_tokens: z.union([z.number(), z.undefined()]).optional(),
 });
 

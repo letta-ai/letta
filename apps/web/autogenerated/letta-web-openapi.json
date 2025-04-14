@@ -1238,6 +1238,54 @@
                               {}
                             ]
                           },
+                          "reasoning_effort": {
+                            "oneOf": [
+                              {
+                                "type": "string",
+                                "enum": ["low"]
+                              },
+                              {
+                                "type": "string",
+                                "enum": ["medium"]
+                              },
+                              {
+                                "type": "string",
+                                "enum": ["high"]
+                              },
+                              {
+                                "type": "string",
+                                "format": "null",
+                                "nullable": true
+                              },
+                              {
+                                "type": "array",
+                                "items": {
+                                  "oneOf": [
+                                    {
+                                      "type": "string",
+                                      "enum": ["low"]
+                                    },
+                                    {
+                                      "type": "string",
+                                      "enum": ["medium"]
+                                    },
+                                    {
+                                      "type": "string",
+                                      "enum": ["high"]
+                                    },
+                                    {
+                                      "type": "string",
+                                      "format": "null",
+                                      "nullable": true
+                                    }
+                                  ],
+                                  "nullable": true
+                                }
+                              },
+                              {}
+                            ],
+                            "nullable": true
+                          },
                           "max_reasoning_tokens": {
                             "oneOf": [
                               {
@@ -4339,6 +4387,54 @@
                                   },
                                   {}
                                 ]
+                              },
+                              "reasoning_effort": {
+                                "oneOf": [
+                                  {
+                                    "type": "string",
+                                    "enum": ["low"]
+                                  },
+                                  {
+                                    "type": "string",
+                                    "enum": ["medium"]
+                                  },
+                                  {
+                                    "type": "string",
+                                    "enum": ["high"]
+                                  },
+                                  {
+                                    "type": "string",
+                                    "format": "null",
+                                    "nullable": true
+                                  },
+                                  {
+                                    "type": "array",
+                                    "items": {
+                                      "oneOf": [
+                                        {
+                                          "type": "string",
+                                          "enum": ["low"]
+                                        },
+                                        {
+                                          "type": "string",
+                                          "enum": ["medium"]
+                                        },
+                                        {
+                                          "type": "string",
+                                          "enum": ["high"]
+                                        },
+                                        {
+                                          "type": "string",
+                                          "format": "null",
+                                          "nullable": true
+                                        }
+                                      ],
+                                      "nullable": true
+                                    }
+                                  },
+                                  {}
+                                ],
+                                "nullable": true
                               },
                               "max_reasoning_tokens": {
                                 "oneOf": [
@@ -7823,6 +7919,54 @@
                                   },
                                   {}
                                 ]
+                              },
+                              "reasoning_effort": {
+                                "oneOf": [
+                                  {
+                                    "type": "string",
+                                    "enum": ["low"]
+                                  },
+                                  {
+                                    "type": "string",
+                                    "enum": ["medium"]
+                                  },
+                                  {
+                                    "type": "string",
+                                    "enum": ["high"]
+                                  },
+                                  {
+                                    "type": "string",
+                                    "format": "null",
+                                    "nullable": true
+                                  },
+                                  {
+                                    "type": "array",
+                                    "items": {
+                                      "oneOf": [
+                                        {
+                                          "type": "string",
+                                          "enum": ["low"]
+                                        },
+                                        {
+                                          "type": "string",
+                                          "enum": ["medium"]
+                                        },
+                                        {
+                                          "type": "string",
+                                          "enum": ["high"]
+                                        },
+                                        {
+                                          "type": "string",
+                                          "format": "null",
+                                          "nullable": true
+                                        }
+                                      ],
+                                      "nullable": true
+                                    }
+                                  },
+                                  {}
+                                ],
+                                "nullable": true
                               },
                               "max_reasoning_tokens": {
                                 "oneOf": [
