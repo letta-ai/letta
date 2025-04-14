@@ -41,6 +41,9 @@ class Message(SqlalchemyBase, OrganizationMixin, AgentMixin):
         ToolReturnColumn, nullable=True, doc="Tool execution return information for prior tool calls"
     )
     group_id: Mapped[Optional[str]] = mapped_column(nullable=True, doc="The multi-agent group that the message was sent in")
+    sender_id: Mapped[Optional[str]] = mapped_column(
+        nullable=True, doc="The id of the sender of the message, can be an identity id or agent id"
+    )
 
     # Monotonically increasing sequence for efficient/correct listing
     sequence_id = mapped_column(BigInteger, Sequence("message_seq_id"), unique=True, nullable=False)

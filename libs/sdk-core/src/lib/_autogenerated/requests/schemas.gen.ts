@@ -1055,6 +1055,13 @@ export const $AssistantMessage = {
       ],
       title: 'Name',
     },
+    message_type: {
+      type: 'string',
+      const: 'assistant_message',
+      title: 'Message Type',
+      description: 'The type of the message.',
+      default: 'assistant_message',
+    },
     otid: {
       anyOf: [
         {
@@ -1066,11 +1073,16 @@ export const $AssistantMessage = {
       ],
       title: 'Otid',
     },
-    message_type: {
-      type: 'string',
-      const: 'assistant_message',
-      title: 'Message Type',
-      default: 'assistant_message',
+    sender_id: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Sender Id',
     },
     content: {
       anyOf: [
@@ -4570,6 +4582,13 @@ export const $HiddenReasoningMessage = {
       ],
       title: 'Name',
     },
+    message_type: {
+      type: 'string',
+      const: 'hidden_reasoning_message',
+      title: 'Message Type',
+      description: 'The type of the message.',
+      default: 'hidden_reasoning_message',
+    },
     otid: {
       anyOf: [
         {
@@ -4581,11 +4600,16 @@ export const $HiddenReasoningMessage = {
       ],
       title: 'Otid',
     },
-    message_type: {
-      type: 'string',
-      const: 'hidden_reasoning_message',
-      title: 'Message Type',
-      default: 'hidden_reasoning_message',
+    sender_id: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Sender Id',
     },
     state: {
       type: 'string',
@@ -5997,6 +6021,19 @@ export const $Message = {
       title: 'Group Id',
       description: 'The multi-agent group that the message was sent in',
     },
+    sender_id: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Sender Id',
+      description:
+        'The id of the sender of the message, can be an identity id or agent id',
+    },
   },
   additionalProperties: false,
   type: 'object',
@@ -6063,6 +6100,19 @@ export const $MessageCreate = {
       ],
       title: 'Otid',
       description: 'The offline threading id associated with this message',
+    },
+    sender_id: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Sender Id',
+      description:
+        'The id of the sender of the message, can be an identity id or agent id',
     },
   },
   type: 'object',
@@ -6918,6 +6968,13 @@ export const $ReasoningMessage = {
       ],
       title: 'Name',
     },
+    message_type: {
+      type: 'string',
+      const: 'reasoning_message',
+      title: 'Message Type',
+      description: 'The type of the message.',
+      default: 'reasoning_message',
+    },
     otid: {
       anyOf: [
         {
@@ -6929,11 +6986,16 @@ export const $ReasoningMessage = {
       ],
       title: 'Otid',
     },
-    message_type: {
-      type: 'string',
-      const: 'reasoning_message',
-      title: 'Message Type',
-      default: 'reasoning_message',
+    sender_id: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Sender Id',
     },
     source: {
       type: 'string',
@@ -8216,6 +8278,13 @@ export const $SystemMessage = {
       ],
       title: 'Name',
     },
+    message_type: {
+      type: 'string',
+      const: 'system_message',
+      title: 'Message Type',
+      description: 'The type of the message.',
+      default: 'system_message',
+    },
     otid: {
       anyOf: [
         {
@@ -8227,11 +8296,16 @@ export const $SystemMessage = {
       ],
       title: 'Otid',
     },
-    message_type: {
-      type: 'string',
-      const: 'system_message',
-      title: 'Message Type',
-      default: 'system_message',
+    sender_id: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Sender Id',
     },
     content: {
       type: 'string',
@@ -8587,6 +8661,13 @@ export const $ToolCallMessage = {
       ],
       title: 'Name',
     },
+    message_type: {
+      type: 'string',
+      const: 'tool_call_message',
+      title: 'Message Type',
+      description: 'The type of the message.',
+      default: 'tool_call_message',
+    },
     otid: {
       anyOf: [
         {
@@ -8598,11 +8679,16 @@ export const $ToolCallMessage = {
       ],
       title: 'Otid',
     },
-    message_type: {
-      type: 'string',
-      const: 'tool_call_message',
-      title: 'Message Type',
-      default: 'tool_call_message',
+    sender_id: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Sender Id',
     },
     tool_call: {
       anyOf: [
@@ -8879,6 +8965,13 @@ export const $ToolReturnMessage = {
       ],
       title: 'Name',
     },
+    message_type: {
+      type: 'string',
+      const: 'tool_return_message',
+      title: 'Message Type',
+      description: 'The type of the message.',
+      default: 'tool_return_message',
+    },
     otid: {
       anyOf: [
         {
@@ -8890,11 +8983,16 @@ export const $ToolReturnMessage = {
       ],
       title: 'Otid',
     },
-    message_type: {
-      type: 'string',
-      const: 'tool_return_message',
-      title: 'Message Type',
-      default: 'tool_return_message',
+    sender_id: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Sender Id',
     },
     tool_return: {
       type: 'string',
@@ -9790,6 +9888,13 @@ export const $UserMessage = {
       ],
       title: 'Name',
     },
+    message_type: {
+      type: 'string',
+      const: 'user_message',
+      title: 'Message Type',
+      description: 'The type of the message.',
+      default: 'user_message',
+    },
     otid: {
       anyOf: [
         {
@@ -9801,11 +9906,16 @@ export const $UserMessage = {
       ],
       title: 'Otid',
     },
-    message_type: {
-      type: 'string',
-      const: 'user_message',
-      title: 'Message Type',
-      default: 'user_message',
+    sender_id: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Sender Id',
     },
     content: {
       anyOf: [

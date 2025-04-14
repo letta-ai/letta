@@ -153,6 +153,7 @@ def create_input_messages(input_messages: List[MessageCreate], agent_id: str, ac
             content=input_message.content,
             name=input_message.name,
             otid=input_message.otid,
+            sender_id=input_message.sender_id,
             organization_id=actor.organization_id,
             agent_id=agent_id,
             model=None,
