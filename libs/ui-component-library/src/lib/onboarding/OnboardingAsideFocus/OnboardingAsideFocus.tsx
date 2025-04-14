@@ -5,7 +5,7 @@ import { HStack } from '../../framing/HStack/HStack';
 import { Typography } from '../../core/Typography/Typography';
 import { OnboardingRewardElement } from '../OnboardingRewardElement/OnboardingRewardElement';
 import { useTranslations } from '@letta-cloud/translations';
-import { useEffect, useId } from 'react';
+import { useCallback, useEffect, useId } from 'react';
 import { Button } from '../../core/Button/Button';
 import { OnboardingSteps } from '../OnboardingSteps/OnboardingSteps';
 import {
@@ -60,7 +60,7 @@ export function OnboardingAsideFocus(props: OnboardingAsideFocusProps) {
 
   const spotlightRef = React.useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
+  const positionSpotlight = useCallback(() => {
     if (!isOpen) {
       return;
     }
@@ -87,7 +87,23 @@ export function OnboardingAsideFocus(props: OnboardingAsideFocusProps) {
 
     spotlight.style.left = `${x}px`;
     spotlight.style.top = `${y}px`;
-  }, [elId, spotlightRef, isOpen]);
+  }, [elId, isOpen]);
+
+  useEffect(() => {
+    if (!isOpen) {
+      return;
+    }
+
+    positionSpotlight();
+
+    window.addEventListener('resize', positionSpotlight);
+    window.addEventListener('scroll', positionSpotlight, { passive: true });
+
+    return () => {
+      window.removeEventListener('resize', positionSpotlight);
+      window.removeEventListener('scroll', positionSpotlight);
+    };
+  }, [positionSpotlight, isOpen]);
 
   if (!isOpen) {
     return children;
@@ -105,7 +121,8 @@ export function OnboardingAsideFocus(props: OnboardingAsideFocusProps) {
         {spotlight && (
           <div
             ref={spotlightRef}
-            className="z-[-1] rounded-full bg-background absolute"
+            // style={floatingStyles}
+            className="z-[-1] rounded-full bg-background"
           />
         )}
       </div>
