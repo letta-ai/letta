@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from unittest.mock import AsyncMock, patch
 
 import pytest
@@ -35,10 +35,12 @@ def mock_agent_messages():
     return {
         "agent-1": [
             PydanticMessage(
-                role=MessageRole.system, content=[{"type": "text", "text": "You are a helpful assistant."}], created_at=datetime.utcnow()
+                role=MessageRole.system,
+                content=[{"type": "text", "text": "You are a helpful assistant."}],
+                created_at=datetime.now(timezone.utc),
             ),
             PydanticMessage(
-                role=MessageRole.user, content=[{"type": "text", "text": "What's the weather like?"}], created_at=datetime.utcnow()
+                role=MessageRole.user, content=[{"type": "text", "text": "What's the weather like?"}], created_at=datetime.now(timezone.utc)
             ),
         ]
     }

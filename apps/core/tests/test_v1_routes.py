@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from unittest.mock import MagicMock, Mock
 
 import pytest
@@ -209,7 +209,7 @@ def test_upsert_base_tools(client, mock_sync_server, add_integers_tool):
 def test_get_run_messages(client, mock_sync_server):
     """Test getting messages for a run."""
     # Create properly formatted mock messages
-    current_time = datetime.utcnow()
+    current_time = datetime.now(timezone.utc)
     mock_messages = [
         UserMessage(
             id=f"message-{i:08x}",
