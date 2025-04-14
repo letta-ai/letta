@@ -247,6 +247,13 @@ def create(
             use_structured_output=False,  # NOTE: not supported atm for xAI
         )
 
+        # Specific bug for the mini models (as of Apr 14, 2025)
+        # 400 - {'code': 'Client specified an invalid argument', 'error': 'Argument not supported on this model: presencePenalty'}
+        # 400 - {'code': 'Client specified an invalid argument', 'error': 'Argument not supported on this model: frequencyPenalty'}
+        if "grok-3-mini-" in llm_config.model:
+            data.presence_penalty = None
+            data.frequency_penalty = None
+
         if stream:  # Client requested token streaming
             data.stream = True
             assert isinstance(stream_interface, AgentChunkStreamingInterface) or isinstance(
