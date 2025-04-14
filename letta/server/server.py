@@ -67,7 +67,7 @@ from letta.schemas.providers import (
     TogetherProvider,
     VLLMChatCompletionsProvider,
     VLLMCompletionsProvider,
-    xAIProvider,
+    XAIProvider,
 )
 from letta.schemas.sandbox_config import SandboxType
 from letta.schemas.source import Source
@@ -321,7 +321,7 @@ class SyncServer(Server):
         if model_settings.deepseek_api_key:
             self._enabled_providers.append(DeepSeekProvider(api_key=model_settings.deepseek_api_key))
         if model_settings.xai_api_key:
-            self._enabled_providers.append(xAIProvider(api_key=model_settings.xai_api_key))
+            self._enabled_providers.append(XAIProvider(api_key=model_settings.xai_api_key))
 
         # For MCP
         """Initialize the MCP clients (there may be multiple)"""
