@@ -50,6 +50,8 @@ class GoogleAIClient(LLMClientBase):
         """
         Constructs a request object in the expected data format for this client.
         """
+        tool_names = []
+
         if tools:
             tools = [{"type": "function", "function": f} for f in tools]
             tool_objs = [Tool(**t) for t in tools]
