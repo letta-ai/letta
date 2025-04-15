@@ -305,7 +305,7 @@ class AgentManager:
             agent_update.system = derive_system_message(
                 agent_type=agent_state.agent_type,
                 enable_sleeptime=agent_update.enable_sleeptime,
-                system=agent_update.system,
+                system=agent_update.system or agent_state.system,
             )
         if agent_update.system and agent_update.system != agent_state.system:
             agent_state = self.rebuild_system_prompt(agent_id=agent_state.id, actor=actor, force=True, update_timestamp=False)
