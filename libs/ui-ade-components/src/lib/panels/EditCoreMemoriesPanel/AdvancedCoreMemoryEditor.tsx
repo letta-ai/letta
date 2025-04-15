@@ -26,7 +26,7 @@ import {
 import React, { useCallback, useMemo, useState } from 'react';
 import { atom, useAtom, useSetAtom } from 'jotai';
 import { useTranslations } from '@letta-cloud/translations';
-import { useCurrentAgent } from '../../hooks';
+import { useCurrentAgent, useCurrentAgentMetaData } from '../../hooks';
 import { useFormContext } from 'react-hook-form';
 import type { Block, AgentState } from '@letta-cloud/sdk-core';
 import {
@@ -211,6 +211,8 @@ function AdvancedMemoryEditorForm(props: AdvancedMemoryEditorProps) {
     ],
   );
 
+  const { isTemplate } = useCurrentAgentMetaData();
+
   return (
     <VStack fullHeight fullWidth padding gap="form">
       <FormProvider {...form}>
@@ -228,13 +230,15 @@ function AdvancedMemoryEditorForm(props: AdvancedMemoryEditorProps) {
                 />
               )}
             />
-            <RawInput
-              fullWidth
-              disabled
-              value={memory.id}
-              allowCopy
-              label={t('AdvancedMemoryEditorForm.id.label')}
-            />
+            {!isTemplate && (
+              <RawInput
+                fullWidth
+                disabled
+                value={memory.id}
+                allowCopy
+                label={t('AdvancedMemoryEditorForm.id.label')}
+              />
+            )}
           </HStack>
           <DeleteMemoryBlockDialog blockId={memory.id || ''} />
         </HStack>
