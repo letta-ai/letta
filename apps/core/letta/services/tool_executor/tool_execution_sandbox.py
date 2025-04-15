@@ -148,7 +148,6 @@ class ToolExecutionSandbox:
             temp_file.write(code)
             temp_file.flush()
             temp_file_path = temp_file.name
-
         try:
             if local_configs.use_venv:
                 return self.run_local_dir_sandbox_venv(sbx_config, env, temp_file_path)

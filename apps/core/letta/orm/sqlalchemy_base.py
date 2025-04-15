@@ -390,7 +390,14 @@ class SqlalchemyBase(CommonSqlalchemyMetaMixins, Base):
 
     @classmethod
     @handle_db_timeout
-    def batch_create(cls, items: List["SqlalchemyBase"], db_session: "Session", actor: Optional["User"] = None) -> List["SqlalchemyBase"]:
+    def batch_create(
+        cls,
+        items: List["SqlalchemyBase"],
+        db_session: "Session",
+        actor: Optional["User"] = None,
+        batch_size: int = 1000,  # TODO: Make this a configurable setting
+        requery: bool = True,
+    ) -> List["SqlalchemyBase"]:
         """
         Create multiple records in a single transaction for better performance.
 
@@ -398,6 +405,8 @@ class SqlalchemyBase(CommonSqlalchemyMetaMixins, Base):
             items: List of model instances to create
             db_session: SQLAlchemy session
             actor: Optional user performing the action
+            batch_size: Maximum number of items to process in a single batch
+            requery: Whether to requery the objects after creation
 
         Returns:
             List of created model instances
@@ -407,30 +416,47 @@ class SqlalchemyBase(CommonSqlalchemyMetaMixins, Base):
         if not items:
             return []
 
-        # Set created/updated by fields if actor is provided
-        if actor:
-            for item in items:
-                item._set_created_and_updated_by_fields(actor.id)
+        result_items = []
 
-        try:
-            with db_session as session:
-                session.add_all(items)
-                session.flush()  # Flush to generate IDs but don't commit yet
+        # Process in batches to avoid memory issues with very large sets
+        for i in range(0, len(items), batch_size):
+            batch = items[i : i + batch_size]
 
-                # Collect IDs to fetch the complete objects after commit
-                item_ids = [item.id for item in items]
+            # Set created/updated by fields if actor is provided
+            if actor:
+                for item in batch:
+                    item._set_created_and_updated_by_fields(actor.id)
 
-                session.commit()
+            try:
+                with db_session as session:
+                    session.add_all(batch)
+                    session.flush()  # Flush to generate IDs but don't commit yet
 
-                # Re-query the objects to get them with relationships loaded
-                query = select(cls).where(cls.id.in_(item_ids))
-                if hasattr(cls, "created_at"):
-                    query = query.order_by(cls.created_at)
+                    # Collect IDs to fetch the complete objects after commit
+                    item_ids = [item.id for item in batch]
 
-                return list(session.execute(query).scalars())
+                    session.commit()
 
-        except (DBAPIError, IntegrityError) as e:
-            cls._handle_dbapi_error(e)
+                    if requery:
+                        # Re-query the objects to get them with relationships loaded
+                        query = select(cls).where(cls.id.in_(item_ids))
+                        if hasattr(cls, "created_at"):
+                            query = query.order_by(cls.created_at)
+
+                        batch_result = list(session.execute(query).scalars())
+                    else:
+                        # Use the objects we already have in memory
+                        batch_result = batch
+
+                    result_items.extend(batch_result)
+
+            except (DBAPIError, IntegrityError) as e:
+                logger.error(f"Database error during batch creation: {e}")
+                # Log which items we were processing when the error occurred
+                logger.error(f"Failed batch starting at index {i} of {len(items)}")
+                cls._handle_dbapi_error(e)
+
+        return result_items
 
     @handle_db_timeout
     def delete(self, db_session: "Session", actor: Optional["User"] = None) -> "SqlalchemyBase":

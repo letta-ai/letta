@@ -91,7 +91,9 @@ describe('letta', () => {
       .first()
       .click();
 
-    cy.findByTestId('key-value-editor-value-0', { timeout: 50000 }).type('Shubham');
+    cy.findByTestId('key-value-editor-value-0', { timeout: 50000 }).type(
+      'Shubham',
+    );
     cy.findByTestId('save-variables-button').click();
 
     // wait for save (kinda...)

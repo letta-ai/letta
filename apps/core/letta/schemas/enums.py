@@ -33,6 +33,7 @@ class JobStatus(str, Enum):
     failed = "failed"
     pending = "pending"
     cancelled = "cancelled"
+    expired = "expired"
 
 
 class AgentStepStatus(str, Enum):
@@ -41,7 +42,8 @@ class AgentStepStatus(str, Enum):
     """
 
     paused = "paused"
-    running = "running"
+    resumed = "resumed"
+    completed = "completed"
 
 
 class MessageStreamStatus(str, Enum):

@@ -5249,6 +5249,7 @@ export const $JobStatus = {
     'failed',
     'pending',
     'cancelled',
+    'expired',
   ],
   title: 'JobStatus',
   description: 'Status of the job.',

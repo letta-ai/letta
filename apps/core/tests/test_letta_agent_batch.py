@@ -10,19 +10,29 @@ import os
 import threading
 import time
 from datetime import datetime, timezone
-from unittest.mock import patch
+from typing import Tuple
+from unittest.mock import AsyncMock, Mock, patch
 
 import pytest
-from anthropic.types.beta.messages import BetaMessageBatch, BetaMessageBatchRequestCounts
+from anthropic.types import BetaErrorResponse, BetaRateLimitError
+from anthropic.types.beta import BetaMessage
+from anthropic.types.beta.messages import (
+    BetaMessageBatch,
+    BetaMessageBatchErroredResult,
+    BetaMessageBatchIndividualResponse,
+    BetaMessageBatchRequestCounts,
+    BetaMessageBatchSucceededResult,
+)
 from dotenv import load_dotenv
 from letta_client import Letta
 
 from letta.agents.letta_agent_batch import LettaAgentBatch
 from letta.config import LettaConfig
 from letta.helpers import ToolRulesSolver
+from letta.jobs.llm_batch_job_polling import poll_running_llm_batches
 from letta.orm import Base
-from letta.schemas.agent import AgentStepState
-from letta.schemas.enums import JobStatus, ProviderType
+from letta.schemas.agent import AgentState, AgentStepState
+from letta.schemas.enums import AgentStepStatus, JobStatus, ProviderType
 from letta.schemas.letta_message_content import TextContent
 from letta.schemas.letta_request import LettaBatchRequest
 from letta.schemas.message import MessageCreate
@@ -50,8 +60,39 @@ EXPECTED_ROLES = ["system", "assistant", "tool", "user", "user"]
 # --------------------------------------------------------------------------- #
 
 
+@pytest.fixture(scope="function")
+def weather_tool(client):
+    def get_weather(location: str) -> str:
+        """
+        Fetches the current weather for a given location.
+
+        Parameters:
+            location (str): The location to get the weather for.
+
+        Returns:
+            str: A formatted string describing the weather in the given location.
+
+        Raises:
+            RuntimeError: If the request to fetch weather data fails.
+        """
+        import requests
+
+        url = f"https://wttr.in/{location}?format=%C+%t"
+
+        response = requests.get(url)
+        if response.status_code == 200:
+            weather_data = response.text
+            return f"The weather in {location} is {weather_data}."
+        else:
+            raise RuntimeError(f"Failed to get weather data, status code: {response.status_code}")
+
+    tool = client.tools.upsert_from_function(func=get_weather)
+    # Yield the created tool
+    yield tool
+
+
 @pytest.fixture
-def agents(client):
+def agents(client, weather_tool):
     """
     Create three test agents with different models.
 
@@ -66,6 +107,7 @@ def agents(client):
             model=model_name,
             tags=["test_agents"],
             embedding="letta/letta-free",
+            tool_ids=[weather_tool.id],
         )
 
     return (
@@ -107,6 +149,90 @@ def step_state_map(agents):
     return {agent.id: AgentStepState(step_number=0, tool_rules_solver=solver) for agent in agents}
 
 
+def create_batch_response(batch_id: str, processing_status: str = "in_progress") -> BetaMessageBatch:
+    """Create a dummy BetaMessageBatch with the specified ID and status."""
+    now = datetime(2024, 8, 20, 18, 37, 24, 100435, tzinfo=timezone.utc)
+    return BetaMessageBatch(
+        id=batch_id,
+        archived_at=now,
+        cancel_initiated_at=now,
+        created_at=now,
+        ended_at=now,
+        expires_at=now,
+        processing_status=processing_status,
+        request_counts=BetaMessageBatchRequestCounts(
+            canceled=10,
+            errored=30,
+            expired=10,
+            processing=100,
+            succeeded=50,
+        ),
+        results_url=None,
+        type="message_batch",
+    )
+
+
+def create_successful_response(custom_id: str) -> BetaMessageBatchIndividualResponse:
+    """Create a dummy successful batch response."""
+    return BetaMessageBatchIndividualResponse(
+        custom_id=custom_id,
+        result=BetaMessageBatchSucceededResult(
+            type="succeeded",
+            message=BetaMessage(
+                id="msg_abc123",
+                role="assistant",
+                type="message",
+                model="claude-3-5-sonnet-20240620",
+                content=[{"type": "text", "text": "hi!"}],
+                usage={"input_tokens": 5, "output_tokens": 7},
+                stop_reason="end_turn",
+            ),
+        ),
+    )
+
+
+def create_complete_tool_response(custom_id: str, model: str, request_heartbeat: bool) -> BetaMessageBatchIndividualResponse:
+    """Create a dummy successful batch response with a tool call after user asks about weather."""
+    return BetaMessageBatchIndividualResponse(
+        custom_id=custom_id,
+        result=BetaMessageBatchSucceededResult(
+            type="succeeded",
+            message=BetaMessage(
+                id="msg_abc123",
+                role="assistant",
+                type="message",
+                model=model,
+                content=[
+                    {"type": "text", "text": "Let me check the current weather in San Francisco for you."},
+                    {
+                        "type": "tool_use",
+                        "id": "tu_01234567890123456789012345",
+                        "name": "get_weather",
+                        "input": {
+                            "location": "Las Vegas",
+                            "inner_thoughts": "I should get the weather",
+                            "request_heartbeat": request_heartbeat,
+                        },
+                    },
+                ],
+                usage={"input_tokens": 7, "output_tokens": 17},
+                stop_reason="end_turn",
+            ),
+        ),
+    )
+
+
+def create_failed_response(custom_id: str) -> BetaMessageBatchIndividualResponse:
+    """Create a dummy failed batch response with a rate limit error."""
+    return BetaMessageBatchIndividualResponse(
+        custom_id=custom_id,
+        result=BetaMessageBatchErroredResult(
+            type="errored",
+            error=BetaErrorResponse(type="error", error=BetaRateLimitError(type="rate_limit_error", message="Rate limit hit.")),
+        ),
+    )
+
+
 @pytest.fixture
 def dummy_batch_response():
     """
@@ -115,14 +241,8 @@ def dummy_batch_response():
     Returns:
         BetaMessageBatch: A dummy batch response
     """
-    now = datetime.now(timezone.utc)
-    return BetaMessageBatch(
-        id="msgbatch_test_12345",
-        created_at=now,
-        expires_at=now,
-        processing_status="in_progress",
-        request_counts=BetaMessageBatchRequestCounts(canceled=0, errored=0, expired=0, processing=3, succeeded=0),
-        type="message_batch",
+    return create_batch_response(
+        batch_id="msgbatch_test_12345",
     )
 
 
@@ -185,14 +305,142 @@ def client(server_url):
     return Letta(base_url=server_url)
 
 
+class MockAsyncIterable:
+    def __init__(self, items):
+        self.items = items
+
+    def __aiter__(self):
+        return self
+
+    async def __anext__(self):
+        if not self.items:
+            raise StopAsyncIteration
+        return self.items.pop(0)
+
+
 # --------------------------------------------------------------------------- #
 # Test
 # --------------------------------------------------------------------------- #
 
 
 @pytest.mark.asyncio
+async def test_resume_step_after_request_happy_path(
+    disable_e2b_api_key, server, default_user, agents: Tuple[AgentState], batch_requests, step_state_map
+):
+    anthropic_batch_id = "msgbatch_test_12345"
+    dummy_batch_response = create_batch_response(
+        batch_id=anthropic_batch_id,
+    )
+
+    # 1. Invoke `step_until_request`
+    with patch("letta.llm_api.anthropic_client.AnthropicClient.send_llm_batch_request_async", return_value=dummy_batch_response):
+        # Create batch runner
+        batch_runner = LettaAgentBatch(
+            message_manager=server.message_manager,
+            agent_manager=server.agent_manager,
+            block_manager=server.block_manager,
+            passage_manager=server.passage_manager,
+            batch_manager=server.batch_manager,
+            sandbox_config_manager=server.sandbox_config_manager,
+            actor=default_user,
+        )
+
+        # Run the method under test
+        pre_resume_response = await batch_runner.step_until_request(
+            batch_requests=batch_requests,
+            agent_step_state_mapping=step_state_map,
+        )
+
+        # Basic sanity checks (This is tested more thoroughly in `test_step_until_request_prepares_and_submits_batch_correctly`
+        # Verify batch items
+        items = server.batch_manager.list_batch_items(batch_id=pre_resume_response.batch_id, actor=default_user)
+        assert len(items) == 3, f"Expected 3 batch items, got {len(items)}"
+
+    # 2. Invoke the polling job and mock responses from Anthropic
+    mock_retrieve = AsyncMock(return_value=create_batch_response(batch_id=pre_resume_response.batch_id, processing_status="ended"))
+
+    with patch.object(server.anthropic_async_client.beta.messages.batches, "retrieve", mock_retrieve):
+        mock_items = [
+            create_complete_tool_response(custom_id=agent.id, model=agent.llm_config.model, request_heartbeat=True) for agent in agents
+        ]
+
+        # Create the mock for results
+        mock_results = Mock()
+        mock_results.return_value = MockAsyncIterable(mock_items.copy())  # Using copy to preserve the original list
+
+        with patch.object(server.anthropic_async_client.beta.messages.batches, "results", mock_results):
+            await poll_running_llm_batches(server)
+
+            # Verify database records were updated correctly
+            job = server.batch_manager.get_batch_job_by_id(pre_resume_response.batch_id, actor=default_user)
+
+            # Verify job properties
+            assert job.status == JobStatus.completed, "Job status should be 'completed'"
+
+            # Verify batch items
+            items = server.batch_manager.list_batch_items(batch_id=job.id, actor=default_user)
+            assert len(items) == 3, f"Expected 3 batch items, got {len(items)}"
+            assert all([item.request_status == JobStatus.completed for item in items])
+
+    # 3. Call resume_step_after_request
+    letta_batch_agent = LettaAgentBatch(
+        message_manager=server.message_manager,
+        agent_manager=server.agent_manager,
+        block_manager=server.block_manager,
+        passage_manager=server.passage_manager,
+        batch_manager=server.batch_manager,
+        sandbox_config_manager=server.sandbox_config_manager,
+        actor=default_user,
+    )
+    with patch("letta.llm_api.anthropic_client.AnthropicClient.send_llm_batch_request_async", return_value=dummy_batch_response):
+        msg_counts_before = {agent.id: server.message_manager.size(actor=default_user, agent_id=agent.id) for agent in agents}
+
+        post_resume_response = await letta_batch_agent.resume_step_after_request(batch_id=pre_resume_response.batch_id)
+
+        # A *new* batch job should have been spawned
+        assert (
+            post_resume_response.batch_id != pre_resume_response.batch_id
+        ), "resume_step_after_request is expected to enqueue a follow‑up batch job."
+        assert post_resume_response.status == JobStatus.running
+        assert post_resume_response.agent_count == 3
+
+        # New batch‑items should exist, initialised in (created, paused) state
+        new_items = server.batch_manager.list_batch_items(batch_id=post_resume_response.batch_id, actor=default_user)
+        assert len(new_items) == 3, f"Expected 3 new batch items, got {len(new_items)}"
+        assert {i.request_status for i in new_items} == {JobStatus.created}
+        assert {i.step_status for i in new_items} == {AgentStepStatus.paused}
+
+        # Confirm that tool_rules_solver state was preserved correctly
+        # Assert every new item's step_state's tool_rules_solver has "get_weather" in the tool_call_history
+        assert all(
+            "get_weather" in item.step_state.tool_rules_solver.tool_call_history for item in new_items
+        ), "Expected 'get_weather' in tool_call_history for all new_items"
+        # Assert that each new item's step_number was incremented to 1
+        assert all(item.step_state.step_number == 1 for item in new_items), "Expected step_number to be incremented to 1 for all new_items"
+
+        # Old items must have been flipped to completed / finished earlier
+        #     (sanity – we already asserted this above, but we keep it close for clarity)
+        old_items = server.batch_manager.list_batch_items(batch_id=pre_resume_response.batch_id, actor=default_user)
+        assert {i.request_status for i in old_items} == {JobStatus.completed}
+        assert {i.step_status for i in old_items} == {AgentStepStatus.completed}
+
+        # Tool‑call side‑effects – each agent gets at least 2 extra messages
+        for agent in agents:
+            before = msg_counts_before[agent.id]  # captured just before resume
+            after = server.message_manager.size(actor=default_user, agent_id=agent.id)
+            assert after - before >= 2, f"Agent {agent.id} should have an assistant tool‑call " f"and tool‑response message persisted."
+
+        # Check that agent states have been properly modified to have extended in-context messages
+        for agent in agents:
+            refreshed_agent = server.agent_manager.get_agent_by_id(agent_id=agent.id, actor=default_user)
+            assert (
+                len(refreshed_agent.message_ids) == 6
+            ), f"Agent's in-context messages have not been extended, are length: {len(refreshed_agent.message_ids)}"
+
+
+@pytest.mark.asyncio
 async def test_step_until_request_prepares_and_submits_batch_correctly(
-    server, default_user, agents, batch_requests, step_state_map, dummy_batch_response
+    disable_e2b_api_key, server, default_user, agents, batch_requests, step_state_map, dummy_batch_response
 ):
     """
     Test that step_until_request correctly:
@@ -258,12 +506,12 @@ async def test_step_until_request_prepares_and_submits_batch_correctly(
 
         # Create batch runner
         batch_runner = LettaAgentBatch(
-            batch_id="test_batch",
             message_manager=server.message_manager,
             agent_manager=server.agent_manager,
             block_manager=server.block_manager,
             passage_manager=server.passage_manager,
             batch_manager=server.batch_manager,
+            sandbox_config_manager=server.sandbox_config_manager,
             actor=default_user,
         )
 

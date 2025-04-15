@@ -11628,7 +11628,8 @@
           "completed",
           "failed",
           "pending",
-          "cancelled"
+          "cancelled",
+          "expired"
         ],
         "title": "JobStatus",
         "description": "Status of the job."

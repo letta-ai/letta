@@ -423,7 +423,8 @@ class AgentManager:
             query = _apply_tag_filter(query, tags, match_all_tags)
             query = _apply_pagination(query, before, after, session, ascending=ascending)
 
-            query = query.limit(limit)
+            if limit:
+                query = query.limit(limit)
 
             agents = session.execute(query).scalars().all()
             return [agent.to_pydantic(include_relationships=include_relationships) for agent in agents]

@@ -80,7 +80,7 @@ class Message(SqlalchemyBase, OrganizationMixin, AgentMixin):
 @event.listens_for(Message, "before_insert")
 def set_sequence_id_for_sqlite(mapper, connection, target):
     # TODO: Kind of hacky, used to detect if we are using sqlite or not
-    if not settings.pg_uri:
+    if not settings.letta_pg_uri_no_default:
         session = Session.object_session(target)
 
         if not hasattr(session, "_sequence_id_counter"):

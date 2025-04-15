@@ -19,7 +19,7 @@ class LLMBatchItem(OrmMetadataBase, validate_assignment=True):
 
     __id_prefix__ = "batch_item"
 
-    id: str = Field(..., description="The id of the batch item. Assigned by the database.")
+    id: Optional[str] = Field(None, description="The id of the batch item. Assigned by the database.")
     batch_id: str = Field(..., description="The id of the parent LLM batch job this item belongs to.")
     agent_id: str = Field(..., description="The id of the agent associated with this LLM request.")
 
@@ -42,7 +42,7 @@ class LLMBatchJob(OrmMetadataBase, validate_assignment=True):
 
     __id_prefix__ = "batch_req"
 
-    id: str = Field(..., description="The id of the batch job. Assigned by the database.")
+    id: Optional[str] = Field(None, description="The id of the batch job. Assigned by the database.")
     status: JobStatus = Field(..., description="The current status of the batch (e.g., created, in_progress, done).")
     llm_provider: ProviderType = Field(..., description="The LLM provider used for the batch (e.g., anthropic, openai).")
 

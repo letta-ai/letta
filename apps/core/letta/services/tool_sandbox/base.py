@@ -10,7 +10,6 @@ from letta.schemas.agent import AgentState
 from letta.schemas.sandbox_config import SandboxConfig, SandboxRunResult
 from letta.schemas.tool import Tool
 from letta.services.helpers.tool_execution_helper import add_imports_and_pydantic_schemas_for_args
-from letta.services.organization_manager import OrganizationManager
 from letta.services.sandbox_config_manager import SandboxConfigManager
 from letta.services.tool_manager import ToolManager
 
@@ -33,8 +32,6 @@ class AsyncToolSandboxBase(ABC):
         self.tool_name = tool_name
         self.args = args
         self.user = user
-        self.organization = OrganizationManager().get_organization_by_id(self.user.organization_id)
-        self.privileged_tools = self.organization.privileged_tools
 
         self.tool = tool_object or ToolManager().get_tool_by_name(tool_name=tool_name, actor=self.user)
         if self.tool is None:
