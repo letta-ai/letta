@@ -602,6 +602,28 @@ export const UseAgentsServiceListAgentGroupsKeyFn = (
   useAgentsServiceListAgentGroupsKey,
   ...(queryKey ?? [{ agentId, managerType, userId }]),
 ];
+export type AgentsServiceRetrieveBatchMessageRequestDefaultResponse = Awaited<
+  ReturnType<typeof AgentsService.retrieveBatchMessageRequest>
+>;
+export type AgentsServiceRetrieveBatchMessageRequestQueryResult<
+  TData = AgentsServiceRetrieveBatchMessageRequestDefaultResponse,
+  TError = unknown,
+> = UseQueryResult<TData, TError>;
+export const useAgentsServiceRetrieveBatchMessageRequestKey =
+  'AgentsServiceRetrieveBatchMessageRequest';
+export const UseAgentsServiceRetrieveBatchMessageRequestKeyFn = (
+  {
+    batchId,
+    userId,
+  }: {
+    batchId: string;
+    userId?: string;
+  },
+  queryKey?: Array<unknown>,
+) => [
+  useAgentsServiceRetrieveBatchMessageRequestKey,
+  ...(queryKey ?? [{ batchId, userId }]),
+];
 export type GroupsServiceListGroupsDefaultResponse = Awaited<
   ReturnType<typeof GroupsService.listGroups>
 >;

@@ -6089,6 +6089,25 @@ export const post_Create_batch_message_request = {
   response: LettaBatchResponse,
 };
 
+export type get_Retrieve_batch_message_request =
+  typeof get_Retrieve_batch_message_request;
+export const get_Retrieve_batch_message_request = {
+  method: z.literal('GET'),
+  path: z.literal('/v1/agents/messages/batches/{batch_id}'),
+  requestFormat: z.literal('json'),
+  parameters: z.object({
+    path: z.object({
+      batch_id: z.string(),
+    }),
+    header: z.object({
+      user_id: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+    }),
+  }),
+  response: LettaBatchResponse,
+};
+
 export type get_List_groups = typeof get_List_groups;
 export const get_List_groups = {
   method: z.literal('GET'),
@@ -7545,6 +7564,8 @@ export const EndpointByMethod = {
     '/v1/agents/{agent_id}/archival-memory': get_List_passages,
     '/v1/agents/{agent_id}/messages': get_List_messages,
     '/v1/agents/{agent_id}/groups': get_List_agent_groups,
+    '/v1/agents/messages/batches/{batch_id}':
+      get_Retrieve_batch_message_request,
     '/v1/groups/': get_List_groups,
     '/v1/groups/{group_id}': get_Retrieve_group,
     '/v1/groups/{group_id}/messages': get_List_group_messages,

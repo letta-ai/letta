@@ -770,6 +770,33 @@ export const prefetchUseAgentsServiceListAgentGroups = (
       AgentsService.listAgentGroups({ agentId, managerType, userId }),
   });
 /**
+ * Retrieve Batch Message Request
+ * Retrieve the result or current status of a previously submitted batch message request.
+ * @param data The data for the request.
+ * @param data.batchId
+ * @param data.userId
+ * @returns LettaBatchResponse Successful Response
+ * @throws ApiError
+ */
+export const prefetchUseAgentsServiceRetrieveBatchMessageRequest = (
+  queryClient: QueryClient,
+  {
+    batchId,
+    userId,
+  }: {
+    batchId: string;
+    userId?: string;
+  },
+) =>
+  queryClient.prefetchQuery({
+    queryKey: Common.UseAgentsServiceRetrieveBatchMessageRequestKeyFn({
+      batchId,
+      userId,
+    }),
+    queryFn: () =>
+      AgentsService.retrieveBatchMessageRequest({ batchId, userId }),
+  });
+/**
  * List Groups
  * Fetch all multi-agent groups matching query.
  * @param data The data for the request.

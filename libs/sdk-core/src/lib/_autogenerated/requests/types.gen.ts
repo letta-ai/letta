@@ -4291,6 +4291,13 @@ export type CreateBatchMessageRequestData = {
 
 export type CreateBatchMessageRequestResponse = LettaBatchResponse;
 
+export type RetrieveBatchMessageRequestData = {
+  batchId: string;
+  userId?: string | null;
+};
+
+export type RetrieveBatchMessageRequestResponse = LettaBatchResponse;
+
 export type ListGroupsData = {
   /**
    * Cursor for pagination
@@ -5797,6 +5804,21 @@ export type $OpenApiTs = {
   '/v1/agents/messages/batches': {
     post: {
       req: CreateBatchMessageRequestData;
+      res: {
+        /**
+         * Successful Response
+         */
+        200: LettaBatchResponse;
+        /**
+         * Validation Error
+         */
+        422: HTTPValidationError;
+      };
+    };
+  };
+  '/v1/agents/messages/batches/{batch_id}': {
+    get: {
+      req: RetrieveBatchMessageRequestData;
       res: {
         /**
          * Successful Response

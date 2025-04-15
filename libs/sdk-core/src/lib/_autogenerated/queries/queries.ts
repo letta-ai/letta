@@ -988,6 +988,39 @@ export const useAgentsServiceListAgentGroups = <
     ...options,
   });
 /**
+ * Retrieve Batch Message Request
+ * Retrieve the result or current status of a previously submitted batch message request.
+ * @param data The data for the request.
+ * @param data.batchId
+ * @param data.userId
+ * @returns LettaBatchResponse Successful Response
+ * @throws ApiError
+ */
+export const useAgentsServiceRetrieveBatchMessageRequest = <
+  TData = Common.AgentsServiceRetrieveBatchMessageRequestDefaultResponse,
+  TError = unknown,
+  TQueryKey extends Array<unknown> = unknown[],
+>(
+  {
+    batchId,
+    userId,
+  }: {
+    batchId: string;
+    userId?: string;
+  },
+  queryKey?: TQueryKey,
+  options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>,
+) =>
+  useQuery<TData, TError>({
+    queryKey: Common.UseAgentsServiceRetrieveBatchMessageRequestKeyFn(
+      { batchId, userId },
+      queryKey,
+    ),
+    queryFn: () =>
+      AgentsService.retrieveBatchMessageRequest({ batchId, userId }) as TData,
+    ...options,
+  });
+/**
  * List Groups
  * Fetch all multi-agent groups matching query.
  * @param data The data for the request.

@@ -3362,6 +3362,47 @@
         }
       }
     },
+    "/v1/agents/messages/batches/{batch_id}": {
+      "get": {
+        "tags": ["agents"],
+        "summary": "Retrieve Batch Message Request",
+        "description": "Retrieve the result or current status of a previously submitted batch message request.",
+        "operationId": "retrieve_batch_message_request",
+        "parameters": [
+          {
+            "name": "batch_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Batch Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LettaBatchResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/groups/": {
       "get": {
         "tags": ["groups"],

@@ -120,6 +120,8 @@ import type {
   ListAgentGroupsResponse,
   CreateBatchMessageRequestData,
   CreateBatchMessageRequestResponse,
+  RetrieveBatchMessageRequestData,
+  RetrieveBatchMessageRequestResponse,
   ListGroupsData,
   ListGroupsResponse,
   CreateGroupData,
@@ -1889,6 +1891,32 @@ export class AgentsService {
       url: '/v1/agents/messages/batches',
       body: data.requestBody,
       mediaType: 'application/json',
+      errors: {
+        422: 'Validation Error',
+      },
+      headers,
+    });
+  }
+
+  /**
+   * Retrieve Batch Message Request
+   * Retrieve the result or current status of a previously submitted batch message request.
+   * @param data The data for the request.
+   * @param data.batchId
+   * @param data.userId
+   * @returns LettaBatchResponse Successful Response
+   * @throws ApiError
+   */
+  public static retrieveBatchMessageRequest(
+    data: RetrieveBatchMessageRequestData,
+    headers?: { user_id: string },
+  ): CancelablePromise<RetrieveBatchMessageRequestResponse> {
+    return __request(OpenAPI, {
+      method: 'GET',
+      url: '/v1/agents/messages/batches/{batch_id}',
+      path: {
+        batch_id: data.batchId,
+      },
       errors: {
         422: 'Validation Error',
       },
