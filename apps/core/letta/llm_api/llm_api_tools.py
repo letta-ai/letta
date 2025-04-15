@@ -329,7 +329,6 @@ def create(
 
         # Force tool calling
         tool_call = None
-        llm_config.put_inner_thoughts_in_kwargs = True
         if functions is None:
             # Special case for summarization path
             tools = None
