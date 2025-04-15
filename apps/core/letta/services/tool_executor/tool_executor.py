@@ -1,6 +1,6 @@
 import math
 from abc import ABC, abstractmethod
-from typing import Any, Optional, Tuple
+from typing import Any, Dict, Optional, Tuple
 
 from letta.constants import COMPOSIO_ENTITY_ENV_VAR_KEY, RETRIEVAL_QUERY_DEFAULT_PAGE_SIZE
 from letta.functions.ast_parsers import coerce_dict_args_by_annotations, get_function_annotations_from_source
@@ -8,7 +8,7 @@ from letta.functions.helpers import execute_composio_action, generate_composio_a
 from letta.helpers.composio_helpers import get_composio_api_key
 from letta.helpers.json_helpers import json_dumps
 from letta.schemas.agent import AgentState
-from letta.schemas.sandbox_config import SandboxRunResult
+from letta.schemas.sandbox_config import SandboxConfig, SandboxRunResult
 from letta.schemas.tool import Tool
 from letta.schemas.user import User
 from letta.services.agent_manager import AgentManager
@@ -25,7 +25,14 @@ class ToolExecutor(ABC):
 
     @abstractmethod
     def execute(
-        self, function_name: str, function_args: dict, agent_state: AgentState, tool: Tool, actor: User
+        self,
+        function_name: str,
+        function_args: dict,
+        agent_state: AgentState,
+        tool: Tool,
+        actor: User,
+        sandbox_config: Optional[SandboxConfig] = None,
+        sandbox_env_vars: Optional[Dict[str, Any]] = None,
     ) -> Tuple[Any, Optional[SandboxRunResult]]:
         """Execute the tool and return the result."""
 
@@ -34,7 +41,14 @@ class LettaCoreToolExecutor(ToolExecutor):
     """Executor for LETTA core tools with direct implementation of functions."""
 
     def execute(
-        self, function_name: str, function_args: dict, agent_state: AgentState, tool: Tool, actor: User
+        self,
+        function_name: str,
+        function_args: dict,
+        agent_state: AgentState,
+        tool: Tool,
+        actor: User,
+        sandbox_config: Optional[SandboxConfig] = None,
+        sandbox_env_vars: Optional[Dict[str, Any]] = None,
     ) -> Tuple[Any, Optional[SandboxRunResult]]:
         # Map function names to method calls
         function_map = {
@@ -184,7 +198,14 @@ class LettaMemoryToolExecutor(ToolExecutor):
     """Executor for LETTA memory core tools with direct implementation."""
 
     def execute(
-        self, function_name: str, function_args: dict, agent_state: AgentState, tool: Tool, actor: User
+        self,
+        function_name: str,
+        function_args: dict,
+        agent_state: AgentState,
+        tool: Tool,
+        actor: User,
+        sandbox_config: Optional[SandboxConfig] = None,
+        sandbox_env_vars: Optional[Dict[str, Any]] = None,
     ) -> Tuple[Any, Optional[SandboxRunResult]]:
         # Map function names to method calls
         function_map = {
@@ -244,7 +265,14 @@ class ExternalComposioToolExecutor(ToolExecutor):
     """Executor for external Composio tools."""
 
     def execute(
-        self, function_name: str, function_args: dict, agent_state: AgentState, tool: Tool, actor: User
+        self,
+        function_name: str,
+        function_args: dict,
+        agent_state: AgentState,
+        tool: Tool,
+        actor: User,
+        sandbox_config: Optional[SandboxConfig] = None,
+        sandbox_env_vars: Optional[Dict[str, Any]] = None,
     ) -> Tuple[Any, Optional[SandboxRunResult]]:
         action_name = generate_composio_action_from_func_name(tool.name)
 
@@ -324,7 +352,14 @@ class SandboxToolExecutor(ToolExecutor):
     """Executor for sandboxed tools."""
 
     async def execute(
-        self, function_name: str, function_args: dict, agent_state: AgentState, tool: Tool, actor: User
+        self,
+        function_name: str,
+        function_args: dict,
+        agent_state: AgentState,
+        tool: Tool,
+        actor: User,
+        sandbox_config: Optional[SandboxConfig] = None,
+        sandbox_env_vars: Optional[Dict[str, Any]] = None,
     ) -> Tuple[Any, Optional[SandboxRunResult]]:
 
         # Store original memory state
@@ -338,9 +373,13 @@ class SandboxToolExecutor(ToolExecutor):
 
             # Execute in sandbox depending on API key
             if tool_settings.e2b_api_key:
-                sandbox = AsyncToolSandboxE2B(function_name, function_args, actor, tool_object=tool)
+                sandbox = AsyncToolSandboxE2B(
+                    function_name, function_args, actor, tool_object=tool, sandbox_config=sandbox_config, sandbox_env_vars=sandbox_env_vars
+                )
             else:
-                sandbox = AsyncToolSandboxLocal(function_name, function_args, actor, tool_object=tool)
+                sandbox = AsyncToolSandboxLocal(
+                    function_name, function_args, actor, tool_object=tool, sandbox_config=sandbox_config, sandbox_env_vars=sandbox_env_vars
+                )
 
             sandbox_run_result = await sandbox.run(agent_state=agent_state_copy)
 

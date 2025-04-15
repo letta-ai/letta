@@ -3,7 +3,7 @@ from typing import Any, Dict, Optional, Tuple, Type
 from letta.log import get_logger
 from letta.orm.enums import ToolType
 from letta.schemas.agent import AgentState
-from letta.schemas.sandbox_config import SandboxRunResult
+from letta.schemas.sandbox_config import SandboxConfig, SandboxRunResult
 from letta.schemas.tool import Tool
 from letta.schemas.user import User
 from letta.services.tool_executor.tool_executor import (
@@ -45,10 +45,18 @@ class ToolExecutorFactory:
 class ToolExecutionManager:
     """Manager class for tool execution operations."""
 
-    def __init__(self, agent_state: AgentState, actor: User):
+    def __init__(
+        self,
+        agent_state: AgentState,
+        actor: User,
+        sandbox_config: Optional[SandboxConfig] = None,
+        sandbox_env_vars: Optional[Dict[str, Any]] = None,
+    ):
         self.agent_state = agent_state
         self.logger = get_logger(__name__)
         self.actor = actor
+        self.sandbox_config = sandbox_config
+        self.sandbox_env_vars = sandbox_env_vars
 
     def execute_tool(self, function_name: str, function_args: dict, tool: Tool) -> Tuple[Any, Optional[SandboxRunResult]]:
         """
@@ -67,7 +75,9 @@ class ToolExecutionManager:
             executor = ToolExecutorFactory.get_executor(tool.tool_type)
 
             # Execute the tool
-            return executor.execute(function_name, function_args, self.agent_state, tool, self.actor)
+            return executor.execute(
+                function_name, function_args, self.agent_state, tool, self.actor, self.sandbox_config, self.sandbox_env_vars
+            )
 
         except Exception as e:
             self.logger.error(f"Error executing tool {function_name}: {str(e)}")

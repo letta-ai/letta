@@ -1,8 +1,9 @@
-from typing import Dict, Optional
+from typing import Any, Dict, Optional
 
 from letta.log import get_logger
 from letta.schemas.agent import AgentState
 from letta.schemas.sandbox_config import SandboxConfig, SandboxRunResult, SandboxType
+from letta.schemas.tool import Tool
 from letta.services.tool_sandbox.base import AsyncToolSandboxBase
 from letta.utils import get_friendly_error_msg
 
@@ -12,8 +13,17 @@ logger = get_logger(__name__)
 class AsyncToolSandboxE2B(AsyncToolSandboxBase):
     METADATA_CONFIG_STATE_KEY = "config_state"
 
-    def __init__(self, tool_name: str, args: dict, user, force_recreate=True, tool_object=None):
-        super().__init__(tool_name, args, user, tool_object)
+    def __init__(
+        self,
+        tool_name: str,
+        args: dict,
+        user,
+        force_recreate=True,
+        tool_object: Optional[Tool] = None,
+        sandbox_config: Optional[SandboxConfig] = None,
+        sandbox_env_vars: Optional[Dict[str, Any]] = None,
+    ):
+        super().__init__(tool_name, args, user, tool_object, sandbox_config=sandbox_config, sandbox_env_vars=sandbox_env_vars)
         self.force_recreate = force_recreate
 
     async def run(
@@ -36,7 +46,10 @@ class AsyncToolSandboxE2B(AsyncToolSandboxBase):
     async def run_e2b_sandbox(
         self, agent_state: Optional[AgentState] = None, additional_env_vars: Optional[Dict] = None
     ) -> SandboxRunResult:
-        sbx_config = self.sandbox_config_manager.get_or_create_default_sandbox_config(sandbox_type=SandboxType.E2B, actor=self.user)
+        if self.provided_sandbox_config:
+            sbx_config = self.provided_sandbox_config
+        else:
+            sbx_config = self.sandbox_config_manager.get_or_create_default_sandbox_config(sandbox_type=SandboxType.E2B, actor=self.user)
         # TODO: So this defaults to force recreating always
         # TODO: Eventually, provision one sandbox PER agent, and that agent re-uses that one specifically
         e2b_sandbox = await self.create_e2b_sandbox_with_metadata_hash(sandbox_config=sbx_config)
@@ -50,7 +63,14 @@ class AsyncToolSandboxE2B(AsyncToolSandboxBase):
 
         # Get environment variables for the sandbox
         # TODO: We set limit to 100 here, but maybe we want it uncapped? Realistically this should be fine.
-        env_vars = self.sandbox_config_manager.get_sandbox_env_vars_as_dict(sandbox_config_id=sbx_config.id, actor=self.user, limit=100)
+        env_vars = {}
+        if self.provided_sandbox_env_vars:
+            env_vars.update(self.provided_sandbox_env_vars)
+        else:
+            db_env_vars = self.sandbox_config_manager.get_sandbox_env_vars_as_dict(
+                sandbox_config_id=sbx_config.id, actor=self.user, limit=100
+            )
+            env_vars.update(db_env_vars)
         # Get environment variables for this agent specifically
         if agent_state:
             env_vars.update(agent_state.get_agent_env_vars_as_dict())
