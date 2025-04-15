@@ -110,6 +110,12 @@ LLM_MAX_TOKENS = {
     "deepseek-chat": 64000,
     "deepseek-reasoner": 64000,
     ## OpenAI models: https://platform.openai.com/docs/models/overview
+    "gpt-4.1": 1047576,
+    "gpt-4.1-2025-04-14": 1047576,
+    "gpt-4.1-mini": 1047576,
+    "gpt-4.1-mini-2025-04-14": 1047576,
+    "gpt-4.1-nano": 1047576,
+    "gpt-4.1-nano-2025-04-14": 1047576,
     # gpt-4.5-preview
     "gpt-4.5-preview": 128000,
     "gpt-4.5-preview-2025-02-27": 128000,
