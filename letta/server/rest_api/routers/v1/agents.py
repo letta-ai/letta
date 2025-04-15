@@ -847,3 +847,29 @@ async def send_batch_messages(
     )
 
     return await batch_runner.step_until_request(batch_requests=batch_requests)
+
+
+@router.get(
+    "/messages/batches/{batch_id}",
+    response_model=LettaBatchResponse,
+    operation_id="retrieve_batch_message_request",
+)
+async def retrieve_batch_message_request(
+    batch_id: str,
+    server: SyncServer = Depends(get_letta_server),
+    actor_id: Optional[str] = Header(None, alias="user_id"),
+):
+    """
+    Retrieve the result or current status of a previously submitted batch message request.
+    """
+    actor = server.user_manager.get_user_or_default(user_id=actor_id)
+    batch_job = server.batch_manager.get_batch_job_by_id(batch_id=batch_id, actor=actor)
+    agent_count = server.batch_manager.count_batch_items(batch_id=batch_id)
+
+    return LettaBatchResponse(
+        batch_id=batch_id,
+        status=batch_job.status,
+        agent_count=agent_count,
+        last_polled_at=batch_job.last_polled_at,
+        created_at=batch_job.created_at,
+    )

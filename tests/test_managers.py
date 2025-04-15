@@ -5058,3 +5058,30 @@ def test_create_batch_items_bulk(server, default_user, sarah_agent, dummy_beta_m
     for item_id in created_ids:
         fetched = server.batch_manager.get_batch_item_by_id(item_id, actor=default_user)
         assert fetched.id in created_ids
+
+
+def test_count_batch_items(server, default_user, sarah_agent, dummy_beta_message_batch, dummy_llm_config, dummy_step_state):
+    # Create a batch job first.
+    batch = server.batch_manager.create_batch_job(
+        llm_provider=ProviderType.anthropic,
+        status=JobStatus.created,
+        create_batch_response=dummy_beta_message_batch,
+        actor=default_user,
+    )
+
+    # Create a specific number of batch items for this batch.
+    num_items = 5
+    for _ in range(num_items):
+        server.batch_manager.create_batch_item(
+            batch_id=batch.id,
+            agent_id=sarah_agent.id,
+            llm_config=dummy_llm_config,
+            step_state=dummy_step_state,
+            actor=default_user,
+        )
+
+    # Use the count_batch_items method to count the items.
+    count = server.batch_manager.count_batch_items(batch_id=batch.id)
+
+    # Assert that the count matches the expected number.
+    assert count == num_items, f"Expected {num_items} items, got {count}"

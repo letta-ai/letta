@@ -2,7 +2,7 @@ import datetime
 from typing import Any, Dict, List, Optional, Tuple
 
 from anthropic.types.beta.messages import BetaMessageBatch, BetaMessageBatchIndividualResponse
-from sqlalchemy import tuple_
+from sqlalchemy import func, tuple_
 
 from letta.jobs.types import BatchPollingResult, ItemUpdateInfo, RequestStatusUpdateInfo, StepStatusUpdateInfo
 from letta.log import get_logger
@@ -312,3 +312,18 @@ class LLMBatchManager:
         with self.session_maker() as session:
             item = LLMBatchItem.read(db_session=session, identifier=item_id, actor=actor)
             item.hard_delete(db_session=session, actor=actor)
+
+    @enforce_types
+    def count_batch_items(self, batch_id: str) -> int:
+        """
+        Efficiently count the number of batch items for a given batch_id.
+
+        Args:
+            batch_id (str): The batch identifier to count items for.
+
+        Returns:
+            int: The total number of batch items associated with the given batch_id.
+        """
+        with self.session_maker() as session:
+            count = session.query(func.count(LLMBatchItem.id)).filter(LLMBatchItem.batch_id == batch_id).scalar()
+            return count or 0
