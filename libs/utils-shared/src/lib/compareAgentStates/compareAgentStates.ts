@@ -30,7 +30,7 @@ export function stateCleaner(state: AgentState): CleanedAgentState {
     tool_exec_environment_variables: state.tool_exec_environment_variables
       ?.map((item) => ({
         key: item.key,
-        value: '',
+        value: item.value,
       }))
       .toSorted((a, b) => (a.key || '').localeCompare(b.key || '')),
     toolIds: (state.tools || [])

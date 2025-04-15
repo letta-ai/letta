@@ -6,7 +6,7 @@ import {
   useAgentsServiceModifyCoreMemoryBlock,
 } from '@letta-cloud/sdk-core';
 import { useQueryClient } from '@tanstack/react-query';
-import { useDebouncedValue } from '@mantine/hooks';
+import { useDebouncedCallback } from '@mantine/hooks';
 
 interface UseUpdateMemoryPayload {
   label: string;
@@ -35,84 +35,66 @@ export function useUpdateMemory(payload: UseUpdateMemoryPayload) {
     isPending: isUpdating,
   } = useAgentsServiceModifyCoreMemoryBlock();
 
-  const updateMessageLock = useRef(false);
-
   const [localValue, setLocalValue] = useState(value || '');
 
-  const [valueToSave, setValueToSave] = useState(value || '');
+  const debouncedSave = useDebouncedCallback(mutate, 500);
 
-  const [debouncedValueToSave] = useDebouncedValue(valueToSave, 500);
+  const handleChange = useCallback(
+    (nextValue: string) => {
+      setLocalValue(nextValue);
+      originalMemory.current = nextValue;
 
-  useEffect(() => {
-    if (debouncedValueToSave === value) {
-      return;
-    }
-
-    mutate(
-      {
-        agentId: id,
-        blockLabel: label,
-        requestBody: {
-          value: debouncedValueToSave,
+      debouncedSave(
+        {
+          agentId: id,
+          blockLabel: label,
+          requestBody: {
+            value: nextValue,
+          },
         },
-      },
-      {
-        onSuccess: () => {
-          queryClient.setQueriesData<AgentState | undefined>(
-            {
-              queryKey: UseAgentsServiceRetrieveAgentKeyFn({
-                agentId: id,
-              }),
-            },
-            (oldData) => {
-              if (!oldData) {
-                return oldData;
-              }
+        {
+          onSuccess: () => {
+            setLastUpdatedAt(new Date().toISOString());
+          },
+        },
+      );
 
-              const newMemory = oldData.memory.blocks.map((block) => {
-                if (block.label === label) {
-                  return {
-                    ...block,
-                    value: debouncedValueToSave,
-                  };
-                }
+      queryClient.setQueriesData<AgentState | undefined>(
+        {
+          queryKey: UseAgentsServiceRetrieveAgentKeyFn({
+            agentId: id,
+          }),
+        },
+        (oldData) => {
+          if (!oldData) {
+            return oldData;
+          }
 
-                return block;
-              });
-
+          const newMemory = oldData.memory.blocks.map((block) => {
+            if (block.label === label) {
               return {
-                ...oldData,
-                memory: {
-                  ...oldData.memory,
-                  blocks: newMemory,
-                },
+                ...block,
+                value: nextValue,
               };
+            }
+
+            return block;
+          });
+
+          return {
+            ...oldData,
+            memory: {
+              ...oldData.memory,
+              blocks: newMemory,
             },
-          );
-
-          updateMessageLock.current = false;
-          setLastUpdatedAt(new Date().toISOString());
+          };
         },
-        onError: () => {
-          updateMessageLock.current = false;
-        },
-      },
-    );
-  }, [debouncedValueToSave, id, label, mutate, queryClient, value]);
-
-  const handleChange = useCallback((nextValue: string) => {
-    setLocalValue(nextValue);
-    originalMemory.current = nextValue;
-
-    updateMessageLock.current = true;
-    setValueToSave(nextValue);
-  }, []);
+      );
+    },
+    [debouncedSave, id, label, queryClient],
+  );
 
   useEffect(() => {
-    if (updateMessageLock.current) {
-      return;
-    }
-
     if (value !== localValue) {
       setLocalValue(value || '');
     }

@@ -49,7 +49,7 @@ export async function copyAgentById(
 
   const nextToolVariables = baseAgent.tool_exec_environment_variables?.reduce(
     (acc, tool) => {
-      acc[tool.key] = toolVariables?.[tool.key] || '';
+      acc[tool.key] = toolVariables?.[tool.key] || tool.value || '';
 
       return acc;
     },

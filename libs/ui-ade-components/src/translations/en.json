@@ -1134,7 +1134,8 @@
     "save": "Save",
     "reset": "Reset",
     "addVariable": "Add variable",
-    "description": "Tool variables can be used to store arbitrary data that can be used in your agent. This is useful for storing data that is not part of the agent's memory, such as API keys or other configuration data."
+    "description": "Tool variables can be used to store arbitrary data that can be used in your agent. This is useful for storing data that is not part of the agent's memory, such as API keys or other configuration data.",
+    "templateDetails": "Setting a tool variable below will set the default variable for all agents that use this template. You can also override this variable when deploying the agent."
   },
   "ToolManager": {
     "close": "Back to ADE",
