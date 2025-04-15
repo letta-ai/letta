@@ -117,11 +117,13 @@ class LettaAgentBatch:
         self.max_steps = max_steps
 
     async def step_until_request(
-        self, batch_requests: List[LettaBatchRequest], agent_step_state_mapping: Dict[str, AgentStepState]
+        self, batch_requests: List[LettaBatchRequest], agent_step_state_mapping: Optional[Dict[str, AgentStepState]] = None
     ) -> LettaBatchResponse:
         # Basic checks
         if not batch_requests:
             raise ValueError("Empty list of batch_requests passed in!")
+        if agent_step_state_mapping is None:
+            agent_step_state_mapping = {}
 
         agent_messages_mapping: Dict[str, List[Message]] = {}
         agent_tools_mapping: Dict[str, List[dict]] = {}
@@ -134,6 +136,13 @@ class LettaAgentBatch:
             agent_messages_mapping[agent_id] = self._get_in_context_messages_per_agent(
                 agent_state=agent_state, input_messages=batch_request.messages
             )
+
+            # TODO: Think about a cleaner way to do this?
+            if agent_id not in agent_step_state_mapping:
+                agent_step_state_mapping[agent_id] = AgentStepState(
+                    step_number=0, tool_rules_solver=ToolRulesSolver(tool_rules=agent_state.tool_rules)
+                )
+
             agent_tools_mapping[agent_id] = self._prepare_tools_per_agent(
                 agent_state, agent_step_state_mapping.get(agent_id).tool_rules_solver
             )
