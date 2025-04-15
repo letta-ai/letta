@@ -502,7 +502,15 @@ export function ContextWindowSimulator() {
       {
         id: 'recursiveMemory',
         label: t('ContextWindowPreview.summaryMemory'),
-        content: recursiveMemorySummary || '',
+        content: (
+          <Code
+            language="javascript"
+            code={recursiveMemorySummary || ''}
+            fontSize="small"
+            showLineNumbers={false}
+            variant="minimal"
+          />
+        ),
         size: recursiveMemoryLength,
         color: 'green',
       },
