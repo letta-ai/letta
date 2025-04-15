@@ -205,22 +205,47 @@ class LLMBatchManager:
 
             return item.update(db_session=session, actor=actor).to_pydantic()
 
-    # TODO: Maybe make this paginated?
     @enforce_types
     def list_batch_items(
         self,
         batch_id: str,
         limit: Optional[int] = None,
         actor: Optional[PydanticUser] = None,
+        after: Optional[str] = None,
+        agent_id: Optional[str] = None,
+        request_status: Optional[JobStatus] = None,
+        step_status: Optional[AgentStepStatus] = None,
     ) -> List[PydanticLLMBatchItem]:
-        """List all batch items for a given batch_id, optionally filtered by organization and limited in count."""
+        """
+        List all batch items for a given batch_id, optionally filtered by additional criteria and limited in count.
+
+        Optional filters:
+            - after: A cursor string. Only items with an `id` greater than this value are returned.
+            - agent_id: Restrict the result set to a specific agent.
+            - request_status: Filter items based on their request status (e.g., created, completed, expired).
+            - step_status: Filter items based on their step execution status.
+
+        The results are ordered by their id in ascending order.
+        """
         with self.session_maker() as session:
             query = session.query(LLMBatchItem).filter(LLMBatchItem.batch_id == batch_id)
 
             if actor is not None:
                 query = query.filter(LLMBatchItem.organization_id == actor.organization_id)
 
-            if limit:
+            # Additional optional filters
+            if agent_id is not None:
+                query = query.filter(LLMBatchItem.agent_id == agent_id)
+            if request_status is not None:
+                query = query.filter(LLMBatchItem.request_status == request_status)
+            if step_status is not None:
+                query = query.filter(LLMBatchItem.step_status == step_status)
+            if after is not None:
+                query = query.filter(LLMBatchItem.id > after)
+
+            query = query.order_by(LLMBatchItem.id.asc())
+
+            if limit is not None:
                 query = query.limit(limit)
 
             results = query.all()
