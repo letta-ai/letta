@@ -118,6 +118,8 @@ import type {
   ResetMessagesResponse,
   ListAgentGroupsData,
   ListAgentGroupsResponse,
+  CreateBatchMessageRequestData,
+  CreateBatchMessageRequestResponse,
   ListGroupsData,
   ListGroupsResponse,
   CreateGroupData,
@@ -1861,6 +1863,32 @@ export class AgentsService {
       query: {
         manager_type: data.managerType,
       },
+      errors: {
+        422: 'Validation Error',
+      },
+      headers,
+    });
+  }
+
+  /**
+   * Send Batch Messages
+   * Submit a batch of agent messages for asynchronous processing.
+   * Creates a job that will fan out messages to all listed agents and process them in parallel.
+   * @param data The data for the request.
+   * @param data.requestBody
+   * @param data.userId
+   * @returns LettaBatchResponse Successful Response
+   * @throws ApiError
+   */
+  public static createBatchMessageRequest(
+    data: CreateBatchMessageRequestData,
+    headers?: { user_id: string },
+  ): CancelablePromise<CreateBatchMessageRequestResponse> {
+    return __request(OpenAPI, {
+      method: 'POST',
+      url: '/v1/agents/messages/batches',
+      body: data.requestBody,
+      mediaType: 'application/json',
       errors: {
         422: 'Validation Error',
       },

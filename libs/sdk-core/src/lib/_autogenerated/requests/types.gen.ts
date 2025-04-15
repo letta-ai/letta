@@ -1863,6 +1863,52 @@ export type model_endpoint_type =
   | 'deepseek'
   | 'xai';
 
+export type LettaBatchRequest = {
+  /**
+   * The messages to be sent to the agent.
+   */
+  messages: Array<MessageCreate>;
+  /**
+   * Whether the server should parse specific tool call arguments (default `send_message`) as `AssistantMessage` objects.
+   */
+  use_assistant_message?: boolean;
+  /**
+   * The name of the designated message tool.
+   */
+  assistant_message_tool_name?: string;
+  /**
+   * The name of the message argument in the designated message tool.
+   */
+  assistant_message_tool_kwarg?: string;
+  /**
+   * The ID of the agent to send this batch request for
+   */
+  agent_id: string;
+};
+
+export type LettaBatchResponse = {
+  /**
+   * A unique identifier for this batch request.
+   */
+  batch_id: string;
+  /**
+   * The current status of the batch request.
+   */
+  status: JobStatus;
+  /**
+   * The number of agents in the batch request.
+   */
+  agent_count: number;
+  /**
+   * The timestamp when the batch was last polled for updates.
+   */
+  last_polled_at: string;
+  /**
+   * The timestamp when the batch request was created.
+   */
+  created_at: string;
+};
+
 export type LettaRequest = {
   /**
    * The messages to be sent to the agent.
@@ -4238,6 +4284,13 @@ export type ListAgentGroupsData = {
 
 export type ListAgentGroupsResponse = Array<Group>;
 
+export type CreateBatchMessageRequestData = {
+  requestBody: Array<LettaBatchRequest>;
+  userId?: string | null;
+};
+
+export type CreateBatchMessageRequestResponse = LettaBatchResponse;
+
 export type ListGroupsData = {
   /**
    * Cursor for pagination
@@ -5734,6 +5787,21 @@ export type $OpenApiTs = {
          * Successful Response
          */
         200: Array<Group>;
+        /**
+         * Validation Error
+         */
+        422: HTTPValidationError;
+      };
+    };
+  };
+  '/v1/agents/messages/batches': {
+    post: {
+      req: CreateBatchMessageRequestData;
+      res: {
+        /**
+         * Successful Response
+         */
+        200: LettaBatchResponse;
         /**
          * Validation Error
          */

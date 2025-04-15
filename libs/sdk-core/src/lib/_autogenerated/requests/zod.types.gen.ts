@@ -3554,6 +3554,24 @@ export const Job = z.object({
     .optional(),
 });
 
+export type LettaBatchRequest = z.infer<typeof LettaBatchRequest>;
+export const LettaBatchRequest = z.object({
+  messages: z.array(MessageCreate),
+  use_assistant_message: z.union([z.boolean(), z.undefined()]).optional(),
+  assistant_message_tool_name: z.union([z.string(), z.undefined()]).optional(),
+  assistant_message_tool_kwarg: z.union([z.string(), z.undefined()]).optional(),
+  agent_id: z.string(),
+});
+
+export type LettaBatchResponse = z.infer<typeof LettaBatchResponse>;
+export const LettaBatchResponse = z.object({
+  batch_id: z.string(),
+  status: JobStatus,
+  agent_count: z.number(),
+  last_polled_at: z.string(),
+  created_at: z.string(),
+});
+
 export type LettaRequest = z.infer<typeof LettaRequest>;
 export const LettaRequest = z.object({
   messages: z.array(MessageCreate),
@@ -6054,6 +6072,23 @@ export const get_List_agent_groups = {
   response: z.array(Group),
 };
 
+export type post_Create_batch_message_request =
+  typeof post_Create_batch_message_request;
+export const post_Create_batch_message_request = {
+  method: z.literal('POST'),
+  path: z.literal('/v1/agents/messages/batches'),
+  requestFormat: z.literal('json'),
+  parameters: z.object({
+    header: z.object({
+      user_id: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+    }),
+    body: z.array(LettaBatchRequest),
+  }),
+  response: LettaBatchResponse,
+};
+
 export type get_List_groups = typeof get_List_groups;
 export const get_List_groups = {
   method: z.literal('GET'),
@@ -7588,6 +7623,7 @@ export const EndpointByMethod = {
     '/v1/agents/{agent_id}/messages': post_Send_message,
     '/v1/agents/{agent_id}/messages/stream': post_Create_agent_message_stream,
     '/v1/agents/{agent_id}/messages/async': post_Create_agent_message_async,
+    '/v1/agents/messages/batches': post_Create_batch_message_request,
     '/v1/groups/': post_Create_group,
     '/v1/groups/{group_id}/messages': post_Send_group_message,
     '/v1/groups/{group_id}/messages/stream': post_Send_group_message_streaming,

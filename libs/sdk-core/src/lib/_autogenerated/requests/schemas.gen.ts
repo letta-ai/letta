@@ -5419,6 +5419,87 @@ Attributes:
     max_tokens (int): The maximum number of tokens to generate.`,
 } as const;
 
+export const $LettaBatchRequest = {
+  properties: {
+    messages: {
+      items: {
+        $ref: '#/components/schemas/MessageCreate',
+      },
+      type: 'array',
+      title: 'Messages',
+      description: 'The messages to be sent to the agent.',
+    },
+    use_assistant_message: {
+      type: 'boolean',
+      title: 'Use Assistant Message',
+      description:
+        'Whether the server should parse specific tool call arguments (default `send_message`) as `AssistantMessage` objects.',
+      default: true,
+    },
+    assistant_message_tool_name: {
+      type: 'string',
+      title: 'Assistant Message Tool Name',
+      description: 'The name of the designated message tool.',
+      default: 'send_message',
+    },
+    assistant_message_tool_kwarg: {
+      type: 'string',
+      title: 'Assistant Message Tool Kwarg',
+      description:
+        'The name of the message argument in the designated message tool.',
+      default: 'message',
+    },
+    agent_id: {
+      type: 'string',
+      title: 'Agent Id',
+      description: 'The ID of the agent to send this batch request for',
+    },
+  },
+  type: 'object',
+  required: ['messages', 'agent_id'],
+  title: 'LettaBatchRequest',
+} as const;
+
+export const $LettaBatchResponse = {
+  properties: {
+    batch_id: {
+      type: 'string',
+      title: 'Batch Id',
+      description: 'A unique identifier for this batch request.',
+    },
+    status: {
+      $ref: '#/components/schemas/JobStatus',
+      description: 'The current status of the batch request.',
+    },
+    agent_count: {
+      type: 'integer',
+      title: 'Agent Count',
+      description: 'The number of agents in the batch request.',
+    },
+    last_polled_at: {
+      type: 'string',
+      format: 'date-time',
+      title: 'Last Polled At',
+      description: 'The timestamp when the batch was last polled for updates.',
+    },
+    created_at: {
+      type: 'string',
+      format: 'date-time',
+      title: 'Created At',
+      description: 'The timestamp when the batch request was created.',
+    },
+  },
+  type: 'object',
+  required: [
+    'batch_id',
+    'status',
+    'agent_count',
+    'last_polled_at',
+    'created_at',
+  ],
+  title: 'LettaBatchResponse',
+} as const;
+
 export const $LettaRequest = {
   properties: {
     messages: {

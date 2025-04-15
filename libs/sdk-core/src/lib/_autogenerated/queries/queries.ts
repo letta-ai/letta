@@ -46,6 +46,7 @@ import {
   IdentityType,
   IdentityUpdate,
   IdentityUpsert,
+  LettaBatchRequest,
   LettaRequest,
   LettaStreamingRequest,
   LocalSandboxConfig,
@@ -2824,6 +2825,50 @@ export const useAgentsServiceCreateAgentMessageAsync = <
     mutationFn: ({ agentId, requestBody, userId }) =>
       AgentsService.createAgentMessageAsync({
         agentId,
+        requestBody,
+        userId,
+      }) as unknown as Promise<TData>,
+    ...options,
+  });
+/**
+ * Send Batch Messages
+ * Submit a batch of agent messages for asynchronous processing.
+ * Creates a job that will fan out messages to all listed agents and process them in parallel.
+ * @param data The data for the request.
+ * @param data.requestBody
+ * @param data.userId
+ * @returns LettaBatchResponse Successful Response
+ * @throws ApiError
+ */
+export const useAgentsServiceCreateBatchMessageRequest = <
+  TData = Common.AgentsServiceCreateBatchMessageRequestMutationResult,
+  TError = unknown,
+  TContext = unknown,
+>(
+  options?: Omit<
+    UseMutationOptions<
+      TData,
+      TError,
+      {
+        requestBody: LettaBatchRequest[];
+        userId?: string;
+      },
+      TContext
+    >,
+    'mutationFn'
+  >,
+) =>
+  useMutation<
+    TData,
+    TError,
+    {
+      requestBody: LettaBatchRequest[];
+      userId?: string;
+    },
+    TContext
+  >({
+    mutationFn: ({ requestBody, userId }) =>
+      AgentsService.createBatchMessageRequest({
         requestBody,
         userId,
       }) as unknown as Promise<TData>,
