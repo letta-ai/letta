@@ -288,6 +288,18 @@ export async function forkAgentTemplate(
     userId,
     name,
     createAgentState: {
+      include_base_tools: false,
+      tool_rules: agentDetails.tool_rules,
+      tool_exec_environment_variables:
+        agentDetails.tool_exec_environment_variables?.reduce(
+          (v, c) => {
+            return {
+              ...v,
+              [c.key]: c.value,
+            };
+          },
+          {} as Record<string, string>,
+        ),
       llm_config: agentDetails.llm_config,
       embedding_config: agentDetails.embedding_config,
       system: agentDetails.system,
