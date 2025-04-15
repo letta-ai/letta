@@ -108,11 +108,7 @@ def weather_tool(client):
         Raises:
             RuntimeError: If the request to fetch weather data fails.
         """
-        import time
-
         import requests
-
-        time.sleep(5)
 
         url = f"https://wttr.in/{location}?format=%C+%t"
 

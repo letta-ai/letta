@@ -1,10 +1,10 @@
 import datetime
-from typing import List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 
 from anthropic.types.beta.messages import BetaMessageBatch, BetaMessageBatchIndividualResponse
 from sqlalchemy import tuple_
 
-from letta.jobs.types import BatchPollingResult, ItemUpdateInfo
+from letta.jobs.types import BatchPollingResult, ItemUpdateInfo, RequestStatusUpdateInfo, StepStatusUpdateInfo
 from letta.log import get_logger
 from letta.orm.llm_batch_items import LLMBatchItem
 from letta.orm.llm_batch_job import LLMBatchJob
@@ -141,6 +141,39 @@ class LLMBatchManager:
             return item.to_pydantic()
 
     @enforce_types
+    def create_batch_items_bulk(self, llm_batch_items: List[PydanticLLMBatchItem], actor: PydanticUser) -> List[PydanticLLMBatchItem]:
+        """
+        Create multiple batch items in bulk for better performance.
+
+        Args:
+            llm_batch_items: List of batch items to create
+            actor: User performing the action
+
+        Returns:
+            List of created batch items as Pydantic models
+        """
+        with self.session_maker() as session:
+            # Convert Pydantic models to ORM objects
+            orm_items = []
+            for item in llm_batch_items:
+                orm_item = LLMBatchItem(
+                    batch_id=item.batch_id,
+                    agent_id=item.agent_id,
+                    llm_config=item.llm_config,
+                    request_status=item.request_status,
+                    step_status=item.step_status,
+                    step_state=item.step_state,
+                    organization_id=actor.organization_id,
+                )
+                orm_items.append(orm_item)
+
+            # Use the batch_create method to create all items at once
+            created_items = LLMBatchItem.batch_create(orm_items, session, actor=actor)
+
+            # Convert back to Pydantic models
+            return [item.to_pydantic() for item in created_items]
+
+    @enforce_types
     def get_batch_item_by_id(self, item_id: str, actor: PydanticUser) -> PydanticLLMBatchItem:
         """Retrieve a single batch item by ID."""
         with self.session_maker() as session:
@@ -172,6 +205,7 @@ class LLMBatchManager:
 
             return item.update(db_session=session, actor=actor).to_pydantic()
 
+    # TODO: Maybe make this paginated?
     @enforce_types
     def list_batch_items(
         self,
@@ -192,55 +226,85 @@ class LLMBatchManager:
             results = query.all()
             return [item.to_pydantic() for item in results]
 
-    def bulk_update_batch_items_by_agent(
+    def bulk_update_batch_items(
         self,
-        updates: List[ItemUpdateInfo],
+        batch_id_agent_id_pairs: List[Tuple[str, str]],
+        field_updates: List[Dict[str, Any]],
     ) -> None:
         """
-        Efficiently update LLMBatchItem rows by (batch_id, agent_id).
+        Efficiently update multiple LLMBatchItem rows by (batch_id, agent_id) pairs.
 
         Args:
-            updates: List of tuples:
-              (batch_id, agent_id, new_request_status, batch_request_result)
+            batch_id_agent_id_pairs: List of (batch_id, agent_id) tuples identifying items to update
+            field_updates: List of dictionaries containing the fields to update for each item
         """
+        if not batch_id_agent_id_pairs or not field_updates:
+            return
+
+        if len(batch_id_agent_id_pairs) != len(field_updates):
+            raise ValueError("batch_id_agent_id_pairs and field_updates must have the same length")
+
         with self.session_maker() as session:
-            # For bulk_update_mappings, we need the primary key of each row
-            # So we must map (batch_id, agent_id) → actual PK (id)
-            # We'll do it in one DB query using the (batch_id, agent_id) sets
-
-            # 1. Gather the pairs
-            key_pairs = [(b_id, a_id) for (b_id, a_id, *_rest) in updates]
-
-            # 2. Query items in a single step
+            # Lookup primary keys
             items = (
                 session.query(LLMBatchItem.id, LLMBatchItem.batch_id, LLMBatchItem.agent_id)
-                .filter(tuple_(LLMBatchItem.batch_id, LLMBatchItem.agent_id).in_(key_pairs))
+                .filter(tuple_(LLMBatchItem.batch_id, LLMBatchItem.agent_id).in_(batch_id_agent_id_pairs))
                 .all()
             )
+            pair_to_pk = {(b, a): id for id, b, a in items}
 
-            # Build a map from (batch_id, agent_id) → PK id
-            pair_to_pk = {}
-            for row_id, row_batch_id, row_agent_id in items:
-                pair_to_pk[(row_batch_id, row_agent_id)] = row_id
-
-            # 3. Construct mappings for the PK-based bulk update
             mappings = []
-            for batch_id, agent_id, new_status, new_result in updates:
+            for (batch_id, agent_id), fields in zip(batch_id_agent_id_pairs, field_updates):
                 pk_id = pair_to_pk.get((batch_id, agent_id))
                 if not pk_id:
-                    # Nonexistent or mismatch → skip
                     continue
-                mappings.append(
-                    {
-                        "id": pk_id,
-                        "request_status": new_status,
-                        "batch_request_result": new_result,
-                    }
-                )
+
+                update_fields = fields.copy()
+                update_fields["id"] = pk_id
+                mappings.append(update_fields)
 
             if mappings:
                 session.bulk_update_mappings(LLMBatchItem, mappings)
                 session.commit()
+
+    @enforce_types
+    def bulk_update_batch_items_results_by_agent(
+        self,
+        updates: List[ItemUpdateInfo],
+    ) -> None:
+        """Update request status and batch results for multiple batch items."""
+        batch_id_agent_id_pairs = [(update.batch_id, update.agent_id) for update in updates]
+        field_updates = [
+            {
+                "request_status": update.request_status,
+                "batch_request_result": update.batch_request_result,
+            }
+            for update in updates
+        ]
+
+        self.bulk_update_batch_items(batch_id_agent_id_pairs, field_updates)
+
+    @enforce_types
+    def bulk_update_batch_items_step_status_by_agent(
+        self,
+        updates: List[StepStatusUpdateInfo],
+    ) -> None:
+        """Update step status for multiple batch items."""
+        batch_id_agent_id_pairs = [(update.batch_id, update.agent_id) for update in updates]
+        field_updates = [{"step_status": update.step_status} for update in updates]
+
+        self.bulk_update_batch_items(batch_id_agent_id_pairs, field_updates)
+
+    @enforce_types
+    def bulk_update_batch_items_request_status_by_agent(
+        self,
+        updates: List[RequestStatusUpdateInfo],
+    ) -> None:
+        """Update request status for multiple batch items."""
+        batch_id_agent_id_pairs = [(update.batch_id, update.agent_id) for update in updates]
+        field_updates = [{"request_status": update.request_status} for update in updates]
+
+        self.bulk_update_batch_items(batch_id_agent_id_pairs, field_updates)
 
     @enforce_types
     def delete_batch_item(self, item_id: str, actor: PydanticUser) -> None:

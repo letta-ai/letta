@@ -4,7 +4,7 @@ from typing import Dict, List, Optional, Union
 
 import anthropic
 from anthropic import AsyncStream
-from anthropic.types import Message as AnthropicMessage
+from anthropic.types.beta import BetaMessage as AnthropicMessage
 from anthropic.types.beta import BetaRawMessageStreamEvent
 from anthropic.types.beta.message_create_params import MessageCreateParamsNonStreaming
 from anthropic.types.beta.messages import BetaMessageBatch
@@ -304,6 +304,8 @@ class AnthropicClient(LLMClientBase):
 
         return super().handle_llm_error(e)
 
+    # TODO: Input messages doesn't get used here
+    # TODO: Clean up this interface
     def convert_response_to_chat_completion(
         self,
         response_data: dict,
