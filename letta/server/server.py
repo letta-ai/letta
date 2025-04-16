@@ -97,7 +97,7 @@ from letta.services.user_manager import UserManager
 from letta.settings import model_settings, settings, tool_settings
 from letta.sleeptime_agent import SleeptimeAgent
 from letta.tracing import log_event, trace_method
-from letta.utils import get_friendly_error_msg, make_key
+from letta.utils import get_friendly_error_msg, get_persona_text, make_key
 
 config = LettaConfig.load()
 logger = get_logger(__name__)
@@ -1053,19 +1053,14 @@ class SyncServer(Server):
             memory_blocks=[
                 CreateBlock(
                     label="persona",
-                    value=(
-                        "I am an expert document summarizer. "
-                        "I manage the data source blocks such that they "
-                        "contain everything that is important about "
-                        "the corresponding files."
-                    ),
+                    value=get_persona_text("sleeptime_doc_persona"),
                 ),
             ],
             llm_config=main_agent.llm_config,
             embedding_config=main_agent.embedding_config,
             project_id=main_agent.project_id,
             include_base_tools=False,
-            tools=["core_memory_insert", "rethink_memory", "finish_rethinking_memory", "view_core_memory_with_line_numbers"],
+            tools=constants.BASE_SLEEPTIME_TOOLS,
         )
         return self.agent_manager.create_agent(
             agent_create=request,
