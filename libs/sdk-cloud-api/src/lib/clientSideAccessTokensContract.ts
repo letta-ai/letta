@@ -44,7 +44,7 @@ const CreateClientSideAccessTokenPayload = z.object({
 const createClientSideAccessTokenContract = c.mutation({
   path: '/v1/client-side-access-tokens',
   method: 'POST',
-  summary: 'Create Client Side Access Token',
+  summary: 'Create token  (Cloud-only)',
   description:
     'Create a new client side access token with the specified configuration.',
   body: CreateClientSideAccessTokenPayload,
@@ -59,7 +59,7 @@ const createClientSideAccessTokenContract = c.mutation({
 const deleteClientSideAccessTokenContract = c.mutation({
   path: '/v1/client-side-access-tokens/:token',
   method: 'DELETE',
-  summary: 'Delete Client Side Access Token',
+  summary: 'Delete token  (Cloud-only)',
   description: 'Delete a client side access token.',
   pathParams: z.object({
     token: z.string().openapi({

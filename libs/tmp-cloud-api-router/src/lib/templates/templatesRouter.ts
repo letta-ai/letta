@@ -2,6 +2,7 @@ import type { ServerInferRequest, ServerInferResponses } from '@ts-rest/core';
 
 import type { cloudContracts } from '@letta-cloud/sdk-cloud-api';
 import {
+  agentTemplates,
   db,
   deployedAgentMetadata,
   deployedAgentVariables,
@@ -10,6 +11,7 @@ import type { SDKContext } from '../types';
 import { getDeployedTemplateByVersion } from '@letta-cloud/utils-server';
 import { copyAgentById } from '@letta-cloud/utils-server';
 import { getContextDataHack } from '../getContextDataHack/getContextDataHack';
+import { and, eq, ilike } from 'drizzle-orm';
 
 type CreateAgentsFromTemplateRequest = ServerInferRequest<
   typeof cloudContracts.templates.createAgentsFromTemplate
@@ -103,6 +105,49 @@ async function createAgentsFromTemplate(
   };
 }
 
+type ListTemplatesRequest = ServerInferRequest<
+  typeof cloudContracts.templates.listTemplates
+>;
+
+type ListTemplatesResponse = ServerInferResponses<
+  typeof cloudContracts.templates.listTemplates
+>;
+
+async function listTemplates(
+  req: ListTemplatesRequest,
+  context: SDKContext,
+): Promise<ListTemplatesResponse> {
+  const { organizationId } = getContextDataHack(req, context);
+
+  const { query } = req;
+
+  const { name, limit = 1, offset = 0, projectId } = query;
+
+  const templatesResponse = await db.query.agentTemplates.findMany({
+    where: and(
+      ...[
+        eq(agentTemplates.organizationId, organizationId),
+        ...(name ? [ilike(agentTemplates.name, name)] : []),
+        ...(projectId ? [eq(agentTemplates.projectId, projectId)] : []),
+      ],
+    ),
+    offset,
+    limit: limit + 1,
+  });
+
+  return {
+    status: 200,
+    body: {
+      templates: templatesResponse.slice(0, limit).map((template) => ({
+        id: template.id,
+        name: template.name,
+      })),
+      hasNextPage: templatesResponse.length > limit,
+    },
+  };
+}
+
 export const templatesRouter = {
   createAgentsFromTemplate,
+  listTemplates,
 };

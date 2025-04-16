@@ -11,7 +11,7 @@ const createAgentsFromTemplate = c.mutation({
   method: 'POST',
   path: '/v1/templates/:project/:template_version/agents',
   description: 'Creates an Agent or multiple Agents from a template',
-  summary: 'Create agents from a template',
+  summary: 'Create agents from a template (Cloud-only)',
   pathParams: z.object({
     project: z.string().openapi({ description: 'The project slug' }),
     template_version: z.string().openapi({
@@ -48,6 +48,33 @@ const createAgentsFromTemplate = c.mutation({
   },
 });
 
+const PublicTemplateDetails = z.object({
+  name: z.string(),
+  id: z.string(),
+});
+
+const templatesQuery = z.object({
+  limit: z.number().min(1).max(20).optional(),
+  offset: z.number().optional(),
+  name: z.string().optional(),
+  projectId: z.string().optional(),
+});
+
+const listTemplates = c.query({
+  method: 'GET',
+  path: '/v1/templates',
+  description: 'List all templates',
+  summary: 'List templates (Cloud-only)',
+  query: templatesQuery,
+  responses: {
+    200: z.object({
+      templates: PublicTemplateDetails.array(),
+      hasNextPage: z.boolean(),
+    }),
+  },
+});
+
 export const templatesContract = c.router({
   createAgentsFromTemplate,
+  listTemplates,
 });

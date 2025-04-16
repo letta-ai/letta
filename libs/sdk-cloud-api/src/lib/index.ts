@@ -2,11 +2,13 @@ import { agentsContract, agentsQueryKeys } from './agentsContract';
 import { initTsrReactQuery } from '@ts-rest/react-query/v5';
 import { templatesContract } from './templatesContract';
 import { clientSideAccessTokensContract } from './clientSideAccessTokensContract';
+import { projectsContract } from './projectsContract';
 
 export const cloudContracts = {
   agents: agentsContract,
   templates: templatesContract,
   clientSideAccessTokens: clientSideAccessTokensContract,
+  projects: projectsContract,
 };
 
 export const cloudQueryKeys = {

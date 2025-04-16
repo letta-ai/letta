@@ -7065,7 +7065,7 @@
     "/v1/templates/{project}/{template_version}/agents": {
       "post": {
         "description": "Creates an Agent or multiple Agents from a template",
-        "summary": "Create agents from a template",
+        "summary": "Create agents from a template (Cloud-only)",
         "tags": ["templates"],
         "parameters": [
           {
@@ -10178,10 +10178,83 @@
         }
       }
     },
+    "/v1/templates": {
+      "get": {
+        "description": "List all templates",
+        "summary": "List templates (Cloud-only)",
+        "tags": ["templates"],
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "number",
+              "minimum": 1,
+              "maximum": 20
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "name",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "projectId",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "operationId": "templates.listTemplates",
+        "responses": {
+          "200": {
+            "description": "200",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "templates": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "name": {
+                            "type": "string"
+                          },
+                          "id": {
+                            "type": "string"
+                          }
+                        },
+                        "required": ["name", "id"]
+                      }
+                    },
+                    "hasNextPage": {
+                      "type": "boolean"
+                    }
+                  },
+                  "required": ["templates", "hasNextPage"]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/client-side-access-tokens": {
       "post": {
         "description": "Create a new client side access token with the specified configuration.",
-        "summary": "Create Client Side Access Token",
+        "summary": "Create token  (Cloud-only)",
         "tags": ["clientSideAccessTokens"],
         "parameters": [],
         "operationId": "clientSideAccessTokens.createClientSideAccessToken",
@@ -10333,7 +10406,7 @@
     "/v1/client-side-access-tokens/{token}": {
       "delete": {
         "description": "Delete a client side access token.",
-        "summary": "Delete Client Side Access Token",
+        "summary": "Delete token  (Cloud-only)",
         "tags": ["clientSideAccessTokens"],
         "parameters": [
           {
@@ -10376,6 +10449,76 @@
                     }
                   },
                   "required": ["message"]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/projects": {
+      "get": {
+        "description": "List all projects",
+        "summary": "List Projects (Cloud-only)",
+        "tags": ["projects"],
+        "parameters": [
+          {
+            "name": "name",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "schema": {
+              "type": "number",
+              "minimum": 0
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "number",
+              "minimum": 1,
+              "maximum": 20
+            }
+          }
+        ],
+        "operationId": "projects.listProjects",
+        "responses": {
+          "200": {
+            "description": "200",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "projects": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "name": {
+                            "type": "string"
+                          },
+                          "slug": {
+                            "type": "string"
+                          },
+                          "id": {
+                            "type": "string"
+                          }
+                        },
+                        "required": ["name", "slug", "id"]
+                      }
+                    },
+                    "hasNextPage": {
+                      "type": "boolean"
+                    }
+                  },
+                  "required": ["projects", "hasNextPage"]
                 }
               }
             }
