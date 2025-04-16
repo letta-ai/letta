@@ -6,10 +6,12 @@ import { Slot } from '@radix-ui/react-slot';
 import { Typography } from '../Typography/Typography';
 import { cva } from 'class-variance-authority';
 import type { VariantProps } from 'class-variance-authority';
+import { MaybeTooltip } from '../Tooltip/Tooltip';
 
 interface TabItemType {
   label: string;
   value: string;
+  hideLabel?: boolean;
   icon?: React.ReactNode;
   postIcon?: React.ReactNode;
 }
@@ -19,14 +21,11 @@ const listVariant = cva('px-4 h-[28px] flex items-center gap-2 flex-row', {
     variant: {
       default:
         'border-b-2 border-b border-border pb-2 data-[state=active]:border-content pt-2',
-      'bordered-background':
-        'data-[state=active]:border data-[state=active]:border-b-0',
       chips: ' font-medium',
     },
     color: {
-      default:
-        'data-[state=active]:bg-background-grey2 data-[state=active]:border-b',
-      dark: 'data-[state=active]:bg-dark-active data-[state=active]:text-dark-active-content',
+      default: 'data-[state=active]:bg-background-grey2 ',
+      dark: 'data-[state=active]:bg-dark-active data-[state=active]:text-secondary-active-content',
     },
     size: {
       small: 'h-biHeight',
@@ -41,6 +40,13 @@ const listVariant = cva('px-4 h-[28px] flex items-center gap-2 flex-row', {
     variant: 'default',
     color: 'default',
   },
+  compoundVariants: [
+    {
+      color: 'default',
+      variant: 'default',
+      className: 'data-[state=active]:border-b',
+    },
+  ],
 });
 
 type TabAggregate = Tabs.TabsProps & VariantProps<typeof listVariant>;
@@ -85,6 +91,18 @@ export function TabGroup(props: TabGroupProps) {
     return 'body2';
   }, [size]);
 
+  const iconSize = useMemo(() => {
+    if (size === 'xsmall') {
+      return 'w-4 h-4';
+    }
+
+    if (size === 'xxsmall') {
+      return 'w-3 h-3';
+    }
+
+    return 'w-5 h-5';
+  }, [size]);
+
   return (
     <Tabs.Root
       className={cn(fullWidth || extendBorder ? 'w-full' : '')}
@@ -102,29 +120,39 @@ export function TabGroup(props: TabGroupProps) {
         )}
       >
         {items.map((item) => (
-          <Tabs.Trigger
-            className={cn(
-              'px-4 h-[28px] flex items-center gap-2 flex-row ',
-              listVariant({ variant, color, size, fullWidth }),
-            )}
-            onClick={(e) => {
-              e.stopPropagation();
-            }}
+          <MaybeTooltip
+            renderTooltip={!!item.hideLabel}
+            asChild
+            content={item.hideLabel ? item.label : undefined}
             key={item.value}
-            value={item.value}
-            data-testid={`tab-item:${item.value}`}
           >
-            <Slot className="w-4 h-4">{item.icon}</Slot>
-            <Typography
-              bold={bold}
-              variant={fontVariant}
-              uppercase={upperCase}
-              className="whitespace-nowrap"
+            <Tabs.Trigger
+              className={cn(
+                'px-4 h-[28px] flex items-center gap-2 flex-row ',
+                listVariant({ variant, color, size, fullWidth }),
+              )}
+              onClick={(e) => {
+                e.stopPropagation();
+              }}
+              value={item.value}
+              data-testid={`tab-item:${item.value}`}
             >
-              {item.label}
-            </Typography>
-            <Slot className="w-4 h-4">{item.postIcon}</Slot>
-          </Tabs.Trigger>
+              <Slot className={iconSize}>{item.icon}</Slot>
+              {item.hideLabel ? (
+                <div className="sr-only">item.label</div>
+              ) : (
+                <Typography
+                  bold={bold}
+                  variant={fontVariant}
+                  uppercase={upperCase}
+                  className="whitespace-nowrap"
+                >
+                  {item.label}
+                </Typography>
+              )}
+              <Slot className={iconSize}>{item.postIcon}</Slot>
+            </Tabs.Trigger>
+          </MaybeTooltip>
         ))}
         {extendBorder && <div className="border-b flex-1">{rightContent}</div>}
       </Tabs.List>

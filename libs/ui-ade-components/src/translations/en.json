@@ -480,6 +480,11 @@
     }
   },
   "ADE/EditCoreMemoriesPanel": {
+    "ManageMemoryLock": {
+      "locked": "Unlock editing core memory",
+      "unlocked": "Lock editing core memory",
+      "simulated": "Simulated memory is not editable"
+    },
     "advancedEditor": "Advanced",
     "advancedEditorDisabledDueToSimulated": "The advanced editor is not available for simulated memoires, switch back to template to edit",
     "MemoryOnboarding": {

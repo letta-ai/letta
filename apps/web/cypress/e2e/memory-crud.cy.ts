@@ -39,6 +39,11 @@ describe('letta', () => {
       /\/projects\/(.+)\/templates\/(.+)/,
     );
 
+    cy.findByTestId('lock-memory', { timeout: 50000 }).then(($el) => {
+      if ($el.attr('data-active') === 'true') {
+        cy.findByTestId('lock-memory').click();
+      }
+    });
     cy.findByTestId('expand-edit-memory-block-human-content').click();
 
     cy.findByTestId('create-new-memory-block-item', {

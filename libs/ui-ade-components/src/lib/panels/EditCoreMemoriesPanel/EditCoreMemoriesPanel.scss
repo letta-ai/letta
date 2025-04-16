@@ -1,0 +1,23 @@
+.hide-label-on-core-memory-size  {
+  display: flex;
+}
+
+.show-label-on-core-memory-size {
+  display: none;
+}
+
+
+
+.core-memory-panel {
+  container-type: inline-size;
+}
+
+@container (max-width: 400px) {
+  .hide-label-on-core-memory-size {
+    display: none;
+  }
+
+  .show-label-on-core-memory-size {
+    display: flex;
+  }
+}

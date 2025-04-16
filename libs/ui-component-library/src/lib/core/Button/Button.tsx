@@ -229,13 +229,16 @@ export const Button = forwardRef<
           _use_rarely_className,
         )}
         {...rest}
+        data-active={active ? 'true' : undefined}
         disabled={rest.disabled || busy}
       >
         {iconToRender}
         {hideLabel ? (
           <span className="sr-only">{label}</span>
         ) : (
-          <span className={cn(bold && 'font-bold')}>{label}</span>
+          <span className={cn(bold && 'font-bold', 'button-label')}>
+            {label}
+          </span>
         )}
         {postIcon && <Slot className={iconSize}>{postIcon}</Slot>}
       </ButtonPrimitive>

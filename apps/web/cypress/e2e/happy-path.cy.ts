@@ -78,6 +78,11 @@ describe('letta', () => {
 
     cy.clearPointerEventLock();
 
+    cy.findByTestId('lock-memory', { timeout: 50000 }).then(($el) => {
+      if ($el.attr('data-active') === 'true') {
+        cy.findByTestId('lock-memory').click();
+      }
+    });
     cy.findByTestId('edit-memory-block-human-content', { timeout: 50000 }).type(
       'The users name is {{name}}. Please include the word BananaMan at the end of every message.',
       { parseSpecialCharSequences: false },
@@ -103,8 +108,7 @@ describe('letta', () => {
     cy.findByTestId('tab-item:simulated', { timeout: 50000 }).click({
       force: true,
     });
-    cy.findByTestId('simulated-memory:human', { timeout: 50000 }).should(
-      'contain.value',
+    cy.findByTestId('simulated-memory:human', { timeout: 50000 }).contains(
       'Shubham',
       { timeout: 50000 },
     );

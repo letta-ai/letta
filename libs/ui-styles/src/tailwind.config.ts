@@ -128,8 +128,8 @@ export function buildConfig(appDir: string): Config {
             content: 'hsl(var(--background-destructive-content))',
           },
           'dark-active': {
-            DEFAULT: 'hsl(var(--dark-active-background))',
-            content: 'hsl(var(--dark-active-content))',
+            DEFAULT: 'hsl(var(--grey3))',
+            content: 'hsl(var(--grey3))',
           },
           content: 'hsl(var(--content))',
           ['on-transparent']: 'hsl(var(--on-transparent))',

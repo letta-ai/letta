@@ -214,3 +214,5 @@ export * from './lib/core/LettaAgentTypeIcon/LettaAgentTypeIcon';
 export * from './lib/core/VariableInput/VariableInput';
 
 export * from './lib/core/ResizableKeyValueEditor/ResizableKeyValueEditor';
+
+export * from './lib/core/InlineTextDiff/InlineTextDiff';

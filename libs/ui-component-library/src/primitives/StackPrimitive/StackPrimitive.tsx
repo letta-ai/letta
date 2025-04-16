@@ -34,6 +34,7 @@ const stackVariants = cva('flex', {
     },
     wrap: {
       true: 'flex-wrap',
+      reverse: 'flex-wrap flex-row-reverse',
     },
   },
   defaultVariants: {

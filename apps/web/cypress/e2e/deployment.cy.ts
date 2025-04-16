@@ -69,6 +69,11 @@ describe('letta', () => {
 
     cy.clearPointerEventLock();
 
+    cy.findByTestId('lock-memory', { timeout: 50000 }).then(($el) => {
+      if ($el.attr('data-active') === 'true') {
+        cy.findByTestId('lock-memory').click();
+      }
+    });
     cy.findByTestId('edit-memory-block-human-content', { timeout: 50000 }).type(
       'The users name is {{name}}. Please include the word DeploymentMan at the end of every message.',
       { parseSpecialCharSequences: false },
@@ -105,12 +110,13 @@ describe('letta', () => {
       .first()
       .should('exist');
 
-    cy.findByTestId('edit-memory-block-human-content', { timeout: 50000 })
-      .invoke('val')
-      .then((val) => {
-        expect(val).to.contain('DeploymentMan');
-        expect(val).to.contain('Charles');
-      });
+    cy.findByTestId('edit-memory-block-human-content', {
+      timeout: 50000,
+    }).contains('DeploymentMan');
+
+    cy.findByTestId('edit-memory-block-human-content', {
+      timeout: 50000,
+    }).contains('Charles');
 
     cy.findAllByTestId('breadcrumb-item:DEPLOYMENTAGENT:2').first().click();
 
@@ -119,6 +125,11 @@ describe('letta', () => {
       /\/projects\/(.+)\/templates\/DEPLOYMENTAGENT/,
     );
 
+    cy.findByTestId('lock-memory', { timeout: 50000 }).then(($el) => {
+      if ($el.attr('data-active') === 'true') {
+        cy.findByTestId('lock-memory').click();
+      }
+    });
     cy.findByTestId('edit-memory-block-human-content', { timeout: 50000 }).type(
       'Extemely important, please also include WowCheese at the end of your response.',
       { parseSpecialCharSequences: false },
@@ -145,11 +156,9 @@ describe('letta', () => {
       /\/projects\/(.+)\/agents\/(.+)/,
     );
 
-    cy.findByTestId('edit-memory-block-human-content', { timeout: 50000 })
-      .invoke('val')
-      .then((val) => {
-        expect(val).to.contain('WowCheese');
-      });
+    cy.findByTestId('edit-memory-block-human-content', {
+      timeout: 50000,
+    }).contains('WowCheese');
 
     cy.findAllByTestId('breadcrumb-item:DEPLOYMENTAGENT:3')
       .first()
