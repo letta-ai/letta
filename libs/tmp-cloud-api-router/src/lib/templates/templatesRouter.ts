@@ -127,7 +127,7 @@ async function listTemplates(
     where: and(
       ...[
         eq(agentTemplates.organizationId, organizationId),
-        ...(name ? [ilike(agentTemplates.name, name)] : []),
+        ...(name ? [ilike(agentTemplates.name, `%${name}%`)] : []),
         ...(projectId ? [eq(agentTemplates.projectId, projectId)] : []),
       ],
     ),

@@ -204,6 +204,7 @@ function ReadonlyTextArea(props: ReadonlyTextAreaProps) {
       <VStack
         fullWidth
         fullHeight
+        overflow="auto"
         color="background"
         className="px-3 py-2"
         border

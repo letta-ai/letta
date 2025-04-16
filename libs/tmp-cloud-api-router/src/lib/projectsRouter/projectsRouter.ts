@@ -23,13 +23,14 @@ async function listProjects(
 
   const { name, limit = 1, offset = 0 } = query;
 
+  const where = [eq(projects.organizationId, organizationId)];
+
+  if (name) {
+    where.push(ilike(projects.name, `%${name}%`));
+  }
+
   const projectsResponse = await db.query.projects.findMany({
-    where: and(
-      ...[
-        eq(projects.organizationId, organizationId),
-        ...(name ? [ilike(projects.name, name)] : []),
-      ],
-    ),
+    where: and(...where),
     offset,
     limit: limit + 1,
   });
