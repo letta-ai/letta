@@ -14,6 +14,7 @@ import { OpenAPI } from '@letta-cloud/sdk-core';
 import * as Sentry from '@sentry/node';
 import winston from 'winston';
 import expressWinston from 'express-winston';
+import cors from 'cors';
 
 interface ExpressMeta {
   req: {
@@ -78,6 +79,8 @@ export function startServer() {
 
     return config;
   });
+
+  app.use(cors());
 
   /* verifyIdentityMiddleware needs to be first */
   app.use(verifyIdentityMiddleware);
