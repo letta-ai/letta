@@ -5,6 +5,7 @@
  */
 
 import { createServer } from 'http';
+import { dialog, app } from 'electron';
 
 let serverId: string | null;
 
@@ -19,7 +20,6 @@ export function setServerId(id: string | null) {
 export function createWebServer() {
   const server = createServer((req, res) => {
     if (req.url === '/health') {
-      // send server id if it is set
       if (serverId) {
         res.writeHead(200, { 'Content-Type': 'text/plain' });
         res.end(serverId);
@@ -35,8 +35,22 @@ export function createWebServer() {
     res.end();
   });
 
-  // port is 8285
-  server.listen(8285);
+  const port = 8285;
 
-  console.log('Web server is running on port 8285');
+  server.listen(port, () => {
+    console.log(`Web server is running on port ${port}`);
+  });
+
+  server.on('error', (err: any) => {
+    if (err.code === 'EADDRINUSE') {
+      dialog.showErrorBox(
+        'Warning\n\nLetta Desktop port in use',
+        `Port ${port} is already in use.\n\nThis usually means another instance of Letta Desktop is already running.\n\nPlease close any other instances and try again.`,
+      );
+      // If we want to prevent parallel copies running, we should actually quit here
+      // app.quit();
+    } else {
+      console.error('[web-server] Unhandled server error:', err);
+    }
+  });
 }

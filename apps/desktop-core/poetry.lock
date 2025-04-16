@@ -115,6 +115,21 @@ yarl = ">=1.17.0,<2.0"
 speedups = ["Brotli", "aiodns (>=3.2.0)", "brotlicffi"]
 
 [[package]]
+name = "aiomultiprocess"
+version = "0.9.1"
+description = "AsyncIO version of the standard multiprocessing module"
+optional = false
+python-versions = ">=3.8"
+files = [
+    {file = "aiomultiprocess-0.9.1-py3-none-any.whl", hash = "sha256:3a7b3bb3c38dbfb4d9d1194ece5934b6d32cf0280e8edbe64a7d215bba1322c6"},
+    {file = "aiomultiprocess-0.9.1.tar.gz", hash = "sha256:f0231dbe0291e15325d7896ebeae0002d95a4f2675426ca05eb35f24c60e495b"},
+]
+
+[package.extras]
+dev = ["attribution (==1.7.1)", "black (==24.4.0)", "coverage (==7.4.4)", "flake8 (==7.0.0)", "flake8-bugbear (==24.4.21)", "flit (==3.9.0)", "mypy (==1.9.0)", "usort (==1.0.8.post1)", "uvloop (==0.19.0)"]
+docs = ["sphinx (==7.3.7)", "sphinx-mdinclude (==0.6.0)"]
+
+[[package]]
 name = "aiosignal"
 version = "1.3.2"
 description = "aiosignal: a list of registered asynchronous callbacks"
@@ -2327,7 +2342,7 @@ pytest = ["pytest (>=7.0.0)", "rich (>=13.9.4,<14.0.0)"]
 
 [[package]]
 name = "letta"
-version = "0.6.50"
+version = "0.6.53"
 description = "Create LLM agents with long-term memory and custom tools"
 optional = false
 python-versions = "<3.14,>=3.10"
@@ -2335,6 +2350,7 @@ files = []
 develop = false
 
 [package.dependencies]
+aiomultiprocess = "^0.9.1"
 alembic = "^1.13.3"
 anthropic = "^0.49.0"
 apscheduler = "^3.11.0"
@@ -2357,7 +2373,7 @@ httpx-sse = "^0.4.0"
 jinja2 = "^3.1.5"
 langchain = {version = "^0.3.7", optional = true}
 langchain-community = {version = "^0.3.7", optional = true}
-letta_client = "^0.1.97"
+letta_client = "^0.1.104"
 llama-index = "^0.12.2"
 llama-index-embeddings-openai = "^0.3.1"
 locust = {version = "^2.31.5", optional = true}
@@ -2416,13 +2432,13 @@ url = "../core"
 
 [[package]]
 name = "letta-client"
-version = "0.1.101"
+version = "0.1.115"
 description = ""
 optional = false
 python-versions = "<4.0,>=3.8"
 files = [
-    {file = "letta_client-0.1.101-py3-none-any.whl", hash = "sha256:eec9bcd6cc8d86631325e12409631bea77dae3bd54c205a0acaa37ff236744cf"},
-    {file = "letta_client-0.1.101.tar.gz", hash = "sha256:0bab4c5b428bf144297d08327e5a0d097f683bd42b156624cca40a8839381586"},
+    {file = "letta_client-0.1.115-py3-none-any.whl", hash = "sha256:d1f1a1775844d35f374b5333bf1159f4164a1926e230cfaec96d470fd5b62baa"},
+    {file = "letta_client-0.1.115.tar.gz", hash = "sha256:8dc1bd10f624b4102f0305a811ad6fb62725eea105ab6153cb16b9cba0c98270"},
 ]
 
 [package.dependencies]
@@ -6217,4 +6233,4 @@ cffi = ["cffi (>=1.11)"]
 [metadata]
 lock-version = "2.0"
 python-versions = "<3.14,>=3.10"
-content-hash = "e880a377122f2066c7ce2867d4f8c208894e080a1b5b2c0472d375d9282758c4"
+content-hash = "b1da67fa1cb1570b82b8511d5bb7ec41e83258b2d1f14345c7b474edde96d927"

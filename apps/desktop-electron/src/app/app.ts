@@ -599,21 +599,24 @@ export default class App {
 
         App.initMainWindow();
         App.loadMainWindow();
-        App.mainWindow.webContents.on('did-finish-load', function () {
+
+        App.mainWindow.once('ready-to-show', async () => {
+          App.mainWindow.show(); // shows the window
+
           App.lettaStartupRouting();
+
+          if (!process.env.IGNORE_POSTGRES) {
+            try {
+              await App.startPostgres();
+              await App.waitForPostgresReady();
+            } catch (err) {
+              console.error('[postgres] Failed to start:', err);
+            }
+          }
+
+          App.startLettaServer();
+          createWebServer();
         });
-
-        // Wait until we see "ready to accept connections"
-        if (!process.env.IGNORE_POSTGRES) {
-          // First start postgres (blocking)
-          await App.startPostgres();
-
-          await App.waitForPostgresReady();
-        }
-
-        // Then start the Letta Server
-        App.startLettaServer();
-        createWebServer();
       }
     } catch (err) {
       console.error('[fatal] Startup Error:', err);
