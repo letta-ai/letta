@@ -68,6 +68,9 @@ const publicHandler = createNextHandler(cloudContracts, cloudApiRouter, {
   jsonQuery: true,
   responseValidation: false,
   handlerType: 'app-router',
+  cors: {
+    origin: '*',
+  },
   requestMiddleware: [
     tsr.middleware<RequestMiddlewareType>(async (req) => {
       if (process.env.IS_API_STABILITY_TEST === 'yes') {
@@ -131,7 +134,6 @@ const publicHandler = createNextHandler(cloudContracts, cloudApiRouter, {
         }
       } else {
         const user = await getUser();
-
         middlewareData.source = 'web';
         middlewareData.organizationId = user?.activeOrganizationId || '';
         middlewareData.userId = user?.id || '';

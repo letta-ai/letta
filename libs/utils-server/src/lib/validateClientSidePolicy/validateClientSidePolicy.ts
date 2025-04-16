@@ -35,6 +35,7 @@ export function validateAgentPolicy(
 
   if (isBaseAgentRoute) {
     const agentId = resource.pathname.split('/')[2];
+
     if (resource.method === 'POST') {
       return policy.access.includes('write_agent') && policy.id === agentId;
     }
