@@ -117,6 +117,9 @@ describe('letta', () => {
 
     cy.findByTestId('create-data-source-dialog-trigger').click();
     cy.findByTestId('create-new-data-source').click();
+    cy.findByTestId('create-data-source-dialog-name').type('test');
+
+    cy.findByTestId('complete-create-data-source').click();
 
     cy.findByTestId('tab:datasources').contains('Sources (1)');
     cy.findByTestId('filetree-actions:1-0').click();
@@ -129,6 +132,7 @@ describe('letta', () => {
     cy.findByTestId('create-data-source-dialog-trigger', {
       timeout: 50000,
     }).click({ waitForAnimations: true, force: true });
+
     cy.findByTestId('attach-existing-data-source').click();
 
     cy.findAllByTestId('attach-data-source-button', {

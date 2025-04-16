@@ -269,7 +269,7 @@ export function FolderComponent(props: FolderComponentProps) {
       return (
         <HStack gap="text">
           <CaretRightIcon />
-          <Slot className="w-4">{iconOverride}</Slot>;
+          <Slot className="w-4">{iconOverride}</Slot>
         </HStack>
       );
     }

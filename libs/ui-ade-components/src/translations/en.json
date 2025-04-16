@@ -247,6 +247,16 @@
       "confirm": "Detach",
       "error": "There was an error detaching this data source, please try again or contact support."
     },
+    "UpdateDataSourceDescriptionDialog": {
+      "title": "Update source description",
+      "trigger": "Update source description",
+      "confirm": "Update",
+      "error": "There was an error updating this data source, please try again or contact support.",
+      "description": {
+        "label": "Source Description",
+        "placeholder": "my-source-description"
+      }
+    },
     "RenameDataSourceDialog": {
       "title": "Rename source",
       "trigger": "Rename source",
@@ -300,6 +310,16 @@
       "titles": "Add New Data Source",
       "trigger": "Create source",
       "goBack": "Go back",
+      "description": {
+        "label": "Description",
+        "placeholder": "Enter a description for this data source"
+      },
+      "name": {
+        "label": "Name",
+        "placeholder": "my-data-source-name"
+      },
+      "cancel": "Go back",
+      "create": "Create",
       "error": "There was an error creating the data source, please try again or contact support.",
       "creatingDataSource": "Creating data source...",
       "title": "Create a new data source",

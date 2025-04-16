@@ -502,6 +502,7 @@
   },
   "data-sources/page": {
     "CreateDataSourceDialog": {
+      "error": "There was an error creating the data source, please try again or contact support.",
       "title": "Create a new data source",
       "trigger": "Create data source",
       "name": {

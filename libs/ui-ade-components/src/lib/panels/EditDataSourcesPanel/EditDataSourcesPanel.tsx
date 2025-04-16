@@ -1,6 +1,8 @@
 'use client';
 import { z } from 'zod';
 import type { DialogTableItem } from '@letta-cloud/ui-component-library';
+import { TextArea } from '@letta-cloud/ui-component-library';
+import { Form, FormActions, Input } from '@letta-cloud/ui-component-library';
 import {
   ActionCard,
   Alert,
@@ -16,7 +18,6 @@ import {
   FormProvider,
   HStack,
   LettaLoader,
-  LoadingEmptyStatusComponent,
   PanelBar,
   PanelMainContent,
   PlusIcon,
@@ -52,12 +53,6 @@ import {
 } from '@letta-cloud/sdk-core';
 import { useCurrentAgent, useCurrentAgentMetaData } from '../../hooks';
 import { useQueryClient } from '@tanstack/react-query';
-import {
-  adjectives,
-  animals,
-  colors,
-  uniqueNamesGenerator,
-} from 'unique-names-generator';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { get, isEqual } from 'lodash-es';
 import { trackClientSideEvent } from '@letta-cloud/service-analytics/client';
@@ -243,6 +238,171 @@ function AttachDataSourceView(props: AttachDataSourceViewProps) {
   );
 }
 
+interface CreateNewDataSourceProps {
+  onClose: () => void;
+  setMode: (mode: CreateDataSourceDialogMode) => void;
+}
+
+const CreateNewDataSourceSchema = z.object({
+  name: z.string().min(1),
+  description: z.string().optional(),
+});
+
+type CreateNewDataSourceFormValues = z.infer<typeof CreateNewDataSourceSchema>;
+
+function CreateNewDataSource(props: CreateNewDataSourceProps) {
+  const { onClose, setMode } = props;
+
+  const form = useForm<CreateNewDataSourceFormValues>({
+    resolver: zodResolver(CreateNewDataSourceSchema),
+    defaultValues: {
+      name: '',
+      description: '',
+    },
+  });
+
+  const { mutate: attachDataSource, isPending: isAttachingDataSource } =
+    useAgentsServiceAttachSourceToAgent();
+
+  const {
+    mutate: createDataSource,
+    isPending: isCreatingDataSource,
+    isError,
+  } = useSourcesServiceCreateSource();
+  const queryClient = useQueryClient();
+  const isPending = useMemo(() => {
+    return isCreatingDataSource || isAttachingDataSource;
+  }, [isCreatingDataSource, isAttachingDataSource]);
+
+  const { id, embedding_config } = useCurrentAgent();
+
+  const t = useTranslations('ADE/EditDataSourcesPanel');
+
+  const handleCreateDataSource = useCallback(
+    (values: CreateNewDataSourceFormValues) => {
+      if (isPending) {
+        return;
+      }
+
+      const { name, description } = values;
+
+      createDataSource(
+        {
+          requestBody: {
+            name,
+            description,
+            embedding_config,
+          },
+        },
+        {
+          onSuccess: (response) => {
+            attachDataSource(
+              {
+                agentId: id,
+                sourceId: response.id || '',
+              },
+              {
+                onSuccess: () => {
+                  queryClient.setQueriesData<AgentState | undefined>(
+                    {
+                      queryKey: UseAgentsServiceRetrieveAgentKeyFn({
+                        agentId: id,
+                      }),
+                    },
+                    (oldData) => {
+                      if (!oldData) {
+                        return oldData;
+                      }
+
+                      return {
+                        ...oldData,
+                        sources: [
+                          response,
+                          ...oldData.sources.filter(
+                            (currentSource) => currentSource.id !== response.id,
+                          ),
+                        ],
+                      };
+                    },
+                  );
+
+                  onClose();
+                },
+              },
+            );
+          },
+        },
+      );
+    },
+    [
+      attachDataSource,
+      createDataSource,
+      embedding_config,
+      id,
+      isPending,
+      onClose,
+      queryClient,
+    ],
+  );
+
+  return (
+    <FormProvider {...form}>
+      <Form onSubmit={form.handleSubmit(handleCreateDataSource)}>
+        <VStack gap="form">
+          <FormField
+            render={({ field }) => (
+              <Input
+                fullWidth
+                {...field}
+                data-testid="create-data-source-dialog-name"
+                label={t('CreateDataSourceDialog.name.label')}
+                placeholder={t('CreateDataSourceDialog.name.placeholder')}
+              />
+            )}
+            name="name"
+          />
+          <FormField
+            render={({ field }) => (
+              <TextArea
+                autosize
+                minRows={3}
+                fullWidth
+                {...field}
+                label={t('CreateDataSourceDialog.description.label')}
+                placeholder={t(
+                  'CreateDataSourceDialog.description.placeholder',
+                )}
+              />
+            )}
+            name="description"
+          />
+          <FormActions
+            errorMessage={
+              isError ? t('CreateDataSourceDialog.error') : undefined
+            }
+          >
+            <Button
+              color="tertiary"
+              type="button"
+              label={t('CreateDataSourceDialog.cancel')}
+              onClick={() => {
+                setMode(null);
+              }}
+            />
+            <Button
+              color="primary"
+              data-testid="complete-create-data-source"
+              type="submit"
+              label={t('CreateDataSourceDialog.create')}
+              busy={isPending}
+            />
+          </FormActions>
+        </VStack>
+      </Form>
+    </FormProvider>
+  );
+}
+
 type CreateDataSourceDialogMode = 'attach' | 'create' | null;
 
 interface CreateDataSourceDialogInnerProps {
@@ -254,101 +414,12 @@ interface CreateDataSourceDialogInnerProps {
 function CreateDataSourceDialogInner(props: CreateDataSourceDialogInnerProps) {
   const { mode, onClose, setMode } = props;
   const t = useTranslations('ADE/EditDataSourcesPanel');
-  const { id, embedding_config } = useCurrentAgent();
-
-  const {
-    mutate: createDataSource,
-    isPending: isCreatingDataSource,
-    isError,
-  } = useSourcesServiceCreateSource();
-  const { mutate: attachDataSource, isPending: isAttachingDataSource } =
-    useAgentsServiceAttachSourceToAgent();
-  const queryClient = useQueryClient();
-  const isPending = useMemo(() => {
-    return isCreatingDataSource || isAttachingDataSource;
-  }, [isCreatingDataSource, isAttachingDataSource]);
-
-  const handleCreateDataSource = useCallback(() => {
-    if (isPending) {
-      return;
-    }
-
-    const randomName = uniqueNamesGenerator({
-      dictionaries: [adjectives, colors, animals],
-      length: 3,
-      separator: '-',
-    });
-
-    createDataSource(
-      {
-        requestBody: {
-          name: randomName,
-          description: '',
-          embedding_config,
-        },
-      },
-      {
-        onSuccess: (response) => {
-          attachDataSource(
-            {
-              agentId: id,
-              sourceId: response.id || '',
-            },
-            {
-              onSuccess: () => {
-                queryClient.setQueriesData<AgentState | undefined>(
-                  {
-                    queryKey: UseAgentsServiceRetrieveAgentKeyFn({
-                      agentId: id,
-                    }),
-                  },
-                  (oldData) => {
-                    if (!oldData) {
-                      return oldData;
-                    }
-
-                    return {
-                      ...oldData,
-                      sources: [
-                        response,
-                        ...oldData.sources.filter(
-                          (currentSource) => currentSource.id !== response.id,
-                        ),
-                      ],
-                    };
-                  },
-                );
-
-                onClose();
-              },
-            },
-          );
-        },
-      },
-    );
-  }, [
-    attachDataSource,
-    createDataSource,
-    embedding_config,
-    id,
-    isPending,
-    onClose,
-    queryClient,
-  ]);
 
   switch (mode) {
     case 'attach':
       return <AttachDataSourceView setMode={setMode} onClose={onClose} />;
     case 'create':
-      return (
-        <LoadingEmptyStatusComponent
-          emptyMessage=""
-          isLoading
-          isError={isError}
-          errorMessage={isError ? t('CreateDataSourceDialog.error') : undefined}
-          loadingMessage={t('CreateDataSourceDialog.creatingDataSource')}
-        />
-      );
+      return <CreateNewDataSource onClose={onClose} setMode={setMode} />;
     default:
       return (
         <VStack>
@@ -369,7 +440,6 @@ function CreateDataSourceDialogInner(props: CreateDataSourceDialogInnerProps) {
             testId="create-new-data-source"
             onClick={() => {
               setMode('create');
-              handleCreateDataSource();
             }}
             icon={<DatabaseIcon />}
             title={t(
@@ -402,13 +472,12 @@ function CreateDataSourceDialog() {
       isOpen={open}
       onOpenChange={handleOpenChange}
       size="large"
+      hideFooter
+      disableForm
       hideConfirm={mode !== 'attach'}
       preventCloseFromOutside={mode === 'create'}
       confirmColor="tertiary"
       confirmText={t('CreateDataSourceDialog.goBack')}
-      onConfirm={() => {
-        setMode(null);
-      }}
       trigger={
         <Button
           preIcon={<PlusIcon />}
@@ -420,13 +489,15 @@ function CreateDataSourceDialog() {
       }
       title={t('CreateDataSourceDialog.title')}
     >
-      <CreateDataSourceDialogInner
-        mode={mode}
-        onClose={() => {
-          handleOpenChange(false);
-        }}
-        setMode={setMode}
-      />
+      <VStack paddingBottom>
+        <CreateDataSourceDialogInner
+          mode={mode}
+          onClose={() => {
+            handleOpenChange(false);
+          }}
+          setMode={setMode}
+        />
+      </VStack>
     </Dialog>
   );
 }
@@ -680,6 +751,117 @@ export function DeleteFileDialog(props: DeleteFileDialogProps) {
   );
 }
 
+const UpdateDataSourceDescriptionSchema = z.object({
+  description: z.string().optional(),
+});
+
+type UpdateDataSourceDescriptionFormValues = z.infer<
+  typeof UpdateDataSourceDescriptionSchema
+>;
+
+interface UpdateDataSourceDescriptionDialogProps {
+  source: Source;
+  onClose: () => void;
+}
+
+function UpdateDataSourceDescriptionDialog(
+  props: UpdateDataSourceDescriptionDialogProps,
+) {
+  const { source, onClose } = props;
+  const t = useTranslations('ADE/EditDataSourcesPanel');
+
+  const queryClient = useQueryClient();
+  const { id: agentId } = useCurrentAgent();
+
+  const form = useForm<UpdateDataSourceDescriptionFormValues>({
+    resolver: zodResolver(UpdateDataSourceDescriptionSchema),
+    defaultValues: {
+      description: source.description || '',
+    },
+  });
+
+  const { mutate, isPending, isError } = useSourcesServiceModifySource({
+    onSuccess: (response) => {
+      queryClient.setQueriesData<AgentState | undefined>(
+        {
+          queryKey: UseAgentsServiceRetrieveAgentKeyFn({
+            agentId,
+          }),
+        },
+        (oldData) => {
+          if (!oldData) {
+            return oldData;
+          }
+
+          return {
+            ...oldData,
+            sources: oldData.sources.map((currentSource) => {
+              if (currentSource.id === source.id) {
+                return {
+                  ...currentSource,
+                  description: response.description,
+                };
+              }
+
+              return currentSource;
+            }),
+          };
+        },
+      );
+
+      onClose();
+    },
+  });
+
+  const onSubmit = useCallback(
+    (values: UpdateDataSourceDescriptionFormValues) => {
+      mutate({
+        sourceId: source.id || '',
+        requestBody: {
+          description: values.description,
+        },
+      });
+    },
+    [mutate, source.id],
+  );
+
+  return (
+    <FormProvider {...form}>
+      <Dialog
+        errorMessage={
+          isError ? t('UpdateDataSourceDescriptionDialog.error') : undefined
+        }
+        isOpen
+        onOpenChange={(state) => {
+          if (!state) {
+            onClose();
+          }
+        }}
+        onSubmit={form.handleSubmit(onSubmit)}
+        title={t('UpdateDataSourceDescriptionDialog.title')}
+        confirmText={t('UpdateDataSourceDescriptionDialog.confirm')}
+        isConfirmBusy={isPending}
+      >
+        <FormField
+          render={({ field }) => (
+            <TextArea
+              autosize
+              minRows={3}
+              fullWidth
+              {...field}
+              label={t('UpdateDataSourceDescriptionDialog.description.label')}
+              placeholder={t(
+                'UpdateDataSourceDescriptionDialog.description.placeholder',
+              )}
+            />
+          )}
+          name="description"
+        />
+      </Dialog>
+    </FormProvider>
+  );
+}
+
 interface DeleteDataSourceDialogProps {
   source: Source;
   onClose: () => void;
@@ -886,6 +1068,8 @@ function EditDataSourcesContent(props: EditDataSourcesContentProps) {
   const t = useTranslations('ADE/EditDataSourcesPanel');
   const [sourceToDetach, setSourceToDetach] = useState<Source | null>(null);
   const [sourceToRename, setSourceToRename] = useState<Source | null>(null);
+  const [sourceToUpdateDescription, setSourceToUpdateDescription] =
+    useState<Source | null>(null);
   const [sourceToDelete, setSourceToDelete] = useState<Source | null>(null);
   const [fileToDelete, setFileToDelete] = useState<Omit<
     DeleteFilePayload,
@@ -978,6 +1162,13 @@ function EditDataSourcesContent(props: EditDataSourcesContentProps) {
               label: t('RenameDataSourceDialog.trigger'),
               onClick: () => {
                 setSourceToRename(source);
+              },
+            },
+            {
+              id: 'updateDescription',
+              label: t('UpdateDataSourceDescriptionDialog.trigger'),
+              onClick: () => {
+                setSourceToUpdateDescription(source);
               },
             },
             {
@@ -1112,6 +1303,14 @@ function EditDataSourcesContent(props: EditDataSourcesContentProps) {
           sourceId={sourceIdToUploadFileTo}
           onClose={() => {
             setSourceIdToUploadFileTo(null);
+          }}
+        />
+      )}
+      {sourceToUpdateDescription && (
+        <UpdateDataSourceDescriptionDialog
+          source={sourceToUpdateDescription}
+          onClose={() => {
+            setSourceToUpdateDescription(null);
           }}
         />
       )}
