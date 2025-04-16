@@ -3,7 +3,8 @@ set windows-shell := ["powershell.exe", "-NoLogo", "-Command"]
 
 PROJECT_NAME := "memgpt-428419"
 REGION := "us-central1"
-REGISTRY_NAME := "letta"
+CLUSTER_CONTEXT := `kubectl config get-contexts | grep \* | awk '{print $2}' | awk -v FS=_ '{print $4}'`
+REGISTRY_NAME := if CLUSTER_CONTEXT == "letta-dev-us-central1" { "letta-dev-us-central1" } else { "letta" }
 DOCKER_REGISTRY := REGION + "-docker.pkg.dev/" + PROJECT_NAME + "/" + REGISTRY_NAME
 HELM_CHARTS_DIR := "helm"
 WEB_HELM_CHART_NAME := "letta-web"
@@ -27,9 +28,9 @@ configure-docker:
     gcloud auth configure-docker {{REGION}}-docker.pkg.dev --quiet
 
 # Configure kubectl
-configure-kubectl:
+configure-kubectl cluster-name="letta":
     @echo "🔧 Configuring kubectl for the Letta cluster..."
-    gcloud container clusters get-credentials letta --region {{REGION}} --project {{PROJECT_NAME}}
+    gcloud container clusters get-credentials {{cluster-name}} --region {{REGION}} --project {{PROJECT_NAME}}
 
 # Build the web Docker image
 @build-web-ui:
@@ -124,7 +125,7 @@ describe-web:
 @build-core:
     echo "🚧 Building multi-architecture Docker images with tag: {{TAG}}..."
     docker buildx create --use
-    docker buildx build --progress=plain --platform linux/amd64 -t {{DOCKER_REGISTRY}}/memgpt-server:{{TAG}} . --load --file libs/config-core-deploy/Dockerfile
+    docker buildx build --platform linux/amd64 -t {{DOCKER_REGISTRY}}/memgpt-server:{{TAG}} . --load --file libs/config-core-deploy/Dockerfile
 
 # Push the Docker images to the registry
 @push-core:
@@ -413,6 +414,7 @@ push-lettuce:
     @echo "🚀 Pushing Docker images to registry with tag: {{TAG}}..."
     docker push {{DOCKER_REGISTRY}}/lettuce:{{TAG}}
 
+
 start-temporal:
     @echo "🚧 Starting Temporal server..."
     temporal server start-dev
@@ -421,9 +423,9 @@ desktop:
     @echo "🚧 Starting up the desktop app..."
     npm run desktop:dev
 
+# TODO move the cleaning here / wiping here
+# And in download-postgres-binaries, only download if they don't exist already
 clean-desktop-resources:
-    # TODO move the cleaning here / wiping here
-    # And in download-postgres-binaries, only download if they don't exist already
     @echo "Cleaning existing bundled Postgres folder..."
 
 download-postgres-binaries-macos:
@@ -610,3 +612,35 @@ trigger-lettuce-deploy branch="" deploy_message="":
     fi
     echo "🚀 Triggering lettuce deployment workflow on branch: $BRANCH"
     gh workflow run "🕸️🚀 Deploy Lettuce" --ref $BRANCH
+
+build-free-proxy:
+    @echo "🚧 Building free-proxy Docker image with tag: {{TAG}}..."
+    docker buildx build --progress=plain --platform=linux/amd64 -t {{DOCKER_REGISTRY}}/free-proxy:{{TAG}} . --load --file apps/free-proxy/Dockerfile
+
+push-free-proxy:
+    @echo "🚀 Pushing Docker images to registry with tag: {{TAG}}..."
+    docker push {{DOCKER_REGISTRY}}/free-proxy:{{TAG}}
+
+@deploy-free-proxy: push-free-proxy
+    @echo "🚧 Deploying free-proxy Helm chart..."
+    npm run slack-bot-says "Deploying free-proxy service with tag: {{TAG}}..."
+    helm upgrade --install free-proxy {{HELM_CHARTS_DIR}}/free-proxy \
+        --set image.repository={{DOCKER_REGISTRY}}/free-proxy \
+        --set image.tag={{TAG}} \
+        --set-string "podAnnotations.kubectl\.kubernetes\.io/restartedAt"="$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+        #        --set env.GCP_PUBSUB_PROJECT_ID="${GCP_PUBSUB_PROJECT_ID}" \
+        #        --set env.GCP_PUBSUB_TOPIC_ID="${GCP_PUBSUB_TOPIC_ID}" \
+        --set env.OPENAI_API_KEY="${OPENAI_API_KEY}"
+
+    npm run slack-bot-says "Successfully deployed free-proxy service with tag: {{TAG}}."
+
+# Trigger the free-proxy deployment workflow (defaults to current branch if none specified)
+trigger-free-proxy-deploy branch="" deploy_message="":
+    #!/usr/bin/env bash
+    if [ -z "{{branch}}" ]; then
+        BRANCH=$(git branch --show-current)
+    else
+        BRANCH="{{branch}}"
+    fi
+    echo "🚀 Triggering free-proxy deployment workflow on branch: $BRANCH"
+    gh workflow run "🕸️🚀 Deploy free-proxy" --ref $BRANCH

@@ -1,0 +1,7 @@
+pymemgpt==0.3.18
+fastapi
+uvicorn
+pydantic
+pytest
+starlette_prometheus
+google-cloud-pubsub
