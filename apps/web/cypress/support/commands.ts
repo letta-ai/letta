@@ -77,3 +77,13 @@ Cypress.Commands.add('deleteApiKeyWithName', (name: string) => {
     },
   });
 });
+
+Cypress.Commands.add('revokeAllClientSideAccessTokens', () => {
+  cy.request({
+    method: 'POST',
+    url: '/aia/revoke-all-client-side-access-tokens',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+  });
+});

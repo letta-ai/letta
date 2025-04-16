@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import type { ZodType } from 'zod';
 import {
+  clientSideAccessTokens,
   db,
   inferenceModelsMetadata,
   lettaAPIKeys,
@@ -8,7 +9,7 @@ import {
   stepCostSchemaTable,
 } from '@letta-cloud/service-database';
 import { and, eq } from 'drizzle-orm';
-import { stepCostVersionOne } from '@letta-cloud/types';
+import { accessPolicyVersionOne, stepCostVersionOne } from '@letta-cloud/types';
 
 interface RedisDefinition<Type extends string, Input, Output extends ZodType> {
   baseKey: Type;
@@ -189,6 +190,67 @@ const coreOrganizationIdToOrganizationIdDefinition =
     output: z.object({ organizationId: z.string() }),
   });
 
+const clientSideApiKeysDefinition = generateDefinitionSatisfies({
+  baseKey: 'clientSideApiKeys',
+  input: z.object({ token: z.string(), organizationId: z.string() }),
+  getKey: (args) => `clientSideApiKeys:${args.token}:${args.organizationId}`,
+  output: z.object({
+    userId: z.string(),
+    organizationId: z.string(),
+    coreUserId: z.string(),
+    expiresAt: z.number(),
+    hostname: z.string(),
+    policy: accessPolicyVersionOne,
+  }),
+  populateOnMissFn: async (args) => {
+    const key = await db.query.clientSideAccessTokens.findFirst({
+      where: and(
+        eq(clientSideAccessTokens.token, args.token),
+        eq(clientSideAccessTokens.organizationId, args.organizationId),
+      ),
+      columns: {
+        organizationId: true,
+        coreUserId: true,
+        requesterUserId: true,
+        hostname: true,
+        expiresAt: true,
+        policy: true,
+      },
+      with: {
+        organization: {
+          columns: {
+            enabledCloudAt: true,
+          },
+        },
+      },
+    });
+
+    if (!key) {
+      return null;
+    }
+
+    if (new Date(key.expiresAt).getTime() < Date.now()) {
+      return null;
+    }
+
+    if (!key.organization.enabledCloudAt) {
+      return null;
+    }
+
+    return {
+      expiresAt: 0,
+      data: {
+        hostname: key.hostname,
+        expiresAt: key.expiresAt,
+        userId: key.requesterUserId,
+        organizationId: key.organizationId,
+        coreUserId: key.coreUserId,
+        policy: key.policy,
+      },
+    };
+  },
+});
+
 const apiKeysDefinition = generateDefinitionSatisfies({
   baseKey: 'apiKeys',
   input: z.object({ apiKey: z.string(), organizationId: z.string() }),
@@ -251,6 +313,7 @@ export const redisDefinitions = {
   modelNameAndEndpointToIdMap: modelNameAndEndpointToIdMapDefinition,
   transactionLock: transactionLockDefinition,
   apiKeys: apiKeysDefinition,
+  clientSideApiKeys: clientSideApiKeysDefinition,
 } satisfies Record<
   string,
   RedisDefinition<

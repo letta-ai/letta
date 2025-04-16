@@ -5,6 +5,7 @@ declare namespace Express {
       cloudUserId: string;
       source: 'api' | 'web';
       coreUserId: string;
+      whitelistedHostname?: string;
     };
   }
 }

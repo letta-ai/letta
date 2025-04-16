@@ -6709,6 +6709,211 @@
           }
         }
       }
+    },
+    "/v1/client-side-access-tokens": {
+      "post": {
+        "description": "Create a new client side access token with the specified configuration.",
+        "summary": "Create Client Side Access Token",
+        "tags": ["clientSideAccessTokens"],
+        "parameters": [],
+        "operationId": "clientSideAccessTokens.createClientSideAccessToken",
+        "requestBody": {
+          "description": "Body",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "policy": {
+                    "type": "array",
+                    "items": {
+                      "discriminator": {
+                        "propertyName": "type"
+                      },
+                      "oneOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "type": {
+                              "type": "string",
+                              "enum": ["agent"]
+                            },
+                            "id": {
+                              "type": "string"
+                            },
+                            "access": {
+                              "type": "array",
+                              "items": {
+                                "type": "string",
+                                "enum": [
+                                  "read_messages",
+                                  "write_messages",
+                                  "read_agent",
+                                  "write_agent"
+                                ]
+                              }
+                            }
+                          },
+                          "required": ["type", "id", "access"]
+                        }
+                      ]
+                    }
+                  },
+                  "hostname": {
+                    "type": "string",
+                    "format": "uri",
+                    "pattern": "^(http|https):\\/\\/",
+                    "description": "The hostname of the client side application. Please specify the full URL including the protocol (http or https)."
+                  },
+                  "expires_at": {
+                    "type": "string",
+                    "description": "The expiration date of the token. If not provided, the token will expire in 5 minutes"
+                  }
+                },
+                "required": ["policy", "hostname"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "201",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "policy": {
+                      "type": "object",
+                      "properties": {
+                        "version": {
+                          "type": "string",
+                          "enum": ["1"]
+                        },
+                        "data": {
+                          "type": "array",
+                          "items": {
+                            "discriminator": {
+                              "propertyName": "type"
+                            },
+                            "oneOf": [
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "type": {
+                                    "type": "string",
+                                    "enum": ["agent"]
+                                  },
+                                  "id": {
+                                    "type": "string"
+                                  },
+                                  "access": {
+                                    "type": "array",
+                                    "items": {
+                                      "type": "string",
+                                      "enum": [
+                                        "read_messages",
+                                        "write_messages",
+                                        "read_agent",
+                                        "write_agent"
+                                      ]
+                                    }
+                                  }
+                                },
+                                "required": ["type", "id", "access"]
+                              }
+                            ]
+                          }
+                        }
+                      },
+                      "required": ["version", "data"]
+                    },
+                    "token": {
+                      "type": "string"
+                    },
+                    "hostname": {
+                      "type": "string"
+                    },
+                    "expiresAt": {
+                      "type": "string"
+                    }
+                  },
+                  "required": ["policy", "token", "hostname", "expiresAt"]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "400",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": ["message"]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/client-side-access-tokens/{token}": {
+      "delete": {
+        "description": "Delete a client side access token.",
+        "summary": "Delete Client Side Access Token",
+        "tags": ["clientSideAccessTokens"],
+        "parameters": [
+          {
+            "name": "token",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "The access token to delete"
+          }
+        ],
+        "operationId": "clientSideAccessTokens.deleteClientSideAccessToken",
+        "requestBody": {
+          "description": "Body",
+          "content": {
+            "application/json": {
+              "schema": {}
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": "204",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "400": {
+            "description": "400",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": ["message"]
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {

@@ -3,4 +3,5 @@ export interface ActorIdentity {
   cloudUserId: string;
   source: 'api' | 'web';
   coreUserId: string;
+  whitelistedHostname?: string;
 }

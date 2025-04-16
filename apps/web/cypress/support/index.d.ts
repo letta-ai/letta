@@ -8,6 +8,7 @@ declare namespace Cypress {
     deleteProjectsWithName(name: string): void;
     clearPointerEventLock(): void;
     deleteApiKeyWithName(name: string): void;
+    revokeAllClientSideAccessTokens(): void;
     grantAdminAccess(): void;
     importModels(): void;
   }

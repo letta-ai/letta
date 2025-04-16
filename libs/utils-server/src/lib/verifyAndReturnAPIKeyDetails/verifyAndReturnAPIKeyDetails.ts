@@ -3,6 +3,9 @@ import { getRedisData } from '@letta-cloud/service-redis';
 import { db, lettaAPIKeys, organizations } from '@letta-cloud/service-database';
 import { and, eq } from 'drizzle-orm';
 import { UsersService } from '@letta-cloud/sdk-core';
+import type { AccessTokenTypes } from '@letta-cloud/types';
+import type { AccessResource } from '../validateClientSidePolicy/validateClientSidePolicy';
+import { validateClientSidePolicy } from '../validateClientSidePolicy/validateClientSidePolicy';
 
 interface BackfillGenerateApiKeyOptions {
   apiKey: string;
@@ -50,35 +53,97 @@ async function backfillCoreUserIdToApiKeyFn(
   return coreUser.id;
 }
 
-export async function verifyAndReturnAPIKeyDetails(apiKey?: string) {
+interface VerifyAndReturnAPIKeyDetailsResponse {
+  type: AccessTokenTypes;
+  apiKey?: string;
+  organizationId: string;
+  coreUserId: string;
+  userId: string;
+  expiresAt?: number;
+  hostname?: string;
+}
+
+interface VerifyAndReturnAPIKeyDetailsOptions {
+  apiKey?: string;
+  resource?: AccessResource;
+}
+
+export async function verifyAndReturnAPIKeyDetails(
+  options: VerifyAndReturnAPIKeyDetailsOptions,
+): Promise<VerifyAndReturnAPIKeyDetailsResponse | null> {
+  const { apiKey } = options;
+
   if (!apiKey) {
     return null;
   }
 
   let organizationId = '';
+  let type: AccessTokenTypes = 'server-side';
 
   try {
-    const { organizationId: orgId } = await parseAccessToken(apiKey);
+    const { organizationId: orgId, type: t } = await parseAccessToken(apiKey);
+
     organizationId = orgId;
+    type = t;
   } catch (_e) {
     return null;
   }
 
-  const key = await getRedisData('apiKeys', {
-    apiKey: apiKey,
-    organizationId: organizationId,
-  });
+  if (type === 'server-side') {
+    const key = await getRedisData('apiKeys', {
+      apiKey: apiKey,
+      organizationId: organizationId,
+    });
 
-  if (!key) {
+    if (!key) {
+      return null;
+    }
+
+    if (!key.coreUserId) {
+      key.coreUserId = await backfillCoreUserIdToApiKeyFn({
+        apiKey,
+        organizationId,
+      });
+    }
+
+    return {
+      type,
+      ...key,
+    };
+  }
+
+  if (!options.resource) {
     return null;
   }
 
-  if (!key.coreUserId) {
-    key.coreUserId = await backfillCoreUserIdToApiKeyFn({
-      apiKey,
-      organizationId,
-    });
+  const clientKey = await getRedisData('clientSideApiKeys', {
+    token: apiKey,
+    organizationId: organizationId,
+  });
+
+  if (!clientKey) {
+    return null;
   }
 
-  return key;
+  if (!clientKey.expiresAt) {
+    return null;
+  }
+
+  if (new Date(clientKey.expiresAt).getTime() < Date.now()) {
+    return null;
+  }
+  if (
+    !validateClientSidePolicy({
+      policy: clientKey.policy,
+      resource: options.resource,
+      coreUserId: clientKey.coreUserId,
+    })
+  ) {
+    return null;
+  }
+
+  return {
+    type,
+    ...clientKey,
+  };
 }

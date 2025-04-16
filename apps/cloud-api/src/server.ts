@@ -44,7 +44,6 @@ export function startServer() {
   const app = express();
 
   const obfuscateAuthorizationHeader = winston.format((info) => {
-    console.log('y', getIsExpressMeta(info.meta));
     if (getIsExpressMeta(info.meta)) {
       const { meta } = info;
       const { headers } = meta.req;

@@ -17,6 +17,7 @@ import type {
   StepCostVersionOne,
   MemoryVariableVersionOneType,
   OnboardingStepsType,
+  AccessPolicyVersionOneType,
 } from '@letta-cloud/types';
 import type { ApplicationServices } from '@letta-cloud/service-rbac';
 import type { UserPresetRolesType } from '@letta-cloud/service-rbac';
@@ -1185,3 +1186,29 @@ export const shareChatUserRelations = relations(shareChatUser, ({ one }) => ({
     references: [deployedAgentMetadata.agentId],
   }),
 }));
+
+export const clientSideAccessTokens = pgTable('client_side_access_tokens', {
+  id: text('id')
+    .notNull()
+    .primaryKey()
+    .default(sql`gen_random_uuid()`),
+  organizationId: text('organization_id')
+    .references(() => organizations.id, { onDelete: 'cascade' })
+    .notNull(),
+  coreUserId: text('core_user_id').notNull(),
+  requesterUserId: text('requester_user_id'),
+  policy: json('policy').$type<AccessPolicyVersionOneType>().notNull(),
+  hostname: text('host').notNull(),
+  token: text('token').notNull().unique(),
+  expiresAt: timestamp('expires_at').notNull(),
+});
+
+export const clientSideAccessTokensRelations = relations(
+  clientSideAccessTokens,
+  ({ one }) => ({
+    organization: one(organizations, {
+      fields: [clientSideAccessTokens.organizationId],
+      references: [organizations.id],
+    }),
+  }),
+);

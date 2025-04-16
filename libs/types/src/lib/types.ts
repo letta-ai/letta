@@ -97,3 +97,37 @@ export const accessTokenPrefixToType: Record<string, AccessTokenTypes> = {
   'ck-let': 'client-side',
   'sk-let': 'server-side',
 };
+
+export const accessRights = z.enum([
+  'read_messages',
+  'write_messages',
+  'read_agent',
+  'write_agent',
+]);
+
+export const agentAccessPolicy = z.object({
+  type: z.literal('agent'),
+  id: z.string(),
+  access: z.array(accessRights),
+});
+
+export type AgentAccessPolicyType = z.infer<typeof agentAccessPolicy>;
+
+export const identityAccessPolicy = z.object({
+  type: z.literal('identity'),
+  id: z.string(),
+  access: z.array(accessRights),
+});
+
+export type IdentityAccessPolicyType = z.infer<typeof identityAccessPolicy>;
+
+export const accessPolicy = z.discriminatedUnion('type', [agentAccessPolicy]);
+
+export const accessPolicyArray = z.array(accessPolicy);
+
+export const accessPolicyVersionOne = z.object({
+  version: z.literal('1'),
+  data: accessPolicyArray,
+});
+
+export type AccessPolicyVersionOneType = z.infer<typeof accessPolicyVersionOne>;

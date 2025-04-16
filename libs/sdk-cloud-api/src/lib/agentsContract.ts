@@ -3,7 +3,6 @@ import { initContract } from '@ts-rest/core';
 import type {
   AgentState as AgentStateType,
   CreateAgentRequest,
-  HTTPValidationError,
   UpdateAgent,
 } from '@letta-cloud/sdk-core';
 import { z } from 'zod';

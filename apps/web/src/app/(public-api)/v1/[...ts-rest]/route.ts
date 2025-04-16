@@ -99,9 +99,32 @@ const publicHandler = createNextHandler(cloudContracts, cloudApiRouter, {
       };
 
       if (apiKey) {
-        const apiKeyResponse = await verifyAndReturnAPIKeyDetails(apiKey);
+        const url = new URL(req.url);
+
+        const apiKeyResponse = await verifyAndReturnAPIKeyDetails({
+          apiKey,
+          resource: {
+            pathname: url.pathname,
+            method: req.method,
+          },
+        });
 
         if (apiKeyResponse) {
+          if (apiKeyResponse.hostname) {
+            // add CORS headers
+            req.headers.set(
+              'Access-Control-Allow-Origin',
+              apiKeyResponse.hostname,
+            );
+            req.headers.set('Access-Control-Allow-Credentials', 'true');
+            req.headers.set('Access-Control-Allow-Headers', 'Authorization');
+            req.headers.set(
+              'Access-Control-Allow-Methods',
+              'GET, POST, PUT, DELETE',
+            );
+            req.headers.set('Access-Control-Max-Age', '86400');
+          }
+
           middlewareData.organizationId = apiKeyResponse?.organizationId || '';
           middlewareData.userId = apiKeyResponse?.userId || '';
           middlewareData.lettaAgentsUserId = apiKeyResponse.coreUserId || '';

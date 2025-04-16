@@ -55,7 +55,13 @@ async function verifyIfUserAccessTokenIsValid(
 
   const apiKey = authorization.replace('Bearer ', '');
 
-  const apiKeyResponse = await verifyAndReturnAPIKeyDetails(apiKey);
+  const apiKeyResponse = await verifyAndReturnAPIKeyDetails({
+    apiKey,
+    resource: {
+      pathname: req.path,
+      method: req.method,
+    },
+  });
 
   if (!apiKeyResponse) {
     return null;
@@ -65,6 +71,7 @@ async function verifyIfUserAccessTokenIsValid(
     cloudOrganizationId: apiKeyResponse.organizationId,
     coreUserId: apiKeyResponse.coreUserId,
     cloudUserId: apiKeyResponse.userId,
+    whitelistedHostname: apiKeyResponse.hostname,
     source: 'api',
   };
 }
@@ -114,6 +121,16 @@ export async function verifyIdentityMiddleware(
   if (apiKeyData) {
     req.actor = apiKeyData;
     req.headers['user_id'] = req.actor.coreUserId;
+
+    if (req.actor.whitelistedHostname) {
+      // attach cors headers
+      res.setHeader(
+        'Access-Control-Allow-Origin',
+        req.actor.whitelistedHostname,
+      );
+      res.setHeader('Access-Control-Allow-Credentials', 'true');
+      res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+    }
 
     next();
     return;

@@ -11,6 +11,11 @@ export async function parseAccessToken(accessToken: string) {
     token = accessToken.split('sk-let-')[1];
   }
 
+  if (accessToken.includes('ck-let')) {
+    prefix = 'ck-let';
+    token = accessToken.split('ck-let-')[1];
+  }
+
   const [organizationId, accessPassword] = atob(token).split(':');
 
   return {
