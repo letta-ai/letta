@@ -30,7 +30,7 @@ from letta.orm.sandbox_config import AgentEnvironmentVariable as AgentEnvironmen
 from letta.orm.sqlalchemy_base import AccessType
 from letta.orm.sqlite_functions import adapt_array
 from letta.schemas.agent import AgentState as PydanticAgentState
-from letta.schemas.agent import AgentType, CreateAgent, UpdateAgent
+from letta.schemas.agent import AgentType, CreateAgent, UpdateAgent, get_prompt_template_for_agent_type
 from letta.schemas.block import Block as PydanticBlock
 from letta.schemas.block import BlockUpdate
 from letta.schemas.embedding_config import EmbeddingConfig
@@ -44,7 +44,6 @@ from letta.schemas.passage import Passage as PydanticPassage
 from letta.schemas.source import Source as PydanticSource
 from letta.schemas.tool import Tool as PydanticTool
 from letta.schemas.tool_rule import ContinueToolRule as PydanticContinueToolRule
-from letta.schemas.tool_rule import ParentToolRule as PydanticParentToolRule
 from letta.schemas.tool_rule import TerminalToolRule as PydanticTerminalToolRule
 from letta.schemas.tool_rule import ToolRule as PydanticToolRule
 from letta.schemas.user import User as PydanticUser
@@ -159,13 +158,10 @@ class AgentManager:
         if agent_create.include_base_tool_rules:
             # apply default tool rules
             for tool_name in tool_names:
-                if tool_name == "send_message" or tool_name == "send_message_to_agent_async" or tool_name == "finish_rethinking_memory":
+                if tool_name == "send_message" or tool_name == "send_message_to_agent_async" or tool_name == "memory_finish_edits":
                     tool_rules.append(PydanticTerminalToolRule(tool_name=tool_name))
                 elif tool_name in BASE_TOOLS + BASE_MEMORY_TOOLS + BASE_SLEEPTIME_TOOLS:
                     tool_rules.append(PydanticContinueToolRule(tool_name=tool_name))
-
-            if agent_create.agent_type == AgentType.sleeptime_agent:
-                tool_rules.append(PydanticParentToolRule(tool_name="view_core_memory_with_line_numbers", children=["core_memory_insert"]))
 
         # if custom rules, check tool rules are valid
         if agent_create.tool_rules:
@@ -843,7 +839,8 @@ class AgentManager:
 
             # refresh memory from DB (using block ids)
             agent_state.memory = Memory(
-                blocks=[self.block_manager.get_block_by_id(block.id, actor=actor) for block in agent_state.memory.get_blocks()]
+                blocks=[self.block_manager.get_block_by_id(block.id, actor=actor) for block in agent_state.memory.get_blocks()],
+                prompt_template=get_prompt_template_for_agent_type(agent_state.agent_type),
             )
 
             # NOTE: don't do this since re-buildin the memory is handled at the start of the step
