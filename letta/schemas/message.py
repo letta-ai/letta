@@ -619,7 +619,7 @@ class Message(BaseMessage):
             text_content = self.content[0].text
         # Otherwise, check if we have TextContent and multiple other parts
         elif self.content and len(self.content) > 1:
-            text = [content for content in self.content if isinstance(self.content[0], TextContent)]
+            text = [content for content in self.content if isinstance(content, TextContent)]
             if len(text) > 1:
                 assert len(text) == 1, f"multiple text content parts found in a single message: {self.content}"
                 text_content = text[0].text

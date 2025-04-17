@@ -6,6 +6,8 @@ from collections import deque
 from datetime import datetime
 from typing import AsyncGenerator, Literal, Optional, Union
 
+import demjson3 as demjson
+
 from letta.constants import DEFAULT_MESSAGE_TOOL, DEFAULT_MESSAGE_TOOL_KWARG
 from letta.helpers.datetime_helpers import is_utc_datetime
 from letta.interface import AgentInterface
@@ -530,7 +532,6 @@ class StreamingServerInterface(AgentChunkStreamingInterface):
             try:
                 # NOTE: this is hardcoded for our DeepSeek API integration
                 json_reasoning_content = parse_json(self.expect_reasoning_content_buffer)
-                print(f"json_reasoning_content: {json_reasoning_content}")
 
                 processed_chunk = ToolCallMessage(
                     id=message_id,
@@ -545,6 +546,10 @@ class StreamingServerInterface(AgentChunkStreamingInterface):
                 )
 
             except json.JSONDecodeError as e:
+                print(f"Failed to interpret reasoning content ({self.expect_reasoning_content_buffer}) as JSON: {e}")
+
+                return None
+            except demjson.JSONDecodeError as e:
                 print(f"Failed to interpret reasoning content ({self.expect_reasoning_content_buffer}) as JSON: {e}")
 
                 return None
