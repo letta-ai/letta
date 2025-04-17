@@ -311,8 +311,9 @@
       "trigger": "Create source",
       "goBack": "Go back",
       "description": {
-        "label": "Description",
-        "placeholder": "Enter a description for this data source"
+        "label": "Instructions",
+        "placeholder": "Enter instructions for how this data source should be used",
+        "tooltip": "How the agent should ingest this data source"
       },
       "name": {
         "label": "Name",

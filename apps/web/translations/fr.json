@@ -247,8 +247,8 @@
         "label": "Modèle d'intégration"
       },
       "descriptionInput": {
-        "label": "Description",
-        "placeholder": "ma-source-de-données-description"
+        "label": "Instructions",
+        "placeholder": "ma-source-de-données-instructions"
       },
       "createButton": "Créer une source de données"
     }

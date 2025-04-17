@@ -175,7 +175,11 @@ function CreateDataSourceDialog() {
         <FormField
           name="description"
           render={({ field }) => (
-            <TextArea fullWidth label="Description" {...field} />
+            <TextArea 
+              fullWidth 
+              label={t('CreateDataSourceDialog.descriptionInput.label')}
+              {...field} 
+            />
           )}
         />
       </Dialog>

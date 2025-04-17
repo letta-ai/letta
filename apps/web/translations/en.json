@@ -513,8 +513,8 @@
         "label": "Embedding model"
       },
       "descriptionInput": {
-        "label": "Description",
-        "placeholder": "my-data-source-description"
+        "label": "Instructions",
+        "placeholder": "my-data-source-instructions"
       },
       "createButton": "Create data source"
     }

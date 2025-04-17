@@ -361,21 +361,23 @@ function CreateNewDataSource(props: CreateNewDataSourceProps) {
             )}
             name="name"
           />
-          <FormField
-            render={({ field }) => (
-              <TextArea
-                autosize
-                minRows={3}
-                fullWidth
-                {...field}
-                label={t('CreateDataSourceDialog.description.label')}
-                placeholder={t(
-                  'CreateDataSourceDialog.description.placeholder',
-                )}
-              />
-            )}
-            name="description"
-          />
+          <Tooltip asChild content={t('CreateDataSourceDialog.description.tooltip')}>
+            <FormField
+              render={({ field }) => (
+                <TextArea
+                  autosize
+                  minRows={3}
+                  fullWidth
+                  {...field}
+                  label={t('CreateDataSourceDialog.description.label')}
+                  placeholder={t(
+                    'CreateDataSourceDialog.description.placeholder',
+                  )}
+                />
+              )}
+              name="description"
+            />
+          </Tooltip>
           <FormActions
             errorMessage={
               isError ? t('CreateDataSourceDialog.error') : undefined

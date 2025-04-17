@@ -284,6 +284,7 @@ def detach_tool(
 def attach_source(
     agent_id: str,
     source_id: str,
+    background_tasks: BackgroundTasks,
     server: "SyncServer" = Depends(get_letta_server),
     actor_id: Optional[str] = Header(None, alias="user_id"),
 ):
@@ -291,7 +292,11 @@ def attach_source(
     Attach a source to an agent.
     """
     actor = server.user_manager.get_user_or_default(user_id=actor_id)
-    return server.agent_manager.attach_source(agent_id=agent_id, source_id=source_id, actor=actor)
+    agent = server.agent_manager.attach_source(agent_id=agent_id, source_id=source_id, actor=actor)
+    if agent.enable_sleeptime:
+        source = server.source_manager.get_source_by_id(source_id=source_id)
+        background_tasks.add_task(server.sleeptime_document_ingest, agent, source, actor)
+    return agent
 
 
 @router.patch("/{agent_id}/sources/detach/{source_id}", response_model=AgentState, operation_id="detach_source_from_agent")
@@ -305,7 +310,15 @@ def detach_source(
     Detach a source from an agent.
     """
     actor = server.user_manager.get_user_or_default(user_id=actor_id)
-    return server.agent_manager.detach_source(agent_id=agent_id, source_id=source_id, actor=actor)
+    agent = server.agent_manager.detach_source(agent_id=agent_id, source_id=source_id, actor=actor)
+    if agent.enable_sleeptime:
+        try:
+            source = server.source_manager.get_source_by_id(source_id=source_id)
+            block = server.agent_manager.get_block_with_label(agent_id=agent.id, block_label=source.name, actor=actor)
+            server.block_manager.delete_block(block.id, actor)
+        except:
+            pass
+    return agent
 
 
 @router.get("/{agent_id}", response_model=AgentState, operation_id="retrieve_agent")
