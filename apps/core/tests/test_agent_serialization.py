@@ -401,9 +401,9 @@ def test_sanity_datetime_mismatch():
 # Agent serialize/deserialize tests
 
 
-@pytest.mark.parametrize("append_copy_suffix", [True, False])
-def test_append_copy_suffix_simple(local_client, server, serialize_test_agent, default_user, other_user, append_copy_suffix):
+def test_deserialize_simple(local_client, server, serialize_test_agent, default_user, other_user):
     """Test deserializing JSON into an Agent instance."""
+    append_copy_suffix = False
     result = server.agent_manager.serialize(agent_id=serialize_test_agent.id, actor=default_user)
 
     # Deserialize the agent

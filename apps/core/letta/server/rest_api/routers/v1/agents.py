@@ -175,7 +175,7 @@ async def import_agent_serialized(
         raise HTTPException(status_code=400, detail="Corrupted agent file format.")
 
     except ValidationError as e:
-        raise HTTPException(status_code=422, detail=f"Invalid agent schema: {e.errors()}")
+        raise HTTPException(status_code=422, detail=f"Invalid agent schema: {str(e)}")
 
     except IntegrityError as e:
         raise HTTPException(status_code=409, detail=f"Database integrity error: {str(e)}")
