@@ -58,7 +58,7 @@ class Tool(BaseModel):
 
 
 ## function_call ##
-FunctionCallChoice = Union[Literal["none", "auto"], FunctionCall]
+FunctionCallChoice = Union[Literal["none", "auto", "required"], FunctionCall]
 
 
 class ChatCompletionRequest(BaseModel):
