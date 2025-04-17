@@ -43,6 +43,7 @@ jobs:
             package-lock.json
             tsconfig.json
   cypress-run:
+    if: ${{ needs.changed-files.outputs.any_changed == 'true' }}
     needs: [changed-files]
     permissions:
       actions: read
