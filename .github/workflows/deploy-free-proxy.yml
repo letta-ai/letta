@@ -4,26 +4,15 @@ on:
   workflow_dispatch:
 
 env:
-  # DOCKER_REGISTRY: us-central1-docker.pkg.dev/memgpt-428419/letta
-  # TAG: ${{ github.sha }}
-  # DATABASE_URL: ${{ secrets.DATABASE_URL }}
-  # LETTA_AGENTS_ENDPOINT: http://memgpt-server:8083
-  # RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
-  # NEXT_PUBLIC_CURRENT_HOST: https://api.letta.com
-  # REDIS_HOST: "10.167.199.148"
-  # TEMPORAL_LETTUCE_API_HOST: ${{ secrets.TEMPORAL_LETTUCE_API_HOST }}
-  # TEMPORAL_LETTUCE_CA_PEM: ${{ secrets.TEMPORAL_LETTUCE_CA_PEM }}
-  # TEMPORAL_LETTUCE_CA_KEY: ${{ secrets.TEMPORAL_LETTUCE_CA_KEY }}
-  # STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY }}
-  # COMPOSIO_API_KEY: ${{ secrets.COMPOSIO_API_KEY }}
-  # LAUNCH_DARKLY_SDK_KEY: ${{ secrets.LAUNCH_DARKLY_SDK_KEY }}
-  # REDIS_PORT: "6379"
-  # PORT: "8080"
-  GCP_PUBSUB_PROJECT_ID: memgpt-428419
-  GCP_PUBSUB_TOPIC_ID: memgpt-proxy-topic
+  PROJECT_ID: memgpt-428419
+  DOCKER_REGISTRY: us-central1-docker.pkg.dev/memgpt-428419/letta
+  TAG: ${{ github.sha }}
+  PORT: "8080"
+  LETTA_AGENTS_ENDPOINT: http://memgpt-server:8083
   OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
   REGION: us-central1
   GCP_SA_EMAIL: github-actions-service-account@memgpt-428419.iam.gserviceaccount.com
+  SLACK_WEBHOOK_URL: https://hooks.slack.com/services/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
 
 jobs:
   build-and-deploy:
