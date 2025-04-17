@@ -1,6 +1,8 @@
 name:  🍃🚀 Deploy Lettuce
 
 on:
+  workflow_run:
+    workflows: ["🦸️ End-to-End Tests"]
   workflow_dispatch:
 
 env:
