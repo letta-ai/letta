@@ -14,7 +14,6 @@ from letta.settings import settings
 config = LettaConfig()
 
 if TYPE_CHECKING:
-    from letta.orm.agent import Agent
     from letta.orm.organization import Organization
 
 
@@ -81,8 +80,3 @@ class AgentPassage(BasePassage, AgentMixin):
     @declared_attr
     def organization(cls) -> Mapped["Organization"]:
         return relationship("Organization", back_populates="agent_passages", lazy="selectin")
-
-    @declared_attr
-    def agent(cls) -> Mapped["Agent"]:
-        """Relationship to agent"""
-        return relationship("Agent", back_populates="agent_passages", lazy="selectin", passive_deletes=True)

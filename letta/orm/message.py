@@ -55,7 +55,6 @@ class Message(SqlalchemyBase, OrganizationMixin, AgentMixin):
     )
 
     # Relationships
-    agent: Mapped["Agent"] = relationship("Agent", back_populates="messages", lazy="selectin")
     organization: Mapped["Organization"] = relationship("Organization", back_populates="messages", lazy="selectin")
     step: Mapped["Step"] = relationship("Step", back_populates="messages", lazy="selectin")
 

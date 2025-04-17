@@ -7,7 +7,6 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from letta.orm.block import Block
 from letta.orm.custom_columns import EmbeddingConfigColumn, LLMConfigColumn, ToolRulesColumn
 from letta.orm.identity import Identity
-from letta.orm.message import Message
 from letta.orm.mixins import OrganizationMixin
 from letta.orm.organization import Organization
 from letta.orm.sqlalchemy_base import SqlalchemyBase
@@ -91,38 +90,12 @@ class Agent(SqlalchemyBase, OrganizationMixin):
         back_populates="agents",
         doc="Blocks forming the core memory of the agent.",
     )
-    messages: Mapped[List["Message"]] = relationship(
-        "Message",
-        back_populates="agent",
-        lazy="selectin",
-        cascade="all, delete-orphan",  # Ensure messages are deleted when the agent is deleted
-        passive_deletes=True,
-    )
     tags: Mapped[List["AgentsTags"]] = relationship(
         "AgentsTags",
         back_populates="agent",
         cascade="all, delete-orphan",
         lazy="selectin",
         doc="Tags associated with the agent.",
-    )
-    source_passages: Mapped[List["SourcePassage"]] = relationship(
-        "SourcePassage",
-        secondary="sources_agents",  # The join table for Agent -> Source
-        primaryjoin="Agent.id == sources_agents.c.agent_id",
-        secondaryjoin="and_(SourcePassage.source_id == sources_agents.c.source_id)",
-        lazy="selectin",
-        order_by="SourcePassage.created_at.desc()",
-        viewonly=True,  # Ensures SQLAlchemy doesn't attempt to manage this relationship
-        doc="All passages derived from sources associated with this agent.",
-    )
-    agent_passages: Mapped[List["AgentPassage"]] = relationship(
-        "AgentPassage",
-        back_populates="agent",
-        lazy="selectin",
-        order_by="AgentPassage.created_at.desc()",
-        cascade="all, delete-orphan",
-        viewonly=True,  # Ensures SQLAlchemy doesn't attempt to manage this relationship
-        doc="All passages derived created by this agent.",
     )
     identities: Mapped[List["Identity"]] = relationship(
         "Identity",
