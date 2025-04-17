@@ -1,6 +1,5 @@
 import { initContract } from '@ts-rest/core';
 import { z } from 'zod';
-import { GenericSearchSchema } from '../shared';
 import type { GenericSearch } from '../shared';
 
 const c = initContract();

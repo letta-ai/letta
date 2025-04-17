@@ -12,8 +12,11 @@ interface SideOverlayProps {
   defaultOpen?: boolean;
   onOpenChange: (value: boolean) => void;
   trigger?: React.ReactNode;
+  position?: 'left' | 'right';
   confirmOnClose?: boolean;
   title: string;
+  overlay?: boolean;
+  __use_rarely_className?: string;
 }
 
 const DialogRoot = DialogPrimitive.Root;
@@ -46,7 +49,17 @@ export function SideOverlayHeader(props: SideOverlayHeaderProps) {
 }
 
 export function SideOverlay(props: SideOverlayProps) {
-  const { children, title, defaultOpen, isOpen, onOpenChange, trigger } = props;
+  const {
+    overlay = true,
+    children,
+    title,
+    defaultOpen,
+    position = 'right',
+    __use_rarely_className,
+    isOpen,
+    onOpenChange,
+    trigger,
+  } = props;
 
   return (
     <DialogRoot
@@ -57,17 +70,21 @@ export function SideOverlay(props: SideOverlayProps) {
       <DialogContext.Provider value={{ isInDialog: true }}>
         {trigger && <DialogTrigger asChild>{trigger}</DialogTrigger>}
         <DialogPortal>
-          <DialogPrimitive.Overlay
-            className={cn(
-              'fixed inset-0 z-miniApp bg-black/40  data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0',
-            )}
-          />
+          {overlay && (
+            <DialogPrimitive.Overlay
+              className={cn(
+                'fixed inset-0 z-miniApp bg-black/40  data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0',
+              )}
+            />
+          )}
 
           <DialogPrimitive.Content>
             <div id="dialog-dropdown-content" className="z-dropdown" />
             <div
               className={cn(
-                'fixed border flex flex-col max-h-[100dvh] max-w-[650px] w-full  h-full text-base right-0 top-[50%] z-miniApp translate-x-[0] translate-y-[-50%] gap-2 shadow-lg duration-200  bg-background',
+                'fixed border flex flex-col max-h-[100dvh] max-w-[650px] w-full  h-full text-base  top-[50%] z-miniApp translate-x-[0] translate-y-[-50%] gap-2 shadow-lg duration-200  bg-background',
+                position === 'left' ? 'left-0' : 'right-0',
+                __use_rarely_className,
               )}
             >
               <DialogTitle className="sr-only">{title}</DialogTitle>

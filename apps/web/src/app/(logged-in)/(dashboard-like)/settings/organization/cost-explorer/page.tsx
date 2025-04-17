@@ -1,22 +1,18 @@
 'use client';
+import type { CostItemType } from '@letta-cloud/sdk-web';
 import { webApi, webApiQueryKeys } from '@letta-cloud/sdk-web';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslations } from '@letta-cloud/translations';
-import type { ColumnDef } from '@tanstack/react-table';
-import type { CostItemType } from '@letta-cloud/sdk-web';
 import {
-  brandKeyToLogo,
-  brandKeyToName,
   Button,
   DashboardPageLayout,
   DashboardPageSection,
-  DataTable,
   Dialog,
   HStack,
   InfoIcon,
-  isBrandKey,
   LettaCoinIcon,
   LoadingEmptyStatusComponent,
+  NiceGridDisplay,
   RawInput,
   Typography,
   VStack,
@@ -29,7 +25,7 @@ import {
 } from '@letta-cloud/utils-client';
 import { creditsToDollars } from '@letta-cloud/utils-shared';
 import { useQueryClient } from '@tanstack/react-query';
-import { Slot } from '@radix-ui/react-slot';
+import { ModelPricingBlocks } from '$web/client/components/ModelPricingBlocks/ModelPricingBlocks';
 
 function CostSimulator() {
   const t = useTranslations('organization/costs');
@@ -212,95 +208,17 @@ function CostSimulator() {
   );
 }
 
-interface BrandTableProps {
-  brand: string;
-  costList: CostItemType[];
+interface DetailedCostBreakdownProps {
+  costs: CostItemType[];
 }
 
-function BrandTable(props: BrandTableProps) {
-  const { brand, costList } = props;
-  const isBrand = isBrandKey(brand);
-
-  const t = useTranslations('organization/costs');
-  const columns: Array<ColumnDef<CostItemType>> = useMemo(() => {
-    if (!costList) {
-      return [];
-    }
-
-    const nextColumns = [
-      {
-        id: 'modelName',
-        header: t('columns.name'),
-        accessorKey: 'modelName',
-      },
-    ];
-
-    const columnSet = new Set<string>();
-
-    costList.forEach((cost) => {
-      Object.keys(cost.costMap).forEach((windowSize) => {
-        columnSet.add(windowSize);
-      });
-    });
-
-    const windowSizesSorted = Array.from(columnSet).sort(
-      (a, b) => parseInt(a, 10) - parseInt(b, 10),
-    );
-
-    return [
-      ...nextColumns,
-      ...windowSizesSorted.map((windowSize) => {
-        return {
-          id: windowSize.toString(),
-          header: t('columns.tokens', { tokens: windowSize }),
-          // @ts-expect-error - not typed
-          cell: ({ row }) => {
-            const costMap = row.original.costMap;
-            let creditAmount = costMap[windowSize];
-
-            if (!creditAmount) {
-              // find the next available window size
-              const nextAvailableWindowSize = Object.keys(
-                row.original.costMap,
-              ).find((key) => parseInt(key, 10) > parseInt(windowSize, 10));
-
-              if (nextAvailableWindowSize) {
-                creditAmount = costMap[nextAvailableWindowSize];
-              } else {
-                // else credit is not supported
-                return t('notSupported');
-              }
-            }
-
-            return (
-              <HStack gap="small" align="center">
-                <LettaCoinIcon size="xsmall" />
-                {creditAmount}
-              </HStack>
-            );
-          },
-        };
-      }),
-    ];
-  }, [costList, t]);
-
-  if (!isBrand) {
-    return null;
-  }
+function DetailedCostBreakdown(props: DetailedCostBreakdownProps) {
+  const { costs } = props;
 
   return (
-    <VStack key={brand} gap="large">
-      <HStack paddingX="small">
-        <Slot
-          /* eslint-disable-next-line react/forbid-component-props */
-          className="w-6 h-6"
-        >
-          {brandKeyToLogo(brand)}
-        </Slot>
-        <Typography variant="heading5">{brandKeyToName(brand)}</Typography>
-      </HStack>
-      <DataTable key={brand} columns={columns} data={costList} />
-    </VStack>
+    <NiceGridDisplay itemWidth="600px">
+      <ModelPricingBlocks costs={costs} />
+    </NiceGridDisplay>
   );
 }
 
@@ -333,49 +251,31 @@ function CostExplorer() {
     });
   }, [costs, queryClient]);
 
-  const costListByBrand = useMemo(() => {
+  const stepCosts = useMemo(() => {
     if (!costs) {
       return [];
     }
 
-    const map = costs.body.stepCosts.reduce(
-      (acc, cost) => {
-        const brand = cost.brand;
-
-        if (!acc[brand]) {
-          acc[brand] = [] as CostItemType[];
-        }
-
-        acc[brand].push(cost);
-
-        return acc;
-      },
-      {} as Record<string, CostItemType[]>,
-    );
-
-    return Object.entries(map);
+    return costs.body.stepCosts;
   }, [costs]);
 
   return (
     <DashboardPageLayout
       title={t('title')}
+      cappedWidth
       actions={<CostSimulator />}
       subtitle={t.rich('description', {
         credit: () => <LettaCoinIcon size="small" />,
       })}
     >
       {!costs ? (
-        <DashboardPageSection>
+        <DashboardPageSection fullHeight>
           <LoadingEmptyStatusComponent isLoading />
         </DashboardPageSection>
       ) : (
-        <DashboardPageSection>
-          <VStack gap="large">
-            {costListByBrand.map(([brand, costList]) => {
-              return (
-                <BrandTable key={brand} brand={brand} costList={costList} />
-              );
-            })}
+        <DashboardPageSection fullHeight>
+          <VStack fullHeight overflow="hidden">
+            <DetailedCostBreakdown costs={stepCosts} />
           </VStack>
         </DashboardPageSection>
       )}

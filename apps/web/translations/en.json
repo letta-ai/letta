@@ -216,6 +216,13 @@
   },
   "components/CreditsViewer": {
     "label": "Go to billing",
+    "PricingOverlay": {
+      "simulator": "Cost simulator",
+      "pricingTable": "Pricing table",
+      "title": "Our pricing",
+      "description": "At Letta, you pay based on inference request, meaning there is a flat rate for every request you make to a model. This rate is determined by your context window size that you can adjust when editing an agent",
+      "reference": "You can always view your costs later in our <link>cost explorer page</link>."
+    },
     "Onboarding": {
       "nextStep": "Create your first template!",
       "title": "What are credits?",
@@ -470,6 +477,9 @@
     }
   },
   "organization/costs": {
+    "CostRender": {
+      "upTo": ">{tokens} tokens"
+    },
     "sameAsPrevious": "Same as previous",
     "CostSimulator": {
       "notSupported": "Not supported",
@@ -485,6 +495,7 @@
         "tooltip": "The amount of requests you will make to POST /messages, /messages/async /messages/stream or made in the UI",
         "placeholder": "1000"
       },
+
       "estimatedContextWindowSize": {
         "tooltip": "The average context window size that's being sent to our models",
         "label": "Estimated average context window size",
@@ -517,6 +528,17 @@
         "placeholder": "my-data-source-instructions"
       },
       "createButton": "Create data source"
+    }
+  },
+  "components/ModelPricingView": {
+    "loading": "Loading pricing...",
+    "notSupported": {
+      "label": "Not supported",
+      "description": "Please lower the context window size to get a price, this model cannot support the given context window size"
+    },
+    "contextWindowSize": {
+      "label": "Context window size",
+      "tooltip": "The average context window size that's being sent to our models"
     }
   },
   "components/QueryBuilder": {

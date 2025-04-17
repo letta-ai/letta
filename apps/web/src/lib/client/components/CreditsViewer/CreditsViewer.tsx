@@ -11,6 +11,11 @@ import {
   Link as StyledLink,
   Typography,
   TemplateIcon,
+  VStack,
+  LettaAlienChatIcon,
+  ExternalLink,
+  TabGroup,
+  LoadingEmptyStatusComponent,
 } from '@letta-cloud/ui-component-library';
 import { useNumberFormatter } from '@letta-cloud/utils-client';
 import { useCurrentUser } from '$web/client/hooks';
@@ -21,8 +26,79 @@ import {
   TOTAL_PRIMARY_ONBOARDING_STEPS,
 } from '@letta-cloud/types';
 import { useSetOnboardingStep } from '@letta-cloud/sdk-web';
-import { useCallback } from 'react';
+import { useCallback, useState } from 'react';
 import Link from 'next/link';
+import { ModelPricingView } from '$web/client/components/ModelPricingView/ModelPricingView';
+import { ModelPricingBlocks } from '$web/client/components/ModelPricingBlocks/ModelPricingBlocks';
+
+type PricingModes = 'simulator' | 'table';
+
+function PricingTable() {
+  const { data: costs } = webApi.costs.getStepCosts.useQuery({
+    queryKey: webApiQueryKeys.costs.getStepCosts,
+  });
+
+  if (!costs) {
+    return <LoadingEmptyStatusComponent isLoading />;
+  }
+
+  return <ModelPricingBlocks costs={costs.body.stepCosts} />;
+}
+
+function PricingOverlay() {
+  const t = useTranslations('components/CreditsViewer');
+  const [mode, setMode] = useState<PricingModes>('simulator');
+
+  return (
+    <div className="fixed left-0 max-w-[800px] bg-white top-0 h-full w-[50%]">
+      <VStack gap="xlarge" padding="xxlarge" fullHeight>
+        <VStack>
+          <LettaAlienChatIcon size="xxlarge" />
+
+          <Typography variant="heading3" bold>
+            {t('PricingOverlay.title')}
+          </Typography>
+          <Typography variant="large">
+            {t('PricingOverlay.description')}
+          </Typography>
+        </VStack>
+        <VStack fullHeight>
+          <TabGroup
+            border
+            variant="chips"
+            items={[
+              {
+                label: t('PricingOverlay.simulator'),
+                value: 'simulator',
+              },
+              {
+                label: t('PricingOverlay.pricingTable'),
+                value: 'table',
+              },
+            ]}
+            onValueChange={(value) => {
+              setMode(value as PricingModes);
+            }}
+            value={mode}
+            fullWidth
+          />
+          <VStack collapseHeight flex overflow="hidden">
+            {mode === 'simulator' ? <ModelPricingView /> : <PricingTable />}
+          </VStack>
+        </VStack>
+        <Typography variant="large">
+          {t.rich('PricingOverlay.reference', {
+            link: (chunks) => (
+              <ExternalLink href={'/settings/organization/cost-explorer'}>
+                {chunks}
+              </ExternalLink>
+            ),
+          })}
+        </Typography>
+      </VStack>
+    </div>
+  );
+}
 
 export function CreditsViewer() {
   const user = useCurrentUser();
@@ -81,6 +157,7 @@ export function CreditsViewer() {
           />
         }
       >
+        <PricingOverlay />
         <HStack align="center" border paddingY="xxsmall" paddingX="small">
           <LettaCoinIcon size="small" />
           <Typography variant="body3">
