@@ -502,7 +502,7 @@ class StreamingServerInterface(AgentChunkStreamingInterface):
                 date=message_date,
                 reasoning=message_delta.reasoning_content,
                 signature=message_delta.reasoning_content_signature,
-                source="reasoner_model" if message_delta.reasoning_content_signature else "non_reasoner_model",
+                source="reasoner_model" if message_delta.reasoning_content else "non_reasoner_model",
                 name=name,
                 otid=otid,
             )
