@@ -9,56 +9,25 @@ import * as fs from 'fs';
 import { execFile, execFileSync } from 'child_process';
 import * as path from 'path';
 import type { ServerLogType } from '@letta-cloud/types';
-import * as todesktop from '@todesktop/runtime';
 import * as os from 'os';
 import { createWebServer, setServerId } from './web-server';
 import { getDesktopConfig } from './utils/desktop-config/desktop-config';
-todesktop.init();
+
+// Store the logs in a desktop log file
+const homeDir = os.homedir();
+const logFilePath = path.join(homeDir, '.letta', 'desktop.log');
+
+// 1) ensure directory exists
+const logDir = path.dirname(logFilePath);
+if (!fs.existsSync(logDir)) fs.mkdirSync(logDir, { recursive: true });
+
+// 2) wipe the old log on every launch
+if (fs.existsSync(logFilePath)) {
+  fs.writeFileSync(logFilePath, '');
+}
 
 let postgresProcess: ReturnType<typeof execFile> | null = null;
 let lettaServer: ReturnType<typeof execFile> | null = null;
-
-function interceptMainProcessLogs() {
-  // Method that pipes console.log and console.error to the Electron server log viewer
-  const originalLog = console.log;
-  const originalError = console.error;
-  // const originalWarn = console.warn;
-  // ... and so on for info, debug, etc., if desired.
-
-  console.log = (...args: any[]) => {
-    // Send the console log output to your existing ServerLogs
-    lettaServerLogs.addLog({
-      type: 'info',
-      message: args.join(' '),
-      timestamp: new Date().toLocaleString(),
-    });
-
-    // Also call the original console.log so you still see it in dev tools
-    originalLog(...args);
-  };
-
-  console.error = (...args: any[]) => {
-    lettaServerLogs.addLog({
-      type: 'error',
-      message: args.join(' '),
-      timestamp: new Date().toLocaleString(),
-    });
-
-    originalError(...args);
-  };
-
-  // ... etc. for console.info, console.debug, if you want them too
-
-  // console.warn = (...args: any[]) => {
-  //   lettaServerLogs.addLog({
-  //     type: 'warn',
-  //     message: args.join(' '),
-  //     timestamp: new Date().toISOString(),
-  //   });
-
-  //   originalWarn(...args);
-  // };
-}
 
 class ServerLogs {
   logs: ServerLogType[] = [];
@@ -73,6 +42,13 @@ class ServerLogs {
   }
 
   addLog(log: ServerLogType) {
+    // write it out
+    fs.appendFileSync(
+      logFilePath,
+      `[${log.timestamp}] ${log.message.replace(/\n/g, ' ')}\n`,
+    );
+
+    // keep in-memory too
     this.logs.push(log);
     if (this.logs.length > this.limit) {
       this.logs.shift();
@@ -85,7 +61,31 @@ class ServerLogs {
 }
 
 const lettaServerLogs = new ServerLogs();
-const homeDir = os.homedir();
+
+// Immediately patch console to write to logfile + in-memory buffer for visualization
+(() => {
+  const oLog = console.log,
+    oErr = console.error;
+  console.log = (...args: any[]) => {
+    lettaServerLogs.addLog({
+      type: 'info',
+      message: args.join(' '),
+      timestamp: new Date().toLocaleString(),
+    });
+    oLog(...args);
+  };
+  console.error = (...args: any[]) => {
+    lettaServerLogs.addLog({
+      type: 'error',
+      message: args.join(' '),
+      timestamp: new Date().toLocaleString(),
+    });
+    oErr(...args);
+  };
+})();
+
+import * as todesktop from '@todesktop/runtime';
+todesktop.init();
 
 function copyAlembicToLettaDir() {
   let alembicFolderPath = path.join(__dirname, '..', '..', 'core', 'alembic');
@@ -236,7 +236,7 @@ export default class App {
     if (lettaServer) {
       lettaServerLogs.clearLogs();
 
-      console.log('Stopping letta server...');
+      console.log('Stopping Letta server...');
 
       lettaServer.kill();
 
@@ -250,7 +250,7 @@ export default class App {
   static startLettaServer(copyFiles: boolean = true) {
     const config = getDesktopConfig();
 
-    lettaServerLogs.clearLogs();
+    // lettaServerLogs.clearLogs();
 
     if (!config) {
       console.log('No desktop config found. Please set one up...');
@@ -581,7 +581,7 @@ export default class App {
 
   private static async onReady() {
     // Intercept logs first so that everything after is captured
-    interceptMainProcessLogs();
+    // interceptMainProcessLogs();
 
     // Log PATH before fix-path
     console.log('[fp] PATH pre-patch:', process.env.PATH);
@@ -619,13 +619,19 @@ export default class App {
         });
       }
     } catch (err) {
-      console.error('[fatal] Startup Error:', err);
-      electron.dialog.showErrorBox(
-        'Error',
-        `An error occured while trying to start Letta Desktop (${err}). ` +
-          'Please check your logs or contact Letta support via Discord.',
+      console.error(
+        'An error occured while trying to start Letta Desktop:',
+        err,
       );
-      App.application.quit();
+      console.error(
+        'Please check your logs (~/.letta/desktop.log) or contact Letta support via Discord.',
+      );
+      // electron.dialog.showErrorBox(
+      //   'Error',
+      //   `An error occured while trying to start Letta Desktop (${err}). ` +
+      //     'Please check your logs (~/.letta/desktop.log) or contact Letta support via Discord.',
+      // );
+      // App.application.quit();
     }
   }
 
