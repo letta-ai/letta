@@ -76,7 +76,7 @@ class GroupManager:
                     new_group.manager_agent_id = group.manager_config.manager_agent_id
                     new_group.sleeptime_agent_frequency = group.manager_config.sleeptime_agent_frequency
                     if new_group.sleeptime_agent_frequency:
-                        new_group.turns_counter = 0
+                        new_group.turns_counter = -1
                 case _:
                     raise ValueError(f"Unsupported manager type: {group.manager_config.manager_type}")
 
@@ -113,7 +113,7 @@ class GroupManager:
                         manager_agent_id = group_update.manager_config.manager_agent_id
                         sleeptime_agent_frequency = group_update.manager_config.sleeptime_agent_frequency
                         if sleeptime_agent_frequency and group.turns_counter is None:
-                            group.turns_counter = 0
+                            group.turns_counter = -1
                     case _:
                         raise ValueError(f"Unsupported manager type: {group_update.manager_config.manager_type}")
 

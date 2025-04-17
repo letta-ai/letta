@@ -143,7 +143,7 @@ async def test_sleeptime_group_chat(server, actor):
         )
 
         assert len(response.messages) > 0
-        assert len(response.usage.run_ids or []) == i % 2
+        assert len(response.usage.run_ids or []) == (i + 1) % 2
         run_ids.extend(response.usage.run_ids or [])
 
         jobs = server.job_manager.list_jobs(actor=actor, job_type=JobType.RUN)
