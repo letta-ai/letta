@@ -51,6 +51,18 @@ brew install poetry
 brew install 1password-cli
 ```
 
+- `node` - [linky](https://nodejs.org/en/download)
+```sh
+# Install node (needed for npm) on mac
+brew install node
+```
+
+- `postgresql` - [linky](https://formulae.brew.sh/formula/postgresql@14)
+```sh
+# Install postgresql (needed to build psycopg2) on mac
+brew install postgresql
+```
+
 ### Setup
 Then run the following commands to setup the environment:
 
@@ -60,6 +72,8 @@ cd ~/Developer
 git clone git@github.com:letta-ai/letta-cloud.git letta-cloud
 
 # Start all supporting services
+# (Make sure docker daemon is running)
+cd letta-cloud
 just start-services
 
 # sign into 1password
@@ -129,14 +143,31 @@ This project uses [Just](https://github.com/casey/just) as a command runner. Her
 
 ### Authentication and Configuration
 
+- `gcloud` - [linky](https://formulae.brew.sh/formula/postgresql@14)
+```sh
+# Install gcloud CLI on mac
+brew install --cask google-cloud-sdk
+```
+
 - `just authenticate`: Authenticate with Google Cloud and configure Docker.
-- `just configure-kubectl`: Configure kubectl for the Letta cluster.
+-  ` just configure-kubectl`: Configure kubectl for the Letta cluster.
+
+Prerequisites for `configure-kubectl`:
+```sh
+gcloud auth login
+gcloud components install kubectl
+```
 
 ### Building and Deploying
 
 - `just build`: Build the multi-architecture Docker image.
 - `just push`: Push the Docker image to the registry.
 - `just deploy`: Deploy the Helm chart (includes pushing the image).
+Prerequisite for `just deploy` - [linky](https://helm.sh)
+```sh
+# Install Helm on mac
+brew install helm
+```
 - `just destroy`: Uninstall the Helm chart.
 
 ### Debugging and Monitoring

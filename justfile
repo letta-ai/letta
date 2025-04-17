@@ -364,7 +364,7 @@ web-slow:
 
 ready:
   @echo "🚧 Updating your local environment..."
-  source ~/.nvm/nvm.sh && nvm use
+  source ~/.nvm/nvm.sh && nvm use || true
   npm install
   npx nx reset
   npm run core:install
