@@ -63,8 +63,7 @@ extensions:
 service:
   telemetry:
     logs:
-      level: debug
-      development: true
+      level: error
     metrics:
       address: 0.0.0.0:8888
   extensions: [health_check, pprof, zpages]
