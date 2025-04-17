@@ -1008,26 +1008,6 @@ class SyncServer(Server):
             new_passage_size = self.agent_manager.passage_size(actor=actor, agent_id=agent_id)
             assert new_passage_size >= curr_passage_size  # in case empty files are added
 
-            # Process file via sleeptime agent
-            if agent_state.enable_sleeptime:
-                ephemeral_sleeptime_agent = self.create_document_sleeptime_agent(
-                    main_agent=agent_state, source_name=source.name, actor=actor
-                )
-
-                agent = self.load_agent(agent_id=ephemeral_sleeptime_agent.id, actor=actor)
-                for passage in self.list_data_source_passages(source_id=source_id, user_id=actor.id):
-                    agent.step(
-                        messages=[
-                            Message(
-                                role="user",
-                                content=[TextContent(text=passage.text)],
-                                agent_id=ephemeral_sleeptime_agent.id,
-                            ),
-                        ]
-                    )
-
-                self.agent_manager.delete_agent(agent_id=ephemeral_sleeptime_agent.id, actor=actor)
-
             # rebuild system prompt and force
             agent_state = self.agent_manager.rebuild_system_prompt(agent_id=agent_id, actor=actor, force=True)
 
@@ -1039,12 +1019,33 @@ class SyncServer(Server):
 
         return job
 
-    def create_document_sleeptime_agent(self, main_agent: AgentState, source_name: str, actor: User) -> AgentState:
+    def sleeptime_document_ingest(self, main_agent: AgentState, source: Source, actor: User, clear_history: bool = False) -> None:
+        sleeptime_agent = self.create_document_sleeptime_agent(main_agent, source, actor, clear_history)
+        agent = self.load_agent(agent_id=sleeptime_agent.id, actor=actor)
+        for passage in self.list_data_source_passages(source_id=source.id, user_id=actor.id):
+            agent.step(
+                messages=[
+                    Message(
+                        role="user",
+                        content=[TextContent(text=passage.text)],
+                        agent_id=sleeptime_agent.id,
+                    ),
+                ]
+            )
+        self.agent_manager.delete_agent(agent_id=sleeptime_agent.id, actor=actor)
+
+    def create_document_sleeptime_agent(
+        self, main_agent: AgentState, source: Source, actor: User, clear_history: bool = False
+    ) -> AgentState:
         try:
-            block = self.agent_manager.get_block_with_label(agent_id=main_agent.id, block_label=source_name, actor=actor)
+            block = self.agent_manager.get_block_with_label(agent_id=main_agent.id, block_label=source.name, actor=actor)
         except:
-            block = self.block_manager.create_or_update_block(Block(label=source_name, value=""), actor=actor)
+            block = self.block_manager.create_or_update_block(Block(label=source.name, value=""), actor=actor)
             self.agent_manager.attach_block(agent_id=main_agent.id, block_id=block.id, actor=actor)
+
+        if clear_history and block.value != "":
+            block = self.block_manager.update_block(block_id=block.id, block=BlockUpdate(value=""))
+
         request = CreateAgent(
             name=main_agent.name + "-doc-sleeptime",
             system=get_system_text("sleeptime_doc_ingest"),
@@ -1054,6 +1055,10 @@ class SyncServer(Server):
                 CreateBlock(
                     label="persona",
                     value=get_persona_text("sleeptime_doc_persona"),
+                ),
+                CreateBlock(
+                    label="instructions",
+                    value=source.description,
                 ),
             ],
             llm_config=main_agent.llm_config,
