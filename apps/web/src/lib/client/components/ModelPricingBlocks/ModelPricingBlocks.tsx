@@ -138,7 +138,24 @@ export function ModelPricingBlocks(props: DetailedCostBreakdownProps) {
       brandMap.get(cost.brand)?.costs.push(cost);
     });
 
-    return Array.from(brandMap.values());
+    return Array.from(brandMap.values()).sort((a, b) => {
+      // brand priorities:
+      // 1. openai
+      // 2. claude
+      // 3. google
+      // 4+ others
+
+      const brandPriority: Partial<Record<BrandKeys, number>> = {
+        openai: 1,
+        claude: 2,
+        google: 3,
+      };
+
+      const aPriority = brandPriority[a.brand] || 4;
+      const bPriority = brandPriority[b.brand] || 4;
+
+      return aPriority - bPriority;
+    });
   }, [costs]);
 
   return costsByBrand.map((brandCosts) => (

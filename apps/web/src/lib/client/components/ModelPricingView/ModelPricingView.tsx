@@ -6,7 +6,9 @@ import {
   isBrandKey,
   LettaCoinIcon,
   LoadingEmptyStatusComponent,
+  RawInput,
   RawSlider,
+  SearchIcon,
   Typography,
   VStack,
 } from '@letta-cloud/ui-component-library';
@@ -106,6 +108,7 @@ export function ModelPricingView() {
   const t = useTranslations('components/ModelPricingView');
   const [contextWindowSize, setContextWindowSize] = useState<string>('32000');
 
+  const [search, setSearch] = useState<string>('');
   const { data: costs } = webApi.costs.getStepCosts.useQuery({
     queryKey: webApiQueryKeys.costs.getStepCosts,
   });
@@ -115,15 +118,22 @@ export function ModelPricingView() {
   }, [costs]);
 
   const stepCostPerModal = useMemo(() => {
-    return stepCosts.map((stepCost) => {
-      return {
-        model: stepCost.modelName,
-        brand: stepCost.brand,
-        id: stepCost.modelId,
-        cost: getCostFromCostMap(Number(contextWindowSize), stepCost.costMap),
-      };
-    });
-  }, [contextWindowSize, stepCosts]);
+    return stepCosts
+      .map((stepCost) => {
+        return {
+          model: stepCost.modelName,
+          brand: stepCost.brand,
+          id: stepCost.modelId,
+          cost: getCostFromCostMap(Number(contextWindowSize), stepCost.costMap),
+        };
+      })
+      .filter((item) => {
+        if (search) {
+          return item.model.toLowerCase().includes(search.toLowerCase());
+        }
+        return true;
+      });
+  }, [contextWindowSize, search, stepCosts]);
 
   const maxContextWindowSize = useMemo(() => {
     return (
@@ -136,6 +146,14 @@ export function ModelPricingView() {
       ) || 200000
     );
   }, [stepCosts]);
+
+  if (!costs) {
+    return (
+      <VStack fullHeight fullWidth>
+        <LoadingEmptyStatusComponent loadingMessage={t('loading')} isLoading />
+      </VStack>
+    );
+  }
 
   return (
     <VStack fullHeight fullWidth>
@@ -150,17 +168,33 @@ export function ModelPricingView() {
           step={10}
         />
       </VStack>
-      <VStack border gap={false} collapseHeight flex overflow="auto">
-        {!costs ? (
-          <LoadingEmptyStatusComponent
-            loadingMessage={t('loading')}
-            isLoading
-          />
-        ) : (
-          stepCostPerModal
-            .sort((a, b) => b.cost - a.cost)
-            .map((item) => <ModelRender key={item.model} item={item} />)
-        )}
+      <VStack border gap={false}>
+        <VStack>
+          <VStack padding="xsmall">
+            <RawInput
+              hideLabel
+              preIcon={<SearchIcon />}
+              fullWidth
+              placeholder={t('search.placeholder')}
+              label={t('search.label')}
+              value={search}
+              onChange={(e) => {
+                setSearch(e.target.value);
+              }}
+            />
+          </VStack>
+        </VStack>
+        <VStack gap={false} collapseHeight flex overflow="auto">
+          {stepCostPerModal.length === 0 ? (
+            <HStack padding="small">
+              <Typography>{t('noResults')}</Typography>
+            </HStack>
+          ) : (
+            stepCostPerModal
+              .sort((a, b) => b.cost - a.cost)
+              .map((item) => <ModelRender key={item.model} item={item} />)
+          )}
+        </VStack>
       </VStack>
     </VStack>
   );

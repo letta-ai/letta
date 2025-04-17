@@ -62,7 +62,7 @@ function PricingOverlay() {
             {t('PricingOverlay.description')}
           </Typography>
         </VStack>
-        <VStack fullHeight>
+        <VStack fullHeight overflow="hidden">
           <TabGroup
             border
             variant="chips"
@@ -82,8 +82,14 @@ function PricingOverlay() {
             value={mode}
             fullWidth
           />
-          <VStack collapseHeight flex overflow="hidden">
-            {mode === 'simulator' ? <ModelPricingView /> : <PricingTable />}
+          <VStack collapseHeight flex overflow="auto">
+            {mode === 'simulator' ? (
+              <div className="min-h-[300px]  h-full">
+                <ModelPricingView />
+              </div>
+            ) : (
+              <PricingTable />
+            )}
           </VStack>
         </VStack>
         <Typography variant="large">

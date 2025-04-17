@@ -480,6 +480,10 @@
     "CostRender": {
       "upTo": ">{tokens} tokens"
     },
+    "DetailedCostBreakdown": {
+      "simulator": "Cost simulator",
+      "pricingTable": "Full pricing table"
+    },
     "sameAsPrevious": "Same as previous",
     "CostSimulator": {
       "notSupported": "Not supported",
@@ -535,6 +539,11 @@
     "notSupported": {
       "label": "Not supported",
       "description": "Please lower the context window size to get a price, this model cannot support the given context window size"
+    },
+    "noResults": "No models match your search",
+    "search": {
+      "placeholder": "Search for a model",
+      "label": "Search"
     },
     "contextWindowSize": {
       "label": "Context window size",
