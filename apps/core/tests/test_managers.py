@@ -692,6 +692,35 @@ def test_create_agent_default_initial_message(server: SyncServer, default_user, 
     assert create_agent_request.memory_blocks[0].value in init_messages[0].content[0].text
 
 
+def test_create_agent_with_json_in_system_message(server: SyncServer, default_user, default_block):
+    system_prompt = (
+        "You are an expert teaching agent with encyclopedic knowledge. "
+        "When you receive a topic, query the external database for more "
+        "information. Format the queries as a JSON list of queries making "
+        "sure to include your reasoning for that query, e.g. "
+        "{'query1' : 'reason1', 'query2' : 'reason2'}"
+    )
+    create_agent_request = CreateAgent(
+        system=system_prompt,
+        llm_config=LLMConfig.default_config("gpt-4"),
+        embedding_config=EmbeddingConfig.default_config(provider="openai"),
+        block_ids=[default_block.id],
+        tags=["a", "b"],
+        description="test_description",
+        include_base_tools=False,
+    )
+    agent_state = server.agent_manager.create_agent(
+        create_agent_request,
+        actor=default_user,
+    )
+    assert agent_state is not None
+    system_message_id = agent_state.message_ids[0]
+    system_message = server.message_manager.get_message_by_id(message_id=system_message_id, actor=default_user)
+    assert system_prompt in system_message.content[0].text
+    assert default_block.value in system_message.content[0].text
+    server.agent_manager.delete_agent(agent_id=agent_state.id, actor=default_user)
+
+
 def test_update_agent(server: SyncServer, comprehensive_test_agent_fixture, other_tool, other_source, other_block, default_user):
     agent, _ = comprehensive_test_agent_fixture
     update_agent_request = UpdateAgent(
