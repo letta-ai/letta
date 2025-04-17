@@ -277,3 +277,26 @@ class AgentStepResponse(BaseModel):
 class AgentStepState(BaseModel):
     step_number: int = Field(..., description="The current step number in the agent loop")
     tool_rules_solver: ToolRulesSolver = Field(..., description="The current state of the ToolRulesSolver")
+
+
+def get_prompt_template_for_agent_type(agent_type: Optional[AgentType] = None):
+    if agent_type == AgentType.sleeptime_agent:
+        return (
+            "{% for block in blocks %}"
+            '<{{ block.label }} characters="{{ block.value|length }}/{{ block.limit }}">\n'
+            "# NOTE: Line numbers shown below are to help during editing. Do NOT include line number prefixes in your memory edit tool calls."
+            "{% for line in block.value.split('\\n') %}"
+            "Line {{ loop.index }}: {{ line }}\n"
+            "{% endfor %}"
+            "</{{ block.label }}>"
+            "{% if not loop.last %}\n{% endif %}"
+            "{% endfor %}"
+        )
+    return (
+        "{% for block in blocks %}"
+        '<{{ block.label }} characters="{{ block.value|length }}/{{ block.limit }}">\n'
+        "{{ block.value }}\n"
+        "</{{ block.label }}>"
+        "{% if not loop.last %}\n{% endif %}"
+        "{% endfor %}"
+    )

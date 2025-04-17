@@ -36,7 +36,7 @@ from letta.log import get_logger
 from letta.memory import summarize_messages
 from letta.orm import User
 from letta.orm.enums import ToolType
-from letta.schemas.agent import AgentState, AgentStepResponse, UpdateAgent
+from letta.schemas.agent import AgentState, AgentStepResponse, UpdateAgent, get_prompt_template_for_agent_type
 from letta.schemas.block import BlockUpdate
 from letta.schemas.embedding_config import EmbeddingConfig
 from letta.schemas.enums import MessageRole
@@ -52,11 +52,7 @@ from letta.schemas.tool_rule import TerminalToolRule
 from letta.schemas.usage import LettaUsageStatistics
 from letta.services.agent_manager import AgentManager
 from letta.services.block_manager import BlockManager
-from letta.services.helpers.agent_manager_helper import (
-    check_supports_structured_output,
-    compile_memory_metadata_block,
-    compile_system_message,
-)
+from letta.services.helpers.agent_manager_helper import check_supports_structured_output, compile_memory_metadata_block
 from letta.services.job_manager import JobManager
 from letta.services.message_manager import MessageManager
 from letta.services.passage_manager import PassageManager
@@ -204,7 +200,8 @@ class Agent(BaseAgent):
 
             # refresh memory from DB (using block ids)
             self.agent_state.memory = Memory(
-                blocks=[self.block_manager.get_block_by_id(block.id, actor=self.user) for block in self.agent_state.memory.get_blocks()]
+                blocks=[self.block_manager.get_block_by_id(block.id, actor=self.user) for block in self.agent_state.memory.get_blocks()],
+                prompt_template=get_prompt_template_for_agent_type(self.agent_state.agent_type),
             )
 
             # NOTE: don't do this since re-buildin the memory is handled at the start of the step
@@ -305,29 +302,6 @@ class Agent(BaseAgent):
         # Force a tool call if exactly one tool is specified
         elif step_count is not None and step_count > 0 and len(allowed_tool_names) == 1:
             force_tool_call = allowed_tool_names[0]
-
-        if force_tool_call == "core_memory_insert":
-            current_system_message = message_sequence[0]
-            new_memory = Memory(
-                blocks=self.agent_state.memory.blocks,
-                prompt_template=(
-                    "{% for block in blocks %}"
-                    '<{{ block.label }} characters="{{ block.value|length }}/{{ block.limit }}">\n'
-                    "{% for line in block.value.splitlines() %}"
-                    "{{ loop.index0 }}: {{ line }}\n"
-                    "{% endfor %}"
-                    "</{{ block.label }}>"
-                    "{% if not loop.last %}\n{% endif %}"
-                    "{% endfor %}"
-                ),
-            )
-            new_system_message_str = compile_system_message(
-                system_prompt=self.agent_state.system,
-                in_context_memory=new_memory,
-                in_context_memory_last_edit=current_system_message.created_at,
-                previous_message_count=len(message_sequence),
-            )
-            message_sequence[0].content = [TextContent(text=new_system_message_str)]
 
         for attempt in range(1, empty_response_retry_limit + 1):
             try:
@@ -834,7 +808,8 @@ class Agent(BaseAgent):
             # Step 0: update core memory
             # only pulling latest block data if shared memory is being used
             current_persisted_memory = Memory(
-                blocks=[self.block_manager.get_block_by_id(block.id, actor=self.user) for block in self.agent_state.memory.get_blocks()]
+                blocks=[self.block_manager.get_block_by_id(block.id, actor=self.user) for block in self.agent_state.memory.get_blocks()],
+                prompt_template=get_prompt_template_for_agent_type(self.agent_state.agent_type),
             )  # read blocks from DB
             self.update_memory_if_changed(current_persisted_memory)
 

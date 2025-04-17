@@ -12,7 +12,7 @@ from letta.orm.mixins import OrganizationMixin
 from letta.orm.organization import Organization
 from letta.orm.sqlalchemy_base import SqlalchemyBase
 from letta.schemas.agent import AgentState as PydanticAgentState
-from letta.schemas.agent import AgentType
+from letta.schemas.agent import AgentType, get_prompt_template_for_agent_type
 from letta.schemas.embedding_config import EmbeddingConfig
 from letta.schemas.llm_config import LLMConfig
 from letta.schemas.memory import Memory
@@ -202,7 +202,10 @@ class Agent(SqlalchemyBase, OrganizationMixin):
             "tags": lambda: [t.tag for t in self.tags],
             "tools": lambda: self.tools,
             "sources": lambda: [s.to_pydantic() for s in self.sources],
-            "memory": lambda: Memory(blocks=[b.to_pydantic() for b in self.core_memory]),
+            "memory": lambda: Memory(
+                blocks=[b.to_pydantic() for b in self.core_memory],
+                prompt_template=get_prompt_template_for_agent_type(self.agent_type),
+            ),
             "identity_ids": lambda: [i.id for i in self.identities],
             "multi_agent_group": lambda: self.multi_agent_group,
             "tool_exec_environment_variables": lambda: self.tool_exec_environment_variables,
