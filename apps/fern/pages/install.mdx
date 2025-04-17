@@ -77,6 +77,76 @@ slug: /install
       width: 50% !important;
     }
 
+    /* Tablet viewport breakpoint */
+    @media (max-width: 1024px) {
+      .letta-header {
+        padding-top: 40px !important;
+        padding-bottom: 40px !important;
+      }
+      
+      .letta-header > div > div> .flex-row {
+        flex-direction: column-reverse !important;
+      }
+      
+      .letta-header .content-side,
+      .letta-header .code-side {
+        width: 100% !important;
+      }
+      
+      .letta-header .code-side {
+        margin-bottom: 2rem !important;
+      }
+      
+      .letta-header h2 {
+        font-size: 2rem !important;
+      }
+      
+      .letta-header p {
+        font-size: 1.1rem !important;
+      }
+      
+      .letta-header .container {
+        padding-top: 2rem !important;
+        padding-bottom: 2rem !important;
+      }
+    }
+    
+    /* Mobile viewport breakpoint */
+    @media (max-width: 640px) {
+      .letta-header {
+        padding-top: 24px !important;
+        padding-bottom: 24px !important;
+      }
+      
+      .letta-header h2 {
+        font-size: 1.75rem !important;
+      }
+      
+      .letta-header h3 {
+        font-size: 1.25rem !important;
+      }
+      
+      .letta-header h4 {
+        font-size: 0.9rem !important;
+      }
+      
+      .letta-header p {
+        font-size: 1rem !important;
+      }
+      
+      .letta-header .container {
+        padding-top: 1.5rem !important;
+        padding-bottom: 1.5rem !important;
+        padding-left: 1rem !important;
+        padding-right: 1rem !important;
+      }
+      
+      .landingbody {
+        padding-left: 1rem !important;
+        padding-right: 1rem !important;
+      }
+    }
+
     .fern-card {
       background-color: #0707ac !important;
       padding: 14px !important;
@@ -125,46 +195,53 @@ slug: /install
       font-size: 0.75rem !important;
     }
 
+    #fern-sidebar { 
+      display: none !important;
+    }
+
+    .download-links > div {
+      margin: 0 !important;
+    }
   `}
 </style>
 <div className="w-full letta-header">
   <div className="container mx-auto px-8 py-16">
     <div className="max-w-6xl mx-auto">
-    <div className="flex flex-row items-start justify-between gap-12">
-      <div className="content-side">
-        <h2 className="text-7xl mb-6">Letta Desktop</h2>
-        <p className="text-3xl font-light mb-4">
-          <b>AI agents that learn, completely local.</b>
-        </p>
-        <h4>The easiest way to build stateful agents on your own computer.</h4>
-        <h4>Letta Desktop combines the Letta Server and ADE into a single application.</h4>
-        <div className="flex flex-col items-start gap-2 mt-6">
-          <Card
-              title="Download Letta Desktop for Mac (Apple Silicon)"
-              icon="fa-brands fa-apple"
-              iconPosition="left"
-              href="https://downloads.letta.com/mac/dmg/arm64"
-          >
-          </Card>
-          <Card
-              title="Download Letta Desktop for Windows (x64)"
-              icon="fa-brands fa-windows"
-              iconPosition="left"
-              href="https://downloads.letta.com/windows/nsis/x64"
-          >
-          </Card>
+      <div className="flex flex-row items-start justify-between gap-12">
+        <div className="content-side">
+          <h2 className="text-7xl mb-6">Letta Desktop</h2>
+          <p className="text-3xl font-light mb-4">
+            <b>AI agents that learn, completely local.</b>
+          </p>
+          <h4>The easiest way to build stateful agents on your own computer.</h4>
+          <h4>Letta Desktop combines the Letta Server and ADE into a single application.</h4>
+          <div className="download-links my-6 grid gap-4 first:mt-0 grid-cols-1 w-fit">
+            <Card
+                title="Download Letta Desktop for Mac (Apple Silicon)"
+                icon="fa-brands fa-apple"
+                iconPosition="left"
+                href="https://downloads.letta.com/mac/dmg/arm64"
+            >
+            </Card>
+            <Card
+                title="Download Letta Desktop for Windows (x64)"
+                icon="fa-brands fa-windows"
+                iconPosition="left"
+                href="https://downloads.letta.com/windows/nsis/x64"
+            >
+            </Card>
+          </div>
+          <Warning>
+          Letta Desktop is currently in **alpha**. View known issues and FAQ [here](/guides/desktop/troubleshooting).<br />
+          For bug reports and feature requests, contact us on [Discord](https://discord.gg/letta).
+          </Warning>
         </div>
-        <Warning>
-        Letta Desktop is currently in **alpha**. View known issues and FAQ [here](/guides/desktop/troubleshooting).<br />
-        For bug reports and feature requests, contact us on [Discord](https://discord.gg/letta).
-        </Warning>
-      </div>
-      <div className="code-side">
-        <img className="w-full light" src="/images/letta_desktop_screenshot.png" />
-        <img className="w-full dark" src="/images/letta_desktop_screenshot_dark.png" />
+        <div className="code-side">
+          <img className="w-full light" src="/images/letta_desktop_screenshot.png" />
+          <img className="w-full dark" src="/images/letta_desktop_screenshot_dark.png" />
+        </div>
       </div>
     </div>
-  </div>
   </div>
 </div>
 

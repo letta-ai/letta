@@ -270,7 +270,7 @@ navbar-links:
     rounded: false
 
 layout:
-  page-width: full
+  page-width: 1504px
   tabs-placement: header
   searchbar-placement: header
 

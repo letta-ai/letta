@@ -2,6 +2,7 @@
   font-weight: 600;
 } */
  
+/* Remove rounded corners across the docs site */
 :root {
   --radius: 0px;
 }
