@@ -1,16 +1,16 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ include "free-proxy.fullname" . }}
+  name: {{ include "model-proxy.fullname" . }}
   labels:
-    {{- include "free-proxy.labels" . | nindent 4 }}
+    {{- include "model-proxy.labels" . | nindent 4 }}
 spec:
   {{- if not .Values.autoscaling.enabled }}
   replicas: {{ .Values.replicaCount }}
   {{- end }}
   selector:
     matchLabels:
-      {{- include "free-proxy.selectorLabels" . | nindent 6 }}
+      {{- include "model-proxy.selectorLabels" . | nindent 6 }}
   template:
     metadata:
       {{- with .Values.podAnnotations }}
@@ -18,7 +18,7 @@ spec:
         {{- toYaml . | nindent 8 }}
       {{- end }}
       labels:
-        {{- include "free-proxy.labels" . | nindent 8 }}
+        {{- include "model-proxy.labels" . | nindent 8 }}
         {{- with .Values.podLabels }}
         {{- toYaml . | nindent 8 }}
         {{- end }}
@@ -27,7 +27,7 @@ spec:
       imagePullSecrets:
         {{- toYaml . | nindent 8 }}
       {{- end }}
-      serviceAccountName: {{ include "free-proxy.serviceAccountName" . }}
+      serviceAccountName: {{ include "model-proxy.serviceAccountName" . }}
       securityContext:
         {{- toYaml .Values.podSecurityContext | nindent 8 }}
       containers:
@@ -50,7 +50,7 @@ spec:
             {{- toYaml .Values.resources | nindent 12 }}
           envFrom:
             - secretRef:
-                name: {{ include "free-proxy.fullname" . }}-env
+                name: {{ include "model-proxy.fullname" . }}-env
           env:
             {{- range $key, $value := .Values.env }}
             - name: {{ $key }}

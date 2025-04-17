@@ -1,4 +1,4 @@
-name:  💸🚀 Deploy free-proxy
+name:  🌐🚀 Deploy model-proxy
 
 on:
   workflow_dispatch:
@@ -95,7 +95,7 @@ jobs:
         uses: docker/setup-buildx-action@v3
 
       - name: Build
-        run: just build-free-proxy
+        run: just build-model-proxy
 
       - name: Update deployment status to in_progress
         uses: chrnorm/deployment-status@v2
@@ -106,7 +106,7 @@ jobs:
 
       - name: Deploy
         id: deploy
-        run: just deploy-free-proxy
+        run: just deploy-model-proxy
 
       - name: Update deployment status to success
         if: success()

@@ -617,34 +617,34 @@ trigger-lettuce-deploy branch="" deploy_message="":
     echo "🚀 Triggering lettuce deployment workflow on branch: $BRANCH"
     gh workflow run "🕸️🚀 Deploy Lettuce" --ref $BRANCH
 
-build-free-proxy:
-    @echo "🚧 Building free-proxy Docker image with tag: {{TAG}}..."
-    docker buildx build --progress=plain --platform=linux/amd64 -t {{DOCKER_REGISTRY}}/free-proxy:{{TAG}} . --load --file apps/free-proxy/Dockerfile
+build-model-proxy:
+    @echo "🚧 Building model-proxy Docker image with tag: {{TAG}}..."
+    docker buildx build --progress=plain --platform=linux/amd64 -t {{DOCKER_REGISTRY}}/model-proxy:{{TAG}} . --load --file apps/model-proxy/Dockerfile
 
-push-free-proxy:
+push-model-proxy:
     @echo "🚀 Pushing Docker images to registry with tag: {{TAG}}..."
-    docker push {{DOCKER_REGISTRY}}/free-proxy:{{TAG}}
+    docker push {{DOCKER_REGISTRY}}/model-proxy:{{TAG}}
 
-@deploy-free-proxy: push-free-proxy
-    @echo "🚧 Deploying free-proxy Helm chart..."
-    npm run slack-bot-says "Deploying free-proxy service with tag: {{TAG}}..."
-    helm upgrade --install free-proxy {{HELM_CHARTS_DIR}}/free-proxy \
-        --set image.repository={{DOCKER_REGISTRY}}/free-proxy \
+@deploy-model-proxy: push-model-proxy
+    @echo "🚧 Deploying model-proxy Helm chart..."
+    npm run slack-bot-says "Deploying model-proxy service with tag: {{TAG}}..."
+    helm upgrade --install model-proxy {{HELM_CHARTS_DIR}}/model-proxy \
+        --set image.repository={{DOCKER_REGISTRY}}/model-proxy \
         --set image.tag={{TAG}} \
         --set-string "podAnnotations.kubectl\.kubernetes\.io/restartedAt"="$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
         #        --set env.GCP_PUBSUB_PROJECT_ID="${GCP_PUBSUB_PROJECT_ID}" \
         #        --set env.GCP_PUBSUB_TOPIC_ID="${GCP_PUBSUB_TOPIC_ID}" \
         --set env.OPENAI_API_KEY="${OPENAI_API_KEY}"
 
-    npm run slack-bot-says "Successfully deployed free-proxy service with tag: {{TAG}}."
+    npm run slack-bot-says "Successfully deployed model-proxy service with tag: {{TAG}}."
 
-# Trigger the free-proxy deployment workflow (defaults to current branch if none specified)
-trigger-free-proxy-deploy branch="" deploy_message="":
+# Trigger the model-proxy deployment workflow (defaults to current branch if none specified)
+trigger-model-proxy-deploy branch="" deploy_message="":
     #!/usr/bin/env bash
     if [ -z "{{branch}}" ]; then
         BRANCH=$(git branch --show-current)
     else
         BRANCH="{{branch}}"
     fi
-    echo "🚀 Triggering free-proxy deployment workflow on branch: $BRANCH"
-    gh workflow run "🕸️🚀 Deploy free-proxy" --ref $BRANCH
+    echo "🚀 Triggering model-proxy deployment workflow on branch: $BRANCH"
+    gh workflow run "🕸️🚀 Deploy model-proxy" --ref $BRANCH
