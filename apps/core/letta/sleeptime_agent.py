@@ -46,8 +46,7 @@ class SleeptimeAgent(Agent):
             for message in step_response.messages:
                 if message.tool_calls:
                     for tool_call in message.tool_calls:
-                        # check if the function name is "finish_rethinking_memory"
-                        if tool_call.function.name == "finish_rethinking_memory":
+                        if tool_call.function.name == "memory_finish_edits":
                             counter = self.max_memory_rethinks
                             break
             usage = step_response.usage
