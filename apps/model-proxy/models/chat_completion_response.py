@@ -57,7 +57,7 @@ class UsageStatistics(BaseModel):
 class ChatCompletionResponse(BaseModel):
     id: str
     choices: List[Choice]
-    created_at: int
+    created: int
     model: str
     system_fingerprint: str
     # object: str = Field(default="chat.completion")
