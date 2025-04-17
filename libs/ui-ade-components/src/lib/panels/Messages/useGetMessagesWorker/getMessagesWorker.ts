@@ -14,10 +14,14 @@ registerPromiseWorker(async (message: GetMessagesWorkerPayload) => {
 
   queryparams.append('use_assistant_message', 'false');
 
-  return fetch(
-    `${url}/v1/agents/${agentId}/messages?${queryparams.toString()}`,
-    {
-      headers,
-    },
-  ).then((res) => res.json());
+  const selfUrl = self.location.href.replace('blob:', ''); // remove `blob:` from the URL
+
+  const absolute = new URL(url || selfUrl);
+
+  absolute.pathname = `/v1/agents/${agentId}/messages`;
+  absolute.search = queryparams.toString();
+
+  return fetch(absolute, {
+    headers,
+  }).then((res) => res.json());
 });
