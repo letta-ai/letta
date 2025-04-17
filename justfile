@@ -197,6 +197,10 @@ cloud-api: setup-cloud-api
     @echo "🚧 Running the cloud API..."
     cd apps/cloud-api && npm run build && npm run start
 
+dev-cloud-api:
+    @echo "🚧 Starting up the cloud API..."
+    cd apps/cloud-api && npm run dev
+
 # Trigger the cloud API deployment workflow (defaults to current branch if none specified)
 trigger-cloud-api-deploy branch="" deploy_message="":
     #!/usr/bin/env bash

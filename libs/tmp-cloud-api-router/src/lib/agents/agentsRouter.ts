@@ -61,7 +61,7 @@ async function createAgent(
   req: CreateAgentRequest,
   context: SDKContext,
 ): Promise<CreateAgentResponse> {
-  const { organizationId, lettaAgentsUserId } = getContextDataHack(
+  const { organizationId, userId, lettaAgentsUserId } = getContextDataHack(
     req,
     context,
   );
@@ -173,7 +173,15 @@ async function createAgent(
           tool_variables: agent.tool_exec_environment_variables || {},
         },
       },
-      context,
+      {
+        request: {
+          organizationId,
+          lettaAgentsUserId,
+          source: 'api',
+          projectSlug,
+          userId,
+        },
+      },
     );
 
   if (deployedAgentTemplate.status !== 201) {
