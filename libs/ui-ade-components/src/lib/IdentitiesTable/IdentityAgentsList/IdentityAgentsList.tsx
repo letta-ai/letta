@@ -24,11 +24,12 @@ import {
 
 interface AgentsListProps {
   identity: Identity;
+  currentProjectId?: string;
 }
 
 export function IdentityAgentsList(props: AgentsListProps) {
   const t = useTranslations('IdentityAgentsList');
-  const { identity } = props;
+  const { identity, currentProjectId } = props;
   const [search, setSearch] = useState<string>('');
 
   const [page, setPage] = useState<number>(0);
@@ -49,6 +50,7 @@ export function IdentityAgentsList(props: AgentsListProps) {
         identityId: identity.id || '',
         queryText: debouncedSearch,
         limit: limit + 1,
+        projectId: currentProjectId,
       }),
     ],
     queryFn: ({ pageParam }) => {
@@ -57,6 +59,7 @@ export function IdentityAgentsList(props: AgentsListProps) {
         limit: limit + 1,
         after: pageParam?.after,
         identityId: identity.id || '',
+        projectId: currentProjectId,
       });
     },
     initialPageParam: { after: null },

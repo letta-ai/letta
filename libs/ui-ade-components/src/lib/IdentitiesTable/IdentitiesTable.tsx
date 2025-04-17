@@ -172,6 +172,7 @@ function IdentityTypeCell(props: IdentityTypeCellProps) {
 
 interface IdentityItemOverlayProps {
   identity: Identity;
+  currentProjectId?: string;
 }
 
 const basicDetailsFormSchema = z.object({
@@ -455,7 +456,7 @@ function BasicDetailsEditor(props: BasicDetailsEditorProps) {
 }
 
 function IdentityItemOverlay(props: IdentityItemOverlayProps) {
-  const { identity } = props;
+  const { identity, currentProjectId } = props;
   const t = useTranslations('IdentitiesTable');
   const [open, setOpen] = useState(false);
 
@@ -495,7 +496,10 @@ function IdentityItemOverlay(props: IdentityItemOverlayProps) {
             <Typography variant="heading6" bold>
               {t('IdentityItemOverlay.agents')}
             </Typography>
-            <IdentityAgentsList identity={identity} />
+            <IdentityAgentsList
+              currentProjectId={currentProjectId}
+              identity={identity}
+            />
           </VStack>
           <VStack paddingX>
             <Typography variant="heading6" bold>
@@ -556,6 +560,7 @@ export function IdentitiesTable(props: IdentitiesTableProps) {
     queryKey: UseInfiniteIdentitiesQueryFn([
       {
         name: debouncedSearch,
+        ...(currentProjectId ? { projectId: currentProjectId } : {}),
         limit: limit + 1,
       },
     ]),
@@ -564,7 +569,7 @@ export function IdentitiesTable(props: IdentitiesTableProps) {
         name: debouncedSearch,
         limit: limit + 1,
         after: pageParam?.after,
-        projectId: currentProjectId,
+        ...(currentProjectId ? { projectId: currentProjectId } : {}),
       });
     },
     initialPageParam: { after: null },
@@ -687,7 +692,10 @@ export function IdentitiesTable(props: IdentitiesTableProps) {
         cell: ({ row }) => {
           return (
             <HStack>
-              <IdentityItemOverlay identity={row.original} />
+              <IdentityItemOverlay
+                currentProjectId={currentProjectId}
+                identity={row.original}
+              />
               <DropdownMenu
                 trigger={
                   <Button
@@ -717,7 +725,7 @@ export function IdentitiesTable(props: IdentitiesTableProps) {
         },
       },
     ];
-  }, [t]);
+  }, [t, currentProjectId]);
 
   const table = (
     <DataTable

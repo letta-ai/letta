@@ -615,7 +615,7 @@ function IdentityViewer() {
 
   const t = useTranslations('ADE/AgentSettingsPanel');
 
-  const { data: sharedAgentInfo } =
+  const { data: sharedAgentInfo, isLoading: isLoadingSharedAgentInfo } =
     webApi.sharedAgentChats.getSharedChatConfiguration.useQuery({
       queryKey: webApiQueryKeys.sharedAgentChats.getSharedChatConfiguration({
         agentId,
@@ -646,7 +646,7 @@ function IdentityViewer() {
       return t('IdentityViewer.status.noIdentities');
     }
 
-    if (isFromTemplate && !sharedAgentInfo) {
+    if (isFromTemplate && isLoadingSharedAgentInfo) {
       return t('IdentityViewer.status.loading');
     }
 
@@ -662,7 +662,13 @@ function IdentityViewer() {
       name: initialIdentity.name,
       count: currentAgent.identity_ids.length - 1,
     });
-  }, [initialIdentity, currentAgent, t, sharedAgentInfo, isFromTemplate]);
+  }, [
+    initialIdentity,
+    isLoadingSharedAgentInfo,
+    currentAgent,
+    t,
+    isFromTemplate,
+  ]);
 
   const identityLabel = useMemo(() => {
     if (currentAgent?.identity_ids?.length === 1) {
