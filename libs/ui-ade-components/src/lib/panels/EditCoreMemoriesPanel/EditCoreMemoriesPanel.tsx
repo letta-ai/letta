@@ -75,6 +75,7 @@ function EditMemoryForm(props: EditMemoryFormProps) {
             <VStack fullHeight fullWidth>
               <ReadonlyTextArea
                 showDiff
+                labelBadge={<SharedMemoryIndicator memory={memory} />}
                 label={label}
                 value={value}
                 testId={`edit-memory-block-${label}-content`}
@@ -174,12 +175,14 @@ interface ReadonlyTextAreaProps {
   value: string;
   label: string;
   testId?: string;
+  labelBadge?: React.ReactNode;
   rightOfLabelContent?: React.ReactNode;
   showDiff?: boolean;
 }
 
 function ReadonlyTextArea(props: ReadonlyTextAreaProps) {
-  const { value, label, testId, showDiff, rightOfLabelContent } = props;
+  const { value, label, testId, showDiff, labelBadge, rightOfLabelContent } =
+    props;
 
   const initialState = useRef<string>(value);
 
@@ -197,6 +200,7 @@ function ReadonlyTextArea(props: ReadonlyTextAreaProps) {
     <RawInputContainer
       fullWidth
       fullHeight
+      labelBadge={labelBadge}
       flex
       label={label}
       rightOfLabelContent={rightOfLabelContent}
@@ -247,6 +251,7 @@ function SimulatedMemory() {
           <VStack fullHeight flex>
             <ReadonlyTextArea
               showDiff
+              labelBadge={<SharedMemoryIndicator memory={block} />}
               testId={`simulated-memory:${block.label}`}
               label={block.label || ''}
               value={block.value}
