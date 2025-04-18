@@ -54,8 +54,14 @@ const PublicTemplateDetails = z.object({
 });
 
 const templatesQuery = z.object({
-  limit: z.number().min(1).max(20).optional(),
-  offset: z.number().optional(),
+  offset: z.string().transform(Number).optional(),
+  limit: z
+    .string()
+    .transform(Number)
+    .refine((val) => val > 0 && val < 20, {
+      message: 'Limit must be between 1 and 20',
+    })
+    .optional(),
   name: z.string().optional(),
   projectId: z.string().optional(),
 });

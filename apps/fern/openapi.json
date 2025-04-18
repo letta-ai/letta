@@ -6785,19 +6785,17 @@
         "tags": ["templates"],
         "parameters": [
           {
-            "name": "limit",
-            "in": "query",
-            "schema": {
-              "type": "number",
-              "minimum": 1,
-              "maximum": 20
-            }
-          },
-          {
             "name": "offset",
             "in": "query",
             "schema": {
-              "type": "number"
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "string"
             }
           },
           {
@@ -7073,17 +7071,14 @@
             "name": "offset",
             "in": "query",
             "schema": {
-              "type": "number",
-              "minimum": 0
+              "type": "string"
             }
           },
           {
             "name": "limit",
             "in": "query",
             "schema": {
-              "type": "number",
-              "minimum": 1,
-              "maximum": 20
+              "type": "string"
             }
           }
         ],

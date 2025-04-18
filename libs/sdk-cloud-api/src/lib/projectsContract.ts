@@ -18,8 +18,14 @@ const PublicProjectDetailsResponse = z.object({
 
 const ListProjectsQuery = z.object({
   name: z.string().optional(),
-  offset: z.number().min(0).optional(),
-  limit: z.number().min(1).max(20).optional(),
+  offset: z.string().transform(Number).optional(),
+  limit: z
+    .string()
+    .transform(Number)
+    .refine((val) => val > 0 && val < 20, {
+      message: 'Limit must be between 1 and 20',
+    })
+    .optional(),
 });
 
 const ListProjectsContract = c.query({
