@@ -1,6 +1,7 @@
 from typing import Optional
 
 from letta.agent import Agent
+from letta.constants import CORE_MEMORY_LINE_NUMBER_WARNING
 
 
 def send_message(self: "Agent", message: str) -> Optional[str]:
@@ -219,6 +220,10 @@ def memory_replace(agent_state: "AgentState", label: str, old_str: str, new_str:
         raise ValueError(
             "old_str contains a line number prefix, which is not allowed. Do not include line numbers when calling memory tools (line numbers are for display purposes only)."
         )
+    if CORE_MEMORY_LINE_NUMBER_WARNING in old_str:
+        raise ValueError(
+            "old_str contains a line number warning, which is not allowed. Do not include line number information when calling memory tools (line numbers are for display purposes only)."
+        )
     if bool(re.search(r"\nLine \d+: ", new_str)):
         raise ValueError(
             "new_str contains a line number prefix, which is not allowed. Do not include line numbers when calling memory tools (line numbers are for display purposes only)."
@@ -282,6 +287,10 @@ def memory_insert(agent_state: "AgentState", label: str, new_str: str, insert_li
         raise ValueError(
             "new_str contains a line number prefix, which is not allowed. Do not include line numbers when calling memory tools (line numbers are for display purposes only)."
         )
+    if CORE_MEMORY_LINE_NUMBER_WARNING in new_str:
+        raise ValueError(
+            "new_str contains a line number warning, which is not allowed. Do not include line number information when calling memory tools (line numbers are for display purposes only)."
+        )
 
     current_value = str(agent_state.memory.get_block(label).value).expandtabs()
     new_str = str(new_str).expandtabs()
@@ -339,6 +348,10 @@ def memory_rethink(agent_state: "AgentState", label: str, new_memory: str) -> No
     if bool(re.search(r"\nLine \d+: ", new_memory)):
         raise ValueError(
             "new_memory contains a line number prefix, which is not allowed. Do not include line numbers when calling memory tools (line numbers are for display purposes only)."
+        )
+    if CORE_MEMORY_LINE_NUMBER_WARNING in new_memory:
+        raise ValueError(
+            "new_memory contains a line number warning, which is not allowed. Do not include line number information when calling memory tools (line numbers are for display purposes only)."
         )
 
     if agent_state.memory.get_block(label) is None:
