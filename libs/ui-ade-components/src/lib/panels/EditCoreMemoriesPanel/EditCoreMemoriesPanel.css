@@ -1,12 +1,13 @@
 .hide-label-on-core-memory-size  {
   display: flex;
+  visibility: visible;
 }
 
 .show-label-on-core-memory-size {
   display: none;
+  visibility: hidden;
+  position: absolute;
 }
-
-
 
 .core-memory-panel {
   container-type: inline-size;
@@ -15,9 +16,11 @@
 @container (max-width: 400px) {
   .hide-label-on-core-memory-size {
     display: none;
+    visibility: hidden;
   }
 
   .show-label-on-core-memory-size {
     display: flex;
+    visibility: visible;
   }
 }

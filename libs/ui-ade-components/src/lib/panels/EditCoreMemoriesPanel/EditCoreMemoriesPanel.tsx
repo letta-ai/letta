@@ -38,7 +38,7 @@ import { ApplicationServices } from '@letta-cloud/service-rbac';
 import { useADETour } from '../../hooks/useADETour/useADETour';
 import { SharedMemoryIndicator } from './SharedMemoryIndicator/SharedMemoryIndicator';
 import { useLocalStorage } from '@mantine/hooks';
-import './EditCoreMemoriesPanel.scss';
+import './EditCoreMemoriesPanel.css';
 
 interface AdvancedEditorPayload {
   label: string;
@@ -156,9 +156,9 @@ function DefaultMemory(props: DefaultMemoryProps) {
   return (
     <>
       <AdvancedCoreMemoryEditor />
-      <VStack fullHeight gap="large">
+      <VStack collapseHeight flex gap="large">
         {memories.map((block) => (
-          <VStack fullHeight key={block.label || ''}>
+          <VStack collapseHeight flex key={block.label || ''}>
             <EditMemoryForm
               disabled={isLocked}
               memory={block}
@@ -245,10 +245,10 @@ function SimulatedMemory() {
   }
 
   return (
-    <VStack fullHeight gap="large">
+    <VStack collapseHeight flex gap="large">
       {memories.map((block) => (
-        <VStack fullHeight key={block.label || ''}>
-          <VStack fullHeight flex>
+        <VStack collapseHeight flex key={block.label || ''}>
+          <VStack collapseHeight flex>
             <ReadonlyTextArea
               showDiff
               labelBadge={<SharedMemoryIndicator memory={block} />}
@@ -338,9 +338,20 @@ function AdvancedEditorButton(props: AdvancedEditorButtonProps) {
       >
         <Tooltip asChild content={t('advancedEditorDisabledDueToSimulated')}>
           <Button
+            _use_rarely_className="hide-label-on-core-memory-size"
             preIcon={<MemoryBlocksIcon />}
             color="secondary"
             size="xsmall"
+            bold
+            label={t('advancedEditor')}
+            disabled
+          />
+          <Button
+            _use_rarely_className="show-label-on-core-memory-size"
+            preIcon={<MemoryBlocksIcon />}
+            color="secondary"
+            size="xsmall"
+            hideLabel
             bold
             label={t('advancedEditor')}
             disabled
@@ -520,8 +531,10 @@ export function EditMemory() {
           </VStack>
           <VStack
             paddingTop="small"
-            fullHeight
             fullWidth
+            collapseHeight
+            flex
+            overflow="auto"
             gap="small"
             paddingX="large"
             paddingBottom="small"
