@@ -605,13 +605,23 @@ export default class App {
 
           App.lettaStartupRouting();
 
-          if (!process.env.IGNORE_POSTGRES) {
+          // only start embedded PG if they explicitly opted in
+          const desktopConfig = getDesktopConfig();
+          if (
+            !process.env.IGNORE_POSTGRES &&
+            (!desktopConfig ||
+              desktopConfig?.databaseConfig?.type === 'embedded')
+          ) {
             try {
               await App.startPostgres();
               await App.waitForPostgresReady();
             } catch (err) {
               console.error('[postgres] Failed to start:', err);
             }
+          } else {
+            console.log(
+              '[postgres] Detected external database config type, skipping embedded PG bootup',
+            );
           }
 
           App.startLettaServer();
