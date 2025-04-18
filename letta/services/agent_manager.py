@@ -1,8 +1,10 @@
 from datetime import datetime
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Set, Tuple
 
 import numpy as np
-from sqlalchemy import Select, and_, func, literal, or_, select, union_all
+import sqlalchemy as sa
+from sqlalchemy import Select, and_, func, insert, literal, or_, select, union_all
+from sqlalchemy.dialects.postgresql import insert as pg_insert
 
 from letta.constants import (
     BASE_MEMORY_TOOLS,
@@ -19,13 +21,17 @@ from letta.log import get_logger
 from letta.orm import Agent as AgentModel
 from letta.orm import AgentPassage, AgentsTags
 from letta.orm import Block as BlockModel
+from letta.orm import BlocksAgents
 from letta.orm import Group as GroupModel
+from letta.orm import IdentitiesAgents
 from letta.orm import Identity as IdentityModel
 from letta.orm import Source as SourceModel
 from letta.orm import SourcePassage, SourcesAgents
 from letta.orm import Tool as ToolModel
+from letta.orm import ToolsAgents
 from letta.orm.enums import ToolType
 from letta.orm.errors import NoResultFound
+from letta.orm.sandbox_config import AgentEnvironmentVariable
 from letta.orm.sandbox_config import AgentEnvironmentVariable as AgentEnvironmentVariableModel
 from letta.orm.sqlalchemy_base import AccessType
 from letta.orm.sqlite_functions import adapt_array
@@ -36,16 +42,14 @@ from letta.schemas.block import BlockUpdate
 from letta.schemas.embedding_config import EmbeddingConfig
 from letta.schemas.group import Group as PydanticGroup
 from letta.schemas.group import ManagerType
-from letta.schemas.llm_config import LLMConfig
 from letta.schemas.memory import Memory
+from letta.schemas.message import Message
 from letta.schemas.message import Message as PydanticMessage
 from letta.schemas.message import MessageCreate, MessageUpdate
 from letta.schemas.passage import Passage as PydanticPassage
 from letta.schemas.source import Source as PydanticSource
 from letta.schemas.tool import Tool as PydanticTool
-from letta.schemas.tool_rule import ContinueToolRule as PydanticContinueToolRule
-from letta.schemas.tool_rule import TerminalToolRule as PydanticTerminalToolRule
-from letta.schemas.tool_rule import ToolRule as PydanticToolRule
+from letta.schemas.tool_rule import ContinueToolRule, TerminalToolRule
 from letta.schemas.user import User as PydanticUser
 from letta.serialize_schemas import MarshmallowAgentSchema
 from letta.serialize_schemas.marshmallow_message import SerializedMessageSchema
@@ -77,7 +81,6 @@ from letta.utils import enforce_types, united_diff
 logger = get_logger(__name__)
 
 
-# Agent Manager Class
 class AgentManager:
     """Manager class to handle business logic related to Agents."""
 
@@ -92,124 +95,206 @@ class AgentManager:
         self.passage_manager = PassageManager()
         self.identity_manager = IdentityManager()
 
+    @staticmethod
+    def _resolve_tools(session, names: Set[str], ids: Set[str], org_id: str) -> Tuple[Dict[str, str], Dict[str, str]]:
+        """
+        Bulk‑fetch all ToolModel rows matching either name ∈ names or id ∈ ids
+        (and scoped to this organization), and return two maps:
+          name_to_id, id_to_name.
+        Raises if any requested name or id was not found.
+        """
+        stmt = select(ToolModel.id, ToolModel.name).where(
+            ToolModel.organization_id == org_id,
+            or_(
+                ToolModel.name.in_(names),
+                ToolModel.id.in_(ids),
+            ),
+        )
+        rows = session.execute(stmt).all()
+        name_to_id = {name: tid for tid, name in rows}
+        id_to_name = {tid: name for tid, name in rows}
+
+        missing_names = names - set(name_to_id.keys())
+        missing_ids = ids - set(id_to_name.keys())
+        if missing_names:
+            raise ValueError(f"Tools not found by name: {missing_names}")
+        if missing_ids:
+            raise ValueError(f"Tools not found by id:   {missing_ids}")
+
+        return name_to_id, id_to_name
+
+    @staticmethod
+    @trace_method
+    def _bulk_insert_pivot(session, table, rows: list[dict]):
+        if not rows:
+            return
+
+        dialect = session.bind.dialect.name
+        if dialect == "postgresql":
+            stmt = pg_insert(table).values(rows).on_conflict_do_nothing()
+        elif dialect == "sqlite":
+            stmt = sa.insert(table).values(rows).prefix_with("OR IGNORE")
+        else:
+            # fallback: filter out exact-duplicate dicts in Python
+            seen = set()
+            filtered = []
+            for row in rows:
+                key = tuple(sorted(row.items()))
+                if key not in seen:
+                    seen.add(key)
+                    filtered.append(row)
+            stmt = sa.insert(table).values(filtered)
+
+        session.execute(stmt)
+
     # ======================================================================================================================
     # Basic CRUD operations
     # ======================================================================================================================
     @trace_method
-    @enforce_types
-    def create_agent(
-        self,
-        agent_create: CreateAgent,
-        actor: PydanticUser,
-    ) -> PydanticAgentState:
-        system = derive_system_message(
-            agent_type=agent_create.agent_type,
-            enable_sleeptime=agent_create.enable_sleeptime,
-            system=agent_create.system,
-        )
-
+    def create_agent(self, agent_create: CreateAgent, actor: PydanticUser) -> PydanticAgentState:
+        # validate required configs
         if not agent_create.llm_config or not agent_create.embedding_config:
             raise ValueError("llm_config and embedding_config are required")
 
-        # create blocks (note: cannot be linked into the agent_id is created)
-        block_ids = list(agent_create.block_ids or [])  # Create a local copy to avoid modifying the original
+        # blocks
+        block_ids = list(agent_create.block_ids or [])
         if agent_create.memory_blocks:
-            for create_block in agent_create.memory_blocks:
-                block = self.block_manager.create_or_update_block(PydanticBlock(**create_block.model_dump(to_orm=True)), actor=actor)
-                block_ids.append(block.id)
-
-        # add passed in `tools`
-        tool_names = agent_create.tools or []
-
-        # add base tools
-        if agent_create.include_base_tools:
-            if agent_create.agent_type == AgentType.sleeptime_agent:
-                tool_names.extend(BASE_SLEEPTIME_TOOLS)
-            else:
-                if agent_create.enable_sleeptime:
-                    tool_names.extend(BASE_SLEEPTIME_CHAT_TOOLS)
-                else:
-                    tool_names.extend(BASE_TOOLS + BASE_MEMORY_TOOLS)
-        if agent_create.include_multi_agent_tools:
-            tool_names.extend(MULTI_AGENT_TOOLS)
-
-        # remove duplicates
-        tool_names = list(set(tool_names))
-
-        # convert tool names to ids
-        tool_ids = []
-        for tool_name in tool_names:
-            tool = self.tool_manager.get_tool_by_name(tool_name=tool_name, actor=actor)
-            if not tool:
-                raise ValueError(f"Tool {tool_name} not found")
-            tool_ids.append(tool.id)
-
-        # add passed in `tool_ids`
-        for tool_id in agent_create.tool_ids or []:
-            if tool_id not in tool_ids:
-                tool = self.tool_manager.get_tool_by_id(tool_id=tool_id, actor=actor)
-                if tool:
-                    tool_ids.append(tool.id)
-                    tool_names.append(tool.name)
-                else:
-                    raise ValueError(f"Tool {tool_id} not found")
-
-        # add default tool rules
-        tool_rules = agent_create.tool_rules or []
-        if agent_create.include_base_tool_rules:
-            # apply default tool rules
-            for tool_name in tool_names:
-                if tool_name == "send_message" or tool_name == "send_message_to_agent_async" or tool_name == "memory_finish_edits":
-                    tool_rules.append(PydanticTerminalToolRule(tool_name=tool_name))
-                elif tool_name in BASE_TOOLS + BASE_MEMORY_TOOLS + BASE_SLEEPTIME_TOOLS:
-                    tool_rules.append(PydanticContinueToolRule(tool_name=tool_name))
-
-        # if custom rules, check tool rules are valid
-        if agent_create.tool_rules:
-            check_supports_structured_output(model=agent_create.llm_config.model, tool_rules=agent_create.tool_rules)
-
-        # Create the agent
-        agent_state = self._create_agent(
-            name=agent_create.name,
-            system=system,
-            agent_type=agent_create.agent_type,
-            llm_config=agent_create.llm_config,
-            embedding_config=agent_create.embedding_config,
-            block_ids=block_ids,
-            tool_ids=tool_ids,
-            source_ids=agent_create.source_ids or [],
-            tags=agent_create.tags or [],
-            identity_ids=agent_create.identity_ids or [],
-            description=agent_create.description,
-            metadata=agent_create.metadata,
-            tool_rules=tool_rules,
-            actor=actor,
-            project_id=agent_create.project_id,
-            template_id=agent_create.template_id,
-            base_template_id=agent_create.base_template_id,
-            message_buffer_autoclear=agent_create.message_buffer_autoclear,
-            enable_sleeptime=agent_create.enable_sleeptime,
-        )
-
-        # If there are provided environment variables, add them in
-        if agent_create.tool_exec_environment_variables:
-            agent_state = self._set_environment_variables(
-                agent_id=agent_state.id,
-                env_vars=agent_create.tool_exec_environment_variables,
+            pydantic_blocks = [PydanticBlock(**b.model_dump(to_orm=True)) for b in agent_create.memory_blocks]
+            created_blocks = self.block_manager.batch_create_blocks(
+                pydantic_blocks,
                 actor=actor,
             )
+            block_ids.extend([blk.id for blk in created_blocks])
 
-        return self.append_initial_message_sequence_to_in_context_messages(actor, agent_state, agent_create.initial_message_sequence)
+        # tools
+        tool_names = set(agent_create.tools or [])
+        if agent_create.include_base_tools:
+            if agent_create.agent_type == AgentType.sleeptime_agent:
+                tool_names |= set(BASE_SLEEPTIME_TOOLS)
+            elif agent_create.enable_sleeptime:
+                tool_names |= set(BASE_SLEEPTIME_CHAT_TOOLS)
+            else:
+                tool_names |= set(BASE_TOOLS + BASE_MEMORY_TOOLS)
+        if agent_create.include_multi_agent_tools:
+            tool_names |= set(MULTI_AGENT_TOOLS)
+
+        supplied_ids = set(agent_create.tool_ids or [])
+
+        source_ids = agent_create.source_ids or []
+        identity_ids = agent_create.identity_ids or []
+        tag_values = agent_create.tags or []
+
+        with self.session_maker() as session:
+            with session.begin():
+                name_to_id, id_to_name = self._resolve_tools(
+                    session,
+                    tool_names,
+                    supplied_ids,
+                    actor.organization_id,
+                )
+
+                tool_ids = set(name_to_id.values()) | set(id_to_name.keys())
+                tool_names = set(name_to_id.keys())  # now canonical
+
+                tool_rules = list(agent_create.tool_rules or [])
+                if agent_create.include_base_tool_rules:
+                    for tn in tool_names:
+                        if tn in {"send_message", "send_message_to_agent_async", "memory_finish_edits"}:
+                            tool_rules.append(TerminalToolRule(tool_name=tn))
+                        elif tn in (BASE_TOOLS + BASE_MEMORY_TOOLS + BASE_SLEEPTIME_TOOLS):
+                            tool_rules.append(ContinueToolRule(tool_name=tn))
+
+                if tool_rules:
+                    check_supports_structured_output(model=agent_create.llm_config.model, tool_rules=tool_rules)
+
+                new_agent = AgentModel(
+                    name=agent_create.name,
+                    system=derive_system_message(
+                        agent_type=agent_create.agent_type,
+                        enable_sleeptime=agent_create.enable_sleeptime,
+                        system=agent_create.system,
+                    ),
+                    agent_type=agent_create.agent_type,
+                    llm_config=agent_create.llm_config,
+                    embedding_config=agent_create.embedding_config,
+                    organization_id=actor.organization_id,
+                    description=agent_create.description,
+                    metadata_=agent_create.metadata,
+                    tool_rules=tool_rules,
+                    project_id=agent_create.project_id,
+                    template_id=agent_create.template_id,
+                    base_template_id=agent_create.base_template_id,
+                    message_buffer_autoclear=agent_create.message_buffer_autoclear,
+                    enable_sleeptime=agent_create.enable_sleeptime,
+                    created_by_id=actor.id,
+                    last_updated_by_id=actor.id,
+                )
+                session.add(new_agent)
+                session.flush()
+                aid = new_agent.id
+
+                self._bulk_insert_pivot(
+                    session,
+                    ToolsAgents.__table__,
+                    [{"agent_id": aid, "tool_id": tid} for tid in tool_ids],
+                )
+
+                if block_ids:
+                    rows = [
+                        {"agent_id": aid, "block_id": bid, "block_label": lbl}
+                        for bid, lbl in session.execute(select(BlockModel.id, BlockModel.label).where(BlockModel.id.in_(block_ids))).all()
+                    ]
+                    self._bulk_insert_pivot(session, BlocksAgents.__table__, rows)
+
+                self._bulk_insert_pivot(
+                    session,
+                    SourcesAgents.__table__,
+                    [{"agent_id": aid, "source_id": sid} for sid in source_ids],
+                )
+                self._bulk_insert_pivot(
+                    session,
+                    AgentsTags.__table__,
+                    [{"agent_id": aid, "tag": tag} for tag in tag_values],
+                )
+                self._bulk_insert_pivot(
+                    session,
+                    IdentitiesAgents.__table__,
+                    [{"agent_id": aid, "identity_id": iid} for iid in identity_ids],
+                )
+
+                if agent_create.tool_exec_environment_variables:
+                    env_rows = [
+                        {
+                            "agent_id": aid,
+                            "key": key,
+                            "value": val,
+                            "organization_id": actor.organization_id,
+                        }
+                        for key, val in agent_create.tool_exec_environment_variables.items()
+                    ]
+                    session.execute(insert(AgentEnvironmentVariable).values(env_rows))
+
+                # initial message sequence
+                init_messages = self._generate_initial_message_sequence(
+                    actor,
+                    agent_state=new_agent.to_pydantic(include_relationships={"memory"}),
+                    supplied_initial_message_sequence=agent_create.initial_message_sequence,
+                )
+                new_agent.message_ids = [msg.id for msg in init_messages]
+
+            session.refresh(new_agent)
+
+        self.message_manager.create_many_messages(pydantic_msgs=init_messages, actor=actor)
+        return new_agent.to_pydantic()
 
     @enforce_types
-    def append_initial_message_sequence_to_in_context_messages(
-        self, actor: PydanticUser, agent_state: PydanticAgentState, initial_message_sequence: Optional[List[MessageCreate]] = None
-    ) -> PydanticAgentState:
+    def _generate_initial_message_sequence(
+        self, actor: PydanticUser, agent_state: PydanticAgentState, supplied_initial_message_sequence: Optional[List[MessageCreate]] = None
+    ) -> List[Message]:
         init_messages = initialize_message_sequence(
             agent_state=agent_state, memory_edit_timestamp=get_utc_time(), include_initial_boot_message=True
         )
-
-        if initial_message_sequence is not None:
+        if supplied_initial_message_sequence is not None:
             # We always need the system prompt up front
             system_message_obj = PydanticMessage.dict_to_message(
                 agent_id=agent_state.id,
@@ -219,7 +304,7 @@ class AgentManager:
             # Don't use anything else in the pregen sequence, instead use the provided sequence
             init_messages = [system_message_obj]
             init_messages.extend(
-                package_initial_message_sequence(agent_state.id, initial_message_sequence, agent_state.llm_config.model, actor)
+                package_initial_message_sequence(agent_state.id, supplied_initial_message_sequence, agent_state.llm_config.model, actor)
             )
         else:
             init_messages = [
@@ -227,63 +312,14 @@ class AgentManager:
                 for msg in init_messages
             ]
 
-        return self.append_to_in_context_messages(init_messages, agent_id=agent_state.id, actor=actor)
+        return init_messages
 
     @enforce_types
-    def _create_agent(
-        self,
-        actor: PydanticUser,
-        name: str,
-        system: str,
-        agent_type: AgentType,
-        llm_config: LLMConfig,
-        embedding_config: EmbeddingConfig,
-        block_ids: List[str],
-        tool_ids: List[str],
-        source_ids: List[str],
-        tags: List[str],
-        identity_ids: List[str],
-        description: Optional[str] = None,
-        metadata: Optional[Dict] = None,
-        tool_rules: Optional[List[PydanticToolRule]] = None,
-        project_id: Optional[str] = None,
-        template_id: Optional[str] = None,
-        base_template_id: Optional[str] = None,
-        message_buffer_autoclear: bool = False,
-        enable_sleeptime: Optional[bool] = None,
+    def append_initial_message_sequence_to_in_context_messages(
+        self, actor: PydanticUser, agent_state: PydanticAgentState, initial_message_sequence: Optional[List[MessageCreate]] = None
     ) -> PydanticAgentState:
-        """Create a new agent."""
-        with self.session_maker() as session:
-            # Prepare the agent data
-            data = {
-                "name": name,
-                "system": system,
-                "agent_type": agent_type,
-                "llm_config": llm_config,
-                "embedding_config": embedding_config,
-                "organization_id": actor.organization_id,
-                "description": description,
-                "metadata_": metadata,
-                "tool_rules": tool_rules,
-                "project_id": project_id,
-                "template_id": template_id,
-                "base_template_id": base_template_id,
-                "message_buffer_autoclear": message_buffer_autoclear,
-                "enable_sleeptime": enable_sleeptime,
-            }
-
-            # Create the new agent using SqlalchemyBase.create
-            new_agent = AgentModel(**data)
-            _process_relationship(session, new_agent, "tools", ToolModel, tool_ids, replace=True)
-            _process_relationship(session, new_agent, "sources", SourceModel, source_ids, replace=True)
-            _process_relationship(session, new_agent, "core_memory", BlockModel, block_ids, replace=True)
-            _process_tags(new_agent, tags, replace=True)
-            _process_relationship(session, new_agent, "identities", IdentityModel, identity_ids, replace=True)
-
-            new_agent.create(session, actor=actor)
-
-            # Convert to PydanticAgentState and return
-            return new_agent.to_pydantic()
+        init_messages = self._generate_initial_message_sequence(actor, agent_state, initial_message_sequence)
+        return self.append_to_in_context_messages(init_messages, agent_id=agent_state.id, actor=actor)
 
     @enforce_types
     def update_agent(self, agent_id: str, agent_update: UpdateAgent, actor: PydanticUser) -> PydanticAgentState:
