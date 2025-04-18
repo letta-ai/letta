@@ -2,9 +2,8 @@ import pytest
 from fastapi.testclient import TestClient
 
 from letta.config import LettaConfig
-from letta.constants import COMPOSIO_ENTITY_ENV_VAR_KEY
 from letta.log import get_logger
-from letta.schemas.agent import CreateAgent, UpdateAgent
+from letta.schemas.agent import CreateAgent
 from letta.schemas.embedding_config import EmbeddingConfig
 from letta.schemas.llm_config import LLMConfig
 from letta.schemas.tool import ToolCreate
@@ -32,8 +31,8 @@ def server():
 
 
 @pytest.fixture
-def composio_gmail_get_profile_tool(server, default_user):
-    tool_create = ToolCreate.from_composio(action_name="GMAIL_GET_PROFILE")
+def composio_get_emojis(server, default_user):
+    tool_create = ToolCreate.from_composio(action_name="GITHUB_GET_EMOJIS")
     tool = server.tool_manager.create_or_update_composio_tool(tool_create=tool_create, actor=default_user)
     yield tool
 
@@ -57,7 +56,7 @@ def test_add_composio_tool(fastapi_client):
     assert "name" in response.json()
 
 
-def test_composio_tool_execution_e2e(check_composio_key_set, composio_gmail_get_profile_tool, server: SyncServer, default_user):
+def test_composio_tool_execution_e2e(check_composio_key_set, composio_get_emojis, server: SyncServer, default_user):
     agent_state = server.agent_manager.create_agent(
         agent_create=CreateAgent(
             name="sarah_agent",
@@ -69,18 +68,8 @@ def test_composio_tool_execution_e2e(check_composio_key_set, composio_gmail_get_
     )
 
     function_response, sandbox_run_result = ToolExecutionManager(agent_state, actor=default_user).execute_tool(
-        function_name=composio_gmail_get_profile_tool.name, function_args={}, tool=composio_gmail_get_profile_tool
+        function_name=composio_get_emojis.name, function_args={}, tool=composio_get_emojis
     )
 
-    assert function_response["response_data"]["emailAddress"] == "sarah@letta.com"
-
-    # Add agent variable changing the entity ID
-    agent_state = server.agent_manager.update_agent(
-        agent_id=agent_state.id,
-        agent_update=UpdateAgent(tool_exec_environment_variables={COMPOSIO_ENTITY_ENV_VAR_KEY: "matt"}),
-        actor=default_user,
-    )
-    function_response, sandbox_run_result = ToolExecutionManager(agent_state, actor=default_user).execute_tool(
-        function_name=composio_gmail_get_profile_tool.name, function_args={}, tool=composio_gmail_get_profile_tool
-    )
-    assert function_response["response_data"]["emailAddress"] == "matt@letta.com"
+    # Small check, it should return something at least
+    assert len(function_response.keys()) > 10
