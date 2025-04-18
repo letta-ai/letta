@@ -37,7 +37,7 @@ paths:
     post:
       x-fern-sdk-group-name:
         - tools
-      x-fern-sdk-method-name: add_base_tool
+      x-fern-sdk-method-name: upsert_base_tools
   /v1/sources/{source_id}:
     get:
       x-fern-sdk-group-name:
@@ -55,7 +55,7 @@ paths:
     get:
       x-fern-sdk-group-name:
         - sources
-      x-fern-sdk-method-name: getByName
+      x-fern-sdk-method-name: retrieve_by_name
   /v1/sources/:
     get:
       x-fern-sdk-group-name:
@@ -287,6 +287,22 @@ paths:
           schema:
             type: string
   /v1/agents/{agent_id}/archival-memory/{memory_id}:
+    patch:
+      x-fern-sdk-group-name:
+        - agents
+        - passages
+      x-fern-sdk-method-name: modify
+      parameters:
+        - name: agent_id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: memory_id
+          in: path
+          required: true
+          schema:
+            type: string
     delete:
       x-fern-sdk-group-name:
         - agents
@@ -299,6 +315,18 @@ paths:
           schema:
             type: string
         - name: memory_id
+          in: path
+          required: true
+          schema:
+            type: string
+  /v1/agents/{agent_id}/reset-messages:
+    patch:
+      x-fern-sdk-group-name:
+        - agents
+        - messages
+      x-fern-sdk-method-name: reset
+      parameters:
+        - name: agent_id
           in: path
           required: true
           schema:
@@ -428,16 +456,44 @@ paths:
           required: true
           schema:
             type: string
+  /v1/agents/import:
+    post:
+      x-fern-sdk-group-name:
+        - agents
+      x-fern-sdk-method-name: import
+  /v1/agents/{agent_id}/export:
+    post:
+      x-fern-sdk-group-name:
+        - agents
+      x-fern-sdk-method-name: export
+      parameters:
+        - name: agent_id
+          in: path
+          required: true
+          schema:
+            type: string
+  /v1/agents/{agent_id}/groups:
+    get:
+      x-fern-sdk-group-name:
+        - agents
+        - groups
+      x-fern-sdk-method-name: list
+      parameters:
+        - name: agent_id
+          in: path
+          required: true
+          schema:
+            type: string
   /v1/models/:
     get:
       x-fern-sdk-group-name:
         - models
-      x-fern-sdk-method-name: list_llms
+      x-fern-sdk-method-name: list
   /v1/models/embedding:
     get:
       x-fern-sdk-group-name:
-        - models
-      x-fern-sdk-method-name: list_embedding_models
+        - embeddings
+      x-fern-sdk-method-name: list
   /v1/blocks/:
     get:
       x-fern-sdk-group-name:
@@ -460,6 +516,12 @@ paths:
       x-fern-sdk-group-name:
         - blocks
       x-fern-sdk-method-name: modify
+  /v1/blocks/{block_id}/agents:
+    get:
+      x-fern-sdk-group-name:
+        - blocks
+        - agents
+      x-fern-sdk-method-name: list
   /v1/jobs/:
     get:
       x-fern-sdk-group-name:
@@ -479,6 +541,43 @@ paths:
       x-fern-sdk-group-name:
         - jobs
       x-fern-sdk-method-name: delete
+  /v1/runs:
+    get:
+      x-fern-sdk-group-name:
+        - runs
+      x-fern-sdk-method-name: list
+  /v1/runs/active:
+    get:
+      x-fern-sdk-group-name:
+        - runs
+      x-fern-sdk-method-name: list_active
+  /v1/runs/{run_id}:
+    get:
+      x-fern-sdk-group-name:
+        - runs
+      x-fern-sdk-method-name: retrieve
+    delete:
+      x-fern-sdk-group-name:
+        - runs
+      x-fern-sdk-method-name: delete
+  /v1/runs/{run_id}/messages:
+    get:
+      x-fern-sdk-group-name:
+        - runs
+        - messages
+      x-fern-sdk-method-name: list
+  /v1/runs/{run_id}/usage:
+    get:
+      x-fern-sdk-group-name:
+        - runs
+        - usage
+      x-fern-sdk-method-name: retrieve
+  /v1/runs/{run_id}/steps:
+    get:
+      x-fern-sdk-group-name:
+        - runs
+        - steps
+      x-fern-sdk-method-name: list
   /v1/health/:
     get:
       x-fern-sdk-group-name:
@@ -488,7 +587,41 @@ paths:
     post:
       x-fern-sdk-group-name:
         - templates
-      x-fern-sdk-method-name: create_agents
+        - agents
+      x-fern-sdk-method-name: create
+  /v1/tags:
+    get:
+      x-fern-sdk-group-name:
+        - tags
+      x-fern-sdk-method-name: list
+  /v1/providers/:
+    get:
+      x-fern-sdk-group-name:
+        - providers
+      x-fern-sdk-method-name: list
+    post:
+      x-fern-sdk-group-name:
+        - providers
+      x-fern-sdk-method-name: create
+  /v1/providers/{provider_id}:
+    delete:
+      x-fern-sdk-group-name:
+        - providers
+      x-fern-sdk-method-name: delete
+    patch:
+      x-fern-sdk-group-name:
+        - providers
+      x-fern-sdk-method-name: modify
+  /v1/steps/:
+    get:
+      x-fern-sdk-group-name:
+        - steps
+      x-fern-sdk-method-name: list
+  /v1/steps/{step_id}:
+    get:
+      x-fern-sdk-group-name:
+        - steps
+      x-fern-sdk-method-name: retrieve
   /v1/identities/:
     get:
       x-fern-sdk-group-name:
@@ -515,6 +648,12 @@ paths:
       x-fern-sdk-group-name:
         - identities
       x-fern-sdk-method-name: delete
+  /v1/identities/{identity_id}/properties:
+    put:
+      x-fern-sdk-group-name:
+        - identities
+        - properties
+      x-fern-sdk-method-name: upsert
   /v1/groups/:
     get:
       x-fern-sdk-group-name:
@@ -541,7 +680,14 @@ paths:
     patch:
       x-fern-sdk-group-name:
         - groups
-      x-fern-sdk-method-name: reset_messages
+        - messages
+      x-fern-sdk-method-name: reset
+      parameters:
+        - name: group_id
+          in: path
+          required: true
+          schema:
+            type: string
   /v1/groups/{group_id}/messages:
     get:
       x-fern-sdk-group-name:
@@ -584,22 +730,18 @@ paths:
   /v1/messages/batches:
     post:
       x-fern-sdk-group-name:
-        - messages
         - batches
       x-fern-sdk-method-name: create
     get:
       x-fern-sdk-group-name:
-        - messages
         - batches
       x-fern-sdk-method-name: list
   /v1/messages/batches/{batch_id}:
     get:
       x-fern-sdk-group-name:
-        - messages
         - batches
       x-fern-sdk-method-name: retrieve
     patch:
       x-fern-sdk-group-name:
-        - messages
         - batches
       x-fern-sdk-method-name: cancel
