@@ -53,6 +53,7 @@ async def create_messages_batch(
             metadata={
                 "job_type": "batch_messages",
             },
+            callback_url=str(payload.callback_url),
         )
 
         # create the batch runner

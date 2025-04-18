@@ -1330,6 +1330,43 @@ export const $BatchJob = {
       $ref: '#/components/schemas/JobType',
       default: 'batch',
     },
+    callback_url: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Callback Url',
+      description: 'If set, POST to this URL when the job completes.',
+    },
+    callback_sent_at: {
+      anyOf: [
+        {
+          type: 'string',
+          format: 'date-time',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Callback Sent At',
+      description: 'Timestamp when the callback was last attempted.',
+    },
+    callback_status_code: {
+      anyOf: [
+        {
+          type: 'integer',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Callback Status Code',
+      description: 'HTTP status code returned by the callback endpoint.',
+    },
     id: {
       type: 'string',
       pattern: '^(job|run)-[a-fA-F0-9]{8}',
@@ -1687,7 +1724,7 @@ export const $ChatCompletionAudioParam = {
   properties: {
     format: {
       type: 'string',
-      enum: ['wav', 'mp3', 'flac', 'opus', 'pcm16'],
+      enum: ['wav', 'aac', 'mp3', 'flac', 'opus', 'pcm16'],
       title: 'Format',
     },
     voice: {
@@ -2163,6 +2200,16 @@ export const $CompletionCreateParamsNonStreaming = {
         {
           type: 'string',
           enum: [
+            'gpt-4.1',
+            'gpt-4.1-mini',
+            'gpt-4.1-nano',
+            'gpt-4.1-2025-04-14',
+            'gpt-4.1-mini-2025-04-14',
+            'gpt-4.1-nano-2025-04-14',
+            'o4-mini',
+            'o4-mini-2025-04-16',
+            'o3',
+            'o3-2025-04-16',
             'o3-mini',
             'o3-mini-2025-01-31',
             'o1',
@@ -2404,7 +2451,7 @@ export const $CompletionCreateParamsNonStreaming = {
       anyOf: [
         {
           type: 'string',
-          enum: ['auto', 'default'],
+          enum: ['auto', 'default', 'flex'],
         },
         {
           type: 'null',
@@ -2563,6 +2610,16 @@ export const $CompletionCreateParamsStreaming = {
         {
           type: 'string',
           enum: [
+            'gpt-4.1',
+            'gpt-4.1-mini',
+            'gpt-4.1-nano',
+            'gpt-4.1-2025-04-14',
+            'gpt-4.1-mini-2025-04-14',
+            'gpt-4.1-nano-2025-04-14',
+            'o4-mini',
+            'o4-mini-2025-04-16',
+            'o3',
+            'o3-2025-04-16',
             'o3-mini',
             'o3-mini-2025-01-31',
             'o1',
@@ -2804,7 +2861,7 @@ export const $CompletionCreateParamsStreaming = {
       anyOf: [
         {
           type: 'string',
-          enum: ['auto', 'default'],
+          enum: ['auto', 'default', 'flex'],
         },
         {
           type: 'null',
@@ -3759,6 +3816,21 @@ export const $CreateBatch = {
       type: 'array',
       title: 'Requests',
       description: 'List of requests to be processed in batch.',
+    },
+    callback_url: {
+      anyOf: [
+        {
+          type: 'string',
+          maxLength: 2083,
+          minLength: 1,
+          format: 'uri',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Callback Url',
+      description: 'Optional URL to call via POST when the batch completes.',
     },
   },
   type: 'object',
@@ -5333,6 +5405,43 @@ export const $Job = {
       $ref: '#/components/schemas/JobType',
       description: 'The type of the job.',
       default: 'job',
+    },
+    callback_url: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Callback Url',
+      description: 'If set, POST to this URL when the job completes.',
+    },
+    callback_sent_at: {
+      anyOf: [
+        {
+          type: 'string',
+          format: 'date-time',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Callback Sent At',
+      description: 'Timestamp when the callback was last attempted.',
+    },
+    callback_status_code: {
+      anyOf: [
+        {
+          type: 'integer',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Callback Status Code',
+      description: 'HTTP status code returned by the callback endpoint.',
     },
     id: {
       type: 'string',
@@ -7404,6 +7513,43 @@ export const $Run = {
     job_type: {
       $ref: '#/components/schemas/JobType',
       default: 'run',
+    },
+    callback_url: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Callback Url',
+      description: 'If set, POST to this URL when the job completes.',
+    },
+    callback_sent_at: {
+      anyOf: [
+        {
+          type: 'string',
+          format: 'date-time',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Callback Sent At',
+      description: 'Timestamp when the callback was last attempted.',
+    },
+    callback_status_code: {
+      anyOf: [
+        {
+          type: 'integer',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Callback Status Code',
+      description: 'HTTP status code returned by the callback endpoint.',
     },
     id: {
       type: 'string',

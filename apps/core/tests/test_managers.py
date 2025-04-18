@@ -5,6 +5,7 @@ import time
 from datetime import datetime, timedelta, timezone
 from typing import List
 
+import httpx
 import pytest
 from anthropic.types.beta import BetaMessage
 from anthropic.types.beta.messages import BetaMessageBatchIndividualResponse, BetaMessageBatchSucceededResult
@@ -4202,6 +4203,40 @@ def test_list_jobs_filter_by_type(server: SyncServer, default_user, default_job)
     jobs = server.job_manager.list_jobs(actor=default_user, job_type=JobType.RUN)
     assert len(jobs) == 1
     assert jobs[0].id == run.id
+
+
+def test_e2e_job_callback(monkeypatch, server: SyncServer, default_user):
+    captured = {}
+
+    def fake_post(url, json, timeout):
+        captured["url"] = url
+        captured["json"] = json
+
+        class FakeResponse:
+            status_code = 202
+
+        return FakeResponse()
+
+    monkeypatch.setattr(httpx, "post", fake_post)
+
+    job_in = PydanticJob(status=JobStatus.created, metadata={"foo": "bar"}, callback_url="http://example.test/webhook/jobs")
+    created = server.job_manager.create_job(job_in, actor=default_user)
+    assert created.callback_url == "http://example.test/webhook/jobs"
+
+    update = JobUpdate(status=JobStatus.completed)
+    updated = server.job_manager.update_job_by_id(created.id, update, actor=default_user)
+
+    assert captured["url"] == created.callback_url
+    assert captured["json"]["job_id"] == created.id
+    assert captured["json"]["status"] == JobStatus.completed.value
+
+    # Normalize the received completed_at to compare properly
+    actual_dt = datetime.fromisoformat(captured["json"]["completed_at"]).replace(tzinfo=None)
+    expected_dt = updated.completed_at.replace(tzinfo=None)
+    assert actual_dt == expected_dt
+
+    assert isinstance(updated.callback_sent_at, datetime)
+    assert updated.callback_status_code == 202
 
 
 # ======================================================================================================================

@@ -2,11 +2,14 @@ import asyncio
 import datetime
 from typing import List
 
+from letta.agents.letta_agent_batch import LettaAgentBatch
 from letta.jobs.helpers import map_anthropic_batch_job_status_to_job_status, map_anthropic_individual_batch_item_status_to_job_status
 from letta.jobs.types import BatchPollingResult, ItemUpdateInfo
 from letta.log import get_logger
 from letta.schemas.enums import JobStatus, ProviderType
+from letta.schemas.letta_response import LettaBatchResponse
 from letta.schemas.llm_batch_job import LLMBatchJob
+from letta.schemas.user import User
 from letta.server.server import SyncServer
 
 logger = get_logger(__name__)
@@ -156,7 +159,7 @@ async def process_completed_batches(
     return item_updates
 
 
-async def poll_running_llm_batches(server: "SyncServer") -> None:
+async def poll_running_llm_batches(server: "SyncServer") -> List[LettaBatchResponse]:
     """
     Cron job to poll all running LLM batch jobs and update their polling responses in bulk.
 
@@ -194,6 +197,32 @@ async def poll_running_llm_batches(server: "SyncServer") -> None:
         if item_updates:
             metrics.updated_items_count = len(item_updates)
             server.batch_manager.bulk_update_batch_llm_items_results_by_agent(item_updates)
+
+            # ─── Kick off post‑processing for each batch that just completed ───
+            completed = [r for r in batch_results if r.request_status == JobStatus.completed]
+
+            async def _resume(batch_row: LLMBatchJob) -> LettaBatchResponse:
+                actor: User = server.user_manager.get_user_by_id(batch_row.created_by_id)
+                runner = LettaAgentBatch(
+                    message_manager=server.message_manager,
+                    agent_manager=server.agent_manager,
+                    block_manager=server.block_manager,
+                    passage_manager=server.passage_manager,
+                    batch_manager=server.batch_manager,
+                    sandbox_config_manager=server.sandbox_config_manager,
+                    job_manager=server.job_manager,
+                    actor=actor,
+                )
+                return await runner.resume_step_after_request(
+                    letta_batch_id=batch_row.letta_batch_job_id,
+                    llm_batch_id=batch_row.id,
+                )
+
+            # launch them all at once
+            tasks = [_resume(server.batch_manager.get_llm_batch_job_by_id(bid)) for bid, *_ in completed]
+            new_batch_responses = await asyncio.gather(*tasks, return_exceptions=True)
+
+            return new_batch_responses
         else:
             logger.info("[Poll BatchJob] No item-level updates needed.")
 

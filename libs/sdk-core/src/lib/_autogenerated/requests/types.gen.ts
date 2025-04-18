@@ -424,6 +424,18 @@ export type BatchJob = {
   } | null;
   job_type?: JobType;
   /**
+   * If set, POST to this URL when the job completes.
+   */
+  callback_url?: string | null;
+  /**
+   * Timestamp when the callback was last attempted.
+   */
+  callback_sent_at?: string | null;
+  /**
+   * HTTP status code returned by the callback endpoint.
+   */
+  callback_status_code?: number | null;
+  /**
    * The human-friendly ID of the Job
    */
   id?: string;
@@ -557,7 +569,7 @@ export type ChatCompletionAssistantMessageParam = {
 };
 
 export type ChatCompletionAudioParam = {
-  format: 'wav' | 'mp3' | 'flac' | 'opus' | 'pcm16';
+  format: 'wav' | 'aac' | 'mp3' | 'flac' | 'opus' | 'pcm16';
   voice:
     | string
     | 'alloy'
@@ -573,7 +585,7 @@ export type ChatCompletionAudioParam = {
     | 'verse';
 };
 
-export type format = 'wav' | 'mp3' | 'flac' | 'opus' | 'pcm16';
+export type format = 'wav' | 'aac' | 'mp3' | 'flac' | 'opus' | 'pcm16';
 
 export type ChatCompletionContentPartImageParam = {
   image_url: ImageURL;
@@ -700,6 +712,16 @@ export type CompletionCreateParamsNonStreaming = {
   >;
   model:
     | string
+    | 'gpt-4.1'
+    | 'gpt-4.1-mini'
+    | 'gpt-4.1-nano'
+    | 'gpt-4.1-2025-04-14'
+    | 'gpt-4.1-mini-2025-04-14'
+    | 'gpt-4.1-nano-2025-04-14'
+    | 'o4-mini'
+    | 'o4-mini-2025-04-16'
+    | 'o3'
+    | 'o3-2025-04-16'
     | 'o3-mini'
     | 'o3-mini-2025-01-31'
     | 'o1'
@@ -767,7 +789,7 @@ export type CompletionCreateParamsNonStreaming = {
     | ResponseFormatJSONSchema
     | ResponseFormatJSONObject;
   seed?: number | null;
-  service_tier?: 'auto' | 'default' | null;
+  service_tier?: 'auto' | 'default' | 'flex' | null;
   stop?: string | Array<string> | null;
   store?: boolean | null;
   stream_options?: ChatCompletionStreamOptionsParam | null;
@@ -796,6 +818,16 @@ export type CompletionCreateParamsStreaming = {
   >;
   model:
     | string
+    | 'gpt-4.1'
+    | 'gpt-4.1-mini'
+    | 'gpt-4.1-nano'
+    | 'gpt-4.1-2025-04-14'
+    | 'gpt-4.1-mini-2025-04-14'
+    | 'gpt-4.1-nano-2025-04-14'
+    | 'o4-mini'
+    | 'o4-mini-2025-04-16'
+    | 'o3'
+    | 'o3-2025-04-16'
     | 'o3-mini'
     | 'o3-mini-2025-01-31'
     | 'o1'
@@ -863,7 +895,7 @@ export type CompletionCreateParamsStreaming = {
     | ResponseFormatJSONSchema
     | ResponseFormatJSONObject;
   seed?: number | null;
-  service_tier?: 'auto' | 'default' | null;
+  service_tier?: 'auto' | 'default' | 'flex' | null;
   stop?: string | Array<string> | null;
   store?: boolean | null;
   stream_options?: ChatCompletionStreamOptionsParam | null;
@@ -1193,6 +1225,10 @@ export type CreateBatch = {
    * List of requests to be processed in batch.
    */
   requests: Array<LettaBatchRequest>;
+  /**
+   * Optional URL to call via POST when the batch completes.
+   */
+  callback_url?: string | null;
 };
 
 /**
@@ -1774,6 +1810,18 @@ export type Job = {
    * The type of the job.
    */
   job_type?: JobType;
+  /**
+   * If set, POST to this URL when the job completes.
+   */
+  callback_url?: string | null;
+  /**
+   * Timestamp when the callback was last attempted.
+   */
+  callback_sent_at?: string | null;
+  /**
+   * HTTP status code returned by the callback endpoint.
+   */
+  callback_status_code?: number | null;
   /**
    * The human-friendly ID of the Job
    */
@@ -2662,6 +2710,18 @@ export type Run = {
     [key: string]: unknown;
   } | null;
   job_type?: JobType;
+  /**
+   * If set, POST to this URL when the job completes.
+   */
+  callback_url?: string | null;
+  /**
+   * Timestamp when the callback was last attempted.
+   */
+  callback_sent_at?: string | null;
+  /**
+   * HTTP status code returned by the callback endpoint.
+   */
+  callback_status_code?: number | null;
   /**
    * The human-friendly ID of the Run
    */

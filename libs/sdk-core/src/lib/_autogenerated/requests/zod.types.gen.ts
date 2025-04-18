@@ -1308,6 +1308,15 @@ export const BatchJob = z.object({
     .union([z.unknown(), z.null(), z.array(z.union([z.unknown(), z.null()]))])
     .optional(),
   job_type: JobType.optional(),
+  callback_url: z
+    .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+    .optional(),
+  callback_sent_at: z
+    .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+    .optional(),
+  callback_status_code: z
+    .union([z.number(), z.null(), z.array(z.union([z.number(), z.null()]))])
+    .optional(),
   id: z.string().optional(),
   user_id: z
     .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
@@ -1469,6 +1478,7 @@ export type ChatCompletionAudioParam = z.infer<typeof ChatCompletionAudioParam>;
 export const ChatCompletionAudioParam = z.object({
   format: z.union([
     z.literal('wav'),
+    z.literal('aac'),
     z.literal('mp3'),
     z.literal('flac'),
     z.literal('opus'),
@@ -1844,6 +1854,16 @@ export const CompletionCreateParamsNonStreaming = z.object({
   ),
   model: z.union([
     z.string(),
+    z.literal('gpt-4.1'),
+    z.literal('gpt-4.1-mini'),
+    z.literal('gpt-4.1-nano'),
+    z.literal('gpt-4.1-2025-04-14'),
+    z.literal('gpt-4.1-mini-2025-04-14'),
+    z.literal('gpt-4.1-nano-2025-04-14'),
+    z.literal('o4-mini'),
+    z.literal('o4-mini-2025-04-16'),
+    z.literal('o3'),
+    z.literal('o3-2025-04-16'),
     z.literal('o3-mini'),
     z.literal('o3-mini-2025-01-31'),
     z.literal('o1'),
@@ -1890,6 +1910,16 @@ export const CompletionCreateParamsNonStreaming = z.object({
     z.array(
       z.union([
         z.string(),
+        z.literal('gpt-4.1'),
+        z.literal('gpt-4.1-mini'),
+        z.literal('gpt-4.1-nano'),
+        z.literal('gpt-4.1-2025-04-14'),
+        z.literal('gpt-4.1-mini-2025-04-14'),
+        z.literal('gpt-4.1-nano-2025-04-14'),
+        z.literal('o4-mini'),
+        z.literal('o4-mini-2025-04-16'),
+        z.literal('o3'),
+        z.literal('o3-2025-04-16'),
         z.literal('o3-mini'),
         z.literal('o3-mini-2025-01-31'),
         z.literal('o1'),
@@ -2095,8 +2125,16 @@ export const CompletionCreateParamsNonStreaming = z.object({
     .union([
       z.literal('auto'),
       z.literal('default'),
+      z.literal('flex'),
       z.null(),
-      z.array(z.union([z.literal('auto'), z.literal('default'), z.null()])),
+      z.array(
+        z.union([
+          z.literal('auto'),
+          z.literal('default'),
+          z.literal('flex'),
+          z.null(),
+        ]),
+      ),
       z.undefined(),
     ])
     .optional(),
@@ -2205,6 +2243,16 @@ export const CompletionCreateParamsStreaming = z.object({
   ),
   model: z.union([
     z.string(),
+    z.literal('gpt-4.1'),
+    z.literal('gpt-4.1-mini'),
+    z.literal('gpt-4.1-nano'),
+    z.literal('gpt-4.1-2025-04-14'),
+    z.literal('gpt-4.1-mini-2025-04-14'),
+    z.literal('gpt-4.1-nano-2025-04-14'),
+    z.literal('o4-mini'),
+    z.literal('o4-mini-2025-04-16'),
+    z.literal('o3'),
+    z.literal('o3-2025-04-16'),
     z.literal('o3-mini'),
     z.literal('o3-mini-2025-01-31'),
     z.literal('o1'),
@@ -2251,6 +2299,16 @@ export const CompletionCreateParamsStreaming = z.object({
     z.array(
       z.union([
         z.string(),
+        z.literal('gpt-4.1'),
+        z.literal('gpt-4.1-mini'),
+        z.literal('gpt-4.1-nano'),
+        z.literal('gpt-4.1-2025-04-14'),
+        z.literal('gpt-4.1-mini-2025-04-14'),
+        z.literal('gpt-4.1-nano-2025-04-14'),
+        z.literal('o4-mini'),
+        z.literal('o4-mini-2025-04-16'),
+        z.literal('o3'),
+        z.literal('o3-2025-04-16'),
         z.literal('o3-mini'),
         z.literal('o3-mini-2025-01-31'),
         z.literal('o1'),
@@ -2456,8 +2514,16 @@ export const CompletionCreateParamsStreaming = z.object({
     .union([
       z.literal('auto'),
       z.literal('default'),
+      z.literal('flex'),
       z.null(),
-      z.array(z.union([z.literal('auto'), z.literal('default'), z.null()])),
+      z.array(
+        z.union([
+          z.literal('auto'),
+          z.literal('default'),
+          z.literal('flex'),
+          z.null(),
+        ]),
+      ),
       z.undefined(),
     ])
     .optional(),
@@ -3094,6 +3160,14 @@ export const LettaBatchRequest = z.object({
 export type CreateBatch = z.infer<typeof CreateBatch>;
 export const CreateBatch = z.object({
   requests: z.array(LettaBatchRequest),
+  callback_url: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
 });
 
 export type DynamicManager = z.infer<typeof DynamicManager>;
@@ -3594,6 +3668,15 @@ export const Job = z.object({
     .union([z.unknown(), z.null(), z.array(z.union([z.unknown(), z.null()]))])
     .optional(),
   job_type: JobType.optional(),
+  callback_url: z
+    .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+    .optional(),
+  callback_sent_at: z
+    .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+    .optional(),
+  callback_status_code: z
+    .union([z.number(), z.null(), z.array(z.union([z.number(), z.null()]))])
+    .optional(),
   id: z.string().optional(),
   user_id: z
     .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
@@ -4223,6 +4306,15 @@ export const Run = z.object({
     .union([z.unknown(), z.null(), z.array(z.union([z.unknown(), z.null()]))])
     .optional(),
   job_type: JobType.optional(),
+  callback_url: z
+    .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+    .optional(),
+  callback_sent_at: z
+    .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+    .optional(),
+  callback_status_code: z
+    .union([z.number(), z.null(), z.array(z.union([z.number(), z.null()]))])
+    .optional(),
   id: z.string().optional(),
   user_id: z
     .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
