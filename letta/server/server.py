@@ -95,7 +95,6 @@ from letta.services.tool_executor.tool_execution_sandbox import ToolExecutionSan
 from letta.services.tool_manager import ToolManager
 from letta.services.user_manager import UserManager
 from letta.settings import model_settings, settings, tool_settings
-from letta.sleeptime_agent import SleeptimeAgent
 from letta.tracing import log_event, trace_method
 from letta.utils import get_friendly_error_msg, get_persona_text, make_key
 
@@ -366,14 +365,7 @@ class SyncServer(Server):
             )
 
         interface = interface or self.default_interface_factory()
-        if agent_state.agent_type == AgentType.memgpt_agent:
-            agent = Agent(agent_state=agent_state, interface=interface, user=actor, mcp_clients=self.mcp_clients)
-        elif agent_state.agent_type == AgentType.sleeptime_agent:
-            agent = SleeptimeAgent(agent_state=agent_state, interface=interface, user=actor)
-        else:
-            raise ValueError(f"Invalid agent type {agent_state.agent_type}")
-
-        return agent
+        return Agent(agent_state=agent_state, interface=interface, user=actor, mcp_clients=self.mcp_clients)
 
     def _step(
         self,
