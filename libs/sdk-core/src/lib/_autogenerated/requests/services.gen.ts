@@ -118,10 +118,6 @@ import type {
   ResetMessagesResponse,
   ListAgentGroupsData,
   ListAgentGroupsResponse,
-  CreateBatchMessageRequestData,
-  CreateBatchMessageRequestResponse,
-  RetrieveBatchMessageRequestData,
-  RetrieveBatchMessageRequestResponse,
   ListGroupsData,
   ListGroupsResponse,
   CreateGroupData,
@@ -249,6 +245,14 @@ import type {
   DeleteOrganizationByIdResponse,
   UpdateOrganizationData,
   UpdateOrganizationResponse,
+  CreateMessagesBatchData,
+  CreateMessagesBatchResponse,
+  ListBatchRunsData,
+  ListBatchRunsResponse,
+  RetrieveBatchRunData,
+  RetrieveBatchRunResponse,
+  CancelBatchRunData,
+  CancelBatchRunResponse,
   CreateVoiceChatCompletionsData,
   CreateVoiceChatCompletionsResponse,
   AuthenticateUserV1AuthPostData,
@@ -1864,58 +1868,6 @@ export class AgentsService {
       },
       query: {
         manager_type: data.managerType,
-      },
-      errors: {
-        422: 'Validation Error',
-      },
-      headers,
-    });
-  }
-
-  /**
-   * Send Batch Messages
-   * Submit a batch of agent messages for asynchronous processing.
-   * Creates a job that will fan out messages to all listed agents and process them in parallel.
-   * @param data The data for the request.
-   * @param data.requestBody
-   * @param data.userId
-   * @returns LettaBatchResponse Successful Response
-   * @throws ApiError
-   */
-  public static createBatchMessageRequest(
-    data: CreateBatchMessageRequestData,
-    headers?: { user_id: string },
-  ): CancelablePromise<CreateBatchMessageRequestResponse> {
-    return __request(OpenAPI, {
-      method: 'POST',
-      url: '/v1/agents/messages/batches',
-      body: data.requestBody,
-      mediaType: 'application/json',
-      errors: {
-        422: 'Validation Error',
-      },
-      headers,
-    });
-  }
-
-  /**
-   * Retrieve Batch Message Request
-   * Retrieve the result or current status of a previously submitted batch message request.
-   * @param data The data for the request.
-   * @param data.batchId
-   * @param data.userId
-   * @returns LettaBatchResponse Successful Response
-   * @throws ApiError
-   */
-  public static retrieveBatchMessageRequest(
-    data: RetrieveBatchMessageRequestData,
-    headers?: { user_id: string },
-  ): CancelablePromise<RetrieveBatchMessageRequestResponse> {
-    return __request(OpenAPI, {
-      method: 'GET',
-      url: '/v1/agents/messages/batches/{batch_id}',
-      path: {
-        batch_id: data.batchId,
       },
       errors: {
         422: 'Validation Error',
@@ -3770,6 +3722,108 @@ export class AdminService {
       },
       body: data.requestBody,
       mediaType: 'application/json',
+      errors: {
+        422: 'Validation Error',
+      },
+      headers,
+    });
+  }
+}
+
+export class MessagesService {
+  /**
+   * Create Messages Batch
+   * Submit a batch of agent messages for asynchronous processing.
+   * Creates a job that will fan out messages to all listed agents and process them in parallel.
+   * @param data The data for the request.
+   * @param data.requestBody
+   * @param data.userId
+   * @returns BatchJob Successful Response
+   * @throws ApiError
+   */
+  public static createMessagesBatch(
+    data: CreateMessagesBatchData,
+    headers?: { user_id: string },
+  ): CancelablePromise<CreateMessagesBatchResponse> {
+    return __request(OpenAPI, {
+      method: 'POST',
+      url: '/v1/messages/batches',
+      body: data.requestBody,
+      mediaType: 'application/json',
+      errors: {
+        422: 'Validation Error',
+      },
+      headers,
+    });
+  }
+
+  /**
+   * List Batch Runs
+   * List all batch runs.
+   * @param data The data for the request.
+   * @param data.userId
+   * @returns BatchJob Successful Response
+   * @throws ApiError
+   */
+  public static listBatchRuns(
+    data: ListBatchRunsData = {},
+    headers?: { user_id: string },
+  ): CancelablePromise<ListBatchRunsResponse> {
+    return __request(OpenAPI, {
+      method: 'GET',
+      url: '/v1/messages/batches',
+      errors: {
+        422: 'Validation Error',
+      },
+      headers,
+    });
+  }
+
+  /**
+   * Retrieve Batch Run
+   * Get the status of a batch run.
+   * @param data The data for the request.
+   * @param data.batchId
+   * @param data.userId
+   * @returns BatchJob Successful Response
+   * @throws ApiError
+   */
+  public static retrieveBatchRun(
+    data: RetrieveBatchRunData,
+    headers?: { user_id: string },
+  ): CancelablePromise<RetrieveBatchRunResponse> {
+    return __request(OpenAPI, {
+      method: 'GET',
+      url: '/v1/messages/batches/{batch_id}',
+      path: {
+        batch_id: data.batchId,
+      },
+      errors: {
+        422: 'Validation Error',
+      },
+      headers,
+    });
+  }
+
+  /**
+   * Cancel Batch Run
+   * Cancel a batch run.
+   * @param data The data for the request.
+   * @param data.batchId
+   * @param data.userId
+   * @returns unknown Successful Response
+   * @throws ApiError
+   */
+  public static cancelBatchRun(
+    data: CancelBatchRunData,
+    headers?: { user_id: string },
+  ): CancelablePromise<CancelBatchRunResponse> {
+    return __request(OpenAPI, {
+      method: 'PATCH',
+      url: '/v1/messages/batches/{batch_id}/cancel',
+      path: {
+        batch_id: data.batchId,
+      },
       errors: {
         422: 'Validation Error',
       },

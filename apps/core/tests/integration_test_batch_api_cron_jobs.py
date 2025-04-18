@@ -23,6 +23,7 @@ from letta.jobs.llm_batch_job_polling import poll_running_llm_batches
 from letta.orm import Base
 from letta.schemas.agent import AgentStepState
 from letta.schemas.enums import JobStatus, ProviderType
+from letta.schemas.job import BatchJob
 from letta.schemas.llm_config import LLMConfig
 from letta.schemas.tool_rule import InitToolRule
 from letta.server.db import db_context
@@ -145,13 +146,21 @@ def create_test_agent(client, name, model="anthropic/claude-3-5-sonnet-20241022"
     )
 
 
-def create_test_batch_job(server, batch_response, default_user):
+def create_test_letta_batch_job(server, default_user):
     """Create a test batch job with the given batch response."""
-    return server.batch_manager.create_batch_job(
+    return server.job_manager.create_job(BatchJob(user_id=default_user.id), actor=default_user)
+
+
+def create_test_llm_batch_job(server, batch_response, default_user):
+    """Create a test batch job with the given batch response."""
+    letta_batch_job = create_test_letta_batch_job(server, default_user)
+
+    return server.batch_manager.create_llm_batch_job(
         llm_provider=ProviderType.anthropic,
         create_batch_response=batch_response,
         actor=default_user,
         status=JobStatus.running,
+        letta_batch_job_id=letta_batch_job.id,
     )
 
 
@@ -171,8 +180,8 @@ def create_test_batch_item(server, batch_id, agent_id, default_user):
         step_number=1, tool_rules_solver=ToolRulesSolver(tool_rules=[InitToolRule(tool_name="send_message")])
     )
 
-    return server.batch_manager.create_batch_item(
-        batch_id=batch_id,
+    return server.batch_manager.create_llm_batch_item(
+        llm_batch_id=batch_id,
         agent_id=agent_id,
         llm_config=dummy_llm_config,
         step_state=common_step_state,
@@ -242,8 +251,8 @@ async def test_polling_mixed_batch_jobs(client, default_user, server):
     agent_c = create_test_agent(client, "agent_c")
 
     # --- Step 2: Create batch jobs ---
-    job_a = create_test_batch_job(server, batch_a_resp, default_user)
-    job_b = create_test_batch_job(server, batch_b_resp, default_user)
+    job_a = create_test_llm_batch_job(server, batch_a_resp, default_user)
+    job_b = create_test_llm_batch_job(server, batch_b_resp, default_user)
 
     # --- Step 3: Create batch items ---
     item_a = create_test_batch_item(server, job_a.id, agent_a.id, default_user)
@@ -258,8 +267,8 @@ async def test_polling_mixed_batch_jobs(client, default_user, server):
     await poll_running_llm_batches(server)
 
     # --- Step 6: Verify batch job status updates ---
-    updated_job_a = server.batch_manager.get_batch_job_by_id(batch_id=job_a.id, actor=default_user)
-    updated_job_b = server.batch_manager.get_batch_job_by_id(batch_id=job_b.id, actor=default_user)
+    updated_job_a = server.batch_manager.get_llm_batch_job_by_id(llm_batch_id=job_a.id, actor=default_user)
+    updated_job_b = server.batch_manager.get_llm_batch_job_by_id(llm_batch_id=job_b.id, actor=default_user)
 
     # Job A should remain running since its processing_status is "in_progress"
     assert updated_job_a.status == JobStatus.running
@@ -273,17 +282,17 @@ async def test_polling_mixed_batch_jobs(client, default_user, server):
 
     # --- Step 7: Verify batch item status updates ---
     # Item A should remain unchanged
-    updated_item_a = server.batch_manager.get_batch_item_by_id(item_a.id, actor=default_user)
+    updated_item_a = server.batch_manager.get_llm_batch_item_by_id(item_a.id, actor=default_user)
     assert updated_item_a.request_status == JobStatus.created
     assert updated_item_a.batch_request_result is None
 
     # Item B should be marked as completed with a successful result
-    updated_item_b = server.batch_manager.get_batch_item_by_id(item_b.id, actor=default_user)
+    updated_item_b = server.batch_manager.get_llm_batch_item_by_id(item_b.id, actor=default_user)
     assert updated_item_b.request_status == JobStatus.completed
     assert updated_item_b.batch_request_result is not None
 
     # Item C should be marked as failed with an error result
-    updated_item_c = server.batch_manager.get_batch_item_by_id(item_c.id, actor=default_user)
+    updated_item_c = server.batch_manager.get_llm_batch_item_by_id(item_c.id, actor=default_user)
     assert updated_item_c.request_status == JobStatus.failed
     assert updated_item_c.batch_request_result is not None
 
@@ -307,11 +316,11 @@ async def test_polling_mixed_batch_jobs(client, default_user, server):
 
     # --- Step 9: Verify that nothing changed for completed jobs ---
     # Refresh all objects
-    final_job_a = server.batch_manager.get_batch_job_by_id(batch_id=job_a.id, actor=default_user)
-    final_job_b = server.batch_manager.get_batch_job_by_id(batch_id=job_b.id, actor=default_user)
-    final_item_a = server.batch_manager.get_batch_item_by_id(item_a.id, actor=default_user)
-    final_item_b = server.batch_manager.get_batch_item_by_id(item_b.id, actor=default_user)
-    final_item_c = server.batch_manager.get_batch_item_by_id(item_c.id, actor=default_user)
+    final_job_a = server.batch_manager.get_llm_batch_job_by_id(llm_batch_id=job_a.id, actor=default_user)
+    final_job_b = server.batch_manager.get_llm_batch_job_by_id(llm_batch_id=job_b.id, actor=default_user)
+    final_item_a = server.batch_manager.get_llm_batch_item_by_id(item_a.id, actor=default_user)
+    final_item_b = server.batch_manager.get_llm_batch_item_by_id(item_b.id, actor=default_user)
+    final_item_c = server.batch_manager.get_llm_batch_item_by_id(item_c.id, actor=default_user)
 
     # Job A should still be polling (last_polled_at should update)
     assert final_job_a.status == JobStatus.running

@@ -10,6 +10,7 @@ import {
   IdentitiesService,
   JobsService,
   LlmsService,
+  MessagesService,
   ModelsService,
   OrganizationService,
   ProvidersService,
@@ -768,33 +769,6 @@ export const prefetchUseAgentsServiceListAgentGroups = (
     }),
     queryFn: () =>
       AgentsService.listAgentGroups({ agentId, managerType, userId }),
-  });
-/**
- * Retrieve Batch Message Request
- * Retrieve the result or current status of a previously submitted batch message request.
- * @param data The data for the request.
- * @param data.batchId
- * @param data.userId
- * @returns LettaBatchResponse Successful Response
- * @throws ApiError
- */
-export const prefetchUseAgentsServiceRetrieveBatchMessageRequest = (
-  queryClient: QueryClient,
-  {
-    batchId,
-    userId,
-  }: {
-    batchId: string;
-    userId?: string;
-  },
-) =>
-  queryClient.prefetchQuery({
-    queryKey: Common.UseAgentsServiceRetrieveBatchMessageRequestKeyFn({
-      batchId,
-      userId,
-    }),
-    queryFn: () =>
-      AgentsService.retrieveBatchMessageRequest({ batchId, userId }),
   });
 /**
  * List Groups
@@ -1750,6 +1724,52 @@ export const prefetchUseAdminServiceListOrgs = (
   queryClient.prefetchQuery({
     queryKey: Common.UseAdminServiceListOrgsKeyFn({ after, limit }),
     queryFn: () => AdminService.listOrgs({ after, limit }),
+  });
+/**
+ * List Batch Runs
+ * List all batch runs.
+ * @param data The data for the request.
+ * @param data.userId
+ * @returns BatchJob Successful Response
+ * @throws ApiError
+ */
+export const prefetchUseMessagesServiceListBatchRuns = (
+  queryClient: QueryClient,
+  {
+    userId,
+  }: {
+    userId?: string;
+  } = {},
+) =>
+  queryClient.prefetchQuery({
+    queryKey: Common.UseMessagesServiceListBatchRunsKeyFn({ userId }),
+    queryFn: () => MessagesService.listBatchRuns({ userId }),
+  });
+/**
+ * Retrieve Batch Run
+ * Get the status of a batch run.
+ * @param data The data for the request.
+ * @param data.batchId
+ * @param data.userId
+ * @returns BatchJob Successful Response
+ * @throws ApiError
+ */
+export const prefetchUseMessagesServiceRetrieveBatchRun = (
+  queryClient: QueryClient,
+  {
+    batchId,
+    userId,
+  }: {
+    batchId: string;
+    userId?: string;
+  },
+) =>
+  queryClient.prefetchQuery({
+    queryKey: Common.UseMessagesServiceRetrieveBatchRunKeyFn({
+      batchId,
+      userId,
+    }),
+    queryFn: () => MessagesService.retrieveBatchRun({ batchId, userId }),
   });
 /**
  * List Users

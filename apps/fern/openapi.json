@@ -3316,93 +3316,6 @@
         }
       }
     },
-    "/v1/agents/messages/batches": {
-      "post": {
-        "tags": ["agents"],
-        "summary": "Send Batch Messages",
-        "description": "Submit a batch of agent messages for asynchronous processing.\nCreates a job that will fan out messages to all listed agents and process them in parallel.",
-        "operationId": "create_batch_message_request",
-        "parameters": [],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "array",
-                "items": {
-                  "$ref": "#/components/schemas/LettaBatchRequest"
-                },
-                "description": "Messages and config for all agents",
-                "title": "Batch Requests"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/LettaBatchResponse"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/v1/agents/messages/batches/{batch_id}": {
-      "get": {
-        "tags": ["agents"],
-        "summary": "Retrieve Batch Message Request",
-        "description": "Retrieve the result or current status of a previously submitted batch message request.",
-        "operationId": "retrieve_batch_message_request",
-        "parameters": [
-          {
-            "name": "batch_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "Batch Id"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/LettaBatchResponse"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
     "/v1/groups/": {
       "get": {
         "tags": ["groups"],
@@ -6078,6 +5991,161 @@
         }
       }
     },
+    "/v1/messages/batches": {
+      "post": {
+        "tags": ["messages"],
+        "summary": "Create Messages Batch",
+        "description": "Submit a batch of agent messages for asynchronous processing.\nCreates a job that will fan out messages to all listed agents and process them in parallel.",
+        "operationId": "create_messages_batch",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateBatch",
+                "description": "Messages and config for all agents"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BatchJob"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": ["messages"],
+        "summary": "List Batch Runs",
+        "description": "List all batch runs.",
+        "operationId": "list_batch_runs",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/BatchJob"
+                  },
+                  "title": "Response List Batch Runs"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/messages/batches/{batch_id}": {
+      "get": {
+        "tags": ["messages"],
+        "summary": "Retrieve Batch Run",
+        "description": "Get the status of a batch run.",
+        "operationId": "retrieve_batch_run",
+        "parameters": [
+          {
+            "name": "batch_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Batch Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BatchJob"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/messages/batches/{batch_id}/cancel": {
+      "patch": {
+        "tags": ["messages"],
+        "summary": "Cancel Batch Run",
+        "description": "Cancel a batch run.",
+        "operationId": "cancel_batch_run",
+        "parameters": [
+          {
+            "name": "batch_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Batch Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/voice-beta/{agent_id}/chat/completions": {
       "post": {
         "tags": ["voice"],
@@ -8247,6 +8315,105 @@
         "type": "object",
         "required": ["tool_name", "type"],
         "title": "BaseToolRuleSchema"
+      },
+      "BatchJob": {
+        "properties": {
+          "created_by_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Created By Id",
+            "description": "The id of the user that made this object."
+          },
+          "last_updated_by_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Updated By Id",
+            "description": "The id of the user that made this object."
+          },
+          "created_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Created At",
+            "description": "The timestamp when the object was created."
+          },
+          "updated_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Updated At",
+            "description": "The timestamp when the object was last updated."
+          },
+          "status": {
+            "$ref": "#/components/schemas/JobStatus",
+            "description": "The status of the job.",
+            "default": "created"
+          },
+          "completed_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Completed At",
+            "description": "The unix timestamp of when the job was completed."
+          },
+          "metadata": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Metadata",
+            "description": "The metadata of the job."
+          },
+          "job_type": {
+            "$ref": "#/components/schemas/JobType",
+            "default": "batch"
+          },
+          "id": {
+            "type": "string",
+            "pattern": "^(job|run)-[a-fA-F0-9]{8}",
+            "title": "Id",
+            "description": "The human-friendly ID of the Job",
+            "examples": ["job-123e4567-e89b-12d3-a456-426614174000"]
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "BatchJob"
       },
       "Block": {
         "properties": {
@@ -10546,6 +10713,21 @@
         "required": ["text"],
         "title": "CreateArchivalMemory"
       },
+      "CreateBatch": {
+        "properties": {
+          "requests": {
+            "items": {
+              "$ref": "#/components/schemas/LettaBatchRequest"
+            },
+            "type": "array",
+            "title": "Requests",
+            "description": "List of requests to be processed in batch."
+          }
+        },
+        "type": "object",
+        "required": ["requests"],
+        "title": "CreateBatch"
+      },
       "CreateBlock": {
         "properties": {
           "value": {
@@ -12071,7 +12253,7 @@
       },
       "JobType": {
         "type": "string",
-        "enum": ["job", "run"],
+        "enum": ["job", "run", "batch"],
         "title": "JobType"
       },
       "LLMConfig": {
@@ -12251,45 +12433,6 @@
         "type": "object",
         "required": ["messages", "agent_id"],
         "title": "LettaBatchRequest"
-      },
-      "LettaBatchResponse": {
-        "properties": {
-          "batch_id": {
-            "type": "string",
-            "title": "Batch Id",
-            "description": "A unique identifier for this batch request."
-          },
-          "status": {
-            "$ref": "#/components/schemas/JobStatus",
-            "description": "The current status of the batch request."
-          },
-          "agent_count": {
-            "type": "integer",
-            "title": "Agent Count",
-            "description": "The number of agents in the batch request."
-          },
-          "last_polled_at": {
-            "type": "string",
-            "format": "date-time",
-            "title": "Last Polled At",
-            "description": "The timestamp when the batch was last polled for updates."
-          },
-          "created_at": {
-            "type": "string",
-            "format": "date-time",
-            "title": "Created At",
-            "description": "The timestamp when the batch request was created."
-          }
-        },
-        "type": "object",
-        "required": [
-          "batch_id",
-          "status",
-          "agent_count",
-          "last_polled_at",
-          "created_at"
-        ],
-        "title": "LettaBatchResponse"
       },
       "LettaRequest": {
         "properties": {

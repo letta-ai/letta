@@ -16,6 +16,7 @@ import {
   IdentitiesService,
   JobsService,
   LlmsService,
+  MessagesService,
   ModelsService,
   OrganizationService,
   ProvidersService,
@@ -38,6 +39,7 @@ import {
   CompletionCreateParamsStreaming,
   CreateAgentRequest,
   CreateArchivalMemory,
+  CreateBatch,
   CreateBlock,
   GroupCreate,
   GroupUpdate,
@@ -46,7 +48,6 @@ import {
   IdentityType,
   IdentityUpdate,
   IdentityUpsert,
-  LettaBatchRequest,
   LettaRequest,
   LettaStreamingRequest,
   LocalSandboxConfig,
@@ -985,39 +986,6 @@ export const useAgentsServiceListAgentGroups = <
     ),
     queryFn: () =>
       AgentsService.listAgentGroups({ agentId, managerType, userId }) as TData,
-    ...options,
-  });
-/**
- * Retrieve Batch Message Request
- * Retrieve the result or current status of a previously submitted batch message request.
- * @param data The data for the request.
- * @param data.batchId
- * @param data.userId
- * @returns LettaBatchResponse Successful Response
- * @throws ApiError
- */
-export const useAgentsServiceRetrieveBatchMessageRequest = <
-  TData = Common.AgentsServiceRetrieveBatchMessageRequestDefaultResponse,
-  TError = unknown,
-  TQueryKey extends Array<unknown> = unknown[],
->(
-  {
-    batchId,
-    userId,
-  }: {
-    batchId: string;
-    userId?: string;
-  },
-  queryKey?: TQueryKey,
-  options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>,
-) =>
-  useQuery<TData, TError>({
-    queryKey: Common.UseAgentsServiceRetrieveBatchMessageRequestKeyFn(
-      { batchId, userId },
-      queryKey,
-    ),
-    queryFn: () =>
-      AgentsService.retrieveBatchMessageRequest({ batchId, userId }) as TData,
     ...options,
   });
 /**
@@ -2195,6 +2163,65 @@ export const useAdminServiceListOrgs = <
     ...options,
   });
 /**
+ * List Batch Runs
+ * List all batch runs.
+ * @param data The data for the request.
+ * @param data.userId
+ * @returns BatchJob Successful Response
+ * @throws ApiError
+ */
+export const useMessagesServiceListBatchRuns = <
+  TData = Common.MessagesServiceListBatchRunsDefaultResponse,
+  TError = unknown,
+  TQueryKey extends Array<unknown> = unknown[],
+>(
+  {
+    userId,
+  }: {
+    userId?: string;
+  } = {},
+  queryKey?: TQueryKey,
+  options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>,
+) =>
+  useQuery<TData, TError>({
+    queryKey: Common.UseMessagesServiceListBatchRunsKeyFn({ userId }, queryKey),
+    queryFn: () => MessagesService.listBatchRuns({ userId }) as TData,
+    ...options,
+  });
+/**
+ * Retrieve Batch Run
+ * Get the status of a batch run.
+ * @param data The data for the request.
+ * @param data.batchId
+ * @param data.userId
+ * @returns BatchJob Successful Response
+ * @throws ApiError
+ */
+export const useMessagesServiceRetrieveBatchRun = <
+  TData = Common.MessagesServiceRetrieveBatchRunDefaultResponse,
+  TError = unknown,
+  TQueryKey extends Array<unknown> = unknown[],
+>(
+  {
+    batchId,
+    userId,
+  }: {
+    batchId: string;
+    userId?: string;
+  },
+  queryKey?: TQueryKey,
+  options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>,
+) =>
+  useQuery<TData, TError>({
+    queryKey: Common.UseMessagesServiceRetrieveBatchRunKeyFn(
+      { batchId, userId },
+      queryKey,
+    ),
+    queryFn: () =>
+      MessagesService.retrieveBatchRun({ batchId, userId }) as TData,
+    ...options,
+  });
+/**
  * List Users
  * Get a list of all users in the database
  * @param data The data for the request.
@@ -2864,50 +2891,6 @@ export const useAgentsServiceCreateAgentMessageAsync = <
     ...options,
   });
 /**
- * Send Batch Messages
- * Submit a batch of agent messages for asynchronous processing.
- * Creates a job that will fan out messages to all listed agents and process them in parallel.
- * @param data The data for the request.
- * @param data.requestBody
- * @param data.userId
- * @returns LettaBatchResponse Successful Response
- * @throws ApiError
- */
-export const useAgentsServiceCreateBatchMessageRequest = <
-  TData = Common.AgentsServiceCreateBatchMessageRequestMutationResult,
-  TError = unknown,
-  TContext = unknown,
->(
-  options?: Omit<
-    UseMutationOptions<
-      TData,
-      TError,
-      {
-        requestBody: LettaBatchRequest[];
-        userId?: string;
-      },
-      TContext
-    >,
-    'mutationFn'
-  >,
-) =>
-  useMutation<
-    TData,
-    TError,
-    {
-      requestBody: LettaBatchRequest[];
-      userId?: string;
-    },
-    TContext
-  >({
-    mutationFn: ({ requestBody, userId }) =>
-      AgentsService.createBatchMessageRequest({
-        requestBody,
-        userId,
-      }) as unknown as Promise<TData>,
-    ...options,
-  });
-/**
  * Create Group
  * Create a new multi-agent group with the specified configuration.
  * @param data The data for the request.
@@ -3504,6 +3487,50 @@ export const useAdminServiceCreateOrganization = <
     mutationFn: ({ requestBody }) =>
       AdminService.createOrganization({
         requestBody,
+      }) as unknown as Promise<TData>,
+    ...options,
+  });
+/**
+ * Create Messages Batch
+ * Submit a batch of agent messages for asynchronous processing.
+ * Creates a job that will fan out messages to all listed agents and process them in parallel.
+ * @param data The data for the request.
+ * @param data.requestBody
+ * @param data.userId
+ * @returns BatchJob Successful Response
+ * @throws ApiError
+ */
+export const useMessagesServiceCreateMessagesBatch = <
+  TData = Common.MessagesServiceCreateMessagesBatchMutationResult,
+  TError = unknown,
+  TContext = unknown,
+>(
+  options?: Omit<
+    UseMutationOptions<
+      TData,
+      TError,
+      {
+        requestBody: CreateBatch;
+        userId?: string;
+      },
+      TContext
+    >,
+    'mutationFn'
+  >,
+) =>
+  useMutation<
+    TData,
+    TError,
+    {
+      requestBody: CreateBatch;
+      userId?: string;
+    },
+    TContext
+  >({
+    mutationFn: ({ requestBody, userId }) =>
+      MessagesService.createMessagesBatch({
+        requestBody,
+        userId,
       }) as unknown as Promise<TData>,
     ...options,
   });
@@ -5021,6 +5048,49 @@ export const useAdminServiceUpdateOrganization = <
       AdminService.updateOrganization({
         orgId,
         requestBody,
+      }) as unknown as Promise<TData>,
+    ...options,
+  });
+/**
+ * Cancel Batch Run
+ * Cancel a batch run.
+ * @param data The data for the request.
+ * @param data.batchId
+ * @param data.userId
+ * @returns unknown Successful Response
+ * @throws ApiError
+ */
+export const useMessagesServiceCancelBatchRun = <
+  TData = Common.MessagesServiceCancelBatchRunMutationResult,
+  TError = unknown,
+  TContext = unknown,
+>(
+  options?: Omit<
+    UseMutationOptions<
+      TData,
+      TError,
+      {
+        batchId: string;
+        userId?: string;
+      },
+      TContext
+    >,
+    'mutationFn'
+  >,
+) =>
+  useMutation<
+    TData,
+    TError,
+    {
+      batchId: string;
+      userId?: string;
+    },
+    TContext
+  >({
+    mutationFn: ({ batchId, userId }) =>
+      MessagesService.cancelBatchRun({
+        batchId,
+        userId,
       }) as unknown as Promise<TData>,
     ...options,
   });

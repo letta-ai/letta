@@ -17,6 +17,7 @@ from letta.log import get_logger
 from letta.orm.enums import ToolType
 from letta.schemas.agent import AgentState, AgentStepState
 from letta.schemas.enums import AgentStepStatus, JobStatus, ProviderType
+from letta.schemas.job import JobUpdate
 from letta.schemas.letta_message_content import OmittedReasoningContent, ReasoningContent, RedactedReasoningContent, TextContent
 from letta.schemas.letta_request import LettaBatchRequest
 from letta.schemas.letta_response import LettaBatchResponse
@@ -29,6 +30,7 @@ from letta.server.rest_api.utils import create_heartbeat_system_message, create_
 from letta.services.agent_manager import AgentManager
 from letta.services.block_manager import BlockManager
 from letta.services.helpers.agent_manager_helper import compile_system_message
+from letta.services.job_manager import JobManager
 from letta.services.llm_batch_manager import LLMBatchManager
 from letta.services.message_manager import MessageManager
 from letta.services.passage_manager import PassageManager
@@ -102,6 +104,7 @@ class LettaAgentBatch:
         passage_manager: PassageManager,
         batch_manager: LLMBatchManager,
         sandbox_config_manager: SandboxConfigManager,
+        job_manager: JobManager,
         actor: User,
         use_assistant_message: bool = True,
         max_steps: int = 10,
@@ -112,12 +115,16 @@ class LettaAgentBatch:
         self.passage_manager = passage_manager
         self.batch_manager = batch_manager
         self.sandbox_config_manager = sandbox_config_manager
+        self.job_manager = job_manager
         self.use_assistant_message = use_assistant_message
         self.actor = actor
         self.max_steps = max_steps
 
     async def step_until_request(
-        self, batch_requests: List[LettaBatchRequest], agent_step_state_mapping: Optional[Dict[str, AgentStepState]] = None
+        self,
+        batch_requests: List[LettaBatchRequest],
+        letta_batch_job_id: str,
+        agent_step_state_mapping: Optional[Dict[str, AgentStepState]] = None,
     ) -> LettaBatchResponse:
         # Basic checks
         if not batch_requests:
@@ -162,11 +169,12 @@ class LettaAgentBatch:
         )
 
         # Write the response into the jobs table, where it will get picked up by the next cron run
-        batch_job = self.batch_manager.create_batch_job(
+        llm_batch_job = self.batch_manager.create_llm_batch_job(
             llm_provider=ProviderType.anthropic,  # TODO: Expand to more providers
             create_batch_response=batch_response,
             actor=self.actor,
             status=JobStatus.running,
+            letta_batch_job_id=letta_batch_job_id,
         )
 
         # Create batch items in bulk for all agents
@@ -174,7 +182,7 @@ class LettaAgentBatch:
         for agent_state in agent_states:
             agent_step_state = agent_step_state_mapping.get(agent_state.id)
             batch_item = LLMBatchItem(
-                batch_id=batch_job.id,
+                llm_batch_id=llm_batch_job.id,
                 agent_id=agent_state.id,
                 llm_config=agent_state.llm_config,
                 request_status=JobStatus.created,
@@ -185,19 +193,21 @@ class LettaAgentBatch:
 
         # Create all batch items at once using the bulk operation
         if batch_items:
-            self.batch_manager.create_batch_items_bulk(batch_items, actor=self.actor)
+            self.batch_manager.create_llm_batch_items_bulk(batch_items, actor=self.actor)
 
         return LettaBatchResponse(
-            batch_id=batch_job.id,
-            status=batch_job.status,
+            letta_batch_id=llm_batch_job.letta_batch_job_id,
+            last_llm_batch_id=llm_batch_job.id,
+            status=llm_batch_job.status,
             agent_count=len(agent_states),
             last_polled_at=get_utc_time(),
-            created_at=batch_job.created_at,
+            created_at=llm_batch_job.created_at,
         )
 
-    async def resume_step_after_request(self, batch_id: str) -> LettaBatchResponse:
+    async def resume_step_after_request(self, letta_batch_id: str, llm_batch_id: str) -> LettaBatchResponse:
         # 1. gather everything we need
-        ctx = await self._collect_resume_context(batch_id)
+        llm_batch_job = self.batch_manager.get_llm_batch_job_by_id(llm_batch_id=llm_batch_id, actor=self.actor)
+        ctx = await self._collect_resume_context(llm_batch_id)
 
         # 2. persist request‑level status updates
         self._update_request_statuses(ctx.request_status_updates)
@@ -209,19 +219,31 @@ class LettaAgentBatch:
         msg_map = self._persist_tool_messages(exec_results, ctx)
 
         # 5. mark steps complete
-        self._mark_steps_complete(batch_id, ctx.agent_ids)
+        self._mark_steps_complete(llm_batch_id, ctx.agent_ids)
 
         # 6. build next‑round requests / step‑state map
         next_reqs, next_step_state = self._prepare_next_iteration(exec_results, ctx, msg_map)
+        if len(next_reqs) == 0:
+            # mark batch job as completed
+            self.job_manager.update_job_by_id(job_id=letta_batch_id, job_update=JobUpdate(status=JobStatus.completed), actor=self.actor)
+            return LettaBatchResponse(
+                letta_batch_id=llm_batch_job.letta_batch_job_id,
+                last_llm_batch_id=llm_batch_job.id,
+                status=JobStatus.completed,
+                agent_count=len(ctx.agent_ids),
+                last_polled_at=get_utc_time(),
+                created_at=llm_batch_job.created_at,
+            )
 
         # 7. recurse into the normal stepping pipeline
         return await self.step_until_request(
             batch_requests=next_reqs,
+            letta_batch_job_id=letta_batch_id,
             agent_step_state_mapping=next_step_state,
         )
 
-    async def _collect_resume_context(self, batch_id: str) -> _ResumeContext:
-        batch_items = self.batch_manager.list_batch_items(batch_id=batch_id)
+    async def _collect_resume_context(self, llm_batch_id: str) -> _ResumeContext:
+        batch_items = self.batch_manager.list_llm_batch_items(llm_batch_id=llm_batch_id)
 
         agent_ids, agent_state_map = [], {}
         provider_results, name_map, args_map, cont_map = {}, {}, {}, {}
@@ -244,7 +266,7 @@ class LettaAgentBatch:
                     else JobStatus.cancelled if isinstance(pr, BetaMessageBatchCanceledResult) else JobStatus.expired
                 )
             )
-            request_status_updates.append(RequestStatusUpdateInfo(batch_id=batch_id, agent_id=aid, request_status=status))
+            request_status_updates.append(RequestStatusUpdateInfo(llm_batch_id=llm_batch_id, agent_id=aid, request_status=status))
 
             # translate provider‑specific response → OpenAI‑style tool call (unchanged)
             llm_client = LLMClient.create(llm_config=item.llm_config, put_inner_thoughts_first=True)
@@ -270,7 +292,7 @@ class LettaAgentBatch:
 
     def _update_request_statuses(self, updates: List[RequestStatusUpdateInfo]) -> None:
         if updates:
-            self.batch_manager.bulk_update_batch_items_request_status_by_agent(updates=updates)
+            self.batch_manager.bulk_update_llm_batch_items_request_status_by_agent(updates=updates)
 
     def _build_sandbox(self) -> Tuple[SandboxConfig, Dict[str, Any]]:
         sbx_type = SandboxType.E2B if tool_settings.e2b_api_key else SandboxType.LOCAL
@@ -315,9 +337,11 @@ class LettaAgentBatch:
         self.message_manager.create_many_messages([m for msgs in msg_map.values() for m in msgs], actor=self.actor)
         return msg_map
 
-    def _mark_steps_complete(self, batch_id: str, agent_ids: List[str]) -> None:
-        updates = [StepStatusUpdateInfo(batch_id=batch_id, agent_id=aid, step_status=AgentStepStatus.completed) for aid in agent_ids]
-        self.batch_manager.bulk_update_batch_items_step_status_by_agent(updates)
+    def _mark_steps_complete(self, llm_batch_id: str, agent_ids: List[str]) -> None:
+        updates = [
+            StepStatusUpdateInfo(llm_batch_id=llm_batch_id, agent_id=aid, step_status=AgentStepStatus.completed) for aid in agent_ids
+        ]
+        self.batch_manager.bulk_update_llm_batch_items_step_status_by_agent(updates)
 
     def _prepare_next_iteration(
         self,

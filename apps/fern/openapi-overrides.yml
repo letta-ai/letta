@@ -1724,3 +1724,25 @@ paths:
                   - $ref: '#/components/schemas/ToolReturnMessage'
                   - $ref: '#/components/schemas/AssistantMessage'
                   - $ref: '#/components/schemas/LettaUsageStatistics'
+  /v1/messages/batches:
+    post:
+      x-fern-sdk-group-name:
+        - messages
+        - batches
+      x-fern-sdk-method-name: create 
+    get: 
+      x-fern-sdk-group-name:
+        - messages
+        - batches
+      x-fern-sdk-method-name: list
+  /v1/messages/batches/{batch_id}:
+    get:
+      x-fern-sdk-group-name:
+        - messages
+        - batches
+      x-fern-sdk-method-name: retrieve 
+    patch:
+      x-fern-sdk-group-name:
+        - messages
+        - batches
+      x-fern-sdk-method-name: cancel 

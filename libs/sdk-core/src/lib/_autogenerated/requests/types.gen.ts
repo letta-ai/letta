@@ -391,6 +391,48 @@ export type BaseToolRuleSchema = {
   type: string;
 };
 
+export type BatchJob = {
+  /**
+   * The id of the user that made this object.
+   */
+  created_by_id?: string | null;
+  /**
+   * The id of the user that made this object.
+   */
+  last_updated_by_id?: string | null;
+  /**
+   * The timestamp when the object was created.
+   */
+  created_at?: string | null;
+  /**
+   * The timestamp when the object was last updated.
+   */
+  updated_at?: string | null;
+  /**
+   * The status of the job.
+   */
+  status?: JobStatus;
+  /**
+   * The unix timestamp of when the job was completed.
+   */
+  completed_at?: string | null;
+  /**
+   * The metadata of the job.
+   */
+  metadata?: {
+    [key: string]: unknown;
+  } | null;
+  job_type?: JobType;
+  /**
+   * The human-friendly ID of the Job
+   */
+  id?: string;
+  /**
+   * The unique identifier of the user associated with the job.
+   */
+  user_id?: string | null;
+};
+
 /**
  * A Block represents a reserved section of the LLM's context window which is editable. `Block` objects contained in the `Memory` object, which is able to edit the Block values.
  *
@@ -1146,6 +1188,13 @@ export type CreateArchivalMemory = {
   text: string;
 };
 
+export type CreateBatch = {
+  /**
+   * List of requests to be processed in batch.
+   */
+  requests: Array<LettaBatchRequest>;
+};
+
 /**
  * Create a block
  */
@@ -1748,7 +1797,7 @@ export type JobStatus =
   | 'cancelled'
   | 'expired';
 
-export type JobType = 'job' | 'run';
+export type JobType = 'job' | 'run' | 'batch';
 
 /**
  * Configuration for a Language Model (LLM) model. This object specifies all the information necessary to access an LLM model to usage with Letta, except for secret keys.
@@ -1884,29 +1933,6 @@ export type LettaBatchRequest = {
    * The ID of the agent to send this batch request for
    */
   agent_id: string;
-};
-
-export type LettaBatchResponse = {
-  /**
-   * A unique identifier for this batch request.
-   */
-  batch_id: string;
-  /**
-   * The current status of the batch request.
-   */
-  status: JobStatus;
-  /**
-   * The number of agents in the batch request.
-   */
-  agent_count: number;
-  /**
-   * The timestamp when the batch was last polled for updates.
-   */
-  last_polled_at: string;
-  /**
-   * The timestamp when the batch request was created.
-   */
-  created_at: string;
 };
 
 export type LettaRequest = {
@@ -4284,20 +4310,6 @@ export type ListAgentGroupsData = {
 
 export type ListAgentGroupsResponse = Array<Group>;
 
-export type CreateBatchMessageRequestData = {
-  requestBody: Array<LettaBatchRequest>;
-  userId?: string | null;
-};
-
-export type CreateBatchMessageRequestResponse = LettaBatchResponse;
-
-export type RetrieveBatchMessageRequestData = {
-  batchId: string;
-  userId?: string | null;
-};
-
-export type RetrieveBatchMessageRequestResponse = LettaBatchResponse;
-
 export type ListGroupsData = {
   /**
    * Cursor for pagination
@@ -4949,6 +4961,33 @@ export type UpdateOrganizationData = {
 };
 
 export type UpdateOrganizationResponse = Organization;
+
+export type CreateMessagesBatchData = {
+  requestBody: CreateBatch;
+  userId?: string | null;
+};
+
+export type CreateMessagesBatchResponse = BatchJob;
+
+export type ListBatchRunsData = {
+  userId?: string | null;
+};
+
+export type ListBatchRunsResponse = Array<BatchJob>;
+
+export type RetrieveBatchRunData = {
+  batchId: string;
+  userId?: string | null;
+};
+
+export type RetrieveBatchRunResponse = BatchJob;
+
+export type CancelBatchRunData = {
+  batchId: string;
+  userId?: string | null;
+};
+
+export type CancelBatchRunResponse = unknown;
 
 export type CreateVoiceChatCompletionsData = {
   agentId: string;
@@ -5794,36 +5833,6 @@ export type $OpenApiTs = {
          * Successful Response
          */
         200: Array<Group>;
-        /**
-         * Validation Error
-         */
-        422: HTTPValidationError;
-      };
-    };
-  };
-  '/v1/agents/messages/batches': {
-    post: {
-      req: CreateBatchMessageRequestData;
-      res: {
-        /**
-         * Successful Response
-         */
-        200: LettaBatchResponse;
-        /**
-         * Validation Error
-         */
-        422: HTTPValidationError;
-      };
-    };
-  };
-  '/v1/agents/messages/batches/{batch_id}': {
-    get: {
-      req: RetrieveBatchMessageRequestData;
-      res: {
-        /**
-         * Successful Response
-         */
-        200: LettaBatchResponse;
         /**
          * Validation Error
          */
@@ -6739,6 +6748,64 @@ export type $OpenApiTs = {
          * Successful Response
          */
         200: Organization;
+        /**
+         * Validation Error
+         */
+        422: HTTPValidationError;
+      };
+    };
+  };
+  '/v1/messages/batches': {
+    post: {
+      req: CreateMessagesBatchData;
+      res: {
+        /**
+         * Successful Response
+         */
+        200: BatchJob;
+        /**
+         * Validation Error
+         */
+        422: HTTPValidationError;
+      };
+    };
+    get: {
+      req: ListBatchRunsData;
+      res: {
+        /**
+         * Successful Response
+         */
+        200: Array<BatchJob>;
+        /**
+         * Validation Error
+         */
+        422: HTTPValidationError;
+      };
+    };
+  };
+  '/v1/messages/batches/{batch_id}': {
+    get: {
+      req: RetrieveBatchRunData;
+      res: {
+        /**
+         * Successful Response
+         */
+        200: BatchJob;
+        /**
+         * Validation Error
+         */
+        422: HTTPValidationError;
+      };
+    };
+  };
+  '/v1/messages/batches/{batch_id}/cancel': {
+    patch: {
+      req: CancelBatchRunData;
+      res: {
+        /**
+         * Successful Response
+         */
+        200: unknown;
         /**
          * Validation Error
          */

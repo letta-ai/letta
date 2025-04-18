@@ -34,6 +34,41 @@ class Job(JobBase):
     user_id: Optional[str] = Field(None, description="The unique identifier of the user associated with the job.")
 
 
+class BatchJob(JobBase):
+    id: str = JobBase.generate_id_field()
+    user_id: Optional[str] = Field(None, description="The unique identifier of the user associated with the job.")
+    job_type: JobType = JobType.BATCH
+
+    @classmethod
+    def from_job(cls, job: Job) -> "BatchJob":
+        """
+        Convert a Job instance to a BatchJob instance by replacing the ID prefix.
+        All other fields are copied as-is.
+
+        Args:
+            job: The Job instance to convert
+
+        Returns:
+            A new Run instance with the same data but 'run-' prefix in ID
+        """
+        # Convert job dict to exclude None values
+        job_data = job.model_dump(exclude_none=True)
+
+        # Create new Run instance with converted data
+        return cls(**job_data)
+
+    def to_job(self) -> Job:
+        """
+        Convert this BatchJob instance to a Job instance by replacing the ID prefix.
+        All other fields are copied as-is.
+
+        Returns:
+            A new Job instance with the same data but 'job-' prefix in ID
+        """
+        run_data = self.model_dump(exclude_none=True)
+        return Job(**run_data)
+
+
 class JobUpdate(JobBase):
     status: Optional[JobStatus] = Field(None, description="The status of the job.")
 

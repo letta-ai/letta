@@ -15,6 +15,7 @@ from letta.orm.sqlalchemy_base import AccessType
 from letta.orm.step import Step
 from letta.orm.step import Step as StepModel
 from letta.schemas.enums import JobStatus, MessageRole
+from letta.schemas.job import BatchJob as PydanticBatchJob
 from letta.schemas.job import Job as PydanticJob
 from letta.schemas.job import JobUpdate, LettaRequestConfig
 from letta.schemas.letta_message import LettaMessage
@@ -36,7 +37,9 @@ class JobManager:
         self.session_maker = db_context
 
     @enforce_types
-    def create_job(self, pydantic_job: Union[PydanticJob, PydanticRun], actor: PydanticUser) -> Union[PydanticJob, PydanticRun]:
+    def create_job(
+        self, pydantic_job: Union[PydanticJob, PydanticRun, PydanticBatchJob], actor: PydanticUser
+    ) -> Union[PydanticJob, PydanticRun, PydanticBatchJob]:
         """Create a new job based on the JobCreate schema."""
         with self.session_maker() as session:
             # Associate the job with the user

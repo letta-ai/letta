@@ -1243,6 +1243,118 @@ export const $BaseToolRuleSchema = {
   title: 'BaseToolRuleSchema',
 } as const;
 
+export const $BatchJob = {
+  properties: {
+    created_by_id: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Created By Id',
+      description: 'The id of the user that made this object.',
+    },
+    last_updated_by_id: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Last Updated By Id',
+      description: 'The id of the user that made this object.',
+    },
+    created_at: {
+      anyOf: [
+        {
+          type: 'string',
+          format: 'date-time',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Created At',
+      description: 'The timestamp when the object was created.',
+    },
+    updated_at: {
+      anyOf: [
+        {
+          type: 'string',
+          format: 'date-time',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Updated At',
+      description: 'The timestamp when the object was last updated.',
+    },
+    status: {
+      $ref: '#/components/schemas/JobStatus',
+      description: 'The status of the job.',
+      default: 'created',
+    },
+    completed_at: {
+      anyOf: [
+        {
+          type: 'string',
+          format: 'date-time',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Completed At',
+      description: 'The unix timestamp of when the job was completed.',
+    },
+    metadata: {
+      anyOf: [
+        {
+          additionalProperties: true,
+          type: 'object',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Metadata',
+      description: 'The metadata of the job.',
+    },
+    job_type: {
+      $ref: '#/components/schemas/JobType',
+      default: 'batch',
+    },
+    id: {
+      type: 'string',
+      pattern: '^(job|run)-[a-fA-F0-9]{8}',
+      title: 'Id',
+      description: 'The human-friendly ID of the Job',
+      examples: ['job-123e4567-e89b-12d3-a456-426614174000'],
+    },
+    user_id: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'User Id',
+      description: 'The unique identifier of the user associated with the job.',
+    },
+  },
+  additionalProperties: false,
+  type: 'object',
+  title: 'BatchJob',
+} as const;
+
 export const $Block = {
   properties: {
     value: {
@@ -3638,6 +3750,22 @@ export const $CreateArchivalMemory = {
   title: 'CreateArchivalMemory',
 } as const;
 
+export const $CreateBatch = {
+  properties: {
+    requests: {
+      items: {
+        $ref: '#/components/schemas/LettaBatchRequest',
+      },
+      type: 'array',
+      title: 'Requests',
+      description: 'List of requests to be processed in batch.',
+    },
+  },
+  type: 'object',
+  required: ['requests'],
+  title: 'CreateBatch',
+} as const;
+
 export const $CreateBlock = {
   properties: {
     value: {
@@ -5257,7 +5385,7 @@ export const $JobStatus = {
 
 export const $JobType = {
   type: 'string',
-  enum: ['job', 'run'],
+  enum: ['job', 'run', 'batch'],
   title: 'JobType',
 } as const;
 
@@ -5458,46 +5586,6 @@ export const $LettaBatchRequest = {
   type: 'object',
   required: ['messages', 'agent_id'],
   title: 'LettaBatchRequest',
-} as const;
-
-export const $LettaBatchResponse = {
-  properties: {
-    batch_id: {
-      type: 'string',
-      title: 'Batch Id',
-      description: 'A unique identifier for this batch request.',
-    },
-    status: {
-      $ref: '#/components/schemas/JobStatus',
-      description: 'The current status of the batch request.',
-    },
-    agent_count: {
-      type: 'integer',
-      title: 'Agent Count',
-      description: 'The number of agents in the batch request.',
-    },
-    last_polled_at: {
-      type: 'string',
-      format: 'date-time',
-      title: 'Last Polled At',
-      description: 'The timestamp when the batch was last polled for updates.',
-    },
-    created_at: {
-      type: 'string',
-      format: 'date-time',
-      title: 'Created At',
-      description: 'The timestamp when the batch request was created.',
-    },
-  },
-  type: 'object',
-  required: [
-    'batch_id',
-    'status',
-    'agent_count',
-    'last_polled_at',
-    'created_at',
-  ],
-  title: 'LettaBatchResponse',
 } as const;
 
 export const $LettaRequest = {

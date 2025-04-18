@@ -1267,6 +1267,53 @@ export const AuthResponse = z.object({
     .optional(),
 });
 
+export type JobStatus = z.infer<typeof JobStatus>;
+export const JobStatus = z.union([
+  z.literal('not_started'),
+  z.literal('created'),
+  z.literal('running'),
+  z.literal('completed'),
+  z.literal('failed'),
+  z.literal('pending'),
+  z.literal('cancelled'),
+  z.literal('expired'),
+]);
+
+export type JobType = z.infer<typeof JobType>;
+export const JobType = z.union([
+  z.literal('job'),
+  z.literal('run'),
+  z.literal('batch'),
+]);
+
+export type BatchJob = z.infer<typeof BatchJob>;
+export const BatchJob = z.object({
+  created_by_id: z
+    .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+    .optional(),
+  last_updated_by_id: z
+    .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+    .optional(),
+  created_at: z
+    .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+    .optional(),
+  updated_at: z
+    .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+    .optional(),
+  status: JobStatus.optional(),
+  completed_at: z
+    .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+    .optional(),
+  metadata: z
+    .union([z.unknown(), z.null(), z.array(z.union([z.unknown(), z.null()]))])
+    .optional(),
+  job_type: JobType.optional(),
+  id: z.string().optional(),
+  user_id: z
+    .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+    .optional(),
+});
+
 export type BlockUpdate = z.infer<typeof BlockUpdate>;
 export const BlockUpdate = z.object({
   value: z
@@ -3035,6 +3082,20 @@ export const CreateArchivalMemory = z.object({
   text: z.string(),
 });
 
+export type LettaBatchRequest = z.infer<typeof LettaBatchRequest>;
+export const LettaBatchRequest = z.object({
+  messages: z.array(MessageCreate),
+  use_assistant_message: z.union([z.boolean(), z.undefined()]).optional(),
+  assistant_message_tool_name: z.union([z.string(), z.undefined()]).optional(),
+  assistant_message_tool_kwarg: z.union([z.string(), z.undefined()]).optional(),
+  agent_id: z.string(),
+});
+
+export type CreateBatch = z.infer<typeof CreateBatch>;
+export const CreateBatch = z.object({
+  requests: z.array(LettaBatchRequest),
+});
+
 export type DynamicManager = z.infer<typeof DynamicManager>;
 export const DynamicManager = z.object({
   manager_type: z.union([z.string(), z.undefined()]).optional(),
@@ -3511,21 +3572,6 @@ export const IdentityUpsert = z.object({
     .optional(),
 });
 
-export type JobStatus = z.infer<typeof JobStatus>;
-export const JobStatus = z.union([
-  z.literal('not_started'),
-  z.literal('created'),
-  z.literal('running'),
-  z.literal('completed'),
-  z.literal('failed'),
-  z.literal('pending'),
-  z.literal('cancelled'),
-  z.literal('expired'),
-]);
-
-export type JobType = z.infer<typeof JobType>;
-export const JobType = z.union([z.literal('job'), z.literal('run')]);
-
 export type Job = z.infer<typeof Job>;
 export const Job = z.object({
   created_by_id: z
@@ -3552,24 +3598,6 @@ export const Job = z.object({
   user_id: z
     .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
     .optional(),
-});
-
-export type LettaBatchRequest = z.infer<typeof LettaBatchRequest>;
-export const LettaBatchRequest = z.object({
-  messages: z.array(MessageCreate),
-  use_assistant_message: z.union([z.boolean(), z.undefined()]).optional(),
-  assistant_message_tool_name: z.union([z.string(), z.undefined()]).optional(),
-  assistant_message_tool_kwarg: z.union([z.string(), z.undefined()]).optional(),
-  agent_id: z.string(),
-});
-
-export type LettaBatchResponse = z.infer<typeof LettaBatchResponse>;
-export const LettaBatchResponse = z.object({
-  batch_id: z.string(),
-  status: JobStatus,
-  agent_count: z.number(),
-  last_polled_at: z.string(),
-  created_at: z.string(),
 });
 
 export type LettaRequest = z.infer<typeof LettaRequest>;
@@ -6072,42 +6100,6 @@ export const get_List_agent_groups = {
   response: z.array(Group),
 };
 
-export type post_Create_batch_message_request =
-  typeof post_Create_batch_message_request;
-export const post_Create_batch_message_request = {
-  method: z.literal('POST'),
-  path: z.literal('/v1/agents/messages/batches'),
-  requestFormat: z.literal('json'),
-  parameters: z.object({
-    header: z.object({
-      user_id: z
-        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
-        .optional(),
-    }),
-    body: z.array(LettaBatchRequest),
-  }),
-  response: LettaBatchResponse,
-};
-
-export type get_Retrieve_batch_message_request =
-  typeof get_Retrieve_batch_message_request;
-export const get_Retrieve_batch_message_request = {
-  method: z.literal('GET'),
-  path: z.literal('/v1/agents/messages/batches/{batch_id}'),
-  requestFormat: z.literal('json'),
-  parameters: z.object({
-    path: z.object({
-      batch_id: z.string(),
-    }),
-    header: z.object({
-      user_id: z
-        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
-        .optional(),
-    }),
-  }),
-  response: LettaBatchResponse,
-};
-
 export type get_List_groups = typeof get_List_groups;
 export const get_List_groups = {
   method: z.literal('GET'),
@@ -7364,6 +7356,73 @@ export const get_List_tags = {
   response: z.array(z.string()),
 };
 
+export type post_Create_messages_batch = typeof post_Create_messages_batch;
+export const post_Create_messages_batch = {
+  method: z.literal('POST'),
+  path: z.literal('/v1/messages/batches'),
+  requestFormat: z.literal('json'),
+  parameters: z.object({
+    header: z.object({
+      user_id: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+    }),
+    body: CreateBatch,
+  }),
+  response: BatchJob,
+};
+
+export type get_List_batch_runs = typeof get_List_batch_runs;
+export const get_List_batch_runs = {
+  method: z.literal('GET'),
+  path: z.literal('/v1/messages/batches'),
+  requestFormat: z.literal('json'),
+  parameters: z.object({
+    header: z.object({
+      user_id: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+    }),
+  }),
+  response: z.array(BatchJob),
+};
+
+export type get_Retrieve_batch_run = typeof get_Retrieve_batch_run;
+export const get_Retrieve_batch_run = {
+  method: z.literal('GET'),
+  path: z.literal('/v1/messages/batches/{batch_id}'),
+  requestFormat: z.literal('json'),
+  parameters: z.object({
+    path: z.object({
+      batch_id: z.string(),
+    }),
+    header: z.object({
+      user_id: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+    }),
+  }),
+  response: BatchJob,
+};
+
+export type patch_Cancel_batch_run = typeof patch_Cancel_batch_run;
+export const patch_Cancel_batch_run = {
+  method: z.literal('PATCH'),
+  path: z.literal('/v1/messages/batches/{batch_id}/cancel'),
+  requestFormat: z.literal('json'),
+  parameters: z.object({
+    path: z.object({
+      batch_id: z.string(),
+    }),
+    header: z.object({
+      user_id: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+    }),
+  }),
+  response: z.unknown(),
+};
+
 export type post_Create_voice_chat_completions =
   typeof post_Create_voice_chat_completions;
 export const post_Create_voice_chat_completions = {
@@ -7564,8 +7623,6 @@ export const EndpointByMethod = {
     '/v1/agents/{agent_id}/archival-memory': get_List_passages,
     '/v1/agents/{agent_id}/messages': get_List_messages,
     '/v1/agents/{agent_id}/groups': get_List_agent_groups,
-    '/v1/agents/messages/batches/{batch_id}':
-      get_Retrieve_batch_message_request,
     '/v1/groups/': get_List_groups,
     '/v1/groups/{group_id}': get_Retrieve_group,
     '/v1/groups/{group_id}/messages': get_List_group_messages,
@@ -7593,6 +7650,8 @@ export const EndpointByMethod = {
     '/v1/steps': get_List_steps,
     '/v1/steps/{step_id}': get_Retrieve_step,
     '/v1/tags/': get_List_tags,
+    '/v1/messages/batches': get_List_batch_runs,
+    '/v1/messages/batches/{batch_id}': get_Retrieve_batch_run,
     '/v1/admin/users/': get_List_users,
     '/v1/admin/orgs/': get_List_orgs,
   },
@@ -7627,6 +7686,7 @@ export const EndpointByMethod = {
     '/v1/providers/': patch_Modify_provider,
     '/v1/steps/{step_id}/transaction/{transaction_id}':
       patch_Update_step_transaction_id,
+    '/v1/messages/batches/{batch_id}/cancel': patch_Cancel_batch_run,
     '/v1/admin/orgs/': patch_Update_organization,
   },
   post: {
@@ -7644,7 +7704,6 @@ export const EndpointByMethod = {
     '/v1/agents/{agent_id}/messages': post_Send_message,
     '/v1/agents/{agent_id}/messages/stream': post_Create_agent_message_stream,
     '/v1/agents/{agent_id}/messages/async': post_Create_agent_message_async,
-    '/v1/agents/messages/batches': post_Create_batch_message_request,
     '/v1/groups/': post_Create_group,
     '/v1/groups/{group_id}/messages': post_Send_group_message,
     '/v1/groups/{group_id}/messages/stream': post_Send_group_message_streaming,
@@ -7662,6 +7721,7 @@ export const EndpointByMethod = {
     '/v1/sandbox-config/{sandbox_config_id}/environment-variable':
       post_Create_sandbox_env_var_v1_sandbox_config__sandbox_config_id__environment_variable_post,
     '/v1/providers/': post_Create_provider,
+    '/v1/messages/batches': post_Create_messages_batch,
     '/v1/voice-beta/{agent_id}/chat/completions':
       post_Create_voice_chat_completions,
     '/v1/admin/users/': post_Create_user,

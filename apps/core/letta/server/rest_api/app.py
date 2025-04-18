@@ -174,6 +174,7 @@ def create_application() -> "FastAPI":
     async def generic_error_handler(request: Request, exc: Exception):
         # Log the actual error for debugging
         log.error(f"Unhandled error: {exc}", exc_info=True)
+        print(f"Unhandled error: {exc}")
 
         # Print the stack trace
         print(f"Stack trace: {exc}")

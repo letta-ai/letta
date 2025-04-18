@@ -16,6 +16,7 @@ class ToolType(str, Enum):
 class JobType(str, Enum):
     JOB = "job"
     RUN = "run"
+    BATCH = "batch"
 
 
 class ToolSourceType(str, Enum):

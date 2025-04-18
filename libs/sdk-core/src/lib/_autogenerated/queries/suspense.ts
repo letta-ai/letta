@@ -10,6 +10,7 @@ import {
   IdentitiesService,
   JobsService,
   LlmsService,
+  MessagesService,
   ModelsService,
   OrganizationService,
   ProvidersService,
@@ -936,39 +937,6 @@ export const useAgentsServiceListAgentGroupsSuspense = <
     ),
     queryFn: () =>
       AgentsService.listAgentGroups({ agentId, managerType, userId }) as TData,
-    ...options,
-  });
-/**
- * Retrieve Batch Message Request
- * Retrieve the result or current status of a previously submitted batch message request.
- * @param data The data for the request.
- * @param data.batchId
- * @param data.userId
- * @returns LettaBatchResponse Successful Response
- * @throws ApiError
- */
-export const useAgentsServiceRetrieveBatchMessageRequestSuspense = <
-  TData = Common.AgentsServiceRetrieveBatchMessageRequestDefaultResponse,
-  TError = unknown,
-  TQueryKey extends Array<unknown> = unknown[],
->(
-  {
-    batchId,
-    userId,
-  }: {
-    batchId: string;
-    userId?: string;
-  },
-  queryKey?: TQueryKey,
-  options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>,
-) =>
-  useSuspenseQuery<TData, TError>({
-    queryKey: Common.UseAgentsServiceRetrieveBatchMessageRequestKeyFn(
-      { batchId, userId },
-      queryKey,
-    ),
-    queryFn: () =>
-      AgentsService.retrieveBatchMessageRequest({ batchId, userId }) as TData,
     ...options,
   });
 /**
@@ -2144,6 +2112,65 @@ export const useAdminServiceListOrgsSuspense = <
   useSuspenseQuery<TData, TError>({
     queryKey: Common.UseAdminServiceListOrgsKeyFn({ after, limit }, queryKey),
     queryFn: () => AdminService.listOrgs({ after, limit }) as TData,
+    ...options,
+  });
+/**
+ * List Batch Runs
+ * List all batch runs.
+ * @param data The data for the request.
+ * @param data.userId
+ * @returns BatchJob Successful Response
+ * @throws ApiError
+ */
+export const useMessagesServiceListBatchRunsSuspense = <
+  TData = Common.MessagesServiceListBatchRunsDefaultResponse,
+  TError = unknown,
+  TQueryKey extends Array<unknown> = unknown[],
+>(
+  {
+    userId,
+  }: {
+    userId?: string;
+  } = {},
+  queryKey?: TQueryKey,
+  options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>,
+) =>
+  useSuspenseQuery<TData, TError>({
+    queryKey: Common.UseMessagesServiceListBatchRunsKeyFn({ userId }, queryKey),
+    queryFn: () => MessagesService.listBatchRuns({ userId }) as TData,
+    ...options,
+  });
+/**
+ * Retrieve Batch Run
+ * Get the status of a batch run.
+ * @param data The data for the request.
+ * @param data.batchId
+ * @param data.userId
+ * @returns BatchJob Successful Response
+ * @throws ApiError
+ */
+export const useMessagesServiceRetrieveBatchRunSuspense = <
+  TData = Common.MessagesServiceRetrieveBatchRunDefaultResponse,
+  TError = unknown,
+  TQueryKey extends Array<unknown> = unknown[],
+>(
+  {
+    batchId,
+    userId,
+  }: {
+    batchId: string;
+    userId?: string;
+  },
+  queryKey?: TQueryKey,
+  options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>,
+) =>
+  useSuspenseQuery<TData, TError>({
+    queryKey: Common.UseMessagesServiceRetrieveBatchRunKeyFn(
+      { batchId, userId },
+      queryKey,
+    ),
+    queryFn: () =>
+      MessagesService.retrieveBatchRun({ batchId, userId }) as TData,
     ...options,
   });
 /**

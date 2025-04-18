@@ -11,6 +11,7 @@ import {
   IdentitiesService,
   JobsService,
   LlmsService,
+  MessagesService,
   ModelsService,
   OrganizationService,
   ProvidersService,
@@ -601,28 +602,6 @@ export const UseAgentsServiceListAgentGroupsKeyFn = (
 ) => [
   useAgentsServiceListAgentGroupsKey,
   ...(queryKey ?? [{ agentId, managerType, userId }]),
-];
-export type AgentsServiceRetrieveBatchMessageRequestDefaultResponse = Awaited<
-  ReturnType<typeof AgentsService.retrieveBatchMessageRequest>
->;
-export type AgentsServiceRetrieveBatchMessageRequestQueryResult<
-  TData = AgentsServiceRetrieveBatchMessageRequestDefaultResponse,
-  TError = unknown,
-> = UseQueryResult<TData, TError>;
-export const useAgentsServiceRetrieveBatchMessageRequestKey =
-  'AgentsServiceRetrieveBatchMessageRequest';
-export const UseAgentsServiceRetrieveBatchMessageRequestKeyFn = (
-  {
-    batchId,
-    userId,
-  }: {
-    batchId: string;
-    userId?: string;
-  },
-  queryKey?: Array<unknown>,
-) => [
-  useAgentsServiceRetrieveBatchMessageRequestKey,
-  ...(queryKey ?? [{ batchId, userId }]),
 ];
 export type GroupsServiceListGroupsDefaultResponse = Awaited<
   ReturnType<typeof GroupsService.listGroups>
@@ -1321,6 +1300,45 @@ export const UseAdminServiceListOrgsKeyFn = (
   } = {},
   queryKey?: Array<unknown>,
 ) => [useAdminServiceListOrgsKey, ...(queryKey ?? [{ after, limit }])];
+export type MessagesServiceListBatchRunsDefaultResponse = Awaited<
+  ReturnType<typeof MessagesService.listBatchRuns>
+>;
+export type MessagesServiceListBatchRunsQueryResult<
+  TData = MessagesServiceListBatchRunsDefaultResponse,
+  TError = unknown,
+> = UseQueryResult<TData, TError>;
+export const useMessagesServiceListBatchRunsKey =
+  'MessagesServiceListBatchRuns';
+export const UseMessagesServiceListBatchRunsKeyFn = (
+  {
+    userId,
+  }: {
+    userId?: string;
+  } = {},
+  queryKey?: Array<unknown>,
+) => [useMessagesServiceListBatchRunsKey, ...(queryKey ?? [{ userId }])];
+export type MessagesServiceRetrieveBatchRunDefaultResponse = Awaited<
+  ReturnType<typeof MessagesService.retrieveBatchRun>
+>;
+export type MessagesServiceRetrieveBatchRunQueryResult<
+  TData = MessagesServiceRetrieveBatchRunDefaultResponse,
+  TError = unknown,
+> = UseQueryResult<TData, TError>;
+export const useMessagesServiceRetrieveBatchRunKey =
+  'MessagesServiceRetrieveBatchRun';
+export const UseMessagesServiceRetrieveBatchRunKeyFn = (
+  {
+    batchId,
+    userId,
+  }: {
+    batchId: string;
+    userId?: string;
+  },
+  queryKey?: Array<unknown>,
+) => [
+  useMessagesServiceRetrieveBatchRunKey,
+  ...(queryKey ?? [{ batchId, userId }]),
+];
 export type UsersServiceListUsersDefaultResponse = Awaited<
   ReturnType<typeof UsersService.listUsers>
 >;
@@ -1396,9 +1414,6 @@ export type AgentsServiceCreateAgentMessageStreamMutationResult = Awaited<
 export type AgentsServiceCreateAgentMessageAsyncMutationResult = Awaited<
   ReturnType<typeof AgentsService.createAgentMessageAsync>
 >;
-export type AgentsServiceCreateBatchMessageRequestMutationResult = Awaited<
-  ReturnType<typeof AgentsService.createBatchMessageRequest>
->;
 export type GroupsServiceCreateGroupMutationResult = Awaited<
   ReturnType<typeof GroupsService.createGroup>
 >;
@@ -1458,6 +1473,9 @@ export type AdminServiceCreateUserMutationResult = Awaited<
 >;
 export type AdminServiceCreateOrganizationMutationResult = Awaited<
   ReturnType<typeof AdminService.createOrganization>
+>;
+export type MessagesServiceCreateMessagesBatchMutationResult = Awaited<
+  ReturnType<typeof MessagesService.createMessagesBatch>
 >;
 export type VoiceServiceCreateVoiceChatCompletionsMutationResult = Awaited<
   ReturnType<typeof VoiceService.createVoiceChatCompletions>
@@ -1563,6 +1581,9 @@ export type StepsServiceUpdateStepTransactionIdMutationResult = Awaited<
 >;
 export type AdminServiceUpdateOrganizationMutationResult = Awaited<
   ReturnType<typeof AdminService.updateOrganization>
+>;
+export type MessagesServiceCancelBatchRunMutationResult = Awaited<
+  ReturnType<typeof MessagesService.cancelBatchRun>
 >;
 export type OrganizationServiceUpdateOrganizationMutationResult = Awaited<
   ReturnType<typeof OrganizationService.updateOrganization>
