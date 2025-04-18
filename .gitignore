@@ -80,3 +80,7 @@ vitest.config.*.timestamp*
 
 ./openapi_letta.json
 ./openapi_openai.json
+
+# terraform state files
+.terraform
+.terraform.*
