@@ -2,6 +2,7 @@ from typing import List, Optional
 
 from fastapi import APIRouter, Body, Depends, Header
 from fastapi.exceptions import HTTPException
+from starlette.requests import Request
 
 from letta.agents.letta_agent_batch import LettaAgentBatch
 from letta.log import get_logger
@@ -25,7 +26,8 @@ logger = get_logger(__name__)
     operation_id="create_messages_batch",
 )
 async def create_messages_batch(
-    request: CreateBatch = Body(..., description="Messages and config for all agents"),
+    request: Request,
+    payload: CreateBatch = Body(..., description="Messages and config for all agents"),
     server: SyncServer = Depends(get_letta_server),
     actor_id: Optional[str] = Header(None, alias="user_id"),
 ):
@@ -33,10 +35,16 @@ async def create_messages_batch(
     Submit a batch of agent messages for asynchronous processing.
     Creates a job that will fan out messages to all listed agents and process them in parallel.
     """
-    print("GOT REQQUEST", request)
+    # Reject requests greater than 256Mbs
+    max_bytes = 256 * 1024 * 1024
+    content_length = request.headers.get("content-length")
+    if content_length:
+        length = int(content_length)
+        if length > max_bytes:
+            raise HTTPException(status_code=413, detail=f"Request too large ({length} bytes). Max is {max_bytes} bytes.")
+
     try:
         actor = server.user_manager.get_user_or_default(user_id=actor_id)
-        print("ACTOR", actor)
 
         # Create a new job
         batch_job = BatchJob(
@@ -46,7 +54,6 @@ async def create_messages_batch(
                 "job_type": "batch_messages",
             },
         )
-        print("BATCH JOB", batch_job)
 
         # create the batch runner
         batch_runner = LettaAgentBatch(
@@ -59,13 +66,11 @@ async def create_messages_batch(
             job_manager=server.job_manager,
             actor=actor,
         )
-        print("call step_until_request", batch_job)
-        llm_batch_job = await batch_runner.step_until_request(batch_requests=request.requests, letta_batch_job_id=batch_job.id)
+        llm_batch_job = await batch_runner.step_until_request(batch_requests=payload.requests, letta_batch_job_id=batch_job.id)
 
         # TODO: update run metadata
         batch_job = server.job_manager.create_job(pydantic_job=batch_job, actor=actor)
-    except Exception as e:
-        print("Error creating batch job", e)
+    except Exception:
         import traceback
 
         traceback.print_exc()
@@ -103,7 +108,6 @@ async def list_batch_runs(
     actor = server.user_manager.get_user_or_default(user_id=actor_id)
 
     jobs = server.job_manager.list_jobs(actor=actor, statuses=[JobStatus.created, JobStatus.running], job_type=JobType.BATCH)
-    print("ACTIVE", jobs)
     return [BatchJob.from_job(job) for job in jobs]
 
 
