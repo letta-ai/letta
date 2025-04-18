@@ -25,6 +25,7 @@ import { launchLinkRoutes } from '$web/web-api/launch-links/launchLinksRoutes';
 import { modelsRouter } from './models/modelRoutes';
 import { cloudAccessCodeRouter } from '$web/web-api/cloud-access-code/cloudAccessCodeRouter';
 import { composioRouter } from '$web/web-api/composio/composioRouter';
+import { transactionsRoutes } from '$web/web-api/transactions/transactionsRoutes';
 
 export const router = {
   user: userRouter,
@@ -47,6 +48,7 @@ export const router = {
   models: modelsRouter,
   cloudAccessCode: cloudAccessCodeRouter,
   composio: composioRouter,
+  transactions: transactionsRoutes,
   admin: {
     usage: adminUsageRouter,
     toolMetadata: adminToolMetadataRouter,

@@ -4,6 +4,7 @@
   "main": "index.js",
   "scripts": {
     "start": "node ./dist/main.js",
+    "dev": "ts-node --swc ./src/main.ts",
     "build": "esbuild src/main.ts --tsconfig=tsconfig.app.json --bundle --platform=node --outdir=dist --format=cjs --sourcemap --external:pg --external:postgres --external:ioredis --external:zod --external:@sentry/node --external:dotenv --external:drizzle-orm"
   },
   "author": "",

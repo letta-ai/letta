@@ -85,6 +85,11 @@ function SettingsLayout(props: SettingsLayoutProps) {
                     href: '/settings/organization/usage',
                   },
                   {
+                    id: 'audit-log',
+                    label: t('organization.auditLog'),
+                    href: '/settings/organization/audit-log',
+                  },
+                  {
                     id: 'rate-limits',
                     label: t('organization.rateLimits'),
                     href: '/settings/organization/rate-limits',

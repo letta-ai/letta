@@ -76,6 +76,10 @@ import {
   composioContracts,
   composioQueryKeys,
 } from './public/composioContracts';
+import {
+  transactionsContracts,
+  transactionsQueryKeys,
+} from './public/transactionsContracts';
 
 export const contracts = {
   user: userContract,
@@ -98,6 +102,7 @@ export const contracts = {
   launchLinks: launchLinkContracts,
   models: modelContracts,
   cloudAccessCode: cloudAccessCodeContract,
+  transactions: transactionsContracts,
   admin: {
     usage: adminUsageContracts,
     toolMetadata: adminToolMetadataContracts,
@@ -127,6 +132,7 @@ export const queryClientKeys = {
   launchLinks: launchLinkQueryKeys,
   composio: composioQueryKeys,
   models: modelQueryClientKeys,
+  transactions: transactionsQueryKeys,
   admin: {
     usage: adminUsageQueryKeys,
     users: adminUsersQueryClientKeys,
@@ -160,3 +166,4 @@ export * from './public/sharedAgentChatsContracts';
 export * from './public/launchLinkContracts';
 export * from './public/modelsContracts';
 export * from './public/composioContracts';
+export * from './public/transactionsContracts';

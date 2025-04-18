@@ -459,6 +459,22 @@
       "configure": "Configure"
     }
   },
+  "settings/audit-log": {
+    "viewStep": "View step",
+    "title": "Audit log",
+    "moreSoon": "More features coming soon",
+    "description": "View all the credit transactions that have been made in your organization",
+    "table": {
+      "loading": "Loading audit log...",
+      "noResults": "No transactions found",
+      "columns": {
+        "date": "Date",
+        "note": "Description",
+        "amount": "Amount",
+        "actions": "Actions"
+      }
+    }
+  },
   "settings/layout": {
     "personal": "Settings",
     "profile": "Profile",
@@ -467,6 +483,7 @@
       "general": "General",
       "members": "Members",
       "root": "Organization",
+      "auditLog": "Audit Log",
       "billing": "Billing",
       "usage": "Usage",
       "integrations": "Integrations",

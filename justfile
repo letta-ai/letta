@@ -272,7 +272,7 @@ deploy-cloud-api: push-cloud-api
 
 undertaker:
     @echo "🚧 Running the undertaker..."
-    npm run undertaker:dev
+    cd apps/credit-undertaker && npm run dev
 
 # Trigger the undertaker deployment workflow (defaults to current branch if none specified)
 trigger-undertaker-deploy branch="" deploy_message="":

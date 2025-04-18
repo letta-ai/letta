@@ -336,6 +336,19 @@
       }
     }
   },
+  "StepsViewer": {
+    "messages": "Messages",
+    "statistics": {
+      "title": "Statistics",
+      "completionTokens": "Completion tokens",
+      "inputTokens": "Input tokens",
+      "totalTokens": "Total tokens",
+      "promptTokens": "Prompt tokens",
+      "providerName": "Provider name",
+      "model": "Model",
+      "modelEndpoint": "Model endpoint"
+    }
+  },
   "ADE/AgentSettingsPanel": {
     "IdentityElement": {
       "remove": "Remove"
