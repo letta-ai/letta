@@ -217,8 +217,8 @@ navigation:
         paginated: true
         flattened: true
         snippets:
-          typescript: letta
-          python: letta
+          typescript: "@letta-ai/letta-client"
+          python: letta-client
         layout:
           - agents
   - tab: cookbooks

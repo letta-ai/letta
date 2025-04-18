@@ -12,499 +12,105 @@ paths:
       x-fern-sdk-group-name:
         - tools
       x-fern-sdk-method-name: retrieve
-      x-fern-examples:
-        - code-samples:
-          - sdk: typescript
-            code: |
-              import { LettaClient } from "@letta-ai/letta-client";
-
-              const client = new LettaClient({ token: "YOUR_TOKEN" });
-              await client.tools.retrieve("tool_id");
-          - sdk: python
-            code: |
-              from letta_client import Letta
-
-              client = Letta(
-                  token="YOUR_TOKEN",
-              )
-              client.tools.retrieve(
-                  tool_id="tool_id",
-              )
     delete:
       x-fern-sdk-group-name:
         - tools
       x-fern-sdk-method-name: delete
-      x-fern-examples:
-        - code-samples:
-          - sdk: typescript
-            code: |
-              import { LettaClient } from "@letta-ai/letta-client";
-
-              const client = new LettaClient({ token: "YOUR_TOKEN" });
-              await client.tools.delete("tool_id");
-          - sdk: python
-            code: |
-              from letta_client import Letta
-
-              client = Letta(
-                  token="YOUR_TOKEN",
-              )
-              client.tools.delete(
-                  tool_id="tool_id",
-              )
     patch:
       x-fern-sdk-group-name:
         - tools
       x-fern-sdk-method-name: modify
-      x-fern-examples:
-        - code-samples:
-          - sdk: typescript
-            code: |
-              import { LettaClient } from "@letta-ai/letta-client";
-
-              const client = new LettaClient({ token: "YOUR_TOKEN" });
-              await client.tools.modify("tool_id");
-          - sdk: python
-            code: |
-              from letta_client import Letta
-
-              client = Letta(
-                  token="YOUR_TOKEN",
-              )
-              client.tools.modify(
-                  tool_id="tool_id",
-              )
   /v1/tools/:
     get:
       x-fern-sdk-group-name:
         - tools
       x-fern-sdk-method-name: list
-      x-fern-examples:
-        - code-samples:
-          - sdk: typescript
-            code: |
-              import { LettaClient } from "@letta-ai/letta-client";
-
-              const client = new LettaClient({ token: "YOUR_TOKEN" });
-              await client.tools.list();
-          - sdk: python
-            code: |
-              from letta_client import Letta
-
-              client = Letta(
-                  token="YOUR_TOKEN",
-              )
-              client.tools.list()
     post:
       x-fern-sdk-group-name:
         - tools
       x-fern-sdk-method-name: create
-      x-fern-examples:
-        - code-samples:
-          - sdk: typescript
-            code: |
-              import { LettaClient } from "@letta-ai/letta-client";
-
-              const client = new LettaClient({ token: "YOUR_TOKEN" });
-              await client.tools.create({
-                  sourceCode: "source_code"
-              });
-          - sdk: python
-            code: |
-              from letta_client import Letta
-
-              client = Letta(
-                  token="YOUR_TOKEN",
-              )
-              client.tools.create(
-                  source_code="source_code",
-              )
     put:
       x-fern-sdk-group-name:
         - tools
       x-fern-sdk-method-name: upsert
-      x-fern-examples:
-        - code-samples:
-          - sdk: typescript
-            code: |
-              import { LettaClient } from "@letta-ai/letta-client";
-
-              const client = new LettaClient({ token: "YOUR_TOKEN" });
-              await client.tools.upsert({
-                sourceCode: "source_code"
-              });
-          - sdk: python
-            code: |
-              from letta_client import Letta
-
-              client = Letta(
-                token="YOUR_TOKEN",
-              )
-              client.tools.upsert(
-                source_code="source_code",
-              )
   /v1/tools/add-base-tools:
     post:
       x-fern-sdk-group-name:
         - tools
       x-fern-sdk-method-name: add_base_tool
-      x-fern-examples:
-        - code-samples:
-          - sdk: typescript
-            code: |
-              import { LettaClient } from "@letta-ai/letta-client";
-
-              const client = new LettaClient({ token: "YOUR_TOKEN" });
-              await client.tools.addBaseTool();
-          - sdk: python
-            code: |
-              from letta_client import Letta
-
-              client = Letta(
-                  token="YOUR_TOKEN",
-              )
-              client.tools.add_base_tool()
   /v1/sources/{source_id}:
     get:
       x-fern-sdk-group-name:
         - sources
       x-fern-sdk-method-name: retrieve
-      x-fern-examples:
-        - code-samples:
-          - sdk: typescript
-            code: |
-              import { LettaClient } from "@letta-ai/letta-client";
-
-              const client = new LettaClient({ token: "YOUR_TOKEN" });
-              await client.sources.retrieve("source_id");
-          - sdk: python
-            code: |
-              from letta_client import Letta
-
-              client = Letta(
-                  token="YOUR_TOKEN",
-              )
-              client.sources.retrieve(
-                  source_id="source_id",
-              )
     delete:
       x-fern-sdk-group-name:
         - sources
       x-fern-sdk-method-name: delete
-      x-fern-examples:
-        - code-samples:
-          - sdk: typescript
-            code: |
-              import { LettaClient } from "@letta-ai/letta-client";
-
-              const client = new LettaClient({ token: "YOUR_TOKEN" });
-              await client.sources.delete("source_id");
-          - sdk: python
-            code: |
-              from letta_client import Letta
-
-              client = Letta(
-                  token="YOUR_TOKEN",
-              )
-              client.sources.delete(
-                  source_id="source_id",
-              )
     patch:
       x-fern-sdk-group-name:
         - sources
       x-fern-sdk-method-name: modify
-      x-fern-examples:
-        - code-samples:
-          - sdk: typescript
-            code: |
-              import { LettaClient } from "@letta-ai/letta-client";
-
-              const client = new LettaClient({ token: "YOUR_TOKEN" });
-              await client.sources.modify("source_id");
-          - sdk: python
-            code: |
-              from letta_client import Letta
-
-              client = Letta(
-                  token="YOUR_TOKEN",
-              )
-              client.sources.modify(
-                  source_id="source_id",
-              )
   /v1/sources/name/{source_name}:
     get:
       x-fern-sdk-group-name:
         - sources
       x-fern-sdk-method-name: getByName
-      x-fern-examples:
-        - code-samples:
-          - sdk: typescript
-            code: |
-              import { LettaClient } from "@letta-ai/letta-client";
-
-              const client = new LettaClient({ token: "YOUR_TOKEN" });
-              await client.sources.getByName("source_name");
-          - sdk: python
-            code: |
-              from letta_client import Letta
-
-              client = Letta(
-                  token="YOUR_TOKEN",
-              )
-              client.sources.get_by_name(
-                  source_name="source_name",
-              )
   /v1/sources/:
     get:
       x-fern-sdk-group-name:
         - sources
       x-fern-sdk-method-name: list
-      x-fern-examples:
-        - code-samples:
-          - sdk: typescript
-            code: |
-              import { LettaClient } from "@letta-ai/letta-client";
-
-              const client = new LettaClient({ token: "YOUR_TOKEN" });
-              await client.sources.list();
-          - sdk: python
-            code: |
-              from letta_client import Letta
-
-              client = Letta(
-                  token="YOUR_TOKEN",
-              )
-              client.sources.list()
     post:
       x-fern-sdk-group-name:
         - sources
       x-fern-sdk-method-name: create
-      x-fern-examples:
-        - code-samples:
-          - sdk: typescript
-            code: |
-              import { LettaClient } from "@letta-ai/letta-client";
-
-              const client = new LettaClient({ token: "YOUR_TOKEN" });
-              await client.sources.create({
-                name: "name"
-              });
-          - sdk: python
-            code: |
-              from letta_client import Letta
-
-              client = Letta(
-                  token="YOUR_TOKEN",
-              )
-              client.sources.create(
-                name="name",
-              )
   /v1/sources/{source_id}/upload:
     post:
       x-fern-sdk-group-name:
         - sources
         - files
       x-fern-sdk-method-name: upload
-      x-fern-examples:
-        - code-samples:
-          - sdk: typescript
-            code: |
-              import { LettaClient } from "@letta-ai/letta-client";
-              import * as fs from "fs";
-
-              const client = new LettaClient({ token: "YOUR_TOKEN" });
-              await client.sources.files.upload(fs.createReadStream("/path/to/your/file"), "source_id");
-          - sdk: python
-            code: |
-              from letta_client import Letta
-
-              client = Letta(
-                  token="YOUR_TOKEN",
-              )
-              client.sources.files.upload(
-                  source_id="source_id",
-              )
   /v1/sources/{source_id}/passages:
     get:
       x-fern-sdk-group-name:
         - sources
         - passages
       x-fern-sdk-method-name: list
-      x-fern-examples:
-        - code-samples:
-          - sdk: typescript
-            code: |
-              import { LettaClient } from "@letta-ai/letta-client";
-
-              const client = new LettaClient({ token: "YOUR_TOKEN" });
-              await client.sources.passages.list("source_id");
-          - sdk: python
-            code: |
-              from letta_client import Letta
-
-              client = Letta(
-                  token="YOUR_TOKEN",
-              )
-              client.sources.passages.list(
-                  source_id="source_id",
-              )
   /v1/sources/{source_id}/files:
     get:
       x-fern-sdk-group-name:
         - sources
         - files
       x-fern-sdk-method-name: list
-      x-fern-examples:
-        - code-samples:
-          - sdk: typescript
-            code: |
-              import { LettaClient } from "@letta-ai/letta-client";
-
-              const client = new LettaClient({ token: "YOUR_TOKEN" });
-              await client.sources.files.list("source_id");
-          - sdk: python
-            code: |
-              from letta_client import Letta
-
-              client = Letta(
-                  token="YOUR_TOKEN",
-              )
-              client.sources.files.list(
-                  source_id="source_id",
-              )
   /v1/sources/{source_id}/{file_id}:
     delete:
       x-fern-sdk-group-name:
         - sources
         - files
       x-fern-sdk-method-name: delete
-      x-fern-examples:
-        - code-samples:
-          - sdk: typescript
-            code: |
-              import { LettaClient } from "@letta-ai/letta-client";
-
-              const client = new LettaClient({ token: "YOUR_TOKEN" });
-              await client.sources.files.delete("source_id", "file_id");
-          - sdk: python
-            code: |
-              from letta_client import Letta
-
-              client = Letta(
-                  token="YOUR_TOKEN",
-              )
-              client.sources.files.delete(
-                  source_id="source_id",
-                  file_id="file_id",
-              )
   /v1/agents/:
     get:
       x-fern-sdk-group-name:
         - agents
       x-fern-sdk-method-name: list
-      x-fern-examples:
-        - code-samples:
-          - sdk: typescript
-            code: |
-              import { LettaClient } from "@letta-ai/letta-client";
-
-              const client = new LettaClient({ token: "YOUR_TOKEN" });
-              await client.agents.list();
-          - sdk: python
-            code: |
-              from letta_client import Letta
-
-              client = Letta(
-                  token="YOUR_TOKEN",
-              )
-              client.agents.list()
     post:
       x-fern-sdk-group-name:
         - agents
       x-fern-sdk-method-name: create
-      x-fern-examples:
-        - code-samples:
-          - sdk: typescript
-            code: |
-              import { LettaClient } from "@letta-ai/letta-client";
-
-              const client = new LettaClient({ token: "YOUR_TOKEN" });
-              await client.agents.create();
-          - sdk: python
-            code: |
-              from letta_client import Letta
-
-              client = Letta(
-                  token="YOUR_TOKEN",
-              )
-              client.agents.create()
   /v1/agents/{agent_id}:
     get:
       x-fern-sdk-group-name:
         - agents
       x-fern-sdk-method-name: retrieve
-      x-fern-examples:
-        - code-samples:
-          - sdk: typescript
-            code: |
-              import { LettaClient } from "@letta-ai/letta-client";
-
-              const client = new LettaClient({ token: "YOUR_TOKEN" });
-              await client.agents.retrieve("agent_id");
-          - sdk: python
-            code: |
-              from letta_client import Letta
-
-              client = Letta(
-                  token="YOUR_TOKEN",
-              )
-              client.agents.retrieve(
-                  agent_id="agent_id",
-              )
     delete:
       x-fern-sdk-group-name:
         - agents
       x-fern-sdk-method-name: delete
-      x-fern-examples:
-        - code-samples:
-          - sdk: typescript
-            code: |
-              import { LettaClient } from "@letta-ai/letta-client";
-
-              const client = new LettaClient({ token: "YOUR_TOKEN" });
-              await client.agents.delete("agent_id");
-          - sdk: python
-            code: |
-              from letta_client import Letta
-
-              client = Letta(
-                  token="YOUR_TOKEN",
-              )
-              client.agents.delete(
-                  agent_id="agent_id",
-              )
     patch:
       x-fern-sdk-group-name:
         - agents
       x-fern-sdk-method-name: modify
-      x-fern-examples:
-        - code-samples:
-          - sdk: typescript
-            code: |
-              import { LettaClient } from "@letta-ai/letta-client";
-
-              const client = new LettaClient({ token: "YOUR_TOKEN" });
-              await client.agents.modify("agent_id");
-          - sdk: python
-            code: |
-              from letta_client import Letta
-
-              client = Letta(
-                  token="YOUR_TOKEN",
-              )
-              client.agents.modify(
-                  agent_id="agent_id",
-              )
   /v1/agents/search:
     post:
       x-fern-sdk-group-name:
@@ -514,70 +120,18 @@ paths:
         <Note>This endpoint is only available on Letta Cloud.</Note>
 
         Search deployed agents.
-      x-fern-examples:
-        - code-samples:
-          - sdk: typescript
-            code: |
-              import { LettaClient } from "@letta-ai/letta-client";
-
-              const client = new LettaClient({ token: "YOUR_TOKEN" });
-              await client.agents.search();
-          - sdk: python
-            code: |
-              from letta_client import Letta
-
-              client = Letta(
-                  token="YOUR_TOKEN",
-              )
-              client.agents.search()
   /v1/agents/{agent_id}/context:
     get:
       x-fern-sdk-group-name:
         - agents
         - context
       x-fern-sdk-method-name: retrieve
-      x-fern-examples:
-        - code-samples:
-          - sdk: typescript
-            code: |
-              import { LettaClient } from "@letta-ai/letta-client";
-
-              const client = new LettaClient({ token: "YOUR_TOKEN" });
-              await client.agents.context.retrieve("agent_id");
-          - sdk: python
-            code: |
-              from letta_client import Letta
-
-              client = Letta(
-                  token="YOUR_TOKEN",
-              )
-              client.agents.context.retrieve(
-                  agent_id="agent_id",
-              )
   /v1/agents/{agent_id}/tools:
     get:
       x-fern-sdk-group-name:
         - agents
         - tools
       x-fern-sdk-method-name: list
-      x-fern-examples:
-        - code-samples:
-          - sdk: typescript
-            code: |
-              import { LettaClient } from "@letta-ai/letta-client";
-
-              const client = new LettaClient({ token: "YOUR_TOKEN" });
-              await client.agents.tools.list("agent_id");
-          - sdk: python
-            code: |
-              from letta_client import Letta
-
-              client = Letta(
-                  token="YOUR_TOKEN",
-              )
-              client.agents.tools.list(
-                  agent_id="agent_id",
-              )
   /v1/agents/{agent_id}/tools/attach/{tool_id}:
     patch:
       x-fern-sdk-group-name:
@@ -595,25 +149,6 @@ paths:
           required: true
           schema:
             type: string
-      x-fern-examples:
-        - code-samples:
-          - sdk: typescript
-            code: |
-              import { LettaClient } from "@letta-ai/letta-client";
-
-              const client = new LettaClient({ token: "YOUR_TOKEN" });
-              await client.agents.tools.attach("agent_id", "tool_id");
-          - sdk: python
-            code: |
-              from letta_client import Letta
-
-              client = Letta(
-                  token="YOUR_TOKEN",
-              )
-              client.agents.tools.attach(
-                  agent_id="agent_id",
-                  tool_id="tool_id",
-              )
   /v1/agents/{agent_id}/tools/detach/{tool_id}:
     patch:
       x-fern-sdk-group-name:
@@ -631,49 +166,12 @@ paths:
           required: true
           schema:
             type: string
-      x-fern-examples:
-        - code-samples:
-          - sdk: typescript
-            code: |
-              import { LettaClient } from "@letta-ai/letta-client";
-
-              const client = new LettaClient({ token: "YOUR_TOKEN" });
-              await client.agents.tools.detach("agent_id", "tool_id");
-          - sdk: python
-            code: |
-              from letta_client import Letta
-
-              client = Letta(
-                  token="YOUR_TOKEN",
-              )
-              client.agents.tools.detach(
-                  agent_id="agent_id",
-                  tool_id="tool_id",
-              )
   /v1/agents/{agent_id}/sources:
     get:
       x-fern-sdk-group-name:
         - agents
         - sources
       x-fern-sdk-method-name: list
-      x-fern-examples:
-        - code-samples:
-          - sdk: typescript
-            code: |
-              import { LettaClient } from "@letta-ai/letta-client";
-
-              const client = new LettaClient({ token: "YOUR_TOKEN" });
-              await client.agents.sources.list("agent_id");
-          - sdk: python
-            code: |
-              from letta_client import Letta
-
-              client = Letta(
-                  token="YOUR_TOKEN",
-              )
-              client.agents.sources.list(
-                  agent_id="agent_id",
-              )
   /v1/agents/{agent_id}/core-memory:
     get:
       x-fern-sdk-group-name:
@@ -686,24 +184,6 @@ paths:
           required: true
           schema:
             type: string
-      x-fern-examples:
-        - code-samples:
-          - sdk: typescript
-            code: |
-              import { LettaClient } from "@letta-ai/letta-client";
-
-              const client = new LettaClient({ token: "YOUR_TOKEN" });
-              await client.agents.coreMemory.retrieve("agent_id");
-          - sdk: python
-            code: |
-              from letta_client import Letta
-
-              client = Letta(
-                  token="YOUR_TOKEN",
-              )
-              client.agents.core_memory.retrieve(
-                  agent_id="agent_id",
-              )
   /v1/agents/{agent_id}/core-memory/blocks:
     get:
       x-fern-sdk-group-name:
@@ -716,24 +196,6 @@ paths:
           required: true
           schema:
             type: string
-      x-fern-examples:
-        - code-samples:
-          - sdk: typescript
-            code: |
-              import { LettaClient } from "@letta-ai/letta-client";
-
-              const client = new LettaClient({ token: "YOUR_TOKEN" });
-              await client.agents.blocks.list("agent_id");
-          - sdk: python
-            code: |
-              from letta_client import Letta
-
-              client = Letta(
-                  token="YOUR_TOKEN",
-              )
-              client.agents.blocks.list(
-                  agent_id="agent_id",
-              )
   /v1/agents/{agent_id}/core-memory/blocks/attach/{block_id}:
     patch:
       x-fern-sdk-group-name:
@@ -751,25 +213,6 @@ paths:
           required: true
           schema:
             type: string
-      x-fern-examples:
-        - code-samples:
-          - sdk: typescript
-            code: |
-              import { LettaClient } from "@letta-ai/letta-client";
-
-              const client = new LettaClient({ token: "YOUR_TOKEN" });
-              await client.agents.blocks.attach("agent_id", "block_id");
-          - sdk: python
-            code: |
-              from letta_client import Letta
-
-              client = Letta(
-                  token="YOUR_TOKEN",
-              )
-              client.agents.blocks.attach(
-                  agent_id="agent_id",
-                  block_id="block_id",
-              )
   /v1/agents/{agent_id}/core-memory/blocks/detach/{block_id}:
     patch:
       x-fern-sdk-group-name:
@@ -787,25 +230,6 @@ paths:
           required: true
           schema:
             type: string
-      x-fern-examples:
-        - code-samples:
-          - sdk: typescript
-            code: |
-              import { LettaClient } from "@letta-ai/letta-client";
-
-              const client = new LettaClient({ token: "YOUR_TOKEN" });
-              await client.agents.blocks.detach("agent_id", "block_id");
-          - sdk: python
-            code: |
-              from letta_client import Letta
-
-              client = Letta(
-                  token="YOUR_TOKEN",
-              )
-              client.agents.blocks.detach(
-                  agent_id="agent_id",
-                  block_id="block_id",
-              )
   /v1/agents/{agent_id}/core-memory/blocks/{block_label}:
     get:
       x-fern-sdk-group-name:
@@ -823,25 +247,6 @@ paths:
           required: true
           schema:
             type: string
-      x-fern-examples:
-        - code-samples:
-          - sdk: typescript
-            code: |
-              import { LettaClient } from "@letta-ai/letta-client";
-
-              const client = new LettaClient({ token: "YOUR_TOKEN" });
-              await client.agents.blocks.retrieve("agent_id", "block_label");
-          - sdk: python
-            code: |
-              from letta_client import Letta
-
-              client = Letta(
-                  token="YOUR_TOKEN",
-              )
-              client.agents.blocks.retrieve(
-                  agent_id="agent_id",
-                  block_label="block_label",
-              )
     patch:
       x-fern-sdk-group-name:
         - agents
@@ -858,25 +263,6 @@ paths:
           required: true
           schema:
             type: string
-      x-fern-examples:
-        - code-samples:
-          - sdk: typescript
-            code: |
-              import { LettaClient, Letta } from "@letta-ai/letta-client";
-
-              const client = new LettaClient({ token: "YOUR_TOKEN" });
-              await client.agents.blocks.modify("agent_id", "block_label", {});
-          - sdk: python
-            code: |
-              from letta_client import Letta
-
-              client = Letta(
-                  token="YOUR_TOKEN",
-              )
-              client.agents.blocks.modify(
-                  agent_id="agent_id",
-                  block_label="block_label",
-              )
   /v1/agents/{agent_id}/archival-memory:
     get:
       x-fern-sdk-group-name:
@@ -889,24 +275,6 @@ paths:
           required: true
           schema:
             type: string
-      x-fern-examples:
-        - code-samples:
-          - sdk: typescript
-            code: |
-              import { LettaClient } from "@letta-ai/letta-client";
-
-              const client = new LettaClient({ token: "YOUR_TOKEN" });
-              await client.agents.passages.list("agent_id");
-          - sdk: python
-            code: |
-              from letta_client import Letta
-
-              client = Letta(
-                  token="YOUR_TOKEN",
-              )
-              client.agents.passages.list(
-                  agent_id="agent_id",
-              )
     post:
       x-fern-sdk-group-name:
         - agents
@@ -918,27 +286,6 @@ paths:
           required: true
           schema:
             type: string
-      x-fern-examples:
-        - code-samples:
-          - sdk: typescript
-            code: |
-              import { LettaClient } from "@letta-ai/letta-client";
-
-              const client = new LettaClient({ token: "YOUR_TOKEN" });
-              await client.agents.passages.create("agent_id", {
-                text: "text"
-              });
-          - sdk: python
-            code: |
-              from letta_client import Letta
-
-              client = Letta(
-                  token="YOUR_TOKEN",
-              )
-              client.agents.passages.create(
-                  agent_id="agent_id",
-                  text="text",
-              )
   /v1/agents/{agent_id}/archival-memory/{memory_id}:
     delete:
       x-fern-sdk-group-name:
@@ -956,143 +303,29 @@ paths:
           required: true
           schema:
             type: string
-      x-fern-examples:
-        - code-samples:
-          - sdk: typescript
-            code: |
-              import { LettaClient } from "@letta-ai/letta-client";
-
-              const client = new LettaClient({ token: "YOUR_TOKEN" });
-              await client.agents.passages.delete("agent_id", "memory_id");
-          - sdk: python
-            code: |
-              from letta_client import Letta
-
-              client = Letta(
-                  token="YOUR_TOKEN",
-              )
-              client.agents.passages.delete(
-                  agent_id="agent_id",
-                  memory_id="memory_id",
-              )
   /v1/agents/{agent_id}/messages:
     get:
       x-fern-sdk-group-name:
         - agents
         - messages
       x-fern-sdk-method-name: list
-      x-fern-examples:
-        - code-samples:
-          - sdk: typescript
-            code: |
-              import { LettaClient } from "@letta-ai/letta-client";
-
-              const client = new LettaClient({ token: "YOUR_TOKEN" });
-              await client.agents.messages.list("agent_id");
-          - sdk: python
-            code: |
-              from letta_client import Letta
-
-              client = Letta(
-                  token="YOUR_TOKEN",
-              )
-              client.agents.messages.list(
-                  agent_id="agent_id",
-              )
     post:
       x-fern-sdk-group-name:
         - agents
         - messages
       x-fern-sdk-method-name: create
-      x-fern-examples:
-        - code-samples:
-          - sdk: typescript
-            code: |
-              import { LettaClient } from "@letta-ai/letta-client";
-
-              const client = new LettaClient({ token: "YOUR_TOKEN" });
-              await client.agents.messages.create("agent_id", {
-                messages: [{
-                  role: "user",
-                  content: "content"
-                }]
-              });
-          - sdk: python
-            code: |
-              from letta_client import Letta, MessageCreate
-
-              client = Letta(
-                  token="YOUR_TOKEN",
-              )
-              client.agents.messages.create(
-                  agent_id="agent_id",
-                  messages=[
-                    MessageCreate(
-                      role="user",
-                      content="content",
-                    )
-                  ],
-              )
   /v1/agents/{agent_id}/messages/{message_id}:
     patch:
       x-fern-sdk-group-name:
         - agents
         - messages
       x-fern-sdk-method-name: modify
-      x-fern-examples:
-        - code-samples:
-          - sdk: typescript
-            code: |
-              import { LettaClient } from "@letta-ai/letta-client";
-
-              const client = new LettaClient({ token: "YOUR_TOKEN" });
-              await client.agents.messages.modify("agent_id", "message_id");
-          - sdk: python
-            code: |
-              from letta_client import Letta
-
-              client = Letta(
-                  token="YOUR_TOKEN",
-              )
-              client.agents.messages.modify(
-                  agent_id="agent_id",
-                  message_id="message_id",
-              )
   /v1/agents/{agent_id}/messages/async:
     post:
       x-fern-sdk-group-name:
         - agents
         - messages
       x-fern-sdk-method-name: create_async
-      x-fern-examples:
-        - code-samples:
-          - sdk: typescript
-            code: |
-              import { LettaClient } from "@letta-ai/letta-client";
-
-              const client = new LettaClient({ token: "YOUR_TOKEN" });
-              await client.agents.messages.createAsync("agent_id", {
-                messages: [{
-                  role: "user",
-                  content: "content"
-                }]
-              });
-          - sdk: python
-            code: |
-              from letta_client import Letta, MessageCreate
-
-              client = Letta(
-                  token="YOUR_TOKEN",
-              )
-              client.agents.messages.create_async(
-                  agent_id="agent_id",
-                  messages=[
-                    MessageCreate(
-                      role="user",
-                      content="content",
-                    )
-                  ],
-              )
   /v1/agents/{agent_id}/messages/stream:
     post:
       x-fern-streaming:
@@ -1115,40 +348,6 @@ paths:
                   - $ref: '#/components/schemas/ToolReturnMessage'
                   - $ref: '#/components/schemas/AssistantMessage'
                   - $ref: '#/components/schemas/LettaUsageStatistics'
-      x-fern-examples:
-        - code-samples:
-          - sdk: typescript
-            code: |
-              import { LettaClient } from "@letta-ai/letta-client";
-
-              const client = new LettaClient({ token: "YOUR_TOKEN" });
-              const response = await client.agents.messages.createStream("agent_id", {
-                messages: [{
-                  role: "user",
-                  content: "content"
-                }]
-              });
-              for await (const item of response) {
-                console.log(item);
-              }
-          - sdk: python
-            code: |
-              from letta_client import Letta, MessageCreate
-
-              client = Letta(
-                  token="YOUR_TOKEN",
-              )
-              response = client.agents.messages.create_stream(
-                  agent_id="agent_id",
-                  messages=[
-                    MessageCreate(
-                      role="user",
-                      content="content",
-                    )
-                  ],
-              )
-              for chunk in response:
-                yield chunk
   /v1/agents/{agent_id}/template:
     post:
       x-fern-sdk-group-name:
@@ -1159,24 +358,6 @@ paths:
         <Note>This endpoint is only available on Letta Cloud.</Note>
 
         Creates a template from an agent.
-      x-fern-examples:
-        - code-samples:
-          - sdk: typescript
-            code: |
-              import { LettaClient } from "@letta-ai/letta-client";
-
-              const client = new LettaClient({ token: "YOUR_TOKEN" });
-              await client.agents.templates.create("agent_id");
-          - sdk: python
-            code: |
-              from letta_client import Letta
-
-              client = Letta(
-                  token="YOUR_TOKEN",
-              )
-              client.agents.templates.create(
-                  agent_id="agent_id",
-              )
   /v1/agents/{agent_id}/migrate:
     post:
       x-fern-sdk-group-name:
@@ -1187,29 +368,6 @@ paths:
         <Note>This endpoint is only available on Letta Cloud.</Note>
 
         Migrate an agent to a new versioned agent template.
-      x-fern-examples:
-        - code-samples:
-          - sdk: typescript
-            code: |
-              import { LettaClient } from "@letta-ai/letta-client";
-
-              const client = new LettaClient({ token: "YOUR_TOKEN" });
-              await client.agents.templates.migrate("agent_id", {
-                toTemplate: "to_template",
-                preserveCoreMemories: true
-              });
-          - sdk: python
-            code: |
-              from letta_client import Letta
-
-              client = Letta(
-                  token="YOUR_TOKEN",
-              )
-              client.agents.templates.migrate(
-                  agent_id="agent_id",
-                  to_template="to_template",
-                  preserve_core_memories=True,
-              )
   /v1/agents/{agent_id}/version-template:
     post:
       x-fern-sdk-group-name:
@@ -1220,24 +378,6 @@ paths:
         <Note>This endpoint is only available on Letta Cloud.</Note>
 
         Creates a new version of the template version of the agent.
-      x-fern-examples:
-        - code-samples:
-          - sdk: typescript
-            code: |
-              import { LettaClient } from "@letta-ai/letta-client";
-
-              const client = new LettaClient({ token: "YOUR_TOKEN" });
-              await client.agents.templates.createVersion("agent_id");
-          - sdk: python
-            code: |
-              from letta_client import Letta
-
-              client = Letta(
-                  token="YOUR_TOKEN",
-              )
-              client.agents.templates.create_version(
-                  agent_id="agent_id",
-              )
   /v1/agents/{agent_id}/core-memory/variables:
     get:
       x-fern-sdk-group-name:
@@ -1254,24 +394,6 @@ paths:
         <Note>This endpoint is only available on Letta Cloud.</Note>
 
         Returns the memory variables associated with an agent.
-      x-fern-examples:
-        - code-samples:
-          - sdk: typescript
-            code: |
-              import { LettaClient } from "@letta-ai/letta-client";
-
-              const client = new LettaClient({ token: "YOUR_TOKEN" });
-              await client.agents.memoryVariables.list("agent_id");
-          - sdk: python
-            code: |
-              from letta_client import Letta
-
-              client = Letta(
-                  token="YOUR_TOKEN",
-              )
-              client.agents.memory_variables.list(
-                  agent_id="agent_id",
-              )
   /v1/agents/{agent_id}/sources/attach/{source_id}:
     patch:
       x-fern-sdk-group-name:
@@ -1289,25 +411,6 @@ paths:
           required: true
           schema:
             type: string
-      x-fern-examples:
-        - code-samples:
-          - sdk: typescript
-            code: |
-              import { LettaClient } from "@letta-ai/letta-client";
-
-              const client = new LettaClient({ token: "YOUR_TOKEN" });
-              await client.agents.sources.attach("agent_id", "source_id");
-          - sdk: python
-            code: |
-              from letta_client import Letta
-
-              client = Letta(
-                  token="YOUR_TOKEN",
-              )
-              client.agents.sources.attach(
-                  agent_id="agent_id",
-                  source_id="source_id",
-              )
   /v1/agents/{agent_id}/sources/detach/{source_id}:
     patch:
       x-fern-sdk-group-name:
@@ -1325,313 +428,67 @@ paths:
           required: true
           schema:
             type: string
-      x-fern-examples:
-        - code-samples:
-          - sdk: typescript
-            code: |
-              import { LettaClient } from "@letta-ai/letta-client";
-
-              const client = new LettaClient({ token: "YOUR_TOKEN" });
-              await client.agents.sources.detach("agent_id", "source_id");
-          - sdk: python
-            code: |
-              from letta_client import Letta
-
-              client = Letta(
-                  token="YOUR_TOKEN",
-              )
-              client.agents.sources.detach(
-                  agent_id="agent_id",
-                  source_id="source_id",
-              )
   /v1/models/:
     get:
       x-fern-sdk-group-name:
         - models
       x-fern-sdk-method-name: list_llms
-      x-fern-examples:
-        - code-samples:
-          - sdk: typescript
-            code: |
-              import { LettaClient } from "@letta-ai/letta-client";
-
-              const client = new LettaClient({ token: "YOUR_TOKEN" });
-              await client.models.listLlms();
-          - sdk: python
-            code: |
-              from letta_client import Letta
-
-              client = Letta(
-                  token="YOUR_TOKEN",
-              )
-              client.models.list_llms()
   /v1/models/embedding:
     get:
       x-fern-sdk-group-name:
         - models
       x-fern-sdk-method-name: list_embedding_models
-      x-fern-examples:
-        - code-samples:
-          - sdk: typescript
-            code: |
-              import { LettaClient } from "@letta-ai/letta-client";
-
-              const client = new LettaClient({ token: "YOUR_TOKEN" });
-              await client.models.listEmbeddingModels();
-          - sdk: python
-            code: |
-              from letta_client import Letta
-
-              client = Letta(
-                  token="YOUR_TOKEN",
-              )
-              client.models.list_embedding_models()
   /v1/blocks/:
     get:
       x-fern-sdk-group-name:
         - blocks
       x-fern-sdk-method-name: list
-      x-fern-examples:
-        - code-samples:
-          - sdk: typescript
-            code: |
-              import { LettaClient } from "@letta-ai/letta-client";
-
-              const client = new LettaClient({ token: "YOUR_TOKEN" });
-              await client.blocks.list();
-          - sdk: python
-            code: |
-              from letta_client import Letta
-
-              client = Letta(
-                  token="YOUR_TOKEN",
-              )
-              client.blocks.list()
     post:
       x-fern-sdk-group-name:
         - blocks
       x-fern-sdk-method-name: create
-      x-fern-examples:
-        - code-samples:
-          - sdk: typescript
-            code: |
-              import { LettaClient } from "@letta-ai/letta-client";
-
-              const client = new LettaClient({ token: "YOUR_TOKEN" });
-              await client.blocks.create({
-                value: "value",
-                label: "label"
-              });
-          - sdk: python
-            code: |
-              from letta_client import Letta
-
-              client = Letta(
-                  token="YOUR_TOKEN",
-              )
-              client.blocks.create(
-                  value="value",
-                  label="label",
-              )
   /v1/blocks/{block_id}:
     get:
       x-fern-sdk-group-name:
         - blocks
       x-fern-sdk-method-name: retrieve
-      x-fern-examples:
-        - code-samples:
-          - sdk: typescript
-            code: |
-              import { LettaClient } from "@letta-ai/letta-client";
-
-              const client = new LettaClient({ token: "YOUR_TOKEN" });
-              await client.blocks.retrieve("block_id");
-          - sdk: python
-            code: |
-              from letta_client import Letta
-
-              client = Letta(
-                  token="YOUR_TOKEN",
-              )
-              client.blocks.retrieve(
-                  block_id="block_id",
-              )
     delete:
       x-fern-sdk-group-name:
         - blocks
       x-fern-sdk-method-name: delete
-      x-fern-examples:
-        - code-samples:
-          - sdk: typescript
-            code: |
-              import { LettaClient } from "@letta-ai/letta-client";
-
-              const client = new LettaClient({ token: "YOUR_TOKEN" });
-              await client.blocks.delete("block_id");
-          - sdk: python
-            code: |
-              from letta_client import Letta
-
-              client = Letta(
-                  token="YOUR_TOKEN",
-              )
-              client.blocks.delete(
-                  block_id="block_id",
-              )
     patch:
       x-fern-sdk-group-name:
         - blocks
       x-fern-sdk-method-name: modify
-      x-fern-examples:
-        - code-samples:
-          - sdk: typescript
-            code: |
-              import { LettaClient, Letta } from "@letta-ai/letta-client";
-
-              const client = new LettaClient({ token: "YOUR_TOKEN" });
-              await client.blocks.modify("block_id", {});
-          - sdk: python
-            code: |
-              from letta_client import Letta
-
-              client = Letta(
-                  token="YOUR_TOKEN",
-              )
-              client.blocks.modify(
-                  block_id="block_id",
-              )
   /v1/jobs/:
     get:
       x-fern-sdk-group-name:
         - jobs
       x-fern-sdk-method-name: list
-      x-fern-examples:
-        - code-samples:
-          - sdk: typescript
-            code: |
-              import { LettaClient } from "@letta-ai/letta-client";
-
-              const client = new LettaClient({ token: "YOUR_TOKEN" });
-              await client.jobs.list();
-          - sdk: python
-            code: |
-              from letta_client import Letta
-
-              client = Letta(
-                  token="YOUR_TOKEN",
-              )
-              client.jobs.list()
   /v1/jobs/active:
     get:
       x-fern-sdk-group-name:
         - jobs
       x-fern-sdk-method-name: listActive
-      x-fern-examples:
-        - code-samples:
-          - sdk: typescript
-            code: |
-              import { LettaClient } from "@letta-ai/letta-client";
-
-              const client = new LettaClient({ token: "YOUR_TOKEN" });
-              await client.jobs.listActive();
-          - sdk: python
-            code: |
-              from letta_client import Letta
-
-              client = Letta(
-                  token="YOUR_TOKEN",
-              )
-              client.jobs.list_active()
   /v1/jobs/{job_id}:
     get:
       x-fern-sdk-group-name:
         - jobs
       x-fern-sdk-method-name: retrieve
-      x-fern-examples:
-        - code-samples:
-          - sdk: typescript
-            code: |
-              import { LettaClient } from "@letta-ai/letta-client";
-
-              const client = new LettaClient({ token: "YOUR_TOKEN" });
-              await client.jobs.retrieve("job_id");
-          - sdk: python
-            code: |
-              from letta_client import Letta
-
-              client = Letta(
-                  token="YOUR_TOKEN",
-              )
-              client.jobs.retrieve(
-                  job_id="job_id",
-              )
     delete:
       x-fern-sdk-group-name:
         - jobs
       x-fern-sdk-method-name: delete
-      x-fern-examples:
-        - code-samples:
-          - sdk: typescript
-            code: |
-              import { LettaClient } from "@letta-ai/letta-client";
-
-              const client = new LettaClient({ token: "YOUR_TOKEN" });
-              await client.jobs.delete("job_id");
-          - sdk: python
-            code: |
-              from letta_client import Letta
-
-              client = Letta(
-                  token="YOUR_TOKEN",
-              )
-              client.jobs.delete(
-                  job_id="job_id",
-              )
   /v1/health/:
     get:
       x-fern-sdk-group-name:
         - health
       x-fern-sdk-method-name: check
-      x-fern-examples:
-        - code-samples:
-          - sdk: typescript
-            code: |
-              import { LettaClient } from "@letta-ai/letta-client";
-
-              const client = new LettaClient({ token: "YOUR_TOKEN" });
-              await client.health.check();
-          - sdk: python
-            code: |
-              from letta_client import Letta
-
-              client = Letta(
-                  token="YOUR_TOKEN",
-              )
-              client.health.check()
   /v1/templates/{project}/{template_version}/agents:
     post:
       x-fern-sdk-group-name:
         - templates
       x-fern-sdk-method-name: create_agents
-      x-fern-examples:
-        - code-samples:
-            - sdk: typescript
-              code: |
-                import { LettaClient } from "@letta-ai/letta-client";
-
-                const client = new LettaClient({ token: "YOUR_TOKEN" });
-                await client.templates.createAgents("project", "template_version");
-            - sdk: python
-              code: |
-                from letta_client import Letta
-
-                client = Letta(
-                    token="YOUR_TOKEN",
-                )
-                client.templates.create_agents(
-                    project="project",
-                    template_version="template_version",
-                )
   /v1/identities/:
     get:
       x-fern-sdk-group-name:
@@ -1729,8 +586,8 @@ paths:
       x-fern-sdk-group-name:
         - messages
         - batches
-      x-fern-sdk-method-name: create 
-    get: 
+      x-fern-sdk-method-name: create
+    get:
       x-fern-sdk-group-name:
         - messages
         - batches
@@ -1740,9 +597,9 @@ paths:
       x-fern-sdk-group-name:
         - messages
         - batches
-      x-fern-sdk-method-name: retrieve 
+      x-fern-sdk-method-name: retrieve
     patch:
       x-fern-sdk-group-name:
         - messages
         - batches
-      x-fern-sdk-method-name: cancel 
+      x-fern-sdk-method-name: cancel
