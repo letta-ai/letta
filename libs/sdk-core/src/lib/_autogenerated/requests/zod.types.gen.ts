@@ -1478,7 +1478,6 @@ export type ChatCompletionAudioParam = z.infer<typeof ChatCompletionAudioParam>;
 export const ChatCompletionAudioParam = z.object({
   format: z.union([
     z.literal('wav'),
-    z.literal('aac'),
     z.literal('mp3'),
     z.literal('flac'),
     z.literal('opus'),
@@ -1854,16 +1853,6 @@ export const CompletionCreateParamsNonStreaming = z.object({
   ),
   model: z.union([
     z.string(),
-    z.literal('gpt-4.1'),
-    z.literal('gpt-4.1-mini'),
-    z.literal('gpt-4.1-nano'),
-    z.literal('gpt-4.1-2025-04-14'),
-    z.literal('gpt-4.1-mini-2025-04-14'),
-    z.literal('gpt-4.1-nano-2025-04-14'),
-    z.literal('o4-mini'),
-    z.literal('o4-mini-2025-04-16'),
-    z.literal('o3'),
-    z.literal('o3-2025-04-16'),
     z.literal('o3-mini'),
     z.literal('o3-mini-2025-01-31'),
     z.literal('o1'),
@@ -1910,16 +1899,6 @@ export const CompletionCreateParamsNonStreaming = z.object({
     z.array(
       z.union([
         z.string(),
-        z.literal('gpt-4.1'),
-        z.literal('gpt-4.1-mini'),
-        z.literal('gpt-4.1-nano'),
-        z.literal('gpt-4.1-2025-04-14'),
-        z.literal('gpt-4.1-mini-2025-04-14'),
-        z.literal('gpt-4.1-nano-2025-04-14'),
-        z.literal('o4-mini'),
-        z.literal('o4-mini-2025-04-16'),
-        z.literal('o3'),
-        z.literal('o3-2025-04-16'),
         z.literal('o3-mini'),
         z.literal('o3-mini-2025-01-31'),
         z.literal('o1'),
@@ -2125,16 +2104,8 @@ export const CompletionCreateParamsNonStreaming = z.object({
     .union([
       z.literal('auto'),
       z.literal('default'),
-      z.literal('flex'),
       z.null(),
-      z.array(
-        z.union([
-          z.literal('auto'),
-          z.literal('default'),
-          z.literal('flex'),
-          z.null(),
-        ]),
-      ),
+      z.array(z.union([z.literal('auto'), z.literal('default'), z.null()])),
       z.undefined(),
     ])
     .optional(),
@@ -2243,16 +2214,6 @@ export const CompletionCreateParamsStreaming = z.object({
   ),
   model: z.union([
     z.string(),
-    z.literal('gpt-4.1'),
-    z.literal('gpt-4.1-mini'),
-    z.literal('gpt-4.1-nano'),
-    z.literal('gpt-4.1-2025-04-14'),
-    z.literal('gpt-4.1-mini-2025-04-14'),
-    z.literal('gpt-4.1-nano-2025-04-14'),
-    z.literal('o4-mini'),
-    z.literal('o4-mini-2025-04-16'),
-    z.literal('o3'),
-    z.literal('o3-2025-04-16'),
     z.literal('o3-mini'),
     z.literal('o3-mini-2025-01-31'),
     z.literal('o1'),
@@ -2299,16 +2260,6 @@ export const CompletionCreateParamsStreaming = z.object({
     z.array(
       z.union([
         z.string(),
-        z.literal('gpt-4.1'),
-        z.literal('gpt-4.1-mini'),
-        z.literal('gpt-4.1-nano'),
-        z.literal('gpt-4.1-2025-04-14'),
-        z.literal('gpt-4.1-mini-2025-04-14'),
-        z.literal('gpt-4.1-nano-2025-04-14'),
-        z.literal('o4-mini'),
-        z.literal('o4-mini-2025-04-16'),
-        z.literal('o3'),
-        z.literal('o3-2025-04-16'),
         z.literal('o3-mini'),
         z.literal('o3-mini-2025-01-31'),
         z.literal('o1'),
@@ -2514,16 +2465,8 @@ export const CompletionCreateParamsStreaming = z.object({
     .union([
       z.literal('auto'),
       z.literal('default'),
-      z.literal('flex'),
       z.null(),
-      z.array(
-        z.union([
-          z.literal('auto'),
-          z.literal('default'),
-          z.literal('flex'),
-          z.null(),
-        ]),
-      ),
+      z.array(z.union([z.literal('auto'), z.literal('default'), z.null()])),
       z.undefined(),
     ])
     .optional(),
