@@ -16,6 +16,10 @@ class JobBase(OrmMetadataBase):
     metadata: Optional[dict] = Field(None, validation_alias="metadata_", description="The metadata of the job.")
     job_type: JobType = Field(default=JobType.JOB, description="The type of the job.")
 
+    callback_url: Optional[str] = Field(None, description="If set, POST to this URL when the job completes.")
+    callback_sent_at: Optional[datetime] = Field(None, description="Timestamp when the callback was last attempted.")
+    callback_status_code: Optional[int] = Field(None, description="HTTP status code returned by the callback endpoint.")
+
 
 class Job(JobBase):
     """

@@ -392,78 +392,75 @@ async def test_resume_step_after_request_all_continue(
         mock_results.return_value = MockAsyncIterable(mock_items.copy())  # Using copy to preserve the original list
 
         with patch.object(server.anthropic_async_client.beta.messages.batches, "results", mock_results):
-            await poll_running_llm_batches(server)
+            with patch("letta.llm_api.anthropic_client.AnthropicClient.send_llm_batch_request_async", return_value=dummy_batch_response):
+                msg_counts_before = {agent.id: server.message_manager.size(actor=default_user, agent_id=agent.id) for agent in agents}
 
-            # Verify database records were updated correctly
-            llm_batch_job = server.batch_manager.get_llm_batch_job_by_id(llm_batch_job.id, actor=default_user)
+                new_batch_responses = await poll_running_llm_batches(server)
 
-            # Verify job properties
-            assert llm_batch_job.status == JobStatus.completed, "Job status should be 'completed'"
+                # Verify database records were updated correctly
+                llm_batch_job = server.batch_manager.get_llm_batch_job_by_id(llm_batch_job.id, actor=default_user)
 
-            # Verify batch items
-            items = server.batch_manager.list_llm_batch_items(llm_batch_id=llm_batch_job.id, actor=default_user)
-            assert len(items) == 3, f"Expected 3 batch items, got {len(items)}"
-            assert all([item.request_status == JobStatus.completed for item in items])
+                # Verify job properties
+                assert llm_batch_job.status == JobStatus.completed, "Job status should be 'completed'"
 
-    # 3. Call resume_step_after_request
-    letta_batch_agent = LettaAgentBatch(
-        message_manager=server.message_manager,
-        agent_manager=server.agent_manager,
-        block_manager=server.block_manager,
-        passage_manager=server.passage_manager,
-        batch_manager=server.batch_manager,
-        sandbox_config_manager=server.sandbox_config_manager,
-        job_manager=server.job_manager,
-        actor=default_user,
-    )
-    with patch("letta.llm_api.anthropic_client.AnthropicClient.send_llm_batch_request_async", return_value=dummy_batch_response):
-        msg_counts_before = {agent.id: server.message_manager.size(actor=default_user, agent_id=agent.id) for agent in agents}
+                # Verify batch items
+                items = server.batch_manager.list_llm_batch_items(llm_batch_id=llm_batch_job.id, actor=default_user)
+                assert len(items) == 3, f"Expected 3 batch items, got {len(items)}"
+                assert all([item.request_status == JobStatus.completed for item in items])
 
-        post_resume_response = await letta_batch_agent.resume_step_after_request(
-            letta_batch_id=pre_resume_response.letta_batch_id, llm_batch_id=llm_batch_job.id
-        )
+                # Verify only one new batch response
+                assert len(new_batch_responses) == 1
+                post_resume_response = new_batch_responses[0]
 
-        assert (
-            post_resume_response.letta_batch_id == pre_resume_response.letta_batch_id
-        ), "resume_step_after_request is expected to have the same letta_batch_id"
-        assert (
-            post_resume_response.last_llm_batch_id != pre_resume_response.last_llm_batch_id
-        ), "resume_step_after_request is expected to have different llm_batch_id."
-        assert post_resume_response.status == JobStatus.running
-        assert post_resume_response.agent_count == 3
+                assert (
+                    post_resume_response.letta_batch_id == pre_resume_response.letta_batch_id
+                ), "resume_step_after_request is expected to have the same letta_batch_id"
+                assert (
+                    post_resume_response.last_llm_batch_id != pre_resume_response.last_llm_batch_id
+                ), "resume_step_after_request is expected to have different llm_batch_id."
+                assert post_resume_response.status == JobStatus.running
+                assert post_resume_response.agent_count == 3
 
-        # New batch‑items should exist, initialised in (created, paused) state
-        new_items = server.batch_manager.list_llm_batch_items(llm_batch_id=post_resume_response.last_llm_batch_id, actor=default_user)
-        assert len(new_items) == 3, f"Expected 3 new batch items, got {len(new_items)}"
-        assert {i.request_status for i in new_items} == {JobStatus.created}
-        assert {i.step_status for i in new_items} == {AgentStepStatus.paused}
+                # New batch‑items should exist, initialised in (created, paused) state
+                new_items = server.batch_manager.list_llm_batch_items(
+                    llm_batch_id=post_resume_response.last_llm_batch_id, actor=default_user
+                )
+                assert len(new_items) == 3, f"Expected 3 new batch items, got {len(new_items)}"
+                assert {i.request_status for i in new_items} == {JobStatus.created}
+                assert {i.step_status for i in new_items} == {AgentStepStatus.paused}
 
-        # Confirm that tool_rules_solver state was preserved correctly
-        # Assert every new item's step_state's tool_rules_solver has "get_weather" in the tool_call_history
-        assert all(
-            "get_weather" in item.step_state.tool_rules_solver.tool_call_history for item in new_items
-        ), "Expected 'get_weather' in tool_call_history for all new_items"
-        # Assert that each new item's step_number was incremented to 1
-        assert all(item.step_state.step_number == 1 for item in new_items), "Expected step_number to be incremented to 1 for all new_items"
+                # Confirm that tool_rules_solver state was preserved correctly
+                # Assert every new item's step_state's tool_rules_solver has "get_weather" in the tool_call_history
+                assert all(
+                    "get_weather" in item.step_state.tool_rules_solver.tool_call_history for item in new_items
+                ), "Expected 'get_weather' in tool_call_history for all new_items"
+                # Assert that each new item's step_number was incremented to 1
+                assert all(
+                    item.step_state.step_number == 1 for item in new_items
+                ), "Expected step_number to be incremented to 1 for all new_items"
 
-        # Old items must have been flipped to completed / finished earlier
-        #     (sanity – we already asserted this above, but we keep it close for clarity)
-        old_items = server.batch_manager.list_llm_batch_items(llm_batch_id=pre_resume_response.last_llm_batch_id, actor=default_user)
-        assert {i.request_status for i in old_items} == {JobStatus.completed}
-        assert {i.step_status for i in old_items} == {AgentStepStatus.completed}
+                # Old items must have been flipped to completed / finished earlier
+                #     (sanity – we already asserted this above, but we keep it close for clarity)
+                old_items = server.batch_manager.list_llm_batch_items(
+                    llm_batch_id=pre_resume_response.last_llm_batch_id, actor=default_user
+                )
+                assert {i.request_status for i in old_items} == {JobStatus.completed}
+                assert {i.step_status for i in old_items} == {AgentStepStatus.completed}
 
-        # Tool‑call side‑effects – each agent gets at least 2 extra messages
-        for agent in agents:
-            before = msg_counts_before[agent.id]  # captured just before resume
-            after = server.message_manager.size(actor=default_user, agent_id=agent.id)
-            assert after - before >= 2, f"Agent {agent.id} should have an assistant tool‑call " f"and tool‑response message persisted."
+                # Tool‑call side‑effects – each agent gets at least 2 extra messages
+                for agent in agents:
+                    before = msg_counts_before[agent.id]  # captured just before resume
+                    after = server.message_manager.size(actor=default_user, agent_id=agent.id)
+                    assert after - before >= 2, (
+                        f"Agent {agent.id} should have an assistant tool‑call " f"and tool‑response message persisted."
+                    )
 
-        # Check that agent states have been properly modified to have extended in-context messages
-        for agent in agents:
-            refreshed_agent = server.agent_manager.get_agent_by_id(agent_id=agent.id, actor=default_user)
-            assert (
-                len(refreshed_agent.message_ids) == 6
-            ), f"Agent's in-context messages have not been extended, are length: {len(refreshed_agent.message_ids)}"
+                # Check that agent states have been properly modified to have extended in-context messages
+                for agent in agents:
+                    refreshed_agent = server.agent_manager.get_agent_by_id(agent_id=agent.id, actor=default_user)
+                    assert (
+                        len(refreshed_agent.message_ids) == 6
+                    ), f"Agent's in-context messages have not been extended, are length: {len(refreshed_agent.message_ids)}"
 
 
 @pytest.mark.asyncio
