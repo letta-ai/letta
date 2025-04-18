@@ -21,9 +21,11 @@ from letta.schemas.passage import Passage as PydanticPassage
 from letta.schemas.tool_rule import ToolRule
 from letta.schemas.user import User
 from letta.system import get_initial_boot_messages, get_login_event
+from letta.tracing import trace_method
 
 
 # Static methods
+@trace_method
 def _process_relationship(
     session, agent: AgentModel, relationship_name: str, model_class, item_ids: List[str], allow_partial=False, replace=True
 ):
