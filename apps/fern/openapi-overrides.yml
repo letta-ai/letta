@@ -603,3 +603,23 @@ paths:
         - messages
         - batches
       x-fern-sdk-method-name: cancel
+  /v1/projects:
+    get:
+      x-fern-sdk-group-name:
+        - projects
+      x-fern-sdk-method-name: list
+  /v1/client-side-access-tokens:
+    post:
+      x-fern-sdk-group-name:
+        - client-side-access-tokens
+      x-fern-sdk-method-name: create
+  /v1/client-side-access-tokens/{token}:
+    delete:
+        x-fern-sdk-group-name:
+            - client-side-access-tokens
+        x-fern-sdk-method-name: delete
+  /v1/templates:
+    get:
+      x-fern-sdk-group-name:
+        - templates
+      x-fern-sdk-method-name: list
