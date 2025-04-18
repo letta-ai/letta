@@ -1,0 +1,51 @@
+## Identity Support for Memory Blocks
+
+Memory blocks can now be associated with specific identities, allowing for better organization and retrieval of contextual information about various entities in your agent's knowledge base.
+
+### Adding Blocks to an Identity
+
+<CodeBlocks>
+```python title="python"
+from letta_client import Letta, CreateBlock
+client = Letta(
+   token="YOUR_API_KEY",
+)
+client.agents.identities.modify(
+   identity_id="IDENTITY_ID",
+   block_ids=["BLOCK_ID"],
+)
+```
+```typescript title="node.js"
+import { LettaClient } from '@letta-ai/letta-client';
+const client = new LettaClient({
+  token: "YOUR_API_KEY",
+});
+await client.agents.identities.modify({
+  identity_id: "IDENTITY_ID",
+  block_ids: ["BLOCK_ID"],
+});
+```
+</CodeBlocks>
+
+### Querying Blocks by Identity
+
+<CodeBlocks>
+```python title="python"
+from letta_client import Letta
+client = Letta(
+   token="YOUR_API_KEY",
+)
+client.agents.blocks.list(
+   identity_id="IDENTITY_ID",
+)
+```
+```typescript title="node.js"
+import { LettaClient } from '@letta-ai/letta-client';
+const client = new LettaClient({
+  token: "YOUR_API_KEY",
+});
+await client.agents.blocks.list({
+  identity_id: "IDENTITY_ID",
+});
+```
+</CodeBlocks>

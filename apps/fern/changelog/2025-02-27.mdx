@@ -1,0 +1,28 @@
+## Added Modify Passage API
+
+We've introduced a new API endpoint that allows you to modify existing passages within agent memory.
+
+<CodeBlocks>
+```python title="python"
+from letta_client import Letta
+client = Letta(
+    token="YOUR_API_KEY",
+)
+client.agents.modify_passage(
+    agent_id="AGENT_ID",
+    memory_id="MEMORY_ID",
+    text="Updated passage content"
+)
+```
+```typescript title="node.js"
+import { LettaClient } from '@letta-ai/letta-client';
+const client = new LettaClient({
+  token: "YOUR_API_KEY",
+});
+await client.agents.modifyPassage({
+  agent_id: "AGENT_ID",
+  memory_id: "MEMORY_ID",
+  text: "Updated passage content"
+});
+```
+</CodeBlocks>
