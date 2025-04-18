@@ -196,6 +196,7 @@ export default function AuditLogPage() {
           minHeight={400}
           limit={limit}
           onLimitChange={setLimit}
+          hasNextPage={data?.body.hasNextPage}
           offset={offset}
           onSetOffset={setOffset}
           showPagination
