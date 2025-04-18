@@ -12,7 +12,6 @@ from sqlalchemy.exc import IntegrityError, OperationalError
 from starlette.responses import Response, StreamingResponse
 
 from letta.agents.letta_agent import LettaAgent
-from letta.agents.letta_agent_batch import LettaAgentBatch
 from letta.constants import DEFAULT_MESSAGE_TOOL, DEFAULT_MESSAGE_TOOL_KWARG
 from letta.log import get_logger
 from letta.orm.errors import NoResultFound
@@ -21,8 +20,8 @@ from letta.schemas.block import Block, BlockUpdate
 from letta.schemas.group import Group
 from letta.schemas.job import JobStatus, JobUpdate, LettaRequestConfig
 from letta.schemas.letta_message import LettaMessageUnion, LettaMessageUpdateUnion
-from letta.schemas.letta_request import LettaBatchRequest, LettaRequest, LettaStreamingRequest
-from letta.schemas.letta_response import LettaBatchResponse, LettaResponse
+from letta.schemas.letta_request import LettaRequest, LettaStreamingRequest
+from letta.schemas.letta_response import LettaResponse
 from letta.schemas.memory import ContextWindowOverview, CreateArchivalMemory, Memory
 from letta.schemas.message import MessageCreate
 from letta.schemas.passage import Passage, PassageUpdate
@@ -832,57 +831,3 @@ async def list_agent_groups(
     actor = server.user_manager.get_user_or_default(user_id=actor_id)
     print("in list agents with manager_type", manager_type)
     return server.agent_manager.list_groups(agent_id=agent_id, manager_type=manager_type, actor=actor)
-
-
-# Batch APIs
-
-
-@router.post("/messages/batches", response_model=LettaBatchResponse, operation_id="create_batch_message_request")
-async def send_batch_messages(
-    batch_requests: List[LettaBatchRequest] = Body(..., description="Messages and config for all agents"),
-    server: SyncServer = Depends(get_letta_server),
-    actor_id: Optional[str] = Header(None, alias="user_id"),
-):
-    """
-    Submit a batch of agent messages for asynchronous processing.
-    Creates a job that will fan out messages to all listed agents and process them in parallel.
-    """
-    actor = server.user_manager.get_user_or_default(user_id=actor_id)
-
-    batch_runner = LettaAgentBatch(
-        message_manager=server.message_manager,
-        agent_manager=server.agent_manager,
-        block_manager=server.block_manager,
-        passage_manager=server.passage_manager,
-        batch_manager=server.batch_manager,
-        sandbox_config_manager=server.sandbox_config_manager,
-        actor=actor,
-    )
-
-    return await batch_runner.step_until_request(batch_requests=batch_requests)
-
-
-@router.get(
-    "/messages/batches/{batch_id}",
-    response_model=LettaBatchResponse,
-    operation_id="retrieve_batch_message_request",
-)
-async def retrieve_batch_message_request(
-    batch_id: str,
-    server: SyncServer = Depends(get_letta_server),
-    actor_id: Optional[str] = Header(None, alias="user_id"),
-):
-    """
-    Retrieve the result or current status of a previously submitted batch message request.
-    """
-    actor = server.user_manager.get_user_or_default(user_id=actor_id)
-    batch_job = server.batch_manager.get_batch_job_by_id(batch_id=batch_id, actor=actor)
-    agent_count = server.batch_manager.count_batch_items(batch_id=batch_id)
-
-    return LettaBatchResponse(
-        batch_id=batch_id,
-        status=batch_job.status,
-        agent_count=agent_count,
-        last_polled_at=batch_job.last_polled_at,
-        created_at=batch_job.created_at,
-    )

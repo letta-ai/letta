@@ -102,7 +102,7 @@ async def poll_batch_updates(server: SyncServer, batch_jobs: List[LLMBatchJob], 
     results: List[BatchPollingResult] = await asyncio.gather(*coros)
 
     # Update the server with batch status changes
-    server.batch_manager.bulk_update_batch_statuses(updates=results)
+    server.batch_manager.bulk_update_llm_batch_statuses(updates=results)
     logger.info(f"[Poll BatchJob] Bulk-updated {len(results)} LLM batch(es) in the DB at job level.")
 
     return results
@@ -176,7 +176,7 @@ async def poll_running_llm_batches(server: "SyncServer") -> None:
 
     try:
         # 1. Retrieve running batch jobs
-        batches = server.batch_manager.list_running_batches()
+        batches = server.batch_manager.list_running_llm_batches()
         metrics.total_batches = len(batches)
 
         # TODO: Expand to more providers
@@ -193,7 +193,7 @@ async def poll_running_llm_batches(server: "SyncServer") -> None:
         # 6. Bulk update all items for newly completed batch(es)
         if item_updates:
             metrics.updated_items_count = len(item_updates)
-            server.batch_manager.bulk_update_batch_items_results_by_agent(item_updates)
+            server.batch_manager.bulk_update_batch_llm_items_results_by_agent(item_updates)
         else:
             logger.info("[Poll BatchJob] No item-level updates needed.")
 
