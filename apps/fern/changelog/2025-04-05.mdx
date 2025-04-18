@@ -1,0 +1,24 @@
+## Runs API can now be filtered by Agent ID
+
+The Runs API now supports filtering by `agent_id` to retrieve all runs and all active runs associated with a specific agent.
+
+<CodeBlocks>
+```python title="python"
+from letta_client import Letta
+client = Letta(
+    token="YOUR_API_KEY",
+)
+runs = client.runs.list_active_runs(
+    agent_id="AGENT_ID",
+)
+```
+```typescript title="node.js"
+import { LettaClient } from '@letta-ai/letta-client';
+const client = new LettaClient({
+  token: "YOUR_API_KEY",
+});
+const runs = await client.runs.listActiveRuns({
+  agent_id: "AGENT_ID",
+});
+```
+</CodeBlocks>

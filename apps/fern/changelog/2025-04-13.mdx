@@ -1,0 +1,42 @@
+## New `reasoning_effort` field added to LLMConfig
+
+The `reasoning_effort` field has been added to the `LLMConfig` object to control the amount of reasoning the model should perform, to support OpenAI's o1 and o3 reasoning models.
+
+## New `sender_id` parameter added to Message model
+
+The `Message` object now includes a `sender_id` field, which is the ID of the sender of the message, which can be either an identity ID or an agent ID. The `sender_id` is expected to be passed in at message creation time.
+
+<CodeBlocks>
+```python title="python"
+from letta_client import Letta
+client = Letta(
+    token="YOUR_API_KEY",
+)
+messages = client.agents.messages.create(
+    agent_id="AGENT_ID",
+    messages=[
+        MessageCreate(
+            role="user",
+            content="Hello, how are you?",
+            sender_id="IDENTITY_ID",
+        )
+    ]
+)
+```
+```typescript title="node.js"
+import { LettaClient } from '@letta-ai/letta-client';
+const client = new LettaClient({
+  token: "YOUR_API_KEY",
+});
+const messages = await client.agents.messages.create({
+  agent_id: "AGENT_ID",
+  messages: [
+    {
+      role: "user",
+      content: "Hello, how are you?",
+      sender_id: "IDENTITY_ID",
+    },
+  ],
+});
+```
+</CodeBlocks>
