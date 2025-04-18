@@ -3,7 +3,7 @@ from typing import Dict, List, Optional
 
 from pydantic import BaseModel, Field, field_validator
 
-from letta.constants import DEFAULT_EMBEDDING_CHUNK_SIZE
+from letta.constants import CORE_MEMORY_LINE_NUMBER_WARNING, DEFAULT_EMBEDDING_CHUNK_SIZE
 from letta.helpers import ToolRulesSolver
 from letta.schemas.block import CreateBlock
 from letta.schemas.embedding_config import EmbeddingConfig
@@ -284,7 +284,7 @@ def get_prompt_template_for_agent_type(agent_type: Optional[AgentType] = None):
         return (
             "{% for block in blocks %}"
             '<{{ block.label }} characters="{{ block.value|length }}/{{ block.limit }}">\n'
-            "# NOTE: Line numbers shown below are to help during editing. Do NOT include line number prefixes in your memory edit tool calls."
+            f"{CORE_MEMORY_LINE_NUMBER_WARNING}"
             "{% for line in block.value.split('\\n') %}"
             "Line {{ loop.index }}: {{ line }}\n"
             "{% endfor %}"

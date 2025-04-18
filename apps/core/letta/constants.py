@@ -103,6 +103,11 @@ ERROR_MESSAGE_PREFIX = "Error"
 
 NON_USER_MSG_PREFIX = "[This is an automated system message hidden from the user] "
 
+CORE_MEMORY_LINE_NUMBER_WARNING = (
+    "# NOTE: Line numbers shown below are to help during editing. Do NOT include line number prefixes in your memory edit tool calls."
+)
+
+
 # Constants to do with summarization / conversation length window
 # The max amount of tokens supported by the underlying model (eg 8k for gpt-4 and Mistral 7B)
 LLM_MAX_TOKENS = {
