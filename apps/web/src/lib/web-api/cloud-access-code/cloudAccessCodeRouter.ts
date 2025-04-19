@@ -22,7 +22,7 @@ export async function submitCloudAccessCode(
   const { activeOrganizationId } =
     await getUserWithActiveOrganizationIdOrThrow();
 
-  if (code.toLowerCase() !== 'diamonhacks-rocks') {
+  if (code.toLowerCase() !== 'davis-rocks') {
     return {
       status: 400,
       body: {
