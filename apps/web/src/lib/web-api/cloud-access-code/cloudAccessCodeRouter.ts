@@ -31,7 +31,7 @@ export async function submitCloudAccessCode(
     };
   }
 
-  if (new Date() > new Date('2025-04-07')) {
+  if (new Date() > new Date('2025-04-22')) {
     return {
       status: 400,
       body: {
