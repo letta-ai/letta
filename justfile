@@ -632,8 +632,8 @@ push-model-proxy:
         --set image.repository={{DOCKER_REGISTRY}}/model-proxy \
         --set image.tag={{TAG}} \
         --set-string "podAnnotations.kubectl\.kubernetes\.io/restartedAt"="$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
-        #        --set env.GCP_PUBSUB_PROJECT_ID="${GCP_PUBSUB_PROJECT_ID}" \
-        #        --set env.GCP_PUBSUB_TOPIC_ID="${GCP_PUBSUB_TOPIC_ID}" \
+        --set env.GCP_PUBSUB_PROJECT_ID="${GCP_PUBSUB_PROJECT_ID}" \
+        --set env.GCP_PUBSUB_TOPIC_ID="${GCP_PUBSUB_TOPIC_ID}" \
         --set env.OPENAI_API_KEY="${OPENAI_API_KEY}"
 
     npm run slack-bot-says "Successfully deployed model-proxy service with tag: {{TAG}}."

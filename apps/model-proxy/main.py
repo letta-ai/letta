@@ -4,7 +4,7 @@ import uuid
 from datetime import datetime
 import logging
 
-PUBSUB = False
+PUBSUB = True
 if PUBSUB:
     from google.cloud import pubsub_v1
 from pprint import pprint
@@ -313,18 +313,19 @@ def on_startup():
             logger.error(msg)
             raise ValueError(msg)
 
-        # TODO: Migrate to workload identity federation: https://cloud.google.com/kubernetes-engine/docs/how-to/workload-identity
-        # Authenticate to GCP
-        # service_account_info = {
-        #     os.getenv("GCP_SA_EMAIL")
-        #     os.getenv("GCP_SA_KEY")
-        # }
-        # credentials = service_account.Credentials.from_service_account_info(service_account_info)
-
         publisher = pubsub_v1.PublisherClient()
         topic_path = publisher.topic_path(project_id, topic_id)
 
         # add to app.state
         app.state.publisher = publisher
         app.state.topic_path = topic_path
+
+        # Attempt to write a "startup" log to the GCS via PubSub
+        data = '{"Success": true}'.encode('utf-8')
+        try:
+            future = app.state.publisher.publish(app.state.topic_path, data=data)
+        except Exception as e:
+            print("Logging error", str(e))
+            raise e
+
         print(f"Publisher and topic path set up: project id {project_id}, topic id {topic_id}")
