@@ -150,6 +150,8 @@ describe-web:
         --set secrets.MEMGPT_SERVER_PASS=${MEMGPT_SERVER_PASS} \
         --set secrets.TOGETHER_API_KEY=${TOGETHER_API_KEY} \
         --set secrets.ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY} \
+        --set secrets.GROK_API_KEY=${GROK_API_KEY} \
+        --set secrets.GEMINI_API_KEY=${GEMINI_API_KEY} \
         --set secrets.SENTRY_DSN=${SENTRY_DSN} \
         --set secrets.E2B_API_KEY=${E2B_API_KEY} \
         --set secrets.E2B_SANDBOX_TEMPLATE_ID=${E2B_SANDBOX_TEMPLATE_ID} \
