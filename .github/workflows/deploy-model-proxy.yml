@@ -13,6 +13,8 @@ env:
   REGION: us-central1
   GCP_SA_EMAIL: github-actions-service-account@memgpt-428419.iam.gserviceaccount.com
   SLACK_WEBHOOK_URL: https://hooks.slack.com/services/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
+  GCP_PUBSUB_PROJECT_ID: memgpt-428419
+  GCP_PUBSUB_TOPIC_ID: model-proxy-prod
 
 jobs:
   build-and-deploy:
