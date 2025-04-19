@@ -29,11 +29,11 @@ class ProviderManager:
             return new_provider.to_pydantic()
 
     @enforce_types
-    def update_provider(self, provider_update: ProviderUpdate, actor: PydanticUser) -> PydanticProvider:
+    def update_provider(self, provider_id: str, provider_update: ProviderUpdate, actor: PydanticUser) -> PydanticProvider:
         """Update provider details."""
         with self.session_maker() as session:
             # Retrieve the existing provider by ID
-            existing_provider = ProviderModel.read(db_session=session, identifier=provider_update.id, actor=actor)
+            existing_provider = ProviderModel.read(db_session=session, identifier=provider_id, actor=actor)
 
             # Update only the fields that are provided in ProviderUpdate
             update_data = provider_update.model_dump(to_orm=True, exclude_unset=True, exclude_none=True)
