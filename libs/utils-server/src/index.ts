@@ -17,3 +17,4 @@ export * from './lib/findUniqueAgentTemplateName/findUniqueAgentTemplateName';
 export * from './lib/goToNextOnboardingStep/goToNextOnboardingStep';
 export * from './lib/getDefaultProject/getDefaultProject';
 export * from './lib/getTemplateProjectId/getTemplateProjectId';
+export * from './lib/findProjectBySlugOrId/findProjectBySlugOrId';

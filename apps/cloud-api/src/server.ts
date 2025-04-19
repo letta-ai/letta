@@ -15,6 +15,7 @@ import * as Sentry from '@sentry/node';
 import winston from 'winston';
 import expressWinston from 'express-winston';
 import cors from 'cors';
+import { requireProjectMiddleware } from './libs/requireProjectMiddleware/requireProjectMiddleware';
 
 interface ExpressMeta {
   req: {
@@ -86,6 +87,9 @@ export function startServer() {
   app.use(verifyIdentityMiddleware);
   app.use(verifyRoutePermissionsMiddleware);
   app.use(rateLimitMiddleware);
+
+  app.use(bodyParser.json());
+  app.use(requireProjectMiddleware);
   app.use(projectHeaderMiddleware);
 
   /* tsRestMiddleware needs to be last */
@@ -136,6 +140,19 @@ export function startServer() {
     target: environment.LETTA_AGENTS_ENDPOINT,
     changeOrigin: true,
     followRedirects: true,
+    plugins: [
+      function reapplyBodyPlugin(proxyServer) {
+        proxyServer.on('proxyReq', (proxyReq, req) => {
+          if (req.body) {
+            proxyReq.setHeader(
+              'Content-Length',
+              Buffer.byteLength(JSON.stringify(req.body)),
+            );
+            proxyReq.write(JSON.stringify(req.body));
+          }
+        });
+      },
+    ],
   });
 
   app.use(proxyMiddleware);
