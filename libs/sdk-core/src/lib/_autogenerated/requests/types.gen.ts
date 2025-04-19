@@ -2556,10 +2556,6 @@ export type ProviderCreate = {
 
 export type ProviderUpdate = {
   /**
-   * The id of the provider to update.
-   */
-  id: string;
-  /**
    * API key used for requests to the provider.
    */
   api_key: string;
@@ -4773,6 +4769,7 @@ export type CreateProviderData = {
 export type CreateProviderResponse = Provider;
 
 export type ModifyProviderData = {
+  providerId: string;
   requestBody: ProviderUpdate;
   userId?: string | null;
 };
@@ -4780,9 +4777,6 @@ export type ModifyProviderData = {
 export type ModifyProviderResponse = Provider;
 
 export type DeleteProviderData = {
-  /**
-   * The provider_id key to be deleted.
-   */
   providerId: string;
   userId?: string | null;
 };
@@ -6497,6 +6491,8 @@ export type $OpenApiTs = {
         422: HTTPValidationError;
       };
     };
+  };
+  '/v1/providers/{provider_id}': {
     patch: {
       req: ModifyProviderData;
       res: {

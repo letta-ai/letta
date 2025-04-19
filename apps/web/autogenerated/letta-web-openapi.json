@@ -431,7 +431,14 @@
             "name": "limit",
             "in": "query",
             "schema": {
-              "type": "string"
+              "oneOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "number"
+                }
+              ]
             }
           }
         ],
@@ -10162,7 +10169,14 @@
             "name": "offset",
             "in": "query",
             "schema": {
-              "type": "string"
+              "oneOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "number"
+                }
+              ]
             }
           },
           {
@@ -10445,7 +10459,14 @@
             "name": "offset",
             "in": "query",
             "schema": {
-              "type": "string"
+              "oneOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "number"
+                }
+              ]
             }
           },
           {

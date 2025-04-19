@@ -7150,11 +7150,6 @@ export const $ProviderCreate = {
 
 export const $ProviderUpdate = {
   properties: {
-    id: {
-      type: 'string',
-      title: 'Id',
-      description: 'The id of the provider to update.',
-    },
     api_key: {
       type: 'string',
       title: 'Api Key',
@@ -7163,7 +7158,7 @@ export const $ProviderUpdate = {
   },
   additionalProperties: false,
   type: 'object',
-  required: ['id', 'api_key'],
+  required: ['api_key'],
   title: 'ProviderUpdate',
 } as const;
 

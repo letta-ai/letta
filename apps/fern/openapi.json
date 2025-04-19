@@ -5022,7 +5022,7 @@
     },
     "/v1/providers/": {
       "get": {
-        "tags": ["providers", "providers"],
+        "tags": ["providers"],
         "summary": "List Providers",
         "description": "Get a list of all custom providers in the database",
         "operationId": "list_providers",
@@ -5089,7 +5089,7 @@
         }
       },
       "post": {
-        "tags": ["providers", "providers"],
+        "tags": ["providers"],
         "summary": "Create Provider",
         "description": "Create a new custom provider",
         "operationId": "create_provider",
@@ -5126,13 +5126,25 @@
             }
           }
         }
-      },
+      }
+    },
+    "/v1/providers/{provider_id}": {
       "patch": {
-        "tags": ["providers", "providers"],
+        "tags": ["providers"],
         "summary": "Modify Provider",
         "description": "Update an existing custom provider",
         "operationId": "modify_provider",
-        "parameters": [],
+        "parameters": [
+          {
+            "name": "provider_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Provider Id"
+            }
+          }
+        ],
         "requestBody": {
           "required": true,
           "content": {
@@ -5167,21 +5179,19 @@
         }
       },
       "delete": {
-        "tags": ["providers", "providers"],
+        "tags": ["providers"],
         "summary": "Delete Provider",
         "description": "Delete an existing custom provider",
         "operationId": "delete_provider",
         "parameters": [
           {
             "name": "provider_id",
-            "in": "query",
+            "in": "path",
             "required": true,
             "schema": {
               "type": "string",
-              "description": "The provider_id key to be deleted.",
               "title": "Provider Id"
-            },
-            "description": "The provider_id key to be deleted."
+            }
           }
         ],
         "responses": {
@@ -6788,7 +6798,14 @@
             "name": "offset",
             "in": "query",
             "schema": {
-              "type": "string"
+              "oneOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "number"
+                }
+              ]
             }
           },
           {
@@ -7071,7 +7088,14 @@
             "name": "offset",
             "in": "query",
             "schema": {
-              "type": "string"
+              "oneOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "number"
+                }
+              ]
             }
           },
           {
@@ -13845,11 +13869,6 @@
       },
       "ProviderUpdate": {
         "properties": {
-          "id": {
-            "type": "string",
-            "title": "Id",
-            "description": "The id of the provider to update."
-          },
           "api_key": {
             "type": "string",
             "title": "Api Key",
@@ -13858,7 +13877,7 @@
         },
         "additionalProperties": false,
         "type": "object",
-        "required": ["id", "api_key"],
+        "required": ["api_key"],
         "title": "ProviderUpdate"
       },
       "ReasoningContent": {

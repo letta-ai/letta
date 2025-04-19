@@ -4223,7 +4223,6 @@ export const ProviderCreate = z.object({
 
 export type ProviderUpdate = z.infer<typeof ProviderUpdate>;
 export const ProviderUpdate = z.object({
-  id: z.string(),
   api_key: z.string(),
 });
 
@@ -7086,9 +7085,12 @@ export const post_Create_provider = {
 export type patch_Modify_provider = typeof patch_Modify_provider;
 export const patch_Modify_provider = {
   method: z.literal('PATCH'),
-  path: z.literal('/v1/providers/'),
+  path: z.literal('/v1/providers/{provider_id}'),
   requestFormat: z.literal('json'),
   parameters: z.object({
+    path: z.object({
+      provider_id: z.string(),
+    }),
     header: z.object({
       user_id: z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
@@ -7102,10 +7104,10 @@ export const patch_Modify_provider = {
 export type delete_Delete_provider = typeof delete_Delete_provider;
 export const delete_Delete_provider = {
   method: z.literal('DELETE'),
-  path: z.literal('/v1/providers/'),
+  path: z.literal('/v1/providers/{provider_id}'),
   requestFormat: z.literal('json'),
   parameters: z.object({
-    query: z.object({
+    path: z.object({
       provider_id: z.string(),
     }),
     header: z.object({
@@ -7626,7 +7628,7 @@ export const EndpointByMethod = {
       delete_Delete_sandbox_config_v1_sandbox_config__sandbox_config_id__delete,
     '/v1/sandbox-config/environment-variable/{env_var_id}':
       delete_Delete_sandbox_env_var_v1_sandbox_config_environment_variable__env_var_id__delete,
-    '/v1/providers/': delete_Delete_provider,
+    '/v1/providers/{provider_id}': delete_Delete_provider,
     '/v1/runs/{run_id}': delete_Delete_run,
     '/v1/admin/users/': delete_Delete_user,
     '/v1/admin/orgs/': delete_Delete_organization_by_id,
@@ -7718,7 +7720,7 @@ export const EndpointByMethod = {
       patch_Update_sandbox_config_v1_sandbox_config__sandbox_config_id__patch,
     '/v1/sandbox-config/environment-variable/{env_var_id}':
       patch_Update_sandbox_env_var_v1_sandbox_config_environment_variable__env_var_id__patch,
-    '/v1/providers/': patch_Modify_provider,
+    '/v1/providers/{provider_id}': patch_Modify_provider,
     '/v1/steps/{step_id}/transaction/{transaction_id}':
       patch_Update_step_transaction_id,
     '/v1/messages/batches/{batch_id}/cancel': patch_Cancel_batch_run,

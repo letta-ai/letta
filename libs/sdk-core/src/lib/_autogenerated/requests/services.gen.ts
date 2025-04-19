@@ -3091,6 +3091,7 @@ export class ProvidersService {
    * Modify Provider
    * Update an existing custom provider
    * @param data The data for the request.
+   * @param data.providerId
    * @param data.requestBody
    * @param data.userId
    * @returns Provider Successful Response
@@ -3102,7 +3103,10 @@ export class ProvidersService {
   ): CancelablePromise<ModifyProviderResponse> {
     return __request(OpenAPI, {
       method: 'PATCH',
-      url: '/v1/providers/',
+      url: '/v1/providers/{provider_id}',
+      path: {
+        provider_id: data.providerId,
+      },
       body: data.requestBody,
       mediaType: 'application/json',
       errors: {
@@ -3116,7 +3120,7 @@ export class ProvidersService {
    * Delete Provider
    * Delete an existing custom provider
    * @param data The data for the request.
-   * @param data.providerId The provider_id key to be deleted.
+   * @param data.providerId
    * @param data.userId
    * @returns unknown Successful Response
    * @throws ApiError
@@ -3127,8 +3131,8 @@ export class ProvidersService {
   ): CancelablePromise<DeleteProviderResponse> {
     return __request(OpenAPI, {
       method: 'DELETE',
-      url: '/v1/providers/',
-      query: {
+      url: '/v1/providers/{provider_id}',
+      path: {
         provider_id: data.providerId,
       },
       errors: {

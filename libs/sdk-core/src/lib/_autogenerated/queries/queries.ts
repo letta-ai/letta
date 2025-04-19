@@ -4923,6 +4923,7 @@ export const useSandboxConfigServiceUpdateSandboxEnvVarV1SandboxConfigEnvironmen
  * Modify Provider
  * Update an existing custom provider
  * @param data The data for the request.
+ * @param data.providerId
  * @param data.requestBody
  * @param data.userId
  * @returns Provider Successful Response
@@ -4938,6 +4939,7 @@ export const useProvidersServiceModifyProvider = <
       TData,
       TError,
       {
+        providerId: string;
         requestBody: ProviderUpdate;
         userId?: string;
       },
@@ -4950,13 +4952,15 @@ export const useProvidersServiceModifyProvider = <
     TData,
     TError,
     {
+      providerId: string;
       requestBody: ProviderUpdate;
       userId?: string;
     },
     TContext
   >({
-    mutationFn: ({ requestBody, userId }) =>
+    mutationFn: ({ providerId, requestBody, userId }) =>
       ProvidersService.modifyProvider({
+        providerId,
         requestBody,
         userId,
       }) as unknown as Promise<TData>,
@@ -5655,7 +5659,7 @@ export const useSandboxConfigServiceDeleteSandboxEnvVarV1SandboxConfigEnvironmen
  * Delete Provider
  * Delete an existing custom provider
  * @param data The data for the request.
- * @param data.providerId The provider_id key to be deleted.
+ * @param data.providerId
  * @param data.userId
  * @returns unknown Successful Response
  * @throws ApiError

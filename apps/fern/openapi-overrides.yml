@@ -462,7 +462,7 @@ paths:
         - agents
       x-fern-sdk-method-name: import
   /v1/agents/{agent_id}/export:
-    post:
+    get:
       x-fern-sdk-group-name:
         - agents
       x-fern-sdk-method-name: export
@@ -541,7 +541,7 @@ paths:
       x-fern-sdk-group-name:
         - jobs
       x-fern-sdk-method-name: delete
-  /v1/runs:
+  /v1/runs/:
     get:
       x-fern-sdk-group-name:
         - runs
@@ -589,7 +589,7 @@ paths:
         - templates
         - agents
       x-fern-sdk-method-name: create
-  /v1/tags:
+  /v1/tags/:
     get:
       x-fern-sdk-group-name:
         - tags
@@ -741,6 +741,7 @@ paths:
       x-fern-sdk-group-name:
         - batches
       x-fern-sdk-method-name: retrieve
+  /v1/messages/batches/{batch_id}/cancel:
     patch:
       x-fern-sdk-group-name:
         - batches

@@ -91,8 +91,8 @@ function UpdateModelProviderDialog(props: UpdateModelProviderDialogProps) {
   const handleSubmit = useCallback(
     async (input: z.infer<typeof UpdateModelProviderSchema>) => {
       mutate({
+        providerId: modelProviderId,
         requestBody: {
-          id: modelProviderId,
           api_key: input.apiKey,
         },
       });

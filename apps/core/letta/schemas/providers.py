@@ -66,7 +66,6 @@ class ProviderCreate(ProviderBase):
 
 
 class ProviderUpdate(ProviderBase):
-    id: str = Field(..., description="The id of the provider to update.")
     api_key: str = Field(..., description="API key used for requests to the provider.")
 
 
