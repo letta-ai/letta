@@ -56,6 +56,9 @@ class GoogleAIClient(LLMClientBase):
             tool_names = [t.function.name for t in tool_objs]
             # Convert to the exact payload style Google expects
             tools = self.convert_tools_to_google_ai_format(tool_objs)
+        else:
+            tool_names = []
+
         contents = self.add_dummy_model_messages(
             [m.to_google_ai_dict() for m in messages],
         )
