@@ -54,7 +54,7 @@ const PublicTemplateDetails = z.object({
 });
 
 const templatesQuery = z.object({
-  offset: z.string().transform(Number).optional(),
+  offset: z.string().or(z.number()).transform(Number).optional(),
   limit: z
     .string()
     .transform(Number)

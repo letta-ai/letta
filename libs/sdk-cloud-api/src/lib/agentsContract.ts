@@ -133,7 +133,7 @@ const listAgentsContract = c.query({
     .extend({
       match_all_tags: z.literal('true').or(z.literal('false')).optional(),
       ascending: z.literal('true').or(z.literal('false')).optional(),
-      limit: z.string().transform(Number).optional(),
+      limit: z.string().or(z.number()).transform(Number).optional(),
     }),
   responses: {
     200: get_List_agents.response,

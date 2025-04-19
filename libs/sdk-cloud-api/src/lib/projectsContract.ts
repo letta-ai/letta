@@ -18,7 +18,7 @@ const PublicProjectDetailsResponse = z.object({
 
 const ListProjectsQuery = z.object({
   name: z.string().optional(),
-  offset: z.string().transform(Number).optional(),
+  offset: z.string().or(z.number()).transform(Number).optional(),
   limit: z
     .string()
     .transform(Number)
