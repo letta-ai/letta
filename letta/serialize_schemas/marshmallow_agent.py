@@ -4,6 +4,7 @@ from marshmallow import fields, post_dump, pre_load
 
 import letta
 from letta.orm import Agent
+from letta.orm import Message as MessageModel
 from letta.schemas.agent import AgentState as PydanticAgentState
 from letta.schemas.user import User
 from letta.serialize_schemas.marshmallow_agent_environment_variable import SerializedAgentEnvironmentVariableSchema
@@ -35,7 +36,6 @@ class MarshmallowAgentSchema(BaseSchema):
 
     tool_rules = ToolRulesField()
 
-    messages = fields.List(fields.Nested(SerializedMessageSchema))
     core_memory = fields.List(fields.Nested(SerializedBlockSchema))
     tools = fields.List(fields.Nested(SerializedToolSchema))
     tool_exec_environment_variables = fields.List(fields.Nested(SerializedAgentEnvironmentVariableSchema))
@@ -53,6 +53,30 @@ class MarshmallowAgentSchema(BaseSchema):
             elif isinstance(field, fields.Nested):
                 field.schema.session = session
                 field.schema.actor = actor
+
+    @post_dump
+    def attach_messages(self, data: Dict, **kwargs):
+        """
+        After dumping the agent, load all its Message rows and serialize them here.
+        """
+        # TODO: This is hacky, but want to move fast, please refactor moving forward
+        from letta.server.db import db_context as session_maker
+
+        with session_maker() as session:
+            agent_id = data.get("id")
+            msgs = (
+                session.query(MessageModel)
+                .filter(
+                    MessageModel.agent_id == agent_id,
+                    MessageModel.organization_id == self.actor.organization_id,
+                )
+                .order_by(MessageModel.sequence_id.asc())
+                .all()
+            )
+            # overwrite the “messages” key with a fully serialized list
+            data[self.FIELD_MESSAGES] = [SerializedMessageSchema(session=self.session, actor=self.actor).dump(m) for m in msgs]
+
+        return data
 
     @post_dump
     def sanitize_ids(self, data: Dict, **kwargs):
@@ -101,25 +125,6 @@ class MarshmallowAgentSchema(BaseSchema):
         del data[self.FIELD_VERSION]
         return data
 
-    @pre_load
-    def remap_in_context_messages(self, data, **kwargs):
-        """
-        Restores `message_ids` by collecting message IDs where `in_context` is True,
-        generates new IDs for all messages, and removes `in_context` from all messages.
-        """
-        messages = data.get(self.FIELD_MESSAGES, [])
-        for msg in messages:
-            msg[self.FIELD_ID] = SerializedMessageSchema.generate_id()  # Generate new ID
-
-        message_ids = []
-        in_context_message_indices = data.pop(self.FIELD_IN_CONTEXT_INDICES)
-        for idx in in_context_message_indices:
-            message_ids.append(messages[idx][self.FIELD_ID])
-
-        data[self.FIELD_MESSAGE_IDS] = message_ids
-
-        return data
-
     class Meta(BaseSchema.Meta):
         model = Agent
         exclude = BaseSchema.Meta.exclude + (
@@ -127,8 +132,6 @@ class MarshmallowAgentSchema(BaseSchema):
             "template_id",
             "base_template_id",
             "sources",
-            "source_passages",
-            "agent_passages",
             "identities",
             "is_deleted",
             "groups",

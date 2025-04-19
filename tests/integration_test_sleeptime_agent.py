@@ -111,12 +111,12 @@ async def test_sleeptime_group_chat(server, actor):
     # 4 Verify sleeptime agent tools
     sleeptime_agent = server.agent_manager.get_agent_by_id(agent_id=sleeptime_agent_id, actor=actor)
     sleeptime_agent_tools = [tool.name for tool in sleeptime_agent.tools]
-    assert "rethink_memory" in sleeptime_agent_tools
-    assert "finish_rethinking_memory" in sleeptime_agent_tools
-    assert "view_core_memory_with_line_numbers" in sleeptime_agent_tools
-    assert "core_memory_insert" in sleeptime_agent_tools
+    assert "memory_rethink" in sleeptime_agent_tools
+    assert "memory_finish_edits" in sleeptime_agent_tools
+    assert "memory_replace" in sleeptime_agent_tools
+    assert "memory_insert" in sleeptime_agent_tools
 
-    assert len([rule for rule in sleeptime_agent.tool_rules if rule.type == ToolRuleType.parent_last_tool]) > 0
+    assert len([rule for rule in sleeptime_agent.tool_rules if rule.type == ToolRuleType.exit_loop]) > 0
 
     # 5. Send messages and verify run ids
     message_text = [
@@ -143,7 +143,7 @@ async def test_sleeptime_group_chat(server, actor):
         )
 
         assert len(response.messages) > 0
-        assert len(response.usage.run_ids or []) == i % 2
+        assert len(response.usage.run_ids or []) == (i + 1) % 2
         run_ids.extend(response.usage.run_ids or [])
 
         jobs = server.job_manager.list_jobs(actor=actor, job_type=JobType.RUN)

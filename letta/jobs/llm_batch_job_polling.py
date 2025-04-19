@@ -2,11 +2,14 @@ import asyncio
 import datetime
 from typing import List
 
+from letta.agents.letta_agent_batch import LettaAgentBatch
 from letta.jobs.helpers import map_anthropic_batch_job_status_to_job_status, map_anthropic_individual_batch_item_status_to_job_status
-from letta.jobs.types import BatchId, BatchPollingResult, ItemUpdateInfo
+from letta.jobs.types import BatchPollingResult, ItemUpdateInfo
 from letta.log import get_logger
 from letta.schemas.enums import JobStatus, ProviderType
+from letta.schemas.letta_response import LettaBatchResponse
 from letta.schemas.llm_batch_job import LLMBatchJob
+from letta.schemas.user import User
 from letta.server.server import SyncServer
 
 logger = get_logger(__name__)
@@ -49,14 +52,14 @@ async def fetch_batch_status(server: SyncServer, batch_job: LLMBatchJob) -> Batc
         response = await server.anthropic_async_client.beta.messages.batches.retrieve(batch_id_str)
         new_status = map_anthropic_batch_job_status_to_job_status(response.processing_status)
         logger.debug(f"[Poll BatchJob] Batch {batch_job.id}: provider={response.processing_status} → internal={new_status}")
-        return (batch_job.id, new_status, response)
+        return BatchPollingResult(batch_job.id, new_status, response)
     except Exception as e:
-        logger.warning(f"[Poll BatchJob] Batch {batch_job.id}: failed to retrieve {batch_id_str}: {e}")
+        logger.error(f"[Poll BatchJob] Batch {batch_job.id}: failed to retrieve {batch_id_str}: {e}")
         # We treat a retrieval error as still running to try again next cycle
-        return (batch_job.id, JobStatus.running, None)
+        return BatchPollingResult(batch_job.id, JobStatus.running, None)
 
 
-async def fetch_batch_items(server: SyncServer, batch_id: BatchId, batch_resp_id: str) -> List[ItemUpdateInfo]:
+async def fetch_batch_items(server: SyncServer, batch_id: str, batch_resp_id: str) -> List[ItemUpdateInfo]:
     """
     Fetch individual item results for a completed batch.
 
@@ -73,7 +76,7 @@ async def fetch_batch_items(server: SyncServer, batch_id: BatchId, batch_resp_id
         async for item_result in server.anthropic_async_client.beta.messages.batches.results(batch_resp_id):
             # Here, custom_id should be the agent_id
             item_status = map_anthropic_individual_batch_item_status_to_job_status(item_result)
-            updates.append((batch_id, item_result.custom_id, item_status, item_result))
+            updates.append(ItemUpdateInfo(batch_id, item_result.custom_id, item_status, item_result))
         logger.info(f"[Poll BatchJob] Fetched {len(updates)} item updates for batch {batch_id}.")
     except Exception as e:
         logger.error(f"[Poll BatchJob] Error fetching item updates for batch {batch_id}: {e}")
@@ -102,7 +105,7 @@ async def poll_batch_updates(server: SyncServer, batch_jobs: List[LLMBatchJob], 
     results: List[BatchPollingResult] = await asyncio.gather(*coros)
 
     # Update the server with batch status changes
-    server.batch_manager.bulk_update_batch_statuses(updates=results)
+    server.batch_manager.bulk_update_llm_batch_statuses(updates=results)
     logger.info(f"[Poll BatchJob] Bulk-updated {len(results)} LLM batch(es) in the DB at job level.")
 
     return results
@@ -156,7 +159,7 @@ async def process_completed_batches(
     return item_updates
 
 
-async def poll_running_llm_batches(server: "SyncServer") -> None:
+async def poll_running_llm_batches(server: "SyncServer") -> List[LettaBatchResponse]:
     """
     Cron job to poll all running LLM batch jobs and update their polling responses in bulk.
 
@@ -176,7 +179,7 @@ async def poll_running_llm_batches(server: "SyncServer") -> None:
 
     try:
         # 1. Retrieve running batch jobs
-        batches = server.batch_manager.list_running_batches()
+        batches = server.batch_manager.list_running_llm_batches()
         metrics.total_batches = len(batches)
 
         # TODO: Expand to more providers
@@ -193,7 +196,33 @@ async def poll_running_llm_batches(server: "SyncServer") -> None:
         # 6. Bulk update all items for newly completed batch(es)
         if item_updates:
             metrics.updated_items_count = len(item_updates)
-            server.batch_manager.bulk_update_batch_items_by_agent(item_updates)
+            server.batch_manager.bulk_update_batch_llm_items_results_by_agent(item_updates)
+
+            # ─── Kick off post‑processing for each batch that just completed ───
+            completed = [r for r in batch_results if r.request_status == JobStatus.completed]
+
+            async def _resume(batch_row: LLMBatchJob) -> LettaBatchResponse:
+                actor: User = server.user_manager.get_user_by_id(batch_row.created_by_id)
+                runner = LettaAgentBatch(
+                    message_manager=server.message_manager,
+                    agent_manager=server.agent_manager,
+                    block_manager=server.block_manager,
+                    passage_manager=server.passage_manager,
+                    batch_manager=server.batch_manager,
+                    sandbox_config_manager=server.sandbox_config_manager,
+                    job_manager=server.job_manager,
+                    actor=actor,
+                )
+                return await runner.resume_step_after_request(
+                    letta_batch_id=batch_row.letta_batch_job_id,
+                    llm_batch_id=batch_row.id,
+                )
+
+            # launch them all at once
+            tasks = [_resume(server.batch_manager.get_llm_batch_job_by_id(bid)) for bid, *_ in completed]
+            new_batch_responses = await asyncio.gather(*tasks, return_exceptions=True)
+
+            return new_batch_responses
         else:
             logger.info("[Poll BatchJob] No item-level updates needed.")
 

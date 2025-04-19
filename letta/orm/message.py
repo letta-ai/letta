@@ -1,7 +1,7 @@
 from typing import List, Optional
 
 from openai.types.chat.chat_completion_message_tool_call import ChatCompletionMessageToolCall as OpenAIToolCall
-from sqlalchemy import BigInteger, ForeignKey, Index, Sequence, event, text
+from sqlalchemy import BigInteger, FetchedValue, ForeignKey, Index, Sequence, event, text
 from sqlalchemy.orm import Mapped, Session, mapped_column, relationship
 
 from letta.orm.custom_columns import MessageContentColumn, ToolCallColumn, ToolReturnColumn
@@ -41,12 +41,20 @@ class Message(SqlalchemyBase, OrganizationMixin, AgentMixin):
         ToolReturnColumn, nullable=True, doc="Tool execution return information for prior tool calls"
     )
     group_id: Mapped[Optional[str]] = mapped_column(nullable=True, doc="The multi-agent group that the message was sent in")
+    sender_id: Mapped[Optional[str]] = mapped_column(
+        nullable=True, doc="The id of the sender of the message, can be an identity id or agent id"
+    )
 
     # Monotonically increasing sequence for efficient/correct listing
-    sequence_id = mapped_column(BigInteger, Sequence("message_seq_id"), unique=True, nullable=False)
+    sequence_id: Mapped[int] = mapped_column(
+        BigInteger,
+        Sequence("message_seq_id"),
+        server_default=FetchedValue(),
+        unique=True,
+        nullable=False,
+    )
 
     # Relationships
-    agent: Mapped["Agent"] = relationship("Agent", back_populates="messages", lazy="selectin")
     organization: Mapped["Organization"] = relationship("Organization", back_populates="messages", lazy="selectin")
     step: Mapped["Step"] = relationship("Step", back_populates="messages", lazy="selectin")
 
@@ -77,7 +85,7 @@ class Message(SqlalchemyBase, OrganizationMixin, AgentMixin):
 @event.listens_for(Message, "before_insert")
 def set_sequence_id_for_sqlite(mapper, connection, target):
     # TODO: Kind of hacky, used to detect if we are using sqlite or not
-    if not settings.pg_uri:
+    if not settings.letta_pg_uri_no_default:
         session = Session.object_session(target)
 
         if not hasattr(session, "_sequence_id_counter"):

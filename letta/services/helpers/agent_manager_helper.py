@@ -194,10 +194,9 @@ def compile_system_message(
         variables[IN_CONTEXT_MEMORY_KEYWORD] = full_memory_string
 
     if template_format == "f-string":
-
+        memory_variable_string = "{" + IN_CONTEXT_MEMORY_KEYWORD + "}"
         # Catch the special case where the system prompt is unformatted
         if append_icm_if_missing:
-            memory_variable_string = "{" + IN_CONTEXT_MEMORY_KEYWORD + "}"
             if memory_variable_string not in system_prompt:
                 # In this case, append it to the end to make sure memory is still injected
                 # warnings.warn(f"{IN_CONTEXT_MEMORY_KEYWORD} variable was missing from system prompt, appending instead")
@@ -205,7 +204,10 @@ def compile_system_message(
 
         # render the variables using the built-in templater
         try:
-            formatted_prompt = safe_format(system_prompt, variables)
+            if user_defined_variables:
+                formatted_prompt = safe_format(system_prompt, variables)
+            else:
+                formatted_prompt = system_prompt.replace(memory_variable_string, full_memory_string)
         except Exception as e:
             raise ValueError(f"Failed to format system prompt - {str(e)}. System prompt value:\n{system_prompt}")
 

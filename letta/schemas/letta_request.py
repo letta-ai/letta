@@ -1,6 +1,6 @@
-from typing import List
+from typing import List, Optional
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, HttpUrl
 
 from letta.constants import DEFAULT_MESSAGE_TOOL, DEFAULT_MESSAGE_TOOL_KWARG
 from letta.schemas.message import MessageCreate
@@ -31,3 +31,8 @@ class LettaStreamingRequest(LettaRequest):
 
 class LettaBatchRequest(LettaRequest):
     agent_id: str = Field(..., description="The ID of the agent to send this batch request for")
+
+
+class CreateBatch(BaseModel):
+    requests: List[LettaBatchRequest] = Field(..., description="List of requests to be processed in batch.")
+    callback_url: Optional[HttpUrl] = Field(None, description="Optional URL to call via POST when the batch completes.")

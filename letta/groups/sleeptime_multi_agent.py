@@ -1,6 +1,6 @@
 import asyncio
 import threading
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import List, Optional
 
 from letta.agent import Agent, AgentState
@@ -154,7 +154,7 @@ class SleeptimeMultiAgent(Agent):
             )
             job_update = JobUpdate(
                 status=JobStatus.completed,
-                completed_at=datetime.utcnow(),
+                completed_at=datetime.now(timezone.utc),
                 metadata={
                     "result": result.model_dump(mode="json"),
                     "agent_id": participant_agent.agent_state.id,
@@ -165,7 +165,7 @@ class SleeptimeMultiAgent(Agent):
         except Exception as e:
             job_update = JobUpdate(
                 status=JobStatus.failed,
-                completed_at=datetime.utcnow(),
+                completed_at=datetime.now(timezone.utc),
                 metadata={"error": str(e)},
             )
             self.job_manager.update_job_by_id(job_id=run_id, job_update=job_update, actor=self.user)

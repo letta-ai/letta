@@ -81,6 +81,7 @@ class MessageCreate(BaseModel):
     )
     name: Optional[str] = Field(None, description="The name of the participant.")
     otid: Optional[str] = Field(None, description="The offline threading id associated with this message")
+    sender_id: Optional[str] = Field(None, description="The id of the sender of the message, can be an identity id or agent id")
 
     def model_dump(self, to_orm: bool = False, **kwargs) -> Dict[str, Any]:
         data = super().model_dump(**kwargs)
@@ -157,6 +158,7 @@ class Message(BaseMessage):
     otid: Optional[str] = Field(None, description="The offline threading id associated with this message")
     tool_returns: Optional[List[ToolReturn]] = Field(None, description="Tool execution return information for prior tool calls")
     group_id: Optional[str] = Field(None, description="The multi-agent group that the message was sent in")
+    sender_id: Optional[str] = Field(None, description="The id of the sender of the message, can be an identity id or agent id")
     # This overrides the optional base orm schema, created_at MUST exist on all messages objects
     created_at: datetime = Field(default_factory=get_utc_time, description="The timestamp when the object was created.")
 
@@ -246,6 +248,7 @@ class Message(BaseMessage):
                             reasoning=self.content[0].text,
                             name=self.name,
                             otid=otid,
+                            sender_id=self.sender_id,
                         )
                     )
                 # Otherwise, we may have a list of multiple types
@@ -262,6 +265,7 @@ class Message(BaseMessage):
                                     reasoning=content_part.text,
                                     name=self.name,
                                     otid=otid,
+                                    sender_id=self.sender_id,
                                 )
                             )
                         elif isinstance(content_part, ReasoningContent):
@@ -287,6 +291,7 @@ class Message(BaseMessage):
                                     hidden_reasoning=content_part.data,
                                     name=self.name,
                                     otid=otid,
+                                    sender_id=self.sender_id,
                                 )
                             )
                         else:
@@ -312,6 +317,7 @@ class Message(BaseMessage):
                                 content=message_string,
                                 name=self.name,
                                 otid=otid,
+                                sender_id=self.sender_id,
                             )
                         )
                     else:
@@ -326,6 +332,7 @@ class Message(BaseMessage):
                                 ),
                                 name=self.name,
                                 otid=otid,
+                                sender_id=self.sender_id,
                             )
                         )
         elif self.role == MessageRole.tool:
@@ -368,6 +375,7 @@ class Message(BaseMessage):
                     stderr=self.tool_returns[0].stderr if self.tool_returns else None,
                     name=self.name,
                     otid=self.id.replace("message-", ""),
+                    sender_id=self.sender_id,
                 )
             )
         elif self.role == MessageRole.user:
@@ -385,6 +393,7 @@ class Message(BaseMessage):
                     content=message_str or text_content,
                     name=self.name,
                     otid=self.otid,
+                    sender_id=self.sender_id,
                 )
             )
         elif self.role == MessageRole.system:
@@ -401,6 +410,7 @@ class Message(BaseMessage):
                     content=text_content,
                     name=self.name,
                     otid=self.otid,
+                    sender_id=self.sender_id,
                 )
             )
         else:
@@ -609,7 +619,7 @@ class Message(BaseMessage):
             text_content = self.content[0].text
         # Otherwise, check if we have TextContent and multiple other parts
         elif self.content and len(self.content) > 1:
-            text = [content for content in self.content if isinstance(self.content[0], TextContent)]
+            text = [content for content in self.content if isinstance(content, TextContent)]
             if len(text) > 1:
                 assert len(text) == 1, f"multiple text content parts found in a single message: {self.content}"
                 text_content = text[0].text

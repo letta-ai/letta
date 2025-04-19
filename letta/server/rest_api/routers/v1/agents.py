@@ -1,6 +1,6 @@
 import json
 import traceback
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Annotated, Any, List, Optional
 
 from fastapi import APIRouter, BackgroundTasks, Body, Depends, File, Header, HTTPException, Query, UploadFile, status
@@ -17,6 +17,7 @@ from letta.log import get_logger
 from letta.orm.errors import NoResultFound
 from letta.schemas.agent import AgentState, AgentType, CreateAgent, UpdateAgent
 from letta.schemas.block import Block, BlockUpdate
+from letta.schemas.group import Group
 from letta.schemas.job import JobStatus, JobUpdate, LettaRequestConfig
 from letta.schemas.letta_message import LettaMessageUnion, LettaMessageUpdateUnion
 from letta.schemas.letta_request import LettaRequest, LettaStreamingRequest
@@ -173,7 +174,7 @@ async def import_agent_serialized(
         raise HTTPException(status_code=400, detail="Corrupted agent file format.")
 
     except ValidationError as e:
-        raise HTTPException(status_code=422, detail=f"Invalid agent schema: {e.errors()}")
+        raise HTTPException(status_code=422, detail=f"Invalid agent schema: {str(e)}")
 
     except IntegrityError as e:
         raise HTTPException(status_code=409, detail=f"Database integrity error: {str(e)}")
@@ -282,6 +283,7 @@ def detach_tool(
 def attach_source(
     agent_id: str,
     source_id: str,
+    background_tasks: BackgroundTasks,
     server: "SyncServer" = Depends(get_letta_server),
     actor_id: Optional[str] = Header(None, alias="user_id"),
 ):
@@ -289,7 +291,11 @@ def attach_source(
     Attach a source to an agent.
     """
     actor = server.user_manager.get_user_or_default(user_id=actor_id)
-    return server.agent_manager.attach_source(agent_id=agent_id, source_id=source_id, actor=actor)
+    agent = server.agent_manager.attach_source(agent_id=agent_id, source_id=source_id, actor=actor)
+    if agent.enable_sleeptime:
+        source = server.source_manager.get_source_by_id(source_id=source_id)
+        background_tasks.add_task(server.sleeptime_document_ingest, agent, source, actor)
+    return agent
 
 
 @router.patch("/{agent_id}/sources/detach/{source_id}", response_model=AgentState, operation_id="detach_source_from_agent")
@@ -303,7 +309,15 @@ def detach_source(
     Detach a source from an agent.
     """
     actor = server.user_manager.get_user_or_default(user_id=actor_id)
-    return server.agent_manager.detach_source(agent_id=agent_id, source_id=source_id, actor=actor)
+    agent = server.agent_manager.detach_source(agent_id=agent_id, source_id=source_id, actor=actor)
+    if agent.enable_sleeptime:
+        try:
+            source = server.source_manager.get_source_by_id(source_id=source_id)
+            block = server.agent_manager.get_block_with_label(agent_id=agent.id, block_label=source.name, actor=actor)
+            server.block_manager.delete_block(block.id, actor)
+        except:
+            pass
+    return agent
 
 
 @router.get("/{agent_id}", response_model=AgentState, operation_id="retrieve_agent")
@@ -728,7 +742,7 @@ async def process_message_background(
         # Update job status to completed
         job_update = JobUpdate(
             status=JobStatus.completed,
-            completed_at=datetime.utcnow(),
+            completed_at=datetime.now(timezone.utc),
             metadata={"result": result.model_dump(mode="json")},  # Store the result in metadata
         )
         server.job_manager.update_job_by_id(job_id=job_id, job_update=job_update, actor=actor)
@@ -737,7 +751,7 @@ async def process_message_background(
         # Update job status to failed
         job_update = JobUpdate(
             status=JobStatus.failed,
-            completed_at=datetime.utcnow(),
+            completed_at=datetime.now(timezone.utc),
             metadata={"error": str(e)},
         )
         server.job_manager.update_job_by_id(job_id=job_id, job_update=job_update, actor=actor)
@@ -804,3 +818,16 @@ def reset_messages(
     """Resets the messages for an agent"""
     actor = server.user_manager.get_user_or_default(user_id=actor_id)
     return server.agent_manager.reset_messages(agent_id=agent_id, actor=actor, add_default_initial_messages=add_default_initial_messages)
+
+
+@router.get("/{agent_id}/groups", response_model=List[Group], operation_id="list_agent_groups")
+async def list_agent_groups(
+    agent_id: str,
+    manager_type: Optional[str] = Query(None, description="Manager type to filter groups by"),
+    server: "SyncServer" = Depends(get_letta_server),
+    actor_id: Optional[str] = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
+):
+    """Lists the groups for an agent"""
+    actor = server.user_manager.get_user_or_default(user_id=actor_id)
+    print("in list agents with manager_type", manager_type)
+    return server.agent_manager.list_groups(agent_id=agent_id, manager_type=manager_type, actor=actor)

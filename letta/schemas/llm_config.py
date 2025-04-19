@@ -67,6 +67,10 @@ class LLMConfig(BaseModel):
     enable_reasoner: bool = Field(
         False, description="Whether or not the model should use extended thinking if it is a 'reasoning' style model"
     )
+    reasoning_effort: Optional[Literal["low", "medium", "high"]] = Field(
+        None,
+        description="The reasoning effort to use when generating text reasoning models",
+    )
     max_reasoning_tokens: int = Field(
         0, description="Configurable thinking budget for extended thinking, only used if enable_reasoner is True. Minimum value is 1024."
     )
@@ -106,7 +110,7 @@ class LLMConfig(BaseModel):
             if self.max_tokens is not None and self.max_reasoning_tokens >= self.max_tokens:
                 logger.warning("max_tokens must be greater than max_reasoning_tokens (thinking budget)")
             if self.put_inner_thoughts_in_kwargs:
-                logger.warning("Extended thinking is not compatible with put_inner_thoughts_in_kwargs")
+                logger.debug("Extended thinking is not compatible with put_inner_thoughts_in_kwargs")
         elif self.max_reasoning_tokens and not self.enable_reasoner:
             logger.warning("model will not use reasoning unless enable_reasoner is set to True")
 
@@ -115,7 +119,7 @@ class LLMConfig(BaseModel):
     @classmethod
     def default_config(cls, model_name: str):
         """
-        Convinience function to generate a default `LLMConfig` from a model name. Only some models are supported in this function.
+        Convenience function to generate a default `LLMConfig` from a model name. Only some models are supported in this function.
 
         Args:
             model_name (str): The name of the model (gpt-4, gpt-4o-mini, letta).

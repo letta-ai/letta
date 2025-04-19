@@ -154,7 +154,7 @@ def deserialize_tool_calls(data: Optional[List[Dict]]) -> List[OpenAIToolCall]:
     calls = []
     for item in data:
         func_data = item.pop("function", None)
-        tool_call_function = OpenAIFunction(**func_data) if func_data else None
+        tool_call_function = OpenAIFunction(**func_data)
         calls.append(OpenAIToolCall(function=tool_call_function, **item))
 
     return calls

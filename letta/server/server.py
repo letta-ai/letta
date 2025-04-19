@@ -34,8 +34,9 @@ from letta.interface import AgentInterface  # abstract
 from letta.interface import CLIInterface  # for printing to terminal
 from letta.log import get_logger
 from letta.orm.errors import NoResultFound
+from letta.prompts.gpt_system import get_system_text
 from letta.schemas.agent import AgentState, AgentType, CreateAgent, UpdateAgent
-from letta.schemas.block import BlockUpdate, CreateBlock
+from letta.schemas.block import Block, BlockUpdate, CreateBlock
 from letta.schemas.embedding_config import EmbeddingConfig
 
 # openai schemas
@@ -67,7 +68,7 @@ from letta.schemas.providers import (
     TogetherProvider,
     VLLMChatCompletionsProvider,
     VLLMCompletionsProvider,
-    xAIProvider,
+    XAIProvider,
 )
 from letta.schemas.sandbox_config import SandboxType
 from letta.schemas.source import Source
@@ -94,9 +95,8 @@ from letta.services.tool_executor.tool_execution_sandbox import ToolExecutionSan
 from letta.services.tool_manager import ToolManager
 from letta.services.user_manager import UserManager
 from letta.settings import model_settings, settings, tool_settings
-from letta.sleeptime_agent import SleeptimeAgent
 from letta.tracing import log_event, trace_method
-from letta.utils import get_friendly_error_msg, make_key
+from letta.utils import get_friendly_error_msg, get_persona_text, make_key
 
 config = LettaConfig.load()
 logger = get_logger(__name__)
@@ -321,7 +321,7 @@ class SyncServer(Server):
         if model_settings.deepseek_api_key:
             self._enabled_providers.append(DeepSeekProvider(api_key=model_settings.deepseek_api_key))
         if model_settings.xai_api_key:
-            self._enabled_providers.append(xAIProvider(api_key=model_settings.xai_api_key))
+            self._enabled_providers.append(XAIProvider(api_key=model_settings.xai_api_key))
 
         # For MCP
         """Initialize the MCP clients (there may be multiple)"""
@@ -365,14 +365,7 @@ class SyncServer(Server):
             )
 
         interface = interface or self.default_interface_factory()
-        if agent_state.agent_type == AgentType.memgpt_agent:
-            agent = Agent(agent_state=agent_state, interface=interface, user=actor, mcp_clients=self.mcp_clients)
-        elif agent_state.agent_type == AgentType.sleeptime_agent:
-            agent = SleeptimeAgent(agent_state=agent_state, interface=interface, user=actor)
-        else:
-            raise ValueError(f"Invalid agent type {agent_state.agent_type}")
-
-        return agent
+        return Agent(agent_state=agent_state, interface=interface, user=actor, mcp_clients=self.mcp_clients)
 
     def _step(
         self,
@@ -996,12 +989,6 @@ class SyncServer(Server):
         connector = DirectoryConnector(input_files=[file_path])
         num_passages, num_documents = self.load_data(user_id=source.created_by_id, source_name=source.name, connector=connector)
 
-        # update job status
-        job.status = JobStatus.completed
-        job.metadata["num_passages"] = num_passages
-        job.metadata["num_documents"] = num_documents
-        self.job_manager.update_job_by_id(job_id=job_id, job_update=JobUpdate(**job.model_dump()), actor=actor)
-
         # update all agents who have this source attached
         agent_states = self.source_manager.list_attached_agents(source_id=source_id, actor=actor)
         for agent_state in agent_states:
@@ -1009,14 +996,73 @@ class SyncServer(Server):
 
             # Attach source to agent
             curr_passage_size = self.agent_manager.passage_size(actor=actor, agent_id=agent_id)
-            self.agent_manager.attach_source(agent_id=agent_state.id, source_id=source_id, actor=actor)
+            agent_state = self.agent_manager.attach_source(agent_id=agent_state.id, source_id=source_id, actor=actor)
             new_passage_size = self.agent_manager.passage_size(actor=actor, agent_id=agent_id)
             assert new_passage_size >= curr_passage_size  # in case empty files are added
 
             # rebuild system prompt and force
-            self.agent_manager.rebuild_system_prompt(agent_id=agent_id, actor=actor, force=True)
+            agent_state = self.agent_manager.rebuild_system_prompt(agent_id=agent_id, actor=actor, force=True)
+
+        # update job status
+        job.status = JobStatus.completed
+        job.metadata["num_passages"] = num_passages
+        job.metadata["num_documents"] = num_documents
+        self.job_manager.update_job_by_id(job_id=job_id, job_update=JobUpdate(**job.model_dump()), actor=actor)
 
         return job
+
+    def sleeptime_document_ingest(self, main_agent: AgentState, source: Source, actor: User, clear_history: bool = False) -> None:
+        sleeptime_agent = self.create_document_sleeptime_agent(main_agent, source, actor, clear_history)
+        agent = self.load_agent(agent_id=sleeptime_agent.id, actor=actor)
+        for passage in self.list_data_source_passages(source_id=source.id, user_id=actor.id):
+            agent.step(
+                messages=[
+                    Message(
+                        role="user",
+                        content=[TextContent(text=passage.text)],
+                        agent_id=sleeptime_agent.id,
+                    ),
+                ]
+            )
+        self.agent_manager.delete_agent(agent_id=sleeptime_agent.id, actor=actor)
+
+    def create_document_sleeptime_agent(
+        self, main_agent: AgentState, source: Source, actor: User, clear_history: bool = False
+    ) -> AgentState:
+        try:
+            block = self.agent_manager.get_block_with_label(agent_id=main_agent.id, block_label=source.name, actor=actor)
+        except:
+            block = self.block_manager.create_or_update_block(Block(label=source.name, value=""), actor=actor)
+            self.agent_manager.attach_block(agent_id=main_agent.id, block_id=block.id, actor=actor)
+
+        if clear_history and block.value != "":
+            block = self.block_manager.update_block(block_id=block.id, block=BlockUpdate(value=""))
+
+        request = CreateAgent(
+            name=main_agent.name + "-doc-sleeptime",
+            system=get_system_text("sleeptime_doc_ingest"),
+            agent_type=AgentType.sleeptime_agent,
+            block_ids=[block.id],
+            memory_blocks=[
+                CreateBlock(
+                    label="persona",
+                    value=get_persona_text("sleeptime_doc_persona"),
+                ),
+                CreateBlock(
+                    label="instructions",
+                    value=source.description,
+                ),
+            ],
+            llm_config=main_agent.llm_config,
+            embedding_config=main_agent.embedding_config,
+            project_id=main_agent.project_id,
+            include_base_tools=False,
+            tools=constants.BASE_SLEEPTIME_TOOLS,
+        )
+        return self.agent_manager.create_agent(
+            agent_create=request,
+            actor=actor,
+        )
 
     def load_data(
         self,

@@ -1,7 +1,6 @@
-import datetime
 import os
 import time
-from datetime import datetime
+from datetime import datetime, timezone
 from importlib import util
 from typing import Dict, Iterator, List, Tuple
 
@@ -34,7 +33,7 @@ class DummyDataConnector(DataConnector):
                 file_size=0,  # Set to 0 as a placeholder
                 file_creation_date="1970-01-01",  # Placeholder date
                 file_last_modified_date="1970-01-01",  # Placeholder date
-                created_at=datetime.utcnow(),
+                created_at=datetime.now(timezone.utc),
             )
             self.file_to_text[file_metadata.id] = text
 

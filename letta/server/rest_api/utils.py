@@ -153,6 +153,7 @@ def create_input_messages(input_messages: List[MessageCreate], agent_id: str, ac
             content=input_message.content,
             name=input_message.name,
             otid=input_message.otid,
+            sender_id=input_message.sender_id,
             organization_id=actor.organization_id,
             agent_id=agent_id,
             model=None,
@@ -224,20 +225,32 @@ def create_letta_messages_from_llm_response(
     messages.append(tool_message)
 
     if add_heartbeat_request_system_message:
-        text_content = REQ_HEARTBEAT_MESSAGE if function_call_success else FUNC_FAILED_HEARTBEAT_MESSAGE
-        heartbeat_system_message = Message(
-            role=MessageRole.user,
-            content=[TextContent(text=get_heartbeat(text_content))],
-            organization_id=actor.organization_id,
-            agent_id=agent_id,
-            model=model,
-            tool_calls=[],
-            tool_call_id=None,
-            created_at=get_utc_time(),
+        heartbeat_system_message = create_heartbeat_system_message(
+            agent_id=agent_id, model=model, function_call_success=function_call_success, actor=actor
         )
         messages.append(heartbeat_system_message)
 
     return messages
+
+
+def create_heartbeat_system_message(
+    agent_id: str,
+    model: str,
+    function_call_success: bool,
+    actor: User,
+) -> Message:
+    text_content = REQ_HEARTBEAT_MESSAGE if function_call_success else FUNC_FAILED_HEARTBEAT_MESSAGE
+    heartbeat_system_message = Message(
+        role=MessageRole.user,
+        content=[TextContent(text=get_heartbeat(text_content))],
+        organization_id=actor.organization_id,
+        agent_id=agent_id,
+        model=model,
+        tool_calls=[],
+        tool_call_id=None,
+        created_at=get_utc_time(),
+    )
+    return heartbeat_system_message
 
 
 def create_assistant_messages_from_openai_response(

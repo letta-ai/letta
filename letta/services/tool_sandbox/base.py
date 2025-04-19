@@ -7,9 +7,9 @@ from typing import Any, Dict, Optional, Tuple
 
 from letta.functions.helpers import generate_model_from_args_json_schema
 from letta.schemas.agent import AgentState
-from letta.schemas.sandbox_config import SandboxRunResult
+from letta.schemas.sandbox_config import SandboxConfig, SandboxRunResult
+from letta.schemas.tool import Tool
 from letta.services.helpers.tool_execution_helper import add_imports_and_pydantic_schemas_for_args
-from letta.services.organization_manager import OrganizationManager
 from letta.services.sandbox_config_manager import SandboxConfigManager
 from letta.services.tool_manager import ToolManager
 
@@ -20,12 +20,18 @@ class AsyncToolSandboxBase(ABC):
     LOCAL_SANDBOX_RESULT_END_MARKER = str(uuid.uuid5(NAMESPACE, "local-sandbox-result-end-marker"))
     LOCAL_SANDBOX_RESULT_VAR_NAME = "result_ZQqiequkcFwRwwGQMqkt"
 
-    def __init__(self, tool_name: str, args: dict, user, tool_object=None):
+    def __init__(
+        self,
+        tool_name: str,
+        args: dict,
+        user,
+        tool_object: Optional[Tool] = None,
+        sandbox_config: Optional[SandboxConfig] = None,
+        sandbox_env_vars: Optional[Dict[str, Any]] = None,
+    ):
         self.tool_name = tool_name
         self.args = args
         self.user = user
-        self.organization = OrganizationManager().get_organization_by_id(self.user.organization_id)
-        self.privileged_tools = self.organization.privileged_tools
 
         self.tool = tool_object or ToolManager().get_tool_by_name(tool_name=tool_name, actor=self.user)
         if self.tool is None:
@@ -33,13 +39,25 @@ class AsyncToolSandboxBase(ABC):
                 f"Agent attempted to invoke tool {self.tool_name} that does not exist for organization {self.user.organization_id}"
             )
 
-        self.sandbox_config_manager = SandboxConfigManager()
+        # Store provided values or create manager to fetch them later
+        self.provided_sandbox_config = sandbox_config
+        self.provided_sandbox_env_vars = sandbox_env_vars
+
+        # Only create the manager if we need to (lazy initialization)
+        self._sandbox_config_manager = None
 
         # See if we should inject agent_state or not based on the presence of the "agent_state" arg
         if "agent_state" in self.parse_function_arguments(self.tool.source_code, self.tool.name):
             self.inject_agent_state = True
         else:
             self.inject_agent_state = False
+
+    # Lazily initialize the manager only when needed
+    @property
+    def sandbox_config_manager(self):
+        if self._sandbox_config_manager is None:
+            self._sandbox_config_manager = SandboxConfigManager()
+        return self._sandbox_config_manager
 
     @abstractmethod
     async def run(

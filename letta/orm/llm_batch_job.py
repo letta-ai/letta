@@ -3,7 +3,7 @@ from datetime import datetime
 from typing import List, Optional, Union
 
 from anthropic.types.beta.messages import BetaMessageBatch
-from sqlalchemy import DateTime, Index, String
+from sqlalchemy import DateTime, ForeignKey, Index, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from letta.orm.custom_columns import CreateBatchResponseColumn, PollBatchResponseColumn
@@ -43,6 +43,9 @@ class LLMBatchJob(SqlalchemyBase, OrganizationMixin):
         DateTime(timezone=True), nullable=True, doc="Last time we polled the provider for status"
     )
 
-    # relationships
+    letta_batch_job_id: Mapped[str] = mapped_column(
+        String, ForeignKey("jobs.id", ondelete="CASCADE"), nullable=False, doc="ID of the Letta batch job"
+    )
+
     organization: Mapped["Organization"] = relationship("Organization", back_populates="llm_batch_jobs")
     items: Mapped[List["LLMBatchItem"]] = relationship("LLMBatchItem", back_populates="batch", lazy="selectin")

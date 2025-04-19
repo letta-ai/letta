@@ -30,10 +30,11 @@ from letta.orm.sandbox_config import AgentEnvironmentVariable as AgentEnvironmen
 from letta.orm.sqlalchemy_base import AccessType
 from letta.orm.sqlite_functions import adapt_array
 from letta.schemas.agent import AgentState as PydanticAgentState
-from letta.schemas.agent import AgentType, CreateAgent, UpdateAgent
+from letta.schemas.agent import AgentType, CreateAgent, UpdateAgent, get_prompt_template_for_agent_type
 from letta.schemas.block import Block as PydanticBlock
 from letta.schemas.block import BlockUpdate
 from letta.schemas.embedding_config import EmbeddingConfig
+from letta.schemas.group import Group as PydanticGroup
 from letta.schemas.group import ManagerType
 from letta.schemas.llm_config import LLMConfig
 from letta.schemas.memory import Memory
@@ -43,11 +44,11 @@ from letta.schemas.passage import Passage as PydanticPassage
 from letta.schemas.source import Source as PydanticSource
 from letta.schemas.tool import Tool as PydanticTool
 from letta.schemas.tool_rule import ContinueToolRule as PydanticContinueToolRule
-from letta.schemas.tool_rule import ParentToolRule as PydanticParentToolRule
 from letta.schemas.tool_rule import TerminalToolRule as PydanticTerminalToolRule
 from letta.schemas.tool_rule import ToolRule as PydanticToolRule
 from letta.schemas.user import User as PydanticUser
 from letta.serialize_schemas import MarshmallowAgentSchema
+from letta.serialize_schemas.marshmallow_message import SerializedMessageSchema
 from letta.serialize_schemas.marshmallow_tool import SerializedToolSchema
 from letta.serialize_schemas.pydantic_agent_schema import AgentSchema
 from letta.services.block_manager import BlockManager
@@ -158,13 +159,10 @@ class AgentManager:
         if agent_create.include_base_tool_rules:
             # apply default tool rules
             for tool_name in tool_names:
-                if tool_name == "send_message" or tool_name == "send_message_to_agent_async" or tool_name == "finish_rethinking_memory":
+                if tool_name == "send_message" or tool_name == "send_message_to_agent_async" or tool_name == "memory_finish_edits":
                     tool_rules.append(PydanticTerminalToolRule(tool_name=tool_name))
                 elif tool_name in BASE_TOOLS + BASE_MEMORY_TOOLS + BASE_SLEEPTIME_TOOLS:
                     tool_rules.append(PydanticContinueToolRule(tool_name=tool_name))
-
-            if agent_create.agent_type == AgentType.sleeptime_agent:
-                tool_rules.append(PydanticParentToolRule(tool_name="view_core_memory_with_line_numbers", children=["core_memory_insert"]))
 
         # if custom rules, check tool rules are valid
         if agent_create.tool_rules:
@@ -304,7 +302,7 @@ class AgentManager:
             agent_update.system = derive_system_message(
                 agent_type=agent_state.agent_type,
                 enable_sleeptime=agent_update.enable_sleeptime,
-                system=agent_update.system,
+                system=agent_update.system or agent_state.system,
             )
         if agent_update.system and agent_update.system != agent_state.system:
             agent_state = self.rebuild_system_prompt(agent_id=agent_state.id, actor=actor, force=True, update_timestamp=False)
@@ -422,7 +420,8 @@ class AgentManager:
             query = _apply_tag_filter(query, tags, match_all_tags)
             query = _apply_pagination(query, before, after, session, ascending=ascending)
 
-            query = query.limit(limit)
+            if limit:
+                query = query.limit(limit)
 
             agents = session.execute(query).scalars().all()
             return [agent.to_pydantic(include_relationships=include_relationships) for agent in agents]
@@ -530,7 +529,6 @@ class AgentManager:
     @enforce_types
     def serialize(self, agent_id: str, actor: PydanticUser) -> AgentSchema:
         with self.session_maker() as session:
-            # Retrieve the agent
             agent = AgentModel.read(db_session=session, identifier=agent_id, actor=actor)
             schema = MarshmallowAgentSchema(session=session, actor=actor)
             data = schema.dump(agent)
@@ -546,12 +544,24 @@ class AgentManager:
         project_id: Optional[str] = None,
         strip_messages: Optional[bool] = False,
     ) -> PydanticAgentState:
-        serialized_agent = serialized_agent.model_dump()
-        tool_data_list = serialized_agent.pop("tools", [])
+        serialized_agent_dict = serialized_agent.model_dump()
+        tool_data_list = serialized_agent_dict.pop("tools", [])
+        messages = serialized_agent_dict.pop(MarshmallowAgentSchema.FIELD_MESSAGES, [])
+
+        for msg in messages:
+            msg[MarshmallowAgentSchema.FIELD_ID] = SerializedMessageSchema.generate_id()  # Generate new ID
+
+        message_ids = []
+        in_context_message_indices = serialized_agent_dict.pop(MarshmallowAgentSchema.FIELD_IN_CONTEXT_INDICES)
+        for idx in in_context_message_indices:
+            message_ids.append(messages[idx][MarshmallowAgentSchema.FIELD_ID])
+
+        serialized_agent_dict[MarshmallowAgentSchema.FIELD_MESSAGE_IDS] = message_ids
 
         with self.session_maker() as session:
             schema = MarshmallowAgentSchema(session=session, actor=actor)
-            agent = schema.load(serialized_agent, session=session)
+            agent = schema.load(serialized_agent_dict, session=session)
+
             if append_copy_suffix:
                 agent.name += "_copy"
             if project_id:
@@ -561,17 +571,23 @@ class AgentManager:
                 # we want to strip all but the first (system) message
                 agent.message_ids = [agent.message_ids[0]]
             agent = agent.create(session, actor=actor)
+
             pydantic_agent = agent.to_pydantic()
+
+        pyd_msgs = []
+        message_schema = SerializedMessageSchema(session=session, actor=actor)
+
+        for serialized_message in messages:
+            pydantic_message = message_schema.load(serialized_message, session=session).to_pydantic()
+            pydantic_message.agent_id = agent.id
+            pyd_msgs.append(pydantic_message)
+        self.message_manager.create_many_messages(pyd_msgs, actor=actor)
 
         # Need to do this separately as there's some fancy upsert logic that SqlAlchemy cannot handle
         for tool_data in tool_data_list:
             pydantic_tool = SerializedToolSchema(actor=actor).load(tool_data, transient=True).to_pydantic()
 
             existing_pydantic_tool = self.tool_manager.get_tool_by_name(pydantic_tool.name, actor=actor)
-            # If the tool exists
-            # AND EITHER:
-            # 1) override_existing_tools is set to False
-            # 2) existing_pydantic_tool is NOT any type of Letta core tool
             if existing_pydantic_tool and (
                 existing_pydantic_tool.tool_type in {ToolType.LETTA_CORE, ToolType.LETTA_MULTI_AGENT_CORE, ToolType.LETTA_MEMORY_CORE}
                 or not override_existing_tools
@@ -641,6 +657,14 @@ class AgentManager:
 
             # Return the updated agent state
             return agent.to_pydantic()
+
+    @enforce_types
+    def list_groups(self, agent_id: str, actor: PydanticUser, manager_type: Optional[str] = None) -> List[PydanticGroup]:
+        with self.session_maker() as session:
+            agent = AgentModel.read(db_session=session, identifier=agent_id, actor=actor)
+            if manager_type:
+                return [group.to_pydantic() for group in agent.groups if group.manager_type == manager_type]
+            return [group.to_pydantic() for group in agent.groups]
 
     # ======================================================================================================================
     # In Context Messages Management
@@ -781,10 +805,6 @@ class AgentManager:
             # Retrieve the existing agent (will raise NoResultFound if invalid)
             agent = AgentModel.read(db_session=session, identifier=agent_id, actor=actor)
 
-            # Because of cascade="all, delete-orphan" on agent.messages, setting
-            # this relationship to an empty list will physically remove them from the DB.
-            agent.messages = []
-
             # Also clear out the message_ids field to keep in-context memory consistent
             agent.message_ids = []
 
@@ -792,6 +812,8 @@ class AgentManager:
             agent.update(db_session=session, actor=actor)
 
             agent_state = agent.to_pydantic()
+
+        self.message_manager.delete_all_messages_for_agent(agent_id=agent_id, actor=actor)
 
         if add_default_initial_messages:
             return self.append_initial_message_sequence_to_in_context_messages(actor, agent_state)
@@ -833,7 +855,8 @@ class AgentManager:
 
             # refresh memory from DB (using block ids)
             agent_state.memory = Memory(
-                blocks=[self.block_manager.get_block_by_id(block.id, actor=actor) for block in agent_state.memory.get_blocks()]
+                blocks=[self.block_manager.get_block_by_id(block.id, actor=actor) for block in agent_state.memory.get_blocks()],
+                prompt_template=get_prompt_template_for_agent_type(agent_state.agent_type),
             )
 
             # NOTE: don't do this since re-buildin the memory is handled at the start of the step

@@ -5,6 +5,7 @@ import time
 from datetime import datetime, timedelta, timezone
 from typing import List
 
+import httpx
 import pytest
 from anthropic.types.beta import BetaMessage
 from anthropic.types.beta.messages import BetaMessageBatchIndividualResponse, BetaMessageBatchSucceededResult
@@ -26,6 +27,7 @@ from letta.embeddings import embedding_model
 from letta.functions.functions import derive_openai_json_schema, parse_source_code
 from letta.functions.mcp_client.types import MCPTool
 from letta.helpers import ToolRulesSolver
+from letta.jobs.types import ItemUpdateInfo, RequestStatusUpdateInfo, StepStatusUpdateInfo
 from letta.orm import Base, Block
 from letta.orm.block_history import BlockHistory
 from letta.orm.enums import ActorType, JobType, ToolType
@@ -38,10 +40,13 @@ from letta.schemas.enums import AgentStepStatus, JobStatus, MessageRole, Provide
 from letta.schemas.environment_variables import SandboxEnvironmentVariableCreate, SandboxEnvironmentVariableUpdate
 from letta.schemas.file import FileMetadata as PydanticFileMetadata
 from letta.schemas.identity import IdentityCreate, IdentityProperty, IdentityPropertyType, IdentityType, IdentityUpdate, IdentityUpsert
+from letta.schemas.job import BatchJob
+from letta.schemas.job import Job
 from letta.schemas.job import Job as PydanticJob
 from letta.schemas.job import JobUpdate, LettaRequestConfig
 from letta.schemas.letta_message import UpdateAssistantMessage, UpdateReasoningMessage, UpdateSystemMessage, UpdateUserMessage
 from letta.schemas.letta_message_content import TextContent
+from letta.schemas.llm_batch_job import LLMBatchItem
 from letta.schemas.llm_config import LLMConfig
 from letta.schemas.message import Message as PydanticMessage
 from letta.schemas.message import MessageCreate, MessageUpdate
@@ -613,6 +618,11 @@ def dummy_successful_response() -> BetaMessageBatchIndividualResponse:
     )
 
 
+@pytest.fixture
+def letta_batch_job(server: SyncServer, default_user) -> Job:
+    return server.job_manager.create_job(BatchJob(user_id=default_user.id), actor=default_user)
+
+
 # ======================================================================================================================
 # AgentManager Tests - Basic
 # ======================================================================================================================
@@ -688,6 +698,35 @@ def test_create_agent_default_initial_message(server: SyncServer, default_user, 
     # Check that the system appears in the first initial message
     assert create_agent_request.system in init_messages[0].content[0].text
     assert create_agent_request.memory_blocks[0].value in init_messages[0].content[0].text
+
+
+def test_create_agent_with_json_in_system_message(server: SyncServer, default_user, default_block):
+    system_prompt = (
+        "You are an expert teaching agent with encyclopedic knowledge. "
+        "When you receive a topic, query the external database for more "
+        "information. Format the queries as a JSON list of queries making "
+        "sure to include your reasoning for that query, e.g. "
+        "{'query1' : 'reason1', 'query2' : 'reason2'}"
+    )
+    create_agent_request = CreateAgent(
+        system=system_prompt,
+        llm_config=LLMConfig.default_config("gpt-4"),
+        embedding_config=EmbeddingConfig.default_config(provider="openai"),
+        block_ids=[default_block.id],
+        tags=["a", "b"],
+        description="test_description",
+        include_base_tools=False,
+    )
+    agent_state = server.agent_manager.create_agent(
+        create_agent_request,
+        actor=default_user,
+    )
+    assert agent_state is not None
+    system_message_id = agent_state.message_ids[0]
+    system_message = server.message_manager.get_message_by_id(message_id=system_message_id, actor=default_user)
+    assert system_prompt in system_message.content[0].text
+    assert default_block.value in system_message.content[0].text
+    server.agent_manager.delete_agent(agent_id=agent_state.id, actor=default_user)
 
 
 def test_update_agent(server: SyncServer, comprehensive_test_agent_fixture, other_tool, other_source, other_block, default_user):
@@ -1768,7 +1807,7 @@ def test_agent_list_passages_filtering(server, default_user, sarah_agent, defaul
     assert len(source_filtered) == 3
 
     # Test date filtering
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
     future_date = now + timedelta(days=1)
     past_date = now - timedelta(days=1)
 
@@ -2713,7 +2752,7 @@ def test_multiple_checkpoints(server: SyncServer, default_user):
     block_manager.checkpoint_block(block_id=block.id, actor=default_user)
 
     # 2) Update block content
-    updated_block_data = PydanticBlock(**block.dict())
+    updated_block_data = PydanticBlock(**block.model_dump())
     updated_block_data.value = "v2"
     block_manager.create_or_update_block(updated_block_data, actor=default_user)
 
@@ -2827,7 +2866,7 @@ def test_checkpoint_no_future_states(server: SyncServer, default_user):
     block_manager.checkpoint_block(block_id=block_v1.id, actor=default_user)
 
     # 2) Create "v2" and checkpoint => seq=2
-    updated_data = PydanticBlock(**block_v1.dict())
+    updated_data = PydanticBlock(**block_v1.model_dump())
     updated_data.value = "v2"
     block_manager.create_or_update_block(updated_data, actor=default_user)
     block_manager.checkpoint_block(block_id=block_v1.id, actor=default_user)
@@ -2872,7 +2911,7 @@ def test_undo_checkpoint_block(server: SyncServer, default_user):
     block_manager.checkpoint_block(block_id=created_block.id, actor=default_user)
 
     # 3) Update block content to "Version 2"
-    updated_data = PydanticBlock(**created_block.dict())
+    updated_data = PydanticBlock(**created_block.model_dump())
     updated_data.value = "Version 2 content"
     block_manager.create_or_update_block(updated_data, actor=default_user)
 
@@ -2901,13 +2940,13 @@ def test_checkpoint_deletes_future_states_after_undo(server: SyncServer, default
     block_manager.checkpoint_block(block_id=block_v1.id, actor=default_user)
 
     # 2) Update to "v2", checkpoint => seq=2
-    block_v2 = PydanticBlock(**block_v1.dict())
+    block_v2 = PydanticBlock(**block_v1.model_dump())
     block_v2.value = "v2"
     block_manager.create_or_update_block(block_v2, actor=default_user)
     block_manager.checkpoint_block(block_id=block_v1.id, actor=default_user)
 
     # 3) Update to "v3", checkpoint => seq=3
-    block_v3 = PydanticBlock(**block_v1.dict())
+    block_v3 = PydanticBlock(**block_v1.model_dump())
     block_v3.value = "v3"
     block_manager.create_or_update_block(block_v3, actor=default_user)
     block_manager.checkpoint_block(block_id=block_v1.id, actor=default_user)
@@ -2926,7 +2965,7 @@ def test_checkpoint_deletes_future_states_after_undo(server: SyncServer, default
     #    because the new code truncates future states beyond seq=1.
 
     # Let's do a new edit: "v1.5"
-    block_v1_5 = PydanticBlock(**block_undo_2.dict())
+    block_v1_5 = PydanticBlock(**block_undo_2.model_dump())
     block_v1_5.value = "v1.5"
     block_manager.create_or_update_block(block_v1_5, actor=default_user)
 
@@ -3000,13 +3039,13 @@ def test_undo_multiple_checkpoints(server: SyncServer, default_user):
     block_manager.checkpoint_block(block_id=block_v1.id, actor=default_user)
 
     # Step 2: Update to v2, checkpoint => seq=2
-    block_data_v2 = PydanticBlock(**block_v1.dict())
+    block_data_v2 = PydanticBlock(**block_v1.model_dump())
     block_data_v2.value = "v2"
     block_manager.create_or_update_block(block_data_v2, actor=default_user)
     block_manager.checkpoint_block(block_id=block_v1.id, actor=default_user)
 
     # Step 3: Update to v3, checkpoint => seq=3
-    block_data_v3 = PydanticBlock(**block_v1.dict())
+    block_data_v3 = PydanticBlock(**block_v1.model_dump())
     block_data_v3.value = "v3"
     block_manager.create_or_update_block(block_data_v3, actor=default_user)
     block_manager.checkpoint_block(block_id=block_v1.id, actor=default_user)
@@ -3040,7 +3079,7 @@ def test_undo_concurrency_stale(server: SyncServer, default_user):
     block_manager.checkpoint_block(block_v1.id, actor=default_user)
 
     # 2) update to v2
-    block_data_v2 = PydanticBlock(**block_v1.dict())
+    block_data_v2 = PydanticBlock(**block_v1.model_dump())
     block_data_v2.value = "v2"
     block_manager.create_or_update_block(block_data_v2, actor=default_user)
     # checkpoint => seq=2
@@ -3088,13 +3127,13 @@ def test_redo_checkpoint_block(server: SyncServer, default_user):
     block_manager.checkpoint_block(block_id=block_v1.id, actor=default_user)
 
     # 2) Update to 'v2'; checkpoint => seq=2
-    block_v2 = PydanticBlock(**block_v1.dict())
+    block_v2 = PydanticBlock(**block_v1.model_dump())
     block_v2.value = "v2"
     block_manager.create_or_update_block(block_v2, actor=default_user)
     block_manager.checkpoint_block(block_id=block_v1.id, actor=default_user)
 
     # 3) Update to 'v3'; checkpoint => seq=3
-    block_v3 = PydanticBlock(**block_v1.dict())
+    block_v3 = PydanticBlock(**block_v1.model_dump())
     block_v3.value = "v3"
     block_manager.create_or_update_block(block_v3, actor=default_user)
     block_manager.checkpoint_block(block_id=block_v1.id, actor=default_user)
@@ -3135,7 +3174,7 @@ def test_redo_at_highest_checkpoint(server: SyncServer, default_user):
     block_manager.checkpoint_block(b_init.id, actor=default_user)
 
     # 2) Another edit => seq=2
-    b_next = PydanticBlock(**b_init.dict())
+    b_next = PydanticBlock(**b_init.model_dump())
     b_next.value = "v2"
     block_manager.create_or_update_block(b_next, actor=default_user)
     block_manager.checkpoint_block(b_init.id, actor=default_user)
@@ -3159,19 +3198,19 @@ def test_redo_after_multiple_undo(server: SyncServer, default_user):
     block_manager.checkpoint_block(b_init.id, actor=default_user)
 
     # seq=2
-    b_v2 = PydanticBlock(**b_init.dict())
+    b_v2 = PydanticBlock(**b_init.model_dump())
     b_v2.value = "v2"
     block_manager.create_or_update_block(b_v2, actor=default_user)
     block_manager.checkpoint_block(b_init.id, actor=default_user)
 
     # seq=3
-    b_v3 = PydanticBlock(**b_init.dict())
+    b_v3 = PydanticBlock(**b_init.model_dump())
     b_v3.value = "v3"
     block_manager.create_or_update_block(b_v3, actor=default_user)
     block_manager.checkpoint_block(b_init.id, actor=default_user)
 
     # seq=4
-    b_v4 = PydanticBlock(**b_init.dict())
+    b_v4 = PydanticBlock(**b_init.model_dump())
     b_v4.value = "v4"
     block_manager.create_or_update_block(b_v4, actor=default_user)
     block_manager.checkpoint_block(b_init.id, actor=default_user)
@@ -3197,13 +3236,13 @@ def test_redo_concurrency_stale(server: SyncServer, default_user):
     block_manager.checkpoint_block(block.id, actor=default_user)
 
     # 2) Another edit => checkpoint => seq=2
-    block_v2 = PydanticBlock(**block.dict())
+    block_v2 = PydanticBlock(**block.model_dump())
     block_v2.value = "v2"
     block_manager.create_or_update_block(block_v2, actor=default_user)
     block_manager.checkpoint_block(block.id, actor=default_user)
 
     # 3) Another edit => checkpoint => seq=3
-    block_v3 = PydanticBlock(**block.dict())
+    block_v3 = PydanticBlock(**block.model_dump())
     block_v3.value = "v3"
     block_manager.create_or_update_block(block_v3, actor=default_user)
     block_manager.checkpoint_block(block.id, actor=default_user)
@@ -4166,6 +4205,40 @@ def test_list_jobs_filter_by_type(server: SyncServer, default_user, default_job)
     assert jobs[0].id == run.id
 
 
+def test_e2e_job_callback(monkeypatch, server: SyncServer, default_user):
+    captured = {}
+
+    def fake_post(url, json, timeout):
+        captured["url"] = url
+        captured["json"] = json
+
+        class FakeResponse:
+            status_code = 202
+
+        return FakeResponse()
+
+    monkeypatch.setattr(httpx, "post", fake_post)
+
+    job_in = PydanticJob(status=JobStatus.created, metadata={"foo": "bar"}, callback_url="http://example.test/webhook/jobs")
+    created = server.job_manager.create_job(job_in, actor=default_user)
+    assert created.callback_url == "http://example.test/webhook/jobs"
+
+    update = JobUpdate(status=JobStatus.completed)
+    updated = server.job_manager.update_job_by_id(created.id, update, actor=default_user)
+
+    assert captured["url"] == created.callback_url
+    assert captured["json"]["job_id"] == created.id
+    assert captured["json"]["status"] == JobStatus.completed.value
+
+    # Normalize the received completed_at to compare properly
+    actual_dt = datetime.fromisoformat(captured["json"]["completed_at"]).replace(tzinfo=None)
+    expected_dt = updated.completed_at.replace(tzinfo=None)
+    assert actual_dt == expected_dt
+
+    assert isinstance(updated.callback_sent_at, datetime)
+    assert updated.callback_status_code == 202
+
+
 # ======================================================================================================================
 # JobManager Tests - Messages
 # ======================================================================================================================
@@ -4302,7 +4375,7 @@ def test_job_messages_pagination(server: SyncServer, default_run, default_user, 
 def test_job_messages_ordering(server: SyncServer, default_run, default_user, sarah_agent):
     """Test that messages are ordered by created_at."""
     # Create messages with different timestamps
-    base_time = datetime.utcnow()
+    base_time = datetime.now(timezone.utc)
     message_times = [
         base_time - timedelta(minutes=2),
         base_time - timedelta(minutes=1),
@@ -4730,77 +4803,90 @@ def test_list_tags(server: SyncServer, default_user, default_organization):
 # ======================================================================================================================
 
 
-def test_create_and_get_batch_request(server, default_user, dummy_beta_message_batch):
-    batch = server.batch_manager.create_batch_job(
+def test_create_and_get_batch_request(server, default_user, dummy_beta_message_batch, letta_batch_job):
+    batch = server.batch_manager.create_llm_batch_job(
         llm_provider=ProviderType.anthropic,
         status=JobStatus.created,
         create_batch_response=dummy_beta_message_batch,
         actor=default_user,
+        letta_batch_job_id=letta_batch_job.id,
     )
     assert batch.id.startswith("batch_req-")
     assert batch.create_batch_response == dummy_beta_message_batch
-    fetched = server.batch_manager.get_batch_job_by_id(batch.id, actor=default_user)
+    fetched = server.batch_manager.get_llm_batch_job_by_id(batch.id, actor=default_user)
     assert fetched.id == batch.id
 
 
-def test_update_batch_status(server, default_user, dummy_beta_message_batch):
-    batch = server.batch_manager.create_batch_job(
+def test_update_batch_status(server, default_user, dummy_beta_message_batch, letta_batch_job):
+    batch = server.batch_manager.create_llm_batch_job(
         llm_provider=ProviderType.anthropic,
         status=JobStatus.created,
         create_batch_response=dummy_beta_message_batch,
         actor=default_user,
+        letta_batch_job_id=letta_batch_job.id,
     )
     before = datetime.now(timezone.utc)
 
-    server.batch_manager.update_batch_status(
-        batch_id=batch.id,
+    server.batch_manager.update_llm_batch_status(
+        llm_batch_id=batch.id,
         status=JobStatus.completed,
         latest_polling_response=dummy_beta_message_batch,
         actor=default_user,
     )
 
-    updated = server.batch_manager.get_batch_job_by_id(batch.id, actor=default_user)
+    updated = server.batch_manager.get_llm_batch_job_by_id(batch.id, actor=default_user)
     assert updated.status == JobStatus.completed
     assert updated.latest_polling_response == dummy_beta_message_batch
     assert updated.last_polled_at >= before
 
 
-def test_create_and_get_batch_item(server, default_user, sarah_agent, dummy_beta_message_batch, dummy_llm_config, dummy_step_state):
-    batch = server.batch_manager.create_batch_job(
+def test_create_and_get_batch_item(
+    server, default_user, sarah_agent, dummy_beta_message_batch, dummy_llm_config, dummy_step_state, letta_batch_job
+):
+    batch = server.batch_manager.create_llm_batch_job(
         llm_provider=ProviderType.anthropic,
         status=JobStatus.created,
         create_batch_response=dummy_beta_message_batch,
         actor=default_user,
+        letta_batch_job_id=letta_batch_job.id,
     )
 
-    item = server.batch_manager.create_batch_item(
-        batch_id=batch.id,
+    item = server.batch_manager.create_llm_batch_item(
+        llm_batch_id=batch.id,
         agent_id=sarah_agent.id,
         llm_config=dummy_llm_config,
         step_state=dummy_step_state,
         actor=default_user,
     )
 
-    assert item.batch_id == batch.id
+    assert item.llm_batch_id == batch.id
     assert item.agent_id == sarah_agent.id
     assert item.step_state == dummy_step_state
 
-    fetched = server.batch_manager.get_batch_item_by_id(item.id, actor=default_user)
+    fetched = server.batch_manager.get_llm_batch_item_by_id(item.id, actor=default_user)
     assert fetched.id == item.id
 
 
 def test_update_batch_item(
-    server, default_user, sarah_agent, dummy_beta_message_batch, dummy_llm_config, dummy_step_state, dummy_successful_response
+    server,
+    default_user,
+    sarah_agent,
+    dummy_beta_message_batch,
+    dummy_llm_config,
+    dummy_step_state,
+    dummy_successful_response,
+    letta_batch_job,
 ):
-    batch = server.batch_manager.create_batch_job(
+    batch = server.batch_manager.create_llm_batch_job(
         llm_provider=ProviderType.anthropic,
         status=JobStatus.created,
         create_batch_response=dummy_beta_message_batch,
         actor=default_user,
+        letta_batch_job_id=letta_batch_job.id,
     )
 
-    item = server.batch_manager.create_batch_item(
-        batch_id=batch.id,
+    item = server.batch_manager.create_llm_batch_item(
+        llm_batch_id=batch.id,
         agent_id=sarah_agent.id,
         llm_config=dummy_llm_config,
         step_state=dummy_step_state,
@@ -4809,37 +4895,364 @@ def test_update_batch_item(
 
     updated_step_state = AgentStepState(step_number=2, tool_rules_solver=dummy_step_state.tool_rules_solver)
 
-    server.batch_manager.update_batch_item(
+    server.batch_manager.update_llm_batch_item(
         item_id=item.id,
         request_status=JobStatus.completed,
-        step_status=AgentStepStatus.running,
+        step_status=AgentStepStatus.resumed,
         llm_request_response=dummy_successful_response,
         step_state=updated_step_state,
         actor=default_user,
     )
 
-    updated = server.batch_manager.get_batch_item_by_id(item.id, actor=default_user)
+    updated = server.batch_manager.get_llm_batch_item_by_id(item.id, actor=default_user)
     assert updated.request_status == JobStatus.completed
     assert updated.batch_request_result == dummy_successful_response
 
 
-def test_delete_batch_item(server, default_user, sarah_agent, dummy_beta_message_batch, dummy_llm_config, dummy_step_state):
-    batch = server.batch_manager.create_batch_job(
+def test_delete_batch_item(
+    server, default_user, sarah_agent, dummy_beta_message_batch, dummy_llm_config, dummy_step_state, letta_batch_job
+):
+    batch = server.batch_manager.create_llm_batch_job(
         llm_provider=ProviderType.anthropic,
         status=JobStatus.created,
         create_batch_response=dummy_beta_message_batch,
         actor=default_user,
+        letta_batch_job_id=letta_batch_job.id,
     )
 
-    item = server.batch_manager.create_batch_item(
-        batch_id=batch.id,
+    item = server.batch_manager.create_llm_batch_item(
+        llm_batch_id=batch.id,
         agent_id=sarah_agent.id,
         llm_config=dummy_llm_config,
         step_state=dummy_step_state,
         actor=default_user,
     )
 
-    server.batch_manager.delete_batch_item(item_id=item.id, actor=default_user)
+    server.batch_manager.delete_llm_batch_item(item_id=item.id, actor=default_user)
 
     with pytest.raises(NoResultFound):
-        server.batch_manager.get_batch_item_by_id(item.id, actor=default_user)
+        server.batch_manager.get_llm_batch_item_by_id(item.id, actor=default_user)
+
+
+def test_list_running_batches(server, default_user, dummy_beta_message_batch, letta_batch_job):
+    server.batch_manager.create_llm_batch_job(
+        llm_provider=ProviderType.anthropic,
+        status=JobStatus.running,
+        create_batch_response=dummy_beta_message_batch,
+        actor=default_user,
+        letta_batch_job_id=letta_batch_job.id,
+    )
+
+    running_batches = server.batch_manager.list_running_llm_batches(actor=default_user)
+    assert len(running_batches) >= 1
+    assert all(batch.status == JobStatus.running for batch in running_batches)
+
+
+def test_bulk_update_batch_statuses(server, default_user, dummy_beta_message_batch, letta_batch_job):
+    batch = server.batch_manager.create_llm_batch_job(
+        llm_provider=ProviderType.anthropic,
+        status=JobStatus.created,
+        create_batch_response=dummy_beta_message_batch,
+        actor=default_user,
+        letta_batch_job_id=letta_batch_job.id,
+    )
+
+    server.batch_manager.bulk_update_llm_batch_statuses([(batch.id, JobStatus.completed, dummy_beta_message_batch)])
+
+    updated = server.batch_manager.get_llm_batch_job_by_id(batch.id, actor=default_user)
+    assert updated.status == JobStatus.completed
+    assert updated.latest_polling_response == dummy_beta_message_batch
+
+
+def test_bulk_update_batch_items_results_by_agent(
+    server,
+    default_user,
+    sarah_agent,
+    dummy_beta_message_batch,
+    dummy_llm_config,
+    dummy_step_state,
+    dummy_successful_response,
+    letta_batch_job,
+):
+    batch = server.batch_manager.create_llm_batch_job(
+        llm_provider=ProviderType.anthropic,
+        create_batch_response=dummy_beta_message_batch,
+        actor=default_user,
+        letta_batch_job_id=letta_batch_job.id,
+    )
+    item = server.batch_manager.create_llm_batch_item(
+        llm_batch_id=batch.id,
+        agent_id=sarah_agent.id,
+        llm_config=dummy_llm_config,
+        step_state=dummy_step_state,
+        actor=default_user,
+    )
+
+    server.batch_manager.bulk_update_batch_llm_items_results_by_agent(
+        [ItemUpdateInfo(batch.id, sarah_agent.id, JobStatus.completed, dummy_successful_response)]
+    )
+
+    updated = server.batch_manager.get_llm_batch_item_by_id(item.id, actor=default_user)
+    assert updated.request_status == JobStatus.completed
+    assert updated.batch_request_result == dummy_successful_response
+
+
+def test_bulk_update_batch_items_step_status_by_agent(
+    server, default_user, sarah_agent, dummy_beta_message_batch, dummy_llm_config, dummy_step_state, letta_batch_job
+):
+    batch = server.batch_manager.create_llm_batch_job(
+        llm_provider=ProviderType.anthropic,
+        create_batch_response=dummy_beta_message_batch,
+        actor=default_user,
+        letta_batch_job_id=letta_batch_job.id,
+    )
+    item = server.batch_manager.create_llm_batch_item(
+        llm_batch_id=batch.id,
+        agent_id=sarah_agent.id,
+        llm_config=dummy_llm_config,
+        step_state=dummy_step_state,
+        actor=default_user,
+    )
+
+    server.batch_manager.bulk_update_llm_batch_items_step_status_by_agent(
+        [StepStatusUpdateInfo(batch.id, sarah_agent.id, AgentStepStatus.resumed)]
+    )
+
+    updated = server.batch_manager.get_llm_batch_item_by_id(item.id, actor=default_user)
+    assert updated.step_status == AgentStepStatus.resumed
+
+
+def test_list_batch_items_limit_and_filter(
+    server, default_user, sarah_agent, dummy_beta_message_batch, dummy_llm_config, dummy_step_state, letta_batch_job
+):
+    batch = server.batch_manager.create_llm_batch_job(
+        llm_provider=ProviderType.anthropic,
+        create_batch_response=dummy_beta_message_batch,
+        actor=default_user,
+        letta_batch_job_id=letta_batch_job.id,
+    )
+
+    for _ in range(3):
+        server.batch_manager.create_llm_batch_item(
+            llm_batch_id=batch.id,
+            agent_id=sarah_agent.id,
+            llm_config=dummy_llm_config,
+            step_state=dummy_step_state,
+            actor=default_user,
+        )
+
+    all_items = server.batch_manager.list_llm_batch_items(llm_batch_id=batch.id, actor=default_user)
+    limited_items = server.batch_manager.list_llm_batch_items(llm_batch_id=batch.id, limit=2, actor=default_user)
+
+    assert len(all_items) >= 3
+    assert len(limited_items) == 2
+
+
+def test_list_batch_items_pagination(
+    server, default_user, sarah_agent, dummy_beta_message_batch, dummy_llm_config, dummy_step_state, letta_batch_job
+):
+    # Create a batch job.
+    batch = server.batch_manager.create_llm_batch_job(
+        llm_provider=ProviderType.anthropic,
+        create_batch_response=dummy_beta_message_batch,
+        actor=default_user,
+        letta_batch_job_id=letta_batch_job.id,
+    )
+
+    # Create 10 batch items.
+    created_items = []
+    for i in range(10):
+        item = server.batch_manager.create_llm_batch_item(
+            llm_batch_id=batch.id,
+            agent_id=sarah_agent.id,
+            llm_config=dummy_llm_config,
+            step_state=dummy_step_state,
+            actor=default_user,
+        )
+        created_items.append(item)
+
+    # Retrieve all items (without pagination).
+    all_items = server.batch_manager.list_llm_batch_items(llm_batch_id=batch.id, actor=default_user)
+    assert len(all_items) >= 10, f"Expected at least 10 items, got {len(all_items)}"
+
+    # Verify the items are ordered ascending by id (based on our implementation).
+    sorted_ids = [item.id for item in sorted(all_items, key=lambda i: i.id)]
+    retrieved_ids = [item.id for item in all_items]
+    assert retrieved_ids == sorted_ids, "Batch items are not ordered in ascending order by id"
+
+    # Choose a cursor: the id of the 5th item.
+    cursor = all_items[4].id
+
+    # Retrieve items after the cursor.
+    paged_items = server.batch_manager.list_llm_batch_items(llm_batch_id=batch.id, actor=default_user, after=cursor)
+
+    # All returned items should have an id greater than the cursor.
+    for item in paged_items:
+        assert item.id > cursor, f"Item id {item.id} is not greater than the cursor {cursor}"
+
+    # Count expected remaining items.
+    # Find the index of the cursor in our sorted list.
+    cursor_index = sorted_ids.index(cursor)
+    expected_remaining = len(sorted_ids) - cursor_index - 1
+    assert len(paged_items) == expected_remaining, f"Expected {expected_remaining} items after cursor, got {len(paged_items)}"
+
+    # Test pagination with a limit.
+    limit = 3
+    limited_page = server.batch_manager.list_llm_batch_items(llm_batch_id=batch.id, actor=default_user, after=cursor, limit=limit)
+    # If more than 'limit' items remain, we should only get exactly 'limit' items.
+    assert len(limited_page) == min(
+        limit, expected_remaining
+    ), f"Expected {min(limit, expected_remaining)} items with limit {limit}, got {len(limited_page)}"
+
+    # Optional: Test with a cursor beyond the last item returns an empty list.
+    last_cursor = sorted_ids[-1]
+    empty_page = server.batch_manager.list_llm_batch_items(llm_batch_id=batch.id, actor=default_user, after=last_cursor)
+    assert empty_page == [], "Expected an empty list when cursor is after the last item"
+
+
+def test_bulk_update_batch_items_request_status_by_agent(
+    server, default_user, sarah_agent, dummy_beta_message_batch, dummy_llm_config, dummy_step_state, letta_batch_job
+):
+    # Create a batch job
+    batch = server.batch_manager.create_llm_batch_job(
+        llm_provider=ProviderType.anthropic,
+        create_batch_response=dummy_beta_message_batch,
+        actor=default_user,
+        letta_batch_job_id=letta_batch_job.id,
+    )
+
+    # Create a batch item
+    item = server.batch_manager.create_llm_batch_item(
+        llm_batch_id=batch.id,
+        agent_id=sarah_agent.id,
+        llm_config=dummy_llm_config,
+        step_state=dummy_step_state,
+        actor=default_user,
+    )
+
+    # Update the request status using the bulk update method
+    server.batch_manager.bulk_update_llm_batch_items_request_status_by_agent(
+        [RequestStatusUpdateInfo(batch.id, sarah_agent.id, JobStatus.expired)]
+    )
+
+    # Verify the update was applied
+    updated = server.batch_manager.get_llm_batch_item_by_id(item.id, actor=default_user)
+    assert updated.request_status == JobStatus.expired
+
+
+def test_bulk_update_nonexistent_items(server, default_user, dummy_beta_message_batch, dummy_successful_response, letta_batch_job):
+    # Create a batch job
+    batch = server.batch_manager.create_llm_batch_job(
+        llm_provider=ProviderType.anthropic,
+        create_batch_response=dummy_beta_message_batch,
+        actor=default_user,
+        letta_batch_job_id=letta_batch_job.id,
+    )
+
+    # Attempt to update non-existent items should not raise errors
+
+    # Test with the direct bulk_update_llm_batch_items method
+    nonexistent_pairs = [(batch.id, "nonexistent-agent-id")]
+    nonexistent_updates = [{"request_status": JobStatus.expired}]
+
+    # This should not raise an error, just silently skip non-existent items
+    server.batch_manager.bulk_update_llm_batch_items(nonexistent_pairs, nonexistent_updates)
+
+    # Test with higher-level methods
+    # Results by agent
+    server.batch_manager.bulk_update_batch_llm_items_results_by_agent(
+        [ItemUpdateInfo(batch.id, "nonexistent-agent-id", JobStatus.expired, dummy_successful_response)]
+    )
+
+    # Step status by agent
+    server.batch_manager.bulk_update_llm_batch_items_step_status_by_agent(
+        [StepStatusUpdateInfo(batch.id, "nonexistent-agent-id", AgentStepStatus.resumed)]
+    )
+
+    # Request status by agent
+    server.batch_manager.bulk_update_llm_batch_items_request_status_by_agent(
+        [RequestStatusUpdateInfo(batch.id, "nonexistent-agent-id", JobStatus.expired)]
+    )
+
+
+def test_create_batch_items_bulk(
+    server, default_user, sarah_agent, dummy_beta_message_batch, dummy_llm_config, dummy_step_state, letta_batch_job
+):
+    # Create a batch job
+    llm_batch_job = server.batch_manager.create_llm_batch_job(
+        llm_provider=ProviderType.anthropic,
+        create_batch_response=dummy_beta_message_batch,
+        actor=default_user,
+        letta_batch_job_id=letta_batch_job.id,
+    )
+
+    # Prepare data for multiple batch items
+    batch_items = []
+    agent_ids = [sarah_agent.id, sarah_agent.id, sarah_agent.id]  # Using the same agent for simplicity
+
+    for agent_id in agent_ids:
+        batch_item = LLMBatchItem(
+            llm_batch_id=llm_batch_job.id,
+            agent_id=agent_id,
+            llm_config=dummy_llm_config,
+            request_status=JobStatus.created,
+            step_status=AgentStepStatus.paused,
+            step_state=dummy_step_state,
+        )
+        batch_items.append(batch_item)
+
+    # Call the bulk create function
+    created_items = server.batch_manager.create_llm_batch_items_bulk(batch_items, actor=default_user)
+
+    # Verify the correct number of items were created
+    assert len(created_items) == len(agent_ids)
+
+    # Verify each item has expected properties
+    for item in created_items:
+        assert item.id.startswith("batch_item-")
+        assert item.llm_batch_id == llm_batch_job.id
+        assert item.agent_id in agent_ids
+        assert item.llm_config == dummy_llm_config
+        assert item.request_status == JobStatus.created
+        assert item.step_status == AgentStepStatus.paused
+        assert item.step_state == dummy_step_state
+
+    # Verify items can be retrieved from the database
+    all_items = server.batch_manager.list_llm_batch_items(llm_batch_id=llm_batch_job.id, actor=default_user)
+    assert len(all_items) >= len(agent_ids)
+
+    # Verify the IDs of created items match what's in the database
+    created_ids = [item.id for item in created_items]
+    for item_id in created_ids:
+        fetched = server.batch_manager.get_llm_batch_item_by_id(item_id, actor=default_user)
+        assert fetched.id in created_ids
+
+
+def test_count_batch_items(
+    server, default_user, sarah_agent, dummy_beta_message_batch, dummy_llm_config, dummy_step_state, letta_batch_job
+):
+    # Create a batch job first.
+    batch = server.batch_manager.create_llm_batch_job(
+        llm_provider=ProviderType.anthropic,
+        status=JobStatus.created,
+        create_batch_response=dummy_beta_message_batch,
+        actor=default_user,
+        letta_batch_job_id=letta_batch_job.id,
+    )
+
+    # Create a specific number of batch items for this batch.
+    num_items = 5
+    for _ in range(num_items):
+        server.batch_manager.create_llm_batch_item(
+            llm_batch_id=batch.id,
+            agent_id=sarah_agent.id,
+            llm_config=dummy_llm_config,
+            step_state=dummy_step_state,
+            actor=default_user,
+        )
+
+    # Use the count_llm_batch_items method to count the items.
+    count = server.batch_manager.count_llm_batch_items(llm_batch_id=batch.id)
+
+    # Assert that the count matches the expected number.
+    assert count == num_items, f"Expected {num_items} items, got {count}"

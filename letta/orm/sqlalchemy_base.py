@@ -393,17 +393,14 @@ class SqlalchemyBase(CommonSqlalchemyMetaMixins, Base):
     def batch_create(cls, items: List["SqlalchemyBase"], db_session: "Session", actor: Optional["User"] = None) -> List["SqlalchemyBase"]:
         """
         Create multiple records in a single transaction for better performance.
-
         Args:
             items: List of model instances to create
             db_session: SQLAlchemy session
             actor: Optional user performing the action
-
         Returns:
             List of created model instances
         """
         logger.debug(f"Batch creating {len(items)} {cls.__name__} items with actor={actor}")
-
         if not items:
             return []
 

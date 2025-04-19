@@ -2,10 +2,11 @@ import asyncio
 import os
 import sys
 import tempfile
-from typing import Dict, Optional, Tuple
+from typing import Any, Dict, Optional, Tuple
 
 from letta.schemas.agent import AgentState
-from letta.schemas.sandbox_config import SandboxRunResult, SandboxType
+from letta.schemas.sandbox_config import SandboxConfig, SandboxRunResult, SandboxType
+from letta.schemas.tool import Tool
 from letta.services.helpers.tool_execution_helper import (
     create_venv_for_local_sandbox,
     find_python_executable,
@@ -21,8 +22,17 @@ class AsyncToolSandboxLocal(AsyncToolSandboxBase):
     METADATA_CONFIG_STATE_KEY = "config_state"
     REQUIREMENT_TXT_NAME = "requirements.txt"
 
-    def __init__(self, tool_name: str, args: dict, user, force_recreate_venv=False, tool_object=None):
-        super().__init__(tool_name, args, user, tool_object)
+    def __init__(
+        self,
+        tool_name: str,
+        args: dict,
+        user,
+        force_recreate_venv=False,
+        tool_object: Optional[Tool] = None,
+        sandbox_config: Optional[SandboxConfig] = None,
+        sandbox_env_vars: Optional[Dict[str, Any]] = None,
+    ):
+        super().__init__(tool_name, args, user, tool_object, sandbox_config=sandbox_config, sandbox_env_vars=sandbox_env_vars)
         self.force_recreate_venv = force_recreate_venv
 
     async def run(
@@ -49,14 +59,20 @@ class AsyncToolSandboxLocal(AsyncToolSandboxBase):
         always via subprocess for multi-core parallelism.
         """
         # Get sandbox configuration
-        sbx_config = self.sandbox_config_manager.get_or_create_default_sandbox_config(sandbox_type=SandboxType.LOCAL, actor=self.user)
+        if self.provided_sandbox_config:
+            sbx_config = self.provided_sandbox_config
+        else:
+            sbx_config = self.sandbox_config_manager.get_or_create_default_sandbox_config(sandbox_type=SandboxType.LOCAL, actor=self.user)
         local_configs = sbx_config.get_local_config()
         use_venv = local_configs.use_venv
 
         # Prepare environment variables
         env = os.environ.copy()
-        env_vars = self.sandbox_config_manager.get_sandbox_env_vars_as_dict(sandbox_config_id=sbx_config.id, actor=self.user, limit=100)
-        env.update(env_vars)
+        if self.provided_sandbox_env_vars:
+            env.update(self.provided_sandbox_env_vars)
+        else:
+            env_vars = self.sandbox_config_manager.get_sandbox_env_vars_as_dict(sandbox_config_id=sbx_config.id, actor=self.user, limit=100)
+            env.update(env_vars)
 
         if agent_state:
             env.update(agent_state.get_agent_env_vars_as_dict())

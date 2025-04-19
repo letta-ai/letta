@@ -121,7 +121,15 @@ def delete_source(
     Delete a data source.
     """
     actor = server.user_manager.get_user_or_default(user_id=actor_id)
-
+    source = server.source_manager.get_source_by_id(source_id=source_id)
+    agents = server.source_manager.list_attached_agents(source_id=source_id, actor=actor)
+    for agent in agents:
+        if agent.enable_sleeptime:
+            try:
+                block = server.agent_manager.get_block_with_label(agent_id=agent.id, block_label=source.name, actor=actor)
+                server.block_manager.delete_block(block.id, actor)
+            except:
+                pass
     server.delete_source(source_id=source_id, actor=actor)
 
 
@@ -151,8 +159,9 @@ def upload_file_to_source(
     job_id = job.id
     server.job_manager.create_job(job, actor=actor)
 
-    # create background task
+    # create background tasks
     background_tasks.add_task(load_file_to_source_async, server, source_id=source.id, file=file, job_id=job.id, bytes=bytes, actor=actor)
+    background_tasks.add_task(sleeptime_document_ingest_async, server, source_id, actor)
 
     # return job information
     # Is this necessary? Can we just return the job from create_job?
@@ -196,6 +205,7 @@ def list_source_files(
 def delete_file_from_source(
     source_id: str,
     file_id: str,
+    background_tasks: BackgroundTasks,
     server: "SyncServer" = Depends(get_letta_server),
     actor_id: Optional[str] = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
 ):
@@ -205,6 +215,7 @@ def delete_file_from_source(
     actor = server.user_manager.get_user_or_default(user_id=actor_id)
 
     deleted_file = server.source_manager.delete_file(file_id=file_id, actor=actor)
+    background_tasks.add_task(sleeptime_document_ingest_async, server, source_id, actor, clear_history=True)
     if deleted_file is None:
         raise HTTPException(status_code=404, detail=f"File with id={file_id} not found.")
 
@@ -222,3 +233,11 @@ def load_file_to_source_async(server: SyncServer, source_id: str, job_id: str, f
 
         # Pass the file to load_file_to_source
         server.load_file_to_source(source_id, file_path, job_id, actor)
+
+
+def sleeptime_document_ingest_async(server: SyncServer, source_id: str, actor: User, clear_history: bool = False):
+    source = server.source_manager.get_source_by_id(source_id=source_id)
+    agents = server.source_manager.list_attached_agents(source_id=source_id, actor=actor)
+    for agent in agents:
+        if agent.enable_sleeptime:
+            server.sleeptime_document_ingest(agent, source, actor, clear_history)

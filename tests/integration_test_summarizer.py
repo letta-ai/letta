@@ -1,7 +1,7 @@
 import json
 import os
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import List
 
 import pytest
@@ -55,7 +55,7 @@ def generate_message(role: str, text: str = None, tool_calls: List = None) -> Me
         id="message-" + str(uuid.uuid4()),
         role=MessageRole(role),
         content=[TextContent(text=text or f"{role} message text")],
-        created_at=datetime.utcnow(),
+        created_at=datetime.now(timezone.utc),
         tool_calls=tool_calls or [],
     )
 

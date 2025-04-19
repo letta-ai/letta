@@ -1,7 +1,7 @@
 import json
 from typing import List, Optional, Sequence
 
-from sqlalchemy import exists, func, select, text
+from sqlalchemy import delete, exists, func, select, text
 
 from letta.log import get_logger
 from letta.orm.agent import Agent as AgentModel
@@ -348,3 +348,25 @@ class MessageManager:
             # Execute and convert each Message to its Pydantic representation.
             results = query.all()
             return [msg.to_pydantic() for msg in results]
+
+    @enforce_types
+    def delete_all_messages_for_agent(self, agent_id: str, actor: PydanticUser) -> int:
+        """
+        Efficiently deletes all messages associated with a given agent_id,
+        while enforcing permission checks and avoiding any ORM‑level loads.
+        """
+        with self.session_maker() as session:
+            # 1) verify the agent exists and the actor has access
+            AgentModel.read(db_session=session, identifier=agent_id, actor=actor)
+
+            # 2) issue a CORE DELETE against the mapped class
+            stmt = (
+                delete(MessageModel).where(MessageModel.agent_id == agent_id).where(MessageModel.organization_id == actor.organization_id)
+            )
+            result = session.execute(stmt)
+
+            # 3) commit once
+            session.commit()
+
+            # 4) return the number of rows deleted
+            return result.rowcount

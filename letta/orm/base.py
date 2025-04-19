@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Optional
 
 from sqlalchemy import Boolean, DateTime, String, func, text
@@ -25,7 +25,7 @@ class CommonSqlalchemyMetaMixins(Base):
             timestamp (Optional[datetime]): The timestamp to set.
                                             If None, uses the current UTC time.
         """
-        self.updated_at = timestamp or datetime.utcnow()
+        self.updated_at = timestamp or datetime.now(timezone.utc)
 
     def _set_created_and_updated_by_fields(self, actor_id: str) -> None:
         """Populate created_by_id and last_updated_by_id based on actor."""

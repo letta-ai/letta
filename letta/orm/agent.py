@@ -7,12 +7,11 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from letta.orm.block import Block
 from letta.orm.custom_columns import EmbeddingConfigColumn, LLMConfigColumn, ToolRulesColumn
 from letta.orm.identity import Identity
-from letta.orm.message import Message
 from letta.orm.mixins import OrganizationMixin
 from letta.orm.organization import Organization
 from letta.orm.sqlalchemy_base import SqlalchemyBase
 from letta.schemas.agent import AgentState as PydanticAgentState
-from letta.schemas.agent import AgentType
+from letta.schemas.agent import AgentType, get_prompt_template_for_agent_type
 from letta.schemas.embedding_config import EmbeddingConfig
 from letta.schemas.llm_config import LLMConfig
 from letta.schemas.memory import Memory
@@ -91,38 +90,12 @@ class Agent(SqlalchemyBase, OrganizationMixin):
         back_populates="agents",
         doc="Blocks forming the core memory of the agent.",
     )
-    messages: Mapped[List["Message"]] = relationship(
-        "Message",
-        back_populates="agent",
-        lazy="selectin",
-        cascade="all, delete-orphan",  # Ensure messages are deleted when the agent is deleted
-        passive_deletes=True,
-    )
     tags: Mapped[List["AgentsTags"]] = relationship(
         "AgentsTags",
         back_populates="agent",
         cascade="all, delete-orphan",
         lazy="selectin",
         doc="Tags associated with the agent.",
-    )
-    source_passages: Mapped[List["SourcePassage"]] = relationship(
-        "SourcePassage",
-        secondary="sources_agents",  # The join table for Agent -> Source
-        primaryjoin="Agent.id == sources_agents.c.agent_id",
-        secondaryjoin="and_(SourcePassage.source_id == sources_agents.c.source_id)",
-        lazy="selectin",
-        order_by="SourcePassage.created_at.desc()",
-        viewonly=True,  # Ensures SQLAlchemy doesn't attempt to manage this relationship
-        doc="All passages derived from sources associated with this agent.",
-    )
-    agent_passages: Mapped[List["AgentPassage"]] = relationship(
-        "AgentPassage",
-        back_populates="agent",
-        lazy="selectin",
-        order_by="AgentPassage.created_at.desc()",
-        cascade="all, delete-orphan",
-        viewonly=True,  # Ensures SQLAlchemy doesn't attempt to manage this relationship
-        doc="All passages derived created by this agent.",
     )
     identities: Mapped[List["Identity"]] = relationship(
         "Identity",
@@ -202,7 +175,10 @@ class Agent(SqlalchemyBase, OrganizationMixin):
             "tags": lambda: [t.tag for t in self.tags],
             "tools": lambda: self.tools,
             "sources": lambda: [s.to_pydantic() for s in self.sources],
-            "memory": lambda: Memory(blocks=[b.to_pydantic() for b in self.core_memory]),
+            "memory": lambda: Memory(
+                blocks=[b.to_pydantic() for b in self.core_memory],
+                prompt_template=get_prompt_template_for_agent_type(self.agent_type),
+            ),
             "identity_ids": lambda: [i.id for i in self.identities],
             "multi_agent_group": lambda: self.multi_agent_group,
             "tool_exec_environment_variables": lambda: self.tool_exec_environment_variables,

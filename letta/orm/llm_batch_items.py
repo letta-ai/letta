@@ -20,7 +20,7 @@ class LLMBatchItem(SqlalchemyBase, OrganizationMixin, AgentMixin):
     __tablename__ = "llm_batch_items"
     __pydantic_model__ = PydanticLLMBatchItem
     __table_args__ = (
-        Index("ix_llm_batch_items_batch_id", "batch_id"),
+        Index("ix_llm_batch_items_llm_batch_id", "llm_batch_id"),
         Index("ix_llm_batch_items_agent_id", "agent_id"),
         Index("ix_llm_batch_items_status", "request_status"),
     )
@@ -29,7 +29,7 @@ class LLMBatchItem(SqlalchemyBase, OrganizationMixin, AgentMixin):
     # TODO: Some still rely on the Pydantic object to do this
     id: Mapped[str] = mapped_column(String, primary_key=True, default=lambda: f"batch_item-{uuid.uuid4()}")
 
-    batch_id: Mapped[str] = mapped_column(
+    llm_batch_id: Mapped[str] = mapped_column(
         ForeignKey("llm_batch_job.id", ondelete="CASCADE"), doc="Foreign key to the LLM provider batch this item belongs to"
     )
 

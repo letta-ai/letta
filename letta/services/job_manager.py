@@ -15,6 +15,7 @@ from letta.orm.sqlalchemy_base import AccessType
 from letta.orm.step import Step
 from letta.orm.step import Step as StepModel
 from letta.schemas.enums import JobStatus, MessageRole
+from letta.schemas.job import BatchJob as PydanticBatchJob
 from letta.schemas.job import Job as PydanticJob
 from letta.schemas.job import JobUpdate, LettaRequestConfig
 from letta.schemas.letta_message import LettaMessage
@@ -36,7 +37,9 @@ class JobManager:
         self.session_maker = db_context
 
     @enforce_types
-    def create_job(self, pydantic_job: Union[PydanticJob, PydanticRun], actor: PydanticUser) -> Union[PydanticJob, PydanticRun]:
+    def create_job(
+        self, pydantic_job: Union[PydanticJob, PydanticRun, PydanticBatchJob], actor: PydanticUser
+    ) -> Union[PydanticJob, PydanticRun, PydanticBatchJob]:
         """Create a new job based on the JobCreate schema."""
         with self.session_maker() as session:
             # Associate the job with the user
@@ -57,14 +60,16 @@ class JobManager:
             update_data = job_update.model_dump(to_orm=True, exclude_unset=True, exclude_none=True)
 
             # Automatically update the completion timestamp if status is set to 'completed'
-            if update_data.get("status") == JobStatus.completed and not job.completed_at:
-                job.completed_at = get_utc_time()
-
             for key, value in update_data.items():
                 setattr(job, key, value)
 
+            if update_data.get("status") == JobStatus.completed and not job.completed_at:
+                job.completed_at = get_utc_time()
+                if job.callback_url:
+                    self._dispatch_callback(session, job)
+
             # Save the updated job to the database
-            job.update(db_session=session)  # TODO: Add this later , actor=actor)
+            job.update(db_session=session, actor=actor)
 
             return job.to_pydantic()
 
@@ -452,3 +457,27 @@ class JobManager:
             job = session.query(JobModel).filter(JobModel.id == run_id).first()
             request_config = job.request_config or LettaRequestConfig()
         return request_config
+
+    def _dispatch_callback(self, session: Session, job: JobModel) -> None:
+        """
+        POST a standard JSON payload to job.callback_url
+        and record timestamp + HTTP status.
+        """
+
+        payload = {
+            "job_id": job.id,
+            "status": job.status,
+            "completed_at": job.completed_at.isoformat(),
+        }
+        try:
+            import httpx
+
+            resp = httpx.post(job.callback_url, json=payload, timeout=5.0)
+            job.callback_sent_at = get_utc_time()
+            job.callback_status_code = resp.status_code
+
+        except Exception:
+            return
+
+        session.add(job)
+        session.commit()

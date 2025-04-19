@@ -195,6 +195,32 @@ async def test_modify_group_pattern(server, actor, participant_agents, manager_a
 
 
 @pytest.mark.asyncio
+async def test_list_agent_groups(server, actor, participant_agents):
+    group_a = server.group_manager.create_group(
+        group=GroupCreate(
+            description="This is a group chat between best friends all like to hang out together. In their free time they like to solve mysteries.",
+            agent_ids=[agent.id for agent in participant_agents],
+        ),
+        actor=actor,
+    )
+    group_b = server.group_manager.create_group(
+        group=GroupCreate(
+            description="This is a group chat between best friends all like to hang out together. In their free time they like to solve mysteries.",
+            agent_ids=[participant_agents[0].id],
+        ),
+        actor=actor,
+    )
+
+    agent_a_groups = server.agent_manager.list_groups(agent_id=participant_agents[0].id, actor=actor)
+    assert sorted([group.id for group in agent_a_groups]) == sorted([group_a.id, group_b.id])
+    agent_b_groups = server.agent_manager.list_groups(agent_id=participant_agents[1].id, actor=actor)
+    assert [group.id for group in agent_b_groups] == [group_a.id]
+
+    server.group_manager.delete_group(group_id=group_a.id, actor=actor)
+    server.group_manager.delete_group(group_id=group_b.id, actor=actor)
+
+
+@pytest.mark.asyncio
 async def test_round_robin(server, actor, participant_agents):
     description = (
         "This is a group chat between best friends all like to hang out together. In their free time they like to solve mysteries."

@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "letta"
-version = "0.6.53"
+version = "0.6.54"
 packages = [
     {include = "letta"},
 ]
@@ -89,6 +89,7 @@ datamodel-code-generator = {extras = ["http"], version = "^0.25.0"}
 mcp = "^1.3.0"
 firecrawl-py = "^1.15.0"
 apscheduler = "^3.11.0"
+aiomultiprocess = "^0.9.1"
 
 
 [tool.poetry.extras]

@@ -1,6 +1,7 @@
 from typing import Optional
 
 from letta.agent import Agent
+from letta.constants import CORE_MEMORY_LINE_NUMBER_WARNING
 
 
 def send_message(self: "Agent", message: str) -> Optional[str]:
@@ -195,40 +196,186 @@ def finish_rethinking_memory(agent_state: "AgentState") -> None:  # type: ignore
     return None
 
 
-def view_core_memory_with_line_numbers(agent_state: "AgentState", target_block_label: str) -> None:  # type: ignore
+## Attempted v2 of sleep-time function set, meant to work better across all types
+
+SNIPPET_LINES: int = 4
+
+
+# Based off of: https://github.com/anthropics/anthropic-quickstarts/blob/main/computer-use-demo/computer_use_demo/tools/edit.py?ref=musings.yasyf.com#L154
+def memory_replace(agent_state: "AgentState", label: str, old_str: str, new_str: Optional[str] = None) -> str:  # type: ignore
     """
-    View the contents of core memory in editor mode with line numbers. Called before `core_memory_insert` to see line numbers of memory block.
+    The memory_replace command allows you to replace a specific string in a memory block with a new string. This is used for making precise edits.
 
     Args:
-        target_block_label (str): The name of the block to view.
+        label (str): Section of the memory to be edited, identified by its label.
+        old_str (str): The text to replace (must match exactly, including whitespace and indentation).
+        new_str (Optional[str]): The new text to insert in place of the old text. Omit this argument to delete the old_str.
+
+    Returns:
+        str: The success message
+    """
+    import re
+
+    if bool(re.search(r"\nLine \d+: ", old_str)):
+        raise ValueError(
+            "old_str contains a line number prefix, which is not allowed. Do not include line numbers when calling memory tools (line numbers are for display purposes only)."
+        )
+    if CORE_MEMORY_LINE_NUMBER_WARNING in old_str:
+        raise ValueError(
+            "old_str contains a line number warning, which is not allowed. Do not include line number information when calling memory tools (line numbers are for display purposes only)."
+        )
+    if bool(re.search(r"\nLine \d+: ", new_str)):
+        raise ValueError(
+            "new_str contains a line number prefix, which is not allowed. Do not include line numbers when calling memory tools (line numbers are for display purposes only)."
+        )
+
+    old_str = str(old_str).expandtabs()
+    new_str = str(new_str).expandtabs()
+    current_value = str(agent_state.memory.get_block(label).value).expandtabs()
+
+    # Check if old_str is unique in the block
+    occurences = current_value.count(old_str)
+    if occurences == 0:
+        raise ValueError(f"No replacement was performed, old_str `{old_str}` did not appear verbatim in memory block with label `{label}`.")
+    elif occurences > 1:
+        content_value_lines = current_value.split("\n")
+        lines = [idx + 1 for idx, line in enumerate(content_value_lines) if old_str in line]
+        raise ValueError(
+            f"No replacement was performed. Multiple occurrences of old_str `{old_str}` in lines {lines}. Please ensure it is unique."
+        )
+
+    # Replace old_str with new_str
+    new_value = current_value.replace(str(old_str), str(new_str))
+
+    # Write the new content to the block
+    agent_state.memory.update_block_value(label=label, value=new_value)
+
+    # Create a snippet of the edited section
+    SNIPPET_LINES = 3
+    replacement_line = current_value.split(old_str)[0].count("\n")
+    start_line = max(0, replacement_line - SNIPPET_LINES)
+    end_line = replacement_line + SNIPPET_LINES + new_str.count("\n")
+    snippet = "\n".join(new_value.split("\n")[start_line : end_line + 1])
+
+    # Prepare the success message
+    success_msg = f"The core memory block with label `{label}` has been edited. "
+    # success_msg += self._make_output(
+    #     snippet, f"a snippet of {path}", start_line + 1
+    # )
+    # success_msg += f"A snippet of core memory block `{label}`:\n{snippet}\n"
+    success_msg += "Review the changes and make sure they are as expected (correct indentation, no duplicate lines, etc). Edit the memory block again if necessary."
+
+    # return None
+    return success_msg
+
+
+def memory_insert(agent_state: "AgentState", label: str, new_str: str, insert_line: int = -1) -> Optional[str]:  # type: ignore
+    """
+    The memory_insert command allows you to insert text at a specific location in a memory block.
+
+    Args:
+        label (str): Section of the memory to be edited, identified by its label.
+        new_str (str): The text to insert.
+        insert_line (int): The line number after which to insert the text (0 for beginning of file). Defaults to -1 (end of the file).
+
+    Returns:
+        Optional[str]: None is always returned as this function does not produce a response.
+    """
+    import re
+
+    if bool(re.search(r"\nLine \d+: ", new_str)):
+        raise ValueError(
+            "new_str contains a line number prefix, which is not allowed. Do not include line numbers when calling memory tools (line numbers are for display purposes only)."
+        )
+    if CORE_MEMORY_LINE_NUMBER_WARNING in new_str:
+        raise ValueError(
+            "new_str contains a line number warning, which is not allowed. Do not include line number information when calling memory tools (line numbers are for display purposes only)."
+        )
+
+    current_value = str(agent_state.memory.get_block(label).value).expandtabs()
+    new_str = str(new_str).expandtabs()
+    current_value_lines = current_value.split("\n")
+    n_lines = len(current_value_lines)
+
+    # Check if we're in range, from 0 (pre-line), to 1 (first line), to n_lines (last line)
+    if insert_line < 0 or insert_line > n_lines:
+        raise ValueError(
+            f"Invalid `insert_line` parameter: {insert_line}. It should be within the range of lines of the memory block: {[0, n_lines]}, or -1 to append to the end of the memory block."
+        )
+
+    # Insert the new string as a line
+    new_str_lines = new_str.split("\n")
+    new_value_lines = current_value_lines[:insert_line] + new_str_lines + current_value_lines[insert_line:]
+    snippet_lines = (
+        current_value_lines[max(0, insert_line - SNIPPET_LINES) : insert_line]
+        + new_str_lines
+        + current_value_lines[insert_line : insert_line + SNIPPET_LINES]
+    )
+
+    # Collate into the new value to update
+    new_value = "\n".join(new_value_lines)
+    snippet = "\n".join(snippet_lines)
+
+    # Write into the block
+    agent_state.memory.update_block_value(label=label, value=new_value)
+
+    # Prepare the success message
+    success_msg = f"The core memory block with label `{label}` has been edited. "
+    # success_msg += self._make_output(
+    #     snippet,
+    #     "a snippet of the edited file",
+    #     max(1, insert_line - SNIPPET_LINES + 1),
+    # )
+    # success_msg += f"A snippet of core memory block `{label}`:\n{snippet}\n"
+    success_msg += "Review the changes and make sure they are as expected (correct indentation, no duplicate lines, etc). Edit the memory block again if necessary."
+
+    return success_msg
+
+
+def memory_rethink(agent_state: "AgentState", label: str, new_memory: str) -> None:
+    """
+    The memory_rethink command allows you to completely rewrite the contents of a memory block. Use this tool to make large sweeping changes (e.g. when you want to condense or reorganize the memory blocks), do NOT use this tool to make small precise edits (e.g. add or remove a line, replace a specific string, etc).
+
+    Args:
+        label (str): The memory block to be rewritten, identified by its label.
+        new_memory (str): The new memory contents with information integrated from existing memory blocks and the conversation context.
 
     Returns:
         None: None is always returned as this function does not produce a response.
     """
-    return None
+    import re
+
+    if bool(re.search(r"\nLine \d+: ", new_memory)):
+        raise ValueError(
+            "new_memory contains a line number prefix, which is not allowed. Do not include line numbers when calling memory tools (line numbers are for display purposes only)."
+        )
+    if CORE_MEMORY_LINE_NUMBER_WARNING in new_memory:
+        raise ValueError(
+            "new_memory contains a line number warning, which is not allowed. Do not include line number information when calling memory tools (line numbers are for display purposes only)."
+        )
+
+    if agent_state.memory.get_block(label) is None:
+        agent_state.memory.create_block(label=label, value=new_memory)
+
+    agent_state.memory.update_block_value(label=label, value=new_memory)
+
+    # Prepare the success message
+    success_msg = f"The core memory block with label `{label}` has been edited. "
+    # success_msg += self._make_output(
+    #     snippet, f"a snippet of {path}", start_line + 1
+    # )
+    # success_msg += f"A snippet of core memory block `{label}`:\n{snippet}\n"
+    success_msg += "Review the changes and make sure they are as expected (correct indentation, no duplicate lines, etc). Edit the memory block again if necessary."
+
+    # return None
+    return success_msg
 
 
-def core_memory_insert(agent_state: "AgentState", target_block_label: str, new_memory: str, line_number: Optional[int] = None, replace: bool = False) -> None:  # type: ignore
+def memory_finish_edits(agent_state: "AgentState") -> None:  # type: ignore
     """
-    Insert new memory content into a core memory block at a specific line number. Call `view_core_memory_with_line_numbers` to see line numbers of the memory block before using this tool.
-
-    Args:
-        target_block_label (str): The name of the block to write to.
-        new_memory (str): The new memory content to insert.
-        line_number (Optional[int]): Line number to insert content into, 0 indexed (None for end of file).
-        replace (bool): Whether to overwrite the content at the specified line number.
+    Call the memory_finish_edits command when you are finished making edits (integrating all new information) into the memory blocks. This function is called when the agent is done rethinking the memory.
 
     Returns:
-        None: None is always returned as this function does not produce a response.
+        Optional[str]: None is always returned as this function does not produce a response.
     """
-    current_value = str(agent_state.memory.get_block(target_block_label).value)
-    current_value_list = current_value.split("\n")
-    if line_number is None:
-        line_number = len(current_value_list)
-    if replace:
-        current_value_list[line_number - 1] = new_memory
-    else:
-        current_value_list.insert(line_number, new_memory)
-    new_value = "\n".join(current_value_list)
-    agent_state.memory.update_block_value(label=target_block_label, value=new_value)
     return None

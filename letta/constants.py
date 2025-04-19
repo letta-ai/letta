@@ -56,10 +56,10 @@ BASE_MEMORY_TOOLS = ["core_memory_append", "core_memory_replace"]
 BASE_SLEEPTIME_CHAT_TOOLS = ["send_message", "conversation_search", "archival_memory_search"]
 # Base memory tools for sleeptime agent
 BASE_SLEEPTIME_TOOLS = [
-    "rethink_memory",
-    "finish_rethinking_memory",
-    "view_core_memory_with_line_numbers",
-    "core_memory_insert",
+    "memory_replace",
+    "memory_insert",
+    "memory_rethink",
+    "memory_finish_edits",
     "archival_memory_insert",
     "archival_memory_search",
     "conversation_search",
@@ -103,6 +103,11 @@ ERROR_MESSAGE_PREFIX = "Error"
 
 NON_USER_MSG_PREFIX = "[This is an automated system message hidden from the user] "
 
+CORE_MEMORY_LINE_NUMBER_WARNING = (
+    "# NOTE: Line numbers shown below are to help during editing. Do NOT include line number prefixes in your memory edit tool calls."
+)
+
+
 # Constants to do with summarization / conversation length window
 # The max amount of tokens supported by the underlying model (eg 8k for gpt-4 and Mistral 7B)
 LLM_MAX_TOKENS = {
@@ -110,6 +115,12 @@ LLM_MAX_TOKENS = {
     "deepseek-chat": 64000,
     "deepseek-reasoner": 64000,
     ## OpenAI models: https://platform.openai.com/docs/models/overview
+    "gpt-4.1": 1047576,
+    "gpt-4.1-2025-04-14": 1047576,
+    "gpt-4.1-mini": 1047576,
+    "gpt-4.1-mini-2025-04-14": 1047576,
+    "gpt-4.1-nano": 1047576,
+    "gpt-4.1-nano-2025-04-14": 1047576,
     # gpt-4.5-preview
     "gpt-4.5-preview": 128000,
     "gpt-4.5-preview-2025-02-27": 128000,

@@ -76,6 +76,7 @@ class LettaAgent(BaseAgent):
                 agent_state=agent_state,
                 tool_rules_solver=tool_rules_solver,
                 stream=False,
+                # TODO: also pass in reasoning content
             )
 
             tool_call = response.choices[0].message.tool_calls[0]
