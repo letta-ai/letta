@@ -46,7 +46,7 @@ ChatMessage = Union[SystemMessage, UserMessage, AssistantMessage, ToolMessage]
 def cast_message_to_subtype(m_dict: dict) -> ChatMessage:
     """Cast a dictionary to one of the individual message types"""
     role = m_dict.get("role")
-    if role == "system":
+    if role == "system" or role == "developer":
         return SystemMessage(**m_dict)
     elif role == "user":
         return UserMessage(**m_dict)
@@ -55,7 +55,7 @@ def cast_message_to_subtype(m_dict: dict) -> ChatMessage:
     elif role == "tool":
         return ToolMessage(**m_dict)
     else:
-        raise ValueError("Unknown message role")
+        raise ValueError(f"Unknown message role: {role}")
 
 
 class ResponseFormat(BaseModel):
