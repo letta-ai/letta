@@ -50,7 +50,7 @@ function PricingOverlay() {
   const [mode, setMode] = useState<PricingModes>('simulator');
 
   return (
-    <div className="fixed left-0 max-w-[800px] bg-white top-0 h-full w-[50%]">
+    <div className="fixed left-0 max-w-[800px] bg-background top-0 h-full w-[50%]">
       <VStack gap="xlarge" padding="xxlarge" fullHeight>
         <VStack>
           <LettaAlienChatIcon size="xxlarge" />
