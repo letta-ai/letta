@@ -42,10 +42,6 @@ landing-page:
   path: pages/index.mdx
 
 navigation:
-  - tab: install
-    layout:
-      - page: Install Letta
-        path: pages/install.mdx
   - tab: docs
     layout:
       - section: Get Started
