@@ -1,7 +1,7 @@
 from typing import List, Optional
 
 from openai.types.chat.chat_completion_message_tool_call import ChatCompletionMessageToolCall as OpenAIToolCall
-from sqlalchemy import BigInteger, FetchedValue, ForeignKey, Index, Sequence, event, text
+from sqlalchemy import BigInteger, FetchedValue, ForeignKey, Index, event, text
 from sqlalchemy.orm import Mapped, Session, mapped_column, relationship
 
 from letta.orm.custom_columns import MessageContentColumn, ToolCallColumn, ToolReturnColumn
@@ -48,7 +48,6 @@ class Message(SqlalchemyBase, OrganizationMixin, AgentMixin):
     # Monotonically increasing sequence for efficient/correct listing
     sequence_id: Mapped[int] = mapped_column(
         BigInteger,
-        Sequence("message_seq_id"),
         server_default=FetchedValue(),
         unique=True,
         nullable=False,
