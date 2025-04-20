@@ -42,10 +42,10 @@ function CostRender(props: CostRenderProps) {
       <VStack fullWidth>
         <HStack fullWidth justify="spaceBetween">
           <Typography variant="body4" bold uppercase color="muted">
-            Max Tokens
+            Max Context Window
           </Typography>
           <Typography variant="body4" bold uppercase color="muted">
-            Cost
+            Cost per Step
           </Typography>
         </HStack>
         {costs.map(({ contextWindowSize, cost }) => (

@@ -215,13 +215,13 @@
     "hasFailedToSendMessage": "Failed to send message, please try again or contact the person that has shared this chat with you."
   },
   "components/CreditsViewer": {
-    "label": "Go to billing",
+    "label": "View balance",
     "PricingOverlay": {
       "simulator": "Cost simulator",
       "pricingTable": "Pricing table",
       "title": "Our pricing",
-      "description": "At Letta, you pay based on inference request, meaning there is a flat rate for every request you make to a model. This rate is determined by your context window size that you can adjust when editing an agent",
-      "reference": "You can always view your costs later in our <link>cost explorer page</link>."
+      "description": "See how many credits a step will cost based on the model and max context window you choose. Use the slider to adjust the context window size, and browse models to compare step pricing.",
+      "reference": "You can always view your costs later in our <link>cost explorer</link>."
     },
     "Onboarding": {
       "nextStep": "Create your first template!",
@@ -476,21 +476,21 @@
     }
   },
   "settings/layout": {
-    "personal": "Settings",
+    "personal": "Personal",
     "profile": "Profile",
     "account": "Account",
     "organization": {
       "general": "General",
       "members": "Members",
       "root": "Organization",
-      "auditLog": "Audit Log",
-      "billing": "Billing",
-      "usage": "Usage",
       "integrations": "Integrations",
       "environmentVariables": "Tool variables",
       "modelProviders": "Model providers",
+      "billing": "Billing",
+      "auditLog": "Audit log",
+      "usage": "Usage",
       "rateLimits": "Rate limits",
-      "costExplorer": "Cost explorer"
+      "costExplorer": "Pricing"
     }
   },
   "organization/costs": {
@@ -524,8 +524,8 @@
       },
       "tokens": "Tokens"
     },
-    "title": "Cost explorer",
-    "description": "Costs are demarked in credits per request by the context window size. The context window size is the number of tokens in the context window of the agent. If a model is not listed, it means it won't be available for use at this time. All costs are denoted in <credit></credit> credits.",
+    "title": "Pricing",
+    "description": "Costs are demarked in <credit></credit> credits per step, varying based on the model used and context window size of your agent (in tokens).",
     "columns": {
       "name": "Model name",
       "tokens": "<={tokens} tokens"
@@ -762,7 +762,7 @@
   "organization/settings": {
     "title": "Organization settings",
     "MembershipRules": {
-      "title": "Automatic Organization Membership",
+      "title": "Automatic organization membership",
       "description": "Automatically add new members to the organizations based on their email domain",
       "actions": "Manage membership invite rules"
     },

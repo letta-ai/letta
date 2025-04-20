@@ -206,7 +206,7 @@
       },
       "messageBufferAutoclear": {
         "label": "Reset message buffer",
-        "tooltip": "Resets the message buffer every time the agent is invoked, similar behavior to an basic llm agent"
+        "tooltip": "If enabled, the agent will not remember messages from previous steps (though the agent will still retain state via memory). Not recommended unless you have an advanced use case."
       },
       "sleeptimeAgentFrequency": {
         "label": "Sleeptime agent frequency",
@@ -360,7 +360,7 @@
     },
     "AgentType": {
       "label": "Agent type",
-      "tooltip": "Describes the core letta agent type, this cannot be changed after creation"
+      "tooltip": "The underlying agent architecture type. Cannot be changed after agent creation."
     },
     "IdentitiesEditorDialog": {
       "error": "There was an error updating the identities, please try again or contact support.",
@@ -408,7 +408,7 @@
       "title": "Core System Prompt",
       "characterCount": "{count} CHARS",
       "updatedAt": "Last updated on {date}",
-      "tooltip": "This is an advanced feature, you should generally edit core memories, editing the system prompt can lead to unexpected behavior as we've fine-tuned the prompt to work with our agent system.",
+      "tooltip": "Edit the (read-only) system prompt of your agent - be careful to ensure your system instructions reflect the current toolset and memory configuration of your agent.",
       "label": "System instructions",
       "error": "There was an error while updating the system prompt, please try again or contact support.",
       "expand": "Show full system prompt editor",
@@ -533,8 +533,8 @@
     "toggleMemoryType": {
       "label": "Toggle Memory Type",
       "agent": {
-        "label": "Agent",
-        "tooltip": "The agent core memory is the memory state of the agent that is unique to this agent"
+        "label": "Blocks",
+        "tooltip": "Core memory is composed of blocks that can be edited by the agent"
       },
       "templated": {
         "label": "Template",
@@ -547,7 +547,7 @@
     },
     "mobileTitle": "Core Memory",
     "EditMemoryForm": {
-      "hasChangedRemotely": "Memory has been changed from another location",
+      "hasChangedRemotely": "Memory updated from another location",
       "characterLimit": "{count}/{limit} CHARS"
     },
     "AdvancedEditMemory": {
