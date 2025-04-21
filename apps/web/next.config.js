@@ -22,6 +22,9 @@ let nextConfig = {
     },
     // swcPlugins: [['@swc-jotai/react-refresh', {}]],
   },
+  sentry: {
+    deleteSourcemapsAfterUpload: true,
+  },
   output: 'standalone',
 };
 
