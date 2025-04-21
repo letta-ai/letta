@@ -1,11 +1,10 @@
 import time
 
-from letta_client import AgentType, GroupUpdateManagerConfig, Letta, ManagerType, SleeptimeManagerUpdate
-from letta_client.types import agent_type
+from letta_client import Letta
 
 client = Letta(base_url="http://localhost:8283")
 
-# delete all sources 
+# delete all sources
 for source in client.sources.list():
     print(f"Deleting source {source.name}")
     client.sources.delete(source.id)
@@ -21,19 +20,19 @@ agent = client.agents.create(
 )
 print(f"Created agent id {agent.id}")
 
-# get the group 
+# get the group
 group_id = agent.multi_agent_group.id
 current_frequence = agent.multi_agent_group.sleeptime_agent_frequency
 print(f"Group id: {group_id}, frequency: {current_frequence}")
 
-# create a source 
+# create a source
 source_name = "employee_handbook"
 source = client.sources.create(
     name=source_name,
-    description="Provides reference information for the employee handbook", 
+    description="Provides reference information for the employee handbook",
     embedding="openai/text-embedding-ada-002" # must match agent
 )
-# attach the source to the agent 
+# attach the source to the agent
 client.agents.sources.attach(
     source_id=source.id,
     agent_id=agent.id
@@ -52,7 +51,7 @@ print("Agent blocks", [b.label for b in client.agents.blocks.list(agent_id=agent
 block = client.agents.blocks.retrieve(agent_id=agent.id, block_label="employee_handbook")
 
 
-# get attached agents 
+# get attached agents
 agents = client.blocks.agents.list(block_id=block.id)
 for agent in agents:
     print(f"Agent id {agent.id}", agent.agent_type)
@@ -63,14 +62,10 @@ for agent in agents:
 while job.status != "completed":
     job = client.jobs.retrieve(job.id)
 
-    # count passages 
+    # count passages
     passages = client.agents.passages.list(agent_id=agent.id)
     print(f"Passages {len(passages)}")
     for passage in passages:
         print(passage.text)
 
     time.sleep(2)
-
-
-    
-
