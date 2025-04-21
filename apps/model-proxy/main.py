@@ -14,14 +14,13 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from starlette_prometheus import PrometheusMiddleware, metrics
 from typing import Optional, Dict
-from memgpt.llm_api.llm_api_tools import create
-from memgpt.config import MemGPTConfig  # TODO refactor for 0.2.12
-from memgpt.data_types import AgentState, LLMConfig
-from memgpt.models.chat_completion_response import ChatCompletionResponse
+from letta.llm_api.llm_api_tools import create
 from typing import Any, Dict, List, Literal, Optional, Union
 from pydantic import BaseModel, validator, ValidationError
-from memgpt.models.chat_completion_request import ChatMessage, ResponseFormat, Tool, ToolChoice, FunctionSchema, FunctionCallChoice, UserMessage, SystemMessage, AssistantMessage, ToolMessage
-from memgpt.data_types import Message
+from letta.schemas.openai.chat_completion_response import ChatCompletionResponse
+from letta.schemas.openai.chat_completion_request import ChatMessage, ResponseFormat, Tool, ToolChoice, FunctionSchema, FunctionCallChoice, UserMessage, SystemMessage, AssistantMessage, ToolMessage
+from letta.schemas.message import Message
+from letta.schemas.llm_config import LLMConfig
 from pydantic import BaseModel, Field
 
 from models.models_request import Model
@@ -213,8 +212,8 @@ async def create_chat_completion(request: ChatCompletionRequest):
     #)
 
     # dummy agent/user ID
-    agent_id = uuid.UUID(int=0)
-    user_id = uuid.UUID(int=0)
+    agent_id = str(uuid.UUID(int=0))
+    user_id = str(uuid.UUID(int=0))
 
     # Delete 'name' if it's None (it triggers an error w/ OpenAI API)
     messages_clean = [{k: v for k, v in d.items() if not (k == "name" and v is None)} for d in request_data["messages"]]

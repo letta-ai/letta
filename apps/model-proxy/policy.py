@@ -1,7 +1,6 @@
 from models.llm_backend import LLMBackendConfig
 from models.chat_completion_request import ChatCompletionRequest
-from memgpt.data_types import LLMConfig
-
+from letta.schemas.llm_config import LLMConfig
 
 def route_llm_request(request: ChatCompletionRequest) -> LLMBackendConfig:
     """FIXME just a dummy policy, just do gpt-4 @ openai"""
