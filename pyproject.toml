@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "letta"
-version = "0.6.54"
+version = "0.7.0"
 packages = [
     {include = "letta"},
 ]

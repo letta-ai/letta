@@ -1,4 +1,4 @@
-__version__ = "0.6.54"
+__version__ = "0.7.0"
 
 # import clients
 from letta.client.client import LocalClient, RESTClient, create_client
