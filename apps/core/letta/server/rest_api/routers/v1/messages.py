@@ -55,6 +55,7 @@ async def create_messages_batch(
             },
             callback_url=str(payload.callback_url),
         )
+        batch_job = server.job_manager.create_job(pydantic_job=batch_job, actor=actor)
 
         # create the batch runner
         batch_runner = LettaAgentBatch(
@@ -70,11 +71,14 @@ async def create_messages_batch(
         llm_batch_job = await batch_runner.step_until_request(batch_requests=payload.requests, letta_batch_job_id=batch_job.id)
 
         # TODO: update run metadata
-        batch_job = server.job_manager.create_job(pydantic_job=batch_job, actor=actor)
-    except Exception:
+    except Exception as e:
         import traceback
 
+        print("Error creating batch job", e)
         traceback.print_exc()
+
+        # mark job as failed
+        server.job_manager.update_job_by_id(job_id=batch_job.id, job=BatchJob(status=JobStatus.failed))
         raise
     return batch_job
 

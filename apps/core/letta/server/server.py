@@ -679,7 +679,6 @@ class SyncServer(Server):
     @trace_method
     def get_cached_llm_config(self, **kwargs):
         key = make_key(**kwargs)
-        print(self._llm_config_cache)
         if key not in self._llm_config_cache:
             self._llm_config_cache[key] = self.get_llm_config_from_handle(**kwargs)
         return self._llm_config_cache[key]
