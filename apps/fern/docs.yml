@@ -48,17 +48,9 @@ navigation:
         contents:
           - page: The Letta Platform
             path: pages/getting-started/letta_platform.mdx
-          - page: Introduction to Stateful Agents
-            path: pages/getting-started/stateful_agents.mdx
-          - page: Agent Development Environment
-            path: pages/getting-started/ade.mdx
-          - section: Letta FAQs & Troubleshooting
-            path: pages/getting-started/faq.mdx
-            contents:
-              - page: Letta Desktop Troubleshooting
-                path: pages/desktop/troubleshooting.mdx
-              - page: ADE Troubleshooting
-                path: pages/agent-development-environment/troubleshooting.mdx
+          #- page: Introduction to Stateful Agents
+          #  path: pages/getting-started/stateful_agents.mdx
+
           - section: Quickstart
             icon: fa-sharp fa-light fa-bolt
             path: pages/getting-started/quickstart.mdx
@@ -69,11 +61,14 @@ navigation:
                 path: pages/getting-started/quickstart_docker.mdx
               - page: Letta Cloud
                 path: pages/getting-started/quickstart_cloud.mdx
+          - page: Agent Development Environment
+            path: pages/getting-started/ade.mdx
+
       - section: Stateful Agents
         contents:
-          - page: Building Stateful Agents
+          - page: Overview
             path: pages/agents/overview.mdx
-          - page: Memory
+          - page: Context & Memory Management 
             path: pages/agents/memory.mdx
           - section: Tools
             path: pages/agents/tools.mdx
@@ -101,6 +96,9 @@ navigation:
             path: pages/agents/multiuser.mdx
           - page: Agent File (.af)
             path: pages/agents/agentfile.mdx
+          - page: Sleep-time Agents
+            path: pages/agents/sleeptime.mdx
+            icon: fa-sharp fa-light fa-snooze
       - section: Model Context Protocol
         contents:
           - page: What is MCP?
@@ -171,8 +169,12 @@ navigation:
             path: pages/concepts/letta.mdx
           - page: MemGPT concepts
             path: pages/concepts/memgpt.mdx
-      - section: External Resources
+      - section: Additional Resources
         contents:
+          - page: Letta Desktop Troubleshooting
+            path: pages/desktop/troubleshooting.mdx
+          - page: ADE Troubleshooting
+            path: pages/agent-development-environment/troubleshooting.mdx
           - link: DeepLearning.AI course
             href: https://www.deeplearning.ai/short-courses/llms-as-operating-systems-agent-memory
   - tab: ade

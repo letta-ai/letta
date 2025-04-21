@@ -7,17 +7,7 @@ Unlike in other frameworks, Letta agents are stateful, so they keep track of his
 <img className="light" src="/images/stateful_agents.png" />
 <img className="dark" src="/images/stateful_agents_dark.png" />
 
-Letta's key features:
-* <Icon icon="fa-sharp fa-solid fa-browser" /> [Agent Development Environment](/agent-development-environment) (agent builder + monitoring UI)
-* <Icon icon="brands fa-python" /> [Python SDK](http://localhost:3000/api-reference/overview) + <Icon icon="brands fa-js" /> [TypeScript SDK](http://localhost:3000/api-reference/overview) + [REST API](http://localhost:3000/api-reference/overview)
-* <Icon icon="fa-sharp fa-solid fa-brain-circuit" /> [Memory management](/guides/agents/memory)
-* <Icon icon="fa-solid fa-database" /> [Persistence](#agents-vs-threads) (all agent state is stored in a database)
-* <Icon icon="fa-sharp fa-solid fa-square-terminal" /> [Tool calling & execution](/guides/agents/tools) (support for custom tools & [pre-made tools](/guides/agents/composio))
-* <Icon icon="fa-sharp fa-solid fa-code-fork" /> [Tool rules](/guides/agents/tool-rules) (constraining an agent's action set in a graph-like structure)
-* <Icon icon="fa-sharp fa-solid fa-message-dots" /> [Streaming support](/guides/agents/streaming)
-* <Icon icon="fa-sharp fa-solid fa-people-group" /> [Native multi-agent support](/guides/agents/multi-agent) and [multi-user support](/guides/agents/multi-user)
-* <Icon icon="fa-sharp fa-solid fa-globe" /> Model-agnostic across closed ([OpenAI](/guides/server/providers/openai), etc.) and open providers ([LM Studio](/guides/server/providers/lmstudio), [vLLM](/guides/server/providers/vllm), etc.)
-* <Icon icon="fa-sharp fa-solid fa-rocket" /> Production-ready deployment ([self-hosted with Docker](/quickstart/docker) or [Letta Cloud](/quickstart/cloud))
+
 
 Letta manages a reasoning loop for agents. At each agent step (i.e. iteration of the loop), the state of the agent is checkpointed and persisted to the database.
 
