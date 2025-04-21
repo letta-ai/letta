@@ -143,8 +143,21 @@ class SleeptimeMultiAgent(Agent):
                     group_id=self.group_id,
                 )
             ]
+
+            # Convert Message objects to MessageCreate objects
+            message_creates = [
+                MessageCreate(
+                    role=m.role,
+                    content=m.content[0].text if m.content and len(m.content) == 1 else m.content,
+                    name=m.name,
+                    otid=m.otid,
+                    sender_id=m.sender_id,
+                )
+                for m in participant_agent_messages
+            ]
+
             result = participant_agent.step(
-                messages=participant_agent_messages,
+                input_messages=message_creates,
                 chaining=chaining,
                 max_chaining_steps=max_chaining_steps,
                 stream=token_streaming,
@@ -173,7 +186,7 @@ class SleeptimeMultiAgent(Agent):
 
     def step(
         self,
-        messages: List[MessageCreate],
+        input_messages: List[MessageCreate],
         chaining: bool = True,
         max_chaining_steps: Optional[int] = None,
         put_inner_thoughts_first: bool = True,
@@ -181,33 +194,28 @@ class SleeptimeMultiAgent(Agent):
     ) -> LettaUsageStatistics:
         run_ids = []
 
+        # Load settings
         token_streaming = self.interface.streaming_mode if hasattr(self.interface, "streaming_mode") else False
         metadata = self.interface.metadata if hasattr(self.interface, "metadata") else None
 
-        messages = [
-            Message(
-                id=Message.generate_id(),
-                agent_id=self.agent_state.id,
-                role=message.role,
-                content=[TextContent(text=message.content)] if isinstance(message.content, str) else message.content,
-                name=message.name,
-                model=None,
-                tool_calls=None,
-                tool_call_id=None,
-                group_id=self.group_id,
-                otid=message.otid,
-            )
-            for message in messages
-        ]
+        # Prepare new messages
+        new_messages = []
+        for message in input_messages:
+            if isinstance(message.content, str):
+                message.content = [TextContent(text=message.content)]
+            message.group_id = self.group_id
+            new_messages.append(message)
 
         try:
+            # Load main agent
             main_agent = Agent(
                 agent_state=self.agent_state,
                 interface=self.interface,
                 user=self.user,
             )
+            # Perform main agent step
             usage_stats = main_agent.step(
-                messages=messages,
+                input_messages=new_messages,
                 chaining=chaining,
                 max_chaining_steps=max_chaining_steps,
                 stream=token_streaming,
@@ -216,10 +224,12 @@ class SleeptimeMultiAgent(Agent):
                 put_inner_thoughts_first=put_inner_thoughts_first,
             )
 
+            # Update turns counter
             turns_counter = None
             if self.sleeptime_agent_frequency is not None and self.sleeptime_agent_frequency > 0:
                 turns_counter = self.group_manager.bump_turns_counter(group_id=self.group_id, actor=self.user)
 
+            # Perform participant steps
             if self.sleeptime_agent_frequency is None or (
                 turns_counter is not None and turns_counter % self.sleeptime_agent_frequency == 0
             ):

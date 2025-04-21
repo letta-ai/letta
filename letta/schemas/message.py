@@ -82,6 +82,7 @@ class MessageCreate(BaseModel):
     name: Optional[str] = Field(None, description="The name of the participant.")
     otid: Optional[str] = Field(None, description="The offline threading id associated with this message")
     sender_id: Optional[str] = Field(None, description="The id of the sender of the message, can be an identity id or agent id")
+    group_id: Optional[str] = Field(None, description="The multi-agent group that the message was sent in")
 
     def model_dump(self, to_orm: bool = False, **kwargs) -> Dict[str, Any]:
         data = super().model_dump(**kwargs)

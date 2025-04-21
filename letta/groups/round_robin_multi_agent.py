@@ -29,7 +29,7 @@ class RoundRobinMultiAgent(Agent):
 
     def step(
         self,
-        messages: List[MessageCreate],
+        input_messages: List[MessageCreate],
         chaining: bool = True,
         max_chaining_steps: Optional[int] = None,
         put_inner_thoughts_first: bool = True,
@@ -37,46 +37,39 @@ class RoundRobinMultiAgent(Agent):
     ) -> LettaUsageStatistics:
         total_usage = UsageStatistics()
         step_count = 0
+        speaker_id = None
 
+        # Load settings
         token_streaming = self.interface.streaming_mode if hasattr(self.interface, "streaming_mode") else False
         metadata = self.interface.metadata if hasattr(self.interface, "metadata") else None
 
-        agents = {}
+        # Load agents and initialize chat history with indexing
+        agents, message_index = {}, {}
+        chat_history: List[MessageCreate] = []
         for agent_id in self.agent_ids:
             agents[agent_id] = self.load_participant_agent(agent_id=agent_id)
+            message_index[agent_id] = 0
 
-        message_index = {agent_id: 0 for agent_id in self.agent_ids}
-        chat_history: List[Message] = []
-        new_messages = messages
-        speaker_id = None
+        # Prepare new messages
+        new_messages = []
+        for message in input_messages:
+            if isinstance(message.content, str):
+                message.content = [TextContent(text=message.content)]
+            message.group_id = self.group_id
+            new_messages.append(message)
+
         try:
             for i in range(self.max_turns):
+                # Select speaker
                 speaker_id = self.agent_ids[i % len(self.agent_ids)]
-                # initialize input messages
-                start_index = message_index[speaker_id] if speaker_id in message_index else 0
-                for message in chat_history[start_index:]:
-                    message.id = Message.generate_id()
-                    message.agent_id = speaker_id
 
-                for message in new_messages:
-                    chat_history.append(
-                        Message(
-                            agent_id=speaker_id,
-                            role=message.role,
-                            content=[TextContent(text=message.content)],
-                            name=message.name,
-                            model=None,
-                            tool_calls=None,
-                            tool_call_id=None,
-                            group_id=self.group_id,
-                            otid=message.otid,
-                        )
-                    )
+                # Update chat history
+                chat_history.extend(new_messages)
 
-                # load agent and perform step
+                # Perform participant step
                 participant_agent = agents[speaker_id]
                 usage_stats = participant_agent.step(
-                    messages=chat_history[start_index:],
+                    input_messages=chat_history[message_index[speaker_id] :],
                     chaining=chaining,
                     max_chaining_steps=max_chaining_steps,
                     stream=token_streaming,
@@ -85,47 +78,48 @@ class RoundRobinMultiAgent(Agent):
                     put_inner_thoughts_first=put_inner_thoughts_first,
                 )
 
-                # parse new messages for next step
+                # Parse participant response
                 responses = Message.to_letta_messages_from_list(participant_agent.last_response_messages)
                 assistant_messages = [response for response in responses if response.message_type == "assistant_message"]
                 new_messages = [
                     MessageCreate(
                         role="system",
-                        content=message.content,
-                        name=message.name,
+                        content=[TextContent(text=message.content)] if isinstance(message.content, str) else message.content,
+                        name=participant_agent.agent_state.name,
                         otid=message.otid,
+                        sender_id=participant_agent.agent_state.id,
+                        group_id=self.group_id,
                     )
                     for message in assistant_messages
                 ]
+
+                # Update message index
                 message_index[speaker_id] = len(chat_history) + len(new_messages)
 
-                # sum usage
+                # Sum usage
                 total_usage.prompt_tokens += usage_stats.prompt_tokens
                 total_usage.completion_tokens += usage_stats.completion_tokens
                 total_usage.total_tokens += usage_stats.total_tokens
                 step_count += 1
 
-            # persist remaining chat history
-            for message in new_messages:
-                chat_history.append(
-                    Message(
-                        agent_id=agent_id,
-                        role=message.role,
-                        content=[TextContent(text=message.content)],
-                        name=message.name,
-                        model=None,
-                        tool_calls=None,
-                        tool_call_id=None,
-                        group_id=self.group_id,
-                    )
-                )
+            # Persist remaining chat history
+            chat_history.extend(new_messages)
             for agent_id, index in message_index.items():
                 if agent_id == speaker_id:
                     continue
+                messages_to_persist = []
                 for message in chat_history[index:]:
-                    message.id = Message.generate_id()
-                    message.agent_id = agent_id
-                self.message_manager.create_many_messages(chat_history[index:], actor=self.user)
+                    message_to_persist = Message(
+                        role=message.role,
+                        content=message.content,
+                        name=message.name,
+                        otid=message.otid,
+                        sender_id=message.sender_id,
+                        group_id=self.group_id,
+                        agent_id=agent_id,
+                    )
+                    messages_to_persist.append(message_to_persist)
+                self.message_manager.create_many_messages(messages_to_persist, actor=self.user)
 
         except Exception as e:
             raise e

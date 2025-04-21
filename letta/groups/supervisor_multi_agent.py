@@ -9,7 +9,7 @@ from letta.interface import AgentInterface
 from letta.orm import User
 from letta.orm.enums import ToolType
 from letta.schemas.letta_message_content import TextContent
-from letta.schemas.message import Message, MessageCreate
+from letta.schemas.message import MessageCreate
 from letta.schemas.tool import Tool
 from letta.schemas.tool_rule import ChildToolRule, InitToolRule, TerminalToolRule
 from letta.schemas.usage import LettaUsageStatistics
@@ -37,17 +37,18 @@ class SupervisorMultiAgent(Agent):
 
     def step(
         self,
-        messages: List[MessageCreate],
+        input_messages: List[MessageCreate],
         chaining: bool = True,
         max_chaining_steps: Optional[int] = None,
         put_inner_thoughts_first: bool = True,
         assistant_message_tool_name: str = DEFAULT_MESSAGE_TOOL,
         **kwargs,
     ) -> LettaUsageStatistics:
+        # Load settings
         token_streaming = self.interface.streaming_mode if hasattr(self.interface, "streaming_mode") else False
         metadata = self.interface.metadata if hasattr(self.interface, "metadata") else None
 
-        # add multi agent tool
+        # Prepare supervisor agent
         if self.tool_manager.get_tool_by_name(tool_name="send_message_to_all_agents_in_group", actor=self.user) is None:
             multi_agent_tool = Tool(
                 name=send_message_to_all_agents_in_group.__name__,
@@ -64,7 +65,6 @@ class SupervisorMultiAgent(Agent):
             )
             self.agent_state = self.agent_manager.attach_tool(agent_id=self.agent_state.id, tool_id=multi_agent_tool.id, actor=self.user)
 
-        # override tool rules
         old_tool_rules = self.agent_state.tool_rules
         self.agent_state.tool_rules = [
             InitToolRule(
@@ -79,24 +79,25 @@ class SupervisorMultiAgent(Agent):
             ),
         ]
 
-        supervisor_messages = [
-            Message(
-                agent_id=self.agent_state.id,
-                role="user",
-                content=[TextContent(text=message.content)],
-                name=None,
-                model=None,
-                tool_calls=None,
-                tool_call_id=None,
-                group_id=self.group_id,
-                otid=message.otid,
-            )
-            for message in messages
-        ]
+        # Prepare new messages
+        new_messages = []
+        for message in input_messages:
+            if isinstance(message.content, str):
+                message.content = [TextContent(text=message.content)]
+            message.group_id = self.group_id
+            new_messages.append(message)
+
         try:
-            supervisor_agent = Agent(agent_state=self.agent_state, interface=self.interface, user=self.user)
+            # Load supervisor agent
+            supervisor_agent = Agent(
+                agent_state=self.agent_state,
+                interface=self.interface,
+                user=self.user,
+            )
+
+            # Perform supervisor step
             usage_stats = supervisor_agent.step(
-                messages=supervisor_messages,
+                input_messages=new_messages,
                 chaining=chaining,
                 max_chaining_steps=max_chaining_steps,
                 stream=token_streaming,

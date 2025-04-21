@@ -132,7 +132,7 @@ async def test_sleeptime_group_chat(server, actor):
         response = await server.send_message_to_agent(
             agent_id=main_agent.id,
             actor=actor,
-            messages=[
+            input_messages=[
                 MessageCreate(
                     role="user",
                     content=text,
@@ -206,7 +206,7 @@ async def test_sleeptime_removes_redundant_information(server, actor):
         _ = await server.send_message_to_agent(
             agent_id=main_agent.id,
             actor=actor,
-            messages=[
+            input_messages=[
                 MessageCreate(
                     role="user",
                     content=test_message,
@@ -270,7 +270,7 @@ async def test_sleeptime_edit(server, actor):
     _ = await server.send_message_to_agent(
         agent_id=sleeptime_agent.id,
         actor=actor,
-        messages=[
+        input_messages=[
             MessageCreate(
                 role="user",
                 content="Messi has now moved to playing for Inter Miami",

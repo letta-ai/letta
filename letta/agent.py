@@ -27,6 +27,7 @@ from letta.helpers import ToolRulesSolver
 from letta.helpers.composio_helpers import get_composio_api_key
 from letta.helpers.datetime_helpers import get_utc_time
 from letta.helpers.json_helpers import json_dumps, json_loads
+from letta.helpers.message_helper import prepare_input_message_create
 from letta.interface import AgentInterface
 from letta.llm_api.helpers import calculate_summarizer_cutoff, get_token_counts_for_messages, is_context_overflow_error
 from letta.llm_api.llm_api_tools import create
@@ -42,7 +43,7 @@ from letta.schemas.embedding_config import EmbeddingConfig
 from letta.schemas.enums import MessageRole
 from letta.schemas.letta_message_content import TextContent
 from letta.schemas.memory import ContextWindowOverview, Memory
-from letta.schemas.message import Message, ToolReturn
+from letta.schemas.message import Message, MessageCreate, ToolReturn
 from letta.schemas.openai.chat_completion_response import ChatCompletionResponse
 from letta.schemas.openai.chat_completion_response import Message as ChatCompletionMessage
 from letta.schemas.openai.chat_completion_response import UsageStatistics
@@ -78,7 +79,7 @@ class BaseAgent(ABC):
     @abstractmethod
     def step(
         self,
-        messages: Union[Message, List[Message]],
+        input_messages: List[MessageCreate],
     ) -> LettaUsageStatistics:
         """
         Top-level event message handler for the agent.
@@ -691,7 +692,7 @@ class Agent(BaseAgent):
     @trace_method
     def step(
         self,
-        messages: Union[Message, List[Message]],
+        input_messages: List[MessageCreate],
         # additional args
         chaining: bool = True,
         max_chaining_steps: Optional[int] = None,
@@ -704,7 +705,9 @@ class Agent(BaseAgent):
         # But just to be safe
         self.tool_rules_solver.clear_tool_history()
 
-        next_input_message = messages if isinstance(messages, list) else [messages]
+        # Convert MessageCreate objects to Message objects
+        message_objects = [prepare_input_message_create(m, self.agent_state.id, True, True) for m in input_messages]
+        next_input_messages = message_objects
         counter = 0
         total_usage = UsageStatistics()
         step_count = 0
@@ -715,7 +718,7 @@ class Agent(BaseAgent):
             kwargs["step_count"] = step_count
             kwargs["last_function_failed"] = function_failed
             step_response = self.inner_step(
-                messages=next_input_message,
+                messages=next_input_messages,
                 put_inner_thoughts_first=put_inner_thoughts_first,
                 **kwargs,
             )
@@ -745,36 +748,42 @@ class Agent(BaseAgent):
             # Chain handlers
             elif token_warning and summarizer_settings.send_memory_warning_message:
                 assert self.agent_state.created_by_id is not None
-                next_input_message = Message.dict_to_message(
-                    agent_id=self.agent_state.id,
-                    model=self.model,
-                    openai_message_dict={
-                        "role": "user",  # TODO: change to system?
-                        "content": get_token_limit_warning(),
-                    },
-                )
+                next_input_messages = [
+                    Message.dict_to_message(
+                        agent_id=self.agent_state.id,
+                        model=self.model,
+                        openai_message_dict={
+                            "role": "user",  # TODO: change to system?
+                            "content": get_token_limit_warning(),
+                        },
+                    ),
+                ]
                 continue  # always chain
             elif function_failed:
                 assert self.agent_state.created_by_id is not None
-                next_input_message = Message.dict_to_message(
-                    agent_id=self.agent_state.id,
-                    model=self.model,
-                    openai_message_dict={
-                        "role": "user",  # TODO: change to system?
-                        "content": get_heartbeat(FUNC_FAILED_HEARTBEAT_MESSAGE),
-                    },
-                )
+                next_input_messages = [
+                    Message.dict_to_message(
+                        agent_id=self.agent_state.id,
+                        model=self.model,
+                        openai_message_dict={
+                            "role": "user",  # TODO: change to system?
+                            "content": get_heartbeat(FUNC_FAILED_HEARTBEAT_MESSAGE),
+                        },
+                    )
+                ]
                 continue  # always chain
             elif heartbeat_request:
                 assert self.agent_state.created_by_id is not None
-                next_input_message = Message.dict_to_message(
-                    agent_id=self.agent_state.id,
-                    model=self.model,
-                    openai_message_dict={
-                        "role": "user",  # TODO: change to system?
-                        "content": get_heartbeat(REQ_HEARTBEAT_MESSAGE),
-                    },
-                )
+                next_input_messages = [
+                    Message.dict_to_message(
+                        agent_id=self.agent_state.id,
+                        model=self.model,
+                        openai_message_dict={
+                            "role": "user",  # TODO: change to system?
+                            "content": get_heartbeat(REQ_HEARTBEAT_MESSAGE),
+                        },
+                    )
+                ]
                 continue  # always chain
             # Letta no-op / yield
             else:
@@ -788,7 +797,7 @@ class Agent(BaseAgent):
 
     def inner_step(
         self,
-        messages: Union[Message, List[Message]],
+        messages: List[Message],
         first_message: bool = False,
         first_message_retry_limit: int = FIRST_MESSAGE_ATTEMPTS,
         skip_verify: bool = False,
@@ -814,11 +823,8 @@ class Agent(BaseAgent):
             self.update_memory_if_changed(current_persisted_memory)
 
             # Step 1: add user message
-            if isinstance(messages, Message):
-                messages = [messages]
-
             if not all(isinstance(m, Message) for m in messages):
-                raise ValueError(f"messages should be a Message or a list of Message, got {type(messages)}")
+                raise ValueError(f"messages should be a list of Message, got {[type(m) for m in messages]}")
 
             in_context_messages = self.agent_manager.get_in_context_messages(agent_id=self.agent_state.id, actor=self.user)
             input_message_sequence = in_context_messages + messages

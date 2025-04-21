@@ -412,7 +412,7 @@ def list_blocks(
     """
     actor = server.user_manager.get_user_or_default(user_id=actor_id)
     try:
-        agent = server.agent_manager.get_agent_by_id(agent_id, actor=actor)
+        agent = server.agent_manager.get_agent_by_id(agent_id, actor)
         return agent.memory.blocks
     except NoResultFound as e:
         raise HTTPException(status_code=404, detail=str(e))
@@ -640,7 +640,7 @@ async def send_message(
         result = await server.send_message_to_agent(
             agent_id=agent_id,
             actor=actor,
-            messages=request.messages,
+            input_messages=request.messages,
             stream_steps=False,
             stream_tokens=False,
             # Support for AssistantMessage
@@ -703,7 +703,7 @@ async def send_message_streaming(
         result = await server.send_message_to_agent(
             agent_id=agent_id,
             actor=actor,
-            messages=request.messages,
+            input_messages=request.messages,
             stream_steps=True,
             stream_tokens=request.stream_tokens,
             # Support for AssistantMessage
@@ -730,7 +730,7 @@ async def process_message_background(
         result = await server.send_message_to_agent(
             agent_id=agent_id,
             actor=actor,
-            messages=messages,
+            input_messages=messages,
             stream_steps=False,  # NOTE(matt)
             stream_tokens=False,
             use_assistant_message=use_assistant_message,
