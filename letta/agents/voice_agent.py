@@ -328,17 +328,12 @@ class VoiceAgent(BaseAgent):
                         "parameters": {
                             "type": "object",
                             "properties": {
-                                "archival_query": {
+                                "query": {
                                     "type": "string",
                                     "description": "A natural language description of what information you're trying to search in archival memory.",
                                 },
-                                "convo_keyword_queries": {
-                                    "type": "array",
-                                    "items": {"type": "string"},
-                                    "description": "A list of specific keywords to search for in memory. These help with precise retrieval, so add as many keywords here as you wish.",
-                                },
                             },
-                            "required": ["archival_query", "convo_keyword_queries"],
+                            "required": ["query"],
                         },
                     },
                     description=search_memory_utterance_description,
@@ -360,8 +355,7 @@ class VoiceAgent(BaseAgent):
         if tool_name == "search_memory":
             # TODO: Make this safe
             tool_result = await self._search_memory(
-                archival_query=tool_args["archival_query"],
-                convo_keyword_queries=tool_args["convo_keyword_queries"],
+                query=tool_args["query"],
                 agent_state=agent_state,
             )
             return tool_result, True
@@ -383,13 +377,12 @@ class VoiceAgent(BaseAgent):
             except Exception as e:
                 return f"Failed to call tool. Error: {e}", False
 
-    async def _search_memory(self, archival_query: str, convo_keyword_queries: List[str], agent_state: AgentState) -> str:
+    async def _search_memory(self, query: str, agent_state: AgentState) -> str:
         """
         Recalls memory based on both semantic query and keyword queries.
 
         Args:
-            archival_query: Natural language description of what to recall
-            convo_keyword_queries: List of specific keywords to search for in memory
+            query: Natural language description of what to recall
             agent_state: Current agent state
 
         Returns:
@@ -399,28 +392,15 @@ class VoiceAgent(BaseAgent):
         archival_results = self.agent_manager.list_passages(
             actor=self.actor,
             agent_id=self.agent_id,
-            query_text=archival_query,
+            query_text=query,
             limit=5,
             embedding_config=agent_state.embedding_config,
             embed_query=True,
         )
         formatted_archival_results = [{"timestamp": str(result.created_at), "content": result.text} for result in archival_results]
 
-        # Retrieve from conversation
-        keyword_results = {}
-        for keyword in convo_keyword_queries:
-            messages = self.message_manager.list_messages_for_agent(
-                agent_id=self.agent_id,
-                actor=self.actor,
-                query_text=keyword,
-                limit=3,
-            )
-            if messages:
-                keyword_results[keyword] = [message.content[0].text for message in messages]
-
         response = {
-            "archival_search_results": formatted_archival_results,
-            "conversation_search_results": keyword_results,
+            "results": formatted_archival_results,
         }
 
         return json.dumps(response, indent=2)

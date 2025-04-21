@@ -88,13 +88,9 @@ class EphemeralMemoryAgent(BaseAgent):
                 function_args = json.loads(tool_call.function.arguments)
 
                 # Execute the appropriate tool function based on the name
-                if function_name == "store_episodic_memory":
-                    print("Called store_episodic_memory")
-                    result = await self.store_episodic_memory(agent_state=agent_state, **function_args)
-                    memory_summaries.append(result)
-                elif function_name == "store_semantic_memory":
-                    print("Called store_semantic_memory")
-                    result = await self.store_semantic_memory(agent_state=agent_state, **function_args)
+                if function_name == "add_to_memory":
+                    print("Called add_to_memory")
+                    result = await self.add_to_memory(agent_state=agent_state, **function_args)
                     memory_summaries.append(result)
                 else:
                     result = f"Error: Unknown tool function '{function_name}'"
@@ -139,67 +135,23 @@ class EphemeralMemoryAgent(BaseAgent):
 
     def _build_tool_schemas(self) -> List[Tool]:
         """
-        Build the schemas for the three memory-related tools.
+        Build the schemas for tools.
         """
         tools = [
             Tool(
                 type="function",
                 function={
-                    "name": "store_episodic_memory",
-                    "description": (
-                        "Store a specific event or conversation as an episodic memory. "
-                        "Include detailed context from the conversation that led to this event, "
-                        "and provide a concise summary (e.g., 'Noted user lost their wallet') "
-                        "that reflects the key takeaway of the memory."
-                    ),
+                    "name": "add_to_memory",
+                    "description": ("Add something to my memory"),
                     "parameters": {
                         "type": "object",
                         "properties": {
                             "memory": {
                                 "type": "string",
-                                "description": (
-                                    "The detailed episodic memory to store, including the conversation context " "that led to this memory."
-                                ),
-                            },
-                            "summary": {
-                                "type": "string",
-                                "description": (
-                                    "A concise summary capturing the essence of the memory, "
-                                    "reflecting the action taken (e.g., 'Noted user lost their wallet')."
-                                ),
+                                "description": ("String representation of the memory."),
                             },
                         },
-                        "required": ["memory", "summary"],
-                    },
-                },
-            ),
-            Tool(
-                type="function",
-                function={
-                    "name": "store_semantic_memory",
-                    "description": (
-                        "Store general information or facts about the user as semantic memory. "
-                        "Provide the necessary context from the conversation and include a concise summary "
-                        "that encapsulates the primary insight (e.g., 'Recognized user preference for chocolate ice cream')."
-                    ),
-                    "parameters": {
-                        "type": "object",
-                        "properties": {
-                            "memory": {
-                                "type": "string",
-                                "description": (
-                                    "The detailed semantic memory to store, along with the conversation context "
-                                    "that provided this insight."
-                                ),
-                            },
-                            "summary": {
-                                "type": "string",
-                                "description": (
-                                    "A concise summary that reflects the main insight or fact " "captured from the conversation."
-                                ),
-                            },
-                        },
-                        "required": ["memory", "summary"],
+                        "required": ["memory"],
                     },
                 },
             ),
@@ -207,9 +159,9 @@ class EphemeralMemoryAgent(BaseAgent):
 
         return tools
 
-    async def store_episodic_memory(self, memory: str, summary: str, agent_state: AgentState) -> str:
+    async def add_to_memory(self, memory: str, agent_state: AgentState) -> str:
         """
-        Store an episodic memory.
+        Add anything worth remember from the conversation to my memory.
         """
         self.agent_manager.passage_manager.insert_passage(
             agent_state=agent_state,
@@ -219,22 +171,7 @@ class EphemeralMemoryAgent(BaseAgent):
         )
         self.agent_manager.rebuild_system_prompt(agent_id=agent_state.id, actor=self.actor, force=True)
 
-        return summary
-
-    async def store_semantic_memory(self, memory: str, summary: str, agent_state: AgentState) -> str:
-        """
-        Store a semantic memory.
-        """
-        # Placeholder implementation
-        self.agent_manager.passage_manager.insert_passage(
-            agent_state=agent_state,
-            agent_id=agent_state.id,
-            text=memory,
-            actor=self.actor,
-        )
-        self.agent_manager.rebuild_system_prompt(agent_id=agent_state.id, actor=self.actor, force=True)
-
-        return summary
+        return ""
 
     def write_memory_metadata_to_block(self, memory_summaries: List[str], agent_state: AgentState):
         # Format
