@@ -1588,6 +1588,46 @@ def test_modify_letta_message(server: SyncServer, sarah_agent, default_user):
     # TODO: tool calls/responses
 
 
+def test_list_messages_with_query_text_filter(server: SyncServer, sarah_agent, default_user):
+    """
+    Ensure that list_messages_for_agent correctly filters messages by query_text.
+    """
+    test_contents = [
+        "This is a message about unicorns and rainbows.",
+        "Another message discussing dragons in the sky.",
+        "Plain message with no magical beasts.",
+        "Mentioning unicorns again for good measure.",
+        "Something unrelated entirely.",
+    ]
+
+    created_messages = []
+    for content in test_contents:
+        message = PydanticMessage(
+            agent_id=sarah_agent.id,
+            role=MessageRole.user,
+            content=[{"type": "text", "text": content}],
+        )
+        created = server.message_manager.create_message(pydantic_msg=message, actor=default_user)
+        created_messages.append(created)
+
+    # Query messages that include "unicorns"
+    unicorn_messages = server.message_manager.list_messages_for_agent(agent_id=sarah_agent.id, actor=default_user, query_text="unicorns")
+    assert len(unicorn_messages) == 2
+    for msg in unicorn_messages:
+        assert any(chunk.type == "text" and "unicorns" in chunk.text.lower() for chunk in msg.content or [])
+
+    # Query messages that include "dragons"
+    dragon_messages = server.message_manager.list_messages_for_agent(agent_id=sarah_agent.id, actor=default_user, query_text="dragons")
+    assert len(dragon_messages) == 1
+    assert any(chunk.type == "text" and "dragons" in chunk.text.lower() for chunk in dragon_messages[0].content or [])
+
+    # Query with a word that shouldn't match any message
+    no_match_messages = server.message_manager.list_messages_for_agent(
+        agent_id=sarah_agent.id, actor=default_user, query_text="nonexistentcreature"
+    )
+    assert len(no_match_messages) == 0
+
+
 # ======================================================================================================================
 # AgentManager Tests - Blocks Relationship
 # ======================================================================================================================
