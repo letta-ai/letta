@@ -844,8 +844,8 @@
   },
 
   "SearchTools": {
-    "label": "Search tools",
-    "placeholder": "Search tools"
+    "label": "Search",
+    "placeholder": "Search"
   },
   "ComposioToolsView": {
     "visitWebsite": "Visit composio.dev",
@@ -1173,12 +1173,13 @@
     "noServerFound": "We couldn't find a server for this tool, this usually means the tool tags have been edited unintentionally, please detach and reattach the tool to have this page work correctly."
   },
   "ToolManager/ToolVariables": {
-    "title": "Tool Variables",
+    "title": "Environment Variables",
     "save": "Save",
     "reset": "Reset",
+    "noVariables": "No variables yet",
     "addVariable": "Add variable",
-    "description": "Tool variables can be used to store arbitrary data that can be used in your agent. This is useful for storing data that is not part of the agent's memory, such as API keys or other configuration data.",
-    "templateDetails": "Setting a tool variable below will set the default variable for all agents that use this template. You can also override this variable when deploying the agent."
+    "description": "Environment variables can be used to store arbitrary data that can be used in your agent. This is useful for storing data that is not part of the agent's memory, such as API keys or other configuration data.",
+    "templateDetails": "Setting a environment variable below will set the default variable for all agents that use this template. You can also override this variable when deploying the agent."
   },
   "ToolManager": {
     "close": "Back to ADE",
@@ -1198,20 +1199,21 @@
       "error": "There was an error creating this tool, please try again or contact support."
     },
     "ToolManagerNavigationSidebar": {
-      "title": "Tool browser",
+      "title": "Tool manager",
       "expand": "Expand",
-      "collapse": "Close",
+      "close": "Return to ADE",
+      "collapse": "Collapse sidebar",
       "toolRules": "Rules",
       "current": "Tools",
       "attachedToAgent": "Attached to agent",
-      "codeTools": "All available tools",
+      "codeTools": "All tools",
       "toolVariables": "Variables",
       "customTools": "Custom tools",
       "lettaTools": "Letta tools",
       "integrationTools": "External tools",
       "composioTools": "Composio",
       "mcpServers": "MCP servers",
-      "create": "Create custom tool"
+      "create": "Create tool"
     }
   },
   "ADE/Tools": {
@@ -1401,7 +1403,7 @@
     "ToolsListPage": {
       "openExplorer": "Tool Manager",
       "openRules": "Rules",
-      "openVariables": "Variables"
+      "openVariables": "Env Vars"
     },
     "ToolsList": {
       "editTool": "Edit tool",

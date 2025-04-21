@@ -40,7 +40,7 @@ const buttonVariants = cva(
         tertiary:
           'bg-transparent border-none hover:bg-secondary-hover text-tertiary-content',
         brand:
-          'bg-brand hover:bg-brand-hover text-brand-content border-transparent',
+          'bg-brand-light hover:bg-brand-light-hover text-brand-light-content border-transparent',
         primary: 'bg-primary text-primary-content border-transparent',
         secondary:
           'bg-transparent hover:bg-secondary-hover text-tertiary-content border-button-border',
@@ -143,6 +143,7 @@ export type ButtonProps = Omit<
       preload?: boolean;
       href?: string;
       disabled?: boolean;
+      fullWidthLabel?: boolean;
       hideLabel?: boolean;
       target?: string;
       bold?: boolean;
@@ -173,6 +174,7 @@ export const Button = forwardRef<
     fullHeight,
     square,
     size,
+    fullWidthLabel,
     hideLabel,
     _use_rarely_className,
     _use_rarely_disableTooltip,

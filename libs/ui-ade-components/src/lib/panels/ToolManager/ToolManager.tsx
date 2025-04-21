@@ -1,8 +1,10 @@
 import { useToolManagerState } from './hooks/useToolManagerState/useToolManagerState';
 import {
-  Breadcrumb,
   Button,
-  CloseIcon,
+  CaretLeftIcon,
+  CaretRightIcon,
+  ChevronLeftIcon,
+  ChevronRightIcon,
   Dialog,
   FormField,
   FormProvider,
@@ -10,13 +12,10 @@ import {
   HR,
   HStack,
   Input,
-  LeftPanelCloseIcon,
-  LeftPanelOpenIcon,
   LettaInvaderIcon,
   MiniApp,
   PlusIcon,
-  TemplateIcon,
-  ToolManagerIcon,
+  Tooltip,
   Typography,
   useForm,
   VStack,
@@ -41,6 +40,7 @@ import { useLocalStorage } from '@mantine/hooks';
 import { useIsComposioConnected } from './hooks/useIsComposioConnected/useIsComposioConnected';
 import { CURRENT_RUNTIME } from '@letta-cloud/config-runtime';
 import { LIST_TOOLS_PAYLOAD } from './routes/MyTools/MyTools';
+import { useCurrentAgent } from '../../hooks';
 
 interface CreateToolDialogProps {
   trigger: React.ReactNode;
@@ -188,29 +188,46 @@ interface SidebarButtonProps {
   path: string;
   hideLabel?: boolean;
   icon: React.ReactNode;
+  hasSubmenu?: boolean;
 }
 
 function SidebarButton(props: SidebarButtonProps) {
   const { setPath, currentPath } = useToolManagerState();
-  const { path, hideLabel, label, icon } = props;
+  const { path, hideLabel, label, icon, hasSubmenu } = props;
 
+  const isSelected = useMemo(() => {
+    return path === currentPath;
+  }, [path, currentPath]);
   return (
-    <Button
-      preIcon={icon}
-      size="small"
-      hideLabel={hideLabel}
-      label={label}
-      color="tertiary"
-      active={path === currentPath}
+    <button
+      color={isSelected ? 'brand' : 'tertiary'}
       onClick={() => {
         setPath(path);
       }}
-    />
+      className={cn(
+        'w-full flex items-center p-1.5',
+        isSelected
+          ? 'bg-brand-light text-brand-light-content'
+          : 'bg-transparent',
+      )}
+    >
+      <div className="flex gap-2 w-full">
+        <div className="w-4 items-center flex justify-center">{icon}</div>
+        <div className={cn('', hideLabel ? 'sr-only' : '')}>{label}</div>
+      </div>
+      {hasSubmenu && !hideLabel ? (
+        <div>
+          <ChevronRightIcon />
+        </div>
+      ) : (
+        <div />
+      )}
+    </button>
   );
 }
 
 interface SidebarSectionProps {
-  title: string;
+  title: React.ReactNode;
   isExpanded?: boolean;
   children: React.ReactNode;
 }
@@ -222,14 +239,55 @@ function SidebarSection(props: SidebarSectionProps) {
     <VStack>
       {isExpanded && (
         <HStack paddingX="medium">
-          <Typography variant="body4" bold>
-            {title}
-          </Typography>
+          {typeof title === 'string' ? (
+            <Typography variant="body4" bold>
+              {title}
+            </Typography>
+          ) : (
+            title
+          )}
         </HStack>
       )}
 
-      <VStack>{children}</VStack>
+      <VStack paddingX="small" gap="small">
+        {children}
+      </VStack>
     </VStack>
+  );
+}
+
+interface ExpandComponentProps {
+  isExpanded: boolean;
+  setExpanded: (expanded: boolean) => void;
+}
+
+function ExpandComponent(props: ExpandComponentProps) {
+  const { isExpanded, setExpanded } = props;
+
+  const t = useTranslations('ToolManager');
+
+  const copy = useMemo(() => {
+    if (!isExpanded) {
+      return t('ToolManagerNavigationSidebar.expand');
+    }
+
+    return t('ToolManagerNavigationSidebar.collapse');
+  }, [isExpanded, t]);
+
+  return (
+    <Tooltip placement="bottom" content={copy} asChild>
+      <button
+        className="text-text-lighter flex item-center justify-center p-0  h-[27px] top-[28px] w-[17px] bg-background-grey border absolute right-[-10px]"
+        onClick={() => {
+          setExpanded(!isExpanded);
+        }}
+      >
+        <div className="w-full">
+          {!isExpanded ? <CaretRightIcon /> : <CaretLeftIcon />}
+          <div className="sr-only">{copy}</div>
+        </div>
+      </button>
+    </Tooltip>
   );
 }
 
@@ -240,12 +298,16 @@ function ToolManagerNavigationSidebar() {
     defaultValue: true,
     key: 'tool-manager-sidebar-expanded',
   });
+  const { closeToolManager } = useToolManagerState();
+
+  const { name } = useCurrentAgent();
 
   return (
     <VStack
       borderRight
       color="background-grey"
       className={cn(
+        'relative',
         isExpanded
           ? 'w-[220px] min-w-[220px] max-w-[220px]'
           : 'w-[50px] max-w-[50px]',
@@ -253,49 +315,55 @@ function ToolManagerNavigationSidebar() {
       gap="medium"
       paddingBottom="xxsmall"
     >
+      <HiddenOnMobile>
+        <ExpandComponent isExpanded={isExpanded} setExpanded={setExpanded} />
+      </HiddenOnMobile>
+      {CURRENT_RUNTIME === 'letta-desktop' && <div className="h-[8px]" />}
       <HStack
         minHeight="header-sm"
         height="header-sm"
-        justify="spaceBetween"
         fullWidth
+        gap={false}
         borderBottom={isExpanded}
-        paddingX={isExpanded ? 'large' : 'small'}
+        paddingX={isExpanded ? 'xsmall' : 'xsmall'}
         align="center"
       >
+        <Button
+          label={t('ToolManagerNavigationSidebar.close')}
+          size="small"
+          color="tertiary"
+          hideLabel
+          data-testid="close-tool-manager"
+          preIcon={<ChevronLeftIcon />}
+          onClick={() => {
+            closeToolManager();
+          }}
+        />
         {isExpanded && (
-          <Typography uppercase color="lighter" className="text-[10px]" bold>
+          <Typography variant="body2" bold color="lighter">
             {t('ToolManagerNavigationSidebar.title')}
           </Typography>
         )}
-        <HiddenOnMobile>
-          <Button
-            size="small"
-            _use_rarely_className="text-text-lighter"
-            hideLabel
-            onClick={() => {
-              setExpanded(!isExpanded);
-            }}
-            preIcon={
-              !isExpanded ? <LeftPanelOpenIcon /> : <LeftPanelCloseIcon />
-            }
-            label={
-              isExpanded
-                ? t('ToolManagerNavigationSidebar.collapse')
-                : t('ToolManagerNavigationSidebar.expand')
-            }
-            color="tertiary"
-          />
-        </HiddenOnMobile>
       </HStack>
-      <VStack overflowY="auto" gap="medium" paddingX="small">
+      <VStack overflowY="auto" gap="medium">
         <SidebarSection
           isExpanded={isExpanded}
-          title={t('ToolManagerNavigationSidebar.attachedToAgent')}
+          title={
+            <HStack align="center" collapseWidth className="gap-2">
+              <div className="bg-agent min-w-[24px] flex items-center justify-center h-[24px]">
+                <LettaInvaderIcon />
+              </div>
+              <Typography fullWidth overflow="ellipsis" variant="body2" noWrap>
+                {name}
+              </Typography>
+            </HStack>
+          }
         >
           <SidebarButton
             hideLabel={!isExpanded}
             label={details.current.title}
             path="/current-agent-tools"
+            hasSubmenu
             icon={details.current.icon}
           />
           <SidebarButton
@@ -320,27 +388,31 @@ function ToolManagerNavigationSidebar() {
             hideLabel={!isExpanded}
             label={details.customTools.title}
             path="/my-tools"
+            hasSubmenu
             icon={details.customTools.icon}
           />
           <SidebarButton
             hideLabel={!isExpanded}
             label={details.lettaTools.title}
             path="/letta-tools"
+            hasSubmenu
             icon={details.lettaTools.icon}
           />
-          <CreateToolDialog
-            trigger={
-              <Button
-                hideLabel={!isExpanded}
-                size="small"
-                data-testid="start-create-tool"
-                preIcon={<PlusIcon />}
-                label={t('ToolManagerNavigationSidebar.create')}
-                color="tertiary"
-                bold
-              />
-            }
-          />
+          <HStack>
+            <CreateToolDialog
+              trigger={
+                <Button
+                  hideLabel={!isExpanded}
+                  size="xsmall"
+                  data-testid="start-create-tool"
+                  preIcon={<PlusIcon />}
+                  label={t('ToolManagerNavigationSidebar.create')}
+                  color="secondary"
+                  bold
+                />
+              }
+            />
+          </HStack>
         </SidebarSection>
         <HR />
 
@@ -375,14 +447,7 @@ function ToolManagerContent() {
 
   return matchingRoute?.component;
 }
-
-interface ToolManagerProps {
-  agentName: string;
-  isTemplate?: boolean;
-}
-
-export function ToolManager(props: ToolManagerProps) {
-  const { agentName, isTemplate } = props;
+export function ToolManager() {
   const {
     closeToolManager,
     openToolManager,
@@ -428,53 +493,6 @@ export function ToolManager(props: ToolManagerProps) {
         fullHeight
         fullWidth
       >
-        {CURRENT_RUNTIME === 'letta-desktop' && <div className="h-[18px]" />}
-        <HStack
-          height="header-sm"
-          minHeight="header-sm"
-          className="app-header"
-          align="center"
-          gap={false}
-          fullWidth
-          borderBottom
-        >
-          <HStack fullWidth justify="spaceBetween" align="center">
-            <div className="px-1 disable-app-header">
-              <Breadcrumb
-                size="xsmall"
-                items={[
-                  {
-                    preIcon: <ToolManagerIcon size="medium" />,
-                    label: t('title'),
-                    bold: true,
-                  },
-                  {
-                    onClick: () => {
-                      closeToolManager();
-                    },
-                    preIcon: isTemplate ? (
-                      <TemplateIcon />
-                    ) : (
-                      <LettaInvaderIcon />
-                    ),
-                    label: agentName,
-                  },
-                ]}
-              />
-            </div>
-            <Button
-              postIcon={<CloseIcon />}
-              size="small"
-              data-testid="close-tool-manager"
-              _use_rarely_className="disable-app-header"
-              color="tertiary"
-              label={t('close')}
-              onClick={() => {
-                closeToolManager();
-              }}
-            />
-          </HStack>
-        </HStack>
         <HStack collapseHeight flex gap={false} fullWidth fullHeight>
           <HiddenOnMobile>
             <ToolManagerNavigationSidebar />

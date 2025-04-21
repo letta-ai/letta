@@ -215,7 +215,7 @@ export function VariableInput(props: VariableInputProps) {
   }, [overriddenValues]);
 
   return (
-    <VStack padding="small" color="background-grey">
+    <VStack fullWidth>
       <HStack align="center">
         {hasOverriddenValues && (
           <Button

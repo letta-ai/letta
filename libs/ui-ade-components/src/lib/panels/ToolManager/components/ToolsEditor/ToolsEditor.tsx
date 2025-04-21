@@ -83,7 +83,7 @@ export function ToolSidebarNavigator(props: ToolSidebarNavigatorProps) {
       fullHeight
       borderRight
       fullWidth
-      className={!isMobile ? 'max-w-[250px]' : 'w-full'}
+      className={!isMobile ? 'max-w-[220px]' : 'w-full'}
     >
       <ToolSearchInput
         isMobile={isMobile}

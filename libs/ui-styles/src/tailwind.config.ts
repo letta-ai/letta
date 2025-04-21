@@ -190,6 +190,10 @@ export function buildConfig(appDir: string): Config {
             DEFAULT: 'hsl(var(--card))',
             content: 'hsl(var(--card-content))',
           },
+          agent: {
+            DEFAULT: 'hsl(var(--agent-color))',
+            content: 'hsl(var(--agent-color-content))',
+          },
         },
         borderRadius: {
           DEFAULT: `var(--radius)`,

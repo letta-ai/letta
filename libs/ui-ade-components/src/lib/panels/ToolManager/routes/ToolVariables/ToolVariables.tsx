@@ -2,6 +2,10 @@ import { useCurrentAgent, useSyncUpdateCurrentAgent } from '../../../../hooks';
 import { useCallback, useState } from 'react';
 import type { VariableDefinition } from '@letta-cloud/ui-component-library';
 import {
+  LoadingEmptyStatusComponent,
+  RefreshIcon,
+} from '@letta-cloud/ui-component-library';
+import {
   Button,
   HStack,
   PlusIcon,
@@ -68,10 +72,8 @@ export function ToolVariables() {
     );
   }, [handleTransformVariables, tool_exec_environment_variables]);
 
-  const handleDeleteVariable = useCallback((variable: VariableDefinition) => {
-    setStagedVariables((prev) =>
-      prev.filter((item) => item.key !== variable.key),
-    );
+  const handleDeleteVariable = useCallback((index: number) => {
+    setStagedVariables((prev) => prev.filter((_, idx) => idx !== index));
   }, []);
 
   const handleUpdateVariable = useCallback(
@@ -89,67 +91,89 @@ export function ToolVariables() {
   );
 
   return (
-    <VStack fullWidth fullHeight color="background-grey" align="center" padding>
-      <VStack
-        overflowY="auto"
-        color="background"
-        fullHeight
-        border
-        width="largeContained"
-        fullWidth
-        padding
-      >
-        <HStack fullWidth justify="spaceBetween">
+    <VStack gap={false} fullWidth fullHeight color="background">
+      <VStack gap="large" borderBottom padding="xlarge">
+        <HStack align="center" fullWidth justify="spaceBetween">
           <Typography variant="heading5">{t('title')}</Typography>
+          <HStack>
+            <Button
+              label={t('addVariable')}
+              onClick={() => {
+                handleAddVariable({
+                  key: '',
+                  value: '',
+                  scope: 'agent',
+                });
+              }}
+              color="secondary"
+              preIcon={<PlusIcon />}
+            />
+            <HStack>
+              <Button
+                label={t('reset')}
+                onClick={handleResetVariables}
+                preIcon={<RefreshIcon />}
+                color="secondary"
+                disabled={isUpdating || isDebouncing}
+              />
+              <Button
+                label={t('save')}
+                busy={isUpdating || isDebouncing}
+                onClick={handleUpdateAgent}
+                color="primary"
+              />
+            </HStack>
+          </HStack>
         </HStack>
         <Alert title={t('description')} variant="brand" />
+      </VStack>
 
+      {stagedVariables.length === 0 ? (
+        <VStack fullWidth fullHeight>
+          <LoadingEmptyStatusComponent
+            emptyAction={
+              <Button
+                label={t('addVariable')}
+                onClick={() => {
+                  handleAddVariable({
+                    key: '',
+                    value: '',
+                    scope: 'agent',
+                  });
+                }}
+                color="secondary"
+                preIcon={<PlusIcon />}
+              />
+            }
+            emptyMessage={t('noVariables')}
+          />
+        </VStack>
+      ) : (
         <VStack fullWidth>
           {stagedVariables.map((variable, index) => {
             return (
-              <VariableInput
+              <VStack
+                borderBottom
+                fullWidth
+                paddingX="large"
+                paddingY="medium"
                 key={index}
-                value={variable}
-                onValueChange={(value) => {
-                  handleUpdateVariable(value, index);
-                }}
-                canDelete={true}
-                onDelete={() => {
-                  handleDeleteVariable(variable);
-                }}
-              />
+              >
+                <VariableInput
+                  value={variable}
+                  onValueChange={(value) => {
+                    handleUpdateVariable(value, index);
+                  }}
+                  canDelete={true}
+                  onDelete={() => {
+                    handleDeleteVariable(index);
+                  }}
+                />
+              </VStack>
             );
           })}
         </VStack>
-        <HStack fullWidth justify="spaceBetween">
-          <Button
-            label={t('addVariable')}
-            onClick={() => {
-              handleAddVariable({
-                key: '',
-                value: '',
-                scope: 'agent',
-              });
-            }}
-            color="secondary"
-            preIcon={<PlusIcon />}
-          />
-          <HStack>
-            <Button
-              label={t('reset')}
-              onClick={handleResetVariables}
-              color="tertiary"
-              disabled={isUpdating || isDebouncing}
-            />
-            <Button
-              label={t('save')}
-              busy={isUpdating || isDebouncing}
-              onClick={handleUpdateAgent}
-              color="primary"
-            />
-          </HStack>
-        </HStack>
-      </VStack>
+      )}
     </VStack>
   );
 }

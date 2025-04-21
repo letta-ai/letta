@@ -21,7 +21,7 @@ import {
   ToolsIcon,
 } from '@letta-cloud/ui-component-library';
 import { Button, PanelMainContent } from '@letta-cloud/ui-component-library';
-import { useCurrentAgent, useCurrentAgentMetaData } from '../../hooks';
+import { useCurrentAgent } from '../../hooks';
 import type { AgentState } from '@letta-cloud/sdk-core';
 import { useAgentsServiceDetachTool } from '@letta-cloud/sdk-core';
 import { isLettaTool } from '@letta-cloud/sdk-core';
@@ -354,12 +354,11 @@ function ToolUtilities() {
 }
 
 export function ToolsPanel() {
-  const { agentName, isTemplate } = useCurrentAgentMetaData();
   return (
     <ToolManagerProvider>
       <ToolsOnboarding>
         <PanelMainContent variant="noPadding">
-          <ToolManager isTemplate={isTemplate} agentName={agentName} />
+          <ToolManager />
 
           <VStack gap={false}>
             <ToolUtilities />
