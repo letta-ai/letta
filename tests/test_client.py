@@ -232,30 +232,30 @@ def test_agent_tags(client: Letta):
     )
 
     # Test getting all tags
-    all_tags = client.tag.list_tags()
+    all_tags = client.tags.list()
     expected_tags = ["agent1", "agent2", "agent3", "development", "production", "test"]
     assert sorted(all_tags) == expected_tags
 
     # Test pagination
-    paginated_tags = client.tag.list_tags(limit=2)
+    paginated_tags = client.tags.list(limit=2)
     assert len(paginated_tags) == 2
     assert paginated_tags[0] == "agent1"
     assert paginated_tags[1] == "agent2"
 
     # Test pagination with cursor
-    next_page_tags = client.tag.list_tags(after="agent2", limit=2)
+    next_page_tags = client.tags.list(after="agent2", limit=2)
     assert len(next_page_tags) == 2
     assert next_page_tags[0] == "agent3"
     assert next_page_tags[1] == "development"
 
     # Test text search
-    prod_tags = client.tag.list_tags(query_text="prod")
+    prod_tags = client.tags.list(query_text="prod")
     assert sorted(prod_tags) == ["production"]
 
-    dev_tags = client.tag.list_tags(query_text="dev")
+    dev_tags = client.tags.list(query_text="dev")
     assert sorted(dev_tags) == ["development"]
 
-    agent_tags = client.tag.list_tags(query_text="agent")
+    agent_tags = client.tags.list(query_text="agent")
     assert sorted(agent_tags) == ["agent1", "agent2", "agent3"]
 
     # Remove agents
