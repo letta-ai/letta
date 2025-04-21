@@ -40,4 +40,5 @@ def prepare_input_message_create(
         tool_call_id=None,
         otid=message.otid,
         sender_id=message.sender_id,
+        group_id=message.group_id,
     )

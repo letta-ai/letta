@@ -2661,7 +2661,7 @@ class LocalClient(AbstractClient):
             response (LettaResponse): Response from the agent
         """
         self.interface.clear()
-        usage = self.server.send_messages(actor=self.user, agent_id=agent_id, messages=messages)
+        usage = self.server.send_messages(actor=self.user, agent_id=agent_id, input_messages=messages)
 
         # format messages
         return LettaResponse(messages=messages, usage=usage)
@@ -2703,7 +2703,7 @@ class LocalClient(AbstractClient):
         usage = self.server.send_messages(
             actor=self.user,
             agent_id=agent_id,
-            messages=[MessageCreate(role=MessageRole(role), content=message, name=name)],
+            input_messages=[MessageCreate(role=MessageRole(role), content=message, name=name)],
         )
 
         ## TODO: need to make sure date/timestamp is propely passed

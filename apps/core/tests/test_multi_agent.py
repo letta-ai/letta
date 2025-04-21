@@ -158,7 +158,7 @@ async def test_empty_group(server, actor):
         await server.send_group_message_to_agent(
             group_id=group.id,
             actor=actor,
-            messages=[
+            input_messages=[
                 MessageCreate(
                     role="user",
                     content="what is everyone up to for the holidays?",
@@ -246,7 +246,7 @@ async def test_round_robin(server, actor, participant_agents):
         response = await server.send_group_message_to_agent(
             group_id=group.id,
             actor=actor,
-            messages=[
+            input_messages=[
                 MessageCreate(
                     role="user",
                     content="what is everyone up to for the holidays?",
@@ -301,7 +301,7 @@ async def test_round_robin(server, actor, participant_agents):
         response = await server.send_group_message_to_agent(
             group_id=group.id,
             actor=actor,
-            messages=[
+            input_messages=[
                 MessageCreate(
                     role="user",
                     content="what is everyone up to for the holidays?",
@@ -367,7 +367,7 @@ async def test_supervisor(server, actor, participant_agents):
         response = await server.send_group_message_to_agent(
             group_id=group.id,
             actor=actor,
-            messages=[
+            input_messages=[
                 MessageCreate(
                     role="user",
                     content="ask everyone what they like to do for fun and then come up with an activity for everyone to do together.",
@@ -449,7 +449,7 @@ async def test_dynamic_group_chat(server, actor, manager_agent, participant_agen
         response = await server.send_group_message_to_agent(
             group_id=group.id,
             actor=actor,
-            messages=[
+            input_messages=[
                 MessageCreate(role="user", content="what is everyone up to for the holidays?"),
             ],
             stream_steps=False,

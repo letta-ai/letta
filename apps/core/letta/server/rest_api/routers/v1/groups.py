@@ -128,7 +128,7 @@ async def send_group_message(
     result = await server.send_group_message_to_agent(
         group_id=group_id,
         actor=actor,
-        messages=request.messages,
+        input_messages=request.messages,
         stream_steps=False,
         stream_tokens=False,
         # Support for AssistantMessage
@@ -167,7 +167,7 @@ async def send_group_message_streaming(
     result = await server.send_group_message_to_agent(
         group_id=group_id,
         actor=actor,
-        messages=request.messages,
+        input_messages=request.messages,
         stream_steps=True,
         stream_tokens=request.stream_tokens,
         # Support for AssistantMessage
