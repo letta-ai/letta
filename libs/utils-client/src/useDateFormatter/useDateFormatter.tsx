@@ -5,25 +5,35 @@ export function useDateFormatter() {
     date: Date | string,
     options?: Intl.DateTimeFormatOptions,
   ) {
-    return new Intl.DateTimeFormat(
-      defaultLocal,
-      options || {
-        dateStyle: 'medium',
-        timeStyle: 'short',
-      },
-    ).format(new Date(date));
+    try {
+      return new Intl.DateTimeFormat(
+        defaultLocal,
+        options || {
+          dateStyle: 'medium',
+          timeStyle: 'short',
+        },
+      ).format(new Date(date));
+    } catch (e) {
+      console.error('Error formatting date and time:', e);
+      return '';
+    }
   }
 
   function formatDate(
     date: Date | string,
     options?: Intl.DateTimeFormatOptions,
   ) {
-    return new Intl.DateTimeFormat(
-      defaultLocal,
-      options || {
-        dateStyle: 'medium',
-      },
-    ).format(new Date(date));
+    try {
+      return new Intl.DateTimeFormat(
+        defaultLocal,
+        options || {
+          dateStyle: 'medium',
+        },
+      ).format(new Date(date));
+    } catch (e) {
+      console.error('Error formatting date:', e);
+      return '';
+    }
   }
 
   return { formatDateAndTime, formatDate };
