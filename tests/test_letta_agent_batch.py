@@ -1,11 +1,3 @@
-"""
-Tests for LettaAgentBatch.step_until_request functionality.
-
-This module tests the batch processing capabilities of LettaAgentBatch,
-specifically the step_until_request method which prepares agent requests
-for batch processing.
-"""
-
 import os
 import threading
 import time
@@ -92,6 +84,28 @@ def weather_tool(client):
     yield tool
 
 
+@pytest.fixture(scope="function")
+def rethink_tool(client):
+    def rethink_memory(agent_state: "AgentState", new_memory: str, target_block_label: str) -> str:  # type: ignore
+        """
+        Re-evaluate the memory in block_name, integrating new and updated facts.
+        Replace outdated information with the most likely truths, avoiding redundancy with original memories.
+        Ensure consistency with other memory blocks.
+
+        Args:
+            new_memory (str): The new memory with information integrated from the memory block. If there is no new information, then this should be the same as the content in the source block.
+            target_block_label (str): The name of the block to write to.
+        Returns:
+            str: None is always returned as this function does not produce a response.
+        """
+        agent_state.memory.update_block_value(label=target_block_label, value=new_memory)
+        return None
+
+    tool = client.tools.upsert_from_function(func=rethink_memory)
+    # Yield the created tool
+    yield tool
+
+
 @pytest.fixture
 def agents(client, weather_tool):
     """
@@ -173,7 +187,7 @@ def create_batch_response(batch_id: str, processing_status: str = "in_progress")
     )
 
 
-def create_complete_tool_response(custom_id: str, model: str, request_heartbeat: bool) -> BetaMessageBatchIndividualResponse:
+def create_get_weather_tool_response(custom_id: str, model: str, request_heartbeat: bool) -> BetaMessageBatchIndividualResponse:
     """Create a dummy successful batch response with a tool call after user asks about weather."""
     return BetaMessageBatchIndividualResponse(
         custom_id=custom_id,
@@ -193,6 +207,39 @@ def create_complete_tool_response(custom_id: str, model: str, request_heartbeat:
                         "input": {
                             "location": "Las Vegas",
                             "inner_thoughts": "I should get the weather",
+                            "request_heartbeat": request_heartbeat,
+                        },
+                    },
+                ],
+                usage={"input_tokens": 7, "output_tokens": 17},
+                stop_reason="end_turn",
+            ),
+        ),
+    )
+
+
+def create_rethink_tool_response(
+    custom_id: str, model: str, request_heartbeat: bool, new_memory: str, target_block_label: str
+) -> BetaMessageBatchIndividualResponse:
+    """Create a dummy successful batch response with a tool call after user asks about weather."""
+    return BetaMessageBatchIndividualResponse(
+        custom_id=custom_id,
+        result=BetaMessageBatchSucceededResult(
+            type="succeeded",
+            message=BetaMessage(
+                id="msg_abc123",
+                role="assistant",
+                type="message",
+                model=model,
+                content=[
+                    {"type": "text", "text": "Let me rethink my memory."},
+                    {
+                        "type": "tool_use",
+                        "id": "tu_01234567890123456789012345",
+                        "name": "rethink_memory",
+                        "input": {
+                            "new_memory": new_memory,
+                            "target_block_label": target_block_label,
                             "request_heartbeat": request_heartbeat,
                         },
                     },
@@ -322,7 +369,89 @@ class MockAsyncIterable:
 
 
 @pytest.mark.asyncio
-async def test_error_from_anthropic(
+async def test_rethink_tool_modify_agent_state(client, disable_e2b_api_key, server, default_user, batch_job, rethink_tool):
+    target_block_label = "human"
+    new_memory = "banana"
+    agent = client.agents.create(
+        name=f"test_agent_rethink",
+        include_base_tools=True,
+        model=MODELS["sonnet"],
+        tags=["test_agents"],
+        embedding="letta/letta-free",
+        tool_ids=[rethink_tool.id],
+        memory_blocks=[
+            {
+                "label": target_block_label,
+                "value": "Name: Matt",
+            },
+        ],
+    )
+    agents = [agent]
+    batch_requests = [
+        LettaBatchRequest(agent_id=agent.id, messages=[MessageCreate(role="user", content=[TextContent(text=f"Rethink memory.")])])
+        for agent in agents
+    ]
+
+    anthropic_batch_id = "msgbatch_test_12345"
+    dummy_batch_response = create_batch_response(
+        batch_id=anthropic_batch_id,
+    )
+
+    # 1. Invoke `step_until_request`
+    with patch("letta.llm_api.anthropic_client.AnthropicClient.send_llm_batch_request_async", return_value=dummy_batch_response):
+        # Create batch runner
+        batch_runner = LettaAgentBatch(
+            message_manager=server.message_manager,
+            agent_manager=server.agent_manager,
+            block_manager=server.block_manager,
+            passage_manager=server.passage_manager,
+            batch_manager=server.batch_manager,
+            sandbox_config_manager=server.sandbox_config_manager,
+            job_manager=server.job_manager,
+            actor=default_user,
+        )
+
+        # Run the method under test
+        solver = ToolRulesSolver(tool_rules=[InitToolRule(tool_name="rethink_memory")])
+        step_state_map = {agent.id: AgentStepState(step_number=0, tool_rules_solver=solver) for agent in agents}
+        pre_resume_response = await batch_runner.step_until_request(
+            batch_requests=batch_requests,
+            agent_step_state_mapping=step_state_map,
+            letta_batch_job_id=batch_job.id,
+        )
+
+    # 2. Invoke the polling job and mock responses from Anthropic
+    mock_retrieve = AsyncMock(return_value=create_batch_response(batch_id=pre_resume_response.letta_batch_id, processing_status="ended"))
+
+    with patch.object(server.anthropic_async_client.beta.messages.batches, "retrieve", mock_retrieve):
+        mock_items = [
+            create_rethink_tool_response(
+                custom_id=agent.id,
+                model=agent.llm_config.model,
+                request_heartbeat=False,
+                new_memory=new_memory,
+                target_block_label=target_block_label,
+            )
+            for agent in agents
+        ]
+
+        # Create the mock for results
+        mock_results = Mock()
+        mock_results.return_value = MockAsyncIterable(mock_items.copy())
+
+        with patch.object(server.anthropic_async_client.beta.messages.batches, "results", mock_results):
+            with patch("letta.llm_api.anthropic_client.AnthropicClient.send_llm_batch_request_async", return_value=dummy_batch_response):
+                await poll_running_llm_batches(server)
+
+                # Check that the tool has been executed correctly
+                agent = client.agents.retrieve(agent_id=agent.id)
+                for block in agent.memory.blocks:
+                    if block.label == target_block_label:
+                        assert block.value == new_memory
+
+
+@pytest.mark.asyncio
+async def test_partial_error_from_anthropic_batch(
     disable_e2b_api_key, server, default_user, agents: Tuple[AgentState], batch_requests, step_state_map, batch_job
 ):
     anthropic_batch_id = "msgbatch_test_12345"
@@ -364,7 +493,7 @@ async def test_error_from_anthropic(
         mock_items = [create_failed_response(custom_id=agent.id) for agent in agents_failed]
         mock_items.extend(
             [
-                create_complete_tool_response(custom_id=agent.id, model=agent.llm_config.model, request_heartbeat=True)
+                create_get_weather_tool_response(custom_id=agent.id, model=agent.llm_config.model, request_heartbeat=True)
                 for agent in agents_continue
             ]
         )
@@ -501,12 +630,12 @@ async def test_resume_step_some_stop(
         agents_continue = agents[:1]
         agents_finish = agents[1:]
         mock_items = [
-            create_complete_tool_response(custom_id=agent.id, model=agent.llm_config.model, request_heartbeat=True)
+            create_get_weather_tool_response(custom_id=agent.id, model=agent.llm_config.model, request_heartbeat=True)
             for agent in agents_continue
         ]
         mock_items.extend(
             [
-                create_complete_tool_response(custom_id=agent.id, model=agent.llm_config.model, request_heartbeat=False)
+                create_get_weather_tool_response(custom_id=agent.id, model=agent.llm_config.model, request_heartbeat=False)
                 for agent in agents_finish
             ]
         )
@@ -634,7 +763,7 @@ async def test_resume_step_after_request_all_continue(
 
     with patch.object(server.anthropic_async_client.beta.messages.batches, "retrieve", mock_retrieve):
         mock_items = [
-            create_complete_tool_response(custom_id=agent.id, model=agent.llm_config.model, request_heartbeat=True) for agent in agents
+            create_get_weather_tool_response(custom_id=agent.id, model=agent.llm_config.model, request_heartbeat=True) for agent in agents
         ]
 
         # Create the mock for results
