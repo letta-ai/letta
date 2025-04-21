@@ -60,9 +60,9 @@ BASE_SLEEPTIME_TOOLS = [
     "memory_insert",
     "memory_rethink",
     "memory_finish_edits",
-    "archival_memory_insert",
-    "archival_memory_search",
-    "conversation_search",
+    # "archival_memory_insert",
+    # "archival_memory_search",
+    # "conversation_search",
 ]
 # Multi agent tools
 MULTI_AGENT_TOOLS = ["send_message_to_agent_and_wait_for_reply", "send_message_to_agents_matching_tags", "send_message_to_agent_async"]

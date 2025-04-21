@@ -159,7 +159,13 @@ class DirectoryConnector(DataConnector):
         from llama_index.core.node_parser import TokenTextSplitter
 
         parser = TokenTextSplitter(chunk_size=chunk_size)
-        documents = SimpleDirectoryReader(input_files=[file.file_path]).load_data()
+        if file.file_type == "application/pdf":
+            from llama_index.readers.file import PDFReader
+
+            reader = PDFReader()
+            documents = reader.load_data(file=file.file_path)
+        else:
+            documents = SimpleDirectoryReader(input_files=[file.file_path]).load_data()
         nodes = parser.get_nodes_from_documents(documents)
         for node in nodes:
             yield node.text, None
