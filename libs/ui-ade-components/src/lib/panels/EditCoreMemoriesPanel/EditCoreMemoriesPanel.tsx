@@ -1,5 +1,7 @@
 import {
   Button,
+  ChevronDownIcon,
+  ChevronUpIcon,
   InlineTextDiff,
   LockClosedIcon,
   LockOpenRightIcon,
@@ -27,7 +29,6 @@ import React, { useMemo } from 'react';
 import { useSortedMemories } from '@letta-cloud/utils-client';
 import { useUpdateMemory } from '../../hooks';
 import { useCurrentAgentMetaData } from '../../hooks';
-import type { Block } from '@letta-cloud/sdk-core';
 import { useCurrentSimulatedAgent } from '../../hooks/useCurrentSimulatedAgent/useCurrentSimulatedAgent';
 import {
   AdvancedCoreMemoryEditor,
@@ -39,6 +40,7 @@ import { useADETour } from '../../hooks/useADETour/useADETour';
 import { SharedMemoryIndicator } from './SharedMemoryIndicator/SharedMemoryIndicator';
 import { useLocalStorage } from '@mantine/hooks';
 import './EditCoreMemoriesPanel.css';
+import type { Block } from '@letta-cloud/sdk-core';
 
 interface AdvancedEditorPayload {
   label: string;
@@ -46,20 +48,64 @@ interface AdvancedEditorPayload {
   disabled?: boolean;
 }
 
-type EditMemoryFormProps = AdvancedEditorPayload;
+interface CollapseComponentProps {
+  collapsed?: boolean;
+  onToggle: VoidFunction;
+}
+
+function CollapseComponent(props: CollapseComponentProps) {
+  const { collapsed, onToggle } = props;
+  const t = useTranslations('ADE/EditCoreMemoriesPanel');
+  return (
+    <Button
+      size="xsmall"
+      color="tertiary"
+      label={
+        collapsed
+          ? t('CollapseComponent.expand')
+          : t('CollapseComponent.collapse')
+      }
+      onClick={onToggle}
+      hideLabel
+      preIcon={collapsed ? <ChevronDownIcon /> : <ChevronUpIcon />}
+    />
+  );
+}
+
+interface EditMemoryFormProps extends AdvancedEditorPayload {
+  memoryType: 'simulated' | 'templated';
+}
 
 function EditMemoryForm(props: EditMemoryFormProps) {
-  const { label, disabled, memory } = props;
+  const { label, disabled, memory, memoryType } = props;
+  const { id } = useCurrentAgent();
+
+  const [collapsed, setCollapsed] = useLocalStorage<boolean>({
+    key: `collapse-memory-${label}-${id}`,
+  });
 
   const { isTemplate } = useCurrentAgentMetaData();
 
   const t = useTranslations('ADE/EditCoreMemoriesPanel');
   const { open } = useAdvancedCoreMemoryEditor();
 
-  const { value, onChange, hasChangedRemotely, error, isUpdating } =
-    useUpdateMemory({
-      label,
-    });
+  const {
+    value: templateValue,
+    onChange,
+    hasChangedRemotely,
+    error,
+    isUpdating,
+  } = useUpdateMemory({
+    label,
+  });
+
+  const value = useMemo(() => {
+    if (memoryType !== 'simulated') {
+      return templateValue;
+    }
+
+    return memory.value;
+  }, [templateValue, memoryType, memory.value]);
 
   const [canUpdateAgent] = useADEPermissions(ApplicationServices.UPDATE_AGENT);
 
@@ -68,78 +114,96 @@ function EditMemoryForm(props: EditMemoryFormProps) {
   }, [disabled, canUpdateAgent]);
 
   return (
-    <>
-      <VStack flex fullHeight>
-        <VStack fullWidth fullHeight>
-          {isLocked ? (
-            <VStack fullHeight fullWidth>
-              <ReadonlyTextArea
-                showDiff
-                labelBadge={<SharedMemoryIndicator memory={memory} />}
-                label={label}
-                value={value}
-                testId={`edit-memory-block-${label}-content`}
-                rightOfLabelContent={
-                  <Typography variant="body3" color="muted">
-                    {t('EditMemoryForm.characterLimit', {
-                      count: value.length,
-                      limit: memory.limit,
-                    })}
-                  </Typography>
-                }
-              />
-            </VStack>
-          ) : (
-            <RawTextArea
-              variant="secondary"
+    <VStack
+      flex={!collapsed}
+      collapseHeight={!collapsed}
+      fullHeight={!collapsed}
+    >
+      <VStack fullWidth fullHeight>
+        {isLocked ? (
+          <VStack fullHeight fullWidth>
+            <ReadonlyTextArea
+              showDiff
+              hideInput={collapsed}
               labelBadge={<SharedMemoryIndicator memory={memory} />}
+              label={label}
+              value={value}
+              testId={`edit-memory-block-${label}-content`}
               rightOfLabelContent={
-                <HStack align="center">
-                  {!isTemplate && hasChangedRemotely && (
-                    <Tooltip content={t('EditMemoryForm.hasChangedRemotely')}>
-                      <StatusIndicator status="brand" animate />
-                    </Tooltip>
-                  )}
-                  {isUpdating && <Spinner size="xsmall" />}
+                <HStack align="center" gap="small">
                   <Typography variant="body3" color="muted">
                     {t('EditMemoryForm.characterLimit', {
                       count: value.length,
                       limit: memory.limit,
                     })}
                   </Typography>
+                  <CollapseComponent
+                    collapsed={collapsed}
+                    onToggle={() => {
+                      setCollapsed(!collapsed);
+                    }}
+                  />
                 </HStack>
               }
-              autosize={false}
-              flex
-              fullHeight
-              data-testid={`edit-memory-block-${label}-content`}
-              fullWidth
-              label={label}
-              onChange={(e) => {
-                // originalMemory.current.value = e.target.value;
-                onChange(e.target.value);
-              }}
-              expandable={{
-                expandText: t('expandContent'),
-                onExpand: () => {
-                  open(label);
-                },
-              }}
-              value={value}
             />
-          )}
-        </VStack>
-        {!!error && (
-          <HStack align="center" justify="spaceBetween">
-            <HStack paddingBottom="small" justify="start">
-              <Typography variant="body2" color="destructive">
-                {t('error')}
-              </Typography>
-            </HStack>
-          </HStack>
+          </VStack>
+        ) : (
+          <RawTextArea
+            hideInput={collapsed}
+            variant="secondary"
+            labelBadge={<SharedMemoryIndicator memory={memory} />}
+            rightOfLabelContent={
+              <HStack align="center" gap="small">
+                {!isTemplate && hasChangedRemotely && (
+                  <Tooltip content={t('EditMemoryForm.hasChangedRemotely')}>
+                    <StatusIndicator status="brand" animate />
+                  </Tooltip>
+                )}
+                {isUpdating && <Spinner size="xsmall" />}
+                <Typography variant="body3" color="muted">
+                  {t('EditMemoryForm.characterLimit', {
+                    count: value.length,
+                    limit: memory.limit,
+                  })}
+                </Typography>
+                <CollapseComponent
+                  collapsed={collapsed}
+                  onToggle={() => {
+                    setCollapsed(!collapsed);
+                  }}
+                />
+              </HStack>
+            }
+            autosize={false}
+            flex
+            fullHeight
+            data-testid={`edit-memory-block-${label}-content`}
+            fullWidth
+            label={label}
+            onChange={(e) => {
+              // originalMemory.current.value = e.target.value;
+              onChange(e.target.value);
+            }}
+            expandable={{
+              expandText: t('expandContent'),
+              onExpand: () => {
+                open(label);
+              },
+            }}
+            value={value}
+          />
         )}
       </VStack>
-    </>
+      {!!error && (
+        <HStack align="center" justify="spaceBetween">
+          <HStack paddingBottom="small" justify="start">
+            <Typography variant="body2" color="destructive">
+              {t('error')}
+            </Typography>
+          </HStack>
+        </HStack>
+      )}
+    </VStack>
   );
 }
 
@@ -155,16 +219,15 @@ function DefaultMemory(props: DefaultMemoryProps) {
 
   return (
     <>
-      <AdvancedCoreMemoryEditor />
       <VStack collapseHeight flex gap="large">
         {memories.map((block) => (
-          <VStack collapseHeight flex key={block.label || ''}>
-            <EditMemoryForm
-              disabled={isLocked}
-              memory={block}
-              label={block.label || ''}
-            />
-          </VStack>
+          <EditMemoryForm
+            disabled={isLocked}
+            key={block.label}
+            memory={block}
+            memoryType="templated"
+            label={block.label || ''}
+          />
         ))}
       </VStack>
     </>
@@ -177,12 +240,20 @@ interface ReadonlyTextAreaProps {
   testId?: string;
   labelBadge?: React.ReactNode;
   rightOfLabelContent?: React.ReactNode;
+  hideInput?: boolean;
   showDiff?: boolean;
 }
 
 function ReadonlyTextArea(props: ReadonlyTextAreaProps) {
-  const { value, label, testId, showDiff, labelBadge, rightOfLabelContent } =
-    props;
+  const {
+    value,
+    label,
+    hideInput,
+    testId,
+    showDiff,
+    labelBadge,
+    rightOfLabelContent,
+  } = props;
 
   const initialState = useRef<string>(value);
 
@@ -202,6 +273,7 @@ function ReadonlyTextArea(props: ReadonlyTextAreaProps) {
       fullHeight
       labelBadge={labelBadge}
       flex
+      hideInput={hideInput}
       label={label}
       rightOfLabelContent={rightOfLabelContent}
     >
@@ -233,7 +305,6 @@ function ReadonlyTextArea(props: ReadonlyTextAreaProps) {
 
 function SimulatedMemory() {
   const { agentSession } = useCurrentSimulatedAgent();
-  const t = useTranslations('ADE/EditCoreMemoriesPanel');
   const agent = useMemo(() => {
     return agentSession?.body.agent;
   }, [agentSession]);
@@ -247,24 +318,13 @@ function SimulatedMemory() {
   return (
     <VStack collapseHeight flex gap="large">
       {memories.map((block) => (
-        <VStack collapseHeight flex key={block.label || ''}>
-          <VStack collapseHeight flex>
-            <ReadonlyTextArea
-              showDiff
-              labelBadge={<SharedMemoryIndicator memory={block} />}
-              testId={`simulated-memory:${block.label}`}
-              label={block.label || ''}
-              value={block.value}
-              rightOfLabelContent={
-                <Typography variant="body3" color="muted">
-                  {t('SimulatedMemory.characterCount', {
-                    count: block.value.length,
-                  })}
-                </Typography>
-              }
-            />
-          </VStack>
-        </VStack>
+        <EditMemoryForm
+          key={block.label}
+          disabled
+          memory={block}
+          memoryType="simulated"
+          label={block.label || ''}
+        />
       ))}
     </VStack>
   );
@@ -312,12 +372,7 @@ function MemoryOnboarding(props: MemoryOnboardingProps) {
 
 type MemoryType = 'simulated' | 'templated';
 
-interface AdvancedEditorButtonProps {
-  memoryType: MemoryType;
-}
-
-function AdvancedEditorButton(props: AdvancedEditorButtonProps) {
-  const { memoryType } = props;
+function AdvancedEditorButton() {
   const { open } = useAdvancedCoreMemoryEditor();
   const t = useTranslations('ADE/EditCoreMemoriesPanel');
   const { memory } = useCurrentAgent();
@@ -325,41 +380,6 @@ function AdvancedEditorButton(props: AdvancedEditorButtonProps) {
   const firstLabel = useMemo(() => {
     return memory?.blocks?.[0]?.label;
   }, [memory]);
-
-  if (memoryType === 'simulated') {
-    return (
-      <HStack
-        fullWidth
-        fullHeight
-        paddingTop="xxsmall"
-        paddingBottom="xxsmall"
-        align="center"
-        justify="end"
-      >
-        <Tooltip asChild content={t('advancedEditorDisabledDueToSimulated')}>
-          <Button
-            _use_rarely_className="hide-label-on-core-memory-size"
-            preIcon={<MemoryBlocksIcon />}
-            color="secondary"
-            size="xsmall"
-            bold
-            label={t('advancedEditor')}
-            disabled
-          />
-          <Button
-            _use_rarely_className="show-label-on-core-memory-size"
-            preIcon={<MemoryBlocksIcon />}
-            color="secondary"
-            size="xsmall"
-            hideLabel
-            bold
-            label={t('advancedEditor')}
-            disabled
-          />
-        </Tooltip>
-      </HStack>
-    );
-  }
 
   return (
     <HStack
@@ -467,11 +487,11 @@ export function EditMemory() {
               fullWidth
               borderBottom
               paddingTop="xxsmall"
-              paddingBottom="xsmall"
+              paddingBottom="xxsmall"
               align="center"
               justify="spaceBetween"
             >
-              <HStack gap="small" fullWidth>
+              <HStack gap="small">
                 <ManageMemoryLock
                   isLocked={isLocked}
                   memoryType={memoryType}
@@ -490,6 +510,7 @@ export function EditMemory() {
 
                     setMemoryType(value as MemoryType);
                   }}
+                  fullWidth
                   items={
                     isTemplate
                       ? [
@@ -526,7 +547,7 @@ export function EditMemory() {
                   }
                 />
               </HStack>
-              <AdvancedEditorButton memoryType={memoryType} />
+              <AdvancedEditorButton />
             </HStack>
           </VStack>
           <VStack
@@ -539,6 +560,8 @@ export function EditMemory() {
             paddingX="large"
             paddingBottom="small"
           >
+            <AdvancedCoreMemoryEditor />
+
             {memoryType === 'templated' ? (
               <DefaultMemory isLocked={isLocked} />
             ) : (

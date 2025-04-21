@@ -108,10 +108,9 @@ describe('letta', () => {
     cy.findByTestId('tab-item:simulated', { timeout: 50000 }).click({
       force: true,
     });
-    cy.findByTestId('simulated-memory:human', { timeout: 50000 }).contains(
-      'Shubham',
-      { timeout: 50000 },
-    );
+    cy.findByTestId('edit-memory-block-human-content', {
+      timeout: 50000,
+    }).contains('Shubham', { timeout: 50000 });
 
     cy.findByTestId('tab:datasources').click();
 

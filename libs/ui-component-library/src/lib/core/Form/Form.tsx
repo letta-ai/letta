@@ -215,6 +215,7 @@ export interface InputContainerProps {
   preLabelIcon?: React.ReactNode;
   labelBadge?: React.ReactNode;
   labelVariant?: LabelVariant;
+  hideInput?: boolean;
   hideLabel?: boolean;
   description?: React.ReactNode | string;
   inline?: boolean | 'reverse';
@@ -298,6 +299,7 @@ export function RawInputContainer(props: RawInputContainerProps) {
     id,
     hideLabel,
     fullHeight,
+    hideInput = false,
     labelBadge,
     flex,
     inline,
@@ -342,7 +344,7 @@ export function RawInputContainer(props: RawInputContainerProps) {
             </LabelPrimitive>
             {rightOfLabelContent}
           </HStack>
-          {children}
+          {!hideInput && children}
         </>
       }
       otherContent={
@@ -424,9 +426,14 @@ export const inputStorybookArgs = {
 };
 
 export function extractAndRemoveInputProps<T>(
-  props: T & { label?: string; hideLabel?: boolean; infoTooltipText?: string },
+  props: T & {
+    label?: string;
+    hideInput?: boolean;
+    hideLabel?: boolean;
+    infoTooltipText?: string;
+  },
 ) {
-  const { label, hideLabel, infoTooltipText, ...rest } = props;
+  const { label, hideLabel, hideInput, infoTooltipText, ...rest } = props;
   return rest;
 }
 

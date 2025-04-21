@@ -514,6 +514,10 @@
     }
   },
   "ADE/EditCoreMemoriesPanel": {
+    "CollapseComponent": {
+      "collapse": "Collapse",
+      "expand": "Expand"
+    },
     "ManageMemoryLock": {
       "locked": "Unlock editing core memory",
       "unlocked": "Lock editing core memory",
