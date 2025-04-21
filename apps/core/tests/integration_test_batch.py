@@ -7,7 +7,21 @@ from dotenv import load_dotenv
 from letta_client import Letta, LettaBatchRequest, MessageCreate, TextContent
 
 from letta.config import LettaConfig
+from letta.jobs.llm_batch_job_polling import poll_running_llm_batches
+from letta.orm import Base
+from letta.schemas.enums import JobStatus
+from letta.server.db import db_context
 from letta.server.server import SyncServer
+
+
+@pytest.fixture(autouse=True)
+def clear_batch_tables():
+    """Clear batch-related tables before each test."""
+    with db_context() as session:
+        for table in reversed(Base.metadata.sorted_tables):
+            if table.name in {"jobs", "llm_batch_job", "llm_batch_items"}:
+                session.execute(table.delete())  # Truncate table
+        session.commit()
 
 
 def run_server():
@@ -54,7 +68,8 @@ def client(server_url):
     return Letta(base_url=server_url)
 
 
-def test_create_batch(client: Letta):
+@pytest.mark.asyncio
+async def test_create_batch(client: Letta, server: SyncServer):
 
     # create agents
     agent1 = client.agents.create(
@@ -105,11 +120,21 @@ def test_create_batch(client: Letta):
 
     # list batches
     batches = client.batches.list()
-    assert len(batches) > 0, f"Expected 1 batch, got {len(batches)}"
+    assert len(batches) == 1, f"Expected 1 batch, got {len(batches)}"
+    assert batches[0].status == JobStatus.running
+
+    # Poll it once
+    await poll_running_llm_batches(server)
 
     # get the batch results
     results = client.batches.retrieve(
         batch_id=run.id,
     )
     assert results is not None
-    print(results)
+
+    # cancel
+    client.batches.cancel(batch_id=run.id)
+    batch_job = client.batches.retrieve(
+        batch_id=run.id,
+    )
+    assert batch_job.status == JobStatus.cancelled
