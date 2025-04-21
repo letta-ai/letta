@@ -204,3 +204,13 @@ class InvalidInnerMonologueError(LettaMessageError):
     """Error raised when a message has a malformed inner monologue."""
 
     default_error_message = "The message has a malformed inner monologue."
+
+
+class HandleNotFoundError(LettaError):
+    """Error raised when a handle is not found."""
+
+    def __init__(self, handle: str, available_handles: List[str]):
+        super().__init__(
+            message=f"Handle {handle} not found, must be one of {available_handles}",
+            code=ErrorCode.NOT_FOUND,
+        )

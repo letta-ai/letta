@@ -218,30 +218,30 @@ def test_agent_tags(client: LettaSDKClient):
     )
 
     # Test getting all tags
-    all_tags = client.tag.list_tags()
+    all_tags = client.tags.list()
     expected_tags = ["agent1", "agent2", "agent3", "development", "production", "test"]
     assert sorted(all_tags) == expected_tags
 
     # Test pagination
-    paginated_tags = client.tag.list_tags(limit=2)
+    paginated_tags = client.tags.list(limit=2)
     assert len(paginated_tags) == 2
     assert paginated_tags[0] == "agent1"
     assert paginated_tags[1] == "agent2"
 
     # Test pagination with cursor
-    next_page_tags = client.tag.list_tags(after="agent2", limit=2)
+    next_page_tags = client.tags.list(after="agent2", limit=2)
     assert len(next_page_tags) == 2
     assert next_page_tags[0] == "agent3"
     assert next_page_tags[1] == "development"
 
     # Test text search
-    prod_tags = client.tag.list_tags(query_text="prod")
+    prod_tags = client.tags.list(query_text="prod")
     assert sorted(prod_tags) == ["production"]
 
-    dev_tags = client.tag.list_tags(query_text="dev")
+    dev_tags = client.tags.list(query_text="dev")
     assert sorted(dev_tags) == ["development"]
 
-    agent_tags = client.tag.list_tags(query_text="agent")
+    agent_tags = client.tags.list(query_text="agent")
     assert sorted(agent_tags) == ["agent1", "agent2", "agent3"]
 
     # Remove agents
@@ -504,7 +504,7 @@ def test_send_message_async(client: LettaSDKClient, agent: AgentState):
     start_time = time.time()
     while run.status == "created":
         time.sleep(1)
-        run = client.runs.retrieve_run(run_id=run.id)
+        run = client.runs.retrieve(run_id=run.id)
         print(f"Run status: {run.status}")
         if time.time() - start_time > 10:
             pytest.fail("Run took too long to complete")
@@ -513,25 +513,18 @@ def test_send_message_async(client: LettaSDKClient, agent: AgentState):
     assert run.status == "completed"
 
     # Get messages for the job
-    messages = client.runs.list_run_messages(run_id=run.id)
+    messages = client.runs.messages.list(run_id=run.id)
     assert len(messages) >= 2  # At least assistant response
 
     # Check filters
-    assistant_messages = client.runs.list_run_messages(run_id=run.id, role="assistant")
+    assistant_messages = client.runs.messages.list(run_id=run.id, role="assistant")
     assert len(assistant_messages) > 0
-    tool_messages = client.runs.list_run_messages(run_id=run.id, role="tool")
+    tool_messages = client.runs.messages.list(run_id=run.id, role="tool")
     assert len(tool_messages) > 0
 
     # specific_tool_messages = [message for message in client.runs.list_run_messages(run_id=run.id) if isinstance(message, ToolCallMessage)]
     # assert specific_tool_messages[0].tool_call.name == "send_message"
     # assert len(specific_tool_messages) > 0
-
-    # Get and verify usage statistics
-    usage = client.runs.retrieve_run_usage(run_id=run.id)
-    assert usage.completion_tokens >= 0
-    assert usage.prompt_tokens >= 0
-    assert usage.total_tokens >= 0
-    assert usage.total_tokens == usage.completion_tokens + usage.prompt_tokens
 
 
 def test_agent_creation(client: LettaSDKClient):

@@ -435,7 +435,7 @@ def sarah_agent(server: SyncServer, default_user, default_organization):
         agent_create=CreateAgent(
             name="sarah_agent",
             memory_blocks=[],
-            llm_config=LLMConfig.default_config("gpt-4"),
+            llm_config=LLMConfig.default_config("gpt-4o-mini"),
             embedding_config=EmbeddingConfig.default_config(provider="openai"),
             include_base_tools=False,
         ),
@@ -451,7 +451,7 @@ def charles_agent(server: SyncServer, default_user, default_organization):
         agent_create=CreateAgent(
             name="charles_agent",
             memory_blocks=[CreateBlock(label="human", value="Charles"), CreateBlock(label="persona", value="I am a helpful assistant")],
-            llm_config=LLMConfig.default_config("gpt-4"),
+            llm_config=LLMConfig.default_config("gpt-4o-mini"),
             embedding_config=EmbeddingConfig.default_config(provider="openai"),
             include_base_tools=False,
         ),
@@ -466,7 +466,7 @@ def comprehensive_test_agent_fixture(server: SyncServer, default_user, print_too
     create_agent_request = CreateAgent(
         system="test system",
         memory_blocks=memory_blocks,
-        llm_config=LLMConfig.default_config("gpt-4"),
+        llm_config=LLMConfig.default_config("gpt-4o-mini"),
         embedding_config=EmbeddingConfig.default_config(provider="openai"),
         block_ids=[default_block.id],
         tool_ids=[print_tool.id],
@@ -586,7 +586,7 @@ def agent_with_tags(server: SyncServer, default_user):
 
 @pytest.fixture
 def dummy_llm_config() -> LLMConfig:
-    return LLMConfig.default_config("gpt-4")
+    return LLMConfig.default_config("gpt-4o-mini")
 
 
 @pytest.fixture
@@ -655,7 +655,7 @@ def test_create_agent_passed_in_initial_messages(server: SyncServer, default_use
     create_agent_request = CreateAgent(
         system="test system",
         memory_blocks=memory_blocks,
-        llm_config=LLMConfig.default_config("gpt-4"),
+        llm_config=LLMConfig.default_config("gpt-4o-mini"),
         embedding_config=EmbeddingConfig.default_config(provider="openai"),
         block_ids=[default_block.id],
         tags=["a", "b"],
@@ -669,6 +669,7 @@ def test_create_agent_passed_in_initial_messages(server: SyncServer, default_use
     )
     assert server.message_manager.size(agent_id=agent_state.id, actor=default_user) == 2
     init_messages = server.agent_manager.get_in_context_messages(agent_id=agent_state.id, actor=default_user)
+
     # Check that the system appears in the first initial message
     assert create_agent_request.system in init_messages[0].content[0].text
     assert create_agent_request.memory_blocks[0].value in init_messages[0].content[0].text
@@ -682,7 +683,7 @@ def test_create_agent_default_initial_message(server: SyncServer, default_user, 
     create_agent_request = CreateAgent(
         system="test system",
         memory_blocks=memory_blocks,
-        llm_config=LLMConfig.default_config("gpt-4"),
+        llm_config=LLMConfig.default_config("gpt-4o-mini"),
         embedding_config=EmbeddingConfig.default_config(provider="openai"),
         block_ids=[default_block.id],
         tags=["a", "b"],
@@ -710,7 +711,7 @@ def test_create_agent_with_json_in_system_message(server: SyncServer, default_us
     )
     create_agent_request = CreateAgent(
         system=system_prompt,
-        llm_config=LLMConfig.default_config("gpt-4"),
+        llm_config=LLMConfig.default_config("gpt-4o-mini"),
         embedding_config=EmbeddingConfig.default_config(provider="openai"),
         block_ids=[default_block.id],
         tags=["a", "b"],
@@ -858,7 +859,7 @@ def test_list_agents_ascending(server: SyncServer, default_user):
     agent1 = server.agent_manager.create_agent(
         agent_create=CreateAgent(
             name="agent_oldest",
-            llm_config=LLMConfig.default_config("gpt-4"),
+            llm_config=LLMConfig.default_config("gpt-4o-mini"),
             embedding_config=EmbeddingConfig.default_config(provider="openai"),
             memory_blocks=[],
             include_base_tools=False,
@@ -872,7 +873,7 @@ def test_list_agents_ascending(server: SyncServer, default_user):
     agent2 = server.agent_manager.create_agent(
         agent_create=CreateAgent(
             name="agent_newest",
-            llm_config=LLMConfig.default_config("gpt-4"),
+            llm_config=LLMConfig.default_config("gpt-4o-mini"),
             embedding_config=EmbeddingConfig.default_config(provider="openai"),
             memory_blocks=[],
             include_base_tools=False,
@@ -890,7 +891,7 @@ def test_list_agents_descending(server: SyncServer, default_user):
     agent1 = server.agent_manager.create_agent(
         agent_create=CreateAgent(
             name="agent_oldest",
-            llm_config=LLMConfig.default_config("gpt-4"),
+            llm_config=LLMConfig.default_config("gpt-4o-mini"),
             embedding_config=EmbeddingConfig.default_config(provider="openai"),
             memory_blocks=[],
             include_base_tools=False,
@@ -904,7 +905,7 @@ def test_list_agents_descending(server: SyncServer, default_user):
     agent2 = server.agent_manager.create_agent(
         agent_create=CreateAgent(
             name="agent_newest",
-            llm_config=LLMConfig.default_config("gpt-4"),
+            llm_config=LLMConfig.default_config("gpt-4o-mini"),
             embedding_config=EmbeddingConfig.default_config(provider="openai"),
             memory_blocks=[],
             include_base_tools=False,
@@ -927,7 +928,7 @@ def test_list_agents_ordering_and_pagination(server: SyncServer, default_user):
             agent_create=CreateAgent(
                 name=name,
                 memory_blocks=[],
-                llm_config=LLMConfig.default_config("gpt-4"),
+                llm_config=LLMConfig.default_config("gpt-4o-mini"),
                 embedding_config=EmbeddingConfig.default_config(provider="openai"),
                 include_base_tools=False,
             ),
@@ -1288,7 +1289,7 @@ def test_list_agents_by_tags_pagination(server: SyncServer, default_user, defaul
         agent_create=CreateAgent(
             name="agent1",
             tags=["pagination_test", "tag1"],
-            llm_config=LLMConfig.default_config("gpt-4"),
+            llm_config=LLMConfig.default_config("gpt-4o-mini"),
             embedding_config=EmbeddingConfig.default_config(provider="openai"),
             memory_blocks=[],
             include_base_tools=False,
@@ -1304,7 +1305,7 @@ def test_list_agents_by_tags_pagination(server: SyncServer, default_user, defaul
         agent_create=CreateAgent(
             name="agent2",
             tags=["pagination_test", "tag2"],
-            llm_config=LLMConfig.default_config("gpt-4"),
+            llm_config=LLMConfig.default_config("gpt-4o-mini"),
             embedding_config=EmbeddingConfig.default_config(provider="openai"),
             memory_blocks=[],
             include_base_tools=False,
@@ -1346,7 +1347,7 @@ def test_list_agents_query_text_pagination(server: SyncServer, default_user, def
             name="Search Agent One",
             memory_blocks=[],
             description="This is a search agent for testing",
-            llm_config=LLMConfig.default_config("gpt-4"),
+            llm_config=LLMConfig.default_config("gpt-4o-mini"),
             embedding_config=EmbeddingConfig.default_config(provider="openai"),
             include_base_tools=False,
         ),
@@ -1358,7 +1359,7 @@ def test_list_agents_query_text_pagination(server: SyncServer, default_user, def
             name="Search Agent Two",
             memory_blocks=[],
             description="Another search agent for testing",
-            llm_config=LLMConfig.default_config("gpt-4"),
+            llm_config=LLMConfig.default_config("gpt-4o-mini"),
             embedding_config=EmbeddingConfig.default_config(provider="openai"),
             include_base_tools=False,
         ),
@@ -1370,7 +1371,7 @@ def test_list_agents_query_text_pagination(server: SyncServer, default_user, def
             name="Different Agent",
             memory_blocks=[],
             description="This is a different agent",
-            llm_config=LLMConfig.default_config("gpt-4"),
+            llm_config=LLMConfig.default_config("gpt-4o-mini"),
             embedding_config=EmbeddingConfig.default_config(provider="openai"),
             include_base_tools=False,
         ),
@@ -1700,7 +1701,7 @@ def test_refresh_memory(server: SyncServer, default_user):
     agent = server.agent_manager.create_agent(
         CreateAgent(
             name="test",
-            llm_config=LLMConfig.default_config("gpt-4"),
+            llm_config=LLMConfig.default_config("gpt-4o-mini"),
             embedding_config=EmbeddingConfig.default_config(provider="openai"),
             include_base_tools=False,
         ),
@@ -2706,6 +2707,36 @@ def test_get_agents_for_block(server: SyncServer, sarah_agent, charles_agent, de
     assert charles_agent.id in agent_state_ids
 
 
+def test_batch_create_multiple_blocks(server: SyncServer, default_user):
+    block_manager = BlockManager()
+    num_blocks = 10
+
+    # Prepare distinct blocks
+    blocks_to_create = [PydanticBlock(label=f"batch_label_{i}", value=f"batch_value_{i}") for i in range(num_blocks)]
+
+    # Create the blocks
+    created_blocks = block_manager.batch_create_blocks(blocks_to_create, actor=default_user)
+    assert len(created_blocks) == num_blocks
+
+    # Map created blocks by label for lookup
+    created_by_label = {blk.label: blk for blk in created_blocks}
+
+    # Assert all blocks were created correctly
+    for i in range(num_blocks):
+        label = f"batch_label_{i}"
+        value = f"batch_value_{i}"
+        assert label in created_by_label, f"Missing label: {label}"
+        blk = created_by_label[label]
+        assert blk.value == value
+        assert blk.organization_id == default_user.organization_id
+        assert blk.id is not None
+
+    # Confirm all created blocks exist in the full list from get_blocks
+    all_labels = {blk.label for blk in block_manager.get_blocks(actor=default_user)}
+    expected_labels = {f"batch_label_{i}" for i in range(num_blocks)}
+    assert expected_labels.issubset(all_labels)
+
+
 # ======================================================================================================================
 # Block Manager Tests - Checkpointing
 # ======================================================================================================================
@@ -3401,7 +3432,7 @@ def test_get_set_agents_for_identities(server: SyncServer, sarah_agent, charles_
     agent_with_identity = server.create_agent(
         CreateAgent(
             memory_blocks=[],
-            llm_config=LLMConfig.default_config("gpt-4"),
+            llm_config=LLMConfig.default_config("gpt-4o-mini"),
             embedding_config=EmbeddingConfig.default_config(provider="openai"),
             identity_ids=[identity.id],
             include_base_tools=False,
@@ -3411,7 +3442,7 @@ def test_get_set_agents_for_identities(server: SyncServer, sarah_agent, charles_
     agent_without_identity = server.create_agent(
         CreateAgent(
             memory_blocks=[],
-            llm_config=LLMConfig.default_config("gpt-4"),
+            llm_config=LLMConfig.default_config("gpt-4o-mini"),
             embedding_config=EmbeddingConfig.default_config(provider="openai"),
             include_base_tools=False,
         ),
@@ -4618,7 +4649,7 @@ def test_job_usage_stats_add_and_get(server: SyncServer, sarah_agent, default_jo
     step_manager.log_step(
         agent_id=sarah_agent.id,
         provider_name="openai",
-        model="gpt-4",
+        model="gpt-4o-mini",
         model_endpoint="https://api.openai.com/v1",
         context_window_limit=8192,
         job_id=default_job.id,
@@ -4669,7 +4700,7 @@ def test_job_usage_stats_add_multiple(server: SyncServer, sarah_agent, default_j
     step_manager.log_step(
         agent_id=sarah_agent.id,
         provider_name="openai",
-        model="gpt-4",
+        model="gpt-4o-mini",
         model_endpoint="https://api.openai.com/v1",
         context_window_limit=8192,
         job_id=default_job.id,
@@ -4685,7 +4716,7 @@ def test_job_usage_stats_add_multiple(server: SyncServer, sarah_agent, default_j
     step_manager.log_step(
         agent_id=sarah_agent.id,
         provider_name="openai",
-        model="gpt-4",
+        model="gpt-4o-mini",
         model_endpoint="https://api.openai.com/v1",
         context_window_limit=8192,
         job_id=default_job.id,
@@ -4731,7 +4762,7 @@ def test_job_usage_stats_add_nonexistent_job(server: SyncServer, sarah_agent, de
         step_manager.log_step(
             agent_id=sarah_agent.id,
             provider_name="openai",
-            model="gpt-4",
+            model="gpt-4o-mini",
             model_endpoint="https://api.openai.com/v1",
             context_window_limit=8192,
             job_id="nonexistent_job",
@@ -4757,7 +4788,7 @@ def test_list_tags(server: SyncServer, default_user, default_organization):
             agent_create=CreateAgent(
                 name="tag_agent_" + str(i),
                 memory_blocks=[],
-                llm_config=LLMConfig.default_config("gpt-4"),
+                llm_config=LLMConfig.default_config("gpt-4o-mini"),
                 embedding_config=EmbeddingConfig.default_config(provider="openai"),
                 tags=tags[i : i + 3],  # Each agent gets 3 consecutive tags
                 include_base_tools=False,

@@ -20,6 +20,7 @@ import letta.system as system
 from letta.agent import Agent, save_agent
 from letta.config import LettaConfig
 from letta.data_sources.connectors import DataConnector, load_data
+from letta.errors import HandleNotFoundError
 from letta.functions.mcp_client.base_client import BaseMCPClient
 from letta.functions.mcp_client.sse_client import MCP_CONFIG_TOPLEVEL_KEY, SSEMCPClient
 from letta.functions.mcp_client.stdio_client import StdioMCPClient
@@ -702,6 +703,8 @@ class SyncServer(Server):
     @trace_method
     def get_cached_llm_config(self, **kwargs):
         key = make_key(**kwargs)
+        print(self._llm_config_cache)
+        print("KEY", key)
         if key not in self._llm_config_cache:
             self._llm_config_cache[key] = self.get_llm_config_from_handle(**kwargs)
         return self._llm_config_cache[key]
@@ -1179,16 +1182,20 @@ class SyncServer(Server):
             provider = self.get_provider_from_name(provider_name)
 
             llm_configs = [config for config in provider.list_llm_models() if config.handle == handle]
+            print("LLM CONFIGS", llm_configs)
             if not llm_configs:
                 llm_configs = [config for config in provider.list_llm_models() if config.model == model_name]
             if not llm_configs:
-                raise ValueError(f"LLM model {model_name} is not supported by {provider_name}")
+                available_handles = [config.handle for config in provider.list_llm_models()]
+                raise HandleNotFoundError(handle, available_handles)
         except ValueError as e:
             llm_configs = [config for config in self.get_local_llm_configs() if config.handle == handle]
             if not llm_configs:
                 llm_configs = [config for config in self.get_local_llm_configs() if config.model == model_name]
             if not llm_configs:
                 raise e
+
+        print("CONFIGS", llm_configs)
 
         if len(llm_configs) == 1:
             llm_config = llm_configs[0]

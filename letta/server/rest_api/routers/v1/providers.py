@@ -11,7 +11,7 @@ if TYPE_CHECKING:
 router = APIRouter(prefix="/providers", tags=["providers"])
 
 
-@router.get("/", tags=["providers"], response_model=List[Provider], operation_id="list_providers")
+@router.get("/", response_model=List[Provider], operation_id="list_providers")
 def list_providers(
     after: Optional[str] = Query(None),
     limit: Optional[int] = Query(50),
@@ -31,7 +31,7 @@ def list_providers(
     return providers
 
 
-@router.post("/", tags=["providers"], response_model=Provider, operation_id="create_provider")
+@router.post("/", response_model=Provider, operation_id="create_provider")
 def create_provider(
     request: ProviderCreate = Body(...),
     actor_id: Optional[str] = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
@@ -47,8 +47,9 @@ def create_provider(
     return provider
 
 
-@router.patch("/", tags=["providers"], response_model=Provider, operation_id="modify_provider")
+@router.patch("/{provider_id}", response_model=Provider, operation_id="modify_provider")
 def modify_provider(
+    provider_id: str,
     request: ProviderUpdate = Body(...),
     actor_id: Optional[str] = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
     server: "SyncServer" = Depends(get_letta_server),
@@ -57,13 +58,12 @@ def modify_provider(
     Update an existing custom provider
     """
     actor = server.user_manager.get_user_or_default(user_id=actor_id)
-    provider = server.provider_manager.update_provider(request, actor=actor)
-    return provider
+    return server.provider_manager.update_provider(provider_id=provider_id, request=request, actor=actor)
 
 
-@router.delete("/", tags=["providers"], response_model=None, operation_id="delete_provider")
+@router.delete("/{provider_id}", response_model=None, operation_id="delete_provider")
 def delete_provider(
-    provider_id: str = Query(..., description="The provider_id key to be deleted."),
+    provider_id: str,
     actor_id: Optional[str] = Header(None, alias="user_id"),
     server: "SyncServer" = Depends(get_letta_server),
 ):
@@ -73,6 +73,9 @@ def delete_provider(
     try:
         actor = server.user_manager.get_user_or_default(user_id=actor_id)
         server.provider_manager.delete_provider_by_id(provider_id=provider_id, actor=actor)
+        return JSONResponse(status_code=status.HTTP_200_OK, content={"message": f"Provider id={provider_id} successfully deleted"})
+    except NoResultFound:
+        raise HTTPException(status_code=404, detail=f"Provider provider_id={provider_id} not found for user_id={actor.id}.")
     except HTTPException:
         raise
     except Exception as e:
