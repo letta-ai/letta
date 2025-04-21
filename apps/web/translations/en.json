@@ -552,6 +552,9 @@
     }
   },
   "components/ModelPricingView": {
+    "CostRender": {
+      "perRequest": "per request"
+    },
     "loading": "Loading pricing...",
     "notSupported": {
       "label": "Not supported",
@@ -563,8 +566,11 @@
       "label": "Search"
     },
     "contextWindowSize": {
-      "label": "Context window size",
-      "tooltip": "The average context window size that's being sent to our models"
+      "label": "Max context window size"
+    },
+    "steps": {
+      "label": "Steps",
+      "tooltip": "The amount of steps (inferences) your agent will make to the model"
     }
   },
   "components/QueryBuilder": {

@@ -43,13 +43,21 @@ function getCostFromCostMap(
 
 interface CostRenderProps {
   cost: number;
+  steps: number;
 }
 
 function CostRender(props: CostRenderProps) {
   const t = useTranslations('components/ModelPricingView');
   const { formatNumber } = useNumberFormatter();
   const { formatCurrency } = useCurrencyFormatter();
-  const { cost } = props;
+  const { cost, steps } = props;
+
+  const computedCost = useMemo(() => {
+    if (cost === -1) {
+      return -1;
+    }
+    return cost * steps;
+  }, [cost, steps]);
 
   if (cost === -1) {
     return (
@@ -63,16 +71,16 @@ function CostRender(props: CostRenderProps) {
   return (
     <HStack align="center" gap="small">
       <LettaCoinIcon size="xsmall" />
-      <Typography variant="body3">{formatNumber(cost)}</Typography>
+      <Typography variant="body3">{formatNumber(computedCost)}</Typography>
       <Typography variant="body3">
         (
-        {formatCurrency(creditsToDollars(cost), {
+        {formatCurrency(creditsToDollars(computedCost), {
           maximumFractionDigits: 3,
           minimumFractionDigits: 3,
           style: 'currency',
           currency: 'USD',
         })}
-        )
+        ) {t('CostRender.perRequest')}
       </Typography>
     </HStack>
   );
@@ -80,10 +88,11 @@ function CostRender(props: CostRenderProps) {
 
 interface ModelRenderProps {
   item: StepCostPerModel;
+  steps: number;
 }
 
 function ModelRender(props: ModelRenderProps) {
-  const { item } = props;
+  const { item, steps } = props;
 
   return (
     <HStack
@@ -99,7 +108,7 @@ function ModelRender(props: ModelRenderProps) {
           {item.model}
         </Typography>
       </HStack>
-      <CostRender cost={item.cost} />
+      <CostRender steps={steps} cost={item.cost} />
     </HStack>
   );
 }
@@ -107,6 +116,7 @@ function ModelRender(props: ModelRenderProps) {
 export function ModelPricingView() {
   const t = useTranslations('components/ModelPricingView');
   const [contextWindowSize, setContextWindowSize] = useState<string>('32000');
+  const [steps, setSteps] = useState<string>('1');
 
   const [search, setSearch] = useState<string>('');
   const { data: costs } = webApi.costs.getStepCosts.useQuery({
@@ -147,6 +157,10 @@ export function ModelPricingView() {
     );
   }, [stepCosts]);
 
+  const stepsAsNumber = useMemo(() => {
+    return Number(steps);
+  }, [steps]);
+
   if (!costs) {
     return (
       <VStack fullHeight fullWidth>
@@ -163,9 +177,21 @@ export function ModelPricingView() {
           label={t('contextWindowSize.label')}
           value={contextWindowSize}
           onValueChange={setContextWindowSize}
-          min={0}
+          min={1}
           max={maxContextWindowSize}
           step={10}
+        />
+        <RawSlider
+          fullWidth
+          infoTooltip={{
+            text: t('steps.tooltip'),
+          }}
+          label={t('steps.label')}
+          value={steps}
+          onValueChange={setSteps}
+          min={0}
+          max={10}
+          step={1}
         />
       </VStack>
       <VStack border gap={false}>
@@ -192,7 +218,13 @@ export function ModelPricingView() {
           ) : (
             stepCostPerModal
               .sort((a, b) => b.cost - a.cost)
-              .map((item) => <ModelRender key={item.model} item={item} />)
+              .map((item) => (
+                <ModelRender
+                  steps={stepsAsNumber}
+                  key={item.model}
+                  item={item}
+                />
+              ))
           )}
         </VStack>
       </VStack>

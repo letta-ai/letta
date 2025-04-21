@@ -26,7 +26,7 @@ type PricingModes = 'simulator' | 'table';
 
 function DetailedCostBreakdown(props: DetailedCostBreakdownProps) {
   const { costs } = props;
-  const [mode, setMode] = useState<PricingModes>('table');
+  const [mode, setMode] = useState<PricingModes>('simulator');
   const t = useTranslations('organization/costs');
 
   return (
@@ -37,12 +37,12 @@ function DetailedCostBreakdown(props: DetailedCostBreakdownProps) {
           variant="chips"
           items={[
             {
-              label: t('DetailedCostBreakdown.pricingTable'),
-              value: 'table',
-            },
-            {
               label: t('DetailedCostBreakdown.simulator'),
               value: 'simulator',
+            },
+            {
+              label: t('DetailedCostBreakdown.pricingTable'),
+              value: 'table',
             },
           ]}
           onValueChange={(value) => {
