@@ -243,7 +243,8 @@ class LettaAgentBatch:
         )
 
     async def _collect_resume_context(self, llm_batch_id: str) -> _ResumeContext:
-        batch_items = self.batch_manager.list_llm_batch_items(llm_batch_id=llm_batch_id)
+        # NOTE: We only continue for items with successful results
+        batch_items = self.batch_manager.list_llm_batch_items(llm_batch_id=llm_batch_id, request_status=JobStatus.completed)
 
         agent_ids, agent_state_map = [], {}
         provider_results, name_map, args_map, cont_map = {}, {}, {}, {}

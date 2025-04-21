@@ -704,7 +704,6 @@ class SyncServer(Server):
     def get_cached_llm_config(self, **kwargs):
         key = make_key(**kwargs)
         print(self._llm_config_cache)
-        print("KEY", key)
         if key not in self._llm_config_cache:
             self._llm_config_cache[key] = self.get_llm_config_from_handle(**kwargs)
         return self._llm_config_cache[key]
@@ -1182,7 +1181,6 @@ class SyncServer(Server):
             provider = self.get_provider_from_name(provider_name)
 
             llm_configs = [config for config in provider.list_llm_models() if config.handle == handle]
-            print("LLM CONFIGS", llm_configs)
             if not llm_configs:
                 llm_configs = [config for config in provider.list_llm_models() if config.model == model_name]
             if not llm_configs:
@@ -1194,8 +1192,6 @@ class SyncServer(Server):
                 llm_configs = [config for config in self.get_local_llm_configs() if config.model == model_name]
             if not llm_configs:
                 raise e
-
-        print("CONFIGS", llm_configs)
 
         if len(llm_configs) == 1:
             llm_config = llm_configs[0]
