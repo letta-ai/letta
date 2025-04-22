@@ -501,7 +501,7 @@ prepare-desktop: rebuild-deps
     # The master target that runs all steps sequentially.
     @echo "Desktop app prepared (prod copies)."
 
-build-desktop:
+build-desktop: setup-desktop
     @echo "Packaging the desktop app..."
     npx nx generate @letta-cloud/desktop-builders:build-desktop-app
 
