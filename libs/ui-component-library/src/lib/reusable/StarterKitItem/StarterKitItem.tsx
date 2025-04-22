@@ -10,7 +10,7 @@ interface StarterKitItemProps {
 export function StarterKitItems(props: StarterKitItemProps) {
   const { starterKit, onSelectStarterKit } = props;
   const t = useTranslations('components/StarterKitItems');
-  const { useGetTitle, useGetDescription, image } = starterKit;
+  const { useGetTitle, useGetDescription, image, name } = starterKit;
 
   const title = useGetTitle();
   const description = useGetDescription();
@@ -20,7 +20,7 @@ export function StarterKitItems(props: StarterKitItemProps) {
       /* eslint-disable-next-line react/forbid-component-props */
       className="h-[270px]"
       onClick={() => {
-        onSelectStarterKit(title, starterKit);
+        onSelectStarterKit(name, starterKit);
       }}
       imageUrl={image}
       altText=""

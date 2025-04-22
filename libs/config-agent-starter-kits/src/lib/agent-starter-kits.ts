@@ -19,7 +19,7 @@ export type StarterKitArchitecture = 'memgpt' | 'sleeptime';
 export interface StarterKit {
   image: StaticImport | string;
   id: string;
-  name?: string;
+  name: string;
   useGetTitle: () => string;
   useGetDescription: () => string;
   agentState: Partial<CreateAgentRequest>;
@@ -55,6 +55,7 @@ export function isAStarterKitName(
 export const STARTER_KITS = {
   scratch: {
     id: 'scratch',
+    name: 'scratch-agent',
     useGetTitle: () => {
       const t = useTranslations('starter-kits');
 
@@ -85,7 +86,7 @@ export const STARTER_KITS = {
   sleepTime: {
     architecture: 'sleeptime',
     id: 'sleepTime',
-    name: 'companion',
+    name: 'sleep-time-companion',
     useGetTitle: () => {
       const t = useTranslations('starter-kits');
 
@@ -118,6 +119,7 @@ export const STARTER_KITS = {
   internetChatbot: {
     architecture: 'memgpt',
     id: 'internetChatbot',
+    name: 'internet-chatbot-agent',
     image: internetChatbot,
     tools: [
       {
@@ -168,6 +170,7 @@ export const STARTER_KITS = {
     architecture: 'memgpt',
     id: 'characterRoleplay',
     image: characterRoleplay,
+    name: 'character-roleplay-agent',
     useGetTitle: () => {
       const t = useTranslations('starter-kits');
 
@@ -217,6 +220,7 @@ export const STARTER_KITS = {
   personalAssistant: {
     architecture: 'memgpt',
     id: 'personalAssistant',
+    name: 'personal-assistant-agent',
     useGetTitle: () => {
       const t = useTranslations('starter-kits');
 
@@ -249,6 +253,7 @@ export const STARTER_KITS = {
   customerSupport: {
     architecture: 'memgpt',
     id: 'customerSupport',
+    name: 'customer-support-agent',
     useGetTitle: () => {
       const t = useTranslations('starter-kits');
 
@@ -347,6 +352,7 @@ export const STARTER_KITS = {
   companion: {
     architecture: 'memgpt',
     id: 'companion',
+    name: 'companion-agent',
     useGetTitle: () => {
       const t = useTranslations('starter-kits');
 
