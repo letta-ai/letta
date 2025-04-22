@@ -219,7 +219,10 @@ function CreateAgentDialog(props: CreateAgentDialogProps) {
                   </VStack>
                 </Alert>
               ) : (
-                <StarterKitSelector onSelectStarterKit={handleCreateAgent} />
+                <StarterKitSelector
+                  architectures={['memgpt', 'sleeptime']}
+                  onSelectStarterKit={handleCreateAgent}
+                />
               )}
             </VStack>
           </VStack>

@@ -52,11 +52,13 @@ export function ImageCard(props: ImageCardProps) {
         )}
       >
         <VStack fullHeight flex align="start">
-          <Image
-            className="max-h-[87px] object-cover bg-background-grey"
-            src={imageUrl}
-            alt={altText}
-          />
+          <div className="max-h-[87px] overflow-hidden object-cover bg-background-grey">
+            <Image
+              className="max-h-[87px] overflow-hidden object-cover bg-background-grey"
+              src={imageUrl}
+              alt={altText}
+            />
+          </div>
           <Typography bold align="left">
             {title}
           </Typography>

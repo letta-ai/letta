@@ -189,6 +189,7 @@ function FromStarterKit(props: FromStarterKitProps) {
       description={t('FromStarterKit.description')}
     >
       <StarterKitSelector
+        architectures={['memgpt', 'sleeptime']}
         onSelectStarterKit={(_, kit) => {
           handleSelectStarterKit(kit.id);
         }}

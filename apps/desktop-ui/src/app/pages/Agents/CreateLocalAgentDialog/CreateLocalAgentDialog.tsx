@@ -162,7 +162,10 @@ export function CreateLocalAgentDialog(props: CreateAgentDialogProps) {
               </Alert>
             )}
             <VStack>
-              <StarterKitSelector onSelectStarterKit={handleCreateAgent} />
+              <StarterKitSelector
+                architectures={['memgpt', 'sleeptime']}
+                onSelectStarterKit={handleCreateAgent}
+              />
             </VStack>
           </VStack>
         )}

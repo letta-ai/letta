@@ -26,6 +26,8 @@ const listVariant = cva('px-4 h-[28px] flex items-center gap-2 flex-row', {
     color: {
       default: 'data-[state=active]:bg-background-grey2 ',
       dark: 'data-[state=active]:bg-dark-active data-[state=active]:text-secondary-active-content',
+      brand:
+        'data-[state=active]:bg-brand-light data-[state=active]:text-brand-light-content',
     },
     size: {
       small: 'h-biHeight',

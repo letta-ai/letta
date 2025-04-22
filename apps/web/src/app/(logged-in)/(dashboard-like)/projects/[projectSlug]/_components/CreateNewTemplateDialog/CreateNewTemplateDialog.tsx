@@ -166,7 +166,7 @@ export function CreateNewTemplateDialog(props: CreateNewTemplateDialogProps) {
             <VStack>
               {isError && <Alert title={t('error')} />}
               <StarterKitSelector
-                starterKitsToExclude={['sleepTime']}
+                architectures={['memgpt']}
                 onSelectStarterKit={(_, kit) => {
                   handleSelectStarterKit(kit.id);
                 }}
