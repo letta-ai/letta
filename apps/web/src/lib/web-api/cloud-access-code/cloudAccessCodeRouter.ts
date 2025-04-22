@@ -22,7 +22,7 @@ export async function submitCloudAccessCode(
   const { activeOrganizationId } =
     await getUserWithActiveOrganizationIdOrThrow();
 
-  if (code.toLowerCase() !== 'davis-rocks') {
+  if (code.toLowerCase() !== 'letta-whitelist-fd92j') {
     return {
       status: 400,
       body: {
@@ -31,7 +31,7 @@ export async function submitCloudAccessCode(
     };
   }
 
-  if (new Date() > new Date('2025-04-22')) {
+  if (new Date() > new Date('2025-05-01')) {
     return {
       status: 400,
       body: {
