@@ -1,6 +1,7 @@
 import math
+import traceback
 from abc import ABC, abstractmethod
-from typing import Any, Dict, Optional, Tuple
+from typing import Any, Dict, Optional
 
 from letta.constants import COMPOSIO_ENTITY_ENV_VAR_KEY, RETRIEVAL_QUERY_DEFAULT_PAGE_SIZE
 from letta.functions.ast_parsers import coerce_dict_args_by_annotations, get_function_annotations_from_source
@@ -8,8 +9,9 @@ from letta.functions.helpers import execute_composio_action, generate_composio_a
 from letta.helpers.composio_helpers import get_composio_api_key
 from letta.helpers.json_helpers import json_dumps
 from letta.schemas.agent import AgentState
-from letta.schemas.sandbox_config import SandboxConfig, SandboxRunResult
+from letta.schemas.sandbox_config import SandboxConfig
 from letta.schemas.tool import Tool
+from letta.schemas.tool_execution_result import ToolExecutionResult
 from letta.schemas.user import User
 from letta.services.agent_manager import AgentManager
 from letta.services.message_manager import MessageManager
@@ -33,7 +35,7 @@ class ToolExecutor(ABC):
         actor: User,
         sandbox_config: Optional[SandboxConfig] = None,
         sandbox_env_vars: Optional[Dict[str, Any]] = None,
-    ) -> Tuple[Any, Optional[SandboxRunResult]]:
+    ) -> ToolExecutionResult:
         """Execute the tool and return the result."""
 
 
@@ -49,7 +51,7 @@ class LettaCoreToolExecutor(ToolExecutor):
         actor: User,
         sandbox_config: Optional[SandboxConfig] = None,
         sandbox_env_vars: Optional[Dict[str, Any]] = None,
-    ) -> Tuple[Any, Optional[SandboxRunResult]]:
+    ) -> ToolExecutionResult:
         # Map function names to method calls
         function_map = {
             "send_message": self.send_message,
@@ -64,7 +66,10 @@ class LettaCoreToolExecutor(ToolExecutor):
         # Execute the appropriate function
         function_args_copy = function_args.copy()  # Make a copy to avoid modifying the original
         function_response = function_map[function_name](agent_state, actor, **function_args_copy)
-        return function_response, None
+        return ToolExecutionResult(
+            status="success",
+            func_return=function_response,
+        )
 
     def send_message(self, agent_state: AgentState, actor: User, message: str) -> Optional[str]:
         """
@@ -186,12 +191,11 @@ class LettaMultiAgentToolExecutor(ToolExecutor):
     """Executor for LETTA multi-agent core tools."""
 
     # TODO: Implement
-    # def execute(self, function_name: str, function_args: dict, agent: "Agent", tool: Tool) -> Tuple[
-    #     Any, Optional[SandboxRunResult]]:
+    # def execute(self, function_name: str, function_args: dict, agent: "Agent", tool: Tool) -> ToolExecutionResult:
     #     callable_func = get_function_from_module(LETTA_MULTI_AGENT_TOOL_MODULE_NAME, function_name)
     #     function_args["self"] = agent  # need to attach self to arg since it's dynamically linked
     #     function_response = callable_func(**function_args)
-    #     return function_response, None
+    #     return ToolExecutionResult(func_return=function_response)
 
 
 class LettaMemoryToolExecutor(ToolExecutor):
@@ -206,7 +210,7 @@ class LettaMemoryToolExecutor(ToolExecutor):
         actor: User,
         sandbox_config: Optional[SandboxConfig] = None,
         sandbox_env_vars: Optional[Dict[str, Any]] = None,
-    ) -> Tuple[Any, Optional[SandboxRunResult]]:
+    ) -> ToolExecutionResult:
         # Map function names to method calls
         function_map = {
             "core_memory_append": self.core_memory_append,
@@ -223,7 +227,10 @@ class LettaMemoryToolExecutor(ToolExecutor):
         # Update memory if changed
         AgentManager().update_memory_if_changed(agent_id=agent_state.id, new_memory=agent_state.memory, actor=actor)
 
-        return function_response, None
+        return ToolExecutionResult(
+            status="success",
+            func_return=function_response,
+        )
 
     def core_memory_append(self, agent_state: "AgentState", label: str, content: str) -> Optional[str]:
         """
@@ -273,7 +280,7 @@ class ExternalComposioToolExecutor(ToolExecutor):
         actor: User,
         sandbox_config: Optional[SandboxConfig] = None,
         sandbox_env_vars: Optional[Dict[str, Any]] = None,
-    ) -> Tuple[Any, Optional[SandboxRunResult]]:
+    ) -> ToolExecutionResult:
         action_name = generate_composio_action_from_func_name(tool.name)
 
         # Get entity ID from the agent_state
@@ -287,7 +294,10 @@ class ExternalComposioToolExecutor(ToolExecutor):
             action_name=action_name, args=function_args, api_key=composio_api_key, entity_id=entity_id
         )
 
-        return function_response, None
+        return ToolExecutionResult(
+            status="success",
+            func_return=function_response,
+        )
 
     def _get_entity_id(self, agent_state: AgentState) -> Optional[str]:
         """Extract the entity ID from environment variables."""
@@ -302,8 +312,7 @@ class ExternalMCPToolExecutor(ToolExecutor):
 
     # TODO: Implement
     #
-    # def execute(self, function_name: str, function_args: dict, agent_state: AgentState, tool: Tool, actor: User) -> Tuple[
-    #     Any, Optional[SandboxRunResult]]:
+    # def execute(self, function_name: str, function_args: dict, agent_state: AgentState, tool: Tool, actor: User) -> ToolExecutionResult:
     #     # Get the server name from the tool tag
     #     server_name = self._extract_server_name(tool)
     #
@@ -316,8 +325,10 @@ class ExternalMCPToolExecutor(ToolExecutor):
     #     # Execute the tool
     #     function_response, is_error = mcp_client.execute_tool(tool_name=function_name, tool_args=function_args)
     #
-    #     sandbox_run_result = SandboxRunResult(status="error" if is_error else "success")
-    #     return function_response, sandbox_run_result
+    #     return ToolExecutionResult(
+    #         status="error" if is_error else "success",
+    #         func_return=function_response,
+    #     )
     #
     # def _extract_server_name(self, tool: Tool) -> str:
     #     """Extract server name from tool tags."""
@@ -360,7 +371,7 @@ class SandboxToolExecutor(ToolExecutor):
         actor: User,
         sandbox_config: Optional[SandboxConfig] = None,
         sandbox_env_vars: Optional[Dict[str, Any]] = None,
-    ) -> Tuple[Any, Optional[SandboxRunResult]]:
+    ) -> ToolExecutionResult:
 
         # Store original memory state
         orig_memory_str = agent_state.memory.compile()
@@ -381,21 +392,19 @@ class SandboxToolExecutor(ToolExecutor):
                     function_name, function_args, actor, tool_object=tool, sandbox_config=sandbox_config, sandbox_env_vars=sandbox_env_vars
                 )
 
-            sandbox_run_result = await sandbox.run(agent_state=agent_state_copy)
-
-            function_response, updated_agent_state = sandbox_run_result.func_return, sandbox_run_result.agent_state
+            tool_execution_result = await sandbox.run(agent_state=agent_state_copy)
 
             # Verify memory integrity
             assert orig_memory_str == agent_state.memory.compile(), "Memory should not be modified in a sandbox tool"
 
             # Update agent memory if needed
-            if updated_agent_state is not None:
-                AgentManager().update_memory_if_changed(agent_state.id, updated_agent_state.memory, actor)
+            if tool_execution_result.agent_state is not None:
+                AgentManager().update_memory_if_changed(agent_state.id, tool_execution_result.agent_state.memory, actor)
 
-            return function_response, sandbox_run_result
+            return tool_execution_result
 
         except Exception as e:
-            return self._handle_execution_error(e, function_name)
+            return self._handle_execution_error(e, function_name, traceback.format_exc())
 
     def _prepare_function_args(self, function_args: dict, tool: Tool, function_name: str) -> dict:
         """Prepare function arguments with proper type coercion."""
@@ -417,9 +426,18 @@ class SandboxToolExecutor(ToolExecutor):
         agent_state_copy.tool_rules = []
         return agent_state_copy
 
-    def _handle_execution_error(self, exception: Exception, function_name: str) -> Tuple[str, SandboxRunResult]:
+    def _handle_execution_error(
+        self,
+        exception: Exception,
+        function_name: str,
+        stderr: str,
+    ) -> ToolExecutionResult:
         """Handle tool execution errors."""
         error_message = get_friendly_error_msg(
             function_name=function_name, exception_name=type(exception).__name__, exception_message=str(exception)
         )
-        return error_message, SandboxRunResult(status="error")
+        return ToolExecutionResult(
+            status="error",
+            func_return=error_message,
+            stderr=[stderr],
+        )

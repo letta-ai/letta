@@ -83,12 +83,12 @@ async def execute_tool_wrapper(params: ToolExecutionParams):
             sandbox_config=params.sbx_config,
             sandbox_env_vars=params.sbx_env_vars,
         )
-        result, _ = await mgr.execute_tool_async(
+        tool_execution_result = await mgr.execute_tool_async(
             function_name=params.tool_call_name,
             function_args=params.tool_args,
             tool=target_tool,
         )
-        return params.agent_id, (result, True)
+        return params.agent_id, (tool_execution_result.func_return, True)
     except Exception as e:
         return params.agent_id, (f"Failed to call tool. Error: {e}", False)
 
