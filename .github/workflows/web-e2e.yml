@@ -110,7 +110,7 @@ jobs:
         env:
           cache-name: cache-nextjs-${{ env.node-version }}
         with:
-          path: .next/cache
+          path: apps/web/.next/cache
           key: ${{ runner.os }}-${{ env.cache-name }}-${{ hashFiles('package-lock.json') }}
       - name: Restore NPM cache if exist
         id: cache-npm
