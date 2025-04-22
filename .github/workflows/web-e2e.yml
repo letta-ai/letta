@@ -194,8 +194,6 @@ jobs:
         env:
           DATABASE_URL: postgres://postgres:postgres@localhost:5433/postgres
         run: npm run web:database:migrate
-      - name: Set nodejs memory
-        run: export NODE_OPTIONS="--max_old_space_size=4096"
       - name: Cypress run
         uses: cypress-io/github-action@v6
         with:
@@ -211,6 +209,7 @@ jobs:
           DATABASE_URL: postgres://postgres:postgres@localhost:5433/postgres
           REDIS_HOST: localhost
           REDIS_PORT: 6379
+          NODE_OPTIONS: --max_old_space_size=4096
           CYPRESS_GOOGLE_CLIENT_ID: ${{ secrets.CYPRESS_GOOGLE_CLIENT_ID }}
           CYPRESS_GOOGLE_CLIENT_SECRET: ${{ secrets.CYPRESS_GOOGLE_CLIENT_SECRET }}
           CYPRESS_GOOGLE_REFRESH_TOKEN: ${{ secrets.CYPRESS_GOOGLE_REFRESH_TOKEN }}
