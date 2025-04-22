@@ -12,7 +12,6 @@ from letta.services.tool_executor.tool_executor import (
     ExternalComposioToolExecutor,
     ExternalMCPToolExecutor,
     LettaCoreToolExecutor,
-    LettaMemoryToolExecutor,
     LettaMultiAgentToolExecutor,
     SandboxToolExecutor,
     ToolExecutor,
@@ -26,8 +25,9 @@ class ToolExecutorFactory:
 
     _executor_map: Dict[ToolType, Type[ToolExecutor]] = {
         ToolType.LETTA_CORE: LettaCoreToolExecutor,
+        ToolType.LETTA_MEMORY_CORE: LettaCoreToolExecutor,
+        ToolType.LETTA_SLEEPTIME_CORE: LettaCoreToolExecutor,
         ToolType.LETTA_MULTI_AGENT_CORE: LettaMultiAgentToolExecutor,
-        ToolType.LETTA_MEMORY_CORE: LettaMemoryToolExecutor,
         ToolType.EXTERNAL_COMPOSIO: ExternalComposioToolExecutor,
         ToolType.EXTERNAL_MCP: ExternalMCPToolExecutor,
     }
@@ -35,13 +35,8 @@ class ToolExecutorFactory:
     @classmethod
     def get_executor(cls, tool_type: ToolType) -> ToolExecutor:
         """Get the appropriate executor for the given tool type."""
-        executor_class = cls._executor_map.get(tool_type)
-
-        if executor_class:
-            return executor_class()
-
-        # Default to sandbox executor for unknown types
-        return SandboxToolExecutor()
+        executor_class = cls._executor_map.get(tool_type, SandboxToolExecutor)
+        return executor_class()
 
 
 class ToolExecutionManager:
