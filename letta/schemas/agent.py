@@ -14,6 +14,7 @@ from letta.schemas.llm_config import LLMConfig
 from letta.schemas.memory import Memory
 from letta.schemas.message import Message, MessageCreate
 from letta.schemas.openai.chat_completion_response import UsageStatistics
+from letta.schemas.response_format import ResponseFormatUnion
 from letta.schemas.source import Source
 from letta.schemas.tool import Tool
 from letta.schemas.tool_rule import ToolRule
@@ -66,6 +67,9 @@ class AgentState(OrmMetadataBase, validate_assignment=True):
     # llm information
     llm_config: LLMConfig = Field(..., description="The LLM configuration used by the agent.")
     embedding_config: EmbeddingConfig = Field(..., description="The embedding configuration used by the agent.")
+    response_format: Optional[ResponseFormatUnion] = Field(
+        None, description="The response format used by the agent when returning from `send_message`."
+    )
 
     # This is an object representing the in-process state of a running `Agent`
     # Field in this object can be theoretically edited by tools, and will be persisted by the ORM
@@ -180,6 +184,7 @@ class CreateAgent(BaseModel, validate_assignment=True):  #
         description="If set to True, the agent will not remember previous messages (though the agent will still retain state via core memory blocks and archival/recall memory). Not recommended unless you have an advanced use case.",
     )
     enable_sleeptime: Optional[bool] = Field(None, description="If set to True, memory management will move to a background agent thread.")
+    response_format: Optional[ResponseFormatUnion] = Field(None, description="The response format for the agent.")
 
     @field_validator("name")
     @classmethod
@@ -259,6 +264,7 @@ class UpdateAgent(BaseModel):
         None, description="The embedding configuration handle used by the agent, specified in the format provider/model-name."
     )
     enable_sleeptime: Optional[bool] = Field(None, description="If set to True, memory management will move to a background agent thread.")
+    response_format: Optional[ResponseFormatUnion] = Field(None, description="The response format for the agent.")
 
     class Config:
         extra = "ignore"  # Ignores extra fields

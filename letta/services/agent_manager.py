@@ -364,6 +364,7 @@ class AgentManager:
                 "base_template_id": agent_update.base_template_id,
                 "message_buffer_autoclear": agent_update.message_buffer_autoclear,
                 "enable_sleeptime": agent_update.enable_sleeptime,
+                "response_format": agent_update.response_format,
             }
             for col, val in scalar_updates.items():
                 if val is not None:

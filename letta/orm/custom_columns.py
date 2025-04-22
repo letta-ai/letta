@@ -9,6 +9,7 @@ from letta.helpers.converters import (
     deserialize_llm_config,
     deserialize_message_content,
     deserialize_poll_batch_response,
+    deserialize_response_format,
     deserialize_tool_calls,
     deserialize_tool_returns,
     deserialize_tool_rules,
@@ -20,6 +21,7 @@ from letta.helpers.converters import (
     serialize_llm_config,
     serialize_message_content,
     serialize_poll_batch_response,
+    serialize_response_format,
     serialize_tool_calls,
     serialize_tool_returns,
     serialize_tool_rules,
@@ -168,3 +170,16 @@ class AgentStepStateColumn(TypeDecorator):
 
     def process_result_value(self, value, dialect):
         return deserialize_agent_step_state(value)
+
+
+class ResponseFormatColumn(TypeDecorator):
+    """Custom SQLAlchemy column type for storing a list of ToolRules as JSON."""
+
+    impl = JSON
+    cache_ok = True
+
+    def process_bind_param(self, value, dialect):
+        return serialize_response_format(value)
+
+    def process_result_value(self, value, dialect):
+        return deserialize_response_format(value)
