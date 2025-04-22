@@ -518,6 +518,10 @@ package-desktop-test:
     npx nx package-smoke desktop-electron
 
 
+docs:
+    @echo "🚧 Startings docs page..."
+    npx nx dev docs
+
 setup-pg-vector:
     @echo "Setting up pg-vector..."
     apps/desktop-electron/scripts/install-pgvector.sh
