@@ -33,6 +33,42 @@
         "buildTarget": "desktop-electron:build"
       }
     },
+    "package": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "todesktop build --async ",
+        "cwd": "apps/desktop-electron"
+      }
+    },
+    "release": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "todesktop release --latest --force",
+        "cwd": "apps/desktop-electron"
+      }
+    },
+    "package-smoke": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "todesktop build --async --code-sign=false",
+        "cwd": "apps/desktop-electron"
+      }
+    },
+    "type-check": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "tsc --noEmit -p apps/desktop-electron/tsconfig.json"
+      }
+    },
+    "make": {
+      "executor": "nx-electron:make",
+      "options": {
+        "name": "desktop-electron",
+        "frontendProject": "desktop-ui",
+        "sourcePath": "dist/apps",
+        "outputPath": "dist/executables"
+      }
+    },
     "lint": {
       "command": "eslint apps/desktop-electron/**/*.ts"
     }
