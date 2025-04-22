@@ -8,7 +8,7 @@ import { MaybeTooltip } from '../Tooltip/Tooltip';
 import type { Placement } from '@floating-ui/react';
 
 const buttonVariants = cva(
-  'items-center cursor-pointer inline-flex  whitespace-nowrap transition-width duration-200 ease-in-out',
+  'items-center cursor-pointer inline-flex disable-app-header whitespace-nowrap transition-width duration-200 ease-in-out',
   {
     variants: {
       animate: {
