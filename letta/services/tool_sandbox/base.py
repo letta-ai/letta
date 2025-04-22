@@ -7,8 +7,9 @@ from typing import Any, Dict, Optional, Tuple
 
 from letta.functions.helpers import generate_model_from_args_json_schema
 from letta.schemas.agent import AgentState
-from letta.schemas.sandbox_config import SandboxConfig, SandboxRunResult
+from letta.schemas.sandbox_config import SandboxConfig
 from letta.schemas.tool import Tool
+from letta.schemas.tool_execution_result import ToolExecutionResult
 from letta.services.helpers.tool_execution_helper import add_imports_and_pydantic_schemas_for_args
 from letta.services.sandbox_config_manager import SandboxConfigManager
 from letta.services.tool_manager import ToolManager
@@ -64,7 +65,7 @@ class AsyncToolSandboxBase(ABC):
         self,
         agent_state: Optional[AgentState] = None,
         additional_env_vars: Optional[Dict] = None,
-    ) -> SandboxRunResult:
+    ) -> ToolExecutionResult:
         """
         Run the tool in a sandbox environment asynchronously.
         Must be implemented by subclasses.

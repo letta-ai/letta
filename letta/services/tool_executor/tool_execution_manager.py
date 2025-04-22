@@ -1,10 +1,12 @@
-from typing import Any, Dict, Optional, Tuple, Type
+import traceback
+from typing import Any, Dict, Optional, Type
 
 from letta.log import get_logger
 from letta.orm.enums import ToolType
 from letta.schemas.agent import AgentState
-from letta.schemas.sandbox_config import SandboxConfig, SandboxRunResult
+from letta.schemas.sandbox_config import SandboxConfig
 from letta.schemas.tool import Tool
+from letta.schemas.tool_execution_result import ToolExecutionResult
 from letta.schemas.user import User
 from letta.services.tool_executor.tool_executor import (
     ExternalComposioToolExecutor,
@@ -58,7 +60,7 @@ class ToolExecutionManager:
         self.sandbox_config = sandbox_config
         self.sandbox_env_vars = sandbox_env_vars
 
-    def execute_tool(self, function_name: str, function_args: dict, tool: Tool) -> Tuple[Any, Optional[SandboxRunResult]]:
+    def execute_tool(self, function_name: str, function_args: dict, tool: Tool) -> ToolExecutionResult:
         """
         Execute a tool and persist any state changes.
 
@@ -71,35 +73,16 @@ class ToolExecutionManager:
             Tuple containing the function response and sandbox run result (if applicable)
         """
         try:
-            # Get the appropriate executor for this tool type
             executor = ToolExecutorFactory.get_executor(tool.tool_type)
-
-            # Execute the tool
             return executor.execute(
-                function_name, function_args, self.agent_state, tool, self.actor, self.sandbox_config, self.sandbox_env_vars
+                function_name,
+                function_args,
+                self.agent_state,
+                tool,
+                self.actor,
+                self.sandbox_config,
+                self.sandbox_env_vars,
             )
-
-        except Exception as e:
-            self.logger.error(f"Error executing tool {function_name}: {str(e)}")
-            error_message = get_friendly_error_msg(function_name=function_name, exception_name=type(e).__name__, exception_message=str(e))
-            return error_message, SandboxRunResult(status="error")
-
-    @trace_method
-    async def execute_tool_async(self, function_name: str, function_args: dict, tool: Tool) -> Tuple[Any, Optional[SandboxRunResult]]:
-        """
-        Execute a tool asynchronously and persist any state changes.
-        """
-        try:
-            # Get the appropriate executor for this tool type
-            # TODO: Extend this async model to composio
-
-            if tool.tool_type == ToolType.CUSTOM:
-                executor = SandboxToolExecutor()
-                result_tuple = await executor.execute(function_name, function_args, self.agent_state, tool, self.actor)
-            else:
-                executor = ToolExecutorFactory.get_executor(tool.tool_type)
-                result_tuple = executor.execute(function_name, function_args, self.agent_state, tool, self.actor)
-            return result_tuple
 
         except Exception as e:
             self.logger.error(f"Error executing tool {function_name}: {str(e)}")
@@ -108,4 +91,35 @@ class ToolExecutionManager:
                 exception_name=type(e).__name__,
                 exception_message=str(e),
             )
-            return error_message, SandboxRunResult(status="error")
+            return ToolExecutionResult(
+                status="error",
+                func_return=error_message,
+                stderr=[traceback.format_exc()],
+            )
+
+    @trace_method
+    async def execute_tool_async(self, function_name: str, function_args: dict, tool: Tool) -> ToolExecutionResult:
+        """
+        Execute a tool asynchronously and persist any state changes.
+        """
+        try:
+            executor = ToolExecutorFactory.get_executor(tool.tool_type)
+            # TODO: Extend this async model to composio
+            if isinstance(executor, SandboxToolExecutor):
+                result = await executor.execute(function_name, function_args, self.agent_state, tool, self.actor)
+            else:
+                result = executor.execute(function_name, function_args, self.agent_state, tool, self.actor)
+            return result
+
+        except Exception as e:
+            self.logger.error(f"Error executing tool {function_name}: {str(e)}")
+            error_message = get_friendly_error_msg(
+                function_name=function_name,
+                exception_name=type(e).__name__,
+                exception_message=str(e),
+            )
+            return ToolExecutionResult(
+                status="error",
+                func_return=error_message,
+                stderr=[traceback.format_exc()],
+            )

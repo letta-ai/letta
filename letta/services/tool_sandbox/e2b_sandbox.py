@@ -2,8 +2,9 @@ from typing import Any, Dict, Optional
 
 from letta.log import get_logger
 from letta.schemas.agent import AgentState
-from letta.schemas.sandbox_config import SandboxConfig, SandboxRunResult, SandboxType
+from letta.schemas.sandbox_config import SandboxConfig, SandboxType
 from letta.schemas.tool import Tool
+from letta.schemas.tool_execution_result import ToolExecutionResult
 from letta.services.tool_sandbox.base import AsyncToolSandboxBase
 from letta.utils import get_friendly_error_msg
 
@@ -30,7 +31,7 @@ class AsyncToolSandboxE2B(AsyncToolSandboxBase):
         self,
         agent_state: Optional[AgentState] = None,
         additional_env_vars: Optional[Dict] = None,
-    ) -> SandboxRunResult:
+    ) -> ToolExecutionResult:
         """
         Run the tool in a sandbox environment asynchronously,
         *always* using a subprocess for execution.
@@ -45,7 +46,7 @@ class AsyncToolSandboxE2B(AsyncToolSandboxBase):
 
     async def run_e2b_sandbox(
         self, agent_state: Optional[AgentState] = None, additional_env_vars: Optional[Dict] = None
-    ) -> SandboxRunResult:
+    ) -> ToolExecutionResult:
         if self.provided_sandbox_config:
             sbx_config = self.provided_sandbox_config
         else:
@@ -94,7 +95,7 @@ class AsyncToolSandboxE2B(AsyncToolSandboxBase):
         else:
             raise ValueError(f"Tool {self.tool_name} returned execution with None")
 
-        return SandboxRunResult(
+        return ToolExecutionResult(
             func_return=func_return,
             agent_state=agent_state,
             stdout=execution.logs.stdout,

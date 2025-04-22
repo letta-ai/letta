@@ -3,7 +3,7 @@ import time
 import traceback
 import warnings
 from abc import ABC, abstractmethod
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Dict, List, Optional, Tuple, Union
 
 from openai.types.beta.function_tool import FunctionTool as OpenAITool
 
@@ -49,8 +49,8 @@ from letta.schemas.openai.chat_completion_response import ChatCompletionResponse
 from letta.schemas.openai.chat_completion_response import Message as ChatCompletionMessage
 from letta.schemas.openai.chat_completion_response import UsageStatistics
 from letta.schemas.response_format import ResponseFormatType
-from letta.schemas.sandbox_config import SandboxRunResult
 from letta.schemas.tool import Tool
+from letta.schemas.tool_execution_result import ToolExecutionResult
 from letta.schemas.tool_rule import TerminalToolRule
 from letta.schemas.usage import LettaUsageStatistics
 from letta.services.agent_manager import AgentManager
@@ -557,22 +557,23 @@ class Agent(BaseAgent):
                     },
                 )
 
-                function_response, sandbox_run_result = self.execute_tool_and_persist_state(function_name, function_args, target_letta_tool)
+                tool_execution_result = self.execute_tool_and_persist_state(function_name, function_args, target_letta_tool)
+                function_response = tool_execution_result.func_return
 
                 log_event(
                     "tool_call_ended",
                     attributes={
                         "function_response": function_response,
-                        "sandbox_run_result": sandbox_run_result.model_dump() if sandbox_run_result else None,
+                        "tool_execution_result": tool_execution_result.model_dump(),
                     },
                 )
                 log_telemetry(
                     self.logger, "_handle_ai_response execute tool finish", function_name=function_name, function_args=function_args
                 )
 
-                if sandbox_run_result and sandbox_run_result.status == "error":
+                if tool_execution_result and tool_execution_result.status == "error":
                     tool_return = ToolReturn(
-                        status=sandbox_run_result.status, stdout=sandbox_run_result.stdout, stderr=sandbox_run_result.stderr
+                        status=tool_execution_result.status, stdout=tool_execution_result.stdout, stderr=tool_execution_result.stderr
                     )
                     messages = self._handle_function_error_response(
                         function_response,
@@ -626,14 +627,10 @@ class Agent(BaseAgent):
             # Step 4: check if function response is an error
             if function_response_string.startswith(ERROR_MESSAGE_PREFIX):
                 error_msg = function_response_string
-                tool_return = (
-                    ToolReturn(
-                        status=sandbox_run_result.status,
-                        stdout=sandbox_run_result.stdout,
-                        stderr=sandbox_run_result.stderr,
-                    )
-                    if sandbox_run_result
-                    else None
+                tool_return = ToolReturn(
+                    status=tool_execution_result.status,
+                    stdout=tool_execution_result.stdout,
+                    stderr=tool_execution_result.stderr,
                 )
                 messages = self._handle_function_error_response(
                     error_msg,
@@ -650,14 +647,10 @@ class Agent(BaseAgent):
 
             # If no failures happened along the way: ...
             # Step 5: send the info on the function call and function response to GPT
-            tool_return = (
-                ToolReturn(
-                    status=sandbox_run_result.status,
-                    stdout=sandbox_run_result.stdout,
-                    stderr=sandbox_run_result.stderr,
-                )
-                if sandbox_run_result
-                else None
+            tool_return = ToolReturn(
+                status=tool_execution_result.status,
+                stdout=tool_execution_result.stdout,
+                stderr=tool_execution_result.stderr,
             )
             messages.append(
                 Message(
@@ -669,7 +662,7 @@ class Agent(BaseAgent):
                     content=[TextContent(text=function_response)],
                     tool_call_id=tool_call_id,
                     # Letta extras
-                    tool_returns=[tool_return] if sandbox_run_result else None,
+                    tool_returns=[tool_return],
                     group_id=group_id,
                 )
             )  # extend conversation with function response
@@ -1262,9 +1255,7 @@ class Agent(BaseAgent):
         return context_window_breakdown.context_window_size_current
 
     # TODO: Refactor into separate class v.s. large if/elses here
-    def execute_tool_and_persist_state(
-        self, function_name: str, function_args: dict, target_letta_tool: Tool
-    ) -> tuple[Any, Optional[SandboxRunResult]]:
+    def execute_tool_and_persist_state(self, function_name: str, function_args: dict, target_letta_tool: Tool) -> ToolExecutionResult:
         """
         Execute tool modifications and persist the state of the agent.
         Note: only some agent state modifications will be persisted, such as data in the AgentState ORM and block data
@@ -1326,8 +1317,10 @@ class Agent(BaseAgent):
                     )
 
                 function_response, is_error = mcp_client.execute_tool(tool_name=function_name, tool_args=function_args)
-                sandbox_run_result = SandboxRunResult(status="error" if is_error else "success")
-                return function_response, sandbox_run_result
+                return ToolExecutionResult(
+                    status="error" if is_error else "success",
+                    func_return=function_response,
+                )
             else:
                 try:
                     # Parse the source code to extract function annotations
@@ -1344,23 +1337,29 @@ class Agent(BaseAgent):
                 agent_state_copy.tools = []
                 agent_state_copy.tool_rules = []
 
-                sandbox_run_result = ToolExecutionSandbox(function_name, function_args, self.user, tool_object=target_letta_tool).run(
+                tool_execution_result = ToolExecutionSandbox(function_name, function_args, self.user, tool_object=target_letta_tool).run(
                     agent_state=agent_state_copy
                 )
-                function_response, updated_agent_state = sandbox_run_result.func_return, sandbox_run_result.agent_state
                 assert orig_memory_str == self.agent_state.memory.compile(), "Memory should not be modified in a sandbox tool"
-                if updated_agent_state is not None:
-                    self.update_memory_if_changed(updated_agent_state.memory)
-                return function_response, sandbox_run_result
+                if tool_execution_result.agent_state is not None:
+                    self.update_memory_if_changed(tool_execution_result.agent_state.memory)
+                return tool_execution_result
         except Exception as e:
             # Need to catch error here, or else trunction wont happen
             # TODO: modify to function execution error
             function_response = get_friendly_error_msg(
                 function_name=function_name, exception_name=type(e).__name__, exception_message=str(e)
             )
-            return function_response, SandboxRunResult(status="error")
+            return ToolExecutionResult(
+                status="error",
+                func_return=function_response,
+                stderr=[traceback.format_exc()],
+            )
 
-        return function_response, None
+        return ToolExecutionResult(
+            status="success",
+            func_return=function_response,
+        )
 
 
 def save_agent(agent: Agent):

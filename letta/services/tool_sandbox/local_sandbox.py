@@ -5,8 +5,9 @@ import tempfile
 from typing import Any, Dict, Optional, Tuple
 
 from letta.schemas.agent import AgentState
-from letta.schemas.sandbox_config import SandboxConfig, SandboxRunResult, SandboxType
+from letta.schemas.sandbox_config import SandboxConfig, SandboxType
 from letta.schemas.tool import Tool
+from letta.schemas.tool_execution_result import ToolExecutionResult
 from letta.services.helpers.tool_execution_helper import (
     create_venv_for_local_sandbox,
     find_python_executable,
@@ -39,7 +40,7 @@ class AsyncToolSandboxLocal(AsyncToolSandboxBase):
         self,
         agent_state: Optional[AgentState] = None,
         additional_env_vars: Optional[Dict] = None,
-    ) -> SandboxRunResult:
+    ) -> ToolExecutionResult:
         """
         Run the tool in a sandbox environment asynchronously,
         *always* using a subprocess for execution.
@@ -53,7 +54,11 @@ class AsyncToolSandboxLocal(AsyncToolSandboxBase):
         return result
 
     @trace_method
-    async def run_local_dir_sandbox(self, agent_state: Optional[AgentState], additional_env_vars: Optional[Dict]) -> SandboxRunResult:
+    async def run_local_dir_sandbox(
+        self,
+        agent_state: Optional[AgentState],
+        additional_env_vars: Optional[Dict],
+    ) -> ToolExecutionResult:
         """
         Unified asynchronougit pus method to run the tool in a local sandbox environment,
         always via subprocess for multi-core parallelism.
@@ -156,7 +161,7 @@ class AsyncToolSandboxLocal(AsyncToolSandboxBase):
     @trace_method
     async def _execute_tool_subprocess(
         self, sbx_config, python_executable: str, temp_file_path: str, env: Dict[str, str], cwd: str
-    ) -> SandboxRunResult:
+    ) -> ToolExecutionResult:
         """
         Execute user code in a subprocess, always capturing stdout and stderr.
         We parse special markers to extract the pickled result string.
@@ -189,7 +194,7 @@ class AsyncToolSandboxLocal(AsyncToolSandboxBase):
             func_result, stdout_text = self.parse_out_function_results_markers(stdout)
             func_return, agent_state = self.parse_best_effort(func_result)
 
-            return SandboxRunResult(
+            return ToolExecutionResult(
                 func_return=func_return,
                 agent_state=agent_state,
                 stdout=[stdout_text] if stdout_text else [],
@@ -209,7 +214,7 @@ class AsyncToolSandboxLocal(AsyncToolSandboxBase):
                 exception_name=type(e).__name__,
                 exception_message=str(e),
             )
-            return SandboxRunResult(
+            return ToolExecutionResult(
                 func_return=func_return,
                 agent_state=None,
                 stdout=[],
