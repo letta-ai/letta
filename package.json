@@ -25,6 +25,7 @@
     "cloud-api:dev": "npm run cloud-api:build && npm run cloud-api:serve",
     "cloud-api:serve": "node --require ./apps/cloud-api/instrument.js dist/apps/cloud-api/main.js",
     "desktop:setup-core": "nx install desktop-core",
+    "desktop:deps": "electron-builder install-app-deps && electron-builder install-app-deps",
     "desktop:package-core": "nx package desktop-core",
     "desktop:dev": "concurrently \"nx serve desktop-electron\" \"nx serve desktop-ui\"",
     "docs:dev": "nx dev docs",
@@ -56,8 +57,7 @@
     "web:database:migrate": "nx run service-database:migrate",
     "web:database:migrate:ci": "cd libs/service-database && drizzle-kit migrate",
     "web:database:studio": "nx run service-database:studio",
-    "web:test": "npx nx run-many -p web ui-component-library ui-ade-components utils-shared  utils-server --exclude=core  --skip-nx-cache --parallel --targets=test",
-    "postinstall": "electron-builder install-app-deps && electron-builder install-app-deps"
+    "web:test": "npx nx run-many -p web ui-component-library ui-ade-components utils-shared  utils-server --exclude=core  --skip-nx-cache --parallel --targets=test"
   },
   "private": true,
   "dependencies": {
@@ -243,7 +243,6 @@
     "cypress-wait-until": "^3.0.2",
     "dotenv": "^16.4.7",
     "drizzle-kit": "^0.30.1",
-    "electron": "33.3.0",
     "esbuild": "~0.19.2",
     "eslint": "~9.17.0",
     "eslint-config-next": "15.1.3",
@@ -269,12 +268,10 @@
     "next-intl-split": "^1.1.6",
     "nodemon": "^3.1.9",
     "nx": "20.6.4",
-    "nx-electron": "^20.0.0",
     "openapi-merge": "^1.3.3",
     "openapi-zod-client": "^1.18.2",
     "postcss": "8.4.49",
     "prettier": "^3.4.2",
-    "react-email": "3.0.7",
     "redis": "^4.7.0",
     "redis-om": "^0.4.7",
     "start-server-and-test": "^2.0.9",

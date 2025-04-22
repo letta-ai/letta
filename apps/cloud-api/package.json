@@ -10,6 +10,7 @@
     "test:branch-regression": "jest --detectOpenHandles --forceExit -- e2e/database-compatibility.test.ts"
   },
   "devDependencies": {
+    "@types/cors": "^2.8.17",
     "@types/express-http-proxy": "^1.6.6",
     "@types/jest": "^29.5.14",
     "@types/lodash-es": "^4.17.12",

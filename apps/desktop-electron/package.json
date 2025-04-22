@@ -12,7 +12,8 @@
     "zod": "^3.24.1"
   },
   "scripts": {
-    "todesktop:beforeBuild": "./scripts/before-build.js"
+    "todesktop:beforeBuild": "./scripts/before-build.js",
+    "desktop:deps": "electron-builder install-app-deps && electron-builder install-app-deps"
   },
   "devDependencies": {
     "electron": "33.3.0"

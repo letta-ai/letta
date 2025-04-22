@@ -368,6 +368,13 @@ web:
 web-slow:
     npm run web:dev:slow
 
+setup-desktop:
+  @echo "🚧 Setting up the desktop app..."
+  cd apps/desktop-electron && npm install
+  npm i --no-save nx-electron@^20.0.0
+  npm run desktop:deps
+
+
 ready:
   @echo "🚧 Updating your local environment..."
   source ~/.nvm/nvm.sh && nvm use || true
@@ -375,6 +382,7 @@ ready:
   npx nx reset
   npm run core:install
   just setup-cloud-api
+  just setup-desktop
   @echo "Migrating the database..."
   npm run web:database:migrate
   npm run core:database:migrate

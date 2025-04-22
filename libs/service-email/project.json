@@ -8,7 +8,7 @@
     "dev": {
       "executor": "nx:run-commands",
       "options": {
-        "commands": ["email dev --dir src/emails"],
+        "commands": ["npx react-email dev --dir src/emails"],
         "cwd": "libs/service-email"
       }
     }
