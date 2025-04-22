@@ -612,6 +612,22 @@ export const AgentType = z.union([
   z.literal('sleeptime_agent'),
 ]);
 
+export type TextResponseFormat = z.infer<typeof TextResponseFormat>;
+export const TextResponseFormat = z.object({
+  type: z.string().optional(),
+});
+
+export type JsonSchemaResponseFormat = z.infer<typeof JsonSchemaResponseFormat>;
+export const JsonSchemaResponseFormat = z.object({
+  type: z.union([z.string(), z.undefined()]).optional(),
+  json_schema: z.unknown(),
+});
+
+export type JsonObjectResponseFormat = z.infer<typeof JsonObjectResponseFormat>;
+export const JsonObjectResponseFormat = z.object({
+  type: z.string().optional(),
+});
+
 export type Block = z.infer<typeof Block>;
 export const Block = z.object({
   value: z.string(),
@@ -942,6 +958,23 @@ export const AgentState = z.object({
   agent_type: AgentType,
   llm_config: LLMConfig,
   embedding_config: EmbeddingConfig,
+  response_format: z
+    .union([
+      TextResponseFormat,
+      JsonSchemaResponseFormat,
+      JsonObjectResponseFormat,
+      z.null(),
+      z.array(
+        z.union([
+          TextResponseFormat,
+          JsonSchemaResponseFormat,
+          JsonObjectResponseFormat,
+          z.null(),
+        ]),
+      ),
+      z.undefined(),
+    ])
+    .optional(),
   organization_id: z
     .union([
       z.string(),
@@ -3081,6 +3114,22 @@ export const CreateAgentRequest = z.object({
   enable_sleeptime: z
     .union([z.boolean(), z.null(), z.array(z.union([z.boolean(), z.null()]))])
     .optional(),
+  response_format: z
+    .union([
+      TextResponseFormat,
+      JsonSchemaResponseFormat,
+      JsonObjectResponseFormat,
+      z.null(),
+      z.array(
+        z.union([
+          TextResponseFormat,
+          JsonSchemaResponseFormat,
+          JsonObjectResponseFormat,
+          z.null(),
+        ]),
+      ),
+    ])
+    .optional(),
   actor_id: z
     .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
     .optional(),
@@ -4840,6 +4889,22 @@ export const UpdateAgent = z.object({
     .optional(),
   enable_sleeptime: z
     .union([z.boolean(), z.null(), z.array(z.union([z.boolean(), z.null()]))])
+    .optional(),
+  response_format: z
+    .union([
+      TextResponseFormat,
+      JsonSchemaResponseFormat,
+      JsonObjectResponseFormat,
+      z.null(),
+      z.array(
+        z.union([
+          TextResponseFormat,
+          JsonSchemaResponseFormat,
+          JsonObjectResponseFormat,
+          z.null(),
+        ]),
+      ),
+    ])
     .optional(),
 });
 

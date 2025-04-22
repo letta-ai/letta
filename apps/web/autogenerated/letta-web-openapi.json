@@ -1502,6 +1502,94 @@
                           "embedding_dim"
                         ]
                       },
+                      "response_format": {
+                        "oneOf": [
+                          {
+                            "type": "object",
+                            "properties": {
+                              "type": {
+                                "type": "string"
+                              }
+                            }
+                          },
+                          {
+                            "type": "object",
+                            "properties": {
+                              "type": {
+                                "oneOf": [
+                                  {
+                                    "type": "string"
+                                  },
+                                  {}
+                                ]
+                              },
+                              "json_schema": {
+                                "nullable": true
+                              }
+                            }
+                          },
+                          {
+                            "type": "object",
+                            "properties": {
+                              "type": {
+                                "type": "string"
+                              }
+                            }
+                          },
+                          {
+                            "type": "string",
+                            "format": "null",
+                            "nullable": true
+                          },
+                          {
+                            "type": "array",
+                            "items": {
+                              "oneOf": [
+                                {
+                                  "type": "object",
+                                  "properties": {
+                                    "type": {
+                                      "type": "string"
+                                    }
+                                  }
+                                },
+                                {
+                                  "type": "object",
+                                  "properties": {
+                                    "type": {
+                                      "oneOf": [
+                                        {
+                                          "type": "string"
+                                        },
+                                        {}
+                                      ]
+                                    },
+                                    "json_schema": {
+                                      "nullable": true
+                                    }
+                                  }
+                                },
+                                {
+                                  "type": "object",
+                                  "properties": {
+                                    "type": {
+                                      "type": "string"
+                                    }
+                                  }
+                                },
+                                {
+                                  "type": "string",
+                                  "format": "null",
+                                  "nullable": true
+                                }
+                              ],
+                              "nullable": true
+                            }
+                          },
+                          {}
+                        ],
+                        "nullable": true
+                      },
                       "organization_id": {
                         "oneOf": [
                           {
@@ -4651,6 +4739,94 @@
                               "embedding_model",
                               "embedding_dim"
                             ]
+                          },
+                          "response_format": {
+                            "oneOf": [
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "type": {
+                                    "type": "string"
+                                  }
+                                }
+                              },
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "type": {
+                                    "oneOf": [
+                                      {
+                                        "type": "string"
+                                      },
+                                      {}
+                                    ]
+                                  },
+                                  "json_schema": {
+                                    "nullable": true
+                                  }
+                                }
+                              },
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "type": {
+                                    "type": "string"
+                                  }
+                                }
+                              },
+                              {
+                                "type": "string",
+                                "format": "null",
+                                "nullable": true
+                              },
+                              {
+                                "type": "array",
+                                "items": {
+                                  "oneOf": [
+                                    {
+                                      "type": "object",
+                                      "properties": {
+                                        "type": {
+                                          "type": "string"
+                                        }
+                                      }
+                                    },
+                                    {
+                                      "type": "object",
+                                      "properties": {
+                                        "type": {
+                                          "oneOf": [
+                                            {
+                                              "type": "string"
+                                            },
+                                            {}
+                                          ]
+                                        },
+                                        "json_schema": {
+                                          "nullable": true
+                                        }
+                                      }
+                                    },
+                                    {
+                                      "type": "object",
+                                      "properties": {
+                                        "type": {
+                                          "type": "string"
+                                        }
+                                      }
+                                    },
+                                    {
+                                      "type": "string",
+                                      "format": "null",
+                                      "nullable": true
+                                    }
+                                  ],
+                                  "nullable": true
+                                }
+                              },
+                              {}
+                            ],
+                            "nullable": true
                           },
                           "organization_id": {
                             "oneOf": [
@@ -8183,6 +8359,94 @@
                               "embedding_model",
                               "embedding_dim"
                             ]
+                          },
+                          "response_format": {
+                            "oneOf": [
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "type": {
+                                    "type": "string"
+                                  }
+                                }
+                              },
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "type": {
+                                    "oneOf": [
+                                      {
+                                        "type": "string"
+                                      },
+                                      {}
+                                    ]
+                                  },
+                                  "json_schema": {
+                                    "nullable": true
+                                  }
+                                }
+                              },
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "type": {
+                                    "type": "string"
+                                  }
+                                }
+                              },
+                              {
+                                "type": "string",
+                                "format": "null",
+                                "nullable": true
+                              },
+                              {
+                                "type": "array",
+                                "items": {
+                                  "oneOf": [
+                                    {
+                                      "type": "object",
+                                      "properties": {
+                                        "type": {
+                                          "type": "string"
+                                        }
+                                      }
+                                    },
+                                    {
+                                      "type": "object",
+                                      "properties": {
+                                        "type": {
+                                          "oneOf": [
+                                            {
+                                              "type": "string"
+                                            },
+                                            {}
+                                          ]
+                                        },
+                                        "json_schema": {
+                                          "nullable": true
+                                        }
+                                      }
+                                    },
+                                    {
+                                      "type": "object",
+                                      "properties": {
+                                        "type": {
+                                          "type": "string"
+                                        }
+                                      }
+                                    },
+                                    {
+                                      "type": "string",
+                                      "format": "null",
+                                      "nullable": true
+                                    }
+                                  ],
+                                  "nullable": true
+                                }
+                              },
+                              {}
+                            ],
+                            "nullable": true
                           },
                           "organization_id": {
                             "oneOf": [

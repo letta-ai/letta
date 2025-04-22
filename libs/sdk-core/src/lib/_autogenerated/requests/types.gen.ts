@@ -188,6 +188,14 @@ export type AgentState = {
    */
   embedding_config: EmbeddingConfig;
   /**
+   * The response format used by the agent when returning from `send_message`.
+   */
+  response_format?:
+    | TextResponseFormat
+    | JsonSchemaResponseFormat
+    | JsonObjectResponseFormat
+    | null;
+  /**
    * The unique identifier of the organization associated with the agent.
    */
   organization_id?: string | null;
@@ -1190,6 +1198,14 @@ export type CreateAgentRequest = {
    * If set to True, memory management will move to a background agent thread.
    */
   enable_sleeptime?: boolean | null;
+  /**
+   * The response format for the agent.
+   */
+  response_format?:
+    | TextResponseFormat
+    | JsonSchemaResponseFormat
+    | JsonObjectResponseFormat
+    | null;
   actor_id?: string | null;
 };
 
@@ -1826,6 +1842,32 @@ export type JobStatus =
   | 'expired';
 
 export type JobType = 'job' | 'run' | 'batch';
+
+/**
+ * Response format for JSON object responses.
+ */
+export type JsonObjectResponseFormat = {
+  /**
+   * The type of the response format.
+   */
+  type?: 'json_object';
+};
+
+/**
+ * Response format for JSON schema-based responses.
+ */
+export type JsonSchemaResponseFormat = {
+  /**
+   * The type of the response format.
+   */
+  type?: 'json_schema';
+  /**
+   * The JSON schema of the response.
+   */
+  json_schema: {
+    [key: string]: unknown;
+  };
+};
 
 /**
  * Configuration for a Language Model (LLM) model. This object specifies all the information necessary to access an LLM model to usage with Letta, except for secret keys.
@@ -3138,6 +3180,16 @@ export type TextContent = {
 };
 
 /**
+ * Response format for plain text responses.
+ */
+export type TextResponseFormat = {
+  /**
+   * The type of the response format.
+   */
+  type?: 'text';
+};
+
+/**
  * Representation of a tool, which is a function that can be called by the agent.
  *
  * Parameters:
@@ -3585,6 +3637,14 @@ export type UpdateAgent = {
    * If set to True, memory management will move to a background agent thread.
    */
   enable_sleeptime?: boolean | null;
+  /**
+   * The response format for the agent.
+   */
+  response_format?:
+    | TextResponseFormat
+    | JsonSchemaResponseFormat
+    | JsonObjectResponseFormat
+    | null;
 };
 
 export type UpdateAssistantMessage = {

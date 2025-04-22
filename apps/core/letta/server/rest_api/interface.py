@@ -1240,10 +1240,11 @@ class StreamingServerInterface(AgentChunkStreamingInterface):
                         and function_call.function.name == self.assistant_message_tool_name
                         and self.assistant_message_tool_kwarg in func_args
                     ):
+                        # Coerce content to `str` in cases where it's a JSON due to `response_format` being a JSON
                         processed_chunk = AssistantMessage(
                             id=msg_obj.id,
                             date=msg_obj.created_at,
-                            content=func_args[self.assistant_message_tool_kwarg],
+                            content=str(func_args[self.assistant_message_tool_kwarg]),
                             name=msg_obj.name,
                             otid=Message.generate_otid_from_id(msg_obj.id, chunk_index) if chunk_index is not None else None,
                         )

@@ -17,6 +17,7 @@ from letta.constants import (
     LETTA_MULTI_AGENT_TOOL_MODULE_NAME,
     LLM_MAX_TOKENS,
     REQ_HEARTBEAT_MESSAGE,
+    SEND_MESSAGE_TOOL_NAME,
 )
 from letta.errors import ContextWindowExceededError
 from letta.functions.ast_parsers import coerce_dict_args_by_annotations, get_function_annotations_from_source
@@ -47,6 +48,7 @@ from letta.schemas.message import Message, MessageCreate, ToolReturn
 from letta.schemas.openai.chat_completion_response import ChatCompletionResponse
 from letta.schemas.openai.chat_completion_response import Message as ChatCompletionMessage
 from letta.schemas.openai.chat_completion_response import UsageStatistics
+from letta.schemas.response_format import ResponseFormatType
 from letta.schemas.sandbox_config import SandboxRunResult
 from letta.schemas.tool import Tool
 from letta.schemas.tool_rule import TerminalToolRule
@@ -256,6 +258,28 @@ class Agent(BaseAgent):
         # Return updated messages
         return messages
 
+    def _runtime_override_tool_json_schema(
+        self,
+        functions_list: List[Dict | None],
+    ) -> List[Dict | None]:
+        """Override the tool JSON schema at runtime for a particular tool if conditions are met."""
+
+        # Currently just injects `send_message` with a `response_format` if provided to the agent.
+        if self.agent_state.response_format and self.agent_state.response_format.type != ResponseFormatType.text:
+            for func in functions_list:
+                if func["name"] == SEND_MESSAGE_TOOL_NAME:
+                    if self.agent_state.response_format.type == ResponseFormatType.json_schema:
+                        func["parameters"]["properties"]["message"] = self.agent_state.response_format.json_schema["schema"]
+                    if self.agent_state.response_format.type == ResponseFormatType.json_object:
+                        func["parameters"]["properties"]["message"] = {
+                            "type": "object",
+                            "description": "Message contents. All unicode (including emojis) are supported.",
+                            "additionalProperties": True,
+                            "properties": {},
+                        }
+                    break
+        return functions_list
+
     @trace_method
     def _get_ai_reply(
         self,
@@ -269,26 +293,25 @@ class Agent(BaseAgent):
         step_count: Optional[int] = None,
         last_function_failed: bool = False,
         put_inner_thoughts_first: bool = True,
-    ) -> ChatCompletionResponse:
+    ) -> ChatCompletionResponse | None:
         """Get response from LLM API with robust retry mechanism."""
         log_telemetry(self.logger, "_get_ai_reply start")
         available_tools = set([t.name for t in self.agent_state.tools])
-        allowed_tool_names = self.tool_rules_solver.get_allowed_tool_names(
-            available_tools=available_tools, last_function_response=self.last_function_response
-        )
         agent_state_tool_jsons = [t.json_schema for t in self.agent_state.tools]
 
-        allowed_functions = (
-            agent_state_tool_jsons
-            if not allowed_tool_names
-            else [func for func in agent_state_tool_jsons if func["name"] in allowed_tool_names]
-        )
+        # Get allowed tools or allow all if none are allowed
+        allowed_tool_names = self.tool_rules_solver.get_allowed_tool_names(
+            available_tools=available_tools, last_function_response=self.last_function_response
+        ) or list(available_tools)
 
         # Don't allow a tool to be called if it failed last time
         if last_function_failed and self.tool_rules_solver.tool_call_history:
-            allowed_functions = [f for f in allowed_functions if f["name"] != self.tool_rules_solver.tool_call_history[-1]]
-            if not allowed_functions:
+            allowed_tool_names = [f for f in allowed_tool_names if f != self.tool_rules_solver.tool_call_history[-1]]
+            if not allowed_tool_names:
                 return None
+
+        allowed_functions = [func for func in agent_state_tool_jsons if func["name"] in allowed_tool_names]
+        allowed_functions = self._runtime_override_tool_json_schema(allowed_functions)
 
         # For the first message, force the initial tool if one is specified
         force_tool_call = None
@@ -419,7 +442,7 @@ class Agent(BaseAgent):
                 tool_call_id = response_message.tool_calls[0].id
                 assert tool_call_id is not None  # should be defined
 
-            # only necessary to add the tool_cal_id to a function call (antipattern)
+            # only necessary to add the tool_call_id to a function call (antipattern)
             # response_message_dict = response_message.model_dump()
             # response_message_dict["tool_call_id"] = tool_call_id
 
@@ -514,6 +537,10 @@ class Agent(BaseAgent):
             # Failure case 3: function failed during execution
             # NOTE: the msg_obj associated with the "Running " message is the prior assistant message, not the function/tool role message
             #       this is because the function/tool role message is only created once the function/tool has executed/returned
+
+            # handle cases where we return a json message
+            if "message" in function_args:
+                function_args["message"] = str(function_args.get("message", ""))
             self.interface.function_message(f"Running {function_name}({function_args})", msg_obj=messages[-1], chunk_index=self.chunk_index)
             self.chunk_index += 1
             try:

@@ -5,7 +5,7 @@ from sqlalchemy import JSON, Boolean, Index, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from letta.orm.block import Block
-from letta.orm.custom_columns import EmbeddingConfigColumn, LLMConfigColumn, ToolRulesColumn
+from letta.orm.custom_columns import EmbeddingConfigColumn, LLMConfigColumn, ResponseFormatColumn, ToolRulesColumn
 from letta.orm.identity import Identity
 from letta.orm.mixins import OrganizationMixin
 from letta.orm.organization import Organization
@@ -15,6 +15,7 @@ from letta.schemas.agent import AgentType, get_prompt_template_for_agent_type
 from letta.schemas.embedding_config import EmbeddingConfig
 from letta.schemas.llm_config import LLMConfig
 from letta.schemas.memory import Memory
+from letta.schemas.response_format import ResponseFormatUnion
 from letta.schemas.tool_rule import ToolRule
 
 if TYPE_CHECKING:
@@ -47,6 +48,11 @@ class Agent(SqlalchemyBase, OrganizationMixin):
     # TODO: This should be a separate mapping table
     # This is dangerously flexible with the JSON type
     message_ids: Mapped[Optional[List[str]]] = mapped_column(JSON, nullable=True, doc="List of message IDs in in-context memory.")
+
+    # Response Format
+    response_format: Mapped[Optional[ResponseFormatUnion]] = mapped_column(
+        ResponseFormatColumn, nullable=True, doc="The response format for the agent."
+    )
 
     # Metadata and configs
     metadata_: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True, doc="metadata for the agent.")
@@ -168,6 +174,7 @@ class Agent(SqlalchemyBase, OrganizationMixin):
             "multi_agent_group": None,
             "tool_exec_environment_variables": [],
             "enable_sleeptime": None,
+            "response_format": self.response_format,
         }
 
         # Optional fields: only included if requested

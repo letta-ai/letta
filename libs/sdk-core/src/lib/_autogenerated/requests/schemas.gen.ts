@@ -587,6 +587,37 @@ export const $AgentState = {
       $ref: '#/components/schemas/EmbeddingConfig',
       description: 'The embedding configuration used by the agent.',
     },
+    response_format: {
+      anyOf: [
+        {
+          oneOf: [
+            {
+              $ref: '#/components/schemas/TextResponseFormat',
+            },
+            {
+              $ref: '#/components/schemas/JsonSchemaResponseFormat',
+            },
+            {
+              $ref: '#/components/schemas/JsonObjectResponseFormat',
+            },
+          ],
+          discriminator: {
+            propertyName: 'type',
+            mapping: {
+              json_object: '#/components/schemas/JsonObjectResponseFormat',
+              json_schema: '#/components/schemas/JsonSchemaResponseFormat',
+              text: '#/components/schemas/TextResponseFormat',
+            },
+          },
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Response Format',
+      description:
+        'The response format used by the agent when returning from `send_message`.',
+    },
     organization_id: {
       anyOf: [
         {
@@ -3756,6 +3787,36 @@ export const $CreateAgentRequest = {
       description:
         'If set to True, memory management will move to a background agent thread.',
     },
+    response_format: {
+      anyOf: [
+        {
+          oneOf: [
+            {
+              $ref: '#/components/schemas/TextResponseFormat',
+            },
+            {
+              $ref: '#/components/schemas/JsonSchemaResponseFormat',
+            },
+            {
+              $ref: '#/components/schemas/JsonObjectResponseFormat',
+            },
+          ],
+          discriminator: {
+            propertyName: 'type',
+            mapping: {
+              json_object: '#/components/schemas/JsonObjectResponseFormat',
+              json_schema: '#/components/schemas/JsonSchemaResponseFormat',
+              text: '#/components/schemas/TextResponseFormat',
+            },
+          },
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Response Format',
+      description: 'The response format for the agent.',
+    },
     actor_id: {
       anyOf: [
         {
@@ -5476,6 +5537,43 @@ export const $JobType = {
   type: 'string',
   enum: ['job', 'run', 'batch'],
   title: 'JobType',
+} as const;
+
+export const $JsonObjectResponseFormat = {
+  properties: {
+    type: {
+      type: 'string',
+      const: 'json_object',
+      title: 'Type',
+      description: 'The type of the response format.',
+      default: 'json_object',
+    },
+  },
+  type: 'object',
+  title: 'JsonObjectResponseFormat',
+  description: 'Response format for JSON object responses.',
+} as const;
+
+export const $JsonSchemaResponseFormat = {
+  properties: {
+    type: {
+      type: 'string',
+      const: 'json_schema',
+      title: 'Type',
+      description: 'The type of the response format.',
+      default: 'json_schema',
+    },
+    json_schema: {
+      additionalProperties: true,
+      type: 'object',
+      title: 'Json Schema',
+      description: 'The JSON schema of the response.',
+    },
+  },
+  type: 'object',
+  required: ['json_schema'],
+  title: 'JsonSchemaResponseFormat',
+  description: 'Response format for JSON schema-based responses.',
 } as const;
 
 export const $LLMConfig = {
@@ -8671,6 +8769,21 @@ export const $TextContent = {
   title: 'TextContent',
 } as const;
 
+export const $TextResponseFormat = {
+  properties: {
+    type: {
+      type: 'string',
+      const: 'text',
+      title: 'Type',
+      description: 'The type of the response format.',
+      default: 'text',
+    },
+  },
+  type: 'object',
+  title: 'TextResponseFormat',
+  description: 'Response format for plain text responses.',
+} as const;
+
 export const $Tool = {
   properties: {
     id: {
@@ -9940,6 +10053,36 @@ export const $UpdateAgent = {
       title: 'Enable Sleeptime',
       description:
         'If set to True, memory management will move to a background agent thread.',
+    },
+    response_format: {
+      anyOf: [
+        {
+          oneOf: [
+            {
+              $ref: '#/components/schemas/TextResponseFormat',
+            },
+            {
+              $ref: '#/components/schemas/JsonSchemaResponseFormat',
+            },
+            {
+              $ref: '#/components/schemas/JsonObjectResponseFormat',
+            },
+          ],
+          discriminator: {
+            propertyName: 'type',
+            mapping: {
+              json_object: '#/components/schemas/JsonObjectResponseFormat',
+              json_schema: '#/components/schemas/JsonSchemaResponseFormat',
+              text: '#/components/schemas/TextResponseFormat',
+            },
+          },
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Response Format',
+      description: 'The response format for the agent.',
     },
   },
   type: 'object',

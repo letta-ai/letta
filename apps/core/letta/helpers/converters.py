@@ -22,6 +22,13 @@ from letta.schemas.letta_message_content import (
 )
 from letta.schemas.llm_config import LLMConfig
 from letta.schemas.message import ToolReturn
+from letta.schemas.response_format import (
+    JsonObjectResponseFormat,
+    JsonSchemaResponseFormat,
+    ResponseFormatType,
+    ResponseFormatUnion,
+    TextResponseFormat,
+)
 from letta.schemas.tool_rule import (
     ChildToolRule,
     ConditionalToolRule,
@@ -371,3 +378,25 @@ def deserialize_agent_step_state(data: Optional[Dict]) -> Optional[AgentStepStat
         return None
 
     return AgentStepState(**data)
+
+
+# --------------------------
+# Response Format Serialization
+# --------------------------
+
+
+def serialize_response_format(response_format: Optional[ResponseFormatUnion]) -> Optional[Dict[str, Any]]:
+    if not response_format:
+        return None
+    return response_format.model_dump(mode="json")
+
+
+def deserialize_response_format(data: Optional[Dict]) -> Optional[ResponseFormatUnion]:
+    if not data:
+        return None
+    if data["type"] == ResponseFormatType.text:
+        return TextResponseFormat(**data)
+    if data["type"] == ResponseFormatType.json_schema:
+        return JsonSchemaResponseFormat(**data)
+    if data["type"] == ResponseFormatType.json_object:
+        return JsonObjectResponseFormat(**data)
