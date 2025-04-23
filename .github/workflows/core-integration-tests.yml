@@ -10,6 +10,7 @@ env:
   AZURE_BASE_URL: ${{ secrets.AZURE_BASE_URL }}
   E2B_API_KEY: ${{ secrets.E2B_API_KEY }}
   E2B_SANDBOX_TEMPLATE_ID: ${{ secrets.E2B_SANDBOX_TEMPLATE_ID }}
+  LETTA_ENABLE_BATCH_JOB_POLLING: true
 
 on:
   push:
