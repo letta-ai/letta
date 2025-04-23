@@ -6,7 +6,7 @@ import {
   organizationUsers,
   users,
 } from '@letta-cloud/service-database';
-import { and, eq, sql } from 'drizzle-orm';
+import { and, eq } from 'drizzle-orm';
 import { createPaymentCustomer } from '../createPaymentCustomer/createPaymentCustomer';
 
 export async function getPaymentCustomer(organizationId: string) {

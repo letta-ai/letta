@@ -4,7 +4,6 @@ import {
   pgEnum,
   timestamp,
   boolean,
-  bigint,
   uniqueIndex,
   json,
   numeric,
@@ -18,6 +17,7 @@ import type {
   MemoryVariableVersionOneType,
   OnboardingStepsType,
   AccessPolicyVersionOneType,
+  DatabaseBillingTiersType,
 } from '@letta-cloud/types';
 import type { ApplicationServices } from '@letta-cloud/service-rbac';
 import type { UserPresetRolesType } from '@letta-cloud/service-rbac';
@@ -821,7 +821,7 @@ export const organizationBillingDetails = pgTable(
       .references(() => organizations.id, { onDelete: 'cascade' })
       .primaryKey(),
     stripeCustomerId: text('stripe_customer_id'),
-    billingTier: text('billing_tier'),
+    billingTier: text('billing_tier').$type<DatabaseBillingTiersType | null>(),
     pricingModel: pricingModelEnum('pricing_model').notNull(),
     monthlyCreditAllocation: numeric('monthly_credit_allocation'),
   },

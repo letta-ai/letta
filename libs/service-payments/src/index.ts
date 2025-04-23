@@ -9,3 +9,4 @@ export * from './lib/createPayment/createPayment';
 export * from './lib/getPaymentMethodDetails/getPaymentMethodDetails';
 export * from './lib/listPaymentIntents/listPaymentIntents';
 export * from './lib/getPaymentCharge/getPaymentCharge';
+export * from './lib/getCustomerBillingTier/getCustomerBillingTier';

@@ -1164,6 +1164,91 @@ async function adminListSSOConfigurations(
   };
 }
 
+type ToggleBillingMethodRequest = ServerInferRequest<
+  typeof contracts.admin.organizations.toggleBillingMethod
+>;
+
+type ToggleBillingMethodResponse = ServerInferResponses<
+  typeof contracts.admin.organizations.toggleBillingMethod
+>;
+
+async function toggleBillingMethod(
+  req: ToggleBillingMethodRequest,
+): Promise<ToggleBillingMethodResponse> {
+  const { organizationId } = req.params;
+  const { method } = req.body;
+
+  const organization = await db.query.organizations.findFirst({
+    where: eq(organizations.id, organizationId),
+  });
+
+  if (!organization) {
+    return {
+      status: 404,
+      body: {
+        message: 'Organization not found',
+      },
+    };
+  }
+
+  if (!method) {
+    return {
+      status: 400,
+      body: {
+        message: 'Method is required',
+      },
+    };
+  }
+
+  await db
+    .update(organizationBillingDetails)
+    .set({
+      billingTier: method,
+    })
+    .where(eq(organizationBillingDetails.organizationId, organization.id));
+
+  return {
+    status: 200,
+    body: {
+      success: true,
+    },
+  };
+}
+
+type AdminGetBillingMethodRequest = ServerInferRequest<
+  typeof contracts.admin.organizations.adminGetBillingMethod
+>;
+
+type AdminGetBillingMethodResponse = ServerInferResponses<
+  typeof contracts.admin.organizations.adminGetBillingMethod
+>;
+
+async function adminGetBillingMethod(
+  req: AdminGetBillingMethodRequest,
+): Promise<AdminGetBillingMethodResponse> {
+  const { organizationId } = req.params;
+
+  const organization = await db.query.organizationBillingDetails.findFirst({
+    where: eq(organizationBillingDetails.organizationId, organizationId),
+  });
+
+  if (!organization) {
+    return {
+      status: 404,
+      body: {
+        message: 'Organization not found',
+      },
+    };
+  }
+
+  return {
+    status: 200,
+    body: {
+      method: organization.billingTier,
+    },
+  };
+}
+
 export const adminOrganizationsRouter = {
   getOrganizations,
   getOrganization,
@@ -1179,6 +1264,7 @@ export const adminOrganizationsRouter = {
   adminGetOrganizationCredits,
   adminAddCreditsToOrganization,
   adminRemoveCreditsFromOrganization,
+  adminGetBillingMethod,
   adminListOrganizationCreditTransactions,
   adminUpdateOrganizationBillingSettings,
   adminGetOrganizationBillingSettings,
@@ -1191,4 +1277,5 @@ export const adminOrganizationsRouter = {
   adminAddSSOConfiguration,
   adminDeleteSSOConfiguration,
   adminListSSOConfigurations,
+  toggleBillingMethod,
 };

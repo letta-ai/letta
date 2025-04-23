@@ -2,6 +2,7 @@ import type { ServerInferResponses } from '@ts-rest/core';
 import { initContract } from '@ts-rest/core';
 import { z } from 'zod';
 import { UserPresetRoles } from '@letta-cloud/service-rbac';
+import { BillingTiers } from '@letta-cloud/types';
 
 const c = initContract();
 
@@ -313,7 +314,7 @@ export type CreditCardType = z.infer<typeof CreditCardSchema>;
 
 const GetCurrentOrganizationBillingInfoResponse = z.object({
   creditCards: CreditCardSchema.array(),
-  billingTier: z.string().optional(),
+  billingTier: BillingTiers,
   totalCredits: z.number(),
 });
 

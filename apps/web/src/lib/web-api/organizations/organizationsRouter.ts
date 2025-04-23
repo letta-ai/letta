@@ -34,6 +34,7 @@ import {
   setDefaultPaymentMethod,
   listPaymentIntents,
   getPaymentCharge,
+  getCustomerBillingTier,
 } from '@letta-cloud/service-payments';
 import { ApplicationServices } from '@letta-cloud/service-rbac';
 import {
@@ -724,15 +725,18 @@ async function getCurrentOrganizationBillingInfo(): Promise<GetCurrentOrganizati
   }
 
   // do not run in parallel as payment customer may not exist yet
-  const paymentCustomer = await getPaymentCustomer(activeOrganizationId);
-  const creditCards = await listCreditCards({
-    organizationId: activeOrganizationId,
-  });
+  const [paymentCustomer, billingTier, creditCards] = await Promise.all([
+    getPaymentCustomer(activeOrganizationId),
+    getCustomerBillingTier(activeOrganizationId),
+    listCreditCards({
+      organizationId: activeOrganizationId,
+    }),
+  ]);
 
   return {
     status: 200,
     body: {
-      billingTier: organization.billingTier || 'basic',
+      billingTier,
       creditCards: creditCards.map((card) => ({
         id: card.id,
         brand: card.card.brand,

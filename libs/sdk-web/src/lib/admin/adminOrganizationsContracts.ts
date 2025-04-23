@@ -1,7 +1,7 @@
 import { initContract } from '@ts-rest/core';
 import { z } from 'zod';
 import { type GenericSearch, GenericSearchSchema } from '../shared';
-import { PricingModelEnum } from '@letta-cloud/types';
+import { DatabaseBillingTiers, PricingModelEnum } from '@letta-cloud/types';
 import { organizationVerifiedDomains } from '@letta-cloud/service-database';
 
 const c = initContract();
@@ -532,9 +532,40 @@ const adminListSSOConfigurationsContract = c.query({
   },
 });
 
+const toggleBillingMethodContract = c.mutation({
+  path: '/admin/organizations/:organizationId/billing-method',
+  method: 'PUT',
+  body: z.object({
+    method: DatabaseBillingTiers,
+  }),
+  pathParams: z.object({
+    organizationId: z.string(),
+  }),
+  responses: {
+    200: z.object({
+      success: z.boolean(),
+    }),
+  },
+});
+
+const adminGetBillingMethodContract = c.query({
+  path: '/admin/organizations/:organizationId/billing-method',
+  method: 'GET',
+  pathParams: z.object({
+    organizationId: z.string(),
+  }),
+  responses: {
+    200: z.object({
+      method: DatabaseBillingTiers.nullable(),
+    }),
+  },
+});
+
 export const adminOrganizationsContracts = {
   getOrganizations: getOrganizationsContract,
   getOrganization: getOrganizationContract,
+  toggleBillingMethod: toggleBillingMethodContract,
+  adminGetBillingMethod: adminGetBillingMethodContract,
   toggleCloudOrganization: toggleCloudOrganizationContract,
   adminBanOrganization: adminBanOrganizationContract,
   adminUnbanOrganization: adminUnbanOrganizationContract,
@@ -653,5 +684,9 @@ export const adminOrganizationsQueryClientKeys = {
       organizationId,
     ),
     search,
+  ],
+  adminGetBillingMethod: (organizationId: string) => [
+    ...adminOrganizationsQueryClientKeys.getOrganization(organizationId),
+    'billing-method',
   ],
 };

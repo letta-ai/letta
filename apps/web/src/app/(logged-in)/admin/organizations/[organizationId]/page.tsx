@@ -46,6 +46,92 @@ import { creditsToDollars } from '@letta-cloud/utils-shared';
 import { useNumberFormatter } from '@letta-cloud/utils-client';
 import { PricingModelEnum } from '@letta-cloud/types';
 
+function SetAsEnterpriseBillingMethodButton() {
+  const organization = useCurrentAdminOrganization();
+
+  const { mutate, isPending, isError } =
+    webApi.admin.organizations.toggleBillingMethod.useMutation();
+
+  const handleSetAsEnterpriseBillingMethod = useCallback(() => {
+    if (!organization) {
+      return;
+    }
+
+    mutate(
+      {
+        params: {
+          organizationId: organization.id,
+        },
+        body: {
+          method: 'enterprise',
+        },
+      },
+      {
+        onSuccess: () => {
+          window.location.reload();
+        },
+      },
+    );
+  }, [mutate, organization]);
+
+  return (
+    <Dialog
+      title="Set as Enterprise Billing Method"
+      trigger={<Button size="small" label="Set as Enterprise Billing" />}
+      isConfirmBusy={isPending}
+      errorMessage={
+        isError ? 'Failed to set as enterprise billing method' : undefined
+      }
+      onConfirm={handleSetAsEnterpriseBillingMethod}
+    >
+      <p>Are you sure you want to set this organization as enterprise?</p>
+    </Dialog>
+  );
+}
+
+function SetAsStripeManagedBillingMethodButton() {
+  const organization = useCurrentAdminOrganization();
+
+  const { mutate, isPending, isError } =
+    webApi.admin.organizations.toggleBillingMethod.useMutation();
+
+  const handleSetAsStripeManagedBillingMethod = useCallback(() => {
+    if (!organization) {
+      return;
+    }
+
+    mutate(
+      {
+        params: {
+          organizationId: organization.id,
+        },
+        body: {
+          method: 'stripe_managed',
+        },
+      },
+      {
+        onSuccess: () => {
+          window.location.reload();
+        },
+      },
+    );
+  }, [mutate, organization]);
+
+  return (
+    <Dialog
+      title="Set as Stripe Managed Billing Method"
+      trigger={<Button size="small" label="Set as Stripe Managed" />}
+      isConfirmBusy={isPending}
+      errorMessage={
+        isError ? 'Failed to set as stripe managed billing method' : undefined
+      }
+      onConfirm={handleSetAsStripeManagedBillingMethod}
+    >
+      <p>Are you sure you want to set this organization as stripe managed?</p>
+    </Dialog>
+  );
+}
+
 function EnableCloudAccess() {
   const organization = useCurrentAdminOrganization();
 
@@ -471,6 +557,7 @@ function VerifiedDomains() {
   );
 }
 
+/* eslint-disable @typescript-eslint/no-unused-vars */
 function OrganizationBillingSettings() {
   const organization = useCurrentAdminOrganization();
 
@@ -862,6 +949,38 @@ function UsageDetails() {
   );
 }
 
+function BillingPlanConfiguration() {
+  const organization = useCurrentAdminOrganization();
+
+  const { data } = webApi.admin.organizations.adminGetBillingMethod.useQuery({
+    queryKey: webApiQueryKeys.admin.organizations.adminGetBillingMethod(
+      organization?.id || '',
+    ),
+    queryData: {
+      params: {
+        organizationId: organization?.id || '',
+      },
+    },
+    enabled: !!organization,
+  });
+
+  if (!data) {
+    return <div>Loading...</div>;
+  }
+
+  return (
+    <HStack align="center" justify="end">
+      ({data.body.method})
+      {data.body.method !== 'enterprise' && (
+        <SetAsEnterpriseBillingMethodButton />
+      )}
+      {data.body.method !== 'stripe_managed' && (
+        <SetAsStripeManagedBillingMethodButton />
+      )}
+    </HStack>
+  );
+}
+
 interface MaybeValueProps {
   value?: number;
   isLoading?: boolean;
@@ -911,6 +1030,10 @@ function OrganizationProperties() {
             )}
           </HStack>
         ),
+      },
+      {
+        name: 'Billing Plan',
+        value: <BillingPlanConfiguration />,
       },
 
       {
@@ -1795,7 +1918,7 @@ function OrganizationPage() {
         </HStack>
       </DashboardPageSection>
       <OrganizationProperties />
-      <OrganizationBillingSettings />
+      {/*<OrganizationBillingSettings />*/}
       <OrganizationLevelRateLimitTable />
       <VerifiedDomains />
       <CreditSection />
