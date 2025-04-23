@@ -801,6 +801,8 @@ export const organizationCreditTransactions = pgTable(
       .notNull(),
     stepId: text('step_id').unique(),
     source: text('source').notNull(),
+    modelId: text('model_id'),
+    modelTier: text('model_tier'),
     amount: numeric('amount').notNull(),
     transactionType: transactionTypesEnum('transaction_type').notNull(),
     note: text('note'),

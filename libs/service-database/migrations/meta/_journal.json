@@ -505,6 +505,13 @@
       "when": 1745440046759,
       "tag": "0071_swift_starjammers",
       "breakpoints": true
+    },
+    {
+      "idx": 72,
+      "version": "7",
+      "when": 1745447827576,
+      "tag": "0072_lowly_jack_flag",
+      "breakpoints": true
     }
   ]
 }
