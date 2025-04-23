@@ -1,6 +1,6 @@
 from typing import List, Optional
 
-from fastapi import APIRouter, Body, Depends, Header
+from fastapi import APIRouter, Body, Depends, Header, status
 from fastapi.exceptions import HTTPException
 from starlette.requests import Request
 
@@ -11,6 +11,7 @@ from letta.schemas.job import BatchJob, JobStatus, JobType, JobUpdate
 from letta.schemas.letta_request import CreateBatch
 from letta.server.rest_api.utils import get_letta_server
 from letta.server.server import SyncServer
+from letta.settings import settings
 
 router = APIRouter(prefix="/messages", tags=["messages"])
 
@@ -42,6 +43,13 @@ async def create_messages_batch(
         length = int(content_length)
         if length > max_bytes:
             raise HTTPException(status_code=413, detail=f"Request too large ({length} bytes). Max is {max_bytes} bytes.")
+
+    # Reject request if env var is not set
+    if not settings.enable_batch_job_polling:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Server misconfiguration: LETTA_ENABLE_BATCH_JOB_POLLING is set to False.",
+        )
 
     actor = server.user_manager.get_user_or_default(user_id=actor_id)
     batch_job = BatchJob(
