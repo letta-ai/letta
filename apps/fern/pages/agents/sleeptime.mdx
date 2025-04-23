@@ -41,6 +41,8 @@ When sleep-time is enabled for an agent, there will be one or more sleep-time ag
 
 When a sleep-time-enabled agent is created, an additional sleep-time agent is created to generate learned context from the conversation history to update the memory blocks of the primary agent. Under the hood, the primary agent and sleep-time agent are part of a multi-agent group. The group ensures that for every `N` steps by the primary agent, the sleep-time agent is invoked with data containing new messges in the primary agent's message history.
 
+<img src="/images/sleeptime_chat_only.gif" />
+
 ### Configuring the frequency of sleep-time updates
 The sleep-time agent will be triggered every N-steps (default `5`) to update the memory blocks of the primary agent. You can configure the frequency of updates by setting the `sleep_time_agent_frequency` parameter when creating the agent.
 ```python maxLines=50
@@ -84,6 +86,8 @@ We recommend keeping the frequency relatively high (e.g. 5 or 10) as triggering 
 Sleep-time-enabled agents will spawn additional ephemeral sleep-time agents when you add data into data sources of the primary agent to process the data sources in the background. These ephemeral agents will create and write to a block specific to the data source, and be deleted once they are finished processing the data sources.
 
 When a file is uploaded to a data source, it is parsed into passages (chunks of text) which are embedded and saved into the main agent's archival memory. If sleeptime is enabled, the sleep-time agent will also process each passage's text to update the memory block corresponding to the data source. The sleep-time agent will contrain an `instructions` block that contains the data source description, to help guide the learned context generation.
+
+<img src="/images/sleeptime_data_source.gif" />
 
 <Tip>
 Give your data sources an informative `name` and `description` when creating them to help the sleep-time agent generate better learned context, and to help the primary agent understand what the associated memory block is for. 
