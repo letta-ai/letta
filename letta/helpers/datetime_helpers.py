@@ -66,6 +66,15 @@ def get_utc_time() -> datetime:
     return datetime.now(timezone.utc)
 
 
+def get_utc_time_int() -> int:
+    return int(get_utc_time().timestamp())
+
+
+def timestamp_to_datetime(timestamp_seconds: int) -> datetime:
+    """Convert Unix timestamp in seconds to UTC datetime object"""
+    return datetime.fromtimestamp(timestamp_seconds, tz=timezone.utc)
+
+
 def format_datetime(dt):
     return dt.strftime("%Y-%m-%d %I:%M:%S %p %Z%z")
 
