@@ -8,7 +8,7 @@ slug: guides/agents/sleep-time-agents
 <img className="light" src="/images/sleep_time.png" />
 <img className="dark" src="/images/sleep_time_dark.png" />
 
-In Letta, you can create special **sleep-time agents** that share the memory of your primary agents, but run in the background and can modify the memory asynchronously. You can think of sleep-time agents as a special form of mulit-agent architecture, where all agents in the system share one or more memory blocks. A single agent can have one or more associated sleep-time agents to process data such as the conversation history or data sources to manage the memory blocks of the primary agent.
+In Letta, you can create special **sleep-time agents** that share the memory of your primary agents, but run in the background and can modify the memory asynchronously. You can think of sleep-time agents as a special form of multi-agent architecture, where all agents in the system share one or more memory blocks. A single agent can have one or more associated sleep-time agents to process data such as the conversation history or data sources to manage the memory blocks of the primary agent.
 
 To enable sleep-time agents for your agent, create the agent with type `sleeptime_agent`. When you create an agent of this type, this will automatically create:
 * A primary agent (i.e. general-purpose agent) tools for `send_message`, `conversation_search`, and `archival_memory_search`. This is your "main" agent that you configure and interact with.
@@ -58,7 +58,7 @@ agent = client.agents.create(
     ],
     model="anthropic/claude-3-7-sonnet-20250219",
     embedding="openai/text-embedding-ada-002",
-    enable_sleep_time=True,
+    enable_sleeptime=True,
 )
 print(f"Created agent id {agent.id}")
 
@@ -108,7 +108,7 @@ agent = client.agents.create(
     ],
     model="anthropic/claude-3-7-sonnet-20250219",
     embedding="openai/text-embedding-ada-002",
-    enable_sleep_time=True,
+    enable_sleeptime=True,
 )
 print(f"Created agent id {agent.id}")
 
