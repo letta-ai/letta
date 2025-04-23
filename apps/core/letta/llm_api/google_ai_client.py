@@ -25,15 +25,15 @@ logger = get_logger(__name__)
 
 class GoogleAIClient(LLMClientBase):
 
-    def request(self, request_data: dict) -> dict:
+    def request(self, request_data: dict, llm_config: LLMConfig) -> dict:
         """
         Performs underlying request to llm and returns raw response.
         """
         # print("[google_ai request]", json.dumps(request_data, indent=2))
 
         url, headers = get_gemini_endpoint_and_headers(
-            base_url=str(self.llm_config.model_endpoint),
-            model=self.llm_config.model,
+            base_url=str(llm_config.model_endpoint),
+            model=llm_config.model,
             api_key=str(model_settings.gemini_api_key),
             key_in_header=True,
             generate_content=True,
@@ -55,7 +55,7 @@ class GoogleAIClient(LLMClientBase):
             tool_objs = [Tool(**t) for t in tools]
             tool_names = [t.function.name for t in tool_objs]
             # Convert to the exact payload style Google expects
-            tools = self.convert_tools_to_google_ai_format(tool_objs)
+            tools = self.convert_tools_to_google_ai_format(tool_objs, llm_config)
         else:
             tool_names = []
 
@@ -88,6 +88,7 @@ class GoogleAIClient(LLMClientBase):
         self,
         response_data: dict,
         input_messages: List[PydanticMessage],
+        llm_config: LLMConfig,
     ) -> ChatCompletionResponse:
         """
         Converts custom response format from llm client into an OpenAI
@@ -150,7 +151,7 @@ class GoogleAIClient(LLMClientBase):
                         assert isinstance(function_args, dict), function_args
 
                         # NOTE: this also involves stripping the inner monologue out of the function
-                        if self.llm_config.put_inner_thoughts_in_kwargs:
+                        if llm_config.put_inner_thoughts_in_kwargs:
                             from letta.local_llm.constants import INNER_THOUGHTS_KWARG
 
                             assert INNER_THOUGHTS_KWARG in function_args, f"Couldn't find inner thoughts in function args:\n{function_call}"
@@ -259,14 +260,14 @@ class GoogleAIClient(LLMClientBase):
             return ChatCompletionResponse(
                 id=response_id,
                 choices=choices,
-                model=self.llm_config.model,  # NOTE: Google API doesn't pass back model in the response
+                model=llm_config.model,  # NOTE: Google API doesn't pass back model in the response
                 created=get_utc_time_int(),
                 usage=usage,
             )
         except KeyError as e:
             raise e
 
-    def convert_tools_to_google_ai_format(self, tools: List[Tool]) -> List[dict]:
+    def convert_tools_to_google_ai_format(self, tools: List[Tool], llm_config: LLMConfig) -> List[dict]:
         """
         OpenAI style:
         "tools": [{
@@ -326,7 +327,7 @@ class GoogleAIClient(LLMClientBase):
             # Note: Google AI API used to have weird casing requirements, but not any more
 
             # Add inner thoughts
-            if self.llm_config.put_inner_thoughts_in_kwargs:
+            if llm_config.put_inner_thoughts_in_kwargs:
                 from letta.local_llm.constants import INNER_THOUGHTS_KWARG, INNER_THOUGHTS_KWARG_DESCRIPTION
 
                 func["parameters"]["properties"][INNER_THOUGHTS_KWARG] = {
