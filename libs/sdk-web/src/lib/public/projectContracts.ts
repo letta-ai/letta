@@ -48,6 +48,9 @@ const createProjectContract = c.mutation({
   body: CreateProjectPayloadSchema,
   responses: {
     201: PartialProjectSchema,
+    400: z.object({
+      errorCode: z.enum(['projectLimitReached', 'noPermission']),
+    }),
   },
 });
 

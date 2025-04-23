@@ -19,14 +19,17 @@ import {
   useForm,
   VStack,
 } from '@letta-cloud/ui-component-library';
-import { webApi, webApiQueryKeys } from '$web/client';
+import { webApi, webApiContracts, webApiQueryKeys } from '$web/client';
 import { useDebouncedValue } from '@mantine/hooks';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useRouter } from 'next/navigation';
 import { useQueryClient } from '@tanstack/react-query';
 import { useTranslations } from '@letta-cloud/translations';
-import { useDateFormatter } from '@letta-cloud/utils-client';
+import {
+  useDateFormatter,
+  useErrorTranslationMessage,
+} from '@letta-cloud/utils-client';
 import Link from 'next/link';
 import { useUserHasPermission } from '$web/client/hooks';
 import { ApplicationServices } from '@letta-cloud/service-rbac';
@@ -51,7 +54,7 @@ function CreateProjectDialog() {
   });
   const queryClient = useQueryClient();
 
-  const { mutate, isPending, isSuccess } =
+  const { mutate, isPending, error, isSuccess } =
     webApi.projects.createProject.useMutation({
       onSuccess: async (res) => {
         void queryClient.invalidateQueries({
@@ -61,6 +64,15 @@ function CreateProjectDialog() {
         push(`/projects/${res.body.slug}`);
       },
     });
+
+  const errorTranslation = useErrorTranslationMessage(error, {
+    messageMap: {
+      projectLimitReached: t('createProjectDialog.errors.projectLimitReached'),
+      noPermission: t('createProjectDialog.errors.noPermission'),
+      default: t('createProjectDialog.errors.default'),
+    },
+    contract: webApiContracts.projects.createProject,
+  });
 
   const handleSubmit = useCallback(
     (values: z.infer<typeof createProjectFormSchema>) => {
@@ -84,6 +96,7 @@ function CreateProjectDialog() {
   return (
     <FormProvider {...form}>
       <Dialog
+        errorMessage={errorTranslation?.message}
         title={t('createProjectDialog.title')}
         confirmText={t('createProjectDialog.createButton')}
         isOpen={isOpen}

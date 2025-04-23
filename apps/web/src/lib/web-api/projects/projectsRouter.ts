@@ -11,6 +11,7 @@ import { and, count, eq, ilike, isNull } from 'drizzle-orm';
 import type { contracts, projectsContract } from '$web/web-api/contracts';
 import { generateSlug } from '$web/server';
 import { ApplicationServices } from '@letta-cloud/service-rbac';
+import { getCurrentOrganizationUsageLimits } from '@letta-cloud/utils-server';
 
 type ResponseShapes = ServerInferResponses<typeof projectsContract>;
 type GetProjectsRequest = ServerInferRequest<
@@ -32,7 +33,6 @@ export async function getProjects(
       body: {},
     };
   }
-
   const where = [
     isNull(projects.deletedAt),
     eq(projects.organizationId, activeOrganizationId),
@@ -150,7 +150,9 @@ export async function createProject(
   ) {
     return {
       status: 403,
-      body: {},
+      body: {
+        errorCode: 'noPermission',
+      },
     };
   }
 
@@ -164,14 +166,25 @@ export async function createProject(
     ),
   });
 
+  const [{ count: projectCount }] = await db
+    .select({ count: count() })
+    .from(projects)
+    .where(eq(projects.organizationId, organizationId));
+
   if (existingProject) {
     // get total project count
-    const [{ count: projectCount }] = await db
-      .select({ count: count() })
-      .from(projects)
-      .where(eq(projects.organizationId, organizationId));
-
     projectSlug = `${projectSlug}-${projectCount}`;
+  }
+
+  const limits = await getCurrentOrganizationUsageLimits(organizationId);
+
+  if (projectCount >= limits.projects) {
+    return {
+      status: 400,
+      body: {
+        errorCode: 'projectLimitReached',
+      },
+    };
   }
 
   const [project] = await db

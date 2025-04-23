@@ -1002,6 +1002,11 @@
       "nameInput": {
         "label": "Project name"
       },
+      "errors": {
+        "default": "There was an error creating the project, please try again or contact support.",
+        "noPermission": "You do not have permission to create a project in this organization, please contact your organization's administrator.",
+        "projectLimitReached": "You have reached your organization's project limit, please upgrade your plan or contact support."
+      },
       "createButton": "Create project",
       "triggerButton": "Create project"
     },
