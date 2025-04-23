@@ -352,7 +352,7 @@ async def send_message_to_agent_no_stream(
     server: "SyncServer",
     agent_id: str,
     actor: User,
-    messages: Union[List[Message], List[MessageCreate]],
+    messages: List[MessageCreate],
     metadata: Optional[dict] = None,
 ) -> LettaResponse:
     """
@@ -368,7 +368,7 @@ async def send_message_to_agent_no_stream(
         server.send_messages,
         actor=actor,
         agent_id=agent_id,
-        messages=messages,
+        input_messages=messages,
         interface=interface,
         metadata=metadata,
     )
@@ -478,7 +478,7 @@ def fire_and_forget_send_to_agent(
                 await server.send_message_to_agent(
                     agent_id=other_agent_id,
                     actor=sender_agent.user,
-                    messages=messages,
+                    input_messages=messages,
                     stream_steps=False,
                     stream_tokens=False,
                     use_assistant_message=True,

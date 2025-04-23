@@ -160,12 +160,12 @@ def execute_external_tool(
             else:
                 agent_state_copy = None
 
-            sandbox_run_result = ToolExecutionSandbox(function_name, function_args, actor).run(agent_state=agent_state_copy)
-            function_response, updated_agent_state = sandbox_run_result.func_return, sandbox_run_result.agent_state
+            tool_execution_result = ToolExecutionSandbox(function_name, function_args, actor).run(agent_state=agent_state_copy)
+            function_response, updated_agent_state = tool_execution_result.func_return, tool_execution_result.agent_state
             # TODO: Bring this back
             # if allow_agent_state_modifications and updated_agent_state is not None:
             #     self.update_memory_if_changed(updated_agent_state.memory)
-            return function_response, sandbox_run_result
+            return function_response, tool_execution_result
     except Exception as e:
         # Need to catch error here, or else trunction wont happen
         # TODO: modify to function execution error

@@ -9,7 +9,6 @@ from letta.functions.helpers import (
     extract_send_message_from_steps_messages,
     fire_and_forget_send_to_agent,
 )
-from letta.helpers.message_helper import prepare_input_message_create
 from letta.schemas.enums import MessageRole
 from letta.schemas.message import MessageCreate
 from letta.server.rest_api.utils import get_letta_server
@@ -109,11 +108,10 @@ def send_message_to_agents_matching_tags(self: "Agent", message: str, match_all:
 
         # Prepare the message
         messages = [MessageCreate(role=MessageRole.system, content=augmented_message, name=self.agent_state.name)]
-        input_messages = [prepare_input_message_create(m, agent_id) for m in messages]
 
         # Run .step() and return the response
         usage_stats = agent.step(
-            messages=input_messages,
+            input_messages=messages,
             chaining=True,
             max_chaining_steps=None,
             stream=False,

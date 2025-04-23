@@ -28,7 +28,6 @@ from letta.functions.mcp_client.types import MCPServerType, MCPTool, SSEServerCo
 from letta.groups.helpers import load_multi_agent
 from letta.helpers.datetime_helpers import get_utc_time
 from letta.helpers.json_helpers import json_dumps, json_loads
-from letta.helpers.message_helper import prepare_input_message_create
 
 # TODO use custom interface
 from letta.interface import AgentInterface  # abstract
@@ -148,7 +147,7 @@ class Server(object):
         raise NotImplementedError
 
     @abstractmethod
-    def send_messages(self, user_id: str, agent_id: str, messages: Union[MessageCreate, List[Message]]) -> None:
+    def send_messages(self, user_id: str, agent_id: str, input_messages: List[MessageCreate]) -> None:
         """Send a list of messages to the agent"""
         raise NotImplementedError
 
@@ -372,19 +371,13 @@ class SyncServer(Server):
         self,
         actor: User,
         agent_id: str,
-        input_messages: Union[Message, List[Message]],
+        input_messages: List[MessageCreate],
         interface: Union[AgentInterface, None] = None,  # needed to getting responses
         put_inner_thoughts_first: bool = True,
         # timestamp: Optional[datetime],
     ) -> LettaUsageStatistics:
         """Send the input message through the agent"""
         # TODO: Thread actor directly through this function, since the top level caller most likely already retrieved the user
-        # Input validation
-        if isinstance(input_messages, Message):
-            input_messages = [input_messages]
-        if not all(isinstance(m, Message) for m in input_messages):
-            raise ValueError(f"messages should be a Message or a list of Message, got {type(input_messages)}")
-
         logger.debug(f"Got input messages: {input_messages}")
         letta_agent = None
         try:
@@ -400,8 +393,9 @@ class SyncServer(Server):
                 metadata = interface.metadata if hasattr(interface, "metadata") else None
             else:
                 metadata = None
+
             usage_stats = letta_agent.step(
-                messages=input_messages,
+                input_messages=input_messages,
                 chaining=self.chaining,
                 max_chaining_steps=self.max_chaining_steps,
                 stream=token_streaming,
@@ -572,23 +566,14 @@ class SyncServer(Server):
             )
 
             # NOTE: eventually deprecate and only allow passing Message types
-            # Convert to a Message object
-            if timestamp:
-                message = Message(
-                    agent_id=agent_id,
-                    role="user",
-                    content=[TextContent(text=packaged_user_message)],
-                    created_at=timestamp,
-                )
-            else:
-                message = Message(
-                    agent_id=agent_id,
-                    role="user",
-                    content=[TextContent(text=packaged_user_message)],
-                )
+            message = MessageCreate(
+                agent_id=agent_id,
+                role="user",
+                content=[TextContent(text=packaged_user_message)],
+            )
 
         # Run the agent state forward
-        usage = self._step(actor=actor, agent_id=agent_id, input_messages=message)
+        usage = self._step(actor=actor, agent_id=agent_id, input_messages=[message])
         return usage
 
     def system_message(
@@ -660,23 +645,14 @@ class SyncServer(Server):
         self,
         actor: User,
         agent_id: str,
-        messages: Union[List[MessageCreate], List[Message]],
+        input_messages: List[MessageCreate],
         wrap_user_message: bool = True,
         wrap_system_message: bool = True,
         interface: Union[AgentInterface, ChatCompletionsStreamingInterface, None] = None,  # needed for responses
         metadata: Optional[dict] = None,  # Pass through metadata to interface
         put_inner_thoughts_first: bool = True,
     ) -> LettaUsageStatistics:
-        """Send a list of messages to the agent.
-
-        If messages are of type MessageCreate, convert them to Message objects before sending.
-        """
-        if all(isinstance(m, MessageCreate) for m in messages):
-            message_objects = [prepare_input_message_create(m, agent_id, wrap_user_message, wrap_system_message) for m in messages]
-        elif all(isinstance(m, Message) for m in messages):
-            message_objects = messages
-        else:
-            raise ValueError(f"All messages must be of type Message or MessageCreate, got {[type(m) for m in messages]}")
+        """Send a list of messages to the agent."""
 
         # Store metadata in interface if provided
         if metadata and hasattr(interface, "metadata"):
@@ -686,7 +662,7 @@ class SyncServer(Server):
         return self._step(
             actor=actor,
             agent_id=agent_id,
-            input_messages=message_objects,
+            input_messages=input_messages,
             interface=interface,
             put_inner_thoughts_first=put_inner_thoughts_first,
         )
@@ -703,8 +679,6 @@ class SyncServer(Server):
     @trace_method
     def get_cached_llm_config(self, **kwargs):
         key = make_key(**kwargs)
-        print(self._llm_config_cache)
-        print("KEY", key)
         if key not in self._llm_config_cache:
             self._llm_config_cache[key] = self.get_llm_config_from_handle(**kwargs)
         return self._llm_config_cache[key]
@@ -1019,12 +993,8 @@ class SyncServer(Server):
         agent = self.load_agent(agent_id=sleeptime_agent.id, actor=actor)
         for passage in self.list_data_source_passages(source_id=source.id, user_id=actor.id):
             agent.step(
-                messages=[
-                    Message(
-                        role="user",
-                        content=[TextContent(text=passage.text)],
-                        agent_id=sleeptime_agent.id,
-                    ),
+                input_messages=[
+                    MessageCreate(role="user", content=passage.text),
                 ]
             )
         self.agent_manager.delete_agent(agent_id=sleeptime_agent.id, actor=actor)
@@ -1182,7 +1152,6 @@ class SyncServer(Server):
             provider = self.get_provider_from_name(provider_name)
 
             llm_configs = [config for config in provider.list_llm_models() if config.handle == handle]
-            print("LLM CONFIGS", llm_configs)
             if not llm_configs:
                 llm_configs = [config for config in provider.list_llm_models() if config.model == model_name]
             if not llm_configs:
@@ -1194,8 +1163,6 @@ class SyncServer(Server):
                 llm_configs = [config for config in self.get_local_llm_configs() if config.model == model_name]
             if not llm_configs:
                 raise e
-
-        print("CONFIGS", llm_configs)
 
         if len(llm_configs) == 1:
             llm_config = llm_configs[0]
@@ -1343,17 +1310,17 @@ class SyncServer(Server):
 
         # Next, attempt to run the tool with the sandbox
         try:
-            sandbox_run_result = ToolExecutionSandbox(tool.name, tool_args, actor, tool_object=tool).run(
+            tool_execution_result = ToolExecutionSandbox(tool.name, tool_args, actor, tool_object=tool).run(
                 agent_state=agent_state, additional_env_vars=tool_env_vars
             )
             return ToolReturnMessage(
                 id="null",
                 tool_call_id="null",
                 date=get_utc_time(),
-                status=sandbox_run_result.status,
-                tool_return=str(sandbox_run_result.func_return),
-                stdout=sandbox_run_result.stdout,
-                stderr=sandbox_run_result.stderr,
+                status=tool_execution_result.status,
+                tool_return=str(tool_execution_result.func_return),
+                stdout=tool_execution_result.stdout,
+                stderr=tool_execution_result.stderr,
             )
 
         except Exception as e:
@@ -1567,7 +1534,7 @@ class SyncServer(Server):
         agent_id: str,
         actor: User,
         # role: MessageRole,
-        messages: Union[List[Message], List[MessageCreate]],
+        input_messages: List[MessageCreate],
         stream_steps: bool,
         stream_tokens: bool,
         # related to whether or not we return `LettaMessage`s or `Message`s
@@ -1647,7 +1614,7 @@ class SyncServer(Server):
                     self.send_messages,
                     actor=actor,
                     agent_id=agent_id,
-                    messages=messages,
+                    input_messages=input_messages,
                     interface=streaming_interface,
                     metadata=metadata,
                 )
@@ -1701,7 +1668,7 @@ class SyncServer(Server):
         self,
         group_id: str,
         actor: User,
-        messages: Union[List[Message], List[MessageCreate]],
+        input_messages: Union[List[Message], List[MessageCreate]],
         stream_steps: bool,
         stream_tokens: bool,
         chat_completion_mode: bool = False,
@@ -1751,7 +1718,7 @@ class SyncServer(Server):
         task = asyncio.create_task(
             asyncio.to_thread(
                 letta_multi_agent.step,
-                messages=messages,
+                input_messages=input_messages,
                 chaining=self.chaining,
                 max_chaining_steps=self.max_chaining_steps,
             )

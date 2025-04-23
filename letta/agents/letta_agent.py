@@ -324,11 +324,11 @@ class LettaAgent(BaseAgent):
                 tool_execution_manager = ToolExecutionManager(agent_state=agent_state, actor=self.actor)
                 # TODO: Integrate sandbox result
                 log_event(name=f"start_{tool_name}_execution", attributes=tool_args)
-                function_response, _ = await tool_execution_manager.execute_tool_async(
+                tool_execution_result = await tool_execution_manager.execute_tool_async(
                     function_name=tool_name, function_args=tool_args, tool=target_tool
                 )
                 log_event(name=f"finish_{tool_name}_execution", attributes=tool_args)
-                return function_response, True
+                return tool_execution_result.func_return, True
         except Exception as e:
             return f"Failed to call tool. Error: {e}", False
 

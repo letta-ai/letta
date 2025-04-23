@@ -13,8 +13,9 @@ from typing import Any, Dict, Optional
 from letta.functions.helpers import generate_model_from_args_json_schema
 from letta.log import get_logger
 from letta.schemas.agent import AgentState
-from letta.schemas.sandbox_config import SandboxConfig, SandboxRunResult, SandboxType
+from letta.schemas.sandbox_config import SandboxConfig, SandboxType
 from letta.schemas.tool import Tool
+from letta.schemas.tool_execution_result import ToolExecutionResult
 from letta.schemas.user import User
 from letta.services.helpers.tool_execution_helper import (
     add_imports_and_pydantic_schemas_for_args,
@@ -72,7 +73,11 @@ class ToolExecutionSandbox:
         self.force_recreate = force_recreate
         self.force_recreate_venv = force_recreate_venv
 
-    def run(self, agent_state: Optional[AgentState] = None, additional_env_vars: Optional[Dict] = None) -> SandboxRunResult:
+    def run(
+        self,
+        agent_state: Optional[AgentState] = None,
+        additional_env_vars: Optional[Dict] = None,
+    ) -> ToolExecutionResult:
         """
         Run the tool in a sandbox environment.
 
@@ -81,7 +86,7 @@ class ToolExecutionSandbox:
             additional_env_vars (Optional[Dict]): Environment variables to inject into the sandbox
 
         Returns:
-            Tuple[Any, Optional[AgentState]]: Tuple containing (tool_result, agent_state)
+            ToolExecutionResult: Object containing tool execution outcome (e.g. status, response)
         """
         if tool_settings.e2b_api_key and not self.privileged_tools:
             logger.debug(f"Using e2b sandbox to execute {self.tool_name}")
@@ -115,7 +120,7 @@ class ToolExecutionSandbox:
     @trace_method
     def run_local_dir_sandbox(
         self, agent_state: Optional[AgentState] = None, additional_env_vars: Optional[Dict] = None
-    ) -> SandboxRunResult:
+    ) -> ToolExecutionResult:
         sbx_config = self.sandbox_config_manager.get_or_create_default_sandbox_config(sandbox_type=SandboxType.LOCAL, actor=self.user)
         local_configs = sbx_config.get_local_config()
 
@@ -162,7 +167,12 @@ class ToolExecutionSandbox:
             os.remove(temp_file_path)
 
     @trace_method
-    def run_local_dir_sandbox_venv(self, sbx_config: SandboxConfig, env: Dict[str, str], temp_file_path: str) -> SandboxRunResult:
+    def run_local_dir_sandbox_venv(
+        self,
+        sbx_config: SandboxConfig,
+        env: Dict[str, str],
+        temp_file_path: str,
+    ) -> ToolExecutionResult:
         local_configs = sbx_config.get_local_config()
         sandbox_dir = os.path.expanduser(local_configs.sandbox_dir)  # Expand tilde
         venv_path = os.path.join(sandbox_dir, local_configs.venv_name)
@@ -205,12 +215,12 @@ class ToolExecutionSandbox:
             func_result, stdout = self.parse_out_function_results_markers(result.stdout)
             func_return, agent_state = self.parse_best_effort(func_result)
 
-            return SandboxRunResult(
+            return ToolExecutionResult(
+                status="success",
                 func_return=func_return,
                 agent_state=agent_state,
                 stdout=[stdout] if stdout else [],
                 stderr=[result.stderr] if result.stderr else [],
-                status="success",
                 sandbox_config_fingerprint=sbx_config.fingerprint(),
             )
 
@@ -221,12 +231,12 @@ class ToolExecutionSandbox:
                 exception_name=type(e).__name__,
                 exception_message=str(e),
             )
-            return SandboxRunResult(
+            return ToolExecutionResult(
+                status="error",
                 func_return=func_return,
                 agent_state=None,
                 stdout=[e.stdout] if e.stdout else [],
                 stderr=[e.stderr] if e.stderr else [],
-                status="error",
                 sandbox_config_fingerprint=sbx_config.fingerprint(),
             )
 
@@ -238,7 +248,12 @@ class ToolExecutionSandbox:
             raise e
 
     @trace_method
-    def run_local_dir_sandbox_directly(self, sbx_config: SandboxConfig, env: Dict[str, str], temp_file_path: str) -> SandboxRunResult:
+    def run_local_dir_sandbox_directly(
+        self,
+        sbx_config: SandboxConfig,
+        env: Dict[str, str],
+        temp_file_path: str,
+    ) -> ToolExecutionResult:
         status = "success"
         func_return, agent_state, stderr = None, None, None
 
@@ -288,12 +303,12 @@ class ToolExecutionSandbox:
         stdout_output = [captured_stdout.getvalue()] if captured_stdout.getvalue() else []
         stderr_output = [captured_stderr.getvalue()] if captured_stderr.getvalue() else []
 
-        return SandboxRunResult(
+        return ToolExecutionResult(
+            status=status,
             func_return=func_return,
             agent_state=agent_state,
             stdout=stdout_output,
             stderr=stderr_output,
-            status=status,
             sandbox_config_fingerprint=sbx_config.fingerprint(),
         )
 
@@ -307,7 +322,11 @@ class ToolExecutionSandbox:
 
     # e2b sandbox specific functions
 
-    def run_e2b_sandbox(self, agent_state: Optional[AgentState] = None, additional_env_vars: Optional[Dict] = None) -> SandboxRunResult:
+    def run_e2b_sandbox(
+        self,
+        agent_state: Optional[AgentState] = None,
+        additional_env_vars: Optional[Dict] = None,
+    ) -> ToolExecutionResult:
         sbx_config = self.sandbox_config_manager.get_or_create_default_sandbox_config(sandbox_type=SandboxType.E2B, actor=self.user)
         sbx = self.get_running_e2b_sandbox_with_same_state(sbx_config)
         if not sbx or self.force_recreate:
@@ -348,12 +367,12 @@ class ToolExecutionSandbox:
         else:
             raise ValueError(f"Tool {self.tool_name} returned execution with None")
 
-        return SandboxRunResult(
+        return ToolExecutionResult(
+            status="error" if execution.error else "success",
             func_return=func_return,
             agent_state=agent_state,
             stdout=execution.logs.stdout,
             stderr=execution.logs.stderr,
-            status="error" if execution.error else "success",
             sandbox_config_fingerprint=sbx_config.fingerprint(),
         )
 
@@ -535,7 +554,7 @@ class ToolExecutionSandbox:
         Generate the code string to call the function.
 
         Args:
-            inject_agent_state (bool): Whether to inject the axgent's state as an input into the tool
+            inject_agent_state (bool): Whether to inject the agent's state as an input into the tool
 
         Returns:
             str: Generated code string for calling the tool

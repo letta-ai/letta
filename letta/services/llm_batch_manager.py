@@ -291,9 +291,7 @@ class LLMBatchManager:
             return [item.to_pydantic() for item in results]
 
     def bulk_update_llm_batch_items(
-        self,
-        llm_batch_id_agent_id_pairs: List[Tuple[str, str]],
-        field_updates: List[Dict[str, Any]],
+        self, llm_batch_id_agent_id_pairs: List[Tuple[str, str]], field_updates: List[Dict[str, Any]], strict: bool = True
     ) -> None:
         """
         Efficiently update multiple LLMBatchItem rows by (llm_batch_id, agent_id) pairs.
@@ -301,30 +299,43 @@ class LLMBatchManager:
         Args:
             llm_batch_id_agent_id_pairs: List of (llm_batch_id, agent_id) tuples identifying items to update
             field_updates: List of dictionaries containing the fields to update for each item
+            strict: Whether to error if any of the requested keys don't exist (default True).
+                    If False, missing pairs are skipped.
         """
         if not llm_batch_id_agent_id_pairs or not field_updates:
             return
 
         if len(llm_batch_id_agent_id_pairs) != len(field_updates):
-            raise ValueError("batch_id_agent_id_pairs and field_updates must have the same length")
+            raise ValueError("llm_batch_id_agent_id_pairs and field_updates must have the same length")
 
         with self.session_maker() as session:
-            # Lookup primary keys
+            # Lookup primary keys for all requested (batch_id, agent_id) pairs
             items = (
                 session.query(LLMBatchItem.id, LLMBatchItem.llm_batch_id, LLMBatchItem.agent_id)
                 .filter(tuple_(LLMBatchItem.llm_batch_id, LLMBatchItem.agent_id).in_(llm_batch_id_agent_id_pairs))
                 .all()
             )
-            pair_to_pk = {(b, a): id for id, b, a in items}
+            pair_to_pk = {(batch_id, agent_id): pk for pk, batch_id, agent_id in items}
 
+            if strict:
+                requested = set(llm_batch_id_agent_id_pairs)
+                found = set(pair_to_pk.keys())
+                missing = requested - found
+                if missing:
+                    raise ValueError(
+                        f"Cannot bulk-update batch items: no records for the following " f"(llm_batch_id, agent_id) pairs: {missing}"
+                    )
+
+            # Build mappings, skipping any missing when strict=False
             mappings = []
-            for (llm_batch_id, agent_id), fields in zip(llm_batch_id_agent_id_pairs, field_updates):
-                pk_id = pair_to_pk.get((llm_batch_id, agent_id))
-                if not pk_id:
+            for (batch_id, agent_id), fields in zip(llm_batch_id_agent_id_pairs, field_updates):
+                pk = pair_to_pk.get((batch_id, agent_id))
+                if pk is None:
+                    # skip missing in non-strict mode
                     continue
 
                 update_fields = fields.copy()
-                update_fields["id"] = pk_id
+                update_fields["id"] = pk
                 mappings.append(update_fields)
 
             if mappings:
@@ -332,10 +343,7 @@ class LLMBatchManager:
                 session.commit()
 
     @enforce_types
-    def bulk_update_batch_llm_items_results_by_agent(
-        self,
-        updates: List[ItemUpdateInfo],
-    ) -> None:
+    def bulk_update_batch_llm_items_results_by_agent(self, updates: List[ItemUpdateInfo], strict: bool = True) -> None:
         """Update request status and batch results for multiple batch items."""
         batch_id_agent_id_pairs = [(update.llm_batch_id, update.agent_id) for update in updates]
         field_updates = [
@@ -346,29 +354,23 @@ class LLMBatchManager:
             for update in updates
         ]
 
-        self.bulk_update_llm_batch_items(batch_id_agent_id_pairs, field_updates)
+        self.bulk_update_llm_batch_items(batch_id_agent_id_pairs, field_updates, strict=strict)
 
     @enforce_types
-    def bulk_update_llm_batch_items_step_status_by_agent(
-        self,
-        updates: List[StepStatusUpdateInfo],
-    ) -> None:
+    def bulk_update_llm_batch_items_step_status_by_agent(self, updates: List[StepStatusUpdateInfo], strict: bool = True) -> None:
         """Update step status for multiple batch items."""
         batch_id_agent_id_pairs = [(update.llm_batch_id, update.agent_id) for update in updates]
         field_updates = [{"step_status": update.step_status} for update in updates]
 
-        self.bulk_update_llm_batch_items(batch_id_agent_id_pairs, field_updates)
+        self.bulk_update_llm_batch_items(batch_id_agent_id_pairs, field_updates, strict=strict)
 
     @enforce_types
-    def bulk_update_llm_batch_items_request_status_by_agent(
-        self,
-        updates: List[RequestStatusUpdateInfo],
-    ) -> None:
+    def bulk_update_llm_batch_items_request_status_by_agent(self, updates: List[RequestStatusUpdateInfo], strict: bool = True) -> None:
         """Update request status for multiple batch items."""
         batch_id_agent_id_pairs = [(update.llm_batch_id, update.agent_id) for update in updates]
         field_updates = [{"request_status": update.request_status} for update in updates]
 
-        self.bulk_update_llm_batch_items(batch_id_agent_id_pairs, field_updates)
+        self.bulk_update_llm_batch_items(batch_id_agent_id_pairs, field_updates, strict=strict)
 
     @enforce_types
     def delete_llm_batch_item(self, item_id: str, actor: PydanticUser) -> None:

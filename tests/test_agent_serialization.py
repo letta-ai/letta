@@ -454,7 +454,7 @@ def test_agent_serialize_with_user_messages(local_client, server, serialize_test
     """Test deserializing JSON into an Agent instance."""
     append_copy_suffix = False
     server.send_messages(
-        actor=default_user, agent_id=serialize_test_agent.id, messages=[MessageCreate(role=MessageRole.user, content="hello")]
+        actor=default_user, agent_id=serialize_test_agent.id, input_messages=[MessageCreate(role=MessageRole.user, content="hello")]
     )
     result = server.agent_manager.serialize(agent_id=serialize_test_agent.id, actor=default_user)
 
@@ -470,10 +470,12 @@ def test_agent_serialize_with_user_messages(local_client, server, serialize_test
 
     # Make sure both agents can receive messages after
     server.send_messages(
-        actor=default_user, agent_id=serialize_test_agent.id, messages=[MessageCreate(role=MessageRole.user, content="and hello again")]
+        actor=default_user,
+        agent_id=serialize_test_agent.id,
+        input_messages=[MessageCreate(role=MessageRole.user, content="and hello again")],
     )
     server.send_messages(
-        actor=other_user, agent_id=agent_copy.id, messages=[MessageCreate(role=MessageRole.user, content="and hello again")]
+        actor=other_user, agent_id=agent_copy.id, input_messages=[MessageCreate(role=MessageRole.user, content="and hello again")]
     )
 
 
@@ -483,7 +485,7 @@ def test_agent_serialize_tool_calls(disable_e2b_api_key, local_client, server, s
     server.send_messages(
         actor=default_user,
         agent_id=serialize_test_agent.id,
-        messages=[MessageCreate(role=MessageRole.user, content="What's the weather like in San Francisco?")],
+        input_messages=[MessageCreate(role=MessageRole.user, content="What's the weather like in San Francisco?")],
     )
     result = server.agent_manager.serialize(agent_id=serialize_test_agent.id, actor=default_user)
 
@@ -501,12 +503,12 @@ def test_agent_serialize_tool_calls(disable_e2b_api_key, local_client, server, s
     original_agent_response = server.send_messages(
         actor=default_user,
         agent_id=serialize_test_agent.id,
-        messages=[MessageCreate(role=MessageRole.user, content="What's the weather like in Seattle?")],
+        input_messages=[MessageCreate(role=MessageRole.user, content="What's the weather like in Seattle?")],
     )
     copy_agent_response = server.send_messages(
         actor=other_user,
         agent_id=agent_copy.id,
-        messages=[MessageCreate(role=MessageRole.user, content="What's the weather like in Seattle?")],
+        input_messages=[MessageCreate(role=MessageRole.user, content="What's the weather like in Seattle?")],
     )
 
     assert original_agent_response.completion_tokens > 0 and original_agent_response.step_count > 0
@@ -519,12 +521,12 @@ def test_agent_serialize_update_blocks(disable_e2b_api_key, local_client, server
     server.send_messages(
         actor=default_user,
         agent_id=serialize_test_agent.id,
-        messages=[MessageCreate(role=MessageRole.user, content="Append 'banana' to core_memory.")],
+        input_messages=[MessageCreate(role=MessageRole.user, content="Append 'banana' to core_memory.")],
     )
     server.send_messages(
         actor=default_user,
         agent_id=serialize_test_agent.id,
-        messages=[MessageCreate(role=MessageRole.user, content="What do you think about that?")],
+        input_messages=[MessageCreate(role=MessageRole.user, content="What do you think about that?")],
     )
 
     result = server.agent_manager.serialize(agent_id=serialize_test_agent.id, actor=default_user)
@@ -543,12 +545,12 @@ def test_agent_serialize_update_blocks(disable_e2b_api_key, local_client, server
     original_agent_response = server.send_messages(
         actor=default_user,
         agent_id=serialize_test_agent.id,
-        messages=[MessageCreate(role=MessageRole.user, content="Hi")],
+        input_messages=[MessageCreate(role=MessageRole.user, content="Hi")],
     )
     copy_agent_response = server.send_messages(
         actor=other_user,
         agent_id=agent_copy.id,
-        messages=[MessageCreate(role=MessageRole.user, content="Hi")],
+        input_messages=[MessageCreate(role=MessageRole.user, content="Hi")],
     )
 
     assert original_agent_response.completion_tokens > 0 and original_agent_response.step_count > 0
@@ -635,5 +637,5 @@ def test_upload_agentfile_from_disk(server, disable_e2b_api_key, fastapi_client,
     server.send_messages(
         actor=other_user,
         agent_id=copied_agent_id,
-        messages=[MessageCreate(role=MessageRole.user, content="Hello there!")],
+        input_messages=[MessageCreate(role=MessageRole.user, content="Hello there!")],
     )

@@ -32,6 +32,7 @@ from letta.schemas.message import Message, MessageCreate
 from letta.schemas.openai.chat_completion_response import UsageStatistics
 from letta.schemas.organization import Organization
 from letta.schemas.passage import Passage
+from letta.schemas.response_format import ResponseFormatUnion
 from letta.schemas.run import Run
 from letta.schemas.sandbox_config import E2BSandboxConfig, LocalSandboxConfig, SandboxConfig, SandboxConfigCreate, SandboxConfigUpdate
 from letta.schemas.source import Source, SourceCreate, SourceUpdate
@@ -100,6 +101,7 @@ class AbstractClient(object):
         message_ids: Optional[List[str]] = None,
         memory: Optional[Memory] = None,
         tags: Optional[List[str]] = None,
+        response_format: Optional[ResponseFormatUnion] = None,
     ):
         raise NotImplementedError
 
@@ -553,6 +555,7 @@ class RESTClient(AbstractClient):
         initial_message_sequence: Optional[List[Message]] = None,
         tags: Optional[List[str]] = None,
         message_buffer_autoclear: bool = False,
+        response_format: Optional[ResponseFormatUnion] = None,
     ) -> AgentState:
         """Create an agent
 
@@ -615,6 +618,7 @@ class RESTClient(AbstractClient):
             "include_base_tools": include_base_tools,
             "message_buffer_autoclear": message_buffer_autoclear,
             "include_multi_agent_tools": include_multi_agent_tools,
+            "response_format": response_format,
         }
 
         # Only add name if it's not None
@@ -653,6 +657,7 @@ class RESTClient(AbstractClient):
         embedding_config: Optional[EmbeddingConfig] = None,
         message_ids: Optional[List[str]] = None,
         tags: Optional[List[str]] = None,
+        response_format: Optional[ResponseFormatUnion] = None,
     ) -> AgentState:
         """
         Update an existing agent
@@ -682,6 +687,7 @@ class RESTClient(AbstractClient):
             llm_config=llm_config,
             embedding_config=embedding_config,
             message_ids=message_ids,
+            response_format=response_format,
         )
         response = requests.patch(f"{self.base_url}/{self.api_prefix}/agents/{agent_id}", json=request.model_dump(), headers=self.headers)
         if response.status_code != 200:
@@ -2425,6 +2431,7 @@ class LocalClient(AbstractClient):
         llm_config: Optional[LLMConfig] = None,
         embedding_config: Optional[EmbeddingConfig] = None,
         message_ids: Optional[List[str]] = None,
+        response_format: Optional[ResponseFormatUnion] = None,
     ):
         """
         Update an existing agent
@@ -2458,6 +2465,7 @@ class LocalClient(AbstractClient):
                 llm_config=llm_config,
                 embedding_config=embedding_config,
                 message_ids=message_ids,
+                response_format=response_format,
             ),
             actor=self.user,
         )
@@ -2661,7 +2669,7 @@ class LocalClient(AbstractClient):
             response (LettaResponse): Response from the agent
         """
         self.interface.clear()
-        usage = self.server.send_messages(actor=self.user, agent_id=agent_id, messages=messages)
+        usage = self.server.send_messages(actor=self.user, agent_id=agent_id, input_messages=messages)
 
         # format messages
         return LettaResponse(messages=messages, usage=usage)
@@ -2703,7 +2711,7 @@ class LocalClient(AbstractClient):
         usage = self.server.send_messages(
             actor=self.user,
             agent_id=agent_id,
-            messages=[MessageCreate(role=MessageRole(role), content=message, name=name)],
+            input_messages=[MessageCreate(role=MessageRole(role), content=message, name=name)],
         )
 
         ## TODO: need to make sure date/timestamp is propely passed

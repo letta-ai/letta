@@ -1,5 +1,6 @@
 import os
 import random
+import re
 import string
 import time
 from datetime import datetime, timedelta, timezone
@@ -5211,6 +5212,47 @@ def test_bulk_update_batch_items_request_status_by_agent(
     assert updated.request_status == JobStatus.expired
 
 
+def test_bulk_update_nonexistent_items_should_error(
+    server,
+    default_user,
+    dummy_beta_message_batch,
+    dummy_successful_response,
+    letta_batch_job,
+):
+    # Create a batch job
+    batch = server.batch_manager.create_llm_batch_job(
+        llm_provider=ProviderType.anthropic,
+        create_batch_response=dummy_beta_message_batch,
+        actor=default_user,
+        letta_batch_job_id=letta_batch_job.id,
+    )
+
+    nonexistent_pairs = [(batch.id, "nonexistent-agent-id")]
+    nonexistent_updates = [{"request_status": JobStatus.expired}]
+    expected_err_msg = (
+        f"Cannot bulk-update batch items: no records for the following "
+        f"(llm_batch_id, agent_id) pairs: {{('{batch.id}', 'nonexistent-agent-id')}}"
+    )
+
+    with pytest.raises(ValueError, match=re.escape(expected_err_msg)):
+        server.batch_manager.bulk_update_llm_batch_items(nonexistent_pairs, nonexistent_updates)
+
+    with pytest.raises(ValueError, match=re.escape(expected_err_msg)):
+        server.batch_manager.bulk_update_batch_llm_items_results_by_agent(
+            [ItemUpdateInfo(batch.id, "nonexistent-agent-id", JobStatus.expired, dummy_successful_response)]
+        )
+
+    with pytest.raises(ValueError, match=re.escape(expected_err_msg)):
+        server.batch_manager.bulk_update_llm_batch_items_step_status_by_agent(
+            [StepStatusUpdateInfo(batch.id, "nonexistent-agent-id", AgentStepStatus.resumed)]
+        )
+
+    with pytest.raises(ValueError, match=re.escape(expected_err_msg)):
+        server.batch_manager.bulk_update_llm_batch_items_request_status_by_agent(
+            [RequestStatusUpdateInfo(batch.id, "nonexistent-agent-id", JobStatus.expired)]
+        )
+
+
 def test_bulk_update_nonexistent_items(server, default_user, dummy_beta_message_batch, dummy_successful_response, letta_batch_job):
     # Create a batch job
     batch = server.batch_manager.create_llm_batch_job(
@@ -5227,22 +5269,22 @@ def test_bulk_update_nonexistent_items(server, default_user, dummy_beta_message_
     nonexistent_updates = [{"request_status": JobStatus.expired}]
 
     # This should not raise an error, just silently skip non-existent items
-    server.batch_manager.bulk_update_llm_batch_items(nonexistent_pairs, nonexistent_updates)
+    server.batch_manager.bulk_update_llm_batch_items(nonexistent_pairs, nonexistent_updates, strict=False)
 
     # Test with higher-level methods
     # Results by agent
     server.batch_manager.bulk_update_batch_llm_items_results_by_agent(
-        [ItemUpdateInfo(batch.id, "nonexistent-agent-id", JobStatus.expired, dummy_successful_response)]
+        [ItemUpdateInfo(batch.id, "nonexistent-agent-id", JobStatus.expired, dummy_successful_response)], strict=False
     )
 
     # Step status by agent
     server.batch_manager.bulk_update_llm_batch_items_step_status_by_agent(
-        [StepStatusUpdateInfo(batch.id, "nonexistent-agent-id", AgentStepStatus.resumed)]
+        [StepStatusUpdateInfo(batch.id, "nonexistent-agent-id", AgentStepStatus.resumed)], strict=False
     )
 
     # Request status by agent
     server.batch_manager.bulk_update_llm_batch_items_request_status_by_agent(
-        [RequestStatusUpdateInfo(batch.id, "nonexistent-agent-id", JobStatus.expired)]
+        [RequestStatusUpdateInfo(batch.id, "nonexistent-agent-id", JobStatus.expired)], strict=False
     )
 
 
