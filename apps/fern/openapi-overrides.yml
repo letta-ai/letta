@@ -460,12 +460,12 @@ paths:
     post:
       x-fern-sdk-group-name:
         - agents
-      x-fern-sdk-method-name: import
+      x-fern-sdk-method-name: import_file
   /v1/agents/{agent_id}/export:
     get:
       x-fern-sdk-group-name:
         - agents
-      x-fern-sdk-method-name: export
+      x-fern-sdk-method-name: export_file
       parameters:
         - name: agent_id
           in: path
