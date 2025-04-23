@@ -73,7 +73,8 @@ async def fetch_batch_items(server: SyncServer, batch_id: str, batch_resp_id: st
     """
     updates = []
     try:
-        async for item_result in server.anthropic_async_client.beta.messages.batches.results(batch_resp_id):
+        results = await server.anthropic_async_client.beta.messages.batches.results(batch_resp_id)
+        async for item_result in results:
             # Here, custom_id should be the agent_id
             item_status = map_anthropic_individual_batch_item_status_to_job_status(item_result)
             updates.append(ItemUpdateInfo(batch_id, item_result.custom_id, item_status, item_result))

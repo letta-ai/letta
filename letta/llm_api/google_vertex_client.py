@@ -4,7 +4,7 @@ from typing import List, Optional
 from google import genai
 from google.genai.types import FunctionCallingConfig, FunctionCallingConfigMode, GenerateContentResponse, ThinkingConfig, ToolConfig
 
-from letta.helpers.datetime_helpers import get_utc_time
+from letta.helpers.datetime_helpers import get_utc_time_int
 from letta.helpers.json_helpers import json_dumps
 from letta.llm_api.google_ai_client import GoogleAIClient
 from letta.local_llm.json_parser import clean_json_string_extra_backslash
@@ -234,7 +234,7 @@ class GoogleVertexClient(GoogleAIClient):
                 id=response_id,
                 choices=choices,
                 model=self.llm_config.model,  # NOTE: Google API doesn't pass back model in the response
-                created=get_utc_time(),
+                created=get_utc_time_int(),
                 usage=usage,
             )
         except KeyError as e:

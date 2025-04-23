@@ -31,6 +31,7 @@ from letta.schemas.letta_message import (
 )
 from letta.schemas.letta_message_content import (
     LettaMessageContentUnion,
+    OmittedReasoningContent,
     ReasoningContent,
     RedactedReasoningContent,
     TextContent,
@@ -295,6 +296,18 @@ class Message(BaseMessage):
                                     sender_id=self.sender_id,
                                 )
                             )
+                        elif isinstance(content_part, OmittedReasoningContent):
+                            # Special case for "hidden reasoning" models like o1/o3
+                            # NOTE: we also have to think about how to return this during streaming
+                            messages.append(
+                                HiddenReasoningMessage(
+                                    id=self.id,
+                                    date=self.created_at,
+                                    state="omitted",
+                                    name=self.name,
+                                    otid=otid,
+                                )
+                            )
                         else:
                             warnings.warn(f"Unrecognized content part in assistant message: {content_part}")
 
@@ -463,6 +476,10 @@ class Message(BaseMessage):
                 RedactedReasoningContent(
                     data=openai_message_dict["redacted_reasoning_content"] if "redacted_reasoning_content" in openai_message_dict else None,
                 ),
+            )
+        if "omitted_reasoning_content" in openai_message_dict and openai_message_dict["omitted_reasoning_content"]:
+            content.append(
+                OmittedReasoningContent(),
             )
 
         # If we're going from deprecated function form

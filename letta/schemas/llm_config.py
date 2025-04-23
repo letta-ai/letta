@@ -81,8 +81,11 @@ class LLMConfig(BaseModel):
     @model_validator(mode="before")
     @classmethod
     def set_default_enable_reasoner(cls, values):
-        if any(openai_reasoner_model in values.get("model", "") for openai_reasoner_model in ["o3-mini", "o1"]):
-            values["enable_reasoner"] = True
+        # NOTE: this is really only applicable for models that can toggle reasoning on-and-off, like 3.7
+        # We can also use this field to identify if a model is a "reasoning" model (o1/o3, etc.) if we want
+        # if any(openai_reasoner_model in values.get("model", "") for openai_reasoner_model in ["o3-mini", "o1"]):
+        #     values["enable_reasoner"] = True
+        #     values["put_inner_thoughts_in_kwargs"] = False
         return values
 
     @model_validator(mode="before")
@@ -99,6 +102,13 @@ class LLMConfig(BaseModel):
 
         if values.get("put_inner_thoughts_in_kwargs") is None:
             values["put_inner_thoughts_in_kwargs"] = False if model in avoid_put_inner_thoughts_in_kwargs else True
+
+        # For the o1/o3 series from OpenAI, set to False by default
+        # We can set this flag to `true` if desired, which will enable "double-think"
+        from letta.llm_api.openai_client import is_openai_reasoning_model
+
+        if is_openai_reasoning_model(model):
+            values["put_inner_thoughts_in_kwargs"] = False
 
         return values
 

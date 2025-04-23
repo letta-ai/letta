@@ -3,7 +3,7 @@ import threading
 import time
 from datetime import datetime, timezone
 from typing import Tuple
-from unittest.mock import AsyncMock, Mock, patch
+from unittest.mock import AsyncMock, patch
 
 import pytest
 from anthropic.types import BetaErrorResponse, BetaRateLimitError
@@ -436,7 +436,7 @@ async def test_rethink_tool_modify_agent_state(client, disable_e2b_api_key, serv
         ]
 
         # Create the mock for results
-        mock_results = Mock()
+        mock_results = AsyncMock()
         mock_results.return_value = MockAsyncIterable(mock_items.copy())
 
         with patch.object(server.anthropic_async_client.beta.messages.batches, "results", mock_results):
@@ -499,7 +499,7 @@ async def test_partial_error_from_anthropic_batch(
         )
 
         # Create the mock for results
-        mock_results = Mock()
+        mock_results = AsyncMock()
         mock_results.return_value = MockAsyncIterable(mock_items.copy())  # Using copy to preserve the original list
 
         with patch.object(server.anthropic_async_client.beta.messages.batches, "results", mock_results):
@@ -641,7 +641,7 @@ async def test_resume_step_some_stop(
         )
 
         # Create the mock for results
-        mock_results = Mock()
+        mock_results = AsyncMock()
         mock_results.return_value = MockAsyncIterable(mock_items.copy())  # Using copy to preserve the original list
 
         with patch.object(server.anthropic_async_client.beta.messages.batches, "results", mock_results):
@@ -767,7 +767,7 @@ async def test_resume_step_after_request_all_continue(
         ]
 
         # Create the mock for results
-        mock_results = Mock()
+        mock_results = AsyncMock()
         mock_results.return_value = MockAsyncIterable(mock_items.copy())  # Using copy to preserve the original list
 
         with patch.object(server.anthropic_async_client.beta.messages.batches, "results", mock_results):

@@ -22,7 +22,7 @@ from letta.errors import (
     LLMServerError,
     LLMUnprocessableEntityError,
 )
-from letta.helpers.datetime_helpers import get_utc_time
+from letta.helpers.datetime_helpers import get_utc_time_int
 from letta.llm_api.helpers import add_inner_thoughts_to_functions, unpack_all_inner_thoughts_from_kwargs
 from letta.llm_api.llm_client_base import LLMClientBase
 from letta.local_llm.constants import INNER_THOUGHTS_KWARG, INNER_THOUGHTS_KWARG_DESCRIPTION
@@ -403,7 +403,7 @@ class AnthropicClient(LLMClientBase):
         chat_completion_response = ChatCompletionResponse(
             id=response.id,
             choices=[choice],
-            created=get_utc_time(),
+            created=get_utc_time_int(),
             model=response.model,
             usage=UsageStatistics(
                 prompt_tokens=prompt_tokens,

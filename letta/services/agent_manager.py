@@ -161,7 +161,7 @@ class AgentManager:
     # Basic CRUD operations
     # ======================================================================================================================
     @trace_method
-    def create_agent(self, agent_create: CreateAgent, actor: PydanticUser) -> PydanticAgentState:
+    def create_agent(self, agent_create: CreateAgent, actor: PydanticUser, _test_only_force_id: Optional[str] = None) -> PydanticAgentState:
         # validate required configs
         if not agent_create.llm_config or not agent_create.embedding_config:
             raise ValueError("llm_config and embedding_config are required")
@@ -239,6 +239,10 @@ class AgentManager:
                     created_by_id=actor.id,
                     last_updated_by_id=actor.id,
                 )
+
+                if _test_only_force_id:
+                    new_agent.id = _test_only_force_id
+
                 session.add(new_agent)
                 session.flush()
                 aid = new_agent.id

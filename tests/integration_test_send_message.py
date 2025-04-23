@@ -1,14 +1,17 @@
+import json
 import os
 import threading
 import time
 from typing import Any, Dict, List
 
 import pytest
+import requests
 from dotenv import load_dotenv
-from letta_client import AsyncLetta, Letta, Run, Tool
-from letta_client.types import AssistantMessage, LettaUsageStatistics, ReasoningMessage, ToolCallMessage, ToolReturnMessage
+from letta_client import AsyncLetta, Letta, Run
+from letta_client.types import AssistantMessage, ReasoningMessage
 
 from letta.schemas.agent import AgentState
+from letta.schemas.llm_config import LLMConfig
 
 # ------------------------------
 # Fixtures
@@ -19,25 +22,35 @@ from letta.schemas.agent import AgentState
 def server_url() -> str:
     """
     Provides the URL for the Letta server.
-    If the environment variable 'LETTA_SERVER_URL' is not set, this fixture
-    will start the Letta server in a background thread and return the default URL.
+    If LETTA_SERVER_URL is not set, starts the server in a background thread
+    and polls until it’s accepting connections.
     """
 
     def _run_server() -> None:
-        """Starts the Letta server in a background thread."""
-        load_dotenv()  # Load environment variables from .env file
+        load_dotenv()
         from letta.server.rest_api.app import start_server
 
         start_server(debug=True)
 
-    # Retrieve server URL from environment, or default to localhost
     url: str = os.getenv("LETTA_SERVER_URL", "http://localhost:8283")
 
-    # If no environment variable is set, start the server in a background thread
     if not os.getenv("LETTA_SERVER_URL"):
         thread = threading.Thread(target=_run_server, daemon=True)
         thread.start()
-        time.sleep(5)  # Allow time for the server to start
+
+        # Poll until the server is up (or timeout)
+        timeout_seconds = 30
+        deadline = time.time() + timeout_seconds
+        while time.time() < deadline:
+            try:
+                resp = requests.get(url + "/v1/health")
+                if resp.status_code < 500:
+                    break
+            except requests.exceptions.RequestException:
+                pass
+            time.sleep(0.1)
+        else:
+            raise RuntimeError(f"Could not reach {url} within {timeout_seconds}s")
 
     return url
 
@@ -61,29 +74,7 @@ def async_client(server_url: str) -> AsyncLetta:
 
 
 @pytest.fixture
-def roll_dice_tool(client: Letta) -> Tool:
-    """
-    Registers a simple roll dice tool with the provided client.
-
-    The tool simulates rolling a six-sided die but returns a fixed result.
-    """
-
-    def roll_dice() -> str:
-        """
-        Simulates rolling a die.
-
-        Returns:
-            str: The roll result.
-        """
-        # Note: The result here is intentionally incorrect for demonstration purposes.
-        return "Rolled a 10!"
-
-    tool = client.tools.upsert_from_function(func=roll_dice)
-    yield tool
-
-
-@pytest.fixture
-def agent_state(client: Letta, roll_dice_tool: Tool) -> AgentState:
+def agent_state(client: Letta) -> AgentState:
     """
     Creates and returns an agent state for testing with a pre-configured agent.
     The agent is named 'supervisor' and is configured with base tools and the roll_dice tool.
@@ -91,7 +82,6 @@ def agent_state(client: Letta, roll_dice_tool: Tool) -> AgentState:
     agent_state_instance = client.agents.create(
         name="supervisor",
         include_base_tools=True,
-        tool_ids=[roll_dice_tool.id],
         model="openai/gpt-4o",
         embedding="letta/letta-free",
         tags=["supervisor"],
@@ -103,8 +93,27 @@ def agent_state(client: Letta, roll_dice_tool: Tool) -> AgentState:
 # Helper Functions and Constants
 # ------------------------------
 
-USER_MESSAGE: List[Dict[str, str]] = [{"role": "user", "content": "Roll the dice."}]
-TESTED_MODELS: List[str] = ["openai/gpt-4o"]
+
+def get_llm_config(filename: str, llm_config_dir: str = "tests/configs/llm_model_configs") -> LLMConfig:
+    filename = os.path.join(llm_config_dir, filename)
+    config_data = json.load(open(filename, "r"))
+    llm_config = LLMConfig(**config_data)
+    return llm_config
+
+
+USER_MESSAGE: List[Dict[str, str]] = [{"role": "user", "content": "Hi there."}]
+all_configs = [
+    "openai-gpt-4o-mini.json",
+    "azure-gpt-4o-mini.json",
+    "claude-3-5-sonnet.json",
+    "claude-3-7-sonnet.json",
+    "claude-3-7-sonnet-extended.json",
+    "gemini-pro.json",
+    "gemini-vertex.json",
+]
+requested = os.getenv("LLM_CONFIG_FILE")
+filenames = [requested] if requested else all_configs
+TESTED_LLM_CONFIGS: List[LLMConfig] = [get_llm_config(fn) for fn in filenames]
 
 
 def assert_tool_response_messages(messages: List[Any]) -> None:
@@ -114,10 +123,7 @@ def assert_tool_response_messages(messages: List[Any]) -> None:
     ReasoningMessage -> AssistantMessage.
     """
     assert isinstance(messages[0], ReasoningMessage)
-    assert isinstance(messages[1], ToolCallMessage)
-    assert isinstance(messages[2], ToolReturnMessage)
-    assert isinstance(messages[3], ReasoningMessage)
-    assert isinstance(messages[4], AssistantMessage)
+    assert isinstance(messages[1], AssistantMessage)
 
 
 def assert_streaming_tool_response_messages(chunks: List[Any]) -> None:
@@ -130,16 +136,10 @@ def assert_streaming_tool_response_messages(chunks: List[Any]) -> None:
         return [c for c in chunks if isinstance(c, msg_type)]
 
     reasoning_msgs = msg_groups(ReasoningMessage)
-    tool_calls = msg_groups(ToolCallMessage)
-    tool_returns = msg_groups(ToolReturnMessage)
     assistant_msgs = msg_groups(AssistantMessage)
-    usage_stats = msg_groups(LettaUsageStatistics)
 
-    assert len(reasoning_msgs) >= 1
-    assert len(tool_calls) == 1
-    assert len(tool_returns) == 1
+    assert len(reasoning_msgs) == 1
     assert len(assistant_msgs) == 1
-    assert len(usage_stats) == 1
 
 
 def wait_for_run_completion(client: Letta, run_id: str, timeout: float = 30.0, interval: float = 0.5) -> Run:
@@ -161,7 +161,7 @@ def wait_for_run_completion(client: Letta, run_id: str, timeout: float = 30.0, i
     """
     start = time.time()
     while True:
-        run = client.runs.retrieve_run(run_id)
+        run = client.runs.retrieve(run_id)
         if run.status == "completed":
             return run
         if run.status == "failed":
@@ -184,13 +184,7 @@ def assert_tool_response_dict_messages(messages: List[Dict[str, Any]]) -> None:
     """
     assert isinstance(messages, list)
     assert messages[0]["message_type"] == "reasoning_message"
-    assert messages[1]["message_type"] == "tool_call_message"
-    assert messages[2]["message_type"] == "tool_return_message"
-    assert messages[3]["message_type"] == "reasoning_message"
-    assert messages[4]["message_type"] == "assistant_message"
-
-    tool_return = messages[2]
-    assert tool_return["status"] == "success"
+    assert messages[1]["message_type"] == "assistant_message"
 
 
 # ------------------------------
@@ -198,18 +192,18 @@ def assert_tool_response_dict_messages(messages: List[Dict[str, Any]]) -> None:
 # ------------------------------
 
 
-@pytest.mark.parametrize("model", TESTED_MODELS)
+@pytest.mark.parametrize("llm_config", TESTED_LLM_CONFIGS)
 def test_send_message_sync_client(
     disable_e2b_api_key: Any,
     client: Letta,
     agent_state: AgentState,
-    model: str,
+    llm_config: LLMConfig,
 ) -> None:
     """
     Tests sending a message with a synchronous client.
     Verifies that the response messages follow the expected order.
     """
-    client.agents.modify(agent_id=agent_state.id, model=model)
+    client.agents.modify(agent_id=agent_state.id, llm_config=llm_config)
     response = client.agents.messages.create(
         agent_id=agent_state.id,
         messages=USER_MESSAGE,
@@ -218,18 +212,18 @@ def test_send_message_sync_client(
 
 
 @pytest.mark.asyncio
-@pytest.mark.parametrize("model", TESTED_MODELS)
+@pytest.mark.parametrize("llm_config", TESTED_LLM_CONFIGS)
 async def test_send_message_async_client(
     disable_e2b_api_key: Any,
     async_client: AsyncLetta,
     agent_state: AgentState,
-    model: str,
+    llm_config: LLMConfig,
 ) -> None:
     """
     Tests sending a message with an asynchronous client.
     Validates that the response messages match the expected sequence.
     """
-    await async_client.agents.modify(agent_id=agent_state.id, model=model)
+    await async_client.agents.modify(agent_id=agent_state.id, llm_config=llm_config)
     response = await async_client.agents.messages.create(
         agent_id=agent_state.id,
         messages=USER_MESSAGE,
@@ -237,18 +231,18 @@ async def test_send_message_async_client(
     assert_tool_response_messages(response.messages)
 
 
-@pytest.mark.parametrize("model", TESTED_MODELS)
+@pytest.mark.parametrize("llm_config", TESTED_LLM_CONFIGS)
 def test_send_message_streaming_sync_client(
     disable_e2b_api_key: Any,
     client: Letta,
     agent_state: AgentState,
-    model: str,
+    llm_config: LLMConfig,
 ) -> None:
     """
     Tests sending a streaming message with a synchronous client.
     Checks that each chunk in the stream has the correct message types.
     """
-    client.agents.modify(agent_id=agent_state.id, model=model)
+    client.agents.modify(agent_id=agent_state.id, llm_config=llm_config)
     response = client.agents.messages.create_stream(
         agent_id=agent_state.id,
         messages=USER_MESSAGE,
@@ -258,18 +252,18 @@ def test_send_message_streaming_sync_client(
 
 
 @pytest.mark.asyncio
-@pytest.mark.parametrize("model", TESTED_MODELS)
+@pytest.mark.parametrize("llm_config", TESTED_LLM_CONFIGS)
 async def test_send_message_streaming_async_client(
     disable_e2b_api_key: Any,
     async_client: AsyncLetta,
     agent_state: AgentState,
-    model: str,
+    llm_config: LLMConfig,
 ) -> None:
     """
     Tests sending a streaming message with an asynchronous client.
     Validates that the streaming response chunks include the correct message types.
     """
-    await async_client.agents.modify(agent_id=agent_state.id, model=model)
+    await async_client.agents.modify(agent_id=agent_state.id, llm_config=llm_config)
     response = async_client.agents.messages.create_stream(
         agent_id=agent_state.id,
         messages=USER_MESSAGE,
@@ -278,18 +272,18 @@ async def test_send_message_streaming_async_client(
     assert_streaming_tool_response_messages(chunks)
 
 
-@pytest.mark.parametrize("model", TESTED_MODELS)
+@pytest.mark.parametrize("llm_config", TESTED_LLM_CONFIGS)
 def test_send_message_job_sync_client(
     disable_e2b_api_key: Any,
     client: Letta,
     agent_state: AgentState,
-    model: str,
+    llm_config: LLMConfig,
 ) -> None:
     """
     Tests sending a message as an asynchronous job using the synchronous client.
     Waits for job completion and asserts that the result messages are as expected.
     """
-    client.agents.modify(agent_id=agent_state.id, model=model)
+    client.agents.modify(agent_id=agent_state.id, llm_config=llm_config)
 
     run = client.agents.messages.create_async(
         agent_id=agent_state.id,
@@ -305,19 +299,19 @@ def test_send_message_job_sync_client(
 
 
 @pytest.mark.asyncio
-@pytest.mark.parametrize("model", TESTED_MODELS)
+@pytest.mark.parametrize("llm_config", TESTED_LLM_CONFIGS)
 async def test_send_message_job_async_client(
     disable_e2b_api_key: Any,
     client: Letta,
     async_client: AsyncLetta,
     agent_state: AgentState,
-    model: str,
+    llm_config: LLMConfig,
 ) -> None:
     """
     Tests sending a message as an asynchronous job using the asynchronous client.
     Waits for job completion and verifies that the resulting messages meet the expected format.
     """
-    await async_client.agents.modify(agent_id=agent_state.id, model=model)
+    await async_client.agents.modify(agent_id=agent_state.id, llm_config=llm_config)
 
     run = await async_client.agents.messages.create_async(
         agent_id=agent_state.id,

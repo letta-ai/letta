@@ -6,7 +6,7 @@ import requests
 from google.genai.types import FunctionCallingConfig, FunctionCallingConfigMode, ToolConfig
 
 from letta.constants import NON_USER_MSG_PREFIX
-from letta.helpers.datetime_helpers import get_utc_time
+from letta.helpers.datetime_helpers import get_utc_time_int
 from letta.helpers.json_helpers import json_dumps
 from letta.llm_api.helpers import make_post_request
 from letta.llm_api.llm_client_base import LLMClientBase
@@ -260,7 +260,7 @@ class GoogleAIClient(LLMClientBase):
                 id=response_id,
                 choices=choices,
                 model=self.llm_config.model,  # NOTE: Google API doesn't pass back model in the response
-                created=get_utc_time(),
+                created=get_utc_time_int(),
                 usage=usage,
             )
         except KeyError as e:
