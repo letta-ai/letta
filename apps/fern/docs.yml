@@ -192,18 +192,25 @@ navigation:
       - section: ADE Components
         contents:
           - page: Agent Simulator
+            icon: fa-sharp fa-light fa-alien-8bit
             path: pages/ade-guide/simulator.mdx
           - page: Context Window Viewer
+            icon: fa-sharp fa-light fa-eye
             path: pages/ade-guide/context_window_viewer.mdx
           - page: Core Memory
+            icon: fa-sharp fa-light fa-brain
             path: pages/ade-guide/core_memory.mdx
           - page: Archival Memory
+            icon: fa-sharp fa-light fa-box-archive
             path: pages/ade-guide/archival_memory.mdx
           - page: Data Sources
+            icon: fa-sharp fa-light fa-database
             path: pages/ade-guide/data_sources.mdx
           - page: Tools
+            icon: fa-sharp fa-light fa-wrench
             path: pages/ade-guide/tools.mdx
           - page: Settings
+            icon: fa-sharp fa-light fa-gear
             path: pages/ade-guide/settings.mdx
   - tab: ref
     layout:

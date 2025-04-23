@@ -1,36 +1,120 @@
 ---
-title: Connecting to the ADE
+title: Initial Setup and Connection
+subtitle: Get started with the Agent Development Environment
 slug: guides/ade/setup
 ---
 
+The Agent Development Environment (ADE) is your gateway to building, testing, and monitoring stateful agents. This guide will help you access the ADE and connect it to your Letta server, whether it's running locally or deployed remotely.
+
+## Accessing the ADE
+
+Letta offers two ways to access the Agent Development Environment:
+
+### Cloud/Web ADE
+
+The cloud-based ADE is available at [https://app.letta.com](https://app.letta.com). You can use the cloud-based ADE to connect to both Letta Cloud, and agents running on your own Letta deployments.
+
+Key features of the cloud ADE:
+- Works in any modern browser
+- No local software installation required
+- Automatically connects to local Letta servers
+- Can connect to remote Letta servers with proper configuration
+- Always up-to-date with the latest features
+
+### Letta Desktop
+
+[Letta Desktop](/quickstart/desktop) provides an all-in-one solution that includes both the Letta server and the ADE in a single application.
+
+Key features of Letta Desktop:
+- Combines the Letta server and ADE in one application
+- Automatically establishes connection between components
+- Ideal for offline development (no internet connection required)
+- Runs on Windows (x64) and macOS (M-series)
+
+<Warning>
+Letta Desktop is currently in beta and has known installation issues. If you are running into problems, please report your bug via our [Discord](https://discord.gg/letta), or try using the cloud/web ADE instead (which you can combine with a locally running Letta server).
+</Warning>
+
+## Understanding Connection Types
+
 <Note>
-The following instructions are for the cloud/web ADE. If you are using the ADE via [Letta Desktop](/quickstart/desktop), the ADE will automatically open and connect to `localhost:8283` when you run the app.
+If you're using Letta Desktop, the ADE will automatically open and connect to `localhost:8283` when you run the app, so you can skip the connection steps in this guide.
 </Note>
 
-The ADE can connect to self-hosted Letta servers (e.g. a Letta server running on your laptop), as well as the Letta Cloud service.
-When connected to a self-hosted / private server, the ADE uses the Letta REST API to communicate with your server.
+The ADE can connect to different types of Letta servers:
 
-## Connecting to a local server
-To connect the ADE with your local Letta server (running on `localhost`), simply:
-1. Start your Letta server (`docker run ...`)
-2. Visit [https://app.letta.com](https://app.letta.com) and you will see "Local server" as an option in the left panel
+1. **Local Server**: A Letta server running on your local machine (`localhost`)
+2. **Remote Server**: A self-hosted Letta server running on a different machine or cloud service
+3. **Letta Cloud**: Letta's managed cloud service for hosting agents
 
-<img className="w-300 light" src="https://raw.githubusercontent.com/letta-ai/letta/refs/heads/main/assets/example_ade_screenshot_agents_light.png" />
-<img className="w-300 dark" src="https://raw.githubusercontent.com/letta-ai/letta/refs/heads/main/assets/example_ade_screenshot_agents.png" />
+All connections use the Letta REST API to communicate between the ADE and the server, with appropriate security measures in place.
 
-## Connecting to an external (self-hosted) server
+## Connecting to a Local Server
+
+Connecting to a local Letta server is the simplest setup and ideal for development:
+
+1. **Start your Letta server** using [Docker](/quickstart/docker)
+2. **Access the ADE** by visiting [https://app.letta.com](https://app.letta.com)
+3. **Select "Local server"** from the server list in the left panel
+
+The ADE will automatically detect your local Letta server running on `localhost:8283` and establish a connection.
+
+<img className="block w-300 dark:hidden" src="https://raw.githubusercontent.com/letta-ai/letta/refs/heads/main/assets/example_ade_screenshot_agents_light.png" />
+<img className="hidden w-300 dark:block" src="https://raw.githubusercontent.com/letta-ai/letta/refs/heads/main/assets/example_ade_screenshot_agents.png" />
+
+
+## Connecting to a Remote Server
+
+For production environments or team collaboration, you may want to connect to a Letta server running on a remote machine:
+
 <Warning>
 The cloud/web ADE does **not support** connecting to `http` (non-`https`) IP addresses, *except* for `localhost`.
 
-For example, if your server is running on a home address like `http://192.168.1.10:8283`, the ADE (when running on a browser on another device on the network) will not be able to connect to your server because it is not on `https`.
+For example, if your server is running on a home address like `http://192.168.1.10:8283`, the ADE (when running on a browser on another device on the network) will not be able to connect to your server because it is not using `https`.
 
-For more information on `https` proxies, see [this page](/guides/server/remote).
+For more information on setting up `https` proxies, see the [remote deployment guide](/guides/server/remote).
 </Warning>
-If your Letta server isn't running on `localhost` (for example, you deployed it on an external service like EC2):
-1. Click "Add remote server"
-2. Enter your desired server name, the IP address of the server, and the server password (if set, otherwise leave empty)
 
-Note that the remote IP address **must be `https`**, or the ADE will not be able to connect.
+To connect to a remote Letta server:
 
-<img className="w-300 light" src="../../images/railway_ade_example_light.png" />
-<img className="w-300 dark" src="../../images/railway_ade_example.png" />
+1. **Deploy your Letta server** on your preferred hosting service (EC2, Railway, etc.)
+2. **Ensure HTTPS access** is configured for your server
+3. **In the ADE, click "Add remote server"**
+4. **Enter the connection details**:
+   - Server name: A friendly name to identify this server
+   - Server URL: The full URL including `https://` and port if needed
+   - Server password: If you've configured API authentication, enter the password
+
+<img className="block w-300 dark:hidden" src="../../images/railway_ade_example_light.png" />
+<img className="hidden w-300 dark:block" src="../../images/railway_ade_example.png" />
+
+## Managing Server Connections
+
+The ADE allows you to manage multiple server connections:
+
+### Saving Server Connections
+
+Once you add a remote server, it will be saved in your browser's local storage for easy access in future sessions. To manage saved connections:
+
+1. Click on the server dropdown in the left panel
+2. Select "Manage servers" to view all saved connections
+3. Use the options to edit or remove servers from your list
+
+### Switching Between Servers
+
+You can easily switch between different Letta servers:
+
+1. Click on the current server name in the left panel
+2. Select a different server from the dropdown list
+3. The ADE will connect to the selected server and display its agents
+
+This flexibility allows you to work with development, staging, and production environments from a single ADE interface.
+
+## Next Steps
+
+Now that you've connected the ADE to your Letta server, you're ready to start building agents! Here are some recommended next steps:
+
+1. **Create your first agent** using the "Create Agent" button
+2. **Explore the [Agent Simulator](/guides/ade/simulator)** to interact with your agent
+3. **Learn about [Tools](/guides/ade/tools)** to extend your agent's capabilities
+4. **Configure [Core Memory](/guides/ade/core-memory)** to give your agent persistent in-context knowledge

@@ -4,9 +4,50 @@ subtitle: Manage the agent's data sources
 slug: guides/ade/data-sources
 ---
 
-Data sources allow you to connect large datasets or file uploads to your agent. To connect your agent to a data source:
-1. Create a new data source (or select an existing one), for example *Business Guidelines*
-2. If you created a new data source, upload your data to the data source (for example, the PDF files related to your business guidelines).
-3. Attach the data source to the agent
+Data sources provide a powerful way to enrich your agent with external knowledge, documentation, or specialized information without manually adding it to memory. This feature allows your agent to access and reference large collections of content seamlessly.
 
-The agent will now be able to view data in the data source via its `archival_memory_search` tool. You can detach a data source from an agent at any time.
+## What Are Data Sources?
+
+Data sources are collections of documents or information that:
+
+- Exist independently from any specific agent
+- Can be attached to or detached from agents as needed
+- Are automatically processed and made searchable
+- Serve as knowledge bases for your agents to reference
+
+Common examples include company documentation, product manuals, research papers, knowledge articles, and curated datasets.
+
+## Managing Data Sources in the ADE
+
+### Creating and Populating Data Sources
+
+To connect your agent to a data source:
+
+1. **Create a new data source** (or select an existing one), e.g., *Business Guidelines*
+2. **Upload your content** to the data source in supported formats:
+   - PDF documents
+   - Text files (.txt)
+   - Markdown files (.md)
+   - Word documents (.docx)
+   - HTML files
+3. **Attach the data source** to your agent through the Data Sources panel
+
+### How Agents Access Data Sources
+
+When a data source is attached to an agent:
+
+- The data is automatically processed and embedded in the vector database
+- The agent can retrieve information using the standard `archival_memory_search` tool
+- Results from data sources are labeled with their source for better attribution
+- You can detach a data source at any time if the information is no longer relevant
+
+## Viewing Connected Data Sources
+
+The Data Sources panel in the ADE shows:
+
+- All data sources currently connected to your agent
+- The option to attach new data sources
+- The ability to detach sources that are no longer needed
+- Information about the content within each data source
+
+This visibility helps you manage what external knowledge your agent can access during conversations.
