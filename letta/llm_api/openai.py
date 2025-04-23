@@ -5,6 +5,7 @@ import requests
 from openai import OpenAI
 
 from letta.llm_api.helpers import add_inner_thoughts_to_functions, convert_to_structured_output, make_post_request
+from letta.llm_api.openai_client import supports_parallel_tool_calling, supports_temperature_param
 from letta.local_llm.constants import INNER_THOUGHTS_KWARG, INNER_THOUGHTS_KWARG_DESCRIPTION, INNER_THOUGHTS_KWARG_DESCRIPTION_GO_FIRST
 from letta.local_llm.utils import num_tokens_from_functions, num_tokens_from_messages
 from letta.log import get_logger
@@ -135,7 +136,7 @@ def build_openai_chat_completions_request(
             tool_choice=tool_choice,
             user=str(user_id),
             max_completion_tokens=llm_config.max_tokens,
-            temperature=1.0 if llm_config.enable_reasoner else llm_config.temperature,
+            temperature=llm_config.temperature if supports_temperature_param(model) else None,
             reasoning_effort=llm_config.reasoning_effort,
         )
     else:
@@ -489,6 +490,7 @@ def prepare_openai_payload(chat_completion_request: ChatCompletionRequest):
     #         except ValueError as e:
     #             warnings.warn(f"Failed to convert tool function to structured output, tool={tool}, error={e}")
 
-    if "o3-mini" in chat_completion_request.model or "o1" in chat_completion_request.model:
+    if not supports_parallel_tool_calling(chat_completion_request.model):
         data.pop("parallel_tool_calls", None)
+
     return data

@@ -10,7 +10,7 @@ def get_composio_api_key(actor: User, logger: Optional[Logger] = None) -> Option
     api_keys = SandboxConfigManager().list_sandbox_env_vars_by_key(key="COMPOSIO_API_KEY", actor=actor)
     if not api_keys:
         if logger:
-            logger.warning(f"No API keys found for Composio. Defaulting to the environment variable...")
+            logger.debug(f"No API keys found for Composio. Defaulting to the environment variable...")
         if tool_settings.composio_api_key:
             return tool_settings.composio_api_key
         else:

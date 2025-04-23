@@ -34,6 +34,33 @@ from letta.settings import model_settings
 logger = get_logger(__name__)
 
 
+def is_openai_reasoning_model(model: str) -> bool:
+    """Utility function to check if the model is a 'reasoner'"""
+
+    # NOTE: needs to be updated with new model releases
+    return model.startswith("o1") or model.startswith("o3")
+
+
+def supports_temperature_param(model: str) -> bool:
+    """Certain OpenAI models don't support configuring the temperature.
+
+    Example error: 400 - {'error': {'message': "Unsupported parameter: 'temperature' is not supported with this model.", 'type': 'invalid_request_error', 'param': 'temperature', 'code': 'unsupported_parameter'}}
+    """
+    if is_openai_reasoning_model(model):
+        return False
+    else:
+        return True
+
+
+def supports_parallel_tool_calling(model: str) -> bool:
+    """Certain OpenAI models don't support parallel tool calls."""
+
+    if is_openai_reasoning_model(model):
+        return False
+    else:
+        return True
+
+
 class OpenAIClient(LLMClientBase):
     def _prepare_client_kwargs(self) -> dict:
         api_key = model_settings.openai_api_key or os.environ.get("OPENAI_API_KEY")
@@ -66,7 +93,8 @@ class OpenAIClient(LLMClientBase):
                 put_inner_thoughts_first=True,
             )
 
-        use_developer_message = llm_config.model.startswith("o1") or llm_config.model.startswith("o3")  # o-series models
+        use_developer_message = is_openai_reasoning_model(llm_config.model)
+
         openai_message_list = [
             cast_message_to_subtype(
                 m.to_openai_dict(
@@ -103,7 +131,7 @@ class OpenAIClient(LLMClientBase):
             tool_choice=tool_choice,
             user=str(),
             max_completion_tokens=llm_config.max_tokens,
-            temperature=llm_config.temperature,
+            temperature=llm_config.temperature if supports_temperature_param(model) else None,
         )
 
         if "inference.memgpt.ai" in llm_config.model_endpoint:
@@ -159,6 +187,10 @@ class OpenAIClient(LLMClientBase):
             chat_completion_response = unpack_all_inner_thoughts_from_kwargs(
                 response=chat_completion_response, inner_thoughts_key=INNER_THOUGHTS_KWARG
             )
+
+        # If we used a reasoning model, create a content part for the ommitted reasoning
+        if is_openai_reasoning_model(self.llm_config.model):
+            chat_completion_response.choices[0].message.ommitted_reasoning_content = True
 
         return chat_completion_response
 

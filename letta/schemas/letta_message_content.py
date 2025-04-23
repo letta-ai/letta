@@ -145,7 +145,8 @@ class OmittedReasoningContent(MessageContent):
     type: Literal[MessageContentType.omitted_reasoning] = Field(
         MessageContentType.omitted_reasoning, description="Indicates this is an omitted reasoning step."
     )
-    tokens: int = Field(..., description="The reasoning token count for intermediate reasoning content.")
+    # NOTE: dropping because we don't track this kind of information for the other reasoning types
+    # tokens: int = Field(..., description="The reasoning token count for intermediate reasoning content.")
 
 
 LettaMessageContentUnion = Annotated[
