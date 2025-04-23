@@ -2,7 +2,7 @@ import uuid
 from typing import List, Optional
 
 from google import genai
-from google.genai.types import FunctionCallingConfig, FunctionCallingConfigMode, GenerateContentResponse, ToolConfig
+from google.genai.types import FunctionCallingConfig, FunctionCallingConfigMode, GenerateContentResponse, ThinkingConfig, ToolConfig
 
 from letta.helpers.datetime_helpers import get_utc_time_int
 from letta.helpers.json_helpers import json_dumps
@@ -59,6 +59,15 @@ class GoogleVertexClient(GoogleAIClient):
             )
         )
         request_data["config"]["tool_config"] = tool_config.model_dump()
+
+        # Add thinking_config
+        # If enable_reasoner is False, set thinking_budget to 0
+        # Otherwise, use the value from max_reasoning_tokens
+        thinking_budget = 0 if not self.llm_config.enable_reasoner else self.llm_config.max_reasoning_tokens
+        thinking_config = ThinkingConfig(
+            thinking_budget=thinking_budget,
+        )
+        request_data["config"]["thinking_config"] = thinking_config.model_dump()
 
         return request_data
 
