@@ -209,15 +209,15 @@
         "tooltip": "If enabled, the agent will not remember messages from previous steps (though the agent will still retain state via memory). Not recommended unless you have an advanced use case."
       },
       "sleeptimeAgentFrequency": {
-        "label": "Sleeptime agent frequency",
-        "tooltip": "The step frequency at which the sleeptime agent should be invoked",
-        "error": "Failed to update sleeptime agent frequency value"
+        "label": "Sleep-time agent frequency",
+        "tooltip": "The step frequency at which the sleep-time agent is invoked. Set to 1 to run the sleep-time agent on every primary agent step.",
+        "error": "Failed to update sleep-time agent frequency value"
       }
     }
   },
   "ADE/EditDataSourcesPanel": {
     "mobileTitle": "Data Sources",
-    "infoTooltip": "External files loaded into the agent’s archival memory for RAG",
+    "infoTooltip": "External files loaded into the agent's archival memory for RAG",
     "AttachDataSourceView": {
       "notCompatible": {
         "title": "Not Compatible",
