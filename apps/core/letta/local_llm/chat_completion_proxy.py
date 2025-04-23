@@ -6,7 +6,7 @@ import requests
 
 from letta.constants import CLI_WARNING_PREFIX
 from letta.errors import LocalLLMConnectionError, LocalLLMError
-from letta.helpers.datetime_helpers import get_utc_time
+from letta.helpers.datetime_helpers import get_utc_time_int
 from letta.helpers.json_helpers import json_dumps
 from letta.local_llm.constants import DEFAULT_WRAPPER
 from letta.local_llm.function_parser import patch_function
@@ -241,7 +241,7 @@ def get_chat_completion(
                 ),
             )
         ],
-        created=get_utc_time(),
+        created=get_utc_time_int(),
         model=model,
         # "This fingerprint represents the backend configuration that the model runs with."
         # system_fingerprint=user if user is not None else "null",

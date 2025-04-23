@@ -4,7 +4,7 @@ from typing import List, Optional, Union
 
 import requests
 
-from letta.helpers.datetime_helpers import get_utc_time
+from letta.helpers.datetime_helpers import get_utc_time_int
 from letta.helpers.json_helpers import json_dumps
 from letta.local_llm.utils import count_tokens
 from letta.schemas.message import Message
@@ -207,7 +207,7 @@ def convert_cohere_response_to_chatcompletion(
     return ChatCompletionResponse(
         id=response_json["response_id"],
         choices=[choice],
-        created=get_utc_time(),
+        created=get_utc_time_int(),
         model=model,
         usage=UsageStatistics(
             prompt_tokens=prompt_tokens,

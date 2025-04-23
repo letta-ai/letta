@@ -119,7 +119,7 @@ class ChatCompletionResponse(BaseModel):
 
     id: str
     choices: List[Choice]
-    created: datetime.datetime
+    created: Union[datetime.datetime, int]
     model: Optional[str] = None  # NOTE: this is not consistent with OpenAI API standard, however is necessary to support local LLMs
     # system_fingerprint: str  # docs say this is mandatory, but in reality API returns None
     system_fingerprint: Optional[str] = None
@@ -187,7 +187,7 @@ class ChatCompletionChunkResponse(BaseModel):
 
     id: str
     choices: List[ChunkChoice]
-    created: Union[datetime.datetime, str]
+    created: Union[datetime.datetime, int]
     model: str
     # system_fingerprint: str  # docs say this is mandatory, but in reality API returns None
     system_fingerprint: Optional[str] = None

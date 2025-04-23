@@ -238,7 +238,7 @@ class ChatCompletionsStreamingInterface(AgentChunkStreamingInterface):
                     return ChatCompletionChunk(
                         id=chunk.id,
                         object=chunk.object,
-                        created=chunk.created.timestamp(),
+                        created=chunk.created,
                         model=chunk.model,
                         choices=[
                             Choice(
@@ -256,7 +256,7 @@ class ChatCompletionsStreamingInterface(AgentChunkStreamingInterface):
                 return ChatCompletionChunk(
                     id=chunk.id,
                     object=chunk.object,
-                    created=chunk.created.timestamp(),
+                    created=chunk.created,
                     model=chunk.model,
                     choices=[
                         Choice(
