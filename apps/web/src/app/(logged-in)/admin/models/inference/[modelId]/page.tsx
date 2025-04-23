@@ -12,9 +12,11 @@ import {
   FormProvider,
   HStack,
   Input,
+  isMultiValue,
   LoadingEmptyStatusComponent,
   RawCodeEditor,
   RawInput,
+  Select,
   Typography,
   useForm,
   VStack,
@@ -27,6 +29,7 @@ import { queryClientKeys } from '$web/web-api/contracts';
 import { useQueryClient } from '@tanstack/react-query';
 import { useParams } from 'next/navigation';
 import type { StepCostSchemaVersionOneStep } from '@letta-cloud/types';
+import { ModelTiers } from '@letta-cloud/types';
 import { parseInt } from 'lodash-es';
 
 interface UpdateInferenceModelFormProps {
@@ -44,11 +47,52 @@ const updateInferenceModelSchema = z.object({
   }),
   tag: z.string().optional(),
   brand: z.string(),
+  tier: ModelTiers,
 });
 
 type UpdateInferenceModelFormValues = z.infer<
   typeof updateInferenceModelSchema
 >;
+
+const TIER_OPTIONS = [
+  {
+    value: 'free',
+    label: 'Free',
+  },
+  {
+    value: 'premium',
+    label: 'Premium',
+  },
+  {
+    value: 'per-inference',
+    label: 'Per Inference',
+    description:
+      'Will be charged per inference and not given away for free/premium tiers',
+  },
+];
+
+function TierSelector() {
+  return (
+    <FormField
+      name="tier"
+      render={({ field }) => (
+        <Select
+          value={TIER_OPTIONS.find((option) => option.value === field.value)}
+          onSelect={(value) => {
+            if (isMultiValue(value) || !value?.value) {
+              return null;
+            }
+
+            field.onChange(value.value);
+          }}
+          label="Tier"
+          fullWidth
+          options={TIER_OPTIONS}
+        />
+      )}
+    />
+  );
+}
 
 function UpdateInferenceModelForm(props: UpdateInferenceModelFormProps) {
   const { model } = props;
@@ -74,6 +118,7 @@ function UpdateInferenceModelForm(props: UpdateInferenceModelFormProps) {
       name: model.name,
       disabled: !!model.disabledAt,
       brand: model.brand,
+      tier: model.tier,
       defaultRequestsPerMinutePerOrganization:
         model.defaultRequestsPerMinutePerOrganization,
       defaultTokensPerMinutePerOrganization:
@@ -98,6 +143,7 @@ function UpdateInferenceModelForm(props: UpdateInferenceModelFormProps) {
           defaultContextWindow: parseInt(values.defaultContextWindow, 10),
           name: values.name,
           disabled: values.disabled,
+          tier: values.tier,
           brand: values.brand,
           isRecommended: values.isRecommended,
           tag: values.tag,
@@ -129,6 +175,7 @@ function UpdateInferenceModelForm(props: UpdateInferenceModelFormProps) {
                 />
               )}
             />
+            <TierSelector />
             <FormField
               name="defaultRequestsPerMinutePerOrganization"
               render={({ field }) => (

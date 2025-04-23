@@ -14,6 +14,7 @@ import {
 import type { EmbeddingConfig, LLMConfig } from '@letta-cloud/sdk-core';
 import { getBrandFromModelName } from '@letta-cloud/utils-shared';
 import { setRedisData } from '@letta-cloud/service-redis';
+import type { ModelTiersType } from '@letta-cloud/types';
 
 type GetAdminInferenceModelsResponse = ServerInferResponses<
   typeof contracts.admin.models.getAdminInferenceModels
@@ -48,6 +49,7 @@ export async function getAdminInferenceModels(
         inferenceModels: res.map((model) => ({
           id: model.model,
           name: model.model,
+          tier: 'per-inference',
           defaultRequestsPerMinutePerOrganization: 0,
           defaultTokensPerMinutePerOrganization: 0,
           tag: '',
@@ -111,6 +113,7 @@ export async function getAdminInferenceModels(
         id: model.id,
         name: model.name,
         brand: model.brand,
+        tier: model.tier,
         defaultRequestsPerMinutePerOrganization: parseInt(
           model.defaultRequestsPerMinutePerOrganization,
           10,
@@ -165,6 +168,7 @@ async function getAdminInferenceModel(
   return {
     status: 200,
     body: {
+      tier: response.tier,
       id: response.id,
       name: response.name,
       isRecommended: response.isRecommended,
@@ -245,6 +249,7 @@ async function createAdminInferenceModel(
     .insert(inferenceModelsMetadata)
     .values({
       name: selectedModel.model,
+      tier: 'per-inference',
       modelEndpoint: selectedModel.model_endpoint,
       brand: getBrandFromModelName(selectedModel.model) || 'unknown',
       modelName: selectedModel.model,
@@ -254,6 +259,7 @@ async function createAdminInferenceModel(
       id: inferenceModelsMetadata.id,
       name: inferenceModelsMetadata.name,
       brand: inferenceModelsMetadata.brand,
+      tier: inferenceModelsMetadata.tier,
       modelEndpoint: inferenceModelsMetadata.modelEndpoint,
       tag: inferenceModelsMetadata.tag,
       isRecommended: inferenceModelsMetadata.isRecommended,
@@ -282,6 +288,7 @@ async function createAdminInferenceModel(
       id: response.id,
       name: response.name,
       brand: response.brand,
+      tier: response.tier,
       tag: response.tag || '',
       defaultTokensPerMinutePerOrganization: parseInt(
         response.defaultTokensPerMinutePerOrganization,
@@ -321,14 +328,22 @@ interface UpdateAdminInferenceSetterType {
   defaultTokensPerMinutePerOrganization?: string;
   defaultContextWindow?: string;
   isRecommended?: boolean;
+  tier: ModelTiersType;
 }
 
 async function updateAdminInferenceModel(
   req: UpdateAdminInferenceModelRequest,
 ): Promise<UpdateAdminInferenceModelResponse> {
   const { id } = req.params;
-  const { brand, disabled, name, defaultContextWindow, isRecommended, tag } =
-    req.body;
+  const {
+    brand,
+    disabled,
+    name,
+    tier,
+    defaultContextWindow,
+    isRecommended,
+    tag,
+  } = req.body;
 
   const existingModel = await db.query.inferenceModelsMetadata.findFirst({
     where: eq(inferenceModelsMetadata.id, id),
@@ -359,6 +374,10 @@ async function updateAdminInferenceModel(
 
   if (tag) {
     set.tag = tag;
+  }
+
+  if (tier) {
+    set.tier = tier;
   }
 
   if (typeof isRecommended === 'boolean') {
@@ -421,6 +440,7 @@ async function updateAdminInferenceModel(
       id: inferenceModelsMetadata.id,
       name: inferenceModelsMetadata.name,
       brand: inferenceModelsMetadata.brand,
+      tier: inferenceModelsMetadata.tier,
       defaultContextWindow: inferenceModelsMetadata.defaultContextWindow,
       modelEndpoint: inferenceModelsMetadata.modelEndpoint,
       isRecommended: inferenceModelsMetadata.isRecommended,
@@ -440,6 +460,7 @@ async function updateAdminInferenceModel(
     body: {
       id: response.id,
       name: response.name,
+      tier: response.tier,
       brand: response.brand,
       defaultContextWindow:
         typeof response.defaultContextWindow === 'string'

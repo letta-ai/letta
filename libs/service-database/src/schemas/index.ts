@@ -624,6 +624,12 @@ export const developmentServerPasswordRelations = relations(
 const DEFAULT_INFERENCE_TOKENS_PER_MINUTE = '1000';
 const DEFAULT_INFERENCE_REQUESTS_PER_MINUTE = '1000';
 
+export const modelTierEnum = pgEnum('model_tier_enum', [
+  'free',
+  'premium',
+  'per-inference',
+]);
+
 export const inferenceModelsMetadata = pgTable(
   'inference_models_metadata',
   {
@@ -634,6 +640,7 @@ export const inferenceModelsMetadata = pgTable(
       .default(sql`gen_random_uuid()`),
     name: text('name').notNull(),
     brand: text('brand').notNull(),
+    tier: modelTierEnum('tier').notNull(),
     isRecommended: boolean('is_recommended').notNull().default(false),
     tag: text('tag'),
     defaultContextWindow: numeric('default_context_window'),

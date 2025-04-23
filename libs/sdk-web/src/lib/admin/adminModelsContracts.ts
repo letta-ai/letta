@@ -2,7 +2,7 @@ import { initContract } from '@ts-rest/core';
 import { z } from 'zod';
 import { EmbeddingConfigSchema, LLMConfigSchema } from '@letta-cloud/sdk-core';
 import { GenericSearchSchema } from '../shared';
-import { stepCostVersionOne } from '@letta-cloud/types';
+import { ModelTiers, stepCostVersionOne } from '@letta-cloud/types';
 
 const c = initContract();
 
@@ -15,6 +15,7 @@ export const InferenceModelSchema = z.object({
   defaultTokensPerMinutePerOrganization: z.number(),
   defaultContextWindow: z.number().optional(),
   isRecommended: z.boolean(),
+  tier: ModelTiers,
   tag: z.string(),
   disabledAt: z.string().nullable().optional(),
   createdAt: z.string(),
@@ -80,6 +81,7 @@ const UpdateInferenceModelRequestBodySchema = z.object({
   disabled: z.boolean().optional(),
   name: z.string().optional(),
   tag: z.string().optional(),
+  tier: ModelTiers.optional(),
   defaultContextWindow: z.number().optional(),
   defaultRequestsPerMinutePerOrganization: z.number().optional(),
   defaultTokensPerMinutePerOrganization: z.number().optional(),

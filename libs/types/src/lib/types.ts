@@ -130,6 +130,9 @@ export const accessPolicyVersionOne = z.object({
   data: accessPolicyArray,
 });
 
+export const ModelTiers = z.enum(['free', 'premium', 'per-inference']);
+export type ModelTiersType = z.infer<typeof ModelTiers>;
+
 export type AccessPolicyVersionOneType = z.infer<typeof accessPolicyVersionOne>;
 
 export const BillingTiers = z.enum(['free', 'pro', 'enterprise']);
