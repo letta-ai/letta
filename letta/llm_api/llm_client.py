@@ -1,7 +1,7 @@
 from typing import Optional
 
 from letta.llm_api.llm_client_base import LLMClientBase
-from letta.schemas.llm_config import LLMConfig
+from letta.schemas.enums import ProviderType
 
 
 class LLMClient:
@@ -9,17 +9,15 @@ class LLMClient:
 
     @staticmethod
     def create(
-        llm_config: LLMConfig,
+        provider: ProviderType,
         put_inner_thoughts_first: bool = True,
     ) -> Optional[LLMClientBase]:
         """
         Create an LLM client based on the model endpoint type.
 
         Args:
-            llm_config: Configuration for the LLM model
+            provider: The model endpoint type
             put_inner_thoughts_first: Whether to put inner thoughts first in the response
-            use_structured_output: Whether to use structured output
-            use_tool_naming: Whether to use tool naming
 
         Returns:
             An instance of LLMClientBase subclass
@@ -27,33 +25,29 @@ class LLMClient:
         Raises:
             ValueError: If the model endpoint type is not supported
         """
-        match llm_config.model_endpoint_type:
-            case "google_ai":
+        match provider:
+            case ProviderType.google_ai:
                 from letta.llm_api.google_ai_client import GoogleAIClient
 
                 return GoogleAIClient(
-                    llm_config=llm_config,
                     put_inner_thoughts_first=put_inner_thoughts_first,
                 )
-            case "google_vertex":
+            case ProviderType.google_vertex:
                 from letta.llm_api.google_vertex_client import GoogleVertexClient
 
                 return GoogleVertexClient(
-                    llm_config=llm_config,
                     put_inner_thoughts_first=put_inner_thoughts_first,
                 )
-            case "anthropic":
+            case ProviderType.anthropic:
                 from letta.llm_api.anthropic_client import AnthropicClient
 
                 return AnthropicClient(
-                    llm_config=llm_config,
                     put_inner_thoughts_first=put_inner_thoughts_first,
                 )
-            case "openai":
+            case ProviderType.openai:
                 from letta.llm_api.openai_client import OpenAIClient
 
                 return OpenAIClient(
-                    llm_config=llm_config,
                     put_inner_thoughts_first=put_inner_thoughts_first,
                 )
             case _:

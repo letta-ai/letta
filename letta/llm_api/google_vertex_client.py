@@ -18,7 +18,7 @@ from letta.utils import get_tool_call_id
 
 class GoogleVertexClient(GoogleAIClient):
 
-    def request(self, request_data: dict) -> dict:
+    def request(self, request_data: dict, llm_config: LLMConfig) -> dict:
         """
         Performs underlying request to llm and returns raw response.
         """
@@ -29,7 +29,7 @@ class GoogleVertexClient(GoogleAIClient):
             http_options={"api_version": "v1"},
         )
         response = client.models.generate_content(
-            model=self.llm_config.model,
+            model=llm_config.model,
             contents=request_data["contents"],
             config=request_data["config"],
         )
@@ -45,7 +45,7 @@ class GoogleVertexClient(GoogleAIClient):
         """
         Constructs a request object in the expected data format for this client.
         """
-        request_data = super().build_request_data(messages, self.llm_config, tools, force_tool_call)
+        request_data = super().build_request_data(messages, llm_config, tools, force_tool_call)
         request_data["config"] = request_data.pop("generation_config")
         request_data["config"]["tools"] = request_data.pop("tools")
 
@@ -66,6 +66,7 @@ class GoogleVertexClient(GoogleAIClient):
         self,
         response_data: dict,
         input_messages: List[PydanticMessage],
+        llm_config: LLMConfig,
     ) -> ChatCompletionResponse:
         """
         Converts custom response format from llm client into an OpenAI
@@ -127,7 +128,7 @@ class GoogleVertexClient(GoogleAIClient):
                         assert isinstance(function_args, dict), function_args
 
                         # NOTE: this also involves stripping the inner monologue out of the function
-                        if self.llm_config.put_inner_thoughts_in_kwargs:
+                        if llm_config.put_inner_thoughts_in_kwargs:
                             from letta.local_llm.constants import INNER_THOUGHTS_KWARG
 
                             assert INNER_THOUGHTS_KWARG in function_args, f"Couldn't find inner thoughts in function args:\n{function_call}"
@@ -224,7 +225,7 @@ class GoogleVertexClient(GoogleAIClient):
             return ChatCompletionResponse(
                 id=response_id,
                 choices=choices,
-                model=self.llm_config.model,  # NOTE: Google API doesn't pass back model in the response
+                model=llm_config.model,  # NOTE: Google API doesn't pass back model in the response
                 created=get_utc_time_int(),
                 usage=usage,
             )

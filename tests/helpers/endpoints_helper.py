@@ -104,10 +104,13 @@ def check_first_response_is_valid_for_llm_endpoint(filename: str, validate_inner
     messages = client.server.agent_manager.get_in_context_messages(agent_id=full_agent_state.id, actor=client.user)
     agent = Agent(agent_state=full_agent_state, interface=None, user=client.user)
 
-    llm_client = LLMClient.create(llm_config=agent_state.llm_config)
+    llm_client = LLMClient.create(
+        provider=agent_state.llm_config.model_endpoint_type,
+    )
     if llm_client:
         response = llm_client.send_llm_request(
             messages=messages,
+            llm_config=agent_state.llm_config,
             tools=[t.json_schema for t in agent.agent_state.tools],
         )
     else:
