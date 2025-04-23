@@ -54,7 +54,6 @@ jobs:
           - "integration_test_multi_agent.py"
           - "integration_test_batch_api_cron_jobs.py"
           - "integration_test_batch.py"
-          - "integration_test_send_message.py"
     services:
       qdrant:
         image: qdrant/qdrant
