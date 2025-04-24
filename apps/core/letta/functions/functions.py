@@ -2,7 +2,7 @@ import importlib
 import inspect
 from textwrap import dedent  # remove indentation
 from types import ModuleType
-from typing import Dict, List, Optional
+from typing import Dict, List, Literal, Optional
 
 from letta.errors import LettaToolCreateError
 from letta.functions.schema_generator import generate_schema
@@ -20,6 +20,7 @@ def derive_openai_json_schema(source_code: str, name: Optional[str] = None) -> d
             "Optional": Optional,
             "List": List,
             "Dict": Dict,
+            "Literal": Literal,
             # To support Pydantic models
             # "BaseModel": BaseModel,
             # "Field": Field,
