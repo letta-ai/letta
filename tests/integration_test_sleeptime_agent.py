@@ -240,13 +240,13 @@ async def test_sleeptime_edit(server, actor):
             agent_type="sleeptime_agent",
             memory_blocks=[
                 CreateBlock(
-                    label="persona",
+                    label="human",
                     value=get_human_text(DEFAULT_HUMAN),
                     limit=2000,
                 ),
                 CreateBlock(
-                    label="human",
-                    value=get_persona_text("offline_memory_persona"),
+                    label="memory_persona",
+                    value=get_persona_text("sleeptime_memory_persona"),
                     limit=2000,
                 ),
                 CreateBlock(

@@ -766,12 +766,7 @@ class SyncServer(Server):
             memory_blocks=[
                 CreateBlock(
                     label="memory_persona",
-                    value=(
-                        "I am an expert conversation memory manager. "
-                        "I manage the memory blocks such that they "
-                        "contain everything that is important about "
-                        "the conversation."
-                    ),
+                    value=get_persona_text("sleeptime_memory_persona"),
                 ),
             ],
             llm_config=main_agent.llm_config,
