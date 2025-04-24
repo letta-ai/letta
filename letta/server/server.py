@@ -1308,12 +1308,14 @@ class SyncServer(Server):
             tool_execution_result = ToolExecutionSandbox(tool.name, tool_args, actor, tool_object=tool).run(
                 agent_state=agent_state, additional_env_vars=tool_env_vars
             )
+            status = "error" if tool_execution_result.stderr else "success"
+            tool_return = str(tool_execution_result.stderr) if tool_execution_result.stderr else str(tool_execution_result.func_return)
             return ToolReturnMessage(
                 id="null",
                 tool_call_id="null",
                 date=get_utc_time(),
-                status=tool_execution_result.status,
-                tool_return=str(tool_execution_result.func_return),
+                status=status,
+                tool_return=tool_return,
                 stdout=tool_execution_result.stdout,
                 stderr=tool_execution_result.stderr,
             )
