@@ -493,7 +493,7 @@ def sample_local_sandbox_config():
     """Fixture for a sample LocalSandboxConfig object."""
     return LocalSandboxConfig(
         sandbox_dir="/custom/path",
-        use_venv=True,
+        force_create_venv=True,
         venv_name="custom_venv_name",
         pip_requirements=[
             PipRequirement(name="numpy", version="1.23.0"),
