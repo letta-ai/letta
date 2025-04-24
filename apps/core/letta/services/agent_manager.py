@@ -931,7 +931,8 @@ class AgentManager:
             modified (bool): whether the memory was updated
         """
         agent_state = self.get_agent_by_id(agent_id=agent_id, actor=actor)
-        if agent_state.memory.compile() != new_memory.compile():
+        system_message = self.message_manager.get_message_by_id(message_id=agent_state.message_ids[0], actor=actor)
+        if new_memory.compile() not in system_message.content[0].text:
             # update the blocks (LRW) in the DB
             for label in agent_state.memory.list_block_labels():
                 updated_value = new_memory.get_block(label).value
