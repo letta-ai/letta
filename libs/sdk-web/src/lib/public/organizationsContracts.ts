@@ -502,6 +502,21 @@ const getOrganizationCreditsContract = c.query({
   },
 });
 
+const upgradeOrganizationToProContract = c.mutation({
+  path: '/organizations/self/upgrade',
+  method: 'POST',
+  body: z.undefined(),
+  responses: {
+    200: z.object({
+      success: z.boolean(),
+    }),
+    400: z.object({
+      message: z.string(),
+      errorCode: z.enum(['paymentError']),
+    }),
+  },
+});
+
 export const organizationsContract = c.router({
   getCurrentOrganization: getCurrentOrganizationContract,
   getCurrentOrganizationPreferences: getCurrentOrganizationPreferencesContract,
@@ -517,6 +532,7 @@ export const organizationsContract = c.router({
   createOrganization: createOrganizationContract,
   regenerateInviteCode: regenerateInviteCodeContract,
   getInviteByCode: GetInviteByCodeContract,
+  upgradeOrganizationToPro: upgradeOrganizationToProContract,
   getCurrentOrganizationBillingInfo: getCurrentOrganizationBillingInfoContract,
   startSetupIntent: startSetupIntentContract,
   removeOrganizationBillingMethod: removeOrganizationBillingMethodContract,
@@ -527,6 +543,7 @@ export const organizationsContract = c.router({
   listInviteRules: listInviteRulesContract,
   deleteInviteRule: deleteInviteRuleContract,
   getOrganizationCredits: getOrganizationCreditsContract,
+
   getOrganizationBillingHistory: getOrganizationBillingHistoryContract,
 });
 

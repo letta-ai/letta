@@ -43,6 +43,7 @@ import {
 } from '@letta-cloud/utils-server';
 import { creditsToDollars } from '@letta-cloud/utils-shared';
 import { sendEmail } from '@letta-cloud/service-email';
+import { upgradeUserToProPlan } from '@letta-cloud/service-payments';
 
 type GetCurrentOrganizationResponse = ServerInferResponses<
   typeof contracts.organizations.getCurrentOrganization
@@ -1289,6 +1290,33 @@ export async function getOrganizationCreditsRoute(): Promise<GetOrganizationCred
   };
 }
 
+type UpgradeOrganizationToProResponse = ServerInferResponses<
+  typeof contracts.organizations.upgradeOrganizationToPro
+>;
+
+async function upgradeOrganizationToPro(): Promise<UpgradeOrganizationToProResponse> {
+  const { activeOrganizationId, permissions } =
+    await getUserWithActiveOrganizationIdOrThrow();
+
+  if (!permissions.has(ApplicationServices.MANAGE_BILLING)) {
+    return {
+      status: 403,
+      body: {
+        message: 'Permission denied',
+      },
+    };
+  }
+
+  await upgradeUserToProPlan(activeOrganizationId);
+
+  return {
+    status: 200,
+    body: {
+      success: true,
+    },
+  };
+}
+
 export const organizationsRouter = {
   getCurrentOrganization,
   getCurrentOrganizationPreferences,
@@ -1297,6 +1325,7 @@ export const organizationsRouter = {
   purchaseCredits,
   inviteNewTeamMember,
   unInviteTeamMember,
+  upgradeOrganizationToPro,
   listInvitedMembers,
   deleteOrganization,
   updateOrganization,

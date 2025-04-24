@@ -46,6 +46,11 @@ export const featureFlags = {
     expiryDate: '2024-04-01',
     flagValue: z.boolean(),
   },
+  PRO_PLAN: {
+    description: 'Pro plan',
+    expiryDate: '2024-04-01',
+    flagValue: z.boolean(),
+  },
 } satisfies Record<string, FlagProperties>;
 
 export type Flag = keyof typeof featureFlags;

@@ -65,11 +65,6 @@ function SettingsLayout(props: SettingsLayoutProps) {
                     href: '/settings/organization/members',
                   },
                   {
-                    id: 'billing',
-                    label: t('organization.billing'),
-                    href: '/settings/organization/billing',
-                  },
-                  {
                     id: 'integrations',
                     label: t('organization.integrations'),
                     href: '/settings/organization/integrations',
@@ -78,26 +73,6 @@ function SettingsLayout(props: SettingsLayoutProps) {
                     id: 'environemnt-variables',
                     label: t('organization.environmentVariables'),
                     href: '/settings/organization/environment-variables',
-                  },
-                  {
-                    id: 'usage',
-                    label: t('organization.usage'),
-                    href: '/settings/organization/usage',
-                  },
-                  {
-                    id: 'audit-log',
-                    label: t('organization.auditLog'),
-                    href: '/settings/organization/audit-log',
-                  },
-                  {
-                    id: 'rate-limits',
-                    label: t('organization.rateLimits'),
-                    href: '/settings/organization/rate-limits',
-                  },
-                  {
-                    id: 'cost-explorer',
-                    label: t('organization.costExplorer'),
-                    href: '/settings/organization/cost-explorer',
                   },
                   ...(showModelProviders
                     ? [
@@ -108,6 +83,37 @@ function SettingsLayout(props: SettingsLayoutProps) {
                         },
                       ]
                     : []),
+                ],
+              },
+              {
+                title: t('organization.costs'),
+                items: [
+                  {
+                    id: 'billing',
+                    label: t('organization.billing'),
+                    href: '/settings/organization/billing',
+                  },
+                  {
+                    id: 'usage',
+                    label: t('organization.usage'),
+                    href: '/settings/organization/usage',
+                  },
+
+                  {
+                    id: 'rate-limits',
+                    label: t('organization.rateLimits'),
+                    href: '/settings/organization/rate-limits',
+                  },
+                  {
+                    id: 'cost-explorer',
+                    label: t('organization.costExplorer'),
+                    href: '/settings/organization/cost-explorer',
+                  },
+                  {
+                    id: 'audit-log',
+                    label: t('organization.auditLog'),
+                    href: '/settings/organization/audit-log',
+                  },
                 ],
               },
             ]

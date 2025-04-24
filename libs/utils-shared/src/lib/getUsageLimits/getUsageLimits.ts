@@ -1,6 +1,6 @@
 import type { BillingTiersType } from '@letta-cloud/types';
 
-interface Limit {
+export interface Limit {
   agents: number;
   templates: number;
   storage: number; // in bytes
@@ -30,7 +30,7 @@ const limitMap: Record<BillingTiersType, Limit> = {
     projects: 100,
     dataSources: 25,
     templates: 100,
-    premiumInferencesPerMonth: 100_000,
+    premiumInferencesPerMonth: 5000,
     freeInferencesPerMonth: 10_000_000,
     storage: OneGB, // 1 GB
   },

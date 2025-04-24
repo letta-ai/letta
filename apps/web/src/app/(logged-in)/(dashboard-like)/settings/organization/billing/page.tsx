@@ -16,10 +16,12 @@ import {
   TollIcon,
   Typography,
   VStack,
+  WalletIcon,
 } from '@letta-cloud/ui-component-library';
 import React, { useEffect, useMemo, useState } from 'react';
 import { webApi, webApiQueryKeys } from '$web/client';
 import type { BillingHistorySchemaType } from '$web/web-api/contracts';
+import { useFeatureFlag } from '$web/web-api/contracts';
 import {
   useCurrencyFormatter,
   useDateFormatter,
@@ -31,6 +33,68 @@ import { ApplicationServices } from '@letta-cloud/service-rbac';
 import { PurchaseCreditsDialog } from '$web/client/components/PurchaseCreditsDialog/PurchaseCreditsDialog';
 import type { ColumnDef } from '@tanstack/react-table';
 import { CreditCardSlot } from '$web/client/components';
+import type { BillingTiersType } from '@letta-cloud/types';
+import { UpgradeToProPlanDialog } from '$web/client/components/UpgradeToProPlanDialog/UpgradeToProPlanDialog';
+
+interface AccountDetailsCTAProps {
+  billingTier: BillingTiersType;
+}
+
+function AccountDetailsCTA(props: AccountDetailsCTAProps) {
+  const { billingTier } = props;
+
+  const t = useTranslations('organization/billing');
+
+  switch (billingTier) {
+    case 'free':
+      return (
+        <HStack>
+          <UpgradeToProPlanDialog
+            trigger={
+              <Button
+                preIcon={<WalletIcon />}
+                color="tertiary"
+                bold
+                size="small"
+                label={t('AccountDetailsCTA.upgrade')}
+              />
+            }
+          />
+        </HStack>
+      );
+  }
+}
+
+function AccountDetails() {
+  const t = useTranslations('organization/billing');
+
+  const { data } =
+    webApi.organizations.getCurrentOrganizationBillingInfo.useQuery({
+      queryKey: webApiQueryKeys.organizations.getCurrentOrganizationBillingInfo,
+    });
+
+  const description = useMemo(() => {
+    switch (data?.body.billingTier) {
+      case 'free':
+        return t('AccountDetails.description.free');
+      case 'pro':
+        return t('AccountDetails.description.pro');
+      case 'enterprise':
+        return t('AccountDetails.description.enterprise');
+    }
+  }, [data, t]);
+
+  if (!data) {
+    return <LoadingEmptyStatusComponent isLoading />;
+  }
+
+  return (
+    <Section title={t('AccountDetails.title')}>
+      <Typography>{description}</Typography>
+      <AccountDetailsCTA billingTier={data.body.billingTier} />
+    </Section>
+  );
+}
 
 function PaymentMethods() {
   const { data, isLoading, isError } =
@@ -117,6 +181,8 @@ function BillingOverview(props: BillingOverviewProps) {
 
   const t = useTranslations('organization/billing');
 
+  const { data: isProPlanEnabled } = useFeatureFlag('PRO_PLAN');
+
   const { formatNumber } = useNumberFormatter();
 
   if (!data) {
@@ -150,6 +216,7 @@ function BillingOverview(props: BillingOverviewProps) {
           }
         />
       )}
+      {isProPlanEnabled && <AccountDetails />}
       <Section title={t('BillingOverview.Credits.title')}>
         <VStack color="background-grey" border padding>
           <VStack paddingY="small" align="start">

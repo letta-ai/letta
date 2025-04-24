@@ -483,6 +483,8 @@
       "general": "General",
       "members": "Members",
       "root": "Organization",
+      "costs": "Usage and Costs",
+      "utilities": "Global Configuration",
       "integrations": "Integrations",
       "environmentVariables": "Tool variables",
       "modelProviders": "Model providers",
@@ -645,7 +647,36 @@
       "error": "There was an error loading usage data, please try again or contact support."
     }
   },
+  "components/UpgradeToProPlanDialog": {
+    "error": "There was an error upgrading to the Pro plan, please try again or contact support.",
+    "title": "Upgrade to the Pro plan",
+    "description": "Upgrading to pro comes with these benefits \uD83D\uDC47",
+    "options": {
+      "freeInferencesPerMonth": "Unlimited free model usage",
+      "premiumInferencesPerMonth": "{amount}/month premium model requests",
+      "agents": "{amount} hosted agents",
+      "storage": "{amount}GB of storage",
+      "dataSources": "{amount} data sources",
+      "projects": "{amount} projects",
+      "identities": "{amount} identities",
+      "templates": "{amount} templates"
+    },
+    "legal": "By upgrading, you agree to our <terms>Terms of Service</terms> and <privacy>Privacy Policy</privacy> and you will pay 20$/month. You can cancel at any time.",
+    "cta": "Upgrade for 20$/month",
+    "heading": "Upgrade to pro"
+  },
   "organization/billing": {
+    "AccountDetailsCTA": {
+      "upgrade": "Upgrade to the Pro plan"
+    },
+    "AccountDetails": {
+      "title": "Account",
+      "description": {
+        "free": "You are currently on the hobby plan (it’s free!).",
+        "pro": "You are currently on the Pro plan.",
+        "enterprise": "You are currently on our enterprise plan."
+      }
+    },
     "noPermission": "You do not have permission to view billing information for this organization, please contact your organization's administrator.",
     "title": "Billing",
     "description": "You are currently using a managed enterprise plan. If you have any questions or need help, please contact support.",
