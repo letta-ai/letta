@@ -190,16 +190,15 @@ class Agent(BaseAgent):
         Returns:
             modified (bool): whether the memory was updated
         """
-        if self.agent_state.memory.compile() != new_memory.compile():
+        system_message = self.message_manager.get_message_by_id(message_id=self.agent_state.message_ids[0], actor=self.user)
+        if new_memory.compile() not in system_message.content[0].text:
             # update the blocks (LRW) in the DB
             for label in self.agent_state.memory.list_block_labels():
                 updated_value = new_memory.get_block(label).value
                 if updated_value != self.agent_state.memory.get_block(label).value:
                     # update the block if it's changed
                     block_id = self.agent_state.memory.get_block(label).id
-                    block = self.block_manager.update_block(
-                        block_id=block_id, block_update=BlockUpdate(value=updated_value), actor=self.user
-                    )
+                    self.block_manager.update_block(block_id=block_id, block_update=BlockUpdate(value=updated_value), actor=self.user)
 
             # refresh memory from DB (using block ids)
             self.agent_state.memory = Memory(
