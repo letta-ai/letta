@@ -756,7 +756,13 @@ export function IdentitiesTable(props: IdentitiesTableProps) {
         actions={
           <CreateIdentityDialog
             currentProjectId={currentProjectId}
-            trigger={<Button label={t('createIdentity')} color="primary" />}
+            trigger={
+              <Button
+                data-testid="start-create-identity"
+                label={t('createIdentity')}
+                color="primary"
+              />
+            }
           />
         }
       >
@@ -774,7 +780,13 @@ export function IdentitiesTable(props: IdentitiesTableProps) {
       actions={
         <CreateIdentityDialog
           currentProjectId={currentProjectId}
-          trigger={<Button label={t('createIdentity')} color="primary" />}
+          trigger={
+            <Button
+              data-testid="start-create-identity"
+              label={t('createIdentity')}
+              color="primary"
+            />
+          }
         />
       }
       encapsulatedFullHeight

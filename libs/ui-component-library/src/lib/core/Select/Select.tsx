@@ -24,6 +24,7 @@ import { LettaLoader } from '../LettaLoader/LettaLoader';
 
 interface SelectOptionsContextProps {
   hideIconsOnOptions?: boolean;
+  testId?: string;
 }
 
 const SelectOptionsContext = React.createContext<SelectOptionsContextProps>({});
@@ -116,6 +117,17 @@ function useSelectComponents(selectProps: BaseSelectProps) {
           </HStack>
         </components.MultiValueRemove>
       ),
+      Input: ({ ...props }) => {
+        const { testId } = useSelectOptionsContext();
+
+        return (
+          // @ts-expect-error yest
+          <components.Input
+            {...props}
+            data-testid={`select-text-area-${testId}`}
+          />
+        );
+      },
       // @ts-expect-error yest
       MultiValueContainer: ({ children, ...props }) => (
         // @ts-expect-error yest
@@ -189,6 +201,7 @@ function useSelectComponents(selectProps: BaseSelectProps) {
             <HStack
               align="center"
               data-testid={`select-box-option-${props.data.value}`}
+              data-testid_alt={`select-box-option-container-${props.data.label}`}
             >
               <HStack align="center" fullWidth>
                 {props.data.icon && !hideIconsOnOptions && (
@@ -342,7 +355,9 @@ function AsyncSelectPrimitive(_props: AsyncSelectProps) {
   }
 
   return (
-    <SelectOptionsProvider value={{ hideIconsOnOptions }}>
+    <SelectOptionsProvider
+      value={{ hideIconsOnOptions, testId: props['data-testid'] }}
+    >
       {props['data-testid'] && (
         <div
           className="absolute"
@@ -448,7 +463,9 @@ function SelectPrimitive(_props: SelectProps) {
   }
 
   return (
-    <SelectOptionsProvider value={{ hideIconsOnOptions }}>
+    <SelectOptionsProvider
+      value={{ hideIconsOnOptions, testId: props['data-testid'] }}
+    >
       {props['data-testid'] && (
         <div
           className="absolute"
@@ -528,7 +545,9 @@ function CreatableAsyncSelectPrimitive(_props: AsyncSelectProps) {
   }
 
   return (
-    <SelectOptionsProvider value={{ hideIconsOnOptions }}>
+    <SelectOptionsProvider
+      value={{ hideIconsOnOptions, testId: props['data-testid'] }}
+    >
       {props['data-testid'] && (
         <div
           className="absolute"

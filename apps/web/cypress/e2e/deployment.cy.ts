@@ -26,6 +26,26 @@ describe('letta', () => {
 
     cy.findByTestId('create-project-dialog-confirm-button').click();
 
+    cy.location('pathname', { timeout: 50000 }).should(
+      'match',
+      /\/projects\/(.+)/,
+    );
+
+    // create an identity
+    cy.visit('/projects/deploymentest/identities');
+
+    cy.findAllByTestId('start-create-identity', { timeout: 50000 })
+      .first()
+      .click();
+
+    cy.findByTestId('identity-name-input').type('DEPLOYMENTIDENTITY');
+    cy.findByTestId('unique-identifier-input').type('DEPLOYMENTIDENTITY');
+
+    cy.findByTestId('create-identity-dialog-confirm-button').click();
+
+    // go to agent creation
+    cy.visit('/projects/deploymentest');
+
     // creates an agent
     cy.findAllByTestId('create-agent-template-button', { timeout: 50000 })
       .first()
@@ -118,6 +138,24 @@ describe('letta', () => {
       timeout: 50000,
     }).contains('Charles');
 
+    // add identity
+
+    cy.findByTestId('update-identities').click();
+
+    cy.findByTestId('select-text-area-identities-selector').type(
+      'DEPLOYMENTIDENTITY',
+    );
+
+    cy.findByText('DEPLOYMENTIDENTITY (DEPLOYMENTIDENTITY)').click();
+
+    cy.findByTestId('update-identities-dialog-confirm-button').click();
+
+    cy.findByTestId('identity-viewer-input', { timeout: 50000 }).should(
+      'have.value',
+      'DEPLOYMENTIDENTITY',
+      { timeout: 50000 },
+    );
+
     cy.findAllByTestId('breadcrumb-item:DEPLOYMENTAGENT:2').first().click();
 
     cy.location('pathname', { timeout: 50000 }).should(
@@ -163,5 +201,11 @@ describe('letta', () => {
     cy.findAllByTestId('breadcrumb-item:DEPLOYMENTAGENT:3')
       .first()
       .should('exist');
+
+    cy.findByTestId('identity-viewer-input', { timeout: 50000 }).should(
+      'have.value',
+      'DEPLOYMENTIDENTITY',
+      { timeout: 50000 },
+    );
   });
 });

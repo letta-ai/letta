@@ -511,10 +511,12 @@ function IdentitiesEditorDialog(props: IdentitiesEditorDialogProps) {
       errorMessage={isError ? t('IdentitiesEditorDialog.error') : ''}
       size="large"
       onConfirm={handleMutate}
+      testId="update-identities-dialog"
       isConfirmBusy={isPending}
       color="background"
       trigger={
         <Button
+          data-testid="update-identities"
           hideLabel
           preIcon={<GroupIcon />}
           color="secondary"
@@ -534,6 +536,7 @@ function IdentitiesEditorDialog(props: IdentitiesEditorDialogProps) {
             size: 'large',
           }}
           postIcon={<GroupIcon />}
+          data-testid="identities-selector"
           label={t('IdentitiesEditorDialog.identitySelector.label')}
           placeholder={t('IdentitiesEditorDialog.identitySelector.placeholder')}
           noOptionsMessage={() =>
@@ -627,6 +630,7 @@ function IdentityViewer() {
           projectId,
         },
       },
+      retry: false,
       enabled: isFromTemplate,
     });
 
@@ -687,6 +691,7 @@ function IdentityViewer() {
         label={identityLabel}
         value={identityValue}
         disabled
+        data-testid="identity-viewer-input"
         fullWidth
       />
       {isFromLaunchLink ? (

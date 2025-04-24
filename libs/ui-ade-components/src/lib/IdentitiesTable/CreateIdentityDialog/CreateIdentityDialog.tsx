@@ -130,6 +130,7 @@ export function CreateIdentityDialog(props: CreateIdentityDialogProps) {
         title={t('title')}
         errorMessage={errorMessage}
         isConfirmBusy={isPending}
+        testId="create-identity-dialog"
         onOpenChange={handleOpenChange}
         trigger={trigger}
         isOpen={open}
@@ -138,7 +139,12 @@ export function CreateIdentityDialog(props: CreateIdentityDialogProps) {
           <FormField
             name="name"
             render={({ field }) => (
-              <Input fullWidth {...field} label={t('name.label')} />
+              <Input
+                data-testid="identity-name-input"
+                fullWidth
+                {...field}
+                label={t('name.label')}
+              />
             )}
           />
 
@@ -166,6 +172,7 @@ export function CreateIdentityDialog(props: CreateIdentityDialogProps) {
               <Input
                 {...field}
                 fullWidth
+                data-testid="unique-identifier-input"
                 label={t('uniqueIdentifier.label')}
                 description={t('uniqueIdentifier.description')}
               />
