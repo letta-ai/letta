@@ -1,12 +1,6 @@
 name:  🕸🚀 Deploy
 
 on:
-    workflow_run:
-      workflows: ["🦸️ End-to-End Tests"]
-      types:
-        - completed
-      branches:
-        - main
     workflow_dispatch:
 env:
   PROJECT_ID: memgpt-428419
