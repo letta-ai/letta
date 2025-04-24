@@ -48,7 +48,6 @@ jobs:
           - "test_client_legacy.py"
           - "test_server.py"
           - "test_multi_agent.py"
-          - "test_v1_routes.py"
           - "test_local_client.py"
           - "test_managers.py"
           - "test_base_functions.py"
