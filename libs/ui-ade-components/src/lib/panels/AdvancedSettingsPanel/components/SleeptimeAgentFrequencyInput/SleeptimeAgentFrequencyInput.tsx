@@ -10,10 +10,119 @@ import {
   type Group,
 } from '@letta-cloud/sdk-core';
 
-export function SleeptimeAgentFrequencyInput() {
+interface SleeptimeAgentFrequencyInputInnerProps {
+  defaultSleeptimeFrequency: string;
+}
+
+function SleeptimeAgentFrequencyInputInner(
+  props: SleeptimeAgentFrequencyInputInnerProps,
+) {
   const currentGroup = useCurrentGroup();
+  const { defaultSleeptimeFrequency } = props;
   const t = useTranslations('ADE/AdvancedSettings');
   const queryClient = useQueryClient();
+
+  const [invalidInputError, setInvalidInputError] = useState<boolean>(false);
+
+  const [inputValue, setInputValue] = useState<string>(
+    defaultSleeptimeFrequency,
+  );
+  const [debouncedInput] = useDebouncedValue(inputValue, 500);
+
+  const { mutate: updateGroup } = useGroupsServiceModifyGroup({
+    onSuccess: () => {
+      if (!currentGroup || !debouncedInput) {
+        return;
+      }
+
+      void queryClient.invalidateQueries({
+        queryKey: UseGroupsServiceRetrieveGroupKeyFn({
+          groupId: currentGroup.id,
+        }),
+      });
+    },
+    onError: () => {
+      setInputValue(defaultSleeptimeFrequency);
+      toast.error(t('AdvancedSettingsPanel.sleeptimeAgentFrequency.error'));
+    },
+  });
+
+  useEffect(() => {
+    if (!debouncedInput || !inputValue) {
+      return;
+    }
+
+    const debouncedInputAsInt = parseInt(debouncedInput, 10);
+
+    if (isNaN(debouncedInputAsInt)) {
+      setInvalidInputError(true);
+      return;
+    }
+
+    if (debouncedInputAsInt <= 0) {
+      setInvalidInputError(true);
+      return;
+    }
+    setInvalidInputError(false);
+
+    if (currentGroup?.id && debouncedInput !== defaultSleeptimeFrequency) {
+      queryClient.setQueryData(
+        UseGroupsServiceRetrieveGroupKeyFn({
+          groupId: currentGroup.id,
+        }),
+        (oldData: Group | undefined) => {
+          if (!oldData) {
+            return oldData;
+          }
+          return {
+            ...oldData,
+            sleeptime_agent_frequency: debouncedInputAsInt,
+          };
+        },
+      );
+
+      updateGroup({
+        groupId: currentGroup.id,
+        requestBody: {
+          manager_config: {
+            manager_type: 'sleeptime',
+            sleeptime_agent_frequency: debouncedInputAsInt,
+          },
+        },
+      });
+    }
+  }, [
+    queryClient,
+    debouncedInput,
+    currentGroup,
+    updateGroup,
+    inputValue,
+    defaultSleeptimeFrequency,
+  ]);
+
+  return (
+    <RawInput
+      fullWidth
+      errorMessage={
+        invalidInputError
+          ? t('AdvancedSettingsPanel.sleeptimeAgentFrequency.invalidInput')
+          : ''
+      }
+      name="sleeptimeAgentFrequency"
+      label={t('AdvancedSettingsPanel.sleeptimeAgentFrequency.label')}
+      infoTooltip={{
+        text: t('AdvancedSettingsPanel.sleeptimeAgentFrequency.tooltip'),
+      }}
+      value={inputValue}
+      onChange={(e) => {
+        setInputValue(e.target.value);
+      }}
+    />
+  );
+}
+
+export function SleeptimeAgentFrequencyInput() {
+  const currentGroup = useCurrentGroup();
 
   const currentSleeptimeAgentFrequency = useMemo(() => {
     if (typeof currentGroup?.sleeptime_agent_frequency === 'number') {
@@ -23,82 +132,13 @@ export function SleeptimeAgentFrequencyInput() {
     }
   }, [currentGroup?.sleeptime_agent_frequency]);
 
-  const [inputValue, setInputValue] = useState<string | undefined>(
-    currentSleeptimeAgentFrequency,
-  );
-  const [debouncedInput] = useDebouncedValue(inputValue, 500);
-
-  useEffect(() => {
-    if (currentSleeptimeAgentFrequency !== undefined) {
-      setInputValue(currentSleeptimeAgentFrequency);
-    }
-  }, [currentSleeptimeAgentFrequency]);
-
-  const { mutate: updateGroup } = useGroupsServiceModifyGroup({
-    onSuccess: (data) => {
-      if (!currentGroup || !debouncedInput) {
-        return;
-      }
-      const queryKey = UseGroupsServiceRetrieveGroupKeyFn({
-        groupId: currentGroup.id,
-      });
-
-      queryClient.setQueryData(queryKey, (oldData: Group | undefined) => {
-        if (!oldData) {
-          return data;
-        }
-        return {
-          ...oldData,
-          sleeptime_agent_frequency: parseInt(debouncedInput, 10),
-        };
-      });
-
-      void queryClient.invalidateQueries({
-        queryKey: queryKey,
-      });
-    },
-    onError: () => {
-      setInputValue(currentSleeptimeAgentFrequency);
-      toast.error(t('AdvancedSettingsPanel.sleeptimeAgentFrequency.error'));
-    },
-  });
-
-  useEffect(() => {
-    if (
-      currentGroup?.id &&
-      debouncedInput &&
-      debouncedInput !== currentSleeptimeAgentFrequency
-    ) {
-      updateGroup({
-        groupId: currentGroup.id,
-        requestBody: {
-          manager_config: {
-            manager_type: 'sleeptime',
-            sleeptime_agent_frequency: parseInt(debouncedInput, 10),
-          },
-        },
-      });
-    }
-  }, [
-    debouncedInput,
-    currentGroup,
-    currentSleeptimeAgentFrequency,
-    updateGroup,
-  ]);
+  if (typeof currentSleeptimeAgentFrequency !== 'string') {
+    return null;
+  }
 
   return (
-    <RawInput
-      fullWidth
-      name="sleeptimeAgentFrequency"
-      label={t('AdvancedSettingsPanel.sleeptimeAgentFrequency.label')}
-      infoTooltip={{
-        text: t('AdvancedSettingsPanel.sleeptimeAgentFrequency.tooltip'),
-      }}
-      type="number"
-      value={inputValue}
-      onChange={(e) => {
-        setInputValue(e.target.value);
-      }}
+    <SleeptimeAgentFrequencyInputInner
+      defaultSleeptimeFrequency={currentSleeptimeAgentFrequency}
     />
   );
 }
