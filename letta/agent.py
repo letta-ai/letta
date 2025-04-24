@@ -332,13 +332,14 @@ class Agent(BaseAgent):
                 log_telemetry(self.logger, "_get_ai_reply create start")
                 # New LLM client flow
                 llm_client = LLMClient.create(
-                    llm_config=self.agent_state.llm_config,
+                    provider=self.agent_state.llm_config.model_endpoint_type,
                     put_inner_thoughts_first=put_inner_thoughts_first,
                 )
 
                 if llm_client and not stream:
                     response = llm_client.send_llm_request(
                         messages=message_sequence,
+                        llm_config=self.agent_state.llm_config,
                         tools=allowed_functions,
                         stream=stream,
                         force_tool_call=force_tool_call,

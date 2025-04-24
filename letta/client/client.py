@@ -85,6 +85,7 @@ class AbstractClient(object):
         description: Optional[str] = None,
         tags: Optional[List[str]] = None,
         message_buffer_autoclear: bool = False,
+        response_format: Optional[ResponseFormatUnion] = None,
     ) -> AgentState:
         raise NotImplementedError
 
@@ -2352,6 +2353,7 @@ class LocalClient(AbstractClient):
         initial_message_sequence: Optional[List[Message]] = None,
         tags: Optional[List[str]] = None,
         message_buffer_autoclear: bool = False,
+        response_format: Optional[ResponseFormatUnion] = None,
     ) -> AgentState:
         """Create an agent
 
@@ -2405,6 +2407,7 @@ class LocalClient(AbstractClient):
             "initial_message_sequence": initial_message_sequence,
             "tags": tags,
             "message_buffer_autoclear": message_buffer_autoclear,
+            "response_format": response_format,
         }
 
         # Only add name if it's not None

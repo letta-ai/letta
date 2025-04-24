@@ -3,6 +3,9 @@ from enum import Enum
 
 class ProviderType(str, Enum):
     anthropic = "anthropic"
+    google_ai = "google_ai"
+    google_vertex = "google_vertex"
+    openai = "openai"
 
 
 class MessageRole(str, Enum):

@@ -529,7 +529,7 @@ def test_send_message_async(client: LettaSDKClient, agent: AgentState):
 
 def test_agent_creation(client: LettaSDKClient):
     """Test that block IDs are properly attached when creating an agent."""
-    offline_memory_agent_system = """
+    sleeptime_agent_system = """
     You are a helpful agent. You will be provided with a list of memory blocks and a user preferences block.
     You should use the memory blocks to remember information about the user and their preferences.
     You should also use the user preferences block to remember information about the user's preferences.
@@ -555,13 +555,13 @@ def test_agent_creation(client: LettaSDKClient):
     tool2 = client.tools.upsert_from_function(func=another_test_tool, tags=["test"])
 
     # Create test blocks
-    offline_persona_block = client.blocks.create(label="persona", value="persona description", limit=5000)
+    sleeptime_persona_block = client.blocks.create(label="persona", value="persona description", limit=5000)
     mindy_block = client.blocks.create(label="mindy", value="Mindy is a helpful assistant", limit=5000)
 
     # Create agent with the blocks and tools
     agent = client.agents.create(
         name=f"test_agent_{str(uuid.uuid4())}",
-        memory_blocks=[offline_persona_block, mindy_block],
+        memory_blocks=[sleeptime_persona_block, mindy_block],
         model="openai/gpt-4o-mini",
         embedding="openai/text-embedding-ada-002",
         tool_ids=[tool1.id, tool2.id],
@@ -575,7 +575,7 @@ def test_agent_creation(client: LettaSDKClient):
     assert agent.id is not None
 
     # Verify all memory blocks are properly attached
-    for block in [offline_persona_block, mindy_block, user_preferences_block]:
+    for block in [sleeptime_persona_block, mindy_block, user_preferences_block]:
         agent_block = client.agents.blocks.retrieve(agent_id=agent.id, block_label=block.label)
         assert block.value == agent_block.value and block.limit == agent_block.limit
 

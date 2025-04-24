@@ -79,7 +79,7 @@ def summarize_messages(
     llm_config_no_inner_thoughts.put_inner_thoughts_in_kwargs = False
 
     llm_client = LLMClient.create(
-        llm_config=llm_config_no_inner_thoughts,
+        provider=llm_config_no_inner_thoughts.model_endpoint_type,
         put_inner_thoughts_first=False,
     )
     # try to use new client, otherwise fallback to old flow
@@ -87,6 +87,7 @@ def summarize_messages(
     if llm_client:
         response = llm_client.send_llm_request(
             messages=message_sequence,
+            llm_config=llm_config_no_inner_thoughts,
             stream=False,
         )
     else:

@@ -26,8 +26,8 @@ def llm_config():
 
 
 @pytest.fixture
-def anthropic_client(llm_config):
-    return AnthropicClient(llm_config=llm_config)
+def anthropic_client():
+    return AnthropicClient()
 
 
 @pytest.fixture

@@ -62,11 +62,11 @@ def supports_parallel_tool_calling(model: str) -> bool:
 
 
 class OpenAIClient(LLMClientBase):
-    def _prepare_client_kwargs(self) -> dict:
+    def _prepare_client_kwargs(self, llm_config: LLMConfig) -> dict:
         api_key = model_settings.openai_api_key or os.environ.get("OPENAI_API_KEY")
         # supposedly the openai python client requires a dummy API key
         api_key = api_key or "DUMMY_API_KEY"
-        kwargs = {"api_key": api_key, "base_url": self.llm_config.model_endpoint}
+        kwargs = {"api_key": api_key, "base_url": llm_config.model_endpoint}
 
         return kwargs
 
@@ -115,7 +115,7 @@ class OpenAIClient(LLMClientBase):
         # TODO(matt) move into LLMConfig
         # TODO: This vllm checking is very brittle and is a patch at most
         tool_choice = None
-        if llm_config.model_endpoint == "https://inference.memgpt.ai" or (llm_config.handle and "vllm" in self.llm_config.handle):
+        if llm_config.model_endpoint == "https://inference.memgpt.ai" or (llm_config.handle and "vllm" in llm_config.handle):
             tool_choice = "auto"  # TODO change to "required" once proxy supports it
         elif tools:
             # only set if tools is non-Null
@@ -152,20 +152,20 @@ class OpenAIClient(LLMClientBase):
 
         return data.model_dump(exclude_unset=True)
 
-    def request(self, request_data: dict) -> dict:
+    def request(self, request_data: dict, llm_config: LLMConfig) -> dict:
         """
         Performs underlying synchronous request to OpenAI API and returns raw response dict.
         """
-        client = OpenAI(**self._prepare_client_kwargs())
+        client = OpenAI(**self._prepare_client_kwargs(llm_config))
 
         response: ChatCompletion = client.chat.completions.create(**request_data)
         return response.model_dump()
 
-    async def request_async(self, request_data: dict) -> dict:
+    async def request_async(self, request_data: dict, llm_config: LLMConfig) -> dict:
         """
         Performs underlying asynchronous request to OpenAI API and returns raw response dict.
         """
-        client = AsyncOpenAI(**self._prepare_client_kwargs())
+        client = AsyncOpenAI(**self._prepare_client_kwargs(llm_config))
         response: ChatCompletion = await client.chat.completions.create(**request_data)
         return response.model_dump()
 
@@ -173,6 +173,7 @@ class OpenAIClient(LLMClientBase):
         self,
         response_data: dict,
         input_messages: List[PydanticMessage],  # Included for consistency, maybe used later
+        llm_config: LLMConfig,
     ) -> ChatCompletionResponse:
         """
         Converts raw OpenAI response dict into the ChatCompletionResponse Pydantic model.
@@ -183,30 +184,30 @@ class OpenAIClient(LLMClientBase):
         chat_completion_response = ChatCompletionResponse(**response_data)
 
         # Unpack inner thoughts if they were embedded in function arguments
-        if self.llm_config.put_inner_thoughts_in_kwargs:
+        if llm_config.put_inner_thoughts_in_kwargs:
             chat_completion_response = unpack_all_inner_thoughts_from_kwargs(
                 response=chat_completion_response, inner_thoughts_key=INNER_THOUGHTS_KWARG
             )
 
         # If we used a reasoning model, create a content part for the ommitted reasoning
-        if is_openai_reasoning_model(self.llm_config.model):
+        if is_openai_reasoning_model(llm_config.model):
             chat_completion_response.choices[0].message.ommitted_reasoning_content = True
 
         return chat_completion_response
 
-    def stream(self, request_data: dict) -> Stream[ChatCompletionChunk]:
+    def stream(self, request_data: dict, llm_config: LLMConfig) -> Stream[ChatCompletionChunk]:
         """
         Performs underlying streaming request to OpenAI and returns the stream iterator.
         """
-        client = OpenAI(**self._prepare_client_kwargs())
+        client = OpenAI(**self._prepare_client_kwargs(llm_config))
         response_stream: Stream[ChatCompletionChunk] = client.chat.completions.create(**request_data, stream=True)
         return response_stream
 
-    async def stream_async(self, request_data: dict) -> AsyncStream[ChatCompletionChunk]:
+    async def stream_async(self, request_data: dict, llm_config: LLMConfig) -> AsyncStream[ChatCompletionChunk]:
         """
         Performs underlying asynchronous streaming request to OpenAI and returns the async stream iterator.
         """
-        client = AsyncOpenAI(**self._prepare_client_kwargs())
+        client = AsyncOpenAI(**self._prepare_client_kwargs(llm_config))
         response_stream: AsyncStream[ChatCompletionChunk] = await client.chat.completions.create(**request_data, stream=True)
         return response_stream
 

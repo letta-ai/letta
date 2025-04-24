@@ -43,18 +43,18 @@ logger = get_logger(__name__)
 
 class AnthropicClient(LLMClientBase):
 
-    def request(self, request_data: dict) -> dict:
+    def request(self, request_data: dict, llm_config: LLMConfig) -> dict:
         client = self._get_anthropic_client(async_client=False)
         response = client.beta.messages.create(**request_data, betas=["tools-2024-04-04"])
         return response.model_dump()
 
-    async def request_async(self, request_data: dict) -> dict:
+    async def request_async(self, request_data: dict, llm_config: LLMConfig) -> dict:
         client = self._get_anthropic_client(async_client=True)
         response = await client.beta.messages.create(**request_data, betas=["tools-2024-04-04"])
         return response.model_dump()
 
     @trace_method
-    async def stream_async(self, request_data: dict) -> AsyncStream[BetaRawMessageStreamEvent]:
+    async def stream_async(self, request_data: dict, llm_config: LLMConfig) -> AsyncStream[BetaRawMessageStreamEvent]:
         client = self._get_anthropic_client(async_client=True)
         request_data["stream"] = True
         return await client.beta.messages.create(**request_data, betas=["tools-2024-04-04"])
@@ -310,6 +310,7 @@ class AnthropicClient(LLMClientBase):
         self,
         response_data: dict,
         input_messages: List[PydanticMessage],
+        llm_config: LLMConfig,
     ) -> ChatCompletionResponse:
         """
         Example response from Claude 3:
@@ -411,7 +412,7 @@ class AnthropicClient(LLMClientBase):
                 total_tokens=prompt_tokens + completion_tokens,
             ),
         )
-        if self.llm_config.put_inner_thoughts_in_kwargs:
+        if llm_config.put_inner_thoughts_in_kwargs:
             chat_completion_response = unpack_all_inner_thoughts_from_kwargs(
                 response=chat_completion_response, inner_thoughts_key=INNER_THOUGHTS_KWARG
             )

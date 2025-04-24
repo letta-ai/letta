@@ -25,15 +25,15 @@ logger = get_logger(__name__)
 
 class GoogleAIClient(LLMClientBase):
 
-    def request(self, request_data: dict) -> dict:
+    def request(self, request_data: dict, llm_config: LLMConfig) -> dict:
         """
         Performs underlying request to llm and returns raw response.
         """
         # print("[google_ai request]", json.dumps(request_data, indent=2))
 
         url, headers = get_gemini_endpoint_and_headers(
-            base_url=str(self.llm_config.model_endpoint),
-            model=self.llm_config.model,
+            base_url=str(llm_config.model_endpoint),
+            model=llm_config.model,
             api_key=str(model_settings.gemini_api_key),
             key_in_header=True,
             generate_content=True,
@@ -55,7 +55,7 @@ class GoogleAIClient(LLMClientBase):
             tool_objs = [Tool(**t) for t in tools]
             tool_names = [t.function.name for t in tool_objs]
             # Convert to the exact payload style Google expects
-            tools = self.convert_tools_to_google_ai_format(tool_objs)
+            tools = self.convert_tools_to_google_ai_format(tool_objs, llm_config)
         else:
             tool_names = []
 
@@ -88,6 +88,7 @@ class GoogleAIClient(LLMClientBase):
         self,
         response_data: dict,
         input_messages: List[PydanticMessage],
+        llm_config: LLMConfig,
     ) -> ChatCompletionResponse:
         """
         Converts custom response format from llm client into an OpenAI
@@ -150,7 +151,7 @@ class GoogleAIClient(LLMClientBase):
                         assert isinstance(function_args, dict), function_args
 
                         # NOTE: this also involves stripping the inner monologue out of the function
-                        if self.llm_config.put_inner_thoughts_in_kwargs:
+                        if llm_config.put_inner_thoughts_in_kwargs:
                             from letta.local_llm.constants import INNER_THOUGHTS_KWARG
 
                             assert INNER_THOUGHTS_KWARG in function_args, f"Couldn't find inner thoughts in function args:\n{function_call}"
@@ -259,49 +260,14 @@ class GoogleAIClient(LLMClientBase):
             return ChatCompletionResponse(
                 id=response_id,
                 choices=choices,
-                model=self.llm_config.model,  # NOTE: Google API doesn't pass back model in the response
+                model=llm_config.model,  # NOTE: Google API doesn't pass back model in the response
                 created=get_utc_time_int(),
                 usage=usage,
             )
         except KeyError as e:
             raise e
 
-    def _clean_google_ai_schema_properties(self, schema_part: dict):
-        """Recursively clean schema parts to remove unsupported Google AI keywords."""
-        if not isinstance(schema_part, dict):
-            return
-
-        # Per https://ai.google.dev/gemini-api/docs/function-calling?example=meeting#notes_and_limitations
-        # * Only a subset of the OpenAPI schema is supported.
-        # * Supported parameter types in Python are limited.
-        unsupported_keys = ["default", "exclusiveMaximum", "exclusiveMinimum"]
-        keys_to_remove_at_this_level = [key for key in unsupported_keys if key in schema_part]
-        for key_to_remove in keys_to_remove_at_this_level:
-            logger.warning(f"Removing unsupported keyword 	'{key_to_remove}' from schema part.")
-            del schema_part[key_to_remove]
-
-        if schema_part.get("type") == "string" and "format" in schema_part:
-            allowed_formats = ["enum", "date-time"]
-            if schema_part["format"] not in allowed_formats:
-                logger.warning(f"Removing unsupported format 	'{schema_part['format']}' for string type. Allowed: {allowed_formats}")
-                del schema_part["format"]
-
-        # Check properties within the current level
-        if "properties" in schema_part and isinstance(schema_part["properties"], dict):
-            for prop_name, prop_schema in schema_part["properties"].items():
-                self._clean_google_ai_schema_properties(prop_schema)
-
-        # Check items within arrays
-        if "items" in schema_part and isinstance(schema_part["items"], dict):
-            self._clean_google_ai_schema_properties(schema_part["items"])
-
-        # Check within anyOf, allOf, oneOf lists
-        for key in ["anyOf", "allOf", "oneOf"]:
-            if key in schema_part and isinstance(schema_part[key], list):
-                for item_schema in schema_part[key]:
-                    self._clean_google_ai_schema_properties(item_schema)
-
-    def convert_tools_to_google_ai_format(self, tools: List[Tool]) -> List[dict]:
+    def convert_tools_to_google_ai_format(self, tools: List[Tool], llm_config: LLMConfig) -> List[dict]:
         """
         OpenAI style:
         "tools": [{
@@ -365,7 +331,7 @@ class GoogleAIClient(LLMClientBase):
                 self._clean_google_ai_schema_properties(func["parameters"])
 
             # Add inner thoughts
-            if self.llm_config.put_inner_thoughts_in_kwargs:
+            if llm_config.put_inner_thoughts_in_kwargs:
                 from letta.local_llm.constants import INNER_THOUGHTS_KWARG, INNER_THOUGHTS_KWARG_DESCRIPTION
 
                 func["parameters"]["properties"][INNER_THOUGHTS_KWARG] = {
