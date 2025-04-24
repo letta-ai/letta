@@ -378,6 +378,12 @@ async function updateAdminInferenceModel(
 
   if (tier) {
     set.tier = tier;
+
+    await setRedisData(
+      'modelIdToModelTier',
+      { modelId: id },
+      { data: { tier } },
+    );
   }
 
   if (typeof isRecommended === 'boolean') {

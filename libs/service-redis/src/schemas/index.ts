@@ -9,7 +9,11 @@ import {
   stepCostSchemaTable,
 } from '@letta-cloud/service-database';
 import { and, eq } from 'drizzle-orm';
-import { accessPolicyVersionOne, stepCostVersionOne } from '@letta-cloud/types';
+import {
+  accessPolicyVersionOne,
+  ModelTiers,
+  stepCostVersionOne,
+} from '@letta-cloud/types';
 
 interface RedisDefinition<Type extends string, Input, Output extends ZodType> {
   baseKey: Type;
@@ -299,6 +303,29 @@ const apiKeysDefinition = generateDefinitionSatisfies({
   },
 });
 
+const modelIdToModelTierDefinition = generateDefinitionSatisfies({
+  baseKey: 'modelIdToModelTier',
+  input: z.object({ modelId: z.string() }),
+  getKey: (args) => `modelIdToModelTier:${args.modelId}`,
+  output: z.object({
+    tier: ModelTiers,
+  }),
+  populateOnMissFn: async (args) => {
+    const model = await db.query.inferenceModelsMetadata.findFirst({
+      where: eq(inferenceModelsMetadata.id, args.modelId),
+      columns: {
+        tier: true,
+      },
+    });
+
+    if (!model) {
+      return null;
+    }
+
+    return { expiresAt: 0, data: { tier: model.tier } };
+  },
+});
+
 export const redisDefinitions = {
   userSession: userSessionDefinition,
   organizationRateLimitsPerModel: organizationRateLimitsPerModelDefinition,
@@ -314,6 +341,7 @@ export const redisDefinitions = {
   transactionLock: transactionLockDefinition,
   apiKeys: apiKeysDefinition,
   clientSideApiKeys: clientSideApiKeysDefinition,
+  modelIdToModelTier: modelIdToModelTierDefinition,
 } satisfies Record<
   string,
   RedisDefinition<
