@@ -90,7 +90,7 @@ class VoiceAgent(BaseAgent):
         # )
         self.message_buffer_limit = message_buffer_limit
         # self.message_buffer_min = message_buffer_min
-        self.offline_memory_agent = EphemeralMemoryAgent(
+        self.sleeptime_memory_agent = EphemeralMemoryAgent(
             agent_id=agent_id, openai_client=openai_client, message_manager=message_manager, agent_manager=agent_manager, actor=actor
         )
 
@@ -372,7 +372,7 @@ class VoiceAgent(BaseAgent):
                 return f"Failed to call tool. Error: {e}", False
 
     async def _recall_memory(self, query, agent_state: AgentState) -> None:
-        results = await self.offline_memory_agent.step([MessageCreate(role="user", content=[TextContent(text=query)])])
+        results = await self.sleeptime_memory_agent.step([MessageCreate(role="user", content=[TextContent(text=query)])])
         target_block = next(b for b in agent_state.memory.blocks if b.label == self.summary_block_label)
         self.block_manager.update_block(
             block_id=target_block.id, block_update=BlockUpdate(value=results[0].content[0].text), actor=self.actor
