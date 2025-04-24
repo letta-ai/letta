@@ -1,0 +1,14 @@
+:root {
+  --progess-color-start: hsla(240, 55%, 50%, .56);
+  --progress-color: #3A3AC6;
+  --complete-color-start: rgba(100, 207, 100, 0.56);
+  --complete-color: #64CF64;
+}
+
+.progress-transition {
+  background: linear-gradient(to right, var(--progess-color-start) 0%, var(--progress-color) 100%);
+}
+
+.complete-transition {
+  background: linear-gradient(to right, var(--complete-color-start) 56%, var(--complete-color) 100%);
+}
