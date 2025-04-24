@@ -236,6 +236,7 @@ class AgentManager:
                     base_template_id=agent_create.base_template_id,
                     message_buffer_autoclear=agent_create.message_buffer_autoclear,
                     enable_sleeptime=agent_create.enable_sleeptime,
+                    response_format=agent_create.response_format,
                     created_by_id=actor.id,
                     last_updated_by_id=actor.id,
                 )
