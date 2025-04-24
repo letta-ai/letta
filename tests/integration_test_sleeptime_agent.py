@@ -150,11 +150,14 @@ async def test_sleeptime_group_chat(server, actor):
         runs = [Run.from_job(job) for job in jobs]
         agent_runs = [run for run in runs if "agent_id" in run.metadata and run.metadata["agent_id"] == sleeptime_agent_id]
         assert len(agent_runs) == len(run_ids)
+
+    # 6. Verify run status after sleep
+    time.sleep(8)
     for run_id in run_ids:
         job = server.job_manager.get_job_by_id(job_id=run_id, actor=actor)
         assert job.status == JobStatus.completed
 
-    # 6. Delete agent
+    # 7. Delete agent
     server.agent_manager.delete_agent(agent_id=main_agent.id, actor=actor)
 
     with pytest.raises(NoResultFound):

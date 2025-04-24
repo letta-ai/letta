@@ -43,24 +43,21 @@ class SleeptimeMultiAgent(Agent):
 
     def _run_async_in_new_thread(self, coro):
         """Run an async coroutine in a new thread with its own event loop"""
-        result = None
 
         def run_async():
-            nonlocal result
             loop = asyncio.new_event_loop()
             asyncio.set_event_loop(loop)
             try:
-                result = loop.run_until_complete(coro)
+                loop.run_until_complete(coro)
             finally:
                 loop.close()
                 asyncio.set_event_loop(None)
 
         thread = threading.Thread(target=run_async)
+        thread.daemon = True
         thread.start()
-        thread.join()
-        return result
 
-    async def _issue_background_task(
+    def _issue_background_task(
         self,
         participant_agent_id: str,
         messages: List[Message],
@@ -81,7 +78,7 @@ class SleeptimeMultiAgent(Agent):
         )
         run = self.job_manager.create_job(pydantic_job=run, actor=self.user)
 
-        asyncio.create_task(
+        self._run_async_in_new_thread(
             self._perform_background_agent_step(
                 participant_agent_id=participant_agent_id,
                 messages=messages,
@@ -239,17 +236,15 @@ class SleeptimeMultiAgent(Agent):
                 )
                 for participant_agent_id in self.agent_ids:
                     try:
-                        run_id = self._run_async_in_new_thread(
-                            self._issue_background_task(
-                                participant_agent_id,
-                                last_response_messages,
-                                chaining,
-                                max_chaining_steps,
-                                token_streaming,
-                                metadata,
-                                put_inner_thoughts_first,
-                                last_processed_message_id,
-                            )
+                        run_id = self._issue_background_task(
+                            participant_agent_id,
+                            last_response_messages,
+                            chaining,
+                            max_chaining_steps,
+                            token_streaming,
+                            metadata,
+                            put_inner_thoughts_first,
+                            last_processed_message_id,
                         )
                         run_ids.append(run_id)
 
