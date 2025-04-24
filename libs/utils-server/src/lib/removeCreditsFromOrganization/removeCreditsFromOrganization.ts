@@ -21,6 +21,8 @@ interface RemoveCreditsFromOrganizationOptions {
   amount: number;
   source: string;
   coreOrganizationId: string;
+  modelId?: string;
+  modelTier?: string;
   note?: string;
 }
 
@@ -94,7 +96,15 @@ async function checkLowBalance(options: CheckLowBalanceOptions) {
 export async function removeCreditsFromOrganization(
   options: RemoveCreditsFromOrganizationOptions,
 ) {
-  const { coreOrganizationId, note, source, stepId, amount } = options;
+  const {
+    coreOrganizationId,
+    modelId,
+    modelTier,
+    note,
+    source,
+    stepId,
+    amount,
+  } = options;
 
   if (isNaN(amount)) {
     throw new Error('Amount must be a number');
@@ -128,6 +138,8 @@ export async function removeCreditsFromOrganization(
       organizationId,
       stepId,
       source,
+      modelId,
+      modelTier,
       note,
       transactionType: 'subtraction',
     })

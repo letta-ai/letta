@@ -1,7 +1,10 @@
 import type { Step } from '@letta-cloud/sdk-core';
 import { getCreditCostPerModel } from '../getCreditCostPerModel/getCreditCostPerModel';
 import { removeCreditsFromOrganization } from '../removeCreditsFromOrganization/removeCreditsFromOrganization';
-import { createUniqueRedisProperty } from '@letta-cloud/service-redis';
+import {
+  createUniqueRedisProperty,
+  getRedisData,
+} from '@letta-cloud/service-redis';
 
 export async function deductCreditsFromStep(step: Step) {
   if (
@@ -13,11 +16,17 @@ export async function deductCreditsFromStep(step: Step) {
     return;
   }
 
-  const creditCost = await getCreditCostPerModel({
-    modelName: step.model,
-    modelEndpoint: step.model_endpoint,
-    contextWindowSize: step.context_window_limit,
-  });
+  const [creditCost, modelData] = await Promise.all([
+    getCreditCostPerModel({
+      modelName: step.model,
+      modelEndpoint: step.model_endpoint,
+      contextWindowSize: step.context_window_limit,
+    }),
+    getRedisData('modelNameAndEndpointToIdMap', {
+      modelName: step.model,
+      modelEndpoint: step.model_endpoint,
+    }),
+  ]);
 
   try {
     if (!creditCost) {
@@ -50,6 +59,7 @@ export async function deductCreditsFromStep(step: Step) {
       coreOrganizationId: step.organization_id,
       source: 'inference',
       stepId: step.id,
+      modelId: modelData?.modelId,
       note: `Deducted ${creditCost} credits for model ${step.model}`,
     });
 
