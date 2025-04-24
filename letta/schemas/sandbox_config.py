@@ -47,14 +47,14 @@ class PipRequirement(BaseModel):
 
 class LocalSandboxConfig(BaseModel):
     sandbox_dir: Optional[str] = Field(None, description="Directory for the sandbox environment.")
-    use_venv: bool = Field(False, description="Whether or not to use the venv, or run directly in the same run loop.")
+    force_create_venv: bool = Field(False, description="Whether or not to use the venv, or run directly in the same run loop.")
     venv_name: str = Field(
         "venv",
         description="The name for the venv in the sandbox directory. We first search for an existing venv with this name, otherwise, we make it from the requirements.txt.",
     )
     pip_requirements: List[PipRequirement] = Field(
         default_factory=list,
-        description="List of pip packages to install with mandatory name and optional version following semantic versioning. This only is considered when use_venv is True.",
+        description="List of pip packages to install with mandatory name and optional version following semantic versioning. This only is considered when force_create_venv is True.",
     )
 
     @property

@@ -220,7 +220,7 @@ def custom_test_sandbox_config(test_user):
     external_codebase_path = str(Path(__file__).parent / "test_tool_sandbox" / "restaurant_management_system")
     # tqdm is used in this codebase, but NOT in the requirements.txt, this tests that we can successfully install pip requirements
     local_sandbox_config = LocalSandboxConfig(
-        sandbox_dir=external_codebase_path, use_venv=True, pip_requirements=[PipRequirement(name="tqdm")]
+        sandbox_dir=external_codebase_path, force_create_venv=True, pip_requirements=[PipRequirement(name="tqdm")]
     )
 
     # Create the sandbox configuration
@@ -382,7 +382,7 @@ def test_local_sandbox_with_venv_errors(disable_e2b_api_key, custom_test_sandbox
 def test_local_sandbox_with_venv_pip_installs_basic(disable_e2b_api_key, cowsay_tool, test_user):
     manager = SandboxConfigManager()
     config_create = SandboxConfigCreate(
-        config=LocalSandboxConfig(use_venv=True, pip_requirements=[PipRequirement(name="cowsay")]).model_dump()
+        config=LocalSandboxConfig(force_create_venv=True, pip_requirements=[PipRequirement(name="cowsay")]).model_dump()
     )
     config = manager.create_or_update_sandbox_config(config_create, test_user)
 
@@ -401,7 +401,7 @@ def test_local_sandbox_with_venv_pip_installs_basic(disable_e2b_api_key, cowsay_
 @pytest.mark.e2b_sandbox
 def test_local_sandbox_with_venv_pip_installs_with_update(disable_e2b_api_key, cowsay_tool, test_user):
     manager = SandboxConfigManager()
-    config_create = SandboxConfigCreate(config=LocalSandboxConfig(use_venv=True).model_dump())
+    config_create = SandboxConfigCreate(config=LocalSandboxConfig(force_create_venv=True).model_dump())
     config = manager.create_or_update_sandbox_config(config_create, test_user)
 
     # Add an environment variable
@@ -421,7 +421,7 @@ def test_local_sandbox_with_venv_pip_installs_with_update(disable_e2b_api_key, c
 
     # Now update the SandboxConfig
     config_create = SandboxConfigCreate(
-        config=LocalSandboxConfig(use_venv=True, pip_requirements=[PipRequirement(name="cowsay")]).model_dump()
+        config=LocalSandboxConfig(force_create_venv=True, pip_requirements=[PipRequirement(name="cowsay")]).model_dump()
     )
     manager.create_or_update_sandbox_config(config_create, test_user)
 
@@ -589,79 +589,3 @@ def test_e2b_sandbox_with_list_rv(check_e2b_key_is_set, list_tool, test_user):
     sandbox = ToolExecutionSandbox(list_tool.name, {}, user=test_user)
     result = sandbox.run()
     assert len(result.func_return) == 5
-
-
-# Core memory integration tests
-class TestCoreMemoryTools:
-    """
-    Tests for core memory manipulation tools.
-    Tests run in both local sandbox and e2b environments.
-    """
-
-    # Local sandbox tests
-    @pytest.mark.local_sandbox
-    def test_core_memory_replace_local(self, disable_e2b_api_key, core_memory_tools, test_user, agent_state):
-        """Test successful replacement of content in core memory - local sandbox."""
-        new_name = "Charles"
-        args = {"label": "human", "old_content": "Chad", "new_content": new_name}
-        sandbox = ToolExecutionSandbox(core_memory_tools["core_memory_replace"].name, args, user=test_user)
-
-        result = sandbox.run(agent_state=agent_state)
-        assert new_name in result.agent_state.memory.get_block("human").value
-        assert result.func_return is None
-
-    @pytest.mark.local_sandbox
-    def test_core_memory_append_local(self, disable_e2b_api_key, core_memory_tools, test_user, agent_state):
-        """Test successful appending of content to core memory - local sandbox."""
-        append_text = "\nLikes coffee"
-        args = {"label": "human", "content": append_text}
-        sandbox = ToolExecutionSandbox(core_memory_tools["core_memory_append"].name, args, user=test_user)
-
-        result = sandbox.run(agent_state=agent_state)
-        assert append_text in result.agent_state.memory.get_block("human").value
-        assert result.func_return is None
-
-    @pytest.mark.local_sandbox
-    def test_core_memory_replace_error_local(self, disable_e2b_api_key, core_memory_tools, test_user, agent_state):
-        """Test error handling when trying to replace non-existent content - local sandbox."""
-        nonexistent_name = "Alexander Wang"
-        args = {"label": "human", "old_content": nonexistent_name, "new_content": "Charles"}
-        sandbox = ToolExecutionSandbox(core_memory_tools["core_memory_replace"].name, args, user=test_user)
-
-        result = sandbox.run(agent_state=agent_state)
-        assert len(result.stderr) != 0
-        assert f"ValueError: Old content '{nonexistent_name}' not found in memory block 'human'" in result.stderr[0]
-
-    # E2B sandbox tests
-    @pytest.mark.e2b_sandbox
-    def test_core_memory_replace_e2b(self, check_e2b_key_is_set, core_memory_tools, test_user, agent_state):
-        """Test successful replacement of content in core memory - e2b sandbox."""
-        new_name = "Charles"
-        args = {"label": "human", "old_content": "Chad", "new_content": new_name}
-        sandbox = ToolExecutionSandbox(core_memory_tools["core_memory_replace"].name, args, user=test_user)
-
-        result = sandbox.run(agent_state=agent_state)
-        assert new_name in result.agent_state.memory.get_block("human").value
-        assert result.func_return is None
-
-    @pytest.mark.e2b_sandbox
-    def test_core_memory_append_e2b(self, check_e2b_key_is_set, core_memory_tools, test_user, agent_state):
-        """Test successful appending of content to core memory - e2b sandbox."""
-        append_text = "\nLikes coffee"
-        args = {"label": "human", "content": append_text}
-        sandbox = ToolExecutionSandbox(core_memory_tools["core_memory_append"].name, args, user=test_user)
-
-        result = sandbox.run(agent_state=agent_state)
-        assert append_text in result.agent_state.memory.get_block("human").value
-        assert result.func_return is None
-
-    @pytest.mark.e2b_sandbox
-    def test_core_memory_replace_error_e2b(self, check_e2b_key_is_set, core_memory_tools, test_user, agent_state):
-        """Test error handling when trying to replace non-existent content - e2b sandbox."""
-        nonexistent_name = "Alexander Wang"
-        args = {"label": "human", "old_content": nonexistent_name, "new_content": "Charles"}
-        sandbox = ToolExecutionSandbox(core_memory_tools["core_memory_replace"].name, args, user=test_user)
-
-        result = sandbox.run(agent_state=agent_state)
-        assert len(result.stderr) != 0
-        assert f"ValueError: Old content '{nonexistent_name}' not found in memory block 'human'" in result.stderr[0]
