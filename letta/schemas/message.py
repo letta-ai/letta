@@ -699,6 +699,10 @@ class Message(BaseMessage):
         else:
             raise ValueError(self.role)
 
+        # Optional field, do not include if null
+        if self.name is not None:
+            openai_message["name"] = self.name
+
         if parse_content_parts:
             for content in self.content:
                 if isinstance(content, ReasoningContent):
