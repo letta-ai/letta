@@ -3,7 +3,7 @@ import { handleMessageRateLimiting } from '@letta-cloud/utils-server';
 import { type MessageCreate, zodTypes } from '@letta-cloud/sdk-core';
 
 const EXPLICIT_RATE_LIMIT_ROUTE = new RegExp(
-  '/api/v1/agents/([A-Za-z0-9-]+)/messages(/stream|/async)?',
+  '/v1/agents/([A-Za-z0-9-]+)/messages(/stream|/async)?',
 );
 
 export async function rateLimitMiddleware(
@@ -18,7 +18,7 @@ export async function rateLimitMiddleware(
 
   const result = EXPLICIT_RATE_LIMIT_ROUTE.exec(req.path);
 
-  if (!result) {
+  if (!result || req.method !== 'POST') {
     next();
     return;
   }

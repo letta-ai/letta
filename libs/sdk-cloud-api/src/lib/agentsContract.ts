@@ -51,7 +51,7 @@ const versionAgentTemplateContract = c.mutation({
     message: z.string().max(140).optional(),
   }),
   query: z.object({
-    returnAgentState: z.boolean().optional(),
+    returnAgentState: z.boolean().or(z.literal('true')).optional(),
   }),
   pathParams: z.object({
     agent_id: z.string().openapi({

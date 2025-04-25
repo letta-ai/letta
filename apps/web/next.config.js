@@ -26,6 +26,18 @@ let nextConfig = {
     deleteSourcemapsAfterUpload: true,
   },
   output: 'standalone',
+  async rewrites() {
+    return [
+      {
+        source: '/v1/:path*',
+        destination: `${process.env.CLOUD_API_ENDPOINT || 'https://api.letta.com'}/v1/:path*`,
+      },
+      {
+        source: '/openai/:path*',
+        destination: `${process.env.OPENAI_API_ENDPOINT || 'https://api.letta.com'}/openai/:path*`,
+      },
+    ];
+  },
 };
 
 const withBundleAnalyzer = require('@next/bundle-analyzer')({
@@ -33,9 +45,9 @@ const withBundleAnalyzer = require('@next/bundle-analyzer')({
 });
 
 const plugins = [
+  withNextIntl,
   // Add more Next.js plugins to this list if needed.
   withNx,
-  withNextIntl,
   withBundleAnalyzer,
 ];
 

@@ -36,9 +36,9 @@ const limitMap: Record<BillingTiersType, Limit> = {
   },
   free: {
     agents: 25,
-    dataSources: 5,
-    projects: 5,
-    templates: 5,
+    dataSources: 25,
+    projects: 25,
+    templates: 25,
     identities: 25,
     premiumInferencesPerMonth: 0,
     freeInferencesPerMonth: 100_000,

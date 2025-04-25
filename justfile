@@ -364,7 +364,7 @@ core:
     npm run core:dev
 
 web:
-    npm run web:dev
+    cd apps/web && npx next dev
 
 web-slow:
     npm run web:dev:slow

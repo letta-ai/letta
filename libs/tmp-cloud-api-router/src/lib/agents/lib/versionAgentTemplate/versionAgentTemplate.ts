@@ -17,6 +17,7 @@ import type { cloudContracts } from '@letta-cloud/sdk-cloud-api';
 import { environment } from '@letta-cloud/config-environment-variables';
 import { startMigrateAgents } from '@letta-cloud/lettuce-client';
 import { getSingleFlag } from '@letta-cloud/service-feature-flags';
+import { getContextDataHack } from '../../../getContextDataHack/getContextDataHack';
 
 type DeployAgentTemplateRequest = ServerInferRequest<
   typeof cloudContracts.agents.versionAgentTemplate
@@ -34,6 +35,8 @@ export async function versionAgentTemplate(
   const { returnAgentState } = req.query;
   const { migrate_deployed_agents, message } = req.body;
 
+  const { organizationId, userId, source, lettaAgentsUserId } =
+    getContextDataHack(req, context);
   const existingDeployedAgentTemplateCount =
     await db.query.deployedAgentTemplates.findMany({
       where: eq(deployedAgentTemplates.agentTemplateId, agentId),
@@ -78,10 +81,7 @@ export async function versionAgentTemplate(
 
   // if agent is a deployed agent, create a new agent template
   if (!agentTemplateId) {
-    const copiedAgent = await copyAgentById(
-      agentId,
-      context.request.lettaAgentsUserId,
-    );
+    const copiedAgent = await copyAgentById(agentId, lettaAgentsUserId);
 
     if (!copiedAgent?.id) {
       return {
@@ -99,7 +99,7 @@ export async function versionAgentTemplate(
     await db.insert(agentTemplates).values({
       id: copiedAgent.id,
       name,
-      organizationId: context.request.organizationId,
+      organizationId,
       projectId,
     });
 
@@ -108,10 +108,7 @@ export async function versionAgentTemplate(
 
   const version = `${existingDeployedAgentTemplateCount.length + 1}`;
 
-  const createdAgent = await copyAgentById(
-    agentId,
-    context.request.lettaAgentsUserId,
-  );
+  const createdAgent = await copyAgentById(agentId, lettaAgentsUserId);
 
   const deployedAgentTemplateId = createdAgent?.id;
 
@@ -138,7 +135,7 @@ export async function versionAgentTemplate(
         label: variable,
       })),
     },
-    organizationId: context.request.organizationId,
+    organizationId: organizationId,
     agentTemplateId,
     version,
   });
@@ -157,15 +154,15 @@ export async function versionAgentTemplate(
 
     const shouldUseTemporal = await getSingleFlag(
       'USE_TEMPORAL_FOR_MIGRATIONS',
-      context.request.organizationId,
+      organizationId,
     );
 
     if (environment.TEMPORAL_LETTUCE_API_HOST && shouldUseTemporal) {
       await startMigrateAgents({
         template: nextVersion,
         preserveCoreMemories: false,
-        coreUserId: context.request.lettaAgentsUserId,
-        organizationId: context.request.organizationId,
+        coreUserId: lettaAgentsUserId,
+        organizationId: organizationId,
       });
     } else {
       const deployedAgentsList = await AgentsService.listAgents(
@@ -173,7 +170,7 @@ export async function versionAgentTemplate(
           baseTemplateId: agentTemplate.id,
         },
         {
-          user_id: context.request.lettaAgentsUserId,
+          user_id: lettaAgentsUserId,
         },
       );
 
@@ -198,7 +195,14 @@ export async function versionAgentTemplate(
                 agent_id: deployedAgent.id,
               },
             },
-            context,
+            {
+              request: {
+                userId,
+                source,
+                lettaAgentsUserId,
+                organizationId,
+              },
+            },
           );
         }),
       );

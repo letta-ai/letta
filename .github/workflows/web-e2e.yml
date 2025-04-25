@@ -145,6 +145,8 @@ jobs:
           key: venv-${{ runner.os }}-${{ steps.setup-python.outputs.python-version }}-${{ hashFiles('apps/core/**/poetry.lock') }}${{ inputs.install-args || '-E dev -E postgres -E external-tools -E tests -E cloud-tool-sandbox' }}
           restore-keys: |
             venv-${{ runner.os }}-${{ steps.setup-python.outputs.python-version }}-
+      - name: Install just
+        run: curl -LSs https://just.systems/install.sh | sudo bash -s -- --to /usr/local/bin/
       - name: Install python dependencies
         if: steps.cached-poetry-dependencies.outputs.cache-hit != 'true'
         shell: bash
@@ -194,6 +196,32 @@ jobs:
         env:
           DATABASE_URL: postgres://postgres:postgres@localhost:5433/postgres
         run: npm run web:database:migrate
+      - name: Cache npm dependencies
+        id: cache-main
+        uses: actions/cache@v3
+        with:
+          path: ./apps/cloud-api/node_modules
+          key: modules-${{ hashFiles('./apps/cloud-api/package-lock.json') }}
+      - name: Install deps
+        working-directory: apps/cloud-api
+        run: just setup-cloud-api
+      - name: Turn on cloud-api
+        working-directory: apps/cloud-api
+        run: just cloud-api > cloud-api.log 2>&1 &
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          DATABASE_URL: postgres://postgres:postgres@localhost:5433/postgres
+          REDIS_HOST: localhost
+          REDIS_PORT: 6379
+          NODE_OPTIONS: --max_old_space_size=4096
+          CLOUD_API_ENDPOINT: http://localhost:3006
+          STRIPE_SECRET_KEY: ${{ secrets.STRIPE_DEV_SECRET_KEY }}
+          NEXT_PUBLIC_STRIPE_PUBLISH_KEY: ${{ secrets.NEXT_PUBLIC_STRIPE_DEV_PUBLISH_KEY }}
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+          LETTA_AGENTS_ENDPOINT: http://localhost:8283
+          NEXT_PUBLIC_CURRENT_HOST: http://localhost:3000
+          IS_CYPRESS_RUN: yes
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
       - name: Cypress run
         uses: cypress-io/github-action@v6
         with:
@@ -228,3 +256,9 @@ jobs:
         with:
           path: undertaker.log
           name: undertaker-log
+      - name: Save cloud-api log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          path: apps/cloud-api/cloud-api.log
+          name: cloud-api-log

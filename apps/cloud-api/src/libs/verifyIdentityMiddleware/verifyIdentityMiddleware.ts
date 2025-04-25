@@ -16,13 +16,23 @@ const cookieSessionSchema = z.object({
 async function verifyIfUserIsLoggedInViaCookies(
   req: Request,
 ): Promise<ActorIdentity | null> {
-  const session = req.cookies?.['__CLOUD_API_SESSION__'];
+  const session =
+    req.cookies?.['__CLOUD_API_SESSION__'] ||
+    req.cookies?.['__LETTA_SESSION__'];
 
   if (!session) {
     return null;
   }
 
-  const res = cookieSessionSchema.safeParse(session);
+  let parsedJson: JSON;
+
+  try {
+    parsedJson = JSON.parse(session);
+  } catch (_e) {
+    return null;
+  }
+
+  const res = cookieSessionSchema.safeParse(parsedJson);
 
   if (!res.success) {
     return null;
@@ -138,7 +148,7 @@ export async function verifyIdentityMiddleware(
 
   const cookieData = await verifyIfUserIsLoggedInViaCookies(req);
 
-  if (cookieData) {
+  if (!req.header('Authorization') && cookieData) {
     req.actor = cookieData;
     req.headers['user_id'] = req.actor.coreUserId;
 

@@ -6,7 +6,10 @@ import { verifyIdentityMiddleware } from './libs/verifyIdentityMiddleware/verify
 import { verifyRoutePermissionsMiddleware } from './libs/verifyRoutePermissionsMiddleware/verifyRoutePermissionsMiddleware';
 import bodyParser from 'body-parser';
 import { projectHeaderMiddleware } from './libs/projectHeaderMiddleware/projectHeaderMiddleware';
-import { createProxyMiddleware } from 'http-proxy-middleware';
+import {
+  createProxyMiddleware,
+  responseInterceptor,
+} from 'http-proxy-middleware';
 import { cloudContracts } from '@letta-cloud/sdk-cloud-api';
 import { cloudApiRouter } from 'tmp-cloud-api-router';
 import { createExpressEndpoints, initServer } from '@ts-rest/express';
@@ -15,7 +18,10 @@ import * as Sentry from '@sentry/node';
 import winston from 'winston';
 import expressWinston from 'express-winston';
 import cors from 'cors';
+import cookieParser from 'cookie-parser';
 import { requireProjectMiddleware } from './libs/requireProjectMiddleware/requireProjectMiddleware';
+import { responseSideEffects } from './libs/responseSideEffects/responseSideEffects';
+import { Readable } from 'node:stream';
 
 interface ExpressMeta {
   req: {
@@ -84,11 +90,12 @@ export function startServer() {
   app.use(cors());
 
   /* verifyIdentityMiddleware needs to be first */
+  app.use(cookieParser());
   app.use(verifyIdentityMiddleware);
   app.use(verifyRoutePermissionsMiddleware);
-  app.use(rateLimitMiddleware);
 
   app.use(bodyParser.json());
+  app.use(rateLimitMiddleware);
   app.use(requireProjectMiddleware);
   app.use(projectHeaderMiddleware);
 
@@ -102,7 +109,6 @@ export function startServer() {
   // @ts-ignore - this is a valid
   createExpressEndpoints(cloudContracts, router, app, {
     globalMiddleware: [
-      bodyParser.json(),
       bodyParser.urlencoded({ extended: false }),
       // eslint-disable-next-line @typescript-eslint/ban-ts-comment
       // @ts-ignore - this is a valid
@@ -136,24 +142,49 @@ export function startServer() {
     });
   });
 
-  const proxyMiddleware = createProxyMiddleware<Request, Response>({
-    target: environment.LETTA_AGENTS_ENDPOINT,
-    changeOrigin: true,
-    followRedirects: true,
-    plugins: [
-      function reapplyBodyPlugin(proxyServer) {
-        proxyServer.on('proxyReq', (proxyReq, req) => {
-          if (req.body) {
-            proxyReq.setHeader(
-              'Content-Length',
-              Buffer.byteLength(JSON.stringify(req.body)),
-            );
-            proxyReq.write(JSON.stringify(req.body));
-          }
-        });
+  function proxyMiddleware(req: Request, res: Response, next: NextFunction) {
+    let stream: Readable | null = null;
+
+    const contentType = req.header('Content-Type');
+    const header = {} as Record<string, string>;
+
+    if (
+      req.body &&
+      contentType === 'application/json' &&
+      ['POST', 'PUT', 'PATCH', 'DELETE'].includes(req.method)
+    ) {
+      stream = new Readable();
+      stream.push(JSON.stringify(req.body));
+      stream.push(null);
+
+      if (contentType) {
+        header['Content-Type'] = contentType;
+        header['Content-Length'] = String(
+          Buffer.byteLength(JSON.stringify(req.body)),
+        );
+      }
+    }
+
+    return createProxyMiddleware<Request, Response>({
+      target: environment.LETTA_AGENTS_ENDPOINT,
+      changeOrigin: true,
+      followRedirects: true,
+      selfHandleResponse: true,
+      ...(stream ? { buffer: stream } : {}),
+      headers: header,
+      on: {
+        // proxyReq: fixRequestBody,
+        proxyRes: responseInterceptor(
+          // eslint-disable-next-line @typescript-eslint/max-params
+          async function (responseBuffer, _proxyRes, req, _res) {
+            responseSideEffects(req);
+
+            return responseBuffer;
+          },
+        ),
       },
-    ],
-  });
+    })(req, res, next);
+  }
 
   app.use(proxyMiddleware);
 

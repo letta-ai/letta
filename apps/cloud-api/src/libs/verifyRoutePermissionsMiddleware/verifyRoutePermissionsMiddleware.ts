@@ -24,7 +24,7 @@ export async function verifyRoutePermissionsMiddleware(
 
   // probably can speed this up in the future
   const user = await getOrganizationUser(
-    req.actor.coreUserId,
+    req.actor.cloudUserId,
     req.actor.cloudOrganizationId,
   );
 
@@ -37,7 +37,7 @@ export async function verifyRoutePermissionsMiddleware(
 
   const userPermissions = new Set(roleToServicesMap[user.role || 'custom']);
 
-  if (!permission || userPermissions.has(permission)) {
+  if (!permission || !userPermissions.has(permission)) {
     res.status(401).send(DEFAULT_UNAUTHORIZED_MESSAGE);
     return;
   }

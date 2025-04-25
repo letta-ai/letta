@@ -8,6 +8,7 @@ import { updateAgentFromAgentId } from '@letta-cloud/utils-server';
 import { environment } from '@letta-cloud/config-environment-variables';
 import { startMigrateAgents } from '@letta-cloud/lettuce-client';
 import { getSingleFlag } from '@letta-cloud/service-feature-flags';
+import { getContextDataHack } from '../../../getContextDataHack/getContextDataHack';
 
 type MigrateAgentRequest = ServerInferRequest<
   typeof cloudContracts.agents.migrateAgent
@@ -24,7 +25,11 @@ export async function migrateAgent(
   const { to_template, preserve_core_memories } = req.body;
   let { variables } = req.body;
   const { agent_id: agentIdToMigrate } = req.params;
-  const { lettaAgentsUserId } = context.request;
+
+  const { organizationId, lettaAgentsUserId } = getContextDataHack(
+    req,
+    context,
+  );
 
   const split = to_template.split(':');
   const templateName = split[0];
@@ -41,7 +46,7 @@ export async function migrateAgent(
 
   const deployedAgentTemplate = await getDeployedTemplateByVersion(
     to_template,
-    context.request.organizationId,
+    organizationId,
   );
 
   if (!deployedAgentTemplate) {
@@ -55,7 +60,7 @@ export async function migrateAgent(
 
   const shouldUseTemporal = await getSingleFlag(
     'USE_TEMPORAL_FOR_MIGRATIONS',
-    context.request.organizationId,
+    organizationId,
   );
 
   if (environment.TEMPORAL_LETTUCE_API_HOST && shouldUseTemporal) {
@@ -65,7 +70,7 @@ export async function migrateAgent(
       memoryVariables: variables,
       preserveCoreMemories: preserve_core_memories,
       coreUserId: lettaAgentsUserId,
-      organizationId: context.request.organizationId,
+      organizationId: organizationId,
     });
   } else {
     if (!variables) {

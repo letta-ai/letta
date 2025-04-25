@@ -19,3 +19,4 @@ export * from './lib/getDefaultProject/getDefaultProject';
 export * from './lib/getTemplateProjectId/getTemplateProjectId';
 export * from './lib/findProjectBySlugOrId/findProjectBySlugOrId';
 export * from './lib/getCurrentOrganizationUsageLimits/getCurrentOrganizationUsageLimits';
+export * from './lib/deleteShareChatOnIdentityDelete/deleteShareChatOnIdentityDelete';
