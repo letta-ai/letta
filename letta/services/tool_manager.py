@@ -29,14 +29,6 @@ logger = get_logger(__name__)
 class ToolManager:
     """Manager class to handle business logic related to Tools."""
 
-    BASE_TOOL_NAMES = [
-        "send_message",
-        "conversation_search",
-        "archival_memory_insert",
-        "archival_memory_search",
-    ]
-    BASE_MEMORY_TOOL_NAMES = ["core_memory_append", "core_memory_replace"]
-
     def __init__(self):
         # Fetching the db_context similarly as in OrganizationManager
         from letta.server.db import db_context
@@ -149,12 +141,17 @@ class ToolManager:
     def size(
         self,
         actor: PydanticUser,
+        include_base_tools: bool,
     ) -> int:
         """
         Get the total count of tools for the given user.
+
+        If include_builtin is True, it will also count the built-in tools.
         """
         with self.session_maker() as session:
-            return ToolModel.size(db_session=session, actor=actor)
+            if include_base_tools:
+                return ToolModel.size(db_session=session, actor=actor)
+            return ToolModel.size(db_session=session, actor=actor, name=LETTA_TOOL_SET)
 
     @enforce_types
     def update_tool_by_id(self, tool_id: str, tool_update: ToolUpdate, actor: PydanticUser) -> PydanticTool:
