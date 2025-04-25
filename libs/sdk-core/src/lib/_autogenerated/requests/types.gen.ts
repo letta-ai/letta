@@ -2314,6 +2314,10 @@ export type MessageCreate = {
    * The id of the sender of the message, can be an identity id or agent id
    */
   sender_id?: string | null;
+  /**
+   * The multi-agent group that the message was sent in
+   */
+  group_id?: string | null;
 };
 
 /**
@@ -2341,10 +2345,6 @@ export type OmittedReasoningContent = {
    * Indicates this is an omitted reasoning step.
    */
   type?: 'omitted_reasoning';
-  /**
-   * The reasoning token count for intermediate reasoning content.
-   */
-  tokens: number;
 };
 
 export type Organization = {
@@ -3680,6 +3680,16 @@ export type UsageStatistics = {
   completion_tokens?: number;
   prompt_tokens?: number;
   total_tokens?: number;
+  prompt_tokens_details?: UsageStatisticsPromptTokenDetails | null;
+  completion_tokens_details?: UsageStatisticsCompletionTokenDetails | null;
+};
+
+export type UsageStatisticsCompletionTokenDetails = {
+  reasoning_tokens?: number;
+};
+
+export type UsageStatisticsPromptTokenDetails = {
+  cached_tokens?: number;
 };
 
 /**
@@ -3878,6 +3888,12 @@ export type UpsertToolData = {
 
 export type UpsertToolResponse = Tool;
 
+export type CountToolsData = {
+  userId?: string | null;
+};
+
+export type CountToolsResponse = number;
+
 export type AddBaseToolsData = {
   userId?: string | null;
 };
@@ -3992,6 +4008,12 @@ export type CreateSourceData = {
 
 export type CreateSourceResponse = Source;
 
+export type CountSourcesData = {
+  userId?: string | null;
+};
+
+export type CountSourcesResponse = number;
+
 export type UploadFileToSourceData = {
   formData: Body_upload_file_to_source;
   sourceId: string;
@@ -4099,6 +4121,12 @@ export type CreateAgentData = {
 };
 
 export type CreateAgentResponse = AgentState;
+
+export type CountAgentsData = {
+  userId?: string | null;
+};
+
+export type CountAgentsResponse = number;
 
 export type ExportAgentSerializedData = {
   agentId: string;
@@ -4565,6 +4593,12 @@ export type UpsertIdentityData = {
 };
 
 export type UpsertIdentityResponse = Identity;
+
+export type CountIdentitiesData = {
+  userId?: string | null;
+};
+
+export type CountIdentitiesResponse = number;
 
 export type RetrieveIdentityData = {
   identityId: string;
@@ -5182,6 +5216,21 @@ export type $OpenApiTs = {
       };
     };
   };
+  '/v1/tools/count': {
+    get: {
+      req: CountToolsData;
+      res: {
+        /**
+         * Successful Response
+         */
+        200: number;
+        /**
+         * Validation Error
+         */
+        422: HTTPValidationError;
+      };
+    };
+  };
   '/v1/tools/add-base-tools': {
     post: {
       req: AddBaseToolsData;
@@ -5416,6 +5465,21 @@ export type $OpenApiTs = {
       };
     };
   };
+  '/v1/sources/count': {
+    get: {
+      req: CountSourcesData;
+      res: {
+        /**
+         * Successful Response
+         */
+        200: number;
+        /**
+         * Validation Error
+         */
+        422: HTTPValidationError;
+      };
+    };
+  };
   '/v1/sources/{source_id}/upload': {
     post: {
       req: UploadFileToSourceData;
@@ -5497,6 +5561,21 @@ export type $OpenApiTs = {
          * Successful Response
          */
         200: AgentState;
+        /**
+         * Validation Error
+         */
+        422: HTTPValidationError;
+      };
+    };
+  };
+  '/v1/agents/count': {
+    get: {
+      req: CountAgentsData;
+      res: {
+        /**
+         * Successful Response
+         */
+        200: number;
         /**
          * Validation Error
          */
@@ -6117,6 +6196,21 @@ export type $OpenApiTs = {
          * Successful Response
          */
         200: Identity;
+        /**
+         * Validation Error
+         */
+        422: HTTPValidationError;
+      };
+    };
+  };
+  '/v1/identities/count': {
+    get: {
+      req: CountIdentitiesData;
+      res: {
+        /**
+         * Successful Response
+         */
+        200: number;
         /**
          * Validation Error
          */

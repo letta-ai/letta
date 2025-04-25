@@ -6471,6 +6471,18 @@ export const $MessageCreate = {
       description:
         'The id of the sender of the message, can be an identity id or agent id',
     },
+    group_id: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Group Id',
+      description: 'The multi-agent group that the message was sent in',
+    },
   },
   type: 'object',
   required: ['role', 'content'],
@@ -6585,15 +6597,8 @@ export const $OmittedReasoningContent = {
       description: 'Indicates this is an omitted reasoning step.',
       default: 'omitted_reasoning',
     },
-    tokens: {
-      type: 'integer',
-      title: 'Tokens',
-      description:
-        'The reasoning token count for intermediate reasoning content.',
-    },
   },
   type: 'object',
-  required: ['tokens'],
   title: 'OmittedReasoningContent',
 } as const;
 
@@ -10204,9 +10209,53 @@ export const $UsageStatistics = {
       title: 'Total Tokens',
       default: 0,
     },
+    prompt_tokens_details: {
+      anyOf: [
+        {
+          $ref: '#/components/schemas/UsageStatisticsPromptTokenDetails',
+        },
+        {
+          type: 'null',
+        },
+      ],
+    },
+    completion_tokens_details: {
+      anyOf: [
+        {
+          $ref: '#/components/schemas/UsageStatisticsCompletionTokenDetails',
+        },
+        {
+          type: 'null',
+        },
+      ],
+    },
   },
   type: 'object',
   title: 'UsageStatistics',
+} as const;
+
+export const $UsageStatisticsCompletionTokenDetails = {
+  properties: {
+    reasoning_tokens: {
+      type: 'integer',
+      title: 'Reasoning Tokens',
+      default: 0,
+    },
+  },
+  type: 'object',
+  title: 'UsageStatisticsCompletionTokenDetails',
+} as const;
+
+export const $UsageStatisticsPromptTokenDetails = {
+  properties: {
+    cached_tokens: {
+      type: 'integer',
+      title: 'Cached Tokens',
+      default: 0,
+    },
+  },
+  type: 'object',
+  title: 'UsageStatisticsPromptTokenDetails',
 } as const;
 
 export const $User = {

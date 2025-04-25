@@ -2670,8 +2670,7 @@ export const RedactedReasoningContent = z.object({
 
 export type OmittedReasoningContent = z.infer<typeof OmittedReasoningContent>;
 export const OmittedReasoningContent = z.object({
-  type: z.union([z.string(), z.undefined()]).optional(),
-  tokens: z.number(),
+  type: z.string().optional(),
 });
 
 export type ToolReturn = z.infer<typeof ToolReturn>;
@@ -2944,6 +2943,14 @@ export const MessageCreate = z.object({
     ])
     .optional(),
   sender_id: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  group_id: z
     .union([
       z.string(),
       z.null(),
@@ -4940,11 +4947,39 @@ export const UpdateUserMessage = z.object({
   ]),
 });
 
+export type UsageStatisticsPromptTokenDetails = z.infer<
+  typeof UsageStatisticsPromptTokenDetails
+>;
+export const UsageStatisticsPromptTokenDetails = z.object({
+  cached_tokens: z.number().optional(),
+});
+
+export type UsageStatisticsCompletionTokenDetails = z.infer<
+  typeof UsageStatisticsCompletionTokenDetails
+>;
+export const UsageStatisticsCompletionTokenDetails = z.object({
+  reasoning_tokens: z.number().optional(),
+});
+
 export type UsageStatistics = z.infer<typeof UsageStatistics>;
 export const UsageStatistics = z.object({
   completion_tokens: z.number().optional(),
   prompt_tokens: z.number().optional(),
   total_tokens: z.number().optional(),
+  prompt_tokens_details: z
+    .union([
+      UsageStatisticsPromptTokenDetails,
+      z.null(),
+      z.array(z.union([UsageStatisticsPromptTokenDetails, z.null()])),
+    ])
+    .optional(),
+  completion_tokens_details: z
+    .union([
+      UsageStatisticsCompletionTokenDetails,
+      z.null(),
+      z.array(z.union([UsageStatisticsCompletionTokenDetails, z.null()])),
+    ])
+    .optional(),
 });
 
 export type User = z.infer<typeof User>;
@@ -5116,6 +5151,21 @@ export const put_Upsert_tool = {
     body: ToolCreate,
   }),
   response: Tool,
+};
+
+export type get_Count_tools = typeof get_Count_tools;
+export const get_Count_tools = {
+  method: z.literal('GET'),
+  path: z.literal('/v1/tools/count'),
+  requestFormat: z.literal('json'),
+  parameters: z.object({
+    header: z.object({
+      user_id: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+    }),
+  }),
+  response: z.number(),
 };
 
 export type post_Add_base_tools = typeof post_Add_base_tools;
@@ -5407,6 +5457,21 @@ export const post_Create_source = {
   response: Source,
 };
 
+export type get_Count_sources = typeof get_Count_sources;
+export const get_Count_sources = {
+  method: z.literal('GET'),
+  path: z.literal('/v1/sources/count'),
+  requestFormat: z.literal('json'),
+  parameters: z.object({
+    header: z.object({
+      user_id: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+    }),
+  }),
+  response: z.number(),
+};
+
 export type post_Upload_file_to_source = typeof post_Upload_file_to_source;
 export const post_Upload_file_to_source = {
   method: z.literal('POST'),
@@ -5572,6 +5637,21 @@ export const post_Create_agent = {
     body: CreateAgentRequest,
   }),
   response: AgentState,
+};
+
+export type get_Count_agents = typeof get_Count_agents;
+export const get_Count_agents = {
+  method: z.literal('GET'),
+  path: z.literal('/v1/agents/count'),
+  requestFormat: z.literal('json'),
+  parameters: z.object({
+    header: z.object({
+      user_id: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+    }),
+  }),
+  response: z.number(),
 };
 
 export type get_Export_agent_serialized = typeof get_Export_agent_serialized;
@@ -6518,6 +6598,21 @@ export const put_Upsert_identity = {
     body: IdentityUpsert,
   }),
   response: Identity,
+};
+
+export type get_Count_identities = typeof get_Count_identities;
+export const get_Count_identities = {
+  method: z.literal('GET'),
+  path: z.literal('/v1/identities/count'),
+  requestFormat: z.literal('json'),
+  parameters: z.object({
+    header: z.object({
+      user_id: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+    }),
+  }),
+  response: z.number(),
 };
 
 export type get_Retrieve_identity = typeof get_Retrieve_identity;
@@ -7701,6 +7796,7 @@ export const EndpointByMethod = {
   get: {
     '/v1/tools/{tool_id}': get_Retrieve_tool,
     '/v1/tools/': get_List_tools,
+    '/v1/tools/count': get_Count_tools,
     '/v1/tools/composio/apps': get_List_composio_apps,
     '/v1/tools/composio/apps/{composio_app_name}/actions':
       get_List_composio_actions_by_app,
@@ -7710,9 +7806,11 @@ export const EndpointByMethod = {
     '/v1/sources/{source_id}': get_Retrieve_source,
     '/v1/sources/name/{source_name}': get_Get_source_id_by_name,
     '/v1/sources/': get_List_sources,
+    '/v1/sources/count': get_Count_sources,
     '/v1/sources/{source_id}/passages': get_List_source_passages,
     '/v1/sources/{source_id}/files': get_List_source_files,
     '/v1/agents/': get_List_agents,
+    '/v1/agents/count': get_Count_agents,
     '/v1/agents/{agent_id}/export': get_Export_agent_serialized,
     '/v1/agents/{agent_id}/context': get_Retrieve_agent_context_window,
     '/v1/agents/{agent_id}': get_Retrieve_agent,
@@ -7729,6 +7827,7 @@ export const EndpointByMethod = {
     '/v1/groups/{group_id}': get_Retrieve_group,
     '/v1/groups/{group_id}/messages': get_List_group_messages,
     '/v1/identities/': get_List_identities,
+    '/v1/identities/count': get_Count_identities,
     '/v1/identities/{identity_id}': get_Retrieve_identity,
     '/v1/models/': get_List_models,
     '/v1/models/embedding': get_List_embedding_models,

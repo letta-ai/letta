@@ -88,6 +88,26 @@ export const prefetchUseToolsServiceListTools = (
     queryFn: () => ToolsService.listTools({ after, limit, name, userId }),
   });
 /**
+ * Count Tools
+ * Get a count of all tools available to agents belonging to the org of the user
+ * @param data The data for the request.
+ * @param data.userId
+ * @returns number Successful Response
+ * @throws ApiError
+ */
+export const prefetchUseToolsServiceCountTools = (
+  queryClient: QueryClient,
+  {
+    userId,
+  }: {
+    userId?: string;
+  } = {},
+) =>
+  queryClient.prefetchQuery({
+    queryKey: Common.UseToolsServiceCountToolsKeyFn({ userId }),
+    queryFn: () => ToolsService.countTools({ userId }),
+  });
+/**
  * List Composio Apps
  * Get a list of all Composio apps
  * @param data The data for the request.
@@ -250,6 +270,26 @@ export const prefetchUseSourcesServiceListSources = (
     queryFn: () => SourcesService.listSources({ userId }),
   });
 /**
+ * Count Sources
+ * Count all data sources created by a user.
+ * @param data The data for the request.
+ * @param data.userId
+ * @returns number Successful Response
+ * @throws ApiError
+ */
+export const prefetchUseSourcesServiceCountSources = (
+  queryClient: QueryClient,
+  {
+    userId,
+  }: {
+    userId?: string;
+  } = {},
+) =>
+  queryClient.prefetchQuery({
+    queryKey: Common.UseSourcesServiceCountSourcesKeyFn({ userId }),
+    queryFn: () => SourcesService.countSources({ userId }),
+  });
+/**
  * List Source Passages
  * List all passages associated with a data source.
  * @param data The data for the request.
@@ -407,6 +447,26 @@ export const prefetchUseAgentsServiceListAgents = (
         templateId,
         userId,
       }),
+  });
+/**
+ * Count Agents
+ * Get the count of all agents associated with a given user.
+ * @param data The data for the request.
+ * @param data.userId
+ * @returns number Successful Response
+ * @throws ApiError
+ */
+export const prefetchUseAgentsServiceCountAgents = (
+  queryClient: QueryClient,
+  {
+    userId,
+  }: {
+    userId?: string;
+  } = {},
+) =>
+  queryClient.prefetchQuery({
+    queryKey: Common.UseAgentsServiceCountAgentsKeyFn({ userId }),
+    queryFn: () => AgentsService.countAgents({ userId }),
   });
 /**
  * Export Agent Serialized
@@ -962,6 +1022,26 @@ export const prefetchUseIdentitiesServiceListIdentities = (
         projectId,
         userId,
       }),
+  });
+/**
+ * Count Identities
+ * Get count of all identities for a user
+ * @param data The data for the request.
+ * @param data.userId
+ * @returns number Successful Response
+ * @throws ApiError
+ */
+export const prefetchUseIdentitiesServiceCountIdentities = (
+  queryClient: QueryClient,
+  {
+    userId,
+  }: {
+    userId?: string;
+  } = {},
+) =>
+  queryClient.prefetchQuery({
+    queryKey: Common.UseIdentitiesServiceCountIdentitiesKeyFn({ userId }),
+    queryFn: () => IdentitiesService.countIdentities({ userId }),
   });
 /**
  * Retrieve Identity

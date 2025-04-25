@@ -16,6 +16,8 @@ import type {
   CreateToolResponse,
   UpsertToolData,
   UpsertToolResponse,
+  CountToolsData,
+  CountToolsResponse,
   AddBaseToolsData,
   AddBaseToolsResponse,
   RunToolFromSourceData,
@@ -48,6 +50,8 @@ import type {
   ListSourcesResponse,
   CreateSourceData,
   CreateSourceResponse,
+  CountSourcesData,
+  CountSourcesResponse,
   UploadFileToSourceData,
   UploadFileToSourceResponse,
   ListSourcePassagesData,
@@ -60,6 +64,8 @@ import type {
   ListAgentsResponse,
   CreateAgentData,
   CreateAgentResponse,
+  CountAgentsData,
+  CountAgentsResponse,
   ExportAgentSerializedData,
   ExportAgentSerializedResponse,
   ImportAgentSerializedData,
@@ -144,6 +150,8 @@ import type {
   CreateIdentityResponse,
   UpsertIdentityData,
   UpsertIdentityResponse,
+  CountIdentitiesData,
+  CountIdentitiesResponse,
   RetrieveIdentityData,
   RetrieveIdentityResponse,
   UpdateIdentityData,
@@ -414,6 +422,28 @@ export class ToolsService {
       url: '/v1/tools/',
       body: data.requestBody,
       mediaType: 'application/json',
+      errors: {
+        422: 'Validation Error',
+      },
+      headers,
+    });
+  }
+
+  /**
+   * Count Tools
+   * Get a count of all tools available to agents belonging to the org of the user
+   * @param data The data for the request.
+   * @param data.userId
+   * @returns number Successful Response
+   * @throws ApiError
+   */
+  public static countTools(
+    data: CountToolsData = {},
+    headers?: { user_id: string },
+  ): CancelablePromise<CountToolsResponse> {
+    return __request(OpenAPI, {
+      method: 'GET',
+      url: '/v1/tools/count',
       errors: {
         422: 'Validation Error',
       },
@@ -826,6 +856,28 @@ export class SourcesService {
   }
 
   /**
+   * Count Sources
+   * Count all data sources created by a user.
+   * @param data The data for the request.
+   * @param data.userId
+   * @returns number Successful Response
+   * @throws ApiError
+   */
+  public static countSources(
+    data: CountSourcesData = {},
+    headers?: { user_id: string },
+  ): CancelablePromise<CountSourcesResponse> {
+    return __request(OpenAPI, {
+      method: 'GET',
+      url: '/v1/sources/count',
+      errors: {
+        422: 'Validation Error',
+      },
+      headers,
+    });
+  }
+
+  /**
    * Upload File To Source
    * Upload a file to a data source.
    * @param data The data for the request.
@@ -1016,6 +1068,28 @@ export class AgentsService {
       url: '/v1/agents/',
       body: data.requestBody,
       mediaType: 'application/json',
+      errors: {
+        422: 'Validation Error',
+      },
+      headers,
+    });
+  }
+
+  /**
+   * Count Agents
+   * Get the count of all agents associated with a given user.
+   * @param data The data for the request.
+   * @param data.userId
+   * @returns number Successful Response
+   * @throws ApiError
+   */
+  public static countAgents(
+    data: CountAgentsData = {},
+    headers?: { user_id: string },
+  ): CancelablePromise<CountAgentsResponse> {
+    return __request(OpenAPI, {
+      method: 'GET',
+      url: '/v1/agents/count',
       errors: {
         422: 'Validation Error',
       },
@@ -2261,6 +2335,28 @@ export class IdentitiesService {
       url: '/v1/identities/',
       body: data.requestBody,
       mediaType: 'application/json',
+      errors: {
+        422: 'Validation Error',
+      },
+      headers,
+    });
+  }
+
+  /**
+   * Count Identities
+   * Get count of all identities for a user
+   * @param data The data for the request.
+   * @param data.userId
+   * @returns number Successful Response
+   * @throws ApiError
+   */
+  public static countIdentities(
+    data: CountIdentitiesData = {},
+    headers?: { user_id: string },
+  ): CancelablePromise<CountIdentitiesResponse> {
+    return __request(OpenAPI, {
+      method: 'GET',
+      url: '/v1/identities/count',
       errors: {
         422: 'Validation Error',
       },

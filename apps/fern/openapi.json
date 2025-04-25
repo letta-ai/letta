@@ -310,6 +310,38 @@
         }
       }
     },
+    "/v1/tools/count": {
+      "get": {
+        "tags": ["tools"],
+        "summary": "Count Tools",
+        "description": "Get a count of all tools available to agents belonging to the org of the user",
+        "operationId": "count_tools",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "integer",
+                  "title": "Response Count Tools"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/tools/add-base-tools": {
       "post": {
         "tags": ["tools"],
@@ -1031,6 +1063,38 @@
         }
       }
     },
+    "/v1/sources/count": {
+      "get": {
+        "tags": ["sources"],
+        "summary": "Count Sources",
+        "description": "Count all data sources created by a user.",
+        "operationId": "count_sources",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "integer",
+                  "title": "Response Count Sources"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/sources/{source_id}/upload": {
       "post": {
         "tags": ["sources"],
@@ -1570,6 +1634,38 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/AgentState"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/agents/count": {
+      "get": {
+        "tags": ["agents"],
+        "summary": "Count Agents",
+        "description": "Get the count of all agents associated with a given user.",
+        "operationId": "count_agents",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "integer",
+                  "title": "Response Count Agents"
                 }
               }
             }
@@ -4261,6 +4357,38 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Identity"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/identities/count": {
+      "get": {
+        "tags": ["identities", "identities"],
+        "summary": "Count Identities",
+        "description": "Get count of all identities for a user",
+        "operationId": "count_identities",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "integer",
+                  "title": "Response Count Identities"
                 }
               }
             }
@@ -13258,6 +13386,18 @@
             ],
             "title": "Sender Id",
             "description": "The id of the sender of the message, can be an identity id or agent id"
+          },
+          "group_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Group Id",
+            "description": "The multi-agent group that the message was sent in"
           }
         },
         "type": "object",
@@ -13369,15 +13509,9 @@
             "title": "Type",
             "description": "Indicates this is an omitted reasoning step.",
             "default": "omitted_reasoning"
-          },
-          "tokens": {
-            "type": "integer",
-            "title": "Tokens",
-            "description": "The reasoning token count for intermediate reasoning content."
           }
         },
         "type": "object",
-        "required": ["tokens"],
         "title": "OmittedReasoningContent"
       },
       "Organization": {
@@ -16711,10 +16845,52 @@
             "type": "integer",
             "title": "Total Tokens",
             "default": 0
+          },
+          "prompt_tokens_details": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/UsageStatisticsPromptTokenDetails"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "completion_tokens_details": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/UsageStatisticsCompletionTokenDetails"
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
         "type": "object",
         "title": "UsageStatistics"
+      },
+      "UsageStatisticsCompletionTokenDetails": {
+        "properties": {
+          "reasoning_tokens": {
+            "type": "integer",
+            "title": "Reasoning Tokens",
+            "default": 0
+          }
+        },
+        "type": "object",
+        "title": "UsageStatisticsCompletionTokenDetails"
+      },
+      "UsageStatisticsPromptTokenDetails": {
+        "properties": {
+          "cached_tokens": {
+            "type": "integer",
+            "title": "Cached Tokens",
+            "default": 0
+          }
+        },
+        "type": "object",
+        "title": "UsageStatisticsPromptTokenDetails"
       },
       "User": {
         "properties": {

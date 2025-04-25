@@ -33,6 +33,11 @@ paths:
       x-fern-sdk-group-name:
         - tools
       x-fern-sdk-method-name: upsert
+  /v1/tools/count:
+    get:
+      x-fern-sdk-group-name:
+        - tools
+      x-fern-sdk-method-name: count
   /v1/tools/add-base-tools:
     post:
       x-fern-sdk-group-name:
@@ -65,6 +70,11 @@ paths:
       x-fern-sdk-group-name:
         - sources
       x-fern-sdk-method-name: create
+  /v1/sources/count:
+    get:
+      x-fern-sdk-group-name:
+        - sources
+      x-fern-sdk-method-name: count
   /v1/sources/{source_id}/upload:
     post:
       x-fern-sdk-group-name:
@@ -111,6 +121,11 @@ paths:
       x-fern-sdk-group-name:
         - agents
       x-fern-sdk-method-name: modify
+  /v1/agents/count:
+    get:
+      x-fern-sdk-group-name:
+        - agents
+      x-fern-sdk-method-name: count
   /v1/agents/search:
     post:
       x-fern-sdk-group-name:
@@ -648,6 +663,11 @@ paths:
       x-fern-sdk-group-name:
         - identities
       x-fern-sdk-method-name: delete
+  /v1/identities/count:
+    get:
+      x-fern-sdk-group-name:
+        - identities
+      x-fern-sdk-method-name: count
   /v1/identities/{identity_id}/properties:
     put:
       x-fern-sdk-group-name:

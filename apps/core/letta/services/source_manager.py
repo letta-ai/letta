@@ -78,6 +78,17 @@ class SourceManager:
             return [source.to_pydantic() for source in sources]
 
     @enforce_types
+    def size(
+        self,
+        actor: PydanticUser,
+    ) -> int:
+        """
+        Get the total count of sources for the given user.
+        """
+        with self.session_maker() as session:
+            return SourceModel.size(db_session=session, actor=actor)
+
+    @enforce_types
     def list_attached_agents(self, source_id: str, actor: Optional[PydanticUser] = None) -> List[PydanticAgentState]:
         """
         Lists all agents that have the specified source attached.

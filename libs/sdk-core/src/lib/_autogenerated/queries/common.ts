@@ -74,6 +74,22 @@ export const UseToolsServiceListToolsKeyFn = (
   useToolsServiceListToolsKey,
   ...(queryKey ?? [{ after, limit, name, userId }]),
 ];
+export type ToolsServiceCountToolsDefaultResponse = Awaited<
+  ReturnType<typeof ToolsService.countTools>
+>;
+export type ToolsServiceCountToolsQueryResult<
+  TData = ToolsServiceCountToolsDefaultResponse,
+  TError = unknown,
+> = UseQueryResult<TData, TError>;
+export const useToolsServiceCountToolsKey = 'ToolsServiceCountTools';
+export const UseToolsServiceCountToolsKeyFn = (
+  {
+    userId,
+  }: {
+    userId?: string;
+  } = {},
+  queryKey?: Array<unknown>,
+) => [useToolsServiceCountToolsKey, ...(queryKey ?? [{ userId }])];
 export type ToolsServiceListComposioAppsDefaultResponse = Awaited<
   ReturnType<typeof ToolsService.listComposioApps>
 >;
@@ -211,6 +227,22 @@ export const UseSourcesServiceListSourcesKeyFn = (
   } = {},
   queryKey?: Array<unknown>,
 ) => [useSourcesServiceListSourcesKey, ...(queryKey ?? [{ userId }])];
+export type SourcesServiceCountSourcesDefaultResponse = Awaited<
+  ReturnType<typeof SourcesService.countSources>
+>;
+export type SourcesServiceCountSourcesQueryResult<
+  TData = SourcesServiceCountSourcesDefaultResponse,
+  TError = unknown,
+> = UseQueryResult<TData, TError>;
+export const useSourcesServiceCountSourcesKey = 'SourcesServiceCountSources';
+export const UseSourcesServiceCountSourcesKeyFn = (
+  {
+    userId,
+  }: {
+    userId?: string;
+  } = {},
+  queryKey?: Array<unknown>,
+) => [useSourcesServiceCountSourcesKey, ...(queryKey ?? [{ userId }])];
 export type SourcesServiceListSourcePassagesDefaultResponse = Awaited<
   ReturnType<typeof SourcesService.listSourcePassages>
 >;
@@ -324,6 +356,22 @@ export const UseAgentsServiceListAgentsKeyFn = (
     },
   ]),
 ];
+export type AgentsServiceCountAgentsDefaultResponse = Awaited<
+  ReturnType<typeof AgentsService.countAgents>
+>;
+export type AgentsServiceCountAgentsQueryResult<
+  TData = AgentsServiceCountAgentsDefaultResponse,
+  TError = unknown,
+> = UseQueryResult<TData, TError>;
+export const useAgentsServiceCountAgentsKey = 'AgentsServiceCountAgents';
+export const UseAgentsServiceCountAgentsKeyFn = (
+  {
+    userId,
+  }: {
+    userId?: string;
+  } = {},
+  queryKey?: Array<unknown>,
+) => [useAgentsServiceCountAgentsKey, ...(queryKey ?? [{ userId }])];
 export type AgentsServiceExportAgentSerializedDefaultResponse = Awaited<
   ReturnType<typeof AgentsService.exportAgentSerialized>
 >;
@@ -740,6 +788,23 @@ export const UseIdentitiesServiceListIdentitiesKeyFn = (
     },
   ]),
 ];
+export type IdentitiesServiceCountIdentitiesDefaultResponse = Awaited<
+  ReturnType<typeof IdentitiesService.countIdentities>
+>;
+export type IdentitiesServiceCountIdentitiesQueryResult<
+  TData = IdentitiesServiceCountIdentitiesDefaultResponse,
+  TError = unknown,
+> = UseQueryResult<TData, TError>;
+export const useIdentitiesServiceCountIdentitiesKey =
+  'IdentitiesServiceCountIdentities';
+export const UseIdentitiesServiceCountIdentitiesKeyFn = (
+  {
+    userId,
+  }: {
+    userId?: string;
+  } = {},
+  queryKey?: Array<unknown>,
+) => [useIdentitiesServiceCountIdentitiesKey, ...(queryKey ?? [{ userId }])];
 export type IdentitiesServiceRetrieveIdentityDefaultResponse = Awaited<
   ReturnType<typeof IdentitiesService.retrieveIdentity>
 >;
