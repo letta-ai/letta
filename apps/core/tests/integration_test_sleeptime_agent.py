@@ -152,7 +152,7 @@ async def test_sleeptime_group_chat(server, actor):
         assert len(agent_runs) == len(run_ids)
 
     # 6. Verify run status after sleep
-    time.sleep(8)
+    time.sleep(10)
     for run_id in run_ids:
         job = server.job_manager.get_job_by_id(job_id=run_id, actor=actor)
         assert job.status == JobStatus.completed

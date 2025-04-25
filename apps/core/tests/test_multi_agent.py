@@ -304,7 +304,7 @@ async def test_round_robin(server, actor, participant_agents):
             input_messages=[
                 MessageCreate(
                     role="user",
-                    content="what is everyone up to for the holidays?",
+                    content="when should we plan our next adventure?",
                 ),
             ],
             stream_steps=False,
