@@ -54,6 +54,32 @@ export const prefetchUseToolsServiceRetrieveTool = (
     queryFn: () => ToolsService.retrieveTool({ toolId, userId }),
   });
 /**
+ * Count Tools
+ * Get a count of all tools available to agents belonging to the org of the user.
+ * @param data The data for the request.
+ * @param data.includeBaseTools Include built-in Letta tools in the count
+ * @param data.userId
+ * @returns number Successful Response
+ * @throws ApiError
+ */
+export const prefetchUseToolsServiceCountTools = (
+  queryClient: QueryClient,
+  {
+    includeBaseTools,
+    userId,
+  }: {
+    includeBaseTools?: boolean;
+    userId?: string;
+  } = {},
+) =>
+  queryClient.prefetchQuery({
+    queryKey: Common.UseToolsServiceCountToolsKeyFn({
+      includeBaseTools,
+      userId,
+    }),
+    queryFn: () => ToolsService.countTools({ includeBaseTools, userId }),
+  });
+/**
  * List Tools
  * Get a list of all tools available to agents belonging to the org of the user
  * @param data The data for the request.
@@ -86,26 +112,6 @@ export const prefetchUseToolsServiceListTools = (
       userId,
     }),
     queryFn: () => ToolsService.listTools({ after, limit, name, userId }),
-  });
-/**
- * Count Tools
- * Get a count of all tools available to agents belonging to the org of the user
- * @param data The data for the request.
- * @param data.userId
- * @returns number Successful Response
- * @throws ApiError
- */
-export const prefetchUseToolsServiceCountTools = (
-  queryClient: QueryClient,
-  {
-    userId,
-  }: {
-    userId?: string;
-  } = {},
-) =>
-  queryClient.prefetchQuery({
-    queryKey: Common.UseToolsServiceCountToolsKeyFn({ userId }),
-    queryFn: () => ToolsService.countTools({ userId }),
   });
 /**
  * List Composio Apps
@@ -201,6 +207,26 @@ export const prefetchUseToolsServiceListMcpToolsByServer = (
     queryFn: () => ToolsService.listMcpToolsByServer({ mcpServerName, userId }),
   });
 /**
+ * Count Sources
+ * Count all data sources created by a user.
+ * @param data The data for the request.
+ * @param data.userId
+ * @returns number Successful Response
+ * @throws ApiError
+ */
+export const prefetchUseSourcesServiceCountSources = (
+  queryClient: QueryClient,
+  {
+    userId,
+  }: {
+    userId?: string;
+  } = {},
+) =>
+  queryClient.prefetchQuery({
+    queryKey: Common.UseSourcesServiceCountSourcesKeyFn({ userId }),
+    queryFn: () => SourcesService.countSources({ userId }),
+  });
+/**
  * Retrieve Source
  * Get all sources
  * @param data The data for the request.
@@ -268,26 +294,6 @@ export const prefetchUseSourcesServiceListSources = (
   queryClient.prefetchQuery({
     queryKey: Common.UseSourcesServiceListSourcesKeyFn({ userId }),
     queryFn: () => SourcesService.listSources({ userId }),
-  });
-/**
- * Count Sources
- * Count all data sources created by a user.
- * @param data The data for the request.
- * @param data.userId
- * @returns number Successful Response
- * @throws ApiError
- */
-export const prefetchUseSourcesServiceCountSources = (
-  queryClient: QueryClient,
-  {
-    userId,
-  }: {
-    userId?: string;
-  } = {},
-) =>
-  queryClient.prefetchQuery({
-    queryKey: Common.UseSourcesServiceCountSourcesKeyFn({ userId }),
-    queryFn: () => SourcesService.countSources({ userId }),
   });
 /**
  * List Source Passages

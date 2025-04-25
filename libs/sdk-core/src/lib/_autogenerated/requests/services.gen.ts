@@ -10,14 +10,14 @@ import type {
   RetrieveToolResponse,
   ModifyToolData,
   ModifyToolResponse,
+  CountToolsData,
+  CountToolsResponse,
   ListToolsData,
   ListToolsResponse,
   CreateToolData,
   CreateToolResponse,
   UpsertToolData,
   UpsertToolResponse,
-  CountToolsData,
-  CountToolsResponse,
   AddBaseToolsData,
   AddBaseToolsResponse,
   RunToolFromSourceData,
@@ -38,6 +38,8 @@ import type {
   AddMcpToolResponse,
   DeleteMcpServerData,
   DeleteMcpServerResponse,
+  CountSourcesData,
+  CountSourcesResponse,
   RetrieveSourceData,
   RetrieveSourceResponse,
   ModifySourceData,
@@ -50,8 +52,6 @@ import type {
   ListSourcesResponse,
   CreateSourceData,
   CreateSourceResponse,
-  CountSourcesData,
-  CountSourcesResponse,
   UploadFileToSourceData,
   UploadFileToSourceResponse,
   ListSourcePassagesData,
@@ -350,6 +350,32 @@ export class ToolsService {
   }
 
   /**
+   * Count Tools
+   * Get a count of all tools available to agents belonging to the org of the user.
+   * @param data The data for the request.
+   * @param data.includeBaseTools Include built-in Letta tools in the count
+   * @param data.userId
+   * @returns number Successful Response
+   * @throws ApiError
+   */
+  public static countTools(
+    data: CountToolsData = {},
+    headers?: { user_id: string },
+  ): CancelablePromise<CountToolsResponse> {
+    return __request(OpenAPI, {
+      method: 'GET',
+      url: '/v1/tools/count',
+      query: {
+        include_base_tools: data.includeBaseTools,
+      },
+      errors: {
+        422: 'Validation Error',
+      },
+      headers,
+    });
+  }
+
+  /**
    * List Tools
    * Get a list of all tools available to agents belonging to the org of the user
    * @param data The data for the request.
@@ -422,28 +448,6 @@ export class ToolsService {
       url: '/v1/tools/',
       body: data.requestBody,
       mediaType: 'application/json',
-      errors: {
-        422: 'Validation Error',
-      },
-      headers,
-    });
-  }
-
-  /**
-   * Count Tools
-   * Get a count of all tools available to agents belonging to the org of the user
-   * @param data The data for the request.
-   * @param data.userId
-   * @returns number Successful Response
-   * @throws ApiError
-   */
-  public static countTools(
-    data: CountToolsData = {},
-    headers?: { user_id: string },
-  ): CancelablePromise<CountToolsResponse> {
-    return __request(OpenAPI, {
-      method: 'GET',
-      url: '/v1/tools/count',
       errors: {
         422: 'Validation Error',
       },
@@ -702,6 +706,28 @@ export class ToolsService {
 
 export class SourcesService {
   /**
+   * Count Sources
+   * Count all data sources created by a user.
+   * @param data The data for the request.
+   * @param data.userId
+   * @returns number Successful Response
+   * @throws ApiError
+   */
+  public static countSources(
+    data: CountSourcesData = {},
+    headers?: { user_id: string },
+  ): CancelablePromise<CountSourcesResponse> {
+    return __request(OpenAPI, {
+      method: 'GET',
+      url: '/v1/sources/count',
+      errors: {
+        422: 'Validation Error',
+      },
+      headers,
+    });
+  }
+
+  /**
    * Retrieve Source
    * Get all sources
    * @param data The data for the request.
@@ -848,28 +874,6 @@ export class SourcesService {
       url: '/v1/sources/',
       body: data.requestBody,
       mediaType: 'application/json',
-      errors: {
-        422: 'Validation Error',
-      },
-      headers,
-    });
-  }
-
-  /**
-   * Count Sources
-   * Count all data sources created by a user.
-   * @param data The data for the request.
-   * @param data.userId
-   * @returns number Successful Response
-   * @throws ApiError
-   */
-  public static countSources(
-    data: CountSourcesData = {},
-    headers?: { user_id: string },
-  ): CancelablePromise<CountSourcesResponse> {
-    return __request(OpenAPI, {
-      method: 'GET',
-      url: '/v1/sources/count',
       errors: {
         422: 'Validation Error',
       },

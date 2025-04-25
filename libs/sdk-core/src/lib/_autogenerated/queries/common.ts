@@ -49,6 +49,27 @@ export const UseToolsServiceRetrieveToolKeyFn = (
   },
   queryKey?: Array<unknown>,
 ) => [useToolsServiceRetrieveToolKey, ...(queryKey ?? [{ toolId, userId }])];
+export type ToolsServiceCountToolsDefaultResponse = Awaited<
+  ReturnType<typeof ToolsService.countTools>
+>;
+export type ToolsServiceCountToolsQueryResult<
+  TData = ToolsServiceCountToolsDefaultResponse,
+  TError = unknown,
+> = UseQueryResult<TData, TError>;
+export const useToolsServiceCountToolsKey = 'ToolsServiceCountTools';
+export const UseToolsServiceCountToolsKeyFn = (
+  {
+    includeBaseTools,
+    userId,
+  }: {
+    includeBaseTools?: boolean;
+    userId?: string;
+  } = {},
+  queryKey?: Array<unknown>,
+) => [
+  useToolsServiceCountToolsKey,
+  ...(queryKey ?? [{ includeBaseTools, userId }]),
+];
 export type ToolsServiceListToolsDefaultResponse = Awaited<
   ReturnType<typeof ToolsService.listTools>
 >;
@@ -74,22 +95,6 @@ export const UseToolsServiceListToolsKeyFn = (
   useToolsServiceListToolsKey,
   ...(queryKey ?? [{ after, limit, name, userId }]),
 ];
-export type ToolsServiceCountToolsDefaultResponse = Awaited<
-  ReturnType<typeof ToolsService.countTools>
->;
-export type ToolsServiceCountToolsQueryResult<
-  TData = ToolsServiceCountToolsDefaultResponse,
-  TError = unknown,
-> = UseQueryResult<TData, TError>;
-export const useToolsServiceCountToolsKey = 'ToolsServiceCountTools';
-export const UseToolsServiceCountToolsKeyFn = (
-  {
-    userId,
-  }: {
-    userId?: string;
-  } = {},
-  queryKey?: Array<unknown>,
-) => [useToolsServiceCountToolsKey, ...(queryKey ?? [{ userId }])];
 export type ToolsServiceListComposioAppsDefaultResponse = Awaited<
   ReturnType<typeof ToolsService.listComposioApps>
 >;
@@ -167,6 +172,22 @@ export const UseToolsServiceListMcpToolsByServerKeyFn = (
   useToolsServiceListMcpToolsByServerKey,
   ...(queryKey ?? [{ mcpServerName, userId }]),
 ];
+export type SourcesServiceCountSourcesDefaultResponse = Awaited<
+  ReturnType<typeof SourcesService.countSources>
+>;
+export type SourcesServiceCountSourcesQueryResult<
+  TData = SourcesServiceCountSourcesDefaultResponse,
+  TError = unknown,
+> = UseQueryResult<TData, TError>;
+export const useSourcesServiceCountSourcesKey = 'SourcesServiceCountSources';
+export const UseSourcesServiceCountSourcesKeyFn = (
+  {
+    userId,
+  }: {
+    userId?: string;
+  } = {},
+  queryKey?: Array<unknown>,
+) => [useSourcesServiceCountSourcesKey, ...(queryKey ?? [{ userId }])];
 export type SourcesServiceRetrieveSourceDefaultResponse = Awaited<
   ReturnType<typeof SourcesService.retrieveSource>
 >;
@@ -227,22 +248,6 @@ export const UseSourcesServiceListSourcesKeyFn = (
   } = {},
   queryKey?: Array<unknown>,
 ) => [useSourcesServiceListSourcesKey, ...(queryKey ?? [{ userId }])];
-export type SourcesServiceCountSourcesDefaultResponse = Awaited<
-  ReturnType<typeof SourcesService.countSources>
->;
-export type SourcesServiceCountSourcesQueryResult<
-  TData = SourcesServiceCountSourcesDefaultResponse,
-  TError = unknown,
-> = UseQueryResult<TData, TError>;
-export const useSourcesServiceCountSourcesKey = 'SourcesServiceCountSources';
-export const UseSourcesServiceCountSourcesKeyFn = (
-  {
-    userId,
-  }: {
-    userId?: string;
-  } = {},
-  queryKey?: Array<unknown>,
-) => [useSourcesServiceCountSourcesKey, ...(queryKey ?? [{ userId }])];
 export type SourcesServiceListSourcePassagesDefaultResponse = Awaited<
   ReturnType<typeof SourcesService.listSourcePassages>
 >;

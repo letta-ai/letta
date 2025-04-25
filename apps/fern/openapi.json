@@ -147,6 +147,58 @@
         }
       }
     },
+    "/v1/tools/count": {
+      "get": {
+        "tags": ["tools"],
+        "summary": "Count Tools",
+        "description": "Get a count of all tools available to agents belonging to the org of the user.",
+        "operationId": "count_tools",
+        "parameters": [
+          {
+            "name": "include_base_tools",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Include built-in Letta tools in the count",
+              "default": false,
+              "title": "Include Base Tools"
+            },
+            "description": "Include built-in Letta tools in the count"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "integer",
+                  "title": "Response Count Tools"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/tools/": {
       "get": {
         "tags": ["tools"],
@@ -293,38 +345,6 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Tool"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/v1/tools/count": {
-      "get": {
-        "tags": ["tools"],
-        "summary": "Count Tools",
-        "description": "Get a count of all tools available to agents belonging to the org of the user",
-        "operationId": "count_tools",
-        "parameters": [],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "integer",
-                  "title": "Response Count Tools"
                 }
               }
             }
@@ -820,6 +840,38 @@
         }
       }
     },
+    "/v1/sources/count": {
+      "get": {
+        "tags": ["sources"],
+        "summary": "Count Sources",
+        "description": "Count all data sources created by a user.",
+        "operationId": "count_sources",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "integer",
+                  "title": "Response Count Sources"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/sources/{source_id}": {
       "get": {
         "tags": ["sources"],
@@ -1046,38 +1098,6 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Source"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/v1/sources/count": {
-      "get": {
-        "tags": ["sources"],
-        "summary": "Count Sources",
-        "description": "Count all data sources created by a user.",
-        "operationId": "count_sources",
-        "parameters": [],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "integer",
-                  "title": "Response Count Sources"
                 }
               }
             }

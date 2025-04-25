@@ -5095,6 +5095,30 @@ export const patch_Modify_tool = {
   response: Tool,
 };
 
+export type get_Count_tools = typeof get_Count_tools;
+export const get_Count_tools = {
+  method: z.literal('GET'),
+  path: z.literal('/v1/tools/count'),
+  requestFormat: z.literal('json'),
+  parameters: z.object({
+    query: z.object({
+      include_base_tools: z
+        .union([
+          z.boolean(),
+          z.null(),
+          z.array(z.union([z.boolean(), z.null()])),
+        ])
+        .optional(),
+    }),
+    header: z.object({
+      user_id: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+    }),
+  }),
+  response: z.number(),
+};
+
 export type get_List_tools = typeof get_List_tools;
 export const get_List_tools = {
   method: z.literal('GET'),
@@ -5151,21 +5175,6 @@ export const put_Upsert_tool = {
     body: ToolCreate,
   }),
   response: Tool,
-};
-
-export type get_Count_tools = typeof get_Count_tools;
-export const get_Count_tools = {
-  method: z.literal('GET'),
-  path: z.literal('/v1/tools/count'),
-  requestFormat: z.literal('json'),
-  parameters: z.object({
-    header: z.object({
-      user_id: z
-        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
-        .optional(),
-    }),
-  }),
-  response: z.number(),
 };
 
 export type post_Add_base_tools = typeof post_Add_base_tools;
@@ -5353,6 +5362,21 @@ export const delete_Delete_mcp_server = {
   ),
 };
 
+export type get_Count_sources = typeof get_Count_sources;
+export const get_Count_sources = {
+  method: z.literal('GET'),
+  path: z.literal('/v1/sources/count'),
+  requestFormat: z.literal('json'),
+  parameters: z.object({
+    header: z.object({
+      user_id: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+    }),
+  }),
+  response: z.number(),
+};
+
 export type get_Retrieve_source = typeof get_Retrieve_source;
 export const get_Retrieve_source = {
   method: z.literal('GET'),
@@ -5455,21 +5479,6 @@ export const post_Create_source = {
     body: SourceCreate,
   }),
   response: Source,
-};
-
-export type get_Count_sources = typeof get_Count_sources;
-export const get_Count_sources = {
-  method: z.literal('GET'),
-  path: z.literal('/v1/sources/count'),
-  requestFormat: z.literal('json'),
-  parameters: z.object({
-    header: z.object({
-      user_id: z
-        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
-        .optional(),
-    }),
-  }),
-  response: z.number(),
 };
 
 export type post_Upload_file_to_source = typeof post_Upload_file_to_source;

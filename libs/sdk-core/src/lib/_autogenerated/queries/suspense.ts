@@ -63,6 +63,39 @@ export const useToolsServiceRetrieveToolSuspense = <
     ...options,
   });
 /**
+ * Count Tools
+ * Get a count of all tools available to agents belonging to the org of the user.
+ * @param data The data for the request.
+ * @param data.includeBaseTools Include built-in Letta tools in the count
+ * @param data.userId
+ * @returns number Successful Response
+ * @throws ApiError
+ */
+export const useToolsServiceCountToolsSuspense = <
+  TData = Common.ToolsServiceCountToolsDefaultResponse,
+  TError = unknown,
+  TQueryKey extends Array<unknown> = unknown[],
+>(
+  {
+    includeBaseTools,
+    userId,
+  }: {
+    includeBaseTools?: boolean;
+    userId?: string;
+  } = {},
+  queryKey?: TQueryKey,
+  options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>,
+) =>
+  useSuspenseQuery<TData, TError>({
+    queryKey: Common.UseToolsServiceCountToolsKeyFn(
+      { includeBaseTools, userId },
+      queryKey,
+    ),
+    queryFn: () =>
+      ToolsService.countTools({ includeBaseTools, userId }) as TData,
+    ...options,
+  });
+/**
  * List Tools
  * Get a list of all tools available to agents belonging to the org of the user
  * @param data The data for the request.
@@ -99,32 +132,6 @@ export const useToolsServiceListToolsSuspense = <
     ),
     queryFn: () =>
       ToolsService.listTools({ after, limit, name, userId }) as TData,
-    ...options,
-  });
-/**
- * Count Tools
- * Get a count of all tools available to agents belonging to the org of the user
- * @param data The data for the request.
- * @param data.userId
- * @returns number Successful Response
- * @throws ApiError
- */
-export const useToolsServiceCountToolsSuspense = <
-  TData = Common.ToolsServiceCountToolsDefaultResponse,
-  TError = unknown,
-  TQueryKey extends Array<unknown> = unknown[],
->(
-  {
-    userId,
-  }: {
-    userId?: string;
-  } = {},
-  queryKey?: TQueryKey,
-  options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>,
-) =>
-  useSuspenseQuery<TData, TError>({
-    queryKey: Common.UseToolsServiceCountToolsKeyFn({ userId }, queryKey),
-    queryFn: () => ToolsService.countTools({ userId }) as TData,
     ...options,
   });
 /**
@@ -249,6 +256,32 @@ export const useToolsServiceListMcpToolsByServerSuspense = <
     ...options,
   });
 /**
+ * Count Sources
+ * Count all data sources created by a user.
+ * @param data The data for the request.
+ * @param data.userId
+ * @returns number Successful Response
+ * @throws ApiError
+ */
+export const useSourcesServiceCountSourcesSuspense = <
+  TData = Common.SourcesServiceCountSourcesDefaultResponse,
+  TError = unknown,
+  TQueryKey extends Array<unknown> = unknown[],
+>(
+  {
+    userId,
+  }: {
+    userId?: string;
+  } = {},
+  queryKey?: TQueryKey,
+  options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>,
+) =>
+  useSuspenseQuery<TData, TError>({
+    queryKey: Common.UseSourcesServiceCountSourcesKeyFn({ userId }, queryKey),
+    queryFn: () => SourcesService.countSources({ userId }) as TData,
+    ...options,
+  });
+/**
  * Retrieve Source
  * Get all sources
  * @param data The data for the request.
@@ -337,32 +370,6 @@ export const useSourcesServiceListSourcesSuspense = <
   useSuspenseQuery<TData, TError>({
     queryKey: Common.UseSourcesServiceListSourcesKeyFn({ userId }, queryKey),
     queryFn: () => SourcesService.listSources({ userId }) as TData,
-    ...options,
-  });
-/**
- * Count Sources
- * Count all data sources created by a user.
- * @param data The data for the request.
- * @param data.userId
- * @returns number Successful Response
- * @throws ApiError
- */
-export const useSourcesServiceCountSourcesSuspense = <
-  TData = Common.SourcesServiceCountSourcesDefaultResponse,
-  TError = unknown,
-  TQueryKey extends Array<unknown> = unknown[],
->(
-  {
-    userId,
-  }: {
-    userId?: string;
-  } = {},
-  queryKey?: TQueryKey,
-  options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>,
-) =>
-  useSuspenseQuery<TData, TError>({
-    queryKey: Common.UseSourcesServiceCountSourcesKeyFn({ userId }, queryKey),
-    queryFn: () => SourcesService.countSources({ userId }) as TData,
     ...options,
   });
 /**

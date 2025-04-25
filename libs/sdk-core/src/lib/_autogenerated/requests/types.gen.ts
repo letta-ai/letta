@@ -3865,6 +3865,16 @@ export type ModifyToolData = {
 
 export type ModifyToolResponse = Tool;
 
+export type CountToolsData = {
+  /**
+   * Include built-in Letta tools in the count
+   */
+  includeBaseTools?: boolean | null;
+  userId?: string | null;
+};
+
+export type CountToolsResponse = number;
+
 export type ListToolsData = {
   after?: string | null;
   limit?: number | null;
@@ -3887,12 +3897,6 @@ export type UpsertToolData = {
 };
 
 export type UpsertToolResponse = Tool;
-
-export type CountToolsData = {
-  userId?: string | null;
-};
-
-export type CountToolsResponse = number;
 
 export type AddBaseToolsData = {
   userId?: string | null;
@@ -3966,6 +3970,12 @@ export type DeleteMcpServerResponse = Array<
   SSEServerConfig | StdioServerConfig
 >;
 
+export type CountSourcesData = {
+  userId?: string | null;
+};
+
+export type CountSourcesResponse = number;
+
 export type RetrieveSourceData = {
   sourceId: string;
   userId?: string | null;
@@ -4007,12 +4017,6 @@ export type CreateSourceData = {
 };
 
 export type CreateSourceResponse = Source;
-
-export type CountSourcesData = {
-  userId?: string | null;
-};
-
-export type CountSourcesResponse = number;
 
 export type UploadFileToSourceData = {
   formData: Body_upload_file_to_source;
@@ -5175,6 +5179,21 @@ export type $OpenApiTs = {
       };
     };
   };
+  '/v1/tools/count': {
+    get: {
+      req: CountToolsData;
+      res: {
+        /**
+         * Successful Response
+         */
+        200: number;
+        /**
+         * Validation Error
+         */
+        422: HTTPValidationError;
+      };
+    };
+  };
   '/v1/tools/': {
     get: {
       req: ListToolsData;
@@ -5209,21 +5228,6 @@ export type $OpenApiTs = {
          * Successful Response
          */
         200: Tool;
-        /**
-         * Validation Error
-         */
-        422: HTTPValidationError;
-      };
-    };
-  };
-  '/v1/tools/count': {
-    get: {
-      req: CountToolsData;
-      res: {
-        /**
-         * Successful Response
-         */
-        200: number;
         /**
          * Validation Error
          */
@@ -5381,6 +5385,21 @@ export type $OpenApiTs = {
       };
     };
   };
+  '/v1/sources/count': {
+    get: {
+      req: CountSourcesData;
+      res: {
+        /**
+         * Successful Response
+         */
+        200: number;
+        /**
+         * Validation Error
+         */
+        422: HTTPValidationError;
+      };
+    };
+  };
   '/v1/sources/{source_id}': {
     get: {
       req: RetrieveSourceData;
@@ -5458,21 +5477,6 @@ export type $OpenApiTs = {
          * Successful Response
          */
         200: Source;
-        /**
-         * Validation Error
-         */
-        422: HTTPValidationError;
-      };
-    };
-  };
-  '/v1/sources/count': {
-    get: {
-      req: CountSourcesData;
-      res: {
-        /**
-         * Successful Response
-         */
-        200: number;
         /**
          * Validation Error
          */
