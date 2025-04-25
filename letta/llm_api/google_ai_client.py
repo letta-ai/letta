@@ -326,6 +326,10 @@ class GoogleAIClient(LLMClientBase):
         for func in function_list:
             # Note: Google AI API used to have weird casing requirements, but not any more
 
+            # Google AI API only supports a subset of OpenAPI 3.0, so unsupported params must be cleaned
+            if "parameters" in func and isinstance(func["parameters"], dict):
+                self._clean_google_ai_schema_properties(func["parameters"])
+
             # Add inner thoughts
             if llm_config.put_inner_thoughts_in_kwargs:
                 from letta.local_llm.constants import INNER_THOUGHTS_KWARG, INNER_THOUGHTS_KWARG_DESCRIPTION
