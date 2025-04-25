@@ -80,6 +80,21 @@ def list_tools(
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@router.get("/count", response_model=int, operation_id="count_tools")
+def count_tools(
+    server: SyncServer = Depends(get_letta_server),
+    actor_id: Optional[str] = Header(None, alias="user_id"),
+):
+    """
+    Get a count of all tools available to agents belonging to the org of the user
+    """
+    try:
+        return server.tool_manager.size(actor=server.user_manager.get_user_or_default(user_id=actor_id))
+    except Exception as e:
+        print(f"Error occurred: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @router.post("/", response_model=Tool, operation_id="create_tool")
 def create_tool(
     request: ToolCreate = Body(...),

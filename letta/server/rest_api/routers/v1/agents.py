@@ -104,6 +104,17 @@ def list_agents(
     )
 
 
+@router.get("/count", response_model=int, operation_id="count_agents")
+def count_agents(
+    server: SyncServer = Depends(get_letta_server),
+    actor_id: Optional[str] = Header(None, alias="user_id"),
+):
+    """
+    Get the count of all agents associated with a given user.
+    """
+    return server.agent_manager.size(actor=server.user_manager.get_user_or_default(user_id=actor_id))
+
+
 class IndentedORJSONResponse(Response):
     media_type = "application/json"
 

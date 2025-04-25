@@ -49,6 +49,24 @@ def list_identities(
     return identities
 
 
+@router.get("/count", tags=["identities"], response_model=int, operation_id="count_identities")
+def count_identities(
+    server: "SyncServer" = Depends(get_letta_server),
+    actor_id: Optional[str] = Header(None, alias="user_id"),
+):
+    """
+    Get count of all identities for a user
+    """
+    try:
+        return server.identity_manager.size(actor=server.user_manager.get_user_or_default(user_id=actor_id))
+    except NoResultFound:
+        return 0
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"{e}")
+
+
 @router.get("/{identity_id}", tags=["identities"], response_model=Identity, operation_id="retrieve_identity")
 def retrieve_identity(
     identity_id: str,

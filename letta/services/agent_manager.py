@@ -556,6 +556,16 @@ class AgentManager:
 
             return list(session.execute(query).scalars())
 
+    def size(
+        self,
+        actor: PydanticUser,
+    ) -> int:
+        """
+        Get the total count of agents for the given user.
+        """
+        with self.session_maker() as session:
+            return AgentModel.size(db_session=session, actor=actor)
+
     @enforce_types
     def get_agent_by_id(self, agent_id: str, actor: PydanticUser) -> PydanticAgentState:
         """Fetch an agent by its ID."""

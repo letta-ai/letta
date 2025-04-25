@@ -146,6 +146,17 @@ class ToolManager:
         return results
 
     @enforce_types
+    def size(
+        self,
+        actor: PydanticUser,
+    ) -> int:
+        """
+        Get the total count of tools for the given user.
+        """
+        with self.session_maker() as session:
+            return ToolModel.size(db_session=session, actor=actor)
+
+    @enforce_types
     def update_tool_by_id(self, tool_id: str, tool_update: ToolUpdate, actor: PydanticUser) -> PydanticTool:
         """Update a tool by its ID with the given ToolUpdate object."""
         with self.session_maker() as session:
