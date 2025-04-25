@@ -471,6 +471,7 @@
         "date": "Date",
         "note": "Description",
         "amount": "Amount",
+        "modelTier": "Model tier",
         "actions": "Actions"
       }
     }

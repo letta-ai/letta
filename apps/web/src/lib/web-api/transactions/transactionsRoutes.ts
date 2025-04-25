@@ -6,6 +6,7 @@ import {
 } from '@letta-cloud/service-database';
 import { getUserWithActiveOrganizationIdOrThrow } from '$web/server/auth';
 import { desc, eq } from 'drizzle-orm';
+import { ModelTiers } from '@letta-cloud/types';
 
 type TransactionsRoutesRequest = ServerInferRequest<
   typeof contracts.transactions.listTransactions
@@ -34,15 +35,20 @@ async function listTransactions(
   return {
     status: 200,
     body: {
-      transactions: transactions.slice(0, limit).map((transaction) => ({
-        type: transaction.transactionType,
-        amount: parseInt(transaction.amount, 10),
-        note: transaction.note || '',
-        source: transaction.source || '',
-        ...(transaction.stepId ? { stepId: transaction.stepId } : {}),
-        createdAt: transaction.createdAt.toISOString(),
-        id: transaction.id,
-      })),
+      transactions: transactions.slice(0, limit).map((transaction) => {
+        const tier = ModelTiers.safeParse(transaction.modelTier);
+
+        return {
+          type: transaction.transactionType,
+          amount: parseInt(transaction.amount, 10),
+          note: transaction.note || '',
+          source: transaction.source || '',
+          ...(transaction.stepId ? { stepId: transaction.stepId } : {}),
+          createdAt: transaction.createdAt.toISOString(),
+          modelTier: tier?.data || 'per-inference',
+          id: transaction.id,
+        };
+      }),
       hasNextPage: transactions.length > limit,
     },
   };

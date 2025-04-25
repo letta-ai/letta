@@ -29,7 +29,7 @@ export async function deductCreditsFromStep(step: Step) {
   ]);
 
   try {
-    if (!creditCost) {
+    if (typeof creditCost !== 'number') {
       console.warn(
         `Model ${step.model} [${step.model_endpoint}] has a cost of 0 credits`,
       );
@@ -54,11 +54,18 @@ export async function deductCreditsFromStep(step: Step) {
       return;
     }
 
+    const modelTier = modelData?.modelId
+      ? await getRedisData('modelIdToModelTier', {
+          modelId: modelData.modelId,
+        })
+      : undefined;
+
     const response = await removeCreditsFromOrganization({
       amount: creditCost,
       coreOrganizationId: step.organization_id,
       source: 'inference',
       stepId: step.id,
+      modelTier: modelTier?.tier,
       modelId: modelData?.modelId,
       note: `Deducted ${creditCost} credits for model ${step.model}`,
     });

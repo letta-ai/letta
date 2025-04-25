@@ -110,8 +110,8 @@ export async function removeCreditsFromOrganization(
     throw new Error('Amount must be a number');
   }
 
-  if (amount <= 0) {
-    throw new Error('Amount must be greater than 0');
+  if (amount < 0) {
+    throw new Error('Amount must be greater or equal than 0');
   }
 
   // credits must be whole numbers

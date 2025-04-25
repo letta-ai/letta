@@ -11,6 +11,7 @@ import {
   SideOverlayHeader,
   VStack,
   LoadingEmptyStatusComponent,
+  Badge,
 } from '@letta-cloud/ui-component-library';
 import type { PublicCreditTransactionType } from '@letta-cloud/sdk-web';
 import { webApi, webApiQueryKeys } from '@letta-cloud/sdk-web';
@@ -151,6 +152,13 @@ export default function AuditLogPage() {
         {
           accessorKey: 'note',
           header: t('table.columns.note'),
+        },
+        {
+          cell: ({ row }) => {
+            return <Badge content={row.original.modelTier || ''} />;
+          },
+          accessorKey: 'modelTier',
+          header: t('table.columns.modelTier'),
         },
         {
           id: 'actions',

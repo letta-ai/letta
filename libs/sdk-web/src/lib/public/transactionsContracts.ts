@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { initContract } from '@ts-rest/core';
+import { ModelTiers } from '@letta-cloud/types';
 
 const c = initContract();
 
@@ -9,6 +10,7 @@ const TransactionSchema = z.object({
   note: z.string().optional(),
   source: z.string().optional(),
   stepId: z.string().optional(),
+  modelTier: ModelTiers,
   createdAt: z.string(),
   id: z.string(),
 });
