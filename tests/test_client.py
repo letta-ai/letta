@@ -505,9 +505,8 @@ def test_function_always_error(client: Letta):
 
     assert response_message, "ToolReturnMessage message not found in response"
     assert response_message.status == "error"
-    assert (
-        response_message.tool_return == "Error executing function testing_method: ZeroDivisionError: division by zero"
-    ), response_message.tool_return
+    assert "Error executing function testing_method" in response_message.tool_return, response_message.tool_return
+    assert "ZeroDivisionError: division by zero" in response_message.stderr[0]
 
     client.agents.delete(agent_id=agent.id)
 
@@ -642,9 +641,9 @@ def test_agent_listing(client: Letta, agent, search_agent_one, search_agent_two)
     assert len(all_ids) == 2
     assert all_ids == {search_agent_one.id, search_agent_two.id}
 
-    # Test listing without any filters
+    # Test listing without any filters; make less flakey by checking we have at least 3 agents in case created elsewhere
     all_agents = client.agents.list()
-    assert len(all_agents) == 3
+    assert len(all_agents) >= 3
     assert all(agent.id in {a.id for a in all_agents} for agent in [search_agent_one, search_agent_two, agent])
 
 

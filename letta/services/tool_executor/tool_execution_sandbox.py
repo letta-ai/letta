@@ -204,12 +204,7 @@ class ToolExecutionSandbox:
         try:
             log_event(name="start subprocess")
             result = subprocess.run(
-                [python_executable, temp_file_path],
-                env=env,
-                cwd=sandbox_dir,
-                timeout=60,
-                capture_output=True,
-                text=True,
+                [python_executable, temp_file_path], env=env, cwd=sandbox_dir, timeout=60, capture_output=True, text=True, check=True
             )
             log_event(name="finish subprocess")
             func_result, stdout = self.parse_out_function_results_markers(result.stdout)
