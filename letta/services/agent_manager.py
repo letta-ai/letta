@@ -600,15 +600,18 @@ class AgentManager:
             agents_to_delete = [agent]
             sleeptime_group_to_delete = None
 
-            # Delete sleeptime agent and group
+            # Delete sleeptime agent and group (TODO this is flimsy pls fix)
             if agent.multi_agent_group:
                 participant_agent_ids = agent.multi_agent_group.agent_ids
                 if agent.multi_agent_group.manager_type == ManagerType.sleeptime and len(participant_agent_ids) == 1:
-                    sleeptime_agent = AgentModel.read(db_session=session, identifier=participant_agent_ids[0], actor=actor)
-                    if sleeptime_agent.agent_type == AgentType.sleeptime_agent:
-                        sleeptime_agent_group = GroupModel.read(db_session=session, identifier=agent.multi_agent_group.id, actor=actor)
-                        sleeptime_group_to_delete = sleeptime_agent_group
+                    try:
+                        sleeptime_agent = AgentModel.read(db_session=session, identifier=participant_agent_ids[0], actor=actor)
                         agents_to_delete.append(sleeptime_agent)
+                    except NoResultFound:
+                        pass  # agent already deleted
+                    sleeptime_agent_group = GroupModel.read(db_session=session, identifier=agent.multi_agent_group.id, actor=actor)
+                    sleeptime_group_to_delete = sleeptime_agent_group
+
             try:
                 if sleeptime_group_to_delete is not None:
                     session.delete(sleeptime_group_to_delete)
