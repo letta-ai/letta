@@ -190,6 +190,17 @@ class IdentityManager:
             session.delete(identity)
             session.commit()
 
+    @enforce_types
+    def size(
+        self,
+        actor: PydanticUser,
+    ) -> int:
+        """
+        Get the total count of identities for the given user.
+        """
+        with self.session_maker() as session:
+            return IdentityModel.size(db_session=session, actor=actor)
+
     def _process_relationship(
         self,
         session: Session,

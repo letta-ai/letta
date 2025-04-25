@@ -1,10 +1,12 @@
 import ast
 import base64
+import io
 import os
 import pickle
 import subprocess
 import sys
 import tempfile
+import traceback
 import uuid
 from typing import Any, Dict, Optional
 
@@ -117,98 +119,108 @@ class ToolExecutionSandbox:
 
     @trace_method
     def run_local_dir_sandbox(
-        self,
-        agent_state: Optional[AgentState] = None,
-        additional_env_vars: Optional[Dict] = None,
+        self, agent_state: Optional[AgentState] = None, additional_env_vars: Optional[Dict] = None
     ) -> ToolExecutionResult:
-        sbx_config = self.sandbox_config_manager.get_or_create_default_sandbox_config(
-            sandbox_type=SandboxType.LOCAL,
-            actor=self.user,
-        )
+        sbx_config = self.sandbox_config_manager.get_or_create_default_sandbox_config(sandbox_type=SandboxType.LOCAL, actor=self.user)
         local_configs = sbx_config.get_local_config()
-        sandbox_dir = os.path.expanduser(local_configs.sandbox_dir)
-        venv_path = os.path.join(sandbox_dir, local_configs.venv_name)
 
-        # Aggregate environment variables
+        # Get environment variables for the sandbox
         env = os.environ.copy()
-        env.update(self.sandbox_config_manager.get_sandbox_env_vars_as_dict(sandbox_config_id=sbx_config.id, actor=self.user, limit=100))
+        env_vars = self.sandbox_config_manager.get_sandbox_env_vars_as_dict(sandbox_config_id=sbx_config.id, actor=self.user, limit=100)
+        env.update(env_vars)
+
+        # Get environment variables for this agent specifically
         if agent_state:
             env.update(agent_state.get_agent_env_vars_as_dict())
+
+        # Finally, get any that are passed explicitly into the `run` function call
         if additional_env_vars:
             env.update(additional_env_vars)
 
-        # Ensure sandbox dir exists
-        if not os.path.exists(sandbox_dir):
-            logger.warning(f"Sandbox directory does not exist, creating: {sandbox_dir}")
-            os.makedirs(sandbox_dir)
+        # Safety checks
+        if not os.path.exists(local_configs.sandbox_dir) or not os.path.isdir(local_configs.sandbox_dir):
+            logger.warning(f"Sandbox directory does not exist, creating: {local_configs.sandbox_dir}")
+            os.makedirs(local_configs.sandbox_dir)
 
-        # Write the code to a temp file
-        with tempfile.NamedTemporaryFile(mode="w", dir=sandbox_dir, suffix=".py", delete=False) as temp_file:
-            code = self.generate_execution_script(agent_state=agent_state, wrap_print_with_markers=True)
+        # Write the code to a temp file in the sandbox_dir
+        with tempfile.NamedTemporaryFile(mode="w", dir=local_configs.sandbox_dir, suffix=".py", delete=False) as temp_file:
+            if local_configs.force_create_venv:
+                # If using venv, we need to wrap with special string markers to separate out the output and the stdout (since it is all in stdout)
+                code = self.generate_execution_script(agent_state=agent_state, wrap_print_with_markers=True)
+            else:
+                code = self.generate_execution_script(agent_state=agent_state)
+
             temp_file.write(code)
             temp_file.flush()
             temp_file_path = temp_file.name
-
         try:
-            # Decide whether to use venv
-            use_venv = os.path.isdir(venv_path)
-
-            if self.force_recreate_venv or (not use_venv and local_configs.force_create_venv):
-                logger.warning(f"Virtual environment not found at {venv_path}. Creating one...")
-                log_event(name="start create_venv_for_local_sandbox", attributes={"venv_path": venv_path})
-                create_venv_for_local_sandbox(
-                    sandbox_dir_path=sandbox_dir,
-                    venv_path=venv_path,
-                    env=env,
-                    force_recreate=self.force_recreate_venv,
-                )
-                log_event(name="finish create_venv_for_local_sandbox")
-                use_venv = True
-
-            if use_venv:
-                log_event(name="start install_pip_requirements_for_sandbox", attributes={"local_configs": local_configs.model_dump_json()})
-                install_pip_requirements_for_sandbox(local_configs, env=env)
-                log_event(name="finish install_pip_requirements_for_sandbox", attributes={"local_configs": local_configs.model_dump_json()})
-
-                python_executable = find_python_executable(local_configs)
-                if not os.path.isfile(python_executable):
-                    logger.warning(
-                        f"Python executable not found at expected venv path: {python_executable}. Falling back to system Python."
-                    )
-                    python_executable = sys.executable
-                else:
-                    env = dict(env)
-                    env["VIRTUAL_ENV"] = venv_path
-                    env["PATH"] = os.path.join(venv_path, "bin") + ":" + env.get("PATH", "")
+            if local_configs.force_create_venv:
+                return self.run_local_dir_sandbox_venv(sbx_config, env, temp_file_path)
             else:
-                python_executable = sys.executable
+                return self.run_local_dir_sandbox_directly(sbx_config, env, temp_file_path)
+        except Exception as e:
+            logger.error(f"Executing tool {self.tool_name} has an unexpected error: {e}")
+            logger.error(f"Logging out tool {self.tool_name} auto-generated code for debugging: \n\n{code}")
+            raise e
+        finally:
+            # Clean up the temp file
+            os.remove(temp_file_path)
 
-            env["PYTHONWARNINGS"] = "ignore"
+    @trace_method
+    def run_local_dir_sandbox_venv(
+        self,
+        sbx_config: SandboxConfig,
+        env: Dict[str, str],
+        temp_file_path: str,
+    ) -> ToolExecutionResult:
+        local_configs = sbx_config.get_local_config()
+        sandbox_dir = os.path.expanduser(local_configs.sandbox_dir)  # Expand tilde
+        venv_path = os.path.join(sandbox_dir, local_configs.venv_name)
 
+        # Recreate venv if required
+        if self.force_recreate_venv or not os.path.isdir(venv_path):
+            logger.warning(f"Virtual environment directory does not exist at: {venv_path}, creating one now...")
+            log_event(name="start create_venv_for_local_sandbox", attributes={"venv_path": venv_path})
+            create_venv_for_local_sandbox(
+                sandbox_dir_path=sandbox_dir, venv_path=venv_path, env=env, force_recreate=self.force_recreate_venv
+            )
+            log_event(name="finish create_venv_for_local_sandbox")
+
+        log_event(name="start install_pip_requirements_for_sandbox", attributes={"local_configs": local_configs.model_dump_json()})
+        install_pip_requirements_for_sandbox(local_configs, env=env)
+        log_event(name="finish install_pip_requirements_for_sandbox", attributes={"local_configs": local_configs.model_dump_json()})
+
+        # Ensure Python executable exists
+        python_executable = find_python_executable(local_configs)
+        if not os.path.isfile(python_executable):
+            raise FileNotFoundError(f"Python executable not found in virtual environment: {python_executable}")
+
+        # Set up environment variables
+        env["VIRTUAL_ENV"] = venv_path
+        env["PATH"] = os.path.join(venv_path, "bin") + ":" + env["PATH"]
+        env["PYTHONWARNINGS"] = "ignore"
+
+        # Execute the code
+        try:
             log_event(name="start subprocess")
             result = subprocess.run(
-                [python_executable, temp_file_path],
-                env=env,
-                cwd=sandbox_dir,
-                timeout=60,
-                capture_output=True,
-                text=True,
+                [python_executable, temp_file_path], env=env, cwd=sandbox_dir, timeout=60, capture_output=True, text=True, check=True
             )
             log_event(name="finish subprocess")
             func_result, stdout = self.parse_out_function_results_markers(result.stdout)
-            func_return, parsed_agent_state = self.parse_best_effort(func_result)
+            func_return, agent_state = self.parse_best_effort(func_result)
 
             return ToolExecutionResult(
                 status="success",
                 func_return=func_return,
-                agent_state=parsed_agent_state,
+                agent_state=agent_state,
                 stdout=[stdout] if stdout else [],
                 stderr=[result.stderr] if result.stderr else [],
                 sandbox_config_fingerprint=sbx_config.fingerprint(),
             )
 
         except subprocess.CalledProcessError as e:
-            logger.error(f"Tool execution failed: {e}")
+            logger.error(f"Executing tool {self.tool_name} has process error: {e}")
             func_return = get_friendly_error_msg(
                 function_name=self.tool_name,
                 exception_name=type(e).__name__,
@@ -228,11 +240,72 @@ class ToolExecutionSandbox:
 
         except Exception as e:
             logger.error(f"Executing tool {self.tool_name} has an unexpected error: {e}")
-            logger.error(f"Generated script:\n{code}")
             raise e
 
-        finally:
-            os.remove(temp_file_path)
+    @trace_method
+    def run_local_dir_sandbox_directly(
+        self,
+        sbx_config: SandboxConfig,
+        env: Dict[str, str],
+        temp_file_path: str,
+    ) -> ToolExecutionResult:
+        status = "success"
+        func_return, agent_state, stderr = None, None, None
+
+        old_stdout = sys.stdout
+        old_stderr = sys.stderr
+        captured_stdout, captured_stderr = io.StringIO(), io.StringIO()
+
+        sys.stdout = captured_stdout
+        sys.stderr = captured_stderr
+
+        try:
+            with self.temporary_env_vars(env):
+
+                # Read and compile the Python script
+                with open(temp_file_path, "r", encoding="utf-8") as f:
+                    source = f.read()
+                code_obj = compile(source, temp_file_path, "exec")
+
+                # Provide a dict for globals.
+                globals_dict = dict(env)  # or {}
+                # If you need to mimic `__main__` behavior:
+                globals_dict["__name__"] = "__main__"
+                globals_dict["__file__"] = temp_file_path
+
+                # Execute the compiled code
+                log_event(name="start exec", attributes={"temp_file_path": temp_file_path})
+                exec(code_obj, globals_dict)
+                log_event(name="finish exec", attributes={"temp_file_path": temp_file_path})
+
+                # Get result from the global dict
+                func_result = globals_dict.get(self.LOCAL_SANDBOX_RESULT_VAR_NAME)
+                func_return, agent_state = self.parse_best_effort(func_result)
+
+        except Exception as e:
+            func_return = get_friendly_error_msg(
+                function_name=self.tool_name,
+                exception_name=type(e).__name__,
+                exception_message=str(e),
+            )
+            traceback.print_exc(file=sys.stderr)
+            status = "error"
+
+        # Restore stdout/stderr
+        sys.stdout = old_stdout
+        sys.stderr = old_stderr
+
+        stdout_output = [captured_stdout.getvalue()] if captured_stdout.getvalue() else []
+        stderr_output = [captured_stderr.getvalue()] if captured_stderr.getvalue() else []
+
+        return ToolExecutionResult(
+            status=status,
+            func_return=func_return,
+            agent_state=agent_state,
+            stdout=stdout_output,
+            stderr=stderr_output,
+            sandbox_config_fingerprint=sbx_config.fingerprint(),
+        )
 
     def parse_out_function_results_markers(self, text: str):
         if self.LOCAL_SANDBOX_RESULT_START_MARKER not in text:

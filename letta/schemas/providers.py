@@ -1233,7 +1233,10 @@ class AzureProvider(Provider):
         """
         This is hardcoded for now, since there is no API endpoints to retrieve metadata for a model.
         """
-        return AZURE_MODEL_TO_CONTEXT_LENGTH.get(model_name, 4096)
+        context_window = AZURE_MODEL_TO_CONTEXT_LENGTH.get(model_name, None)
+        if context_window is None:
+            context_window = LLM_MAX_TOKENS.get(model_name, 4096)
+        return context_window
 
 
 class VLLMChatCompletionsProvider(Provider):
