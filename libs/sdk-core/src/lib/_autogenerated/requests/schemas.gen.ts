@@ -5999,9 +5999,9 @@ export const $LocalSandboxConfig = {
       title: 'Sandbox Dir',
       description: 'Directory for the sandbox environment.',
     },
-    use_venv: {
+    force_create_venv: {
       type: 'boolean',
-      title: 'Use Venv',
+      title: 'Force Create Venv',
       description:
         'Whether or not to use the venv, or run directly in the same run loop.',
       default: false,
@@ -6020,7 +6020,7 @@ export const $LocalSandboxConfig = {
       type: 'array',
       title: 'Pip Requirements',
       description:
-        'List of pip packages to install with mandatory name and optional version following semantic versioning. This only is considered when use_venv is True.',
+        'List of pip packages to install with mandatory name and optional version following semantic versioning. This only is considered when force_create_venv is True.',
     },
   },
   type: 'object',

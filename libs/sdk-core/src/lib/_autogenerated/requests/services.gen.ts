@@ -263,6 +263,8 @@ import type {
   CancelBatchRunResponse,
   CreateVoiceChatCompletionsData,
   CreateVoiceChatCompletionsResponse,
+  GetTotalStorageSizeData,
+  GetTotalStorageSizeResponse,
   AuthenticateUserV1AuthPostData,
   AuthenticateUserV1AuthPostResponse,
 } from './types.gen';
@@ -2478,7 +2480,7 @@ export class IdentitiesService {
 
 export class ModelsService {
   /**
-   * List Llm Backends
+   * List Llm Models
    * @returns LLMConfig Successful Response
    * @throws ApiError
    */
@@ -2493,7 +2495,7 @@ export class ModelsService {
   }
 
   /**
-   * List Embedding Backends
+   * List Embedding Models
    * @returns EmbeddingConfig Successful Response
    * @throws ApiError
    */
@@ -2510,7 +2512,7 @@ export class ModelsService {
 
 export class LlmsService {
   /**
-   * List Llm Backends
+   * List Llm Models
    * @returns LLMConfig Successful Response
    * @throws ApiError
    */
@@ -2525,7 +2527,7 @@ export class LlmsService {
   }
 
   /**
-   * List Embedding Backends
+   * List Embedding Models
    * @returns EmbeddingConfig Successful Response
    * @throws ApiError
    */
@@ -3958,6 +3960,30 @@ export class VoiceService {
       },
       body: data.requestBody,
       mediaType: 'application/json',
+      errors: {
+        422: 'Validation Error',
+      },
+      headers,
+    });
+  }
+}
+
+export class EmbeddingsService {
+  /**
+   * Get Embeddings Storage Size
+   * Get the total size of all embeddings in the database for a user in GB.
+   * @param data The data for the request.
+   * @param data.userId
+   * @returns number Successful Response
+   * @throws ApiError
+   */
+  public static getTotalStorageSize(
+    data: GetTotalStorageSizeData = {},
+    headers?: { user_id: string },
+  ): CancelablePromise<GetTotalStorageSizeResponse> {
+    return __request(OpenAPI, {
+      method: 'GET',
+      url: '/v1/embeddings/total_storage_size',
       errors: {
         422: 'Validation Error',
       },

@@ -4606,7 +4606,7 @@
     "/v1/models/": {
       "get": {
         "tags": ["models", "llms"],
-        "summary": "List Llm Backends",
+        "summary": "List Llm Models",
         "operationId": "list_models",
         "responses": {
           "200": {
@@ -4629,7 +4629,7 @@
     "/v1/models/embedding": {
       "get": {
         "tags": ["models", "llms"],
-        "summary": "List Embedding Backends",
+        "summary": "List Embedding Models",
         "operationId": "list_embedding_models",
         "responses": {
           "200": {
@@ -6363,6 +6363,38 @@
               },
               "text/event-stream": {
                 "description": "Server-Sent Events stream"
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/embeddings/total_storage_size": {
+      "get": {
+        "tags": ["embeddings"],
+        "summary": "Get Embeddings Storage Size",
+        "description": "Get the total size of all embeddings in the database for a user in GB.",
+        "operationId": "get_total_storage_size",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "number",
+                  "title": "Response Get Total Storage Size"
+                }
               }
             }
           },
@@ -12985,9 +13017,9 @@
             "title": "Sandbox Dir",
             "description": "Directory for the sandbox environment."
           },
-          "use_venv": {
+          "force_create_venv": {
             "type": "boolean",
-            "title": "Use Venv",
+            "title": "Force Create Venv",
             "description": "Whether or not to use the venv, or run directly in the same run loop.",
             "default": false
           },
@@ -13003,7 +13035,7 @@
             },
             "type": "array",
             "title": "Pip Requirements",
-            "description": "List of pip packages to install with mandatory name and optional version following semantic versioning. This only is considered when use_venv is True."
+            "description": "List of pip packages to install with mandatory name and optional version following semantic versioning. This only is considered when force_create_venv is True."
           }
         },
         "type": "object",

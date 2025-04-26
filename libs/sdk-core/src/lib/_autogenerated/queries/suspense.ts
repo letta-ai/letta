@@ -5,6 +5,7 @@ import {
   AdminService,
   AgentsService,
   BlocksService,
+  EmbeddingsService,
   GroupsService,
   HealthService,
   IdentitiesService,
@@ -1308,7 +1309,7 @@ export const useIdentitiesServiceRetrieveIdentitySuspense = <
     ...options,
   });
 /**
- * List Llm Backends
+ * List Llm Models
  * @returns LLMConfig Successful Response
  * @throws ApiError
  */
@@ -1326,7 +1327,7 @@ export const useModelsServiceListModelsSuspense = <
     ...options,
   });
 /**
- * List Embedding Backends
+ * List Embedding Models
  * @returns EmbeddingConfig Successful Response
  * @throws ApiError
  */
@@ -1344,7 +1345,7 @@ export const useModelsServiceListEmbeddingModelsSuspense = <
     ...options,
   });
 /**
- * List Llm Backends
+ * List Llm Models
  * @returns LLMConfig Successful Response
  * @throws ApiError
  */
@@ -1362,7 +1363,7 @@ export const useLlmsServiceListModelsSuspense = <
     ...options,
   });
 /**
- * List Embedding Backends
+ * List Embedding Models
  * @returns EmbeddingConfig Successful Response
  * @throws ApiError
  */
@@ -2285,6 +2286,35 @@ export const useMessagesServiceRetrieveBatchRunSuspense = <
     ),
     queryFn: () =>
       MessagesService.retrieveBatchRun({ batchId, userId }) as TData,
+    ...options,
+  });
+/**
+ * Get Embeddings Storage Size
+ * Get the total size of all embeddings in the database for a user in GB.
+ * @param data The data for the request.
+ * @param data.userId
+ * @returns number Successful Response
+ * @throws ApiError
+ */
+export const useEmbeddingsServiceGetTotalStorageSizeSuspense = <
+  TData = Common.EmbeddingsServiceGetTotalStorageSizeDefaultResponse,
+  TError = unknown,
+  TQueryKey extends Array<unknown> = unknown[],
+>(
+  {
+    userId,
+  }: {
+    userId?: string;
+  } = {},
+  queryKey?: TQueryKey,
+  options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>,
+) =>
+  useSuspenseQuery<TData, TError>({
+    queryKey: Common.UseEmbeddingsServiceGetTotalStorageSizeKeyFn(
+      { userId },
+      queryKey,
+    ),
+    queryFn: () => EmbeddingsService.getTotalStorageSize({ userId }) as TData,
     ...options,
   });
 /**

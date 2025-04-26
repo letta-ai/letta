@@ -501,13 +501,14 @@ paths:
             type: string
   /v1/models/:
     get:
+      summary: List LLM Models
       x-fern-sdk-group-name:
         - models
       x-fern-sdk-method-name: list
   /v1/models/embedding:
     get:
       x-fern-sdk-group-name:
-        - embeddings
+        - embedding_models
       x-fern-sdk-method-name: list
   /v1/blocks/:
     get:
@@ -766,6 +767,12 @@ paths:
       x-fern-sdk-group-name:
         - batches
       x-fern-sdk-method-name: cancel
+  /v1/embeddings/get_total_storage_size:
+    get:
+      x-fern-sdk-group-name:
+        - embeddings
+      x-fern-sdk-method-name: get_total_storage_size
+
   /v1/projects:
     get:
       x-fern-sdk-group-name:

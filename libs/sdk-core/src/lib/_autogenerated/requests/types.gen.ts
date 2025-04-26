@@ -2126,13 +2126,13 @@ export type LocalSandboxConfig = {
   /**
    * Whether or not to use the venv, or run directly in the same run loop.
    */
-  use_venv?: boolean;
+  force_create_venv?: boolean;
   /**
    * The name for the venv in the sandbox directory. We first search for an existing venv with this name, otherwise, we make it from the requirements.txt.
    */
   venv_name?: string;
   /**
-   * List of pip packages to install with mandatory name and optional version following semantic versioning. This only is considered when use_venv is True.
+   * List of pip packages to install with mandatory name and optional version following semantic versioning. This only is considered when force_create_venv is True.
    */
   pip_requirements?: Array<PipRequirement>;
 };
@@ -5131,6 +5131,12 @@ export type CreateVoiceChatCompletionsData = {
 
 export type CreateVoiceChatCompletionsResponse = unknown;
 
+export type GetTotalStorageSizeData = {
+  userId?: string | null;
+};
+
+export type GetTotalStorageSizeResponse = number;
+
 export type AuthenticateUserV1AuthPostData = {
   requestBody: AuthRequest;
 };
@@ -7015,6 +7021,21 @@ export type $OpenApiTs = {
          * Successful response
          */
         200: unknown;
+        /**
+         * Validation Error
+         */
+        422: HTTPValidationError;
+      };
+    };
+  };
+  '/v1/embeddings/total_storage_size': {
+    get: {
+      req: GetTotalStorageSizeData;
+      res: {
+        /**
+         * Successful Response
+         */
+        200: number;
         /**
          * Validation Error
          */

@@ -3993,7 +3993,7 @@ export const LocalSandboxConfig = z.object({
   sandbox_dir: z
     .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
     .optional(),
-  use_venv: z.boolean().optional(),
+  force_create_venv: z.boolean().optional(),
   venv_name: z.string().optional(),
   pip_requirements: z.array(PipRequirement).optional(),
 });
@@ -7658,6 +7658,21 @@ export const post_Create_voice_chat_completions = {
   response: z.unknown(),
 };
 
+export type get_Get_total_storage_size = typeof get_Get_total_storage_size;
+export const get_Get_total_storage_size = {
+  method: z.literal('GET'),
+  path: z.literal('/v1/embeddings/total_storage_size'),
+  requestFormat: z.literal('json'),
+  parameters: z.object({
+    header: z.object({
+      user_id: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+    }),
+  }),
+  response: z.number(),
+};
+
 export type get_List_users = typeof get_List_users;
 export const get_List_users = {
   method: z.literal('GET'),
@@ -7804,18 +7819,18 @@ export const EndpointByMethod = {
   },
   get: {
     '/v1/tools/{tool_id}': get_Retrieve_tool,
-    '/v1/tools/': get_List_tools,
     '/v1/tools/count': get_Count_tools,
+    '/v1/tools/': get_List_tools,
     '/v1/tools/composio/apps': get_List_composio_apps,
     '/v1/tools/composio/apps/{composio_app_name}/actions':
       get_List_composio_actions_by_app,
     '/v1/tools/mcp/servers': get_List_mcp_servers,
     '/v1/tools/mcp/servers/{mcp_server_name}/tools':
       get_List_mcp_tools_by_server,
+    '/v1/sources/count': get_Count_sources,
     '/v1/sources/{source_id}': get_Retrieve_source,
     '/v1/sources/name/{source_name}': get_Get_source_id_by_name,
     '/v1/sources/': get_List_sources,
-    '/v1/sources/count': get_Count_sources,
     '/v1/sources/{source_id}/passages': get_List_source_passages,
     '/v1/sources/{source_id}/files': get_List_source_files,
     '/v1/agents/': get_List_agents,
@@ -7862,6 +7877,7 @@ export const EndpointByMethod = {
     '/v1/tags/': get_List_tags,
     '/v1/messages/batches': get_List_batch_runs,
     '/v1/messages/batches/{batch_id}': get_Retrieve_batch_run,
+    '/v1/embeddings/total_storage_size': get_Get_total_storage_size,
     '/v1/admin/users/': get_List_users,
     '/v1/admin/orgs/': get_List_orgs,
   },

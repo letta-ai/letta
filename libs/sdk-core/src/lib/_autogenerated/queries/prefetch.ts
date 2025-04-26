@@ -5,6 +5,7 @@ import {
   AdminService,
   AgentsService,
   BlocksService,
+  EmbeddingsService,
   GroupsService,
   HealthService,
   IdentitiesService,
@@ -1075,7 +1076,7 @@ export const prefetchUseIdentitiesServiceRetrieveIdentity = (
     queryFn: () => IdentitiesService.retrieveIdentity({ identityId, userId }),
   });
 /**
- * List Llm Backends
+ * List Llm Models
  * @returns LLMConfig Successful Response
  * @throws ApiError
  */
@@ -1085,7 +1086,7 @@ export const prefetchUseModelsServiceListModels = (queryClient: QueryClient) =>
     queryFn: () => ModelsService.listModels(),
   });
 /**
- * List Embedding Backends
+ * List Embedding Models
  * @returns EmbeddingConfig Successful Response
  * @throws ApiError
  */
@@ -1097,7 +1098,7 @@ export const prefetchUseModelsServiceListEmbeddingModels = (
     queryFn: () => ModelsService.listEmbeddingModels(),
   });
 /**
- * List Llm Backends
+ * List Llm Models
  * @returns LLMConfig Successful Response
  * @throws ApiError
  */
@@ -1107,7 +1108,7 @@ export const prefetchUseLlmsServiceListModels = (queryClient: QueryClient) =>
     queryFn: () => LlmsService.listModels(),
   });
 /**
- * List Embedding Backends
+ * List Embedding Models
  * @returns EmbeddingConfig Successful Response
  * @throws ApiError
  */
@@ -1856,6 +1857,26 @@ export const prefetchUseMessagesServiceRetrieveBatchRun = (
       userId,
     }),
     queryFn: () => MessagesService.retrieveBatchRun({ batchId, userId }),
+  });
+/**
+ * Get Embeddings Storage Size
+ * Get the total size of all embeddings in the database for a user in GB.
+ * @param data The data for the request.
+ * @param data.userId
+ * @returns number Successful Response
+ * @throws ApiError
+ */
+export const prefetchUseEmbeddingsServiceGetTotalStorageSize = (
+  queryClient: QueryClient,
+  {
+    userId,
+  }: {
+    userId?: string;
+  } = {},
+) =>
+  queryClient.prefetchQuery({
+    queryKey: Common.UseEmbeddingsServiceGetTotalStorageSizeKeyFn({ userId }),
+    queryFn: () => EmbeddingsService.getTotalStorageSize({ userId }),
   });
 /**
  * List Users

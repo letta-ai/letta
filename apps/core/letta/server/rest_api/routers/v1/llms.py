@@ -13,7 +13,7 @@ router = APIRouter(prefix="/models", tags=["models", "llms"])
 
 
 @router.get("/", response_model=List[LLMConfig], operation_id="list_models")
-def list_llm_backends(
+def list_llm_models(
     server: "SyncServer" = Depends(get_letta_server),
 ):
 
@@ -23,7 +23,7 @@ def list_llm_backends(
 
 
 @router.get("/embedding", response_model=List[EmbeddingConfig], operation_id="list_embedding_models")
-def list_embedding_backends(
+def list_embedding_models(
     server: "SyncServer" = Depends(get_letta_server),
 ):
 

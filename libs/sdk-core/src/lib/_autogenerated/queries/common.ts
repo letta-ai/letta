@@ -6,6 +6,7 @@ import {
   AgentsService,
   AuthService,
   BlocksService,
+  EmbeddingsService,
   GroupsService,
   HealthService,
   IdentitiesService,
@@ -1408,6 +1409,26 @@ export const UseMessagesServiceRetrieveBatchRunKeyFn = (
 ) => [
   useMessagesServiceRetrieveBatchRunKey,
   ...(queryKey ?? [{ batchId, userId }]),
+];
+export type EmbeddingsServiceGetTotalStorageSizeDefaultResponse = Awaited<
+  ReturnType<typeof EmbeddingsService.getTotalStorageSize>
+>;
+export type EmbeddingsServiceGetTotalStorageSizeQueryResult<
+  TData = EmbeddingsServiceGetTotalStorageSizeDefaultResponse,
+  TError = unknown,
+> = UseQueryResult<TData, TError>;
+export const useEmbeddingsServiceGetTotalStorageSizeKey =
+  'EmbeddingsServiceGetTotalStorageSize';
+export const UseEmbeddingsServiceGetTotalStorageSizeKeyFn = (
+  {
+    userId,
+  }: {
+    userId?: string;
+  } = {},
+  queryKey?: Array<unknown>,
+) => [
+  useEmbeddingsServiceGetTotalStorageSizeKey,
+  ...(queryKey ?? [{ userId }]),
 ];
 export type UsersServiceListUsersDefaultResponse = Awaited<
   ReturnType<typeof UsersService.listUsers>
