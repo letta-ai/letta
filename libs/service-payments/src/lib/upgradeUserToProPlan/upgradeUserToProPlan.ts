@@ -1,5 +1,6 @@
 import { getStripeClient } from '../getStripeClient/getStripeClient';
 import { getPaymentCustomer } from '../getPaymentCustomer/getPaymentCustomer';
+import { getCustomerSubscription } from '../getCustomerSubscription/getCustomerSubscription';
 
 export async function upgradeUserToProPlan(organizationId: string) {
   const stripeClient = getStripeClient();
@@ -12,6 +13,12 @@ export async function upgradeUserToProPlan(organizationId: string) {
 
   if (!customer) {
     throw new Error('Customer not found');
+  }
+
+  const tier = await getCustomerSubscription(organizationId);
+
+  if (tier.tier === 'pro') {
+    throw new Error('User already on pro plan');
   }
 
   const priceId = await stripeClient.plans.list();

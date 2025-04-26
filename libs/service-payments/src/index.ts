@@ -9,5 +9,7 @@ export * from './lib/createPayment/createPayment';
 export * from './lib/getPaymentMethodDetails/getPaymentMethodDetails';
 export * from './lib/listPaymentIntents/listPaymentIntents';
 export * from './lib/getPaymentCharge/getPaymentCharge';
-export * from './lib/getCustomerBillingTier/getCustomerBillingTier';
+export * from './lib/getCustomerSubscription/getCustomerSubscription';
 export * from './lib/upgradeUserToProPlan/upgradeUserToProPlan';
+export * from './lib/cancelSubscription/cancelSubscription';
+export * from './lib/resumeSubscription/resumeSubscription';

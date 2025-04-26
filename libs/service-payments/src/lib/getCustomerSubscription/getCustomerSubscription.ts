@@ -3,13 +3,21 @@ import { db, organizationBillingDetails } from '@letta-cloud/service-database';
 import { eq } from 'drizzle-orm';
 import type { BillingTiersType } from '@letta-cloud/types';
 
-export async function getCustomerBillingTier(
+interface GetCustomerSubscriptionResponse {
+  tier: BillingTiersType;
+  billingPeriodEnd?: string;
+  cancelled?: boolean;
+}
+
+export async function getCustomerSubscription(
   organizationId: string,
-): Promise<BillingTiersType> {
+): Promise<GetCustomerSubscriptionResponse> {
   const stripeClient = getStripeClient();
 
   if (!stripeClient) {
-    return 'free';
+    return {
+      tier: 'free',
+    };
   }
 
   const customer = await db.query.organizationBillingDetails.findFirst({
@@ -21,28 +29,42 @@ export async function getCustomerBillingTier(
   });
 
   if (!customer) {
-    return 'free';
+    return {
+      tier: 'free',
+    };
   }
 
   if (!customer.stripeCustomerId) {
-    return 'free';
+    return {
+      tier: 'free',
+    };
   }
 
   if (customer?.billingTier === 'enterprise') {
-    return 'enterprise';
+    return {
+      tier: 'enterprise',
+    };
   }
 
   const subscriptions = await stripeClient.subscriptions.list({
     customer: customer.stripeCustomerId,
   });
 
-  const activeSubscriptions = subscriptions.data.filter((sub) => {
+  const activeSubscriptions = subscriptions.data.find((sub) => {
     return sub.status === 'active';
   });
 
-  if (activeSubscriptions.length === 0) {
-    return 'free';
+  if (!activeSubscriptions) {
+    return {
+      tier: 'free',
+    };
   }
 
-  return 'pro';
+  return {
+    billingPeriodEnd: new Date(
+      activeSubscriptions.current_period_end * 1000,
+    ).toISOString(),
+    cancelled: activeSubscriptions.cancel_at_period_end,
+    tier: 'pro',
+  };
 }

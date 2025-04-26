@@ -34,7 +34,9 @@ import {
   setDefaultPaymentMethod,
   listPaymentIntents,
   getPaymentCharge,
-  getCustomerBillingTier,
+  getCustomerSubscription,
+  resumeSubscription,
+  cancelSubscription,
 } from '@letta-cloud/service-payments';
 import { ApplicationServices } from '@letta-cloud/service-rbac';
 import {
@@ -726,9 +728,9 @@ async function getCurrentOrganizationBillingInfo(): Promise<GetCurrentOrganizati
   }
 
   // do not run in parallel as payment customer may not exist yet
-  const [paymentCustomer, billingTier, creditCards] = await Promise.all([
+  const [paymentCustomer, subscription, creditCards] = await Promise.all([
     getPaymentCustomer(activeOrganizationId),
-    getCustomerBillingTier(activeOrganizationId),
+    getCustomerSubscription(activeOrganizationId),
     listCreditCards({
       organizationId: activeOrganizationId,
     }),
@@ -737,7 +739,9 @@ async function getCurrentOrganizationBillingInfo(): Promise<GetCurrentOrganizati
   return {
     status: 200,
     body: {
-      billingTier,
+      billingTier: subscription.tier,
+      isCancelled: !!subscription.cancelled,
+      billingPeriodEnd: subscription.billingPeriodEnd,
       creditCards: creditCards.map((card) => ({
         id: card.id,
         brand: card.card.brand,
@@ -1317,12 +1321,68 @@ async function upgradeOrganizationToPro(): Promise<UpgradeOrganizationToProRespo
   };
 }
 
+type CancelSubscriptionResponse = ServerInferResponses<
+  typeof contracts.organizations.cancelOrganizationSubscription
+>;
+
+async function cancelOrganizationSubscription(): Promise<CancelSubscriptionResponse> {
+  const { activeOrganizationId, permissions } =
+    await getUserWithActiveOrganizationIdOrThrow();
+
+  if (!permissions.has(ApplicationServices.MANAGE_BILLING)) {
+    return {
+      status: 403,
+      body: {
+        message: 'Permission denied',
+      },
+    };
+  }
+
+  await cancelSubscription(activeOrganizationId);
+
+  return {
+    status: 200,
+    body: {
+      success: true,
+    },
+  };
+}
+
+type ResumeSubscriptionResponse = ServerInferResponses<
+  typeof contracts.organizations.resumeOrganizationSubscription
+>;
+
+async function resumeOrganizationSubscription(): Promise<ResumeSubscriptionResponse> {
+  const { activeOrganizationId, permissions } =
+    await getUserWithActiveOrganizationIdOrThrow();
+
+  if (!permissions.has(ApplicationServices.MANAGE_BILLING)) {
+    return {
+      status: 403,
+      body: {
+        message: 'Permission denied',
+      },
+    };
+  }
+
+  await resumeSubscription(activeOrganizationId);
+
+  return {
+    status: 200,
+    body: {
+      success: true,
+    },
+  };
+}
+
 export const organizationsRouter = {
   getCurrentOrganization,
   getCurrentOrganizationPreferences,
   getCurrentOrganizationTeamMembers,
   removeTeamMember,
   purchaseCredits,
+  cancelOrganizationSubscription,
+  resumeOrganizationSubscription,
   inviteNewTeamMember,
   unInviteTeamMember,
   upgradeOrganizationToPro,

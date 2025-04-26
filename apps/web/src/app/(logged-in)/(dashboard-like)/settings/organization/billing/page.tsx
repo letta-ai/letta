@@ -35,13 +35,80 @@ import type { ColumnDef } from '@tanstack/react-table';
 import { CreditCardSlot } from '$web/client/components';
 import type { BillingTiersType } from '@letta-cloud/types';
 import { UpgradeToProPlanDialog } from '$web/client/components/UpgradeToProPlanDialog/UpgradeToProPlanDialog';
+import { CancelPlanDialog } from '$web/client/components/CancelPlanDialog/CancelPlanDialog';
+import { ResumePlanButton } from '$web/client/components/ResumePlanButton/ResumePlanButton';
+
+interface ProViewProps {
+  billingPeriodEnd: string | undefined;
+  isCancelled: boolean;
+}
+
+function ProView(props: ProViewProps) {
+  const { billingPeriodEnd, isCancelled } = props;
+  const t = useTranslations('organization/billing');
+  const { formatDate } = useDateFormatter();
+
+  if (!billingPeriodEnd) {
+    return (
+      <CancelPlanDialog
+        trigger={
+          <Button
+            color="tertiary"
+            bold
+            size="small"
+            label={t('AccountDetailsCTA.pro.cancel')}
+          />
+        }
+      />
+    );
+  }
+
+  if (isCancelled) {
+    return (
+      <VStack>
+        <Typography>
+          {t('AccountDetailsCTA.pro.cancelPeriod', {
+            date: formatDate(billingPeriodEnd),
+          })}
+        </Typography>
+        <HStack>
+          <ResumePlanButton />
+        </HStack>
+      </VStack>
+    );
+  }
+
+  return (
+    <VStack>
+      <Typography>
+        {t('AccountDetailsCTA.pro.billingPeriod', {
+          date: formatDate(billingPeriodEnd),
+        })}
+      </Typography>
+      <HStack>
+        <CancelPlanDialog
+          trigger={
+            <Button
+              color="tertiary"
+              bold
+              size="small"
+              label={t('AccountDetailsCTA.pro.cancel')}
+            />
+          }
+        />
+      </HStack>
+    </VStack>
+  );
+}
 
 interface AccountDetailsCTAProps {
   billingTier: BillingTiersType;
+  billingPeriodEnd: string | undefined;
+  isCancelled: boolean;
 }
 
 function AccountDetailsCTA(props: AccountDetailsCTAProps) {
-  const { billingTier } = props;
+  const { billingTier, billingPeriodEnd, isCancelled } = props;
 
   const t = useTranslations('organization/billing');
 
@@ -61,6 +128,13 @@ function AccountDetailsCTA(props: AccountDetailsCTAProps) {
             }
           />
         </HStack>
+      );
+    case 'pro':
+      return (
+        <ProView
+          billingPeriodEnd={billingPeriodEnd}
+          isCancelled={isCancelled}
+        />
       );
   }
 }
@@ -91,7 +165,11 @@ function AccountDetails() {
   return (
     <Section title={t('AccountDetails.title')}>
       <Typography>{description}</Typography>
-      <AccountDetailsCTA billingTier={data.body.billingTier} />
+      <AccountDetailsCTA
+        billingPeriodEnd={data.body.billingPeriodEnd}
+        isCancelled={data.body.isCancelled}
+        billingTier={data.body.billingTier}
+      />
     </Section>
   );
 }

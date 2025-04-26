@@ -316,6 +316,8 @@ const GetCurrentOrganizationBillingInfoResponse = z.object({
   creditCards: CreditCardSchema.array(),
   billingTier: BillingTiers,
   totalCredits: z.number(),
+  isCancelled: z.boolean(),
+  billingPeriodEnd: z.string().optional(),
 });
 
 const getCurrentOrganizationBillingInfoContract = c.query({
@@ -517,6 +519,36 @@ const upgradeOrganizationToProContract = c.mutation({
   },
 });
 
+const cancelOrganizationSubscriptionContract = c.mutation({
+  path: '/organizations/self/subscription',
+  method: 'DELETE',
+  body: z.undefined(),
+  responses: {
+    200: z.object({
+      success: z.boolean(),
+    }),
+    400: z.object({
+      message: z.string(),
+      errorCode: z.enum(['paymentError']),
+    }),
+  },
+});
+
+const resumeOrganizationSubscriptionContract = c.mutation({
+  path: '/organizations/self/subscription/resume',
+  method: 'POST',
+  body: z.undefined(),
+  responses: {
+    200: z.object({
+      success: z.boolean(),
+    }),
+    400: z.object({
+      message: z.string(),
+      errorCode: z.enum(['paymentError']),
+    }),
+  },
+});
+
 export const organizationsContract = c.router({
   getCurrentOrganization: getCurrentOrganizationContract,
   getCurrentOrganizationPreferences: getCurrentOrganizationPreferencesContract,
@@ -543,6 +575,8 @@ export const organizationsContract = c.router({
   listInviteRules: listInviteRulesContract,
   deleteInviteRule: deleteInviteRuleContract,
   getOrganizationCredits: getOrganizationCreditsContract,
+  cancelOrganizationSubscription: cancelOrganizationSubscriptionContract,
+  resumeOrganizationSubscription: resumeOrganizationSubscriptionContract,
 
   getOrganizationBillingHistory: getOrganizationBillingHistoryContract,
 });

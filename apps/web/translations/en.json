@@ -648,6 +648,15 @@
       "error": "There was an error loading usage data, please try again or contact support."
     }
   },
+  "components/ResumePlanButton": {
+    "title": "Resume Plan",
+    "error": "There was an error resuming your plan, please try again or contact support."
+  },
+  "components/CancelPlanDialog": {
+    "title": "Cancel plan",
+    "error": "There was an error canceling your plan, please try again or contact support.",
+    "description": "Are you sure you want to cancel your plan? This will cancel your current subscription at the end of the billing period. You will not be charged again, but you will lose access to the Pro plan features and any additional agents, identities, and data sources will be deleted. You can resume your subscription at any time before your billing period ends."
+  },
   "components/UpgradeToProPlanDialog": {
     "error": "There was an error upgrading to the Pro plan, please try again or contact support.",
     "title": "Upgrade to the Pro plan",
@@ -668,7 +677,12 @@
   },
   "organization/billing": {
     "AccountDetailsCTA": {
-      "upgrade": "Upgrade to the Pro plan"
+      "upgrade": "Upgrade to the Pro plan",
+      "pro": {
+        "billingPeriod": "You will be charged on {date} for the Pro plan",
+        "cancel": "Cancel plan",
+        "cancelPeriod": "Your plan will be canceled on {date}"
+      }
     },
     "AccountDetails": {
       "title": "Account",
