@@ -88,11 +88,14 @@ def load_multi_agent(
 def stringify_message(message: Message, use_assistant_name: bool = False) -> str | None:
     assistant_name = message.name or "assistant" if use_assistant_name else "assistant"
     if message.role == "user":
-        content = json.loads(message.content[0].text)
-        if content["type"] == "user_message":
-            return f"{message.name or 'user'}: {content['message']}"
-        else:
-            return None
+        try:
+            content = json.loads(message.content[0].text)
+            if content["type"] == "user_message":
+                return f"{message.name or 'user'}: {content['message']}"
+            else:
+                return None
+        except:
+            return f"{message.name or 'user'}: {message.content[0].text}"
     elif message.role == "assistant":
         messages = []
         if message.tool_calls:

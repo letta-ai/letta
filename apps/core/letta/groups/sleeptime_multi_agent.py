@@ -107,6 +107,9 @@ class SleeptimeMultiAgent(Agent):
         run_id: str,
     ) -> LettaUsageStatistics:
         try:
+            job_update = JobUpdate(status=JobStatus.running)
+            self.job_manager.update_job_by_id(job_id=run_id, job_update=job_update, actor=self.user)
+
             participant_agent_state = self.agent_manager.get_agent_by_id(participant_agent_id, actor=self.user)
             participant_agent = Agent(
                 agent_state=participant_agent_state,
