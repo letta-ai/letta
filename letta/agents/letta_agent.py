@@ -57,6 +57,7 @@ class LettaAgent(BaseAgent):
         self.block_manager = block_manager
         self.passage_manager = passage_manager
         self.use_assistant_message = use_assistant_message
+        self.response_messages: List[Message] = []
 
     @trace_method
     async def step(self, input_messages: List[MessageCreate], max_steps: int = 10) -> LettaResponse:
@@ -81,6 +82,7 @@ class LettaAgent(BaseAgent):
 
             tool_call = response.choices[0].message.tool_calls[0]
             persisted_messages, should_continue = await self._handle_ai_response(tool_call, agent_state, tool_rules_solver)
+            self.response_messages.extend(persisted_messages)
             new_in_context_messages.extend(persisted_messages)
 
             if not should_continue:
@@ -139,6 +141,7 @@ class LettaAgent(BaseAgent):
                 pre_computed_assistant_message_id=interface.letta_assistant_message_id,
                 pre_computed_tool_message_id=interface.letta_tool_message_id,
             )
+            self.response_messages.extend(persisted_messages)
             new_in_context_messages.extend(persisted_messages)
 
             if not should_continue:
@@ -167,7 +170,14 @@ class LettaAgent(BaseAgent):
         tools = [
             t
             for t in agent_state.tools
-            if t.tool_type in {ToolType.CUSTOM, ToolType.LETTA_CORE, ToolType.LETTA_MEMORY_CORE}
+            if t.tool_type
+            in {
+                ToolType.CUSTOM,
+                ToolType.LETTA_CORE,
+                ToolType.LETTA_MEMORY_CORE,
+                ToolType.LETTA_MULTI_AGENT_CORE,
+                ToolType.LETTA_SLEEPTIME_CORE,
+            }
             or (t.tool_type == ToolType.LETTA_MULTI_AGENT_CORE and t.name == "send_message_to_agents_matching_tags")
         ]
 

@@ -192,7 +192,7 @@ class LettaCoreToolExecutor(ToolExecutor):
         AgentManager().rebuild_system_prompt(agent_id=agent_state.id, actor=actor, force=True)
         return None
 
-    def core_memory_append(self, agent_state: "AgentState", actor: User, label: str, content: str) -> Optional[str]:
+    def core_memory_append(self, agent_state: AgentState, actor: User, label: str, content: str) -> Optional[str]:
         """
         Append to the contents of core memory.
 
@@ -211,7 +211,7 @@ class LettaCoreToolExecutor(ToolExecutor):
 
     def core_memory_replace(
         self,
-        agent_state: "AgentState",
+        agent_state: AgentState,
         actor: User,
         label: str,
         old_content: str,
@@ -237,7 +237,8 @@ class LettaCoreToolExecutor(ToolExecutor):
         return None
 
     def memory_replace(
-        agent_state: "AgentState",
+        self,
+        agent_state: AgentState,
         actor: User,
         label: str,
         old_str: str,
@@ -326,7 +327,8 @@ class LettaCoreToolExecutor(ToolExecutor):
         return success_msg
 
     def memory_insert(
-        agent_state: "AgentState",
+        self,
+        agent_state: AgentState,
         actor: User,
         label: str,
         new_str: str,
@@ -407,7 +409,7 @@ class LettaCoreToolExecutor(ToolExecutor):
 
         return success_msg
 
-    def memory_rethink(agent_state: "AgentState", actor: User, label: str, new_memory: str) -> str:
+    def memory_rethink(self, agent_state: AgentState, actor: User, label: str, new_memory: str) -> str:
         """
         The memory_rethink command allows you to completely rewrite the contents of a
         memory block. Use this tool to make large sweeping changes (e.g. when you want
@@ -458,7 +460,7 @@ class LettaCoreToolExecutor(ToolExecutor):
         # return None
         return success_msg
 
-    def memory_finish_edits(agent_state: "AgentState") -> None:
+    def memory_finish_edits(self, agent_state: AgentState, actor: User) -> None:
         """
         Call the memory_finish_edits command when you are finished making edits
         (integrating all new information) into the memory blocks. This function
