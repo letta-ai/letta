@@ -223,7 +223,7 @@ async def create_chat_completion(request: ChatCompletionRequest):
     for msg in messages_clean:
         message_objs.append(
             Message.dict_to_message(
-                agent_id=agent_id, user_id=user_id, model="memgpt", openai_message_dict=msg
+                agent_id=agent_id, model="memgpt", openai_message_dict=msg
             )
         )
 
