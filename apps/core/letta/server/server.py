@@ -1562,7 +1562,8 @@ class SyncServer(Server):
             # supports_token_streaming = ["openai", "anthropic", "xai", "deepseek"]
             supports_token_streaming = ["openai", "anthropic", "deepseek"]  # TODO re-enable xAI once streaming is patched
             if stream_tokens and (
-                llm_config.model_endpoint_type not in supports_token_streaming or "inference.memgpt.ai" in llm_config.model_endpoint
+                llm_config.model_endpoint_type not in supports_token_streaming
+                or llm_config.model_endpoint == constants.LETTA_MODEL_ENDPOINT
             ):
                 warnings.warn(
                     f"Token streaming is only supported for models with type {' or '.join(supports_token_streaming)} in the model_endpoint: agent has endpoint type {llm_config.model_endpoint_type} and {llm_config.model_endpoint}. Setting stream_tokens to False."
@@ -1685,7 +1686,7 @@ class SyncServer(Server):
         llm_config = letta_multi_agent.agent_state.llm_config
         supports_token_streaming = ["openai", "anthropic", "deepseek"]
         if stream_tokens and (
-            llm_config.model_endpoint_type not in supports_token_streaming or "inference.memgpt.ai" in llm_config.model_endpoint
+            llm_config.model_endpoint_type not in supports_token_streaming or llm_config.model_endpoint == constants.LETTA_MODEL_ENDPOINT
         ):
             warnings.warn(
                 f"Token streaming is only supported for models with type {' or '.join(supports_token_streaming)} in the model_endpoint: agent has endpoint type {llm_config.model_endpoint_type} and {llm_config.model_endpoint}. Setting stream_tokens to False."

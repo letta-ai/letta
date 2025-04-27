@@ -2,6 +2,7 @@ from typing import Literal, Optional
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
+from letta.constants import LETTA_MODEL_ENDPOINT
 from letta.log import get_logger
 
 logger = get_logger(__name__)
@@ -163,7 +164,7 @@ class LLMConfig(BaseModel):
             return cls(
                 model="memgpt-openai",
                 model_endpoint_type="openai",
-                model_endpoint="https://inference.memgpt.ai",
+                model_endpoint=LETTA_MODEL_ENDPOINT,
                 context_window=8192,
             )
         else:
