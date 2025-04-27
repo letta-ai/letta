@@ -20,6 +20,17 @@ from letta.utils import sanitize_filename
 router = APIRouter(prefix="/sources", tags=["sources"])
 
 
+@router.get("/count", response_model=int, operation_id="count_sources")
+def count_sources(
+    server: "SyncServer" = Depends(get_letta_server),
+    actor_id: Optional[str] = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
+):
+    """
+    Count all data sources created by a user.
+    """
+    return server.source_manager.size(actor=server.user_manager.get_user_or_default(user_id=actor_id))
+
+
 @router.get("/{source_id}", response_model=Source, operation_id="retrieve_source")
 def retrieve_source(
     source_id: str,

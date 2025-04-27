@@ -3,6 +3,7 @@ from typing import List, Optional
 
 from openai import OpenAI
 
+from letta.constants import MAX_EMBEDDING_DIM
 from letta.embeddings import embedding_model, parse_and_chunk_text
 from letta.orm.errors import NoResultFound
 from letta.orm.passage import AgentPassage, SourcePassage
@@ -218,3 +219,16 @@ class PassageManager:
         """
         with self.session_maker() as session:
             return AgentPassage.size(db_session=session, actor=actor, agent_id=agent_id)
+
+    def estimate_embeddings_size_GB(
+        self,
+        actor: PydanticUser,
+        agent_id: Optional[str] = None,
+    ) -> float:
+        """
+        Estimate the size of the embeddings in GB.
+        """
+        BYTES_PER_EMBEDDING_DIM = 4
+        BYTES_PER_GB = 1024 * 1024 * 1024
+        GB_PER_EMBEDDING = BYTES_PER_EMBEDDING_DIM / BYTES_PER_GB * MAX_EMBEDDING_DIM
+        return self.size(actor=actor, agent_id=agent_id) * GB_PER_EMBEDDING

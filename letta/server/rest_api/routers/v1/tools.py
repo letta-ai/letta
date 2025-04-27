@@ -9,7 +9,7 @@ from composio.exceptions import (
     EnumMetadataNotFound,
     EnumStringNotFound,
 )
-from fastapi import APIRouter, Body, Depends, Header, HTTPException
+from fastapi import APIRouter, Body, Depends, Header, HTTPException, Query
 
 from letta.errors import LettaToolCreateError
 from letta.functions.mcp_client.exceptions import MCPTimeoutError
@@ -38,6 +38,24 @@ def delete_tool(
     """
     actor = server.user_manager.get_user_or_default(user_id=actor_id)
     server.tool_manager.delete_tool_by_id(tool_id=tool_id, actor=actor)
+
+
+@router.get("/count", response_model=int, operation_id="count_tools")
+def count_tools(
+    server: SyncServer = Depends(get_letta_server),
+    actor_id: Optional[str] = Header(None, alias="user_id"),
+    include_base_tools: Optional[bool] = Query(False, description="Include built-in Letta tools in the count"),
+):
+    """
+    Get a count of all tools available to agents belonging to the org of the user.
+    """
+    try:
+        return server.tool_manager.size(
+            actor=server.user_manager.get_user_or_default(user_id=actor_id), include_base_tools=include_base_tools
+        )
+    except Exception as e:
+        print(f"Error occurred: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @router.get("/{tool_id}", response_model=Tool, operation_id="retrieve_tool")
