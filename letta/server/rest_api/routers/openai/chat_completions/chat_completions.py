@@ -6,7 +6,7 @@ from fastapi.responses import StreamingResponse
 from openai.types.chat.completion_create_params import CompletionCreateParams
 
 from letta.agent import Agent
-from letta.constants import DEFAULT_MESSAGE_TOOL, DEFAULT_MESSAGE_TOOL_KWARG
+from letta.constants import DEFAULT_MESSAGE_TOOL, DEFAULT_MESSAGE_TOOL_KWARG, LETTA_MODEL_ENDPOINT
 from letta.log import get_logger
 from letta.schemas.message import Message, MessageCreate
 from letta.schemas.user import User
@@ -54,7 +54,7 @@ async def create_chat_completions(
 
     letta_agent = server.load_agent(agent_id=agent_id, actor=actor)
     llm_config = letta_agent.agent_state.llm_config
-    if llm_config.model_endpoint_type != "openai" or "inference.memgpt.ai" in llm_config.model_endpoint:
+    if llm_config.model_endpoint_type != "openai" or llm_config.model_endpoint == LETTA_MODEL_ENDPOINT:
         error_msg = f"You can only use models with type 'openai' for chat completions. This agent {agent_id} has llm_config: \n{llm_config.model_dump_json(indent=4)}"
         logger.error(error_msg)
         raise HTTPException(status_code=400, detail=error_msg)

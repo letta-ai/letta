@@ -6,6 +6,7 @@ from openai import AsyncOpenAI, AsyncStream, OpenAI, Stream
 from openai.types.chat.chat_completion import ChatCompletion
 from openai.types.chat.chat_completion_chunk import ChatCompletionChunk
 
+from letta.constants import LETTA_MODEL_ENDPOINT
 from letta.errors import (
     ErrorCode,
     LLMAuthenticationError,
@@ -115,7 +116,7 @@ class OpenAIClient(LLMClientBase):
         # TODO(matt) move into LLMConfig
         # TODO: This vllm checking is very brittle and is a patch at most
         tool_choice = None
-        if llm_config.model_endpoint == "https://inference.memgpt.ai" or (llm_config.handle and "vllm" in llm_config.handle):
+        if llm_config.model_endpoint == LETTA_MODEL_ENDPOINT or (llm_config.handle and "vllm" in llm_config.handle):
             tool_choice = "auto"  # TODO change to "required" once proxy supports it
         elif tools:
             # only set if tools is non-Null
@@ -134,7 +135,7 @@ class OpenAIClient(LLMClientBase):
             temperature=llm_config.temperature if supports_temperature_param(model) else None,
         )
 
-        if "inference.memgpt.ai" in llm_config.model_endpoint:
+        if llm_config.model_endpoint == LETTA_MODEL_ENDPOINT:
             # override user id for inference.memgpt.ai
             import uuid
 
