@@ -2,10 +2,12 @@ import { getStripeClient } from '../getStripeClient/getStripeClient';
 import { db, organizationBillingDetails } from '@letta-cloud/service-database';
 import { eq } from 'drizzle-orm';
 import type { BillingTiersType } from '@letta-cloud/types';
+import { startOfMonth, endOfMonth } from 'date-fns';
 
 interface GetCustomerSubscriptionResponse {
   tier: BillingTiersType;
-  billingPeriodEnd?: string;
+  billingPeriodEnd: string;
+  billingPeriodStart: string;
   cancelled?: boolean;
 }
 
@@ -14,8 +16,14 @@ export async function getCustomerSubscription(
 ): Promise<GetCustomerSubscriptionResponse> {
   const stripeClient = getStripeClient();
 
+  // start of the month
+  const billingPeriodStart = startOfMonth(new Date()).toISOString();
+  const billingPeriodEnd = endOfMonth(new Date()).toISOString();
+
   if (!stripeClient) {
     return {
+      billingPeriodStart,
+      billingPeriodEnd,
       tier: 'free',
     };
   }
@@ -30,18 +38,24 @@ export async function getCustomerSubscription(
 
   if (!customer) {
     return {
+      billingPeriodStart,
+      billingPeriodEnd,
       tier: 'free',
     };
   }
 
   if (!customer.stripeCustomerId) {
     return {
+      billingPeriodStart,
+      billingPeriodEnd,
       tier: 'free',
     };
   }
 
   if (customer?.billingTier === 'enterprise') {
     return {
+      billingPeriodStart,
+      billingPeriodEnd,
       tier: 'enterprise',
     };
   }
@@ -56,6 +70,8 @@ export async function getCustomerSubscription(
 
   if (!activeSubscriptions) {
     return {
+      billingPeriodStart,
+      billingPeriodEnd,
       tier: 'free',
     };
   }
@@ -63,6 +79,9 @@ export async function getCustomerSubscription(
   return {
     billingPeriodEnd: new Date(
       activeSubscriptions.current_period_end * 1000,
+    ).toISOString(),
+    billingPeriodStart: new Date(
+      activeSubscriptions.current_period_start * 1000,
     ).toISOString(),
     cancelled: activeSubscriptions.cancel_at_period_end,
     tier: 'pro',

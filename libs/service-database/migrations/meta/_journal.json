@@ -512,6 +512,13 @@
       "when": 1745447827576,
       "tag": "0072_lowly_jack_flag",
       "breakpoints": true
+    },
+    {
+      "idx": 73,
+      "version": "7",
+      "when": 1745862286521,
+      "tag": "0073_pretty_nova",
+      "breakpoints": true
     }
   ]
 }

@@ -1,5 +1,6 @@
 import {
   db,
+  deployedAgentMetadata,
   organizationBillingDetails,
   organizationCredits,
   organizationInvitedUsers,
@@ -18,7 +19,7 @@ import {
 import { createOrganization as authCreateOrganization } from '@letta-cloud/service-auth';
 import type { ServerInferRequest, ServerInferResponses } from '@ts-rest/core';
 import type { contracts } from '$web/web-api/contracts';
-import { and, eq, gt, ilike } from 'drizzle-orm';
+import { and, count, eq, gt, ilike } from 'drizzle-orm';
 import {
   generateInviteCode,
   generateInviteCodeLink,
@@ -46,6 +47,7 @@ import {
 import { creditsToDollars } from '@letta-cloud/utils-shared';
 import { sendEmail } from '@letta-cloud/service-email';
 import { upgradeUserToProPlan } from '@letta-cloud/service-payments';
+import { getRedisModelTransactions } from '@letta-cloud/utils-server';
 
 type GetCurrentOrganizationResponse = ServerInferResponses<
   typeof contracts.organizations.getCurrentOrganization
@@ -1339,11 +1341,47 @@ async function cancelOrganizationSubscription(): Promise<CancelSubscriptionRespo
   }
 
   await cancelSubscription(activeOrganizationId);
-
   return {
     status: 200,
     body: {
       success: true,
+    },
+  };
+}
+
+type GetOrganizationQuotasResponse = ServerInferResponses<
+  typeof contracts.organizations.getOrganizationQuotas
+>;
+
+async function getOrganizationQuotas(): Promise<GetOrganizationQuotasResponse> {
+  const { activeOrganizationId } =
+    await getUserWithActiveOrganizationIdOrThrow();
+
+  const organization = await db.query.organizations.findFirst({
+    where: eq(organizations.id, activeOrganizationId),
+  });
+
+  if (!organization) {
+    throw new Error('Organization not found');
+  }
+
+  const [[agents], freeModelRequests, premiumModelRequests] = await Promise.all(
+    [
+      db
+        .select({ count: count() })
+        .from(deployedAgentMetadata)
+        .where(eq(deployedAgentMetadata.organizationId, activeOrganizationId)),
+      getRedisModelTransactions('free', activeOrganizationId),
+      getRedisModelTransactions('premium', activeOrganizationId),
+    ],
+  );
+
+  return {
+    status: 200,
+    body: {
+      freeModelRequests,
+      premiumModelRequests,
+      agents: agents.count,
     },
   };
 }
@@ -1400,6 +1438,7 @@ export const organizationsRouter = {
   setDefaultOrganizationBillingMethod,
   listVerifiedDomains,
   createInviteRule,
+  getOrganizationQuotas,
   listInviteRules,
   deleteInviteRule,
   getOrganizationBillingHistory,

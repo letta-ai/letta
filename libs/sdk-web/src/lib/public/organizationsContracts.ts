@@ -549,6 +549,20 @@ const resumeOrganizationSubscriptionContract = c.mutation({
   },
 });
 
+const OrganizationQuota = z.object({
+  freeModelRequests: z.number(),
+  premiumModelRequests: z.number(),
+  agents: z.number(),
+});
+
+const getOrganizationQuotasContract = c.query({
+  path: '/organizations/self/quotas',
+  method: 'GET',
+  responses: {
+    200: OrganizationQuota,
+  },
+});
+
 export const organizationsContract = c.router({
   getCurrentOrganization: getCurrentOrganizationContract,
   getCurrentOrganizationPreferences: getCurrentOrganizationPreferencesContract,
@@ -577,7 +591,7 @@ export const organizationsContract = c.router({
   getOrganizationCredits: getOrganizationCreditsContract,
   cancelOrganizationSubscription: cancelOrganizationSubscriptionContract,
   resumeOrganizationSubscription: resumeOrganizationSubscriptionContract,
-
+  getOrganizationQuotas: getOrganizationQuotasContract,
   getOrganizationBillingHistory: getOrganizationBillingHistoryContract,
 });
 

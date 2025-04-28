@@ -1,7 +1,7 @@
 import pg from 'pg';
 import * as Sentry from '@sentry/node';
 
-import { deductCreditsFromStep } from '@letta-cloud/utils-server';
+import { processStep } from '@letta-cloud/utils-server';
 
 import './instrumentation';
 
@@ -70,7 +70,7 @@ END;$$;
     await Promise.all(
       filteredSteps.map(async (row) => {
         console.log('[Undertaker] Found existing step', row.id);
-        const transaction = await deductCreditsFromStep(row);
+        const transaction = await processStep(row);
 
         if (!transaction) {
           return;
@@ -92,7 +92,7 @@ END;$$;
       if (msg.payload) {
         const parsedPayload = JSON.parse(msg.payload) as Step;
         console.log('[Undertaker] Received new step', parsedPayload.id);
-        const transaction = await deductCreditsFromStep(parsedPayload);
+        const transaction = await processStep(parsedPayload);
 
         if (!transaction) {
           console.log(

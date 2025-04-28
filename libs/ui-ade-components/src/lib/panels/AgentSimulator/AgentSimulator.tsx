@@ -85,6 +85,7 @@ import { isSendingMessageAtom } from './atoms';
 import { useADETour } from '../../hooks/useADETour/useADETour';
 import type { InfiniteData } from '@tanstack/query-core';
 import { ErrorBoundary } from 'react-error-boundary';
+import type { RateLimitReason } from '@letta-cloud/types';
 
 type ErrorCode = z.infer<typeof ErrorMessageSchema>['code'];
 
@@ -102,7 +103,12 @@ interface UseSendMessageOptions {
 
 function errorHasResponseAndStatus(
   e: unknown,
-): e is { response: { status: number } } {
+): e is {
+  response: {
+    status: number;
+    json: () => Promise<{ reasons: RateLimitReason[] }>;
+  };
+} {
   return Object.prototype.hasOwnProperty.call(e, 'response');
 }
 
@@ -264,12 +270,24 @@ export function useSendMessage(
         },
       );
 
-      eventsource.addEventListener('error', (e) => {
+      eventsource.addEventListener('error', async (e) => {
         e.stopPropagation();
         e.preventDefault();
         // tag user sent message as errored
 
         if (errorHasResponseAndStatus(e)) {
+          const body = await e.response.json();
+
+          if (body.reasons?.includes('free-usage-exceeded')) {
+            handleError(message, 'FREE_USAGE_EXCEEDED');
+            return;
+          }
+
+          if (body.reasons?.includes('premium-usage-exceeded')) {
+            handleError(message, 'PREMIUM_USAGE_EXCEEDED');
+            return;
+          }
+
           if (e.response.status === 429) {
             handleError(message, 'RATE_LIMIT_EXCEEDED');
             return;
@@ -855,10 +873,34 @@ export function AgentSimulator() {
         return t('hasFailedToSendMessageText.contextWindowExceeded');
       case 'RATE_LIMIT_EXCEEDED':
         return t('hasFailedToSendMessageText.rateLimitExceeded');
+      case 'FREE_USAGE_EXCEEDED':
+        return t.rich('hasFailedToSendMessageText.freeUsageExceeded', {
+          link: (chunks) => {
+            return (
+              <Link target="_blank" href="/settings/organization/billing">
+                {chunks}
+              </Link>
+            );
+          },
+        });
+      case 'PREMIUM_USAGE_EXCEEDED':
+        return t.rich('hasFailedToSendMessageText.premiumUsageExceeded', {
+          link: (chunks) => {
+            return (
+              <Link target="_blank" href="/settings/organization/billing">
+                {chunks}
+              </Link>
+            );
+          },
+        });
       case 'CREDIT_LIMIT_EXCEEDED':
         return t.rich('hasFailedToSendMessageText.creditLimitExceeded', {
           link: (chunks) => {
-            return <Link href="/settings/organization/billing">{chunks}</Link>;
+            return (
+              <Link target="_blank" href="/settings/organization/billing">
+                {chunks}
+              </Link>
+            );
           },
         });
       case 'INTERNAL_SERVER_ERROR':

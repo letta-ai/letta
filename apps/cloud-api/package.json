@@ -6,7 +6,7 @@
     "start": "node ./dist/main.js",
     "test:e2e": "jest --detectOpenHandles --forceExit -- e2e/default.test.ts",
     "dev": "ts-node --swc ./src/main.ts",
-    "build": "npx esbuild src/main.ts --tsconfig=tsconfig.app.json --bundle --platform=node --outdir=dist --format=cjs --sourcemap --external:pg --external:postgres --external:ioredis --external:zod --external:@sentry/node --external:dotenv --external:drizzle-orm --external:pg --external:lodash --external:jsonrepair --external:@t3-oss/env-nextjs --external:@tanstack/react-query --external:@ts-rest/core --external:unique-names-generator --external:lru-cache --external:axios --external:@anatine/zod-openapi --external:mixpanel --external:react --external:@react-email/components --external:js-tiktoken --external:lodash-es --external:stripe --external:resend --external:@ts-rest/react-query --external:@launchdarkly/node-server-sdk --external:nanoid --external:@temporalio/workflow --external:@temporalio/client --external:path-to-regexp",
+    "build": "npx esbuild src/main.ts --tsconfig=tsconfig.app.json --bundle --platform=node --outdir=dist --format=cjs --sourcemap --external:pg --external:postgres --external:ioredis --external:zod --external:@sentry/node --external:dotenv --external:drizzle-orm --external:pg --external:lodash --external:jsonrepair --external:@t3-oss/env-nextjs --external:@tanstack/react-query --external:@ts-rest/core --external:unique-names-generator --external:lru-cache --external:axios --external:@anatine/zod-openapi --external:mixpanel --external:react --external:@react-email/components --external:js-tiktoken --external:lodash-es --external:stripe --external:resend --external:@ts-rest/react-query --external:@launchdarkly/node-server-sdk --external:nanoid --external:@temporalio/workflow --external:@temporalio/client --external:path-to-regexp --external:date-fns",
     "test:branch-regression": "jest --detectOpenHandles --forceExit -- e2e/database-compatibility.test.ts"
   },
   "devDependencies": {
@@ -45,6 +45,7 @@
     "body-parser": "^1.20.3",
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.5",
+    "date-fns": "^4.1.0",
     "dotenv": "^16.4.7",
     "drizzle-orm": "^0.38.3",
     "express": "^4.21.2",

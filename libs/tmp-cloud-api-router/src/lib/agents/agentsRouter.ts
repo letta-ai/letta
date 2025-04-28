@@ -141,6 +141,12 @@ async function createAgent(
       },
     );
 
+    await db.insert(deployedAgentMetadata).values({
+      agentId: response.id,
+      organizationId,
+      projectId,
+    });
+
     return {
       status: 201,
       body: response,

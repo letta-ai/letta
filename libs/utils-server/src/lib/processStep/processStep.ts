@@ -5,8 +5,9 @@ import {
   createUniqueRedisProperty,
   getRedisData,
 } from '@letta-cloud/service-redis';
+import { incrementRedisModelTransactions } from '../redisModelTransactions/redisModelTransactions';
 
-export async function deductCreditsFromStep(step: Step) {
+export async function processStep(step: Step) {
   if (
     !step.model ||
     !step.model_endpoint ||
@@ -16,7 +17,7 @@ export async function deductCreditsFromStep(step: Step) {
     return;
   }
 
-  const [creditCost, modelData] = await Promise.all([
+  const [creditCost, modelData, webOrgId] = await Promise.all([
     getCreditCostPerModel({
       modelName: step.model,
       modelEndpoint: step.model_endpoint,
@@ -25,6 +26,9 @@ export async function deductCreditsFromStep(step: Step) {
     getRedisData('modelNameAndEndpointToIdMap', {
       modelName: step.model,
       modelEndpoint: step.model_endpoint,
+    }),
+    getRedisData('coreOrganizationIdToOrganizationId', {
+      coreOrganizationId: step.organization_id,
     }),
   ]);
 
@@ -59,6 +63,18 @@ export async function deductCreditsFromStep(step: Step) {
           modelId: modelData.modelId,
         })
       : undefined;
+
+    if (
+      webOrgId &&
+      modelTier &&
+      ['free', 'premium'].includes(modelTier?.tier || '')
+    ) {
+      await incrementRedisModelTransactions(
+        modelTier.tier,
+        webOrgId.organizationId,
+        1,
+      );
+    }
 
     const response = await removeCreditsFromOrganization({
       amount: creditCost,

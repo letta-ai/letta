@@ -1,6 +1,6 @@
 export * from './lib/removeCreditsFromOrganization/removeCreditsFromOrganization';
 export * from './lib/addCreditsToOrganization/addCreditsToOrganization';
-export * from './lib/deductCreditsFromStep/deductCreditsFromStep';
+export * from './lib/processStep/processStep';
 export * from './lib/getDeployedTemplateByVersion/getDeployedTemplateByVersion';
 export * from './lib/getCreditCostPerModel/getCreditCostPerModel';
 export * from './lib/redisOrganizationCredits/redisOrganizationCredits';
@@ -20,3 +20,4 @@ export * from './lib/getTemplateProjectId/getTemplateProjectId';
 export * from './lib/findProjectBySlugOrId/findProjectBySlugOrId';
 export * from './lib/getCurrentOrganizationUsageLimits/getCurrentOrganizationUsageLimits';
 export * from './lib/deleteShareChatOnIdentityDelete/deleteShareChatOnIdentityDelete';
+export * from './lib/redisModelTransactions/redisModelTransactions';

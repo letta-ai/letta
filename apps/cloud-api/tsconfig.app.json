@@ -2,6 +2,7 @@
   "extends": "./tsconfig.json",
   "compilerOptions": {
     "outDir": "../../dist/out-tsc",
+    "esModuleInterop": true,
     "module": "commonjs",
     "types": ["node"]
   },

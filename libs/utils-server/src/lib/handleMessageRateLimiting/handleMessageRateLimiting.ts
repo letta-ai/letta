@@ -7,9 +7,12 @@ import {
 } from '@letta-cloud/service-database';
 import { eq } from 'drizzle-orm';
 import { AgentsService, type MessageCreate } from '@letta-cloud/sdk-core';
-import { getTikTokenEncoder } from '@letta-cloud/utils-shared';
+import { getTikTokenEncoder, getUsageLimits } from '@letta-cloud/utils-shared';
 import { getCreditCostPerModel } from '../getCreditCostPerModel/getCreditCostPerModel';
 import { getOrganizationCredits } from '../redisOrganizationCredits/redisOrganizationCredits';
+import { getCustomerSubscription } from '@letta-cloud/service-payments';
+import { getRedisModelTransactions } from '../redisModelTransactions/redisModelTransactions';
+import type { RateLimitReason } from '@letta-cloud/types';
 
 type ModelType = 'embedding' | 'inference';
 
@@ -170,12 +173,6 @@ export async function getAndSeedOrganizationLimits(
 
   If the number of requests or tokens exceeds the rate limit, we return a response indicating that the request is rate limited.
  */
-export type RateLimitReason =
-  | 'context-window-size-not-supported'
-  | 'model-unknown'
-  | 'not-enough-credits'
-  | 'requests'
-  | 'tokens';
 
 function isANumberSafe(num: any) {
   return typeof num === 'number' && !isNaN(num) && isFinite(num);
@@ -262,6 +259,12 @@ export async function handleMessageRateLimiting(
       modelEndpoint: agent.llm_config.model_endpoint || '',
       contextWindowSize: inputTokens,
     }),
+    getRedisData('modelIdToModelTier', {
+      modelId: modelId,
+    }),
+    getCustomerSubscription(organizationId),
+    getRedisModelTransactions('free', organizationId),
+    getRedisModelTransactions('premium', organizationId),
   ]);
 
   const currentRequests =
@@ -272,12 +275,36 @@ export async function handleMessageRateLimiting(
     result[2] && isANumberSafe(result[2]) ? result[2] : 0;
   const creditCost = result[3];
 
+  const modelTierInformation = result[4]?.tier || 'free';
+  const subscriptionTier = result[5]?.tier || 'free';
+  const freeUsage = result[6] || 0;
+  const premiumUsage = result[7] || 0;
+
+  const usageLimits = getUsageLimits(subscriptionTier);
+
   const rateLimitThresholds: RateLimitReason[] = [];
 
-  if (typeof creditCost !== 'number') {
-    rateLimitThresholds.push('context-window-size-not-supported');
-  } else if (organizationCredits - creditCost < 0) {
-    rateLimitThresholds.push('not-enough-credits');
+  if (subscriptionTier !== 'enterprise') {
+    if (modelTierInformation === 'free') {
+      if (freeUsage + 1 >= usageLimits.freeInferencesPerMonth) {
+        rateLimitThresholds.push('free-usage-exceeded');
+      }
+    } else if (modelTierInformation === 'premium') {
+      if (premiumUsage + 1 >= usageLimits.premiumInferencesPerMonth) {
+        rateLimitThresholds.push('premium-usage-exceeded');
+      }
+    }
+  }
+
+  if (
+    !['free', 'premium'].includes(modelTierInformation) ||
+    subscriptionTier === 'enterprise'
+  ) {
+    if (typeof creditCost !== 'number') {
+      rateLimitThresholds.push('context-window-size-not-supported');
+    } else if (organizationCredits - creditCost < 0) {
+      rateLimitThresholds.push('not-enough-credits');
+    }
   }
 
   if (currentRequests + 1 >= maxRequestsPerMinutePerModel) {

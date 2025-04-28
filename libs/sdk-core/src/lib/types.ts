@@ -120,6 +120,8 @@ const ErrorCodeSchema = z.enum([
   'CONTEXT_WINDOW_EXCEEDED',
   'RATE_LIMIT_EXCEEDED',
   'CREDIT_LIMIT_EXCEEDED',
+  'FREE_USAGE_EXCEEDED',
+  'PREMIUM_USAGE_EXCEEDED',
 ]);
 
 export const ErrorMessageSchema = z.object({

@@ -840,6 +840,8 @@
       "cloud": "Failed to send message, please try again or contact support",
       "contextWindowExceeded": "Input exceeded context window limit and is at max compression, please increase limit and try again.",
       "rateLimitExceeded": "Rate limit reached, please wait a few moments before trying again.",
+      "freeUsageExceeded": "You have run out of standard model usage, please <link>upgrade your plan</link> to continue chatting.",
+      "premiumUsageExceeded": "You have run out of premium usage, please <link>upgrade your plan</link> to continue chatting.",
       "creditLimitExceeded": "You have run out of credits, please <link>buy more credits</link> to continue chatting."
     }
   },

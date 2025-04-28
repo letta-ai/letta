@@ -15,6 +15,7 @@ import {
   getOrganizationCredits,
 } from '../redisOrganizationCredits/redisOrganizationCredits';
 import { getRedisData } from '@letta-cloud/service-redis';
+import type { ModelTiersType } from '@letta-cloud/types';
 
 interface RemoveCreditsFromOrganizationOptions {
   stepId?: string;
@@ -22,7 +23,7 @@ interface RemoveCreditsFromOrganizationOptions {
   source: string;
   coreOrganizationId: string;
   modelId?: string;
-  modelTier?: string;
+  modelTier?: ModelTiersType;
   note?: string;
 }
 
