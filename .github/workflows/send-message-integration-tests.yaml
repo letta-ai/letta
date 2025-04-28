@@ -86,6 +86,10 @@ jobs:
             fi
           done
 
+      - name: Test masking
+        run: |
+          echo $CANARY_KEY
+
       # Check out base repository code, not the PR's code (for security)
       - name: Checkout base repository
         uses: actions/checkout@v4 # No ref specified means it uses base branch
