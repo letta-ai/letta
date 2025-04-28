@@ -74,7 +74,6 @@ class LettaProvider(Provider):
     name: str = "letta"
 
     def list_llm_models(self) -> List[LLMConfig]:
-        raise Exception
         return [
             LLMConfig(
                 model="letta-free",  # NOTE: renamed
