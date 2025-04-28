@@ -144,7 +144,7 @@ jobs:
           LETTA_PG_DB: postgres
           LETTA_PG_HOST: localhost
           LETTA_SERVER_PASS: test_server_token
-          CANARY_KEY: thisismyfakesecretkey
+          CANARY_KEY: {{ secrets.CANARY_KEY }}
           # TODO: Uncomment once I am confident this is secure 
           # OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           # ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
