@@ -6,6 +6,7 @@ import traceback
 import warnings
 from abc import abstractmethod
 from datetime import datetime
+from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 
 from anthropic import AsyncAnthropic
@@ -19,6 +20,7 @@ import letta.server.utils as server_utils
 import letta.system as system
 from letta.agent import Agent, save_agent
 from letta.config import LettaConfig
+from letta.constants import LETTA_TOOL_EXECUTION_DIR
 from letta.data_sources.connectors import DataConnector, load_data
 from letta.errors import HandleNotFoundError
 from letta.functions.mcp_client.base_client import BaseMCPClient
@@ -70,7 +72,7 @@ from letta.schemas.providers import (
     VLLMCompletionsProvider,
     XAIProvider,
 )
-from letta.schemas.sandbox_config import SandboxType
+from letta.schemas.sandbox_config import LocalSandboxConfig, SandboxConfigCreate, SandboxType
 from letta.schemas.source import Source
 from letta.schemas.tool import Tool
 from letta.schemas.usage import LettaUsageStatistics
@@ -228,6 +230,29 @@ class SyncServer(Server):
                     sandbox_config_id=sandbox_config.id,
                     actor=self.default_user,
                 )
+
+            # For OSS users, create a local sandbox config
+            oss_default_user = self.user_manager.get_default_user()
+            use_venv = False if not tool_settings.tool_exec_venv_name else True
+            venv_name = tool_settings.tool_exec_venv_name or "venv"
+            tool_dir = tool_settings.tool_exec_dir or LETTA_TOOL_EXECUTION_DIR
+
+            venv_dir = Path(tool_dir) / venv_name
+            if not Path(tool_dir).is_dir():
+                logger.error(f"Provided LETTA_TOOL_SANDBOX_DIR is not a valid directory: {tool_dir}")
+            else:
+                if tool_settings.tool_exec_venv_name and not venv_dir.is_dir():
+                    logger.warning(
+                        f"Provided LETTA_TOOL_SANDBOX_VENV_NAME is not a valid venv ({venv_dir}), one will be created for you during tool execution."
+                    )
+
+                sandbox_config_create = SandboxConfigCreate(
+                    config=LocalSandboxConfig(sandbox_dir=tool_settings.tool_exec_dir, use_venv=use_venv, venv_name=venv_name)
+                )
+                sandbox_config = self.sandbox_config_manager.create_or_update_sandbox_config(
+                    sandbox_config_create=sandbox_config_create, actor=oss_default_user
+                )
+                logger.info(f"Successfully created default local sandbox config:\n{sandbox_config.get_local_config().model_dump()}")
 
         # collect providers (always has Letta as a default)
         self._enabled_providers: List[Provider] = [LettaProvider()]

@@ -24,7 +24,7 @@ def find_python_executable(local_configs: LocalSandboxConfig) -> str:
     """
     sandbox_dir = os.path.expanduser(local_configs.sandbox_dir)  # Expand tilde
 
-    if not local_configs.force_create_venv:
+    if not local_configs.use_venv:
         return "python.exe" if platform.system().lower().startswith("win") else "python3"
 
     venv_path = os.path.join(sandbox_dir, local_configs.venv_name)
@@ -96,7 +96,7 @@ def install_pip_requirements_for_sandbox(
     python_exec = find_python_executable(local_configs)
 
     # If using a virtual environment, upgrade pip before installing dependencies.
-    if local_configs.force_create_venv:
+    if local_configs.use_venv:
         ensure_pip_is_up_to_date(python_exec, env=env)
 
     # Construct package list
@@ -108,7 +108,7 @@ def install_pip_requirements_for_sandbox(
         pip_cmd.append("--upgrade")
     pip_cmd += packages
 
-    if user_install_if_no_venv and not local_configs.force_create_venv:
+    if user_install_if_no_venv and not local_configs.use_venv:
         pip_cmd.append("--user")
 
     run_subprocess(pip_cmd, env=env, fail_msg=f"Failed to install packages: {', '.join(packages)}")
