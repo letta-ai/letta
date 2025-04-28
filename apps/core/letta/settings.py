@@ -16,8 +16,9 @@ class ToolSettings(BaseSettings):
     e2b_sandbox_template_id: Optional[str] = None  # Updated manually
 
     # Local Sandbox configurations
-    local_sandbox_dir: Optional[str] = None
-    local_sandbox_timeout: float = 180
+    tool_exec_dir: Optional[str] = None
+    tool_sandbox_timeout: float = 180
+    tool_exec_venv_name: Optional[str] = None
 
     # MCP settings
     mcp_connect_to_server_timeout: float = 30.0

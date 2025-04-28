@@ -220,7 +220,7 @@ def custom_test_sandbox_config(test_user):
     external_codebase_path = str(Path(__file__).parent / "test_tool_sandbox" / "restaurant_management_system")
     # tqdm is used in this codebase, but NOT in the requirements.txt, this tests that we can successfully install pip requirements
     local_sandbox_config = LocalSandboxConfig(
-        sandbox_dir=external_codebase_path, force_create_venv=True, pip_requirements=[PipRequirement(name="tqdm")]
+        sandbox_dir=external_codebase_path, use_venv=True, pip_requirements=[PipRequirement(name="tqdm")]
     )
 
     # Create the sandbox configuration
@@ -382,7 +382,7 @@ def test_local_sandbox_with_venv_errors(disable_e2b_api_key, custom_test_sandbox
 def test_local_sandbox_with_venv_pip_installs_basic(disable_e2b_api_key, cowsay_tool, test_user):
     manager = SandboxConfigManager()
     config_create = SandboxConfigCreate(
-        config=LocalSandboxConfig(force_create_venv=True, pip_requirements=[PipRequirement(name="cowsay")]).model_dump()
+        config=LocalSandboxConfig(use_venv=True, pip_requirements=[PipRequirement(name="cowsay")]).model_dump()
     )
     config = manager.create_or_update_sandbox_config(config_create, test_user)
 
@@ -401,7 +401,7 @@ def test_local_sandbox_with_venv_pip_installs_basic(disable_e2b_api_key, cowsay_
 @pytest.mark.e2b_sandbox
 def test_local_sandbox_with_venv_pip_installs_with_update(disable_e2b_api_key, cowsay_tool, test_user):
     manager = SandboxConfigManager()
-    config_create = SandboxConfigCreate(config=LocalSandboxConfig(force_create_venv=True).model_dump())
+    config_create = SandboxConfigCreate(config=LocalSandboxConfig(use_venv=True).model_dump())
     config = manager.create_or_update_sandbox_config(config_create, test_user)
 
     # Add an environment variable
@@ -421,7 +421,7 @@ def test_local_sandbox_with_venv_pip_installs_with_update(disable_e2b_api_key, c
 
     # Now update the SandboxConfig
     config_create = SandboxConfigCreate(
-        config=LocalSandboxConfig(force_create_venv=True, pip_requirements=[PipRequirement(name="cowsay")]).model_dump()
+        config=LocalSandboxConfig(use_venv=True, pip_requirements=[PipRequirement(name="cowsay")]).model_dump()
     )
     manager.create_or_update_sandbox_config(config_create, test_user)
 
