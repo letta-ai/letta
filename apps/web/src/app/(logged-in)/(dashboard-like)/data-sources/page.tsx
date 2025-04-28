@@ -175,10 +175,10 @@ function CreateDataSourceDialog() {
         <FormField
           name="description"
           render={({ field }) => (
-            <TextArea 
-              fullWidth 
+            <TextArea
+              fullWidth
               label={t('CreateDataSourceDialog.descriptionInput.label')}
-              {...field} 
+              {...field}
             />
           )}
         />

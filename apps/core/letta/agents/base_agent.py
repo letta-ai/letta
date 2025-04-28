@@ -63,4 +63,4 @@ class BaseAgent(ABC):
             else:
                 return ""
 
-        return [{"role": input_message.role, "content": get_content(input_message)} for input_message in input_messages]
+        return [{"role": input_message.role.value, "content": get_content(input_message)} for input_message in input_messages]

@@ -6,7 +6,7 @@ from sqlalchemy import and_, asc, desc, func, literal, or_, select
 from letta import system
 from letta.constants import IN_CONTEXT_MEMORY_KEYWORD, STRUCTURED_OUTPUT_MODELS
 from letta.helpers import ToolRulesSolver
-from letta.helpers.datetime_helpers import get_local_time
+from letta.helpers.datetime_helpers import get_local_time, get_local_time_fast
 from letta.orm.agent import Agent as AgentModel
 from letta.orm.agents_tags import AgentsTags
 from letta.orm.errors import NoResultFound
@@ -119,7 +119,7 @@ def compile_memory_metadata_block(
     # Create a metadata block of info so the agent knows about the metadata of out-of-context memories
     memory_metadata_block = "\n".join(
         [
-            f"### Memory [last modified: {timestamp_str}]",
+            f"### Current Time: {get_local_time_fast()}" f"### Memory [last modified: {timestamp_str}]",
             f"{previous_message_count} previous messages between you and the user are stored in recall memory (use functions to access them)",
             f"{archival_memory_size} total memories you created are stored in archival memory (use functions to access them)",
             (

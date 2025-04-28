@@ -361,7 +361,10 @@ function CreateNewDataSource(props: CreateNewDataSourceProps) {
             )}
             name="name"
           />
-          <Tooltip asChild content={t('CreateDataSourceDialog.description.tooltip')}>
+          <Tooltip
+            asChild
+            content={t('CreateDataSourceDialog.description.tooltip')}
+          >
             <FormField
               render={({ field }) => (
                 <TextArea
