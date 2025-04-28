@@ -1,6 +1,5 @@
 import os
 import threading
-import time
 from datetime import datetime, timezone
 from typing import Tuple
 from unittest.mock import AsyncMock, patch
@@ -32,6 +31,7 @@ from letta.schemas.message import MessageCreate
 from letta.schemas.tool_rule import InitToolRule
 from letta.server.db import db_context
 from letta.server.server import SyncServer
+from tests.utils import wait_for_server
 
 # --------------------------------------------------------------------------- #
 # Test Constants
@@ -311,7 +311,7 @@ def server_url():
     if not os.getenv("LETTA_SERVER_URL"):
         thread = threading.Thread(target=run_server, daemon=True)
         thread.start()
-        time.sleep(1)  # Give server time to start
+        wait_for_server(url)
 
     return url
 
