@@ -30,7 +30,6 @@ class Provider(ProviderBase):
             self.id = ProviderBase.generate_id(prefix=ProviderBase.__id_prefix__)
 
     def list_llm_models(self) -> List[LLMConfig]:
-        raise Exception
         return []
 
     def list_embedding_models(self) -> List[EmbeddingConfig]:
