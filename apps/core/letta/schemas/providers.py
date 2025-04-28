@@ -744,7 +744,8 @@ class AnthropicProvider(Provider):
             # reliable for tool calling (no chance of a non-tool call step)
             # Since tool_choice_type 'any' doesn't work with in-content COT
             # NOTE For Haiku, it can be flaky if we don't enable this by default
-            inner_thoughts_in_kwargs = True if "haiku" in model["id"] else False
+            # inner_thoughts_in_kwargs = True if "haiku" in model["id"] else False
+            inner_thoughts_in_kwargs = True  # we no longer support thinking tags
 
             configs.append(
                 LLMConfig(

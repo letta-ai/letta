@@ -327,6 +327,9 @@ def create(
         if not use_tool_naming:
             raise NotImplementedError("Only tool calling supported on Anthropic API requests")
 
+        if llm_config.enable_reasoner:
+            llm_config.put_inner_thoughts_in_kwargs = False
+
         # Force tool calling
         tool_call = None
         if functions is None:
