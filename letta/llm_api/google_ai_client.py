@@ -278,13 +278,13 @@ class GoogleAIClient(LLMClientBase):
         unsupported_keys = ["default", "exclusiveMaximum", "exclusiveMinimum"]
         keys_to_remove_at_this_level = [key for key in unsupported_keys if key in schema_part]
         for key_to_remove in keys_to_remove_at_this_level:
-            logger.warning(f"Removing unsupported keyword 	'{key_to_remove}' from schema part.")
+            logger.warning(f"Removing unsupported keyword '{key_to_remove}' from schema part.")
             del schema_part[key_to_remove]
 
         if schema_part.get("type") == "string" and "format" in schema_part:
             allowed_formats = ["enum", "date-time"]
             if schema_part["format"] not in allowed_formats:
-                logger.warning(f"Removing unsupported format 	'{schema_part['format']}' for string type. Allowed: {allowed_formats}")
+                logger.warning(f"Removing unsupported format '{schema_part['format']}' for string type. Allowed: {allowed_formats}")
                 del schema_part["format"]
 
         # Check properties within the current level
@@ -363,7 +363,12 @@ class GoogleAIClient(LLMClientBase):
 
             # Google AI API only supports a subset of OpenAPI 3.0, so unsupported params must be cleaned
             if "parameters" in func and isinstance(func["parameters"], dict):
-                self._clean_google_ai_schema_properties(func["parameters"])
+                try:
+                    # Try to use the class method, if available
+                    self._clean_google_ai_schema_properties(func["parameters"])
+                except AttributeError:
+                    # Fallback to use the standalone helper function if method isn't available
+                    clean_google_ai_schema_properties(func["parameters"])
 
             # Add inner thoughts
             if llm_config.put_inner_thoughts_in_kwargs:
@@ -502,3 +507,40 @@ def google_ai_get_model_context_window(base_url: str, api_key: str, model: str, 
     # TODO should this be:
     # return model_details["inputTokenLimit"] + model_details["outputTokenLimit"]
     return int(model_details["inputTokenLimit"])
+
+
+# Standalone helper function as a fallback for instances when the class method is not available
+def clean_google_ai_schema_properties(schema_part: dict):
+    """Recursively clean schema parts to remove unsupported Google AI keywords."""
+    if not isinstance(schema_part, dict):
+        return
+
+    # Per https://ai.google.dev/gemini-api/docs/function-calling?example=meeting#notes_and_limitations
+    # * Only a subset of the OpenAPI schema is supported.
+    # * Supported parameter types in Python are limited.
+    unsupported_keys = ["default", "exclusiveMaximum", "exclusiveMinimum"]
+    keys_to_remove_at_this_level = [key for key in unsupported_keys if key in schema_part]
+    for key_to_remove in keys_to_remove_at_this_level:
+        logger.warning(f"Removing unsupported keyword '{key_to_remove}' from schema part.")
+        del schema_part[key_to_remove]
+
+    if schema_part.get("type") == "string" and "format" in schema_part:
+        allowed_formats = ["enum", "date-time"]
+        if schema_part["format"] not in allowed_formats:
+            logger.warning(f"Removing unsupported format '{schema_part['format']}' for string type. Allowed: {allowed_formats}")
+            del schema_part["format"]
+
+    # Check properties within the current level
+    if "properties" in schema_part and isinstance(schema_part["properties"], dict):
+        for prop_name, prop_schema in schema_part["properties"].items():
+            clean_google_ai_schema_properties(prop_schema)
+
+    # Check items within arrays
+    if "items" in schema_part and isinstance(schema_part["items"], dict):
+        clean_google_ai_schema_properties(schema_part["items"])
+
+    # Check within anyOf, allOf, oneOf lists
+    for key in ["anyOf", "allOf", "oneOf"]:
+        if key in schema_part and isinstance(schema_part[key], list):
+            for item_schema in schema_part[key]:
+                clean_google_ai_schema_properties(item_schema)
