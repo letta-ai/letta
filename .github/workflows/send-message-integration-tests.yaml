@@ -41,18 +41,6 @@ jobs:
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
-    env:
-      CANARY_KEY: thisismyfakesecretkey
-      # TODO: Uncomment once I am confident this is secure 
-      # OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-      # ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
-      # AZURE_API_KEY: ${{ secrets.AZURE_API_KEY }}
-      # AZURE_BASE_URL: ${{ secrets.AZURE_BASE_URL }}
-      # GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
-      # COMPOSIO_API_KEY: ${{ secrets.COMPOSIO_API_KEY }}
-      # DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
-      # GOOGLE_CLOUD_PROJECT: ${{ secrets.GOOGLE_CLOUD_PROJECT }}
-      # GOOGLE_CLOUD_LOCATION: ${{ secrets.GOOGLE_CLOUD_LOCATION }}
     
     steps:
       # Ensure secrets don't leak
@@ -156,6 +144,17 @@ jobs:
           LETTA_PG_DB: postgres
           LETTA_PG_HOST: localhost
           LETTA_SERVER_PASS: test_server_token
+          CANARY_KEY: thisismyfakesecretkey
+          # TODO: Uncomment once I am confident this is secure 
+          # OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          # ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          # AZURE_API_KEY: ${{ secrets.AZURE_API_KEY }}
+          # AZURE_BASE_URL: ${{ secrets.AZURE_BASE_URL }}
+          # GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          # COMPOSIO_API_KEY: ${{ secrets.COMPOSIO_API_KEY }}
+          # DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
+          # GOOGLE_CLOUD_PROJECT: ${{ secrets.GOOGLE_CLOUD_PROJECT }}
+          # GOOGLE_CLOUD_LOCATION: ${{ secrets.GOOGLE_CLOUD_LOCATION }}
         run: |
           poetry run pytest \
             -s -vv \
