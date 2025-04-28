@@ -41,7 +41,8 @@ jobs:
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
-    # env:
+    env:
+      CANARY_KEY: thisismyfakesecretkey
       # TODO: Uncomment once I am confident this is secure 
       # OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
       # ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
@@ -49,11 +50,42 @@ jobs:
       # AZURE_BASE_URL: ${{ secrets.AZURE_BASE_URL }}
       # GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
       # COMPOSIO_API_KEY: ${{ secrets.COMPOSIO_API_KEY }}
+      # DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
       # GOOGLE_CLOUD_PROJECT: ${{ secrets.GOOGLE_CLOUD_PROJECT }}
       # GOOGLE_CLOUD_LOCATION: ${{ secrets.GOOGLE_CLOUD_LOCATION }}
-      # DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
     
     steps:
+      # Ensure secrets don't leak
+      - name: Configure git to hide secrets
+        run: |
+          git config --global core.logAllRefUpdates false
+          git config --global log.hideCredentials true
+      - name: Set up secret masking
+        run: |
+          # Automatically mask any environment variable ending with _KEY
+          for var in $(env | grep '_KEY=' | cut -d= -f1); do
+            value="${!var}"
+            if [[ -n "$value" ]]; then
+              # Mask the full value
+              echo "::add-mask::$value"
+              
+              # Also mask partial values (first and last several characters)
+              # This helps when only parts of keys appear in logs
+              if [[ ${#value} -gt 8 ]]; then
+                echo "::add-mask::${value:0:8}"
+                echo "::add-mask::${value:(-8)}"
+              fi
+              
+              # Also mask with common formatting changes
+              # Some logs might add quotes or other characters
+              echo "::add-mask::\"$value\""
+              echo "::add-mask::$value\""
+              echo "::add-mask::\"$value"
+              
+              echo "Masked secret: $var (length: ${#value})"
+            fi
+          done
+
       # Check out base repository code, not the PR's code (for security)
       - name: Checkout base repository
         uses: actions/checkout@v4 # No ref specified means it uses base branch
