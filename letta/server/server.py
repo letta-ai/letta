@@ -1211,6 +1211,8 @@ class SyncServer(Server):
             llm_config.max_reasoning_tokens = max_reasoning_tokens
         if enable_reasoner is not None:
             llm_config.enable_reasoner = enable_reasoner
+            if enable_reasoner and llm_config.model_endpoint_type == "anthropic":
+                llm_config.put_inner_thoughts_in_kwargs = False
 
         return llm_config
 
