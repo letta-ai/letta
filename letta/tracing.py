@@ -23,6 +23,7 @@ _excluded_v1_endpoints_regex: List[str] = [
     "^GET /v1/agents/(?P<agent_id>[^/]+)/context$",
     "^GET /v1/agents/(?P<agent_id>[^/]+)/archival-memory$",
     "^GET /v1/agents/(?P<agent_id>[^/]+)/sources$",
+    r"^POST /v1/voice-beta/.*/chat/completions$",
 ]
 
 

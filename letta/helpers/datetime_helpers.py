@@ -1,5 +1,6 @@
 import re
 from datetime import datetime, timedelta, timezone
+from time import strftime
 
 import pytz
 
@@ -29,6 +30,12 @@ def get_local_time_military():
 
     # You may format it as you desire
     formatted_time = local_time.strftime("%Y-%m-%d %H:%M:%S %Z%z")
+
+    return formatted_time
+
+
+def get_local_time_fast():
+    formatted_time = strftime("%Y-%m-%d %H:%M:%S")
 
     return formatted_time
 

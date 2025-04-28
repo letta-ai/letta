@@ -13,7 +13,7 @@ from letta.schemas.user import User
 from letta.server.rest_api.chat_completions_interface import ChatCompletionsStreamingInterface
 
 # TODO this belongs in a controller!
-from letta.server.rest_api.utils import get_letta_server, get_messages_from_completion_request, sse_async_generator
+from letta.server.rest_api.utils import get_letta_server, get_user_message_from_chat_completions_request, sse_async_generator
 
 if TYPE_CHECKING:
     from letta.server.server import SyncServer
@@ -43,10 +43,6 @@ async def create_chat_completions(
     user_id: Optional[str] = Header(None, alias="user_id"),
 ):
     # Validate and process fields
-    messages = get_messages_from_completion_request(completion_request)
-    input_message = messages[-1]
-
-    # Process remaining fields
     if not completion_request["stream"]:
         raise HTTPException(status_code=400, detail="Must be streaming request: `stream` was set to `False` in the request.")
 
@@ -65,13 +61,11 @@ async def create_chat_completions(
         logger.warning(f"Defaulting to {llm_config.model}...")
         logger.warning(warning_msg)
 
-    logger.info(f"Received input message: {input_message}")
-
     return await send_message_to_agent_chat_completions(
         server=server,
         letta_agent=letta_agent,
         actor=actor,
-        messages=[MessageCreate(role=input_message["role"], content=input_message["content"])],
+        messages=get_user_message_from_chat_completions_request(completion_request),
     )
 
 
