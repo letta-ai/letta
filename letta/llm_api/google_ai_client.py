@@ -122,7 +122,7 @@ class GoogleAIClient(LLMClientBase):
             for candidate in response_data["candidates"]:
                 content = candidate["content"]
 
-                role = content["role"]
+                role = content.get("role", "model")
                 assert role == "model", f"Unknown role in response: {role}"
 
                 parts = content["parts"]
