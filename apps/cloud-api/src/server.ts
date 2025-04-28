@@ -169,19 +169,19 @@ export function startServer() {
       target: environment.LETTA_AGENTS_ENDPOINT,
       changeOrigin: true,
       followRedirects: true,
-      selfHandleResponse: true,
+      // selfHandleResponse: true,
       ...(stream ? { buffer: stream } : {}),
       headers: header,
       on: {
         // proxyReq: fixRequestBody,
-        proxyRes: responseInterceptor(
-          // eslint-disable-next-line @typescript-eslint/max-params
-          async function (responseBuffer, _proxyRes, req, _res) {
-            responseSideEffects(req);
-
-            return responseBuffer;
-          },
-        ),
+        // proxyRes: responseInterceptor(
+        //   // eslint-disable-next-line @typescript-eslint/max-params
+        //   async function (responseBuffer, _proxyRes, req, _res) {
+        //     responseSideEffects(req);
+        //
+        //     return responseBuffer;
+        //   },
+        // ),
       },
     })(req, res, next);
   }
