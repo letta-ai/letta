@@ -103,8 +103,8 @@ class OpenAIProvider(Provider):
     base_url: str = Field(..., description="Base URL for the OpenAI API.")
 
     def list_llm_models(self) -> List[LLMConfig]:
-        raise Exception 
         from letta.llm_api.openai import openai_get_model_list
+        raise Exception 
         # Some hardcoded support for OpenRouter (so that we only get models with tool calling support)...
         # See: https://openrouter.ai/docs/requests
         extra_params = {"supported_parameters": "tools"} if "openrouter.ai" in self.base_url else None
