@@ -1,6 +1,9 @@
+import { extractPythonArgDescription } from '../extractPythonArgDescription/extractPythonArgDescription';
+
 interface Args {
   name: string;
   type: string;
+  description?: string;
 }
 
 interface FunctionConfig {
@@ -11,6 +14,7 @@ interface FunctionConfig {
 }
 
 /*
+
 Python example:
 
 def add(a: int, b: int) -> int:
@@ -26,6 +30,10 @@ def multiline(
 ) -> int:
   """
   Adds three numbers together
+
+  Args:
+    a (int): The first number
+    b (int): The second number
   """
   return a + b + c
 
@@ -52,10 +60,13 @@ export function pythonCodeParser(pythonCode: string) {
     const name = match[1];
     const argsString = match[2].trim();
     const returnType = match[3] || 'any';
-    let description = match[4] ? match[4].trim() : '';
+    const description = match[4] ? match[4].trim() : '';
 
     // only take the first line of the description
-    description = description.split('\n')[0];
+    const functionDescription = description.split('\n')[0];
+
+    // lookup arguments in description
+    const argDescriptionMap = extractPythonArgDescription(pythonCode);
 
     // Parse arguments
     const args: Args[] = [];
@@ -84,6 +95,7 @@ export function pythonCodeParser(pythonCode: string) {
           args.push({
             name: argName,
             type: argType,
+            description: argDescriptionMap[argName]?.description,
           });
         }
       }
@@ -93,7 +105,7 @@ export function pythonCodeParser(pythonCode: string) {
       name,
       args,
       returnType,
-      description,
+      description: functionDescription,
     });
   }
 

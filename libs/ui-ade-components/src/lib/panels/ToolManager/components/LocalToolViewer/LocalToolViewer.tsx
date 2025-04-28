@@ -58,6 +58,7 @@ import {
 } from '@letta-cloud/utils-shared';
 import { atom, useAtom } from 'jotai';
 import { DeleteToolButton } from './DeleteToolButton/DeleteToolButton';
+import { RESTRICTED_FN_PROPS } from '../../constants';
 
 interface CurrentToolContextState {
   tool: Tool;
@@ -783,17 +784,17 @@ function useIsCodeAndSchemaDifferent() {
     ) as ToolJSONSchema['parameters']['properties'];
 
     const baseArgs = Object.entries(args)
-      .filter(([key]) => key !== 'request_heartbeat')
+      .filter(([key]) => !RESTRICTED_FN_PROPS.includes(key))
       .map(([key, value]) => [
         key,
         jsonSchemaTypeMap[value.type] || value.type,
       ]);
 
-    const lastFunctionArgs = lastFunction.args.map((arg) => [
-      arg.name,
-      jsonSchemaTypeMap[arg.type] || arg.type,
-    ]);
+    const lastFunctionArgs = lastFunction.args
+      .filter((arg) => !RESTRICTED_FN_PROPS.includes(arg.name))
+      .map((arg) => [arg.name, jsonSchemaTypeMap[arg.type] || arg.type]);
 
+    console.log(baseArgs, lastFunctionArgs);
     return (
       lastFunction.name !== schemaFunctionName ||
       lastFunction.description !== schemaDescription ||

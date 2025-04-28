@@ -38,6 +38,7 @@ import { pythonCodeParser } from '@letta-cloud/utils-shared';
 import { useCurrentTool } from '../LocalToolViewer/LocalToolViewer';
 import { Panel, PanelGroup, PanelResizeHandle } from 'react-resizable-panels';
 import { useDebouncedValue } from '@mantine/hooks';
+import { RESTRICTED_FN_PROPS } from '../../constants';
 
 interface ArgumentEditorProps {
   defaultArguments: ResizableKeyValueEditorDefinition[];
@@ -108,7 +109,7 @@ function ArgumentEditor(props: ArgumentEditorProps) {
 
   const definitions = useMemo(() => {
     return [...stagedArguments, ...newToolArgs].filter(
-      (v) => v.key !== 'request_heartbeat',
+      (v) => !RESTRICTED_FN_PROPS.includes(v.key),
     );
   }, [stagedArguments, newToolArgs]);
 

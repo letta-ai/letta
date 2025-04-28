@@ -13,6 +13,12 @@ export const jsonSchemaTypeMap: Record<string, string> = {
 };
 
 export const ADD_DESCRIPTION_PLACEHOLDER = '<please add a description>';
+export const RESTRICTED_PROPS = [
+  'agent_state',
+  'cls',
+  'request_heartbeat',
+  'self',
+];
 
 export function generateJSONSchemaFromCode(
   code: string,
@@ -36,27 +42,34 @@ export function generateJSONSchemaFromCode(
     parameters: {
       type: 'object',
       properties: {
-        ...lastConfig.args.reduce(
-          (acc, arg) => {
-            acc[arg.name] = {
-              type: jsonSchemaTypeMap[arg.type] || arg.type,
-              description:
-                existingArgs[arg.name]?.description ||
-                ADD_DESCRIPTION_PLACEHOLDER,
-            };
-            return acc;
-          },
-          {} as Record<string, ParameterProperties>,
-        ),
-        request_heartbeat: {
-          type: 'boolean',
-          description:
-            'Request an immediate heartbeat after function execution. Set to `True` if you want to send a follow-up message or run a follow-up function.',
-        },
+        ...lastConfig.args
+          .filter((arg) => !RESTRICTED_PROPS.includes(arg.name))
+          .reduce(
+            (acc, arg) => {
+              let description =
+                existingArgs[arg.name]?.description || arg?.description;
+
+              if (description === ADD_DESCRIPTION_PLACEHOLDER) {
+                description = arg?.description;
+              }
+
+              if (!description) {
+                description = ADD_DESCRIPTION_PLACEHOLDER;
+              }
+
+              acc[arg.name] = {
+                type: jsonSchemaTypeMap[arg.type] || arg.type,
+                description: description,
+              };
+              return acc;
+            },
+            {} as Record<string, ParameterProperties>,
+          ),
       },
       required: [
-        ...lastConfig.args.map((arg) => arg.name),
-        'request_heartbeat',
+        ...lastConfig.args
+          .filter((arg) => !RESTRICTED_PROPS.includes(arg.name))
+          .map((arg) => arg.name),
       ],
     },
   };
