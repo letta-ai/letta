@@ -72,7 +72,6 @@ class ProviderUpdate(ProviderBase):
 class LettaProvider(Provider):
 
     name: str = "letta"
-    raise Exception
     def list_llm_models(self) -> List[LLMConfig]:
         return [
             LLMConfig(
