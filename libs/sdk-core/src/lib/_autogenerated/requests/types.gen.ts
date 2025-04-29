@@ -1511,7 +1511,8 @@ export type GroupCreate = {
     | RoundRobinManager
     | SupervisorManager
     | DynamicManager
-    | SleeptimeManager;
+    | SleeptimeManager
+    | VoiceSleeptimeManager;
   shared_block_ids?: Array<string>;
 };
 
@@ -1523,6 +1524,7 @@ export type GroupUpdate = {
     | SupervisorManagerUpdate
     | DynamicManagerUpdate
     | SleeptimeManagerUpdate
+    | VoiceSleeptimeManagerUpdate
     | null;
   shared_block_ids?: Array<string> | null;
 };
@@ -2158,6 +2160,7 @@ export type ManagerType =
   | 'supervisor'
   | 'dynamic'
   | 'sleeptime'
+  | 'voice_sleeptime'
   | 'swarm';
 
 /**
@@ -2304,7 +2307,7 @@ export type MessageCreate = {
   /**
    * The role of the participant.
    */
-  role: 'user' | 'system';
+  role: 'user' | 'system' | 'assistant';
   /**
    * The content of the message.
    */
@@ -2330,7 +2333,7 @@ export type MessageCreate = {
 /**
  * The role of the participant.
  */
-export type role = 'user' | 'system';
+export type role = 'user' | 'system' | 'assistant';
 
 export type MessageRole = 'assistant' | 'user' | 'tool' | 'function' | 'system';
 
@@ -3790,6 +3793,16 @@ export type ValidationError = {
   loc: Array<string | number>;
   msg: string;
   type: string;
+};
+
+export type VoiceSleeptimeManager = {
+  manager_type?: 'voice_sleeptime';
+  manager_agent_id: string;
+};
+
+export type VoiceSleeptimeManagerUpdate = {
+  manager_type?: 'voice_sleeptime';
+  manager_agent_id?: string | null;
 };
 
 export type WebSearchOptions = {

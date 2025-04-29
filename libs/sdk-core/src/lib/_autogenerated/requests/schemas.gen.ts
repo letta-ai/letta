@@ -4662,6 +4662,9 @@ export const $GroupCreate = {
         {
           $ref: '#/components/schemas/SleeptimeManager',
         },
+        {
+          $ref: '#/components/schemas/VoiceSleeptimeManager',
+        },
       ],
       title: 'Manager Config',
       description: '',
@@ -4675,6 +4678,7 @@ export const $GroupCreate = {
           round_robin: '#/components/schemas/RoundRobinManager',
           sleeptime: '#/components/schemas/SleeptimeManager',
           supervisor: '#/components/schemas/SupervisorManager',
+          voice_sleeptime: '#/components/schemas/VoiceSleeptimeManager',
         },
       },
     },
@@ -4738,6 +4742,9 @@ export const $GroupUpdate = {
             {
               $ref: '#/components/schemas/SleeptimeManagerUpdate',
             },
+            {
+              $ref: '#/components/schemas/VoiceSleeptimeManagerUpdate',
+            },
           ],
           discriminator: {
             propertyName: 'manager_type',
@@ -4746,6 +4753,8 @@ export const $GroupUpdate = {
               round_robin: '#/components/schemas/RoundRobinManagerUpdate',
               sleeptime: '#/components/schemas/SleeptimeManagerUpdate',
               supervisor: '#/components/schemas/SupervisorManagerUpdate',
+              voice_sleeptime:
+                '#/components/schemas/VoiceSleeptimeManagerUpdate',
             },
           },
         },
@@ -6072,7 +6081,14 @@ export const $MCPTool = {
 
 export const $ManagerType = {
   type: 'string',
-  enum: ['round_robin', 'supervisor', 'dynamic', 'sleeptime', 'swarm'],
+  enum: [
+    'round_robin',
+    'supervisor',
+    'dynamic',
+    'sleeptime',
+    'voice_sleeptime',
+    'swarm',
+  ],
   title: 'ManagerType',
 } as const;
 
@@ -6426,7 +6442,7 @@ export const $MessageCreate = {
   properties: {
     role: {
       type: 'string',
-      enum: ['user', 'system'],
+      enum: ['user', 'system', 'assistant'],
       title: 'Role',
       description: 'The role of the participant.',
     },
@@ -10507,6 +10523,52 @@ export const $ValidationError = {
   type: 'object',
   required: ['loc', 'msg', 'type'],
   title: 'ValidationError',
+} as const;
+
+export const $VoiceSleeptimeManager = {
+  properties: {
+    manager_type: {
+      type: 'string',
+      const: 'voice_sleeptime',
+      title: 'Manager Type',
+      description: '',
+      default: 'voice_sleeptime',
+    },
+    manager_agent_id: {
+      type: 'string',
+      title: 'Manager Agent Id',
+      description: '',
+    },
+  },
+  type: 'object',
+  required: ['manager_agent_id'],
+  title: 'VoiceSleeptimeManager',
+} as const;
+
+export const $VoiceSleeptimeManagerUpdate = {
+  properties: {
+    manager_type: {
+      type: 'string',
+      const: 'voice_sleeptime',
+      title: 'Manager Type',
+      description: '',
+      default: 'voice_sleeptime',
+    },
+    manager_agent_id: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Manager Agent Id',
+      description: '',
+    },
+  },
+  type: 'object',
+  title: 'VoiceSleeptimeManagerUpdate',
 } as const;
 
 export const $WebSearchOptions = {

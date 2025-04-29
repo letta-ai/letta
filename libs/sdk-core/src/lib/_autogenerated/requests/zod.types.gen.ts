@@ -820,6 +820,7 @@ export const ManagerType = z.union([
   z.literal('supervisor'),
   z.literal('dynamic'),
   z.literal('sleeptime'),
+  z.literal('voice_sleeptime'),
   z.literal('swarm'),
 ]);
 
@@ -2923,7 +2924,11 @@ export const LettaMessageContentUnion = z.union([
 
 export type MessageCreate = z.infer<typeof MessageCreate>;
 export const MessageCreate = z.object({
-  role: z.union([z.literal('user'), z.literal('system')]),
+  role: z.union([
+    z.literal('user'),
+    z.literal('system'),
+    z.literal('assistant'),
+  ]),
   content: z.union([
     z.array(LettaMessageContentUnion),
     z.string(),
@@ -3330,6 +3335,12 @@ export const SleeptimeManager = z.object({
     .optional(),
 });
 
+export type VoiceSleeptimeManager = z.infer<typeof VoiceSleeptimeManager>;
+export const VoiceSleeptimeManager = z.object({
+  manager_type: z.union([z.string(), z.undefined()]).optional(),
+  manager_agent_id: z.string(),
+});
+
 export type GroupCreate = z.infer<typeof GroupCreate>;
 export const GroupCreate = z.object({
   agent_ids: z.array(z.string()),
@@ -3340,6 +3351,7 @@ export const GroupCreate = z.object({
       SupervisorManager,
       DynamicManager,
       SleeptimeManager,
+      VoiceSleeptimeManager,
       z.undefined(),
     ])
     .optional(),
@@ -3375,6 +3387,16 @@ export const SleeptimeManagerUpdate = z.object({
     .optional(),
 });
 
+export type VoiceSleeptimeManagerUpdate = z.infer<
+  typeof VoiceSleeptimeManagerUpdate
+>;
+export const VoiceSleeptimeManagerUpdate = z.object({
+  manager_type: z.string().optional(),
+  manager_agent_id: z
+    .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+    .optional(),
+});
+
 export type GroupUpdate = z.infer<typeof GroupUpdate>;
 export const GroupUpdate = z.object({
   agent_ids: z
@@ -3393,6 +3415,7 @@ export const GroupUpdate = z.object({
       SupervisorManagerUpdate,
       DynamicManagerUpdate,
       SleeptimeManagerUpdate,
+      VoiceSleeptimeManagerUpdate,
       z.null(),
       z.array(
         z.union([
@@ -3400,6 +3423,7 @@ export const GroupUpdate = z.object({
           SupervisorManagerUpdate,
           DynamicManagerUpdate,
           SleeptimeManagerUpdate,
+          VoiceSleeptimeManagerUpdate,
           z.null(),
         ]),
       ),

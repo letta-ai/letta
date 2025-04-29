@@ -3087,6 +3087,7 @@
                                   "supervisor",
                                   "dynamic",
                                   "sleeptime",
+                                  "voice_sleeptime",
                                   "swarm"
                                 ]
                               },
@@ -3320,6 +3321,7 @@
                                         "supervisor",
                                         "dynamic",
                                         "sleeptime",
+                                        "voice_sleeptime",
                                         "swarm"
                                       ]
                                     },
@@ -6328,6 +6330,7 @@
                                       "supervisor",
                                       "dynamic",
                                       "sleeptime",
+                                      "voice_sleeptime",
                                       "swarm"
                                     ]
                                   },
@@ -6561,6 +6564,7 @@
                                             "supervisor",
                                             "dynamic",
                                             "sleeptime",
+                                            "voice_sleeptime",
                                             "swarm"
                                           ]
                                         },
@@ -9959,6 +9963,7 @@
                                       "supervisor",
                                       "dynamic",
                                       "sleeptime",
+                                      "voice_sleeptime",
                                       "swarm"
                                     ]
                                   },
@@ -10192,6 +10197,7 @@
                                             "supervisor",
                                             "dynamic",
                                             "sleeptime",
+                                            "voice_sleeptime",
                                             "swarm"
                                           ]
                                         },
