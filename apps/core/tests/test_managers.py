@@ -2191,6 +2191,12 @@ def test_update_tool_by_id(server: SyncServer, print_tool, default_user):
     # Assertions to check if the update was successful
     assert updated_tool.description == updated_description
     assert updated_tool.return_char_limit == return_char_limit
+    assert updated_tool.tool_type == ToolType.CUSTOM
+
+    # Dangerous: we bypass safety to give it another tool type
+    server.tool_manager.update_tool_by_id(print_tool.id, tool_update, actor=default_user, updated_tool_type=ToolType.EXTERNAL_LANGCHAIN)
+    updated_tool = server.tool_manager.get_tool_by_id(print_tool.id, actor=default_user)
+    assert updated_tool.tool_type == ToolType.EXTERNAL_LANGCHAIN
 
 
 def test_update_tool_source_code_refreshes_schema_and_name(server: SyncServer, print_tool, default_user):
