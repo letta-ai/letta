@@ -28,10 +28,10 @@ let nextConfig = {
   output: 'standalone',
   async rewrites() {
     return [
-      {
-        source: '/v1/:path*',
-        destination: `${process.env.CLOUD_API_ENDPOINT || 'https://api.letta.com'}/v1/:path*`,
-      },
+      // {
+      //   source: '/v1/:path*',
+      //   destination: `${process.env.CLOUD_API_ENDPOINT || 'https://api.letta.com'}/v1/:path*`,
+      // },
       {
         source: '/openai/:path*',
         destination: `${process.env.OPENAI_API_ENDPOINT || 'https://api.letta.com'}/openai/:path*`,

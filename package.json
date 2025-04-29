@@ -180,7 +180,6 @@
     "@dnd-kit/sortable": "^10.0.0",
     "@eslint/eslintrc": "^3.2.0",
     "@eslint/js": "^9.24.0",
-    "@microsoft/fetch-event-source": "^2.0.1",
     "@neondatabase/serverless": "^0.10.4",
     "@nx/cypress": "20.6.4",
     "@nx/devkit": "20.6.4",

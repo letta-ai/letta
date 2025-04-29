@@ -101,9 +101,7 @@ interface UseSendMessageOptions {
   onFailedToSendMessage?: (existingMessage: string) => void;
 }
 
-function errorHasResponseAndStatus(
-  e: unknown,
-): e is {
+function errorHasResponseAndStatus(e: unknown): e is {
   response: {
     status: number;
     json: () => Promise<{ reasons: RateLimitReason[] }>;

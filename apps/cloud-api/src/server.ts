@@ -67,11 +67,28 @@ export function startServer() {
     return info;
   });
 
+  const obfuscateCookieHeader = winston.format((info) => {
+    if (getIsExpressMeta(info.meta)) {
+      const { meta } = info;
+      const { headers } = meta.req;
+
+      const cookieHeader = headers.cookie;
+      if (cookieHeader) {
+        info.meta.req.headers.cookie = '[TRUNCATED]';
+      }
+
+      return info;
+    }
+
+    return info;
+  });
+
   app.use(
     expressWinston.logger({
       transports: [new winston.transports.Console()],
       format: winston.format.combine(
         obfuscateAuthorizationHeader(),
+        obfuscateCookieHeader(),
         winston.format.json(),
       ),
       meta: true, // optional: control whether you want to log the meta data about the request (default to true)
