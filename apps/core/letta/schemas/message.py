@@ -74,6 +74,7 @@ class MessageCreate(BaseModel):
     role: Literal[
         MessageRole.user,
         MessageRole.system,
+        MessageRole.assistant,
     ] = Field(..., description="The role of the participant.")
     content: Union[str, List[LettaMessageContentUnion]] = Field(
         ...,
