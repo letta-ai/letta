@@ -210,20 +210,20 @@ def create_letta_messages_from_llm_response(
 
     # TODO: Use ToolReturnContent instead of TextContent
     # TODO: This helps preserve ordering
-    if function_response:
-        tool_message = Message(
-            role=MessageRole.tool,
-            content=[TextContent(text=package_function_response(function_call_success, function_response))],
-            organization_id=actor.organization_id,
-            agent_id=agent_id,
-            model=model,
-            tool_calls=[],
-            tool_call_id=tool_call_id,
-            created_at=get_utc_time(),
-        )
-        if pre_computed_tool_message_id:
-            tool_message.id = pre_computed_tool_message_id
-        messages.append(tool_message)
+    tool_message = Message(
+        role=MessageRole.tool,
+        content=[TextContent(text=package_function_response(function_call_success, function_response))],
+        organization_id=actor.organization_id,
+        agent_id=agent_id,
+        model=model,
+        tool_calls=[],
+        tool_call_id=tool_call_id,
+        created_at=get_utc_time(),
+        name=function_name,
+    )
+    if pre_computed_tool_message_id:
+        tool_message.id = pre_computed_tool_message_id
+    messages.append(tool_message)
 
     if add_heartbeat_request_system_message:
         heartbeat_system_message = create_heartbeat_system_message(

@@ -196,13 +196,15 @@ async def test_multiple_messages(disable_e2b_api_key, client, agent, endpoint):
     stream = await async_client.chat.completions.create(**request.model_dump(exclude_none=True))
     async with stream:
         async for chunk in stream:
-            print(chunk)
+            if chunk.choices and chunk.choices[0].delta.content:
+                print(chunk.choices[0].delta.content)
     print("============================================")
     request = _get_chat_request("What are you up to?")
     stream = await async_client.chat.completions.create(**request.model_dump(exclude_none=True))
     async with stream:
         async for chunk in stream:
-            print(chunk)
+            if chunk.choices and chunk.choices[0].delta.content:
+                print(chunk.choices[0].delta.content)
 
 
 @pytest.mark.asyncio
