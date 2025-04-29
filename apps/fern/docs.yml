@@ -79,8 +79,6 @@ navigation:
             contents:
               - page: Custom Tools
                 path: pages/agents/custom_tools.mdx
-              - page: Local Tool Execution
-                path: pages/agents/local_tool_execution.mdx
               - page: Tool Rules
                 path: pages/agents/tool_rules.mdx
               - page: Tool Variables
