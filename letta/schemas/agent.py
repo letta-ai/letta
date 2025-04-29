@@ -29,6 +29,8 @@ class AgentType(str, Enum):
     memgpt_agent = "memgpt_agent"
     split_thread_agent = "split_thread_agent"
     sleeptime_agent = "sleeptime_agent"
+    voice_convo_agent = "voice_convo_agent"
+    voice_sleeptime_agent = "voice_sleeptime_agent"
 
 
 class AgentState(OrmMetadataBase, validate_assignment=True):

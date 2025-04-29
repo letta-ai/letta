@@ -44,7 +44,7 @@ from letta.schemas.embedding_config import EmbeddingConfig
 # openai schemas
 from letta.schemas.enums import JobStatus, MessageStreamStatus
 from letta.schemas.environment_variables import SandboxEnvironmentVariableCreate
-from letta.schemas.group import GroupCreate, SleeptimeManager
+from letta.schemas.group import GroupCreate, SleeptimeManager, VoiceSleeptimeManager
 from letta.schemas.job import Job, JobUpdate
 from letta.schemas.letta_message import LegacyLettaMessage, LettaMessage, ToolReturnMessage
 from letta.schemas.letta_message_content import TextContent
@@ -769,7 +769,10 @@ class SyncServer(Server):
         log_event(name="end create_agent db")
 
         if request.enable_sleeptime:
-            main_agent = self.create_sleeptime_agent(main_agent=main_agent, actor=actor)
+            if request.agent_type == AgentType.voice_convo_agent:
+                main_agent = self.create_voice_sleeptime_agent(main_agent=main_agent, actor=actor)
+            else:
+                main_agent = self.create_sleeptime_agent(main_agent=main_agent, actor=actor)
 
         return main_agent
 
@@ -788,7 +791,10 @@ class SyncServer(Server):
         if request.enable_sleeptime:
             agent = self.agent_manager.get_agent_by_id(agent_id=agent_id, actor=actor)
             if agent.multi_agent_group is None:
-                self.create_sleeptime_agent(main_agent=agent, actor=actor)
+                if agent.agent_type == AgentType.voice_convo_agent:
+                    self.create_voice_sleeptime_agent(main_agent=agent, actor=actor)
+                else:
+                    self.create_sleeptime_agent(main_agent=agent, actor=actor)
 
         return self.agent_manager.update_agent(
             agent_id=agent_id,
@@ -822,6 +828,38 @@ class SyncServer(Server):
                 manager_config=SleeptimeManager(
                     manager_agent_id=main_agent.id,
                     sleeptime_agent_frequency=5,
+                ),
+            ),
+            actor=actor,
+        )
+        return self.agent_manager.get_agent_by_id(agent_id=main_agent.id, actor=actor)
+
+    def create_voice_sleeptime_agent(self, main_agent: AgentState, actor: User) -> AgentState:
+        # TODO: Inject system
+        request = CreateAgent(
+            name=main_agent.name + "-sleeptime",
+            agent_type=AgentType.voice_sleeptime_agent,
+            block_ids=[block.id for block in main_agent.memory.blocks],
+            memory_blocks=[
+                CreateBlock(
+                    label="memory_persona",
+                    value=get_persona_text("sleeptime_memory_persona"),
+                ),
+            ],
+            llm_config=main_agent.llm_config,
+            embedding_config=main_agent.embedding_config,
+            project_id=main_agent.project_id,
+        )
+        voice_sleeptime_agent = self.agent_manager.create_agent(
+            agent_create=request,
+            actor=actor,
+        )
+        self.group_manager.create_group(
+            group=GroupCreate(
+                description="",
+                agent_ids=[voice_sleeptime_agent.id],
+                manager_config=VoiceSleeptimeManager(
+                    manager_agent_id=main_agent.id,
                 ),
             ),
             actor=actor,

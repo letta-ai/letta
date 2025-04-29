@@ -7,6 +7,8 @@ from letta.constants import (
     BASE_MEMORY_TOOLS,
     BASE_SLEEPTIME_TOOLS,
     BASE_TOOLS,
+    BASE_VOICE_SLEEPTIME_CHAT_TOOLS,
+    BASE_VOICE_SLEEPTIME_TOOLS,
     LETTA_TOOL_SET,
     MCP_TOOL_TAG_NAME_PREFIX,
     MULTI_AGENT_TOOLS,
@@ -190,7 +192,7 @@ class ToolManager:
     def upsert_base_tools(self, actor: PydanticUser) -> List[PydanticTool]:
         """Add default tools in base.py and multi_agent.py"""
         functions_to_schema = {}
-        module_names = ["base", "multi_agent"]
+        module_names = ["base", "multi_agent", "voice"]
 
         for module_name in module_names:
             full_module_name = f"letta.functions.function_sets.{module_name}"
@@ -223,9 +225,12 @@ class ToolManager:
                 elif name in BASE_SLEEPTIME_TOOLS:
                     tool_type = ToolType.LETTA_SLEEPTIME_CORE
                     tags = [tool_type.value]
+                elif name in BASE_VOICE_SLEEPTIME_TOOLS or name in BASE_VOICE_SLEEPTIME_CHAT_TOOLS:
+                    tool_type = ToolType.LETTA_VOICE_SLEEPTIME_CORE
+                    tags = [tool_type.value]
                 else:
                     raise ValueError(
-                        f"Tool name {name} is not in the list of base tool names: {BASE_TOOLS + BASE_MEMORY_TOOLS + MULTI_AGENT_TOOLS + BASE_SLEEPTIME_TOOLS}"
+                        f"Tool name {name} is not in the list of base tool names: {BASE_TOOLS + BASE_MEMORY_TOOLS + MULTI_AGENT_TOOLS + BASE_SLEEPTIME_TOOLS + BASE_VOICE_SLEEPTIME_TOOLS + BASE_VOICE_SLEEPTIME_CHAT_TOOLS}"
                     )
 
                 # create to tool

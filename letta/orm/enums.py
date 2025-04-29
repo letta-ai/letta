@@ -7,6 +7,7 @@ class ToolType(str, Enum):
     LETTA_MEMORY_CORE = "letta_memory_core"
     LETTA_MULTI_AGENT_CORE = "letta_multi_agent_core"
     LETTA_SLEEPTIME_CORE = "letta_sleeptime_core"
+    LETTA_VOICE_SLEEPTIME_CORE = "letta_voice_sleeptime_core"
     EXTERNAL_COMPOSIO = "external_composio"
     EXTERNAL_LANGCHAIN = "external_langchain"
     # TODO is "external" the right name here? Since as of now, MCP is local / doesn't support remote?
