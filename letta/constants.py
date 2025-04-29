@@ -70,7 +70,7 @@ BASE_SLEEPTIME_TOOLS = [
     # "conversation_search",
 ]
 # Base tools for the voice agent
-BASE_VOICE_SLEEPTIME_CHAT_TOOLS = ["search_memory"]
+BASE_VOICE_SLEEPTIME_CHAT_TOOLS = [SEND_MESSAGE_TOOL_NAME, "search_memory"]
 # Base memory tools for sleeptime agent
 BASE_VOICE_SLEEPTIME_TOOLS = [
     "store_memories",

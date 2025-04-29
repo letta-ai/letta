@@ -44,7 +44,7 @@ from letta.schemas.embedding_config import EmbeddingConfig
 # openai schemas
 from letta.schemas.enums import JobStatus, MessageStreamStatus
 from letta.schemas.environment_variables import SandboxEnvironmentVariableCreate
-from letta.schemas.group import GroupCreate, SleeptimeManager, VoiceSleeptimeManager
+from letta.schemas.group import GroupCreate, ManagerType, SleeptimeManager, VoiceSleeptimeManager
 from letta.schemas.job import Job, JobUpdate
 from letta.schemas.letta_message import LegacyLettaMessage, LettaMessage, ToolReturnMessage
 from letta.schemas.letta_message_content import TextContent
@@ -397,7 +397,9 @@ class SyncServer(Server):
     def load_agent(self, agent_id: str, actor: User, interface: Union[AgentInterface, None] = None) -> Agent:
         """Updated method to load agents from persisted storage"""
         agent_state = self.agent_manager.get_agent_by_id(agent_id=agent_id, actor=actor)
-        if agent_state.multi_agent_group:
+        # TODO: Think about how to integrate voice sleeptime into sleeptime
+        # TODO: Voice sleeptime agents turn into normal agents when being messaged
+        if agent_state.multi_agent_group and agent_state.multi_agent_group.manager_type != ManagerType.voice_sleeptime:
             return load_multi_agent(
                 group=agent_state.multi_agent_group, agent_state=agent_state, actor=actor, interface=interface, mcp_clients=self.mcp_clients
             )
@@ -843,7 +845,7 @@ class SyncServer(Server):
             memory_blocks=[
                 CreateBlock(
                     label="memory_persona",
-                    value=get_persona_text("sleeptime_memory_persona"),
+                    value=get_persona_text("voice_memory_persona"),
                 ),
             ],
             llm_config=main_agent.llm_config,
@@ -856,7 +858,7 @@ class SyncServer(Server):
         )
         self.group_manager.create_group(
             group=GroupCreate(
-                description="",
+                description="Low latency voice chat with async memory management.",
                 agent_ids=[voice_sleeptime_agent.id],
                 manager_config=VoiceSleeptimeManager(
                     manager_agent_id=main_agent.id,

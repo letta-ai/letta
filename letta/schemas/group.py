@@ -11,6 +11,7 @@ class ManagerType(str, Enum):
     supervisor = "supervisor"
     dynamic = "dynamic"
     sleeptime = "sleeptime"
+    voice_sleeptime = "voice_sleeptime"
     swarm = "swarm"
 
 
@@ -84,12 +85,12 @@ class SleeptimeManagerUpdate(ManagerConfig):
 
 
 class VoiceSleeptimeManager(ManagerConfig):
-    manager_type: Literal[ManagerType.sleeptime] = Field(ManagerType.sleeptime, description="")
+    manager_type: Literal[ManagerType.voice_sleeptime] = Field(ManagerType.voice_sleeptime, description="")
     manager_agent_id: str = Field(..., description="")
 
 
 class VoiceSleeptimeManagerUpdate(ManagerConfig):
-    manager_type: Literal[ManagerType.sleeptime] = Field(ManagerType.sleeptime, description="")
+    manager_type: Literal[ManagerType.voice_sleeptime] = Field(ManagerType.voice_sleeptime, description="")
     manager_agent_id: Optional[str] = Field(None, description="")
 
 
@@ -98,13 +99,13 @@ class VoiceSleeptimeManagerUpdate(ManagerConfig):
 
 
 ManagerConfigUnion = Annotated[
-    Union[RoundRobinManager, SupervisorManager, DynamicManager, SleeptimeManager],
+    Union[RoundRobinManager, SupervisorManager, DynamicManager, SleeptimeManager, VoiceSleeptimeManager],
     Field(discriminator="manager_type"),
 ]
 
 
 ManagerConfigUpdateUnion = Annotated[
-    Union[RoundRobinManagerUpdate, SupervisorManagerUpdate, DynamicManagerUpdate, SleeptimeManagerUpdate],
+    Union[RoundRobinManagerUpdate, SupervisorManagerUpdate, DynamicManagerUpdate, SleeptimeManagerUpdate, VoiceSleeptimeManagerUpdate],
     Field(discriminator="manager_type"),
 ]
 

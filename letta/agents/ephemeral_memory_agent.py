@@ -135,7 +135,7 @@ Use `rethink_user_memor(new_memory)` as many times as you need to iteratively im
             if function_name == "rethink_user_memor":
                 print("Called rethink_user_memor")
                 print(function_args)
-                result = self.rethink_user_memor(agent_state=agent_state, **function_args)
+                result = self.rethink_user_memory(agent_state=agent_state, **function_args)
             elif function_name == "finish_rethinking_memory":
                 print("Called finish_rethinking_memory")
                 break
