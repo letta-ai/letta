@@ -372,8 +372,8 @@ web-slow:
 setup-desktop:
   @echo "🚧 Setting up the desktop app..."
   cd apps/desktop-electron && npm install
-  npm i --no-save nx-electron@^20.0.0
-  npm run desktop:deps
+  npm i --no-save nx-electron@^20.0.2
+  cd apps/desktop-electron && npm run desktop:deps
 
 
 ready:
