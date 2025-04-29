@@ -83,6 +83,7 @@ from letta.server.rest_api.utils import sse_async_generator
 from letta.services.agent_manager import AgentManager
 from letta.services.block_manager import BlockManager
 from letta.services.group_manager import GroupManager
+from letta.services.helpers.tool_execution_helper import prepare_local_sandbox
 from letta.services.identity_manager import IdentityManager
 from letta.services.job_manager import JobManager
 from letta.services.llm_batch_manager import LLMBatchManager
@@ -258,6 +259,13 @@ class SyncServer(Server):
                     sandbox_config_create=sandbox_config_create, actor=oss_default_user
                 )
                 logger.info(f"Successfully created default local sandbox config:\n{sandbox_config.get_local_config().model_dump()}")
+
+                if use_venv and tool_settings.tool_exec_autoreload_venv:
+                    prepare_local_sandbox(
+                        sandbox_config.get_local_config(),
+                        env=os.environ.copy(),
+                        force_recreate=True,
+                    )
 
         # collect providers (always has Letta as a default)
         self._enabled_providers: List[Provider] = [LettaProvider()]

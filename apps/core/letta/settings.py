@@ -19,6 +19,7 @@ class ToolSettings(BaseSettings):
     tool_exec_dir: Optional[str] = None
     tool_sandbox_timeout: float = 180
     tool_exec_venv_name: Optional[str] = None
+    tool_exec_autoreload_venv: bool = True
 
     # MCP settings
     mcp_connect_to_server_timeout: float = 30.0
