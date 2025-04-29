@@ -84,7 +84,7 @@ export const STARTER_KITS = {
     },
     image: sleeptime,
     agentState: {
-      model: 'anthropic/claude-3-5-sonnet',
+      model: 'anthropic/claude-3-5-sonnet-20240620',
       enable_sleeptime: true,
       description:
         'Act as a companion to the user, providing emotional support and companionship. This agent has a corresponding sleep-time agent that manages its memory.',
