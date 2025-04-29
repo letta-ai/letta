@@ -801,7 +801,13 @@ Parameters:
 
 export const $AgentType = {
   type: 'string',
-  enum: ['memgpt_agent', 'split_thread_agent', 'sleeptime_agent'],
+  enum: [
+    'memgpt_agent',
+    'split_thread_agent',
+    'sleeptime_agent',
+    'voice_convo_agent',
+    'voice_sleeptime_agent',
+  ],
   title: 'AgentType',
   description: 'Enum to represent the type of agent.',
 } as const;
@@ -5999,9 +6005,9 @@ export const $LocalSandboxConfig = {
       title: 'Sandbox Dir',
       description: 'Directory for the sandbox environment.',
     },
-    force_create_venv: {
+    use_venv: {
       type: 'boolean',
-      title: 'Force Create Venv',
+      title: 'Use Venv',
       description:
         'Whether or not to use the venv, or run directly in the same run loop.',
       default: false,
@@ -6020,7 +6026,7 @@ export const $LocalSandboxConfig = {
       type: 'array',
       title: 'Pip Requirements',
       description:
-        'List of pip packages to install with mandatory name and optional version following semantic versioning. This only is considered when force_create_venv is True.',
+        'List of pip packages to install with mandatory name and optional version following semantic versioning. This only is considered when use_venv is True.',
     },
   },
   type: 'object',
@@ -6400,15 +6406,20 @@ export const $Message = {
 
 Attributes:
     id (str): The unique identifier of the message.
-    role (MessageRole): The role of the participant.
-    text (str): The text of the message.
-    user_id (str): The unique identifier of the user.
+    organization_id (str): The unique identifier of the organization.
     agent_id (str): The unique identifier of the agent.
     model (str): The model used to make the function call.
+    role (MessageRole): The role of the participant.
+    content (List[LettaMessageContentUnion]): The content of the message.
     name (str): The name of the participant.
-    created_at (datetime): The time the message was created.
     tool_calls (List[OpenAIToolCall,]): The list of tool calls requested.
-    tool_call_id (str): The id of the tool call.`,
+    tool_call_id (str): The id of the tool call.
+    step_id (str): The id of the step that this message was created in.
+    otid (str): The offline threading id associated with this message.
+    tool_returns (List[ToolReturn]): Tool execution return information for prior tool calls.
+    group_id (str): The multi-agent group that the message was sent in.
+    sender_id (str): The id of the sender of the message, can be an identity id or agent id.
+    created_at (datetime): The timestamp when the object was created.`,
 } as const;
 
 export const $MessageCreate = {
@@ -9638,6 +9649,7 @@ export const $ToolType = {
     'letta_memory_core',
     'letta_multi_agent_core',
     'letta_sleeptime_core',
+    'letta_voice_sleeptime_core',
     'external_composio',
     'external_langchain',
     'external_mcp',

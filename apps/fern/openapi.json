@@ -6382,10 +6382,28 @@
     "/v1/embeddings/total_storage_size": {
       "get": {
         "tags": ["embeddings"],
-        "summary": "Get Embeddings Storage Size",
-        "description": "Get the total size of all embeddings in the database for a user in GB.",
+        "summary": "Get Embeddings Total Storage Size",
+        "description": "Get the total size of all embeddings in the database for a user in the storage unit given.",
         "operationId": "get_total_storage_size",
-        "parameters": [],
+        "parameters": [
+          {
+            "name": "storage-unit",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": "GB",
+              "title": "Storage Unit"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Successful Response",
@@ -6564,7 +6582,15 @@
             "name": "returnAgentState",
             "in": "query",
             "schema": {
-              "type": "boolean"
+              "oneOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "string",
+                  "enum": ["true"]
+                }
+              ]
             }
           }
         ],
@@ -8081,7 +8107,13 @@
       },
       "AgentType": {
         "type": "string",
-        "enum": ["memgpt_agent", "split_thread_agent", "sleeptime_agent"],
+        "enum": [
+          "memgpt_agent",
+          "split_thread_agent",
+          "sleeptime_agent",
+          "voice_convo_agent",
+          "voice_sleeptime_agent"
+        ],
         "title": "AgentType",
         "description": "Enum to represent the type of agent."
       },
@@ -13017,9 +13049,9 @@
             "title": "Sandbox Dir",
             "description": "Directory for the sandbox environment."
           },
-          "force_create_venv": {
+          "use_venv": {
             "type": "boolean",
-            "title": "Force Create Venv",
+            "title": "Use Venv",
             "description": "Whether or not to use the venv, or run directly in the same run loop.",
             "default": false
           },
@@ -13035,7 +13067,7 @@
             },
             "type": "array",
             "title": "Pip Requirements",
-            "description": "List of pip packages to install with mandatory name and optional version following semantic versioning. This only is considered when force_create_venv is True."
+            "description": "List of pip packages to install with mandatory name and optional version following semantic versioning. This only is considered when use_venv is True."
           }
         },
         "type": "object",
@@ -13378,7 +13410,7 @@
         "type": "object",
         "required": ["role"],
         "title": "Message",
-        "description": "Letta's internal representation of a message. Includes methods to convert to/from LLM provider formats.\n\nAttributes:\n    id (str): The unique identifier of the message.\n    role (MessageRole): The role of the participant.\n    text (str): The text of the message.\n    user_id (str): The unique identifier of the user.\n    agent_id (str): The unique identifier of the agent.\n    model (str): The model used to make the function call.\n    name (str): The name of the participant.\n    created_at (datetime): The time the message was created.\n    tool_calls (List[OpenAIToolCall,]): The list of tool calls requested.\n    tool_call_id (str): The id of the tool call."
+        "description": "Letta's internal representation of a message. Includes methods to convert to/from LLM provider formats.\n\nAttributes:\n    id (str): The unique identifier of the message.\n    organization_id (str): The unique identifier of the organization.\n    agent_id (str): The unique identifier of the agent.\n    model (str): The model used to make the function call.\n    role (MessageRole): The role of the participant.\n    content (List[LettaMessageContentUnion]): The content of the message.\n    name (str): The name of the participant.\n    tool_calls (List[OpenAIToolCall,]): The list of tool calls requested.\n    tool_call_id (str): The id of the tool call.\n    step_id (str): The id of the step that this message was created in.\n    otid (str): The offline threading id associated with this message.\n    tool_returns (List[ToolReturn]): Tool execution return information for prior tool calls.\n    group_id (str): The multi-agent group that the message was sent in.\n    sender_id (str): The id of the sender of the message, can be an identity id or agent id.\n    created_at (datetime): The timestamp when the object was created."
       },
       "MessageCreate": {
         "properties": {
@@ -16344,6 +16376,7 @@
           "letta_memory_core",
           "letta_multi_agent_core",
           "letta_sleeptime_core",
+          "letta_voice_sleeptime_core",
           "external_composio",
           "external_langchain",
           "external_mcp"

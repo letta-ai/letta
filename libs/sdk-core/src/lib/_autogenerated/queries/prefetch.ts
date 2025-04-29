@@ -1859,24 +1859,31 @@ export const prefetchUseMessagesServiceRetrieveBatchRun = (
     queryFn: () => MessagesService.retrieveBatchRun({ batchId, userId }),
   });
 /**
- * Get Embeddings Storage Size
- * Get the total size of all embeddings in the database for a user in GB.
+ * Get Embeddings Total Storage Size
+ * Get the total size of all embeddings in the database for a user in the storage unit given.
  * @param data The data for the request.
  * @param data.userId
+ * @param data.storageUnit
  * @returns number Successful Response
  * @throws ApiError
  */
 export const prefetchUseEmbeddingsServiceGetTotalStorageSize = (
   queryClient: QueryClient,
   {
+    storageUnit,
     userId,
   }: {
+    storageUnit?: string;
     userId?: string;
   } = {},
 ) =>
   queryClient.prefetchQuery({
-    queryKey: Common.UseEmbeddingsServiceGetTotalStorageSizeKeyFn({ userId }),
-    queryFn: () => EmbeddingsService.getTotalStorageSize({ userId }),
+    queryKey: Common.UseEmbeddingsServiceGetTotalStorageSizeKeyFn({
+      storageUnit,
+      userId,
+    }),
+    queryFn: () =>
+      EmbeddingsService.getTotalStorageSize({ storageUnit, userId }),
   });
 /**
  * List Users

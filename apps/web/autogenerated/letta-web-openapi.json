@@ -1014,7 +1014,9 @@
                         "enum": [
                           "memgpt_agent",
                           "split_thread_agent",
-                          "sleeptime_agent"
+                          "sleeptime_agent",
+                          "voice_convo_agent",
+                          "voice_sleeptime_agent"
                         ]
                       },
                       "llm_config": {
@@ -1956,6 +1958,7 @@
                                 "letta_memory_core",
                                 "letta_multi_agent_core",
                                 "letta_sleeptime_core",
+                                "letta_voice_sleeptime_core",
                                 "external_composio",
                                 "external_langchain",
                                 "external_mcp"
@@ -4252,7 +4255,9 @@
                             "enum": [
                               "memgpt_agent",
                               "split_thread_agent",
-                              "sleeptime_agent"
+                              "sleeptime_agent",
+                              "voice_convo_agent",
+                              "voice_sleeptime_agent"
                             ]
                           },
                           "llm_config": {
@@ -5194,6 +5199,7 @@
                                     "letta_memory_core",
                                     "letta_multi_agent_core",
                                     "letta_sleeptime_core",
+                                    "letta_voice_sleeptime_core",
                                     "external_composio",
                                     "external_langchain",
                                     "external_mcp"
@@ -6829,7 +6835,15 @@
             "name": "returnAgentState",
             "in": "query",
             "schema": {
-              "type": "boolean"
+              "oneOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "string",
+                  "enum": ["true"]
+                }
+              ]
             }
           }
         ],
@@ -7872,7 +7886,9 @@
                             "enum": [
                               "memgpt_agent",
                               "split_thread_agent",
-                              "sleeptime_agent"
+                              "sleeptime_agent",
+                              "voice_convo_agent",
+                              "voice_sleeptime_agent"
                             ]
                           },
                           "llm_config": {
@@ -8814,6 +8830,7 @@
                                     "letta_memory_core",
                                     "letta_multi_agent_core",
                                     "letta_sleeptime_core",
+                                    "letta_voice_sleeptime_core",
                                     "external_composio",
                                     "external_langchain",
                                     "external_mcp"

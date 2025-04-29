@@ -2337,10 +2337,11 @@ export const useMessagesServiceRetrieveBatchRun = <
     ...options,
   });
 /**
- * Get Embeddings Storage Size
- * Get the total size of all embeddings in the database for a user in GB.
+ * Get Embeddings Total Storage Size
+ * Get the total size of all embeddings in the database for a user in the storage unit given.
  * @param data The data for the request.
  * @param data.userId
+ * @param data.storageUnit
  * @returns number Successful Response
  * @throws ApiError
  */
@@ -2350,8 +2351,10 @@ export const useEmbeddingsServiceGetTotalStorageSize = <
   TQueryKey extends Array<unknown> = unknown[],
 >(
   {
+    storageUnit,
     userId,
   }: {
+    storageUnit?: string;
     userId?: string;
   } = {},
   queryKey?: TQueryKey,
@@ -2359,10 +2362,11 @@ export const useEmbeddingsServiceGetTotalStorageSize = <
 ) =>
   useQuery<TData, TError>({
     queryKey: Common.UseEmbeddingsServiceGetTotalStorageSizeKeyFn(
-      { userId },
+      { storageUnit, userId },
       queryKey,
     ),
-    queryFn: () => EmbeddingsService.getTotalStorageSize({ userId }) as TData,
+    queryFn: () =>
+      EmbeddingsService.getTotalStorageSize({ storageUnit, userId }) as TData,
     ...options,
   });
 /**

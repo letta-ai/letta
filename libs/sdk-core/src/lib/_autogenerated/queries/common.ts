@@ -1421,14 +1421,16 @@ export const useEmbeddingsServiceGetTotalStorageSizeKey =
   'EmbeddingsServiceGetTotalStorageSize';
 export const UseEmbeddingsServiceGetTotalStorageSizeKeyFn = (
   {
+    storageUnit,
     userId,
   }: {
+    storageUnit?: string;
     userId?: string;
   } = {},
   queryKey?: Array<unknown>,
 ) => [
   useEmbeddingsServiceGetTotalStorageSizeKey,
-  ...(queryKey ?? [{ userId }]),
+  ...(queryKey ?? [{ storageUnit, userId }]),
 ];
 export type UsersServiceListUsersDefaultResponse = Awaited<
   ReturnType<typeof UsersService.listUsers>

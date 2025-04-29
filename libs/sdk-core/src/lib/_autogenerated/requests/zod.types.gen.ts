@@ -610,6 +610,8 @@ export const AgentType = z.union([
   z.literal('memgpt_agent'),
   z.literal('split_thread_agent'),
   z.literal('sleeptime_agent'),
+  z.literal('voice_convo_agent'),
+  z.literal('voice_sleeptime_agent'),
 ]);
 
 export type TextResponseFormat = z.infer<typeof TextResponseFormat>;
@@ -705,6 +707,7 @@ export const ToolType = z.union([
   z.literal('letta_memory_core'),
   z.literal('letta_multi_agent_core'),
   z.literal('letta_sleeptime_core'),
+  z.literal('letta_voice_sleeptime_core'),
   z.literal('external_composio'),
   z.literal('external_langchain'),
   z.literal('external_mcp'),
@@ -3993,7 +3996,7 @@ export const LocalSandboxConfig = z.object({
   sandbox_dir: z
     .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
     .optional(),
-  force_create_venv: z.boolean().optional(),
+  use_venv: z.boolean().optional(),
   venv_name: z.string().optional(),
   pip_requirements: z.array(PipRequirement).optional(),
 });
@@ -7666,6 +7669,9 @@ export const get_Get_total_storage_size = {
   parameters: z.object({
     header: z.object({
       user_id: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'storage-unit': z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
     }),

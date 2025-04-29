@@ -3970,10 +3970,11 @@ export class VoiceService {
 
 export class EmbeddingsService {
   /**
-   * Get Embeddings Storage Size
-   * Get the total size of all embeddings in the database for a user in GB.
+   * Get Embeddings Total Storage Size
+   * Get the total size of all embeddings in the database for a user in the storage unit given.
    * @param data The data for the request.
    * @param data.userId
+   * @param data.storageUnit
    * @returns number Successful Response
    * @throws ApiError
    */

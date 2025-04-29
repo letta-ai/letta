@@ -220,15 +220,24 @@ class PassageManager:
         with self.session_maker() as session:
             return AgentPassage.size(db_session=session, actor=actor, agent_id=agent_id)
 
-    def estimate_embeddings_size_GB(
+    def estimate_embeddings_size(
         self,
         actor: PydanticUser,
         agent_id: Optional[str] = None,
+        storage_unit: str = "GB",
     ) -> float:
         """
-        Estimate the size of the embeddings in GB.
+        Estimate the size of the embeddings. Defaults to GB.
         """
+        BYTES_PER_STORAGE_UNIT = {
+            "B": 1,
+            "KB": 1024,
+            "MB": 1024**2,
+            "GB": 1024**3,
+            "TB": 1024**4,
+        }
+        if storage_unit not in BYTES_PER_STORAGE_UNIT:
+            raise ValueError(f"Invalid storage unit: {storage_unit}. Must be one of {list(BYTES_PER_STORAGE_UNIT.keys())}.")
         BYTES_PER_EMBEDDING_DIM = 4
-        BYTES_PER_GB = 1024 * 1024 * 1024
-        GB_PER_EMBEDDING = BYTES_PER_EMBEDDING_DIM / BYTES_PER_GB * MAX_EMBEDDING_DIM
+        GB_PER_EMBEDDING = BYTES_PER_EMBEDDING_DIM / BYTES_PER_STORAGE_UNIT[storage_unit] * MAX_EMBEDDING_DIM
         return self.size(actor=actor, agent_id=agent_id) * GB_PER_EMBEDDING
