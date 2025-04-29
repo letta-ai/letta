@@ -5,6 +5,9 @@ on:
     types: [labeled]
     paths:
       - 'letta/schemas/**'
+      - 'letta/llm_api/**'
+      - 'letta/agent.py'
+      - 'letta/embeddings.py'
 
 jobs:
   send-messages:
@@ -86,6 +89,9 @@ jobs:
           
           # Extract ONLY the schema files
           git checkout pr-${{ github.event.pull_request.number }} -- letta/schemas/
+          git checkout pr-${{ github.event.pull_request.number }} -- letta/llm_api/
+          git checkout pr-${{ github.event.pull_request.number }} -- letta/agent.py
+          git checkout pr-${{ github.event.pull_request.number }} -- letta/embeddings.py
 
       - name: Set up python 3.12
         id: setup-python
