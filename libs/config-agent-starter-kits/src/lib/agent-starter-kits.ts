@@ -27,24 +27,9 @@ export interface StarterKit {
   architecture: StarterKitArchitecture;
 }
 
-export const defaultLLMConfig = {
-  model: 'gpt-4o-mini',
-  model_endpoint_type: 'openai',
-  model_endpoint: 'https://api.openai.com/v1',
-  model_wrapper: null,
-  context_window: 32000,
-} satisfies AgentState['llm_config'];
+export const defaultModel = 'openai/gpt-4o-mini';
 
-export const defaultEmbeddingConfig = {
-  embedding_endpoint_type: 'openai',
-  embedding_endpoint: 'https://api.openai.com/v1',
-  embedding_model: 'text-embedding-3-small',
-  embedding_dim: 1536,
-  embedding_chunk_size: 300,
-  azure_endpoint: null,
-  azure_version: null,
-  azure_deployment: null,
-} satisfies AgentState['embedding_config'];
+export const defaultEmbeddingModel = 'openai/text-embedding-3-small';
 
 export function isAStarterKitName(
   templateName: string,
@@ -86,7 +71,7 @@ export const STARTER_KITS = {
   sleepTime: {
     architecture: 'sleeptime',
     id: 'sleepTime',
-    name: 'sleep-time-companion',
+    name: 'companion',
     useGetTitle: () => {
       const t = useTranslations('starter-kits');
 
@@ -99,6 +84,7 @@ export const STARTER_KITS = {
     },
     image: sleeptime,
     agentState: {
+      model: 'anthropic/claude-3-5-sonnet',
       enable_sleeptime: true,
       description:
         'Act as a companion to the user, providing emotional support and companionship. This agent has a corresponding sleep-time agent that manages its memory.',

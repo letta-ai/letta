@@ -1,8 +1,8 @@
 import type { ServerInferRequest, ServerInferResponses } from '@ts-rest/core';
 import type { contracts } from '@letta-cloud/sdk-web';
 import {
-  defaultEmbeddingConfig,
-  defaultLLMConfig,
+  defaultEmbeddingModel,
+  defaultModel,
   isAStarterKitName,
   STARTER_KITS,
 } from '@letta-cloud/config-agent-starter-kits';
@@ -128,8 +128,11 @@ async function createAgentFromStarterKit(
       body: {
         ...starterKit.agentState,
         name: starterKit.name,
-        llm_config: defaultLLMConfig,
-        embedding_config: defaultEmbeddingConfig,
+        model:
+          'model' in starterKit.agentState
+            ? starterKit.agentState.model
+            : defaultModel,
+        embedding: defaultEmbeddingModel,
         tool_ids: toolIds,
         project_id: project.id,
       },
@@ -213,8 +216,11 @@ async function createTemplateFromStarterKit(
     createAgentState: {
       ...starterKit.agentState,
       tool_ids: toolIds,
-      llm_config: defaultLLMConfig,
-      embedding_config: defaultEmbeddingConfig,
+      model:
+        'model' in starterKit.agentState
+          ? starterKit.agentState.model
+          : defaultModel,
+      embedding: defaultEmbeddingModel,
     },
   });
 
