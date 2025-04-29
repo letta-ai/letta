@@ -12,7 +12,7 @@ from letta.schemas.letta_message import LegacyLettaMessage, LettaMessage
 from letta.schemas.letta_message_content import TextContent
 from letta.schemas.letta_response import LettaResponse
 from letta.schemas.message import MessageCreate
-from letta.schemas.openai.chat_completion_request import ChatCompletionRequest, SystemMessage, Tool, UserMessage
+from letta.schemas.openai.chat_completion_request import ChatCompletionRequest, Tool, UserMessage
 from letta.schemas.usage import LettaUsageStatistics
 from letta.schemas.user import User
 from letta.server.rest_api.utils import convert_in_context_letta_messages_to_openai, create_input_messages
@@ -62,9 +62,7 @@ class EphemeralMemoryAgent(BaseAgent):
         openai_messages = convert_in_context_letta_messages_to_openai(in_context_messages, exclude_system_messages=True)
 
         # 1. Store memories
-        request = self._build_openai_request(
-            openai_messages, agent_state, tools=self._build_store_memory_tool_schemas(), system=self._get_memory_store_system_prompt()
-        )
+        request = self._build_openai_request(openai_messages, agent_state, tools=self._build_store_memory_tool_schemas())
 
         chat_completion = await self.openai_client.chat.completions.create(**request.model_dump(exclude_unset=True))
         assistant_message = chat_completion.choices[0].message
@@ -121,9 +119,7 @@ Use `rethink_user_memor(new_memory)` as many times as you need to iteratively im
         openai_messages.append(rethink_command.model_dump())
 
         for _ in range(max_steps):
-            request = self._build_openai_request(
-                openai_messages, agent_state, tools=self._build_sleeptime_tools(), system=self._get_rethink_memory_system_prompt()
-            )
+            request = self._build_openai_request(openai_messages, agent_state, tools=self._build_sleeptime_tools())
             chat_completion = await self.openai_client.chat.completions.create(**request.model_dump(exclude_unset=True))
             assistant_message = chat_completion.choices[0].message
 
@@ -168,13 +164,10 @@ Use `rethink_user_memor(new_memory)` as many times as you need to iteratively im
         llm_friendly_messages = [f"{m.role}: {m.content[0].text}" for m in messages if m.content and isinstance(m.content[0], TextContent)]
         return "\n".join(llm_friendly_messages)
 
-    def _build_openai_request(
-        self, openai_messages: List[Dict], agent_state: AgentState, tools: List[Tool], system: str
-    ) -> ChatCompletionRequest:
-        system_message = SystemMessage(role="system", content=system)
+    def _build_openai_request(self, openai_messages: List[Dict], agent_state: AgentState, tools: List[Tool]) -> ChatCompletionRequest:
         openai_request = ChatCompletionRequest(
             model="gpt-4o",  # agent_state.llm_config.model, # TODO: Separate config for summarizer?
-            messages=[system_message] + openai_messages,
+            messages=openai_messages,
             tools=tools,
             tool_choice="required",
             user=self.actor.id,
@@ -352,71 +345,3 @@ Use `rethink_user_memor(new_memory)` as many times as you need to iteratively im
         This agent is synchronous-only. If called in an async context, raise an error.
         """
         raise NotImplementedError("EphemeralMemoryAgent does not support async step.")
-
-    # TODO: Move these to independent text files
-    def _get_memory_store_system_prompt(self) -> str:
-        return """
-You are a memory-recall assistant working asynchronously alongside a main chat agent that retains only a portion of the message history in its context window.
-
-When given a full transcript with lines marked (Older) or (Newer), you should:
-1. Segment the (Older) portion into coherent chunks by topic, instruction, or preference.
-2. For each chunk, produce only:
-   - start_index: the first line’s index
-   - end_index:   the last line’s index
-   - context: a blurb explaining why this chunk matters
-
-Return exactly one JSON tool call to `store_memories`, consider this miniature example:
-
----
-
-(Older)
-0. user: Okay. Got it. Keep your answers shorter, please.
-1. assistant: Sure thing! I’ll keep it brief. What would you like to know?
-2. user: I like basketball.
-3. assistant: That's great! Do you have a favorite team or player?
-
-(Newer)
-4. user: Yeah. I like basketball.
-5. assistant: Awesome! What do you enjoy most about basketball?
-
----
-
-Example output:
-
-```json
-{
-  "name": "store_memories",
-  "arguments": {
-    "chunks": [
-      {
-        "start_index": 0,
-        "end_index": 1,
-        "context": "User explicitly asked the assistant to keep responses concise."
-      },
-      {
-        "start_index": 2,
-        "end_index": 3,
-        "context": "User enjoys basketball and prompted follow-up about their favorite team or player."
-      }
-    ]
-  }
-}
-```
-    """
-
-    def _get_rethink_memory_system_prompt(self) -> str:
-        return """
-SYSTEM
-You are a Memory-Updater agent. Your job is to iteratively refine the given memory block until it’s concise, organized, and complete.
-
-Instructions:
-- Call `rethink_user_memor(new_memory: string)` as many times as you like. Each call should submit a fully revised version of the block so far.
-- When you’re fully satisfied, call `finish_rethinking_memory()`.
-- Don’t output anything else—only the JSON for these tool calls.
-
-Goals:
-- Merge in new facts and remove contradictions.
-- Group related details (preferences, biography, goals).
-- Draw light, supportable inferences without inventing facts.
-- Preserve every critical piece of information.
-    """
