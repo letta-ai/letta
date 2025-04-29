@@ -7,6 +7,7 @@ from letta.constants import (
     FUNCTION_RETURN_CHAR_LIMIT,
     LETTA_CORE_TOOL_MODULE_NAME,
     LETTA_MULTI_AGENT_TOOL_MODULE_NAME,
+    LETTA_VOICE_TOOL_MODULE_NAME,
     MCP_TOOL_TAG_NAME_PREFIX,
 )
 from letta.functions.ast_parsers import get_function_name_and_description
@@ -98,15 +99,15 @@ class Tool(BaseTool):
                     except Exception as e:
                         error_msg = f"Failed to derive json schema for tool with id={self.id} name={self.name}. Error: {str(e)}"
                         logger.error(error_msg)
-        elif self.tool_type in {ToolType.LETTA_CORE, ToolType.LETTA_MEMORY_CORE}:
+        elif self.tool_type in {ToolType.LETTA_CORE, ToolType.LETTA_MEMORY_CORE, ToolType.LETTA_SLEEPTIME_CORE}:
             # If it's letta core tool, we generate the json_schema on the fly here
             self.json_schema = get_json_schema_from_module(module_name=LETTA_CORE_TOOL_MODULE_NAME, function_name=self.name)
         elif self.tool_type in {ToolType.LETTA_MULTI_AGENT_CORE}:
             # If it's letta multi-agent tool, we also generate the json_schema on the fly here
             self.json_schema = get_json_schema_from_module(module_name=LETTA_MULTI_AGENT_TOOL_MODULE_NAME, function_name=self.name)
-        elif self.tool_type in {ToolType.LETTA_SLEEPTIME_CORE}:
-            # If it's letta sleeptime core tool, we generate the json_schema on the fly here
-            self.json_schema = get_json_schema_from_module(module_name=LETTA_CORE_TOOL_MODULE_NAME, function_name=self.name)
+        elif self.tool_type in {ToolType.LETTA_VOICE_SLEEPTIME_CORE}:
+            # If it's letta voice tool, we generate the json_schema on the fly here
+            self.json_schema = get_json_schema_from_module(module_name=LETTA_VOICE_TOOL_MODULE_NAME, function_name=self.name)
 
         # At this point, we need to validate that at least json_schema is populated
         if not self.json_schema:

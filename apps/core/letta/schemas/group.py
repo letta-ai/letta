@@ -83,6 +83,16 @@ class SleeptimeManagerUpdate(ManagerConfig):
     sleeptime_agent_frequency: Optional[int] = Field(None, description="")
 
 
+class VoiceSleeptimeManager(ManagerConfig):
+    manager_type: Literal[ManagerType.sleeptime] = Field(ManagerType.sleeptime, description="")
+    manager_agent_id: str = Field(..., description="")
+
+
+class VoiceSleeptimeManagerUpdate(ManagerConfig):
+    manager_type: Literal[ManagerType.sleeptime] = Field(ManagerType.sleeptime, description="")
+    manager_agent_id: Optional[str] = Field(None, description="")
+
+
 # class SwarmGroup(ManagerConfig):
 #   manager_type: Literal[ManagerType.swarm] = Field(ManagerType.swarm, description="")
 

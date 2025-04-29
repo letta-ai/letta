@@ -74,8 +74,8 @@ class EphemeralMemoryAgent(BaseAgent):
         function_name = tool_call.function.name
         function_args = json.loads(tool_call.function.arguments)
 
-        if function_name == "store_memory":
-            print("Called store_memory")
+        if function_name == "store_memories":
+            print("Called store_memories")
             print(function_args)
             for chunk_args in function_args.get("chunks"):
                 self.store_memory(agent_state=agent_state, **chunk_args)
@@ -115,7 +115,7 @@ Please refine this block:
 - Organize related information together (e.g., preferences, background, ongoing goals).
 - Add any light, supportable inferences that deepen understanding—but do not invent unsupported details.
 
-Use `rethink_memory(new_memory)` as many times as you need to iteratively improve the text. When it’s fully polished and complete, call `finish_rethinking_memory()`.
+Use `rethink_user_memor(new_memory)` as many times as you need to iteratively improve the text. When it’s fully polished and complete, call `finish_rethinking_memory()`.
         """
         rethink_command = UserMessage(content=rethink_command)
         openai_messages.append(rethink_command.model_dump())
@@ -132,10 +132,10 @@ Use `rethink_memory(new_memory)` as many times as you need to iteratively improv
             function_name = tool_call.function.name
             function_args = json.loads(tool_call.function.arguments)
 
-            if function_name == "rethink_memory":
-                print("Called rethink_memory")
+            if function_name == "rethink_user_memor":
+                print("Called rethink_user_memor")
                 print(function_args)
-                result = self.rethink_memory(agent_state=agent_state, **function_args)
+                result = self.rethink_user_memor(agent_state=agent_state, **function_args)
             elif function_name == "finish_rethinking_memory":
                 print("Called finish_rethinking_memory")
                 break
@@ -192,7 +192,7 @@ Use `rethink_memory(new_memory)` as many times as you need to iteratively improv
             Tool(
                 type="function",
                 function={
-                    "name": "store_memory",
+                    "name": "store_memories",
                     "description": "Archive coherent chunks of dialogue that will be evicted, preserving raw lines and a brief contextual description.",
                     "parameters": {
                         "type": "object",
@@ -227,7 +227,7 @@ Use `rethink_memory(new_memory)` as many times as you need to iteratively improv
             Tool(
                 type="function",
                 function={
-                    "name": "rethink_memory",
+                    "name": "rethink_user_memory",
                     "description": (
                         "Rewrite memory block for the main agent, new_memory should contain all current "
                         "information from the block that is not outdated or inconsistent, integrating any "
@@ -268,7 +268,7 @@ Use `rethink_memory(new_memory)` as many times as you need to iteratively improv
 
         return tools
 
-    def rethink_memory(self, new_memory: str, agent_state: AgentState) -> str:
+    def rethink_user_memory(self, new_memory: str, agent_state: AgentState) -> str:
         if agent_state.memory.get_block(self.target_block_label) is None:
             agent_state.memory.create_block(label=self.target_block_label, value=new_memory)
 
@@ -365,7 +365,7 @@ When given a full transcript with lines marked (Older) or (Newer), you should:
    - end_index:   the last line’s index
    - context: a blurb explaining why this chunk matters
 
-Return exactly one JSON tool call to `store_memory`, consider this miniature example:
+Return exactly one JSON tool call to `store_memories`, consider this miniature example:
 
 ---
 
@@ -385,7 +385,7 @@ Example output:
 
 ```json
 {
-  "name": "store_memory",
+  "name": "store_memories",
   "arguments": {
     "chunks": [
       {
@@ -410,7 +410,7 @@ SYSTEM
 You are a Memory-Updater agent. Your job is to iteratively refine the given memory block until it’s concise, organized, and complete.
 
 Instructions:
-- Call `rethink_memory(new_memory: string)` as many times as you like. Each call should submit a fully revised version of the block so far.
+- Call `rethink_user_memor(new_memory: string)` as many times as you like. Each call should submit a fully revised version of the block so far.
 - When you’re fully satisfied, call `finish_rethinking_memory()`.
 - Don’t output anything else—only the JSON for these tool calls.
 
