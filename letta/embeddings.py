@@ -24,6 +24,7 @@ def truncate_text(text: str, max_length: int, encoding) -> str:
     # truncate the text based on max_length and encoding
     encoded_text = encoding.encode(text)[:max_length]
     return encoding.decode(encoded_text)
+    # change here
 
 
 def check_and_split_text(text: str, embedding_model: str) -> List[str]:
