@@ -84,8 +84,11 @@ class UserManager:
 
     @enforce_types
     def get_default_user(self) -> PydanticUser:
-        """Fetch the default user."""
-        return self.get_user_by_id(self.DEFAULT_USER_ID)
+        """Fetch the default user. If it doesn't exist, create it."""
+        try:
+            return self.get_user_by_id(self.DEFAULT_USER_ID)
+        except NoResultFound:
+            return self.create_default_user()
 
     @enforce_types
     def get_user_or_default(self, user_id: Optional[str] = None):

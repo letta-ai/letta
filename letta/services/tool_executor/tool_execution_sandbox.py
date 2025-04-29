@@ -144,7 +144,7 @@ class ToolExecutionSandbox:
 
         # Write the code to a temp file in the sandbox_dir
         with tempfile.NamedTemporaryFile(mode="w", dir=local_configs.sandbox_dir, suffix=".py", delete=False) as temp_file:
-            if local_configs.force_create_venv:
+            if local_configs.use_venv:
                 # If using venv, we need to wrap with special string markers to separate out the output and the stdout (since it is all in stdout)
                 code = self.generate_execution_script(agent_state=agent_state, wrap_print_with_markers=True)
             else:
@@ -154,7 +154,7 @@ class ToolExecutionSandbox:
             temp_file.flush()
             temp_file_path = temp_file.name
         try:
-            if local_configs.force_create_venv:
+            if local_configs.use_venv:
                 return self.run_local_dir_sandbox_venv(sbx_config, env, temp_file_path)
             else:
                 return self.run_local_dir_sandbox_directly(sbx_config, env, temp_file_path)
@@ -220,7 +220,11 @@ class ToolExecutionSandbox:
             )
 
         except subprocess.CalledProcessError as e:
+            with open(temp_file_path, "r") as f:
+                code = f.read()
+
             logger.error(f"Executing tool {self.tool_name} has process error: {e}")
+            logger.error(f"Logging out tool {self.tool_name} auto-generated code for debugging: \n\n{code}")
             func_return = get_friendly_error_msg(
                 function_name=self.tool_name,
                 exception_name=type(e).__name__,
@@ -447,6 +451,11 @@ class ToolExecutionSandbox:
         Returns:
             code (str): The generated code strong
         """
+        if "agent_state" in self.parse_function_arguments(self.tool.source_code, self.tool.name):
+            inject_agent_state = True
+        else:
+            inject_agent_state = False
+
         # dump JSON representation of agent state to re-load
         code = "from typing import *\n"
         code += "import pickle\n"
@@ -454,7 +463,7 @@ class ToolExecutionSandbox:
         code += "import base64\n"
 
         # imports to support agent state
-        if agent_state:
+        if inject_agent_state:
             code += "import letta\n"
             code += "from letta import * \n"
             import pickle
@@ -467,7 +476,7 @@ class ToolExecutionSandbox:
             code += schema_code + "\n"
 
         # load the agent state
-        if agent_state:
+        if inject_agent_state:
             agent_state_pickle = pickle.dumps(agent_state)
             code += f"agent_state = pickle.loads({agent_state_pickle})\n"
         else:
@@ -482,11 +491,6 @@ class ToolExecutionSandbox:
         else:
             for param in self.args:
                 code += self.initialize_param(param, self.args[param])
-
-        if "agent_state" in self.parse_function_arguments(self.tool.source_code, self.tool.name):
-            inject_agent_state = True
-        else:
-            inject_agent_state = False
 
         code += "\n" + self.tool.source_code + "\n"
 

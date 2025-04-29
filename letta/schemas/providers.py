@@ -4,7 +4,7 @@ from typing import List, Optional
 
 from pydantic import Field, model_validator
 
-from letta.constants import LLM_MAX_TOKENS, MIN_CONTEXT_WINDOW
+from letta.constants import LETTA_MODEL_ENDPOINT, LLM_MAX_TOKENS, MIN_CONTEXT_WINDOW
 from letta.llm_api.azure_openai import get_azure_chat_completions_endpoint, get_azure_embeddings_endpoint
 from letta.llm_api.azure_openai_constants import AZURE_MODEL_TO_CONTEXT_LENGTH
 from letta.schemas.embedding_config import EmbeddingConfig
@@ -78,7 +78,7 @@ class LettaProvider(Provider):
             LLMConfig(
                 model="letta-free",  # NOTE: renamed
                 model_endpoint_type="openai",
-                model_endpoint="https://inference.memgpt.ai",
+                model_endpoint=LETTA_MODEL_ENDPOINT,
                 context_window=8192,
                 handle=self.get_handle("letta-free"),
             )
@@ -744,7 +744,8 @@ class AnthropicProvider(Provider):
             # reliable for tool calling (no chance of a non-tool call step)
             # Since tool_choice_type 'any' doesn't work with in-content COT
             # NOTE For Haiku, it can be flaky if we don't enable this by default
-            inner_thoughts_in_kwargs = True if "haiku" in model["id"] else False
+            # inner_thoughts_in_kwargs = True if "haiku" in model["id"] else False
+            inner_thoughts_in_kwargs = True  # we no longer support thinking tags
 
             configs.append(
                 LLMConfig(

@@ -1,4 +1,3 @@
-# inspecting tools
 import asyncio
 import json
 import os
@@ -6,8 +5,10 @@ import traceback
 import warnings
 from abc import abstractmethod
 from datetime import datetime
+from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 
+import httpx
 from anthropic import AsyncAnthropic
 from composio.client import Composio
 from composio.client.collections import ActionModel, AppModel
@@ -19,6 +20,7 @@ import letta.server.utils as server_utils
 import letta.system as system
 from letta.agent import Agent, save_agent
 from letta.config import LettaConfig
+from letta.constants import LETTA_TOOL_EXECUTION_DIR
 from letta.data_sources.connectors import DataConnector, load_data
 from letta.errors import HandleNotFoundError
 from letta.functions.mcp_client.base_client import BaseMCPClient
@@ -70,7 +72,7 @@ from letta.schemas.providers import (
     VLLMCompletionsProvider,
     XAIProvider,
 )
-from letta.schemas.sandbox_config import SandboxType
+from letta.schemas.sandbox_config import LocalSandboxConfig, SandboxConfigCreate, SandboxType
 from letta.schemas.source import Source
 from letta.schemas.tool import Tool
 from letta.schemas.usage import LettaUsageStatistics
@@ -81,6 +83,7 @@ from letta.server.rest_api.utils import sse_async_generator
 from letta.services.agent_manager import AgentManager
 from letta.services.block_manager import BlockManager
 from letta.services.group_manager import GroupManager
+from letta.services.helpers.tool_execution_helper import prepare_local_sandbox
 from letta.services.identity_manager import IdentityManager
 from letta.services.job_manager import JobManager
 from letta.services.llm_batch_manager import LLMBatchManager
@@ -211,6 +214,11 @@ class SyncServer(Server):
         self.group_manager = GroupManager()
         self.batch_manager = LLMBatchManager()
 
+        # A resusable httpx client
+        timeout = httpx.Timeout(connect=10.0, read=20.0, write=10.0, pool=10.0)
+        limits = httpx.Limits(max_connections=100, max_keepalive_connections=80, keepalive_expiry=300)
+        self.httpx_client = httpx.AsyncClient(timeout=timeout, follow_redirects=True, limits=limits)
+
         # Make default user and org
         if init_with_default_org_and_user:
             self.default_org = self.organization_manager.create_default_organization()
@@ -228,6 +236,36 @@ class SyncServer(Server):
                     sandbox_config_id=sandbox_config.id,
                     actor=self.default_user,
                 )
+
+            # For OSS users, create a local sandbox config
+            oss_default_user = self.user_manager.get_default_user()
+            use_venv = False if not tool_settings.tool_exec_venv_name else True
+            venv_name = tool_settings.tool_exec_venv_name or "venv"
+            tool_dir = tool_settings.tool_exec_dir or LETTA_TOOL_EXECUTION_DIR
+
+            venv_dir = Path(tool_dir) / venv_name
+            if not Path(tool_dir).is_dir():
+                logger.error(f"Provided LETTA_TOOL_SANDBOX_DIR is not a valid directory: {tool_dir}")
+            else:
+                if tool_settings.tool_exec_venv_name and not venv_dir.is_dir():
+                    logger.warning(
+                        f"Provided LETTA_TOOL_SANDBOX_VENV_NAME is not a valid venv ({venv_dir}), one will be created for you during tool execution."
+                    )
+
+                sandbox_config_create = SandboxConfigCreate(
+                    config=LocalSandboxConfig(sandbox_dir=tool_settings.tool_exec_dir, use_venv=use_venv, venv_name=venv_name)
+                )
+                sandbox_config = self.sandbox_config_manager.create_or_update_sandbox_config(
+                    sandbox_config_create=sandbox_config_create, actor=oss_default_user
+                )
+                logger.info(f"Successfully created default local sandbox config:\n{sandbox_config.get_local_config().model_dump()}")
+
+                if use_venv and tool_settings.tool_exec_autoreload_venv:
+                    prepare_local_sandbox(
+                        sandbox_config.get_local_config(),
+                        env=os.environ.copy(),
+                        force_recreate=True,
+                    )
 
         # collect providers (always has Letta as a default)
         self._enabled_providers: List[Provider] = [LettaProvider()]
@@ -325,29 +363,29 @@ class SyncServer(Server):
 
         # For MCP
         """Initialize the MCP clients (there may be multiple)"""
-        mcp_server_configs = self.get_mcp_servers()
+        # mcp_server_configs = self.get_mcp_servers()
         self.mcp_clients: Dict[str, BaseMCPClient] = {}
-
-        for server_name, server_config in mcp_server_configs.items():
-            if server_config.type == MCPServerType.SSE:
-                self.mcp_clients[server_name] = SSEMCPClient(server_config)
-            elif server_config.type == MCPServerType.STDIO:
-                self.mcp_clients[server_name] = StdioMCPClient(server_config)
-            else:
-                raise ValueError(f"Invalid MCP server config: {server_config}")
-
-            try:
-                self.mcp_clients[server_name].connect_to_server()
-            except Exception as e:
-                logger.error(e)
-                self.mcp_clients.pop(server_name)
-
-        # Print out the tools that are connected
-        for server_name, client in self.mcp_clients.items():
-            logger.info(f"Attempting to fetch tools from MCP server: {server_name}")
-            mcp_tools = client.list_tools()
-            logger.info(f"MCP tools connected: {', '.join([t.name for t in mcp_tools])}")
-            logger.debug(f"MCP tools: {', '.join([str(t) for t in mcp_tools])}")
+        #
+        # for server_name, server_config in mcp_server_configs.items():
+        #     if server_config.type == MCPServerType.SSE:
+        #         self.mcp_clients[server_name] = SSEMCPClient(server_config)
+        #     elif server_config.type == MCPServerType.STDIO:
+        #         self.mcp_clients[server_name] = StdioMCPClient(server_config)
+        #     else:
+        #         raise ValueError(f"Invalid MCP server config: {server_config}")
+        #
+        #     try:
+        #         self.mcp_clients[server_name].connect_to_server()
+        #     except Exception as e:
+        #         logger.error(e)
+        #         self.mcp_clients.pop(server_name)
+        #
+        # # Print out the tools that are connected
+        # for server_name, client in self.mcp_clients.items():
+        #     logger.info(f"Attempting to fetch tools from MCP server: {server_name}")
+        #     mcp_tools = client.list_tools()
+        #     logger.info(f"MCP tools connected: {', '.join([t.name for t in mcp_tools])}")
+        #     logger.debug(f"MCP tools: {', '.join([str(t) for t in mcp_tools])}")
 
         # TODO: Remove these in memory caches
         self._llm_config_cache = {}
@@ -1181,6 +1219,8 @@ class SyncServer(Server):
             llm_config.max_reasoning_tokens = max_reasoning_tokens
         if enable_reasoner is not None:
             llm_config.enable_reasoner = enable_reasoner
+            if enable_reasoner and llm_config.model_endpoint_type == "anthropic":
+                llm_config.put_inner_thoughts_in_kwargs = False
 
         return llm_config
 
@@ -1562,7 +1602,8 @@ class SyncServer(Server):
             # supports_token_streaming = ["openai", "anthropic", "xai", "deepseek"]
             supports_token_streaming = ["openai", "anthropic", "deepseek"]  # TODO re-enable xAI once streaming is patched
             if stream_tokens and (
-                llm_config.model_endpoint_type not in supports_token_streaming or "inference.memgpt.ai" in llm_config.model_endpoint
+                llm_config.model_endpoint_type not in supports_token_streaming
+                or llm_config.model_endpoint == constants.LETTA_MODEL_ENDPOINT
             ):
                 warnings.warn(
                     f"Token streaming is only supported for models with type {' or '.join(supports_token_streaming)} in the model_endpoint: agent has endpoint type {llm_config.model_endpoint_type} and {llm_config.model_endpoint}. Setting stream_tokens to False."
@@ -1685,7 +1726,7 @@ class SyncServer(Server):
         llm_config = letta_multi_agent.agent_state.llm_config
         supports_token_streaming = ["openai", "anthropic", "deepseek"]
         if stream_tokens and (
-            llm_config.model_endpoint_type not in supports_token_streaming or "inference.memgpt.ai" in llm_config.model_endpoint
+            llm_config.model_endpoint_type not in supports_token_streaming or llm_config.model_endpoint == constants.LETTA_MODEL_ENDPOINT
         ):
             warnings.warn(
                 f"Token streaming is only supported for models with type {' or '.join(supports_token_streaming)} in the model_endpoint: agent has endpoint type {llm_config.model_endpoint_type} and {llm_config.model_endpoint}. Setting stream_tokens to False."

@@ -4,18 +4,20 @@ import shutil
 import uuid
 import warnings
 from typing import List, Tuple
+from unittest.mock import patch
 
 import pytest
 from sqlalchemy import delete
 
 import letta.utils as utils
-from letta.constants import BASE_MEMORY_TOOLS, BASE_TOOLS
+from letta.constants import BASE_MEMORY_TOOLS, BASE_TOOLS, LETTA_DIR, LETTA_TOOL_EXECUTION_DIR
 from letta.orm import Provider, Step
 from letta.schemas.block import CreateBlock
 from letta.schemas.enums import MessageRole
 from letta.schemas.letta_message import LettaMessage, ReasoningMessage, SystemMessage, ToolCallMessage, ToolReturnMessage, UserMessage
 from letta.schemas.llm_config import LLMConfig
 from letta.schemas.providers import Provider as PydanticProvider
+from letta.schemas.sandbox_config import SandboxType
 from letta.schemas.user import User
 
 utils.DEBUG = True
@@ -1299,3 +1301,44 @@ def test_unique_handles_for_provider_configs(server: SyncServer):
     embeddings = server.list_embedding_models()
     embedding_handles = [embedding.handle for embedding in embeddings]
     assert sorted(embedding_handles) == sorted(list(set(embedding_handles))), "All embeddings should have unique handles"
+
+
+def test_make_default_local_sandbox_config():
+    venv_name = "test"
+    default_venv_name = "venv"
+
+    # --- Case 1: tool_exec_dir and tool_exec_venv_name are both explicitly set ---
+    with patch("letta.settings.tool_settings.tool_exec_dir", LETTA_DIR):
+        with patch("letta.settings.tool_settings.tool_exec_venv_name", venv_name):
+            server = SyncServer()
+            actor = server.user_manager.get_default_user()
+
+            local_config = server.sandbox_config_manager.get_or_create_default_sandbox_config(
+                sandbox_type=SandboxType.LOCAL, actor=actor
+            ).get_local_config()
+            assert local_config.sandbox_dir == LETTA_DIR
+            assert local_config.venv_name == venv_name
+            assert local_config.use_venv == True
+
+    # --- Case 2: only tool_exec_dir is set (no custom venv_name provided) ---
+    with patch("letta.settings.tool_settings.tool_exec_dir", LETTA_DIR):
+        server = SyncServer()
+        actor = server.user_manager.get_default_user()
+
+        local_config = server.sandbox_config_manager.get_or_create_default_sandbox_config(
+            sandbox_type=SandboxType.LOCAL, actor=actor
+        ).get_local_config()
+        assert local_config.sandbox_dir == LETTA_DIR
+        assert local_config.venv_name == default_venv_name  # falls back to default
+        assert local_config.use_venv == False  # no custom venv name, so no venv usage
+
+    # --- Case 3: neither tool_exec_dir nor tool_exec_venv_name is set (default fallback behavior) ---
+    server = SyncServer()
+    actor = server.user_manager.get_default_user()
+
+    local_config = server.sandbox_config_manager.get_or_create_default_sandbox_config(
+        sandbox_type=SandboxType.LOCAL, actor=actor
+    ).get_local_config()
+    assert local_config.sandbox_dir == LETTA_TOOL_EXECUTION_DIR
+    assert local_config.venv_name == default_venv_name
+    assert local_config.use_venv == False

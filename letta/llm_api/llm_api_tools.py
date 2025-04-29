@@ -5,7 +5,7 @@ from typing import List, Optional, Union
 
 import requests
 
-from letta.constants import CLI_WARNING_PREFIX
+from letta.constants import CLI_WARNING_PREFIX, LETTA_MODEL_ENDPOINT
 from letta.errors import LettaConfigurationError, RateLimitExceededError
 from letta.llm_api.anthropic import (
     anthropic_bedrock_chat_completions_request,
@@ -181,7 +181,7 @@ def create(
             # force function calling for reliability, see https://platform.openai.com/docs/api-reference/chat/create#chat-create-tool_choice
             # TODO(matt) move into LLMConfig
             # TODO: This vllm checking is very brittle and is a patch at most
-            if llm_config.model_endpoint == "https://inference.memgpt.ai" or (llm_config.handle and "vllm" in llm_config.handle):
+            if llm_config.model_endpoint == LETTA_MODEL_ENDPOINT or (llm_config.handle and "vllm" in llm_config.handle):
                 function_call = "auto"  # TODO change to "required" once proxy supports it
             else:
                 function_call = "required"
@@ -326,6 +326,9 @@ def create(
     elif llm_config.model_endpoint_type == "anthropic":
         if not use_tool_naming:
             raise NotImplementedError("Only tool calling supported on Anthropic API requests")
+
+        if llm_config.enable_reasoner:
+            llm_config.put_inner_thoughts_in_kwargs = False
 
         # Force tool calling
         tool_call = None

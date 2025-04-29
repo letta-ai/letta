@@ -4,6 +4,7 @@ from typing import Generator, List, Optional, Union
 import requests
 from openai import OpenAI
 
+from letta.constants import LETTA_MODEL_ENDPOINT
 from letta.helpers.datetime_helpers import timestamp_to_datetime
 from letta.llm_api.helpers import add_inner_thoughts_to_functions, convert_to_structured_output, make_post_request
 from letta.llm_api.openai_client import supports_parallel_tool_calling, supports_temperature_param
@@ -156,7 +157,7 @@ def build_openai_chat_completions_request(
         # if "gpt-4o" in llm_config.model or "gpt-4-turbo" in llm_config.model or "gpt-3.5-turbo" in llm_config.model:
         # data.response_format = {"type": "json_object"}
 
-    if "inference.memgpt.ai" in llm_config.model_endpoint:
+    if llm_config.model_endpoint == LETTA_MODEL_ENDPOINT:
         # override user id for inference.memgpt.ai
         import uuid
 

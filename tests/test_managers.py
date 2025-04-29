@@ -3892,7 +3892,7 @@ def test_create_local_sandbox_config_defaults(server: SyncServer, default_user):
     # Assertions
     assert created_config.type == SandboxType.LOCAL
     assert created_config.get_local_config() == sandbox_config_create.config
-    assert created_config.get_local_config().sandbox_dir in {LETTA_TOOL_EXECUTION_DIR, tool_settings.local_sandbox_dir}
+    assert created_config.get_local_config().sandbox_dir in {LETTA_TOOL_EXECUTION_DIR, tool_settings.tool_exec_dir}
     assert created_config.organization_id == default_user.organization_id
 
 

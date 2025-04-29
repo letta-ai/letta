@@ -210,19 +210,20 @@ def create_letta_messages_from_llm_response(
 
     # TODO: Use ToolReturnContent instead of TextContent
     # TODO: This helps preserve ordering
-    tool_message = Message(
-        role=MessageRole.tool,
-        content=[TextContent(text=package_function_response(function_call_success, function_response))],
-        organization_id=actor.organization_id,
-        agent_id=agent_id,
-        model=model,
-        tool_calls=[],
-        tool_call_id=tool_call_id,
-        created_at=get_utc_time(),
-    )
-    if pre_computed_tool_message_id:
-        tool_message.id = pre_computed_tool_message_id
-    messages.append(tool_message)
+    if function_response:
+        tool_message = Message(
+            role=MessageRole.tool,
+            content=[TextContent(text=package_function_response(function_call_success, function_response))],
+            organization_id=actor.organization_id,
+            agent_id=agent_id,
+            model=model,
+            tool_calls=[],
+            tool_call_id=tool_call_id,
+            created_at=get_utc_time(),
+        )
+        if pre_computed_tool_message_id:
+            tool_message.id = pre_computed_tool_message_id
+        messages.append(tool_message)
 
     if add_heartbeat_request_system_message:
         heartbeat_system_message = create_heartbeat_system_message(
@@ -278,7 +279,7 @@ def create_assistant_messages_from_openai_response(
     )
 
 
-def convert_letta_messages_to_openai(messages: List[Message]) -> List[dict]:
+def convert_in_context_letta_messages_to_openai(in_context_messages: List[Message], exclude_system_messages: bool = False) -> List[dict]:
     """
     Flattens Letta's messages (with system, user, assistant, tool roles, etc.)
     into standard OpenAI chat messages (system, user, assistant).
@@ -289,10 +290,15 @@ def convert_letta_messages_to_openai(messages: List[Message]) -> List[dict]:
       3. User messages might store actual text inside JSON => parse that into content
       4. System => pass through as normal
     """
+    # Always include the system prompt
+    # TODO: This is brittle
+    openai_messages = [in_context_messages[0].to_openai_dict()]
 
-    openai_messages = []
+    for msg in in_context_messages[1:]:
+        if msg.role == MessageRole.system and exclude_system_messages:
+            # Skip if exclude_system_messages is set to True
+            continue
 
-    for msg in messages:
         # 1. Assistant + 'send_message' tool_calls => flatten
         if msg.role == MessageRole.assistant and msg.tool_calls:
             # Find any 'send_message' tool_calls
@@ -350,15 +356,13 @@ def convert_letta_messages_to_openai(messages: List[Message]) -> List[dict]:
                 except json.JSONDecodeError:
                     pass  # It's not JSON, leave as-is
 
-        # 4. System is left as-is (or any other role that doesn't need special handling)
-        #
         # Finally, convert to dict using your existing method
         openai_messages.append(msg.to_openai_dict())
 
     return openai_messages
 
 
-def get_messages_from_completion_request(completion_request: CompletionCreateParams) -> List[Dict]:
+def get_user_message_from_chat_completions_request(completion_request: CompletionCreateParams) -> List[MessageCreate]:
     try:
         messages = list(cast(Iterable[ChatCompletionMessageParam], completion_request["messages"]))
     except KeyError:
@@ -380,4 +384,6 @@ def get_messages_from_completion_request(completion_request: CompletionCreatePar
         logger.error(f"The input message does not have valid content: {input_message}")
         raise HTTPException(status_code=400, detail="'messages[-1].content' must be a 'string'")
 
-    return messages
+    for message in reversed(messages):
+        if message["role"] == "user":
+            return [MessageCreate(role=MessageRole.user, content=[TextContent(text=message["content"])])]

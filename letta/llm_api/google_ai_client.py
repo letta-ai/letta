@@ -122,6 +122,10 @@ class GoogleAIClient(LLMClientBase):
             for candidate in response_data["candidates"]:
                 content = candidate["content"]
 
+                if "role" not in content:
+                    # This means the response is malformed
+                    # NOTE: must be a ValueError to trigger a retry
+                    raise ValueError(f"Error in response data from LLM: {response_data}")
                 role = content["role"]
                 assert role == "model", f"Unknown role in response: {role}"
 

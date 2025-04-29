@@ -24,7 +24,7 @@ def find_python_executable(local_configs: LocalSandboxConfig) -> str:
     """
     sandbox_dir = os.path.expanduser(local_configs.sandbox_dir)  # Expand tilde
 
-    if not local_configs.force_create_venv:
+    if not local_configs.use_venv:
         return "python.exe" if platform.system().lower().startswith("win") else "python3"
 
     venv_path = os.path.join(sandbox_dir, local_configs.venv_name)
@@ -96,7 +96,7 @@ def install_pip_requirements_for_sandbox(
     python_exec = find_python_executable(local_configs)
 
     # If using a virtual environment, upgrade pip before installing dependencies.
-    if local_configs.force_create_venv:
+    if local_configs.use_venv:
         ensure_pip_is_up_to_date(python_exec, env=env)
 
     # Construct package list
@@ -108,7 +108,7 @@ def install_pip_requirements_for_sandbox(
         pip_cmd.append("--upgrade")
     pip_cmd += packages
 
-    if user_install_if_no_venv and not local_configs.force_create_venv:
+    if user_install_if_no_venv and not local_configs.use_venv:
         pip_cmd.append("--user")
 
     run_subprocess(pip_cmd, env=env, fail_msg=f"Failed to install packages: {', '.join(packages)}")
@@ -171,3 +171,30 @@ def add_imports_and_pydantic_schemas_for_args(args_json_schema: dict) -> str:
     )
     result = parser.parse()
     return result
+
+
+def prepare_local_sandbox(
+    local_cfg: LocalSandboxConfig,
+    env: Dict[str, str],
+    force_recreate: bool = False,
+) -> None:
+    """
+    Ensure the sandbox virtual-env is freshly created and that
+    requirements are installed.  Uses your existing helpers.
+    """
+    sandbox_dir = os.path.expanduser(local_cfg.sandbox_dir)
+    venv_path = os.path.join(sandbox_dir, local_cfg.venv_name)
+
+    create_venv_for_local_sandbox(
+        sandbox_dir_path=sandbox_dir,
+        venv_path=venv_path,
+        env=env,
+        force_recreate=force_recreate,
+    )
+
+    install_pip_requirements_for_sandbox(
+        local_cfg,
+        upgrade=True,
+        user_install_if_no_venv=False,
+        env=env,
+    )
