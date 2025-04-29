@@ -79,6 +79,8 @@ navigation:
             contents:
               - page: Custom Tools
                 path: pages/agents/custom_tools.mdx
+              - page: Local Tool Execution
+                path: pages/agents/local_tool_execution.mdx
               - page: Tool Rules
                 path: pages/agents/tool_rules.mdx
               - page: Tool Variables
@@ -103,6 +105,12 @@ navigation:
           - page: Sleep-time Agents
             path: pages/agents/sleeptime.mdx
             icon: fa-sharp fa-light fa-snooze
+      - section: Tool Execution  
+        contents:
+          - page: Overview 
+            path: pages/tool_execution/overview.mdx
+          - page: Configuring tool execution
+            path: pages/tool_execution/local_tool_execution.mdx
       - section: Model Context Protocol
         contents:
           - page: What is MCP?
