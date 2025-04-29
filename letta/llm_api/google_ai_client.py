@@ -25,6 +25,39 @@ logger = get_logger(__name__)
 
 class GoogleAIClient(LLMClientBase):
 
+    def __init__(self, *args, **kwargs):
+        """Initialize the Google AI client and verify the integrity of required methods."""
+        super().__init__(*args, **kwargs)
+        
+        # Verify all required methods are available
+        self._verify_methods_integrity()
+    
+    def _verify_methods_integrity(self):
+        """Verify that all required methods exist in the instance and add fallbacks if necessary."""
+        required_methods = [
+            '_clean_google_ai_schema_properties',
+            'convert_tools_to_google_ai_format',
+            'add_dummy_model_messages',
+            'convert_response_to_chat_completion',
+            'build_request_data',
+            'request'
+        ]
+        
+        for method_name in required_methods:
+            if not hasattr(self, method_name):
+                logger.warning(
+                    f"Method '{method_name}' not found in GoogleAIClient instance. "
+                    f"Instance ID: {id(self)}, Class: {self.__class__.__name__}, "
+                    f"Base class: {self.__class__.__bases__}"
+                )
+                
+                # If it's the critical method causing errors, try to fix it
+                if method_name == '_clean_google_ai_schema_properties':
+                    logger.warning("Adding '_clean_google_ai_schema_properties' method to instance")
+                    # Dynamically add the method to the instance
+                    setattr(self, '_clean_google_ai_schema_properties', 
+                            lambda schema_part: clean_google_ai_schema_properties(schema_part))
+
     def request(self, request_data: dict, llm_config: LLMConfig) -> dict:
         """
         Performs underlying request to llm and returns raw response.
@@ -122,7 +155,7 @@ class GoogleAIClient(LLMClientBase):
             for candidate in response_data["candidates"]:
                 content = candidate["content"]
 
-                role = content["role"]
+                role = content.get("role", "model")
                 assert role == "model", f"Unknown role in response: {role}"
 
                 parts = content["parts"]
@@ -278,13 +311,13 @@ class GoogleAIClient(LLMClientBase):
         unsupported_keys = ["default", "exclusiveMaximum", "exclusiveMinimum"]
         keys_to_remove_at_this_level = [key for key in unsupported_keys if key in schema_part]
         for key_to_remove in keys_to_remove_at_this_level:
-            logger.warning(f"Removing unsupported keyword 	'{key_to_remove}' from schema part.")
+            logger.warning(f"Removing unsupported keyword '{key_to_remove}' from schema part.")
             del schema_part[key_to_remove]
 
         if schema_part.get("type") == "string" and "format" in schema_part:
             allowed_formats = ["enum", "date-time"]
             if schema_part["format"] not in allowed_formats:
-                logger.warning(f"Removing unsupported format 	'{schema_part['format']}' for string type. Allowed: {allowed_formats}")
+                logger.warning(f"Removing unsupported format '{schema_part['format']}' for string type. Allowed: {allowed_formats}")
                 del schema_part["format"]
 
         # Check properties within the current level
@@ -363,7 +396,31 @@ class GoogleAIClient(LLMClientBase):
 
             # Google AI API only supports a subset of OpenAPI 3.0, so unsupported params must be cleaned
             if "parameters" in func and isinstance(func["parameters"], dict):
-                self._clean_google_ai_schema_properties(func["parameters"])
+                try:
+                    # First, check if the method exists in the instance
+                    if not hasattr(self, '_clean_google_ai_schema_properties'):
+                        logger.warning(
+                            "Method '_clean_google_ai_schema_properties' not found at call time. "
+                            f"Instance ID: {id(self)}, Class: {self.__class__.__name__}"
+                        )
+                        # Try to add the method again
+                        self._verify_methods_integrity()
+                    
+                    # Try to use the class method, if available
+                    self._clean_google_ai_schema_properties(func["parameters"])
+                except AttributeError as e:
+                    # Detailed logging to help with diagnosis
+                    logger.warning(
+                        f"AttributeError when calling '_clean_google_ai_schema_properties': {e}. "
+                        f"Using fallback. Instance ID: {id(self)}"
+                    )
+                    # Fallback to use the standalone helper function
+                    clean_google_ai_schema_properties(func["parameters"])
+                except Exception as e:
+                    # Catch any other error
+                    logger.error(f"Unexpected error when cleaning schema properties: {e}")
+                    # Still try the fallback
+                    clean_google_ai_schema_properties(func["parameters"])
 
             # Add inner thoughts
             if llm_config.put_inner_thoughts_in_kwargs:
@@ -502,3 +559,75 @@ def google_ai_get_model_context_window(base_url: str, api_key: str, model: str, 
     # TODO should this be:
     # return model_details["inputTokenLimit"] + model_details["outputTokenLimit"]
     return int(model_details["inputTokenLimit"])
+
+
+# Standalone helper function as a fallback for instances when the class method is not available
+def clean_google_ai_schema_properties(schema_part: dict):
+    """Recursively clean schema parts to remove unsupported Google AI keywords."""
+    if not isinstance(schema_part, dict):
+        return
+
+    # Per https://ai.google.dev/gemini-api/docs/function-calling?example=meeting#notes_and_limitations
+    # * Only a subset of the OpenAPI schema is supported.
+    # * Supported parameter types in Python are limited.
+    unsupported_keys = ["default", "exclusiveMaximum", "exclusiveMinimum"]
+    keys_to_remove_at_this_level = [key for key in unsupported_keys if key in schema_part]
+    for key_to_remove in keys_to_remove_at_this_level:
+        logger.warning(f"Removing unsupported keyword '{key_to_remove}' from schema part.")
+        del schema_part[key_to_remove]
+
+    if schema_part.get("type") == "string" and "format" in schema_part:
+        allowed_formats = ["enum", "date-time"]
+        if schema_part["format"] not in allowed_formats:
+            logger.warning(f"Removing unsupported format '{schema_part['format']}' for string type. Allowed: {allowed_formats}")
+            del schema_part["format"]
+
+    # Check properties within the current level
+    if "properties" in schema_part and isinstance(schema_part["properties"], dict):
+        for prop_name, prop_schema in schema_part["properties"].items():
+            clean_google_ai_schema_properties(prop_schema)
+
+    # Check items within arrays
+    if "items" in schema_part and isinstance(schema_part["items"], dict):
+        clean_google_ai_schema_properties(schema_part["items"])
+
+    # Check within anyOf, allOf, oneOf lists
+    for key in ["anyOf", "allOf", "oneOf"]:
+        if key in schema_part and isinstance(schema_part[key], list):
+            for item_schema in schema_part[key]:
+                clean_google_ai_schema_properties(item_schema)
+
+# Function to verify the integrity of the entire GoogleAIClient class
+def verify_google_ai_client_integrity():
+    """Verify that the GoogleAIClient class has all necessary methods."""
+    required_methods = [
+        'request', 
+        'build_request_data',
+        'convert_response_to_chat_completion',
+        'add_dummy_model_messages',
+        'convert_tools_to_google_ai_format',
+        '_clean_google_ai_schema_properties'
+    ]
+    
+    # Check methods in the class definition
+    missing_methods = []
+    for method_name in required_methods:
+        if not hasattr(GoogleAIClient, method_name) and not method_name.startswith('__'):
+            missing_methods.append(method_name)
+    
+    if missing_methods:
+        logger.error(f"INTEGRITY CHECK FAILED: Missing methods in GoogleAIClient class: {missing_methods}")
+        
+        # Try to fix missing methods
+        if '_clean_google_ai_schema_properties' in missing_methods:
+            logger.warning("Attempting to fix missing method '_clean_google_ai_schema_properties'")
+            # Add the method to the class
+            setattr(GoogleAIClient, '_clean_google_ai_schema_properties', 
+                   lambda self, schema_part: clean_google_ai_schema_properties(schema_part))
+    else:
+        logger.info("INTEGRITY CHECK PASSED: All required methods found in GoogleAIClient")
+    
+    return len(missing_methods) == 0
+
+# Run integrity check when module is loaded
+verify_google_ai_client_integrity()
