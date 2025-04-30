@@ -179,6 +179,7 @@ class LettaAgent(BaseAgent):
                 ToolType.LETTA_SLEEPTIME_CORE,
             }
             or (t.tool_type == ToolType.LETTA_MULTI_AGENT_CORE and t.name == "send_message_to_agents_matching_tags")
+            or (t.tool_type == ToolType.EXTERNAL_COMPOSIO)
         ]
 
         valid_tool_names = tool_rules_solver.get_allowed_tool_names(available_tools=set([t.name for t in tools]))
@@ -331,6 +332,10 @@ class LettaAgent(BaseAgent):
                 results = await self._send_message_to_agents_matching_tags(**tool_args)
                 log_event(name="finish_send_message_to_agents_matching_tags", attributes=tool_args)
                 return json.dumps(results), True
+            elif target_tool.type == ToolType.EXTERNAL_COMPOSIO:
+                log_event(name=f"start_composio_{tool_name}_execution", attributes=tool_args)
+                log_event(name=f"finish_compsio_{tool_name}_execution", attributes=tool_args)
+                return tool_execution_result.func_return, True
             else:
                 tool_execution_manager = ToolExecutionManager(agent_state=agent_state, actor=self.actor)
                 # TODO: Integrate sandbox result

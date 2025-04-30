@@ -21,8 +21,8 @@ from letta.constants import (
 )
 from letta.errors import ContextWindowExceededError
 from letta.functions.ast_parsers import coerce_dict_args_by_annotations, get_function_annotations_from_source
+from letta.functions.composio_helpers import execute_composio_action, generate_composio_action_from_func_name
 from letta.functions.functions import get_function_from_module
-from letta.functions.helpers import execute_composio_action, generate_composio_action_from_func_name
 from letta.functions.mcp_client.base_client import BaseMCPClient
 from letta.helpers import ToolRulesSolver
 from letta.helpers.composio_helpers import get_composio_api_key

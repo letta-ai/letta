@@ -56,7 +56,7 @@ def test_add_composio_tool(fastapi_client):
     assert "name" in response.json()
 
 
-def test_composio_tool_execution_e2e(check_composio_key_set, composio_get_emojis, server: SyncServer, default_user):
+async def test_composio_tool_execution_e2e(check_composio_key_set, composio_get_emojis, server: SyncServer, default_user):
     agent_state = server.agent_manager.create_agent(
         agent_create=CreateAgent(
             name="sarah_agent",
@@ -67,7 +67,7 @@ def test_composio_tool_execution_e2e(check_composio_key_set, composio_get_emojis
         actor=default_user,
     )
 
-    tool_execution_result = ToolExecutionManager(agent_state, actor=default_user).execute_tool(
+    tool_execution_result = await ToolExecutionManager(agent_state, actor=default_user).execute_tool(
         function_name=composio_get_emojis.name, function_args={}, tool=composio_get_emojis
     )
 

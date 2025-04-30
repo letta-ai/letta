@@ -179,7 +179,7 @@ def check_agent_uses_external_tool(filename: str) -> LettaResponse:
 
     Note: This is acting on the Letta response, note the usage of `user_message`
     """
-    from composio_langchain import Action
+    from composio import Action
 
     # Set up client
     client = create_client()

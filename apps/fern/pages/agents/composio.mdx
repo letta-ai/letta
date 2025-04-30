@@ -92,7 +92,7 @@ composio add github
 ```
 To attach a Composio tool to an agent, you must first create a Letta tool from composio by specifying the action name:
 ```python title="python"
-from composio_langchain import Action
+from composio import Action
 
 # create a Letta tool object
 tool = client.tools.add_composio_tool(
@@ -102,7 +102,7 @@ tool = client.tools.add_composio_tool(
 Below is a full example of creating a Letta agent that can start a Github repository.
 ```python title="python" maxLines=50
 from letta_client import Letta
-from composio_langchain import Action
+from composio import Action
 
 client = Letta(base_url="http://localhost:8283")
 

@@ -1017,25 +1017,6 @@ flyio = ["gql", "requests_toolbelt"]
 tools = ["diskcache", "flake8", "networkx", "pathspec", "pygments", "ruff", "transformers"]
 
 [[package]]
-name = "composio-langchain"
-version = "0.7.15"
-description = "Use Composio to get an array of tools with your LangChain agent."
-optional = false
-python-versions = "<4,>=3.9"
-groups = ["main"]
-files = [
-    {file = "composio_langchain-0.7.15-py3-none-any.whl", hash = "sha256:a71b5371ad6c3ee4d4289c7a994fad1424e24c29a38e820b6b2ed259056abb65"},
-    {file = "composio_langchain-0.7.15.tar.gz", hash = "sha256:cb75c460289ecdf9590caf7ddc0d7888b0a6622ca4f800c9358abe90c25d055e"},
-]
-
-[package.dependencies]
-composio_core = ">=0.7.0,<0.8.0"
-langchain = ">=0.1.0"
-langchain-openai = ">=0.0.2.post1"
-langchainhub = ">=0.1.15"
-pydantic = ">=2.6.4"
-
-[[package]]
 name = "configargparse"
 version = "1.7"
 description = "A drop-in replacement for argparse that allows options to also be set via config files and/or environment variables."
@@ -2842,9 +2823,10 @@ files = [
 name = "jsonpatch"
 version = "1.33"
 description = "Apply JSON-Patches (RFC 6902)"
-optional = false
+optional = true
 python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, !=3.4.*, !=3.5.*, !=3.6.*"
 groups = ["main"]
+markers = "extra == \"external-tools\" or extra == \"desktop\" or extra == \"all\""
 files = [
     {file = "jsonpatch-1.33-py2.py3-none-any.whl", hash = "sha256:0ae28c0cd062bbd8b8ecc26d7d164fbbea9652a1a3693f3b956c1eae5145dade"},
     {file = "jsonpatch-1.33.tar.gz", hash = "sha256:9fcd4009c41e6d12348b4a0ff2563ba56a2923a7dfee731d004e212e1ee5030c"},
@@ -2857,9 +2839,10 @@ jsonpointer = ">=1.9"
 name = "jsonpointer"
 version = "3.0.0"
 description = "Identify specific nodes in a JSON document (RFC 6901)"
-optional = false
+optional = true
 python-versions = ">=3.7"
 groups = ["main"]
+markers = "extra == \"external-tools\" or extra == \"desktop\" or extra == \"all\""
 files = [
     {file = "jsonpointer-3.0.0-py2.py3-none-any.whl", hash = "sha256:13e088adc14fca8b6aa8177c044e12701e6ad4b28ff10e65f2267a90109c9942"},
     {file = "jsonpointer-3.0.0.tar.gz", hash = "sha256:2b2d729f2091522d61c3b31f82e11870f60b68f43fbc705cb76bf4b832af59ef"},
@@ -3052,9 +3035,10 @@ files = [
 name = "langchain"
 version = "0.3.23"
 description = "Building applications with LLMs through composability"
-optional = false
+optional = true
 python-versions = "<4.0,>=3.9"
 groups = ["main"]
+markers = "extra == \"external-tools\" or extra == \"desktop\" or extra == \"all\""
 files = [
     {file = "langchain-0.3.23-py3-none-any.whl", hash = "sha256:084f05ee7e80b7c3f378ebadd7309f2a37868ce2906fa0ae64365a67843ade3d"},
     {file = "langchain-0.3.23.tar.gz", hash = "sha256:d95004afe8abebb52d51d6026270248da3f4b53d93e9bf699f76005e0c83ad34"},
@@ -3120,9 +3104,10 @@ tenacity = ">=8.1.0,<8.4.0 || >8.4.0,<10"
 name = "langchain-core"
 version = "0.3.51"
 description = "Building applications with LLMs through composability"
-optional = false
+optional = true
 python-versions = "<4.0,>=3.9"
 groups = ["main"]
+markers = "extra == \"external-tools\" or extra == \"desktop\" or extra == \"all\""
 files = [
     {file = "langchain_core-0.3.51-py3-none-any.whl", hash = "sha256:4bd71e8acd45362aa428953f2a91d8162318014544a2216e4b769463caf68e13"},
     {file = "langchain_core-0.3.51.tar.gz", hash = "sha256:db76b9cc331411602cb40ba0469a161febe7a0663fbcaddbc9056046ac2d22f4"},
@@ -3141,29 +3126,13 @@ tenacity = ">=8.1.0,<8.4.0 || >8.4.0,<10.0.0"
 typing-extensions = ">=4.7"
 
 [[package]]
-name = "langchain-openai"
-version = "0.3.12"
-description = "An integration package connecting OpenAI and LangChain"
-optional = false
-python-versions = "<4.0,>=3.9"
-groups = ["main"]
-files = [
-    {file = "langchain_openai-0.3.12-py3-none-any.whl", hash = "sha256:0fab64d58ec95e65ffbaf659470cd362e815685e15edbcb171641e90eca4eb86"},
-    {file = "langchain_openai-0.3.12.tar.gz", hash = "sha256:c9dbff63551f6bd91913bca9f99a2d057fd95dc58d4778657d67e5baa1737f61"},
-]
-
-[package.dependencies]
-langchain-core = ">=0.3.49,<1.0.0"
-openai = ">=1.68.2,<2.0.0"
-tiktoken = ">=0.7,<1"
-
-[[package]]
 name = "langchain-text-splitters"
 version = "0.3.8"
 description = "LangChain text splitting utilities"
-optional = false
+optional = true
 python-versions = "<4.0,>=3.9"
 groups = ["main"]
+markers = "extra == \"external-tools\" or extra == \"desktop\" or extra == \"all\""
 files = [
     {file = "langchain_text_splitters-0.3.8-py3-none-any.whl", hash = "sha256:e75cc0f4ae58dcf07d9f18776400cf8ade27fadd4ff6d264df6278bb302f6f02"},
     {file = "langchain_text_splitters-0.3.8.tar.gz", hash = "sha256:116d4b9f2a22dda357d0b79e30acf005c5518177971c66a9f1ab0edfdb0f912e"},
@@ -3173,29 +3142,13 @@ files = [
 langchain-core = ">=0.3.51,<1.0.0"
 
 [[package]]
-name = "langchainhub"
-version = "0.1.21"
-description = "The LangChain Hub API client"
-optional = false
-python-versions = "<4.0,>=3.8.1"
-groups = ["main"]
-files = [
-    {file = "langchainhub-0.1.21-py3-none-any.whl", hash = "sha256:1cc002dc31e0d132a776afd044361e2b698743df5202618cf2bad399246b895f"},
-    {file = "langchainhub-0.1.21.tar.gz", hash = "sha256:723383b3964a47dbaea6ad5d0ef728accefbc9d2c07480e800bdec43510a8c10"},
-]
-
-[package.dependencies]
-packaging = ">=23.2,<25"
-requests = ">=2,<3"
-types-requests = ">=2.31.0.2,<3.0.0.0"
-
-[[package]]
 name = "langsmith"
 version = "0.3.28"
 description = "Client library to connect to the LangSmith LLM Tracing and Evaluation Platform."
-optional = false
+optional = true
 python-versions = "<4.0,>=3.9"
 groups = ["main"]
+markers = "extra == \"external-tools\" or extra == \"desktop\" or extra == \"all\""
 files = [
     {file = "langsmith-0.3.28-py3-none-any.whl", hash = "sha256:54ac8815514af52d9c801ad7970086693667e266bf1db90fc453c1759e8407cd"},
     {file = "langsmith-0.3.28.tar.gz", hash = "sha256:4666595207131d7f8d83418e54dc86c05e28562e5c997633e7c33fc18f9aeb89"},
@@ -3221,14 +3174,14 @@ pytest = ["pytest (>=7.0.0)", "rich (>=13.9.4,<14.0.0)"]
 
 [[package]]
 name = "letta-client"
-version = "0.1.124"
+version = "0.1.129"
 description = ""
 optional = false
 python-versions = "<4.0,>=3.8"
 groups = ["main"]
 files = [
-    {file = "letta_client-0.1.124-py3-none-any.whl", hash = "sha256:a7901437ef91f395cd85d24c0312046b7c82e5a4dd8e04de0d39b5ca085c65d3"},
-    {file = "letta_client-0.1.124.tar.gz", hash = "sha256:e8b5716930824cc98c62ee01343e358f88619d346578d48a466277bc8282036d"},
+    {file = "letta_client-0.1.129-py3-none-any.whl", hash = "sha256:87a5fc32471e5b9fefbfc1e1337fd667d5e2e340ece5d2a6c782afbceab4bf36"},
+    {file = "letta_client-0.1.129.tar.gz", hash = "sha256:b00f611c18a2ad802ec9265f384e1666938c5fc5c86364b2c410d72f0331d597"},
 ]
 
 [package.dependencies]
@@ -4366,10 +4319,10 @@ files = [
 name = "orjson"
 version = "3.10.16"
 description = "Fast, correct Python JSON library supporting dataclasses, datetimes, and numpy"
-optional = false
+optional = true
 python-versions = ">=3.9"
 groups = ["main"]
-markers = "platform_python_implementation != \"PyPy\""
+markers = "platform_python_implementation != \"PyPy\" and (extra == \"external-tools\" or extra == \"desktop\" or extra == \"all\")"
 files = [
     {file = "orjson-3.10.16-cp310-cp310-macosx_10_15_x86_64.macosx_11_0_arm64.macosx_10_15_universal2.whl", hash = "sha256:4cb473b8e79154fa778fb56d2d73763d977be3dcc140587e07dbc545bbfc38f8"},
     {file = "orjson-3.10.16-cp310-cp310-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:622a8e85eeec1948690409a19ca1c7d9fd8ff116f4861d261e6ae2094fe59a00"},
@@ -6069,9 +6022,10 @@ use-chardet-on-py3 = ["chardet (>=3.0.2,<6)"]
 name = "requests-toolbelt"
 version = "1.0.0"
 description = "A utility belt for advanced users of python-requests"
-optional = false
+optional = true
 python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*"
 groups = ["main"]
+markers = "extra == \"external-tools\" or extra == \"desktop\" or extra == \"all\""
 files = [
     {file = "requests-toolbelt-1.0.0.tar.gz", hash = "sha256:7681a0a3d047012b5bdc0ee37d7f8f07ebe76ab08caeccfc3921ce23c88d5bc6"},
     {file = "requests_toolbelt-1.0.0-py2.py3-none-any.whl", hash = "sha256:cccfdd665f0a24fcf4726e690f65639d272bb0637b9b92dfd91a5568ccf6bd06"},
@@ -6856,21 +6810,6 @@ doc = ["cairosvg (>=2.5.2,<3.0.0)", "mdx-include (>=1.4.1,<2.0.0)", "mkdocs (>=1
 test = ["black (>=22.3.0,<23.0.0)", "coverage (>=6.2,<7.0)", "isort (>=5.0.6,<6.0.0)", "mypy (==0.971)", "pytest (>=4.4.0,<8.0.0)", "pytest-cov (>=2.10.0,<5.0.0)", "pytest-sugar (>=0.9.4,<0.10.0)", "pytest-xdist (>=1.32.0,<4.0.0)", "rich (>=10.11.0,<14.0.0)", "shellingham (>=1.3.0,<2.0.0)"]
 
 [[package]]
-name = "types-requests"
-version = "2.32.0.20250328"
-description = "Typing stubs for requests"
-optional = false
-python-versions = ">=3.9"
-groups = ["main"]
-files = [
-    {file = "types_requests-2.32.0.20250328-py3-none-any.whl", hash = "sha256:72ff80f84b15eb3aa7a8e2625fffb6a93f2ad5a0c20215fc1dcfa61117bcb2a2"},
-    {file = "types_requests-2.32.0.20250328.tar.gz", hash = "sha256:c9e67228ea103bd811c96984fac36ed2ae8da87a36a633964a21f199d60baf32"},
-]
-
-[package.dependencies]
-urllib3 = ">=2"
-
-[[package]]
 name = "typing-extensions"
 version = "4.13.2"
 description = "Backported and Experimental Type Hints for Python 3.8+"
@@ -7438,9 +7377,10 @@ testing = ["coverage[toml]", "zope.event", "zope.testing"]
 name = "zstandard"
 version = "0.23.0"
 description = "Zstandard bindings for Python"
-optional = false
+optional = true
 python-versions = ">=3.8"
 groups = ["main"]
+markers = "extra == \"external-tools\" or extra == \"desktop\" or extra == \"all\""
 files = [
     {file = "zstandard-0.23.0-cp310-cp310-macosx_10_9_x86_64.whl", hash = "sha256:bf0a05b6059c0528477fba9054d09179beb63744355cab9f38059548fedd46a9"},
     {file = "zstandard-0.23.0-cp310-cp310-macosx_11_0_arm64.whl", hash = "sha256:fc9ca1c9718cb3b06634c7c8dec57d24e9438b2aa9a0f02b8bb36bf478538880"},
@@ -7563,4 +7503,4 @@ tests = ["wikipedia"]
 [metadata]
 lock-version = "2.1"
 python-versions = "<3.14,>=3.10"
-content-hash = "75c1c949aa6c0ef8d681bddd91999f97ed4991451be93ca45bf9c01dd19d8a8a"
+content-hash = "ba9cf0e00af2d5542aa4beecbd727af92b77ba584033f05c222b00ae47f96585"

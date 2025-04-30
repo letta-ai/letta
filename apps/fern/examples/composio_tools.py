@@ -6,7 +6,7 @@ Make sure you set `COMPOSIO_API_KEY` environment variable or run `composio login
 
 
 from letta_client import Letta
-from composio_langchain import Action
+from composio import Action
 
 client = Letta(base_url="http://localhost:8283")
 
