@@ -1,6 +1,5 @@
 import os
 import threading
-import time
 import uuid
 
 import pytest
@@ -10,6 +9,7 @@ from letta_client.core.api_error import ApiError
 from sqlalchemy import delete
 
 from letta.orm import SandboxConfig, SandboxEnvironmentVariable
+from tests.utils import wait_for_server
 
 # Constants
 SERVER_PORT = 8283
@@ -41,7 +41,7 @@ def client(request):
         print("Starting server thread")
         thread = threading.Thread(target=run_server, daemon=True)
         thread.start()
-        time.sleep(5)
+        wait_for_server(server_url)
     print("Running client tests with server:", server_url)
 
     # create the Letta client

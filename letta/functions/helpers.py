@@ -78,9 +78,7 @@ def {func_name}(**kwargs):
     return func_name, wrapper_function_str.strip()
 
 
-def execute_composio_action(
-    action_name: str, args: dict, api_key: Optional[str] = None, entity_id: Optional[str] = None
-) -> tuple[str, str]:
+def execute_composio_action(action_name: str, args: dict, api_key: Optional[str] = None, entity_id: Optional[str] = None) -> Any:
     import os
 
     from composio.exceptions import (
@@ -110,10 +108,10 @@ def execute_composio_action(
     except ComposioSDKError as e:
         raise RuntimeError(f"An unexpected error occurred in Composio SDK while executing action '{action_name}': " + str(e))
 
-    if response["error"]:
+    if "error" in response:
         raise RuntimeError(f"Error while executing action '{action_name}': " + str(response["error"]))
 
-    return response["data"]
+    return response.get("data")
 
 
 def generate_langchain_tool_wrapper(

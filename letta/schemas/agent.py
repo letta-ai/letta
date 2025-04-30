@@ -1,7 +1,7 @@
 from enum import Enum
 from typing import Dict, List, Optional
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, field_validator, model_validator
 
 from letta.constants import CORE_MEMORY_LINE_NUMBER_WARNING, DEFAULT_EMBEDDING_CHUNK_SIZE
 from letta.helpers import ToolRulesSolver
@@ -29,6 +29,8 @@ class AgentType(str, Enum):
     memgpt_agent = "memgpt_agent"
     split_thread_agent = "split_thread_agent"
     sleeptime_agent = "sleeptime_agent"
+    voice_convo_agent = "voice_convo_agent"
+    voice_sleeptime_agent = "voice_sleeptime_agent"
 
 
 class AgentState(OrmMetadataBase, validate_assignment=True):
@@ -229,6 +231,17 @@ class CreateAgent(BaseModel, validate_assignment=True):  #
             raise ValueError("The embedding config handle should be in the format provider/model-name")
 
         return embedding
+
+    @model_validator(mode="after")
+    def validate_sleeptime_for_agent_type(self) -> "CreateAgent":
+        """Validate that enable_sleeptime is True when agent_type is a specific value"""
+        AGENT_TYPES_REQUIRING_SLEEPTIME = {AgentType.voice_convo_agent}
+
+        if self.agent_type in AGENT_TYPES_REQUIRING_SLEEPTIME:
+            if not self.enable_sleeptime:
+                raise ValueError(f"Agent type {self.agent_type} requires enable_sleeptime to be True")
+
+        return self
 
 
 class UpdateAgent(BaseModel):

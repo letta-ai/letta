@@ -79,9 +79,13 @@ def agent_state(client: Letta) -> AgentState:
     Creates and returns an agent state for testing with a pre-configured agent.
     The agent is named 'supervisor' and is configured with base tools and the roll_dice tool.
     """
+    client.tools.upsert_base_tools()
+
+    send_message_tool = client.tools.list(name="send_message")[0]
     agent_state_instance = client.agents.create(
         name="supervisor",
-        include_base_tools=True,
+        include_base_tools=False,
+        tool_ids=[send_message_tool.id],
         model="openai/gpt-4o",
         embedding="letta/letta-free",
         tags=["supervisor"],

@@ -20,6 +20,8 @@ from letta.constants import (
     BASE_MEMORY_TOOLS,
     BASE_SLEEPTIME_TOOLS,
     BASE_TOOLS,
+    BASE_VOICE_SLEEPTIME_CHAT_TOOLS,
+    BASE_VOICE_SLEEPTIME_TOOLS,
     LETTA_TOOL_EXECUTION_DIR,
     MCP_TOOL_TAG_NAME_PREFIX,
     MULTI_AGENT_TOOLS,
@@ -2229,6 +2231,12 @@ def test_update_tool_by_id(server: SyncServer, print_tool, default_user):
     # Assertions to check if the update was successful
     assert updated_tool.description == updated_description
     assert updated_tool.return_char_limit == return_char_limit
+    assert updated_tool.tool_type == ToolType.CUSTOM
+
+    # Dangerous: we bypass safety to give it another tool type
+    server.tool_manager.update_tool_by_id(print_tool.id, tool_update, actor=default_user, updated_tool_type=ToolType.EXTERNAL_LANGCHAIN)
+    updated_tool = server.tool_manager.get_tool_by_id(print_tool.id, actor=default_user)
+    assert updated_tool.tool_type == ToolType.EXTERNAL_LANGCHAIN
 
 
 def test_update_tool_source_code_refreshes_schema_and_name(server: SyncServer, print_tool, default_user):
@@ -2334,7 +2342,16 @@ def test_delete_tool_by_id(server: SyncServer, print_tool, default_user):
 
 def test_upsert_base_tools(server: SyncServer, default_user):
     tools = server.tool_manager.upsert_base_tools(actor=default_user)
-    expected_tool_names = sorted(set(BASE_TOOLS + BASE_MEMORY_TOOLS + MULTI_AGENT_TOOLS + BASE_SLEEPTIME_TOOLS))
+    expected_tool_names = sorted(
+        set(
+            BASE_TOOLS
+            + BASE_MEMORY_TOOLS
+            + MULTI_AGENT_TOOLS
+            + BASE_SLEEPTIME_TOOLS
+            + BASE_VOICE_SLEEPTIME_TOOLS
+            + BASE_VOICE_SLEEPTIME_CHAT_TOOLS
+        )
+    )
     assert sorted([t.name for t in tools]) == expected_tool_names
 
     # Call it again to make sure it doesn't create duplicates
@@ -2351,6 +2368,10 @@ def test_upsert_base_tools(server: SyncServer, default_user):
             assert t.tool_type == ToolType.LETTA_MULTI_AGENT_CORE
         elif t.name in BASE_SLEEPTIME_TOOLS:
             assert t.tool_type == ToolType.LETTA_SLEEPTIME_CORE
+        elif t.name in BASE_VOICE_SLEEPTIME_TOOLS:
+            assert t.tool_type == ToolType.LETTA_VOICE_SLEEPTIME_CORE
+        elif t.name in BASE_VOICE_SLEEPTIME_CHAT_TOOLS:
+            assert t.tool_type == ToolType.LETTA_VOICE_SLEEPTIME_CORE
         else:
             pytest.fail(f"The tool name is unrecognized as a base tool: {t.name}")
         assert t.source_code is None

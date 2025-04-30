@@ -11,6 +11,8 @@ from letta.constants import (
     BASE_SLEEPTIME_CHAT_TOOLS,
     BASE_SLEEPTIME_TOOLS,
     BASE_TOOLS,
+    BASE_VOICE_SLEEPTIME_CHAT_TOOLS,
+    BASE_VOICE_SLEEPTIME_TOOLS,
     DATA_SOURCE_ATTACH_ALERT,
     MAX_EMBEDDING_DIM,
     MULTI_AGENT_TOOLS,
@@ -179,7 +181,11 @@ class AgentManager:
         # tools
         tool_names = set(agent_create.tools or [])
         if agent_create.include_base_tools:
-            if agent_create.agent_type == AgentType.sleeptime_agent:
+            if agent_create.agent_type == AgentType.voice_sleeptime_agent:
+                tool_names |= set(BASE_VOICE_SLEEPTIME_TOOLS)
+            elif agent_create.agent_type == AgentType.voice_convo_agent:
+                tool_names |= set(BASE_VOICE_SLEEPTIME_CHAT_TOOLS)
+            elif agent_create.agent_type == AgentType.sleeptime_agent:
                 tool_names |= set(BASE_SLEEPTIME_TOOLS)
             elif agent_create.enable_sleeptime:
                 tool_names |= set(BASE_SLEEPTIME_CHAT_TOOLS)
@@ -603,12 +609,13 @@ class AgentManager:
             # Delete sleeptime agent and group (TODO this is flimsy pls fix)
             if agent.multi_agent_group:
                 participant_agent_ids = agent.multi_agent_group.agent_ids
-                if agent.multi_agent_group.manager_type == ManagerType.sleeptime and len(participant_agent_ids) == 1:
-                    try:
-                        sleeptime_agent = AgentModel.read(db_session=session, identifier=participant_agent_ids[0], actor=actor)
-                        agents_to_delete.append(sleeptime_agent)
-                    except NoResultFound:
-                        pass  # agent already deleted
+                if agent.multi_agent_group.manager_type in {ManagerType.sleeptime, ManagerType.voice_sleeptime} and participant_agent_ids:
+                    for participant_agent_id in participant_agent_ids:
+                        try:
+                            sleeptime_agent = AgentModel.read(db_session=session, identifier=participant_agent_id, actor=actor)
+                            agents_to_delete.append(sleeptime_agent)
+                        except NoResultFound:
+                            pass  # agent already deleted
                     sleeptime_agent_group = GroupModel.read(db_session=session, identifier=agent.multi_agent_group.id, actor=actor)
                     sleeptime_group_to_delete = sleeptime_agent_group
 

@@ -186,16 +186,6 @@ def rethink_memory(agent_state: "AgentState", new_memory: str, target_block_labe
     return None
 
 
-def finish_rethinking_memory(agent_state: "AgentState") -> None:  # type: ignore
-    """
-    This function is called when the agent is done rethinking the memory.
-
-    Returns:
-        Optional[str]: None is always returned as this function does not produce a response.
-    """
-    return None
-
-
 ## Attempted v2 of sleep-time function set, meant to work better across all types
 
 SNIPPET_LINES: int = 4

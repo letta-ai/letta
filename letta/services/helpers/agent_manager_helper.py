@@ -20,7 +20,7 @@ from letta.schemas.message import Message, MessageCreate
 from letta.schemas.passage import Passage as PydanticPassage
 from letta.schemas.tool_rule import ToolRule
 from letta.schemas.user import User
-from letta.system import get_initial_boot_messages, get_login_event
+from letta.system import get_initial_boot_messages, get_login_event, package_function_response
 from letta.tracing import trace_method
 
 
@@ -94,7 +94,11 @@ def _process_tags(agent: AgentModel, tags: List[str], replace=True):
 def derive_system_message(agent_type: AgentType, enable_sleeptime: Optional[bool] = None, system: Optional[str] = None):
     if system is None:
         # TODO: don't hardcode
-        if agent_type == AgentType.memgpt_agent and not enable_sleeptime:
+        if agent_type == AgentType.voice_convo_agent:
+            system = gpt_system.get_system_text("voice_chat")
+        elif agent_type == AgentType.voice_sleeptime_agent:
+            system = gpt_system.get_system_text("voice_sleeptime")
+        elif agent_type == AgentType.memgpt_agent and not enable_sleeptime:
             system = gpt_system.get_system_text("memgpt_chat")
         elif agent_type == AgentType.memgpt_agent and enable_sleeptime:
             system = gpt_system.get_system_text("memgpt_sleeptime_chat")
@@ -278,23 +282,76 @@ def package_initial_message_sequence(
             packed_message = system.package_user_message(
                 user_message=message_create.content,
             )
+            init_messages.append(
+                Message(
+                    role=message_create.role,
+                    content=[TextContent(text=packed_message)],
+                    name=message_create.name,
+                    organization_id=actor.organization_id,
+                    agent_id=agent_id,
+                    model=model,
+                )
+            )
         elif message_create.role == MessageRole.system:
             packed_message = system.package_system_message(
                 system_message=message_create.content,
             )
+            init_messages.append(
+                Message(
+                    role=message_create.role,
+                    content=[TextContent(text=packed_message)],
+                    name=message_create.name,
+                    organization_id=actor.organization_id,
+                    agent_id=agent_id,
+                    model=model,
+                )
+            )
+        elif message_create.role == MessageRole.assistant:
+            # append tool call to send_message
+            import json
+            import uuid
+
+            from openai.types.chat.chat_completion_message_tool_call import ChatCompletionMessageToolCall as OpenAIToolCall
+            from openai.types.chat.chat_completion_message_tool_call import Function as OpenAIFunction
+
+            from letta.constants import DEFAULT_MESSAGE_TOOL
+
+            tool_call_id = str(uuid.uuid4())
+            init_messages.append(
+                Message(
+                    role=MessageRole.assistant,
+                    content=None,
+                    name=message_create.name,
+                    organization_id=actor.organization_id,
+                    agent_id=agent_id,
+                    model=model,
+                    tool_calls=[
+                        OpenAIToolCall(
+                            id=tool_call_id,
+                            type="function",
+                            function=OpenAIFunction(name=DEFAULT_MESSAGE_TOOL, arguments=json.dumps({"message": message_create.content})),
+                        )
+                    ],
+                )
+            )
+
+            # add tool return
+            function_response = package_function_response(True, "None")
+            init_messages.append(
+                Message(
+                    role=MessageRole.tool,
+                    content=[TextContent(text=function_response)],
+                    name=message_create.name,
+                    organization_id=actor.organization_id,
+                    agent_id=agent_id,
+                    model=model,
+                    tool_call_id=tool_call_id,
+                )
+            )
         else:
+            # TODO: add tool call and tool return
             raise ValueError(f"Invalid message role: {message_create.role}")
 
-        init_messages.append(
-            Message(
-                role=message_create.role,
-                content=[TextContent(text=packed_message)],
-                name=message_create.name,
-                organization_id=actor.organization_id,
-                agent_id=agent_id,
-                model=model,
-            )
-        )
     return init_messages
 
 

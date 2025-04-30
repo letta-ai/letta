@@ -44,7 +44,7 @@ from letta.schemas.embedding_config import EmbeddingConfig
 # openai schemas
 from letta.schemas.enums import JobStatus, MessageStreamStatus
 from letta.schemas.environment_variables import SandboxEnvironmentVariableCreate
-from letta.schemas.group import GroupCreate, SleeptimeManager
+from letta.schemas.group import GroupCreate, ManagerType, SleeptimeManager, VoiceSleeptimeManager
 from letta.schemas.job import Job, JobUpdate
 from letta.schemas.letta_message import LegacyLettaMessage, LettaMessage, ToolReturnMessage
 from letta.schemas.letta_message_content import TextContent
@@ -363,29 +363,29 @@ class SyncServer(Server):
 
         # For MCP
         """Initialize the MCP clients (there may be multiple)"""
-        # mcp_server_configs = self.get_mcp_servers()
+        mcp_server_configs = self.get_mcp_servers()
         self.mcp_clients: Dict[str, BaseMCPClient] = {}
-        #
-        # for server_name, server_config in mcp_server_configs.items():
-        #     if server_config.type == MCPServerType.SSE:
-        #         self.mcp_clients[server_name] = SSEMCPClient(server_config)
-        #     elif server_config.type == MCPServerType.STDIO:
-        #         self.mcp_clients[server_name] = StdioMCPClient(server_config)
-        #     else:
-        #         raise ValueError(f"Invalid MCP server config: {server_config}")
-        #
-        #     try:
-        #         self.mcp_clients[server_name].connect_to_server()
-        #     except Exception as e:
-        #         logger.error(e)
-        #         self.mcp_clients.pop(server_name)
-        #
-        # # Print out the tools that are connected
-        # for server_name, client in self.mcp_clients.items():
-        #     logger.info(f"Attempting to fetch tools from MCP server: {server_name}")
-        #     mcp_tools = client.list_tools()
-        #     logger.info(f"MCP tools connected: {', '.join([t.name for t in mcp_tools])}")
-        #     logger.debug(f"MCP tools: {', '.join([str(t) for t in mcp_tools])}")
+
+        for server_name, server_config in mcp_server_configs.items():
+            if server_config.type == MCPServerType.SSE:
+                self.mcp_clients[server_name] = SSEMCPClient(server_config)
+            elif server_config.type == MCPServerType.STDIO:
+                self.mcp_clients[server_name] = StdioMCPClient(server_config)
+            else:
+                raise ValueError(f"Invalid MCP server config: {server_config}")
+
+            try:
+                self.mcp_clients[server_name].connect_to_server()
+            except Exception as e:
+                logger.error(e)
+                self.mcp_clients.pop(server_name)
+
+        # Print out the tools that are connected
+        for server_name, client in self.mcp_clients.items():
+            logger.info(f"Attempting to fetch tools from MCP server: {server_name}")
+            mcp_tools = client.list_tools()
+            logger.info(f"MCP tools connected: {', '.join([t.name for t in mcp_tools])}")
+            logger.debug(f"MCP tools: {', '.join([str(t) for t in mcp_tools])}")
 
         # TODO: Remove these in memory caches
         self._llm_config_cache = {}
@@ -397,7 +397,9 @@ class SyncServer(Server):
     def load_agent(self, agent_id: str, actor: User, interface: Union[AgentInterface, None] = None) -> Agent:
         """Updated method to load agents from persisted storage"""
         agent_state = self.agent_manager.get_agent_by_id(agent_id=agent_id, actor=actor)
-        if agent_state.multi_agent_group:
+        # TODO: Think about how to integrate voice sleeptime into sleeptime
+        # TODO: Voice sleeptime agents turn into normal agents when being messaged
+        if agent_state.multi_agent_group and agent_state.multi_agent_group.manager_type != ManagerType.voice_sleeptime:
             return load_multi_agent(
                 group=agent_state.multi_agent_group, agent_state=agent_state, actor=actor, interface=interface, mcp_clients=self.mcp_clients
             )
@@ -769,7 +771,10 @@ class SyncServer(Server):
         log_event(name="end create_agent db")
 
         if request.enable_sleeptime:
-            main_agent = self.create_sleeptime_agent(main_agent=main_agent, actor=actor)
+            if request.agent_type == AgentType.voice_convo_agent:
+                main_agent = self.create_voice_sleeptime_agent(main_agent=main_agent, actor=actor)
+            else:
+                main_agent = self.create_sleeptime_agent(main_agent=main_agent, actor=actor)
 
         return main_agent
 
@@ -788,7 +793,10 @@ class SyncServer(Server):
         if request.enable_sleeptime:
             agent = self.agent_manager.get_agent_by_id(agent_id=agent_id, actor=actor)
             if agent.multi_agent_group is None:
-                self.create_sleeptime_agent(main_agent=agent, actor=actor)
+                if agent.agent_type == AgentType.voice_convo_agent:
+                    self.create_voice_sleeptime_agent(main_agent=agent, actor=actor)
+                else:
+                    self.create_sleeptime_agent(main_agent=agent, actor=actor)
 
         return self.agent_manager.update_agent(
             agent_id=agent_id,
@@ -822,6 +830,38 @@ class SyncServer(Server):
                 manager_config=SleeptimeManager(
                     manager_agent_id=main_agent.id,
                     sleeptime_agent_frequency=5,
+                ),
+            ),
+            actor=actor,
+        )
+        return self.agent_manager.get_agent_by_id(agent_id=main_agent.id, actor=actor)
+
+    def create_voice_sleeptime_agent(self, main_agent: AgentState, actor: User) -> AgentState:
+        # TODO: Inject system
+        request = CreateAgent(
+            name=main_agent.name + "-sleeptime",
+            agent_type=AgentType.voice_sleeptime_agent,
+            block_ids=[block.id for block in main_agent.memory.blocks],
+            memory_blocks=[
+                CreateBlock(
+                    label="memory_persona",
+                    value=get_persona_text("voice_memory_persona"),
+                ),
+            ],
+            llm_config=main_agent.llm_config,
+            embedding_config=main_agent.embedding_config,
+            project_id=main_agent.project_id,
+        )
+        voice_sleeptime_agent = self.agent_manager.create_agent(
+            agent_create=request,
+            actor=actor,
+        )
+        self.group_manager.create_group(
+            group=GroupCreate(
+                description="Low latency voice chat with async memory management.",
+                agent_ids=[voice_sleeptime_agent.id],
+                manager_config=VoiceSleeptimeManager(
+                    manager_agent_id=main_agent.id,
                 ),
             ),
             actor=actor,
