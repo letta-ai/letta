@@ -1031,7 +1031,7 @@ class RESTClient(AbstractClient):
             #     messages = []
             #     for m in response.messages:
             #         assert isinstance(m, Message)
-            #         messages += m.to_letta_message()
+            #         messages += m.to_letta_messages()
             #     response.messages = messages
 
             return response
@@ -2725,14 +2725,14 @@ class LocalClient(AbstractClient):
         #    assert isinstance(m, Message), f"Expected Message object, got {type(m)}"
         # letta_messages = []
         # for m in messages:
-        #    letta_messages += m.to_letta_message()
+        #    letta_messages += m.to_letta_messages()
         # return LettaResponse(messages=letta_messages, usage=usage)
 
         # format messages
         messages = self.interface.to_list()
         letta_messages = []
         for m in messages:
-            letta_messages += m.to_letta_message()
+            letta_messages += m.to_letta_messages()
 
         return LettaResponse(messages=letta_messages, usage=usage)
 

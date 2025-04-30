@@ -3,7 +3,7 @@ import json
 import traceback
 from typing import List, Tuple
 
-from letta.agents.ephemeral_memory_agent import EphemeralMemoryAgent
+from letta.agents.voice_sleeptime_agent import VoiceSleeptimeAgent
 from letta.log import get_logger
 from letta.schemas.enums import MessageRole
 from letta.schemas.letta_message_content import TextContent
@@ -21,7 +21,7 @@ class Summarizer:
     """
 
     def __init__(
-        self, mode: SummarizationMode, summarizer_agent: EphemeralMemoryAgent, message_buffer_limit: int = 10, message_buffer_min: int = 3
+        self, mode: SummarizationMode, summarizer_agent: VoiceSleeptimeAgent, message_buffer_limit: int = 10, message_buffer_min: int = 3
     ):
         self.mode = mode
 
@@ -109,17 +109,14 @@ class Summarizer:
 
         evicted_messages_str = "\n".join(formatted_evicted_messages)
         in_context_messages_str = "\n".join(formatted_in_context_messages)
-        summary_request_text = f"""You are a specialized memory recall agent assisting another AI agent by asynchronously reorganizing its memory storage. The LLM agent you are helping maintains a limited context window that retains only the most recent {self.message_buffer_min} messages from its conversations. The provided conversation history includes messages that are about to be evicted from its context window, as well as some additional recent messages for extra clarity and context.
+        summary_request_text = f"""You’re a memory-recall helper for an AI that can only keep the last {self.message_buffer_min} messages. Scan the conversation history, focusing on messages about to drop out of that window, and write crisp notes that capture any important facts or insights about the human so they aren’t lost.
 
-Your task is to carefully review the provided conversation history and proactively generate detailed, relevant memories about the human participant, specifically targeting information contained in messages that are about to be evicted from the context window. Your notes will help preserve critical insights, events, or facts that would otherwise be forgotten.
-
-(Older) Evicted Messages:
+(Older) Evicted Messages:\n
 {evicted_messages_str}
 
-(Newer) In-Context Messages:
+(Newer) In-Context Messages:\n
 {in_context_messages_str}
 """
-
         # Fire-and-forget the summarization task
         self.fire_and_forget(
             self.summarizer_agent.step([MessageCreate(role=MessageRole.user, content=[TextContent(text=summary_request_text)])])
