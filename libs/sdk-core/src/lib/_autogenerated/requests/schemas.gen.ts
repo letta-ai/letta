@@ -6422,20 +6422,15 @@ export const $Message = {
 
 Attributes:
     id (str): The unique identifier of the message.
-    organization_id (str): The unique identifier of the organization.
+    role (MessageRole): The role of the participant.
+    text (str): The text of the message.
+    user_id (str): The unique identifier of the user.
     agent_id (str): The unique identifier of the agent.
     model (str): The model used to make the function call.
-    role (MessageRole): The role of the participant.
-    content (List[LettaMessageContentUnion]): The content of the message.
     name (str): The name of the participant.
+    created_at (datetime): The time the message was created.
     tool_calls (List[OpenAIToolCall,]): The list of tool calls requested.
-    tool_call_id (str): The id of the tool call.
-    step_id (str): The id of the step that this message was created in.
-    otid (str): The offline threading id associated with this message.
-    tool_returns (List[ToolReturn]): Tool execution return information for prior tool calls.
-    group_id (str): The multi-agent group that the message was sent in.
-    sender_id (str): The id of the sender of the message, can be an identity id or agent id.
-    created_at (datetime): The timestamp when the object was created.`,
+    tool_call_id (str): The id of the tool call.`,
 } as const;
 
 export const $MessageCreate = {
