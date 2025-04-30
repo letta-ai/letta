@@ -363,29 +363,29 @@ class SyncServer(Server):
 
         # For MCP
         """Initialize the MCP clients (there may be multiple)"""
-        # mcp_server_configs = self.get_mcp_servers()
+        mcp_server_configs = self.get_mcp_servers()
         self.mcp_clients: Dict[str, BaseMCPClient] = {}
-        #
-        # for server_name, server_config in mcp_server_configs.items():
-        #     if server_config.type == MCPServerType.SSE:
-        #         self.mcp_clients[server_name] = SSEMCPClient(server_config)
-        #     elif server_config.type == MCPServerType.STDIO:
-        #         self.mcp_clients[server_name] = StdioMCPClient(server_config)
-        #     else:
-        #         raise ValueError(f"Invalid MCP server config: {server_config}")
-        #
-        #     try:
-        #         self.mcp_clients[server_name].connect_to_server()
-        #     except Exception as e:
-        #         logger.error(e)
-        #         self.mcp_clients.pop(server_name)
-        #
-        # # Print out the tools that are connected
-        # for server_name, client in self.mcp_clients.items():
-        #     logger.info(f"Attempting to fetch tools from MCP server: {server_name}")
-        #     mcp_tools = client.list_tools()
-        #     logger.info(f"MCP tools connected: {', '.join([t.name for t in mcp_tools])}")
-        #     logger.debug(f"MCP tools: {', '.join([str(t) for t in mcp_tools])}")
+
+        for server_name, server_config in mcp_server_configs.items():
+            if server_config.type == MCPServerType.SSE:
+                self.mcp_clients[server_name] = SSEMCPClient(server_config)
+            elif server_config.type == MCPServerType.STDIO:
+                self.mcp_clients[server_name] = StdioMCPClient(server_config)
+            else:
+                raise ValueError(f"Invalid MCP server config: {server_config}")
+
+            try:
+                self.mcp_clients[server_name].connect_to_server()
+            except Exception as e:
+                logger.error(e)
+                self.mcp_clients.pop(server_name)
+
+        # Print out the tools that are connected
+        for server_name, client in self.mcp_clients.items():
+            logger.info(f"Attempting to fetch tools from MCP server: {server_name}")
+            mcp_tools = client.list_tools()
+            logger.info(f"MCP tools connected: {', '.join([t.name for t in mcp_tools])}")
+            logger.debug(f"MCP tools: {', '.join([str(t) for t in mcp_tools])}")
 
         # TODO: Remove these in memory caches
         self._llm_config_cache = {}
