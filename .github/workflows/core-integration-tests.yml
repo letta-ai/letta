@@ -95,6 +95,27 @@ jobs:
           version: 1.8.3
           virtualenvs-create: true
           virtualenvs-in-project: true
+
+      - name: Install Fern
+        if: ${{ contains(needs.changed-files.outputs.all_changed_files, 'apps/core/letta/') }}
+        run: npm install -g fern-api
+
+      - name: Generate SDK with Fern
+        uses: nick-fields/retry@v3
+        if: ${{ contains(needs.changed-files.outputs.all_changed_files, 'apps/core/letta/') }}
+        env:
+          FERN_TOKEN: ${{ secrets.FERN_TOKEN }}
+        with:
+          max_attempts: 3
+          timeout_minutes: 5
+          command: |
+            set -o xtrace
+            cd apps
+            fern generate --group python-sdk --preview
+            cd fern/.preview/fern-python-sdk
+            poetry install
+            poetry run mypy .
+
       - name: Load cached venv
         id: cached-poetry-dependencies
         uses: actions/cache@v4
@@ -110,10 +131,6 @@ jobs:
         shell: bash
         working-directory: apps/core
         run: poetry install --no-interaction --no-root ${{ inputs.install-args || '-E dev -E postgres -E external-tools -E tests -E cloud-tool-sandbox' }}
-      - name: Install letta packages via Poetry
-        working-directory: apps/core
-        run: |
-          poetry run pip install --upgrade letta-client letta
       - name: Migrate database
         working-directory: apps/core
         env:
@@ -125,7 +142,13 @@ jobs:
         run: |
           psql -h localhost -U postgres -d postgres -c 'CREATE EXTENSION vector'
           poetry run alembic upgrade head
-      - name: Run core unit tests
+
+      - name: Use SDK with on branch changes
+        if: ${{ contains(needs.changed-files.outputs.all_changed_files, 'apps/core/letta/') }}
+        working-directory: apps/core
+        run: poetry run pip install -e ../fern/.preview/fern-python-sdk/.
+
+      - name: Run core integration tests
         working-directory: apps/core
         env:
           LETTA_PG_PORT: 5432
@@ -135,4 +158,6 @@ jobs:
           LETTA_PG_HOST: localhost
           LETTA_SERVER_PASS: test_server_token
         run: |
-          poetry run pytest -s -vv tests/${{ matrix.integration_test_suite }}
+          set -o xtrace
+          poetry run pip show letta-client
+          poetry run pytest -svv tests/${{ matrix.integration_test_suite }}

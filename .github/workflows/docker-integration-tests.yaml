@@ -23,12 +23,16 @@ jobs:
         with:
           files: |
             apps/core/**
+            .github/workflows/docker-integration-tests.yaml
+
   test:
     if: ${{ needs.changed-files.outputs.any_changed == 'true' }}
     needs: [changed-files]
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
+    - run: echo "${{ needs.changed-files.outputs.all_changed_files }}"
+    - run: echo "${{ contains(needs.changed-files.outputs.all_changed_files, 'apps/core/letta/') }}"
     - name: Checkout
       uses: actions/checkout@v4
     - name: Python
@@ -65,7 +69,40 @@ jobs:
         cd apps/core
         bash scripts/wait_for_service.sh http://localhost:8283 -- echo "Service is ready"
 
+    - name: Install Poetry
+      run: pipx install poetry==1.8.2
+
+    - name: Install Fern
+      if: ${{ contains(needs.changed-files.outputs.all_changed_files, 'apps/core/letta/') }}
+      run: npm install -g fern-api
+
+    - name: Generate SDK with Fern
+      uses: nick-fields/retry@v3
+      if: ${{ contains(needs.changed-files.outputs.all_changed_files, 'apps/core/letta/') }}
+      env:
+        FERN_TOKEN: ${{ secrets.FERN_TOKEN }}
+      with:
+        max_attempts: 3
+        timeout_minutes: 5
+        command: |
+          set -o xtrace
+          cd apps
+          fern generate --group python-sdk --preview
+          cd fern/.preview/fern-python-sdk
+          poetry install
+          poetry run mypy .
+
+    - name: Install Dependencies
+      working-directory: apps/core
+      run: poetry install -E dev -E postgres
+
+    - name: Use SDK with on branch changes
+      if: ${{ contains(needs.changed-files.outputs.all_changed_files, 'apps/core/letta/') }}
+      working-directory: apps/core
+      run: poetry run pip install -e ../fern/.preview/fern-python-sdk/.
+
     - name: Run tests with pytest
+      working-directory: apps/core
       env:
         LETTA_PG_DB:   letta
         LETTA_PG_USER: letta
@@ -76,16 +113,13 @@ jobs:
         OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
         PYTHONPATH: ${{ github.workspace }}:${{ env.PYTHONPATH }}
       run: |
-        cd apps/core
-        pipx install poetry==1.8.2
-        poetry install -E dev -E postgres
         poetry run pytest -s tests/test_client.py
         poetry run pytest -s tests/test_streaming.py
 #        poetry run pytest -s tests/test_client_legacy.py
 
     - name: Print docker logs if tests fail
       if: failure()
+      working-directory: apps/core
       run: |
-        cd apps/core
         echo "Printing Docker Logs..."
         docker compose -f dev-compose.yaml logs
