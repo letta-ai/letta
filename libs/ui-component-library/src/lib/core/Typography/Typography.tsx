@@ -78,7 +78,7 @@ const typographyVariants = cva('break-words', {
 
 export type TypographyProps = HTMLProps<HTMLElement> &
   VariantProps<typeof typographyVariants> & {
-    overrideEl?: 'h1' | 'h2' | 'h3' | 'h4' | 'h5' | 'h6' | 'p' | 'span';
+    overrideEl?: 'h1' | 'h2' | 'h3' | 'h4' | 'h5' | 'h6' | 'li' | 'p' | 'span';
   };
 
 const variantToElement = {

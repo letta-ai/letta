@@ -1,4 +1,5 @@
 import {
+  agentTemplates,
   db,
   deployedAgentMetadata,
   organizationBillingDetails,
@@ -10,6 +11,7 @@ import {
   organizations,
   organizationUsers,
   organizationVerifiedDomains,
+  projects,
   users,
 } from '@letta-cloud/service-database';
 import {
@@ -48,6 +50,11 @@ import { creditsToDollars } from '@letta-cloud/utils-shared';
 import { sendEmail } from '@letta-cloud/service-email';
 import { upgradeUserToProPlan } from '@letta-cloud/service-payments';
 import { getRedisModelTransactions } from '@letta-cloud/utils-server';
+import {
+  EmbeddingsService,
+  IdentitiesService,
+  SourcesService,
+} from '@letta-cloud/sdk-core';
 
 type GetCurrentOrganizationResponse = ServerInferResponses<
   typeof contracts.organizations.getCurrentOrganization
@@ -1413,6 +1420,83 @@ async function resumeOrganizationSubscription(): Promise<ResumeSubscriptionRespo
   };
 }
 
+type GetFullOrganizationQuotasResponse = ServerInferResponses<
+  typeof contracts.organizations.getFullOrganizationQuotas
+>;
+
+async function getFullOrganizationQuotas(): Promise<GetFullOrganizationQuotasResponse> {
+  const { activeOrganizationId, lettaAgentsId } =
+    await getUserWithActiveOrganizationIdOrThrow();
+
+  const organization = await db.query.organizations.findFirst({
+    where: eq(organizations.id, activeOrganizationId),
+  });
+
+  if (!organization) {
+    throw new Error('Organization not found');
+  }
+
+  const [
+    [agents],
+    freeInferencesPerMonth,
+    premiumInferencesPerMonth,
+    [projectsData],
+    identities,
+    dataSources,
+    storage,
+    [templatesData],
+  ] = await Promise.all([
+    db
+      .select({ count: count() })
+      .from(deployedAgentMetadata)
+      .where(eq(deployedAgentMetadata.organizationId, activeOrganizationId)),
+    getRedisModelTransactions('free', activeOrganizationId),
+    getRedisModelTransactions('premium', activeOrganizationId),
+    db
+      .select({ count: count() })
+      .from(projects)
+      .where(eq(projects.organizationId, activeOrganizationId)),
+    IdentitiesService.countIdentities(
+      {},
+      {
+        user_id: lettaAgentsId,
+      },
+    ),
+    SourcesService.countSources(
+      {},
+      {
+        user_id: lettaAgentsId,
+      },
+    ),
+    EmbeddingsService.getTotalStorageSize(
+      {},
+      {
+        user_id: lettaAgentsId,
+      },
+    ),
+    db
+      .select({
+        count: count(),
+      })
+      .from(agentTemplates)
+      .where(eq(agentTemplates.organizationId, activeOrganizationId)),
+  ]);
+
+  return {
+    status: 200,
+    body: {
+      freeInferencesPerMonth,
+      premiumInferencesPerMonth,
+      agents: agents.count,
+      projects: projectsData.count,
+      templates: templatesData.count,
+      identities,
+      dataSources,
+      storage,
+    },
+  };
+}
+
 export const organizationsRouter = {
   getCurrentOrganization,
   getCurrentOrganizationPreferences,
@@ -1442,4 +1526,5 @@ export const organizationsRouter = {
   listInviteRules,
   deleteInviteRule,
   getOrganizationBillingHistory,
+  getFullOrganizationQuotas,
 };

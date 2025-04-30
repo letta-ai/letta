@@ -563,6 +563,25 @@ const getOrganizationQuotasContract = c.query({
   },
 });
 
+const FullOrganizationQuota = z.object({
+  agents: z.number(),
+  identities: z.number(),
+  projects: z.number(),
+  dataSources: z.number(),
+  templates: z.number(),
+  premiumInferencesPerMonth: z.number(),
+  freeInferencesPerMonth: z.number(),
+  storage: z.number(),
+});
+
+const getFullOrganizationQuotasContract = c.query({
+  path: '/organizations/self/quotas/full',
+  method: 'GET',
+  responses: {
+    200: FullOrganizationQuota,
+  },
+});
+
 export const organizationsContract = c.router({
   getCurrentOrganization: getCurrentOrganizationContract,
   getCurrentOrganizationPreferences: getCurrentOrganizationPreferencesContract,
@@ -576,6 +595,7 @@ export const organizationsContract = c.router({
   deleteOrganization: deleteOrganizationContract,
   updateOrganization: updateOrganizationContract,
   createOrganization: createOrganizationContract,
+  getFullOrganizationQuotas: getFullOrganizationQuotasContract,
   regenerateInviteCode: regenerateInviteCodeContract,
   getInviteByCode: GetInviteByCodeContract,
   upgradeOrganizationToPro: upgradeOrganizationToProContract,
@@ -617,7 +637,9 @@ export const organizationsQueryClientKeys = {
   listVerifiedDomains: ['organizations', 'self', 'verified-domains'],
   listInviteRules: ['organizations', 'self', 'invite-rules'],
   getOrganizationBillingHistory: ['organizations', 'self', 'billing-history'],
+  getOrganizationQuotas: ['organizations', 'self', 'quotas'],
   getOrganizationBillingHistoryWithSearch: (
     search: BillingHistoryQueryParamsType,
   ) => [...organizationsQueryClientKeys.getOrganizationBillingHistory, search],
+  getFullOrganizationQuotas: ['organizations', 'self', 'quotas', 'full'],
 };

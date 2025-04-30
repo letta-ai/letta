@@ -11,6 +11,32 @@
     "description": "You can continue your onboarding at any time. Click the button below to continue.",
     "trigger": "Continue onboarding"
   },
+  "components/CustomerQuotaView": {
+    "loading": "Loading quotas...",
+    "ViewAllQuotas": {
+      "open": "See all limits",
+      "close": "Hide limits",
+      "agents": "Agents",
+      "identities": "Identities",
+      "dataSources": "Data sources",
+      "templates": "Templates",
+      "projects": "Projects",
+      "storage": "Storage"
+    },
+    "QuotaRow": {
+      "limit": "<value></value> of {max}"
+    },
+    "title": "Your organization's usage",
+    "premiumModelUsage": {
+      "label": "Premium model usage"
+    },
+    "freeModelUsage": {
+      "label": "Standard model usage"
+    },
+    "agentUsage": {
+      "label": "Agents"
+    }
+  },
   "onboarding/StartOnboardingDialog": {
     "skip": "Skip onboarding",
     "start": "Learn about credits",
@@ -673,11 +699,22 @@
     },
     "legal": "By upgrading, you agree to our <terms>Terms of Service</terms> and <privacy>Privacy Policy</privacy> and you will pay 20$/month. You can cancel at any time.",
     "cta": "Upgrade for 20$/month",
-    "heading": "Upgrade to pro"
+    "heading": "Upgrade to pro",
+    "purchasing": "Upgrading your plan..."
   },
   "organization/billing": {
+    "FreePlanUpsellDetails": {
+      "title": "Do more with Letta Pro",
+      "description": "Right now you're on the free plan, which is great for getting started. But if you want to do more with Letta, consider upgrading to the Pro plan. Check out what you can get \uD83D\uDC47",
+      "features": {
+        "free": "Cancel at any time, no lock in.",
+        "agents": "Create an interact with {agents} agents.",
+        "premiumModels": "Send {limit} requests for premium models per month.",
+        "freeModels": "Send unlimited requests for free models per month."
+      }
+    },
     "AccountDetailsCTA": {
-      "upgrade": "Upgrade to the Pro plan",
+      "upgrade": "Upgrade to Pro",
       "pro": {
         "billingPeriod": "You will be charged on {date} for the Pro plan",
         "cancel": "Cancel plan",
@@ -685,6 +722,7 @@
       }
     },
     "AccountDetails": {
+      "freeTitle": "Plan details",
       "title": "Account",
       "description": {
         "free": "You are currently on the hobby plan (it’s free!).",
@@ -741,8 +779,8 @@
       "addPaymentMethod": "Add payment method",
       "error": "There was an error loading billing information, please try again or contact support.",
       "Credits": {
-        "title": "Credit balance",
-        "description": "Credits are used to pay for agent usage. You can purchase more credits below.",
+        "title": "Usage based pricing",
+        "description": "Enabling usage-based pricing allows you to pay for additional model requests beyond your monthly limits.",
         "add": "Buy credits",
         "available": "credits",
         "used": "of {total} credits used"

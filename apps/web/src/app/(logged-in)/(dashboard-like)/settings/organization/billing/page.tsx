@@ -8,6 +8,7 @@ import {
   DataTable,
   HStack,
   LettaCoinIcon,
+  LettaInvaderIcon,
   LoadingEmptyStatusComponent,
   NiceGridDisplay,
   PlusIcon,
@@ -16,7 +17,6 @@ import {
   TollIcon,
   Typography,
   VStack,
-  WalletIcon,
 } from '@letta-cloud/ui-component-library';
 import React, { useEffect, useMemo, useState } from 'react';
 import { webApi, webApiQueryKeys } from '$web/client';
@@ -37,6 +37,8 @@ import type { BillingTiersType } from '@letta-cloud/types';
 import { UpgradeToProPlanDialog } from '$web/client/components/UpgradeToProPlanDialog/UpgradeToProPlanDialog';
 import { CancelPlanDialog } from '$web/client/components/CancelPlanDialog/CancelPlanDialog';
 import { ResumePlanButton } from '$web/client/components/ResumePlanButton/ResumePlanButton';
+import { CustomerQuotaView } from '$web/client/components/CustomerQuotaView/CustomerQuotaView';
+import { getUsageLimits } from '@letta-cloud/utils-shared';
 
 interface ProViewProps {
   billingPeriodEnd: string | undefined;
@@ -110,25 +112,9 @@ interface AccountDetailsCTAProps {
 function AccountDetailsCTA(props: AccountDetailsCTAProps) {
   const { billingTier, billingPeriodEnd, isCancelled } = props;
 
-  const t = useTranslations('organization/billing');
-
   switch (billingTier) {
     case 'free':
-      return (
-        <HStack>
-          <UpgradeToProPlanDialog
-            trigger={
-              <Button
-                preIcon={<WalletIcon />}
-                color="tertiary"
-                bold
-                size="small"
-                label={t('AccountDetailsCTA.upgrade')}
-              />
-            }
-          />
-        </HStack>
-      );
+      return <HStack></HStack>;
     case 'pro':
       return (
         <ProView
@@ -137,6 +123,58 @@ function AccountDetailsCTA(props: AccountDetailsCTAProps) {
         />
       );
   }
+}
+
+function FreePlanUpsellDetails() {
+  const t = useTranslations('organization/billing');
+
+  const limits = getUsageLimits('pro');
+
+  const { formatNumber } = useNumberFormatter();
+
+  return (
+    <VStack border fullWidth color="brand-light" padding="xlarge">
+      <HStack fullWidth align="center" justify="spaceBetween">
+        <Typography variant="heading3" bold>
+          {t('FreePlanUpsellDetails.title')}
+        </Typography>
+        <UpgradeToProPlanDialog
+          trigger={
+            <Button
+              preIcon={<LettaInvaderIcon />}
+              bold
+              label={t('AccountDetailsCTA.upgrade')}
+            />
+          }
+        />
+      </HStack>
+      <VStack>
+        <VStack paddingY="medium">
+          <Typography>{t('FreePlanUpsellDetails.description')}</Typography>
+        </VStack>
+        <VStack paddingLeft>
+          <Typography noWrap overrideEl="li">
+            {t('FreePlanUpsellDetails.features.agents', {
+              agents: formatNumber(limits.agents),
+            })}
+          </Typography>
+          <Typography noWrap overrideEl="li">
+            {t('FreePlanUpsellDetails.features.premiumModels', {
+              limit: formatNumber(limits.premiumInferencesPerMonth),
+            })}
+          </Typography>
+          <Typography noWrap overrideEl="li">
+            {t('FreePlanUpsellDetails.features.freeModels', {
+              limit: formatNumber(limits.freeInferencesPerMonth),
+            })}
+          </Typography>
+          <Typography noWrap overrideEl="li">
+            {t('FreePlanUpsellDetails.features.free')}
+          </Typography>
+        </VStack>
+      </VStack>
+    </VStack>
+  );
 }
 
 function AccountDetails() {
@@ -160,6 +198,10 @@ function AccountDetails() {
 
   if (!data) {
     return <LoadingEmptyStatusComponent isLoading />;
+  }
+
+  if (data.body.billingTier === 'free') {
+    return <FreePlanUpsellDetails />;
   }
 
   return (
@@ -246,12 +288,7 @@ function PaymentMethods() {
 
 type Tabs = 'billing-history' | 'overview' | 'payment-methods';
 
-interface BillingOverviewProps {
-  changeTab: (tab: Tabs) => void;
-}
-
-function BillingOverview(props: BillingOverviewProps) {
-  const { changeTab } = props;
+function BillingOverview() {
   const { data, isLoading, isError } =
     webApi.organizations.getCurrentOrganizationBillingInfo.useQuery({
       queryKey: webApiQueryKeys.organizations.getCurrentOrganizationBillingInfo,
@@ -274,28 +311,15 @@ function BillingOverview(props: BillingOverviewProps) {
   }
 
   return (
-    <VStack width="contained">
-      {data.body.creditCards.length === 0 && (
-        <Alert
-          variant="warning"
-          title={t('BillingOverview.noPaymentMethods')}
-          action={
-            <Button
-              label={t('BillingOverview.addPaymentMethod')}
-              color="primary"
-              size="small"
-              onClick={() => {
-                changeTab('payment-methods');
-                setTimeout(() => {
-                  document.getElementById('add-payment-method')?.click();
-                }, 100);
-              }}
-            />
-          }
-        />
-      )}
+    <VStack gap="large" width="largeContained">
       {isProPlanEnabled && <AccountDetails />}
-      <Section title={t('BillingOverview.Credits.title')}>
+
+      {data.body.billingTier !== 'enterprise' && <CustomerQuotaView />}
+
+      <Section
+        title={t('BillingOverview.Credits.title')}
+        description={t('BillingOverview.Credits.description')}
+      >
         <VStack color="background-grey" border padding>
           <VStack paddingY="small" align="start">
             <HStack align="end">
@@ -492,38 +516,35 @@ function Billing() {
   }
 
   return (
-    <DashboardPageLayout title={t('title')}>
-      <VStack width="largeContained">
-        <DashboardPageSection>
-          <TabGroup
-            extendBorder
-            onValueChange={(value) => {
-              setSelectedTab(value as Tabs);
-            }}
-            size="small"
-            value={selectedTab}
-            items={[
-              {
-                label: t('Overview.title'),
-                value: 'overview',
-              },
-              {
-                label: t('BillingHistory.title'),
-                value: 'billing-history',
-              },
-              {
-                label: t('PaymentMethods.title'),
-                value: 'payment-methods',
-              },
-            ]}
-          />
-          {selectedTab === 'overview' && (
-            <BillingOverview changeTab={setSelectedTab} />
-          )}
-          {selectedTab === 'billing-history' && <BillingHistory />}
-          {selectedTab === 'payment-methods' && <PaymentMethods />}
-        </DashboardPageSection>
-      </VStack>
+    <DashboardPageLayout cappedWidth title={t('title')}>
+      <DashboardPageSection>
+        <TabGroup
+          color="transparent"
+          extendBorder
+          onValueChange={(value) => {
+            setSelectedTab(value as Tabs);
+          }}
+          size="small"
+          value={selectedTab}
+          items={[
+            {
+              label: t('Overview.title'),
+              value: 'overview',
+            },
+            {
+              label: t('BillingHistory.title'),
+              value: 'billing-history',
+            },
+            {
+              label: t('PaymentMethods.title'),
+              value: 'payment-methods',
+            },
+          ]}
+        />
+        {selectedTab === 'overview' && <BillingOverview />}
+        {selectedTab === 'billing-history' && <BillingHistory />}
+        {selectedTab === 'payment-methods' && <PaymentMethods />}
+      </DashboardPageSection>
     </DashboardPageLayout>
   );
 }

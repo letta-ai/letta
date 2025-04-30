@@ -1,4 +1,7 @@
 {
+  "components/QuotaBlock": {
+    "usage": "<value></value> of <max></max>"
+  },
   "components/AgentStateViewer": {
     "changed": "Changed",
     "StateViewer": {

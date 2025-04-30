@@ -218,3 +218,5 @@ export * from './lib/core/ResizableKeyValueEditor/ResizableKeyValueEditor';
 export * from './lib/core/InlineTextDiff/InlineTextDiff';
 
 export * from './lib/core/QuotaProgressBar/QuotaProgressBar';
+
+export * from './lib/reusable/QuotaBlock/QuotaBlock';

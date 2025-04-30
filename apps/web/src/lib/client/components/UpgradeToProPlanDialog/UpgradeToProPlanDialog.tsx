@@ -1,10 +1,11 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { useTranslations } from '@letta-cloud/translations';
 import {
   Button,
   Dialog,
   HStack,
   LettaInvaderIcon,
+  LoadingEmptyStatusComponent,
   toast,
   Typography,
   VStack,
@@ -12,7 +13,8 @@ import {
 import type { Limit } from '@letta-cloud/utils-shared';
 import { getUsageLimits } from '@letta-cloud/utils-shared';
 import { useNumberFormatter } from '@letta-cloud/utils-client';
-import { webApi } from '@letta-cloud/sdk-web';
+import { webApi, webApiQueryKeys } from '@letta-cloud/sdk-web';
+import { CreditCardForm } from '$web/client/components/AddCreditCardDialog/AddCreditCardDialog';
 
 interface UpgradeToProPlanProps {
   trigger: React.ReactNode;
@@ -100,6 +102,11 @@ export function UpgradeToProPlanDialog(props: UpgradeToProPlanProps) {
   const { trigger } = props;
   const t = useTranslations('components/UpgradeToProPlanDialog');
 
+  const { data: billingData } =
+    webApi.organizations.getCurrentOrganizationBillingInfo.useQuery({
+      queryKey: webApiQueryKeys.organizations.getCurrentOrganizationBillingInfo,
+    });
+
   const { isPending, mutate, isSuccess } =
     webApi.organizations.upgradeOrganizationToPro.useMutation({
       onSuccess: () => {
@@ -110,6 +117,16 @@ export function UpgradeToProPlanDialog(props: UpgradeToProPlanProps) {
       },
     });
 
+  const isMissingCreditCard = useMemo(() => {
+    if (!billingData) {
+      return true;
+    }
+
+    return billingData.body.creditCards.length === 0;
+  }, [billingData]);
+
+  const [acceptedUpgrade, setAcceptedUpgrade] = useState(false);
+
   return (
     <Dialog
       trigger={trigger}
@@ -118,53 +135,76 @@ export function UpgradeToProPlanDialog(props: UpgradeToProPlanProps) {
       disableForm
       hideFooter
     >
-      <VStack paddingTop paddingBottom="xxlarge" align="center">
-        <LettaInvaderIcon size="xxlarge" />
-        <Typography bold variant="heading1">
-          {t('heading')}
-        </Typography>
-        <Typography bold> {t('description')}</Typography>
-        <VStack paddingY fullWidth align="center">
-          <Feature type="freeInferencesPerMonth" />
-          <Feature type="premiumInferencesPerMonth" />
-          <Feature type="agents" />
-          <Feature type="identities" />
-          <Feature type="storage" />
-        </VStack>
-
-        <Button
-          onClick={() => {
+      {acceptedUpgrade ? (
+        <CreditCardForm
+          onComplete={() => {
             mutate({});
+            setAcceptedUpgrade(false);
           }}
-          busy={isPending || isSuccess}
-          fullWidth
-          size="large"
-          bold
-          label={t('cta')}
         />
-        <HStack paddingTop="small">
-          <Typography color="muted" variant="body3" align="center">
-            {t.rich('legal', {
-              terms: (chunks) => (
-                <a
-                  className="underline"
-                  href="https://letta.com/terms-of-service"
-                >
-                  {chunks}
-                </a>
-              ),
-              privacy: (chunks) => (
-                <a
-                  className="underline"
-                  href="https://letta.com/privacy-policy"
-                >
-                  {chunks}
-                </a>
-              ),
-            })}
-          </Typography>
-        </HStack>
-      </VStack>
+      ) : (
+        <>
+          {isPending || isSuccess ? (
+            <LoadingEmptyStatusComponent
+              isLoading
+              loadingMessage={t('purchasing')}
+            />
+          ) : (
+            <VStack paddingTop paddingBottom="xxlarge" align="center">
+              <LettaInvaderIcon size="xxlarge" />
+              <Typography bold variant="heading1">
+                {t('heading')}
+              </Typography>
+              <Typography bold> {t('description')}</Typography>
+              <VStack paddingY fullWidth align="center">
+                <Feature type="freeInferencesPerMonth" />
+                <Feature type="premiumInferencesPerMonth" />
+                <Feature type="agents" />
+                <Feature type="identities" />
+                <Feature type="storage" />
+              </VStack>
+
+              <Button
+                onClick={() => {
+                  if (isMissingCreditCard) {
+                    setAcceptedUpgrade(true);
+                    return;
+                  }
+
+                  mutate({});
+                }}
+                busy={isPending || isSuccess}
+                fullWidth
+                size="large"
+                bold
+                label={t('cta')}
+              />
+              <HStack paddingTop="small">
+                <Typography color="muted" variant="body3" align="center">
+                  {t.rich('legal', {
+                    terms: (chunks) => (
+                      <a
+                        className="underline"
+                        href="https://letta.com/terms-of-service"
+                      >
+                        {chunks}
+                      </a>
+                    ),
+                    privacy: (chunks) => (
+                      <a
+                        className="underline"
+                        href="https://letta.com/privacy-policy"
+                      >
+                        {chunks}
+                      </a>
+                    ),
+                  })}
+                </Typography>
+              </HStack>
+            </VStack>
+          )}
+        </>
+      )}
     </Dialog>
   );
 }

@@ -40,7 +40,7 @@ const limitMap: Record<BillingTiersType, Limit> = {
     projects: 25,
     templates: 25,
     identities: 25,
-    premiumInferencesPerMonth: 0,
+    premiumInferencesPerMonth: 25,
     freeInferencesPerMonth: 100_000,
     storage: OneGB / 10, // 100 MB
   },
