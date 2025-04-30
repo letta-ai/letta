@@ -56,7 +56,6 @@ class AgentState(OrmMetadataBase, validate_assignment=True):
     name: str = Field(..., description="The name of the agent.")
     # tool rules
     tool_rules: Optional[List[ToolRule]] = Field(default=None, description="The list of tool rules.")
-
     # in-context memory
     message_ids: Optional[List[str]] = Field(default=None, description="The ids of the messages in the agent's in-context memory.")
 
