@@ -4,6 +4,7 @@ import { nxViteTsPaths } from '@nx/vite/plugins/nx-tsconfig-paths.plugin';
 import { mergeConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import * as path from 'node:path';
+import React from 'react';
 
 const config: StorybookConfig = {
   stories: ['../src/**/*.@(mdx|stories.@(js|jsx|ts|tsx))'],
@@ -29,8 +30,8 @@ const config: StorybookConfig = {
     nextConfig.resolve.alias = {
       ...nextConfig.resolve.alias,
       path: () => require.resolve('path-browserify'),
-      'next/image': path.resolve(__dirname, '..', 'src', 'stubs', 'Image.tsx'),
-      'next/link': path.resolve(__dirname, '..', 'src', 'stubs', 'Link.tsx'),
+      'next/image': () => React.createElement('div'),
+      'next/link': () => React.createElement('div'),
     };
 
     return nextConfig;

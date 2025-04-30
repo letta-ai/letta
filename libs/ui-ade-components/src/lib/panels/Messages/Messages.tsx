@@ -51,6 +51,8 @@ import { get } from 'lodash-es';
 import { useGetMessagesWorker } from './useGetMessagesWorker/useGetMessagesWorker';
 import { useCurrentDevelopmentServerConfig } from '@letta-cloud/utils-client';
 import { CURRENT_RUNTIME } from '@letta-cloud/config-runtime';
+import { useFeatureFlag } from '@letta-cloud/sdk-web';
+import { DetailedMessageView } from './DetailedMessageView';
 
 // tryFallbackParseJson will attempt to parse a string as JSON, if it fails, it will trim the last character and try again
 // until it succeeds or the string is empty
@@ -127,6 +129,10 @@ function MessageGroup({ group }: MessageGroupType) {
     return null;
   }, [name]);
 
+  const { data: isEnabledDetailedMessageView } = useFeatureFlag(
+    'DETAILED_MESSAGE_VIEW',
+  );
+
   return (
     <HStack
       padding="small"
@@ -144,9 +150,12 @@ function MessageGroup({ group }: MessageGroupType) {
         size={'xsmall'}
       />
       <VStack collapseWidth flex gap="small">
-        <Typography bold variant="body2" color="lighter">
-          {name.toUpperCase()}
-        </Typography>
+        <HStack fullWidth align="center" justify="spaceBetween">
+          <Typography bold variant="body2" color="lighter">
+            {name.toUpperCase()}
+          </Typography>
+          {isEnabledDetailedMessageView && <DetailedMessageView />}
+        </HStack>
         <VStack
           gap="large"
           data-testid={`${name.toLowerCase()}-message-content`}
@@ -180,6 +189,7 @@ interface LastMessageReceived {
 export function Messages(props: MessagesProps) {
   const { isSendingMessage, renderAgentsLink, mode, isPanelActive, agentId } =
     props;
+
   const ref = useRef<HTMLDivElement>(null);
   const hasScrolledInitially = useRef(false);
   const t = useTranslations('components/Messages');
@@ -477,9 +487,7 @@ export function Messages(props: MessagesProps) {
               const functionResponse = allMessages.find(
                 (message) =>
                   message.message_type === 'tool_return_message' &&
-                  // eslint-disable-next-line @typescript-eslint/no-confusing-void-expression
                   get(message, 'tool_call_id') ===
-                    // eslint-disable-next-line @typescript-eslint/no-confusing-void-expression
                     agentMessage.tool_call.tool_call_id,
               );
 

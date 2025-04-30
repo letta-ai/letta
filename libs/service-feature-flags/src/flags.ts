@@ -51,6 +51,11 @@ export const featureFlags = {
     expiryDate: '2024-04-01',
     flagValue: z.boolean(),
   },
+  DETAILED_MESSAGE_VIEW: {
+    description: 'See detailed message view from the agent chat page',
+    expiryDate: '2024-06-01',
+    flagValue: z.boolean(),
+  },
 } satisfies Record<string, FlagProperties>;
 
 export type Flag = keyof typeof featureFlags;

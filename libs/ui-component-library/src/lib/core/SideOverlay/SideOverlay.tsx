@@ -73,7 +73,7 @@ export function SideOverlay(props: SideOverlayProps) {
           {overlay && (
             <DialogPrimitive.Overlay
               className={cn(
-                'fixed inset-0 z-miniApp bg-black/40  data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0',
+                'fixed inset-0 z-miniapp bg-black/40  data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0',
               )}
             />
           )}
@@ -82,7 +82,7 @@ export function SideOverlay(props: SideOverlayProps) {
             <div id="dialog-dropdown-content" className="z-dropdown" />
             <div
               className={cn(
-                'fixed border flex flex-col max-h-[100dvh] max-w-[650px] w-full  h-full text-base  top-[50%] z-miniApp translate-x-[0] translate-y-[-50%] gap-2 shadow-lg duration-200  bg-background',
+                'fixed border flex flex-col max-h-[100dvh] max-w-[650px] w-full  h-full text-base  top-[50%] z-miniapp translate-x-[0] translate-y-[-50%] gap-2 shadow-lg duration-200  bg-background',
                 position === 'left' ? 'left-0' : 'right-0',
                 __use_rarely_className,
               )}
