@@ -180,7 +180,7 @@ docker exec -it $(docker ps -q -f ancestor=letta/letta) letta run
 In the CLI tool, you'll be able to create new agents, or load existing agents:
 ```
 🧬 Creating new agent...
-? Select LLM model: letta-free [type=openai] [ip=https://inference.memgpt.ai]
+? Select LLM model: letta-free [type=openai] [ip=https://inference.letta.com]
 ? Select embedding model: letta-free [type=hugging-face] [ip=https://embeddings.memgpt.ai]
 ->  🤖 Using persona profile: 'sam_pov'
 ->  🧑 Using human profile: 'basic'
@@ -246,7 +246,7 @@ letta run
 ```
 ```
 🧬 Creating new agent...
-? Select LLM model: letta-free [type=openai] [ip=https://inference.memgpt.ai]
+? Select LLM model: letta-free [type=openai] [ip=https://inference.letta.com]
 ? Select embedding model: letta-free [type=hugging-face] [ip=https://embeddings.memgpt.ai]
 ->  🤖 Using persona profile: 'sam_pov'
 ->  🧑 Using human profile: 'basic'

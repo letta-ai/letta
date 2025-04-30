@@ -158,7 +158,7 @@ def build_openai_chat_completions_request(
         # data.response_format = {"type": "json_object"}
 
     if llm_config.model_endpoint == LETTA_MODEL_ENDPOINT:
-        # override user id for inference.memgpt.ai
+        # override user id for inference.letta.com
         import uuid
 
         data.user = str(uuid.UUID(int=0))
