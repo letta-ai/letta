@@ -22,6 +22,25 @@ jest.mock('$web/server/auth', () => ({
   })),
 }));
 
+jest.mock('$web/server/cookies', () => ({
+  __esModule: true,
+  ...jest.requireActual('$web/server/cookies'),
+  getCookie: jest.fn(async () => ({
+    sessionId: 'session-id',
+    expires: Date.now() + 1000 * 60 * 60 * 24,
+  })),
+}));
+
+jest.mock('@letta-cloud/service-redis', () => ({
+  getRedisData: jest.fn(() => ({
+    name: 'test',
+    lettaAgentsId: '456',
+    activeOrganizationId: '123',
+    id: '123',
+  })),
+  setRedisData: jest.fn(),
+}));
+
 describe('userRouter', () => {
   describe('updateActiveOrganization', () => {
     it("should update a user's organization successfully", async () => {

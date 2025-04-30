@@ -32,6 +32,8 @@ import { environment } from '@letta-cloud/config-environment-variables';
 import { trackServerSideEvent } from '@letta-cloud/service-analytics/server';
 import { AnalyticsEvent } from '@letta-cloud/service-analytics';
 import { goToNextOnboardingStep } from '@letta-cloud/utils-server';
+import { getRedisData, setRedisData } from '@letta-cloud/service-redis';
+import { getCookie } from '$web/server/cookies';
 
 type ResponseShapes = ServerInferResponses<typeof userContract>;
 
@@ -180,7 +182,22 @@ async function updateActiveOrganization(
 ): Promise<UpdateActiveOrganizationResponse> {
   const user = await getUser();
 
-  if (!user) {
+  const session = await getCookie(CookieNames.LETTA_SESSION);
+
+  if (!session) {
+    return {
+      status: 401,
+      body: {
+        message: 'User not found',
+      },
+    };
+  }
+
+  const userSession = await getRedisData('userSession', {
+    sessionId: session.sessionId,
+  });
+
+  if (!userSession || !user) {
     return {
       status: 401,
       body: {
@@ -213,6 +230,18 @@ async function updateActiveOrganization(
       },
     }),
   ]);
+
+  await setRedisData(
+    'userSession',
+    { sessionId: session.sessionId },
+    {
+      expiresAt: Date.now() + 31536000000,
+      data: {
+        ...userSession,
+        activeOrganizationId: activeOrganizationId,
+      },
+    },
+  );
 
   return {
     status: 200,
