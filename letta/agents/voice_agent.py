@@ -6,6 +6,7 @@ from typing import Any, AsyncGenerator, Dict, List, Optional, Tuple
 import openai
 
 from letta.agents.base_agent import BaseAgent
+from letta.agents.exceptions import IncompatibleAgentType
 from letta.agents.voice_sleeptime_agent import VoiceSleeptimeAgent
 from letta.constants import NON_USER_MSG_PREFIX
 from letta.helpers.datetime_helpers import get_utc_time
@@ -18,7 +19,7 @@ from letta.helpers.tool_execution_helper import (
 from letta.interfaces.openai_chat_completions_streaming_interface import OpenAIChatCompletionsStreamingInterface
 from letta.log import get_logger
 from letta.orm.enums import ToolType
-from letta.schemas.agent import AgentState
+from letta.schemas.agent import AgentState, AgentType
 from letta.schemas.enums import MessageRole
 from letta.schemas.letta_response import LettaResponse
 from letta.schemas.message import Message, MessageCreate, MessageUpdate
@@ -124,9 +125,15 @@ class VoiceAgent(BaseAgent):
         """
         if len(input_messages) != 1 or input_messages[0].role != MessageRole.user:
             raise ValueError(f"Voice Agent was invoked with multiple input messages or message did not have role `user`: {input_messages}")
+
         user_query = input_messages[0].content[0].text
 
         agent_state = self.agent_manager.get_agent_by_id(self.agent_id, actor=self.actor)
+
+        # Safety check
+        if agent_state.agent_type != AgentType.voice_convo_agent:
+            raise IncompatibleAgentType(expected_type=AgentType.voice_convo_agent, actual_type=agent_state.agent_type)
+
         summarizer = self.init_summarizer(agent_state=agent_state)
 
         in_context_messages = self.message_manager.get_messages_by_ids(message_ids=agent_state.message_ids, actor=self.actor)
