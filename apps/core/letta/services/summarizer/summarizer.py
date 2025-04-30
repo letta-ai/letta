@@ -4,6 +4,7 @@ import traceback
 from typing import List, Tuple
 
 from letta.agents.voice_sleeptime_agent import VoiceSleeptimeAgent
+from letta.constants import DEFAULT_MESSAGE_TOOL, DEFAULT_MESSAGE_TOOL_KWARG
 from letta.log import get_logger
 from letta.schemas.enums import MessageRole
 from letta.schemas.letta_message_content import TextContent
@@ -77,7 +78,7 @@ class Summarizer:
 
         logger.info("Buffer length hit, evicting messages.")
 
-        target_trim_index = len(all_in_context_messages) - self.message_buffer_min + 1
+        target_trim_index = len(all_in_context_messages) - self.message_buffer_min
 
         while target_trim_index < len(all_in_context_messages) and all_in_context_messages[target_trim_index].role != MessageRole.user:
             target_trim_index += 1
@@ -112,11 +113,12 @@ class Summarizer:
         summary_request_text = f"""You’re a memory-recall helper for an AI that can only keep the last {self.message_buffer_min} messages. Scan the conversation history, focusing on messages about to drop out of that window, and write crisp notes that capture any important facts or insights about the human so they aren’t lost.
 
 (Older) Evicted Messages:\n
-{evicted_messages_str}
+{evicted_messages_str}\n
 
 (Newer) In-Context Messages:\n
 {in_context_messages_str}
 """
+        print(summary_request_text)
         # Fire-and-forget the summarization task
         self.fire_and_forget(
             self.summarizer_agent.step([MessageCreate(role=MessageRole.user, content=[TextContent(text=summary_request_text)])])
@@ -149,6 +151,9 @@ def format_transcript(messages: List[Message], include_system: bool = False) -> 
 
         # 1) Try plain content
         if msg.content:
+            # Skip tool messages where the name is "send_message"
+            if msg.role == MessageRole.tool and msg.name == DEFAULT_MESSAGE_TOOL:
+                continue
             text = "".join(c.text for c in msg.content).strip()
 
         # 2) Otherwise, try extracting from function calls
@@ -156,11 +161,14 @@ def format_transcript(messages: List[Message], include_system: bool = False) -> 
             parts = []
             for call in msg.tool_calls:
                 args_str = call.function.arguments
-                try:
-                    args = json.loads(args_str)
-                    # pull out a "message" field if present
-                    parts.append(args.get("message", args_str))
-                except json.JSONDecodeError:
+                if call.function.name == DEFAULT_MESSAGE_TOOL:
+                    try:
+                        args = json.loads(args_str)
+                        # pull out a "message" field if present
+                        parts.append(args.get(DEFAULT_MESSAGE_TOOL_KWARG, args_str))
+                    except json.JSONDecodeError:
+                        parts.append(args_str)
+                else:
                     parts.append(args_str)
             text = " ".join(parts).strip()
 
