@@ -122,7 +122,7 @@ class MessageManager:
         message = self.update_message_by_id(message_id=message_id, message_update=update_message, actor=actor)
 
         # convert back to LettaMessage
-        for letta_msg in message.to_letta_message(use_assistant_message=True):
+        for letta_msg in message.to_letta_messages(use_assistant_message=True):
             if letta_msg.message_type == letta_message_update.message_type:
                 return letta_msg
 
@@ -160,7 +160,7 @@ class MessageManager:
         message = self.update_message_by_id(message_id=message_id, message_update=update_message, actor=actor)
 
         # convert back to LettaMessage
-        for letta_msg in message.to_letta_message(use_assistant_message=True):
+        for letta_msg in message.to_letta_messages(use_assistant_message=True):
             if letta_msg.message_type == letta_message_update.message_type:
                 return letta_msg
 

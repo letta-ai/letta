@@ -219,7 +219,7 @@ class Message(BaseMessage):
         return [
             msg
             for m in messages
-            for msg in m.to_letta_message(
+            for msg in m.to_letta_messages(
                 use_assistant_message=use_assistant_message,
                 assistant_message_tool_name=assistant_message_tool_name,
                 assistant_message_tool_kwarg=assistant_message_tool_kwarg,
@@ -227,7 +227,7 @@ class Message(BaseMessage):
             )
         ]
 
-    def to_letta_message(
+    def to_letta_messages(
         self,
         use_assistant_message: bool = False,
         assistant_message_tool_name: str = DEFAULT_MESSAGE_TOOL,
@@ -447,7 +447,7 @@ class Message(BaseMessage):
         name: Optional[str] = None,
         group_id: Optional[str] = None,
         tool_returns: Optional[List[ToolReturn]] = None,
-    ):
+    ) -> Message:
         """Convert a ChatCompletion message object into a Message object (synced to DB)"""
         if not created_at:
             # timestamp for creation
