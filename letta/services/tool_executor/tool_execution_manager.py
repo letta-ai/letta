@@ -100,7 +100,7 @@ class ToolExecutionManager:
         try:
             executor = ToolExecutorFactory.get_executor(tool.tool_type)
             # TODO: Extend this async model to composio
-            if isinstance(executor, SandboxToolExecutor):
+            if isinstance(executor, (SandboxToolExecutor, ExternalComposioToolExecutor)):
                 result = await executor.execute(function_name, function_args, self.agent_state, tool, self.actor)
             else:
                 result = executor.execute(function_name, function_args, self.agent_state, tool, self.actor)

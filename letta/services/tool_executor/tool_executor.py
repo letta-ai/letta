@@ -5,7 +5,7 @@ from typing import Any, Dict, Optional
 
 from letta.constants import COMPOSIO_ENTITY_ENV_VAR_KEY, CORE_MEMORY_LINE_NUMBER_WARNING, RETRIEVAL_QUERY_DEFAULT_PAGE_SIZE
 from letta.functions.ast_parsers import coerce_dict_args_by_annotations, get_function_annotations_from_source
-from letta.functions.helpers import execute_composio_action, generate_composio_action_from_func_name
+from letta.functions.composio_helpers import execute_composio_action_async, generate_composio_action_from_func_name
 from letta.helpers.composio_helpers import get_composio_api_key
 from letta.helpers.json_helpers import json_dumps
 from letta.schemas.agent import AgentState
@@ -486,7 +486,7 @@ class LettaMultiAgentToolExecutor(ToolExecutor):
 class ExternalComposioToolExecutor(ToolExecutor):
     """Executor for external Composio tools."""
 
-    def execute(
+    async def execute(
         self,
         function_name: str,
         function_args: dict,
@@ -505,7 +505,7 @@ class ExternalComposioToolExecutor(ToolExecutor):
         composio_api_key = get_composio_api_key(actor=actor)
 
         # TODO (matt): Roll in execute_composio_action into this class
-        function_response = execute_composio_action(
+        function_response = await execute_composio_action_async(
             action_name=action_name, args=function_args, api_key=composio_api_key, entity_id=entity_id
         )
 

@@ -3,7 +3,7 @@ from typing import Any, Dict, Optional
 
 from letta.constants import COMPOSIO_ENTITY_ENV_VAR_KEY, PRE_EXECUTION_MESSAGE_ARG
 from letta.functions.ast_parsers import coerce_dict_args_by_annotations, get_function_annotations_from_source
-from letta.functions.helpers import execute_composio_action, generate_composio_action_from_func_name
+from letta.functions.composio_helpers import execute_composio_action, generate_composio_action_from_func_name
 from letta.helpers.composio_helpers import get_composio_api_key
 from letta.orm.enums import ToolType
 from letta.schemas.agent import AgentState
