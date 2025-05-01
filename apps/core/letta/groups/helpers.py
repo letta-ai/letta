@@ -76,6 +76,7 @@ def load_multi_agent(
                 agent_state=agent_state,
                 interface=interface,
                 user=actor,
+                mcp_clients=mcp_clients,
                 group_id=group.id,
                 agent_ids=group.agent_ids,
                 description=group.description,
