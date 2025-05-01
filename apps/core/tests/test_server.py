@@ -13,7 +13,7 @@ import letta.utils as utils
 from letta.constants import BASE_MEMORY_TOOLS, BASE_TOOLS, LETTA_DIR, LETTA_TOOL_EXECUTION_DIR
 from letta.orm import Provider, Step
 from letta.schemas.block import CreateBlock
-from letta.schemas.enums import MessageRole
+from letta.schemas.enums import MessageRole, ProviderType
 from letta.schemas.letta_message import LettaMessage, ReasoningMessage, SystemMessage, ToolCallMessage, ToolReturnMessage, UserMessage
 from letta.schemas.llm_config import LLMConfig
 from letta.schemas.providers import Provider as PydanticProvider
@@ -1226,7 +1226,8 @@ def test_messages_with_provider_override(server: SyncServer, user_id: str):
     actor = server.user_manager.get_user_or_default(user_id)
     provider = server.provider_manager.create_provider(
         provider=PydanticProvider(
-            name="anthropic",
+            name="caren-anthropic",
+            provider_type=ProviderType.anthropic,
             api_key=os.getenv("ANTHROPIC_API_KEY"),
         ),
         actor=actor,
@@ -1234,8 +1235,8 @@ def test_messages_with_provider_override(server: SyncServer, user_id: str):
     agent = server.create_agent(
         request=CreateAgent(
             memory_blocks=[],
-            model="anthropic/claude-3-opus-20240229",
-            context_window_limit=200000,
+            model="caren-anthropic/claude-3-opus-20240229",
+            context_window_limit=100000,
             embedding="openai/text-embedding-ada-002",
         ),
         actor=actor,

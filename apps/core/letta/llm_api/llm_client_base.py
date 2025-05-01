@@ -20,9 +20,11 @@ class LLMClientBase:
 
     def __init__(
         self,
+        provider_name: Optional[str] = None,
         put_inner_thoughts_first: Optional[bool] = True,
         use_tool_naming: bool = True,
     ):
+        self.provider_name = provider_name
         self.put_inner_thoughts_first = put_inner_thoughts_first
         self.use_tool_naming = use_tool_naming
 

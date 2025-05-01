@@ -30,6 +30,7 @@ import {
   IdentityType,
   ManagerType,
   MessageRole,
+  ProviderType,
   SandboxType,
 } from '../requests/types.gen';
 export type ToolsServiceRetrieveToolDefaultResponse = Awaited<
@@ -841,10 +842,14 @@ export type ModelsServiceListModelsQueryResult<
   TError = unknown,
 > = UseQueryResult<TData, TError>;
 export const useModelsServiceListModelsKey = 'ModelsServiceListModels';
-export const UseModelsServiceListModelsKeyFn = (queryKey?: Array<unknown>) => [
-  useModelsServiceListModelsKey,
-  ...(queryKey ?? []),
-];
+export const UseModelsServiceListModelsKeyFn = (
+  {
+    byokOnly,
+  }: {
+    byokOnly?: boolean;
+  } = {},
+  queryKey?: Array<unknown>,
+) => [useModelsServiceListModelsKey, ...(queryKey ?? [{ byokOnly }])];
 export type ModelsServiceListEmbeddingModelsDefaultResponse = Awaited<
   ReturnType<typeof ModelsService.listEmbeddingModels>
 >;
@@ -865,10 +870,14 @@ export type LlmsServiceListModelsQueryResult<
   TError = unknown,
 > = UseQueryResult<TData, TError>;
 export const useLlmsServiceListModelsKey = 'LlmsServiceListModels';
-export const UseLlmsServiceListModelsKeyFn = (queryKey?: Array<unknown>) => [
-  useLlmsServiceListModelsKey,
-  ...(queryKey ?? []),
-];
+export const UseLlmsServiceListModelsKeyFn = (
+  {
+    byokOnly,
+  }: {
+    byokOnly?: boolean;
+  } = {},
+  queryKey?: Array<unknown>,
+) => [useLlmsServiceListModelsKey, ...(queryKey ?? [{ byokOnly }])];
 export type LlmsServiceListEmbeddingModelsDefaultResponse = Awaited<
   ReturnType<typeof LlmsService.listEmbeddingModels>
 >;
@@ -1087,16 +1096,20 @@ export const UseProvidersServiceListProvidersKeyFn = (
   {
     after,
     limit,
+    name,
+    providerType,
     userId,
   }: {
     after?: string;
     limit?: number;
+    name?: string;
+    providerType?: ProviderType;
     userId?: string;
   } = {},
   queryKey?: Array<unknown>,
 ) => [
   useProvidersServiceListProvidersKey,
-  ...(queryKey ?? [{ after, limit, userId }]),
+  ...(queryKey ?? [{ after, limit, name, providerType, userId }]),
 ];
 export type RunsServiceListRunsDefaultResponse = Awaited<
   ReturnType<typeof RunsService.listRuns>

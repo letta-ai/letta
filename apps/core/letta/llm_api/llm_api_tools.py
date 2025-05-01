@@ -24,6 +24,7 @@ from letta.llm_api.openai import (
 from letta.local_llm.chat_completion_proxy import get_chat_completion
 from letta.local_llm.constants import INNER_THOUGHTS_KWARG, INNER_THOUGHTS_KWARG_DESCRIPTION
 from letta.local_llm.utils import num_tokens_from_functions, num_tokens_from_messages
+from letta.schemas.enums import ProviderType
 from letta.schemas.llm_config import LLMConfig
 from letta.schemas.message import Message
 from letta.schemas.openai.chat_completion_request import ChatCompletionRequest, cast_message_to_subtype
@@ -171,6 +172,10 @@ def create(
         if model_settings.openai_api_key is None and llm_config.model_endpoint == "https://api.openai.com/v1":
             # only is a problem if we are *not* using an openai proxy
             raise LettaConfigurationError(message="OpenAI key is missing from letta config file", missing_fields=["openai_api_key"])
+        elif llm_config.provider_name and llm_config.provider_name != ProviderType.openai.value:
+            from letta.services.provider_manager import ProviderManager
+
+            api_key = ProviderManager().get_override_key(llm_config.provider_name)
         elif model_settings.openai_api_key is None:
             # the openai python client requires a dummy API key
             api_key = "DUMMY_API_KEY"
@@ -373,6 +378,7 @@ def create(
                 stream_interface=stream_interface,
                 extended_thinking=llm_config.enable_reasoner,
                 max_reasoning_tokens=llm_config.max_reasoning_tokens,
+                provider_name=llm_config.provider_name,
                 name=name,
             )
 
@@ -383,6 +389,7 @@ def create(
                 put_inner_thoughts_in_kwargs=llm_config.put_inner_thoughts_in_kwargs,
                 extended_thinking=llm_config.enable_reasoner,
                 max_reasoning_tokens=llm_config.max_reasoning_tokens,
+                provider_name=llm_config.provider_name,
             )
 
         if llm_config.put_inner_thoughts_in_kwargs:

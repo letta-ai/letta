@@ -1930,6 +1930,10 @@ export type LLMConfig = {
    */
   model_endpoint?: string | null;
   /**
+   * The provider name for the model.
+   */
+  provider_name?: string | null;
+  /**
    * The wrapper for the model.
    */
   model_wrapper?: string | null;
@@ -2585,9 +2589,17 @@ export type Provider = {
    */
   name: string;
   /**
+   * The type of the provider
+   */
+  provider_type: ProviderType;
+  /**
    * API key used for requests to the provider.
    */
   api_key?: string | null;
+  /**
+   * Base URL for the provider.
+   */
+  base_url?: string | null;
   /**
    * The organization id of the user
    */
@@ -2604,10 +2616,31 @@ export type ProviderCreate = {
    */
   name: string;
   /**
+   * The type of the provider.
+   */
+  provider_type: ProviderType;
+  /**
    * API key used for requests to the provider.
    */
   api_key: string;
 };
+
+export type ProviderType =
+  | 'anthropic'
+  | 'google_ai'
+  | 'google_vertex'
+  | 'openai'
+  | 'letta'
+  | 'deepseek'
+  | 'lmstudio_openai'
+  | 'xai'
+  | 'mistral'
+  | 'ollama'
+  | 'groq'
+  | 'together'
+  | 'azure'
+  | 'vllm'
+  | 'bedrock';
 
 export type ProviderUpdate = {
   /**
@@ -4674,6 +4707,10 @@ export type UpsertIdentityPropertiesData = {
 
 export type UpsertIdentityPropertiesResponse = unknown;
 
+export type ListModelsData = {
+  byokOnly?: boolean | null;
+};
+
 export type ListModelsResponse = Array<LLMConfig>;
 
 export type ListEmbeddingModelsResponse = Array<EmbeddingConfig>;
@@ -4894,6 +4931,8 @@ export type DeleteSandboxEnvVarV1SandboxConfigEnvironmentVariableEnvVarIdDeleteR
 export type ListProvidersData = {
   after?: string | null;
   limit?: number | null;
+  name?: string | null;
+  providerType?: ProviderType | null;
   userId?: string | null;
 };
 
@@ -6327,11 +6366,16 @@ export type $OpenApiTs = {
   };
   '/v1/models/': {
     get: {
+      req: ListModelsData;
       res: {
         /**
          * Successful Response
          */
         200: Array<LLMConfig>;
+        /**
+         * Validation Error
+         */
+        422: HTTPValidationError;
       };
     };
   };

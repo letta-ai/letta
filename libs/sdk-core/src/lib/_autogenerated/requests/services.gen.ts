@@ -160,6 +160,7 @@ import type {
   DeleteIdentityResponse,
   UpsertIdentityPropertiesData,
   UpsertIdentityPropertiesResponse,
+  ListModelsData,
   ListModelsResponse,
   ListEmbeddingModelsResponse,
   ListBlocksData,
@@ -2481,15 +2482,24 @@ export class IdentitiesService {
 export class ModelsService {
   /**
    * List Llm Models
+   * @param data The data for the request.
+   * @param data.byokOnly
    * @returns LLMConfig Successful Response
    * @throws ApiError
    */
-  public static listModels(headers?: {
-    user_id: string;
-  }): CancelablePromise<ListModelsResponse> {
+  public static listModels(
+    data: ListModelsData = {},
+    headers?: { user_id: string },
+  ): CancelablePromise<ListModelsResponse> {
     return __request(OpenAPI, {
       method: 'GET',
       url: '/v1/models/',
+      query: {
+        byok_only: data.byokOnly,
+      },
+      errors: {
+        422: 'Validation Error',
+      },
       headers,
     });
   }
@@ -2513,15 +2523,24 @@ export class ModelsService {
 export class LlmsService {
   /**
    * List Llm Models
+   * @param data The data for the request.
+   * @param data.byokOnly
    * @returns LLMConfig Successful Response
    * @throws ApiError
    */
-  public static listModels(headers?: {
-    user_id: string;
-  }): CancelablePromise<ListModelsResponse> {
+  public static listModels(
+    data: ListModelsData = {},
+    headers?: { user_id: string },
+  ): CancelablePromise<ListModelsResponse> {
     return __request(OpenAPI, {
       method: 'GET',
       url: '/v1/models/',
+      query: {
+        byok_only: data.byokOnly,
+      },
+      errors: {
+        422: 'Validation Error',
+      },
       headers,
     });
   }
@@ -3140,6 +3159,8 @@ export class ProvidersService {
    * List Providers
    * Get a list of all custom providers in the database
    * @param data The data for the request.
+   * @param data.name
+   * @param data.providerType
    * @param data.after
    * @param data.limit
    * @param data.userId
@@ -3154,6 +3175,8 @@ export class ProvidersService {
       method: 'GET',
       url: '/v1/providers/',
       query: {
+        name: data.name,
+        provider_type: data.providerType,
         after: data.after,
         limit: data.limit,
       },

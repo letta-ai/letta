@@ -28,6 +28,7 @@ import {
   IdentityType,
   ManagerType,
   MessageRole,
+  ProviderType,
   SandboxType,
 } from '../requests/types.gen';
 import * as Common from './common';
@@ -1310,6 +1311,8 @@ export const useIdentitiesServiceRetrieveIdentitySuspense = <
   });
 /**
  * List Llm Models
+ * @param data The data for the request.
+ * @param data.byokOnly
  * @returns LLMConfig Successful Response
  * @throws ApiError
  */
@@ -1318,12 +1321,17 @@ export const useModelsServiceListModelsSuspense = <
   TError = unknown,
   TQueryKey extends Array<unknown> = unknown[],
 >(
+  {
+    byokOnly,
+  }: {
+    byokOnly?: boolean;
+  } = {},
   queryKey?: TQueryKey,
   options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>,
 ) =>
   useSuspenseQuery<TData, TError>({
-    queryKey: Common.UseModelsServiceListModelsKeyFn(queryKey),
-    queryFn: () => ModelsService.listModels() as TData,
+    queryKey: Common.UseModelsServiceListModelsKeyFn({ byokOnly }, queryKey),
+    queryFn: () => ModelsService.listModels({ byokOnly }) as TData,
     ...options,
   });
 /**
@@ -1346,6 +1354,8 @@ export const useModelsServiceListEmbeddingModelsSuspense = <
   });
 /**
  * List Llm Models
+ * @param data The data for the request.
+ * @param data.byokOnly
  * @returns LLMConfig Successful Response
  * @throws ApiError
  */
@@ -1354,12 +1364,17 @@ export const useLlmsServiceListModelsSuspense = <
   TError = unknown,
   TQueryKey extends Array<unknown> = unknown[],
 >(
+  {
+    byokOnly,
+  }: {
+    byokOnly?: boolean;
+  } = {},
   queryKey?: TQueryKey,
   options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>,
 ) =>
   useSuspenseQuery<TData, TError>({
-    queryKey: Common.UseLlmsServiceListModelsKeyFn(queryKey),
-    queryFn: () => LlmsService.listModels() as TData,
+    queryKey: Common.UseLlmsServiceListModelsKeyFn({ byokOnly }, queryKey),
+    queryFn: () => LlmsService.listModels({ byokOnly }) as TData,
     ...options,
   });
 /**
@@ -1695,6 +1710,8 @@ export const useSandboxConfigServiceListSandboxEnvVarsV1SandboxConfigSandboxConf
  * List Providers
  * Get a list of all custom providers in the database
  * @param data The data for the request.
+ * @param data.name
+ * @param data.providerType
  * @param data.after
  * @param data.limit
  * @param data.userId
@@ -1709,10 +1726,14 @@ export const useProvidersServiceListProvidersSuspense = <
   {
     after,
     limit,
+    name,
+    providerType,
     userId,
   }: {
     after?: string;
     limit?: number;
+    name?: string;
+    providerType?: ProviderType;
     userId?: string;
   } = {},
   queryKey?: TQueryKey,
@@ -1720,11 +1741,17 @@ export const useProvidersServiceListProvidersSuspense = <
 ) =>
   useSuspenseQuery<TData, TError>({
     queryKey: Common.UseProvidersServiceListProvidersKeyFn(
-      { after, limit, userId },
+      { after, limit, name, providerType, userId },
       queryKey,
     ),
     queryFn: () =>
-      ProvidersService.listProviders({ after, limit, userId }) as TData,
+      ProvidersService.listProviders({
+        after,
+        limit,
+        name,
+        providerType,
+        userId,
+      }) as TData,
     ...options,
   });
 /**

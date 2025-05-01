@@ -5665,6 +5665,18 @@ export const $LLMConfig = {
       title: 'Model Endpoint',
       description: 'The endpoint for the model.',
     },
+    provider_name: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Provider Name',
+      description: 'The provider name for the model.',
+    },
     model_wrapper: {
       anyOf: [
         {
@@ -7236,6 +7248,10 @@ export const $Provider = {
       title: 'Name',
       description: 'The name of the provider',
     },
+    provider_type: {
+      $ref: '#/components/schemas/ProviderType',
+      description: 'The type of the provider',
+    },
     api_key: {
       anyOf: [
         {
@@ -7247,6 +7263,18 @@ export const $Provider = {
       ],
       title: 'Api Key',
       description: 'API key used for requests to the provider.',
+    },
+    base_url: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Base Url',
+      description: 'Base URL for the provider.',
     },
     organization_id: {
       anyOf: [
@@ -7276,7 +7304,7 @@ export const $Provider = {
   },
   additionalProperties: false,
   type: 'object',
-  required: ['name'],
+  required: ['name', 'provider_type'],
   title: 'Provider',
 } as const;
 
@@ -7287,6 +7315,10 @@ export const $ProviderCreate = {
       title: 'Name',
       description: 'The name of the provider.',
     },
+    provider_type: {
+      $ref: '#/components/schemas/ProviderType',
+      description: 'The type of the provider.',
+    },
     api_key: {
       type: 'string',
       title: 'Api Key',
@@ -7295,8 +7327,30 @@ export const $ProviderCreate = {
   },
   additionalProperties: false,
   type: 'object',
-  required: ['name', 'api_key'],
+  required: ['name', 'provider_type', 'api_key'],
   title: 'ProviderCreate',
+} as const;
+
+export const $ProviderType = {
+  type: 'string',
+  enum: [
+    'anthropic',
+    'google_ai',
+    'google_vertex',
+    'openai',
+    'letta',
+    'deepseek',
+    'lmstudio_openai',
+    'xai',
+    'mistral',
+    'ollama',
+    'groq',
+    'together',
+    'azure',
+    'vllm',
+    'bedrock',
+  ],
+  title: 'ProviderType',
 } as const;
 
 export const $ProviderUpdate = {

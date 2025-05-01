@@ -4608,17 +4608,45 @@
         "tags": ["models", "llms"],
         "summary": "List Llm Models",
         "operationId": "list_models",
+        "parameters": [
+          {
+            "name": "byok_only",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Byok Only"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Successful Response",
             "content": {
               "application/json": {
                 "schema": {
+                  "type": "array",
                   "items": {
                     "$ref": "#/components/schemas/LLMConfig"
                   },
-                  "type": "array",
                   "title": "Response List Models"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
                 }
               }
             }
@@ -5175,6 +5203,38 @@
         "description": "Get a list of all custom providers in the database",
         "operationId": "list_providers",
         "parameters": [
+          {
+            "name": "name",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Name"
+            }
+          },
+          {
+            "name": "provider_type",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/ProviderType"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Provider Type"
+            }
+          },
           {
             "name": "after",
             "in": "query",
@@ -12751,6 +12811,18 @@
             "title": "Model Endpoint",
             "description": "The endpoint for the model."
           },
+          "provider_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Provider Name",
+            "description": "The provider name for the model."
+          },
           "model_wrapper": {
             "anyOf": [
               {
@@ -14170,6 +14242,10 @@
             "title": "Name",
             "description": "The name of the provider"
           },
+          "provider_type": {
+            "$ref": "#/components/schemas/ProviderType",
+            "description": "The type of the provider"
+          },
           "api_key": {
             "anyOf": [
               {
@@ -14181,6 +14257,18 @@
             ],
             "title": "Api Key",
             "description": "API key used for requests to the provider."
+          },
+          "base_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Base Url",
+            "description": "Base URL for the provider."
           },
           "updated_at": {
             "anyOf": [
@@ -14198,7 +14286,7 @@
         },
         "additionalProperties": false,
         "type": "object",
-        "required": ["name"],
+        "required": ["name", "provider_type"],
         "title": "Provider"
       },
       "ProviderCreate": {
@@ -14208,6 +14296,10 @@
             "title": "Name",
             "description": "The name of the provider."
           },
+          "provider_type": {
+            "$ref": "#/components/schemas/ProviderType",
+            "description": "The type of the provider."
+          },
           "api_key": {
             "type": "string",
             "title": "Api Key",
@@ -14216,8 +14308,29 @@
         },
         "additionalProperties": false,
         "type": "object",
-        "required": ["name", "api_key"],
+        "required": ["name", "provider_type", "api_key"],
         "title": "ProviderCreate"
+      },
+      "ProviderType": {
+        "type": "string",
+        "enum": [
+          "anthropic",
+          "google_ai",
+          "google_vertex",
+          "openai",
+          "letta",
+          "deepseek",
+          "lmstudio_openai",
+          "xai",
+          "mistral",
+          "ollama",
+          "groq",
+          "together",
+          "azure",
+          "vllm",
+          "bedrock"
+        ],
+        "title": "ProviderType"
       },
       "ProviderUpdate": {
         "properties": {

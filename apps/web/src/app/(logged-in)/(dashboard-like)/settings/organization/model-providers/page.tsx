@@ -279,6 +279,7 @@ function AddModelProviderDialog() {
       mutate({
         requestBody: {
           name: 'Anthropic',
+          provider_type: 'anthropic',
           api_key: input.apiKey,
         },
       });

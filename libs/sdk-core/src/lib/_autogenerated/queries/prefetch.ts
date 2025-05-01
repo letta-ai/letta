@@ -28,6 +28,7 @@ import {
   IdentityType,
   ManagerType,
   MessageRole,
+  ProviderType,
   SandboxType,
 } from '../requests/types.gen';
 import * as Common from './common';
@@ -1077,13 +1078,22 @@ export const prefetchUseIdentitiesServiceRetrieveIdentity = (
   });
 /**
  * List Llm Models
+ * @param data The data for the request.
+ * @param data.byokOnly
  * @returns LLMConfig Successful Response
  * @throws ApiError
  */
-export const prefetchUseModelsServiceListModels = (queryClient: QueryClient) =>
+export const prefetchUseModelsServiceListModels = (
+  queryClient: QueryClient,
+  {
+    byokOnly,
+  }: {
+    byokOnly?: boolean;
+  } = {},
+) =>
   queryClient.prefetchQuery({
-    queryKey: Common.UseModelsServiceListModelsKeyFn(),
-    queryFn: () => ModelsService.listModels(),
+    queryKey: Common.UseModelsServiceListModelsKeyFn({ byokOnly }),
+    queryFn: () => ModelsService.listModels({ byokOnly }),
   });
 /**
  * List Embedding Models
@@ -1099,13 +1109,22 @@ export const prefetchUseModelsServiceListEmbeddingModels = (
   });
 /**
  * List Llm Models
+ * @param data The data for the request.
+ * @param data.byokOnly
  * @returns LLMConfig Successful Response
  * @throws ApiError
  */
-export const prefetchUseLlmsServiceListModels = (queryClient: QueryClient) =>
+export const prefetchUseLlmsServiceListModels = (
+  queryClient: QueryClient,
+  {
+    byokOnly,
+  }: {
+    byokOnly?: boolean;
+  } = {},
+) =>
   queryClient.prefetchQuery({
-    queryKey: Common.UseLlmsServiceListModelsKeyFn(),
-    queryFn: () => LlmsService.listModels(),
+    queryKey: Common.UseLlmsServiceListModelsKeyFn({ byokOnly }),
+    queryFn: () => LlmsService.listModels({ byokOnly }),
   });
 /**
  * List Embedding Models
@@ -1370,6 +1389,8 @@ export const prefetchUseSandboxConfigServiceListSandboxEnvVarsV1SandboxConfigSan
  * List Providers
  * Get a list of all custom providers in the database
  * @param data The data for the request.
+ * @param data.name
+ * @param data.providerType
  * @param data.after
  * @param data.limit
  * @param data.userId
@@ -1381,10 +1402,14 @@ export const prefetchUseProvidersServiceListProviders = (
   {
     after,
     limit,
+    name,
+    providerType,
     userId,
   }: {
     after?: string;
     limit?: number;
+    name?: string;
+    providerType?: ProviderType;
     userId?: string;
   } = {},
 ) =>
@@ -1392,9 +1417,18 @@ export const prefetchUseProvidersServiceListProviders = (
     queryKey: Common.UseProvidersServiceListProvidersKeyFn({
       after,
       limit,
+      name,
+      providerType,
       userId,
     }),
-    queryFn: () => ProvidersService.listProviders({ after, limit, userId }),
+    queryFn: () =>
+      ProvidersService.listProviders({
+        after,
+        limit,
+        name,
+        providerType,
+        userId,
+      }),
   });
 /**
  * List Runs

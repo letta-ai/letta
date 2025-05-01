@@ -270,6 +270,14 @@ export const LLMConfig = z.object({
       z.undefined(),
     ])
     .optional(),
+  provider_name: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
   model_wrapper: z
     .union([
       z.string(),
@@ -4299,6 +4307,25 @@ export const PassageUpdate = z.object({
   id: z.string(),
 });
 
+export type ProviderType = z.infer<typeof ProviderType>;
+export const ProviderType = z.union([
+  z.literal('anthropic'),
+  z.literal('google_ai'),
+  z.literal('google_vertex'),
+  z.literal('openai'),
+  z.literal('letta'),
+  z.literal('deepseek'),
+  z.literal('lmstudio_openai'),
+  z.literal('xai'),
+  z.literal('mistral'),
+  z.literal('ollama'),
+  z.literal('groq'),
+  z.literal('together'),
+  z.literal('azure'),
+  z.literal('vllm'),
+  z.literal('bedrock'),
+]);
+
 export type Provider = z.infer<typeof Provider>;
 export const Provider = z.object({
   id: z
@@ -4310,7 +4337,16 @@ export const Provider = z.object({
     ])
     .optional(),
   name: z.string(),
+  provider_type: ProviderType,
   api_key: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  base_url: z
     .union([
       z.string(),
       z.null(),
@@ -4339,6 +4375,7 @@ export const Provider = z.object({
 export type ProviderCreate = z.infer<typeof ProviderCreate>;
 export const ProviderCreate = z.object({
   name: z.string(),
+  provider_type: ProviderType,
   api_key: z.string(),
 });
 
@@ -6769,7 +6806,17 @@ export const get_List_models = {
   method: z.literal('GET'),
   path: z.literal('/v1/models/'),
   requestFormat: z.literal('json'),
-  parameters: z.never(),
+  parameters: z.object({
+    query: z.object({
+      byok_only: z
+        .union([
+          z.boolean(),
+          z.null(),
+          z.array(z.union([z.boolean(), z.null()])),
+        ])
+        .optional(),
+    }),
+  }),
   response: z.array(LLMConfig),
 };
 
@@ -7284,6 +7331,16 @@ export const get_List_providers = {
   requestFormat: z.literal('json'),
   parameters: z.object({
     query: z.object({
+      name: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      provider_type: z
+        .union([
+          ProviderType,
+          z.null(),
+          z.array(z.union([ProviderType, z.null()])),
+        ])
+        .optional(),
       after: z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),

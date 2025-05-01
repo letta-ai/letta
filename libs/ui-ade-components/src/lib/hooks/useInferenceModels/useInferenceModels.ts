@@ -6,7 +6,7 @@ import { webApi, webApiQueryKeys } from '@letta-cloud/sdk-web';
 export function useInferenceModels() {
   const { isLocal } = useCurrentAgentMetaData();
 
-  const { data: localModelsList } = useModelsServiceListModels(undefined, {
+  const { data: localModelsList } = useModelsServiceListModels({}, undefined, {
     enabled: isLocal,
   });
 
