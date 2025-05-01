@@ -12,6 +12,7 @@ class LLMClient:
         provider_type: ProviderType,
         provider_name: Optional[str] = None,
         put_inner_thoughts_first: bool = True,
+        actor_id: Optional[str] = None,
     ) -> Optional[LLMClientBase]:
         """
         Create an LLM client based on the model endpoint type.
@@ -33,6 +34,7 @@ class LLMClient:
                 return GoogleAIClient(
                     provider_name=provider_name,
                     put_inner_thoughts_first=put_inner_thoughts_first,
+                    actor_id=actor_id,
                 )
             case ProviderType.google_vertex:
                 from letta.llm_api.google_vertex_client import GoogleVertexClient
@@ -40,6 +42,7 @@ class LLMClient:
                 return GoogleVertexClient(
                     provider_name=provider_name,
                     put_inner_thoughts_first=put_inner_thoughts_first,
+                    actor_id=actor_id,
                 )
             case ProviderType.anthropic:
                 from letta.llm_api.anthropic_client import AnthropicClient
@@ -47,6 +50,7 @@ class LLMClient:
                 return AnthropicClient(
                     provider_name=provider_name,
                     put_inner_thoughts_first=put_inner_thoughts_first,
+                    actor_id=actor_id,
                 )
             case ProviderType.openai:
                 from letta.llm_api.openai_client import OpenAIClient
@@ -54,6 +58,7 @@ class LLMClient:
                 return OpenAIClient(
                     provider_name=provider_name,
                     put_inner_thoughts_first=put_inner_thoughts_first,
+                    actor_id=actor_id,
                 )
             case _:
                 return None

@@ -213,7 +213,7 @@ async def create_chat_completion(request: ChatCompletionRequest):
 
     # dummy agent/user ID
     agent_id = str(uuid.UUID(int=0))
-    user_id = str(uuid.UUID(int=0))
+    user_id = request.user or str(uuid.UUID(int=0))
 
     # Delete 'name' if it's None (it triggers an error w/ OpenAI API)
     messages_clean = [{k: v for k, v in d.items() if not (k == "name" and v is None)} for d in request_data["messages"]]
@@ -253,7 +253,7 @@ async def create_chat_completion(request: ChatCompletionRequest):
             response = create(
                 #agent_state=agent_state,
                 llm_config=llm_backend_config, # ADD for version 0.3.13
-                #user_id=user_id,
+                user_id=user_id,
                 messages=message_objs,
                 functions=functions,
                 function_call=function_call,
