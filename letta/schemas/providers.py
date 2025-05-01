@@ -1,6 +1,6 @@
 import warnings
 from datetime import datetime
-from typing import List, Optional
+from typing import List, Literal, Optional
 
 from pydantic import Field, model_validator
 
@@ -9,9 +9,11 @@ from letta.llm_api.azure_openai import get_azure_chat_completions_endpoint, get_
 from letta.llm_api.azure_openai_constants import AZURE_MODEL_TO_CONTEXT_LENGTH
 from letta.schemas.embedding_config import EmbeddingConfig
 from letta.schemas.embedding_config_overrides import EMBEDDING_HANDLE_OVERRIDES
+from letta.schemas.enums import ProviderType
 from letta.schemas.letta_base import LettaBase
 from letta.schemas.llm_config import LLMConfig
 from letta.schemas.llm_config_overrides import LLM_HANDLE_OVERRIDES
+from letta.settings import model_settings
 
 
 class ProviderBase(LettaBase):
@@ -21,9 +23,17 @@ class ProviderBase(LettaBase):
 class Provider(ProviderBase):
     id: Optional[str] = Field(None, description="The id of the provider, lazily created by the database manager.")
     name: str = Field(..., description="The name of the provider")
+    provider_type: ProviderType = Field(..., description="The type of the provider")
     api_key: Optional[str] = Field(None, description="API key used for requests to the provider.")
+    base_url: Optional[str] = Field(None, description="Base URL for the provider.")
     organization_id: Optional[str] = Field(None, description="The organization id of the user")
     updated_at: Optional[datetime] = Field(None, description="The last update timestamp of the provider.")
+
+    @model_validator(mode="after")
+    def default_base_url(self):
+        if self.provider_type == ProviderType.openai and self.base_url is None:
+            self.base_url = model_settings.openai_api_base
+        return self
 
     def resolve_identifier(self):
         if not self.id:
@@ -59,9 +69,41 @@ class Provider(ProviderBase):
 
         return f"{self.name}/{model_name}"
 
+    def cast_to_subtype(self):
+        match (self.provider_type):
+            case ProviderType.letta:
+                return LettaProvider(**self.model_dump(exclude_none=True))
+            case ProviderType.openai:
+                return OpenAIProvider(**self.model_dump(exclude_none=True))
+            case ProviderType.anthropic:
+                return AnthropicProvider(**self.model_dump(exclude_none=True))
+            case ProviderType.anthropic_bedrock:
+                return AnthropicBedrockProvider(**self.model_dump(exclude_none=True))
+            case ProviderType.ollama:
+                return OllamaProvider(**self.model_dump(exclude_none=True))
+            case ProviderType.google_ai:
+                return GoogleAIProvider(**self.model_dump(exclude_none=True))
+            case ProviderType.google_vertex:
+                return GoogleVertexProvider(**self.model_dump(exclude_none=True))
+            case ProviderType.azure:
+                return AzureProvider(**self.model_dump(exclude_none=True))
+            case ProviderType.groq:
+                return GroqProvider(**self.model_dump(exclude_none=True))
+            case ProviderType.together:
+                return TogetherProvider(**self.model_dump(exclude_none=True))
+            case ProviderType.vllm_chat_completions:
+                return VLLMChatCompletionsProvider(**self.model_dump(exclude_none=True))
+            case ProviderType.vllm_completions:
+                return VLLMCompletionsProvider(**self.model_dump(exclude_none=True))
+            case ProviderType.xai:
+                return XAIProvider(**self.model_dump(exclude_none=True))
+            case _:
+                raise ValueError(f"Unknown provider type: {self.provider_type}")
+
 
 class ProviderCreate(ProviderBase):
     name: str = Field(..., description="The name of the provider.")
+    provider_type: ProviderType = Field(..., description="The type of the provider.")
     api_key: str = Field(..., description="API key used for requests to the provider.")
 
 
@@ -70,8 +112,7 @@ class ProviderUpdate(ProviderBase):
 
 
 class LettaProvider(Provider):
-
-    name: str = "letta"
+    provider_type: Literal[ProviderType.letta] = Field(ProviderType.letta, description="The type of the provider.")
 
     def list_llm_models(self) -> List[LLMConfig]:
         return [
@@ -81,6 +122,7 @@ class LettaProvider(Provider):
                 model_endpoint=LETTA_MODEL_ENDPOINT,
                 context_window=8192,
                 handle=self.get_handle("letta-free"),
+                provider_name=self.name,
             )
         ]
 
@@ -98,7 +140,7 @@ class LettaProvider(Provider):
 
 
 class OpenAIProvider(Provider):
-    name: str = "openai"
+    provider_type: Literal[ProviderType.openai] = Field(ProviderType.openai, description="The type of the provider.")
     api_key: str = Field(..., description="API key for the OpenAI API.")
     base_url: str = Field(..., description="Base URL for the OpenAI API.")
 
@@ -180,6 +222,7 @@ class OpenAIProvider(Provider):
                     model_endpoint=self.base_url,
                     context_window=context_window_size,
                     handle=self.get_handle(model_name),
+                    provider_name=self.name,
                 )
             )
 
@@ -235,7 +278,7 @@ class DeepSeekProvider(OpenAIProvider):
     * It also does not support native function calling
     """
 
-    name: str = "deepseek"
+    provider_type: Literal[ProviderType.deepseek] = Field(ProviderType.deepseek, description="The type of the provider.")
     base_url: str = Field("https://api.deepseek.com/v1", description="Base URL for the DeepSeek API.")
     api_key: str = Field(..., description="API key for the DeepSeek API.")
 
@@ -286,6 +329,7 @@ class DeepSeekProvider(OpenAIProvider):
                     context_window=context_window_size,
                     handle=self.get_handle(model_name),
                     put_inner_thoughts_in_kwargs=put_inner_thoughts_in_kwargs,
+                    provider_name=self.name,
                 )
             )
 
@@ -297,7 +341,7 @@ class DeepSeekProvider(OpenAIProvider):
 
 
 class LMStudioOpenAIProvider(OpenAIProvider):
-    name: str = "lmstudio-openai"
+    provider_type: Literal[ProviderType.lmstudio_openai] = Field(ProviderType.lmstudio_openai, description="The type of the provider.")
     base_url: str = Field(..., description="Base URL for the LMStudio OpenAI API.")
     api_key: Optional[str] = Field(None, description="API key for the LMStudio API.")
 
@@ -423,7 +467,7 @@ class LMStudioOpenAIProvider(OpenAIProvider):
 class XAIProvider(OpenAIProvider):
     """https://docs.x.ai/docs/api-reference"""
 
-    name: str = "xai"
+    provider_type: Literal[ProviderType.xai] = Field(ProviderType.xai, description="The type of the provider.")
     api_key: str = Field(..., description="API key for the xAI/Grok API.")
     base_url: str = Field("https://api.x.ai/v1", description="Base URL for the xAI/Grok API.")
 
@@ -476,6 +520,7 @@ class XAIProvider(OpenAIProvider):
                     model_endpoint=self.base_url,
                     context_window=context_window_size,
                     handle=self.get_handle(model_name),
+                    provider_name=self.name,
                 )
             )
 
@@ -487,7 +532,7 @@ class XAIProvider(OpenAIProvider):
 
 
 class AnthropicProvider(Provider):
-    name: str = "anthropic"
+    provider_type: Literal[ProviderType.anthropic] = Field(ProviderType.anthropic, description="The type of the provider.")
     api_key: str = Field(..., description="API key for the Anthropic API.")
     base_url: str = "https://api.anthropic.com/v1"
 
@@ -563,6 +608,7 @@ class AnthropicProvider(Provider):
                     handle=self.get_handle(model["id"]),
                     put_inner_thoughts_in_kwargs=inner_thoughts_in_kwargs,
                     max_tokens=max_tokens,
+                    provider_name=self.name,
                 )
             )
         return configs
@@ -572,7 +618,7 @@ class AnthropicProvider(Provider):
 
 
 class MistralProvider(Provider):
-    name: str = "mistral"
+    provider_type: Literal[ProviderType.mistral] = Field(ProviderType.mistral, description="The type of the provider.")
     api_key: str = Field(..., description="API key for the Mistral API.")
     base_url: str = "https://api.mistral.ai/v1"
 
@@ -596,6 +642,7 @@ class MistralProvider(Provider):
                         model_endpoint=self.base_url,
                         context_window=model["max_context_length"],
                         handle=self.get_handle(model["id"]),
+                        provider_name=self.name,
                     )
                 )
 
@@ -622,7 +669,7 @@ class OllamaProvider(OpenAIProvider):
     See: https://github.com/ollama/ollama/blob/main/docs/api.md#generate-a-completion
     """
 
-    name: str = "ollama"
+    provider_type: Literal[ProviderType.ollama] = Field(ProviderType.ollama, description="The type of the provider.")
     base_url: str = Field(..., description="Base URL for the Ollama API.")
     api_key: Optional[str] = Field(None, description="API key for the Ollama API (default: `None`).")
     default_prompt_formatter: str = Field(
@@ -652,6 +699,7 @@ class OllamaProvider(OpenAIProvider):
                     model_wrapper=self.default_prompt_formatter,
                     context_window=context_window,
                     handle=self.get_handle(model["name"]),
+                    provider_name=self.name,
                 )
             )
         return configs
@@ -734,7 +782,7 @@ class OllamaProvider(OpenAIProvider):
 
 
 class GroqProvider(OpenAIProvider):
-    name: str = "groq"
+    provider_type: Literal[ProviderType.groq] = Field(ProviderType.groq, description="The type of the provider.")
     base_url: str = "https://api.groq.com/openai/v1"
     api_key: str = Field(..., description="API key for the Groq API.")
 
@@ -753,6 +801,7 @@ class GroqProvider(OpenAIProvider):
                     model_endpoint=self.base_url,
                     context_window=model["context_window"],
                     handle=self.get_handle(model["id"]),
+                    provider_name=self.name,
                 )
             )
         return configs
@@ -773,7 +822,7 @@ class TogetherProvider(OpenAIProvider):
     function calling support is limited.
     """
 
-    name: str = "together"
+    provider_type: Literal[ProviderType.together] = Field(ProviderType.together, description="The type of the provider.")
     base_url: str = "https://api.together.ai/v1"
     api_key: str = Field(..., description="API key for the TogetherAI API.")
     default_prompt_formatter: str = Field(..., description="Default prompt formatter (aka model wrapper) to use on vLLM /completions API.")
@@ -821,6 +870,7 @@ class TogetherProvider(OpenAIProvider):
                     model_wrapper=self.default_prompt_formatter,
                     context_window=context_window_size,
                     handle=self.get_handle(model_name),
+                    provider_name=self.name,
                 )
             )
 
@@ -874,7 +924,7 @@ class TogetherProvider(OpenAIProvider):
 
 class GoogleAIProvider(Provider):
     # gemini
-    name: str = "google_ai"
+    provider_type: Literal[ProviderType.google_ai] = Field(ProviderType.google_ai, description="The type of the provider.")
     api_key: str = Field(..., description="API key for the Google AI API.")
     base_url: str = "https://generativelanguage.googleapis.com"
 
@@ -889,7 +939,6 @@ class GoogleAIProvider(Provider):
         # filter by model names
         model_options = [mo[len("models/") :] if mo.startswith("models/") else mo for mo in model_options]
 
-        # TODO remove manual filtering for gemini-pro
         # Add support for all gemini models
         model_options = [mo for mo in model_options if str(mo).startswith("gemini-")]
 
@@ -903,6 +952,7 @@ class GoogleAIProvider(Provider):
                     context_window=self.get_model_context_window(model),
                     handle=self.get_handle(model),
                     max_tokens=8192,
+                    provider_name=self.name,
                 )
             )
         return configs
@@ -938,7 +988,7 @@ class GoogleAIProvider(Provider):
 
 
 class GoogleVertexProvider(Provider):
-    name: str = "google_vertex"
+    provider_type: Literal[ProviderType.google_vertex] = Field(ProviderType.google_vertex, description="The type of the provider.")
     google_cloud_project: str = Field(..., description="GCP project ID for the Google Vertex API.")
     google_cloud_location: str = Field(..., description="GCP region for the Google Vertex API.")
 
@@ -955,6 +1005,7 @@ class GoogleVertexProvider(Provider):
                     context_window=context_length,
                     handle=self.get_handle(model),
                     max_tokens=8192,
+                    provider_name=self.name,
                 )
             )
         return configs
@@ -978,7 +1029,7 @@ class GoogleVertexProvider(Provider):
 
 
 class AzureProvider(Provider):
-    name: str = "azure"
+    provider_type: Literal[ProviderType.azure] = Field(ProviderType.azure, description="The type of the provider.")
     latest_api_version: str = "2024-09-01-preview"  # https://learn.microsoft.com/en-us/azure/ai-services/openai/api-version-deprecation
     base_url: str = Field(
         ..., description="Base URL for the Azure API endpoint. This should be specific to your org, e.g. `https://letta.openai.azure.com`."
@@ -1011,6 +1062,7 @@ class AzureProvider(Provider):
                     model_endpoint=model_endpoint,
                     context_window=context_window_size,
                     handle=self.get_handle(model_name),
+                    provider_name=self.name,
                 ),
             )
         return configs
@@ -1051,7 +1103,7 @@ class VLLMChatCompletionsProvider(Provider):
     """vLLM provider that treats vLLM as an OpenAI /chat/completions proxy"""
 
     # NOTE: vLLM only serves one model at a time (so could configure that through env variables)
-    name: str = "vllm"
+    provider_type: Literal[ProviderType.vllm] = Field(ProviderType.vllm, description="The type of the provider.")
     base_url: str = Field(..., description="Base URL for the vLLM API.")
 
     def list_llm_models(self) -> List[LLMConfig]:
@@ -1070,6 +1122,7 @@ class VLLMChatCompletionsProvider(Provider):
                     model_endpoint=self.base_url,
                     context_window=model["max_model_len"],
                     handle=self.get_handle(model["id"]),
+                    provider_name=self.name,
                 )
             )
         return configs
@@ -1083,7 +1136,7 @@ class VLLMCompletionsProvider(Provider):
     """This uses /completions API as the backend, not /chat/completions, so we need to specify a model wrapper"""
 
     # NOTE: vLLM only serves one model at a time (so could configure that through env variables)
-    name: str = "vllm"
+    provider_type: Literal[ProviderType.vllm] = Field(ProviderType.vllm, description="The type of the provider.")
     base_url: str = Field(..., description="Base URL for the vLLM API.")
     default_prompt_formatter: str = Field(..., description="Default prompt formatter (aka model wrapper) to use on vLLM /completions API.")
 
@@ -1103,6 +1156,7 @@ class VLLMCompletionsProvider(Provider):
                     model_wrapper=self.default_prompt_formatter,
                     context_window=model["max_model_len"],
                     handle=self.get_handle(model["id"]),
+                    provider_name=self.name,
                 )
             )
         return configs
@@ -1117,7 +1171,7 @@ class CohereProvider(OpenAIProvider):
 
 
 class AnthropicBedrockProvider(Provider):
-    name: str = "bedrock"
+    provider_type: Literal[ProviderType.bedrock] = Field(ProviderType.bedrock, description="The type of the provider.")
     aws_region: str = Field(..., description="AWS region for Bedrock")
 
     def list_llm_models(self):
@@ -1131,10 +1185,11 @@ class AnthropicBedrockProvider(Provider):
             configs.append(
                 LLMConfig(
                     model=model_arn,
-                    model_endpoint_type=self.name,
+                    model_endpoint_type=self.provider_type.value,
                     model_endpoint=None,
                     context_window=self.get_model_context_window(model_arn),
                     handle=self.get_handle(model_arn),
+                    provider_name=self.name,
                 )
             )
         return configs

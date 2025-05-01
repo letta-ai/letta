@@ -1,5 +1,6 @@
 from typing import TYPE_CHECKING
 
+from sqlalchemy import UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from letta.orm.mixins import OrganizationMixin
@@ -15,9 +16,18 @@ class Provider(SqlalchemyBase, OrganizationMixin):
 
     __tablename__ = "providers"
     __pydantic_model__ = PydanticProvider
+    __table_args__ = (
+        UniqueConstraint(
+            "name",
+            "organization_id",
+            name="unique_name_organization_id",
+        ),
+    )
 
     name: Mapped[str] = mapped_column(nullable=False, doc="The name of the provider")
+    provider_type: Mapped[str] = mapped_column(nullable=True, doc="The type of the provider")
     api_key: Mapped[str] = mapped_column(nullable=True, doc="API key used for requests to the provider.")
+    base_url: Mapped[str] = mapped_column(nullable=True, doc="Base URL for the provider.")
 
     # relationships
     organization: Mapped["Organization"] = relationship("Organization", back_populates="providers")

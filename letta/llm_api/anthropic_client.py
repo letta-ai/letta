@@ -27,6 +27,7 @@ from letta.llm_api.helpers import add_inner_thoughts_to_functions, unpack_all_in
 from letta.llm_api.llm_client_base import LLMClientBase
 from letta.local_llm.constants import INNER_THOUGHTS_KWARG, INNER_THOUGHTS_KWARG_DESCRIPTION
 from letta.log import get_logger
+from letta.schemas.enums import ProviderType
 from letta.schemas.llm_config import LLMConfig
 from letta.schemas.message import Message as PydanticMessage
 from letta.schemas.openai.chat_completion_request import Tool
@@ -112,7 +113,10 @@ class AnthropicClient(LLMClientBase):
 
     @trace_method
     def _get_anthropic_client(self, async_client: bool = False) -> Union[anthropic.AsyncAnthropic, anthropic.Anthropic]:
-        override_key = ProviderManager().get_anthropic_override_key()
+        override_key = None
+        if self.provider_name and self.provider_name != ProviderType.anthropic.value:
+            override_key = ProviderManager().get_override_key(self.provider_name)
+
         if async_client:
             return anthropic.AsyncAnthropic(api_key=override_key) if override_key else anthropic.AsyncAnthropic()
         return anthropic.Anthropic(api_key=override_key) if override_key else anthropic.Anthropic()

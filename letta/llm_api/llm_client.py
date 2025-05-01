@@ -9,7 +9,8 @@ class LLMClient:
 
     @staticmethod
     def create(
-        provider: ProviderType,
+        provider_type: ProviderType,
+        provider_name: Optional[str] = None,
         put_inner_thoughts_first: bool = True,
     ) -> Optional[LLMClientBase]:
         """
@@ -25,29 +26,33 @@ class LLMClient:
         Raises:
             ValueError: If the model endpoint type is not supported
         """
-        match provider:
+        match provider_type:
             case ProviderType.google_ai:
                 from letta.llm_api.google_ai_client import GoogleAIClient
 
                 return GoogleAIClient(
+                    provider_name=provider_name,
                     put_inner_thoughts_first=put_inner_thoughts_first,
                 )
             case ProviderType.google_vertex:
                 from letta.llm_api.google_vertex_client import GoogleVertexClient
 
                 return GoogleVertexClient(
+                    provider_name=provider_name,
                     put_inner_thoughts_first=put_inner_thoughts_first,
                 )
             case ProviderType.anthropic:
                 from letta.llm_api.anthropic_client import AnthropicClient
 
                 return AnthropicClient(
+                    provider_name=provider_name,
                     put_inner_thoughts_first=put_inner_thoughts_first,
                 )
             case ProviderType.openai:
                 from letta.llm_api.openai_client import OpenAIClient
 
                 return OpenAIClient(
+                    provider_name=provider_name,
                     put_inner_thoughts_first=put_inner_thoughts_first,
                 )
             case _:

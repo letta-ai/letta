@@ -331,7 +331,8 @@ class Agent(BaseAgent):
                 log_telemetry(self.logger, "_get_ai_reply create start")
                 # New LLM client flow
                 llm_client = LLMClient.create(
-                    provider=self.agent_state.llm_config.model_endpoint_type,
+                    provider_name=self.agent_state.llm_config.provider_name,
+                    provider_type=self.agent_state.llm_config.model_endpoint_type,
                     put_inner_thoughts_first=put_inner_thoughts_first,
                 )
 
@@ -941,12 +942,7 @@ class Agent(BaseAgent):
                 model_endpoint=self.agent_state.llm_config.model_endpoint,
                 context_window_limit=self.agent_state.llm_config.context_window,
                 usage=response.usage,
-                # TODO(@caren): Add full provider support - this line is a workaround for v0 BYOK feature
-                provider_id=(
-                    self.provider_manager.get_anthropic_override_provider_id()
-                    if self.agent_state.llm_config.model_endpoint_type == "anthropic"
-                    else None
-                ),
+                provider_id=self.provider_manager.get_provider_id_from_name(self.agent_state.llm_config.provider_name),
                 job_id=job_id,
             )
             for message in all_new_messages:
