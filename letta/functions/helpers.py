@@ -6,10 +6,9 @@ from random import uniform
 from typing import Any, Dict, List, Optional, Type, Union
 
 import humps
-from composio.constants import DEFAULT_ENTITY_ID
 from pydantic import BaseModel, Field, create_model
 
-from letta.constants import COMPOSIO_ENTITY_ENV_VAR_KEY, DEFAULT_MESSAGE_TOOL, DEFAULT_MESSAGE_TOOL_KWARG
+from letta.constants import DEFAULT_MESSAGE_TOOL, DEFAULT_MESSAGE_TOOL_KWARG
 from letta.functions.interface import MultiAgentMessagingInterface
 from letta.orm.errors import NoResultFound
 from letta.schemas.enums import MessageRole
@@ -21,34 +20,6 @@ from letta.server.rest_api.utils import get_letta_server
 from letta.settings import settings
 
 
-# TODO: This is kind of hacky, as this is used to search up the action later on composio's side
-# TODO: So be very careful changing/removing these pair of functions
-def generate_func_name_from_composio_action(action_name: str) -> str:
-    """
-    Generates the composio function name from the composio action.
-
-    Args:
-        action_name: The composio action name
-
-    Returns:
-        function name
-    """
-    return action_name.lower()
-
-
-def generate_composio_action_from_func_name(func_name: str) -> str:
-    """
-    Generates the composio action from the composio function name.
-
-    Args:
-        func_name: The composio function name
-
-    Returns:
-        composio action name
-    """
-    return func_name.upper()
-
-
 # TODO needed?
 def generate_mcp_tool_wrapper(mcp_tool_name: str) -> tuple[str, str]:
 
@@ -58,60 +29,9 @@ def {mcp_tool_name}(**kwargs):
 """
 
     # Compile safety check
-    assert_code_gen_compilable(wrapper_function_str.strip())
+    _assert_code_gen_compilable(wrapper_function_str.strip())
 
     return mcp_tool_name, wrapper_function_str.strip()
-
-
-def generate_composio_tool_wrapper(action_name: str) -> tuple[str, str]:
-    # Generate func name
-    func_name = generate_func_name_from_composio_action(action_name)
-
-    wrapper_function_str = f"""\
-def {func_name}(**kwargs):
-    raise RuntimeError("Something went wrong - we should never be using the persisted source code for Composio. Please reach out to Letta team")
-"""
-
-    # Compile safety check
-    assert_code_gen_compilable(wrapper_function_str.strip())
-
-    return func_name, wrapper_function_str.strip()
-
-
-def execute_composio_action(action_name: str, args: dict, api_key: Optional[str] = None, entity_id: Optional[str] = None) -> Any:
-    import os
-
-    from composio.exceptions import (
-        ApiKeyNotProvidedError,
-        ComposioSDKError,
-        ConnectedAccountNotFoundError,
-        EnumMetadataNotFound,
-        EnumStringNotFound,
-    )
-    from composio_langchain import ComposioToolSet
-
-    entity_id = entity_id or os.getenv(COMPOSIO_ENTITY_ENV_VAR_KEY, DEFAULT_ENTITY_ID)
-    try:
-        composio_toolset = ComposioToolSet(api_key=api_key, entity_id=entity_id, lock=False)
-        response = composio_toolset.execute_action(action=action_name, params=args)
-    except ApiKeyNotProvidedError:
-        raise RuntimeError(
-            f"Composio API key is missing for action '{action_name}'. "
-            "Please set the sandbox environment variables either through the ADE or the API."
-        )
-    except ConnectedAccountNotFoundError:
-        raise RuntimeError(f"No connected account was found for action '{action_name}'. " "Please link an account and try again.")
-    except EnumStringNotFound as e:
-        raise RuntimeError(f"Invalid value provided for action '{action_name}': " + str(e) + ". Please check the action parameters.")
-    except EnumMetadataNotFound as e:
-        raise RuntimeError(f"Invalid value provided for action '{action_name}': " + str(e) + ". Please check the action parameters.")
-    except ComposioSDKError as e:
-        raise RuntimeError(f"An unexpected error occurred in Composio SDK while executing action '{action_name}': " + str(e))
-
-    if "error" in response:
-        raise RuntimeError(f"Error while executing action '{action_name}': " + str(response["error"]))
-
-    return response.get("data")
 
 
 def generate_langchain_tool_wrapper(
@@ -119,10 +39,10 @@ def generate_langchain_tool_wrapper(
 ) -> tuple[str, str]:
     tool_name = tool.__class__.__name__
     import_statement = f"from langchain_community.tools import {tool_name}"
-    extra_module_imports = generate_import_code(additional_imports_module_attr_map)
+    extra_module_imports = _generate_import_code(additional_imports_module_attr_map)
 
     # Safety check that user has passed in all required imports:
-    assert_all_classes_are_imported(tool, additional_imports_module_attr_map)
+    _assert_all_classes_are_imported(tool, additional_imports_module_attr_map)
 
     tool_instantiation = f"tool = {generate_imported_tool_instantiation_call_str(tool)}"
     run_call = f"return tool._run(**kwargs)"
@@ -139,25 +59,25 @@ def {func_name}(**kwargs):
 """
 
     # Compile safety check
-    assert_code_gen_compilable(wrapper_function_str)
+    _assert_code_gen_compilable(wrapper_function_str)
 
     return func_name, wrapper_function_str
 
 
-def assert_code_gen_compilable(code_str):
+def _assert_code_gen_compilable(code_str):
     try:
         compile(code_str, "<string>", "exec")
     except SyntaxError as e:
         print(f"Syntax error in code: {e}")
 
 
-def assert_all_classes_are_imported(tool: Union["LangChainBaseTool"], additional_imports_module_attr_map: dict[str, str]) -> None:
+def _assert_all_classes_are_imported(tool: Union["LangChainBaseTool"], additional_imports_module_attr_map: dict[str, str]) -> None:
     # Safety check that user has passed in all required imports:
     tool_name = tool.__class__.__name__
     current_class_imports = {tool_name}
     if additional_imports_module_attr_map:
         current_class_imports.update(set(additional_imports_module_attr_map.values()))
-    required_class_imports = set(find_required_class_names_for_import(tool))
+    required_class_imports = set(_find_required_class_names_for_import(tool))
 
     if not current_class_imports.issuperset(required_class_imports):
         err_msg = f"[ERROR] You are missing module_attr pairs in `additional_imports_module_attr_map`. Currently, you have imports for {current_class_imports}, but the required classes for import are {required_class_imports}"
@@ -165,7 +85,7 @@ def assert_all_classes_are_imported(tool: Union["LangChainBaseTool"], additional
         raise RuntimeError(err_msg)
 
 
-def find_required_class_names_for_import(obj: Union["LangChainBaseTool", BaseModel]) -> list[str]:
+def _find_required_class_names_for_import(obj: Union["LangChainBaseTool", BaseModel]) -> list[str]:
     """
     Finds all the class names for required imports when instantiating the `obj`.
     NOTE: This does not return the full import path, only the class name.
@@ -181,7 +101,7 @@ def find_required_class_names_for_import(obj: Union["LangChainBaseTool", BaseMod
 
         # Collect all possible candidates for BaseModel objects
         candidates = []
-        if is_base_model(curr_obj):
+        if _is_base_model(curr_obj):
             # If it is a base model, we get all the values of the object parameters
             # i.e., if obj('b' = <class A>), we would want to inspect <class A>
             fields = dict(curr_obj)
@@ -198,7 +118,7 @@ def find_required_class_names_for_import(obj: Union["LangChainBaseTool", BaseMod
 
         # Filter out all candidates that are not BaseModels
         # In the list example above, ['a', 3, None, <class A>], we want to filter out 'a', 3, and None
-        candidates = filter(lambda x: is_base_model(x), candidates)
+        candidates = filter(lambda x: _is_base_model(x), candidates)
 
         # Classic BFS here
         for c in candidates:
@@ -216,7 +136,7 @@ def generate_imported_tool_instantiation_call_str(obj: Any) -> Optional[str]:
         # If it is a basic Python type, we trivially return the string version of that value
         # Handle basic types
         return repr(obj)
-    elif is_base_model(obj):
+    elif _is_base_model(obj):
         # Otherwise, if it is a BaseModel
         # We want to pull out all the parameters, and reformat them into strings
         # e.g. {arg}={value}
@@ -269,11 +189,11 @@ def generate_imported_tool_instantiation_call_str(obj: Any) -> Optional[str]:
         return None
 
 
-def is_base_model(obj: Any):
+def _is_base_model(obj: Any):
     return isinstance(obj, BaseModel)
 
 
-def generate_import_code(module_attr_map: Optional[dict]):
+def _generate_import_code(module_attr_map: Optional[dict]):
     if not module_attr_map:
         return ""
 
@@ -286,7 +206,7 @@ def generate_import_code(module_attr_map: Optional[dict]):
     return "\n".join(code_lines)
 
 
-def parse_letta_response_for_assistant_message(
+def _parse_letta_response_for_assistant_message(
     target_agent_id: str,
     letta_response: LettaResponse,
 ) -> Optional[str]:
@@ -346,7 +266,7 @@ def execute_send_message_to_agent(
     return asyncio.run(async_execute_send_message_to_agent(sender_agent, messages, other_agent_id, log_prefix))
 
 
-async def send_message_to_agent_no_stream(
+async def _send_message_to_agent_no_stream(
     server: "SyncServer",
     agent_id: str,
     actor: User,
@@ -375,7 +295,7 @@ async def send_message_to_agent_no_stream(
     return LettaResponse(messages=final_messages, usage=usage_stats)
 
 
-async def async_send_message_with_retries(
+async def _async_send_message_with_retries(
     server: "SyncServer",
     sender_agent: "Agent",
     target_agent_id: str,
@@ -389,7 +309,7 @@ async def async_send_message_with_retries(
     for attempt in range(1, max_retries + 1):
         try:
             response = await asyncio.wait_for(
-                send_message_to_agent_no_stream(
+                _send_message_to_agent_no_stream(
                     server=server,
                     agent_id=target_agent_id,
                     actor=sender_agent.user,
@@ -399,7 +319,7 @@ async def async_send_message_with_retries(
             )
 
             # Then parse out the assistant message
-            assistant_message = parse_letta_response_for_assistant_message(target_agent_id, response)
+            assistant_message = _parse_letta_response_for_assistant_message(target_agent_id, response)
             if assistant_message:
                 sender_agent.logger.info(f"{logging_prefix} - {assistant_message}")
                 return assistant_message

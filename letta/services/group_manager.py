@@ -80,6 +80,12 @@ class GroupManager:
                 case ManagerType.voice_sleeptime:
                     new_group.manager_type = ManagerType.voice_sleeptime
                     new_group.manager_agent_id = group.manager_config.manager_agent_id
+                    max_message_buffer_length = group.manager_config.max_message_buffer_length
+                    min_message_buffer_length = group.manager_config.min_message_buffer_length
+                    # Safety check for buffer length range
+                    self.ensure_buffer_length_range_valid(max_value=max_message_buffer_length, min_value=min_message_buffer_length)
+                    new_group.max_message_buffer_length = max_message_buffer_length
+                    new_group.min_message_buffer_length = min_message_buffer_length
                 case _:
                     raise ValueError(f"Unsupported manager type: {group.manager_config.manager_type}")
 
@@ -97,6 +103,8 @@ class GroupManager:
             group = GroupModel.read(db_session=session, identifier=group_id, actor=actor)
 
             sleeptime_agent_frequency = None
+            max_message_buffer_length = None
+            min_message_buffer_length = None
             max_turns = None
             termination_token = None
             manager_agent_id = None
@@ -117,11 +125,24 @@ class GroupManager:
                         sleeptime_agent_frequency = group_update.manager_config.sleeptime_agent_frequency
                         if sleeptime_agent_frequency and group.turns_counter is None:
                             group.turns_counter = -1
+                    case ManagerType.voice_sleeptime:
+                        manager_agent_id = group_update.manager_config.manager_agent_id
+                        max_message_buffer_length = group_update.manager_config.max_message_buffer_length or group.max_message_buffer_length
+                        min_message_buffer_length = group_update.manager_config.min_message_buffer_length or group.min_message_buffer_length
+                        if sleeptime_agent_frequency and group.turns_counter is None:
+                            group.turns_counter = -1
                     case _:
                         raise ValueError(f"Unsupported manager type: {group_update.manager_config.manager_type}")
 
+            # Safety check for buffer length range
+            self.ensure_buffer_length_range_valid(max_value=max_message_buffer_length, min_value=min_message_buffer_length)
+
             if sleeptime_agent_frequency:
                 group.sleeptime_agent_frequency = sleeptime_agent_frequency
+            if max_message_buffer_length:
+                group.max_message_buffer_length = max_message_buffer_length
+            if min_message_buffer_length:
+                group.min_message_buffer_length = min_message_buffer_length
             if max_turns:
                 group.max_turns = max_turns
             if termination_token:
@@ -274,3 +295,40 @@ class GroupManager:
             if manager_agent:
                 for block in blocks:
                     session.add(BlocksAgents(agent_id=manager_agent.id, block_id=block.id, block_label=block.label))
+
+    @staticmethod
+    def ensure_buffer_length_range_valid(
+        max_value: Optional[int],
+        min_value: Optional[int],
+        max_name: str = "max_message_buffer_length",
+        min_name: str = "min_message_buffer_length",
+    ) -> None:
+        """
+        1) Both-or-none: if one is set, the other must be set.
+        2) Both must be ints > 4.
+        3) max_value must be strictly greater than min_value.
+        """
+        # 1) require both-or-none
+        if (max_value is None) != (min_value is None):
+            raise ValueError(
+                f"Both '{max_name}' and '{min_name}' must be provided together " f"(got {max_name}={max_value}, {min_name}={min_value})"
+            )
+
+        # no further checks if neither is provided
+        if max_value is None:
+            return
+
+        # 2) type & lower‐bound checks
+        if not isinstance(max_value, int) or not isinstance(min_value, int):
+            raise ValueError(
+                f"Both '{max_name}' and '{min_name}' must be integers "
+                f"(got {max_name}={type(max_value).__name__}, {min_name}={type(min_value).__name__})"
+            )
+        if max_value <= 4 or min_value <= 4:
+            raise ValueError(
+                f"Both '{max_name}' and '{min_name}' must be greater than 4 " f"(got {max_name}={max_value}, {min_name}={min_value})"
+            )
+
+        # 3) ordering
+        if max_value <= min_value:
+            raise ValueError(f"'{max_name}' must be greater than '{min_name}' " f"(got {max_name}={max_value} <= {min_name}={min_value})")

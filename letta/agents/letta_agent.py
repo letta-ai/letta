@@ -67,8 +67,10 @@ class LettaAgent(BaseAgent):
         )
         tool_rules_solver = ToolRulesSolver(agent_state.tool_rules)
         llm_client = LLMClient.create(
-            provider=agent_state.llm_config.model_endpoint_type,
+            provider_name=agent_state.llm_config.provider_name,
+            provider_type=agent_state.llm_config.model_endpoint_type,
             put_inner_thoughts_first=True,
+            actor_id=self.actor.id,
         )
         for step in range(max_steps):
             response = await self._get_ai_reply(
@@ -109,8 +111,10 @@ class LettaAgent(BaseAgent):
         )
         tool_rules_solver = ToolRulesSolver(agent_state.tool_rules)
         llm_client = LLMClient.create(
-            llm_config=agent_state.llm_config,
+            provider_name=agent_state.llm_config.provider_name,
+            provider_type=agent_state.llm_config.model_endpoint_type,
             put_inner_thoughts_first=True,
+            actor_id=self.actor.id,
         )
 
         for step in range(max_steps):
@@ -125,7 +129,7 @@ class LettaAgent(BaseAgent):
             # TODO: THIS IS INCREDIBLY UGLY
             # TODO: THERE ARE MULTIPLE COPIES OF THE LLM_CONFIG EVERYWHERE THAT ARE GETTING MANIPULATED
             interface = AnthropicStreamingInterface(
-                use_assistant_message=use_assistant_message, put_inner_thoughts_in_kwarg=llm_client.llm_config.put_inner_thoughts_in_kwargs
+                use_assistant_message=use_assistant_message, put_inner_thoughts_in_kwarg=agent_state.llm_config.put_inner_thoughts_in_kwargs
             )
             async for chunk in interface.process(stream):
                 yield f"data: {chunk.model_dump_json()}\n\n"
@@ -179,6 +183,7 @@ class LettaAgent(BaseAgent):
                 ToolType.LETTA_SLEEPTIME_CORE,
             }
             or (t.tool_type == ToolType.LETTA_MULTI_AGENT_CORE and t.name == "send_message_to_agents_matching_tags")
+            or (t.tool_type == ToolType.EXTERNAL_COMPOSIO)
         ]
 
         valid_tool_names = tool_rules_solver.get_allowed_tool_names(available_tools=set([t.name for t in tools]))
@@ -274,45 +279,49 @@ class LettaAgent(BaseAgent):
         return persisted_messages, continue_stepping
 
     def _rebuild_memory(self, in_context_messages: List[Message], agent_state: AgentState) -> List[Message]:
-        self.agent_manager.refresh_memory(agent_state=agent_state, actor=self.actor)
+        try:
+            self.agent_manager.refresh_memory(agent_state=agent_state, actor=self.actor)
 
-        # TODO: This is a pretty brittle pattern established all over our code, need to get rid of this
-        curr_system_message = in_context_messages[0]
-        curr_memory_str = agent_state.memory.compile()
-        curr_system_message_text = curr_system_message.content[0].text
-        if curr_memory_str in curr_system_message_text:
-            # NOTE: could this cause issues if a block is removed? (substring match would still work)
-            logger.debug(
-                f"Memory hasn't changed for agent id={agent_state.id} and actor=({self.actor.id}, {self.actor.name}), skipping system prompt rebuild"
-            )
-            return in_context_messages
+            # TODO: This is a pretty brittle pattern established all over our code, need to get rid of this
+            curr_system_message = in_context_messages[0]
+            curr_memory_str = agent_state.memory.compile()
+            curr_system_message_text = curr_system_message.content[0].text
+            if curr_memory_str in curr_system_message_text:
+                # NOTE: could this cause issues if a block is removed? (substring match would still work)
+                logger.debug(
+                    f"Memory hasn't changed for agent id={agent_state.id} and actor=({self.actor.id}, {self.actor.name}), skipping system prompt rebuild"
+                )
+                return in_context_messages
 
-        memory_edit_timestamp = get_utc_time()
+            memory_edit_timestamp = get_utc_time()
 
-        num_messages = self.message_manager.size(actor=self.actor, agent_id=agent_state.id)
-        num_archival_memories = self.passage_manager.size(actor=self.actor, agent_id=agent_state.id)
+            num_messages = self.message_manager.size(actor=self.actor, agent_id=agent_state.id)
+            num_archival_memories = self.passage_manager.size(actor=self.actor, agent_id=agent_state.id)
 
-        new_system_message_str = compile_system_message(
-            system_prompt=agent_state.system,
-            in_context_memory=agent_state.memory,
-            in_context_memory_last_edit=memory_edit_timestamp,
-            previous_message_count=num_messages,
-            archival_memory_size=num_archival_memories,
-        )
-
-        diff = united_diff(curr_system_message_text, new_system_message_str)
-        if len(diff) > 0:
-            logger.debug(f"Rebuilding system with new memory...\nDiff:\n{diff}")
-
-            new_system_message = self.message_manager.update_message_by_id(
-                curr_system_message.id, message_update=MessageUpdate(content=new_system_message_str), actor=self.actor
+            new_system_message_str = compile_system_message(
+                system_prompt=agent_state.system,
+                in_context_memory=agent_state.memory,
+                in_context_memory_last_edit=memory_edit_timestamp,
+                previous_message_count=num_messages,
+                archival_memory_size=num_archival_memories,
             )
 
-            # Skip pulling down the agent's memory again to save on a db call
-            return [new_system_message] + in_context_messages[1:]
+            diff = united_diff(curr_system_message_text, new_system_message_str)
+            if len(diff) > 0:
+                logger.debug(f"Rebuilding system with new memory...\nDiff:\n{diff}")
 
-        else:
-            return in_context_messages
+                new_system_message = self.message_manager.update_message_by_id(
+                    curr_system_message.id, message_update=MessageUpdate(content=new_system_message_str), actor=self.actor
+                )
+
+                # Skip pulling down the agent's memory again to save on a db call
+                return [new_system_message] + in_context_messages[1:]
+
+            else:
+                return in_context_messages
+        except:
+            logger.exception(f"Failed to rebuild memory for agent id={agent_state.id} and actor=({self.actor.id}, {self.actor.name})")
+            raise
 
     @trace_method
     async def _execute_tool(self, tool_name: str, tool_args: dict, agent_state: AgentState) -> Tuple[str, bool]:
@@ -331,6 +340,10 @@ class LettaAgent(BaseAgent):
                 results = await self._send_message_to_agents_matching_tags(**tool_args)
                 log_event(name="finish_send_message_to_agents_matching_tags", attributes=tool_args)
                 return json.dumps(results), True
+            elif target_tool.type == ToolType.EXTERNAL_COMPOSIO:
+                log_event(name=f"start_composio_{tool_name}_execution", attributes=tool_args)
+                log_event(name=f"finish_compsio_{tool_name}_execution", attributes=tool_args)
+                return tool_execution_result.func_return, True
             else:
                 tool_execution_manager = ToolExecutionManager(agent_state=agent_state, actor=self.actor)
                 # TODO: Integrate sandbox result

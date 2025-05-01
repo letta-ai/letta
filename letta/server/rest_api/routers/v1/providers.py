@@ -2,6 +2,7 @@ from typing import TYPE_CHECKING, List, Optional
 
 from fastapi import APIRouter, Body, Depends, Header, HTTPException, Query
 
+from letta.schemas.enums import ProviderType
 from letta.schemas.providers import Provider, ProviderCreate, ProviderUpdate
 from letta.server.rest_api.utils import get_letta_server
 
@@ -13,6 +14,8 @@ router = APIRouter(prefix="/providers", tags=["providers"])
 
 @router.get("/", response_model=List[Provider], operation_id="list_providers")
 def list_providers(
+    name: Optional[str] = Query(None),
+    provider_type: Optional[ProviderType] = Query(None),
     after: Optional[str] = Query(None),
     limit: Optional[int] = Query(50),
     actor_id: Optional[str] = Header(None, alias="user_id"),
@@ -23,7 +26,7 @@ def list_providers(
     """
     try:
         actor = server.user_manager.get_user_or_default(user_id=actor_id)
-        providers = server.provider_manager.list_providers(after=after, limit=limit, actor=actor)
+        providers = server.provider_manager.list_providers(after=after, limit=limit, actor=actor, name=name, provider_type=provider_type)
     except HTTPException:
         raise
     except Exception as e:

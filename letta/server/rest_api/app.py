@@ -14,6 +14,7 @@ from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.middleware.cors import CORSMiddleware
 
 from letta.__init__ import __version__
+from letta.agents.exceptions import IncompatibleAgentType
 from letta.constants import ADMIN_PREFIX, API_PREFIX, OPENAI_API_PREFIX
 from letta.errors import BedrockPermissionError, LettaAgentNotFoundError, LettaUserNotFoundError
 from letta.jobs.scheduler import shutdown_cron_scheduler, start_cron_jobs
@@ -172,6 +173,17 @@ def create_application() -> "FastAPI":
     @app.on_event("shutdown")
     def shutdown_scheduler():
         shutdown_cron_scheduler()
+
+    @app.exception_handler(IncompatibleAgentType)
+    async def handle_incompatible_agent_type(request: Request, exc: IncompatibleAgentType):
+        return JSONResponse(
+            status_code=400,
+            content={
+                "detail": str(exc),
+                "expected_type": exc.expected_type,
+                "actual_type": exc.actual_type,
+            },
+        )
 
     @app.exception_handler(Exception)
     async def generic_error_handler(request: Request, exc: Exception):

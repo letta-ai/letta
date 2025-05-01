@@ -268,10 +268,11 @@ class SyncServer(Server):
                     )
 
         # collect providers (always has Letta as a default)
-        self._enabled_providers: List[Provider] = [LettaProvider()]
+        self._enabled_providers: List[Provider] = [LettaProvider(name="letta")]
         if model_settings.openai_api_key:
             self._enabled_providers.append(
                 OpenAIProvider(
+                    name="openai",
                     api_key=model_settings.openai_api_key,
                     base_url=model_settings.openai_api_base,
                 )
@@ -279,12 +280,14 @@ class SyncServer(Server):
         if model_settings.anthropic_api_key:
             self._enabled_providers.append(
                 AnthropicProvider(
+                    name="anthropic",
                     api_key=model_settings.anthropic_api_key,
                 )
             )
         if model_settings.ollama_base_url:
             self._enabled_providers.append(
                 OllamaProvider(
+                    name="ollama",
                     base_url=model_settings.ollama_base_url,
                     api_key=None,
                     default_prompt_formatter=model_settings.default_prompt_formatter,
@@ -293,12 +296,14 @@ class SyncServer(Server):
         if model_settings.gemini_api_key:
             self._enabled_providers.append(
                 GoogleAIProvider(
+                    name="google_ai",
                     api_key=model_settings.gemini_api_key,
                 )
             )
         if model_settings.google_cloud_location and model_settings.google_cloud_project:
             self._enabled_providers.append(
                 GoogleVertexProvider(
+                    name="google_vertex",
                     google_cloud_project=model_settings.google_cloud_project,
                     google_cloud_location=model_settings.google_cloud_location,
                 )
@@ -307,6 +312,7 @@ class SyncServer(Server):
             assert model_settings.azure_api_version, "AZURE_API_VERSION is required"
             self._enabled_providers.append(
                 AzureProvider(
+                    name="azure",
                     api_key=model_settings.azure_api_key,
                     base_url=model_settings.azure_base_url,
                     api_version=model_settings.azure_api_version,
@@ -315,12 +321,14 @@ class SyncServer(Server):
         if model_settings.groq_api_key:
             self._enabled_providers.append(
                 GroqProvider(
+                    name="groq",
                     api_key=model_settings.groq_api_key,
                 )
             )
         if model_settings.together_api_key:
             self._enabled_providers.append(
                 TogetherProvider(
+                    name="together",
                     api_key=model_settings.together_api_key,
                     default_prompt_formatter=model_settings.default_prompt_formatter,
                 )
@@ -329,6 +337,7 @@ class SyncServer(Server):
             # vLLM exposes both a /chat/completions and a /completions endpoint
             self._enabled_providers.append(
                 VLLMCompletionsProvider(
+                    name="vllm",
                     base_url=model_settings.vllm_api_base,
                     default_prompt_formatter=model_settings.default_prompt_formatter,
                 )
@@ -338,12 +347,14 @@ class SyncServer(Server):
             # e.g. "... --enable-auto-tool-choice --tool-call-parser hermes"
             self._enabled_providers.append(
                 VLLMChatCompletionsProvider(
+                    name="vllm",
                     base_url=model_settings.vllm_api_base,
                 )
             )
         if model_settings.aws_access_key and model_settings.aws_secret_access_key and model_settings.aws_region:
             self._enabled_providers.append(
                 AnthropicBedrockProvider(
+                    name="bedrock",
                     aws_region=model_settings.aws_region,
                 )
             )
@@ -355,11 +366,11 @@ class SyncServer(Server):
                 if model_settings.lmstudio_base_url.endswith("/v1")
                 else model_settings.lmstudio_base_url + "/v1"
             )
-            self._enabled_providers.append(LMStudioOpenAIProvider(base_url=lmstudio_url))
+            self._enabled_providers.append(LMStudioOpenAIProvider(name="lmstudio_openai", base_url=lmstudio_url))
         if model_settings.deepseek_api_key:
-            self._enabled_providers.append(DeepSeekProvider(api_key=model_settings.deepseek_api_key))
+            self._enabled_providers.append(DeepSeekProvider(name="deepseek", api_key=model_settings.deepseek_api_key))
         if model_settings.xai_api_key:
-            self._enabled_providers.append(XAIProvider(api_key=model_settings.xai_api_key))
+            self._enabled_providers.append(XAIProvider(name="xai", api_key=model_settings.xai_api_key))
 
         # For MCP
         """Initialize the MCP clients (there may be multiple)"""
@@ -862,6 +873,8 @@ class SyncServer(Server):
                 agent_ids=[voice_sleeptime_agent.id],
                 manager_config=VoiceSleeptimeManager(
                     manager_agent_id=main_agent.id,
+                    max_message_buffer_length=constants.DEFAULT_MAX_MESSAGE_BUFFER_LENGTH,
+                    min_message_buffer_length=constants.DEFAULT_MIN_MESSAGE_BUFFER_LENGTH,
                 ),
             ),
             actor=actor,
@@ -1182,10 +1195,10 @@ class SyncServer(Server):
         except NoResultFound:
             raise HTTPException(status_code=404, detail=f"Organization with id {org_id} not found")
 
-    def list_llm_models(self) -> List[LLMConfig]:
+    def list_llm_models(self, byok_only: bool = False) -> List[LLMConfig]:
         """List available models"""
         llm_models = []
-        for provider in self.get_enabled_providers():
+        for provider in self.get_enabled_providers(byok_only=byok_only):
             try:
                 llm_models.extend(provider.list_llm_models())
             except Exception as e:
@@ -1205,11 +1218,12 @@ class SyncServer(Server):
                 warnings.warn(f"An error occurred while listing embedding models for provider {provider}: {e}")
         return embedding_models
 
-    def get_enabled_providers(self):
+    def get_enabled_providers(self, byok_only: bool = False):
+        providers_from_db = {p.name: p.cast_to_subtype() for p in self.provider_manager.list_providers()}
+        if byok_only:
+            return list(providers_from_db.values())
         providers_from_env = {p.name: p for p in self._enabled_providers}
-        providers_from_db = {p.name: p for p in self.provider_manager.list_providers()}
-        # Merge the two dictionaries, keeping the values from providers_from_db where conflicts occur
-        return {**providers_from_env, **providers_from_db}.values()
+        return list(providers_from_env.values()) + list(providers_from_db.values())
 
     @trace_method
     def get_llm_config_from_handle(
@@ -1294,7 +1308,7 @@ class SyncServer(Server):
         return embedding_config
 
     def get_provider_from_name(self, provider_name: str) -> Provider:
-        providers = [provider for provider in self._enabled_providers if provider.name == provider_name]
+        providers = [provider for provider in self.get_enabled_providers() if provider.name == provider_name]
         if not providers:
             raise ValueError(f"Provider {provider_name} is not supported")
         elif len(providers) > 1:

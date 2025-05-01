@@ -50,6 +50,7 @@ class LLMConfig(BaseModel):
         "xai",
     ] = Field(..., description="The endpoint type for the model.")
     model_endpoint: Optional[str] = Field(None, description="The endpoint for the model.")
+    provider_name: Optional[str] = Field(None, description="The provider name for the model.")
     model_wrapper: Optional[str] = Field(None, description="The wrapper for the model.")
     context_window: int = Field(..., description="The context window size for the model.")
     put_inner_thoughts_in_kwargs: Optional[bool] = Field(

@@ -26,6 +26,7 @@ from letta.llm_api.helpers import add_inner_thoughts_to_functions
 from letta.local_llm.constants import INNER_THOUGHTS_KWARG, INNER_THOUGHTS_KWARG_DESCRIPTION
 from letta.local_llm.utils import num_tokens_from_functions, num_tokens_from_messages
 from letta.log import get_logger
+from letta.schemas.enums import ProviderType
 from letta.schemas.message import Message as _Message
 from letta.schemas.message import MessageRole as _MessageRole
 from letta.schemas.openai.chat_completion_request import ChatCompletionRequest, Tool
@@ -128,11 +129,12 @@ def anthropic_get_model_list(url: str, api_key: Union[str, None]) -> dict:
     # NOTE: currently there is no GET /models, so we need to hardcode
     # return MODEL_LIST
 
-    anthropic_override_key = ProviderManager().get_anthropic_override_key()
-    if anthropic_override_key:
-        anthropic_client = anthropic.Anthropic(api_key=anthropic_override_key)
+    if api_key:
+        anthropic_client = anthropic.Anthropic(api_key=api_key)
     elif model_settings.anthropic_api_key:
         anthropic_client = anthropic.Anthropic()
+    else:
+        raise ValueError("No API key provided")
 
     models = anthropic_client.models.list()
     models_json = models.model_dump()
@@ -738,13 +740,14 @@ def anthropic_chat_completions_request(
     put_inner_thoughts_in_kwargs: bool = False,
     extended_thinking: bool = False,
     max_reasoning_tokens: Optional[int] = None,
+    provider_name: Optional[str] = None,
     betas: List[str] = ["tools-2024-04-04"],
 ) -> ChatCompletionResponse:
     """https://docs.anthropic.com/claude/docs/tool-use"""
     anthropic_client = None
-    anthropic_override_key = ProviderManager().get_anthropic_override_key()
-    if anthropic_override_key:
-        anthropic_client = anthropic.Anthropic(api_key=anthropic_override_key)
+    if provider_name and provider_name != ProviderType.anthropic.value:
+        api_key = ProviderManager().get_override_key(provider_name)
+        anthropic_client = anthropic.Anthropic(api_key=api_key)
     elif model_settings.anthropic_api_key:
         anthropic_client = anthropic.Anthropic()
     else:
@@ -796,6 +799,7 @@ def anthropic_chat_completions_request_stream(
     put_inner_thoughts_in_kwargs: bool = False,
     extended_thinking: bool = False,
     max_reasoning_tokens: Optional[int] = None,
+    provider_name: Optional[str] = None,
     betas: List[str] = ["tools-2024-04-04"],
 ) -> Generator[ChatCompletionChunkResponse, None, None]:
     """Stream chat completions from Anthropic API.
@@ -810,10 +814,9 @@ def anthropic_chat_completions_request_stream(
         extended_thinking=extended_thinking,
         max_reasoning_tokens=max_reasoning_tokens,
     )
-
-    anthropic_override_key = ProviderManager().get_anthropic_override_key()
-    if anthropic_override_key:
-        anthropic_client = anthropic.Anthropic(api_key=anthropic_override_key)
+    if provider_name and provider_name != ProviderType.anthropic.value:
+        api_key = ProviderManager().get_override_key(provider_name)
+        anthropic_client = anthropic.Anthropic(api_key=api_key)
     elif model_settings.anthropic_api_key:
         anthropic_client = anthropic.Anthropic()
 
@@ -860,6 +863,7 @@ def anthropic_chat_completions_process_stream(
     put_inner_thoughts_in_kwargs: bool = False,
     extended_thinking: bool = False,
     max_reasoning_tokens: Optional[int] = None,
+    provider_name: Optional[str] = None,
     create_message_id: bool = True,
     create_message_datetime: bool = True,
     betas: List[str] = ["tools-2024-04-04"],
@@ -944,6 +948,7 @@ def anthropic_chat_completions_process_stream(
                 put_inner_thoughts_in_kwargs=put_inner_thoughts_in_kwargs,
                 extended_thinking=extended_thinking,
                 max_reasoning_tokens=max_reasoning_tokens,
+                provider_name=provider_name,
                 betas=betas,
             )
         ):

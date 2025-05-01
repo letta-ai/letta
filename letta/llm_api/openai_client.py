@@ -22,6 +22,7 @@ from letta.llm_api.helpers import add_inner_thoughts_to_functions, convert_to_st
 from letta.llm_api.llm_client_base import LLMClientBase
 from letta.local_llm.constants import INNER_THOUGHTS_KWARG, INNER_THOUGHTS_KWARG_DESCRIPTION, INNER_THOUGHTS_KWARG_DESCRIPTION_GO_FIRST
 from letta.log import get_logger
+from letta.schemas.enums import ProviderType
 from letta.schemas.llm_config import LLMConfig
 from letta.schemas.message import Message as PydanticMessage
 from letta.schemas.openai.chat_completion_request import ChatCompletionRequest
@@ -64,7 +65,14 @@ def supports_parallel_tool_calling(model: str) -> bool:
 
 class OpenAIClient(LLMClientBase):
     def _prepare_client_kwargs(self, llm_config: LLMConfig) -> dict:
-        api_key = model_settings.openai_api_key or os.environ.get("OPENAI_API_KEY")
+        api_key = None
+        if llm_config.provider_name and llm_config.provider_name != ProviderType.openai.value:
+            from letta.services.provider_manager import ProviderManager
+
+            api_key = ProviderManager().get_override_key(llm_config.provider_name)
+
+        if not api_key:
+            api_key = model_settings.openai_api_key or os.environ.get("OPENAI_API_KEY")
         # supposedly the openai python client requires a dummy API key
         api_key = api_key or "DUMMY_API_KEY"
         kwargs = {"api_key": api_key, "base_url": llm_config.model_endpoint}
@@ -135,11 +143,17 @@ class OpenAIClient(LLMClientBase):
             temperature=llm_config.temperature if supports_temperature_param(model) else None,
         )
 
-        if llm_config.model_endpoint == LETTA_MODEL_ENDPOINT:
-            # override user id for inference.memgpt.ai
-            import uuid
+        # always set user id for openai requests
+        if self.actor_id:
+            data.user = self.actor_id
 
-            data.user = str(uuid.UUID(int=0))
+        if llm_config.model_endpoint == LETTA_MODEL_ENDPOINT:
+            if not self.actor_id:
+                # override user id for inference.letta.com
+                import uuid
+
+                data.user = str(uuid.UUID(int=0))
+
             data.model = "memgpt-openai"
 
         if data.tools is not None and len(data.tools) > 0:

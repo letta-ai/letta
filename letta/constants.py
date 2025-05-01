@@ -4,7 +4,7 @@ from logging import CRITICAL, DEBUG, ERROR, INFO, NOTSET, WARN, WARNING
 LETTA_DIR = os.path.join(os.path.expanduser("~"), ".letta")
 LETTA_TOOL_EXECUTION_DIR = os.path.join(LETTA_DIR, "tool_execution_dir")
 
-LETTA_MODEL_ENDPOINT = "https://inference.memgpt.ai"
+LETTA_MODEL_ENDPOINT = "https://inference.letta.com"
 
 ADMIN_PREFIX = "/v1/admin"
 API_PREFIX = "/v1"
@@ -34,6 +34,10 @@ TOOL_CALL_ID_MAX_LEN = 29
 
 # minimum context window size
 MIN_CONTEXT_WINDOW = 4096
+
+# Voice Sleeptime message buffer lengths
+DEFAULT_MAX_MESSAGE_BUFFER_LENGTH = 30
+DEFAULT_MIN_MESSAGE_BUFFER_LENGTH = 15
 
 # embeddings
 MAX_EMBEDDING_DIM = 4096  # maximum supported embeding size - do NOT change or else DBs will need to be reset

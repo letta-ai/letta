@@ -4,7 +4,24 @@ from letta.schemas.letta_message_content import TextContent
 from letta.schemas.message import Message, MessageCreate
 
 
-def prepare_input_message_create(
+def convert_message_creates_to_messages(
+    messages: list[MessageCreate],
+    agent_id: str,
+    wrap_user_message: bool = True,
+    wrap_system_message: bool = True,
+) -> list[Message]:
+    return [
+        _convert_message_create_to_message(
+            message=message,
+            agent_id=agent_id,
+            wrap_user_message=wrap_user_message,
+            wrap_system_message=wrap_system_message,
+        )
+        for message in messages
+    ]
+
+
+def _convert_message_create_to_message(
     message: MessageCreate,
     agent_id: str,
     wrap_user_message: bool = True,
@@ -23,12 +40,12 @@ def prepare_input_message_create(
         raise ValueError("Message content is empty or invalid")
 
     # Apply wrapping if needed
-    if message.role == MessageRole.user and wrap_user_message:
+    if message.role not in {MessageRole.user, MessageRole.system}:
+        raise ValueError(f"Invalid message role: {message.role}")
+    elif message.role == MessageRole.user and wrap_user_message:
         message_content = system.package_user_message(user_message=message_content)
     elif message.role == MessageRole.system and wrap_system_message:
         message_content = system.package_system_message(system_message=message_content)
-    elif message.role not in {MessageRole.user, MessageRole.system}:
-        raise ValueError(f"Invalid message role: {message.role}")
 
     return Message(
         agent_id=agent_id,

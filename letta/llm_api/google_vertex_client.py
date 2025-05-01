@@ -63,7 +63,7 @@ class GoogleVertexClient(GoogleAIClient):
         # Add thinking_config
         # If enable_reasoner is False, set thinking_budget to 0
         # Otherwise, use the value from max_reasoning_tokens
-        thinking_budget = 0 if not self.llm_config.enable_reasoner else self.llm_config.max_reasoning_tokens
+        thinking_budget = 0 if not llm_config.enable_reasoner else llm_config.max_reasoning_tokens
         thinking_config = ThinkingConfig(
             thinking_budget=thinking_budget,
         )

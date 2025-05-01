@@ -157,11 +157,17 @@ def build_openai_chat_completions_request(
         # if "gpt-4o" in llm_config.model or "gpt-4-turbo" in llm_config.model or "gpt-3.5-turbo" in llm_config.model:
         # data.response_format = {"type": "json_object"}
 
-    if llm_config.model_endpoint == LETTA_MODEL_ENDPOINT:
-        # override user id for inference.memgpt.ai
-        import uuid
+    # always set user id for openai requests
+    if user_id:
+        data.user = str(user_id)
 
-        data.user = str(uuid.UUID(int=0))
+    if llm_config.model_endpoint == LETTA_MODEL_ENDPOINT:
+        if not user_id:
+            # override user id for inference.letta.com
+            import uuid
+
+            data.user = str(uuid.UUID(int=0))
+
         data.model = "memgpt-openai"
 
     if use_structured_output and data.tools is not None and len(data.tools) > 0:

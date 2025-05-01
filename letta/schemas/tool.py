@@ -11,13 +11,9 @@ from letta.constants import (
     MCP_TOOL_TAG_NAME_PREFIX,
 )
 from letta.functions.ast_parsers import get_function_name_and_description
+from letta.functions.composio_helpers import generate_composio_tool_wrapper
 from letta.functions.functions import derive_openai_json_schema, get_json_schema_from_module
-from letta.functions.helpers import (
-    generate_composio_tool_wrapper,
-    generate_langchain_tool_wrapper,
-    generate_mcp_tool_wrapper,
-    generate_model_from_args_json_schema,
-)
+from letta.functions.helpers import generate_langchain_tool_wrapper, generate_mcp_tool_wrapper, generate_model_from_args_json_schema
 from letta.functions.mcp_client.types import MCPTool
 from letta.functions.schema_generator import (
     generate_schema_from_args_schema_v2,
@@ -176,8 +172,7 @@ class ToolCreate(LettaBase):
         Returns:
             Tool: A Letta Tool initialized with attributes derived from the Composio tool.
         """
-        from composio import LogLevel
-        from composio_langchain import ComposioToolSet
+        from composio import ComposioToolSet, LogLevel
 
         composio_toolset = ComposioToolSet(logging_level=LogLevel.ERROR, lock=False)
         composio_action_schemas = composio_toolset.get_action_schemas(actions=[action_name], check_connected_accounts=False)

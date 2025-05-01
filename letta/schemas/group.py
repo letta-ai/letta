@@ -32,6 +32,14 @@ class Group(GroupBase):
     sleeptime_agent_frequency: Optional[int] = Field(None, description="")
     turns_counter: Optional[int] = Field(None, description="")
     last_processed_message_id: Optional[str] = Field(None, description="")
+    max_message_buffer_length: Optional[int] = Field(
+        None,
+        description="The desired maximum length of messages in the context window of the convo agent. This is a best effort, and may be off slightly due to user/assistant interleaving.",
+    )
+    min_message_buffer_length: Optional[int] = Field(
+        None,
+        description="The desired minimum length of messages in the context window of the convo agent. This is a best effort, and may be off-by-one due to user/assistant interleaving.",
+    )
 
 
 class ManagerConfig(BaseModel):
@@ -87,11 +95,27 @@ class SleeptimeManagerUpdate(ManagerConfig):
 class VoiceSleeptimeManager(ManagerConfig):
     manager_type: Literal[ManagerType.voice_sleeptime] = Field(ManagerType.voice_sleeptime, description="")
     manager_agent_id: str = Field(..., description="")
+    max_message_buffer_length: Optional[int] = Field(
+        None,
+        description="The desired maximum length of messages in the context window of the convo agent. This is a best effort, and may be off slightly due to user/assistant interleaving.",
+    )
+    min_message_buffer_length: Optional[int] = Field(
+        None,
+        description="The desired minimum length of messages in the context window of the convo agent. This is a best effort, and may be off-by-one due to user/assistant interleaving.",
+    )
 
 
 class VoiceSleeptimeManagerUpdate(ManagerConfig):
     manager_type: Literal[ManagerType.voice_sleeptime] = Field(ManagerType.voice_sleeptime, description="")
     manager_agent_id: Optional[str] = Field(None, description="")
+    max_message_buffer_length: Optional[int] = Field(
+        None,
+        description="The desired maximum length of messages in the context window of the convo agent. This is a best effort, and may be off slightly due to user/assistant interleaving.",
+    )
+    min_message_buffer_length: Optional[int] = Field(
+        None,
+        description="The desired minimum length of messages in the context window of the convo agent. This is a best effort, and may be off-by-one due to user/assistant interleaving.",
+    )
 
 
 # class SwarmGroup(ManagerConfig):

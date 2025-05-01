@@ -79,8 +79,10 @@ def summarize_messages(
     llm_config_no_inner_thoughts.put_inner_thoughts_in_kwargs = False
 
     llm_client = LLMClient.create(
-        provider=llm_config_no_inner_thoughts.model_endpoint_type,
+        provider_name=llm_config_no_inner_thoughts.provider_name,
+        provider_type=llm_config_no_inner_thoughts.model_endpoint_type,
         put_inner_thoughts_first=False,
+        actor_id=agent_state.created_by_id,
     )
     # try to use new client, otherwise fallback to old flow
     # TODO: we can just directly call the LLM here?

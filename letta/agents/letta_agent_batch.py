@@ -156,8 +156,10 @@ class LettaAgentBatch:
 
         log_event(name="init_llm_client")
         llm_client = LLMClient.create(
-            provider=agent_states[0].llm_config.model_endpoint_type,
+            provider_name=agent_states[0].llm_config.provider_name,
+            provider_type=agent_states[0].llm_config.model_endpoint_type,
             put_inner_thoughts_first=True,
+            actor_id=self.actor.id,
         )
         agent_llm_config_mapping = {s.id: s.llm_config for s in agent_states}
 
@@ -273,8 +275,10 @@ class LettaAgentBatch:
 
             # translate provider‑specific response → OpenAI‑style tool call (unchanged)
             llm_client = LLMClient.create(
-                provider=item.llm_config.model_endpoint_type,
+                provider_name=item.llm_config.provider_name,
+                provider_type=item.llm_config.model_endpoint_type,
                 put_inner_thoughts_first=True,
+                actor_id=self.actor.id,
             )
             tool_call = (
                 llm_client.convert_response_to_chat_completion(

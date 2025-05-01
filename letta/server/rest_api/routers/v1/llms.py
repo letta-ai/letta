@@ -1,6 +1,6 @@
-from typing import TYPE_CHECKING, List
+from typing import TYPE_CHECKING, List, Optional
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Query
 
 from letta.schemas.embedding_config import EmbeddingConfig
 from letta.schemas.llm_config import LLMConfig
@@ -14,10 +14,11 @@ router = APIRouter(prefix="/models", tags=["models", "llms"])
 
 @router.get("/", response_model=List[LLMConfig], operation_id="list_models")
 def list_llm_models(
+    byok_only: Optional[bool] = Query(None),
     server: "SyncServer" = Depends(get_letta_server),
 ):
 
-    models = server.list_llm_models()
+    models = server.list_llm_models(byok_only=byok_only)
     # print(models)
     return models
 
