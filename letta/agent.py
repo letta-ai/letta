@@ -1103,7 +1103,7 @@ class Agent(BaseAgent):
         logger.info(f"Packaged into message: {summary_message}")
 
         prior_len = len(in_context_messages_openai)
-        self.agent_state = self.agent_manager.trim_all_in_context_messages_except_system(agent_id=self.agent_state.id, actor=self.user)
+        self.agent_state = self.agent_manager.trim_older_in_context_messages(num=cutoff, agent_id=self.agent_state.id, actor=self.user)
         packed_summary_message = {"role": "user", "content": summary_message}
         # Prepend the summary
         self.agent_state = self.agent_manager.prepend_to_in_context_messages(
