@@ -5,7 +5,7 @@ from openai.types.chat.chat_completion_chunk import ChatCompletionChunk, Choice,
 
 from letta.constants import PRE_EXECUTION_MESSAGE_ARG
 from letta.interfaces.utils import _format_sse_chunk
-from letta.server.rest_api.optimistic_json_parser import OptimisticJSONParser
+from letta.server.rest_api.json_parser import OptimisticJSONParser
 
 
 class OpenAIChatCompletionsStreamingInterface:

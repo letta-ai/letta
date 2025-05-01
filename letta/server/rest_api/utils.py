@@ -16,6 +16,7 @@ from pydantic import BaseModel
 from letta.constants import DEFAULT_MESSAGE_TOOL, DEFAULT_MESSAGE_TOOL_KWARG, FUNC_FAILED_HEARTBEAT_MESSAGE, REQ_HEARTBEAT_MESSAGE
 from letta.errors import ContextWindowExceededError, RateLimitExceededError
 from letta.helpers.datetime_helpers import get_utc_time
+from letta.helpers.message_helper import convert_message_creates_to_messages
 from letta.log import get_logger
 from letta.schemas.enums import MessageRole
 from letta.schemas.letta_message_content import OmittedReasoningContent, ReasoningContent, RedactedReasoningContent, TextContent
@@ -143,27 +144,15 @@ def log_error_to_sentry(e):
 def create_input_messages(input_messages: List[MessageCreate], agent_id: str, actor: User) -> List[Message]:
     """
     Converts a user input message into the internal structured format.
-    """
-    new_messages = []
-    for input_message in input_messages:
-        # Construct the Message object
-        new_message = Message(
-            id=f"message-{uuid.uuid4()}",
-            role=input_message.role,
-            content=input_message.content,
-            name=input_message.name,
-            otid=input_message.otid,
-            sender_id=input_message.sender_id,
-            organization_id=actor.organization_id,
-            agent_id=agent_id,
-            model=None,
-            tool_calls=None,
-            tool_call_id=None,
-            created_at=get_utc_time(),
-        )
-        new_messages.append(new_message)
 
-    return new_messages
+    TODO (cliandy): this effectively duplicates the functionality of `convert_message_creates_to_messages`,
+    we should unify this when it's clear what message attributes we need.
+    """
+
+    messages = convert_message_creates_to_messages(input_messages, agent_id, wrap_user_message=False, wrap_system_message=False)
+    for message in messages:
+        message.organization_id = actor.organization_id
+    return messages
 
 
 def create_letta_messages_from_llm_response(

@@ -12,7 +12,7 @@ from letta.schemas.enums import MessageStreamStatus
 from letta.schemas.letta_message import LettaMessage
 from letta.schemas.message import Message
 from letta.schemas.openai.chat_completion_response import ChatCompletionChunkResponse
-from letta.server.rest_api.optimistic_json_parser import OptimisticJSONParser
+from letta.server.rest_api.json_parser import OptimisticJSONParser
 from letta.streaming_interface import AgentChunkStreamingInterface
 
 logger = get_logger(__name__)

@@ -28,7 +28,7 @@ from letta.helpers import ToolRulesSolver
 from letta.helpers.composio_helpers import get_composio_api_key
 from letta.helpers.datetime_helpers import get_utc_time
 from letta.helpers.json_helpers import json_dumps, json_loads
-from letta.helpers.message_helper import prepare_input_message_create
+from letta.helpers.message_helper import convert_message_creates_to_messages
 from letta.interface import AgentInterface
 from letta.llm_api.helpers import calculate_summarizer_cutoff, get_token_counts_for_messages, is_context_overflow_error
 from letta.llm_api.llm_api_tools import create
@@ -726,8 +726,7 @@ class Agent(BaseAgent):
         self.tool_rules_solver.clear_tool_history()
 
         # Convert MessageCreate objects to Message objects
-        message_objects = [prepare_input_message_create(m, self.agent_state.id, True, True) for m in input_messages]
-        next_input_messages = message_objects
+        next_input_messages = convert_message_creates_to_messages(input_messages, self.agent_state.id)
         counter = 0
         total_usage = UsageStatistics()
         step_count = 0
