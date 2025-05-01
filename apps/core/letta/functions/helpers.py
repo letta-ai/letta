@@ -231,7 +231,7 @@ async def async_execute_send_message_to_agent(
     """
     Async helper to:
       1) validate the target agent exists & is in the same org,
-      2) send a message via async_send_message_with_retries.
+      2) send a message via _async_send_message_with_retries.
     """
     server = get_letta_server()
 
@@ -242,7 +242,7 @@ async def async_execute_send_message_to_agent(
         raise ValueError(f"Target agent {other_agent_id} either does not exist or is not in org " f"({sender_agent.user.organization_id}).")
 
     # 2. Use your async retry logic
-    return await async_send_message_with_retries(
+    return await _async_send_message_with_retries(
         server=server,
         sender_agent=sender_agent,
         target_agent_id=other_agent_id,
@@ -304,7 +304,7 @@ async def _async_send_message_with_retries(
     timeout: int,
     logging_prefix: Optional[str] = None,
 ) -> str:
-    logging_prefix = logging_prefix or "[async_send_message_with_retries]"
+    logging_prefix = logging_prefix or "[_async_send_message_with_retries]"
 
     for attempt in range(1, max_retries + 1):
         try:
@@ -363,7 +363,7 @@ def fire_and_forget_send_to_agent(
         messages (List[MessageCreate]): The messages to send.
         other_agent_id (str): The ID of the target agent.
         log_prefix (str): Prefix for logging.
-        use_retries (bool): If True, uses async_send_message_with_retries;
+        use_retries (bool): If True, uses _async_send_message_with_retries;
                             if False, calls server.send_message_to_agent directly.
     """
     server = get_letta_server()
@@ -381,7 +381,7 @@ def fire_and_forget_send_to_agent(
     async def background_task():
         try:
             if use_retries:
-                result = await async_send_message_with_retries(
+                result = await _async_send_message_with_retries(
                     server=server,
                     sender_agent=sender_agent,
                     target_agent_id=other_agent_id,
@@ -434,7 +434,7 @@ async def _send_message_to_agents_matching_tags_async(
     sender_agent: "Agent", server: "SyncServer", messages: List[MessageCreate], matching_agents: List["AgentState"]
 ) -> List[str]:
     async def _send_single(agent_state):
-        return await async_send_message_with_retries(
+        return await _async_send_message_with_retries(
             server=server,
             sender_agent=sender_agent,
             target_agent_id=agent_state.id,
@@ -475,7 +475,7 @@ async def _send_message_to_all_agents_in_group_async(sender_agent: "Agent", mess
 
     async def _send_single(agent_state):
         async with sem:
-            return await async_send_message_with_retries(
+            return await _async_send_message_with_retries(
                 server=server,
                 sender_agent=sender_agent,
                 target_agent_id=agent_state.id,
