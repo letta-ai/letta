@@ -11,7 +11,7 @@ from letta.server.server import SyncServer
 router = APIRouter(prefix="/steps", tags=["steps"])
 
 
-@router.get("", response_model=List[Step], operation_id="list_steps")
+@router.get("/", response_model=List[Step], operation_id="list_steps")
 def list_steps(
     before: Optional[str] = Query(None, description="Return steps before this step ID"),
     after: Optional[str] = Query(None, description="Return steps after this step ID"),
