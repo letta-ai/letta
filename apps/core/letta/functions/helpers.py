@@ -39,10 +39,10 @@ def generate_langchain_tool_wrapper(
 ) -> tuple[str, str]:
     tool_name = tool.__class__.__name__
     import_statement = f"from langchain_community.tools import {tool_name}"
-    extra_module_imports = generate_import_code(additional_imports_module_attr_map)
+    extra_module_imports = _generate_import_code(additional_imports_module_attr_map)
 
     # Safety check that user has passed in all required imports:
-    assert_all_classes_are_imported(tool, additional_imports_module_attr_map)
+    _assert_all_classes_are_imported(tool, additional_imports_module_attr_map)
 
     tool_instantiation = f"tool = {generate_imported_tool_instantiation_call_str(tool)}"
     run_call = f"return tool._run(**kwargs)"
@@ -71,7 +71,7 @@ def _assert_code_gen_compilable(code_str):
         print(f"Syntax error in code: {e}")
 
 
-def assert_all_classes_are_imported(tool: Union["LangChainBaseTool"], additional_imports_module_attr_map: dict[str, str]) -> None:
+def _assert_all_classes_are_imported(tool: Union["LangChainBaseTool"], additional_imports_module_attr_map: dict[str, str]) -> None:
     # Safety check that user has passed in all required imports:
     tool_name = tool.__class__.__name__
     current_class_imports = {tool_name}
@@ -193,7 +193,7 @@ def _is_base_model(obj: Any):
     return isinstance(obj, BaseModel)
 
 
-def generate_import_code(module_attr_map: Optional[dict]):
+def _generate_import_code(module_attr_map: Optional[dict]):
     if not module_attr_map:
         return ""
 
@@ -295,7 +295,7 @@ async def _send_message_to_agent_no_stream(
     return LettaResponse(messages=final_messages, usage=usage_stats)
 
 
-async def async_send_message_with_retries(
+async def _async_send_message_with_retries(
     server: "SyncServer",
     sender_agent: "Agent",
     target_agent_id: str,

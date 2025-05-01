@@ -28,7 +28,7 @@ from letta.schemas.letta_message import (
 from letta.schemas.letta_message_content import ReasoningContent, RedactedReasoningContent, TextContent
 from letta.schemas.message import Message
 from letta.schemas.openai.chat_completion_response import ChatCompletionChunkResponse
-from letta.server.rest_api.optimistic_json_parser import OptimisticJSONParser
+from letta.server.rest_api.json_parser import OptimisticJSONParser
 from letta.streaming_interface import AgentChunkStreamingInterface
 from letta.streaming_utils import FunctionArgumentsStreamHandler, JSONInnerThoughtsExtractor
 from letta.utils import parse_json
@@ -291,7 +291,7 @@ class StreamingServerInterface(AgentChunkStreamingInterface):
         self.streaming_chat_completion_json_reader = FunctionArgumentsStreamHandler(json_key=assistant_message_tool_kwarg)
 
         # @matt's changes here, adopting new optimistic json parser
-        self.current_function_arguments = []
+        self.current_function_arguments = ""
         self.optimistic_json_parser = OptimisticJSONParser()
         self.current_json_parse_result = {}
 
@@ -387,7 +387,7 @@ class StreamingServerInterface(AgentChunkStreamingInterface):
     def stream_start(self):
         """Initialize streaming by activating the generator and clearing any old chunks."""
         self.streaming_chat_completion_mode_function_name = None
-        self.current_function_arguments = []
+        self.current_function_arguments = ""
         self.current_json_parse_result = {}
 
         if not self._active:
@@ -398,7 +398,7 @@ class StreamingServerInterface(AgentChunkStreamingInterface):
     def stream_end(self):
         """Clean up the stream by deactivating and clearing chunks."""
         self.streaming_chat_completion_mode_function_name = None
-        self.current_function_arguments = []
+        self.current_function_arguments = ""
         self.current_json_parse_result = {}
 
         # if not self.streaming_chat_completion_mode and not self.nonstreaming_legacy_mode:
@@ -609,14 +609,13 @@ class StreamingServerInterface(AgentChunkStreamingInterface):
                     # early exit to turn into content mode
                     return None
                 if tool_call.function.arguments:
-                    self.current_function_arguments.append(tool_call.function.arguments)
+                    self.current_function_arguments += tool_call.function.arguments
 
                 # if we're in the middle of parsing a send_message, we'll keep processing the JSON chunks
                 if tool_call.function.arguments and self.streaming_chat_completion_mode_function_name == self.assistant_message_tool_name:
                     # Strip out any extras tokens
                     # In the case that we just have the prefix of something, no message yet, then we should early exit to move to the next chunk
-                    combined_args = "".join(self.current_function_arguments)
-                    parsed_args = self.optimistic_json_parser.parse(combined_args)
+                    parsed_args = self.optimistic_json_parser.parse(self.current_function_arguments)
 
                     if parsed_args.get(self.assistant_message_tool_kwarg) and parsed_args.get(
                         self.assistant_message_tool_kwarg
@@ -686,7 +685,7 @@ class StreamingServerInterface(AgentChunkStreamingInterface):
                     # updates_inner_thoughts = ""
                     # else:  # OpenAI
                     # updates_main_json, updates_inner_thoughts = self.function_args_reader.process_fragment(tool_call.function.arguments)
-                    self.current_function_arguments.append(tool_call.function.arguments)
+                    self.current_function_arguments += tool_call.function.arguments
                     updates_main_json, updates_inner_thoughts = self.function_args_reader.process_fragment(tool_call.function.arguments)
 
                     # If we have inner thoughts, we should output them as a chunk
@@ -805,8 +804,7 @@ class StreamingServerInterface(AgentChunkStreamingInterface):
                                     # TODO: THIS IS HORRIBLE
                                     # TODO: WE USE THE OLD JSON PARSER EARLIER (WHICH DOES NOTHING) AND NOW THE NEW JSON PARSER
                                     # TODO: THIS IS TOTALLY WRONG AND BAD, BUT SAVING FOR A LARGER REWRITE IN THE NEAR FUTURE
-                                    combined_args = "".join(self.current_function_arguments)
-                                    parsed_args = self.optimistic_json_parser.parse(combined_args)
+                                    parsed_args = self.optimistic_json_parser.parse(self.current_function_arguments)
 
                                     if parsed_args.get(self.assistant_message_tool_kwarg) and parsed_args.get(
                                         self.assistant_message_tool_kwarg

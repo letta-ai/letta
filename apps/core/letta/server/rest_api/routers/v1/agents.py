@@ -680,7 +680,7 @@ async def send_message_streaming(
     server: SyncServer = Depends(get_letta_server),
     request: LettaStreamingRequest = Body(...),
     actor_id: Optional[str] = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
-):
+) -> StreamingResponse | LettaResponse:
     """
     Process a user message and return the agent's response.
     This endpoint accepts a message from a user and processes it through the agent.
