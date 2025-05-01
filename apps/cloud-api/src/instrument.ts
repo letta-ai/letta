@@ -13,4 +13,6 @@ Sentry.init({
   profilesSampleRate: 1.0,
 
   tracesSampleRate: 1.0,
+
+  enabled: process.env.NODE_ENV === 'production',
 });

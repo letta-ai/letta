@@ -217,23 +217,25 @@ export async function handleMessageRateLimiting(
     };
   }
 
-  const encoding = getTikTokenEncoder(agent.llm_config.model);
+  // const encoding = getTikTokenEncoder(agent.llm_config.model);
 
-  const inputTokens = messages.reduce((acc, message) => {
-    let text = '';
-
-    if (Array.isArray(message.content)) {
-      text = message.content
-        .map((c) => (c.type === 'text' ? c.text : ''))
-        .join(' ');
-    } else {
-      text = message.content;
-    }
-
-    const tokenLength = encoding.encode(text).length;
-
-    return acc + tokenLength;
-  }, 0);
+  // temporary
+  const inputTokens = 1;
+  // const inputTokens = messages.reduce((acc, message) => {
+  //   let text = '';
+  //
+  //   if (Array.isArray(message.content)) {
+  //     text = message.content
+  //       .map((c) => (c.type === 'text' ? c.text : ''))
+  //       .join(' ');
+  //   } else {
+  //     text = message.content;
+  //   }
+  //
+  //   const tokenLength = encoding.encode(text).length;
+  //
+  //   return acc + tokenLength;
+  // }, 0);
 
   const modelId = modelMetaData.modelId;
 
