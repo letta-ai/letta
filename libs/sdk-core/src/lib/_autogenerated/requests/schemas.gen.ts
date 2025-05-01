@@ -1121,6 +1121,17 @@ export const $AssistantMessage = {
       ],
       title: 'Sender Id',
     },
+    step_id: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Step Id',
+    },
     content: {
       anyOf: [
         {
@@ -4893,6 +4904,17 @@ export const $HiddenReasoningMessage = {
       ],
       title: 'Sender Id',
     },
+    step_id: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Step Id',
+    },
     state: {
       type: 'string',
       enum: ['redacted', 'omitted'],
@@ -6468,7 +6490,12 @@ Attributes:
     name (str): The name of the participant.
     created_at (datetime): The time the message was created.
     tool_calls (List[OpenAIToolCall,]): The list of tool calls requested.
-    tool_call_id (str): The id of the tool call.`,
+    tool_call_id (str): The id of the tool call.
+    step_id (str): The id of the step that this message was created in.
+    otid (str): The offline threading id associated with this message.
+    tool_returns (List[ToolReturn]): The list of tool returns requested.
+    group_id (str): The multi-agent group that the message was sent in.
+    sender_id (str): The id of the sender of the message, can be an identity id or agent id.`,
 } as const;
 
 export const $MessageCreate = {
@@ -7455,6 +7482,17 @@ export const $ReasoningMessage = {
         },
       ],
       title: 'Sender Id',
+    },
+    step_id: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Step Id',
     },
     source: {
       type: 'string',
@@ -8803,6 +8841,17 @@ export const $SystemMessage = {
       ],
       title: 'Sender Id',
     },
+    step_id: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Step Id',
+    },
     content: {
       type: 'string',
       title: 'Content',
@@ -9201,6 +9250,17 @@ export const $ToolCallMessage = {
       ],
       title: 'Sender Id',
     },
+    step_id: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Step Id',
+    },
     tool_call: {
       anyOf: [
         {
@@ -9504,6 +9564,17 @@ export const $ToolReturnMessage = {
         },
       ],
       title: 'Sender Id',
+    },
+    step_id: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Step Id',
     },
     tool_return: {
       type: 'string',
@@ -10502,6 +10573,17 @@ export const $UserMessage = {
         },
       ],
       title: 'Sender Id',
+    },
+    step_id: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Step Id',
     },
     content: {
       anyOf: [

@@ -354,6 +354,7 @@ export type AssistantMessage = {
   message_type?: 'assistant_message';
   otid?: string | null;
   sender_id?: string | null;
+  step_id?: string | null;
   /**
    * The message content sent by the agent (can be a string or an array of content parts)
    */
@@ -1571,6 +1572,7 @@ export type HiddenReasoningMessage = {
   message_type?: 'hidden_reasoning_message';
   otid?: string | null;
   sender_id?: string | null;
+  step_id?: string | null;
   state: 'redacted' | 'omitted';
   hidden_reasoning?: string | null;
 };
@@ -2224,6 +2226,11 @@ export type Memory = {
  * created_at (datetime): The time the message was created.
  * tool_calls (List[OpenAIToolCall,]): The list of tool calls requested.
  * tool_call_id (str): The id of the tool call.
+ * step_id (str): The id of the step that this message was created in.
+ * otid (str): The offline threading id associated with this message.
+ * tool_returns (List[ToolReturn]): The list of tool returns requested.
+ * group_id (str): The multi-agent group that the message was sent in.
+ * sender_id (str): The id of the sender of the message, can be an identity id or agent id.
  */
 export type Message = {
   /**
@@ -2690,6 +2697,7 @@ export type ReasoningMessage = {
   message_type?: 'reasoning_message';
   otid?: string | null;
   sender_id?: string | null;
+  step_id?: string | null;
   source?: 'reasoner_model' | 'non_reasoner_model';
   reasoning: string;
   signature?: string | null;
@@ -3193,6 +3201,7 @@ export type SystemMessage = {
   message_type?: 'system_message';
   otid?: string | null;
   sender_id?: string | null;
+  step_id?: string | null;
   /**
    * The message content sent by the system
    */
@@ -3362,6 +3371,7 @@ export type ToolCallMessage = {
   message_type?: 'tool_call_message';
   otid?: string | null;
   sender_id?: string | null;
+  step_id?: string | null;
   tool_call: ToolCall | ToolCallDelta;
 };
 
@@ -3478,6 +3488,7 @@ export type ToolReturnMessage = {
   message_type?: 'tool_return_message';
   otid?: string | null;
   sender_id?: string | null;
+  step_id?: string | null;
   tool_return: string;
   status: 'success' | 'error';
   tool_call_id: string;
@@ -3804,6 +3815,7 @@ export type UserMessage = {
   message_type?: 'user_message';
   otid?: string | null;
   sender_id?: string | null;
+  step_id?: string | null;
   /**
    * The message content sent by the user (can be a string or an array of multi-modal content parts)
    */

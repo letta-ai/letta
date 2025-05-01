@@ -138,6 +138,11 @@ class Message(BaseMessage):
         created_at (datetime): The time the message was created.
         tool_calls (List[OpenAIToolCall,]): The list of tool calls requested.
         tool_call_id (str): The id of the tool call.
+        step_id (str): The id of the step that this message was created in.
+        otid (str): The offline threading id associated with this message.
+        tool_returns (List[ToolReturn]): The list of tool returns requested.
+        group_id (str): The multi-agent group that the message was sent in.
+        sender_id (str): The id of the sender of the message, can be an identity id or agent id.
 
     """
 
@@ -253,6 +258,7 @@ class Message(BaseMessage):
                             name=self.name,
                             otid=otid,
                             sender_id=self.sender_id,
+                            step_id=self.step_id,
                         )
                     )
                 # Otherwise, we may have a list of multiple types
@@ -270,6 +276,7 @@ class Message(BaseMessage):
                                     name=self.name,
                                     otid=otid,
                                     sender_id=self.sender_id,
+                                    step_id=self.step_id,
                                 )
                             )
                         elif isinstance(content_part, ReasoningContent):
@@ -283,6 +290,7 @@ class Message(BaseMessage):
                                     signature=content_part.signature,
                                     name=self.name,
                                     otid=otid,
+                                    step_id=self.step_id,
                                 )
                             )
                         elif isinstance(content_part, RedactedReasoningContent):
@@ -296,6 +304,7 @@ class Message(BaseMessage):
                                     name=self.name,
                                     otid=otid,
                                     sender_id=self.sender_id,
+                                    step_id=self.step_id,
                                 )
                             )
                         elif isinstance(content_part, OmittedReasoningContent):
@@ -308,6 +317,7 @@ class Message(BaseMessage):
                                     state="omitted",
                                     name=self.name,
                                     otid=otid,
+                                    step_id=self.step_id,
                                 )
                             )
                         else:
@@ -334,6 +344,7 @@ class Message(BaseMessage):
                                 name=self.name,
                                 otid=otid,
                                 sender_id=self.sender_id,
+                                step_id=self.step_id,
                             )
                         )
                     else:
@@ -349,6 +360,7 @@ class Message(BaseMessage):
                                 name=self.name,
                                 otid=otid,
                                 sender_id=self.sender_id,
+                                step_id=self.step_id,
                             )
                         )
         elif self.role == MessageRole.tool:
@@ -392,6 +404,7 @@ class Message(BaseMessage):
                     name=self.name,
                     otid=self.id.replace("message-", ""),
                     sender_id=self.sender_id,
+                    step_id=self.step_id,
                 )
             )
         elif self.role == MessageRole.user:
@@ -410,6 +423,7 @@ class Message(BaseMessage):
                     name=self.name,
                     otid=self.otid,
                     sender_id=self.sender_id,
+                    step_id=self.step_id,
                 )
             )
         elif self.role == MessageRole.system:
@@ -427,6 +441,7 @@ class Message(BaseMessage):
                     name=self.name,
                     otid=self.otid,
                     sender_id=self.sender_id,
+                    step_id=self.step_id,
                 )
             )
         else:
