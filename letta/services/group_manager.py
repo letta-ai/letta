@@ -125,10 +125,10 @@ class GroupManager:
                         sleeptime_agent_frequency = group_update.manager_config.sleeptime_agent_frequency
                         if sleeptime_agent_frequency and group.turns_counter is None:
                             group.turns_counter = -1
-                    case ManagerType.sleeptime:
+                    case ManagerType.voice_sleeptime:
                         manager_agent_id = group_update.manager_config.manager_agent_id
-                        max_message_buffer_length = group_update.manager_config.max_message_buffer_length
-                        min_message_buffer_length = group_update.manager_config.min_message_buffer_length
+                        max_message_buffer_length = group_update.manager_config.max_message_buffer_length or group.max_message_buffer_length
+                        min_message_buffer_length = group_update.manager_config.min_message_buffer_length or group.min_message_buffer_length
                         if sleeptime_agent_frequency and group.turns_counter is None:
                             group.turns_counter = -1
                     case _:
@@ -304,8 +304,9 @@ class GroupManager:
         min_name: str = "min_message_buffer_length",
     ) -> None:
         """
-        1) If one of max_value/min_value is set, the other must also be set.
-        2) If both are set, max_value must be greater than min_value.
+        1) Both-or-none: if one is set, the other must be set.
+        2) Both must be ints > 4.
+        3) max_value must be strictly greater than min_value.
         """
         # 1) require both-or-none
         if (max_value is None) != (min_value is None):
@@ -313,6 +314,21 @@ class GroupManager:
                 f"Both '{max_name}' and '{min_name}' must be provided together " f"(got {max_name}={max_value}, {min_name}={min_value})"
             )
 
-        # 2) valid range
-        if max_value is not None and min_value is not None and max_value <= min_value:
+        # no further checks if neither is provided
+        if max_value is None:
+            return
+
+        # 2) type & lower‐bound checks
+        if not isinstance(max_value, int) or not isinstance(min_value, int):
+            raise ValueError(
+                f"Both '{max_name}' and '{min_name}' must be integers "
+                f"(got {max_name}={type(max_value).__name__}, {min_name}={type(min_value).__name__})"
+            )
+        if max_value <= 4 or min_value <= 4:
+            raise ValueError(
+                f"Both '{max_name}' and '{min_name}' must be greater than 4 " f"(got {max_name}={max_value}, {min_name}={min_value})"
+            )
+
+        # 3) ordering
+        if max_value <= min_value:
             raise ValueError(f"'{max_name}' must be greater than '{min_name}' " f"(got {max_name}={max_value} <= {min_name}={min_value})")

@@ -862,8 +862,8 @@ class SyncServer(Server):
                 agent_ids=[voice_sleeptime_agent.id],
                 manager_config=VoiceSleeptimeManager(
                     manager_agent_id=main_agent.id,
-                    max_message_buffer_length=30,
-                    min_message_buffer_length=15,
+                    max_message_buffer_length=constants.DEFAULT_MAX_MESSAGE_BUFFER_LENGTH,
+                    min_message_buffer_length=constants.DEFAULT_MIN_MESSAGE_BUFFER_LENGTH,
                 ),
             ),
             actor=actor,

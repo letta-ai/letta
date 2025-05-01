@@ -10,12 +10,13 @@ from openai.types.chat import ChatCompletionChunk
 
 from letta.agents.voice_sleeptime_agent import VoiceSleeptimeAgent
 from letta.config import LettaConfig
+from letta.constants import DEFAULT_MAX_MESSAGE_BUFFER_LENGTH, DEFAULT_MIN_MESSAGE_BUFFER_LENGTH
 from letta.orm.errors import NoResultFound
 from letta.schemas.agent import AgentType, CreateAgent
 from letta.schemas.block import CreateBlock
 from letta.schemas.embedding_config import EmbeddingConfig
 from letta.schemas.enums import MessageRole, MessageStreamStatus
-from letta.schemas.group import ManagerType
+from letta.schemas.group import GroupUpdate, ManagerType, VoiceSleeptimeManagerUpdate
 from letta.schemas.letta_message import AssistantMessage, ReasoningMessage, ToolCallMessage, ToolReturnMessage, UserMessage
 from letta.schemas.letta_message_content import TextContent
 from letta.schemas.llm_config import LLMConfig
@@ -497,3 +498,66 @@ async def test_init_voice_convo_agent(voice_agent, server, actor):
         server.group_manager.retrieve_group(group_id=group.id, actor=actor)
     with pytest.raises(NoResultFound):
         server.agent_manager.get_agent_by_id(agent_id=sleeptime_agent_id, actor=actor)
+
+
+def _modify(group_id, server, actor, max_val, min_val):
+    """Helper to invoke modify_group with voice_sleeptime config."""
+    return server.group_manager.modify_group(
+        group_id=group_id,
+        group_update=GroupUpdate(
+            manager_config=VoiceSleeptimeManagerUpdate(
+                manager_type=ManagerType.voice_sleeptime,
+                max_message_buffer_length=max_val,
+                min_message_buffer_length=min_val,
+            )
+        ),
+        actor=actor,
+    )
+
+
+@pytest.fixture
+def group_id(voice_agent):
+    return voice_agent.multi_agent_group.id
+
+
+def test_valid_buffer_lengths_above_four(group_id, server, actor):
+    # both > 4 and max > min
+    updated = _modify(group_id, server, actor, max_val=10, min_val=5)
+    assert updated.max_message_buffer_length == 10
+    assert updated.min_message_buffer_length == 5
+
+
+def test_valid_buffer_lengths_only_max(group_id, server, actor):
+    # both > 4 and max > min
+    updated = _modify(group_id, server, actor, max_val=DEFAULT_MAX_MESSAGE_BUFFER_LENGTH + 1, min_val=None)
+    assert updated.max_message_buffer_length == DEFAULT_MAX_MESSAGE_BUFFER_LENGTH + 1
+    assert updated.min_message_buffer_length == DEFAULT_MIN_MESSAGE_BUFFER_LENGTH
+
+
+def test_valid_buffer_lengths_only_min(group_id, server, actor):
+    # both > 4 and max > min
+    updated = _modify(group_id, server, actor, max_val=None, min_val=DEFAULT_MIN_MESSAGE_BUFFER_LENGTH + 1)
+    assert updated.max_message_buffer_length == DEFAULT_MAX_MESSAGE_BUFFER_LENGTH
+    assert updated.min_message_buffer_length == DEFAULT_MIN_MESSAGE_BUFFER_LENGTH + 1
+
+
+@pytest.mark.parametrize(
+    "max_val,min_val,err_part",
+    [
+        # only one set → both-or-none
+        (None, DEFAULT_MAX_MESSAGE_BUFFER_LENGTH, "must be greater than"),
+        (DEFAULT_MIN_MESSAGE_BUFFER_LENGTH, None, "must be greater than"),
+        # ordering violations
+        (5, 5, "must be greater than"),
+        (6, 7, "must be greater than"),
+        # lower-bound (must both be > 4)
+        (4, 5, "greater than 4"),
+        (5, 4, "greater than 4"),
+        (1, 10, "greater than 4"),
+        (10, 1, "greater than 4"),
+    ],
+)
+def test_invalid_buffer_lengths(group_id, server, actor, max_val, min_val, err_part):
+    with pytest.raises(ValueError) as exc:
+        _modify(group_id, server, actor, max_val, min_val)
+    assert err_part in str(exc.value)

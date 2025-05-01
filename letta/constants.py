@@ -35,6 +35,10 @@ TOOL_CALL_ID_MAX_LEN = 29
 # minimum context window size
 MIN_CONTEXT_WINDOW = 4096
 
+# Voice Sleeptime message buffer lengths
+DEFAULT_MAX_MESSAGE_BUFFER_LENGTH = 30
+DEFAULT_MIN_MESSAGE_BUFFER_LENGTH = 15
+
 # embeddings
 MAX_EMBEDDING_DIM = 4096  # maximum supported embeding size - do NOT change or else DBs will need to be reset
 DEFAULT_EMBEDDING_CHUNK_SIZE = 300
