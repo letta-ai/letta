@@ -11,4 +11,6 @@ Sentry.init({
   // Learn more at
   // https://docs.sentry.io/platforms/javascript/guides/node/configuration/options/#profilesSampleRate
   profilesSampleRate: 1.0,
+
+  tracesSampleRate: 1.0,
 });
