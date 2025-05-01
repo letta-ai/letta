@@ -69,8 +69,6 @@ class VoiceAgent(BaseAgent):
         block_manager: BlockManager,
         passage_manager: PassageManager,
         actor: User,
-        message_buffer_limit: int,
-        message_buffer_min: int,
     ):
         super().__init__(
             agent_id=agent_id, openai_client=openai_client, message_manager=message_manager, agent_manager=agent_manager, actor=actor
@@ -81,8 +79,6 @@ class VoiceAgent(BaseAgent):
         self.passage_manager = passage_manager
         # TODO: This is not guaranteed to exist!
         self.summary_block_label = "human"
-        self.message_buffer_limit = message_buffer_limit
-        self.message_buffer_min = message_buffer_min
 
         # Cached archival memory/message size
         self.num_messages = self.message_manager.size(actor=self.actor, agent_id=agent_id)
@@ -109,8 +105,8 @@ class VoiceAgent(BaseAgent):
                 target_block_label=self.summary_block_label,
                 message_transcripts=[],
             ),
-            message_buffer_limit=self.message_buffer_limit,
-            message_buffer_min=self.message_buffer_min,
+            message_buffer_limit=agent_state.multi_agent_group.max_message_buffer_length,
+            message_buffer_min=agent_state.multi_agent_group.min_message_buffer_length,
         )
 
         return summarizer

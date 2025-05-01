@@ -4626,6 +4626,32 @@ export const $Group = {
       title: 'Last Processed Message Id',
       description: '',
     },
+    max_message_buffer_length: {
+      anyOf: [
+        {
+          type: 'integer',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Max Message Buffer Length',
+      description:
+        'The desired maximum length of messages in the context window of the convo agent. This is a best effort, and may be off slightly due to user/assistant interleaving.',
+    },
+    min_message_buffer_length: {
+      anyOf: [
+        {
+          type: 'integer',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Min Message Buffer Length',
+      description:
+        'The desired minimum length of messages in the context window of the convo agent. This is a best effort, and may be off-by-one due to user/assistant interleaving.',
+    },
   },
   additionalProperties: false,
   type: 'object',
@@ -10534,6 +10560,32 @@ export const $VoiceSleeptimeManager = {
       title: 'Manager Agent Id',
       description: '',
     },
+    max_message_buffer_length: {
+      anyOf: [
+        {
+          type: 'integer',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Max Message Buffer Length',
+      description:
+        'The desired maximum length of messages in the context window of the convo agent. This is a best effort, and may be off slightly due to user/assistant interleaving.',
+    },
+    min_message_buffer_length: {
+      anyOf: [
+        {
+          type: 'integer',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Min Message Buffer Length',
+      description:
+        'The desired minimum length of messages in the context window of the convo agent. This is a best effort, and may be off-by-one due to user/assistant interleaving.',
+    },
   },
   type: 'object',
   required: ['manager_agent_id'],
@@ -10560,6 +10612,32 @@ export const $VoiceSleeptimeManagerUpdate = {
       ],
       title: 'Manager Agent Id',
       description: '',
+    },
+    max_message_buffer_length: {
+      anyOf: [
+        {
+          type: 'integer',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Max Message Buffer Length',
+      description:
+        'The desired maximum length of messages in the context window of the convo agent. This is a best effort, and may be off slightly due to user/assistant interleaving.',
+    },
+    min_message_buffer_length: {
+      anyOf: [
+        {
+          type: 'integer',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Min Message Buffer Length',
+      description:
+        'The desired minimum length of messages in the context window of the convo agent. This is a best effort, and may be off-by-one due to user/assistant interleaving.',
     },
   },
   type: 'object',

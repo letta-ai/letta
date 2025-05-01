@@ -1502,6 +1502,14 @@ export type Group = {
   sleeptime_agent_frequency?: number | null;
   turns_counter?: number | null;
   last_processed_message_id?: string | null;
+  /**
+   * The desired maximum length of messages in the context window of the convo agent. This is a best effort, and may be off slightly due to user/assistant interleaving.
+   */
+  max_message_buffer_length?: number | null;
+  /**
+   * The desired minimum length of messages in the context window of the convo agent. This is a best effort, and may be off-by-one due to user/assistant interleaving.
+   */
+  min_message_buffer_length?: number | null;
 };
 
 export type GroupCreate = {
@@ -3793,11 +3801,27 @@ export type ValidationError = {
 export type VoiceSleeptimeManager = {
   manager_type?: 'voice_sleeptime';
   manager_agent_id: string;
+  /**
+   * The desired maximum length of messages in the context window of the convo agent. This is a best effort, and may be off slightly due to user/assistant interleaving.
+   */
+  max_message_buffer_length?: number | null;
+  /**
+   * The desired minimum length of messages in the context window of the convo agent. This is a best effort, and may be off-by-one due to user/assistant interleaving.
+   */
+  min_message_buffer_length?: number | null;
 };
 
 export type VoiceSleeptimeManagerUpdate = {
   manager_type?: 'voice_sleeptime';
   manager_agent_id?: string | null;
+  /**
+   * The desired maximum length of messages in the context window of the convo agent. This is a best effort, and may be off slightly due to user/assistant interleaving.
+   */
+  max_message_buffer_length?: number | null;
+  /**
+   * The desired minimum length of messages in the context window of the convo agent. This is a best effort, and may be off-by-one due to user/assistant interleaving.
+   */
+  min_message_buffer_length?: number | null;
 };
 
 export type WebSearchOptions = {

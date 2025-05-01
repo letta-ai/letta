@@ -879,6 +879,22 @@ export const Group = z.object({
       z.undefined(),
     ])
     .optional(),
+  max_message_buffer_length: z
+    .union([
+      z.number(),
+      z.null(),
+      z.array(z.union([z.number(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  min_message_buffer_length: z
+    .union([
+      z.number(),
+      z.null(),
+      z.array(z.union([z.number(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
 });
 
 export type AgentState = z.infer<typeof AgentState>;
@@ -3339,6 +3355,22 @@ export type VoiceSleeptimeManager = z.infer<typeof VoiceSleeptimeManager>;
 export const VoiceSleeptimeManager = z.object({
   manager_type: z.union([z.string(), z.undefined()]).optional(),
   manager_agent_id: z.string(),
+  max_message_buffer_length: z
+    .union([
+      z.number(),
+      z.null(),
+      z.array(z.union([z.number(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  min_message_buffer_length: z
+    .union([
+      z.number(),
+      z.null(),
+      z.array(z.union([z.number(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
 });
 
 export type GroupCreate = z.infer<typeof GroupCreate>;
@@ -3394,6 +3426,12 @@ export const VoiceSleeptimeManagerUpdate = z.object({
   manager_type: z.string().optional(),
   manager_agent_id: z
     .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+    .optional(),
+  max_message_buffer_length: z
+    .union([z.number(), z.null(), z.array(z.union([z.number(), z.null()]))])
+    .optional(),
+  min_message_buffer_length: z
+    .union([z.number(), z.null(), z.array(z.union([z.number(), z.null()]))])
     .optional(),
 });
 
