@@ -130,7 +130,9 @@ jobs:
         if: steps.cached-poetry-dependencies.outputs.cache-hit != 'true'
         shell: bash
         working-directory: apps/core
-        run: poetry install --no-interaction --no-root ${{ inputs.install-args || '-E dev -E postgres -E external-tools -E tests -E cloud-tool-sandbox' }}
+        run: |
+          poetry install --no-interaction --no-root ${{ inputs.install-args || '-E dev -E postgres -E external-tools -E tests -E cloud-tool-sandbox' }}
+          poetry run pip install letta
       - name: Migrate database
         working-directory: apps/core
         env:
@@ -146,7 +148,9 @@ jobs:
       - name: Use SDK with on branch changes
         if: ${{ contains(needs.changed-files.outputs.all_changed_files, 'apps/core/letta/') }}
         working-directory: apps/core
-        run: poetry run pip install -e ../fern/.preview/fern-python-sdk/.
+        run: |
+          poetry run pip install -e ../fern/.preview/fern-python-sdk/.
+          poetry run pip install letta
 
       - name: Run core integration tests
         working-directory: apps/core
@@ -159,5 +163,6 @@ jobs:
           LETTA_SERVER_PASS: test_server_token
         run: |
           set -o xtrace
+          poetry run pip show letta
           poetry run pip show letta-client
           poetry run pytest -svv tests/${{ matrix.integration_test_suite }}
