@@ -7582,7 +7582,7 @@ export const get_List_run_steps = {
 export type get_List_steps = typeof get_List_steps;
 export const get_List_steps = {
   method: z.literal('GET'),
-  path: z.literal('/v1/steps'),
+  path: z.literal('/v1/steps/'),
   requestFormat: z.literal('json'),
   parameters: z.object({
     query: z.object({
@@ -7997,7 +7997,7 @@ export const EndpointByMethod = {
     '/v1/runs/{run_id}/messages': get_List_run_messages,
     '/v1/runs/{run_id}/usage': get_Retrieve_run_usage,
     '/v1/runs/{run_id}/steps': get_List_run_steps,
-    '/v1/steps': get_List_steps,
+    '/v1/steps/': get_List_steps,
     '/v1/steps/{step_id}': get_Retrieve_step,
     '/v1/tags/': get_List_tags,
     '/v1/messages/batches': get_List_batch_runs,

@@ -6872,7 +6872,7 @@ export type $OpenApiTs = {
       };
     };
   };
-  '/v1/steps': {
+  '/v1/steps/': {
     get: {
       req: ListStepsData;
       res: {

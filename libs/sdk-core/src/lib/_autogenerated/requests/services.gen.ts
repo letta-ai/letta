@@ -3521,7 +3521,7 @@ export class StepsService {
   ): CancelablePromise<ListStepsResponse> {
     return __request(OpenAPI, {
       method: 'GET',
-      url: '/v1/steps',
+      url: '/v1/steps/',
       query: {
         before: data.before,
         after: data.after,

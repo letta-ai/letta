@@ -5901,7 +5901,7 @@
         }
       }
     },
-    "/v1/steps": {
+    "/v1/steps/": {
       "get": {
         "tags": ["steps"],
         "summary": "List Steps",
