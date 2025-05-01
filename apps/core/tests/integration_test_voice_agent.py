@@ -215,6 +215,11 @@ def voice_agent(server, actor):
     return main_agent
 
 
+@pytest.fixture
+def group_id(voice_agent):
+    return voice_agent.multi_agent_group.id
+
+
 @pytest.fixture(scope="module")
 def org_id(server):
     org = server.organization_manager.create_default_organization()
@@ -279,8 +284,19 @@ async def test_voice_recall_memory(disable_e2b_api_key, client, voice_agent, mes
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize("endpoint", ["v1/voice-beta"])
-async def test_multiple_messages(disable_e2b_api_key, client, voice_agent, endpoint):
-    """Tests chat completion streaming using the Async OpenAI client."""
+async def test_trigger_summarization(disable_e2b_api_key, client, server, voice_agent, group_id, endpoint, actor):
+    server.group_manager.modify_group(
+        group_id=group_id,
+        group_update=GroupUpdate(
+            manager_config=VoiceSleeptimeManagerUpdate(
+                manager_type=ManagerType.voice_sleeptime,
+                max_message_buffer_length=6,
+                min_message_buffer_length=5,
+            )
+        ),
+        actor=actor,
+    )
+
     request = _get_chat_request("How are you?")
     async_client = AsyncOpenAI(base_url=f"http://localhost:8283/{endpoint}/{voice_agent.id}", max_retries=0)
 
@@ -513,11 +529,6 @@ def _modify(group_id, server, actor, max_val, min_val):
         ),
         actor=actor,
     )
-
-
-@pytest.fixture
-def group_id(voice_agent):
-    return voice_agent.multi_agent_group.id
 
 
 def test_valid_buffer_lengths_above_four(group_id, server, actor):

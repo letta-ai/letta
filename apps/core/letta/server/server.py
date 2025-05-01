@@ -859,7 +859,7 @@ class SyncServer(Server):
                     value=get_persona_text("voice_memory_persona"),
                 ),
             ],
-            llm_config=main_agent.llm_config,
+            llm_config=LLMConfig.default_config("gpt-4.1"),
             embedding_config=main_agent.embedding_config,
             project_id=main_agent.project_id,
         )
