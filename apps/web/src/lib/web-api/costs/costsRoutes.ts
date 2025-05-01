@@ -17,6 +17,7 @@ async function getStepCosts(): Promise<GetStepCostsResponse> {
       id: true,
       name: true,
       brand: true,
+      tier: true,
       defaultRequestsPerMinutePerOrganization: true,
       defaultTokensPerMinutePerOrganization: true,
     },
@@ -30,6 +31,7 @@ async function getStepCosts(): Promise<GetStepCostsResponse> {
           modelId: model.id,
           modelName: model.name,
           brand: model.brand,
+          tier: model.tier,
           costMap: model.stepCostSchema.stepCostSchema.data.reduce(
             (acc, cost) => {
               acc[`${cost.maxContextWindowSize}`] = cost.cost;

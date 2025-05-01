@@ -56,6 +56,11 @@ export const featureFlags = {
     expiryDate: '2024-06-01',
     flagValue: z.boolean(),
   },
+  MODELS_ROOT_PAGE: {
+    description: 'Models root page',
+    expiryDate: '2024-06-01',
+    flagValue: z.boolean(),
+  },
 } satisfies Record<string, FlagProperties>;
 
 export type Flag = keyof typeof featureFlags;

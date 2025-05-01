@@ -54,6 +54,29 @@ export const brandKeyToNameMap: Record<BrandKeys, string> = {
   ollama: 'Ollama',
 };
 
+export const brandKeyToOwnerMap: Record<BrandKeys, string> = {
+  openai: 'OpenAI',
+  letta: 'Letta',
+  meta: 'Meta',
+  mistral: 'Mistral',
+  anthropic: 'Anthropic',
+  discord: 'Discord',
+  claude: 'Anthropic',
+  llama: 'Meta',
+  qwen: 'Qwen',
+  'nous-research': 'Nous Research',
+  google: 'Google',
+  nvidia: 'Nvidia',
+  'snorkel-ai': 'Snorkel AI',
+  'together-ai': 'Together AI',
+  composio: 'Composio',
+  github: 'GitHub',
+  gemini: 'Google',
+  azure: 'Microsoft',
+  lmstudio: 'LM Studio',
+  ollama: 'Ollama',
+};
+
 export function isBrandKey(brandKey: string): brandKey is BrandKeys {
   return brandKey in brandKeyToNameMap;
 }

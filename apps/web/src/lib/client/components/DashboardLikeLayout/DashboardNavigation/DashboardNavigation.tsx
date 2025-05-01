@@ -15,6 +15,7 @@ import {
   Breadcrumb,
   ExternalLinkIcon,
   isSubNavigationOverride,
+  TokenIcon,
 } from '@letta-cloud/ui-component-library';
 import { HiddenOnMobile } from '@letta-cloud/ui-component-library';
 import {
@@ -53,6 +54,7 @@ import * as Sentry from '@sentry/browser';
 import { ApplicationServices } from '@letta-cloud/service-rbac';
 import { CloudAccessCodeDialog } from '$web/client/components/DashboardLikeLayout/DashboardNavigation/CloudAccessCodeDialog/CloudAccessCodeDialog';
 import { CreditsViewer } from '$web/client/components/CreditsViewer/CreditsViewer';
+import { useFeatureFlag } from '@letta-cloud/sdk-web';
 
 interface NavButtonProps {
   href: string;
@@ -165,6 +167,8 @@ function MainNavigationItems(props: MainNavigationItemsProps) {
     ApplicationServices.READ_API_KEYS,
   );
 
+  const { data: isModelsPageEnabled } = useFeatureFlag('MODELS_ROOT_PAGE');
+
   const baseNavItems = useMemo(() => {
     return [
       {
@@ -173,12 +177,23 @@ function MainNavigationItems(props: MainNavigationItemsProps) {
         id: 'projects',
         icon: <ProjectsIcon />,
       },
+      ...(isModelsPageEnabled
+        ? [
+            {
+              label: t('nav.models'),
+              href: '/models',
+              id: 'models',
+              icon: <TokenIcon />,
+            },
+          ]
+        : []),
       {
         label: t('nav.dataSources'),
         href: '/data-sources',
         id: 'data-sources',
         icon: <DatabaseIcon />,
       },
+
       ...(canReadAPIKeys
         ? [
             {
@@ -212,7 +227,7 @@ function MainNavigationItems(props: MainNavigationItemsProps) {
 
       return hasCloudAccess;
     });
-  }, [t, hasCloudAccess, canReadAPIKeys]);
+  }, [t, isModelsPageEnabled, hasCloudAccess, canReadAPIKeys]);
 
   const isBaseNav = useMemo(() => {
     const isBase = baseNavItems.some((item) => item.href === pathname);

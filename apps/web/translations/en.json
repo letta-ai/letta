@@ -256,6 +256,57 @@
       "description": "Credits power agents on Letta Cloud. Agents use credits each time they run a step. The number of credits per step depends on the model — larger models cost more, smaller models cost less.\n\nLet's start building agents with an agent template!"
     }
   },
+  "pages/models": {
+    "title": "Models",
+    "description": "View, manage and add AI models to your organization"
+  },
+  "pages/models/ModelDetailsOverlay": {
+    "title": "Model details",
+    "ModelCostsTable": {
+      "title": "Model costs",
+      "description": "Below are the costs per step for this model if paying with usage-based pricing.",
+      "maxContextWindow": "Max context window",
+      "maxContextWindowTooltip": "Maximum of amount of tokens you can pass into the model in a single step cost",
+      "costPerStep": "Cost per step"
+    }
+  },
+  "pages/models/LettaManagedModels": {
+    "title": "Letta Managed",
+    "manageModels": "Manage Model Visibility",
+    "description": "Letta managed models let you use OpenAI, Anthropic, and Gemini endpoints without an API Key, just pay through our platform or use our complimentary models",
+    "columns": {
+      "name": "Model",
+      "brand": "Provider",
+      "baseCost": "Base Cost"
+    },
+    "VisibilityCell": {
+      "visible": {
+        "tooltip": "This model is visible in the model selector"
+      }
+    },
+    "ModelDetailsOverlay": {
+      "trigger": "Explore model details",
+      "pricing": {
+        "title": "Detailed costs"
+      }
+    },
+    "BaseCostCell": {
+      "infinite": "Infinite",
+      "notSupported": "Not supported",
+      "perStep": "{cost} per step",
+      "perStepInfo": "A step is a single inference to the model, a single request to Letta can have multiple steps depending on how you configure your agent",
+      "tier": {
+        "premium": {
+          "label": "Premium",
+          "tooltip": "This model is free up to {requests} requests. Explore all pricing to see overage costs"
+        },
+        "standard": {
+          "label": "Standard",
+          "tooltip": "This model is free up to {requests} requests. Explore all pricing to see overage costs"
+        }
+      }
+    }
+  },
   "components/DashboardLikeLayout/DashboardNavigation": {
     "back": "Back",
     "nav": {
@@ -263,6 +314,7 @@
       "apiKeys": "API keys",
       "dataSources": "Data sources",
       "admin": "Admin",
+      "models": "Models",
       "localDev": "Self-hosted",
       "settings": "Settings"
     },

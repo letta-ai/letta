@@ -1,6 +1,7 @@
 import { initContract } from '@ts-rest/core';
 import { z } from 'zod';
 import type { GenericSearch } from '../shared';
+import { ModelTiers } from '@letta-cloud/types';
 
 const c = initContract();
 
@@ -9,6 +10,7 @@ const CostItem = z.object({
   modelName: z.string(),
   brand: z.string(),
   costMap: z.record(z.number()),
+  tier: ModelTiers.optional(),
 });
 
 export type CostItemType = z.infer<typeof CostItem>;
