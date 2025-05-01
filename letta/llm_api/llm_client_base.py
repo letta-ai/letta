@@ -23,7 +23,9 @@ class LLMClientBase:
         provider_name: Optional[str] = None,
         put_inner_thoughts_first: Optional[bool] = True,
         use_tool_naming: bool = True,
+        actor_id: Optional[str] = None,
     ):
+        self.actor_id = actor_id
         self.provider_name = provider_name
         self.put_inner_thoughts_first = put_inner_thoughts_first
         self.use_tool_naming = use_tool_naming

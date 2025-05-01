@@ -107,6 +107,7 @@ def check_first_response_is_valid_for_llm_endpoint(filename: str, validate_inner
     llm_client = LLMClient.create(
         provider_name=agent_state.llm_config.provider_name,
         provider_type=agent_state.llm_config.model_endpoint_type,
+        actor_id=client.user.id,
     )
     if llm_client:
         response = llm_client.send_llm_request(

@@ -143,11 +143,17 @@ class OpenAIClient(LLMClientBase):
             temperature=llm_config.temperature if supports_temperature_param(model) else None,
         )
 
-        if llm_config.model_endpoint == LETTA_MODEL_ENDPOINT:
-            # override user id for inference.letta.com
-            import uuid
+        # always set user id for openai requests
+        if self.actor_id:
+            data.user = self.actor_id
 
-            data.user = str(uuid.UUID(int=0))
+        if llm_config.model_endpoint == LETTA_MODEL_ENDPOINT:
+            if not self.actor_id:
+                # override user id for inference.letta.com
+                import uuid
+
+                data.user = str(uuid.UUID(int=0))
+
             data.model = "memgpt-openai"
 
         if data.tools is not None and len(data.tools) > 0:

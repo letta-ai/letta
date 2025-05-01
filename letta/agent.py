@@ -334,6 +334,7 @@ class Agent(BaseAgent):
                     provider_name=self.agent_state.llm_config.provider_name,
                     provider_type=self.agent_state.llm_config.model_endpoint_type,
                     put_inner_thoughts_first=put_inner_thoughts_first,
+                    actor_id=self.user.id,
                 )
 
                 if llm_client and not stream:
