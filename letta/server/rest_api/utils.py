@@ -15,7 +15,11 @@ from pydantic import BaseModel
 
 from letta.constants import DEFAULT_MESSAGE_TOOL, DEFAULT_MESSAGE_TOOL_KWARG, FUNC_FAILED_HEARTBEAT_MESSAGE, REQ_HEARTBEAT_MESSAGE
 from letta.errors import ContextWindowExceededError, RateLimitExceededError
+<<<<<<< HEAD
 from letta.helpers.datetime_helpers import get_utc_time, get_utc_timestamp_ns
+=======
+from letta.helpers.datetime_helpers import get_utc_time
+>>>>>>> main
 from letta.helpers.message_helper import convert_message_creates_to_messages
 from letta.log import get_logger
 from letta.schemas.enums import MessageRole

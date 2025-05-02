@@ -5,24 +5,40 @@ from letta.schemas.message import Message, MessageCreate
 
 
 def convert_message_creates_to_messages(
+<<<<<<< HEAD
     message_creates: list[MessageCreate],
+=======
+    messages: list[MessageCreate],
+>>>>>>> main
     agent_id: str,
     wrap_user_message: bool = True,
     wrap_system_message: bool = True,
 ) -> list[Message]:
     return [
         _convert_message_create_to_message(
+<<<<<<< HEAD
             message_create=create,
+=======
+            message=message,
+>>>>>>> main
             agent_id=agent_id,
             wrap_user_message=wrap_user_message,
             wrap_system_message=wrap_system_message,
         )
+<<<<<<< HEAD
         for create in message_creates
+=======
+        for message in messages
+>>>>>>> main
     ]
 
 
 def _convert_message_create_to_message(
+<<<<<<< HEAD
     message_create: MessageCreate,
+=======
+    message: MessageCreate,
+>>>>>>> main
     agent_id: str,
     wrap_user_message: bool = True,
     wrap_system_message: bool = True,
@@ -40,9 +56,15 @@ def _convert_message_create_to_message(
         raise ValueError("Message content is empty or invalid")
 
     # Apply wrapping if needed
+<<<<<<< HEAD
     if message_create.role not in {MessageRole.user, MessageRole.system}:
         raise ValueError(f"Invalid message role: {message_create.role}")
     elif message_create.role == MessageRole.user and wrap_user_message:
+=======
+    if message.role not in {MessageRole.user, MessageRole.system}:
+        raise ValueError(f"Invalid message role: {message.role}")
+    elif message.role == MessageRole.user and wrap_user_message:
+>>>>>>> main
         message_content = system.package_user_message(user_message=message_content)
     elif message_create.role == MessageRole.system and wrap_system_message:
         message_content = system.package_system_message(system_message=message_content)
