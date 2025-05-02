@@ -21,46 +21,21 @@ This is the monorepo for all internal Letta web projects. It uses [Nx](https://n
 
 For windows setup: [Windows Setup](docs/windows-setup.md)
 
-- Docker - [linky](https://docs.docker.com/get-docker/)
+Install the following with Homebrew:
+- `docker` - [linky](https://docs.docker.com/get-docker/)
+- `just` - [linky](https://github.com/casey/just)
+- `poetry` - [linky]([https://github.com/casey/just](https://github.com/python-poetry/poetry))
+- `1password-cli` - [linky](https://support.1password.com/command-line-getting-started/)
+- `node` (for npm) - [linky](https://nodejs.org/en/download)
+- `postgresql` (to build psycopg2) - [linky](https://formulae.brew.sh/formula/postgresql@14)
 ```sh
-# Install Docker on mac
-brew install docker
+brew install docker just poetry 1password-cli node postgresql
 ```
 
 - `nvm` - [linky](https://github.com/nvm-sh/nvm)
 ```sh
 # Install nvm on mac
 curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.1/install.sh | bash
-```
-
-- `just` - [linky](https://github.com/casey/just)
-```sh
-# Install just on mac
-brew install just
-```
-
-- `poetry` - [linky]([https://github.com/casey/just](https://github.com/python-poetry/poetry))
-```sh
-# Install just on mac
-brew install poetry
-```
-
-- `1password-cli` - [linky](https://support.1password.com/command-line-getting-started/)
-```sh
-# Install 1password-cli on mac
-brew install 1password-cli
-```
-
-- `node` - [linky](https://nodejs.org/en/download)
-```sh
-# Install node (needed for npm) on mac
-brew install node
-```
-
-- `postgresql` - [linky](https://formulae.brew.sh/formula/postgresql@14)
-```sh
-# Install postgresql (needed to build psycopg2) on mac
-brew install postgresql
 ```
 
 ### Setup
@@ -76,32 +51,36 @@ git clone git@github.com:letta-ai/letta-cloud.git letta-cloud
 cd letta-cloud
 just start-services
 
+# link 1pass CLI to your account
+op account add
+
 # sign into 1password
-# if haven't linked the 1pass CLI to your account yet, first do: `op account add`
 eval $(op signin)
 
-# Setups up the environment
+# Sets up the environment
 just setup
 ```
 
 ### Starting the Development Environment
-#### Running letta core
+#### Running letta core (OSS Backend)
 ```
-# migrates your databases and starts the web server
+# prepares local environment, cloud APIs, migrates your databases
 just ready
 
+# starts the server
 just core
 ```
 
 #### Running letta web
 ```
-# migrates your databases and starts the web server
+# prepares local environment, cloud APIs, migrates your databases
 just ready
 
-# in a different terminal (you need core running)
+# starts the server
+# NOTE: run in a different terminal from `just web` (you need core running)
 just core
 
-# in a different terminal
+# NOTE: run in a different terminal from `just core` to have it running
 just web
 ```
 
@@ -113,11 +92,13 @@ Access the app at [http://localhost:3000](http://localhost:3000)
 - `docker logs -f letta-agents` - loads the logs of the letta-agents server
 
 ## Docs Site
+For our docs and SDK, we use [fern](https://www.buildwithfern.com/)
+
 ### Running the Docs Site Locally
 To run the docs site, use:
 
 ```sh
-npm run docs
+just preview-docs
 ```
 
 Access the docs site at [http://localhost:3001](http://localhost:3001)
