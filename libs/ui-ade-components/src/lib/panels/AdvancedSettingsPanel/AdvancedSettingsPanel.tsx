@@ -20,6 +20,7 @@ import { MaxReasoningTokensSlider } from './components/MaxReasoningTokensSlider/
 import { SystemPromptEditor } from './components/SystemPromptEditor/SystemPromptEditor';
 import { AgentDescription } from './components/AgentDescription/AgentDescription';
 import { AgentType } from './components/AgentType/AgentType';
+import { MessageBufferLengthSlider } from './components/MessageBufferLengthSlider/MessageBufferLengthSlider';
 import { SleeptimeAgentFrequencyInput } from './components/SleeptimeAgentFrequencyInput/SleeptimeAgentFrequencyInput';
 
 function LLMConfigView() {
@@ -90,7 +91,7 @@ function EmbeddingConfigView() {
 }
 
 function AgentAdvancedSettingsView() {
-  const { isTemplate, isSleeptimeAgent } = useCurrentAgentMetaData();
+  const { agentType, isTemplate, isSleeptimeAgent } = useCurrentAgentMetaData();
 
   return (
     <VStack gap="large">
@@ -99,7 +100,10 @@ function AgentAdvancedSettingsView() {
         <SystemPromptEditor />
       </VStack>
       <AgentType />
-      {isSleeptimeAgent && <SleeptimeAgentFrequencyInput />}
+      {agentType === 'voice_convo_agent' && <MessageBufferLengthSlider />}
+      {isSleeptimeAgent && agentType !== 'voice_convo_agent' && (
+        <SleeptimeAgentFrequencyInput />
+      )}
       {!isTemplate && <AgentDescription />}
     </VStack>
   );

@@ -15,14 +15,14 @@ import {
   type StarterKit,
 } from '@letta-cloud/config-agent-starter-kits';
 import { useMemo, useState } from 'react';
+import { useTranslations } from '@letta-cloud/translations';
+import { useFeatureFlag } from '@letta-cloud/sdk-web';
 
 interface ArchitectureSelectorProps {
   architectures: StarterKitArchitecture[];
   currentArchitecture: StarterKitArchitecture;
   onChange: (architecture: StarterKitArchitecture) => void;
 }
-
-import { useTranslations } from '@letta-cloud/translations';
 
 function ArchitectureSelector(props: ArchitectureSelectorProps) {
   const { architectures, currentArchitecture, onChange } = props;
@@ -106,6 +106,8 @@ export function StarterKitSelector(props: StarterKitSelectorProps) {
     return starterKits;
   }, [entryMapToArchitecture, currentArchitecture]);
 
+  const isVoiceSleeptimeAgentEnabled = useFeatureFlag('VOICE_SLEEPTIME_AGENT');
+
   return (
     <VStack className="min-h-[610px]">
       {architectures.length > 1 && (
@@ -121,13 +123,18 @@ export function StarterKitSelector(props: StarterKitSelectorProps) {
         <Alert title={t('sleeptimeAlert.title')} variant="brand" />
       )}
       <NiceGridDisplay itemWidth="250px" itemHeight="260px">
-        {currentStarterKits.map(([id, starterKit]) => (
-          <StarterKitItems
-            onSelectStarterKit={onSelectStarterKit}
-            key={id}
-            starterKit={starterKit}
-          />
-        ))}
+        {currentStarterKits.map(([id, starterKit]) => {
+          if (id === 'voiceSleepTime' && !isVoiceSleeptimeAgentEnabled) {
+            return null;
+          }
+          return (
+            <StarterKitItems
+              onSelectStarterKit={onSelectStarterKit}
+              key={id}
+              starterKit={starterKit}
+            />
+          );
+        })}
       </NiceGridDisplay>
     </VStack>
   );

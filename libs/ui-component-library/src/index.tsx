@@ -19,6 +19,10 @@ export * from './lib/core/Alert/Alert';
 
 export * from './lib/core/Select/Select';
 
+export * from './lib/core/Slider/Slider';
+
+export * from './lib/core/RangeSlider/RangeSlider';
+
 export * from './lib/core/Switch/Switch';
 
 export * from './lib/core/DataTable/DataTable';

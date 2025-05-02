@@ -28,6 +28,11 @@
       "title": "Companion (sleep-time enabled)",
       "description": "A companion that uses our new sleep-time architecture",
       "badge": "New Architecture!"
+    },
+    "voiceSleepTime": {
+      "title": "Voice Companion (sleep-time enabled)",
+      "description": "A voice companion that uses our new sleep-time architecture",
+      "badge": "New Architecture!"
     }
   },
   "components/StarterKitItems": {
@@ -196,6 +201,12 @@
     "MaxReasoningTokensSlider": {
       "label": "Max reasoning tokens",
       "error": "Invalid max reasoning tokens value, minimum value is 1024"
+    },
+    "MessageBufferLengthSlider": {
+      "label": "Message buffer length",
+      "error": "Failed to persist message buffer length value",
+      "rangeError": "Invalid message buffer length value, range must be between 4 and 256",
+      "tooltip": "The number of messages to keep in memory before triggering a memory update."
     },
     "AdvancedSettingsPanel": {
       "embeddingDimensions": {

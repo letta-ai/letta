@@ -61,6 +61,11 @@ export const featureFlags = {
     expiryDate: '2024-06-01',
     flagValue: z.boolean(),
   },
+  VOICE_SLEEPTIME_AGENT: {
+    description: 'Voice sleep time agent starter kit',
+    expiryDate: '2024-07-01',
+    flagValue: z.boolean(),
+  },
 } satisfies Record<string, FlagProperties>;
 
 export type Flag = keyof typeof featureFlags;
