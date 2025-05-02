@@ -85,6 +85,7 @@ class MessageCreate(BaseModel):
     name: Optional[str] = Field(None, description="The name of the participant.")
     otid: Optional[str] = Field(None, description="The offline threading id associated with this message")
     sender_id: Optional[str] = Field(None, description="The id of the sender of the message, can be an identity id or agent id")
+    batch_item_id: Optional[str] = Field(None, description="The id of the LLMBatchItem that this message is associated with")
     group_id: Optional[str] = Field(None, description="The multi-agent group that the message was sent in")
 
     def model_dump(self, to_orm: bool = False, **kwargs) -> Dict[str, Any]:
@@ -168,6 +169,7 @@ class Message(BaseMessage):
     tool_returns: Optional[List[ToolReturn]] = Field(None, description="Tool execution return information for prior tool calls")
     group_id: Optional[str] = Field(None, description="The multi-agent group that the message was sent in")
     sender_id: Optional[str] = Field(None, description="The id of the sender of the message, can be an identity id or agent id")
+    batch_item_id: Optional[str] = Field(None, description="The id of the LLMBatchItem that this message is associated with")
     # This overrides the optional base orm schema, created_at MUST exist on all messages objects
     created_at: datetime = Field(default_factory=get_utc_time, description="The timestamp when the object was created.")
 

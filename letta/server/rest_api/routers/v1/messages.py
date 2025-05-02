@@ -1,6 +1,6 @@
 from typing import List, Optional
 
-from fastapi import APIRouter, Body, Depends, Header, status
+from fastapi import APIRouter, Body, Depends, Header, Query, status
 from fastapi.exceptions import HTTPException
 from starlette.requests import Request
 
@@ -9,6 +9,7 @@ from letta.log import get_logger
 from letta.orm.errors import NoResultFound
 from letta.schemas.job import BatchJob, JobStatus, JobType, JobUpdate
 from letta.schemas.letta_request import CreateBatch
+from letta.schemas.letta_response import LettaBatchMessages
 from letta.server.rest_api.utils import get_letta_server
 from letta.server.server import SyncServer
 from letta.settings import settings
@@ -121,6 +122,50 @@ async def list_batch_runs(
 
     jobs = server.job_manager.list_jobs(actor=actor, statuses=[JobStatus.created, JobStatus.running], job_type=JobType.BATCH)
     return [BatchJob.from_job(job) for job in jobs]
+
+
+@router.get(
+    "/batches/{batch_id}/messages",
+    response_model=LettaBatchMessages,
+    operation_id="list_batch_messages",
+)
+async def list_batch_messages(
+    batch_id: str,
+    limit: int = Query(100, description="Maximum number of messages to return"),
+    cursor: Optional[str] = Query(
+        None, description="Message ID to use as pagination cursor (get messages before/after this ID) depending on sort_descending."
+    ),
+    agent_id: Optional[str] = Query(None, description="Filter messages by agent ID"),
+    sort_descending: bool = Query(True, description="Sort messages by creation time (true=newest first)"),
+    actor_id: Optional[str] = Header(None, alias="user_id"),
+    server: SyncServer = Depends(get_letta_server),
+):
+    """
+    Get messages for a specific batch job.
+
+    Returns messages associated with the batch in chronological order.
+
+    Pagination:
+    - For the first page, omit the cursor parameter
+    - For subsequent pages, use the ID of the last message from the previous response as the cursor
+    - Results will include messages before/after the cursor based on sort_descending
+    """
+    actor = server.user_manager.get_user_or_default(user_id=actor_id)
+
+    # First, verify the batch job exists and the user has access to it
+    try:
+        job = server.job_manager.get_job_by_id(job_id=batch_id, actor=actor)
+        BatchJob.from_job(job)
+    except NoResultFound:
+        raise HTTPException(status_code=404, detail="Batch not found")
+
+    # Get messages directly using our efficient method
+    # We'll need to update the underlying implementation to use message_id as cursor
+    messages = server.batch_manager.get_messages_for_letta_batch(
+        letta_batch_job_id=batch_id, limit=limit, actor=actor, agent_id=agent_id, sort_descending=sort_descending, cursor=cursor
+    )
+
+    return LettaBatchMessages(messages=messages)
 
 
 @router.patch("/batches/{batch_id}/cancel", operation_id="cancel_batch_run")

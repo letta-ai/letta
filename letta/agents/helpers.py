@@ -21,7 +21,10 @@ def _create_letta_response(new_in_context_messages: list[Message], use_assistant
 
 
 def _prepare_in_context_messages(
-    input_messages: List[MessageCreate], agent_state: AgentState, message_manager: MessageManager, actor: User
+    input_messages: List[MessageCreate],
+    agent_state: AgentState,
+    message_manager: MessageManager,
+    actor: User,
 ) -> Tuple[List[Message], List[Message]]:
     """
     Prepares in-context messages for an agent, based on the current state and a new user input.

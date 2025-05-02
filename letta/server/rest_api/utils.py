@@ -168,6 +168,7 @@ def create_letta_messages_from_llm_response(
     reasoning_content: Optional[List[Union[TextContent, ReasoningContent, RedactedReasoningContent, OmittedReasoningContent]]] = None,
     pre_computed_assistant_message_id: Optional[str] = None,
     pre_computed_tool_message_id: Optional[str] = None,
+    llm_batch_item_id: Optional[str] = None,
 ) -> List[Message]:
     messages = []
 
@@ -192,6 +193,7 @@ def create_letta_messages_from_llm_response(
         tool_calls=[tool_call],
         tool_call_id=tool_call_id,
         created_at=get_utc_time(),
+        batch_item_id=llm_batch_item_id,
     )
     if pre_computed_assistant_message_id:
         assistant_message.id = pre_computed_assistant_message_id
@@ -209,6 +211,7 @@ def create_letta_messages_from_llm_response(
         tool_call_id=tool_call_id,
         created_at=get_utc_time(),
         name=function_name,
+        batch_item_id=llm_batch_item_id,
     )
     if pre_computed_tool_message_id:
         tool_message.id = pre_computed_tool_message_id
@@ -216,7 +219,7 @@ def create_letta_messages_from_llm_response(
 
     if add_heartbeat_request_system_message:
         heartbeat_system_message = create_heartbeat_system_message(
-            agent_id=agent_id, model=model, function_call_success=function_call_success, actor=actor
+            agent_id=agent_id, model=model, function_call_success=function_call_success, actor=actor, llm_batch_item_id=llm_batch_item_id
         )
         messages.append(heartbeat_system_message)
 
@@ -224,10 +227,7 @@ def create_letta_messages_from_llm_response(
 
 
 def create_heartbeat_system_message(
-    agent_id: str,
-    model: str,
-    function_call_success: bool,
-    actor: User,
+    agent_id: str, model: str, function_call_success: bool, actor: User, llm_batch_item_id: Optional[str] = None
 ) -> Message:
     text_content = REQ_HEARTBEAT_MESSAGE if function_call_success else FUNC_FAILED_HEARTBEAT_MESSAGE
     heartbeat_system_message = Message(
@@ -239,6 +239,7 @@ def create_heartbeat_system_message(
         tool_calls=[],
         tool_call_id=None,
         created_at=get_utc_time(),
+        batch_item_id=llm_batch_item_id,
     )
     return heartbeat_system_message
 
