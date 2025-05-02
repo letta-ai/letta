@@ -1,9 +1,8 @@
 import asyncio
 import json
 import traceback
-from typing import List, Tuple
+from typing import List, Optional, Tuple
 
-from letta.agents.voice_sleeptime_agent import VoiceSleeptimeAgent
 from letta.constants import DEFAULT_MESSAGE_TOOL, DEFAULT_MESSAGE_TOOL_KWARG
 from letta.log import get_logger
 from letta.schemas.enums import MessageRole
@@ -22,7 +21,11 @@ class Summarizer:
     """
 
     def __init__(
-        self, mode: SummarizationMode, summarizer_agent: VoiceSleeptimeAgent, message_buffer_limit: int = 10, message_buffer_min: int = 3
+        self,
+        mode: SummarizationMode,
+        summarizer_agent: Optional["VoiceSleeptimeAgent"] = None,
+        message_buffer_limit: int = 10,
+        message_buffer_min: int = 3,
     ):
         self.mode = mode
 
@@ -90,39 +93,42 @@ class Summarizer:
             logger.info("Nothing to evict, returning in context messages as is.")
             return all_in_context_messages, False
 
-        evicted_messages = all_in_context_messages[1:target_trim_index]
+        if self.summarizer_agent:
+            # Only invoke if summarizer agent is passed in
 
-        # Format
-        formatted_evicted_messages = format_transcript(evicted_messages)
-        formatted_in_context_messages = format_transcript(updated_in_context_messages)
+            evicted_messages = all_in_context_messages[1:target_trim_index]
 
-        # Update the message transcript of the memory agent
-        self.summarizer_agent.update_message_transcript(message_transcripts=formatted_evicted_messages + formatted_in_context_messages)
+            # Format
+            formatted_evicted_messages = format_transcript(evicted_messages)
+            formatted_in_context_messages = format_transcript(updated_in_context_messages)
 
-        # Add line numbers to the formatted messages
-        line_number = 0
-        for i in range(len(formatted_evicted_messages)):
-            formatted_evicted_messages[i] = f"{line_number}. " + formatted_evicted_messages[i]
-            line_number += 1
-        for i in range(len(formatted_in_context_messages)):
-            formatted_in_context_messages[i] = f"{line_number}. " + formatted_in_context_messages[i]
-            line_number += 1
+            # TODO: This is hyperspecific to voice, generalize!
+            # Update the message transcript of the memory agent
+            self.summarizer_agent.update_message_transcript(message_transcripts=formatted_evicted_messages + formatted_in_context_messages)
 
-        evicted_messages_str = "\n".join(formatted_evicted_messages)
-        in_context_messages_str = "\n".join(formatted_in_context_messages)
-        summary_request_text = f"""You’re a memory-recall helper for an AI that can only keep the last {self.message_buffer_min} messages. Scan the conversation history, focusing on messages about to drop out of that window, and write crisp notes that capture any important facts or insights about the human so they aren’t lost.
+            # Add line numbers to the formatted messages
+            line_number = 0
+            for i in range(len(formatted_evicted_messages)):
+                formatted_evicted_messages[i] = f"{line_number}. " + formatted_evicted_messages[i]
+                line_number += 1
+            for i in range(len(formatted_in_context_messages)):
+                formatted_in_context_messages[i] = f"{line_number}. " + formatted_in_context_messages[i]
+                line_number += 1
 
-(Older) Evicted Messages:\n
-{evicted_messages_str}\n
+            evicted_messages_str = "\n".join(formatted_evicted_messages)
+            in_context_messages_str = "\n".join(formatted_in_context_messages)
+            summary_request_text = f"""You’re a memory-recall helper for an AI that can only keep the last {self.message_buffer_min} messages. Scan the conversation history, focusing on messages about to drop out of that window, and write crisp notes that capture any important facts or insights about the human so they aren’t lost.
 
-(Newer) In-Context Messages:\n
-{in_context_messages_str}
-"""
-        print(summary_request_text)
-        # Fire-and-forget the summarization task
-        self.fire_and_forget(
-            self.summarizer_agent.step([MessageCreate(role=MessageRole.user, content=[TextContent(text=summary_request_text)])])
-        )
+    (Older) Evicted Messages:\n
+    {evicted_messages_str}\n
+
+    (Newer) In-Context Messages:\n
+    {in_context_messages_str}
+    """
+            # Fire-and-forget the summarization task
+            self.fire_and_forget(
+                self.summarizer_agent.step([MessageCreate(role=MessageRole.user, content=[TextContent(text=summary_request_text)])])
+            )
 
         return [all_in_context_messages[0]] + updated_in_context_messages, True
 

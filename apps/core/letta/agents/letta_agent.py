@@ -62,6 +62,14 @@ class LettaAgent(BaseAgent):
     @trace_method
     async def step(self, input_messages: List[MessageCreate], max_steps: int = 10) -> LettaResponse:
         agent_state = self.agent_manager.get_agent_by_id(self.agent_id, actor=self.actor)
+        current_in_context_messages, new_in_context_messages = await self._step(
+            agent_state=agent_state, input_messages=input_messages, max_steps=max_steps
+        )
+        return _create_letta_response(new_in_context_messages=new_in_context_messages, use_assistant_message=self.use_assistant_message)
+
+    async def _step(
+        self, agent_state: AgentState, input_messages: List[MessageCreate], max_steps: int = 10
+    ) -> Tuple[List[Message], List[Message]]:
         current_in_context_messages, new_in_context_messages = _prepare_in_context_messages(
             input_messages, agent_state, self.message_manager, self.actor
         )
@@ -72,7 +80,7 @@ class LettaAgent(BaseAgent):
             put_inner_thoughts_first=True,
             actor_id=self.actor.id,
         )
-        for step in range(max_steps):
+        for _ in range(max_steps):
             response = await self._get_ai_reply(
                 llm_client=llm_client,
                 in_context_messages=current_in_context_messages + new_in_context_messages,
@@ -83,6 +91,7 @@ class LettaAgent(BaseAgent):
             )
 
             tool_call = response.choices[0].message.tool_calls[0]
+
             persisted_messages, should_continue = await self._handle_ai_response(tool_call, agent_state, tool_rules_solver)
             self.response_messages.extend(persisted_messages)
             new_in_context_messages.extend(persisted_messages)
@@ -95,7 +104,7 @@ class LettaAgent(BaseAgent):
             message_ids = [m.id for m in (current_in_context_messages + new_in_context_messages)]
             self.agent_manager.set_in_context_messages(agent_id=self.agent_id, message_ids=message_ids, actor=self.actor)
 
-        return _create_letta_response(new_in_context_messages=new_in_context_messages, use_assistant_message=self.use_assistant_message)
+        return current_in_context_messages, new_in_context_messages
 
     @trace_method
     async def step_stream(
@@ -117,7 +126,7 @@ class LettaAgent(BaseAgent):
             actor_id=self.actor.id,
         )
 
-        for step in range(max_steps):
+        for _ in range(max_steps):
             stream = await self._get_ai_reply(
                 llm_client=llm_client,
                 in_context_messages=current_in_context_messages + new_in_context_messages,
@@ -181,6 +190,7 @@ class LettaAgent(BaseAgent):
                 ToolType.LETTA_MEMORY_CORE,
                 ToolType.LETTA_MULTI_AGENT_CORE,
                 ToolType.LETTA_SLEEPTIME_CORE,
+                ToolType.LETTA_VOICE_SLEEPTIME_CORE,
             }
             or (t.tool_type == ToolType.LETTA_MULTI_AGENT_CORE and t.name == "send_message_to_agents_matching_tags")
             or (t.tool_type == ToolType.EXTERNAL_COMPOSIO)
