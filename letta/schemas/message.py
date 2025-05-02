@@ -719,9 +719,9 @@ class Message(BaseMessage):
         # Optional field, do not include if null or invalid
         if self.name is not None:
             if bool(re.match(r"^[^\s<|\\/>]+$", self.name)):
-                warnings.warn(f"Using OpenAI with invalid 'name' field (name={self.name} role={self.role}).")
-            else:
                 openai_message["name"] = self.name
+            else:
+                warnings.warn(f"Using OpenAI with invalid 'name' field (name={self.name} role={self.role}).")
 
         if parse_content_parts:
             for content in self.content:
