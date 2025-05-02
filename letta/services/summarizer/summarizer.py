@@ -3,10 +3,6 @@ import json
 import traceback
 from typing import List, Optional, Tuple
 
-<<<<<<< HEAD
-=======
-from letta.agents.voice_sleeptime_agent import VoiceSleeptimeAgent
->>>>>>> main
 from letta.constants import DEFAULT_MESSAGE_TOOL, DEFAULT_MESSAGE_TOOL_KWARG
 from letta.log import get_logger
 from letta.schemas.enums import MessageRole
@@ -119,7 +115,6 @@ class Summarizer:
                 formatted_in_context_messages[i] = f"{line_number}. " + formatted_in_context_messages[i]
                 line_number += 1
 
-<<<<<<< HEAD
             evicted_messages_str = "\n".join(formatted_evicted_messages)
             in_context_messages_str = "\n".join(formatted_in_context_messages)
             summary_request_text = f"""You’re a memory-recall helper for an AI that can only keep the last {self.message_buffer_min} messages. Scan the conversation history, focusing on messages about to drop out of that window, and write crisp notes that capture any important facts or insights about the human so they aren’t lost.
@@ -134,19 +129,6 @@ class Summarizer:
             self.fire_and_forget(
                 self.summarizer_agent.step([MessageCreate(role=MessageRole.user, content=[TextContent(text=summary_request_text)])])
             )
-=======
-(Older) Evicted Messages:\n
-{evicted_messages_str}\n
-
-(Newer) In-Context Messages:\n
-{in_context_messages_str}
-"""
-        print(summary_request_text)
-        # Fire-and-forget the summarization task
-        self.fire_and_forget(
-            self.summarizer_agent.step([MessageCreate(role=MessageRole.user, content=[TextContent(text=summary_request_text)])])
-        )
->>>>>>> main
 
         return [all_in_context_messages[0]] + updated_in_context_messages, True
 

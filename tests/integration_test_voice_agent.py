@@ -17,11 +17,7 @@ from letta.schemas.block import CreateBlock
 from letta.schemas.embedding_config import EmbeddingConfig
 from letta.schemas.enums import MessageRole, MessageStreamStatus
 from letta.schemas.group import GroupUpdate, ManagerType, VoiceSleeptimeManagerUpdate
-<<<<<<< HEAD
 from letta.schemas.letta_message import AssistantMessage, ReasoningMessage, ToolCallMessage
-=======
-from letta.schemas.letta_message import AssistantMessage, ReasoningMessage, ToolCallMessage, ToolReturnMessage, UserMessage
->>>>>>> main
 from letta.schemas.letta_message_content import TextContent
 from letta.schemas.llm_config import LLMConfig
 from letta.schemas.message import Message, MessageCreate
@@ -33,10 +29,7 @@ from letta.server.server import SyncServer
 from letta.services.agent_manager import AgentManager
 from letta.services.block_manager import BlockManager
 from letta.services.message_manager import MessageManager
-<<<<<<< HEAD
 from letta.services.passage_manager import PassageManager
-=======
->>>>>>> main
 from letta.services.summarizer.enums import SummarizationMode
 from letta.services.summarizer.summarizer import Summarizer
 from letta.services.tool_manager import ToolManager
@@ -324,8 +317,6 @@ async def test_trigger_summarization(disable_e2b_api_key, client, server, voice_
 
 @pytest.mark.asyncio
 async def test_summarization(disable_e2b_api_key, voice_agent):
-<<<<<<< HEAD
-=======
     agent_manager = AgentManager()
     user_manager = UserManager()
     actor = user_manager.get_default_user()
@@ -401,7 +392,6 @@ async def test_summarization(disable_e2b_api_key, voice_agent):
 @pytest.mark.asyncio
 async def test_voice_sleeptime_agent(disable_e2b_api_key, voice_agent):
     """Tests chat completion streaming using the Async OpenAI client."""
->>>>>>> main
     agent_manager = AgentManager()
     user_manager = UserManager()
     actor = user_manager.get_default_user()
@@ -614,14 +604,11 @@ def _modify(group_id, server, actor, max_val, min_val):
     )
 
 
-<<<<<<< HEAD
-=======
 @pytest.fixture
 def group_id(voice_agent):
     return voice_agent.multi_agent_group.id
 
 
->>>>>>> main
 def test_valid_buffer_lengths_above_four(group_id, server, actor):
     # both > 4 and max > min
     updated = _modify(group_id, server, actor, max_val=10, min_val=5)
