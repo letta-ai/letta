@@ -84,7 +84,7 @@ export const STARTER_KITS = {
     },
     image: sleeptime,
     agentState: {
-      model: 'anthropic/claude-3-5-sonnet-20240620',
+      model: 'anthropic/claude-3-5-sonnet-20241022',
       enable_sleeptime: true,
       description:
         'Act as a companion to the user, providing emotional support and companionship. This agent has a corresponding sleep-time agent that manages its memory.',
@@ -118,7 +118,7 @@ export const STARTER_KITS = {
     },
     image: sleeptime,
     agentState: {
-      model: 'anthropic/claude-3-5-sonnet-20240620',
+      model: 'anthropic/claude-3-5-sonnet-20241022',
       enable_sleeptime: true,
       agent_type: 'voice_convo_agent',
       description:
