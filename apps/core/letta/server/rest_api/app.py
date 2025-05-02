@@ -170,10 +170,6 @@ def create_application() -> "FastAPI":
         t.start()
         t.join()
 
-    @app.on_event("shutdown")
-    def shutdown_scheduler():
-        shutdown_cron_scheduler()
-
     @app.exception_handler(IncompatibleAgentType)
     async def handle_incompatible_agent_type(request: Request, exc: IncompatibleAgentType):
         return JSONResponse(
