@@ -2364,6 +2364,65 @@ export const useMessagesServiceRetrieveBatchRun = <
     ...options,
   });
 /**
+ * List Batch Messages
+ * Get messages for a specific batch job.
+ *
+ * Returns messages associated with the batch in chronological order.
+ *
+ * Pagination:
+ * - For the first page, omit the cursor parameter
+ * - For subsequent pages, use the ID of the last message from the previous response as the cursor
+ * - Results will include messages before/after the cursor based on sort_descending
+ * @param data The data for the request.
+ * @param data.batchId
+ * @param data.limit Maximum number of messages to return
+ * @param data.cursor Message ID to use as pagination cursor (get messages before/after this ID) depending on sort_descending.
+ * @param data.agentId Filter messages by agent ID
+ * @param data.sortDescending Sort messages by creation time (true=newest first)
+ * @param data.userId
+ * @returns LettaBatchMessages Successful Response
+ * @throws ApiError
+ */
+export const useMessagesServiceListBatchMessages = <
+  TData = Common.MessagesServiceListBatchMessagesDefaultResponse,
+  TError = unknown,
+  TQueryKey extends Array<unknown> = unknown[],
+>(
+  {
+    agentId,
+    batchId,
+    cursor,
+    limit,
+    sortDescending,
+    userId,
+  }: {
+    agentId?: string;
+    batchId: string;
+    cursor?: string;
+    limit?: number;
+    sortDescending?: boolean;
+    userId?: string;
+  },
+  queryKey?: TQueryKey,
+  options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>,
+) =>
+  useQuery<TData, TError>({
+    queryKey: Common.UseMessagesServiceListBatchMessagesKeyFn(
+      { agentId, batchId, cursor, limit, sortDescending, userId },
+      queryKey,
+    ),
+    queryFn: () =>
+      MessagesService.listBatchMessages({
+        agentId,
+        batchId,
+        cursor,
+        limit,
+        sortDescending,
+        userId,
+      }) as TData,
+    ...options,
+  });
+/**
  * Get Embeddings Total Storage Size
  * Get the total size of all embeddings in the database for a user in the storage unit given.
  * @param data The data for the request.

@@ -260,6 +260,8 @@ import type {
   ListBatchRunsResponse,
   RetrieveBatchRunData,
   RetrieveBatchRunResponse,
+  ListBatchMessagesData,
+  ListBatchMessagesResponse,
   CancelBatchRunData,
   CancelBatchRunResponse,
   CreateVoiceChatCompletionsData,
@@ -3926,6 +3928,49 @@ export class MessagesService {
       url: '/v1/messages/batches/{batch_id}',
       path: {
         batch_id: data.batchId,
+      },
+      errors: {
+        422: 'Validation Error',
+      },
+      headers,
+    });
+  }
+
+  /**
+   * List Batch Messages
+   * Get messages for a specific batch job.
+   *
+   * Returns messages associated with the batch in chronological order.
+   *
+   * Pagination:
+   * - For the first page, omit the cursor parameter
+   * - For subsequent pages, use the ID of the last message from the previous response as the cursor
+   * - Results will include messages before/after the cursor based on sort_descending
+   * @param data The data for the request.
+   * @param data.batchId
+   * @param data.limit Maximum number of messages to return
+   * @param data.cursor Message ID to use as pagination cursor (get messages before/after this ID) depending on sort_descending.
+   * @param data.agentId Filter messages by agent ID
+   * @param data.sortDescending Sort messages by creation time (true=newest first)
+   * @param data.userId
+   * @returns LettaBatchMessages Successful Response
+   * @throws ApiError
+   */
+  public static listBatchMessages(
+    data: ListBatchMessagesData,
+    headers?: { user_id: string },
+  ): CancelablePromise<ListBatchMessagesResponse> {
+    return __request(OpenAPI, {
+      method: 'GET',
+      url: '/v1/messages/batches/{batch_id}/messages',
+      path: {
+        batch_id: data.batchId,
+      },
+      query: {
+        limit: data.limit,
+        cursor: data.cursor,
+        agent_id: data.agentId,
+        sort_descending: data.sortDescending,
       },
       errors: {
         422: 'Validation Error',

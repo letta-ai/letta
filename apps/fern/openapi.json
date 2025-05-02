@@ -6325,6 +6325,107 @@
         }
       }
     },
+    "/v1/messages/batches/{batch_id}/messages": {
+      "get": {
+        "tags": ["messages"],
+        "summary": "List Batch Messages",
+        "description": "Get messages for a specific batch job.\n\nReturns messages associated with the batch in chronological order.\n\nPagination:\n- For the first page, omit the cursor parameter\n- For subsequent pages, use the ID of the last message from the previous response as the cursor\n- Results will include messages before/after the cursor based on sort_descending",
+        "operationId": "list_batch_messages",
+        "parameters": [
+          {
+            "name": "batch_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Batch Id"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "description": "Maximum number of messages to return",
+              "default": 100,
+              "title": "Limit"
+            },
+            "description": "Maximum number of messages to return"
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Message ID to use as pagination cursor (get messages before/after this ID) depending on sort_descending.",
+              "title": "Cursor"
+            },
+            "description": "Message ID to use as pagination cursor (get messages before/after this ID) depending on sort_descending."
+          },
+          {
+            "name": "agent_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter messages by agent ID",
+              "title": "Agent Id"
+            },
+            "description": "Filter messages by agent ID"
+          },
+          {
+            "name": "sort_descending",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "description": "Sort messages by creation time (true=newest first)",
+              "default": true,
+              "title": "Sort Descending"
+            },
+            "description": "Sort messages by creation time (true=newest first)"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LettaBatchMessages"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/messages/batches/{batch_id}/cancel": {
       "patch": {
         "tags": ["messages"],
@@ -12937,6 +13038,20 @@
         "title": "LLMConfig",
         "description": "Configuration for a Language Model (LLM) model. This object specifies all the information necessary to access an LLM model to usage with Letta, except for secret keys.\n\nAttributes:\n    model (str): The name of the LLM model.\n    model_endpoint_type (str): The endpoint type for the model.\n    model_endpoint (str): The endpoint for the model.\n    model_wrapper (str): The wrapper for the model. This is used to wrap additional text around the input/output of the model. This is useful for text-to-text completions, such as the Completions API in OpenAI.\n    context_window (int): The context window size for the model.\n    put_inner_thoughts_in_kwargs (bool): Puts `inner_thoughts` as a kwarg in the function call if this is set to True. This helps with function calling performance and also the generation of inner thoughts.\n    temperature (float): The temperature to use when generating text with the model. A higher temperature will result in more random text.\n    max_tokens (int): The maximum number of tokens to generate."
       },
+      "LettaBatchMessages": {
+        "properties": {
+          "messages": {
+            "items": {
+              "$ref": "#/components/schemas/Message"
+            },
+            "type": "array",
+            "title": "Messages"
+          }
+        },
+        "type": "object",
+        "required": ["messages"],
+        "title": "LettaBatchMessages"
+      },
       "LettaBatchRequest": {
         "properties": {
           "messages": {
@@ -13537,6 +13652,18 @@
             ],
             "title": "Sender Id",
             "description": "The id of the sender of the message, can be an identity id or agent id"
+          },
+          "batch_item_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Batch Item Id",
+            "description": "The id of the LLMBatchItem that this message is associated with"
           }
         },
         "additionalProperties": false,
@@ -13603,6 +13730,18 @@
             ],
             "title": "Sender Id",
             "description": "The id of the sender of the message, can be an identity id or agent id"
+          },
+          "batch_item_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Batch Item Id",
+            "description": "The id of the LLMBatchItem that this message is associated with"
           },
           "group_id": {
             "anyOf": [

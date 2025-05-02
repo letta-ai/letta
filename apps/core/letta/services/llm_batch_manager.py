@@ -2,10 +2,11 @@ import datetime
 from typing import Any, Dict, List, Optional, Tuple
 
 from anthropic.types.beta.messages import BetaMessageBatch, BetaMessageBatchIndividualResponse
-from sqlalchemy import func, tuple_
+from sqlalchemy import desc, func, tuple_
 
 from letta.jobs.types import BatchPollingResult, ItemUpdateInfo, RequestStatusUpdateInfo, StepStatusUpdateInfo
 from letta.log import get_logger
+from letta.orm import Message as MessageModel
 from letta.orm.llm_batch_items import LLMBatchItem
 from letta.orm.llm_batch_job import LLMBatchJob
 from letta.schemas.agent import AgentStepState
@@ -13,6 +14,7 @@ from letta.schemas.enums import AgentStepStatus, JobStatus, ProviderType
 from letta.schemas.llm_batch_job import LLMBatchItem as PydanticLLMBatchItem
 from letta.schemas.llm_batch_job import LLMBatchJob as PydanticLLMBatchJob
 from letta.schemas.llm_config import LLMConfig
+from letta.schemas.message import Message as PydanticMessage
 from letta.schemas.user import User as PydanticUser
 from letta.utils import enforce_types
 
@@ -143,6 +145,62 @@ class LLMBatchManager:
             batch.hard_delete(db_session=session, actor=actor)
 
     @enforce_types
+    def get_messages_for_letta_batch(
+        self,
+        letta_batch_job_id: str,
+        limit: int = 100,
+        actor: Optional[PydanticUser] = None,
+        agent_id: Optional[str] = None,
+        sort_descending: bool = True,
+        cursor: Optional[str] = None,  # Message ID as cursor
+    ) -> List[PydanticMessage]:
+        """
+        Retrieve messages across all LLM batch jobs associated with a Letta batch job.
+        Optimized for PostgreSQL performance using ID-based keyset pagination.
+        """
+        with self.session_maker() as session:
+            # If cursor is provided, get sequence_id for that message
+            cursor_sequence_id = None
+            if cursor:
+                cursor_query = session.query(MessageModel.sequence_id).filter(MessageModel.id == cursor).limit(1)
+                cursor_result = cursor_query.first()
+                if cursor_result:
+                    cursor_sequence_id = cursor_result[0]
+                else:
+                    # If cursor message doesn't exist, ignore it
+                    pass
+
+            query = (
+                session.query(MessageModel)
+                .join(LLMBatchItem, MessageModel.batch_item_id == LLMBatchItem.id)
+                .join(LLMBatchJob, LLMBatchItem.llm_batch_id == LLMBatchJob.id)
+                .filter(LLMBatchJob.letta_batch_job_id == letta_batch_job_id)
+            )
+
+            if actor is not None:
+                query = query.filter(MessageModel.organization_id == actor.organization_id)
+
+            if agent_id is not None:
+                query = query.filter(MessageModel.agent_id == agent_id)
+
+            # Apply cursor-based pagination if cursor exists
+            if cursor_sequence_id is not None:
+                if sort_descending:
+                    query = query.filter(MessageModel.sequence_id < cursor_sequence_id)
+                else:
+                    query = query.filter(MessageModel.sequence_id > cursor_sequence_id)
+
+            if sort_descending:
+                query = query.order_by(desc(MessageModel.sequence_id))
+            else:
+                query = query.order_by(MessageModel.sequence_id)
+
+            query = query.limit(limit)
+
+            results = query.all()
+            return [message.to_pydantic() for message in results]
+
+    @enforce_types
     def list_running_llm_batches(self, actor: Optional[PydanticUser] = None) -> List[PydanticLLMBatchJob]:
         """Return all running LLM batch jobs, optionally filtered by actor's organization."""
         with self.session_maker() as session:
@@ -196,6 +254,7 @@ class LLMBatchManager:
             orm_items = []
             for item in llm_batch_items:
                 orm_item = LLMBatchItem(
+                    id=item.id,
                     llm_batch_id=item.llm_batch_id,
                     agent_id=item.agent_id,
                     llm_config=item.llm_config,

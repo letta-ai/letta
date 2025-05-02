@@ -2000,6 +2000,10 @@ export type model_endpoint_type =
   | 'deepseek'
   | 'xai';
 
+export type LettaBatchMessages = {
+  messages: Array<Message>;
+};
+
 export type LettaBatchRequest = {
   /**
    * The messages to be sent to the agent.
@@ -2312,6 +2316,10 @@ export type Message = {
    * The id of the sender of the message, can be an identity id or agent id
    */
   sender_id?: string | null;
+  /**
+   * The id of the LLMBatchItem that this message is associated with
+   */
+  batch_item_id?: string | null;
 };
 
 /**
@@ -2338,6 +2346,10 @@ export type MessageCreate = {
    * The id of the sender of the message, can be an identity id or agent id
    */
   sender_id?: string | null;
+  /**
+   * The id of the LLMBatchItem that this message is associated with
+   */
+  batch_item_id?: string | null;
   /**
    * The multi-agent group that the message was sent in
    */
@@ -5205,6 +5217,29 @@ export type RetrieveBatchRunData = {
 
 export type RetrieveBatchRunResponse = BatchJob;
 
+export type ListBatchMessagesData = {
+  /**
+   * Filter messages by agent ID
+   */
+  agentId?: string | null;
+  batchId: string;
+  /**
+   * Message ID to use as pagination cursor (get messages before/after this ID) depending on sort_descending.
+   */
+  cursor?: string | null;
+  /**
+   * Maximum number of messages to return
+   */
+  limit?: number;
+  /**
+   * Sort messages by creation time (true=newest first)
+   */
+  sortDescending?: boolean;
+  userId?: string | null;
+};
+
+export type ListBatchMessagesResponse = LettaBatchMessages;
+
 export type CancelBatchRunData = {
   batchId: string;
   userId?: string | null;
@@ -7088,6 +7123,21 @@ export type $OpenApiTs = {
          * Successful Response
          */
         200: BatchJob;
+        /**
+         * Validation Error
+         */
+        422: HTTPValidationError;
+      };
+    };
+  };
+  '/v1/messages/batches/{batch_id}/messages': {
+    get: {
+      req: ListBatchMessagesData;
+      res: {
+        /**
+         * Successful Response
+         */
+        200: LettaBatchMessages;
         /**
          * Validation Error
          */

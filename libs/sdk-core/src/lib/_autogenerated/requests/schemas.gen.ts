@@ -5809,6 +5809,21 @@ Attributes:
     max_tokens (int): The maximum number of tokens to generate.`,
 } as const;
 
+export const $LettaBatchMessages = {
+  properties: {
+    messages: {
+      items: {
+        $ref: '#/components/schemas/Message',
+      },
+      type: 'array',
+      title: 'Messages',
+    },
+  },
+  type: 'object',
+  required: ['messages'],
+  title: 'LettaBatchMessages',
+} as const;
+
 export const $LettaBatchRequest = {
   properties: {
     messages: {
@@ -6473,6 +6488,19 @@ export const $Message = {
       description:
         'The id of the sender of the message, can be an identity id or agent id',
     },
+    batch_item_id: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Batch Item Id',
+      description:
+        'The id of the LLMBatchItem that this message is associated with',
+    },
   },
   additionalProperties: false,
   type: 'object',
@@ -6557,6 +6585,19 @@ export const $MessageCreate = {
       title: 'Sender Id',
       description:
         'The id of the sender of the message, can be an identity id or agent id',
+    },
+    batch_item_id: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Batch Item Id',
+      description:
+        'The id of the LLMBatchItem that this message is associated with',
     },
     group_id: {
       anyOf: [

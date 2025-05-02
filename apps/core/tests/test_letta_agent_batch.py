@@ -23,7 +23,7 @@ from letta.helpers import ToolRulesSolver
 from letta.jobs.llm_batch_job_polling import poll_running_llm_batches
 from letta.orm import Base
 from letta.schemas.agent import AgentState, AgentStepState
-from letta.schemas.enums import AgentStepStatus, JobStatus, ProviderType
+from letta.schemas.enums import AgentStepStatus, JobStatus, MessageRole, ProviderType
 from letta.schemas.job import BatchJob
 from letta.schemas.letta_message_content import TextContent
 from letta.schemas.letta_request import LettaBatchRequest
@@ -589,6 +589,26 @@ async def test_partial_error_from_anthropic_batch(
                             len(refreshed_agent.message_ids) == 6
                         ), f"Agent's in-context messages have been extended, are length: {len(refreshed_agent.message_ids)}"
 
+                # Check the total list of messages
+                messages = server.batch_manager.get_messages_for_letta_batch(
+                    letta_batch_job_id=pre_resume_response.letta_batch_id, limit=200, actor=default_user
+                )
+                assert len(messages) == (len(agents) - 1) * 4 + 1
+                assert_descending_order(messages)
+                # Check that each agent is represented
+                for agent in agents_continue:
+                    agent_messages = [m for m in messages if m.agent_id == agent.id]
+                    assert len(agent_messages) == 4
+                    assert agent_messages[-1].role == MessageRole.user, "Expected initial user message"
+                    assert agent_messages[-2].role == MessageRole.assistant, "Expected assistant tool call after user message"
+                    assert agent_messages[-3].role == MessageRole.tool, "Expected tool response after assistant tool call"
+                    assert agent_messages[-4].role == MessageRole.user, "Expected final system-level heartbeat user message"
+
+                for agent in agents_failed:
+                    agent_messages = [m for m in messages if m.agent_id == agent.id]
+                    assert len(agent_messages) == 1
+                    assert agent_messages[0].role == MessageRole.user, "Expected initial user message"
+
 
 @pytest.mark.asyncio
 async def test_resume_step_some_stop(
@@ -718,6 +738,42 @@ async def test_resume_step_some_stop(
                         len(refreshed_agent.message_ids) == 6
                     ), f"Agent's in-context messages have been extended, are length: {len(refreshed_agent.message_ids)}"
 
+                # Check the total list of messages
+                messages = server.batch_manager.get_messages_for_letta_batch(
+                    letta_batch_job_id=pre_resume_response.letta_batch_id, limit=200, actor=default_user
+                )
+                assert len(messages) == len(agents) * 3 + 1
+                assert_descending_order(messages)
+                # Check that each agent is represented
+                for agent in agents_continue:
+                    agent_messages = [m for m in messages if m.agent_id == agent.id]
+                    assert len(agent_messages) == 4
+                    assert agent_messages[-1].role == MessageRole.user, "Expected initial user message"
+                    assert agent_messages[-2].role == MessageRole.assistant, "Expected assistant tool call after user message"
+                    assert agent_messages[-3].role == MessageRole.tool, "Expected tool response after assistant tool call"
+                    assert agent_messages[-4].role == MessageRole.user, "Expected final system-level heartbeat user message"
+
+                for agent in agents_finish:
+                    agent_messages = [m for m in messages if m.agent_id == agent.id]
+                    assert len(agent_messages) == 3
+                    assert agent_messages[-1].role == MessageRole.user, "Expected initial user message"
+                    assert agent_messages[-2].role == MessageRole.assistant, "Expected assistant tool call after user message"
+                    assert agent_messages[-3].role == MessageRole.tool, "Expected tool response after assistant tool call"
+
+
+def assert_descending_order(messages):
+    """Assert messages are in descending order by created_at timestamps."""
+    if len(messages) <= 1:
+        return True
+
+    for i in range(1, len(messages)):
+        assert messages[i].created_at <= messages[i - 1].created_at, (
+            f"Order violation: {messages[i - 1].id} ({messages[i - 1].created_at}) "
+            f"followed by {messages[i].id} ({messages[i].created_at})"
+        )
+
+    return True
+
 
 @pytest.mark.asyncio
 async def test_resume_step_after_request_all_continue(
@@ -840,6 +896,21 @@ async def test_resume_step_after_request_all_continue(
                     assert (
                         len(refreshed_agent.message_ids) == 6
                     ), f"Agent's in-context messages have been extended, are length: {len(refreshed_agent.message_ids)}"
+
+                # Check the total list of messages
+                messages = server.batch_manager.get_messages_for_letta_batch(
+                    letta_batch_job_id=pre_resume_response.letta_batch_id, limit=200, actor=default_user
+                )
+                assert len(messages) == len(agents) * 4
+                assert_descending_order(messages)
+                # Check that each agent is represented
+                for agent in agents:
+                    agent_messages = [m for m in messages if m.agent_id == agent.id]
+                    assert len(agent_messages) == 4
+                    assert agent_messages[-1].role == MessageRole.user, "Expected initial user message"
+                    assert agent_messages[-2].role == MessageRole.assistant, "Expected assistant tool call after user message"
+                    assert agent_messages[-3].role == MessageRole.tool, "Expected tool response after assistant tool call"
+                    assert agent_messages[-4].role == MessageRole.user, "Expected final system-level heartbeat user message"
 
 
 @pytest.mark.asyncio

@@ -73,6 +73,7 @@ class MessageManager:
         Returns:
             List of created Pydantic message models
         """
+
         if not pydantic_msgs:
             return []
 

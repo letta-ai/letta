@@ -2878,6 +2878,14 @@ export const Message = z.object({
       z.undefined(),
     ])
     .optional(),
+  batch_item_id: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
 });
 
 export type ContextWindowOverview = z.infer<typeof ContextWindowOverview>;
@@ -2983,6 +2991,14 @@ export const MessageCreate = z.object({
     ])
     .optional(),
   sender_id: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  batch_item_id: z
     .union([
       z.string(),
       z.null(),
@@ -3769,6 +3785,11 @@ export const Job = z.object({
   user_id: z
     .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
     .optional(),
+});
+
+export type LettaBatchMessages = z.infer<typeof LettaBatchMessages>;
+export const LettaBatchMessages = z.object({
+  messages: z.array(Message),
 });
 
 export type LettaRequest = z.infer<typeof LettaRequest>;
@@ -7789,6 +7810,34 @@ export const get_Retrieve_batch_run = {
   response: BatchJob,
 };
 
+export type get_List_batch_messages = typeof get_List_batch_messages;
+export const get_List_batch_messages = {
+  method: z.literal('GET'),
+  path: z.literal('/v1/messages/batches/{batch_id}/messages'),
+  requestFormat: z.literal('json'),
+  parameters: z.object({
+    query: z.object({
+      limit: z.number().optional(),
+      cursor: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      agent_id: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      sort_descending: z.boolean().optional(),
+    }),
+    path: z.object({
+      batch_id: z.string(),
+    }),
+    header: z.object({
+      user_id: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+    }),
+  }),
+  response: LettaBatchMessages,
+};
+
 export type patch_Cancel_batch_run = typeof patch_Cancel_batch_run;
 export const patch_Cancel_batch_run = {
   method: z.literal('PATCH'),
@@ -8058,6 +8107,7 @@ export const EndpointByMethod = {
     '/v1/tags/': get_List_tags,
     '/v1/messages/batches': get_List_batch_runs,
     '/v1/messages/batches/{batch_id}': get_Retrieve_batch_run,
+    '/v1/messages/batches/{batch_id}/messages': get_List_batch_messages,
     '/v1/embeddings/total_storage_size': get_Get_total_storage_size,
     '/v1/admin/users/': get_List_users,
     '/v1/admin/orgs/': get_List_orgs,

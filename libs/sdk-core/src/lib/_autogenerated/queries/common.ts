@@ -1423,6 +1423,38 @@ export const UseMessagesServiceRetrieveBatchRunKeyFn = (
   useMessagesServiceRetrieveBatchRunKey,
   ...(queryKey ?? [{ batchId, userId }]),
 ];
+export type MessagesServiceListBatchMessagesDefaultResponse = Awaited<
+  ReturnType<typeof MessagesService.listBatchMessages>
+>;
+export type MessagesServiceListBatchMessagesQueryResult<
+  TData = MessagesServiceListBatchMessagesDefaultResponse,
+  TError = unknown,
+> = UseQueryResult<TData, TError>;
+export const useMessagesServiceListBatchMessagesKey =
+  'MessagesServiceListBatchMessages';
+export const UseMessagesServiceListBatchMessagesKeyFn = (
+  {
+    agentId,
+    batchId,
+    cursor,
+    limit,
+    sortDescending,
+    userId,
+  }: {
+    agentId?: string;
+    batchId: string;
+    cursor?: string;
+    limit?: number;
+    sortDescending?: boolean;
+    userId?: string;
+  },
+  queryKey?: Array<unknown>,
+) => [
+  useMessagesServiceListBatchMessagesKey,
+  ...(queryKey ?? [
+    { agentId, batchId, cursor, limit, sortDescending, userId },
+  ]),
+];
 export type EmbeddingsServiceGetTotalStorageSizeDefaultResponse = Awaited<
   ReturnType<typeof EmbeddingsService.getTotalStorageSize>
 >;
