@@ -1633,6 +1633,7 @@ class SyncServer(Server):
         assistant_message_tool_name: str = constants.DEFAULT_MESSAGE_TOOL,
         assistant_message_tool_kwarg: str = constants.DEFAULT_MESSAGE_TOOL_KWARG,
         metadata: Optional[dict] = None,
+        request_start_timestamp_ns: Optional[int] = None,
     ) -> Union[StreamingResponse, LettaResponse]:
         """Split off into a separate function so that it can be imported in the /chat/completion proxy."""
         # TODO: @charles is this the correct way to handle?
@@ -1717,6 +1718,7 @@ class SyncServer(Server):
                         streaming_interface.get_generator(),
                         usage_task=task,
                         finish_message=include_final_message,
+                        request_start_timestamp_ns=request_start_timestamp_ns,
                     ),
                     media_type="text/event-stream",
                 )

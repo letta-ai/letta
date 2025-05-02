@@ -1,4 +1,5 @@
 import re
+import time
 from datetime import datetime, timedelta, timezone
 from time import strftime
 
@@ -75,6 +76,11 @@ def get_utc_time() -> datetime:
 
 def get_utc_time_int() -> int:
     return int(get_utc_time().timestamp())
+
+
+def get_utc_timestamp_ns() -> int:
+    """Get the current UTC time in nanoseconds"""
+    return int(time.time_ns())
 
 
 def timestamp_to_datetime(timestamp_seconds: int) -> datetime:
