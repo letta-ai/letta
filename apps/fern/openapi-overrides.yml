@@ -770,6 +770,9 @@ paths:
   /v1/embeddings/total_storage_size:
     get:
       x-fern-ignore: true
+  /v1/voice-beta/{agent_id}/chat/completions:
+    get:
+      x-fern-ignore: true
   /v1/projects:
     get:
       x-fern-sdk-group-name:
