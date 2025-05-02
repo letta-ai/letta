@@ -35,18 +35,19 @@ class OpenAIChatCompletionsStreamingInterface:
         """
         async with stream:
             async for chunk in stream:
-                choice = chunk.choices[0]
-                delta = choice.delta
-                finish_reason = choice.finish_reason
+                if chunk.choices:
+                    choice = chunk.choices[0]
+                    delta = choice.delta
+                    finish_reason = choice.finish_reason
 
-                async for sse_chunk in self._process_content(delta, chunk):
-                    yield sse_chunk
+                    async for sse_chunk in self._process_content(delta, chunk):
+                        yield sse_chunk
 
-                async for sse_chunk in self._process_tool_calls(delta, chunk):
-                    yield sse_chunk
+                    async for sse_chunk in self._process_tool_calls(delta, chunk):
+                        yield sse_chunk
 
-                if self._handle_finish_reason(finish_reason):
-                    break
+                    if self._handle_finish_reason(finish_reason):
+                        break
 
     async def _process_content(self, delta: ChoiceDelta, chunk: ChatCompletionChunk) -> AsyncGenerator[str, None]:
         """Processes regular content tokens and streams them."""

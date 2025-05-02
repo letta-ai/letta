@@ -216,6 +216,34 @@ def voice_agent(server, actor):
     return main_agent
 
 
+@pytest.fixture(scope="function")
+def voice_agent_anthropic(server, actor):
+    server.tool_manager.upsert_base_tools(actor=actor)
+
+    main_agent = server.create_agent(
+        request=CreateAgent(
+            agent_type=AgentType.voice_convo_agent,
+            name="main_agent",
+            memory_blocks=[
+                CreateBlock(
+                    label="persona",
+                    value="You are a personal assistant that helps users with requests.",
+                ),
+                CreateBlock(
+                    label="human",
+                    value="My favorite plant is the fiddle leaf\nMy favorite color is lavender",
+                ),
+            ],
+            model="anthropic/claude-3-5-sonnet-20241022",
+            embedding="openai/text-embedding-ada-002",
+            enable_sleeptime=True,
+        ),
+        actor=actor,
+    )
+
+    return main_agent
+
+
 @pytest.fixture
 def group_id(voice_agent):
     return voice_agent.multi_agent_group.id
@@ -285,7 +313,7 @@ async def test_voice_recall_memory(disable_e2b_api_key, client, voice_agent, mes
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize("endpoint", ["v1/voice-beta"])
-async def test_trigger_summarization(disable_e2b_api_key, client, server, voice_agent, group_id, endpoint, actor):
+async def test_trigger_summarization(disable_e2b_api_key, client, server, voice_agent_anthropic, group_id, endpoint, actor):
     server.group_manager.modify_group(
         group_id=group_id,
         group_update=GroupUpdate(
@@ -299,7 +327,7 @@ async def test_trigger_summarization(disable_e2b_api_key, client, server, voice_
     )
 
     request = _get_chat_request("How are you?")
-    async_client = AsyncOpenAI(base_url=f"http://localhost:8283/{endpoint}/{voice_agent.id}", max_retries=0)
+    async_client = AsyncOpenAI(base_url=f"http://localhost:8283/{endpoint}/{voice_agent_anthropic.id}", max_retries=0)
 
     stream = await async_client.chat.completions.create(**request.model_dump(exclude_none=True))
     async with stream:
