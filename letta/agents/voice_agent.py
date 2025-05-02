@@ -131,6 +131,8 @@ class VoiceAgent(BaseAgent):
         if agent_state.llm_config.model_endpoint_type == "anthropic":
             self.openai_client.api_key = model_settings.anthropic_api_key
             self.openai_client.base_url = "https://api.anthropic.com/v1/"
+        elif agent_state.llm_config.model_endpoint_type != "openai":
+            raise ValueError("Letta voice agents are only compatible with OpenAI or Anthropic.")
 
         # Safety check
         if agent_state.agent_type != AgentType.voice_convo_agent:
