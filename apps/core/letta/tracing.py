@@ -75,6 +75,11 @@ async def update_trace_attributes(request: Request):
     for key, value in request.path_params.items():
         span.set_attribute(f"http.{key}", value)
 
+    # Add user ID if available
+    user_id = request.headers.get("user_id")
+    if user_id:
+        span.set_attribute("user.id", user_id)
+
     # Add request body if available
     try:
         body = await request.json()
