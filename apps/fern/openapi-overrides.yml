@@ -769,10 +769,7 @@ paths:
       x-fern-sdk-method-name: cancel
   /v1/embeddings/total_storage_size:
     get:
-      x-fern-sdk-group-name:
-        - embeddings
-      x-fern-sdk-method-name: get_embeddings_total_storage_size
-
+      x-fern-ignore: true
   /v1/projects:
     get:
       x-fern-sdk-group-name:
