@@ -15,7 +15,7 @@ from pydantic import BaseModel
 
 from letta.constants import DEFAULT_MESSAGE_TOOL, DEFAULT_MESSAGE_TOOL_KWARG, FUNC_FAILED_HEARTBEAT_MESSAGE, REQ_HEARTBEAT_MESSAGE
 from letta.errors import ContextWindowExceededError, RateLimitExceededError
-from letta.helpers.datetime_helpers import get_utc_time
+from letta.helpers.datetime_helpers import get_utc_time, get_utc_timestamp_ns
 from letta.helpers.message_helper import convert_message_creates_to_messages
 from letta.log import get_logger
 from letta.schemas.enums import MessageRole
@@ -25,6 +25,7 @@ from letta.schemas.usage import LettaUsageStatistics
 from letta.schemas.user import User
 from letta.server.rest_api.interface import StreamingServerInterface
 from letta.system import get_heartbeat, package_function_response
+from letta.tracing import tracer
 
 if TYPE_CHECKING:
     from letta.server.server import SyncServer
@@ -51,18 +52,35 @@ async def sse_async_generator(
     generator: AsyncGenerator,
     usage_task: Optional[asyncio.Task] = None,
     finish_message=True,
+    request_start_timestamp_ns: Optional[int] = None,
 ):
     """
     Wraps a generator for use in Server-Sent Events (SSE), handling errors and ensuring a completion message.
 
     Args:
     - generator: An asynchronous generator yielding data chunks.
+    - usage_task: Optional task that will return usage statistics.
+    - finish_message: Whether to send a completion message.
+    - request_start_timestamp_ns: Optional ns timestamp when the request started, used to measure time to first token.
 
     Yields:
     - Formatted Server-Sent Event strings.
     """
+    first_chunk = True
+    ttft_span = None
+    if request_start_timestamp_ns is not None:
+        ttft_span = tracer.start_span("time_to_first_token", start_time=request_start_timestamp_ns)
+
     try:
         async for chunk in generator:
+            # Measure time to first token
+            if first_chunk and ttft_span is not None:
+                now = get_utc_timestamp_ns()
+                ttft_ns = now - request_start_timestamp_ns
+                ttft_span.add_event(name="time_to_first_token_ms", attributes={"ttft_ms": ttft_ns // 1_000_000})
+                ttft_span.end()
+                first_chunk = False
+
             # yield f"data: {json.dumps(chunk)}\n\n"
             if isinstance(chunk, BaseModel):
                 chunk = chunk.model_dump()
