@@ -1,3 +1,4 @@
+import xml.etree.ElementTree as ET
 from typing import List, Tuple
 
 from letta.schemas.agent import AgentState
@@ -50,3 +51,56 @@ def _prepare_in_context_messages(
     )
 
     return current_in_context_messages, new_in_context_messages
+
+
+def serialize_message_history(messages: List[str], context: str) -> str:
+    """
+    Produce an XML document like:
+
+    <memory>
+      <messages>
+        <message>…</message>
+        <message>…</message>
+        …
+      </messages>
+      <context>…</context>
+    </memory>
+    """
+    root = ET.Element("memory")
+
+    msgs_el = ET.SubElement(root, "messages")
+    for msg in messages:
+        m = ET.SubElement(msgs_el, "message")
+        m.text = msg
+
+    sum_el = ET.SubElement(root, "context")
+    sum_el.text = context
+
+    # ET.tostring will escape reserved chars for you
+    return ET.tostring(root, encoding="unicode")
+
+
+def deserialize_message_history(xml_str: str) -> Tuple[List[str], str]:
+    """
+    Parse the XML back into (messages, context). Raises ValueError if tags are missing.
+    """
+    try:
+        root = ET.fromstring(xml_str)
+    except ET.ParseError as e:
+        raise ValueError(f"Invalid XML: {e}")
+
+    msgs_el = root.find("messages")
+    if msgs_el is None:
+        raise ValueError("Missing <messages> section")
+
+    messages = []
+    for m in msgs_el.findall("message"):
+        # .text may be None if empty, so coerce to empty string
+        messages.append(m.text or "")
+
+    sum_el = root.find("context")
+    if sum_el is None:
+        raise ValueError("Missing <context> section")
+    context = sum_el.text or ""
+
+    return messages, context
