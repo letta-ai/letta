@@ -40,7 +40,19 @@ def is_openai_reasoning_model(model: str) -> bool:
     """Utility function to check if the model is a 'reasoner'"""
 
     # NOTE: needs to be updated with new model releases
-    return model.startswith("o1") or model.startswith("o3")
+    is_reasoning = model.startswith("o1") or model.startswith("o3")
+    return is_reasoning
+
+
+def accepts_developer_role(model: str) -> bool:
+    """Checks if the model accepts the 'developer' role. Note that not all reasoning models accept this role.
+
+    See: https://community.openai.com/t/developer-role-not-accepted-for-o1-o1-mini-o3-mini/1110750/7
+    """
+    if is_openai_reasoning_model(model):
+        return True
+    else:
+        return False
 
 
 def supports_temperature_param(model: str) -> bool:
@@ -102,7 +114,7 @@ class OpenAIClient(LLMClientBase):
                 put_inner_thoughts_first=True,
             )
 
-        use_developer_message = is_openai_reasoning_model(llm_config.model)
+        use_developer_message = accepts_developer_role(llm_config.model)
 
         openai_message_list = [
             cast_message_to_subtype(
