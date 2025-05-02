@@ -209,6 +209,7 @@ class Settings(BaseSettings):
     # cron job parameters
     enable_batch_job_polling: bool = False
     poll_running_llm_batches_interval_seconds: int = 5 * 60
+    poll_lock_retry_interval_seconds: int = 5 * 60
 
     @property
     def letta_pg_uri(self) -> str:

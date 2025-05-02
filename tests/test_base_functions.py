@@ -1,9 +1,21 @@
+import os
+import threading
+
 import pytest
+from dotenv import load_dotenv
+from letta_client import Letta
 
 import letta.functions.function_sets.base as base_functions
 from letta import LocalClient, create_client
 from letta.schemas.embedding_config import EmbeddingConfig
 from letta.schemas.llm_config import LLMConfig
+from tests.test_tool_schema_parsing_files.expected_base_tool_schemas import (
+    get_finish_rethinking_memory_schema,
+    get_rethink_user_memory_schema,
+    get_search_memory_schema,
+    get_store_memories_schema,
+)
+from tests.utils import wait_for_server
 
 
 @pytest.fixture(scope="function")
@@ -13,6 +25,35 @@ def client():
     client.set_default_embedding_config(EmbeddingConfig.default_config(provider="openai"))
 
     yield client
+
+
+def _run_server():
+    """Starts the Letta server in a background thread."""
+    load_dotenv()
+    from letta.server.rest_api.app import start_server
+
+    start_server(debug=True)
+
+
+@pytest.fixture(scope="session")
+def server_url():
+    """Ensures a server is running and returns its base URL."""
+    url = os.getenv("LETTA_SERVER_URL", "http://localhost:8283")
+
+    if not os.getenv("LETTA_SERVER_URL"):
+        thread = threading.Thread(target=_run_server, daemon=True)
+        thread.start()
+        wait_for_server(url)
+
+    return url
+
+
+@pytest.fixture(scope="session")
+def letta_client(server_url):
+    """Creates a REST client for testing."""
+    client = Letta(base_url=server_url)
+    client.tools.upsert_base_tools()
+    return client
 
 
 @pytest.fixture(scope="function")
@@ -99,3 +140,57 @@ def test_recall_self(client, agent_obj):
     # Conversation search
     result = base_functions.conversation_search(agent_obj, "banana")
     assert keyword in result
+
+
+def test_get_rethink_user_memory_parsing(letta_client):
+    tool = letta_client.tools.list(name="rethink_user_memory")[0]
+    json_schema = tool.json_schema
+    # Remove `request_heartbeat` from properties
+    json_schema["parameters"]["properties"].pop("request_heartbeat", None)
+
+    # Remove it from the required list if present
+    required = json_schema["parameters"].get("required", [])
+    if "request_heartbeat" in required:
+        required.remove("request_heartbeat")
+
+    assert json_schema == get_rethink_user_memory_schema()
+
+
+def test_get_finish_rethinking_memory_parsing(letta_client):
+    tool = letta_client.tools.list(name="finish_rethinking_memory")[0]
+    json_schema = tool.json_schema
+    # Remove `request_heartbeat` from properties
+    json_schema["parameters"]["properties"].pop("request_heartbeat", None)
+
+    # Remove it from the required list if present
+    required = json_schema["parameters"].get("required", [])
+    if "request_heartbeat" in required:
+        required.remove("request_heartbeat")
+
+    assert json_schema == get_finish_rethinking_memory_schema()
+
+
+def test_store_memories_parsing(letta_client):
+    tool = letta_client.tools.list(name="store_memories")[0]
+    json_schema = tool.json_schema
+    # Remove `request_heartbeat` from properties
+    json_schema["parameters"]["properties"].pop("request_heartbeat", None)
+
+    # Remove it from the required list if present
+    required = json_schema["parameters"].get("required", [])
+    if "request_heartbeat" in required:
+        required.remove("request_heartbeat")
+    assert json_schema == get_store_memories_schema()
+
+
+def test_search_memory_parsing(letta_client):
+    tool = letta_client.tools.list(name="search_memory")[0]
+    json_schema = tool.json_schema
+    # Remove `request_heartbeat` from properties
+    json_schema["parameters"]["properties"].pop("request_heartbeat", None)
+
+    # Remove it from the required list if present
+    required = json_schema["parameters"].get("required", [])
+    if "request_heartbeat" in required:
+        required.remove("request_heartbeat")
+    assert json_schema == get_search_memory_schema()

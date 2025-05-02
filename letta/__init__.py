@@ -1,9 +1,9 @@
-__version__ = "0.7.8"
+__version__ = "0.7.9"
 
 # import clients
 from letta.client.client import LocalClient, RESTClient, create_client
 
-# # imports for easier access
+# imports for easier access
 from letta.schemas.agent import AgentState
 from letta.schemas.block import Block
 from letta.schemas.embedding_config import EmbeddingConfig

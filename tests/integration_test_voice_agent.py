@@ -17,7 +17,7 @@ from letta.schemas.block import CreateBlock
 from letta.schemas.embedding_config import EmbeddingConfig
 from letta.schemas.enums import MessageRole, MessageStreamStatus
 from letta.schemas.group import GroupUpdate, ManagerType, VoiceSleeptimeManagerUpdate
-from letta.schemas.letta_message import AssistantMessage, ReasoningMessage, ToolCallMessage, ToolReturnMessage, UserMessage
+from letta.schemas.letta_message import AssistantMessage, ReasoningMessage, ToolCallMessage
 from letta.schemas.letta_message_content import TextContent
 from letta.schemas.llm_config import LLMConfig
 from letta.schemas.message import Message, MessageCreate
@@ -29,6 +29,7 @@ from letta.server.server import SyncServer
 from letta.services.agent_manager import AgentManager
 from letta.services.block_manager import BlockManager
 from letta.services.message_manager import MessageManager
+from letta.services.passage_manager import PassageManager
 from letta.services.summarizer.enums import SummarizationMode
 from letta.services.summarizer.summarizer import Summarizer
 from letta.services.tool_manager import ToolManager
@@ -215,6 +216,11 @@ def voice_agent(server, actor):
     return main_agent
 
 
+@pytest.fixture
+def group_id(voice_agent):
+    return voice_agent.multi_agent_group.id
+
+
 @pytest.fixture(scope="module")
 def org_id(server):
     org = server.organization_manager.create_default_organization()
@@ -279,8 +285,19 @@ async def test_voice_recall_memory(disable_e2b_api_key, client, voice_agent, mes
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize("endpoint", ["v1/voice-beta"])
-async def test_multiple_messages(disable_e2b_api_key, client, voice_agent, endpoint):
-    """Tests chat completion streaming using the Async OpenAI client."""
+async def test_trigger_summarization(disable_e2b_api_key, client, server, voice_agent, group_id, endpoint, actor):
+    server.group_manager.modify_group(
+        group_id=group_id,
+        group_update=GroupUpdate(
+            manager_config=VoiceSleeptimeManagerUpdate(
+                manager_type=ManagerType.voice_sleeptime,
+                max_message_buffer_length=6,
+                min_message_buffer_length=5,
+            )
+        ),
+        actor=actor,
+    )
+
     request = _get_chat_request("How are you?")
     async_client = AsyncOpenAI(base_url=f"http://localhost:8283/{endpoint}/{voice_agent.id}", max_retries=0)
 
@@ -395,47 +412,119 @@ async def test_voice_sleeptime_agent(disable_e2b_api_key, voice_agent):
     )
     sleeptime_agent = agent_manager.create_agent(request, actor=actor)
 
-    async_client = AsyncOpenAI()
-
     memory_agent = VoiceSleeptimeAgent(
         agent_id=sleeptime_agent.id,
         convo_agent_state=sleeptime_agent,  # In reality, this will be the main convo agent
-        openai_client=async_client,
         message_manager=MessageManager(),
         agent_manager=agent_manager,
         actor=actor,
         block_manager=BlockManager(),
+        passage_manager=PassageManager(),
         target_block_label="human",
-        message_transcripts=MESSAGE_TRANSCRIPTS,
     )
+    memory_agent.update_message_transcript(MESSAGE_TRANSCRIPTS)
+
+    summarizer = Summarizer(
+        mode=SummarizationMode.STATIC_MESSAGE_BUFFER,
+        summarizer_agent=memory_agent,
+        message_buffer_limit=8,
+        message_buffer_min=4,
+    )
+
+    # stub out the agent.step so it returns a known sentinel
+    memory_agent.step = MagicMock(return_value="STEP_RESULT")
+
+    # patch fire_and_forget on *this* summarizer instance to a MagicMock
+    summarizer.fire_and_forget = MagicMock()
+
+    # now call the method under test
+    in_ctx = MESSAGE_OBJECTS[:MESSAGE_EVICT_BREAKPOINT]
+    new_msgs = MESSAGE_OBJECTS[MESSAGE_EVICT_BREAKPOINT:]
+    # call under test (this is sync)
+    updated, did_summarize = summarizer._static_buffer_summarization(
+        in_context_messages=in_ctx,
+        new_letta_messages=new_msgs,
+    )
+
+    assert did_summarize is True
+    assert len(updated) == summarizer.message_buffer_min + 1  # One extra for system message
+    assert updated[0].role == MessageRole.system  # Preserved system message
+
+    # 2) the summarizer_agent.step() should have been *called* exactly once
+    memory_agent.step.assert_called_once()
+    call_args = memory_agent.step.call_args.args[0]  # the single positional argument: a list of MessageCreate
+    assert isinstance(call_args, list)
+    assert isinstance(call_args[0], MessageCreate)
+    assert call_args[0].role == MessageRole.user
+    assert "15. assistant: I’ll put together a day-by-day plan now." in call_args[0].content[0].text
+
+    # 3) fire_and_forget should have been called once, and its argument must be the coroutine returned by step()
+    summarizer.fire_and_forget.assert_called_once()
+
+
+@pytest.mark.asyncio
+async def test_voice_sleeptime_agent(disable_e2b_api_key, client, voice_agent):
+    """Tests chat completion streaming using the Async OpenAI client."""
+    agent_manager = AgentManager()
+    user_manager = UserManager()
+    actor = user_manager.get_default_user()
+
+    finish_rethinking_memory_tool = client.tools.list(name="finish_rethinking_memory")[0]
+    store_memories_tool = client.tools.list(name="store_memories")[0]
+    rethink_user_memory_tool = client.tools.list(name="rethink_user_memory")[0]
+    request = CreateAgent(
+        name=voice_agent.name + "-sleeptime",
+        agent_type=AgentType.voice_sleeptime_agent,
+        block_ids=[block.id for block in voice_agent.memory.blocks],
+        memory_blocks=[
+            CreateBlock(
+                label="memory_persona",
+                value=get_persona_text("voice_memory_persona"),
+            ),
+        ],
+        llm_config=LLMConfig.default_config(model_name="gpt-4o-mini"),
+        embedding_config=EmbeddingConfig.default_config(provider="openai"),
+        project_id=voice_agent.project_id,
+        tool_ids=[finish_rethinking_memory_tool.id, store_memories_tool.id, rethink_user_memory_tool.id],
+    )
+    sleeptime_agent = agent_manager.create_agent(request, actor=actor)
+
+    memory_agent = VoiceSleeptimeAgent(
+        agent_id=sleeptime_agent.id,
+        convo_agent_state=sleeptime_agent,  # In reality, this will be the main convo agent
+        message_manager=MessageManager(),
+        agent_manager=agent_manager,
+        actor=actor,
+        block_manager=BlockManager(),
+        passage_manager=PassageManager(),
+        target_block_label="human",
+    )
+    memory_agent.update_message_transcript(MESSAGE_TRANSCRIPTS)
 
     results = await memory_agent.step([MessageCreate(role=MessageRole.user, content=[TextContent(text=SUMMARY_REQ_TEXT)])])
 
     messages = results.messages
-    # --- Basic structural check ---
-    assert isinstance(messages, list)
-    assert len(messages) >= 5, "Expected at least 5 messages in the sequence"
+    # collect the names of every tool call
+    seen_tool_calls = set()
 
-    # --- Message 0: initial UserMessage ---
-    assert isinstance(messages[0], UserMessage), "First message should be a UserMessage"
+    for idx, msg in enumerate(messages):
+        # 1) Print whatever “content” this message carries
+        if hasattr(msg, "content") and msg.content is not None:
+            print(f"Message {idx} content:\n{msg.content}\n")
+        # 2) If it’s a ToolCallMessage, also grab its name and print the raw args
+        elif isinstance(msg, ToolCallMessage):
+            name = msg.tool_call.name
+            args = msg.tool_call.arguments
+            seen_tool_calls.add(name)
+            print(f"Message {idx} TOOL CALL: {name}\nArguments:\n{args}\n")
+        # 3) Otherwise just dump the repr
+        else:
+            print(f"Message {idx} repr:\n{msg!r}\n")
 
-    # --- Message 1: store_memories ToolCall ---
-    assert isinstance(messages[1], ToolCallMessage), "Second message should be ToolCallMessage"
-    assert messages[1].name == "store_memories", "Expected store_memories tool call"
-
-    # --- Message 2: store_memories ToolReturn ---
-    assert isinstance(messages[2], ToolReturnMessage), "Third message should be ToolReturnMessage"
-    assert messages[2].name == "store_memories", "Expected store_memories tool return"
-    assert messages[2].status == "success", "store_memories tool return should be successful"
-
-    # --- Message 3: rethink_user_memory ToolCall ---
-    assert isinstance(messages[3], ToolCallMessage), "Fourth message should be ToolCallMessage"
-    assert messages[3].name == "rethink_user_memory", "Expected rethink_user_memory tool call"
-
-    # --- Message 4: rethink_user_memory ToolReturn ---
-    assert isinstance(messages[4], ToolReturnMessage), "Fifth message should be ToolReturnMessage"
-    assert messages[4].name == "rethink_user_memory", "Expected rethink_user_memory tool return"
-    assert messages[4].status == "success", "rethink_user_memory tool return should be successful"
+    # now verify we saw each of the three calls at least once
+    expected = {"store_memories", "rethink_user_memory", "finish_rethinking_memory"}
+    missing = expected - seen_tool_calls
+    assert not missing, f"Did not see calls to: {', '.join(missing)}"
 
 
 @pytest.mark.asyncio

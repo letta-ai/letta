@@ -7,7 +7,7 @@ from openai import OpenAI
 from letta.constants import LETTA_MODEL_ENDPOINT
 from letta.helpers.datetime_helpers import timestamp_to_datetime
 from letta.llm_api.helpers import add_inner_thoughts_to_functions, convert_to_structured_output, make_post_request
-from letta.llm_api.openai_client import supports_parallel_tool_calling, supports_temperature_param
+from letta.llm_api.openai_client import accepts_developer_role, supports_parallel_tool_calling, supports_temperature_param
 from letta.local_llm.constants import INNER_THOUGHTS_KWARG, INNER_THOUGHTS_KWARG_DESCRIPTION, INNER_THOUGHTS_KWARG_DESCRIPTION_GO_FIRST
 from letta.local_llm.utils import num_tokens_from_functions, num_tokens_from_messages
 from letta.log import get_logger
@@ -114,8 +114,16 @@ def build_openai_chat_completions_request(
             put_inner_thoughts_first=put_inner_thoughts_first,
         )
 
+    use_developer_message = accepts_developer_role(llm_config.model)
+
     openai_message_list = [
-        cast_message_to_subtype(m.to_openai_dict(put_inner_thoughts_in_kwargs=llm_config.put_inner_thoughts_in_kwargs)) for m in messages
+        cast_message_to_subtype(
+            m.to_openai_dict(
+                put_inner_thoughts_in_kwargs=llm_config.put_inner_thoughts_in_kwargs,
+                use_developer_message=use_developer_message,
+            )
+        )
+        for m in messages
     ]
 
     if llm_config.model:

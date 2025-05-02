@@ -244,9 +244,15 @@ class SyncServer(Server):
             tool_dir = tool_settings.tool_exec_dir or LETTA_TOOL_EXECUTION_DIR
 
             venv_dir = Path(tool_dir) / venv_name
-            if not Path(tool_dir).is_dir():
-                logger.error(f"Provided LETTA_TOOL_SANDBOX_DIR is not a valid directory: {tool_dir}")
+            tool_path = Path(tool_dir)
+
+            if tool_path.exists() and not tool_path.is_dir():
+                logger.error(f"LETTA_TOOL_SANDBOX_DIR exists but is not a directory: {tool_dir}")
             else:
+                if not tool_path.exists():
+                    logger.warning(f"LETTA_TOOL_SANDBOX_DIR does not exist, creating now: {tool_dir}")
+                    tool_path.mkdir(parents=True, exist_ok=True)
+
                 if tool_settings.tool_exec_venv_name and not venv_dir.is_dir():
                     logger.warning(
                         f"Provided LETTA_TOOL_SANDBOX_VENV_NAME is not a valid venv ({venv_dir}), one will be created for you during tool execution."
@@ -859,7 +865,7 @@ class SyncServer(Server):
                     value=get_persona_text("voice_memory_persona"),
                 ),
             ],
-            llm_config=main_agent.llm_config,
+            llm_config=LLMConfig.default_config("gpt-4.1"),
             embedding_config=main_agent.embedding_config,
             project_id=main_agent.project_id,
         )
@@ -1633,6 +1639,7 @@ class SyncServer(Server):
         assistant_message_tool_name: str = constants.DEFAULT_MESSAGE_TOOL,
         assistant_message_tool_kwarg: str = constants.DEFAULT_MESSAGE_TOOL_KWARG,
         metadata: Optional[dict] = None,
+        request_start_timestamp_ns: Optional[int] = None,
     ) -> Union[StreamingResponse, LettaResponse]:
         """Split off into a separate function so that it can be imported in the /chat/completion proxy."""
         # TODO: @charles is this the correct way to handle?
@@ -1717,6 +1724,7 @@ class SyncServer(Server):
                         streaming_interface.get_generator(),
                         usage_task=task,
                         finish_message=include_final_message,
+                        request_start_timestamp_ns=request_start_timestamp_ns,
                     ),
                     media_type="text/event-stream",
                 )

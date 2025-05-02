@@ -13,6 +13,7 @@ from starlette.responses import Response, StreamingResponse
 
 from letta.agents.letta_agent import LettaAgent
 from letta.constants import DEFAULT_MESSAGE_TOOL, DEFAULT_MESSAGE_TOOL_KWARG
+from letta.helpers.datetime_helpers import get_utc_timestamp_ns
 from letta.log import get_logger
 from letta.orm.errors import NoResultFound
 from letta.schemas.agent import AgentState, AgentType, CreateAgent, UpdateAgent
@@ -684,6 +685,7 @@ async def send_message_streaming(
     This endpoint accepts a message from a user and processes it through the agent.
     It will stream the steps of the response always, and stream the tokens if 'stream_tokens' is set to True.
     """
+    request_start_timestamp_ns = get_utc_timestamp_ns()
     actor = server.user_manager.get_user_or_default(user_id=actor_id)
     # TODO: This is redundant, remove soon
     agent = server.agent_manager.get_agent_by_id(agent_id, actor)
@@ -719,6 +721,7 @@ async def send_message_streaming(
             use_assistant_message=request.use_assistant_message,
             assistant_message_tool_name=request.assistant_message_tool_name,
             assistant_message_tool_kwarg=request.assistant_message_tool_kwarg,
+            request_start_timestamp_ns=request_start_timestamp_ns,
         )
 
     return result

@@ -15,7 +15,7 @@ from pydantic import BaseModel
 
 from letta.constants import DEFAULT_MESSAGE_TOOL, DEFAULT_MESSAGE_TOOL_KWARG, FUNC_FAILED_HEARTBEAT_MESSAGE, REQ_HEARTBEAT_MESSAGE
 from letta.errors import ContextWindowExceededError, RateLimitExceededError
-from letta.helpers.datetime_helpers import get_utc_time
+from letta.helpers.datetime_helpers import get_utc_time, get_utc_timestamp_ns
 from letta.helpers.message_helper import convert_message_creates_to_messages
 from letta.log import get_logger
 from letta.schemas.enums import MessageRole
@@ -25,6 +25,7 @@ from letta.schemas.usage import LettaUsageStatistics
 from letta.schemas.user import User
 from letta.server.rest_api.interface import StreamingServerInterface
 from letta.system import get_heartbeat, package_function_response
+from letta.tracing import tracer
 
 if TYPE_CHECKING:
     from letta.server.server import SyncServer
@@ -51,18 +52,35 @@ async def sse_async_generator(
     generator: AsyncGenerator,
     usage_task: Optional[asyncio.Task] = None,
     finish_message=True,
+    request_start_timestamp_ns: Optional[int] = None,
 ):
     """
     Wraps a generator for use in Server-Sent Events (SSE), handling errors and ensuring a completion message.
 
     Args:
     - generator: An asynchronous generator yielding data chunks.
+    - usage_task: Optional task that will return usage statistics.
+    - finish_message: Whether to send a completion message.
+    - request_start_timestamp_ns: Optional ns timestamp when the request started, used to measure time to first token.
 
     Yields:
     - Formatted Server-Sent Event strings.
     """
+    first_chunk = True
+    ttft_span = None
+    if request_start_timestamp_ns is not None:
+        ttft_span = tracer.start_span("time_to_first_token", start_time=request_start_timestamp_ns)
+
     try:
         async for chunk in generator:
+            # Measure time to first token
+            if first_chunk and ttft_span is not None:
+                now = get_utc_timestamp_ns()
+                ttft_ns = now - request_start_timestamp_ns
+                ttft_span.add_event(name="time_to_first_token_ms", attributes={"ttft_ms": ttft_ns // 1_000_000})
+                ttft_span.end()
+                first_chunk = False
+
             # yield f"data: {json.dumps(chunk)}\n\n"
             if isinstance(chunk, BaseModel):
                 chunk = chunk.model_dump()
@@ -168,6 +186,7 @@ def create_letta_messages_from_llm_response(
     reasoning_content: Optional[List[Union[TextContent, ReasoningContent, RedactedReasoningContent, OmittedReasoningContent]]] = None,
     pre_computed_assistant_message_id: Optional[str] = None,
     pre_computed_tool_message_id: Optional[str] = None,
+    llm_batch_item_id: Optional[str] = None,
 ) -> List[Message]:
     messages = []
 
@@ -192,6 +211,7 @@ def create_letta_messages_from_llm_response(
         tool_calls=[tool_call],
         tool_call_id=tool_call_id,
         created_at=get_utc_time(),
+        batch_item_id=llm_batch_item_id,
     )
     if pre_computed_assistant_message_id:
         assistant_message.id = pre_computed_assistant_message_id
@@ -209,6 +229,7 @@ def create_letta_messages_from_llm_response(
         tool_call_id=tool_call_id,
         created_at=get_utc_time(),
         name=function_name,
+        batch_item_id=llm_batch_item_id,
     )
     if pre_computed_tool_message_id:
         tool_message.id = pre_computed_tool_message_id
@@ -216,7 +237,7 @@ def create_letta_messages_from_llm_response(
 
     if add_heartbeat_request_system_message:
         heartbeat_system_message = create_heartbeat_system_message(
-            agent_id=agent_id, model=model, function_call_success=function_call_success, actor=actor
+            agent_id=agent_id, model=model, function_call_success=function_call_success, actor=actor, llm_batch_item_id=llm_batch_item_id
         )
         messages.append(heartbeat_system_message)
 
@@ -224,10 +245,7 @@ def create_letta_messages_from_llm_response(
 
 
 def create_heartbeat_system_message(
-    agent_id: str,
-    model: str,
-    function_call_success: bool,
-    actor: User,
+    agent_id: str, model: str, function_call_success: bool, actor: User, llm_batch_item_id: Optional[str] = None
 ) -> Message:
     text_content = REQ_HEARTBEAT_MESSAGE if function_call_success else FUNC_FAILED_HEARTBEAT_MESSAGE
     heartbeat_system_message = Message(
@@ -239,6 +257,7 @@ def create_heartbeat_system_message(
         tool_calls=[],
         tool_call_id=None,
         created_at=get_utc_time(),
+        batch_item_id=llm_batch_item_id,
     )
     return heartbeat_system_message
 

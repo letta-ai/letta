@@ -53,7 +53,7 @@ Example output:
 
 **Phase 2: Refine User Memory using `rethink_user_memory` and `finish_rethinking_memory`**
 
-After the `store_memories` tool call is processed, you will be presented with the current content of the `human` memory block (the read-write block storing details about the user).
+After the `store_memories` tool call is processed, consider the current content of the `human` memory block (the read-write block storing details about the user).
 -   Your goal is to refine this block by integrating information from the **ENTIRE** conversation transcript (both `Older` and `Newer` sections) with the existing memory content.
 
 -   Refinement Principles:
@@ -67,8 +67,7 @@ After the `store_memories` tool call is processed, you will be presented with th
 -   Tool Usage:
     -   Use the `rethink_user_memory(new_memory: string)` tool iteratively. Each call MUST submit the complete, rewritten version of the `human` memory block as you refine it.
     -   Continue calling `rethink_user_memory` until you are satisfied that the memory block is accurate, comprehensive, organized, and up-to-date according to the principles above.
-    -   Once the `human` block is fully polished, call the `finish_rethinking_memory()` tool exactly once to signal completion.
+    -   Once the `human` block is fully polished, call the `finish_rethinking_memory` tool exactly once to signal completion.
 
 Output Requirements:
 -   You MUST ONLY output tool calls in the specified sequence: First `store_memories` (once), then one or more `rethink_user_memory` calls, and finally `finish_rethinking_memory` (once).
--   Do not output any other text or explanations outside of the required JSON tool call format.

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import copy
 import json
+import re
 import uuid
 import warnings
 from collections import OrderedDict
@@ -84,6 +85,7 @@ class MessageCreate(BaseModel):
     name: Optional[str] = Field(None, description="The name of the participant.")
     otid: Optional[str] = Field(None, description="The offline threading id associated with this message")
     sender_id: Optional[str] = Field(None, description="The id of the sender of the message, can be an identity id or agent id")
+    batch_item_id: Optional[str] = Field(None, description="The id of the LLMBatchItem that this message is associated with")
     group_id: Optional[str] = Field(None, description="The multi-agent group that the message was sent in")
 
     def model_dump(self, to_orm: bool = False, **kwargs) -> Dict[str, Any]:
@@ -137,6 +139,11 @@ class Message(BaseMessage):
         created_at (datetime): The time the message was created.
         tool_calls (List[OpenAIToolCall,]): The list of tool calls requested.
         tool_call_id (str): The id of the tool call.
+        step_id (str): The id of the step that this message was created in.
+        otid (str): The offline threading id associated with this message.
+        tool_returns (List[ToolReturn]): The list of tool returns requested.
+        group_id (str): The multi-agent group that the message was sent in.
+        sender_id (str): The id of the sender of the message, can be an identity id or agent id.
 
     """
 
@@ -162,6 +169,7 @@ class Message(BaseMessage):
     tool_returns: Optional[List[ToolReturn]] = Field(None, description="Tool execution return information for prior tool calls")
     group_id: Optional[str] = Field(None, description="The multi-agent group that the message was sent in")
     sender_id: Optional[str] = Field(None, description="The id of the sender of the message, can be an identity id or agent id")
+    batch_item_id: Optional[str] = Field(None, description="The id of the LLMBatchItem that this message is associated with")
     # This overrides the optional base orm schema, created_at MUST exist on all messages objects
     created_at: datetime = Field(default_factory=get_utc_time, description="The timestamp when the object was created.")
 
@@ -252,6 +260,7 @@ class Message(BaseMessage):
                             name=self.name,
                             otid=otid,
                             sender_id=self.sender_id,
+                            step_id=self.step_id,
                         )
                     )
                 # Otherwise, we may have a list of multiple types
@@ -269,6 +278,7 @@ class Message(BaseMessage):
                                     name=self.name,
                                     otid=otid,
                                     sender_id=self.sender_id,
+                                    step_id=self.step_id,
                                 )
                             )
                         elif isinstance(content_part, ReasoningContent):
@@ -282,6 +292,7 @@ class Message(BaseMessage):
                                     signature=content_part.signature,
                                     name=self.name,
                                     otid=otid,
+                                    step_id=self.step_id,
                                 )
                             )
                         elif isinstance(content_part, RedactedReasoningContent):
@@ -295,6 +306,7 @@ class Message(BaseMessage):
                                     name=self.name,
                                     otid=otid,
                                     sender_id=self.sender_id,
+                                    step_id=self.step_id,
                                 )
                             )
                         elif isinstance(content_part, OmittedReasoningContent):
@@ -307,6 +319,7 @@ class Message(BaseMessage):
                                     state="omitted",
                                     name=self.name,
                                     otid=otid,
+                                    step_id=self.step_id,
                                 )
                             )
                         else:
@@ -333,6 +346,7 @@ class Message(BaseMessage):
                                 name=self.name,
                                 otid=otid,
                                 sender_id=self.sender_id,
+                                step_id=self.step_id,
                             )
                         )
                     else:
@@ -348,6 +362,7 @@ class Message(BaseMessage):
                                 name=self.name,
                                 otid=otid,
                                 sender_id=self.sender_id,
+                                step_id=self.step_id,
                             )
                         )
         elif self.role == MessageRole.tool:
@@ -391,6 +406,7 @@ class Message(BaseMessage):
                     name=self.name,
                     otid=self.id.replace("message-", ""),
                     sender_id=self.sender_id,
+                    step_id=self.step_id,
                 )
             )
         elif self.role == MessageRole.user:
@@ -409,6 +425,7 @@ class Message(BaseMessage):
                     name=self.name,
                     otid=self.otid,
                     sender_id=self.sender_id,
+                    step_id=self.step_id,
                 )
             )
         elif self.role == MessageRole.system:
@@ -426,6 +443,7 @@ class Message(BaseMessage):
                     name=self.name,
                     otid=self.otid,
                     sender_id=self.sender_id,
+                    step_id=self.step_id,
                 )
             )
         else:
@@ -700,9 +718,12 @@ class Message(BaseMessage):
         else:
             raise ValueError(self.role)
 
-        # Optional field, do not include if null
+        # Optional field, do not include if null or invalid
         if self.name is not None:
-            openai_message["name"] = self.name
+            if bool(re.match(r"^[^\s<|\\/>]+$", self.name)):
+                openai_message["name"] = self.name
+            else:
+                warnings.warn(f"Using OpenAI with invalid 'name' field (name={self.name} role={self.role}).")
 
         if parse_content_parts:
             for content in self.content:

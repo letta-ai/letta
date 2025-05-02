@@ -17,7 +17,7 @@ from letta.__init__ import __version__
 from letta.agents.exceptions import IncompatibleAgentType
 from letta.constants import ADMIN_PREFIX, API_PREFIX, OPENAI_API_PREFIX
 from letta.errors import BedrockPermissionError, LettaAgentNotFoundError, LettaUserNotFoundError
-from letta.jobs.scheduler import shutdown_cron_scheduler, start_cron_jobs
+from letta.jobs.scheduler import shutdown_scheduler_and_release_lock, start_scheduler_with_leader_election
 from letta.log import get_logger
 from letta.orm.errors import DatabaseTimeoutError, ForeignKeyConstraintViolationError, NoResultFound, UniqueConstraintViolationError
 from letta.schemas.letta_message import create_letta_message_union_schema
@@ -150,10 +150,10 @@ def create_application() -> "FastAPI":
         loop.set_default_executor(executor)
 
     @app.on_event("startup")
-    def on_startup():
+    async def on_startup():
         global server
 
-        start_cron_jobs(server)
+        await start_scheduler_with_leader_election(server)
 
     @app.on_event("shutdown")
     def shutdown_mcp_clients():
@@ -170,9 +170,16 @@ def create_application() -> "FastAPI":
         t.start()
         t.join()
 
-    @app.on_event("shutdown")
-    def shutdown_scheduler():
-        shutdown_cron_scheduler()
+    @app.exception_handler(IncompatibleAgentType)
+    async def handle_incompatible_agent_type(request: Request, exc: IncompatibleAgentType):
+        return JSONResponse(
+            status_code=400,
+            content={
+                "detail": str(exc),
+                "expected_type": exc.expected_type,
+                "actual_type": exc.actual_type,
+            },
+        )
 
     @app.exception_handler(IncompatibleAgentType)
     async def handle_incompatible_agent_type(request: Request, exc: IncompatibleAgentType):
@@ -322,9 +329,10 @@ def create_application() -> "FastAPI":
     generate_openapi_schema(app)
 
     @app.on_event("shutdown")
-    def on_shutdown():
+    async def on_shutdown():
         global server
         # server = None
+        await shutdown_scheduler_and_release_lock()
 
     return app
 
