@@ -244,9 +244,15 @@ class SyncServer(Server):
             tool_dir = tool_settings.tool_exec_dir or LETTA_TOOL_EXECUTION_DIR
 
             venv_dir = Path(tool_dir) / venv_name
-            if not Path(tool_dir).is_dir():
-                logger.error(f"Provided LETTA_TOOL_SANDBOX_DIR is not a valid directory: {tool_dir}")
+            tool_path = Path(tool_dir)
+
+            if tool_path.exists() and not tool_path.is_dir():
+                logger.error(f"LETTA_TOOL_SANDBOX_DIR exists but is not a directory: {tool_dir}")
             else:
+                if not tool_path.exists():
+                    logger.warning(f"LETTA_TOOL_SANDBOX_DIR does not exist, creating now: {tool_dir}")
+                    tool_path.mkdir(parents=True, exist_ok=True)
+
                 if tool_settings.tool_exec_venv_name and not venv_dir.is_dir():
                     logger.warning(
                         f"Provided LETTA_TOOL_SANDBOX_VENV_NAME is not a valid venv ({venv_dir}), one will be created for you during tool execution."
