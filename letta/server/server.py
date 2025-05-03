@@ -1725,6 +1725,7 @@ class SyncServer(Server):
                         usage_task=task,
                         finish_message=include_final_message,
                         request_start_timestamp_ns=request_start_timestamp_ns,
+                        llm_config=llm_config,
                     ),
                     media_type="text/event-stream",
                 )
