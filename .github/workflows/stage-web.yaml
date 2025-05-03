@@ -1,0 +1,135 @@
+name:  🕸🚀 Stage Web
+
+on:
+  workflow_dispatch:
+    inputs:
+      git_hash:
+        description: 'Git hash to deploy'
+        required: false
+        type: string
+      branch:
+        description: 'Branch to deploy'
+        required: false
+        type: string
+        default: 'main'
+      deploy_message:
+        description: 'Deployment message'
+        required: false
+        type: string
+        default: ''
+
+env:
+  PROJECT_ID: memgpt-428419
+  # DOCKER_REGISTRY: us-central1-docker.pkg.dev/memgpt-428419/letta
+  TAG: ${{ github.sha }}
+  DEPLOY_MESSAGE: ${{ github.event.inputs.deploy_message || github.event.head_commit.message }}
+  DATABASE_URL: postgresql://staff:${{ secrets.DATABASE_USER_STAFF_PASSWORD }}@10.119.0.3:5432/memgpt
+  GOOGLE_CLIENT_ID: 231889654562-kuff3iq6b78o7uu3n8kn0b4st5hs45de.apps.googleusercontent.com
+  GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
+  GOOGLE_REDIRECT_URI: https://app.letta.com/auth/google/callback
+  E2B_SANDBOX_TEMPLATE_ID: ${{ secrets.E2B_SANDBOX_TEMPLATE_ID }}
+  LETTA_AGENTS_ENDPOINT: http://memgpt-server:8083
+  LETTA_ENVIRONMENT: dev
+  RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+  MIXPANEL_TOKEN: ${{ secrets.MIXPANEL_TOKEN }}
+  NEXT_PUBLIC_MIXPANEL_TOKEN: ${{ secrets.MIXPANEL_TOKEN }}
+  NEXT_PUBLIC_STRIPE_PUBLISH_KEY: ${{ secrets.STRIPE_PUBLISH_KEY }}
+  TEMPORAL_LETTUCE_API_HOST: ${{ secrets.TEMPORAL_LETTUCE_API_HOST }}
+  TEMPORAL_LETTUCE_CA_PEM: ${{ secrets.TEMPORAL_LETTUCE_CA_PEM }}
+  TEMPORAL_LETTUCE_CA_KEY: ${{ secrets.TEMPORAL_LETTUCE_CA_KEY }}
+  STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY }}
+  WORKOS_CLIENT_ID: ${{ secrets.WORKOS_CLIENT_ID }}
+  WORKOS_API_KEY: ${{ secrets.WORKOS_API_KEY }}
+  LAUNCH_DARKLY_SDK_KEY: ${{ secrets.LAUNCH_DARKLY_SDK_KEY }}
+  E2B_API_KEY: ${{ secrets.E2B_API_KEY }}
+  HUBSPOT_API_KEY: ${{ secrets.HUBSPOT_API_KEY }}
+  COMPOSIO_API_KEY: ${{ secrets.COMPOSIO_API_KEY }}
+  SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+  AUTH_GITHUB_CLIENT_ID: ${{ secrets.AUTH_GITHUB_CLIENT_ID }}
+  AUTH_GITHUB_CLIENT_SECRET: ${{ secrets.AUTH_GITHUB_CLIENT_SECRET }}
+  AUTH_GITHUB_REDIRECT_URI: ${{ secrets.AUTH_GITHUB_REDIRECT_URI }}
+  NEXT_PUBLIC_CURRENT_HOST: 34.56.226.249
+  CLOUD_API_ENDPOINT: 34.56.226.249
+  REDIS_HOST: "10.219.146.68"
+  REDIS_PORT: "6379"
+  REGION: us-central1
+  # SLACK_WEBHOOK_URL: https://hooks.slack.com/services/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
+  GCP_SA_EMAIL: github-actions-service-account@memgpt-428419.iam.gserviceaccount.com
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: 'read'
+      id-token: 'write'
+    timeout-minutes: 60
+    # if: github.event.workflow_run.conclusion == 'success' || github.event_name == 'workflow_dispatch'
+    steps:
+      - uses: actions/checkout@v4
+
+      - id: auth
+        name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 'lts/*'
+
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+        with:
+          project_id: ${{ env.PROJECT_ID }}
+          service_account_key: ${{ secrets.GCP_SA_KEY }}
+
+      - name: Set active project
+        run: |
+          gcloud config set project ${{ env.PROJECT_ID }}
+          gcloud auth configure-docker ${{ env.REGION }}-docker.pkg.dev
+
+      - name: Install kubectl
+        run: |
+          curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+          chmod +x kubectl
+          sudo mv kubectl /usr/local/bin/
+          # Add Google Cloud SDK repository and install GKE authentication plugin
+          sudo apt-get install apt-transport-https ca-certificates gnupg
+          echo "deb [signed-by=/usr/share/keyrings/cloud.google.gpg] https://packages.cloud.google.com/apt cloud-sdk main" | sudo tee -a /etc/apt/sources.list.d/google-cloud-sdk.list
+          curl https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo apt-key --keyring /usr/share/keyrings/cloud.google.gpg add -
+          sudo apt-get update
+          sudo apt-get install -y google-cloud-sdk-gke-gcloud-auth-plugin
+
+      - name: Install just
+        run: curl -LSs https://just.systems/install.sh | sudo bash -s -- --to /usr/local/bin/
+
+      - name: Install Helm
+        run: curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
+
+      - name: Configure kubectl
+        env:
+          USE_GKE_GCLOUD_AUTH_PLUGIN: True
+        run: just configure-kubectl letta-dev-us-central1
+
+      - name: Configure Docker
+        run: gcloud auth configure-docker ${{ env.REGION }}-docker.pkg.dev --quiet
+
+      - name: Remove unnecessary files
+        run: |
+            sudo rm -rf /usr/share/dotnet
+            sudo rm -rf "$AGENT_TOOLSDIRECTORY"
+            sudo rm -rf /usr/local/share/boost
+            sudo rm -rf /usr/share/swift
+            sudo rm -rf /usr/local/lib/android
+            sudo rm -rf /usr/local/share/chromium
+            sudo rm -rf /usr/local/share/powershell
+            sudo docker system prune -af --volumes
+            df -h
+
+      - name: Deploy
+        id: deploy
+        run: just build-web deploy-web "${DEPLOY_MESSAGE}"

@@ -55,7 +55,7 @@ configure-kubectl cluster-name="letta":
     docker push {{DOCKER_REGISTRY}}/web-migrations:{{TAG}}
 
 # Deploy the Helm chart
-@deploy-web: push-web
+@deploy-web deploy_message="": push-web
     @echo "🚧 Deploying Helm chart..."
     kubectl delete job {{WEB_HELM_CHART_NAME}}-migration --ignore-not-found
     npm run slack-bot-says "Deploying web service Helm chart with tag: {{TAG}}..."

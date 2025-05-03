@@ -44,7 +44,7 @@ module cluster {
 
   # GKE Node Pool Config
   node_pool_autoscaling_min = 1
-  node_pool_autoscaling_max = 2
+  node_pool_autoscaling_max = 16
   machine_type = "e2-standard-4"
-  disk_size_gb = 100
+  disk_size_gb = 99
 }

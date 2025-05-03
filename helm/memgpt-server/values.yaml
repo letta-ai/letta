@@ -68,21 +68,26 @@ resources:
     memory: 4Gi
 
 livenessProbe:
+  failureThreshold: 5
   httpGet:
     path: /v1/health/
     port: 8083
-    initialDelaySeconds: 30
-    periodSeconds: 10
-    timeoutSeconds: 10
-    failureThreshold: 3
+    scheme: HTTP
+  initialDelaySeconds: 30
+  periodSeconds: 15
+  successThreshold: 1
+  timeoutSeconds: 15
+
 readinessProbe:
+  failureThreshold: 3
   httpGet:
     path: /v1/health/
     port: 8083
-    initialDelaySeconds: 30
-    periodSeconds: 10
-    timeoutSeconds: 10
-    failureThreshold: 3
+    scheme: HTTP
+  initialDelaySeconds: 20
+  periodSeconds: 10
+  successThreshold: 1
+  timeoutSeconds: 15
 
 autoscaling:
   enabled: true

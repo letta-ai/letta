@@ -28,7 +28,7 @@ module database {
     env = var.env
     region = var.region
 
-    db_tier = "db-custom-2-4096"
+    db_tier = "db-custom-8-32768"
     vpc_network_id = data.google_compute_network.vpc_network.id
 
     db_user = "staff"
