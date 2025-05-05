@@ -36,6 +36,7 @@ import {
 import { useTranslations } from '@letta-cloud/translations';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import type { AgentState, Source } from '@letta-cloud/sdk-core';
+import { isAPIError } from '@letta-cloud/sdk-core';
 import {
   type ListSourceFilesResponse,
   useAgentsServiceAttachSourceToAgent,
@@ -533,7 +534,7 @@ function FileUploadDialog(props: FileUploadDialogProps) {
   );
 
   const queryClient = useQueryClient();
-  const { mutate, isPending } = useSourcesServiceUploadFileToSource({
+  const { mutate, error, isPending } = useSourcesServiceUploadFileToSource({
     onSuccess: (_, variables) => {
       void queryClient.setQueriesData<ListSourceFilesResponse | undefined>(
         {
@@ -565,6 +566,29 @@ function FileUploadDialog(props: FileUploadDialogProps) {
       onClose();
     },
   });
+
+  const errorMessage = useMemo(() => {
+    if (error) {
+      if (isAPIError(error)) {
+        if (error.body.errorCode === 'file_size_exceeded') {
+          return t('FileUploadDialog.errors.fileSizeExceeded', {
+            limit: error.body.limit || '5MB',
+          });
+        }
+
+        if (error.body.errorCode === 'storage_exceeded') {
+          return t('FileUploadDialog.errors.storageExceeded', {
+            limit: error.body.limit || '5MB',
+          });
+        }
+      }
+
+      return t('FileUploadDialog.errors.genericError');
+    }
+
+    return undefined;
+  }, [error, t]);
+
   const form = useForm<UploadToFormValues>({
     resolver: zodResolver(uploadToFormValuesSchema),
     mode: 'onChange',
@@ -590,6 +614,7 @@ function FileUploadDialog(props: FileUploadDialogProps) {
     <FormProvider {...form}>
       <Dialog
         isOpen
+        errorMessage={errorMessage}
         onOpenChange={handleOpenChange}
         onSubmit={form.handleSubmit(onSubmit)}
         title={t('FileUploadDialog.title')}

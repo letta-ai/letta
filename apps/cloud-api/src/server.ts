@@ -22,6 +22,8 @@ import cookieParser from 'cookie-parser';
 import { requireProjectMiddleware } from './libs/requireProjectMiddleware/requireProjectMiddleware';
 import { responseSideEffects } from './libs/responseSideEffects/responseSideEffects';
 import { Readable } from 'node:stream';
+import { itemRateLimitMiddleware } from './libs/itemRateLimitMiddleware/itemRateLimitMiddleware';
+import { fileSizeRateLimitMiddleware } from './libs/fileSizeRateLimitMiddlware/fileSizeRateLimitMiddleware';
 
 interface ExpressMeta {
   req: {
@@ -113,6 +115,8 @@ export function startServer() {
 
   app.use(bodyParser.json());
   app.use(rateLimitMiddleware);
+  app.use(itemRateLimitMiddleware);
+  app.use(fileSizeRateLimitMiddleware);
   app.use(requireProjectMiddleware);
   app.use(projectHeaderMiddleware);
 

@@ -10,7 +10,7 @@ import {
   Typography,
   VStack,
 } from '@letta-cloud/ui-component-library';
-import type { Limit } from '@letta-cloud/utils-shared';
+import type { UsageLimits } from '@letta-cloud/utils-shared';
 import { getUsageLimits } from '@letta-cloud/utils-shared';
 import { useNumberFormatter } from '@letta-cloud/utils-client';
 import { webApi, webApiQueryKeys } from '@letta-cloud/sdk-web';
@@ -21,7 +21,7 @@ interface UpgradeToProPlanProps {
 }
 
 interface FeatureProps {
-  type: keyof Limit;
+  type: keyof UsageLimits;
 }
 
 /*

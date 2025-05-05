@@ -21,3 +21,4 @@ export * from './lib/findProjectBySlugOrId/findProjectBySlugOrId';
 export * from './lib/getCurrentOrganizationUsageLimits/getCurrentOrganizationUsageLimits';
 export * from './lib/deleteShareChatOnIdentityDelete/deleteShareChatOnIdentityDelete';
 export * from './lib/redisModelTransactions/redisModelTransactions';
+export * from './lib/shouldItemRateLimit/shouldItemRateLimit';

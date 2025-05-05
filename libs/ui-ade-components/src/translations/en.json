@@ -305,7 +305,12 @@
     },
     "FileUploadDialog": {
       "title": "Upload a file",
-      "confirm": "Upload"
+      "confirm": "Upload",
+      "errors": {
+        "fileSizeExceeded": "File size exceeded, the maximum size is {limit}",
+        "storageExceeded": "You have exceeded the maximum storage limit of {limit}, please upgrade your plan or delete some files",
+        "genericError": "There was an error uploading the file, please try again or contact support."
+      }
     },
     "title": "Data Sources ({count})",
     "errorDetaching": "There was an error detaching this data source, please try again or contact support.",
