@@ -1,4 +1,6 @@
 import os
+import random
+import string
 import time
 from datetime import datetime, timezone
 from importlib import util
@@ -193,3 +195,7 @@ def wait_for_server(url, timeout=30, interval=0.5):
         time.sleep(interval)
 
     raise TimeoutError(f"Server at {url} did not start within {timeout} seconds")
+
+
+def random_string(length: int) -> str:
+    return "".join(random.choices(string.ascii_letters + string.digits, k=length))
