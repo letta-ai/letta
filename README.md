@@ -78,7 +78,7 @@ just ready
 
 # starts the server
 # NOTE: run in a different terminal from `just web` (you need core running)
-just core
+just cloud-api
 
 # NOTE: run in a different terminal from `just core` to have it running
 just web
