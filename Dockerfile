@@ -26,14 +26,14 @@ RUN python3 -m venv /opt/venv
 ENV PATH="/opt/venv/bin:$PATH"
 
 # Now install poetry in the virtual environment
-RUN pip install --no-cache-dir poetry==1.8.2
+RUN pip install --no-cache-dir poetry==2.1.3
 
 # Copy dependency files first
 COPY pyproject.toml poetry.lock ./
 # Then copy the rest of the application code
 COPY . .
 
-RUN poetry lock --no-update && \
+RUN poetry lock && \
     poetry install --all-extras && \
     rm -rf $POETRY_CACHE_DIR
 
