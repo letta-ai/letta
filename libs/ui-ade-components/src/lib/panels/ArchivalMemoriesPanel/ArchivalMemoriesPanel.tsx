@@ -110,18 +110,28 @@ function MemoryItem(props: MemoryItemProps) {
     useAgentsServiceDeletePassage({
       onSuccess: async () => {
         setOpen(false);
-        queryClient.setQueriesData<ListPassagesResponse | undefined>(
+        queryClient.setQueriesData<
+          InfiniteData<ListPassagesResponse> | undefined
+        >(
           {
-            queryKey: UseAgentsServiceListPassagesKeyFn({
-              agentId: currentAgentId,
-            }),
+            queryKey: UseInfiniteAgentPassagesQueryFn([
+              {
+                agentId: currentAgentId,
+              },
+            ]).slice(0, 2),
+            exact: false,
           },
           (oldData) => {
             if (!oldData) {
               return oldData;
             }
 
-            return oldData.filter((m) => m.id !== memory.id);
+            return {
+              ...oldData,
+              pages: oldData.pages.map((p) =>
+                p.filter((m) => m.id !== memory.id),
+              ),
+            };
           },
         );
       },
@@ -229,6 +239,7 @@ function MemoriesList(props: MemoriesListProps) {
           agentId,
         });
       },
+      refetchInterval: 10000,
       initialPageParam: { after: null },
       getNextPageParam: (lastPage) => {
         if (lastPage.length > limit) {
@@ -405,6 +416,7 @@ export function useArchivalMemoriesTitle() {
     },
     undefined,
     {
+      refetchInterval: 10000,
       enabled: !!currentAgentId,
     },
   );
