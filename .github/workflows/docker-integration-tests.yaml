@@ -70,7 +70,7 @@ jobs:
         bash scripts/wait_for_service.sh http://localhost:8283 -- echo "Service is ready"
 
     - name: Install Poetry
-      run: pipx install poetry==1.8.2
+      run: pipx install poetry==2.1.3
 
     - name: Install Fern
       if: ${{ contains(needs.changed-files.outputs.all_changed_files, 'apps/core/letta/') }}
