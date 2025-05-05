@@ -381,7 +381,13 @@ function ToolInput(props: ToolInputProps) {
   const t = useTranslations('ToolsEditor/ToolsSimulator');
 
   return (
-    <VStack gap={false} color="background" fullWidth fullHeight>
+    <VStack
+      gap={false}
+      overflow="hidden"
+      color="background"
+      fullWidth
+      fullHeight
+    >
       <HStack
         align="center"
         justify="spaceBetween"
@@ -421,20 +427,22 @@ function ToolInput(props: ToolInputProps) {
           ></Button>
         </HStack>
       </HStack>
-      {toolInput === 'args' && (
-        <ArgumentEditor
-          defaultArguments={defaultArguments}
-          stagedArguments={stagedArguments}
-          setStagedArguments={setStagedArguments}
-        />
-      )}
-      {toolInput === 'environment' && (
-        <EnvironmentEditor
-          defaultEnvironment={defaultEnvironment}
-          stagedEnvironment={stagedEnvironment}
-          setStagedEnvironment={setStagedEnvironment}
-        />
-      )}
+      <VStack collapseHeight flex overflowY="auto">
+        {toolInput === 'args' && (
+          <ArgumentEditor
+            defaultArguments={defaultArguments}
+            stagedArguments={stagedArguments}
+            setStagedArguments={setStagedArguments}
+          />
+        )}
+        {toolInput === 'environment' && (
+          <EnvironmentEditor
+            defaultEnvironment={defaultEnvironment}
+            stagedEnvironment={stagedEnvironment}
+            setStagedEnvironment={setStagedEnvironment}
+          />
+        )}
+      </VStack>
     </VStack>
   );
 }
