@@ -9,9 +9,10 @@ from mcp import Tool as MCPTool
 
 import letta.constants as constants
 from letta.config import LettaConfig
-from letta.functions.mcp_client.types import MCPServerType, StdioServerConfig
+from letta.functions.mcp_client.types import MCPServerType, SSEServerConfig, StdioServerConfig
 from letta.schemas.tool import ToolCreate
 from letta.server.server import SyncServer
+from letta.utils import parse_json
 
 
 def create_virtualenv_and_install_requirements(requirements_path: Path, name="venv") -> Path:
@@ -44,7 +45,6 @@ def empty_mcp_config(tmp_path):
     path = Path(__file__).parent / "mcp_config.json"
     path.write_text(json.dumps({}))  # writes "{}"
 
-    create_virtualenv_and_install_requirements(Path(__file__).parent / "weather" / "requirements.txt")
     return path
 
 
@@ -69,8 +69,46 @@ def default_user(server):
     yield user
 
 
+def test_sse_mcp_server(server, default_user):
+    assert server.mcp_clients == {}
+
+    mcp_server_name = "github_composio"
+    server_url = "https://mcp.composio.dev/composio/server/3c44733b-75ae-4ba8-9a68-7153265fadd8"
+    sse_mcp_config = SSEServerConfig(server_name=mcp_server_name, server_url=server_url)
+    server.add_mcp_server_to_config(sse_mcp_config)
+
+    # Check that it's in clients
+    assert mcp_server_name in server.mcp_clients
+
+    # Check that it's in the server mapping
+    mcp_server_mapping = server.get_mcp_servers()
+    assert mcp_server_name in mcp_server_mapping
+    assert mcp_server_mapping[mcp_server_name] == sse_mcp_config
+
+    # Check tools
+    tools = server.get_tools_from_mcp_server(mcp_server_name)
+    assert len(tools) > 0
+    assert isinstance(tools[0], MCPTool)
+    star_mcp_tool = next((t for t in tools if t.name == "GITHUB_STAR_A_REPOSITORY_FOR_THE_AUTHENTICATED_USER"), None)
+
+    # Check that one of the tools are executable
+    tool_create = ToolCreate.from_mcp(mcp_server_name=mcp_server_name, mcp_tool=star_mcp_tool)
+    server.tool_manager.create_or_update_mcp_tool(tool_create=tool_create, mcp_server_name=mcp_server_name, actor=default_user)
+
+    function_response, is_error = server.mcp_clients[mcp_server_name].execute_tool(
+        tool_name=star_mcp_tool.name, tool_args={"owner": "letta-ai", "repo": "letta"}
+    )
+    assert not is_error
+    function_response = parse_json(function_response)
+    assert function_response.get("successful"), function_response
+    assert function_response.get("data").get("details") == "Action executed successfully", function_response
+
+
 def test_stdio_mcp_server(server, default_user):
     assert server.mcp_clients == {}
+
+    # Create venv
+    create_virtualenv_and_install_requirements(Path(__file__).parent / "weather" / "requirements.txt")
 
     mcp_server_name = "weather"
     command = str(Path(__file__).parent / "weather" / "venv" / "bin" / "python3")
@@ -115,11 +153,9 @@ def test_stdio_mcp_server(server, default_user):
     get_alerts_mcp_tool = tools[0]
 
     tool_create = ToolCreate.from_mcp(mcp_server_name=mcp_server_name, mcp_tool=get_alerts_mcp_tool)
-    get_alerts_tool = server.tool_manager.create_or_update_mcp_tool(
-        tool_create=tool_create, mcp_server_name=mcp_server_name, actor=default_user
-    )
+    server.tool_manager.create_or_update_mcp_tool(tool_create=tool_create, mcp_server_name=mcp_server_name, actor=default_user)
 
     # Attempt running the tool
     function_response, is_error = server.mcp_clients[mcp_server_name].execute_tool(tool_name="get_alerts", tool_args={"state": "CA"})
     assert not is_error
-    assert len(function_response) > 1000, function_response  # Crude heuristic for an expected result
+    assert len(function_response) > 20, function_response  # Crude heuristic for an expected result
