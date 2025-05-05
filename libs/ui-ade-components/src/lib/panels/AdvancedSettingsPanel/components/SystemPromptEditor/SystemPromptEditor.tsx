@@ -23,7 +23,7 @@ import {
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useADEPermissions } from '../../../../hooks/useADEPermissions/useADEPermissions';
 import { ApplicationServices } from '@letta-cloud/service-rbac';
-import React, { useCallback, useState } from 'react';
+import { useCallback, useState } from 'react';
 
 const systemPromptEditorForm = z.object({
   system: z.string(),
@@ -167,7 +167,7 @@ export function SystemPromptEditor() {
       )}
       <HStack align="center" fullWidth justify="spaceBetween">
         <HStack align="center">
-          <Typography variant="body2">
+          <Typography variant="body2" color="lighter" semibold={true}>
             {t('SystemPromptEditor.label')}
           </Typography>
           <InfoTooltip text={t('SystemPromptEditor.tooltip')} />

@@ -3,7 +3,6 @@ import {
   InfoTooltip,
   Typography,
 } from '@letta-cloud/ui-component-library';
-import React from 'react';
 import { useTranslations } from '@letta-cloud/translations';
 import { useCurrentAgent } from '../../../../hooks';
 
@@ -14,7 +13,9 @@ export function AgentType() {
   return (
     <HStack align="center" fullWidth justify="spaceBetween">
       <HStack align="center">
-        <Typography variant="body2">{t('AgentType.label')}</Typography>
+        <Typography variant="body2" color="lighter" semibold={true}>
+          {t('AgentType.label')}
+        </Typography>
         <InfoTooltip text={t('AgentType.tooltip')} />
       </HStack>
       <Typography variant="body2" font="mono">

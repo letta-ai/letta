@@ -99,12 +99,14 @@ function AgentAdvancedSettingsView() {
         <MessageBufferAutoclearSwitch />
         <SystemPromptEditor />
       </VStack>
-      <AgentType />
-      {agentType === 'voice_convo_agent' && <MessageBufferLengthSlider />}
-      {isSleeptimeAgent && agentType !== 'voice_convo_agent' && (
-        <SleeptimeAgentFrequencyInput />
-      )}
-      {!isTemplate && <AgentDescription />}
+      <VStack gap="xlarge">
+        <AgentType />
+        {agentType === 'voice_convo_agent' && <MessageBufferLengthSlider />}
+        {isSleeptimeAgent && agentType !== 'voice_convo_agent' && (
+          <SleeptimeAgentFrequencyInput />
+        )}
+        {!isTemplate && <AgentDescription />}
+      </VStack>
     </VStack>
   );
 }
