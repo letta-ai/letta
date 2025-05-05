@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "weather": {
+      "transport": "stdio",
+      "command": "/Users/mattzhou/letta-cloud/apps/core/tests/mcp/weather/venv/bin/python3",
+      "args": [
+        "/Users/mattzhou/letta-cloud/apps/core/tests/mcp/weather/weather.py"
+      ]
+    }
+  }
+}
