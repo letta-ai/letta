@@ -737,31 +737,27 @@ export function Messages(props: MessagesProps) {
       return [];
     }
 
-    let firstPage = Array.isArray(data.pages[0]) ? data.pages[0] : [];
+    const firstPage = Array.isArray(data.pages[0]) ? data.pages[0] : [];
     const messageExistingMap = new Set<string>();
 
-    firstPage = firstPage.filter((message) => {
-      if (!message.otid) {
-        return true;
-      }
-
-      if (messageExistingMap.has(message.otid)) {
-        return false;
-      }
-
-      messageExistingMap.add(message.otid);
-
-      return true;
-    });
-
     const preMessages = [...firstPage, ...(data.pages.slice(1).flat() || [])]
-      // deduplicate messages on otid
+      .filter((message) => {
+        if (!message.otid) {
+          return true;
+        }
 
+        if (messageExistingMap.has(message.otid)) {
+          return false;
+        }
+
+        messageExistingMap.add(message.otid);
+
+        return true;
+      })
       .map((message, _, allMessages) =>
         // @ts-expect-error - the typing is wrong
         extractMessage(message, mode, allMessages),
       )
-
       .filter((message) => !!message)
       .sort(
         (a, b) =>
