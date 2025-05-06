@@ -1,9 +1,6 @@
 import type { CostItemType } from '@letta-cloud/sdk-web';
 import { useMemo } from 'react';
-import {
-  useCurrencyFormatter,
-  useNumberFormatter,
-} from '@letta-cloud/utils-client';
+import { useFormatters } from '@letta-cloud/utils-client';
 import {
   type BrandKeys,
   brandKeyToLogo,
@@ -32,8 +29,7 @@ function CostRender(props: CostRenderProps) {
     }));
   }, [costMap]);
 
-  const { formatNumber } = useNumberFormatter();
-  const { formatCurrency } = useCurrencyFormatter();
+  const { formatNumber, formatCurrency } = useFormatters();
   return (
     <VStack fullWidth>
       <Typography bold variant="body2">

@@ -22,11 +22,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { webApi, webApiQueryKeys } from '$web/client';
 import type { BillingHistorySchemaType } from '$web/web-api/contracts';
 import { useFeatureFlag } from '$web/web-api/contracts';
-import {
-  useCurrencyFormatter,
-  useDateFormatter,
-  useNumberFormatter,
-} from '@letta-cloud/utils-client';
+import { useFormatters } from '@letta-cloud/utils-client';
 import { AddCreditCardDialog } from '$web/client/components/AddCreditCardDialog/AddCreditCardDialog';
 import { useUserHasPermission } from '$web/client/hooks';
 import { ApplicationServices } from '@letta-cloud/service-rbac';
@@ -48,7 +44,7 @@ interface ProViewProps {
 function ProView(props: ProViewProps) {
   const { billingPeriodEnd, isCancelled } = props;
   const t = useTranslations('organization/billing');
-  const { formatDate } = useDateFormatter();
+  const { formatDate } = useFormatters();
 
   if (!billingPeriodEnd) {
     return (
@@ -130,7 +126,7 @@ function FreePlanUpsellDetails() {
 
   const limits = getUsageLimits('pro');
 
-  const { formatNumber } = useNumberFormatter();
+  const { formatNumber } = useFormatters();
 
   return (
     <VStack border fullWidth color="brand-light" padding="xlarge">
@@ -298,7 +294,7 @@ function BillingOverview() {
 
   const { data: isProPlanEnabled } = useFeatureFlag('PRO_PLAN');
 
-  const { formatNumber } = useNumberFormatter();
+  const { formatNumber } = useFormatters();
 
   if (!data) {
     return (
@@ -414,8 +410,7 @@ function BillingHistory() {
       },
     });
 
-  const { formatDate } = useDateFormatter();
-  const { formatCurrency } = useCurrencyFormatter();
+  const { formatDate, formatCurrency } = useFormatters();
 
   const columns: Array<ColumnDef<BillingHistorySchemaType>> = useMemo(() => {
     return [

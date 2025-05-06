@@ -7,7 +7,7 @@ import {
   Button,
   HStack,
 } from '@letta-cloud/ui-component-library';
-import { useDateFormatter } from '@letta-cloud/utils-client';
+import { useFormatters } from '@letta-cloud/utils-client';
 import type { AgentTemplateType } from '@letta-cloud/sdk-web';
 
 interface AgentTemplateCardProps {
@@ -19,7 +19,7 @@ export function AgentTemplateCard(props: AgentTemplateCardProps) {
   // const [openVersions, setOpenVersions] = React.useState(false);
   const { agent } = props;
   const { name, updatedAt } = agent;
-  const { formatDateAndTime } = useDateFormatter();
+  const { formatDateAndTime } = useFormatters();
   const { slug: projectSlug } = useCurrentProject();
 
   return (

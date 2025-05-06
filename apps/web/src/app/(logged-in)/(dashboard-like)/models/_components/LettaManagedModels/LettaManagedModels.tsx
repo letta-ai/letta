@@ -21,10 +21,7 @@ import {
 import type { ColumnDef } from '@tanstack/react-table';
 import type { UsageLimits } from '@letta-cloud/utils-shared';
 import { creditsToDollars, getUsageLimits } from '@letta-cloud/utils-shared';
-import {
-  useCurrencyFormatter,
-  useNumberFormatter,
-} from '@letta-cloud/utils-client';
+import { useFormatters } from '@letta-cloud/utils-client';
 import { ModelName } from '../ModelName/ModelName';
 import { ModelDetailsOverlay } from '../ModelDetailsOverlay/ModelDetailsOverlay';
 
@@ -38,8 +35,7 @@ function BaseCostCell(props: BaseCostCellProps) {
   const { tier, costMap, usage } = props;
   const t = useTranslations('pages/models/LettaManagedModels');
 
-  const { formatCurrency } = useCurrencyFormatter();
-  const { formatNumber } = useNumberFormatter();
+  const { formatCurrency, formatNumber } = useFormatters();
 
   const baseCost = useMemo(() => {
     return Object.entries(costMap)

@@ -17,7 +17,7 @@ import {
 import { useTranslations } from '@letta-cloud/translations';
 import { getUsageLimits } from '@letta-cloud/utils-shared';
 import { useMemo, useState } from 'react';
-import { useNumberFormatter } from '@letta-cloud/utils-client';
+import { useFormatters } from '@letta-cloud/utils-client';
 
 interface QuotaRowProps {
   label: string;
@@ -29,7 +29,7 @@ function QuotaRow(props: QuotaRowProps) {
   const { label, value, max } = props;
   const t = useTranslations('components/CustomerQuotaView');
 
-  const { formatNumber } = useNumberFormatter();
+  const { formatNumber } = useFormatters();
 
   return (
     <HStack fullWidth align="center" justify="spaceBetween">
@@ -63,7 +63,7 @@ function ViewAllQuotas(props: ViewAllQuotasProps) {
   const { limits } = props;
   const [open, setIsOpen] = useState(false);
 
-  const { formatFileSize } = useNumberFormatter();
+  const { formatFileSize } = useFormatters();
 
   const t = useTranslations('components/CustomerQuotaView');
   const { data: allQuotasData } =

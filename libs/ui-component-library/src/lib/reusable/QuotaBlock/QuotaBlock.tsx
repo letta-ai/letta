@@ -4,7 +4,7 @@ import { Typography } from '../../core/Typography/Typography';
 import { QuotaProgressBar } from '../../core/QuotaProgressBar/QuotaProgressBar';
 import { HStack } from '../../framing/HStack/HStack';
 import { useTranslations } from '@letta-cloud/translations';
-import { useNumberFormatter } from '@letta-cloud/utils-client';
+import { useFormatters } from '@letta-cloud/utils-client';
 
 interface QuotaBlockProps {
   max: number | 'infinite';
@@ -27,7 +27,7 @@ export function QuotaBlock(props: QuotaBlockProps) {
   const { max, value, footer, label, type = 'progress' } = props;
   const t = useTranslations('components/QuotaBlock');
 
-  const { formatNumber } = useNumberFormatter();
+  const { formatNumber } = useFormatters();
   return (
     <VStack color="background-grey" padding>
       <Typography bold>{label}</Typography>

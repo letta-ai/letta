@@ -18,7 +18,7 @@ import { webApi, webApiQueryKeys } from '@letta-cloud/sdk-web';
 import React, { useMemo, useState } from 'react';
 import { useTranslations } from '@letta-cloud/translations';
 import type { ColumnDef } from '@tanstack/react-table';
-import { useDateFormatter } from '@letta-cloud/utils-client';
+import { useFormatters } from '@letta-cloud/utils-client';
 import { Slot } from '@radix-ui/react-slot';
 import { Button } from '@letta-cloud/ui-component-library';
 import type { Step } from '@letta-cloud/sdk-core';
@@ -125,7 +125,7 @@ export default function AuditLogPage() {
       enabled: Boolean(limit),
     });
 
-  const { formatDateAndTime } = useDateFormatter();
+  const { formatDateAndTime } = useFormatters();
 
   const transactionColumns: Array<ColumnDef<PublicCreditTransactionType>> =
     useMemo(() => {

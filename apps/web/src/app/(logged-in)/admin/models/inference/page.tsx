@@ -22,10 +22,7 @@ import {
   Typography,
 } from '@letta-cloud/ui-component-library';
 import type { ColumnDef } from '@tanstack/react-table';
-import {
-  useDateFormatter,
-  useNumberFormatter,
-} from '@letta-cloud/utils-client';
+import { useFormatters } from '@letta-cloud/utils-client';
 import type { AdminInferenceModelType } from '$web/web-api/contracts';
 import { useQueryClient } from '@tanstack/react-query';
 import type { ServerInferResponses } from '@ts-rest/core';
@@ -207,7 +204,7 @@ function ImportModelsDialog() {
 function AdminInferenceModelsPage() {
   const [offset, setOffset] = useState(0);
   const [limit, setLimit] = useState(10);
-  const { formatNumber } = useNumberFormatter();
+  const { formatNumber, formatDateAndTime } = useFormatters();
   const [search, setSearch] = useState('');
 
   const { data, isFetching, isError } =
@@ -225,8 +222,6 @@ function AdminInferenceModelsPage() {
         },
       },
     });
-
-  const { formatDateAndTime } = useDateFormatter();
 
   const inferenceModelsColumns: Array<ColumnDef<AdminInferenceModelType>> =
     useMemo(

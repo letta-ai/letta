@@ -33,7 +33,7 @@ import {
 import { useInfiniteQuery, useQueryClient } from '@tanstack/react-query';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useTranslations } from '@letta-cloud/translations';
-import { useDateFormatter } from '@letta-cloud/utils-client';
+import { useFormatters } from '@letta-cloud/utils-client';
 import { useCurrentSimulatedAgent } from '../../hooks/useCurrentSimulatedAgent/useCurrentSimulatedAgent';
 import { useCurrentAgentMetaData } from '../../hooks';
 import { useADEPermissions } from '../../hooks/useADEPermissions/useADEPermissions';
@@ -104,7 +104,7 @@ function MemoryItem(props: MemoryItemProps) {
 
   const t = useTranslations('ADE/ArchivalMemories');
 
-  const { formatDateAndTime } = useDateFormatter();
+  const { formatDateAndTime } = useFormatters();
 
   const { mutate: deleteMemory, isPending: isDeletingMemory } =
     useAgentsServiceDeletePassage({

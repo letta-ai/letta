@@ -20,7 +20,7 @@ import {
 import type { AgentState, ListAgentsResponse } from '@letta-cloud/sdk-core';
 import React, { useEffect, useMemo, useState } from 'react';
 import type { ColumnDef } from '@tanstack/react-table';
-import { useDateFormatter } from '@letta-cloud/utils-client';
+import { useFormatters } from '@letta-cloud/utils-client';
 import { useCurrentDevelopmentServerConfig } from '@letta-cloud/utils-client';
 import { ConnectToLocalServerCommand } from '$web/client/components/ConnectToLocalServerCommand/ConnectToLocalServerCommand';
 import { UpdateDevelopmentServerDetailsDialog } from '../../shared/UpdateDevelopmentServerDetailsDialog/UpdateDevelopmentServerDetailsDialog';
@@ -189,7 +189,7 @@ function LocalProjectPage() {
     return data.pages?.[page]?.slice(0, limit) || [];
   }, [data, page, limit]);
 
-  const { formatDateAndTime } = useDateFormatter();
+  const { formatDateAndTime } = useFormatters();
   const user = useCurrentUser();
 
   const columns: Array<ColumnDef<AgentState>> = useMemo(

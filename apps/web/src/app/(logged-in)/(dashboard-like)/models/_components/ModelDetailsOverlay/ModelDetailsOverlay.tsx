@@ -10,7 +10,7 @@ import {
   VStack,
 } from '@letta-cloud/ui-component-library';
 import { ModelName } from '../ModelName/ModelName';
-import { useCurrencyFormatter } from '@letta-cloud/utils-client';
+import { useFormatters } from '@letta-cloud/utils-client';
 import { creditsToDollars } from '@letta-cloud/utils-shared';
 
 interface CostsTableProps {
@@ -22,7 +22,7 @@ function ModelCostsTable(props: CostsTableProps) {
 
   const t = useTranslations('pages/models/ModelDetailsOverlay');
 
-  const { formatCurrency } = useCurrencyFormatter();
+  const { formatCurrency } = useFormatters();
 
   return (
     <Section

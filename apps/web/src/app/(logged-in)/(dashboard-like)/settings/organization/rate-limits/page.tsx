@@ -10,7 +10,7 @@ import {
   TabGroup,
 } from '@letta-cloud/ui-component-library';
 import type { ColumnDef } from '@tanstack/react-table';
-import { useNumberFormatter } from '@letta-cloud/utils-client';
+import { useFormatters } from '@letta-cloud/utils-client';
 import { useDebouncedValue } from '@mantine/hooks';
 
 type Mode = 'embedding' | 'inference';
@@ -63,7 +63,7 @@ function RateLimitsPage() {
     return mode === 'inference' ? inferenceRateLimits : embeddingRateLimits;
   }, [mode, inferenceRateLimits, embeddingRateLimits]);
 
-  const { formatNumber } = useNumberFormatter();
+  const { formatNumber } = useFormatters();
 
   const columns: Array<ColumnDef<RateLimit>> = useMemo(() => {
     return [

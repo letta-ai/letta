@@ -21,9 +21,8 @@ import { CreditCardForm } from '$web/client/components/AddCreditCardDialog/AddCr
 import { useQueryClient } from '@tanstack/react-query';
 import { creditsToDollars } from '@letta-cloud/utils-shared';
 import {
-  useCurrencyFormatter,
   useErrorTranslationMessage,
-  useNumberFormatter,
+  useFormatters,
 } from '@letta-cloud/utils-client';
 import { get } from 'lodash-es';
 import type { ServerInferResponses } from '@ts-rest/core';
@@ -73,8 +72,7 @@ function ConfirmationText() {
 
   const t = useTranslations('components/PurchaseCreditsDialog');
   const credits = form.watch('credits');
-  const { formatCurrency } = useCurrencyFormatter();
-  const { formatNumber } = useNumberFormatter();
+  const { formatNumber, formatCurrency } = useFormatters();
 
   const { data: billingInfo } =
     webApi.organizations.getCurrentOrganizationBillingInfo.useQuery({
@@ -170,8 +168,7 @@ function PurchaseCreditsForm(props: PurchaseCreditsFormProps) {
         onComplete();
       },
     });
-  const { formatCurrency } = useCurrencyFormatter();
-  const { formatNumber } = useNumberFormatter();
+  const { formatNumber, formatCurrency } = useFormatters();
 
   const errorTranslation = useErrorMessages(error);
 

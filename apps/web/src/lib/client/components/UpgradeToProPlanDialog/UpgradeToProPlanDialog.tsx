@@ -12,7 +12,7 @@ import {
 } from '@letta-cloud/ui-component-library';
 import type { UsageLimits } from '@letta-cloud/utils-shared';
 import { getUsageLimits } from '@letta-cloud/utils-shared';
-import { useNumberFormatter } from '@letta-cloud/utils-client';
+import { useFormatters } from '@letta-cloud/utils-client';
 import { webApi, webApiQueryKeys } from '@letta-cloud/sdk-web';
 import { CreditCardForm } from '$web/client/components/AddCreditCardDialog/AddCreditCardDialog';
 
@@ -40,7 +40,7 @@ function Feature(props: FeatureProps) {
   const limits = getUsageLimits('pro');
   const t = useTranslations('components/UpgradeToProPlanDialog');
 
-  const { formatNumber } = useNumberFormatter();
+  const { formatNumber } = useFormatters();
 
   const content = useMemo(() => {
     switch (type) {

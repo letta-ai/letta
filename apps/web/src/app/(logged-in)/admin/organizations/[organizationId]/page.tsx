@@ -28,7 +28,7 @@ import {
 } from '@letta-cloud/ui-component-library';
 import { webApi, webApiQueryKeys } from '$web/client';
 import React, { useCallback, useMemo, useState } from 'react';
-import { useDateFormatter, useMonthCursor } from '@letta-cloud/utils-client';
+import { useFormatters, useMonthCursor } from '@letta-cloud/utils-client';
 import type { ColumnDef } from '@tanstack/react-table';
 import type {
   AdminOrganizationRateLimitItemType,
@@ -41,9 +41,7 @@ import type { ServerInferResponses } from '@ts-rest/core';
 import { useDebouncedValue } from '@mantine/hooks';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useCurrencyFormatter } from '@letta-cloud/utils-client';
 import { creditsToDollars } from '@letta-cloud/utils-shared';
-import { useNumberFormatter } from '@letta-cloud/utils-client';
 import { PricingModelEnum } from '@letta-cloud/types';
 
 function SetAsEnterpriseBillingMethodButton() {
@@ -1408,7 +1406,7 @@ function CreditSection() {
       enabled: !!organization,
     });
 
-  const { formatNumber } = useNumberFormatter();
+  const { formatNumber, formatCurrency } = useFormatters();
 
   const credits = useMemo(() => {
     if (!data?.body) {
@@ -1417,8 +1415,6 @@ function CreditSection() {
 
     return formatNumber(data.body.credits);
   }, [data?.body, formatNumber]);
-
-  const { formatCurrency } = useCurrencyFormatter();
 
   const creditValue = useMemo(() => {
     if (!data?.body) {
@@ -1758,7 +1754,7 @@ function OrganizationLevelRateLimitTable() {
       enabled: !!organization,
     });
 
-  const { formatNumber } = useNumberFormatter();
+  const { formatNumber } = useFormatters();
 
   const columns: Array<ColumnDef<AdminOrganizationRateLimitItemType>> =
     useMemo(() => {
@@ -1885,7 +1881,7 @@ function BanSection() {
 
 function OrganizationPage() {
   const organization = useCurrentAdminOrganization();
-  const { formatDate } = useDateFormatter();
+  const { formatDate } = useFormatters();
 
   return (
     <DashboardPageLayout

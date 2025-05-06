@@ -27,7 +27,7 @@ import { useRouter } from 'next/navigation';
 import { useQueryClient } from '@tanstack/react-query';
 import { useTranslations } from '@letta-cloud/translations';
 import {
-  useDateFormatter,
+  useFormatters,
   useErrorTranslationMessage,
 } from '@letta-cloud/utils-client';
 import Link from 'next/link';
@@ -147,7 +147,7 @@ interface ProjectCardProps {
 function ProjectCard(props: ProjectCardProps) {
   const { projectName, lastUpdatedAt, url } = props;
   const t = useTranslations('projects/page');
-  const { formatDateAndTime } = useDateFormatter();
+  const { formatDateAndTime } = useFormatters();
 
   return (
     <Link href={url}>

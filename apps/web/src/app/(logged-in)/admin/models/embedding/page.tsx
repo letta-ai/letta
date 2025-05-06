@@ -22,10 +22,7 @@ import {
   Typography,
 } from '@letta-cloud/ui-component-library';
 import type { ColumnDef } from '@tanstack/react-table';
-import {
-  useDateFormatter,
-  useNumberFormatter,
-} from '@letta-cloud/utils-client';
+import { useFormatters } from '@letta-cloud/utils-client';
 import type { AdminEmbeddingModelType } from '$web/web-api/contracts';
 import { useQueryClient } from '@tanstack/react-query';
 import type { ServerInferResponses } from '@ts-rest/core';
@@ -209,7 +206,7 @@ function AdminEmbeddingModelsPage() {
   const [limit, setLimit] = useState(10);
   const [search, setSearch] = useState('');
 
-  const { formatNumber } = useNumberFormatter();
+  const { formatNumber, formatDateAndTime } = useFormatters();
 
   const { data, isFetching, isError } =
     webApi.admin.models.getAdminEmbeddingModels.useQuery({
@@ -226,8 +223,6 @@ function AdminEmbeddingModelsPage() {
         },
       },
     });
-
-  const { formatDateAndTime } = useDateFormatter();
 
   const embeddingModelsColumns: Array<ColumnDef<AdminEmbeddingModelType>> =
     useMemo(

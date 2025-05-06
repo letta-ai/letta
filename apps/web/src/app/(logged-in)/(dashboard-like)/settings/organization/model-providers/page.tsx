@@ -34,7 +34,7 @@ import {
   useProvidersServiceModifyProvider,
 } from '@letta-cloud/sdk-core';
 import { useQueryClient } from '@tanstack/react-query';
-import { useDateFormatter } from '@letta-cloud/utils-client';
+import { useFormatters } from '@letta-cloud/utils-client';
 import { getUseProvidersServiceModelsStandardArgs } from '../../../models/_components/utils/getUseProvidersServiceModelsStandardArgs/getUseProvidersServiceModelsStandardArgs';
 
 const UpdateModelProviderSchema = z.object({
@@ -358,7 +358,7 @@ function ModelProvidersPage() {
   const [limit, setLimit] = useState(10);
   const [offset, setOffset] = useState(0);
   const { data, isFetching, error } = useProvidersServiceListProviders();
-  const { formatDateAndTime } = useDateFormatter();
+  const { formatDateAndTime } = useFormatters();
 
   const modelProvidersColumns: Array<ColumnDef<Provider>> = useMemo(
     () => [

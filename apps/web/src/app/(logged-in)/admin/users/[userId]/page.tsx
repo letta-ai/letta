@@ -17,7 +17,7 @@ import type {
   AdminWholeUserType,
   AdminWholeUserOrganizationType,
 } from '$web/web-api/contracts';
-import { useDateFormatter } from '@letta-cloud/utils-client';
+import { useFormatters } from '@letta-cloud/utils-client';
 import { webApi } from '$web/client';
 import type { contracts } from '$web/web-api/contracts';
 import { queryClientKeys } from '$web/web-api/contracts';
@@ -275,7 +275,7 @@ function UserPage(props: UserPageProps) {
   const { user } = props;
   const { imageUrl, name, email } = user;
 
-  const { formatDate } = useDateFormatter();
+  const { formatDate } = useFormatters();
 
   return (
     <DashboardPageLayout

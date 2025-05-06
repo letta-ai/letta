@@ -12,7 +12,7 @@ import {
   DataTable,
 } from '@letta-cloud/ui-component-library';
 import type { ColumnDef } from '@tanstack/react-table';
-import { useDateFormatter } from '@letta-cloud/utils-client';
+import { useFormatters } from '@letta-cloud/utils-client';
 
 function AdminUsersPage() {
   const [offset, setOffset] = useState(0);
@@ -35,7 +35,7 @@ function AdminUsersPage() {
       },
     });
 
-  const { formatDateAndTime } = useDateFormatter();
+  const { formatDateAndTime } = useFormatters();
 
   const organizationColumns: Array<ColumnDef<AdminPublicUserType>> = useMemo(
     () => [

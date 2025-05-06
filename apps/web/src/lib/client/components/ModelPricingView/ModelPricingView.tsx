@@ -14,10 +14,7 @@ import {
 } from '@letta-cloud/ui-component-library';
 import { useMemo, useState } from 'react';
 import { webApi, webApiQueryKeys } from '@letta-cloud/sdk-web';
-import {
-  useCurrencyFormatter,
-  useNumberFormatter,
-} from '@letta-cloud/utils-client';
+import { useFormatters } from '@letta-cloud/utils-client';
 import { creditsToDollars } from '@letta-cloud/utils-shared';
 
 interface StepCostPerModel {
@@ -48,8 +45,7 @@ interface CostRenderProps {
 
 function CostRender(props: CostRenderProps) {
   const t = useTranslations('components/ModelPricingView');
-  const { formatNumber } = useNumberFormatter();
-  const { formatCurrency } = useCurrencyFormatter();
+  const { formatNumber, formatCurrency } = useFormatters();
   const { cost, steps } = props;
 
   const computedCost = useMemo(() => {

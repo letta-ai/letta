@@ -19,7 +19,7 @@ import { AddProviderModal } from '../AddProviderModal/AddProviderModal';
 import type { Provider } from '@letta-cloud/sdk-core';
 import { useProvidersServiceListProviders } from '@letta-cloud/sdk-core';
 import type { ColumnDef } from '@tanstack/react-table';
-import { useDateFormatter } from '@letta-cloud/utils-client';
+import { useFormatters } from '@letta-cloud/utils-client';
 import { ProviderDetailsOverlay } from '../ProviderDetailsOverlay/ProviderDetailsOverlay';
 import { getUseProvidersServiceModelsStandardArgs } from '../utils/getUseProvidersServiceModelsStandardArgs/getUseProvidersServiceModelsStandardArgs';
 
@@ -43,7 +43,7 @@ function ProviderTable(props: ProviderTableProps) {
   const { providers, isLoading } = props;
 
   const t = useTranslations('pages/models/BYOKModels');
-  const { formatDateAndTime } = useDateFormatter();
+  const { formatDateAndTime } = useFormatters();
 
   const [selectedProvider, setSelectedProvider] = useState<Provider | null>(
     null,

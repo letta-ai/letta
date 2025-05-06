@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useCurrentAgentMetaData } from '@letta-cloud/ui-ade-components';
 import { useTranslations } from '@letta-cloud/translations';
 import { webApi, webApiQueryKeys } from '@letta-cloud/sdk-web';
-import { useDateFormatter } from '@letta-cloud/utils-client';
+import { useFormatters } from '@letta-cloud/utils-client';
 import {
   VersionHistory,
   Button,
@@ -131,7 +131,7 @@ export function VersionHistorySection() {
     return versionData.pages?.flatMap((v) => v.body.versions) || [];
   }, [versionData]);
 
-  const { formatDateAndTime } = useDateFormatter();
+  const { formatDateAndTime } = useFormatters();
 
   const versionHistoryItems = useMemo(() => {
     return [

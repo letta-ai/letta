@@ -43,7 +43,7 @@ import { useFeatureFlag, useSetOnboardingStep } from '@letta-cloud/sdk-web';
 import { LaunchLinks } from './LaunchLinks/LaunchLinks';
 import { VersionHistorySection } from './VersionHistorySection/VersionHistorySection';
 import { useLatestAgentTemplate } from '$web/client/hooks/useLatestAgentTemplate/useLatestAgentTemplate';
-import { useDateFormatter } from '@letta-cloud/utils-client';
+import { useFormatters } from '@letta-cloud/utils-client';
 import { CreateAgentFromTemplateDialog } from './CreateAgentFromTemplateDialog/CreateAgentFromTemplateDialog';
 import { TypescriptInstructions } from './TypescriptInstructions/TypescriptInstructions';
 import { useShowOnboarding } from '$web/client/hooks/useShowOnboarding/useShowOnboarding';
@@ -372,7 +372,7 @@ function RecentAgents() {
     return data.pages?.flatMap((page) => page.slice(0, AGENT_LIMIT)) || [];
   }, [data]);
 
-  const { formatDateAndTime } = useDateFormatter();
+  const { formatDateAndTime } = useFormatters();
   return (
     <VStack gap="small" fullHeight>
       <PanelBar

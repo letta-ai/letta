@@ -15,7 +15,7 @@ import {
 } from '@letta-cloud/sdk-core';
 import type { ColumnDef } from '@tanstack/react-table';
 import React, { useEffect, useMemo, useState } from 'react';
-import { useDateFormatter } from '@letta-cloud/utils-client';
+import { useFormatters } from '@letta-cloud/utils-client';
 import { useTranslations } from '@letta-cloud/translations';
 import { CreateLocalAgentDialog } from './CreateLocalAgentDialog/CreateLocalAgentDialog';
 import { useServerStatus } from '../../hooks/useServerStatus/useServerStatus';
@@ -26,7 +26,7 @@ import type { InfiniteData } from '@tanstack/query-core';
 
 export function Agents() {
   const t = useTranslations('Agents');
-  const { formatDateAndTime } = useDateFormatter();
+  const { formatDateAndTime } = useFormatters();
   const status = useServerStatus();
 
   const [search, setSearch] = useState<string>('');

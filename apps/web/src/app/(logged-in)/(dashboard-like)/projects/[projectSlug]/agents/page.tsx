@@ -44,7 +44,7 @@ import { TagService, useTagServiceListTags } from '@letta-cloud/sdk-core';
 import { useAgentsServiceRetrieveAgent } from '@letta-cloud/sdk-core';
 import { useTranslations } from '@letta-cloud/translations';
 import { DeployAgentDialog } from './DeployAgentDialog/DeployAgentDialog';
-import { useDateFormatter } from '@letta-cloud/utils-client';
+import { useFormatters } from '@letta-cloud/utils-client';
 import { useInfiniteQuery } from '@tanstack/react-query';
 import type { ServerInferResponses } from '@ts-rest/core';
 import { ImportAgentsDialog, Messages } from '@letta-cloud/ui-ade-components';
@@ -716,7 +716,7 @@ function DeployedAgentsPage() {
   }, [data, page]);
 
   const { slug: currentProjectSlug } = useCurrentProject();
-  const { formatDateAndTime } = useDateFormatter();
+  const { formatDateAndTime } = useFormatters();
 
   const DeployedAgentColumns: Array<ColumnDef<ExtendedAgentState>> = useMemo(
     () => [

@@ -23,7 +23,7 @@ import { CreateNewTemplateDialog } from './_components/CreateNewTemplateDialog/C
 import { useCurrentUser, useUserHasPermission } from '$web/client/hooks';
 import { ApplicationServices } from '@letta-cloud/service-rbac';
 import { useAgentsServiceListAgents } from '@letta-cloud/sdk-core';
-import { useDateFormatter } from '@letta-cloud/utils-client';
+import { useFormatters } from '@letta-cloud/utils-client';
 import { PausedOnboardingView } from '$web/client/hooks/useOnboarding/PausedOnboardingView/PausedOnboardingView';
 
 function RecentAgentsSection() {
@@ -39,7 +39,7 @@ function RecentAgentsSection() {
     },
   );
 
-  const { formatDate } = useDateFormatter();
+  const { formatDate } = useFormatters();
   const t = useTranslations('projects/(projectSlug)/page');
 
   return (

@@ -11,7 +11,7 @@ import {
 } from '@letta-cloud/ui-component-library';
 import type { ColumnDef } from '@tanstack/react-table';
 import type { PublicOrganizationType } from '$web/web-api/contracts';
-import { useDateFormatter } from '@letta-cloud/utils-client';
+import { useFormatters } from '@letta-cloud/utils-client';
 
 function AdminOrganizationsPage() {
   const [offset, setOffset] = useState(0);
@@ -34,7 +34,7 @@ function AdminOrganizationsPage() {
       },
     });
 
-  const { formatDateAndTime } = useDateFormatter();
+  const { formatDateAndTime } = useFormatters();
 
   const organizationColumns: Array<ColumnDef<PublicOrganizationType>> = useMemo(
     () => [

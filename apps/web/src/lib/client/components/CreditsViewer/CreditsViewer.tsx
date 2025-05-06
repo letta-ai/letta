@@ -17,7 +17,7 @@ import {
   TabGroup,
   LoadingEmptyStatusComponent,
 } from '@letta-cloud/ui-component-library';
-import { useNumberFormatter } from '@letta-cloud/utils-client';
+import { useFormatters } from '@letta-cloud/utils-client';
 import { useCurrentUser } from '$web/client/hooks';
 import { useTranslations } from '@letta-cloud/translations';
 import { useShowOnboarding } from '$web/client/hooks/useShowOnboarding/useShowOnboarding';
@@ -116,7 +116,7 @@ export function CreditsViewer() {
 
   const t = useTranslations('components/CreditsViewer');
 
-  const { formatNumber } = useNumberFormatter();
+  const { formatNumber } = useFormatters();
   const { data: isModelsPageEnabled, isLoading: isModelsPageEnabledLoading } =
     useFeatureFlag('MODELS_ROOT_PAGE');
 
