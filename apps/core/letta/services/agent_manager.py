@@ -866,8 +866,9 @@ class AgentManager:
     @enforce_types
     def trim_older_in_context_messages(self, num: int, agent_id: str, actor: PydanticUser) -> PydanticAgentState:
         message_ids = self.get_agent_by_id(agent_id=agent_id, actor=actor).message_ids
-        new_messages = [message_ids[0]] + message_ids[num:]  # 0 is system message
-        return self.set_in_context_messages(agent_id=agent_id, message_ids=new_messages, actor=actor)
+        newer_messages = self._trim_tool_response(agent_id=agent_id, actor=actor, message_ids=message_ids[num:])
+        trimmed_messages = [message_ids[0]] + newer_messages  # 0 is system message
+        return self.set_in_context_messages(agent_id=agent_id, message_ids=trimmed_messages, actor=actor)
 
     @enforce_types
     def trim_all_in_context_messages_except_system(self, agent_id: str, actor: PydanticUser) -> PydanticAgentState:
@@ -875,6 +876,16 @@ class AgentManager:
         # TODO: How do we know this?
         new_messages = [message_ids[0]]  # 0 is system message
         return self.set_in_context_messages(agent_id=agent_id, message_ids=new_messages, actor=actor)
+
+    def _trim_tool_response(self, agent_id: str, actor: PydanticUser, message_ids: list[str]) -> PydanticAgentState:
+        """
+        Trims the tool response from the in-context messages if there is no tool call present in trimmed messages.
+        """
+        if message_ids:
+            messages = self.message_manager.get_messages_by_ids(message_ids=[message_ids[0]], actor=actor)
+            if messages and messages[0].role == "tool":
+                return message_ids[1:]
+        return message_ids
 
     @enforce_types
     def prepend_to_in_context_messages(self, messages: List[PydanticMessage], agent_id: str, actor: PydanticUser) -> PydanticAgentState:
