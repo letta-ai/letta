@@ -181,17 +181,6 @@ def create_application() -> "FastAPI":
             },
         )
 
-    @app.exception_handler(IncompatibleAgentType)
-    async def handle_incompatible_agent_type(request: Request, exc: IncompatibleAgentType):
-        return JSONResponse(
-            status_code=400,
-            content={
-                "detail": str(exc),
-                "expected_type": exc.expected_type,
-                "actual_type": exc.actual_type,
-            },
-        )
-
     @app.exception_handler(Exception)
     async def generic_error_handler(request: Request, exc: Exception):
         # Log the actual error for debugging

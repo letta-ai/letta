@@ -1,3 +1,4 @@
+import logging
 import os
 import random
 import re
@@ -73,6 +74,7 @@ from letta.services.block_manager import BlockManager
 from letta.services.organization_manager import OrganizationManager
 from letta.settings import tool_settings
 from tests.helpers.utils import comprehensive_agent_checks
+from tests.utils import random_string
 
 DEFAULT_EMBEDDING_CONFIG = EmbeddingConfig(
     embedding_endpoint_type="hugging-face",
@@ -2797,6 +2799,88 @@ def test_batch_create_multiple_blocks(server: SyncServer, default_user):
     all_labels = {blk.label for blk in block_manager.get_blocks(actor=default_user)}
     expected_labels = {f"batch_label_{i}" for i in range(num_blocks)}
     assert expected_labels.issubset(all_labels)
+
+
+def test_bulk_update_skips_missing_and_truncates_then_returns_none(server: SyncServer, default_user: PydanticUser, caplog):
+    mgr = BlockManager()
+
+    # create one block with a small limit
+    b = mgr.create_or_update_block(
+        PydanticBlock(label="human", value="orig", limit=5),
+        actor=default_user,
+    )
+
+    # prepare updates: one real id with an over‐limit value, plus one missing id
+    long_val = random_string(10)  # length > limit==5
+    updates = {
+        b.id: long_val,
+        "nonexistent-id": "whatever",
+    }
+
+    caplog.set_level(logging.WARNING)
+    result = mgr.bulk_update_block_values(updates, actor=default_user)
+    # default return_hydrated=False → should be None
+    assert result is None
+
+    # warnings should mention skipping the missing ID and truncation
+    assert "skipping during bulk update" in caplog.text
+    assert "truncating" in caplog.text
+
+    # confirm the value was truncated to `limit` characters
+    reloaded = mgr.get_blocks(actor=default_user, id=b.id)[0]
+    assert len(reloaded.value) == 5
+    assert reloaded.value == long_val[:5]
+
+
+def test_bulk_update_return_hydrated_true(server: SyncServer, default_user: PydanticUser):
+    mgr = BlockManager()
+
+    # create a block
+    b = mgr.create_or_update_block(
+        PydanticBlock(label="persona", value="foo", limit=20),
+        actor=default_user,
+    )
+
+    updates = {b.id: "new-val"}
+    updated = mgr.bulk_update_block_values(updates, actor=default_user, return_hydrated=True)
+
+    # with return_hydrated=True, we get back a list of schemas
+    assert isinstance(updated, list) and len(updated) == 1
+    assert updated[0].id == b.id
+    assert updated[0].value == "new-val"
+
+
+def test_bulk_update_respects_org_scoping(server: SyncServer, default_user: PydanticUser, other_user_different_org: PydanticUser, caplog):
+    mgr = BlockManager()
+
+    # one block in each org
+    mine = mgr.create_or_update_block(
+        PydanticBlock(label="human", value="mine", limit=100),
+        actor=default_user,
+    )
+    theirs = mgr.create_or_update_block(
+        PydanticBlock(label="human", value="theirs", limit=100),
+        actor=other_user_different_org,
+    )
+
+    updates = {
+        mine.id: "updated-mine",
+        theirs.id: "updated-theirs",
+    }
+
+    caplog.set_level(logging.WARNING)
+    mgr.bulk_update_block_values(updates, actor=default_user)
+
+    # mine should be updated...
+    reloaded_mine = mgr.get_blocks(actor=default_user, id=mine.id)[0]
+    assert reloaded_mine.value == "updated-mine"
+
+    # ...theirs should remain untouched
+    reloaded_theirs = mgr.get_blocks(actor=other_user_different_org, id=theirs.id)[0]
+    assert reloaded_theirs.value == "theirs"
+
+    # warning should mention skipping the other-org ID
+    assert "skipping during bulk update" in caplog.text
 
 
 # ======================================================================================================================

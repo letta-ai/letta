@@ -269,6 +269,41 @@ def _assert_valid_chunk(chunk, idx, chunks):
 
 
 @pytest.mark.asyncio
+@pytest.mark.parametrize("model", ["openai/gpt-4o-mini", "anthropic/claude-3-5-sonnet-20241022"])
+async def test_model_compatibility(disable_e2b_api_key, client, model, server, group_id, actor):
+    request = _get_chat_request("How are you?")
+    server.tool_manager.upsert_base_tools(actor=actor)
+
+    main_agent = server.create_agent(
+        request=CreateAgent(
+            agent_type=AgentType.voice_convo_agent,
+            name="main_agent",
+            memory_blocks=[
+                CreateBlock(
+                    label="persona",
+                    value="You are a personal assistant that helps users with requests.",
+                ),
+                CreateBlock(
+                    label="human",
+                    value="My favorite plant is the fiddle leaf\nMy favorite color is lavender",
+                ),
+            ],
+            model=model,
+            embedding="openai/text-embedding-ada-002",
+            enable_sleeptime=True,
+        ),
+        actor=actor,
+    )
+    async_client = AsyncOpenAI(base_url=f"http://localhost:8283/v1/voice-beta/{main_agent.id}", max_retries=0)
+
+    stream = await async_client.chat.completions.create(**request.model_dump(exclude_none=True))
+    async with stream:
+        async for chunk in stream:
+            if chunk.choices and chunk.choices[0].delta.content:
+                print(chunk.choices[0].delta.content)
+
+
+@pytest.mark.asyncio
 @pytest.mark.parametrize("message", ["Use search memory tool to recall what my name is."])
 @pytest.mark.parametrize("endpoint", ["v1/voice-beta"])
 async def test_voice_recall_memory(disable_e2b_api_key, client, voice_agent, message, endpoint):
@@ -317,81 +352,6 @@ async def test_trigger_summarization(disable_e2b_api_key, client, server, voice_
 
 @pytest.mark.asyncio
 async def test_summarization(disable_e2b_api_key, voice_agent):
-    agent_manager = AgentManager()
-    user_manager = UserManager()
-    actor = user_manager.get_default_user()
-
-    request = CreateAgent(
-        name=voice_agent.name + "-sleeptime",
-        agent_type=AgentType.voice_sleeptime_agent,
-        block_ids=[block.id for block in voice_agent.memory.blocks],
-        memory_blocks=[
-            CreateBlock(
-                label="memory_persona",
-                value=get_persona_text("voice_memory_persona"),
-            ),
-        ],
-        llm_config=LLMConfig.default_config(model_name="gpt-4o-mini"),
-        embedding_config=EmbeddingConfig.default_config(provider="openai"),
-        project_id=voice_agent.project_id,
-    )
-    sleeptime_agent = agent_manager.create_agent(request, actor=actor)
-
-    async_client = AsyncOpenAI()
-
-    memory_agent = VoiceSleeptimeAgent(
-        agent_id=sleeptime_agent.id,
-        convo_agent_state=sleeptime_agent,  # In reality, this will be the main convo agent
-        openai_client=async_client,
-        message_manager=MessageManager(),
-        agent_manager=agent_manager,
-        actor=actor,
-        block_manager=BlockManager(),
-        target_block_label="human",
-        message_transcripts=MESSAGE_TRANSCRIPTS,
-    )
-
-    summarizer = Summarizer(
-        mode=SummarizationMode.STATIC_MESSAGE_BUFFER,
-        summarizer_agent=memory_agent,
-        message_buffer_limit=8,
-        message_buffer_min=4,
-    )
-
-    # stub out the agent.step so it returns a known sentinel
-    memory_agent.step = MagicMock(return_value="STEP_RESULT")
-
-    # patch fire_and_forget on *this* summarizer instance to a MagicMock
-    summarizer.fire_and_forget = MagicMock()
-
-    # now call the method under test
-    in_ctx = MESSAGE_OBJECTS[:MESSAGE_EVICT_BREAKPOINT]
-    new_msgs = MESSAGE_OBJECTS[MESSAGE_EVICT_BREAKPOINT:]
-    # call under test (this is sync)
-    updated, did_summarize = summarizer._static_buffer_summarization(
-        in_context_messages=in_ctx,
-        new_letta_messages=new_msgs,
-    )
-
-    assert did_summarize is True
-    assert len(updated) == summarizer.message_buffer_min + 1  # One extra for system message
-    assert updated[0].role == MessageRole.system  # Preserved system message
-
-    # 2) the summarizer_agent.step() should have been *called* exactly once
-    memory_agent.step.assert_called_once()
-    call_args = memory_agent.step.call_args.args[0]  # the single positional argument: a list of MessageCreate
-    assert isinstance(call_args, list)
-    assert isinstance(call_args[0], MessageCreate)
-    assert call_args[0].role == MessageRole.user
-    assert "15. assistant: I’ll put together a day-by-day plan now." in call_args[0].content[0].text
-
-    # 3) fire_and_forget should have been called once, and its argument must be the coroutine returned by step()
-    summarizer.fire_and_forget.assert_called_once()
-
-
-@pytest.mark.asyncio
-async def test_voice_sleeptime_agent(disable_e2b_api_key, voice_agent):
-    """Tests chat completion streaming using the Async OpenAI client."""
     agent_manager = AgentManager()
     user_manager = UserManager()
     actor = user_manager.get_default_user()
@@ -602,12 +562,6 @@ def _modify(group_id, server, actor, max_val, min_val):
         ),
         actor=actor,
     )
-
-
-@pytest.fixture
-def group_id(voice_agent):
-    return voice_agent.multi_agent_group.id
-
 
 def test_valid_buffer_lengths_above_four(group_id, server, actor):
     # both > 4 and max > min

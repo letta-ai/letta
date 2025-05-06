@@ -46,6 +46,7 @@ from letta.services.message_manager import MessageManager
 from letta.services.passage_manager import PassageManager
 from letta.services.summarizer.enums import SummarizationMode
 from letta.services.summarizer.summarizer import Summarizer
+from letta.settings import model_settings
 from letta.utils import united_diff
 
 logger = get_logger(__name__)
@@ -124,6 +125,14 @@ class VoiceAgent(BaseAgent):
         user_query = input_messages[0].content[0].text
 
         agent_state = self.agent_manager.get_agent_by_id(self.agent_id, actor=self.actor)
+
+        # TODO: Refactor this so it uses our in-house clients
+        # TODO: For now, piggyback off of OpenAI client for ease
+        if agent_state.llm_config.model_endpoint_type == "anthropic":
+            self.openai_client.api_key = model_settings.anthropic_api_key
+            self.openai_client.base_url = "https://api.anthropic.com/v1/"
+        elif agent_state.llm_config.model_endpoint_type != "openai":
+            raise ValueError("Letta voice agents are only compatible with OpenAI or Anthropic.")
 
         # Safety check
         if agent_state.agent_type != AgentType.voice_convo_agent:

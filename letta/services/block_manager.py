@@ -1,8 +1,9 @@
 import os
-from typing import List, Optional
+from typing import Dict, List, Optional
 
 from sqlalchemy.orm import Session
 
+from letta.log import get_logger
 from letta.orm.block import Block as BlockModel
 from letta.orm.block_history import BlockHistory
 from letta.orm.enums import ActorType
@@ -12,6 +13,8 @@ from letta.schemas.block import Block as PydanticBlock
 from letta.schemas.block import BlockUpdate, Human, Persona
 from letta.schemas.user import User as PydanticUser
 from letta.utils import enforce_types, list_human_files, list_persona_files
+
+logger = get_logger(__name__)
 
 
 class BlockManager:
@@ -164,6 +167,17 @@ class BlockManager:
             agents_pydantic = [agent.to_pydantic() for agent in agents_orm]
 
             return agents_pydantic
+
+    @enforce_types
+    def size(
+        self,
+        actor: PydanticUser,
+    ) -> int:
+        """
+        Get the total count of blocks for the given user.
+        """
+        with self.session_maker() as session:
+            return BlockModel.size(db_session=session, actor=actor)
 
     # Block History Functions
 
@@ -349,3 +363,44 @@ class BlockManager:
 
             session.commit()
             return block.to_pydantic()
+
+    @enforce_types
+    def bulk_update_block_values(
+        self, updates: Dict[str, str], actor: PydanticUser, return_hydrated: bool = False
+    ) -> Optional[List[PydanticBlock]]:
+        """
+        Bulk-update the `value` field for multiple blocks in one transaction.
+
+        Args:
+            updates: mapping of block_id -> new value
+            actor:   the user performing the update (for org scoping, permissions, audit)
+            return_hydrated: whether to return the pydantic Block objects that were updated
+
+        Returns:
+            the updated Block objects as Pydantic schemas
+
+        Raises:
+            NoResultFound if any block_id doesn’t exist or isn’t visible to this actor
+            ValueError     if any new value exceeds its block’s limit
+        """
+        with self.session_maker() as session:
+            q = session.query(BlockModel).filter(BlockModel.id.in_(updates.keys()), BlockModel.organization_id == actor.organization_id)
+            blocks = q.all()
+
+            found_ids = {b.id for b in blocks}
+            missing = set(updates.keys()) - found_ids
+            if missing:
+                logger.warning(f"Block IDs not found or inaccessible, skipping during bulk update: {missing!r}")
+
+            for block in blocks:
+                new_val = updates[block.id]
+                if len(new_val) > block.limit:
+                    logger.warning(f"Value length ({len(new_val)}) exceeds limit " f"({block.limit}) for block {block.id!r}, truncating...")
+                    new_val = new_val[: block.limit]
+                block.value = new_val
+
+            session.commit()
+
+            if return_hydrated:
+                return [b.to_pydantic() for b in blocks]
+            return None

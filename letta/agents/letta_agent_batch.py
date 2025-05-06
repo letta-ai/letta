@@ -66,7 +66,7 @@ class _ResumeContext:
     request_status_updates: List[RequestStatusUpdateInfo]
 
 
-async def execute_tool_wrapper(params: ToolExecutionParams):
+async def execute_tool_wrapper(params: ToolExecutionParams) -> Tuple[str, Tuple[str, bool]]:
     """
     Executes the tool in an out‑of‑process worker and returns:
         (agent_id, (tool_result:str, success_flag:bool))
@@ -324,8 +324,13 @@ class LettaAgentBatch:
     @trace_method
     async def _execute_tools(self, ctx: _ResumeContext) -> Sequence[Tuple[str, Tuple[str, bool]]]:
         sbx_cfg, sbx_env = self._build_sandbox()
-        params = [
-            ToolExecutionParams(
+        rethink_memory_tool_name = "rethink_memory"
+        tool_params = []
+        # TODO: This is a special case - we need to think about how to generalize this
+        # TODO: Rethink memory is a common op that is easily batchable, so we pull this logic out
+        rethink_memory_params = []
+        for aid in ctx.agent_ids:
+            param = ToolExecutionParams(
                 agent_id=aid,
                 tool_call_name=ctx.tool_call_name_map[aid],
                 tool_args=ctx.tool_call_args_map[aid],
@@ -334,10 +339,44 @@ class LettaAgentBatch:
                 sbx_config=sbx_cfg,
                 sbx_env_vars=sbx_env,
             )
-            for aid in ctx.agent_ids
-        ]
-        async with Pool() as pool:
-            return await pool.map(execute_tool_wrapper, params)
+
+            if ctx.tool_call_name_map[aid] == rethink_memory_tool_name:
+                rethink_memory_params.append(param)
+            else:
+                tool_params.append(param)
+
+        if rethink_memory_params:
+            return self._bulk_rethink_memory(rethink_memory_params)
+
+        if tool_params:
+            async with Pool() as pool:
+                return await pool.map(execute_tool_wrapper, tool_params)
+
+    @trace_method
+    def _bulk_rethink_memory(self, params: List[ToolExecutionParams]) -> Sequence[Tuple[str, Tuple[str, bool]]]:
+        updates = {}
+        result = []
+        for param in params:
+            # Sanity check
+            # TODO: This is very brittle and done quickly for performance
+            # TODO: If the end tool is changed, this will break
+            # TODO: Move 'rethink_memory' to a native Letta tool that we control
+            if "new_memory" not in param.tool_args or "target_block_label" not in param.tool_args:
+                raise ValueError(f"Missing either `new_memory` or `target_block_label` in the tool args: {param.tool_args}")
+
+            # Find the block id/update
+            block_id = param.agent_state.memory.get_block(label=param.tool_args.get("target_block_label")).id
+            new_value = param.tool_args.get("new_memory")
+
+            # This is sensitive to multiple agents overwriting the same memory block
+            updates[block_id] = new_value
+
+            # TODO: This is quite ugly and confusing - this is mostly to align with the returns of other tools
+            result.append((param.agent_id, ("", True)))
+
+        self.block_manager.bulk_update_block_values(updates=updates, actor=self.actor)
+
+        return result
 
     def _persist_tool_messages(
         self,

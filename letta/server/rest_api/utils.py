@@ -20,6 +20,7 @@ from letta.helpers.message_helper import convert_message_creates_to_messages
 from letta.log import get_logger
 from letta.schemas.enums import MessageRole
 from letta.schemas.letta_message_content import OmittedReasoningContent, ReasoningContent, RedactedReasoningContent, TextContent
+from letta.schemas.llm_config import LLMConfig
 from letta.schemas.message import Message, MessageCreate
 from letta.schemas.usage import LettaUsageStatistics
 from letta.schemas.user import User
@@ -53,6 +54,7 @@ async def sse_async_generator(
     usage_task: Optional[asyncio.Task] = None,
     finish_message=True,
     request_start_timestamp_ns: Optional[int] = None,
+    llm_config: Optional[LLMConfig] = None,
 ):
     """
     Wraps a generator for use in Server-Sent Events (SSE), handling errors and ensuring a completion message.
@@ -70,6 +72,7 @@ async def sse_async_generator(
     ttft_span = None
     if request_start_timestamp_ns is not None:
         ttft_span = tracer.start_span("time_to_first_token", start_time=request_start_timestamp_ns)
+        ttft_span.set_attributes({f"llm_config.{k}": v for k, v in llm_config.model_dump().items()})
 
     try:
         async for chunk in generator:

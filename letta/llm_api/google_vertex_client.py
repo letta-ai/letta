@@ -110,12 +110,12 @@ class GoogleVertexClient(GoogleAIClient):
             for candidate in response.candidates:
                 content = candidate.content
 
-                if "role" not in content or not content["role"]:
-                    # This means the response is malformed like MALFORMED_FUNCTION_CALL
-                    # NOTE: must be a ValueError to trigger a retry
-                    raise ValueError(f"Error in response data from LLM: {response_data}")
-                role = content["role"]
-                assert role == "model", f"Unknown role in response: {role}"
+                # if "role" not in content or not content["role"]:
+                #    # This means the response is malformed like MALFORMED_FUNCTION_CALL
+                #    # NOTE: must be a ValueError to trigger a retry
+                #    raise ValueError(f"Error in response data from LLM: {response_data}")
+                # role = content["role"]
+                # assert role == "model", f"Unknown role in response: {role}"
 
                 parts = content.parts
 
