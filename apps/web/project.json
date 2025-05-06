@@ -9,7 +9,7 @@
       "executor": "nx:run-commands",
       "options": {
         "cwd": "apps/web",
-        "command": "next dev --turbo"
+        "command": "next dev --turbopack"
       }
     },
     "dev:slow": {

@@ -364,7 +364,7 @@ core:
     npm run core:dev
 
 web:
-    cd apps/web && npx next dev
+    cd apps/web && npx next dev --turbopack
 
 web-slow:
     npm run web:dev:slow
