@@ -7,11 +7,14 @@ import {
 import { stepToRewardMap } from '@letta-cloud/types';
 import { useTranslations } from '@letta-cloud/translations';
 import { useCurrentUser } from '$web/client/hooks';
+import { useFeatureFlag } from '@letta-cloud/sdk-web';
 
 export function MainOnboardingSteps() {
   const t = useTranslations('onboarding/StartOnboardingDialog');
 
   const user = useCurrentUser();
+
+  const { data: isModelsPageEnabled } = useFeatureFlag('MODELS_ROOT_PAGE');
 
   if (!user) {
     return null;
@@ -24,7 +27,9 @@ export function MainOnboardingSteps() {
           checked={user.onboardingStatus?.completedSteps.includes(
             'about_credits',
           )}
-          label={t('steps.creditsAndCloud')}
+          label={
+            isModelsPageEnabled ? t('steps.models') : t('steps.creditsAndCloud')
+          }
         />
         <OnboardingRewardElement
           isClaimed={user.onboardingStatus?.claimedSteps.includes(
@@ -36,7 +41,7 @@ export function MainOnboardingSteps() {
       <HStack>
         <OnboardingCheckbox
           checked={user.onboardingStatus?.completedSteps.includes(
-            'about_credits',
+            'create_template',
           )}
           label={t('steps.createATemplate')}
         />

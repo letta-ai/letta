@@ -40,11 +40,13 @@
   "onboarding/StartOnboardingDialog": {
     "skip": "Skip onboarding",
     "start": "Learn about credits",
+    "startModels": "Explore models",
     "title": "Welcome to Letta Cloud",
     "description": "Start your onboarding to learn how to use the platform and get your agents ready for deployment. Complete each step to earn credits along the way.",
     "reward": "Reward: <lettacoin></lettacoin> {credits} credits",
     "time": "Approx. 15 minutes",
     "steps": {
+      "models": "Explore models",
       "creditsAndCloud": "Understand credits",
       "createATemplate": "Create an agent template",
       "exploreTheADE": "Explore the ADE",
@@ -257,6 +259,11 @@
     }
   },
   "pages/models": {
+    "Onboarding": {
+      "title": "Learn how to use Models with Letta",
+      "description": "Large language models power the agents that power your applications, with Letta you can choose to bring your own models by adding the keys of popular LLM providers such as OpenAI, Anthropic and Gemini, or use models managed by Letta. \n\nModels managed by Letta allow you to use popular models without extra access keys, and some are free to use up to a certain amount of requests.",
+      "nextStep": "Create a template"
+    },
     "title": "Models",
     "description": "View, manage and add AI models to your organization"
   },
@@ -320,7 +327,7 @@
       }
     },
     "NoProviders": {
-      "title": "You have not connected any external model providers, check out our Letta managed models below to easily get started"
+      "title": "You have not connected any external model providers; check out our Letta managed models below to easily get started"
     },
     "ProvidersView": {
       "error": "There was an error loading your model providers, please try again or contact support."
@@ -328,7 +335,7 @@
     "actions": {
       "addProvider": "Add model provider"
     },
-    "title": "Bring Your Own Models",
+    "title": "Bring your own models",
     "description": "Use your own API key to access models. This is useful if you want to use a model that is not available on Letta, or if you want to use your own API key for billing purposes.",
     "columns": {
       "name": "Name",

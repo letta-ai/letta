@@ -61,15 +61,17 @@ export function useSetOnboardingStep() {
 
   const setOnboardingStep = useCallback(
     (payload: SetOnboardingStepPayload) => {
-      handleUpdateStatus(payload.onboardingStep);
+      const { onSuccess, onboardingStep, stepToClaim } = payload;
+
+      if (!onSuccess) {
+        handleUpdateStatus(onboardingStep);
+      }
 
       mutate(
         {
           body: {
-            onboardingStep: payload.onboardingStep,
-            ...(payload.stepToClaim
-              ? { stepToClaim: payload.stepToClaim }
-              : {}),
+            onboardingStep: onboardingStep,
+            ...(stepToClaim ? { stepToClaim: stepToClaim } : {}),
           },
         },
         {
@@ -78,8 +80,9 @@ export function useSetOnboardingStep() {
               queryKey: webApiQueryKeys.organizations.getOrganizationCredits,
             });
 
-            if (payload.onSuccess) {
-              payload.onSuccess();
+            if (onSuccess) {
+              onSuccess();
+              handleUpdateStatus(onboardingStep);
             }
           },
         },

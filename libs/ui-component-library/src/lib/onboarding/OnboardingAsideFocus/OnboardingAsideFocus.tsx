@@ -25,6 +25,7 @@ interface OnboardingAsideFocusProps {
   totalSteps: number;
   currentStep: number;
   description: React.ReactNode;
+  panelClassName?: string;
   spotlight?: boolean;
   className?: string;
   isOpen: boolean;
@@ -37,6 +38,7 @@ export function OnboardingAsideFocus(props: OnboardingAsideFocusProps) {
     children,
     title,
     className,
+    panelClassName,
     description,
     totalSteps = 1,
     currentStep = 1,
@@ -133,7 +135,10 @@ export function OnboardingAsideFocus(props: OnboardingAsideFocusProps) {
           gap="large"
           padding
           color="background-grey"
-          className="w-[350px] fixed z-[9] shadow-lg border"
+          className={cn(
+            'w-[350px] fixed z-[9] shadow-lg border',
+            panelClassName,
+          )}
         >
           <HStack justify="spaceBetween" align="center">
             {reward && <OnboardingRewardElement reward={reward} />}

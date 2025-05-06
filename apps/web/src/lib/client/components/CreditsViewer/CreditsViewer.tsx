@@ -1,5 +1,5 @@
 'use client';
-import { webApi, webApiQueryKeys } from '@letta-cloud/sdk-web';
+import { useFeatureFlag, webApi, webApiQueryKeys } from '@letta-cloud/sdk-web';
 import {
   Button,
   ExternalLinkIcon,
@@ -117,6 +117,8 @@ export function CreditsViewer() {
   const t = useTranslations('components/CreditsViewer');
 
   const { formatNumber } = useNumberFormatter();
+  const { data: isModelsPageEnabled, isLoading: isModelsPageEnabledLoading } =
+    useFeatureFlag('MODELS_ROOT_PAGE');
 
   const showOnboarding = useShowOnboarding('about_credits');
 
@@ -131,7 +133,11 @@ export function CreditsViewer() {
     window.location.href = '/default-project';
   }, [setOnboardingStep]);
 
-  if (showOnboarding) {
+  if (isModelsPageEnabledLoading) {
+    return null;
+  }
+
+  if (showOnboarding && !isModelsPageEnabled) {
     return (
       <OnboardingAsideFocus
         placement="bottom-end"
