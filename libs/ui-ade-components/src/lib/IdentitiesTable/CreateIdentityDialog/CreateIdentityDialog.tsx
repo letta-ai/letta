@@ -6,6 +6,7 @@ import {
   useIdentitiesServiceCreateIdentity,
 } from '@letta-cloud/sdk-core';
 import {
+  BillingLink,
   Dialog,
   FormField,
   FormProvider,
@@ -68,6 +69,13 @@ export function CreateIdentityDialog(props: CreateIdentityDialogProps) {
   const errorMessage = useMemo(() => {
     if (error) {
       if (isAPIError(error)) {
+        if (error.status === 402) {
+          return t.rich('errors.overage', {
+            limit: () => error.body.limit,
+            link: (chunks) => <BillingLink>{chunks}</BillingLink>,
+          });
+        }
+
         if (error.status === 409) {
           return t('errors.uniqueConstraint');
         }

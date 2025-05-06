@@ -7194,6 +7194,25 @@
                 }
               }
             }
+          },
+          "402": {
+            "description": "402",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    },
+                    "limit": {
+                      "type": "number"
+                    }
+                  },
+                  "required": ["message", "limit"]
+                }
+              }
+            }
           }
         }
       }

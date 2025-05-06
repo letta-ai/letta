@@ -338,7 +338,10 @@
       },
       "cancel": "Go back",
       "create": "Create",
-      "error": "There was an error creating the data source, please try again or contact support.",
+      "errors": {
+        "default": "There was an error creating the data source, please try again or contact support.",
+        "overage": "You have reached the maximum number of data sources for your plan, please <link>upgrade</link> or delete some data sources."
+      },
       "creatingDataSource": "Creating data source...",
       "title": "Create a new data source",
       "options": {
@@ -701,6 +704,10 @@
     "title": "Core Memory Editor",
     "CreateNewMemoryBlockForm": {
       "title": "Add new memory block",
+      "errors": {
+        "default": "There was an error creating the memory block, please try again or contact support.",
+        "overage": "You have reached the maximum number of memory blocks for your plan, please <link>upgrade</link> or delete some memory blocks."
+      },
       "label": {
         "label": "Memory Label",
         "description": "Labels are used to reference memory blocks in the agent's memory, they must be unique, alphanumeric, and cannot start with a number",
@@ -1210,12 +1217,15 @@
     "CreateToolDialog": {
       "title": "Create new tool",
       "trigger": "Create new tool",
-      "errorAlreadyExists": "This tool name is already in use, please choose another name",
       "description": "Create a new tool to use in your agent and other projects.",
       "label": "Tool name",
       "placeholder": "My tool",
       "restriction": "Tools must be alphanumeric and underscores only",
-      "error": "There was an error creating this tool, please try again or contact support."
+      "errors": {
+        "default": "There was an error creating this tool, please try again or contact support.",
+        "overage": "You have reached the maximum number of tools for your plan (<limit></limit>), please <link>upgrade</link> or delete some tools.",
+        "alreadyExists": "This tool name is already in use, please choose another name"
+      }
     },
     "ToolManagerNavigationSidebar": {
       "title": "Tool manager",
@@ -1569,6 +1579,7 @@
       "label": "Name"
     },
     "errors": {
+      "overage": "You have reached the maximum number of identities for your plan (<limit></limit>), please <link>upgrade</link> or delete some identities.",
       "minLength": "Unique identifier must be at least 1 character long",
       "uniqueConstraint": "The unique identifier provided is already in use, please choose another unique key",
       "default": "There was an error creating this identity, please try again or contact support."

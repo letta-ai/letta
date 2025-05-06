@@ -12,7 +12,7 @@ interface UseErrorTranslationMessageOptions<T extends AppRoute> {
   // If the server response has an error code, this map will be used to translate the error message.
   // otherwise we will return undefined, which means the error message is unknown.
   messageMap: ServerInferResponseBody<T, 400> extends ServerWithError<string>
-    ? Record<ServerInferResponseBody<T, 400>['errorCode'], string> & {
+    ? Record<ServerInferResponseBody<T, 400>['errorCode'], React.ReactNode> & {
         default: string;
       }
     : undefined;

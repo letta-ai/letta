@@ -62,7 +62,10 @@
   },
   "pages/distribution/CreateAgentFromTemplateDialog": {
     "create": "Create agent",
-    "error": "There was an error creating the agent, please try again or contact support.",
+    "errors": {
+      "default": "There was an error creating the agent, please try again or contact support.",
+      "limit": "You have reached the maximum number of agents for your plan (<limit></limit>), please <link>upgrade your plan</link> to create more agents."
+    },
     "title": "Create agent from {templateName}",
     "inputDetails": "Please enter the following variables:",
     "description": "Confirm creating an agent from {templateName}:latest.",
@@ -687,7 +690,10 @@
   },
   "data-sources/page": {
     "CreateDataSourceDialog": {
-      "error": "There was an error creating the data source, please try again or contact support.",
+      "errors": {
+        "default": "There was an error creating the data source, please try again or contact support.",
+        "overage": "You have reached the maximum number of data sources for your plan, please <link>upgrade your plan</link> to create more data sources."
+      },
       "title": "Create a new data source",
       "trigger": "Create data source",
       "name": {
@@ -1213,7 +1219,7 @@
       "errors": {
         "default": "There was an error creating the project, please try again or contact support.",
         "noPermission": "You do not have permission to create a project in this organization, please contact your organization's administrator.",
-        "projectLimitReached": "You have reached your organization's project limit, please upgrade your plan or contact support."
+        "projectLimitReached": "You have reached your organization's project limit, please <link>upgrade your plan</link> or contact support."
       },
       "createButton": "Create project",
       "triggerButton": "Create project"
@@ -1241,7 +1247,10 @@
       "description": "Templates are blueprints for agents. They define the agent's tools, memory, and behavior — and make it easy to create many agents with a shared structure.\n\nIn Letta Cloud, templates are the recommended way to create and manage agents at scale, with support for versioning and upgrades.\n\nCreate a starter template to claim your reward."
     },
     "back": "All templates",
-    "error": "An error occurred while creating the template. Please try again or contact support.",
+    "errors": {
+      "default": "An error occurred while creating the template. Please try again or contact support.",
+      "overage": "You have reached the maximum number of templates for your plan, please <link>upgrade your plan</link> to create more templates."
+    },
     "loading": "Creating template...",
     "starterKits": {
       "title": "Starter kits",
@@ -1407,7 +1416,10 @@
     "loading": "Creating agent...",
     "title": "Create an agent",
     "trigger": "Create a new agent",
-    "error": "There was an error creating the agent, please try again or contact support.",
+    "error": {
+      "default": "There was an error creating the agent, please try again or contact support.",
+      "overage": "You have reached your organization's agent creation limit, <link>upgrade your plan</link> or contact support."
+    },
     "DeployFromTemplate": {
       "noItems": "The best way to get started is to create an agent from a template, visit the templates page to get started.",
       "notFound": "No templates found that match your search",

@@ -3,6 +3,7 @@ import { getCustomerSubscription } from '@letta-cloud/service-payments';
 import { getUsageLimits } from '@letta-cloud/utils-shared';
 import { shouldItemRateLimit } from '@letta-cloud/utils-server';
 import * as Sentry from '@sentry/node';
+import { getSingleFlag } from '@letta-cloud/service-feature-flags';
 
 export async function itemRateLimitMiddleware(
   req: Request,
@@ -20,9 +21,15 @@ export async function itemRateLimitMiddleware(
       return;
     }
 
-    const subscription = await getCustomerSubscription(
-      req.actor.cloudOrganizationId,
-    );
+    const [subscription, shouldRateLimitUser] = await Promise.all([
+      getCustomerSubscription(req.actor.cloudOrganizationId),
+      getSingleFlag('PRO_PLAN', req.actor.cloudOrganizationId),
+    ]);
+
+    if (!shouldRateLimitUser) {
+      next();
+      return;
+    }
 
     const limits = await getUsageLimits(subscription.tier);
 
@@ -33,11 +40,12 @@ export async function itemRateLimitMiddleware(
     });
 
     if (limitResponse) {
-      res.status(429).json({
+      res.status(402).json({
         error:
           'You have reached your limit for this resource, please upgrade your plan',
         limit: limitResponse.currentLimit,
       });
+      return;
     }
 
     next();

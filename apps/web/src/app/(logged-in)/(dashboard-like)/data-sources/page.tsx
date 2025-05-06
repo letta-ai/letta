@@ -19,9 +19,10 @@ import {
   brandKeyToName,
   isMultiValue,
   OptionTypeSchemaSingle,
+  BillingLink,
 } from '@letta-cloud/ui-component-library';
 import type { ColumnDef } from '@tanstack/react-table';
-import type { Source } from '@letta-cloud/sdk-core';
+import { isAPIError, type Source } from '@letta-cloud/sdk-core';
 import { useModelsServiceListEmbeddingModels } from '@letta-cloud/sdk-core';
 import {
   useSourcesServiceCreateSource,
@@ -49,7 +50,7 @@ function CreateDataSourceDialog() {
   const t = useTranslations('data-sources/page');
 
   const queryClient = useQueryClient();
-  const { mutate, isPending } = useSourcesServiceCreateSource({
+  const { mutate, isPending, error } = useSourcesServiceCreateSource({
     onSuccess: (response) => {
       void queryClient.invalidateQueries({
         queryKey: UseSourcesServiceListSourcesKeyFn(),
@@ -58,6 +59,20 @@ function CreateDataSourceDialog() {
       push(`/data-sources/${response.id}`);
     },
   });
+
+  const errorMessage = useMemo(() => {
+    if (error) {
+      if (isAPIError(error) && error.status === 402) {
+        return t.rich('CreateDataSourceDialog.errors.overage', {
+          link: (chunks) => <BillingLink>{chunks}</BillingLink>,
+        });
+      }
+
+      return t('CreateDataSourceDialog.errors.default');
+    }
+
+    return undefined;
+  }, [error, t]);
 
   const { data: embeddingModels, isLoading } =
     useModelsServiceListEmbeddingModels();
@@ -134,6 +149,7 @@ function CreateDataSourceDialog() {
         title={t('CreateDataSourceDialog.title')}
         confirmText={t('CreateDataSourceDialog.createButton')}
         isConfirmBusy={isPending}
+        errorMessage={errorMessage}
         trigger={
           <Button
             preIcon={<PlusIcon />}

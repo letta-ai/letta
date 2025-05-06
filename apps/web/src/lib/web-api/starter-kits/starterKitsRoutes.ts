@@ -9,9 +9,16 @@ import {
 import type { StarterKitTool } from '@letta-cloud/config-agent-starter-kits';
 import { ToolsService } from '@letta-cloud/sdk-core';
 import { getUserWithActiveOrganizationIdOrThrow } from '$web/server/auth';
-import { db, projects } from '@letta-cloud/service-database';
-import { and, eq } from 'drizzle-orm';
+import {
+  agentTemplates,
+  db,
+  deployedAgentMetadata,
+  projects,
+} from '@letta-cloud/service-database';
+import { and, count, eq } from 'drizzle-orm';
 import { cloudApiRouter, createTemplate } from 'tmp-cloud-api-router';
+import { getCustomerSubscription } from '@letta-cloud/service-payments';
+import { getUsageLimits } from '@letta-cloud/utils-shared';
 
 type CreateAgentFromStarterKitsRequest = ServerInferRequest<
   typeof contracts.starterKits.createAgentFromStarterKit
@@ -86,6 +93,26 @@ async function createAgentFromStarterKit(
       status: 400,
       body: {
         message: 'Invalid starter kit id',
+      },
+    };
+  }
+
+  const subscription = await getCustomerSubscription(activeOrganizationId);
+
+  const limits = await getUsageLimits(subscription.tier);
+
+  const [agents] = await db
+    .select({ count: count() })
+    .from(deployedAgentMetadata)
+    .where(eq(deployedAgentMetadata.organizationId, activeOrganizationId));
+
+  if (agents.count >= limits.agents) {
+    return {
+      status: 402,
+      body: {
+        message:
+          'You have reached your limit for this resource, please upgrade your plan',
+        limit: limits.agents,
       },
     };
   }
@@ -199,6 +226,26 @@ async function createTemplateFromStarterKit(
       status: 404,
       body: {
         message: 'Starter kit not found',
+      },
+    };
+  }
+
+  const subscription = await getCustomerSubscription(activeOrganizationId);
+
+  const limits = await getUsageLimits(subscription.tier);
+
+  const [templateDetails] = await db
+    .select({ count: count() })
+    .from(agentTemplates)
+    .where(eq(agentTemplates.organizationId, activeOrganizationId));
+
+  if (templateDetails.count >= limits.templates) {
+    return {
+      status: 402,
+      body: {
+        message:
+          'You have reached your limit for this resource, please upgrade your plan',
+        limit: limits.templates,
       },
     };
   }

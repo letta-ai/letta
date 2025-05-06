@@ -29,6 +29,8 @@ import { useUserHasPermission } from '$web/client/hooks';
 import { ApplicationServices } from '@letta-cloud/service-rbac';
 import { cloudAPI } from '@letta-cloud/sdk-cloud-api';
 import { StarterKitSelector } from '@letta-cloud/ui-ade-components';
+import { isFetchError } from '@ts-rest/react-query/v5';
+import { BillingLink } from '@letta-cloud/ui-component-library';
 
 const elementWidth = '204px';
 const elementHeight = '166px';
@@ -144,7 +146,7 @@ function DeployFromTemplate(props: DeployFromTemplateProps) {
 
 interface FromStarterKitProps {
   onIsCreating: (isCreating: boolean) => void;
-  onError: () => void;
+  onError: (error: ErrorType) => void;
 }
 
 function FromStarterKit(props: FromStarterKitProps) {
@@ -158,9 +160,14 @@ function FromStarterKit(props: FromStarterKitProps) {
   const { push } = useRouter();
 
   const { mutate } = webApi.starterKits.createAgentFromStarterKit.useMutation({
-    onError: () => {
+    onError: (error) => {
+      if (!isFetchError(error) && error.status === 402) {
+        onError('overage');
+      } else {
+        onError('default');
+      }
+
       onIsCreating(false);
-      onError();
     },
     onSuccess: (data) => {
       push(`/projects/${slug}/agents/${data.body.agentId}`);
@@ -207,7 +214,7 @@ interface SelectedTemplateStateWrapperProps {
   selectedTemplate: SelectedTemplate;
   onReset: () => void;
   onCreating: (isCreating: boolean) => void;
-  onErrored: () => void;
+  onErrored: (error: ErrorType) => void;
 }
 
 function SelectedTemplateStateWrapper(
@@ -302,7 +309,15 @@ function SelectedTemplateState(props: SelectedTemplateStateProps) {
     isSuccess,
     isPending,
   } = cloudAPI.templates.createAgentsFromTemplate.useMutation({
-    onError: onErrored,
+    onError: (error) => {
+      if (!isFetchError(error) && error.status === 402) {
+        onErrored('overage');
+      } else {
+        onErrored('default');
+      }
+
+      onCreating(false);
+    },
     onSuccess: (data) => {
       push(`/projects/${projectSlug}/agents/${data.body.agents[0].id}`);
     },
@@ -438,7 +453,7 @@ function SelectedTemplateState(props: SelectedTemplateStateProps) {
 interface DeployAgentViewContentsProps {
   isCreating: boolean;
   setIsCreating: (isCreating: boolean) => void;
-  setIsError: (isError: boolean) => void;
+  setIsError: (isError: ErrorType | null) => void;
   selectedTemplate: SelectedTemplate | null;
   setSelectedTemplate: (template: SelectedTemplate | null) => void;
 }
@@ -459,7 +474,7 @@ function DeployAgentViewContents(props: DeployAgentViewContentsProps) {
   const handleCreating = useCallback(
     (state: boolean) => {
       if (state) {
-        setIsError(false);
+        setIsError(null);
       }
 
       setIsCreating(state);
@@ -483,9 +498,9 @@ function DeployAgentViewContents(props: DeployAgentViewContentsProps) {
         onReset={() => {
           setSelectedTemplate(null);
         }}
-        onErrored={() => {
+        onErrored={(error) => {
           setIsCreating(false);
-          setIsError(true);
+          setIsError(error);
         }}
         onCreating={handleCreating}
         selectedTemplate={selectedTemplate}
@@ -497,9 +512,9 @@ function DeployAgentViewContents(props: DeployAgentViewContentsProps) {
     <VStack paddingTop="xsmall" paddingBottom>
       <DeployFromTemplate onSelectTemplate={setSelectedTemplate} />
       <FromStarterKit
-        onError={() => {
+        onError={(error) => {
           setIsCreating(false);
-          setIsError(true);
+          setIsError(error);
         }}
         onIsCreating={handleCreating}
       />
@@ -507,9 +522,11 @@ function DeployAgentViewContents(props: DeployAgentViewContentsProps) {
   );
 }
 
+type ErrorType = 'default' | 'overage';
+
 export function DeployAgentDialog() {
   const [isCreating, setIsCreating] = React.useState(false);
-  const [isError, setIsError] = React.useState(false);
+  const [errorType, setErrorType] = React.useState<ErrorType | null>(null);
   const [selectedTemplate, setSelectedTemplate] =
     React.useState<SelectedTemplate | null>(null);
   const t = useTranslations(
@@ -519,6 +536,20 @@ export function DeployAgentDialog() {
   const [canCreateAgents] = useUserHasPermission(
     ApplicationServices.CREATE_AGENT,
   );
+
+  const errorMessage = useMemo(() => {
+    if (errorType) {
+      if (errorType === 'overage') {
+        return t.rich('error.overage', {
+          link: (chunks) => <BillingLink>{chunks}</BillingLink>,
+        });
+      }
+
+      return t('error.default');
+    }
+
+    return null;
+  }, [errorType, t]);
 
   if (!canCreateAgents) {
     return null;
@@ -533,11 +564,11 @@ export function DeployAgentDialog() {
       onOpenChange={(isOpen) => {
         if (!isOpen) {
           setIsCreating(false);
-          setIsError(false);
+          setErrorType(null);
           setSelectedTemplate(null);
         }
       }}
-      errorMessage={isError ? t('error') : undefined}
+      errorMessage={errorMessage || ''}
       size={selectedTemplate ? 'large' : 'xxlarge'}
       trigger={
         <Button
@@ -552,7 +583,7 @@ export function DeployAgentDialog() {
         <DeployAgentViewContents
           isCreating={isCreating}
           setIsCreating={setIsCreating}
-          setIsError={setIsError}
+          setIsError={setErrorType}
           selectedTemplate={selectedTemplate}
           setSelectedTemplate={setSelectedTemplate}
         />

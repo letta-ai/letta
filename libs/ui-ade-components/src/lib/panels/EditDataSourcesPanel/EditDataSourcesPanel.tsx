@@ -60,6 +60,7 @@ import { trackClientSideEvent } from '@letta-cloud/service-analytics/client';
 import { AnalyticsEvent } from '@letta-cloud/service-analytics';
 import { useADEPermissions } from '../../hooks/useADEPermissions/useADEPermissions';
 import { ApplicationServices } from '@letta-cloud/service-rbac';
+import { BillingLink } from '@letta-cloud/ui-component-library';
 
 interface AttachDataSourceActionProps {
   source: Source;
@@ -268,7 +269,7 @@ function CreateNewDataSource(props: CreateNewDataSourceProps) {
   const {
     mutate: createDataSource,
     isPending: isCreatingDataSource,
-    isError,
+    error,
   } = useSourcesServiceCreateSource();
   const queryClient = useQueryClient();
   const isPending = useMemo(() => {
@@ -278,6 +279,20 @@ function CreateNewDataSource(props: CreateNewDataSourceProps) {
   const { id, embedding_config } = useCurrentAgent();
 
   const t = useTranslations('ADE/EditDataSourcesPanel');
+
+  const errorMessage = useMemo(() => {
+    if (error) {
+      if (isAPIError(error) && error.status === 402) {
+        return t.rich('CreateDataSourceDialog.errors.overage', {
+          link: (chunks) => <BillingLink>{chunks}</BillingLink>,
+        });
+      }
+
+      return t('CreateDataSourceDialog.errors.default');
+    }
+
+    return undefined;
+  }, [error, t]);
 
   const handleCreateDataSource = useCallback(
     (values: CreateNewDataSourceFormValues) => {
@@ -382,11 +397,7 @@ function CreateNewDataSource(props: CreateNewDataSourceProps) {
               name="description"
             />
           </Tooltip>
-          <FormActions
-            errorMessage={
-              isError ? t('CreateDataSourceDialog.error') : undefined
-            }
-          >
+          <FormActions errorMessage={errorMessage}>
             <Button
               color="tertiary"
               type="button"

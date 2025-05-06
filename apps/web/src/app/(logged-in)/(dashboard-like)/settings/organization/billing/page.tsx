@@ -313,9 +313,9 @@ function BillingOverview() {
   return (
     <VStack gap="large" width="largeContained">
       {isProPlanEnabled && <AccountDetails />}
-
-      {data.body.billingTier !== 'enterprise' && <CustomerQuotaView />}
-
+      {isProPlanEnabled && data.body.billingTier !== 'enterprise' && (
+        <CustomerQuotaView />
+      )}
       <Section
         title={t('BillingOverview.Credits.title')}
         description={t('BillingOverview.Credits.description')}

@@ -13,6 +13,7 @@ import pathToRegexp from 'path-to-regexp';
 import { db, deployedAgentMetadata } from '@letta-cloud/service-database';
 import { count, eq } from 'drizzle-orm';
 import {
+  BlocksService,
   IdentitiesService,
   SourcesService,
   ToolsService,
@@ -28,12 +29,15 @@ interface ShouldRateLimitPayload {
   };
 }
 
+const agentsOtherRoute = pathToRegexp(
+  '/v1/templates/:project/:template_version/agents',
+);
 const agentsRoute = pathToRegexp('/v1/agents');
 const toolsRoute = pathToRegexp('/v1/tools');
 const sourcesRoute = pathToRegexp('/v1/sources');
 // const groupsRoute = pathToRegexp('/v1/groups');
 const identitiesRoute = pathToRegexp('/v1/identities');
-// const blocksRoute = pathToRegexp('/v1/blocks');
+const blocksRoute = pathToRegexp('/v1/blocks');
 
 async function canCreateAgent(
   payload: ShouldRateLimitPayload,
@@ -131,6 +135,32 @@ async function canCreateSource(
   return null;
 }
 
+async function canCreateBlock(
+  payload: ShouldRateLimitPayload,
+): Promise<ShouldItemRateLimitResponse | null> {
+  const { limits, actor } = payload;
+
+  const { coreUserId } = actor;
+
+  const blocksCount = await BlocksService.countBlocks(
+    {},
+    {
+      user_id: coreUserId,
+    },
+  );
+
+  console.log('a', blocksCount);
+
+  if (blocksCount >= limits.blocks) {
+    return {
+      type: 'blocks',
+      currentLimit: limits.blocks,
+    };
+  }
+
+  return null;
+}
+
 interface ShouldItemRateLimitResponse {
   type: 'agents' | 'blocks' | 'groups' | 'identities' | 'sources' | 'tools';
   currentLimit: number;
@@ -139,7 +169,7 @@ interface ShouldItemRateLimitResponse {
 export async function shouldItemRateLimit(
   payload: ShouldRateLimitPayload,
 ): Promise<ShouldItemRateLimitResponse | null> {
-  if (agentsRoute.test(payload.path)) {
+  if (agentsRoute.test(payload.path) || agentsOtherRoute.test(payload.path)) {
     return canCreateAgent(payload);
   }
 
@@ -149,6 +179,10 @@ export async function shouldItemRateLimit(
 
   if (identitiesRoute.test(payload.path)) {
     return canCreateIdentity(payload);
+  }
+
+  if (blocksRoute.test(payload.path)) {
+    return canCreateBlock(payload);
   }
 
   if (sourcesRoute.test(payload.path)) {

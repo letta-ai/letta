@@ -558,8 +558,7 @@ const FormMessage = React.forwardRef<
 FormMessage.displayName = 'FormMessage';
 
 type FormActionsProps = PropsWithChildren<{
-  startAction?: React.ReactNode;
-  errorMessage?: string;
+  errorMessage?: React.ReactNode;
   align?: 'end' | 'start';
 }>;
 
@@ -567,7 +566,6 @@ export function FormActions({
   children,
   errorMessage,
   align = 'end',
-  startAction,
 }: FormActionsProps) {
   return (
     <div
@@ -576,13 +574,14 @@ export function FormActions({
         align === 'start' ? 'flex-row-reverse' : 'flex-row',
       )}
     >
-      {startAction ? startAction : <div />}
+      {errorMessage ? (
+        <Typography align="left" color="destructive">
+          {errorMessage}
+        </Typography>
+      ) : (
+        <div />
+      )}
       <HStack align="center" reverse={align === 'start'}>
-        {errorMessage && (
-          <Typography align="left" color="destructive">
-            {errorMessage}
-          </Typography>
-        )}
         {children}
       </HStack>
     </div>

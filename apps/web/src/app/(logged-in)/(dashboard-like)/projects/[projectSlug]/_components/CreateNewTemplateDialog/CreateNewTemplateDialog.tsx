@@ -1,10 +1,11 @@
-import React, { useCallback } from 'react';
+import React, { useCallback, useMemo } from 'react';
 import { useTranslations } from '@letta-cloud/translations';
 import { useCurrentProject } from '$web/client/hooks/useCurrentProject/useCurrentProject';
 import { webApi, webApiQueryKeys } from '$web/client';
 import { useRouter } from 'next/navigation';
 import {
   Alert,
+  BillingLink,
   Dialog,
   LoadingEmptyStatusComponent,
   OnboardingAsideFocus,
@@ -25,6 +26,7 @@ import {
   StarterKitSelector,
   useADETourStep,
 } from '@letta-cloud/ui-ade-components';
+import { isAPIError } from '@letta-cloud/sdk-core';
 
 interface CreateNewTemplateDialogProps {
   trigger: React.ReactNode;
@@ -70,7 +72,7 @@ export function CreateNewTemplateDialog(props: CreateNewTemplateDialogProps) {
   const [_, setStep] = useADETourStep();
 
   const user = useCurrentUser();
-  const { mutate, isPending, isSuccess, isError } =
+  const { mutate, isPending, isSuccess, error } =
     webApi.starterKits.createTemplateFromStarterKit.useMutation();
 
   const { setOnboardingStep } = useSetOnboardingStep();
@@ -122,6 +124,20 @@ export function CreateNewTemplateDialog(props: CreateNewTemplateDialogProps) {
     ],
   );
 
+  const errorMessage = useMemo(() => {
+    if (error) {
+      if (isAPIError(error) && error.status === 402) {
+        return t.rich('errors.overage', {
+          link: (chunks) => <BillingLink>{chunks}</BillingLink>,
+        });
+      }
+
+      return t('errors.default');
+    }
+
+    return undefined;
+  }, [error, t]);
+
   const [canCreateTemplate] = useUserHasPermission(
     ApplicationServices.CREATE_UPDATE_DELETE_TEMPLATES,
   );
@@ -164,7 +180,7 @@ export function CreateNewTemplateDialog(props: CreateNewTemplateDialogProps) {
             />
           ) : (
             <VStack>
-              {isError && <Alert title={t('error')} />}
+              {errorMessage && <Alert title={errorMessage} />}
               <StarterKitSelector
                 architectures={['memgpt']}
                 onSelectStarterKit={(_, kit) => {

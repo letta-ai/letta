@@ -62,7 +62,7 @@ type DialogContentProps = React.ComponentPropsWithoutRef<
 > & {
   color?: 'background-grey' | 'background';
   size?: VariantProps<typeof dialogVariants>['size'];
-  errorMessage?: string;
+  errorMessage?: React.ReactNode;
   errorAdditionalMessage?: string;
 };
 
@@ -344,7 +344,7 @@ export function DialogContentWithCategories(
 interface DialogProps extends VariantProps<typeof dialogVariants> {
   isOpen?: boolean;
   testId?: string;
-  errorMessage?: string;
+  errorMessage?: React.ReactNode;
   errorAdditionalMessage?: string;
   onOpenChange?: (open: boolean) => void;
   title?: string;

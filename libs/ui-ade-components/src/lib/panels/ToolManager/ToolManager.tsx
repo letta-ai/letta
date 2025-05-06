@@ -1,5 +1,6 @@
 import { useToolManagerState } from './hooks/useToolManagerState/useToolManagerState';
 import {
+  BillingLink,
   Button,
   CaretLeftIcon,
   CaretRightIcon,
@@ -84,41 +85,40 @@ function CreateToolDialog(props: CreateToolDialogProps) {
   const queryClient = useQueryClient();
   const { setSelectedToolId } = useToolManagerState();
 
-  const { mutate, isPending, isError, error, reset } =
-    useToolsServiceCreateTool({
-      onSuccess: (data) => {
-        if (!data.id) {
-          return;
-        }
+  const { mutate, isPending, error, reset } = useToolsServiceCreateTool({
+    onSuccess: (data) => {
+      if (!data.id) {
+        return;
+      }
 
-        setDialogOpen(false);
-        setPath('/my-tools');
+      setDialogOpen(false);
+      setPath('/my-tools');
 
-        queryClient.setQueriesData<Tool[]>(
-          {
-            queryKey: UseToolsServiceListToolsKeyFn(LIST_TOOLS_PAYLOAD),
-          },
-          (oldData) => {
-            if (!oldData) {
-              return [data];
-            }
+      queryClient.setQueriesData<Tool[]>(
+        {
+          queryKey: UseToolsServiceListToolsKeyFn(LIST_TOOLS_PAYLOAD),
+        },
+        (oldData) => {
+          if (!oldData) {
+            return [data];
+          }
 
-            return [data, ...oldData];
-          },
-        );
+          return [data, ...oldData];
+        },
+      );
 
-        queryClient.setQueriesData<Tool>(
-          {
-            queryKey: UseToolsServiceRetrieveToolKeyFn({
-              toolId: data.id,
-            }),
-          },
-          () => data,
-        );
+      queryClient.setQueriesData<Tool>(
+        {
+          queryKey: UseToolsServiceRetrieveToolKeyFn({
+            toolId: data.id,
+          }),
+        },
+        () => data,
+      );
 
-        setSelectedToolId(data.id);
-      },
-    });
+      setSelectedToolId(data.id);
+    },
+  });
 
   const handleOpenChange = useCallback(
     (open: boolean) => {
@@ -132,13 +132,24 @@ function CreateToolDialog(props: CreateToolDialogProps) {
   );
 
   const errorMessage = useMemo(() => {
-    if (error && isAPIError(error)) {
-      if (error.status === 409) {
-        return t('CreateToolDialog.errorAlreadyExists');
+    if (error) {
+      if (isAPIError(error)) {
+        if (error.status === 402) {
+          return t.rich('CreateToolDialog.errors.overage', {
+            limit: () => error.body.limit,
+            link: (chunks) => <BillingLink>{chunks}</BillingLink>,
+          });
+        }
+
+        if (error.status === 409) {
+          return t('CreateToolDialog.errors.alreadyExists');
+        }
       }
+
+      return t('CreateToolDialog.errors.default');
     }
 
-    return t('CreateToolDialog.error');
+    return undefined;
   }, [error, t]);
 
   const handleSubmit = useCallback(
@@ -158,7 +169,7 @@ function CreateToolDialog(props: CreateToolDialogProps) {
         isOpen={isDialogOpen}
         onOpenChange={handleOpenChange}
         isConfirmBusy={isPending}
-        errorMessage={isError ? errorMessage : undefined}
+        errorMessage={errorMessage}
         onSubmit={form.handleSubmit(handleSubmit)}
         title={t('CreateToolDialog.title')}
         trigger={trigger}
@@ -447,6 +458,7 @@ function ToolManagerContent() {
 
   return matchingRoute?.component;
 }
+
 export function ToolManager() {
   const {
     closeToolManager,

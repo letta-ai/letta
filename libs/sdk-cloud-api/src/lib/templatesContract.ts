@@ -45,6 +45,10 @@ const createAgentsFromTemplate = c.mutation({
     201: z.object({
       agents: zodTypes.AgentState.array(),
     }),
+    402: z.object({
+      message: z.string(),
+      limit: z.number(),
+    }),
   },
 });
 

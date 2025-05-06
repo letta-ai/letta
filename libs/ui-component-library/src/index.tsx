@@ -224,3 +224,5 @@ export * from './lib/core/InlineTextDiff/InlineTextDiff';
 export * from './lib/core/QuotaProgressBar/QuotaProgressBar';
 
 export * from './lib/reusable/QuotaBlock/QuotaBlock';
+
+export * from './lib/reusable/BillingLink/BillingLink';

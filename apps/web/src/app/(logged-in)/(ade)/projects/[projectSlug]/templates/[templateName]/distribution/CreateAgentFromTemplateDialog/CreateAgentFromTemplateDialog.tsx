@@ -21,6 +21,8 @@ import { cloudAPI } from '@letta-cloud/sdk-cloud-api';
 import { useRouter } from 'next/navigation';
 import { useCurrentProject } from '$web/client/hooks/useCurrentProject/useCurrentProject';
 import { useQueryClient } from '@tanstack/react-query';
+import { isFetchError } from '@ts-rest/react-query/v5';
+import { BillingLink } from '@letta-cloud/ui-component-library';
 
 interface CreateAgentFromTemplateDialogProps {
   templateName: string;
@@ -68,7 +70,7 @@ function AgentInputDetails(props: AgentInputDetailsProps) {
   const {
     mutate: createAgent,
     isSuccess,
-    isError,
+    error,
     isPending,
   } = cloudAPI.templates.createAgentsFromTemplate.useMutation({
     onSuccess: async (data) => {
@@ -116,6 +118,21 @@ function AgentInputDetails(props: AgentInputDetailsProps) {
     ],
   );
 
+  const errorMessage = useMemo(() => {
+    if (error) {
+      if (!isFetchError(error) && error.status === 402) {
+        return t.rich('errors.limit', {
+          limit: () => error.body.limit,
+          link: (chunks) => <BillingLink>{chunks}</BillingLink>,
+        });
+      }
+
+      return t('errors.default');
+    }
+
+    return null;
+  }, [error, t]);
+
   return (
     <form className="contents" onSubmit={handleCreateAgent}>
       <VStack fullHeight paddingBottom gap="form" flex>
@@ -143,10 +160,7 @@ function AgentInputDetails(props: AgentInputDetailsProps) {
             onValueChange={setToolVariables}
           />
         )}
-        <FormActions
-          errorMessage={isError ? t('error') : undefined}
-          align="end"
-        >
+        <FormActions errorMessage={errorMessage} align="end">
           <Button
             type="submit"
             busy={isPending || isSuccess}

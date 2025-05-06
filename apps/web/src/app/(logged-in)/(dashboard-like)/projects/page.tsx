@@ -33,6 +33,7 @@ import {
 import Link from 'next/link';
 import { useUserHasPermission } from '$web/client/hooks';
 import { ApplicationServices } from '@letta-cloud/service-rbac';
+import { BillingLink } from '@letta-cloud/ui-component-library';
 
 interface ProjectsListProps {
   search: string;
@@ -67,7 +68,12 @@ function CreateProjectDialog() {
 
   const errorTranslation = useErrorTranslationMessage(error, {
     messageMap: {
-      projectLimitReached: t('createProjectDialog.errors.projectLimitReached'),
+      projectLimitReached: t.rich(
+        'createProjectDialog.errors.projectLimitReached',
+        {
+          link: (chunks) => <BillingLink>{chunks}</BillingLink>,
+        },
+      ),
       noPermission: t('createProjectDialog.errors.noPermission'),
       default: t('createProjectDialog.errors.default'),
     },

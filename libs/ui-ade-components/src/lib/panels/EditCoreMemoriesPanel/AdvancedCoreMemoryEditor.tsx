@@ -1,5 +1,6 @@
 import {
   Alert,
+  BillingLink,
   Button,
   CloseIcon,
   CloseMiniApp,
@@ -29,6 +30,7 @@ import { useTranslations } from '@letta-cloud/translations';
 import { useCurrentAgent, useCurrentAgentMetaData } from '../../hooks';
 import { useFormContext } from 'react-hook-form';
 import type { Block, AgentState } from '@letta-cloud/sdk-core';
+import { isAPIError } from '@letta-cloud/sdk-core';
 import {
   useAgentsServiceAttachCoreMemoryBlock,
   useAgentsServiceModifyCoreMemoryBlock,
@@ -315,12 +317,26 @@ function CreateNewMemoryBlockForm(props: CreateNewMemoryBlockFormProps) {
     mutate: createBlock,
     reset: resetCreating,
     isPending: isCreatingBlock,
+    error,
   } = useBlocksServiceCreateBlock();
   const {
     mutate: attachBlock,
     reset: resetAttaching,
     isPending: isAttachingBlock,
   } = useAgentsServiceAttachCoreMemoryBlock();
+
+  const errorMessage = useMemo(() => {
+    if (error) {
+      if (isAPIError(error) && error.status === 402) {
+        return t.rich('CreateNewMemoryBlockForm.errors.overage', {
+          link: (chunks) => <BillingLink>{chunks}</BillingLink>,
+        });
+      }
+
+      return t('CreateNewMemoryBlockForm.errors.default');
+    }
+    return undefined;
+  }, [error, t]);
 
   const CreateNewMemoryBlockSchema = useMemo(() => {
     return z.object({
@@ -416,6 +432,7 @@ function CreateNewMemoryBlockForm(props: CreateNewMemoryBlockFormProps) {
     <FormProvider {...form}>
       <Dialog
         isOpen={isOpen}
+        errorMessage={errorMessage}
         onSubmit={form.handleSubmit(handleCreateBlock)}
         onOpenChange={setIsOpen}
         isConfirmBusy={isCreatingBlock || isAttachingBlock}
