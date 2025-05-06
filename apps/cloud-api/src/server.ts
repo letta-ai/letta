@@ -115,7 +115,7 @@ export function startServer() {
 
   app.use(bodyParser.json());
   app.use(rateLimitMiddleware);
-  app.use(itemRateLimitMiddleware);
+  // app.use(itemRateLimitMiddleware);
   app.use(fileSizeRateLimitMiddleware);
   app.use(requireProjectMiddleware);
   app.use(projectHeaderMiddleware);
