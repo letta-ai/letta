@@ -21,11 +21,6 @@ export const featureFlags = {
     expiryDate: '2024-01-31',
     flagValue: z.boolean(),
   },
-  IDENTITIES: {
-    description: 'Identities',
-    expiryDate: '2024-03-01',
-    flagValue: z.boolean(),
-  },
   ONBOARDING: {
     description: 'Onboarding',
     expiryDate: '2024-02-31',
