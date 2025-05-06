@@ -25,7 +25,7 @@ jobs:
         uses: tj-actions/changed-files@v44
         with:
           files: |
-            .github/workflows/migration-api-stability.yml
+            .github/workflows/database-compatibility-test.yml
             apps/cloud-api/src/**
             apps/core/**
             libs/sdk-core/**
@@ -184,7 +184,7 @@ jobs:
           just migrate-cloud-db
       - name: Turn on letta web on main branch
         working-directory: main-code
-        run: just cloud-api &
+        run: just cloud-api > cloud-api.log 2>&1 &
         env:
           DATABASE_URL: postgres://postgres:postgres@localhost:5433/postgres
           REDIS_HOST: localhost
@@ -192,7 +192,6 @@ jobs:
           LETTA_AGENTS_ENDPOINT: http://localhost:8283
           NEXT_PUBLIC_CURRENT_HOST: http://localhost:3006
           IS_API_STABILITY_TEST: yes
-          USE_FAKE_USER: yes
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           TEST_STAGE: main
       - name: Run database compatibility tests
@@ -234,14 +233,13 @@ jobs:
           just migrate-cloud-db
       - name: Turn on letta web on branch code
         working-directory: branch-code/apps/cloud-api
-        run: just cloud-api &
+        run: just cloud-api > cloud-api.log 2>&1 &
         env:
           DATABASE_URL: postgres://postgres:postgres@localhost:5433/postgres
           REDIS_HOST: localhost
           REDIS_PORT: 6379
           NEXT_PUBLIC_CURRENT_HOST: http://localhost:3006
           IS_API_STABILITY_TEST: yes
-          USE_FAKE_USER: yes
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           TEST_STAGE: branch
       - name: Run database stability tests on branch code
@@ -249,3 +247,15 @@ jobs:
         run: just database-compatibility
         env:
           TEST_STAGE: branch
+      - name: Save branch code log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          path: branch-code/cloud-api.log
+          name: cloud-api-branch-log
+      - name: Save main code log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          path: main-code/cloud-api.log
+          name: cloud-api-main0log

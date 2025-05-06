@@ -3,11 +3,9 @@ import {
   emailWhitelist,
   organizationInvitedUsers,
   organizationInviteRules,
-  organizationPreferences,
   organizations,
   organizationUsers,
   organizationVerifiedDomains,
-  projects,
   userProductOnboarding,
   users,
 } from '@letta-cloud/service-database';
