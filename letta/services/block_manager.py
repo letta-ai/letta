@@ -168,6 +168,17 @@ class BlockManager:
 
             return agents_pydantic
 
+    @enforce_types
+    def size(
+        self,
+        actor: PydanticUser,
+    ) -> int:
+        """
+        Get the total count of blocks for the given user.
+        """
+        with self.session_maker() as session:
+            return BlockModel.size(db_session=session, actor=actor)
+
     # Block History Functions
 
     @enforce_types
