@@ -435,7 +435,12 @@ async function removeTeamMember(
   await Promise.all([
     db
       .delete(organizationUsers)
-      .where(and(eq(organizationUsers.userId, memberId))),
+      .where(
+        and(
+          eq(organizationUsers.userId, memberId),
+          eq(organizationUsers.organizationId, activeOrganizationId),
+        ),
+      ),
     db
       .update(users)
       .set({
