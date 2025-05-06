@@ -2512,6 +2512,7 @@ export class ModelsService {
    * List Llm Models
    * @param data The data for the request.
    * @param data.byokOnly
+   * @param data.defaultOnly
    * @returns LLMConfig Successful Response
    * @throws ApiError
    */
@@ -2524,6 +2525,7 @@ export class ModelsService {
       url: '/v1/models/',
       query: {
         byok_only: data.byokOnly,
+        default_only: data.defaultOnly,
       },
       errors: {
         422: 'Validation Error',
@@ -2553,6 +2555,7 @@ export class LlmsService {
    * List Llm Models
    * @param data The data for the request.
    * @param data.byokOnly
+   * @param data.defaultOnly
    * @returns LLMConfig Successful Response
    * @throws ApiError
    */
@@ -2565,6 +2568,7 @@ export class LlmsService {
       url: '/v1/models/',
       query: {
         byok_only: data.byokOnly,
+        default_only: data.defaultOnly,
       },
       errors: {
         422: 'Validation Error',

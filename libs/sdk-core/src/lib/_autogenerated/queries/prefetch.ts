@@ -1100,6 +1100,7 @@ export const prefetchUseIdentitiesServiceRetrieveIdentity = (
  * List Llm Models
  * @param data The data for the request.
  * @param data.byokOnly
+ * @param data.defaultOnly
  * @returns LLMConfig Successful Response
  * @throws ApiError
  */
@@ -1107,13 +1108,15 @@ export const prefetchUseModelsServiceListModels = (
   queryClient: QueryClient,
   {
     byokOnly,
+    defaultOnly,
   }: {
     byokOnly?: boolean;
+    defaultOnly?: boolean;
   } = {},
 ) =>
   queryClient.prefetchQuery({
-    queryKey: Common.UseModelsServiceListModelsKeyFn({ byokOnly }),
-    queryFn: () => ModelsService.listModels({ byokOnly }),
+    queryKey: Common.UseModelsServiceListModelsKeyFn({ byokOnly, defaultOnly }),
+    queryFn: () => ModelsService.listModels({ byokOnly, defaultOnly }),
   });
 /**
  * List Embedding Models
@@ -1131,6 +1134,7 @@ export const prefetchUseModelsServiceListEmbeddingModels = (
  * List Llm Models
  * @param data The data for the request.
  * @param data.byokOnly
+ * @param data.defaultOnly
  * @returns LLMConfig Successful Response
  * @throws ApiError
  */
@@ -1138,13 +1142,15 @@ export const prefetchUseLlmsServiceListModels = (
   queryClient: QueryClient,
   {
     byokOnly,
+    defaultOnly,
   }: {
     byokOnly?: boolean;
+    defaultOnly?: boolean;
   } = {},
 ) =>
   queryClient.prefetchQuery({
-    queryKey: Common.UseLlmsServiceListModelsKeyFn({ byokOnly }),
-    queryFn: () => LlmsService.listModels({ byokOnly }),
+    queryKey: Common.UseLlmsServiceListModelsKeyFn({ byokOnly, defaultOnly }),
+    queryFn: () => LlmsService.listModels({ byokOnly, defaultOnly }),
   });
 /**
  * List Embedding Models

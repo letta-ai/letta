@@ -861,11 +861,16 @@ export const useModelsServiceListModelsKey = 'ModelsServiceListModels';
 export const UseModelsServiceListModelsKeyFn = (
   {
     byokOnly,
+    defaultOnly,
   }: {
     byokOnly?: boolean;
+    defaultOnly?: boolean;
   } = {},
   queryKey?: Array<unknown>,
-) => [useModelsServiceListModelsKey, ...(queryKey ?? [{ byokOnly }])];
+) => [
+  useModelsServiceListModelsKey,
+  ...(queryKey ?? [{ byokOnly, defaultOnly }]),
+];
 export type ModelsServiceListEmbeddingModelsDefaultResponse = Awaited<
   ReturnType<typeof ModelsService.listEmbeddingModels>
 >;
@@ -889,11 +894,16 @@ export const useLlmsServiceListModelsKey = 'LlmsServiceListModels';
 export const UseLlmsServiceListModelsKeyFn = (
   {
     byokOnly,
+    defaultOnly,
   }: {
     byokOnly?: boolean;
+    defaultOnly?: boolean;
   } = {},
   queryKey?: Array<unknown>,
-) => [useLlmsServiceListModelsKey, ...(queryKey ?? [{ byokOnly }])];
+) => [
+  useLlmsServiceListModelsKey,
+  ...(queryKey ?? [{ byokOnly, defaultOnly }]),
+];
 export type LlmsServiceListEmbeddingModelsDefaultResponse = Awaited<
   ReturnType<typeof LlmsService.listEmbeddingModels>
 >;

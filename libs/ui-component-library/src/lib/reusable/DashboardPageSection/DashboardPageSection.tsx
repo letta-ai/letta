@@ -72,7 +72,11 @@ export function DashboardPageSection(props: DashboardPageSectionProps) {
       {!title && !description ? null : (
         <VStack gap={false}>
           {title && (
-            <HStack align="center" justify="spaceBetween">
+            <HStack
+              paddingBottom={actions ? 'small' : false}
+              align="center"
+              justify="spaceBetween"
+            >
               <Typography align="left" noWrap bold variant="heading4">
                 {title}
               </Typography>

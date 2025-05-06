@@ -193,10 +193,28 @@ export async function handleMessageRateLimiting(
     },
   );
 
-  if (!agent) {
+  const handleRoot = agent.llm_config.handle?.split('/')[0];
+
+  if (!agent || !handleRoot) {
     return {
       isRateLimited: true,
       reasons: ['model-unknown'],
+    };
+  }
+
+  if (
+    ![
+      'openai',
+      'together',
+      'mistralai',
+      'anthropic',
+      'google_ai',
+      'xai',
+    ].includes(handleRoot)
+  ) {
+    // is a custom model
+    return {
+      isRateLimited: false,
     };
   }
 

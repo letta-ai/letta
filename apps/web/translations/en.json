@@ -270,8 +270,73 @@
       "costPerStep": "Cost per step"
     }
   },
+  "pages/models/CreateProviderModal": {
+    "title": "Add a new model provider",
+    "errors": {
+      "default": "There was an error adding the model provider, please try again or contact support.",
+      "nameConflict": "You already have a model provider with this name, please choose another name",
+      "tooManyProviders": "You have reached the limit of providers you can add to your account. The limit is {max} providers. Please contact support if you need more."
+    },
+    "providerType": {
+      "label": "Provider"
+    },
+    "name": {
+      "label": "Name",
+      "placeholder": "My model provider",
+      "description": "Provide a name for the model provider, this will be used to identify it in the UI"
+    },
+    "apiKey": {
+      "label": "API Key"
+    }
+  },
+  "pages/models/DeleteProviderModal": {
+    "title": "Delete model provider",
+    "description": "Are you sure you want to delete the model provider? This will delete all models associated with this provider and will break the functionality your agents that use this provider.",
+    "confirm": "Delete provider",
+    "confirmDelete": "I understand the consequences of deleting this model provider",
+    "errors": {
+      "notConfirmed": "You must confirm that you understand the consequences of deleting this model provider",
+      "default": "There was an error deleting the model provider, please try again or contact support."
+    }
+  },
+  "pages/models/ProviderDetailsOverlay": {
+    "title": "Model provider details",
+    "ModelsList": {
+      "title": "Models",
+      "description": "Below are the models available for this provider."
+    },
+    "DeleteProvider": {
+      "trigger": "Delete model provider",
+      "title": "Delete model provider",
+      "description": "Press the button below to delete the model provider. This will delete all models associated with this provider and will break the functionality your agents that use this provider."
+    }
+  },
+  "pages/models/BYOKModels": {
+    "ProviderTable": {
+      "columns": {
+        "name": "Name",
+        "provider": "Provider",
+        "updatedAt": "Last Updated"
+      }
+    },
+    "NoProviders": {
+      "title": "You have not connected any external model providers, check out our Letta managed models below to easily get started"
+    },
+    "ProvidersView": {
+      "error": "There was an error loading your model providers, please try again or contact support."
+    },
+    "actions": {
+      "addProvider": "Add model provider"
+    },
+    "title": "Bring Your Own Models",
+    "description": "Use your own API key to access models. This is useful if you want to use a model that is not available on Letta, or if you want to use your own API key for billing purposes.",
+    "columns": {
+      "name": "Name",
+      "brand": "Provider"
+    }
+  },
   "pages/models/LettaManagedModels": {
-    "title": "Letta Managed",
+    "title": "Letta Managed Models",
     "manageModels": "Manage Model Visibility",
     "description": "Letta managed models let you use OpenAI, Anthropic, and Gemini endpoints without an API Key, just pay through our platform or use our complimentary models",
     "columns": {

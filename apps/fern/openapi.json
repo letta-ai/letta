@@ -4656,6 +4656,22 @@
               ],
               "title": "Byok Only"
             }
+          },
+          {
+            "name": "default_only",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Default Only"
+            }
           }
         ],
         "responses": {

@@ -4739,6 +4739,7 @@ export type UpsertIdentityPropertiesResponse = unknown;
 
 export type ListModelsData = {
   byokOnly?: boolean | null;
+  defaultOnly?: boolean | null;
 };
 
 export type ListModelsResponse = Array<LLMConfig>;

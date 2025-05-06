@@ -6,6 +6,7 @@ export * from './discord';
 export * from './gemini';
 export * from './github';
 export * from './google';
+export * from './google_ai';
 export * from './letta';
 export * from './llama';
 export * from './lmstudio';
@@ -26,6 +27,7 @@ export type BrandKeys =
   | 'discord'
   | 'gemini'
   | 'github'
+  | 'google_ai'
   | 'google'
   | 'letta'
   | 'llama'

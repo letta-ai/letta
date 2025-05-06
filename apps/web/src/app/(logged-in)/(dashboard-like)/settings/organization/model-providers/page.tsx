@@ -35,6 +35,7 @@ import {
 } from '@letta-cloud/sdk-core';
 import { useQueryClient } from '@tanstack/react-query';
 import { useDateFormatter } from '@letta-cloud/utils-client';
+import { getUseProvidersServiceModelsStandardArgs } from '../../../models/_components/utils/getUseProvidersServiceModelsStandardArgs/getUseProvidersServiceModelsStandardArgs';
 
 const UpdateModelProviderSchema = z.object({
   apiKey: z.string(),
@@ -56,7 +57,9 @@ function UpdateModelProviderDialog(props: UpdateModelProviderDialogProps) {
       onSuccess: () => {
         queryClient.setQueriesData<ListProvidersResponse | undefined>(
           {
-            queryKey: UseProvidersServiceListProvidersKeyFn(),
+            queryKey: UseProvidersServiceListProvidersKeyFn(
+              getUseProvidersServiceModelsStandardArgs(),
+            ),
           },
           (oldData) => {
             if (!oldData) {

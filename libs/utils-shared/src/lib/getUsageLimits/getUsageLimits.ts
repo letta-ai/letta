@@ -1,6 +1,7 @@
 import type { BillingTiersType } from '@letta-cloud/types';
 
 export interface UsageLimits {
+  providers: number;
   agents: number;
   templates: number;
   storage: number; // in bytes
@@ -22,6 +23,7 @@ const FiveMB = 1024 * 1024 * 5; // 5 MB
 
 const limitMap: Record<BillingTiersType, UsageLimits> = {
   enterprise: {
+    providers: 50,
     agents: 50_000_000,
     identities: 10_000_000,
     projects: 10_000,
@@ -36,6 +38,7 @@ const limitMap: Record<BillingTiersType, UsageLimits> = {
     storage: OneGB * 100, // 100 GB
   },
   pro: {
+    providers: 50,
     identities: 1000,
     agents: 1000,
     projects: 100,
@@ -50,6 +53,7 @@ const limitMap: Record<BillingTiersType, UsageLimits> = {
     storage: OneGB, // 1 GB
   },
   free: {
+    providers: 50,
     agents: 25,
     dataSources: 25,
     projects: 25,

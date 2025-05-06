@@ -6907,6 +6907,13 @@ export const get_List_models = {
           z.array(z.union([z.boolean(), z.null()])),
         ])
         .optional(),
+      default_only: z
+        .union([
+          z.boolean(),
+          z.null(),
+          z.array(z.union([z.boolean(), z.null()])),
+        ])
+        .optional(),
     }),
   }),
   response: z.array(LLMConfig),

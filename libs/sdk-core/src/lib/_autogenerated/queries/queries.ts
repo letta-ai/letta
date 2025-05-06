@@ -1388,6 +1388,7 @@ export const useIdentitiesServiceRetrieveIdentity = <
  * List Llm Models
  * @param data The data for the request.
  * @param data.byokOnly
+ * @param data.defaultOnly
  * @returns LLMConfig Successful Response
  * @throws ApiError
  */
@@ -1398,15 +1399,20 @@ export const useModelsServiceListModels = <
 >(
   {
     byokOnly,
+    defaultOnly,
   }: {
     byokOnly?: boolean;
+    defaultOnly?: boolean;
   } = {},
   queryKey?: TQueryKey,
   options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>,
 ) =>
   useQuery<TData, TError>({
-    queryKey: Common.UseModelsServiceListModelsKeyFn({ byokOnly }, queryKey),
-    queryFn: () => ModelsService.listModels({ byokOnly }) as TData,
+    queryKey: Common.UseModelsServiceListModelsKeyFn(
+      { byokOnly, defaultOnly },
+      queryKey,
+    ),
+    queryFn: () => ModelsService.listModels({ byokOnly, defaultOnly }) as TData,
     ...options,
   });
 /**
@@ -1431,6 +1437,7 @@ export const useModelsServiceListEmbeddingModels = <
  * List Llm Models
  * @param data The data for the request.
  * @param data.byokOnly
+ * @param data.defaultOnly
  * @returns LLMConfig Successful Response
  * @throws ApiError
  */
@@ -1441,15 +1448,20 @@ export const useLlmsServiceListModels = <
 >(
   {
     byokOnly,
+    defaultOnly,
   }: {
     byokOnly?: boolean;
+    defaultOnly?: boolean;
   } = {},
   queryKey?: TQueryKey,
   options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>,
 ) =>
   useQuery<TData, TError>({
-    queryKey: Common.UseLlmsServiceListModelsKeyFn({ byokOnly }, queryKey),
-    queryFn: () => LlmsService.listModels({ byokOnly }) as TData,
+    queryKey: Common.UseLlmsServiceListModelsKeyFn(
+      { byokOnly, defaultOnly },
+      queryKey,
+    ),
+    queryFn: () => LlmsService.listModels({ byokOnly, defaultOnly }) as TData,
     ...options,
   });
 /**

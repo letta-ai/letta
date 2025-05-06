@@ -11,7 +11,9 @@ export async function getLettaAgentsInferenceModelsSingleton(
   props: CommonProps = {},
 ) {
   if (inferenceModelsList.length === 0 || props.cacheBust) {
-    inferenceModelsList = await ModelsService.listModels();
+    inferenceModelsList = await ModelsService.listModels({
+      defaultOnly: true,
+    });
   }
 
   return inferenceModelsList;
