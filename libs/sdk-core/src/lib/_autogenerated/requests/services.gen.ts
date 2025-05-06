@@ -128,6 +128,8 @@ import type {
   ListGroupsResponse,
   CreateGroupData,
   CreateGroupResponse,
+  CountGroupsData,
+  CountGroupsResponse,
   RetrieveGroupData,
   RetrieveGroupResponse,
   ModifyGroupData,
@@ -167,6 +169,8 @@ import type {
   ListBlocksResponse,
   CreateBlockData,
   CreateBlockResponse,
+  CountBlocksData,
+  CountBlocksResponse,
   ModifyBlockData,
   ModifyBlockResponse,
   DeleteBlockData,
@@ -2022,6 +2026,28 @@ export class GroupsService {
   }
 
   /**
+   * Count Groups
+   * Get the count of all groups associated with a given user.
+   * @param data The data for the request.
+   * @param data.userId
+   * @returns number Successful Response
+   * @throws ApiError
+   */
+  public static countGroups(
+    data: CountGroupsData = {},
+    headers?: { user_id: string },
+  ): CancelablePromise<CountGroupsResponse> {
+    return __request(OpenAPI, {
+      method: 'GET',
+      url: '/v1/groups/count',
+      errors: {
+        422: 'Validation Error',
+      },
+      headers,
+    });
+  }
+
+  /**
    * Retrieve Group
    * Retrieve the group by id.
    * @param data The data for the request.
@@ -2614,6 +2640,28 @@ export class BlocksService {
       url: '/v1/blocks/',
       body: data.requestBody,
       mediaType: 'application/json',
+      errors: {
+        422: 'Validation Error',
+      },
+      headers,
+    });
+  }
+
+  /**
+   * Count Blocks
+   * Count all blocks created by a user.
+   * @param data The data for the request.
+   * @param data.userId
+   * @returns number Successful Response
+   * @throws ApiError
+   */
+  public static countBlocks(
+    data: CountBlocksData = {},
+    headers?: { user_id: string },
+  ): CancelablePromise<CountBlocksResponse> {
+    return __request(OpenAPI, {
+      method: 'GET',
+      url: '/v1/blocks/count',
       errors: {
         422: 'Validation Error',
       },

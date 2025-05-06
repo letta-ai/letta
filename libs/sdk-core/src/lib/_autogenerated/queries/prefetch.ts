@@ -889,6 +889,26 @@ export const prefetchUseGroupsServiceListGroups = (
       }),
   });
 /**
+ * Count Groups
+ * Get the count of all groups associated with a given user.
+ * @param data The data for the request.
+ * @param data.userId
+ * @returns number Successful Response
+ * @throws ApiError
+ */
+export const prefetchUseGroupsServiceCountGroups = (
+  queryClient: QueryClient,
+  {
+    userId,
+  }: {
+    userId?: string;
+  } = {},
+) =>
+  queryClient.prefetchQuery({
+    queryKey: Common.UseGroupsServiceCountGroupsKeyFn({ userId }),
+    queryFn: () => GroupsService.countGroups({ userId }),
+  });
+/**
  * Retrieve Group
  * Retrieve the group by id.
  * @param data The data for the request.
@@ -1186,6 +1206,26 @@ export const prefetchUseBlocksServiceListBlocks = (
         templatesOnly,
         userId,
       }),
+  });
+/**
+ * Count Blocks
+ * Count all blocks created by a user.
+ * @param data The data for the request.
+ * @param data.userId
+ * @returns number Successful Response
+ * @throws ApiError
+ */
+export const prefetchUseBlocksServiceCountBlocks = (
+  queryClient: QueryClient,
+  {
+    userId,
+  }: {
+    userId?: string;
+  } = {},
+) =>
+  queryClient.prefetchQuery({
+    queryKey: Common.UseBlocksServiceCountBlocksKeyFn({ userId }),
+    queryFn: () => BlocksService.countBlocks({ userId }),
   });
 /**
  * Retrieve Block

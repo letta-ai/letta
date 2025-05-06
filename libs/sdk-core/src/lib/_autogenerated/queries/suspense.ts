@@ -1079,6 +1079,32 @@ export const useGroupsServiceListGroupsSuspense = <
     ...options,
   });
 /**
+ * Count Groups
+ * Get the count of all groups associated with a given user.
+ * @param data The data for the request.
+ * @param data.userId
+ * @returns number Successful Response
+ * @throws ApiError
+ */
+export const useGroupsServiceCountGroupsSuspense = <
+  TData = Common.GroupsServiceCountGroupsDefaultResponse,
+  TError = unknown,
+  TQueryKey extends Array<unknown> = unknown[],
+>(
+  {
+    userId,
+  }: {
+    userId?: string;
+  } = {},
+  queryKey?: TQueryKey,
+  options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>,
+) =>
+  useSuspenseQuery<TData, TError>({
+    queryKey: Common.UseGroupsServiceCountGroupsKeyFn({ userId }, queryKey),
+    queryFn: () => GroupsService.countGroups({ userId }) as TData,
+    ...options,
+  });
+/**
  * Retrieve Group
  * Retrieve the group by id.
  * @param data The data for the request.
@@ -1444,6 +1470,32 @@ export const useBlocksServiceListBlocksSuspense = <
         templatesOnly,
         userId,
       }) as TData,
+    ...options,
+  });
+/**
+ * Count Blocks
+ * Count all blocks created by a user.
+ * @param data The data for the request.
+ * @param data.userId
+ * @returns number Successful Response
+ * @throws ApiError
+ */
+export const useBlocksServiceCountBlocksSuspense = <
+  TData = Common.BlocksServiceCountBlocksDefaultResponse,
+  TError = unknown,
+  TQueryKey extends Array<unknown> = unknown[],
+>(
+  {
+    userId,
+  }: {
+    userId?: string;
+  } = {},
+  queryKey?: TQueryKey,
+  options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>,
+) =>
+  useSuspenseQuery<TData, TError>({
+    queryKey: Common.UseBlocksServiceCountBlocksKeyFn({ userId }, queryKey),
+    queryFn: () => BlocksService.countBlocks({ userId }) as TData,
     ...options,
   });
 /**

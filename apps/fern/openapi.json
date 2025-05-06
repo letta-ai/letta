@@ -3614,6 +3614,38 @@
         }
       }
     },
+    "/v1/groups/count": {
+      "get": {
+        "tags": ["groups"],
+        "summary": "Count Groups",
+        "description": "Get the count of all groups associated with a given user.",
+        "operationId": "count_groups",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "integer",
+                  "title": "Response Count Groups"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/groups/{group_id}": {
       "get": {
         "tags": ["groups"],
@@ -4820,6 +4852,38 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Block"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/blocks/count": {
+      "get": {
+        "tags": ["blocks"],
+        "summary": "Count Blocks",
+        "description": "Count all blocks created by a user.",
+        "operationId": "count_blocks",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "integer",
+                  "title": "Response Count Blocks"
                 }
               }
             }

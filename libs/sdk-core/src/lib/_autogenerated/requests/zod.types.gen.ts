@@ -6522,6 +6522,21 @@ export const post_Create_group = {
   response: Group,
 };
 
+export type get_Count_groups = typeof get_Count_groups;
+export const get_Count_groups = {
+  method: z.literal('GET'),
+  path: z.literal('/v1/groups/count'),
+  requestFormat: z.literal('json'),
+  parameters: z.object({
+    header: z.object({
+      user_id: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+    }),
+  }),
+  response: z.number(),
+};
+
 export type get_Retrieve_group = typeof get_Retrieve_group;
 export const get_Retrieve_group = {
   method: z.literal('GET'),
@@ -6954,6 +6969,21 @@ export const post_Create_block = {
     body: CreateBlock,
   }),
   response: Block,
+};
+
+export type get_Count_blocks = typeof get_Count_blocks;
+export const get_Count_blocks = {
+  method: z.literal('GET'),
+  path: z.literal('/v1/blocks/count'),
+  requestFormat: z.literal('json'),
+  parameters: z.object({
+    header: z.object({
+      user_id: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+    }),
+  }),
+  response: z.number(),
 };
 
 export type patch_Modify_block = typeof patch_Modify_block;
@@ -8078,6 +8108,7 @@ export const EndpointByMethod = {
     '/v1/agents/{agent_id}/messages': get_List_messages,
     '/v1/agents/{agent_id}/groups': get_List_agent_groups,
     '/v1/groups/': get_List_groups,
+    '/v1/groups/count': get_Count_groups,
     '/v1/groups/{group_id}': get_Retrieve_group,
     '/v1/groups/{group_id}/messages': get_List_group_messages,
     '/v1/identities/': get_List_identities,
@@ -8086,6 +8117,7 @@ export const EndpointByMethod = {
     '/v1/models/': get_List_models,
     '/v1/models/embedding': get_List_embedding_models,
     '/v1/blocks/': get_List_blocks,
+    '/v1/blocks/count': get_Count_blocks,
     '/v1/blocks/{block_id}': get_Retrieve_block,
     '/v1/blocks/{block_id}/agents': get_List_agents_for_block,
     '/v1/jobs/': get_List_jobs,

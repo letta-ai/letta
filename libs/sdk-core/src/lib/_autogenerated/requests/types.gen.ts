@@ -4569,6 +4569,12 @@ export type CreateGroupData = {
 
 export type CreateGroupResponse = Group;
 
+export type CountGroupsData = {
+  userId?: string | null;
+};
+
+export type CountGroupsResponse = number;
+
 export type RetrieveGroupData = {
   groupId: string;
   userId?: string | null;
@@ -4771,6 +4777,12 @@ export type CreateBlockData = {
 };
 
 export type CreateBlockResponse = Block;
+
+export type CountBlocksData = {
+  userId?: string | null;
+};
+
+export type CountBlocksResponse = number;
 
 export type ModifyBlockData = {
   blockId: string;
@@ -6178,6 +6190,21 @@ export type $OpenApiTs = {
       };
     };
   };
+  '/v1/groups/count': {
+    get: {
+      req: CountGroupsData;
+      res: {
+        /**
+         * Successful Response
+         */
+        200: number;
+        /**
+         * Validation Error
+         */
+        422: HTTPValidationError;
+      };
+    };
+  };
   '/v1/groups/{group_id}': {
     get: {
       req: RetrieveGroupData;
@@ -6457,6 +6484,21 @@ export type $OpenApiTs = {
          * Successful Response
          */
         200: Block;
+        /**
+         * Validation Error
+         */
+        422: HTTPValidationError;
+      };
+    };
+  };
+  '/v1/blocks/count': {
+    get: {
+      req: CountBlocksData;
+      res: {
+        /**
+         * Successful Response
+         */
+        200: number;
         /**
          * Validation Error
          */

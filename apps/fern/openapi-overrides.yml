@@ -532,6 +532,11 @@ paths:
       x-fern-sdk-group-name:
         - blocks
       x-fern-sdk-method-name: modify
+  /v1/blocks/count:
+    get:
+      x-fern-sdk-group-name:
+        - blocks
+      x-fern-sdk-method-name: count
   /v1/blocks/{block_id}/agents:
     get:
       x-fern-sdk-group-name:
@@ -697,6 +702,11 @@ paths:
       x-fern-sdk-group-name:
         - groups
       x-fern-sdk-method-name: delete
+  /v1/groups/count:
+    get:
+      x-fern-sdk-group-name:
+        - groups
+      x-fern-sdk-method-name: count
   /v1/groups/{group_id}/reset-messages:
     patch:
       x-fern-sdk-group-name:

@@ -239,6 +239,17 @@ class GroupManager:
 
             return prev_last_processed_message_id
 
+    @enforce_types
+    def size(
+        self,
+        actor: PydanticUser,
+    ) -> int:
+        """
+        Get the total count of groups for the given user.
+        """
+        with self.session_maker() as session:
+            return GroupModel.size(db_session=session, actor=actor)
+
     def _process_agent_relationship(self, session: Session, group: GroupModel, agent_ids: List[str], allow_partial=False, replace=True):
         if not agent_ids:
             if replace:

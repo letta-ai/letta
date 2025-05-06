@@ -31,11 +31,22 @@ def list_blocks(
     )
 
 
+@router.get("/count", response_model=int, operation_id="count_blocks")
+def count_blocks(
+    server: SyncServer = Depends(get_letta_server),
+    actor_id: Optional[str] = Header(None, alias="user_id"),
+):
+    """
+    Count all blocks created by a user.
+    """
+    return server.block_manager.size(actor=server.user_manager.get_user_or_default(user_id=actor_id))
+
+
 @router.post("/", response_model=Block, operation_id="create_block")
 def create_block(
     create_block: CreateBlock = Body(...),
     server: SyncServer = Depends(get_letta_server),
-    actor_id: Optional[str] = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
+    actor_id: Optional[str] = Header(None, alias="user_id"),
 ):
     actor = server.user_manager.get_user_or_default(user_id=actor_id)
     block = Block(**create_block.model_dump())

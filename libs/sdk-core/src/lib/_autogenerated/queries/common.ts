@@ -687,6 +687,22 @@ export const UseGroupsServiceListGroupsKeyFn = (
   useGroupsServiceListGroupsKey,
   ...(queryKey ?? [{ after, before, limit, managerType, projectId, userId }]),
 ];
+export type GroupsServiceCountGroupsDefaultResponse = Awaited<
+  ReturnType<typeof GroupsService.countGroups>
+>;
+export type GroupsServiceCountGroupsQueryResult<
+  TData = GroupsServiceCountGroupsDefaultResponse,
+  TError = unknown,
+> = UseQueryResult<TData, TError>;
+export const useGroupsServiceCountGroupsKey = 'GroupsServiceCountGroups';
+export const UseGroupsServiceCountGroupsKeyFn = (
+  {
+    userId,
+  }: {
+    userId?: string;
+  } = {},
+  queryKey?: Array<unknown>,
+) => [useGroupsServiceCountGroupsKey, ...(queryKey ?? [{ userId }])];
 export type GroupsServiceRetrieveGroupDefaultResponse = Awaited<
   ReturnType<typeof GroupsService.retrieveGroup>
 >;
@@ -921,6 +937,22 @@ export const UseBlocksServiceListBlocksKeyFn = (
     { identifierKeys, identityId, label, name, templatesOnly, userId },
   ]),
 ];
+export type BlocksServiceCountBlocksDefaultResponse = Awaited<
+  ReturnType<typeof BlocksService.countBlocks>
+>;
+export type BlocksServiceCountBlocksQueryResult<
+  TData = BlocksServiceCountBlocksDefaultResponse,
+  TError = unknown,
+> = UseQueryResult<TData, TError>;
+export const useBlocksServiceCountBlocksKey = 'BlocksServiceCountBlocks';
+export const UseBlocksServiceCountBlocksKeyFn = (
+  {
+    userId,
+  }: {
+    userId?: string;
+  } = {},
+  queryKey?: Array<unknown>,
+) => [useBlocksServiceCountBlocksKey, ...(queryKey ?? [{ userId }])];
 export type BlocksServiceRetrieveBlockDefaultResponse = Awaited<
   ReturnType<typeof BlocksService.retrieveBlock>
 >;
