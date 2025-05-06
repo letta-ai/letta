@@ -9,7 +9,7 @@ import pathToRegexp from 'path-to-regexp';
 import { findProjectBySlugOrId } from '@letta-cloud/utils-server';
 
 // agents route is handled in the agentsRouter itself
-// const agentsRoute = pathToRegexp('/v1/agents');
+const agentsRoute = pathToRegexp('/v1/agents');
 const identitiesRoute = pathToRegexp('/v1/identities');
 const agentsImportRoute = pathToRegexp('/v1/agents/import');
 
@@ -25,6 +25,33 @@ export async function requireProjectMiddleware(
 
   const pathname = req.path;
   const method = req.method;
+
+  if (method === 'GET' && agentsRoute.test(pathname)) {
+    // if GET request to /v1/agents, we should check the project_id if present
+
+    // query
+    const projectId = req.query?.project_id;
+    const projectHeader = req.headers['x-project'];
+
+    if (!projectHeader && !projectId) {
+      // no check if neither project_id nor x-project header is present
+      next();
+      return;
+    }
+
+    const real = await findProjectBySlugOrId({
+      projectId: projectId as string,
+      projectSlug: projectHeader as string,
+    });
+
+    if (!real) {
+      res.status(404).json({ error: 'Project not found' });
+      return;
+    }
+
+    next();
+    return;
+  }
 
   if (method !== 'POST') {
     next();

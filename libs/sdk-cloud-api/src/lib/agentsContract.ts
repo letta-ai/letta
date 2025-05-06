@@ -115,31 +115,6 @@ const migrateAgentContract = c.mutation({
   },
 });
 
-const AgentHeaderSchema = z.object({
-  project: z.string().optional(),
-});
-
-/* List Agents */
-
-const listAgentsContract = c.query({
-  method: 'GET',
-  summary: 'List Agents',
-  path: '/v1/agents',
-  headers: AgentHeaderSchema,
-  description:
-    'List all agents associated with a given user. This endpoint retrieves a list of all agents and their configurations associated with the specified user ID',
-  query: get_List_agents.parameters.shape.query
-    .omit({ ascending: true, match_all_tags: true, limit: true })
-    .extend({
-      match_all_tags: z.literal('true').or(z.literal('false')).optional(),
-      ascending: z.literal('true').or(z.literal('false')).optional(),
-      limit: z.string().or(z.number()).transform(Number).optional(),
-    }),
-  responses: {
-    200: get_List_agents.response,
-  },
-});
-
 /* Get Agent By Id */
 const GetAgentByIdResponseSchema = c.type<AgentStateType>();
 
@@ -320,7 +295,6 @@ export const agentsContract = c.router({
   searchDeployedAgents: searchDeployedAgentsContract,
   versionAgentTemplate: versionAgentTemplateContract,
   migrateAgent: migrateAgentContract,
-  listAgents: listAgentsContract,
   getAgentById: getAgentByIdContract,
   deleteAgent: deleteAgentContract,
   updateAgent: updateAgentContract,

@@ -215,99 +215,6 @@ interface GetValidProjectIdFromPayload {
   projectSlug?: string;
 }
 
-function getValidProjectIdFromPayload(payload: GetValidProjectIdFromPayload) {
-  const { organizationId, projectId, projectSlug } = payload;
-  if (projectId) {
-    return db.query.projects
-      .findFirst({
-        where: and(
-          eq(projects.organizationId, organizationId),
-          eq(projects.id, projectId),
-          isNull(projects.deletedAt),
-        ),
-        columns: {
-          id: true,
-        },
-      })
-      .then((project) => {
-        if (!project) {
-          return null;
-        }
-
-        return project.id;
-      });
-  }
-
-  if (projectSlug) {
-    return db.query.projects
-      .findFirst({
-        where: and(
-          eq(projects.organizationId, organizationId),
-          eq(projects.slug, projectSlug),
-          isNull(projects.deletedAt),
-        ),
-        columns: {
-          id: true,
-        },
-      })
-      .then((project) => {
-        if (!project) {
-          return null;
-        }
-
-        return project.id;
-      });
-  }
-
-  return getCatchAllProjectId({ organizationId });
-}
-
-type ListAgentsRequest = ServerInferRequest<
-  typeof cloudContracts.agents.listAgents
->;
-
-type ListAgentsResponse = ServerInferResponses<
-  typeof cloudContracts.agents.listAgents
->;
-
-async function listAgents(
-  req: ListAgentsRequest,
-  context: SDKContext,
-): Promise<ListAgentsResponse> {
-  const projectId = await getValidProjectIdFromPayload({
-    organizationId: getContextDataHack(req, context).organizationId,
-    projectId:
-      typeof req.query.project_id === 'string'
-        ? req.query.project_id
-        : undefined,
-    projectSlug: req.headers.project,
-  });
-
-  if (!projectId) {
-    return {
-      status: 404,
-      body: {
-        message: 'Project not found',
-      },
-    };
-  }
-
-  const agents = await AgentsService.listAgents(
-    {
-      ...camelCaseKeys(req.query),
-      projectId,
-    },
-    {
-      user_id: getContextDataHack(req, context).lettaAgentsUserId,
-    },
-  );
-
-  return {
-    status: 200,
-    body: agents,
-  };
-}
-
 type GetAgentByIdRequest = ServerInferRequest<
   typeof cloudContracts.agents.getAgentById
 >;
@@ -834,7 +741,6 @@ export const agentsRouter = {
   createAgent,
   versionAgentTemplate,
   migrateAgent,
-  listAgents,
   getAgentVariables,
   getAgentById,
   deleteAgent,
