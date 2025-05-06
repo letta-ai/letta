@@ -16,9 +16,8 @@ export async function itemRateLimitMiddleware(
     }
 
     if (!req.actor?.cloudOrganizationId) {
-      throw new Error(
-        'This middlware must be used after verifyIdentityMiddleware',
-      );
+      next();
+      return;
     }
 
     const subscription = await getCustomerSubscription(

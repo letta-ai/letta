@@ -19,7 +19,7 @@ import {
   webApiQueryKeys,
 } from '@letta-cloud/sdk-web';
 import type { ColumnDef } from '@tanstack/react-table';
-import type { Limit } from '@letta-cloud/utils-shared';
+import type { UsageLimits } from '@letta-cloud/utils-shared';
 import { creditsToDollars, getUsageLimits } from '@letta-cloud/utils-shared';
 import {
   useCurrencyFormatter,
@@ -31,7 +31,7 @@ import { ModelDetailsOverlay } from '../ModelDetailsOverlay/ModelDetailsOverlay'
 interface BaseCostCellProps {
   tier: CostItemType['tier'];
   costMap: CostItemType['costMap'];
-  usage: Limit;
+  usage: UsageLimits;
 }
 
 function BaseCostCell(props: BaseCostCellProps) {
