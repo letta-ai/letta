@@ -44,10 +44,11 @@ import { SingleMCPServer } from './SingleMCPServer/SingleMCPServer';
 
 interface AddStdioServerFormProps {
   onCancel: () => void;
+  onSuccess: () => void;
 }
 
 function AddStdioServerForm(props: AddStdioServerFormProps) {
-  const { onCancel } = props;
+  const { onCancel, onSuccess } = props;
 
   const t = useTranslations('ToolsEditor/MCPServers');
 
@@ -88,6 +89,8 @@ function AddStdioServerForm(props: AddStdioServerFormProps) {
           }, {} as ListMcpServersResponse);
         },
       );
+
+      onSuccess();
     },
   });
 
@@ -176,7 +179,7 @@ function AddStdioServerForm(props: AddStdioServerFormProps) {
 }
 
 function AddSSEServerForm(props: AddStdioServerFormProps) {
-  const { onCancel } = props;
+  const { onCancel, onSuccess } = props;
 
   const t = useTranslations('ToolsEditor/MCPServers');
 
@@ -216,6 +219,8 @@ function AddSSEServerForm(props: AddStdioServerFormProps) {
           }, {} as ListMcpServersResponse);
         },
       );
+
+      onSuccess();
     },
   });
 
@@ -340,12 +345,18 @@ function AddServerDialog(props: AddServerDialogProps) {
         )}
         {serverType === 'stdio' ? (
           <AddStdioServerForm
+            onSuccess={() => {
+              setIsOpen(false);
+            }}
             onCancel={() => {
               setIsOpen(false);
             }}
           />
         ) : (
           <AddSSEServerForm
+            onSuccess={() => {
+              setIsOpen(false);
+            }}
             onCancel={() => {
               setIsOpen(false);
             }}
