@@ -1,8 +1,1 @@
-{
-  "mcpServers": {
-    "github_composio": {
-      "transport": "sse",
-      "url": "https://mcp.composio.dev/composio/server/3c44733b-75ae-4ba8-9a68-7153265fadd8"
-    }
-  }
-}
+{}
