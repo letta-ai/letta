@@ -6,11 +6,8 @@ import type { Config } from 'tailwindcss';
 export function buildConfig(appDir: string): Config {
   return {
     content: [
-      join(
-        appDir,
-        '{src,pages,components,app}/**/*!(*.stories|*.spec).{ts,tsx,html}',
-      ),
-      join(appDir, '..', '..', 'libs', '**/*!(*.stories|*.spec).{ts,tsx,html}'),
+      join(appDir, '{src,pages,components,app}/**/*!(*.stories|*.spec).tsx'),
+      join(appDir, '..', '..', 'libs', '**/*!(*.stories|*.spec).tsx'),
     ],
     theme: {
       screens: {

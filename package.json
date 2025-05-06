@@ -157,6 +157,7 @@
     "react-simple-code-editor": "^0.14.1",
     "react-textarea-autosize": "^8.5.6",
     "react-virtualized": "^9.22.6",
+    "react-virtualized-auto-sizer": "^1.0.26",
     "react-window": "^1.8.11",
     "remark-gfm": "^4.0.0",
     "resend": "^4.1.2",

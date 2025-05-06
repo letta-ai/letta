@@ -19,7 +19,7 @@ import { atom, useAtom } from 'jotai';
 import './ContextEditorPanel.scss';
 import { useCurrentAgent } from '../../hooks';
 import { useCurrentSimulatedAgent } from '../../hooks/useCurrentSimulatedAgent/useCurrentSimulatedAgent';
-import { getTikTokenEncoder } from '@letta-cloud/utils-shared';
+import { useTikTokenEncoder } from '@letta-cloud/utils-client';
 
 const computedMemoryStringAtom = atom<string | null>(null);
 
@@ -52,9 +52,7 @@ function useContextWindowDetails() {
     },
   });
 
-  const encoder = useMemo(() => {
-    return getTikTokenEncoder(llm_config?.model);
-  }, [llm_config?.model]);
+  const { data: encoder } = useTikTokenEncoder();
 
   useEffect(() => {
     if (!memory) {
@@ -70,6 +68,10 @@ function useContextWindowDetails() {
   }, [memory, postMessage]);
 
   const systemPromptLength = useMemo(() => {
+    if (!encoder) {
+      return 0;
+    }
+
     return encoder.encode(system || '').length;
   }, [encoder, system]);
 
@@ -82,6 +84,10 @@ function useContextWindowDetails() {
   }, [contextWindow?.num_tokens_external_memory_summary]);
 
   const coreMemoryLength = useMemo(() => {
+    if (!encoder) {
+      return 0;
+    }
+
     return encoder.encode(computedMemoryString || '').length;
   }, [computedMemoryString, encoder]);
 

@@ -7,7 +7,7 @@ import {
 } from '@letta-cloud/service-database';
 import { eq } from 'drizzle-orm';
 import { AgentsService, type MessageCreate } from '@letta-cloud/sdk-core';
-import { getTikTokenEncoder, getUsageLimits } from '@letta-cloud/utils-shared';
+import { getUsageLimits } from '@letta-cloud/utils-shared';
 import { getCreditCostPerModel } from '../getCreditCostPerModel/getCreditCostPerModel';
 import { getOrganizationCredits } from '../redisOrganizationCredits/redisOrganizationCredits';
 import { getCustomerSubscription } from '@letta-cloud/service-payments';

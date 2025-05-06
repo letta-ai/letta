@@ -14,9 +14,18 @@ import {
   TOTAL_PRIMARY_ONBOARDING_STEPS,
 } from '@letta-cloud/types';
 import { useSetOnboardingStep } from '@letta-cloud/sdk-web';
+import { useShowOnboarding } from '$web/client/hooks/useShowOnboarding/useShowOnboarding';
 
-export default function ModelsPage() {
+interface OnboardingWrapperProps {
+  children: React.ReactNode;
+}
+
+function OnboardingWrapper(props: OnboardingWrapperProps) {
+  const { children } = props;
+
+  const showOnboarding = useShowOnboarding('about_credits');
   const t = useTranslations('pages/models');
+
   const { setOnboardingStep } = useSetOnboardingStep();
   const [isLoading, setIsLoading] = React.useState(false);
   const handleNextStep = useCallback(() => {
@@ -30,15 +39,15 @@ export default function ModelsPage() {
     });
   }, [setOnboardingStep]);
 
-  return (
-    <DashboardPageLayout title={t('title')} subtitle={t('description')}>
+  if (showOnboarding) {
+    return (
       <OnboardingAsideFocus
         placement="left-start"
         panelClassName="w-[300px]"
         reward={stepToRewardMap.about_credits}
         title={t('Onboarding.title')}
         description={t('Onboarding.description')}
-        isOpen
+        isOpen={showOnboarding}
         totalSteps={TOTAL_PRIMARY_ONBOARDING_STEPS}
         currentStep={1}
         nextStep={
@@ -53,9 +62,23 @@ export default function ModelsPage() {
           />
         }
       >
+        {children}
+      </OnboardingAsideFocus>
+    );
+  }
+
+  return children;
+}
+
+export default function ModelsPage() {
+  const t = useTranslations('pages/models');
+
+  return (
+    <DashboardPageLayout title={t('title')} subtitle={t('description')}>
+      <OnboardingWrapper>
         <BYOKModels />
         <LettaManagedModels />
-      </OnboardingAsideFocus>
+      </OnboardingWrapper>
     </DashboardPageLayout>
   );
 }

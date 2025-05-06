@@ -2,7 +2,7 @@
 import * as React from 'react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { FixedSizeList as List } from 'react-window';
-import { AutoSizer } from 'react-virtualized';
+import AutoSizer from 'react-virtualized-auto-sizer';
 
 interface VirtualizedCodeViewerProps {
   content: string;

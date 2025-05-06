@@ -1,5 +1,3 @@
-import * as Sentry from '@sentry/nextjs';
-
 export async function register() {
   if (process.env.NEXT_RUNTIME === 'nodejs') {
     await import('../sentry.server.config');
@@ -14,4 +12,22 @@ export async function register() {
   }
 }
 
-export const onRequestError = Sentry.captureRequestError;
+export async function onRequestError(...rest: any) {
+  if (process.env.NEXT_RUNTIME === 'edge') {
+    const res = await import('@sentry/nextjs');
+
+    // @ts-expect-error - dfa
+    res.captureRequestError(...rest);
+    return;
+  }
+
+  if (process.env.NEXT_RUNTIME === 'nodejs') {
+    const res = await import('@sentry/nextjs');
+
+    // @ts-expect-error - daf
+    res.captureRequestError(...rest);
+    return;
+  }
+
+  return;
+}
