@@ -115,6 +115,8 @@ MODEL_LIST = [
 
 DUMMY_FIRST_USER_MESSAGE = "User initializing bootup sequence."
 
+VALID_EVENT_TYPES = {"content_block_stop", "message_stop"}
+
 
 def antropic_get_model_context_window(url: str, api_key: Union[str, None], model: str) -> int:
     for model_dict in anthropic_get_model_list(url=url, api_key=api_key):
@@ -596,7 +598,8 @@ def convert_anthropic_stream_event_to_chatcompletion(
             redacted_reasoning_content = event.content_block.data
         else:
             warnings.warn("Unexpected content start type: " + str(type(event.content_block)))
-
+    elif event.type in VALID_EVENT_TYPES:
+        pass
     else:
         warnings.warn("Unexpected event type: " + event.type)
 
