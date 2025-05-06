@@ -15,10 +15,11 @@ router = APIRouter(prefix="/models", tags=["models", "llms"])
 @router.get("/", response_model=List[LLMConfig], operation_id="list_models")
 def list_llm_models(
     byok_only: Optional[bool] = Query(None),
+    default_only: Optional[bool] = Query(None),
     server: "SyncServer" = Depends(get_letta_server),
 ):
 
-    models = server.list_llm_models(byok_only=byok_only)
+    models = server.list_llm_models(byok_only=byok_only, default_only=default_only)
     # print(models)
     return models
 
