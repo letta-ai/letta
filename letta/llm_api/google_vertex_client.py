@@ -9,11 +9,14 @@ from letta.helpers.json_helpers import json_dumps, json_loads
 from letta.llm_api.google_ai_client import GoogleAIClient
 from letta.local_llm.json_parser import clean_json_string_extra_backslash
 from letta.local_llm.utils import count_tokens
+from letta.log import get_logger
 from letta.schemas.llm_config import LLMConfig
 from letta.schemas.message import Message as PydanticMessage
 from letta.schemas.openai.chat_completion_response import ChatCompletionResponse, Choice, FunctionCall, Message, ToolCall, UsageStatistics
 from letta.settings import model_settings, settings
 from letta.utils import get_tool_call_id
+
+logger = get_logger(__name__)
 
 
 class GoogleVertexClient(GoogleAIClient):
