@@ -27,7 +27,7 @@ from letta.llm_api.helpers import add_inner_thoughts_to_functions, unpack_all_in
 from letta.llm_api.llm_client_base import LLMClientBase
 from letta.local_llm.constants import INNER_THOUGHTS_KWARG, INNER_THOUGHTS_KWARG_DESCRIPTION
 from letta.log import get_logger
-from letta.schemas.enums import ProviderType
+from letta.schemas.enums import ProviderCategory
 from letta.schemas.llm_config import LLMConfig
 from letta.schemas.message import Message as PydanticMessage
 from letta.schemas.openai.chat_completion_request import Tool
@@ -45,18 +45,18 @@ logger = get_logger(__name__)
 class AnthropicClient(LLMClientBase):
 
     def request(self, request_data: dict, llm_config: LLMConfig) -> dict:
-        client = self._get_anthropic_client(async_client=False)
+        client = self._get_anthropic_client(llm_config, async_client=False)
         response = client.beta.messages.create(**request_data, betas=["tools-2024-04-04"])
         return response.model_dump()
 
     async def request_async(self, request_data: dict, llm_config: LLMConfig) -> dict:
-        client = self._get_anthropic_client(async_client=True)
+        client = self._get_anthropic_client(llm_config, async_client=True)
         response = await client.beta.messages.create(**request_data, betas=["tools-2024-04-04"])
         return response.model_dump()
 
     @trace_method
     async def stream_async(self, request_data: dict, llm_config: LLMConfig) -> AsyncStream[BetaRawMessageStreamEvent]:
-        client = self._get_anthropic_client(async_client=True)
+        client = self._get_anthropic_client(llm_config, async_client=True)
         request_data["stream"] = True
         return await client.beta.messages.create(**request_data, betas=["tools-2024-04-04"])
 
@@ -96,7 +96,7 @@ class AnthropicClient(LLMClientBase):
                 for agent_id in agent_messages_mapping
             }
 
-            client = self._get_anthropic_client(async_client=True)
+            client = self._get_anthropic_client(list(agent_llm_config_mapping.values())[0], async_client=True)
 
             anthropic_requests = [
                 Request(custom_id=agent_id, params=MessageCreateParamsNonStreaming(**params)) for agent_id, params in requests.items()
@@ -112,10 +112,12 @@ class AnthropicClient(LLMClientBase):
             raise self.handle_llm_error(e)
 
     @trace_method
-    def _get_anthropic_client(self, async_client: bool = False) -> Union[anthropic.AsyncAnthropic, anthropic.Anthropic]:
+    def _get_anthropic_client(
+        self, llm_config: LLMConfig, async_client: bool = False
+    ) -> Union[anthropic.AsyncAnthropic, anthropic.Anthropic]:
         override_key = None
-        if self.provider_name and self.provider_name != ProviderType.anthropic.value:
-            override_key = ProviderManager().get_override_key(self.provider_name)
+        if llm_config.provider_category == ProviderCategory.byok:
+            override_key = ProviderManager().get_override_key(llm_config.provider_name, actor=self.actor)
 
         if async_client:
             return anthropic.AsyncAnthropic(api_key=override_key) if override_key else anthropic.AsyncAnthropic()

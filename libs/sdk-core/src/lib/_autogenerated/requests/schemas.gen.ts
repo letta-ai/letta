@@ -5700,6 +5700,17 @@ export const $LLMConfig = {
       title: 'Provider Name',
       description: 'The provider name for the model.',
     },
+    provider_category: {
+      anyOf: [
+        {
+          $ref: '#/components/schemas/ProviderCategory',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      description: 'The provider category for the model.',
+    },
     model_wrapper: {
       anyOf: [
         {
@@ -7321,6 +7332,10 @@ export const $Provider = {
       $ref: '#/components/schemas/ProviderType',
       description: 'The type of the provider',
     },
+    provider_category: {
+      $ref: '#/components/schemas/ProviderCategory',
+      description: 'The category of the provider (base or byok)',
+    },
     api_key: {
       anyOf: [
         {
@@ -7373,8 +7388,14 @@ export const $Provider = {
   },
   additionalProperties: false,
   type: 'object',
-  required: ['name', 'provider_type'],
+  required: ['name', 'provider_type', 'provider_category'],
   title: 'Provider',
+} as const;
+
+export const $ProviderCategory = {
+  type: 'string',
+  enum: ['base', 'byok'],
+  title: 'ProviderCategory',
 } as const;
 
 export const $ProviderCreate = {

@@ -1936,6 +1936,10 @@ export type LLMConfig = {
    */
   provider_name?: string | null;
   /**
+   * The provider category for the model.
+   */
+  provider_category?: ProviderCategory | null;
+  /**
    * The wrapper for the model.
    */
   model_wrapper?: string | null;
@@ -2612,6 +2616,10 @@ export type Provider = {
    */
   provider_type: ProviderType;
   /**
+   * The category of the provider (base or byok)
+   */
+  provider_category: ProviderCategory;
+  /**
    * API key used for requests to the provider.
    */
   api_key?: string | null;
@@ -2628,6 +2636,8 @@ export type Provider = {
    */
   updated_at?: string | null;
 };
+
+export type ProviderCategory = 'base' | 'byok';
 
 export type ProviderCreate = {
   /**
@@ -4738,11 +4748,17 @@ export type UpsertIdentityPropertiesData = {
 export type UpsertIdentityPropertiesResponse = unknown;
 
 export type ListModelsData = {
-  byokOnly?: boolean | null;
-  defaultOnly?: boolean | null;
+  providerCategory?: Array<ProviderCategory> | null;
+  providerName?: string | null;
+  providerType?: ProviderType | null;
+  userId?: string | null;
 };
 
 export type ListModelsResponse = Array<LLMConfig>;
+
+export type ListEmbeddingModelsData = {
+  userId?: string | null;
+};
 
 export type ListEmbeddingModelsResponse = Array<EmbeddingConfig>;
 
@@ -6456,11 +6472,16 @@ export type $OpenApiTs = {
   };
   '/v1/models/embedding': {
     get: {
+      req: ListEmbeddingModelsData;
       res: {
         /**
          * Successful Response
          */
         200: Array<EmbeddingConfig>;
+        /**
+         * Validation Error
+         */
+        422: HTTPValidationError;
       };
     };
   };

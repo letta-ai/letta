@@ -1,9 +1,9 @@
 from typing import List, Optional, Union
 
 from letta.orm.provider import Provider as ProviderModel
-from letta.schemas.enums import ProviderType
+from letta.schemas.enums import ProviderCategory, ProviderType
 from letta.schemas.providers import Provider as PydanticProvider
-from letta.schemas.providers import ProviderUpdate
+from letta.schemas.providers import ProviderCreate, ProviderUpdate
 from letta.schemas.user import User as PydanticUser
 from letta.utils import enforce_types
 
@@ -16,9 +16,12 @@ class ProviderManager:
         self.session_maker = db_context
 
     @enforce_types
-    def create_provider(self, provider: PydanticProvider, actor: PydanticUser) -> PydanticProvider:
+    def create_provider(self, request: ProviderCreate, actor: PydanticUser) -> PydanticProvider:
         """Create a new provider if it doesn't already exist."""
         with self.session_maker() as session:
+            provider_create_args = {**request.model_dump(), "provider_category": ProviderCategory.byok}
+            provider = PydanticProvider(**provider_create_args)
+
             if provider.name == provider.provider_type.value:
                 raise ValueError("Provider name must be unique and different from provider type")
 
@@ -65,11 +68,11 @@ class ProviderManager:
     @enforce_types
     def list_providers(
         self,
+        actor: PydanticUser,
         name: Optional[str] = None,
         provider_type: Optional[ProviderType] = None,
         after: Optional[str] = None,
         limit: Optional[int] = 50,
-        actor: PydanticUser = None,
     ) -> List[PydanticProvider]:
         """List all providers with optional pagination."""
         filter_kwargs = {}
@@ -88,11 +91,11 @@ class ProviderManager:
             return [provider.to_pydantic() for provider in providers]
 
     @enforce_types
-    def get_provider_id_from_name(self, provider_name: Union[str, None]) -> Optional[str]:
-        providers = self.list_providers(name=provider_name)
+    def get_provider_id_from_name(self, provider_name: Union[str, None], actor: PydanticUser) -> Optional[str]:
+        providers = self.list_providers(name=provider_name, actor=actor)
         return providers[0].id if providers else None
 
     @enforce_types
-    def get_override_key(self, provider_name: Union[str, None]) -> Optional[str]:
-        providers = self.list_providers(name=provider_name)
+    def get_override_key(self, provider_name: Union[str, None], actor: PydanticUser) -> Optional[str]:
+        providers = self.list_providers(name=provider_name, actor=actor)
         return providers[0].api_key if providers else None

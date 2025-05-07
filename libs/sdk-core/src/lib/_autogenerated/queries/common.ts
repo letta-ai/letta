@@ -30,6 +30,7 @@ import {
   IdentityType,
   ManagerType,
   MessageRole,
+  ProviderCategory,
   ProviderType,
   SandboxType,
 } from '../requests/types.gen';
@@ -860,16 +861,20 @@ export type ModelsServiceListModelsQueryResult<
 export const useModelsServiceListModelsKey = 'ModelsServiceListModels';
 export const UseModelsServiceListModelsKeyFn = (
   {
-    byokOnly,
-    defaultOnly,
+    providerCategory,
+    providerName,
+    providerType,
+    userId,
   }: {
-    byokOnly?: boolean;
-    defaultOnly?: boolean;
+    providerCategory?: ProviderCategory[];
+    providerName?: string;
+    providerType?: ProviderType;
+    userId?: string;
   } = {},
   queryKey?: Array<unknown>,
 ) => [
   useModelsServiceListModelsKey,
-  ...(queryKey ?? [{ byokOnly, defaultOnly }]),
+  ...(queryKey ?? [{ providerCategory, providerName, providerType, userId }]),
 ];
 export type ModelsServiceListEmbeddingModelsDefaultResponse = Awaited<
   ReturnType<typeof ModelsService.listEmbeddingModels>
@@ -881,8 +886,13 @@ export type ModelsServiceListEmbeddingModelsQueryResult<
 export const useModelsServiceListEmbeddingModelsKey =
   'ModelsServiceListEmbeddingModels';
 export const UseModelsServiceListEmbeddingModelsKeyFn = (
+  {
+    userId,
+  }: {
+    userId?: string;
+  } = {},
   queryKey?: Array<unknown>,
-) => [useModelsServiceListEmbeddingModelsKey, ...(queryKey ?? [])];
+) => [useModelsServiceListEmbeddingModelsKey, ...(queryKey ?? [{ userId }])];
 export type LlmsServiceListModelsDefaultResponse = Awaited<
   ReturnType<typeof LlmsService.listModels>
 >;
@@ -893,16 +903,20 @@ export type LlmsServiceListModelsQueryResult<
 export const useLlmsServiceListModelsKey = 'LlmsServiceListModels';
 export const UseLlmsServiceListModelsKeyFn = (
   {
-    byokOnly,
-    defaultOnly,
+    providerCategory,
+    providerName,
+    providerType,
+    userId,
   }: {
-    byokOnly?: boolean;
-    defaultOnly?: boolean;
+    providerCategory?: ProviderCategory[];
+    providerName?: string;
+    providerType?: ProviderType;
+    userId?: string;
   } = {},
   queryKey?: Array<unknown>,
 ) => [
   useLlmsServiceListModelsKey,
-  ...(queryKey ?? [{ byokOnly, defaultOnly }]),
+  ...(queryKey ?? [{ providerCategory, providerName, providerType, userId }]),
 ];
 export type LlmsServiceListEmbeddingModelsDefaultResponse = Awaited<
   ReturnType<typeof LlmsService.listEmbeddingModels>
@@ -914,8 +928,13 @@ export type LlmsServiceListEmbeddingModelsQueryResult<
 export const useLlmsServiceListEmbeddingModelsKey =
   'LlmsServiceListEmbeddingModels';
 export const UseLlmsServiceListEmbeddingModelsKeyFn = (
+  {
+    userId,
+  }: {
+    userId?: string;
+  } = {},
   queryKey?: Array<unknown>,
-) => [useLlmsServiceListEmbeddingModelsKey, ...(queryKey ?? [])];
+) => [useLlmsServiceListEmbeddingModelsKey, ...(queryKey ?? [{ userId }])];
 export type BlocksServiceListBlocksDefaultResponse = Awaited<
   ReturnType<typeof BlocksService.listBlocks>
 >;

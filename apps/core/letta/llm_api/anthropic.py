@@ -26,7 +26,7 @@ from letta.llm_api.helpers import add_inner_thoughts_to_functions
 from letta.local_llm.constants import INNER_THOUGHTS_KWARG, INNER_THOUGHTS_KWARG_DESCRIPTION
 from letta.local_llm.utils import num_tokens_from_functions, num_tokens_from_messages
 from letta.log import get_logger
-from letta.schemas.enums import ProviderType
+from letta.schemas.enums import ProviderCategory
 from letta.schemas.message import Message as _Message
 from letta.schemas.message import MessageRole as _MessageRole
 from letta.schemas.openai.chat_completion_request import ChatCompletionRequest, Tool
@@ -42,6 +42,7 @@ from letta.schemas.openai.chat_completion_response import Message
 from letta.schemas.openai.chat_completion_response import Message as ChoiceMessage
 from letta.schemas.openai.chat_completion_response import MessageDelta, ToolCall, ToolCallDelta, UsageStatistics
 from letta.services.provider_manager import ProviderManager
+from letta.services.user_manager import UserManager
 from letta.settings import model_settings
 from letta.streaming_interface import AgentChunkStreamingInterface, AgentRefreshStreamingInterface
 from letta.tracing import log_event
@@ -744,12 +745,15 @@ def anthropic_chat_completions_request(
     extended_thinking: bool = False,
     max_reasoning_tokens: Optional[int] = None,
     provider_name: Optional[str] = None,
+    provider_category: Optional[ProviderCategory] = None,
     betas: List[str] = ["tools-2024-04-04"],
+    user_id: Optional[str] = None,
 ) -> ChatCompletionResponse:
     """https://docs.anthropic.com/claude/docs/tool-use"""
     anthropic_client = None
-    if provider_name and provider_name != ProviderType.anthropic.value:
-        api_key = ProviderManager().get_override_key(provider_name)
+    if provider_category == ProviderCategory.byok:
+        actor = UserManager().get_user_or_default(user_id=user_id)
+        api_key = ProviderManager().get_override_key(provider_name, actor=actor)
         anthropic_client = anthropic.Anthropic(api_key=api_key)
     elif model_settings.anthropic_api_key:
         anthropic_client = anthropic.Anthropic()
@@ -803,7 +807,9 @@ def anthropic_chat_completions_request_stream(
     extended_thinking: bool = False,
     max_reasoning_tokens: Optional[int] = None,
     provider_name: Optional[str] = None,
+    provider_category: Optional[ProviderCategory] = None,
     betas: List[str] = ["tools-2024-04-04"],
+    user_id: Optional[str] = None,
 ) -> Generator[ChatCompletionChunkResponse, None, None]:
     """Stream chat completions from Anthropic API.
 
@@ -817,8 +823,9 @@ def anthropic_chat_completions_request_stream(
         extended_thinking=extended_thinking,
         max_reasoning_tokens=max_reasoning_tokens,
     )
-    if provider_name and provider_name != ProviderType.anthropic.value:
-        api_key = ProviderManager().get_override_key(provider_name)
+    if provider_category == ProviderCategory.byok:
+        actor = UserManager().get_user_or_default(user_id=user_id)
+        api_key = ProviderManager().get_override_key(provider_name, actor=actor)
         anthropic_client = anthropic.Anthropic(api_key=api_key)
     elif model_settings.anthropic_api_key:
         anthropic_client = anthropic.Anthropic()
@@ -867,10 +874,12 @@ def anthropic_chat_completions_process_stream(
     extended_thinking: bool = False,
     max_reasoning_tokens: Optional[int] = None,
     provider_name: Optional[str] = None,
+    provider_category: Optional[ProviderCategory] = None,
     create_message_id: bool = True,
     create_message_datetime: bool = True,
     betas: List[str] = ["tools-2024-04-04"],
     name: Optional[str] = None,
+    user_id: Optional[str] = None,
 ) -> ChatCompletionResponse:
     """Process a streaming completion response from Anthropic, similar to OpenAI's streaming.
 
@@ -952,7 +961,9 @@ def anthropic_chat_completions_process_stream(
                 extended_thinking=extended_thinking,
                 max_reasoning_tokens=max_reasoning_tokens,
                 provider_name=provider_name,
+                provider_category=provider_category,
                 betas=betas,
+                user_id=user_id,
             )
         ):
             assert isinstance(chat_completion_chunk, ChatCompletionChunkResponse), type(chat_completion_chunk)

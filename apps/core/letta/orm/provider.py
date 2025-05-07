@@ -26,6 +26,7 @@ class Provider(SqlalchemyBase, OrganizationMixin):
 
     name: Mapped[str] = mapped_column(nullable=False, doc="The name of the provider")
     provider_type: Mapped[str] = mapped_column(nullable=True, doc="The type of the provider")
+    provider_category: Mapped[str] = mapped_column(nullable=True, doc="The category of the provider (base or byok)")
     api_key: Mapped[str] = mapped_column(nullable=True, doc="API key used for requests to the provider.")
     base_url: Mapped[str] = mapped_column(nullable=True, doc="Base URL for the provider.")
 

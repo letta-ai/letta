@@ -7,6 +7,7 @@ export function useEmbeddingModels() {
   const { isLocal } = useCurrentAgentMetaData();
 
   const { data: localModelsList } = useModelsServiceListEmbeddingModels(
+    {},
     undefined,
     {
       enabled: isLocal,

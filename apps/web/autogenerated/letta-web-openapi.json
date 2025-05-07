@@ -807,6 +807,38 @@
                                 ],
                                 "nullable": true
                               },
+                              "provider_category": {
+                                "oneOf": [
+                                  {
+                                    "type": "string",
+                                    "enum": ["base", "byok"]
+                                  },
+                                  {
+                                    "type": "string",
+                                    "format": "null",
+                                    "nullable": true
+                                  },
+                                  {
+                                    "type": "array",
+                                    "items": {
+                                      "oneOf": [
+                                        {
+                                          "type": "string",
+                                          "enum": ["base", "byok"]
+                                        },
+                                        {
+                                          "type": "string",
+                                          "format": "null",
+                                          "nullable": true
+                                        }
+                                      ],
+                                      "nullable": true
+                                    }
+                                  },
+                                  {}
+                                ],
+                                "nullable": true
+                              },
                               "model_wrapper": {
                                 "oneOf": [
                                   {
@@ -4576,6 +4608,38 @@
                                       "oneOf": [
                                         {
                                           "type": "string"
+                                        },
+                                        {
+                                          "type": "string",
+                                          "format": "null",
+                                          "nullable": true
+                                        }
+                                      ],
+                                      "nullable": true
+                                    }
+                                  },
+                                  {}
+                                ],
+                                "nullable": true
+                              },
+                              "provider_category": {
+                                "oneOf": [
+                                  {
+                                    "type": "string",
+                                    "enum": ["base", "byok"]
+                                  },
+                                  {
+                                    "type": "string",
+                                    "format": "null",
+                                    "nullable": true
+                                  },
+                                  {
+                                    "type": "array",
+                                    "items": {
+                                      "oneOf": [
+                                        {
+                                          "type": "string",
+                                          "enum": ["base", "byok"]
                                         },
                                         {
                                           "type": "string",

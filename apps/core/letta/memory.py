@@ -1,4 +1,4 @@
-from typing import Callable, Dict, List
+from typing import TYPE_CHECKING, Callable, Dict, List
 
 from letta.constants import MESSAGE_SUMMARY_REQUEST_ACK
 from letta.llm_api.llm_api_tools import create
@@ -12,6 +12,9 @@ from letta.schemas.message import Message
 from letta.settings import summarizer_settings
 from letta.tracing import trace_method
 from letta.utils import count_tokens, printd
+
+if TYPE_CHECKING:
+    from letta.orm import User
 
 
 def get_memory_functions(cls: Memory) -> Dict[str, Callable]:
@@ -51,6 +54,7 @@ def _format_summary_history(message_history: List[Message]):
 def summarize_messages(
     agent_state: AgentState,
     message_sequence_to_summarize: List[Message],
+    actor: "User",
 ):
     """Summarize a message sequence using GPT"""
     # we need the context_window
@@ -63,7 +67,7 @@ def summarize_messages(
         trunc_ratio = (summarizer_settings.memory_warning_threshold * context_window / summary_input_tkns) * 0.8  # For good measure...
         cutoff = int(len(message_sequence_to_summarize) * trunc_ratio)
         summary_input = str(
-            [summarize_messages(agent_state, message_sequence_to_summarize=message_sequence_to_summarize[:cutoff])]
+            [summarize_messages(agent_state, message_sequence_to_summarize=message_sequence_to_summarize[:cutoff], actor=actor)]
             + message_sequence_to_summarize[cutoff:]
         )
 
@@ -79,10 +83,9 @@ def summarize_messages(
     llm_config_no_inner_thoughts.put_inner_thoughts_in_kwargs = False
 
     llm_client = LLMClient.create(
-        provider_name=llm_config_no_inner_thoughts.provider_name,
-        provider_type=llm_config_no_inner_thoughts.model_endpoint_type,
+        provider_type=agent_state.llm_config.model_endpoint_type,
         put_inner_thoughts_first=False,
-        actor_id=agent_state.created_by_id,
+        actor=actor,
     )
     # try to use new client, otherwise fallback to old flow
     # TODO: we can just directly call the LLM here?

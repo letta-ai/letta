@@ -13,10 +13,10 @@ import letta.utils as utils
 from letta.constants import BASE_MEMORY_TOOLS, BASE_TOOLS, LETTA_DIR, LETTA_TOOL_EXECUTION_DIR
 from letta.orm import Provider, Step
 from letta.schemas.block import CreateBlock
-from letta.schemas.enums import MessageRole, ProviderType
+from letta.schemas.enums import MessageRole, ProviderCategory, ProviderType
 from letta.schemas.letta_message import LettaMessage, ReasoningMessage, SystemMessage, ToolCallMessage, ToolReturnMessage, UserMessage
 from letta.schemas.llm_config import LLMConfig
-from letta.schemas.providers import Provider as PydanticProvider
+from letta.schemas.providers import ProviderCreate
 from letta.schemas.sandbox_config import SandboxType
 from letta.schemas.user import User
 
@@ -587,7 +587,7 @@ def test_read_local_llm_configs(server: SyncServer, user: User):
 
         # Call list_llm_models
         assert os.path.exists(configs_base_dir)
-        llm_models = server.list_llm_models()
+        llm_models = server.list_llm_models(actor=user)
 
         # Assert that the config is in the returned models
         assert any(
@@ -1225,17 +1225,23 @@ def test_add_remove_tools_update_agent(server: SyncServer, user_id: str, base_to
 def test_messages_with_provider_override(server: SyncServer, user_id: str):
     actor = server.user_manager.get_user_or_default(user_id)
     provider = server.provider_manager.create_provider(
-        provider=PydanticProvider(
+        request=ProviderCreate(
             name="caren-anthropic",
             provider_type=ProviderType.anthropic,
             api_key=os.getenv("ANTHROPIC_API_KEY"),
         ),
         actor=actor,
     )
+    models = server.list_llm_models(actor=actor, provider_category=[ProviderCategory.byok])
+    assert provider.name in [model.provider_name for model in models]
+
+    models = server.list_llm_models(actor=actor, provider_category=[ProviderCategory.base])
+    assert provider.name not in [model.provider_name for model in models]
+
     agent = server.create_agent(
         request=CreateAgent(
             memory_blocks=[],
-            model="caren-anthropic/claude-3-opus-20240229",
+            model="caren-anthropic/claude-3-5-sonnet-20240620",
             context_window_limit=100000,
             embedding="openai/text-embedding-ada-002",
         ),
@@ -1295,11 +1301,11 @@ def test_messages_with_provider_override(server: SyncServer, user_id: str):
     assert total_tokens == usage.total_tokens
 
 
-def test_unique_handles_for_provider_configs(server: SyncServer):
-    models = server.list_llm_models()
+def test_unique_handles_for_provider_configs(server: SyncServer, user: User):
+    models = server.list_llm_models(actor=user)
     model_handles = [model.handle for model in models]
     assert sorted(model_handles) == sorted(list(set(model_handles))), "All models should have unique handles"
-    embeddings = server.list_embedding_models()
+    embeddings = server.list_embedding_models(actor=user)
     embedding_handles = [embedding.handle for embedding in embeddings]
     assert sorted(embedding_handles) == sorted(list(set(embedding_handles))), "All embeddings should have unique handles"
 

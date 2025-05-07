@@ -57,6 +57,7 @@ import {
   OrganizationCreate,
   OrganizationUpdate,
   PassageUpdate,
+  ProviderCategory,
   ProviderCreate,
   ProviderType,
   ProviderUpdate,
@@ -1387,8 +1388,10 @@ export const useIdentitiesServiceRetrieveIdentity = <
 /**
  * List Llm Models
  * @param data The data for the request.
- * @param data.byokOnly
- * @param data.defaultOnly
+ * @param data.providerCategory
+ * @param data.providerName
+ * @param data.providerType
+ * @param data.userId
  * @returns LLMConfig Successful Response
  * @throws ApiError
  */
@@ -1398,25 +1401,37 @@ export const useModelsServiceListModels = <
   TQueryKey extends Array<unknown> = unknown[],
 >(
   {
-    byokOnly,
-    defaultOnly,
+    providerCategory,
+    providerName,
+    providerType,
+    userId,
   }: {
-    byokOnly?: boolean;
-    defaultOnly?: boolean;
+    providerCategory?: ProviderCategory[];
+    providerName?: string;
+    providerType?: ProviderType;
+    userId?: string;
   } = {},
   queryKey?: TQueryKey,
   options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>,
 ) =>
   useQuery<TData, TError>({
     queryKey: Common.UseModelsServiceListModelsKeyFn(
-      { byokOnly, defaultOnly },
+      { providerCategory, providerName, providerType, userId },
       queryKey,
     ),
-    queryFn: () => ModelsService.listModels({ byokOnly, defaultOnly }) as TData,
+    queryFn: () =>
+      ModelsService.listModels({
+        providerCategory,
+        providerName,
+        providerType,
+        userId,
+      }) as TData,
     ...options,
   });
 /**
  * List Embedding Models
+ * @param data The data for the request.
+ * @param data.userId
  * @returns EmbeddingConfig Successful Response
  * @throws ApiError
  */
@@ -1425,19 +1440,29 @@ export const useModelsServiceListEmbeddingModels = <
   TError = unknown,
   TQueryKey extends Array<unknown> = unknown[],
 >(
+  {
+    userId,
+  }: {
+    userId?: string;
+  } = {},
   queryKey?: TQueryKey,
   options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>,
 ) =>
   useQuery<TData, TError>({
-    queryKey: Common.UseModelsServiceListEmbeddingModelsKeyFn(queryKey),
-    queryFn: () => ModelsService.listEmbeddingModels() as TData,
+    queryKey: Common.UseModelsServiceListEmbeddingModelsKeyFn(
+      { userId },
+      queryKey,
+    ),
+    queryFn: () => ModelsService.listEmbeddingModels({ userId }) as TData,
     ...options,
   });
 /**
  * List Llm Models
  * @param data The data for the request.
- * @param data.byokOnly
- * @param data.defaultOnly
+ * @param data.providerCategory
+ * @param data.providerName
+ * @param data.providerType
+ * @param data.userId
  * @returns LLMConfig Successful Response
  * @throws ApiError
  */
@@ -1447,25 +1472,37 @@ export const useLlmsServiceListModels = <
   TQueryKey extends Array<unknown> = unknown[],
 >(
   {
-    byokOnly,
-    defaultOnly,
+    providerCategory,
+    providerName,
+    providerType,
+    userId,
   }: {
-    byokOnly?: boolean;
-    defaultOnly?: boolean;
+    providerCategory?: ProviderCategory[];
+    providerName?: string;
+    providerType?: ProviderType;
+    userId?: string;
   } = {},
   queryKey?: TQueryKey,
   options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>,
 ) =>
   useQuery<TData, TError>({
     queryKey: Common.UseLlmsServiceListModelsKeyFn(
-      { byokOnly, defaultOnly },
+      { providerCategory, providerName, providerType, userId },
       queryKey,
     ),
-    queryFn: () => LlmsService.listModels({ byokOnly, defaultOnly }) as TData,
+    queryFn: () =>
+      LlmsService.listModels({
+        providerCategory,
+        providerName,
+        providerType,
+        userId,
+      }) as TData,
     ...options,
   });
 /**
  * List Embedding Models
+ * @param data The data for the request.
+ * @param data.userId
  * @returns EmbeddingConfig Successful Response
  * @throws ApiError
  */
@@ -1474,12 +1511,20 @@ export const useLlmsServiceListEmbeddingModels = <
   TError = unknown,
   TQueryKey extends Array<unknown> = unknown[],
 >(
+  {
+    userId,
+  }: {
+    userId?: string;
+  } = {},
   queryKey?: TQueryKey,
   options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>,
 ) =>
   useQuery<TData, TError>({
-    queryKey: Common.UseLlmsServiceListEmbeddingModelsKeyFn(queryKey),
-    queryFn: () => LlmsService.listEmbeddingModels() as TData,
+    queryKey: Common.UseLlmsServiceListEmbeddingModelsKeyFn(
+      { userId },
+      queryKey,
+    ),
+    queryFn: () => LlmsService.listEmbeddingModels({ userId }) as TData,
     ...options,
   });
 /**

@@ -12,7 +12,7 @@ export async function getLettaAgentsInferenceModelsSingleton(
 ) {
   if (inferenceModelsList.length === 0 || props.cacheBust) {
     inferenceModelsList = await ModelsService.listModels({
-      defaultOnly: true,
+      providerCategory: ['base'],
     });
   }
 

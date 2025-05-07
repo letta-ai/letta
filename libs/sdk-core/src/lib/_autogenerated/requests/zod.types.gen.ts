@@ -235,6 +235,9 @@ export const EmbeddingConfig = z.object({
     .optional(),
 });
 
+export type ProviderCategory = z.infer<typeof ProviderCategory>;
+export const ProviderCategory = z.union([z.literal('base'), z.literal('byok')]);
+
 export type LLMConfig = z.infer<typeof LLMConfig>;
 export const LLMConfig = z.object({
   model: z.string(),
@@ -275,6 +278,14 @@ export const LLMConfig = z.object({
       z.string(),
       z.null(),
       z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  provider_category: z
+    .union([
+      ProviderCategory,
+      z.null(),
+      z.array(z.union([ProviderCategory, z.null()])),
       z.undefined(),
     ])
     .optional(),
@@ -4415,6 +4426,7 @@ export const Provider = z.object({
     .optional(),
   name: z.string(),
   provider_type: ProviderType,
+  provider_category: ProviderCategory,
   api_key: z
     .union([
       z.string(),
@@ -6900,19 +6912,27 @@ export const get_List_models = {
   requestFormat: z.literal('json'),
   parameters: z.object({
     query: z.object({
-      byok_only: z
+      provider_category: z
         .union([
-          z.boolean(),
+          z.array(ProviderCategory),
           z.null(),
-          z.array(z.union([z.boolean(), z.null()])),
+          z.array(z.union([z.array(ProviderCategory), z.null()])),
         ])
         .optional(),
-      default_only: z
+      provider_name: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      provider_type: z
         .union([
-          z.boolean(),
+          ProviderType,
           z.null(),
-          z.array(z.union([z.boolean(), z.null()])),
+          z.array(z.union([ProviderType, z.null()])),
         ])
+        .optional(),
+    }),
+    header: z.object({
+      user_id: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
     }),
   }),
@@ -6924,7 +6944,13 @@ export const get_List_embedding_models = {
   method: z.literal('GET'),
   path: z.literal('/v1/models/embedding'),
   requestFormat: z.literal('json'),
-  parameters: z.never(),
+  parameters: z.object({
+    header: z.object({
+      user_id: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+    }),
+  }),
   response: z.array(EmbeddingConfig),
 };
 

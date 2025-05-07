@@ -28,6 +28,7 @@ import {
   IdentityType,
   ManagerType,
   MessageRole,
+  ProviderCategory,
   ProviderType,
   SandboxType,
 } from '../requests/types.gen';
@@ -1099,70 +1100,118 @@ export const prefetchUseIdentitiesServiceRetrieveIdentity = (
 /**
  * List Llm Models
  * @param data The data for the request.
- * @param data.byokOnly
- * @param data.defaultOnly
+ * @param data.providerCategory
+ * @param data.providerName
+ * @param data.providerType
+ * @param data.userId
  * @returns LLMConfig Successful Response
  * @throws ApiError
  */
 export const prefetchUseModelsServiceListModels = (
   queryClient: QueryClient,
   {
-    byokOnly,
-    defaultOnly,
+    providerCategory,
+    providerName,
+    providerType,
+    userId,
   }: {
-    byokOnly?: boolean;
-    defaultOnly?: boolean;
+    providerCategory?: ProviderCategory[];
+    providerName?: string;
+    providerType?: ProviderType;
+    userId?: string;
   } = {},
 ) =>
   queryClient.prefetchQuery({
-    queryKey: Common.UseModelsServiceListModelsKeyFn({ byokOnly, defaultOnly }),
-    queryFn: () => ModelsService.listModels({ byokOnly, defaultOnly }),
+    queryKey: Common.UseModelsServiceListModelsKeyFn({
+      providerCategory,
+      providerName,
+      providerType,
+      userId,
+    }),
+    queryFn: () =>
+      ModelsService.listModels({
+        providerCategory,
+        providerName,
+        providerType,
+        userId,
+      }),
   });
 /**
  * List Embedding Models
+ * @param data The data for the request.
+ * @param data.userId
  * @returns EmbeddingConfig Successful Response
  * @throws ApiError
  */
 export const prefetchUseModelsServiceListEmbeddingModels = (
   queryClient: QueryClient,
+  {
+    userId,
+  }: {
+    userId?: string;
+  } = {},
 ) =>
   queryClient.prefetchQuery({
-    queryKey: Common.UseModelsServiceListEmbeddingModelsKeyFn(),
-    queryFn: () => ModelsService.listEmbeddingModels(),
+    queryKey: Common.UseModelsServiceListEmbeddingModelsKeyFn({ userId }),
+    queryFn: () => ModelsService.listEmbeddingModels({ userId }),
   });
 /**
  * List Llm Models
  * @param data The data for the request.
- * @param data.byokOnly
- * @param data.defaultOnly
+ * @param data.providerCategory
+ * @param data.providerName
+ * @param data.providerType
+ * @param data.userId
  * @returns LLMConfig Successful Response
  * @throws ApiError
  */
 export const prefetchUseLlmsServiceListModels = (
   queryClient: QueryClient,
   {
-    byokOnly,
-    defaultOnly,
+    providerCategory,
+    providerName,
+    providerType,
+    userId,
   }: {
-    byokOnly?: boolean;
-    defaultOnly?: boolean;
+    providerCategory?: ProviderCategory[];
+    providerName?: string;
+    providerType?: ProviderType;
+    userId?: string;
   } = {},
 ) =>
   queryClient.prefetchQuery({
-    queryKey: Common.UseLlmsServiceListModelsKeyFn({ byokOnly, defaultOnly }),
-    queryFn: () => LlmsService.listModels({ byokOnly, defaultOnly }),
+    queryKey: Common.UseLlmsServiceListModelsKeyFn({
+      providerCategory,
+      providerName,
+      providerType,
+      userId,
+    }),
+    queryFn: () =>
+      LlmsService.listModels({
+        providerCategory,
+        providerName,
+        providerType,
+        userId,
+      }),
   });
 /**
  * List Embedding Models
+ * @param data The data for the request.
+ * @param data.userId
  * @returns EmbeddingConfig Successful Response
  * @throws ApiError
  */
 export const prefetchUseLlmsServiceListEmbeddingModels = (
   queryClient: QueryClient,
+  {
+    userId,
+  }: {
+    userId?: string;
+  } = {},
 ) =>
   queryClient.prefetchQuery({
-    queryKey: Common.UseLlmsServiceListEmbeddingModelsKeyFn(),
-    queryFn: () => LlmsService.listEmbeddingModels(),
+    queryKey: Common.UseLlmsServiceListEmbeddingModelsKeyFn({ userId }),
+    queryFn: () => LlmsService.listEmbeddingModels({ userId }),
   });
 /**
  * List Blocks

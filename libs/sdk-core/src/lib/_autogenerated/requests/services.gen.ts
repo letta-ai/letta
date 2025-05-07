@@ -164,6 +164,7 @@ import type {
   UpsertIdentityPropertiesResponse,
   ListModelsData,
   ListModelsResponse,
+  ListEmbeddingModelsData,
   ListEmbeddingModelsResponse,
   ListBlocksData,
   ListBlocksResponse,
@@ -2511,8 +2512,10 @@ export class ModelsService {
   /**
    * List Llm Models
    * @param data The data for the request.
-   * @param data.byokOnly
-   * @param data.defaultOnly
+   * @param data.providerCategory
+   * @param data.providerName
+   * @param data.providerType
+   * @param data.userId
    * @returns LLMConfig Successful Response
    * @throws ApiError
    */
@@ -2524,8 +2527,9 @@ export class ModelsService {
       method: 'GET',
       url: '/v1/models/',
       query: {
-        byok_only: data.byokOnly,
-        default_only: data.defaultOnly,
+        provider_category: data.providerCategory,
+        provider_name: data.providerName,
+        provider_type: data.providerType,
       },
       errors: {
         422: 'Validation Error',
@@ -2536,15 +2540,21 @@ export class ModelsService {
 
   /**
    * List Embedding Models
+   * @param data The data for the request.
+   * @param data.userId
    * @returns EmbeddingConfig Successful Response
    * @throws ApiError
    */
-  public static listEmbeddingModels(headers?: {
-    user_id: string;
-  }): CancelablePromise<ListEmbeddingModelsResponse> {
+  public static listEmbeddingModels(
+    data: ListEmbeddingModelsData = {},
+    headers?: { user_id: string },
+  ): CancelablePromise<ListEmbeddingModelsResponse> {
     return __request(OpenAPI, {
       method: 'GET',
       url: '/v1/models/embedding',
+      errors: {
+        422: 'Validation Error',
+      },
       headers,
     });
   }
@@ -2554,8 +2564,10 @@ export class LlmsService {
   /**
    * List Llm Models
    * @param data The data for the request.
-   * @param data.byokOnly
-   * @param data.defaultOnly
+   * @param data.providerCategory
+   * @param data.providerName
+   * @param data.providerType
+   * @param data.userId
    * @returns LLMConfig Successful Response
    * @throws ApiError
    */
@@ -2567,8 +2579,9 @@ export class LlmsService {
       method: 'GET',
       url: '/v1/models/',
       query: {
-        byok_only: data.byokOnly,
-        default_only: data.defaultOnly,
+        provider_category: data.providerCategory,
+        provider_name: data.providerName,
+        provider_type: data.providerType,
       },
       errors: {
         422: 'Validation Error',
@@ -2579,15 +2592,21 @@ export class LlmsService {
 
   /**
    * List Embedding Models
+   * @param data The data for the request.
+   * @param data.userId
    * @returns EmbeddingConfig Successful Response
    * @throws ApiError
    */
-  public static listEmbeddingModels(headers?: {
-    user_id: string;
-  }): CancelablePromise<ListEmbeddingModelsResponse> {
+  public static listEmbeddingModels(
+    data: ListEmbeddingModelsData = {},
+    headers?: { user_id: string },
+  ): CancelablePromise<ListEmbeddingModelsResponse> {
     return __request(OpenAPI, {
       method: 'GET',
       url: '/v1/models/embedding',
+      errors: {
+        422: 'Validation Error',
+      },
       headers,
     });
   }

@@ -4642,35 +4642,54 @@
         "operationId": "list_models",
         "parameters": [
           {
-            "name": "byok_only",
+            "name": "provider_category",
             "in": "query",
             "required": false,
             "schema": {
               "anyOf": [
                 {
-                  "type": "boolean"
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ProviderCategory"
+                  }
                 },
                 {
                   "type": "null"
                 }
               ],
-              "title": "Byok Only"
+              "title": "Provider Category"
             }
           },
           {
-            "name": "default_only",
+            "name": "provider_name",
             "in": "query",
             "required": false,
             "schema": {
               "anyOf": [
                 {
-                  "type": "boolean"
+                  "type": "string"
                 },
                 {
                   "type": "null"
                 }
               ],
-              "title": "Default Only"
+              "title": "Provider Name"
+            }
+          },
+          {
+            "name": "provider_type",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/ProviderType"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Provider Type"
             }
           }
         ],
@@ -4707,17 +4726,28 @@
         "tags": ["models", "llms"],
         "summary": "List Embedding Models",
         "operationId": "list_embedding_models",
+        "parameters": [],
         "responses": {
           "200": {
             "description": "Successful Response",
             "content": {
               "application/json": {
                 "schema": {
+                  "type": "array",
                   "items": {
                     "$ref": "#/components/schemas/EmbeddingConfig"
                   },
-                  "type": "array",
                   "title": "Response List Embedding Models"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
                 }
               }
             }
@@ -13045,6 +13075,17 @@
             "title": "Provider Name",
             "description": "The provider name for the model."
           },
+          "provider_category": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ProviderCategory"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The provider category for the model."
+          },
           "model_wrapper": {
             "anyOf": [
               {
@@ -14506,6 +14547,10 @@
             "$ref": "#/components/schemas/ProviderType",
             "description": "The type of the provider"
           },
+          "provider_category": {
+            "$ref": "#/components/schemas/ProviderCategory",
+            "description": "The category of the provider (base or byok)"
+          },
           "api_key": {
             "anyOf": [
               {
@@ -14546,8 +14591,13 @@
         },
         "additionalProperties": false,
         "type": "object",
-        "required": ["name", "provider_type"],
+        "required": ["name", "provider_type", "provider_category"],
         "title": "Provider"
+      },
+      "ProviderCategory": {
+        "type": "string",
+        "enum": ["base", "byok"],
+        "title": "ProviderCategory"
       },
       "ProviderCreate": {
         "properties": {

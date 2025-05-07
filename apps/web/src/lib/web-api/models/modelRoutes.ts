@@ -32,7 +32,7 @@ async function listInferenceModels(): Promise<ListLLMBackendsResponseType> {
     }),
     ModelsService.listModels(
       {
-        byokOnly: true,
+        providerCategory: ['byok'],
       },
       {
         user_id: user.lettaAgentsId,

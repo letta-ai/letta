@@ -194,6 +194,13 @@ export async function handleMessageRateLimiting(
   );
 
   const handleRoot = agent.llm_config.handle?.split('/')[0];
+  const isByok = agent.llm_config.provider_category === 'byok';
+
+  if (isByok) {
+    return {
+      isRateLimited: false,
+    };
+  }
 
   if (!agent || !handleRoot) {
     return {
