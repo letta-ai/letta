@@ -580,7 +580,7 @@ function StateViewer(props: StateViewerProps) {
 
   return (
     <SingleStateViewerContext.Provider value={{ tools, sources }}>
-      {hasNoDifference && <Alert title={t('noDifference')} variant="info" />}
+      {hasNoDifference && <Alert title={t('noDifference')} variant="warning" />}
       <VStack border className="w-fit min-w-full" overflowX="auto" gap={false}>
         <HStack fullWidth gap={false}>
           {baseName && <StateHeader name={baseName} />}
