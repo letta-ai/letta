@@ -47,7 +47,8 @@ def create_provider(
     """
     actor = server.user_manager.get_user_or_default(user_id=actor_id)
 
-    provider = Provider(**request.model_dump())
+    provider = ProviderCreate(**request.model_dump())
+
     provider = server.provider_manager.create_provider(provider, actor=actor)
     return provider
 

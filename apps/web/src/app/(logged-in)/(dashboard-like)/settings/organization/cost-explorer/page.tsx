@@ -13,7 +13,6 @@ import {
   TabGroup,
   VStack,
 } from '@letta-cloud/ui-component-library';
-import { useInferenceModels } from './ModelSelector';
 import { useQueryClient } from '@tanstack/react-query';
 import { ModelPricingBlocks } from '$web/client/components/ModelPricingBlocks/ModelPricingBlocks';
 import { ModelPricingView } from '$web/client/components/ModelPricingView/ModelPricingView';
@@ -64,7 +63,6 @@ function DetailedCostBreakdown(props: DetailedCostBreakdownProps) {
 
 function CostExplorer() {
   const limit = 150;
-  useInferenceModels();
 
   const t = useTranslations('organization/costs');
 

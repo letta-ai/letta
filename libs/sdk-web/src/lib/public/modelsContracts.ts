@@ -1,15 +1,18 @@
 import { initContract } from '@ts-rest/core';
 import { z } from 'zod';
 import { EmbeddingConfigSchema, LLMConfigSchema } from '@letta-cloud/sdk-core';
+import { ModelTiers } from '@letta-cloud/types';
 
 const c = initContract();
 
+export const LLMType = z.enum(['letta', 'byok']);
+
 export const ExtendedLLMSchema = LLMConfigSchema.extend({
-  brand: z.string().optional(),
-  isRecommended: z.boolean().optional(),
-  tag: z.string().optional(),
-  displayName: z.string().optional(),
-  id: z.string().optional(),
+  brand: z.string(),
+  displayName: z.string(),
+  id: z.string(),
+  type: LLMType,
+  tier: ModelTiers.optional(),
 });
 
 const ListInferenceModelsContract = c.query({

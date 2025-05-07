@@ -169,16 +169,19 @@ function useSelectComponents(selectProps: BaseSelectProps) {
         <components.GroupHeading {...props} style={{ padding: 0, margin: 0 }}>
           <HStack
             align="center"
-            color="background-grey"
-            paddingY="small"
             paddingX="medium"
+            className="h-[36px]"
+            borderTop
           >
-            {props.data.icon && (
-              <Slot className="max-h-3 w-3">{props.data.icon}</Slot>
-            )}
-            <Typography bold className="mt-[-1px]">
-              {children}
-            </Typography>
+            <HStack fullWidth>
+              {props.data.icon && (
+                <Slot className="max-h-3 w-3">{props.data.icon}</Slot>
+              )}
+              <Typography variant="body3" bold className="mt-[-1px]">
+                {children}
+              </Typography>
+            </HStack>
+            {props.data.badge}
           </HStack>
         </components.GroupHeading>
       ),

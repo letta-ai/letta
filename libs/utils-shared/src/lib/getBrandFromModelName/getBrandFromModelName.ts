@@ -4,6 +4,7 @@ export function getBrandFromModelName(model: string) {
   const includerMapper = {
     letta: 'letta',
     gpt: 'openai',
+    openai: 'openai',
     claude: 'claude',
     meta: 'meta',
     mistral: 'mistral',

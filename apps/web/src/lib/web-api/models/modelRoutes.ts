@@ -55,11 +55,10 @@ async function listInferenceModels(): Promise<ListLLMBackendsResponseType> {
   const parsedByokModels = byokModels.map((model) => {
     return {
       ...model,
-      id: model.handle || '',
       brand: model.model_endpoint_type,
-      context_window: model.context_window,
-      isRecommended: false,
+      id: model.handle || '',
       displayName: model.handle || '',
+      type: 'byok' as const,
     };
   });
 
@@ -73,9 +72,9 @@ async function listInferenceModels(): Promise<ListLLMBackendsResponseType> {
         brand: model.brand,
         context_window:
           model.defaultContextWindow || model.config!.context_window,
-        isRecommended: model.isRecommended,
-        tag: model.tag,
         displayName: model.name || '',
+        type: 'letta' as const,
+        tier: model.tier,
       };
     });
 

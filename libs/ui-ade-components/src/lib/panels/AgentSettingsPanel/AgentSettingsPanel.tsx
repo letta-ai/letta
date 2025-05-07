@@ -1,19 +1,16 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import {
   Alert,
   Badge,
-  brandKeyToLogo,
   Button,
   CopyButton,
   Dialog,
   EditIcon,
   HStack,
-  isBrandKey,
   isMultiValue,
   LoadingEmptyStatusComponent,
   PanelMainContent,
   RawInput,
-  RawSelect,
   RawTextArea,
   Typography,
   VStack,
@@ -33,7 +30,6 @@ import {
   useAgentBaseTypeName,
   useCurrentAgent,
   useCurrentAgentMetaData,
-  useSyncUpdateCurrentAgent,
 } from '../../hooks';
 import {
   type AgentState,
@@ -46,198 +42,16 @@ import {
   useAgentsServiceModifyAgent,
 } from '@letta-cloud/sdk-core';
 import { useTranslations } from '@letta-cloud/translations';
-import { useDebouncedCallback, useDebouncedValue } from '@mantine/hooks';
+import { useDebouncedCallback } from '@mantine/hooks';
 import { useQueryClient } from '@tanstack/react-query';
 import { UpdateNameDialog } from '../../shared/UpdateAgentNameDialog/UpdateAgentNameDialog';
-import {
-  ExtendedLLMSchema,
-  webApi,
-  webApiQueryKeys,
-} from '@letta-cloud/sdk-web';
+import { webApi, webApiQueryKeys } from '@letta-cloud/sdk-web';
 import { useADEPermissions } from '../../hooks/useADEPermissions/useADEPermissions';
 import { ApplicationServices } from '@letta-cloud/service-rbac';
 import { useADEAppContext } from '../../AppContext/AppContext';
 import { useIdentityTypeToTranslationMap } from '../../IdentitiesTable/hooks/useIdentityTypeToTranslationMap';
-import { getBrandFromModelName } from '@letta-cloud/utils-shared';
-import { useInferenceModels } from '../../hooks/useInferenceModels/useInferenceModels';
 import { useADETour } from '../../hooks/useADETour/useADETour';
-import { getMergedLLMConfig } from './utils/getMergedLLMConfig/getMergedLLMConfig';
-
-interface SelectedModelType {
-  icon: React.ReactNode;
-  label: string;
-  value: string;
-}
-
-interface ModelSelectorProps {
-  llmConfig: AgentState['llm_config'];
-}
-
-function ModelSelector(props: ModelSelectorProps) {
-  const { llmConfig } = props;
-  const t = useTranslations('ADE/AgentSettingsPanel');
-  const { syncUpdateCurrentAgent, error } = useSyncUpdateCurrentAgent();
-
-  const modelsList = useInferenceModels();
-
-  const formattedModelsList = useMemo(() => {
-    if (!modelsList) {
-      return [];
-    }
-
-    return modelsList
-      .map((value) => {
-        const { model, handle } = value;
-        let modelName = handle || model;
-        let brand = 'llama';
-        let isRecommended = false;
-        let badge = '';
-
-        if (ExtendedLLMSchema.safeParse(value).success) {
-          const out = ExtendedLLMSchema.safeParse(value).data;
-
-          brand = out?.brand || brand;
-          isRecommended = out?.isRecommended || isRecommended;
-          badge = out?.tag || badge;
-          modelName = out?.displayName || modelName;
-        }
-
-        if (brand === 'llama') {
-          brand = getBrandFromModelName(model) || brand;
-        }
-
-        return {
-          icon: isBrandKey(brand) ? brandKeyToLogo(brand) : '',
-          label: modelName,
-          value: model,
-          brand,
-          isRecommended,
-          badge: badge ? <Badge size="small" content={badge} /> : '',
-        };
-      })
-      .sort(function (a, b) {
-        if (a.brand < b.brand) {
-          return -1;
-        }
-        if (a.brand > b.brand) {
-          return 1;
-        }
-        return 0;
-      });
-  }, [modelsList]);
-
-  const [modelState, setModelState] = useState<SelectedModelType>({
-    icon: '',
-    label: llmConfig.handle || llmConfig.model,
-    value: llmConfig.model,
-  });
-
-  const { isLocal } = useCurrentAgentMetaData();
-
-  const [debouncedModelState] = useDebouncedValue(modelState, 500);
-
-  const value = useMemo(() => {
-    const selectedModel = formattedModelsList.find(
-      (model) => model.value === modelState.value,
-    );
-
-    return {
-      ...modelState,
-      icon: selectedModel?.icon || '',
-      badge: selectedModel?.badge || '',
-    };
-  }, [formattedModelsList, modelState]);
-
-  const groupedModelsList = useMemo(() => {
-    if (isLocal) {
-      return formattedModelsList;
-    }
-
-    const list = formattedModelsList.reduce(
-      (acc, model) => {
-        if (model.isRecommended) {
-          acc.recommended.push(model);
-        } else {
-          acc.others.push(model);
-        }
-
-        return acc;
-      },
-      {
-        recommended: [] as SelectedModelType[],
-        others: [] as SelectedModelType[],
-      },
-    );
-
-    return Object.entries(list).map(([key, value]) => {
-      return {
-        label:
-          key === 'recommended'
-            ? t('modelInput.recommended')
-            : t('modelInput.others'),
-        options: value,
-      };
-    });
-  }, [formattedModelsList, isLocal, t]);
-
-  useEffect(() => {
-    if (!modelsList) {
-      return;
-    }
-
-    if (debouncedModelState.value !== llmConfig.model) {
-      const selectedLLMConfig = modelsList.find(
-        (model) => model.model === debouncedModelState.value,
-      );
-
-      if (!selectedLLMConfig) {
-        return;
-      }
-
-      syncUpdateCurrentAgent((prev) => {
-        return {
-          llm_config: getMergedLLMConfig(selectedLLMConfig, prev.llm_config),
-        };
-      });
-    }
-  }, [
-    llmConfig.model,
-    debouncedModelState,
-    modelsList,
-    syncUpdateCurrentAgent,
-  ]);
-
-  const [canUpdateAgent] = useADEPermissions(ApplicationServices.UPDATE_AGENT);
-
-  const { base: baseName } = useAgentBaseTypeName();
-
-  return (
-    <>
-      {error && <Alert title={t('error')} variant="destructive" />}
-      <RawSelect
-        disabled={!canUpdateAgent}
-        fullWidth
-        infoTooltip={{
-          text: t('modelInput.tooltip', { baseName }),
-        }}
-        onSelect={(value) => {
-          if (isMultiValue(value)) {
-            return;
-          }
-
-          setModelState({
-            value: value?.value || '',
-            label: value?.label || '',
-            icon: value?.icon || '',
-          });
-        }}
-        value={value}
-        label={t('modelInput.label')}
-        options={groupedModelsList}
-      />
-    </>
-  );
-}
+import { ModelSelector } from './ModelSelector/ModelSelector';
 
 function AgentIdentifierToCopy() {
   const currentAgent = useCurrentAgent();

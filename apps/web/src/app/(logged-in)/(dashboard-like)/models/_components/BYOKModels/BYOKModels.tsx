@@ -115,7 +115,6 @@ function ProviderTable(props: ProviderTableProps) {
         onRowClick={(row) => {
           setSelectedProvider(row);
         }}
-        minHeight={500}
         isLoading={isLoading}
         columns={columns}
         data={providers}
@@ -179,6 +178,7 @@ export function BYOKModels() {
           }
         />
       }
+      description={t('description')}
       title={t('title')}
     >
       <ProvidersView />
