@@ -5,14 +5,14 @@ from google import genai
 from google.genai.types import FunctionCallingConfig, FunctionCallingConfigMode, GenerateContentResponse, ThinkingConfig, ToolConfig
 
 from letta.helpers.datetime_helpers import get_utc_time_int
-from letta.helpers.json_helpers import json_dumps
+from letta.helpers.json_helpers import json_dumps, json_loads
 from letta.llm_api.google_ai_client import GoogleAIClient
 from letta.local_llm.json_parser import clean_json_string_extra_backslash
 from letta.local_llm.utils import count_tokens
 from letta.schemas.llm_config import LLMConfig
 from letta.schemas.message import Message as PydanticMessage
 from letta.schemas.openai.chat_completion_response import ChatCompletionResponse, Choice, FunctionCall, Message, ToolCall, UsageStatistics
-from letta.settings import model_settings
+from letta.settings import model_settings, settings
 from letta.utils import get_tool_call_id
 
 
@@ -35,6 +35,23 @@ class GoogleVertexClient(GoogleAIClient):
         )
         return response.model_dump()
 
+    async def request_async(self, request_data: dict, llm_config: LLMConfig) -> dict:
+        """
+        Performs underlying request to llm and returns raw response.
+        """
+        client = genai.Client(
+            vertexai=True,
+            project=model_settings.google_cloud_project,
+            location=model_settings.google_cloud_location,
+            http_options={"api_version": "v1"},
+        )
+        response = await client.aio.models.generate_content(
+            model=llm_config.model,
+            contents=request_data["contents"],
+            config=request_data["config"],
+        )
+        return response.model_dump()
+
     def build_request_data(
         self,
         messages: List[PydanticMessage],
@@ -49,16 +66,21 @@ class GoogleVertexClient(GoogleAIClient):
         request_data["config"] = request_data.pop("generation_config")
         request_data["config"]["tools"] = request_data.pop("tools")
 
-        tool_names = [t["name"] for t in tools]
-        tool_config = ToolConfig(
-            function_calling_config=FunctionCallingConfig(
-                # ANY mode forces the model to predict only function calls
-                mode=FunctionCallingConfigMode.ANY,
-                # Provide the list of tools (though empty should also work, it seems not to)
-                allowed_function_names=tool_names,
+        tool_names = [t["name"] for t in tools] if tools else []
+        if len(tool_names) == 1 and settings.use_vertex_structured_outputs_experimental:
+            request_data["config"]["response_mime_type"] = "application/json"
+            request_data["config"]["response_schema"] = self.get_function_call_response_schema(tools[0])
+            del request_data["config"]["tools"]
+        else:
+            tool_config = ToolConfig(
+                function_calling_config=FunctionCallingConfig(
+                    # ANY mode forces the model to predict only function calls
+                    mode=FunctionCallingConfigMode.ANY,
+                    # Provide the list of tools (though empty should also work, it seems not to)
+                    allowed_function_names=tool_names,
+                )
             )
-        )
-        request_data["config"]["tool_config"] = tool_config.model_dump()
+            request_data["config"]["tool_config"] = tool_config.model_dump()
 
         # Add thinking_config
         # If enable_reasoner is False, set thinking_budget to 0
@@ -110,12 +132,16 @@ class GoogleVertexClient(GoogleAIClient):
             for candidate in response.candidates:
                 content = candidate.content
 
-                # if "role" not in content or not content["role"]:
-                #    # This means the response is malformed like MALFORMED_FUNCTION_CALL
-                #    # NOTE: must be a ValueError to trigger a retry
-                #    raise ValueError(f"Error in response data from LLM: {response_data}")
-                # role = content["role"]
-                # assert role == "model", f"Unknown role in response: {role}"
+                if content.role is None or content.parts is None:
+                    # This means the response is malformed like MALFORMED_FUNCTION_CALL
+                    # NOTE: must be a ValueError to trigger a retry
+                    if candidate.finish_reason == "MALFORMED_FUNCTION_CALL":
+                        raise ValueError(f"Error in response data from LLM: {candidate.finish_message[:350]}...")
+                    else:
+                        raise ValueError(f"Error in response data from LLM: {response_data}")
+
+                role = content.role
+                assert role == "model", f"Unknown role in response: {role}"
 
                 parts = content.parts
 
@@ -167,15 +193,50 @@ class GoogleVertexClient(GoogleAIClient):
                         )
 
                     else:
+                        try:
+                            # Structured output tool call
+                            function_call = json_loads(response_message.text)
+                            function_name = function_call["name"]
+                            function_args = function_call["args"]
+                            assert isinstance(function_args, dict), function_args
 
-                        # Inner thoughts are the content by default
-                        inner_thoughts = response_message.text
+                            # NOTE: this also involves stripping the inner monologue out of the function
+                            if llm_config.put_inner_thoughts_in_kwargs:
+                                from letta.local_llm.constants import INNER_THOUGHTS_KWARG
 
-                        # Google AI API doesn't generate tool call IDs
-                        openai_response_message = Message(
-                            role="assistant",  # NOTE: "model" -> "assistant"
-                            content=inner_thoughts,
-                        )
+                                assert (
+                                    INNER_THOUGHTS_KWARG in function_args
+                                ), f"Couldn't find inner thoughts in function args:\n{function_call}"
+                                inner_thoughts = function_args.pop(INNER_THOUGHTS_KWARG)
+                                assert inner_thoughts is not None, f"Expected non-null inner thoughts function arg:\n{function_call}"
+                            else:
+                                inner_thoughts = None
+
+                            # Google AI API doesn't generate tool call IDs
+                            openai_response_message = Message(
+                                role="assistant",  # NOTE: "model" -> "assistant"
+                                content=inner_thoughts,
+                                tool_calls=[
+                                    ToolCall(
+                                        id=get_tool_call_id(),
+                                        type="function",
+                                        function=FunctionCall(
+                                            name=function_name,
+                                            arguments=clean_json_string_extra_backslash(json_dumps(function_args)),
+                                        ),
+                                    )
+                                ],
+                            )
+
+                        except:
+                            # Inner thoughts are the content by default
+                            inner_thoughts = response_message.text
+
+                            # Google AI API doesn't generate tool call IDs
+                            openai_response_message = Message(
+                                role="assistant",  # NOTE: "model" -> "assistant"
+                                content=inner_thoughts,
+                            )
 
                     # Google AI API uses different finish reason strings than OpenAI
                     # OpenAI: 'stop', 'length', 'function_call', 'content_filter', null
@@ -244,3 +305,17 @@ class GoogleVertexClient(GoogleAIClient):
             )
         except KeyError as e:
             raise e
+
+    def get_function_call_response_schema(self, tool: dict) -> dict:
+        return {
+            "type": "OBJECT",
+            "properties": {
+                "name": {"type": "STRING", "enum": [tool["name"]]},
+                "args": {
+                    "type": "OBJECT",
+                    "properties": tool["parameters"]["properties"],
+                    "required": tool["parameters"]["required"],
+                },
+            },
+            "required": ["name", "args"],
+        }
