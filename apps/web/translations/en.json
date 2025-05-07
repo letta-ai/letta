@@ -268,16 +268,16 @@
       "nextStep": "Create a template"
     },
     "title": "Models",
-    "description": "View, manage and add AI models to your organization"
+    "description": "View and manage your AI models"
   },
   "pages/models/ModelDetailsOverlay": {
     "title": "Model details",
     "ModelCostsTable": {
       "title": "Model costs",
-      "description": "Below are the costs per step for this model if paying with usage-based pricing.",
+      "description": "Below are the costs per model request for this model if paying with usage-based pricing.",
       "maxContextWindow": "Max context window",
-      "maxContextWindowTooltip": "Maximum of amount of tokens you can pass into the model in a single step cost",
-      "costPerStep": "Cost per step"
+      "maxContextWindowTooltip": "The configured max context window determines the cost per model request.",
+      "costPerStep": "Cost per request"
     }
   },
   "pages/models/CreateProviderModal": {
@@ -288,15 +288,15 @@
       "tooManyProviders": "You have reached the limit of providers you can add to your account. The limit is {max} providers. Please contact support if you need more."
     },
     "providerType": {
-      "label": "Provider"
+      "label": "Provider type"
     },
     "name": {
-      "label": "Name",
-      "placeholder": "My model provider",
-      "description": "Provide a name for the model provider, this will be used to identify it in the UI"
+      "label": "Provider name",
+      "placeholder": "Example: 'my-openai-key'",
+      "description": "This will be used to identify your custom provider in the ADE"
     },
     "apiKey": {
-      "label": "API Key"
+      "label": "Custom API key"
     }
   },
   "pages/models/DeleteProviderModal": {
@@ -330,29 +330,29 @@
       }
     },
     "NoProviders": {
-      "title": "You have not connected any external model providers; check out our Letta managed models below to easily get started"
+      "title": "No custom API keys connected."
     },
     "ProvidersView": {
       "error": "There was an error loading your model providers, please try again or contact support."
     },
     "actions": {
-      "addProvider": "Add model provider"
+      "addProvider": "Add API key"
     },
-    "title": "Bring your own models",
-    "description": "Use your own API key to access models. This is useful if you want to use a model that is not available on Letta, or if you want to use your own API key for billing purposes.",
+    "title": "Bring your own key",
+    "description": "You can provide your own API keys for OpenAI, Anthropic, and Google Gemini. When using models tied to your own API keys, you will be billed directly by the model provider for your usage (subject to their own pricing).",
     "columns": {
       "name": "Name",
       "brand": "Provider"
     }
   },
   "pages/models/LettaManagedModels": {
-    "title": "Letta Managed Models",
+    "title": "Available models",
     "manageModels": "Manage Model Visibility",
-    "description": "Letta managed models let you use OpenAI, Anthropic, and Gemini endpoints without an API Key, just pay through our platform or use our complimentary models",
+    "description": "Browse our collection of available models on Letta Cloud. Standard and Premium models are applied towards your plan's request quota. Additional models are available by enabling usage-based billing.",
     "columns": {
       "name": "Model",
       "brand": "Provider",
-      "baseCost": "Base Cost"
+      "baseCost": "Price"
     },
     "VisibilityCell": {
       "visible": {
