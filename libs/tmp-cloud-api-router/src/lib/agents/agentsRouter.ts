@@ -1,7 +1,7 @@
 import type { ServerInferRequest, ServerInferResponses } from '@ts-rest/core';
-import type { ListAgentsData } from '@letta-cloud/sdk-core';
+import { isAPIError } from '@letta-cloud/sdk-core';
 import * as Sentry from '@sentry/node';
-import type { AgentState } from '@letta-cloud/sdk-core';
+import type { AgentState, ListAgentsData } from '@letta-cloud/sdk-core';
 import { AgentsService } from '@letta-cloud/sdk-core';
 import {
   agentTemplates,
@@ -126,30 +126,45 @@ async function createAgent(
   }
 
   if (!from_template) {
-    // standard agent creation route, this should just pipe
-    // the request to the agents service
-    const response = await AgentsService.createAgent(
-      {
-        requestBody: {
-          project_id: projectId,
-          ...agent,
+    try {
+      // standard agent creation route, this should just pipe
+      // the request to the agents service
+      const response = await AgentsService.createAgent(
+        {
+          requestBody: {
+            project_id: projectId,
+            ...agent,
+          },
         },
-      },
-      {
-        user_id: lettaAgentsUserId,
-      },
-    );
+        {
+          user_id: lettaAgentsUserId,
+        },
+      );
 
-    await db.insert(deployedAgentMetadata).values({
-      agentId: response.id,
-      organizationId,
-      projectId,
-    });
+      await db.insert(deployedAgentMetadata).values({
+        agentId: response.id,
+        organizationId,
+        projectId,
+      });
 
-    return {
-      status: 201,
-      body: response,
-    };
+      return {
+        status: 201,
+        body: response,
+      };
+    } catch (e) {
+      if (isAPIError(e)) {
+        return {
+          status: 400,
+          body: e.body,
+        };
+      }
+      return {
+        status: 500,
+        body: {
+          message: 'Failed to create agent',
+        },
+      };
+    }
   }
 
   // logic for creating agents from templates

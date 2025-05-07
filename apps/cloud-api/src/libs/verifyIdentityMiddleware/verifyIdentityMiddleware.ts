@@ -111,6 +111,8 @@ async function handleFakeUser(req: Request) {
     source: 'api',
   };
 
+  req.headers['user_id'] = req.actor.coreUserId;
+
   return true;
 }
 
