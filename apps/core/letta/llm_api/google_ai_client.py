@@ -288,7 +288,7 @@ class GoogleAIClient(LLMClientBase):
         # Per https://ai.google.dev/gemini-api/docs/function-calling?example=meeting#notes_and_limitations
         # * Only a subset of the OpenAPI schema is supported.
         # * Supported parameter types in Python are limited.
-        unsupported_keys = ["default", "exclusiveMaximum", "exclusiveMinimum"]
+        unsupported_keys = ["default", "exclusiveMaximum", "exclusiveMinimum", "additionalProperties"]
         keys_to_remove_at_this_level = [key for key in unsupported_keys if key in schema_part]
         for key_to_remove in keys_to_remove_at_this_level:
             logger.warning(f"Removing unsupported keyword 	'{key_to_remove}' from schema part.")

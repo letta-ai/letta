@@ -348,7 +348,7 @@ class LettaAgent(BaseAgent):
                 results = await self._send_message_to_agents_matching_tags(**tool_args)
                 log_event(name="finish_send_message_to_agents_matching_tags", attributes=tool_args)
                 return json.dumps(results), True
-            elif target_tool.type == ToolType.EXTERNAL_COMPOSIO:
+            elif target_tool.tool_type == ToolType.EXTERNAL_COMPOSIO:
                 log_event(name=f"start_composio_{tool_name}_execution", attributes=tool_args)
                 log_event(name=f"finish_compsio_{tool_name}_execution", attributes=tool_args)
                 return tool_execution_result.func_return, True
