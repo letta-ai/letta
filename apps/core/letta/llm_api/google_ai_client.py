@@ -3,11 +3,14 @@ import uuid
 from typing import List, Optional, Tuple
 
 import requests
+from google import genai
 from google.genai.types import FunctionCallingConfig, FunctionCallingConfigMode, ToolConfig
 
 from letta.constants import NON_USER_MSG_PREFIX
+from letta.errors import ErrorCode, LLMAuthenticationError, LLMError
 from letta.helpers.datetime_helpers import get_utc_time_int
 from letta.helpers.json_helpers import json_dumps
+from letta.llm_api.google_constants import GOOGLE_MODEL_FOR_API_KEY_CHECK
 from letta.llm_api.helpers import make_post_request
 from letta.llm_api.llm_client_base import LLMClientBase
 from letta.local_llm.json_parser import clean_json_string_extra_backslash
@@ -441,6 +444,23 @@ def get_gemini_endpoint_and_headers(
         headers = {"Content-Type": "application/json"}
 
     return url, headers
+
+
+def google_ai_check_valid_api_key(api_key: str):
+    client = genai.Client(api_key=api_key)
+    # use the count token endpoint for a cheap model - as of 5/7/2025 this is slightly faster than fetching the list of models
+    try:
+        client.models.count_tokens(
+            model=GOOGLE_MODEL_FOR_API_KEY_CHECK,
+            contents="",
+        )
+    except genai.errors.ClientError as e:
+        # google api returns 400 invalid argument for invalid api key
+        if e.code == 400:
+            raise LLMAuthenticationError(message=f"Failed to authenticate with Google AI: {e}", code=ErrorCode.UNAUTHENTICATED)
+        raise e
+    except Exception as e:
+        raise LLMError(message=f"{e}", code=ErrorCode.INTERNAL_SERVER_ERROR)
 
 
 def google_ai_get_model_list(base_url: str, api_key: str, key_in_header: bool = True) -> List[dict]:

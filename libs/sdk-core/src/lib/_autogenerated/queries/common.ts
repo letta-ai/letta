@@ -1172,6 +1172,28 @@ export const UseProvidersServiceListProvidersKeyFn = (
   useProvidersServiceListProvidersKey,
   ...(queryKey ?? [{ after, limit, name, providerType, userId }]),
 ];
+export type ProvidersServiceCheckProviderDefaultResponse = Awaited<
+  ReturnType<typeof ProvidersService.checkProvider>
+>;
+export type ProvidersServiceCheckProviderQueryResult<
+  TData = ProvidersServiceCheckProviderDefaultResponse,
+  TError = unknown,
+> = UseQueryResult<TData, TError>;
+export const useProvidersServiceCheckProviderKey =
+  'ProvidersServiceCheckProvider';
+export const UseProvidersServiceCheckProviderKeyFn = (
+  {
+    providerType,
+    xApiKey,
+  }: {
+    providerType: ProviderType;
+    xApiKey: string;
+  },
+  queryKey?: Array<unknown>,
+) => [
+  useProvidersServiceCheckProviderKey,
+  ...(queryKey ?? [{ providerType, xApiKey }]),
+];
 export type RunsServiceListRunsDefaultResponse = Awaited<
   ReturnType<typeof RunsService.listRuns>
 >;

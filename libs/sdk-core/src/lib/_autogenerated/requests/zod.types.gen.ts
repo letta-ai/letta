@@ -4398,6 +4398,7 @@ export const PassageUpdate = z.object({
 export type ProviderType = z.infer<typeof ProviderType>;
 export const ProviderType = z.union([
   z.literal('anthropic'),
+  z.literal('bedrock'),
   z.literal('google_ai'),
   z.literal('google_vertex'),
   z.literal('openai'),
@@ -7550,6 +7551,39 @@ export const delete_Delete_provider = {
   response: z.unknown(),
 };
 
+export type get_Check_provider = typeof get_Check_provider;
+export const get_Check_provider = {
+  method: z.literal('GET'),
+  path: z.literal('/v1/providers/check'),
+  requestFormat: z.literal('json'),
+  parameters: z.object({
+    query: z.object({
+      provider_type: z.union([
+        z.literal('anthropic'),
+        z.literal('bedrock'),
+        z.literal('google_ai'),
+        z.literal('google_vertex'),
+        z.literal('openai'),
+        z.literal('letta'),
+        z.literal('deepseek'),
+        z.literal('lmstudio_openai'),
+        z.literal('xai'),
+        z.literal('mistral'),
+        z.literal('ollama'),
+        z.literal('groq'),
+        z.literal('together'),
+        z.literal('azure'),
+        z.literal('vllm'),
+        z.literal('bedrock'),
+      ]),
+    }),
+    header: z.object({
+      'x-api-key': z.string(),
+    }),
+  }),
+  response: z.unknown(),
+};
+
 export type get_List_runs = typeof get_List_runs;
 export const get_List_runs = {
   method: z.literal('GET'),
@@ -8161,6 +8195,7 @@ export const EndpointByMethod = {
     '/v1/sandbox-config/{sandbox_config_id}/environment-variable':
       get_List_sandbox_env_vars_v1_sandbox_config__sandbox_config_id__environment_variable_get,
     '/v1/providers/': get_List_providers,
+    '/v1/providers/check': get_Check_provider,
     '/v1/runs/': get_List_runs,
     '/v1/runs/active': get_List_active_runs,
     '/v1/runs/{run_id}': get_Retrieve_run,

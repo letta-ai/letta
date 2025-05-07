@@ -3,7 +3,7 @@ from typing import List, Optional, Union
 from letta.orm.provider import Provider as ProviderModel
 from letta.schemas.enums import ProviderCategory, ProviderType
 from letta.schemas.providers import Provider as PydanticProvider
-from letta.schemas.providers import ProviderCreate, ProviderUpdate
+from letta.schemas.providers import ProviderCheck, ProviderCreate, ProviderUpdate
 from letta.schemas.user import User as PydanticUser
 from letta.utils import enforce_types
 
@@ -99,3 +99,18 @@ class ProviderManager:
     def get_override_key(self, provider_name: Union[str, None], actor: PydanticUser) -> Optional[str]:
         providers = self.list_providers(name=provider_name, actor=actor)
         return providers[0].api_key if providers else None
+
+    @enforce_types
+    def check_provider_api_key(self, provider_check: ProviderCheck) -> None:
+        provider = PydanticProvider(
+            name=provider_check.provider_type.value,
+            provider_type=provider_check.provider_type,
+            api_key=provider_check.api_key,
+            provider_category=ProviderCategory.byok,
+        ).cast_to_subtype()
+
+        # TODO: add more string sanity checks here before we hit actual endpoints
+        if not provider.api_key:
+            raise ValueError("API key is required")
+
+        provider.check_api_key()

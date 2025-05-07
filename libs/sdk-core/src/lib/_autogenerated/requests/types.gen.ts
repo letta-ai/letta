@@ -2656,6 +2656,7 @@ export type ProviderCreate = {
 
 export type ProviderType =
   | 'anthropic'
+  | 'bedrock'
   | 'google_ai'
   | 'google_vertex'
   | 'openai'
@@ -2668,8 +2669,7 @@ export type ProviderType =
   | 'groq'
   | 'together'
   | 'azure'
-  | 'vllm'
-  | 'bedrock';
+  | 'vllm';
 
 export type ProviderUpdate = {
   /**
@@ -5013,6 +5013,13 @@ export type DeleteProviderData = {
 
 export type DeleteProviderResponse = unknown;
 
+export type CheckProviderData = {
+  providerType: ProviderType;
+  xApiKey: string;
+};
+
+export type CheckProviderResponse = unknown;
+
 export type ListRunsData = {
   /**
    * The unique identifier of the agent associated with the run.
@@ -6868,6 +6875,21 @@ export type $OpenApiTs = {
     };
     delete: {
       req: DeleteProviderData;
+      res: {
+        /**
+         * Successful Response
+         */
+        200: unknown;
+        /**
+         * Validation Error
+         */
+        422: HTTPValidationError;
+      };
+    };
+  };
+  '/v1/providers/check': {
+    get: {
+      req: CheckProviderData;
       res: {
         /**
          * Successful Response

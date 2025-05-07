@@ -633,6 +633,11 @@ paths:
       x-fern-sdk-group-name:
         - providers
       x-fern-sdk-method-name: modify
+  /v1/providers/check:
+    get:
+      x-fern-sdk-group-name:
+        - providers
+      x-fern-sdk-method-name: check
   /v1/steps/:
     get:
       x-fern-sdk-group-name:

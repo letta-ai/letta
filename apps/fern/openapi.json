@@ -5534,6 +5534,52 @@
         }
       }
     },
+    "/v1/providers/check": {
+      "get": {
+        "tags": ["providers"],
+        "summary": "Check Provider",
+        "operationId": "check_provider",
+        "parameters": [
+          {
+            "name": "provider_type",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/ProviderType"
+            }
+          },
+          {
+            "name": "x-api-key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "X-Api-Key"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/runs/": {
       "get": {
         "tags": ["runs"],
@@ -14625,6 +14671,7 @@
         "type": "string",
         "enum": [
           "anthropic",
+          "bedrock",
           "google_ai",
           "google_vertex",
           "openai",

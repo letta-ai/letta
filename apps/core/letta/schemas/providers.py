@@ -2,7 +2,7 @@ import warnings
 from datetime import datetime
 from typing import List, Literal, Optional
 
-from pydantic import Field, model_validator
+from pydantic import BaseModel, Field, model_validator
 
 from letta.constants import LETTA_MODEL_ENDPOINT, LLM_MAX_TOKENS, MIN_CONTEXT_WINDOW
 from letta.llm_api.azure_openai import get_azure_chat_completions_endpoint, get_azure_embeddings_endpoint
@@ -39,6 +39,10 @@ class Provider(ProviderBase):
     def resolve_identifier(self):
         if not self.id:
             self.id = ProviderBase.generate_id(prefix=ProviderBase.__id_prefix__)
+
+    def check_api_key(self):
+        """Check if the API key is valid for the provider"""
+        raise NotImplementedError
 
     def list_llm_models(self) -> List[LLMConfig]:
         return []
@@ -112,6 +116,11 @@ class ProviderUpdate(ProviderBase):
     api_key: str = Field(..., description="API key used for requests to the provider.")
 
 
+class ProviderCheck(BaseModel):
+    provider_type: ProviderType = Field(..., description="The type of the provider.")
+    api_key: str = Field(..., description="API key used for requests to the provider.")
+
+
 class LettaProvider(Provider):
     provider_type: Literal[ProviderType.letta] = Field(ProviderType.letta, description="The type of the provider.")
     provider_category: ProviderCategory = Field(ProviderCategory.base, description="The category of the provider (base or byok)")
@@ -147,6 +156,11 @@ class OpenAIProvider(Provider):
     provider_category: ProviderCategory = Field(ProviderCategory.base, description="The category of the provider (base or byok)")
     api_key: str = Field(..., description="API key for the OpenAI API.")
     base_url: str = Field(..., description="Base URL for the OpenAI API.")
+
+    def check_api_key(self):
+        from letta.llm_api.openai import openai_check_valid_api_key
+
+        openai_check_valid_api_key(self.base_url, self.api_key)
 
     def list_llm_models(self) -> List[LLMConfig]:
         from letta.llm_api.openai import openai_get_model_list
@@ -549,6 +563,11 @@ class AnthropicProvider(Provider):
     api_key: str = Field(..., description="API key for the Anthropic API.")
     base_url: str = "https://api.anthropic.com/v1"
 
+    def check_api_key(self):
+        from letta.llm_api.anthropic import anthropic_check_valid_api_key
+
+        anthropic_check_valid_api_key(self.api_key)
+
     def list_llm_models(self) -> List[LLMConfig]:
         from letta.llm_api.anthropic import MODEL_LIST, anthropic_get_model_list
 
@@ -950,6 +969,11 @@ class GoogleAIProvider(Provider):
     provider_category: ProviderCategory = Field(ProviderCategory.base, description="The category of the provider (base or byok)")
     api_key: str = Field(..., description="API key for the Google AI API.")
     base_url: str = "https://generativelanguage.googleapis.com"
+
+    def check_api_key(self):
+        from letta.llm_api.google_ai_client import google_ai_check_valid_api_key
+
+        google_ai_check_valid_api_key(self.api_key)
 
     def list_llm_models(self):
         from letta.llm_api.google_ai_client import google_ai_get_model_list

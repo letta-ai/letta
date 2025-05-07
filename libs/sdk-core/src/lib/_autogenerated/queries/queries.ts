@@ -1912,6 +1912,38 @@ export const useProvidersServiceListProviders = <
     ...options,
   });
 /**
+ * Check Provider
+ * @param data The data for the request.
+ * @param data.providerType
+ * @param data.xApiKey
+ * @returns unknown Successful Response
+ * @throws ApiError
+ */
+export const useProvidersServiceCheckProvider = <
+  TData = Common.ProvidersServiceCheckProviderDefaultResponse,
+  TError = unknown,
+  TQueryKey extends Array<unknown> = unknown[],
+>(
+  {
+    providerType,
+    xApiKey,
+  }: {
+    providerType: ProviderType;
+    xApiKey: string;
+  },
+  queryKey?: TQueryKey,
+  options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>,
+) =>
+  useQuery<TData, TError>({
+    queryKey: Common.UseProvidersServiceCheckProviderKeyFn(
+      { providerType, xApiKey },
+      queryKey,
+    ),
+    queryFn: () =>
+      ProvidersService.checkProvider({ providerType, xApiKey }) as TData,
+    ...options,
+  });
+/**
  * List Runs
  * List all runs.
  * @param data The data for the request.

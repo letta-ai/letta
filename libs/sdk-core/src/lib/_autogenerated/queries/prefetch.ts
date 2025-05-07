@@ -1526,6 +1526,31 @@ export const prefetchUseProvidersServiceListProviders = (
       }),
   });
 /**
+ * Check Provider
+ * @param data The data for the request.
+ * @param data.providerType
+ * @param data.xApiKey
+ * @returns unknown Successful Response
+ * @throws ApiError
+ */
+export const prefetchUseProvidersServiceCheckProvider = (
+  queryClient: QueryClient,
+  {
+    providerType,
+    xApiKey,
+  }: {
+    providerType: ProviderType;
+    xApiKey: string;
+  },
+) =>
+  queryClient.prefetchQuery({
+    queryKey: Common.UseProvidersServiceCheckProviderKeyFn({
+      providerType,
+      xApiKey,
+    }),
+    queryFn: () => ProvidersService.checkProvider({ providerType, xApiKey }),
+  });
+/**
  * List Runs
  * List all runs.
  * @param data The data for the request.

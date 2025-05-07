@@ -221,6 +221,8 @@ import type {
   ModifyProviderResponse,
   DeleteProviderData,
   DeleteProviderResponse,
+  CheckProviderData,
+  CheckProviderResponse,
   ListRunsData,
   ListRunsResponse,
   ListActiveRunsData,
@@ -3332,6 +3334,31 @@ export class ProvidersService {
       url: '/v1/providers/{provider_id}',
       path: {
         provider_id: data.providerId,
+      },
+      errors: {
+        422: 'Validation Error',
+      },
+      headers,
+    });
+  }
+
+  /**
+   * Check Provider
+   * @param data The data for the request.
+   * @param data.providerType
+   * @param data.xApiKey
+   * @returns unknown Successful Response
+   * @throws ApiError
+   */
+  public static checkProvider(
+    data: CheckProviderData,
+    headers?: { user_id: string },
+  ): CancelablePromise<CheckProviderResponse> {
+    return __request(OpenAPI, {
+      method: 'GET',
+      url: '/v1/providers/check',
+      query: {
+        provider_type: data.providerType,
       },
       errors: {
         422: 'Validation Error',

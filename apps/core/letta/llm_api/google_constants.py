@@ -14,3 +14,5 @@ GOOGLE_MODEL_TO_CONTEXT_LENGTH = {
 GOOGLE_MODEL_TO_OUTPUT_LENGTH = {"gemini-2.0-flash-001": 8192, "gemini-2.5-pro-exp-03-25": 65536}
 
 GOOGLE_EMBEDING_MODEL_TO_DIM = {"text-embedding-005": 768, "text-multilingual-embedding-002": 768}
+
+GOOGLE_MODEL_FOR_API_KEY_CHECK = "gemini-2.0-flash-lite"

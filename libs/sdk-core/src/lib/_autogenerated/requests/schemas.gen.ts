@@ -7425,6 +7425,7 @@ export const $ProviderType = {
   type: 'string',
   enum: [
     'anthropic',
+    'bedrock',
     'google_ai',
     'google_vertex',
     'openai',
