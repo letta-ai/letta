@@ -19,7 +19,7 @@ from anthropic.types.beta import (
     BetaToolUseBlock,
 )
 
-from letta.errors import BedrockError, BedrockPermissionError
+from letta.errors import BedrockError, BedrockPermissionError, ErrorCode, LLMAuthenticationError, LLMError
 from letta.helpers.datetime_helpers import get_utc_time_int, timestamp_to_datetime
 from letta.llm_api.aws_bedrock import get_bedrock_client
 from letta.llm_api.helpers import add_inner_thoughts_to_functions
@@ -117,6 +117,20 @@ MODEL_LIST = [
 DUMMY_FIRST_USER_MESSAGE = "User initializing bootup sequence."
 
 VALID_EVENT_TYPES = {"content_block_stop", "message_stop"}
+
+
+def anthropic_check_valid_api_key(api_key: Union[str, None]) -> None:
+    if api_key:
+        anthropic_client = anthropic.Anthropic(api_key=api_key)
+        try:
+            # just use a cheap model to count some tokens - as of 5/7/2025 this is faster than fetching the list of models
+            anthropic_client.messages.count_tokens(model=MODEL_LIST[-1]["name"], messages=[{"role": "user", "content": "a"}])
+        except anthropic.AuthenticationError as e:
+            raise LLMAuthenticationError(message=f"Failed to authenticate with Anthropic: {e}", code=ErrorCode.UNAUTHENTICATED)
+        except Exception as e:
+            raise LLMError(message=f"{e}", code=ErrorCode.INTERNAL_SERVER_ERROR)
+    else:
+        raise ValueError("No API key provided")
 
 
 def antropic_get_model_context_window(url: str, api_key: Union[str, None], model: str) -> int:
