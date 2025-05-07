@@ -675,9 +675,7 @@ async def send_message(
     responses={
         200: {
             "description": "Successful response",
-            "content": {
-                "text/event-stream": {"description": "Server-Sent Events stream"},
-            },
+            "content": {"text/event-stream": {}},
         }
     },
 )
