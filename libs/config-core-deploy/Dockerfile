@@ -12,7 +12,7 @@ ENV POETRY_NO_INTERACTION=1 \
 WORKDIR /app
 
 COPY apps/core/pyproject.toml apps/core/poetry.lock ./
-RUN poetry lock --no-update
+RUN poetry lock
 RUN poetry install --no-root --all-extras
 
 # The collector image, used to get the OpenTelemetry Collector
