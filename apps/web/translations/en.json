@@ -391,7 +391,9 @@
       "admin": "Admin",
       "models": "Models",
       "localDev": "Self-hosted",
-      "settings": "Settings"
+      "settings": "Settings",
+      "billing": "Billing",
+      "account": "Account"
     },
     "rootTitle": "Dashboard",
     "secondaryNav": {

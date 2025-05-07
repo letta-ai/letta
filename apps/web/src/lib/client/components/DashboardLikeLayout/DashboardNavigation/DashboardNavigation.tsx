@@ -21,6 +21,7 @@ import { HiddenOnMobile } from '@letta-cloud/ui-component-library';
 import {
   Avatar,
   Button,
+  BarChartIcon,
   CogIcon,
   CloseIcon,
   LogoutIcon,
@@ -31,6 +32,7 @@ import {
   HamburgerMenuIcon,
   HStack,
   Logo,
+  PersonIcon,
   Popover,
   Typography,
   useDashboardNavigationItems,
@@ -212,14 +214,6 @@ function MainNavigationItems(props: MainNavigationItemsProps) {
         icon: <LaptopIcon />,
         doesNotNeedCloudAccess: true,
       },
-      {
-        borderTop: true,
-        label: t('nav.settings'),
-        href: '/settings',
-        id: 'usage',
-        icon: <CogIcon />,
-        doesNotNeedCloudAccess: true,
-      },
     ].filter((item) => {
       if (item.doesNotNeedCloudAccess) {
         return true;
@@ -228,6 +222,27 @@ function MainNavigationItems(props: MainNavigationItemsProps) {
       return hasCloudAccess;
     });
   }, [t, isModelsPageEnabled, hasCloudAccess, canReadAPIKeys]);
+
+  const baseNavBottomItems = [
+    {
+      label: t('nav.account'),
+      href: '/settings/profile',
+      id: 'usage',
+      icon: <PersonIcon />,
+    },
+    {
+      label: t('nav.billing'),
+      href: '/settings/organization/billing',
+      id: 'billing',
+      icon: <BarChartIcon />,
+    },
+    {
+      label: t('nav.settings'),
+      href: '/settings/organization/general',
+      id: 'usage',
+      icon: <CogIcon />,
+    },
+  ];
 
   const isBaseNav = useMemo(() => {
     const isBase = baseNavItems.some((item) => item.href === pathname);
@@ -285,13 +300,11 @@ function MainNavigationItems(props: MainNavigationItemsProps) {
             fullWidth={isBaseNav}
             padding="small"
             borderRight={!isBaseNav}
+            justify="spaceBetween"
+            /*eslint-disable-next-line react/forbid-component-props*/
+            className="min-w-[36px]"
           >
-            <VStack
-              fullWidth={isBaseNav}
-              gap="small"
-              /*eslint-disable-next-line react/forbid-component-props*/
-              className="min-w-[36px]"
-            >
+            <VStack gap="small">
               {baseNavItems.map((item) => {
                 if (item.id === 'development-servers' && hasCloudAccess) {
                   return (
@@ -299,7 +312,6 @@ function MainNavigationItems(props: MainNavigationItemsProps) {
                       key={item.href}
                       fullWidth
                       borderTop
-                      borderBottom
                       paddingY="xsmall"
                     >
                       <NavButton
@@ -327,6 +339,19 @@ function MainNavigationItems(props: MainNavigationItemsProps) {
                   />
                 );
               })}
+            </VStack>
+            <VStack>
+              {baseNavBottomItems.map((item) => (
+                <NavButton
+                  id={item.id}
+                  key={item.href}
+                  href={item.href}
+                  active={pathroot === item.id}
+                  label={item.label}
+                  icon={item.icon}
+                  hideLabel={!isBaseNav}
+                />
+              ))}
             </VStack>
           </VStack>
         )}
@@ -425,6 +450,15 @@ function MainNavigationItems(props: MainNavigationItemsProps) {
             gap="small"
           >
             {baseNavItems.map((item) => (
+              <NavButton
+                id={item.id}
+                key={item.href}
+                href={item.href}
+                label={item.label}
+                icon={item.icon}
+              />
+            ))}
+            {baseNavBottomItems.map((item) => (
               <NavButton
                 id={item.id}
                 key={item.href}
