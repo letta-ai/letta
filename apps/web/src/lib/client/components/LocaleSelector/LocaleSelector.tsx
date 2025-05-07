@@ -79,6 +79,12 @@ export function LocaleSelector() {
           handleLocaleChange('fr');
         }}
       />
+      <DropdownMenuItem
+        label="简体中文 (BETA)"
+        onClick={() => {
+          handleLocaleChange('cn');
+        }}
+      />
     </DropdownMenu>
   );
 }

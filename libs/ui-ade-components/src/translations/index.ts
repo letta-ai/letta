@@ -1,3 +1,3 @@
 import en from './en.json';
-
-export { en };
+import cn from './cn.json';
+export { en, cn };

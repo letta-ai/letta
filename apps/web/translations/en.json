@@ -1196,7 +1196,8 @@
     "changeLocale": "Change language",
     "options": {
       "en": "English",
-      "fr": "Français"
+      "fr": "Français",
+      "cn": "简体中文"
     }
   },
   "components/ProjectSelector": {
