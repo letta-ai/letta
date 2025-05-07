@@ -10,7 +10,6 @@ import {
   FormActions,
   FormField,
   FormProvider,
-  InlineCode,
   Input,
   PlusIcon,
   Typography,
@@ -80,12 +79,7 @@ function AddRemoteDevelopmentServer() {
             <Alert title="" variant="info">
               <Typography overrideEl="span">
                 {t.rich('description', {
-                  code: (chunks) => (
-                    <InlineCode
-                      code={typeof chunks === 'string' ? chunks : ''}
-                      hideCopyButton
-                    />
-                  ),
+                  code: (chunks) => <code>{chunks}</code>,
                 })}
               </Typography>
             </Alert>
