@@ -276,6 +276,26 @@
       "title": "Model costs",
       "description": "Below are the costs per model request for this model if paying with usage-based pricing.",
       "maxContextWindow": "Max context window",
+      "maxContextWindowTooltip": "Maximum of amount of tokens you can pass into the model in a single step cost",
+      "costPerStep": "Cost per step"
+    },
+    "UsageSummary": {
+      "title": "Usage summary",
+      "base": "Total requests used",
+      "value": "{used}/{total}"
+    },
+    "ModelTypeView": {
+      "title": "Model type",
+      "typeLabel": {
+        "standard": "Standard",
+        "premium": "Premium",
+        "perInference": "Per-inference"
+      },
+      "types": {
+        "standard": "This is a standard model offered for by Letta. Standard models are models that are available for free up to a certain amount of requests. After the limit you will be charged based on usage if you have credits in your account.",
+        "premium": "This is a premium model offered by Letta. Premium models are models that are available for free up to a certain amount of requests. After the limit you will be charged based on usage if you have credits in your account.",
+        "perInference": "This model is per-inference charged model, meaning there is no allowance for requests with your account. You will be charged based on usage if you have credits in your account."
+      },
       "maxContextWindowTooltip": "The configured max context window determines the cost per model request.",
       "costPerStep": "Cost per request"
     }
@@ -369,18 +389,23 @@
       "infinite": "Infinite",
       "notSupported": "Not supported",
       "perStep": "{cost} per step",
-      "perStepInfo": "A step is a single inference to the model, a single request to Letta can have multiple steps depending on how you configure your agent",
-      "tier": {
-        "premium": {
-          "label": "Premium",
-          "tooltip": "This model is free up to {requests} requests. Explore all pricing to see overage costs"
-        },
-        "standard": {
-          "label": "Standard",
-          "tooltip": "This model is free up to {requests} requests. Explore all pricing to see overage costs"
-        }
-      }
+      "perStepInfo": "A step is a single inference to the model, a single request to Letta can have multiple steps depending on how you configure your agent"
     }
+  },
+  "pages/models/ModelTierBadge": {
+    "premium": {
+      "label": "Premium",
+      "tooltip": "This model is free up to {requests} requests. Explore all pricing to see overage costs"
+    },
+    "standard": {
+      "label": "Standard",
+      "tooltip": "This model is free up to {requests} requests. Explore all pricing to see overage costs"
+    },
+    "perInference": {
+      "label": "Per-inference",
+      "tooltip": "This model is not free, you will be charged based on usage if you have credits in your account"
+    },
+    "infinite": "Infinite"
   },
   "components/DashboardLikeLayout/DashboardNavigation": {
     "back": "Back",

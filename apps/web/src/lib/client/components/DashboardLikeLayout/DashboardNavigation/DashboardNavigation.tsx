@@ -57,6 +57,7 @@ import { ApplicationServices } from '@letta-cloud/service-rbac';
 import { CloudAccessCodeDialog } from '$web/client/components/DashboardLikeLayout/DashboardNavigation/CloudAccessCodeDialog/CloudAccessCodeDialog';
 import { CreditsViewer } from '$web/client/components/CreditsViewer/CreditsViewer';
 import { useFeatureFlag } from '@letta-cloud/sdk-web';
+import './DashboardNavigation.scss';
 
 interface NavButtonProps {
   href: string;
@@ -84,18 +85,28 @@ function NavButton(props: NavButtonProps) {
   } = props;
   const pathname = usePathname();
 
+  const isActive = useMemo(() => {
+    if (active) {
+      return true;
+    }
+
+    return pathname === href;
+  }, [active, pathname, href]);
+
   return (
     <Button
       animate
       disabled={disabled}
       data-testid={`nav-button-${id}`}
       preload={preload}
+      _use_rarely_className={hideLabel ? '' : 'px-3'}
       onClick={onClick}
-      active={active || pathname === href}
+      active={isActive}
       href={href}
+      square={hideLabel}
       hideLabel={hideLabel}
       fullWidth
-      color="tertiary"
+      color={isActive ? 'brand' : 'tertiary'}
       align="left"
       label={label}
       preIcon={icon}
@@ -229,6 +240,7 @@ function MainNavigationItems(props: MainNavigationItemsProps) {
       href: '/settings/profile',
       id: 'usage',
       icon: <PersonIcon />,
+      doesNotNeedCloudAccess: true,
     },
     {
       label: t('nav.billing'),
@@ -242,7 +254,13 @@ function MainNavigationItems(props: MainNavigationItemsProps) {
       id: 'usage',
       icon: <CogIcon />,
     },
-  ];
+  ].filter((item) => {
+    if (item.doesNotNeedCloudAccess) {
+      return true;
+    }
+
+    return hasCloudAccess;
+  });
 
   const isBaseNav = useMemo(() => {
     const isBase = baseNavItems.some((item) => item.href === pathname);
@@ -298,11 +316,12 @@ function MainNavigationItems(props: MainNavigationItemsProps) {
         {!isMobile && (
           <VStack
             fullWidth={isBaseNav}
-            padding="small"
+            padding={isBaseNav ? 'small' : 'xsmall'}
+            paddingY="small"
             borderRight={!isBaseNav}
             justify="spaceBetween"
             /*eslint-disable-next-line react/forbid-component-props*/
-            className="min-w-[36px]"
+            style={{ minWidth: '56px' }}
           >
             <VStack gap="small">
               {baseNavItems.map((item) => {
@@ -535,10 +554,16 @@ export function NavigationSidebar() {
         /* eslint-disable-next-line react/forbid-component-props */
         className="top-0 min-w-sidebar h-full max-w-sidebar invisible visibleSidebar:visible"
       >
-        <VStack fullHeight gap="small" padding="xxsmall">
+        <VStack fullHeight gap="small" paddingY="xxsmall" paddingLeft="xxsmall">
           {/* eslint-disable-next-line react/forbid-component-props */}
           <HStack className="h-header min-h-header" />
-          <VStack fullHeight border>
+          <VStack
+            fullHeight
+            borderY
+            borderLeft
+            /* eslint-disable-next-line react/forbid-component-props */
+            className="main-sidebar"
+          >
             <MainNavigationItems />
           </VStack>
         </VStack>
@@ -825,7 +850,6 @@ export function DashboardHeader() {
         fullWidth
       >
         <HStack
-          border
           color="background"
           fullWidth
           justify="spaceBetween"

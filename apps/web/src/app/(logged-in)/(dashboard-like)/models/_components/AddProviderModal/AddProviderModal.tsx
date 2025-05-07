@@ -155,7 +155,7 @@ export function AddProviderModal(props: CreateProviderModalProps) {
                       icon: brandKeyToLogo('claude'),
                     },
                     {
-                      label: brandKeyToName('google'),
+                      label: brandKeyToName('gemini'),
                       value: 'google_ai',
                       icon: brandKeyToLogo('gemini'),
                     },

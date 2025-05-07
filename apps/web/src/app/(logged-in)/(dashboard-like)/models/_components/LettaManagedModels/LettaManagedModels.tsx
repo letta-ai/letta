@@ -1,6 +1,5 @@
 import { useTranslations } from '@letta-cloud/translations';
 import {
-  Badge,
   Typography,
   DashboardPageSection,
   DataTable,
@@ -24,6 +23,7 @@ import { creditsToDollars, getUsageLimits } from '@letta-cloud/utils-shared';
 import { useFormatters } from '@letta-cloud/utils-client';
 import { ModelName } from '../ModelName/ModelName';
 import { ModelDetailsOverlay } from '../ModelDetailsOverlay/ModelDetailsOverlay';
+import { ModelTierBadge } from '../ModelTierBadge/ModelTierBadge';
 
 interface BaseCostCellProps {
   tier: CostItemType['tier'];
@@ -32,10 +32,10 @@ interface BaseCostCellProps {
 }
 
 function BaseCostCell(props: BaseCostCellProps) {
-  const { tier, costMap, usage } = props;
+  const { tier, costMap } = props;
   const t = useTranslations('pages/models/LettaManagedModels');
 
-  const { formatCurrency, formatNumber } = useFormatters();
+  const { formatCurrency } = useFormatters();
 
   const baseCost = useMemo(() => {
     return Object.entries(costMap)
@@ -49,38 +49,11 @@ function BaseCostCell(props: BaseCostCellProps) {
   }, [costMap]);
 
   if (tier === 'free') {
-    return (
-      <HStack>
-        <Badge
-          variant="success"
-          content={t('BaseCostCell.tier.standard.label')}
-        ></Badge>
-        <InfoTooltip
-          text={t('BaseCostCell.tier.standard.tooltip', {
-            requests:
-              tier === 'free'
-                ? formatNumber(usage.freeInferencesPerMonth)
-                : t('BaseCostCell.infinite'),
-          })}
-        />
-      </HStack>
-    );
+    return <ModelTierBadge tier="free" />;
   }
 
   if (tier === 'premium') {
-    return (
-      <HStack>
-        <Badge
-          variant="info"
-          content={t('BaseCostCell.tier.premium.label')}
-        ></Badge>
-        <InfoTooltip
-          text={t('BaseCostCell.tier.premium.tooltip', {
-            requests: formatNumber(usage.premiumInferencesPerMonth),
-          })}
-        />
-      </HStack>
-    );
+    return <ModelTierBadge tier="premium" />;
   }
 
   if (!baseCost[0]) {

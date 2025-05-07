@@ -74,7 +74,11 @@ export default function ModelsPage() {
   const t = useTranslations('pages/models');
 
   return (
-    <DashboardPageLayout title={t('title')} subtitle={t('description')}>
+    <DashboardPageLayout
+      cappedWidth
+      title={t('title')}
+      subtitle={t('description')}
+    >
       <OnboardingWrapper>
         <BYOKModels />
         <LettaManagedModels />

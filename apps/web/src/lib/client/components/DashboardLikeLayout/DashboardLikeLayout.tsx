@@ -25,6 +25,7 @@ export async function DashboardLikeLayout(props: DashboardLikeLayoutProps) {
   return (
     <UseDashboardNavigationItemsProvider>
       <div className="pageFadeIn overflow-x-hidden">
+        <div className="dashboard h-full fixed z-[-1]"></div>
         <VStack gap="small" fullHeight fullWidth>
           <DashboardHeader />
           <HStack gap={false} fullWidth>

@@ -117,7 +117,7 @@ function TableBodyContent<Data>(props: TableBodyContentProps<Data>) {
 const dataTableVariants = cva('h-full', {
   variants: {
     variant: {
-      default: 'border',
+      default: '',
       minimal: 'border-none',
     },
     fullHeight: {
@@ -275,7 +275,7 @@ export function DataTable<TData, TValue>(props: DataTableProps<TData, TValue>) {
     <div
       ref={tableParentRef}
       className={cn(
-        'flex  flex-col gap-2 w-full',
+        'flex flex-col gap-2 w-full',
         fullHeight || autofitHeight ? 'h-full flex-1' : '',
       )}
     >
@@ -314,12 +314,20 @@ export function DataTable<TData, TValue>(props: DataTableProps<TData, TValue>) {
           'relative',
         )}
         style={{
+          minHeight: !autofitHeight && minHeight ? `${minHeight}px` : '',
           height:
             !autofitHeight && limit
               ? `${(limit + 1) * TABLE_ROW_HEIGHT}px`
               : '',
         }}
       >
+        <div
+          className={cn(
+            variant !== 'minimal' ? 'border' : '',
+            'w-full h-full absolute fake-border top-0 touch-none pointer-events-none',
+          )}
+        />
+
         <Table>
           <TableHeader>
             {table.getHeaderGroups().map((headerGroup) => (

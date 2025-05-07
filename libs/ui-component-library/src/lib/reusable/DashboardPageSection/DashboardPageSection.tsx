@@ -5,6 +5,7 @@ import { HStack } from '../../framing/HStack/HStack';
 import { Typography } from '../../core/Typography/Typography';
 import { RawInput } from '../../core/Input/Input';
 import { SearchIcon } from '../../icons';
+import type { FrameProps } from '../../framing/Frame/Frame';
 import { Frame } from '../../framing/Frame/Frame';
 import { HiddenOnMobile } from '../../framing/HiddenOnMobile/HiddenOnMobile';
 import { VisibleOnMobile } from '../../framing/VisibleOnMobile/VisibleOnMobile';
@@ -42,6 +43,7 @@ type DashboardPageSectionProps = PropsWithChildren<
     borderBottom?: boolean;
     title?: string;
     description?: string;
+    width?: FrameProps['width'];
   }
 >;
 
@@ -54,6 +56,7 @@ export function DashboardPageSection(props: DashboardPageSectionProps) {
     description,
     borderBottom,
     searchPlaceholder,
+    width,
     searchValue,
     onSearch,
   } = props;
@@ -67,16 +70,13 @@ export function DashboardPageSection(props: DashboardPageSectionProps) {
       fullHeight={fullHeight}
       flex={fullHeight}
       fullWidth
+      width={width}
       borderBottom={borderBottom}
     >
       {!title && !description ? null : (
         <VStack gap={false}>
           {title && (
-            <HStack
-              paddingBottom={actions ? 'small' : false}
-              align="center"
-              justify="spaceBetween"
-            >
+            <HStack align="center" justify="spaceBetween">
               <Typography align="left" noWrap bold variant="heading4">
                 {title}
               </Typography>

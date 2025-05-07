@@ -2,6 +2,12 @@
   animation: fadeIn 0.5s forwards;
 }
 
+
+.dashboard {
+  background-color: hsl(var(--dashboard-color));
+  width: calc(100% - 0.25rem);
+}
+
 @keyframes fadeIn {
   from {
     opacity: 0;

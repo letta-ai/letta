@@ -10,6 +10,7 @@
 :root {
   --default-gap: 0.5rem;
 
+  --head-cell-height: 2rem;
   --font-size-xxs: 0.5rem;
   --font-size-xs: 0.75rem;
   --font-size-sm: 0.8rem;
@@ -39,7 +40,7 @@
   --brand-content: 0 0% 98%;
   --brand-hover: 240, 54%, 48%;
 
-  --brand-light: 240, 89%, 93%;
+  --brand-light: 240deg 36.36% 95.69%;
   --brand-light-content: 240 96% 40%;
   --brand-light-border: 240, 100%, 88%;
 
@@ -72,10 +73,14 @@
   --warning: 40, 100%, 50%;
   --warning-content: 40, 100%, 85%;
 
+  --sidebar-color: 240 11.11% 98.24%;
+
   /* backgrounds */
   --background: 0 0% 100%;
   --background-hover: 0 0% 98%;
   --content: var(--text-default);
+
+  --dashboard-color: var(--background);
 
   --destructive-diff: 10, 100%, 60%, 0.16;
   --destructive-diff-content: 10, 67%, 48%;
@@ -115,7 +120,7 @@
   --button-input-height-sm: 28px;
   --button-input-height-lg: 44px;
   --panel-row-height: 42px;
-  --header-height: 64px;
+  --header-height: 43px;
   --header-height-sm: 43px;
 
   --sidebar-width: 300px;
@@ -184,6 +189,9 @@
   --accent: 240 4.8% 95.9%;
   --accent-content: 240 5.9% 10%;
 
+  --sidebar-color: var(--background);
+  --dashboard-color: var(--background);
+
 
 }
 
@@ -202,7 +210,7 @@
   --brand-content: 0 0% 98%;
   --brand-hover: 10, 100%, 67%;
 
-  --brand-light: 9, 8%, 18%;
+  --brand-light: hsl(240deg 36.36% 95.69%);
   --brand-light-content: 10, 100%, 60%;
   --brand-light-border: 9, 15%, 25%;
 
@@ -264,6 +272,9 @@
 
   --background-violet: 278, 44%, 25%;
   --background-violet-content: var(--content);
+
+  --sidebar-color: 0 0% 10%;
+  --dashboard-color: 0 0% 8.47%;
 }
 
 
@@ -394,6 +405,10 @@ body {
       'rlig' 1,
       'calt' 1;
   }
+}
+
+.h-head-cell {
+  height: var(--head-cell-height);
 }
 
 .ignore-focus-on-buttons:has(button:focus) {

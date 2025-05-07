@@ -75,6 +75,7 @@ function ViewAllQuotas(props: ViewAllQuotasProps) {
   return (
     <Popover
       align="end"
+      triggerAsChild
       trigger={
         <Button
           color="tertiary"

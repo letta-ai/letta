@@ -174,14 +174,12 @@ export function BYOKModels() {
             <Button
               preIcon={<PlusIcon />}
               label={t('actions.addProvider')}
-              size="small"
               color="secondary"
             />
           }
         />
       }
       title={t('title')}
-      description={t('description')}
     >
       <ProvidersView />
     </DashboardPageSection>

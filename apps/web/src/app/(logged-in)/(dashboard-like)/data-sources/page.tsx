@@ -255,6 +255,7 @@ function DataSourcesTable() {
 function DataSourcesPage() {
   return (
     <DashboardPageLayout
+      cappedWidth
       title="Data sources"
       actions={
         <>
