@@ -98,7 +98,7 @@ class AsyncComposioToolSet(BaseComposioToolSet, runtime="letta"):
         except aiohttp.ClientError as e:
             # Wrap network errors in ComposioSDKError
             raise ComposioSDKError(f"Network error when calling Composio API: {str(e)}")
-        except ValueError as e:
+        except ValueError:
             # Re-raise ValueError (which could be our custom error message or a JSON parsing error)
             raise
         except Exception as e:
