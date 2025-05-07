@@ -165,10 +165,12 @@ class GoogleAIClient(LLMClientBase):
 
                         # NOTE: this also involves stripping the inner monologue out of the function
                         if llm_config.put_inner_thoughts_in_kwargs:
-                            from letta.local_llm.constants import INNER_THOUGHTS_KWARG
+                            from letta.local_llm.constants import INNER_THOUGHTS_KWARG_VERTEX
 
-                            assert INNER_THOUGHTS_KWARG in function_args, f"Couldn't find inner thoughts in function args:\n{function_call}"
-                            inner_thoughts = function_args.pop(INNER_THOUGHTS_KWARG)
+                            assert (
+                                INNER_THOUGHTS_KWARG_VERTEX in function_args
+                            ), f"Couldn't find inner thoughts in function args:\n{function_call}"
+                            inner_thoughts = function_args.pop(INNER_THOUGHTS_KWARG_VERTEX)
                             assert inner_thoughts is not None, f"Expected non-null inner thoughts function arg:\n{function_call}"
                         else:
                             inner_thoughts = None
@@ -380,13 +382,13 @@ class GoogleAIClient(LLMClientBase):
 
             # Add inner thoughts
             if llm_config.put_inner_thoughts_in_kwargs:
-                from letta.local_llm.constants import INNER_THOUGHTS_KWARG, INNER_THOUGHTS_KWARG_DESCRIPTION
+                from letta.local_llm.constants import INNER_THOUGHTS_KWARG_DESCRIPTION, INNER_THOUGHTS_KWARG_VERTEX
 
-                func["parameters"]["properties"][INNER_THOUGHTS_KWARG] = {
+                func["parameters"]["properties"][INNER_THOUGHTS_KWARG_VERTEX] = {
                     "type": "string",
                     "description": INNER_THOUGHTS_KWARG_DESCRIPTION,
                 }
-                func["parameters"]["required"].append(INNER_THOUGHTS_KWARG)
+                func["parameters"]["required"].append(INNER_THOUGHTS_KWARG_VERTEX)
 
         return [{"functionDeclarations": function_list}]
 
