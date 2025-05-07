@@ -3721,27 +3721,6 @@
             }
           }
         }
-      },
-      "patch": {
-        "description": "Update an agent by its ID",
-        "summary": "Modify Agent",
-        "tags": ["agents"],
-        "parameters": [
-          {
-            "name": "agent_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "operationId": "agents.updateAgent",
-        "responses": {
-          "200": {
-            "description": "200"
-          }
-        }
       }
     },
     "/v1/agents/{agent_id}/template": {
