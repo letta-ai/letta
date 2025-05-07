@@ -75,10 +75,9 @@ class LettaAgent(BaseAgent):
         )
         tool_rules_solver = ToolRulesSolver(agent_state.tool_rules)
         llm_client = LLMClient.create(
-            provider_name=agent_state.llm_config.provider_name,
             provider_type=agent_state.llm_config.model_endpoint_type,
             put_inner_thoughts_first=True,
-            actor_id=self.actor.id,
+            actor=self.actor,
         )
         for _ in range(max_steps):
             response = await self._get_ai_reply(
@@ -120,10 +119,9 @@ class LettaAgent(BaseAgent):
         )
         tool_rules_solver = ToolRulesSolver(agent_state.tool_rules)
         llm_client = LLMClient.create(
-            provider_name=agent_state.llm_config.provider_name,
             provider_type=agent_state.llm_config.model_endpoint_type,
             put_inner_thoughts_first=True,
-            actor_id=self.actor.id,
+            actor=self.actor,
         )
 
         for _ in range(max_steps):
@@ -350,7 +348,7 @@ class LettaAgent(BaseAgent):
                 results = await self._send_message_to_agents_matching_tags(**tool_args)
                 log_event(name="finish_send_message_to_agents_matching_tags", attributes=tool_args)
                 return json.dumps(results), True
-            elif target_tool.type == ToolType.EXTERNAL_COMPOSIO:
+            elif target_tool.tool_type == ToolType.EXTERNAL_COMPOSIO:
                 log_event(name=f"start_composio_{tool_name}_execution", attributes=tool_args)
                 log_event(name=f"finish_compsio_{tool_name}_execution", attributes=tool_args)
                 return tool_execution_result.func_return, True

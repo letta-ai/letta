@@ -3455,7 +3455,7 @@ class LocalClient(AbstractClient):
         Returns:
             configs (List[LLMConfig]): List of LLM configurations
         """
-        return self.server.list_llm_models()
+        return self.server.list_llm_models(actor=self.user)
 
     def list_embedding_configs(self) -> List[EmbeddingConfig]:
         """
@@ -3464,7 +3464,7 @@ class LocalClient(AbstractClient):
         Returns:
             configs (List[EmbeddingConfig]): List of embedding configurations
         """
-        return self.server.list_embedding_models()
+        return self.server.list_embedding_models(actor=self.user)
 
     def create_org(self, name: Optional[str] = None) -> Organization:
         return self.server.organization_manager.create_organization(pydantic_org=Organization(name=name))

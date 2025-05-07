@@ -13,7 +13,7 @@ from letta.llm_api.llm_client_base import LLMClientBase
 from letta.local_llm.json_parser import clean_json_string_extra_backslash
 from letta.local_llm.utils import count_tokens
 from letta.log import get_logger
-from letta.schemas.enums import ProviderType
+from letta.schemas.enums import ProviderCategory
 from letta.schemas.llm_config import LLMConfig
 from letta.schemas.message import Message as PydanticMessage
 from letta.schemas.openai.chat_completion_request import Tool
@@ -31,10 +31,10 @@ class GoogleAIClient(LLMClientBase):
         Performs underlying request to llm and returns raw response.
         """
         api_key = None
-        if llm_config.provider_name and llm_config.provider_name != ProviderType.google_ai.value:
+        if llm_config.provider_category == ProviderCategory.byok:
             from letta.services.provider_manager import ProviderManager
 
-            api_key = ProviderManager().get_override_key(llm_config.provider_name)
+            api_key = ProviderManager().get_override_key(llm_config.provider_name, actor=self.actor)
 
         if not api_key:
             api_key = model_settings.gemini_api_key
@@ -165,10 +165,12 @@ class GoogleAIClient(LLMClientBase):
 
                         # NOTE: this also involves stripping the inner monologue out of the function
                         if llm_config.put_inner_thoughts_in_kwargs:
-                            from letta.local_llm.constants import INNER_THOUGHTS_KWARG
+                            from letta.local_llm.constants import INNER_THOUGHTS_KWARG_VERTEX
 
-                            assert INNER_THOUGHTS_KWARG in function_args, f"Couldn't find inner thoughts in function args:\n{function_call}"
-                            inner_thoughts = function_args.pop(INNER_THOUGHTS_KWARG)
+                            assert (
+                                INNER_THOUGHTS_KWARG_VERTEX in function_args
+                            ), f"Couldn't find inner thoughts in function args:\n{function_call}"
+                            inner_thoughts = function_args.pop(INNER_THOUGHTS_KWARG_VERTEX)
                             assert inner_thoughts is not None, f"Expected non-null inner thoughts function arg:\n{function_call}"
                         else:
                             inner_thoughts = None
@@ -288,7 +290,7 @@ class GoogleAIClient(LLMClientBase):
         # Per https://ai.google.dev/gemini-api/docs/function-calling?example=meeting#notes_and_limitations
         # * Only a subset of the OpenAPI schema is supported.
         # * Supported parameter types in Python are limited.
-        unsupported_keys = ["default", "exclusiveMaximum", "exclusiveMinimum"]
+        unsupported_keys = ["default", "exclusiveMaximum", "exclusiveMinimum", "additionalProperties"]
         keys_to_remove_at_this_level = [key for key in unsupported_keys if key in schema_part]
         for key_to_remove in keys_to_remove_at_this_level:
             logger.warning(f"Removing unsupported keyword 	'{key_to_remove}' from schema part.")
@@ -380,13 +382,13 @@ class GoogleAIClient(LLMClientBase):
 
             # Add inner thoughts
             if llm_config.put_inner_thoughts_in_kwargs:
-                from letta.local_llm.constants import INNER_THOUGHTS_KWARG, INNER_THOUGHTS_KWARG_DESCRIPTION
+                from letta.local_llm.constants import INNER_THOUGHTS_KWARG_DESCRIPTION, INNER_THOUGHTS_KWARG_VERTEX
 
-                func["parameters"]["properties"][INNER_THOUGHTS_KWARG] = {
+                func["parameters"]["properties"][INNER_THOUGHTS_KWARG_VERTEX] = {
                     "type": "string",
                     "description": INNER_THOUGHTS_KWARG_DESCRIPTION,
                 }
-                func["parameters"]["required"].append(INNER_THOUGHTS_KWARG)
+                func["parameters"]["required"].append(INNER_THOUGHTS_KWARG_VERTEX)
 
         return [{"functionDeclarations": function_list}]
 

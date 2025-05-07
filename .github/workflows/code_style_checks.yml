@@ -24,7 +24,7 @@ jobs:
       uses: packetcoders/action-setup-cache-python-poetry@main
       with:
         python-version: ${{ matrix.python-version }}
-        poetry-version: "1.8.2"
+        poetry-version: "2.1.3"
         install-args: "-E dev -E postgres -E external-tools -E tests"  # Adjust as necessary
 
     - name: Validate PR Title

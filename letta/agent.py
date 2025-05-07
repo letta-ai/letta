@@ -331,10 +331,9 @@ class Agent(BaseAgent):
                 log_telemetry(self.logger, "_get_ai_reply create start")
                 # New LLM client flow
                 llm_client = LLMClient.create(
-                    provider_name=self.agent_state.llm_config.provider_name,
                     provider_type=self.agent_state.llm_config.model_endpoint_type,
                     put_inner_thoughts_first=put_inner_thoughts_first,
-                    actor_id=self.user.id,
+                    actor=self.user,
                 )
 
                 if llm_client and not stream:
@@ -943,7 +942,10 @@ class Agent(BaseAgent):
                 model_endpoint=self.agent_state.llm_config.model_endpoint,
                 context_window_limit=self.agent_state.llm_config.context_window,
                 usage=response.usage,
-                provider_id=self.provider_manager.get_provider_id_from_name(self.agent_state.llm_config.provider_name),
+                provider_id=self.provider_manager.get_provider_id_from_name(
+                    self.agent_state.llm_config.provider_name,
+                    actor=self.user,
+                ),
                 job_id=job_id,
             )
             for message in all_new_messages:
@@ -1087,7 +1089,9 @@ class Agent(BaseAgent):
                 LLM_MAX_TOKENS[self.model] if (self.model is not None and self.model in LLM_MAX_TOKENS) else LLM_MAX_TOKENS["DEFAULT"]
             )
 
-        summary = summarize_messages(agent_state=self.agent_state, message_sequence_to_summarize=message_sequence_to_summarize)
+        summary = summarize_messages(
+            agent_state=self.agent_state, message_sequence_to_summarize=message_sequence_to_summarize, actor=self.user
+        )
         logger.info(f"Got summary: {summary}")
 
         # Metadata that's useful for the agent to see

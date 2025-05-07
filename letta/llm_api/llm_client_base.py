@@ -1,5 +1,5 @@
 from abc import abstractmethod
-from typing import Dict, List, Optional, Union
+from typing import TYPE_CHECKING, Dict, List, Optional, Union
 
 from anthropic.types.beta.messages import BetaMessageBatch
 from openai import AsyncStream, Stream
@@ -11,6 +11,9 @@ from letta.schemas.message import Message
 from letta.schemas.openai.chat_completion_response import ChatCompletionResponse
 from letta.tracing import log_event
 
+if TYPE_CHECKING:
+    from letta.orm import User
+
 
 class LLMClientBase:
     """
@@ -20,13 +23,11 @@ class LLMClientBase:
 
     def __init__(
         self,
-        provider_name: Optional[str] = None,
         put_inner_thoughts_first: Optional[bool] = True,
         use_tool_naming: bool = True,
-        actor_id: Optional[str] = None,
+        actor: Optional["User"] = None,
     ):
-        self.actor_id = actor_id
-        self.provider_name = provider_name
+        self.actor = actor
         self.put_inner_thoughts_first = put_inner_thoughts_first
         self.use_tool_naming = use_tool_naming
 
