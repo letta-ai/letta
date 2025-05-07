@@ -631,12 +631,17 @@ async def send_message(
     # TODO: This is redundant, remove soon
     agent = server.agent_manager.get_agent_by_id(agent_id, actor)
 
-    if (
+    if all(
+        (
+            settings.use_experimental,
+            not agent.enable_sleeptime,
+            not agent.multi_agent_group,
+            not agent.agent_type == AgentType.sleeptime_agent,
+        )
+    ) and (
+        # LLM Model Check: (1) Anthropic or (2) Google Vertex + Flag
         agent.llm_config.model_endpoint_type == "anthropic"
-        and not agent.enable_sleeptime
-        and not agent.multi_agent_group
-        and not agent.agent_type == AgentType.sleeptime_agent
-        and settings.use_experimental
+        or (agent.llm_config.model_endpoint_type == "google_vertex" and settings.use_vertex_async_loop_experimental)
     ):
         experimental_agent = LettaAgent(
             agent_id=agent_id,
