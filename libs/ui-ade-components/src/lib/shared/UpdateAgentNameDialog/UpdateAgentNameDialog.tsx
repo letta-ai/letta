@@ -8,16 +8,14 @@ import {
   useForm,
 } from '@letta-cloud/ui-component-library';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useAgentsServiceModifyAgent } from '@letta-cloud/sdk-core';
+import { isAPIError, useAgentsServiceModifyAgent } from '@letta-cloud/sdk-core';
 import React, { useCallback, useEffect } from 'react';
-import { isFetchError } from '@ts-rest/react-query/v5';
 import { useAgentBaseTypeName } from '../../hooks';
 import { useCurrentAgent } from '../../hooks';
 import { useCurrentBasePathname } from '../../hooks';
 import { useCurrentAgentMetaData } from '../../hooks';
 import { useADEPermissions } from '../../hooks/useADEPermissions/useADEPermissions';
 import { ApplicationServices } from '@letta-cloud/service-rbac';
-import { cloudAPI } from '@letta-cloud/sdk-cloud-api';
 
 interface UpdateNameDialogProps {
   trigger: React.ReactNode;
@@ -60,8 +58,7 @@ export function UpdateNameDialog(props: UpdateNameDialogProps) {
 
   const { id: agentTemplateId } = useCurrentAgent();
 
-  const { mutate, isPending, error } =
-    cloudAPI.agents.updateAgent.useMutation();
+  const { mutate, isPending, error } = useAgentsServiceModifyAgent();
 
   const handleSubmit = useCallback(
     (values: UpdateNameFormValues) => {
@@ -85,10 +82,10 @@ export function UpdateNameDialog(props: UpdateNameDialogProps) {
 
       mutate(
         {
-          body: { name: values.name },
-          params: {
-            agent_id: agentTemplateId,
+          requestBody: {
+            name: values.name,
           },
+          agentId: agentTemplateId,
         },
         {
           onSuccess: async () => {
@@ -105,8 +102,8 @@ export function UpdateNameDialog(props: UpdateNameDialogProps) {
   );
 
   useEffect(() => {
-    if (error && !isFetchError(error)) {
-      if (error.status === 409) {
+    if (error) {
+      if (isAPIError(error) && error.status === 409) {
         form.setError('name', {
           message: t('error.conflict', {
             agentBaseType: agentBaseType.base,

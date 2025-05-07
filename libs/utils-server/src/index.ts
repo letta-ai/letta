@@ -22,3 +22,4 @@ export * from './lib/getCurrentOrganizationUsageLimits/getCurrentOrganizationUsa
 export * from './lib/deleteShareChatOnIdentityDelete/deleteShareChatOnIdentityDelete';
 export * from './lib/redisModelTransactions/redisModelTransactions';
 export * from './lib/shouldItemRateLimit/shouldItemRateLimit';
+export * from './lib/verifyUpdateAgent/verifyUpdateAgent';

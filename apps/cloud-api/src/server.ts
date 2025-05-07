@@ -24,6 +24,7 @@ import { responseSideEffects } from './libs/responseSideEffects/responseSideEffe
 import { Readable } from 'node:stream';
 import { itemRateLimitMiddleware } from './libs/itemRateLimitMiddleware/itemRateLimitMiddleware';
 import { fileSizeRateLimitMiddleware } from './libs/fileSizeRateLimitMiddlware/fileSizeRateLimitMiddleware';
+import { updateAgentMiddleware } from './libs/updateAgentMiddleware/updateAgentMiddleware';
 
 interface ExpressMeta {
   req: {
@@ -119,6 +120,7 @@ export function startServer() {
   app.use(fileSizeRateLimitMiddleware);
   app.use(requireProjectMiddleware);
   app.use(projectHeaderMiddleware);
+  app.use(updateAgentMiddleware);
 
   /* tsRestMiddleware needs to be last */
   const s = initServer();

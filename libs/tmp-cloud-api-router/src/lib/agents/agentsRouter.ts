@@ -16,7 +16,6 @@ import { and, eq, isNull } from 'drizzle-orm';
 import { versionAgentTemplate } from './lib/versionAgentTemplate/versionAgentTemplate';
 import { getDeployedTemplateByVersion } from '@letta-cloud/utils-server';
 import { LRUCache } from 'lru-cache';
-import { camelCaseKeys } from '@letta-cloud/utils-shared';
 import { cloudApiRouter } from '../router';
 import { createTemplate } from '../createTemplate/createTemplate';
 import type { cloudContracts } from '@letta-cloud/sdk-cloud-api';
@@ -347,119 +346,6 @@ async function deleteAgent(
   };
 }
 
-type UpdateAgentRequest = ServerInferRequest<
-  typeof cloudContracts.agents.updateAgent
->;
-
-type UpdateAgentResponse = ServerInferResponses<
-  typeof cloudContracts.agents.updateAgent
->;
-
-async function updateAgent(
-  req: UpdateAgentRequest,
-  context: SDKContext,
-): Promise<UpdateAgentResponse> {
-  const { agent_id: agentId } = req.params;
-
-  const [deployedAgent, agentTemplate] = await Promise.all([
-    AgentsService.retrieveAgent(
-      {
-        agentId,
-      },
-      {
-        user_id: getContextDataHack(req, context).lettaAgentsUserId,
-      },
-    ),
-    db.query.agentTemplates.findFirst({
-      where: and(
-        eq(
-          agentTemplates.organizationId,
-          getContextDataHack(req, context).organizationId,
-        ),
-        eq(agentTemplates.id, agentId),
-        isNull(agentTemplates.deletedAt),
-      ),
-    }),
-  ]);
-
-  if (!(deployedAgent || agentTemplate)) {
-    return {
-      status: 404,
-      body: {
-        message: 'Agent not found',
-      },
-    };
-  }
-
-  if (agentTemplate) {
-    if (getContextDataHack(req, context).source !== 'web') {
-      return {
-        status: 400,
-        body: {
-          message:
-            'Cannot update agent template via API, please update in the UI',
-        },
-      };
-    }
-
-    const { name } = req.body;
-
-    if (name) {
-      if (!/^[a-zA-Z0-9_-]+$/.test(name)) {
-        return {
-          status: 400,
-          body: {
-            message: 'Name must be alphanumeric, with underscores or dashes',
-          },
-        };
-      }
-
-      if (name !== agentTemplate.name) {
-        const exists = await db.query.agentTemplates.findFirst({
-          where: and(
-            eq(
-              agentTemplates.organizationId,
-              getContextDataHack(req, context).organizationId,
-            ),
-            eq(agentTemplates.projectId, agentTemplate.projectId),
-            eq(agentTemplates.name, name),
-            isNull(agentTemplates.deletedAt),
-          ),
-        });
-
-        if (exists) {
-          return {
-            status: 409,
-            body: {
-              message: 'An agent with the same name already exists',
-            },
-          };
-        }
-
-        await db
-          .update(agentTemplates)
-          .set({ name })
-          .where(eq(agentTemplates.id, agentId));
-      }
-    }
-  }
-
-  const response = await AgentsService.modifyAgent(
-    {
-      agentId,
-      requestBody: req.body,
-    },
-    {
-      user_id: getContextDataHack(req, context).lettaAgentsUserId,
-    },
-  );
-
-  return {
-    status: 200,
-    body: response,
-  };
-}
-
 type SearchDeployedAgentsRequest = ServerInferRequest<
   typeof cloudContracts.agents.searchDeployedAgents
 >;
@@ -744,7 +630,6 @@ export const agentsRouter = {
   getAgentVariables,
   getAgentById,
   deleteAgent,
-  updateAgent,
   searchDeployedAgents,
   createTemplateFromAgent,
 };

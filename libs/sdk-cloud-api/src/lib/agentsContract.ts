@@ -3,7 +3,6 @@ import { initContract } from '@ts-rest/core';
 import type {
   AgentState as AgentStateType,
   CreateAgentRequest,
-  UpdateAgent,
 } from '@letta-cloud/sdk-core';
 import { z } from 'zod';
 import { extendZodWithOpenApi } from '@anatine/zod-openapi';
@@ -13,7 +12,7 @@ import {
   VersionedTemplateType,
 } from '@letta-cloud/sdk-core';
 
-const { AgentState, get_List_agents } = zodTypes;
+const { AgentState } = zodTypes;
 
 extendZodWithOpenApi(z);
 
@@ -150,25 +149,6 @@ const deleteAgentContract = c.mutation({
   },
 });
 
-/* Update Agent */
-const UpdateAgentBodySchema = c.type<UpdateAgent>();
-
-const UpdateAgentResponseSchema = c.type<AgentStateType>();
-
-const updateAgentContract = c.mutation({
-  method: 'PATCH',
-  summary: 'Modify Agent',
-  path: '/v1/agents/:agent_id',
-  description: 'Update an agent by its ID',
-  body: UpdateAgentBodySchema,
-  pathParams: z.object({
-    agent_id: z.string(),
-  }),
-  responses: {
-    200: UpdateAgentResponseSchema,
-  },
-});
-
 /* Search Deployed Agents */
 const SearchByAgentVersionSchema = z.object({
   field: z.literal('version'),
@@ -297,7 +277,6 @@ export const agentsContract = c.router({
   migrateAgent: migrateAgentContract,
   getAgentById: getAgentByIdContract,
   deleteAgent: deleteAgentContract,
-  updateAgent: updateAgentContract,
   createTemplateFromAgent: createTemplateFromAgentContract,
   getAgentVariables: getAgentVariablesContract,
 });
