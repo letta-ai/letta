@@ -75,10 +75,9 @@ class LettaAgent(BaseAgent):
         )
         tool_rules_solver = ToolRulesSolver(agent_state.tool_rules)
         llm_client = LLMClient.create(
-            provider_name=agent_state.llm_config.provider_name,
             provider_type=agent_state.llm_config.model_endpoint_type,
             put_inner_thoughts_first=True,
-            actor_id=self.actor.id,
+            actor=self.actor,
         )
         for _ in range(max_steps):
             response = await self._get_ai_reply(
@@ -120,10 +119,9 @@ class LettaAgent(BaseAgent):
         )
         tool_rules_solver = ToolRulesSolver(agent_state.tool_rules)
         llm_client = LLMClient.create(
-            provider_name=agent_state.llm_config.provider_name,
             provider_type=agent_state.llm_config.model_endpoint_type,
             put_inner_thoughts_first=True,
-            actor_id=self.actor.id,
+            actor=self.actor,
         )
 
         for _ in range(max_steps):

@@ -95,6 +95,7 @@ def create_source(
         source_create.embedding_config = server.get_embedding_config_from_handle(
             handle=source_create.embedding,
             embedding_chunk_size=source_create.embedding_chunk_size or constants.DEFAULT_EMBEDDING_CHUNK_SIZE,
+            actor=actor,
         )
     source = Source(
         name=source_create.name,

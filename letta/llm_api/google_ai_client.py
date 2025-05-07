@@ -13,7 +13,7 @@ from letta.llm_api.llm_client_base import LLMClientBase
 from letta.local_llm.json_parser import clean_json_string_extra_backslash
 from letta.local_llm.utils import count_tokens
 from letta.log import get_logger
-from letta.schemas.enums import ProviderType
+from letta.schemas.enums import ProviderCategory
 from letta.schemas.llm_config import LLMConfig
 from letta.schemas.message import Message as PydanticMessage
 from letta.schemas.openai.chat_completion_request import Tool
@@ -31,10 +31,10 @@ class GoogleAIClient(LLMClientBase):
         Performs underlying request to llm and returns raw response.
         """
         api_key = None
-        if llm_config.provider_name and llm_config.provider_name != ProviderType.google_ai.value:
+        if llm_config.provider_category == ProviderCategory.byok:
             from letta.services.provider_manager import ProviderManager
 
-            api_key = ProviderManager().get_override_key(llm_config.provider_name)
+            api_key = ProviderManager().get_override_key(llm_config.provider_name, actor=self.actor)
 
         if not api_key:
             api_key = model_settings.gemini_api_key

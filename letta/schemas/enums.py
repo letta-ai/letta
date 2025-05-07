@@ -19,6 +19,11 @@ class ProviderType(str, Enum):
     bedrock = "bedrock"
 
 
+class ProviderCategory(str, Enum):
+    base = "base"
+    byok = "byok"
+
+
 class MessageRole(str, Enum):
     assistant = "assistant"
     user = "user"
