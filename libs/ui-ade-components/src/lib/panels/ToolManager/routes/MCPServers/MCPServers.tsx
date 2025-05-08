@@ -5,6 +5,7 @@ import {
   Badge,
   Button,
   ChevronDownIcon,
+  CodeEditor,
   Dialog,
   Form,
   FormActions,
@@ -58,8 +59,8 @@ function AddStdioServerForm(props: AddStdioServerFormProps) {
         name: z.string().regex(/^[a-zA-Z_][a-zA-Z0-9_]*$/, {
           message: t('AddServerDialog.name.error'),
         }),
-        command: z.string(),
-        args: z.string(),
+        command: z.string().min(1),
+        args: z.string().min(1),
       }),
     [t],
   );
@@ -124,33 +125,39 @@ function AddStdioServerForm(props: AddStdioServerFormProps) {
               <Input
                 fullWidth
                 {...field}
-                description={t('AddServerDialog.name.description')}
                 placeholder={t('AddServerDialog.name.placeholder')}
                 label={t('AddServerDialog.name.label')}
+                infoTooltip={{ text: t('AddServerDialog.name.description') }}
               />
             )}
           />
           <FormField
             name="command"
             render={({ field }) => (
-              <Input
-                fullWidth
-                {...field}
+              <CodeEditor
                 label={t('AddServerDialog.command.label')}
+                fullWidth
+                fontSize="small"
+                onSetCode={field.onChange}
+                showLineNumbers={false}
+                language="bash"
+                code={field.value}
                 placeholder={t('AddServerDialog.command.placeholder')}
-                description={t('AddServerDialog.command.description')}
               />
             )}
           />
           <FormField
             name="args"
             render={({ field }) => (
-              <Input
-                fullWidth
-                {...field}
+              <CodeEditor
                 label={t('AddServerDialog.args.label')}
+                fullWidth
+                fontSize="small"
+                onSetCode={field.onChange}
+                showLineNumbers={false}
+                language="bash"
+                code={field.value}
                 placeholder={t('AddServerDialog.args.placeholder')}
-                description={t('AddServerDialog.args.description')}
               />
             )}
           />
@@ -250,9 +257,9 @@ function AddSSEServerForm(props: AddStdioServerFormProps) {
               <Input
                 fullWidth
                 {...field}
-                description={t('AddServerDialog.name.description')}
                 placeholder={t('AddServerDialog.name.placeholder')}
                 label={t('AddServerDialog.name.label')}
+                infoTooltip={{ text: t('AddServerDialog.name.description') }}
               />
             )}
           />
@@ -264,7 +271,9 @@ function AddSSEServerForm(props: AddStdioServerFormProps) {
                 {...field}
                 label={t('AddServerDialog.serverUrl.label')}
                 placeholder={t('AddServerDialog.serverUrl.placeholder')}
-                description={t('AddServerDialog.serverUrl.description')}
+                infoTooltip={{
+                  text: t('AddServerDialog.serverUrl.description'),
+                }}
               />
             )}
           />
