@@ -75,7 +75,20 @@ interface MessageProps {
 }
 
 function Message({ message }: MessageProps) {
-  return <HStack fullWidth>{message.content}</HStack>;
+  const { data: isEnabledDetailedMessageView } = useFeatureFlag(
+    'DETAILED_MESSAGE_VIEW',
+  );
+
+  return (
+    <HStack fullWidth position="relative">
+      {isEnabledDetailedMessageView && message.stepId && (
+        <div style={{ left: -28 }} className="absolute top-0">
+          <DetailedMessageView stepId={message.stepId} />
+        </div>
+      )}
+      {message.content}
+    </HStack>
+  );
 }
 
 interface MessageGroupType {
@@ -129,10 +142,6 @@ function MessageGroup({ group }: MessageGroupType) {
     return null;
   }, [name]);
 
-  const { data: isEnabledDetailedMessageView } = useFeatureFlag(
-    'DETAILED_MESSAGE_VIEW',
-  );
-
   return (
     <HStack
       padding="small"
@@ -154,7 +163,6 @@ function MessageGroup({ group }: MessageGroupType) {
           <Typography bold variant="body2" color="lighter">
             {name.toUpperCase()}
           </Typography>
-          {isEnabledDetailedMessageView && <DetailedMessageView />}
         </HStack>
         <VStack
           gap="large"
@@ -345,6 +353,7 @@ export function Messages(props: MessagesProps) {
     ): AgentSimulatorMessageType | null | undefined {
       if (mode === 'debug') {
         return {
+          stepId: agentMessage.step_id,
           id: `${agentMessage.id}-${agentMessage.message_type}`,
           content: (
             <MessageWrapper
@@ -378,6 +387,7 @@ export function Messages(props: MessagesProps) {
           }
 
           return {
+            stepId: agentMessage.step_id,
             id: `${agentMessage.id}-${agentMessage.message_type}`,
             name: 'System',
             timestamp: new Date(agentMessage.date).toISOString(),
@@ -399,6 +409,7 @@ export function Messages(props: MessagesProps) {
           }
 
           return {
+            stepId: agentMessage.step_id,
             id: `${agentMessage.id}-${agentMessage.message_type}`,
             content: (
               <MessageWrapper
@@ -464,6 +475,7 @@ export function Messages(props: MessagesProps) {
                 }
 
                 return {
+                  stepId: agentMessage.step_id,
                   id: `${agentMessage.id}-${agentMessage.message_type}`,
                   content: (
                     <VStack>
@@ -475,6 +487,7 @@ export function Messages(props: MessagesProps) {
                 };
               } catch (_e) {
                 return {
+                  stepId: agentMessage.step_id,
                   id: `${agentMessage.id}-${agentMessage.message_type}`,
                   content: '',
                   timestamp: new Date(agentMessage.date).toISOString(),
@@ -490,8 +503,8 @@ export function Messages(props: MessagesProps) {
                   get(message, 'tool_call_id') ===
                     agentMessage.tool_call.tool_call_id,
               );
-
               return {
+                stepId: agentMessage.step_id,
                 id: `${agentMessage.id}-${agentMessage.message_type}`,
                 content: (
                   <FunctionCall
@@ -512,6 +525,7 @@ export function Messages(props: MessagesProps) {
           }
 
           return {
+            stepId: agentMessage.step_id,
             id: `${agentMessage.id}-${agentMessage.message_type}`,
             content: (
               <MessageWrapper
@@ -550,6 +564,7 @@ export function Messages(props: MessagesProps) {
 
           if (mode === 'interactive') {
             return {
+              stepId: agentMessage.step_id,
               id: `${agentMessage.id}-${agentMessage.message_type}`,
               content: (
                 <BlockQuote fullWidth>
@@ -583,6 +598,7 @@ export function Messages(props: MessagesProps) {
           }
 
           return {
+            stepId: agentMessage.step_id,
             id: `${agentMessage.id}-${agentMessage.message_type}`,
             content: (
               <MessageWrapper
@@ -604,6 +620,7 @@ export function Messages(props: MessagesProps) {
           }
           if (mode === 'interactive') {
             return {
+              stepId: agentMessage.step_id,
               id: `${agentMessage.id}-${agentMessage.message_type}`,
               content: (
                 <BlockQuote fullWidth>
@@ -642,6 +659,7 @@ export function Messages(props: MessagesProps) {
           }
 
           return {
+            stepId: agentMessage.step_id,
             id: `${agentMessage.id}-${agentMessage.message_type}`,
             content: (
               <MessageWrapper
@@ -674,6 +692,7 @@ export function Messages(props: MessagesProps) {
             }
 
             return {
+              stepId: agentMessage.step_id,
               id: `${agentMessage.id}-${agentMessage.message_type}`,
               content: (
                 <VStack>
@@ -690,6 +709,7 @@ export function Messages(props: MessagesProps) {
 
             if (tryParseResp) {
               return {
+                stepId: agentMessage.step_id,
                 id: `${agentMessage.id}-${agentMessage.message_type}`,
                 content: (
                   <MessageWrapper
@@ -713,6 +733,7 @@ export function Messages(props: MessagesProps) {
             }
 
             return {
+              stepId: agentMessage.step_id,
               id: `${agentMessage.id}-${agentMessage.message_type}`,
               content: <Typography>{agentMessage.content}</Typography>,
               timestamp: new Date(agentMessage.date).toISOString(),
@@ -721,6 +742,7 @@ export function Messages(props: MessagesProps) {
           }
 
           return {
+            stepId: agentMessage.step_id,
             id: `${agentMessage.id}-${agentMessage.message_type}`,
             content: <Typography>{agentMessage.content}</Typography>,
             timestamp: new Date(agentMessage.date).toISOString(),
@@ -774,6 +796,7 @@ export function Messages(props: MessagesProps) {
         id: message.id || '',
         content: message.content || '',
         name: message.name,
+        stepId: message.stepId || '',
         timestamp: message.timestamp || '',
       };
 

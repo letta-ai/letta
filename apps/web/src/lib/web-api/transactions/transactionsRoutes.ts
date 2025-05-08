@@ -5,7 +5,7 @@ import {
   organizationCreditTransactions,
 } from '@letta-cloud/service-database';
 import { getUserWithActiveOrganizationIdOrThrow } from '$web/server/auth';
-import { desc, eq } from 'drizzle-orm';
+import { and, desc, eq } from 'drizzle-orm';
 import { ModelTiers } from '@letta-cloud/types';
 
 type TransactionsRoutesRequest = ServerInferRequest<
@@ -18,15 +18,20 @@ type TransactionsRoutesResponse = ServerInferResponses<
 async function listTransactions(
   req: TransactionsRoutesRequest,
 ): Promise<TransactionsRoutesResponse> {
-  const { limit = 10, offset = 0 } = req.query;
+  const { limit = 10, offset = 0, stepId } = req.query;
   const { activeOrganizationId } =
     await getUserWithActiveOrganizationIdOrThrow();
 
+  const options = [
+    eq(organizationCreditTransactions.organizationId, activeOrganizationId),
+  ];
+
+  if (stepId) {
+    options.push(eq(organizationCreditTransactions.stepId, stepId));
+  }
+
   const transactions = await db.query.organizationCreditTransactions.findMany({
-    where: eq(
-      organizationCreditTransactions.organizationId,
-      activeOrganizationId,
-    ),
+    where: and(...options),
     limit: limit + 1,
     offset,
     orderBy: desc(organizationCreditTransactions.createdAt),

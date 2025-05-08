@@ -18,20 +18,23 @@ const TransactionSchema = z.object({
 export type PublicCreditTransactionType = z.infer<typeof TransactionSchema>;
 
 const QuerySchema = z.object({
+  stepId: z.string().optional(),
   limit: z
     .string()
     .or(z.number())
     .transform(Number)
     .refine((val) => val > 0 && val <= 100, {
       message: 'Limit must be between 1 and 25',
-    }),
+    })
+    .optional(),
   offset: z
     .string()
     .or(z.number())
     .transform(Number)
     .refine((val) => val >= 0, {
       message: 'Offset must be greater than or equal to 0',
-    }),
+    })
+    .optional(),
 });
 
 type ListTransactionsQuery = z.infer<typeof QuerySchema>;

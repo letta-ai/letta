@@ -770,6 +770,38 @@
       "default": "There was an error updating the agent name, please try again or contact support."
     }
   },
+  "ADE/AgentSimulator/DetailedMessageView": {
+    "trigger": "View details",
+    "title": "Message Details",
+    "loading": "Loading message details...",
+    "TransactionDetails": {
+      "title": "Transaction details",
+      "transactionId": "Transaction ID",
+      "transactionIdTooltip": "This is the ID of the transaction that was executed, this is used for managing balances and costs",
+      "cost": "Cost"
+    },
+    "TransactionCost": {
+      "standard": {
+        "badge": "Standard",
+        "tooltip": "This transaction had no cost as it was part of your standard inference allowance"
+      },
+      "premium": {
+        "badge": "Premium",
+        "tooltip": "This transaction had a cost as it was not part of your standard inference allowance"
+      }
+    },
+    "StepBasicDetails": {
+      "llmProviderDetails": "LLM Provider",
+      "tokenDetails": "Token details",
+      "provider": "Provider",
+      "title": "Request details",
+      "stepId": "Step ID",
+      "model": "Model",
+      "promptTokens": "Prompt tokens",
+      "totalTokens": "Total tokens",
+      "completionTokens": "Completion tokens"
+    }
+  },
   "ADE/AgentSimulator": {
     "InvalidMessages": {
       "title": "There was an error processing the message response",

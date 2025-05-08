@@ -28,6 +28,7 @@ export interface SourceMetadata {
 export const SystemMessageSchema = z.object({
   message_type: z.literal('system_message'),
   content: z.string(),
+  step_id: z.string().nullable().optional(),
   date: z.string(),
   id: z.string(),
 });
@@ -42,6 +43,7 @@ export const UserMessageSchema = z.object({
   message_type: z.literal('user_message'),
   formattedMessage: z.record(z.unknown()).optional(),
   content: z.string(),
+  step_id: z.string().nullable().optional(),
   otid: z.string().nullable().optional(),
   name: z.string().nullable().optional(),
   date: z.string(),
@@ -53,6 +55,7 @@ export const ReasoningMessageSchema = z.object({
   source: z.enum(['reasoner_model', 'non_reasoner_model']),
   signature: z.string().nullable().optional(),
   reasoning: z.string(),
+  step_id: z.string().nullable().optional(),
   otid: z.string().nullable().optional(),
   name: z.string().nullable().optional(),
   date: z.string(),
@@ -65,6 +68,7 @@ export const HiddenReasoningMessageSchema = z.object({
   hidden_reasoning: z.string().nullable().optional(),
   otid: z.string().nullable().optional(),
   name: z.string().nullable().optional(),
+  step_id: z.string().nullable().optional(),
   date: z.string(),
   id: z.string(),
 });
@@ -86,6 +90,7 @@ export const ToolCallMessageSchema = z.object({
   otid: z.string().nullable().optional(),
   name: z.string().nullable().optional(),
   date: z.string(),
+  step_id: z.string().nullable().optional(),
   id: z.string(),
 });
 
@@ -99,6 +104,7 @@ export const ToolReturnMessageSchema = z.object({
   otid: z.string().nullable().optional(),
   name: z.string().nullable().optional(),
   date: z.string(),
+  step_id: z.string().nullable().optional(),
   id: z.string(),
 });
 

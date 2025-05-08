@@ -74,7 +74,7 @@ export function Section(props: SectionProps) {
           {icon && <VStack>{icon}</VStack>}
           <VStack gap={false}>
             {title && (
-              <Typography align="left" noWrap bold variant="body">
+              <Typography align="left" noWrap bold variant="heading6">
                 {title}
               </Typography>
             )}
