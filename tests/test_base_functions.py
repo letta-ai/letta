@@ -127,13 +127,14 @@ def test_archival(agent_obj):
         pass
 
 
-def test_recall(client, agent_obj):
+def test_recall_self(client, agent_obj):
     # keyword
     keyword = "banana"
+    keyword_backwards = "".join(reversed(keyword))
 
     # Send messages to agent
     client.send_message(agent_id=agent_obj.agent_state.id, role="user", message="hello")
-    client.send_message(agent_id=agent_obj.agent_state.id, role="user", message=keyword)
+    client.send_message(agent_id=agent_obj.agent_state.id, role="user", message="what word is '{}' backwards?".format(keyword_backwards))
     client.send_message(agent_id=agent_obj.agent_state.id, role="user", message="tell me a fun fact")
 
     # Conversation search
