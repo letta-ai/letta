@@ -1,18 +1,28 @@
 import {
   brandKeyToLogo,
   brandKeyToName,
+  Button,
+  CheckIcon,
+  CloseIcon,
   Dialog,
   FormField,
   FormProvider,
+  HStack,
   Input,
   InputContainer,
+  StatusIndicator,
   TabGroup,
+  Tooltip,
+  Typography,
   useForm,
   VStack,
 } from '@letta-cloud/ui-component-library';
 import { useTranslations } from '@letta-cloud/translations';
 import { z } from 'zod';
-import type { ListProvidersResponse } from '@letta-cloud/sdk-core';
+import type {
+  ListProvidersResponse,
+  ProviderType,
+} from '@letta-cloud/sdk-core';
 import {
   isAPIError,
   useProvidersServiceCreateProvider,
@@ -22,6 +32,99 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useCallback, useMemo, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { getUseProvidersServiceModelsStandardArgs } from '../utils/getUseProvidersServiceModelsStandardArgs/getUseProvidersServiceModelsStandardArgs';
+import { useFormContext } from 'react-hook-form';
+
+function TestConnectionButton() {
+  const [isTesting, setIsTesting] = useState(false);
+  const [testingStatus, setTestingStatus] = useState<
+    'failed' | 'success' | null
+  >(null);
+  const t = useTranslations('pages/models/CreateProviderModal');
+
+  const { watch } = useFormContext();
+
+  const testConnection = useCallback(
+    async (apiKey: string, providerType: ProviderType) => {
+      try {
+        setIsTesting(true);
+        setTestingStatus(null);
+        await fetch(`/v1/providers/check?provider_type=${providerType}`, {
+          method: 'GET',
+          headers: {
+            'x-api-key': apiKey,
+            'Content-Type': 'application/json',
+          },
+        });
+
+        setTestingStatus('success');
+      } catch (_) {
+        setTestingStatus('failed');
+      } finally {
+        setIsTesting(false);
+      }
+    },
+    [],
+  );
+
+  const apiKey = watch('apiKey');
+  const providerType = watch('providerType');
+
+  return (
+    <HStack
+      align="center"
+      justify="spaceBetween"
+      padding="small"
+      paddingRight
+      border
+      fullWidth
+    >
+      <Button
+        color="secondary"
+        busy={isTesting}
+        label={t('TestConnectionButton.label')}
+        onClick={() => {
+          void testConnection(apiKey, providerType);
+        }}
+      />
+      <HStack>
+        {testingStatus === 'success' && (
+          <Tooltip content={t('TestConnectionButton.success.tooltip')}>
+            <HStack>
+              <CheckIcon color="success" />
+              <Typography variant="body2" bold>
+                {t('TestConnectionButton.success.label')}
+              </Typography>
+            </HStack>
+          </Tooltip>
+        )}
+        {testingStatus === 'failed' && (
+          <Tooltip content={t('TestConnectionButton.failed.tooltip')}>
+            <HStack>
+              <CloseIcon color="destructive" />
+              <Typography variant="body2" bold>
+                {t('TestConnectionButton.failed.label')}
+              </Typography>
+            </HStack>
+          </Tooltip>
+        )}
+        {testingStatus === null && (
+          <HStack align="center">
+            <StatusIndicator status="processing" />
+            {isTesting ? (
+              <Typography variant="body2" bold>
+                {t('TestConnectionButton.pending')}
+              </Typography>
+            ) : (
+              <Typography variant="body2" bold>
+                {t('TestConnectionButton.unconnected')}
+              </Typography>
+            )}
+          </HStack>
+        )}
+      </HStack>
+    </HStack>
+  );
+}
 
 interface CreateProviderModalProps {
   trigger: React.ReactNode;
@@ -40,7 +143,6 @@ export function AddProviderModal(props: CreateProviderModalProps) {
   const t = useTranslations('pages/models/CreateProviderModal');
 
   const [open, setOpen] = useState(false);
-
   const queryClient = useQueryClient();
 
   const { mutate, isPending, error } = useProvidersServiceCreateProvider();
@@ -195,6 +297,7 @@ export function AddProviderModal(props: CreateProviderModalProps) {
               />
             )}
           ></FormField>
+          <TestConnectionButton />
         </VStack>
       </Dialog>
     </FormProvider>

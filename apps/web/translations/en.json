@@ -302,6 +302,19 @@
   },
   "pages/models/CreateProviderModal": {
     "title": "Add a new model provider",
+    "TestConnectionButton": {
+      "label": "Test connection",
+      "failed": {
+        "tooltip": "Failed to connect to the model provider, please check your API key and try again.",
+        "label": "Failed"
+      },
+      "success": {
+        "tooltip": "Successfully connected to the model provider, you can now add models to this provider.",
+        "label": "Success"
+      },
+      "unconnected": "Untested",
+      "pending": "Testing connection..."
+    },
     "errors": {
       "default": "There was an error adding the model provider, please try again or contact support.",
       "nameConflict": "You already have a model provider with this name, please choose another name",
@@ -331,8 +344,12 @@
   },
   "pages/models/ProviderDetailsOverlay": {
     "title": "Model provider details",
+    "providerType": "Provider type",
     "ModelsList": {
       "title": "Models",
+      "loading": "Loading models...",
+      "noModels": "No models found",
+      "error": "There was an error loading your models, this may be due to the provider being unavailable. Please try again or contact support.",
       "description": "Below are the models available for this provider."
     },
     "DeleteProvider": {
