@@ -26,6 +26,7 @@ import { modelsRouter } from './models/modelRoutes';
 import { cloudAccessCodeRouter } from '$web/web-api/cloud-access-code/cloudAccessCodeRouter';
 import { composioRouter } from '$web/web-api/composio/composioRouter';
 import { transactionsRoutes } from '$web/web-api/transactions/transactionsRoutes';
+import { tracesRoutes } from '$web/web-api/traces/tracesRouter';
 
 export const router = {
   user: userRouter,
@@ -49,6 +50,7 @@ export const router = {
   cloudAccessCode: cloudAccessCodeRouter,
   composio: composioRouter,
   transactions: transactionsRoutes,
+  traces: tracesRoutes,
   admin: {
     usage: adminUsageRouter,
     toolMetadata: adminToolMetadataRouter,

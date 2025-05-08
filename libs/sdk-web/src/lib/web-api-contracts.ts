@@ -80,6 +80,7 @@ import {
   transactionsContracts,
   transactionsQueryKeys,
 } from './public/transactionsContracts';
+import { tracesContracts, tracesQueryKeys } from './public/tracesContracts';
 
 export const contracts = {
   user: userContract,
@@ -103,6 +104,7 @@ export const contracts = {
   models: modelContracts,
   cloudAccessCode: cloudAccessCodeContract,
   transactions: transactionsContracts,
+  traces: tracesContracts,
   admin: {
     usage: adminUsageContracts,
     toolMetadata: adminToolMetadataContracts,
@@ -133,6 +135,7 @@ export const queryClientKeys = {
   composio: composioQueryKeys,
   models: modelQueryClientKeys,
   transactions: transactionsQueryKeys,
+  traces: tracesQueryKeys,
   admin: {
     usage: adminUsageQueryKeys,
     users: adminUsersQueryClientKeys,

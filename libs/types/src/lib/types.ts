@@ -151,3 +151,45 @@ export type RateLimitReason =
   | 'premium-usage-exceeded'
   | 'requests'
   | 'tokens';
+
+/**
+ * Zod schema for OpenTelemetry trace data based on ClickHouse schema
+ */
+export const OtelTraceSchema = z.object({
+  // Core span fields
+  Timestamp: z.string(), // DateTime64(9) represented as ISO string
+  TraceId: z.string(),
+  SpanId: z.string(),
+  ParentSpanId: z.string(),
+  TraceState: z.string(),
+  SpanName: z.string(),
+  SpanKind: z.string(),
+  ServiceName: z.string(),
+
+  // Attributes
+  ResourceAttributes: z.record(z.string(), z.string()),
+  ScopeName: z.string(),
+  ScopeVersion: z.string(),
+  SpanAttributes: z.record(z.string(), z.string()),
+
+  // Metrics
+  Duration: z.number().int(),
+
+  // Status
+  StatusCode: z.string(),
+  StatusMessage: z.string(),
+
+  'Events.Name': z.array(z.string()),
+  'Events.Timestamp': z.array(z.string()),
+  'Events.Attributes': z.array(z.record(z.string(), z.string())),
+  // Links
+  Links: z.object({
+    TraceId: z.array(z.string()),
+    SpanId: z.array(z.string()),
+    TraceState: z.array(z.string()),
+    Attributes: z.array(z.record(z.string(), z.string())),
+  }),
+});
+
+// Type definition derived from the schema
+export type OtelTrace = z.infer<typeof OtelTraceSchema>;

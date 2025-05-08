@@ -13,6 +13,7 @@ import {
   RawInputContainer,
   Badge,
   InfoTooltip,
+  TabGroup,
 } from '@letta-cloud/ui-component-library';
 import { useTranslations } from '@letta-cloud/translations';
 import type { Step } from '@letta-cloud/sdk-core';
@@ -21,7 +22,9 @@ import { useFormatters } from '@letta-cloud/utils-client';
 import { webApi, webApiQueryKeys } from '@letta-cloud/sdk-web';
 import type { ModelTiersType } from '@letta-cloud/types';
 import { creditsToDollars } from '@letta-cloud/utils-shared';
-import { useCurrentAgentMetaData } from '../../hooks/useCurrentAgentMetaData/useCurrentAgentMetaData';
+import { useCurrentAgentMetaData } from '../../../hooks';
+import { TraceMetricsViewer } from './TraceMetricsViewer/TraceMetricsViewer';
+import { TraceViewer } from './TraceViewer/TraceViewer';
 
 interface StepBasicDetailsProps {
   step: Step;
@@ -190,15 +193,66 @@ interface StepDetailsViewerProps {
   step: Step;
 }
 
+type DetailViewTypes = 'general' | 'raw';
+
 function StepDetailsViewer(props: StepDetailsViewerProps) {
   const { step } = props;
 
   const { isLocal } = useCurrentAgentMetaData();
+  const { data: traceData } = webApi.traces.getTrace.useQuery({
+    queryKey: webApiQueryKeys.traces.getTrace(step.trace_id || ''),
+    queryData: {
+      params: {
+        traceId: step.trace_id || '',
+      },
+    },
+    enabled: !!step.trace_id,
+  });
+
+  const t = useTranslations('ADE/AgentSimulator/DetailedMessageView');
+
+  const [detailsView, setDetailsView] = useState<DetailViewTypes>('general');
 
   return (
-    <VStack padding>
-      <StepBasicDetails step={step} />
-      {!isLocal && <TransactionDetails stepId={step.id} />}
+    <VStack
+      paddingX
+      collapseHeight
+      flex
+      fullWidth
+      overflow="auto"
+      paddingTop="small"
+    >
+      {!isLocal && (
+        <TabGroup
+          variant="chips"
+          size="xxsmall"
+          value={detailsView}
+          onValueChange={(value) => {
+            setDetailsView(value as DetailViewTypes);
+          }}
+          items={[
+            {
+              label: t('tabs.general'),
+              value: 'general',
+            },
+            {
+              label: t('tabs.raw'),
+              value: 'raw',
+            },
+          ]}
+        />
+      )}
+      {detailsView === 'general' ? (
+        <>
+          <StepBasicDetails step={step} />
+          {!isLocal && <TransactionDetails stepId={step.id} />}
+          {!isLocal && traceData && (
+            <TraceMetricsViewer traces={traceData.body} />
+          )}
+        </>
+      ) : (
+        <TraceViewer traces={traceData?.body || []} />
+      )}
     </VStack>
   );
 }

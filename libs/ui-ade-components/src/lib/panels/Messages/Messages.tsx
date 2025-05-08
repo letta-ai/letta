@@ -52,7 +52,7 @@ import { useGetMessagesWorker } from './useGetMessagesWorker/useGetMessagesWorke
 import { useCurrentDevelopmentServerConfig } from '@letta-cloud/utils-client';
 import { CURRENT_RUNTIME } from '@letta-cloud/config-runtime';
 import { useFeatureFlag } from '@letta-cloud/sdk-web';
-import { DetailedMessageView } from './DetailedMessageView';
+import { DetailedMessageView } from './DetailedMessageView/DetailedMessageView';
 
 // tryFallbackParseJson will attempt to parse a string as JSON, if it fails, it will trim the last character and try again
 // until it succeeds or the string is empty

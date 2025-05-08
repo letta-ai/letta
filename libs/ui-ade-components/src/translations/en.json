@@ -774,6 +774,10 @@
     "trigger": "View details",
     "title": "Message Details",
     "loading": "Loading message details...",
+    "tabs": {
+      "general": "General",
+      "raw": "Raw Traces"
+    },
     "TransactionDetails": {
       "title": "Transaction details",
       "transactionId": "Transaction ID",
@@ -800,6 +804,13 @@
       "promptTokens": "Prompt tokens",
       "totalTokens": "Total tokens",
       "completionTokens": "Completion tokens"
+    }
+  },
+  "ADE/AgentSimulator/TraceMetricsViewer": {
+    "title": "Metrics",
+    "timeToFirstToken": {
+      "label": "Time to first token",
+      "time": "{time} s"
     }
   },
   "ADE/AgentSimulator": {
