@@ -1,0 +1,30 @@
+---
+title: Logging Telemetry 
+slug: guides/server/otel 
+---
+
+Letta uses [Clickhouse](https://clickhouse.com/) to store telemetry. Clickhouse is a database optimized for storing logs and traces. Traces can be used to view raw requests to LLM providers and also understand your agent's system performance metrics. 
+
+## Configuring Clickhouse
+You will need to have a Clickhouse DB (either running locally or with [Clickhouse Cloud](https://console.clickhouse.cloud/)) to connect to Letta. 
+
+You can configure Clickhouse by passing the required enviornment variables: 
+```sh
+docker run \
+  -v ~/.letta/.persist/pgdata:/var/lib/postgresql/data \
+  -p 8283:8283 \
+  ...
+  -e CLICKHOUSE_ENDPOINT=${CLICKHOUSE_ENDPOINT} \
+  -e CLICKHOUSE_DATABASE=${CLICKHOUSE_DATABASE} \
+  -e CLICKHOUSE_USERNAME=${CLICKHOUSE_USERNAME} \
+  -e CLICKHOUSE_PASSWORD=${CLICKHOUSE_PASSWORD} \
+  letta/letta:latest
+```
+
+### Finding your credentials in Clickhouse Cloud
+You can find these variable inside of Clickhouse Cloud by selecting the "Connection" button in the dashboard. 
+
+<img src="/images/clickhouse_config.png" />
+
+## Connecting to Grafana 
+We recommend connecting Clickhouse to Grafana to query and view traces. 

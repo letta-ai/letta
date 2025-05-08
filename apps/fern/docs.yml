@@ -165,6 +165,8 @@ navigation:
               path: pages/server/pip.mdx
             - page: Installing from Source
               path: pages/server/source.mdx
+          - page: Telemetry 
+            path: pages/deployment/telemetry.mdx
       - section: Agent Templates
         contents:
           - page: Introduction to Templates
