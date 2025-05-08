@@ -333,7 +333,7 @@ function IdentitiesEditorDialog(props: IdentitiesEditorDialogProps) {
           data-testid="update-identities"
           hideLabel
           preIcon={<GroupIcon />}
-          color="secondary"
+          color="tertiary"
           label={t('IdentitiesEditorDialog.trigger')}
         />
       }
@@ -676,7 +676,7 @@ export function AgentSettingsPanel() {
                 hideLabel
                 data-testid="update-agent-name-button"
                 preIcon={<EditIcon />}
-                color="secondary"
+                color="tertiary"
                 label={t('agentName.edit', { baseName })}
               />
             }
