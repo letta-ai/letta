@@ -3,6 +3,9 @@ instances:
     custom-domain: https://docs.letta.com
 title: Letta
 
+experimental:
+  openapi-parser-v3: true
+
 tabs:
   docs:
     display-name: Documentation
@@ -72,7 +75,7 @@ navigation:
         contents:
           - page: Overview
             path: pages/agents/overview.mdx
-          - page: Context & Memory Management 
+          - page: Context & Memory Management
             path: pages/agents/memory.mdx
           - section: Tools
             path: pages/agents/tools.mdx
@@ -103,9 +106,9 @@ navigation:
           - page: Sleep-time Agents
             path: pages/agents/sleeptime.mdx
             icon: fa-sharp fa-light fa-snooze
-      - section: Tool Execution  
+      - section: Tool Execution
         contents:
-          - page: Overview 
+          - page: Overview
             path: pages/tool_execution/overview.mdx
           - page: Configuring tool execution
             path: pages/tool_execution/local_tool_execution.mdx
