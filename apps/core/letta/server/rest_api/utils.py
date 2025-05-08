@@ -72,7 +72,7 @@ async def sse_async_generator(
     ttft_span = None
     if request_start_timestamp_ns is not None:
         ttft_span = tracer.start_span("time_to_first_token", start_time=request_start_timestamp_ns)
-        ttft_span.set_attributes({f"llm_config.{k}": v for k, v in llm_config.model_dump().items()})
+        ttft_span.set_attributes({f"llm_config.{k}": v for k, v in llm_config.model_dump().items() if v is not None})
 
     try:
         async for chunk in generator:
