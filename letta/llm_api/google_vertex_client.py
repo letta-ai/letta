@@ -207,12 +207,12 @@ class GoogleVertexClient(GoogleAIClient):
 
                             # NOTE: this also involves stripping the inner monologue out of the function
                             if llm_config.put_inner_thoughts_in_kwargs:
-                                from letta.local_llm.constants import INNER_THOUGHTS_KWARG
+                                from letta.local_llm.constants import INNER_THOUGHTS_KWARG_VERTEX
 
                                 assert (
-                                    INNER_THOUGHTS_KWARG in function_args
+                                    INNER_THOUGHTS_KWARG_VERTEX in function_args
                                 ), f"Couldn't find inner thoughts in function args:\n{function_call}"
-                                inner_thoughts = function_args.pop(INNER_THOUGHTS_KWARG)
+                                inner_thoughts = function_args.pop(INNER_THOUGHTS_KWARG_VERTEX)
                                 assert inner_thoughts is not None, f"Expected non-null inner thoughts function arg:\n{function_call}"
                             else:
                                 inner_thoughts = None
@@ -233,7 +233,7 @@ class GoogleVertexClient(GoogleAIClient):
                                 ],
                             )
 
-                        except:
+                        except json.decoder.JSONDecodeError:
                             # Inner thoughts are the content by default
                             inner_thoughts = response_message.text
 

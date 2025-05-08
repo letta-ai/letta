@@ -5,6 +5,7 @@ import requests
 from openai import OpenAI
 
 from letta.constants import LETTA_MODEL_ENDPOINT
+from letta.errors import ErrorCode, LLMAuthenticationError, LLMError
 from letta.helpers.datetime_helpers import timestamp_to_datetime
 from letta.llm_api.helpers import add_inner_thoughts_to_functions, convert_to_structured_output, make_post_request
 from letta.llm_api.openai_client import accepts_developer_role, supports_parallel_tool_calling, supports_temperature_param
@@ -32,6 +33,21 @@ from letta.tracing import log_event
 from letta.utils import get_tool_call_id, smart_urljoin
 
 logger = get_logger(__name__)
+
+
+def openai_check_valid_api_key(base_url: str, api_key: Union[str, None]) -> None:
+    if api_key:
+        try:
+            # just get model list to check if the api key is valid until we find a cheaper / quicker endpoint
+            openai_get_model_list(url=base_url, api_key=api_key)
+        except requests.HTTPError as e:
+            if e.response.status_code == 401:
+                raise LLMAuthenticationError(message=f"Failed to authenticate with OpenAI: {e}", code=ErrorCode.UNAUTHENTICATED)
+            raise e
+        except Exception as e:
+            raise LLMError(message=f"{e}", code=ErrorCode.INTERNAL_SERVER_ERROR)
+    else:
+        raise ValueError("No API key provided")
 
 
 def openai_get_model_list(

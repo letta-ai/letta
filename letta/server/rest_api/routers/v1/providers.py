@@ -3,9 +3,10 @@ from typing import TYPE_CHECKING, List, Optional
 from fastapi import APIRouter, Body, Depends, Header, HTTPException, Query, status
 from fastapi.responses import JSONResponse
 
+from letta.errors import LLMAuthenticationError
 from letta.orm.errors import NoResultFound
 from letta.schemas.enums import ProviderType
-from letta.schemas.providers import Provider, ProviderCreate, ProviderUpdate
+from letta.schemas.providers import Provider, ProviderCheck, ProviderCreate, ProviderUpdate
 from letta.server.rest_api.utils import get_letta_server
 
 if TYPE_CHECKING:
@@ -47,7 +48,8 @@ def create_provider(
     """
     actor = server.user_manager.get_user_or_default(user_id=actor_id)
 
-    provider = Provider(**request.model_dump())
+    provider = ProviderCreate(**request.model_dump())
+
     provider = server.provider_manager.create_provider(provider, actor=actor)
     return provider
 
@@ -63,7 +65,23 @@ def modify_provider(
     Update an existing custom provider
     """
     actor = server.user_manager.get_user_or_default(user_id=actor_id)
-    return server.provider_manager.update_provider(provider_id=provider_id, request=request, actor=actor)
+    return server.provider_manager.update_provider(provider_id=provider_id, provider_update=request, actor=actor)
+
+
+@router.get("/check", response_model=None, operation_id="check_provider")
+def check_provider(
+    provider_type: ProviderType = Query(...),
+    api_key: str = Header(..., alias="x-api-key"),
+    server: "SyncServer" = Depends(get_letta_server),
+):
+    try:
+        provider_check = ProviderCheck(provider_type=provider_type, api_key=api_key)
+        server.provider_manager.check_provider_api_key(provider_check=provider_check)
+        return JSONResponse(status_code=status.HTTP_200_OK, content={"message": f"Valid api key for provider_type={provider_type.value}"})
+    except LLMAuthenticationError as e:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=f"{e.message}")
+    except Exception as e:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"{e}")
 
 
 @router.delete("/{provider_id}", response_model=None, operation_id="delete_provider")
