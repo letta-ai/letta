@@ -6,3 +6,10 @@ export interface MigrateAgentsPayload {
   coreUserId: string;
   organizationId: string;
 }
+
+export interface DeleteExpiredTokensAndUsersResult {
+  expiredTokens: number;
+  deletedTokens: number;
+  deletedUsers: number;
+  failedUserIds: string[];
+}
