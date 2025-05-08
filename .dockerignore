@@ -7,3 +7,4 @@
 .gitignore
 .env
 *.log
+.persist

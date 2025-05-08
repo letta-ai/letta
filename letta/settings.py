@@ -1,3 +1,4 @@
+from dotenv import load_dotenv
 import os
 from pathlib import Path
 from typing import Optional
@@ -7,6 +8,8 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 from letta.local_llm.constants import DEFAULT_WRAPPER_NAME
 
+# Load .env file before Settings class is instantiated
+load_dotenv()
 
 class ToolSettings(BaseSettings):
     composio_api_key: Optional[str] = None
