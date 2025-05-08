@@ -125,7 +125,6 @@ function EnterMemoryVariablesView(props: MemoryVariablesViewProps) {
         <Typography>{t('EnterMemoryVariablesView.title')}</Typography>
         {memoryVariableData.map((variable, index) => (
           <RawInput
-            labelVariant="simple"
             key={index}
             fullWidth
             label={capitalize(variable.key)}

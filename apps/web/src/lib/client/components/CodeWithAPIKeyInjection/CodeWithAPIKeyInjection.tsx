@@ -42,7 +42,6 @@ export function CodeWithAPIKeyInjection(props: CodeWithAPIKeyInjectionProps) {
           {isLoading && showAPIKeysInCode && <LettaLoader size="small" />}
           <RawSwitch
             labelFontVariant="body3"
-            labelVariant="simple"
             size="small"
             data-testid="show-api-key-switch"
             label={t('showAPIKey')}

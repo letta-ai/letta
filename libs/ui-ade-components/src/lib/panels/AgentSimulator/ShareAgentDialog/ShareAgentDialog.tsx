@@ -119,7 +119,6 @@ function ShareAgentPermissionsDropdown(
 
   return (
     <RawSelect
-      labelVariant="simple"
       fullWidth
       label={t('ShareAgentDialog.generalAccess.title')}
       options={generalAccessOptions}

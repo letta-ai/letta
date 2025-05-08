@@ -342,7 +342,6 @@ function IdentitiesEditorDialog(props: IdentitiesEditorDialogProps) {
     >
       <VStack gap="large">
         <RawAsyncSelect
-          labelVariant="simple"
           fullWidth
           value={[]}
           hideLabel

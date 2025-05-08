@@ -60,7 +60,6 @@ export function CloudAccessCodeDialog() {
           name="accessCode"
           render={({ field }) => (
             <Input
-              labelVariant="simple"
               fullWidth
               hideLabel
               placeholder="Access Code"

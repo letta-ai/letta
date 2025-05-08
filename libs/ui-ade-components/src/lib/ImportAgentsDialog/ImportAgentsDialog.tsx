@@ -83,7 +83,6 @@ function AgentsDialogSidebar(props: AgentsDialogSidebarProps) {
                 infoTooltip={{
                   text: t('AgentsDialogSidebar.appendCopySuffix.info'),
                 }}
-                labelVariant="simple"
                 label={t('AgentsDialogSidebar.appendCopySuffix.label')}
                 onCheckedChange={field.onChange}
                 checked={field.value}
@@ -98,7 +97,6 @@ function AgentsDialogSidebar(props: AgentsDialogSidebarProps) {
                 infoTooltip={{
                   text: t('AgentsDialogSidebar.overrideExistingTools.info'),
                 }}
-                labelVariant="simple"
                 label={t('AgentsDialogSidebar.overrideExistingTools.label')}
                 onCheckedChange={field.onChange}
                 checked={field.value}
@@ -114,7 +112,6 @@ function AgentsDialogSidebar(props: AgentsDialogSidebarProps) {
                   infoTooltip={{
                     text: t('AgentsDialogSidebar.importAsTemplate.info'),
                   }}
-                  labelVariant="simple"
                   label={t('AgentsDialogSidebar.importAsTemplate.label')}
                   onCheckedChange={field.onChange}
                   checked={field.value}

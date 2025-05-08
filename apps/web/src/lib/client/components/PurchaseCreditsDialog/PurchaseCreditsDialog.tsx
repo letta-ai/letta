@@ -223,7 +223,6 @@ function PurchaseCreditsForm(props: PurchaseCreditsFormProps) {
                 render={({ field }) => (
                   <>
                     <RadioGroup
-                      labelVariant="simple"
                       label={t('amount.label')}
                       fullWidth
                       value={field.value}

@@ -82,7 +82,6 @@ export function ConfigureExternalDatabaseStep(
                   return (
                     <Input
                       fullWidth
-                      labelVariant="simple"
                       label={t(
                         'ConfigureExternalDatabaseStep.step.databaseName.label',
                       )}
@@ -101,7 +100,6 @@ export function ConfigureExternalDatabaseStep(
                     return (
                       <Input
                         fullWidth
-                        labelVariant="simple"
                         label={t(
                           'ConfigureExternalDatabaseStep.step.username.label',
                         )}
@@ -120,7 +118,6 @@ export function ConfigureExternalDatabaseStep(
                     return (
                       <Input
                         fullWidth
-                        labelVariant="simple"
                         label={t(
                           'ConfigureExternalDatabaseStep.step.password.label',
                         )}
@@ -142,7 +139,6 @@ export function ConfigureExternalDatabaseStep(
                     return (
                       <Input
                         fullWidth
-                        labelVariant="simple"
                         label={t(
                           'ConfigureExternalDatabaseStep.step.host.label',
                         )}
@@ -160,7 +156,6 @@ export function ConfigureExternalDatabaseStep(
                   render={({ field }) => {
                     return (
                       <Input
-                        labelVariant="simple"
                         label={t(
                           'ConfigureExternalDatabaseStep.step.port.label',
                         )}

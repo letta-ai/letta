@@ -146,7 +146,6 @@ function DeleteIdentityDialog(props: DeleteIdentityDialogProps) {
             name="name"
             render={({ field }) => (
               <Input
-                labelVariant="simple"
                 placeholder={name}
                 fullWidth
                 {...field}

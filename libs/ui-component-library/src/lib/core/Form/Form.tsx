@@ -156,8 +156,6 @@ function FormItem({ children }: FormItemProps) {
   );
 }
 
-type LabelVariant = 'default' | 'simple';
-
 interface InputContainerHeaderProps {
   preLabelIcon?: React.ReactNode;
   labelBadge?: React.ReactNode;
@@ -166,39 +164,17 @@ interface InputContainerHeaderProps {
     text: string;
   };
   label: string;
-  variant?: LabelVariant;
 }
 
 function InputContainerHeader(props: InputContainerHeaderProps) {
-  const {
-    preLabelIcon,
-    labelBadge,
-    label,
-    labelFontVariant,
-    infoTooltip,
-    variant = 'default',
-  } = props;
-
-  const typographyVariant = useMemo(() => {
-    let tv: TypographyProps['variant'] = 'body2';
-
-    if (variant === 'simple') {
-      tv = 'body';
-    }
-
-    return labelFontVariant || tv;
-  }, [labelFontVariant, variant]);
+  const { preLabelIcon, labelBadge, label, labelFontVariant, infoTooltip } =
+    props;
 
   return (
     <HStack>
       <HStack gap="small" align="center">
         {preLabelIcon && <Slot className="h-3">{preLabelIcon}</Slot>}
-        <Typography
-          align="left"
-          className={variant === 'simple' ? 'leading-[1.35]' : ''}
-          variant={typographyVariant}
-          color={variant === 'default' ? 'lighter' : 'default'}
-        >
+        <Typography align="left" variant={labelFontVariant} color={'default'}>
           {label}
         </Typography>
         {labelBadge}
@@ -214,7 +190,6 @@ export interface InputContainerProps {
   labelFontVariant?: 'body' | 'body2' | 'body3' | 'body4';
   preLabelIcon?: React.ReactNode;
   labelBadge?: React.ReactNode;
-  labelVariant?: LabelVariant;
   hideInput?: boolean;
   hideLabel?: boolean;
   description?: React.ReactNode | string;
@@ -238,7 +213,6 @@ export function InputContainer(props: InputContainerProps) {
     fullWidth,
     fullHeight,
     labelBadge,
-    labelVariant,
     flex,
     description,
     inline,
@@ -264,7 +238,6 @@ export function InputContainer(props: InputContainerProps) {
             >
               <FormLabel>
                 <InputContainerHeader
-                  variant={labelVariant}
                   preLabelIcon={preLabelIcon}
                   labelFontVariant={labelFontVariant}
                   labelBadge={labelBadge}
@@ -310,7 +283,6 @@ export function RawInputContainer(props: RawInputContainerProps) {
     collapseHeight,
     description,
     children,
-    labelVariant,
     infoTooltip,
     rightOfLabelContent,
   } = props;
@@ -338,7 +310,6 @@ export function RawInputContainer(props: RawInputContainerProps) {
                 labelBadge={labelBadge}
                 labelFontVariant={labelFontVariant}
                 label={label}
-                variant={labelVariant}
                 infoTooltip={infoTooltip}
               />
             </LabelPrimitive>
@@ -379,7 +350,6 @@ const omitProps = [
   'rightOfLabelContent',
   'infoTooltip',
   'errorMessage',
-  'labelVariant',
   'labelBadge',
 ];
 

@@ -572,7 +572,6 @@ function ConditionalToolEditor(props: ConditionalToolEditorProps) {
             render={({ field }) => (
               <HStack align="center">
                 <Checkbox
-                  labelVariant="simple"
                   label={t('ConditionalToolEditor.requireOutputMapping')}
                   onCheckedChange={field.onChange}
                   checked={field.value}

@@ -354,29 +354,6 @@ function BillingOverview() {
           </HStack>
         </VStack>
       </Section>
-      {/*<Section*/}
-      {/*  borderBottom*/}
-      {/*  title={t('BillingOverview.Preferences.title')}*/}
-      {/*>*/}
-      {/*  <VStack>*/}
-      {/*    <HStack>*/}
-      {/*      <Badge variant="info" content={t('BillingOverview.Preferences.preferences.comingSoon')} />*/}
-      {/*    </HStack>*/}
-      {/*    <RawSwitch*/}
-      {/*      disabled*/}
-      {/*      description={t('BillingOverview.Preferences.preferences.autoReload.description')}*/}
-      {/*      labelVariant="simple" fullWidth  label={t('BillingOverview.Preferences.preferences.autoReload.label')} />*/}
-      {/*  </VStack>*/}
-      {/*  <VStack>*/}
-      {/*    <HStack>*/}
-      {/*      <Badge variant="info" content={t('BillingOverview.Preferences.preferences.comingSoon')} />*/}
-      {/*    </HStack>*/}
-      {/*    <RawSwitch*/}
-      {/*      disabled*/}
-      {/*      description={t('BillingOverview.Preferences.preferences.emailAlert.description')}*/}
-      {/*      labelVariant="simple" fullWidth  label={t('BillingOverview.Preferences.preferences.emailAlert.label')} />*/}
-      {/*  </VStack>*/}
-      {/*</Section>*/}
     </VStack>
   );
 }

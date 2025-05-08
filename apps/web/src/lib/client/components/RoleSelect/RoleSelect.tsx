@@ -42,5 +42,5 @@ export function RoleSelect(
       .filter((role) => role.value !== 'custom');
   }, [getLabelForRole]);
 
-  return <Select {...props} labelVariant="simple" options={roleOptions} />;
+  return <Select {...props} options={roleOptions} />;
 }

@@ -195,7 +195,6 @@ function LaunchLinkConfiguration(props: LaunchLinkConfigurationProps) {
             render={({ field }) => (
               <Select
                 fullWidth
-                labelVariant="simple"
                 rightOfLabelContent={
                   isPending ? <Spinner size="xsmall" /> : null
                 }
@@ -253,7 +252,6 @@ export function LaunchLinks() {
             defaultAccessLevel={launchLinkConfig.body.accessLevel}
           />
           <RawInput
-            labelVariant="simple"
             label={t('link.label')}
             value={getLaunchLinkUrl(launchLinkConfig.body.launchLink)}
             fullWidth

@@ -110,7 +110,6 @@ function FormFields(props: FormFieldsProps) {
             return (
               <TextArea
                 {...field}
-                labelVariant="simple"
                 autosize
                 minRows={4}
                 rows={3}
@@ -127,7 +126,6 @@ function FormFields(props: FormFieldsProps) {
             return (
               <Checkbox
                 size="large"
-                labelVariant="simple"
                 checked={field.value}
                 description={t.rich('VersionAgentDialog.migrateDescription', {
                   link: (chunks) => (

@@ -122,7 +122,6 @@ function AddStdioServerForm(props: AddStdioServerFormProps) {
             name="name"
             render={({ field }) => (
               <Input
-                labelVariant="simple"
                 fullWidth
                 {...field}
                 description={t('AddServerDialog.name.description')}
@@ -135,7 +134,6 @@ function AddStdioServerForm(props: AddStdioServerFormProps) {
             name="command"
             render={({ field }) => (
               <Input
-                labelVariant="simple"
                 fullWidth
                 {...field}
                 label={t('AddServerDialog.command.label')}
@@ -148,7 +146,6 @@ function AddStdioServerForm(props: AddStdioServerFormProps) {
             name="args"
             render={({ field }) => (
               <Input
-                labelVariant="simple"
                 fullWidth
                 {...field}
                 label={t('AddServerDialog.args.label')}
@@ -252,7 +249,6 @@ function AddSSEServerForm(props: AddStdioServerFormProps) {
             render={({ field }) => (
               <Input
                 fullWidth
-                labelVariant="simple"
                 {...field}
                 description={t('AddServerDialog.name.description')}
                 placeholder={t('AddServerDialog.name.placeholder')}
@@ -265,7 +261,6 @@ function AddSSEServerForm(props: AddStdioServerFormProps) {
             render={({ field }) => (
               <Input
                 fullWidth
-                labelVariant="simple"
                 {...field}
                 label={t('AddServerDialog.serverUrl.label')}
                 placeholder={t('AddServerDialog.serverUrl.placeholder')}

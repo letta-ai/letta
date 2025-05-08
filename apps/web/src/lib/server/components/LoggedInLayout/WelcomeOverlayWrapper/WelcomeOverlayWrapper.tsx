@@ -177,7 +177,6 @@ export function WelcomeOverlayWrapper(props: WelcomeOverlayWrapperProps) {
                     render={({ field }) => {
                       return (
                         <ChipSelect
-                          labelVariant="simple"
                           onChange={(value) => {
                             field.onChange(value);
                           }}
@@ -220,7 +219,6 @@ export function WelcomeOverlayWrapper(props: WelcomeOverlayWrapperProps) {
                     render={({ field }) => {
                       return (
                         <ChipSelect
-                          labelVariant="simple"
                           onChange={(value) => {
                             field.onChange(value);
                           }}
@@ -271,7 +269,6 @@ export function WelcomeOverlayWrapper(props: WelcomeOverlayWrapperProps) {
                     render={({ field }) => {
                       return (
                         <Checkbox
-                          labelVariant="simple"
                           label={t('emailConsent.label')}
                           onCheckedChange={field.onChange}
                           checked={field.value}

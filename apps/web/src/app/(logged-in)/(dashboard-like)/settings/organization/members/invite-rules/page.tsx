@@ -144,7 +144,6 @@ function AddInviteRuleDialog() {
           name="domain"
           render={({ field }) => (
             <Select
-              labelVariant="simple"
               label={t('AddInviteRuleDialog.domain.label')}
               placeholder={t('AddInviteRuleDialog.domain.placeholder')}
               value={field.value}

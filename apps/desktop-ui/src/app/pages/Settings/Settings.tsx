@@ -145,7 +145,6 @@ function EditDatabaseSettingsDialog(props: EditDatabaseSettingsDialogProps) {
 
             return (
               <ChipSelect
-                labelVariant="simple"
                 label={t('DatabaseSettings.type')}
                 isMultiSelect={false}
                 onChange={(value) => {
@@ -172,7 +171,6 @@ function EditDatabaseSettingsDialog(props: EditDatabaseSettingsDialogProps) {
             return (
               <Input
                 disabled={type !== 'external'}
-                labelVariant="simple"
                 fullWidth
                 label={t('EditDatabaseSettingsDialog.connectionString.label')}
                 {...field}

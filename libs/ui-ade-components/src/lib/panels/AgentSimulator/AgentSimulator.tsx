@@ -642,7 +642,6 @@ function AgentResetMessagesDialog() {
             name="addDefaultInitialMessages"
             render={({ field }) => (
               <Checkbox
-                labelVariant="simple"
                 label={t('AgentResetMessagesDialog.addDefaultInitialMessages')}
                 onCheckedChange={field.onChange}
                 checked={field.value}
