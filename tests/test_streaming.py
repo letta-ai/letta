@@ -23,6 +23,7 @@ def run_server():
 )
 def client(request):
     # Get URL from environment or start server
+    api_url = os.getenv("LETTA_API_URL")
     server_url = os.getenv("LETTA_SERVER_URL", f"http://localhost:8283")
     if not os.getenv("LETTA_SERVER_URL"):
         print("Starting server thread")
@@ -31,8 +32,10 @@ def client(request):
         time.sleep(5)
     print("Running client tests with server:", server_url)
 
+    # Overide the base_url if the LETTA_API_URL is set
+    base_url = api_url if api_url else server_url
     # create the Letta client
-    yield Letta(base_url=server_url, token=None)
+    yield Letta(base_url=base_url, token=None)
 
 
 # Fixture for test agent
