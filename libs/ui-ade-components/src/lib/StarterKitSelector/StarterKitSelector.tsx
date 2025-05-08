@@ -53,7 +53,6 @@ function ArchitectureSelector(props: ArchitectureSelectorProps) {
         <InfoTooltip text={t('ArchitectureSelector.description')} />
       </HStack>
       <TabGroup
-        extendBorder
         color="brand"
         size="small"
         variant="chips"
