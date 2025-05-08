@@ -1025,3 +1025,7 @@ tests/test_tool_sandbox/restaurant_management_system/venv
 
 ## custom scripts
 test
+
+## benchmark results
+benchmark_results.csv
+benchmarks/**/*.csv
