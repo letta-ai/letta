@@ -3,9 +3,12 @@ set windows-shell := ["powershell.exe", "-NoLogo", "-Command"]
 
 PROJECT_NAME := "memgpt-428419"
 REGION := "us-central1"
-CLUSTER_CONTEXT := `kubectl config get-contexts | grep \* | awk '{print $2}' | awk -v FS=_ '{print $4}'`
+HAS_KUBECTL := `command -v kubectl || echo ""`
+CLUSTER_CONTEXT := if HAS_KUBECTL=="" { "letta-dev-us-central1" } else { `kubectl config get-contexts | grep \* | awk '{print $2}' | awk -v FS=_ '{print $4}'` }
 REGISTRY_NAME := if CLUSTER_CONTEXT == "letta-dev-us-central1" { "letta-dev-us-central1" } else { "letta" }
 DOCKER_REGISTRY := REGION + "-docker.pkg.dev/" + PROJECT_NAME + "/" + REGISTRY_NAME
+SYSTEM_ARCH := `uname -m`
+BUILD_ARCH := if SYSTEM_ARCH == "x86_64" { "amd64" } else { "arm64" }
 HELM_CHARTS_DIR := "helm"
 WEB_HELM_CHART_NAME := "letta-web"
 CORE_HELM_CHART_NAME := "memgpt-server"
@@ -217,7 +220,7 @@ trigger-cloud-api-deploy branch="" deploy_message="":
 
 build-cloud-api:
     @echo "🚧 Building cloud API Docker image with tag: {{TAG}}..."
-    docker buildx build --platform linux/amd64 --target cloud-api -t {{DOCKER_REGISTRY}}/cloud-api:{{TAG}} . --load --file apps/cloud-api/Dockerfile
+    docker buildx build --platform linux/{{BUILD_ARCH}} --target cloud-api -t {{DOCKER_REGISTRY}}/cloud-api:{{TAG}} . --load --file apps/cloud-api/Dockerfile
 
 push-cloud-api:
     @echo "🚀 Pushing Docker images to registry with tag: {{TAG}}..."

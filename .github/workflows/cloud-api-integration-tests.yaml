@@ -1,0 +1,231 @@
+name: Run cloud-api integration tests
+
+permissions:
+  actions: read
+  contents: read
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'apps/web/**'
+      - 'apps/core/**'
+      - 'libs/**'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'tsconfig.json'
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  changed-files:
+    runs-on: ubuntu-latest
+    name: changed-files
+    outputs:
+      all_changed_files: ${{ steps.changed-files.outputs.all_changed_files }}
+      any_changed: ${{ steps.changed-files.outputs.any_changed }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Get changed files
+        id: changed-files
+        uses: tj-actions/changed-files@v44
+        with:
+          files: |
+            .github/workflows/cloud-api-integration-tests.yaml
+            apps/cloud-api/**
+
+  cloud-api-integration-tests:
+    if: ${{ needs.changed-files.outputs.any_changed == 'true' }}
+    needs: [changed-files]
+    permissions:
+      actions: read
+      contents: read
+      id-token: write
+    runs-on: ubuntu-latest
+    services:
+      redis:
+        image: redis
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+      postgres-web:
+        image: postgres
+        ports:
+          - 5433:5432
+        env:
+          POSTGRES_DB: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_USER: postgres
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+      postgres-core:
+        image: pgvector/pgvector:pg17
+        ports:
+          - 5432:5432
+        env:
+          POSTGRES_HOST_AUTH_METHOD: trust
+          POSTGRES_DB: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_USER: postgres
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.inputs.git_hash || github.event.inputs.branch || github.sha }}
+          submodules: recursive
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: '.nvmrc'
+      - name: Restore node_modules cache if exist
+        id: cache-nodemodules
+        uses: actions/cache@v4
+        env:
+          cache-name: cache-node-modules-${{ env.node-version }}
+        with:
+          path: node_modules
+          key: ${{ runner.os }}-${{ env.cache-name }}-${{ hashFiles('package-lock.json') }}
+      - name: Restore nextjs cache if exist
+        id: cache-nextjs
+        uses: actions/cache@v4
+        env:
+          cache-name: cache-nextjs-${{ env.node-version }}
+        with:
+          path: apps/web/.next/cache
+          key: ${{ runner.os }}-${{ env.cache-name }}-${{ hashFiles('package-lock.json') }}
+      - name: Restore NPM cache if exist
+        id: cache-npm
+        uses: actions/cache@v4
+        env:
+          cache-name: cache-npm-${{ env.node-version }}
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-${{ env.cache-name }}
+      - name: Set up python 3.12
+        id: setup-python
+        uses: actions/setup-python@v5
+        with:
+          python-version: 3.12
+      - name: Load cached Poetry Binary
+        id: cached-poetry-binary
+        uses: actions/cache@v4
+        with:
+          path: ~/.local
+          key: venv-${{ runner.os }}-${{ steps.setup-python.outputs.python-version }}-1.8.3
+      - name: Install Poetry
+        uses: snok/install-poetry@v1
+        with:
+          version: 1.8.3
+          virtualenvs-create: true
+          virtualenvs-in-project: true
+      - name: Load cached venv
+        id: cached-poetry-dependencies
+        uses: actions/cache@v4
+        with:
+          path: apps/core/.venv
+          key: venv-${{ runner.os }}-${{ steps.setup-python.outputs.python-version }}-${{ hashFiles('apps/core/**/poetry.lock') }}${{ inputs.install-args || '-E dev -E postgres -E external-tools -E tests -E cloud-tool-sandbox' }}
+          restore-keys: |
+            venv-${{ runner.os }}-${{ steps.setup-python.outputs.python-version }}-
+      - name: Install just
+        run: curl -LSs https://just.systems/install.sh | sudo bash -s -- --to /usr/local/bin/
+      - name: Install python dependencies
+        if: steps.cached-poetry-dependencies.outputs.cache-hit != 'true'
+        shell: bash
+        working-directory: apps/core
+        run: poetry install --no-interaction --no-root ${{ inputs.install-args || '-E dev -E postgres -E external-tools -E tests -E cloud-tool-sandbox' }}
+      - name: Migrate core database
+        working-directory: apps/core
+        env:
+          LETTA_PG_PORT: 5432
+          LETTA_PG_USER: postgres
+          LETTA_PG_PASSWORD: postgres
+          LETTA_PG_DB: postgres
+          LETTA_PG_HOST: localhost
+        run: |
+          psql -h localhost -U postgres -d postgres -c 'CREATE EXTENSION vector'
+          poetry run alembic upgrade head
+      - name: Turn on Letta agents on main branch
+        working-directory: apps/core
+        env:
+          LETTA_PG_PORT: 5432
+          LETTA_PG_USER: postgres
+          LETTA_PG_PASSWORD: postgres
+          LETTA_PG_DB: postgres
+          LETTA_PG_HOST: localhost
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        run: poetry run letta server &
+      - name: Install Dependencies
+        if: steps.cache-nodemodules.outputs.cache-hit != 'true'
+        run: npm ci
+      - name: Migrate web database
+        env:
+          DATABASE_URL: postgres://postgres:postgres@localhost:5433/postgres
+        run: npm run web:database:migrate
+      - name: Cache npm dependencies
+        id: cache-main
+        uses: actions/cache@v3
+        with:
+          path: ./apps/cloud-api/node_modules
+          key: modules-${{ hashFiles('./apps/cloud-api/package-lock.json') }}
+      - name: Install deps
+        working-directory: apps/cloud-api
+        run: just setup-cloud-api
+      - name: Turn on cloud-api
+        working-directory: apps/cloud-api
+        run: just cloud-api > cloud-api.log 2>&1 &
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          DATABASE_URL: postgres://postgres:postgres@localhost:5433/postgres
+          REDIS_HOST: localhost
+          REDIS_PORT: 6379
+          NODE_OPTIONS: --max_old_space_size=4096
+          CLOUD_API_ENDPOINT: http://localhost:3006
+          STRIPE_SECRET_KEY: ${{ secrets.STRIPE_DEV_SECRET_KEY }}
+          NEXT_PUBLIC_STRIPE_PUBLISH_KEY: ${{ secrets.NEXT_PUBLIC_STRIPE_DEV_PUBLISH_KEY }}
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+          LETTA_AGENTS_ENDPOINT: http://localhost:8283
+          NEXT_PUBLIC_CURRENT_HOST: http://localhost:3000
+          IS_CYPRESS_RUN: yes
+          IS_API_STABILITY_TEST: yes
+          USE_FAKE_USER: yes
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+      - name: Run tests with pytest
+        env:
+          LETTA_PG_PORT: 5432
+          LETTA_PG_USER: postgres
+          LETTA_PG_PASSWORD: postgres
+          LETTA_PG_DB: postgres
+          LETTA_PG_HOST: localhost
+          LETTA_SERVER_PASS: test_server_token
+          LETTA_SERVER_URL: http://localhost:8283
+          LETTA_API_URL: http://localhost:3006
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          PYTHONPATH: ${{ github.workspace }}:${{ env.PYTHONPATH }}
+        run: |
+          cd apps/core
+          pipx install poetry==1.8.2
+          poetry install -E dev -E postgres
+          poetry run pytest -s tests/test_client.py
+          poetry run pytest -s tests/test_streaming.py
+          poetry run pytest -s tests/sdk/
+      - name: Save cloud-api log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          path: apps/cloud-api/cloud-api.log
+          name: cloud-api-log

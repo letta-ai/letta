@@ -6,7 +6,10 @@
 
 import type { NextFunction, Request, Response } from 'express';
 import pathToRegexp from 'path-to-regexp';
-import { findProjectBySlugOrId } from '@letta-cloud/utils-server';
+import {
+  findProjectBySlugOrId,
+  getDefaultProject,
+} from '@letta-cloud/utils-server';
 
 // agents route is handled in the agentsRouter itself
 const agentsRoute = pathToRegexp('/v1/agents');
@@ -19,6 +22,11 @@ export async function requireProjectMiddleware(
   next: NextFunction,
 ) {
   if (!req.actor) {
+    next();
+    return;
+  }
+
+  if (!req.actor?.cloudOrganizationId) {
     next();
     return;
   }
@@ -53,7 +61,7 @@ export async function requireProjectMiddleware(
     return;
   }
 
-  if (method !== 'POST') {
+  if (method !== 'POST' && method !== 'PUT') {
     next();
     return;
   }
@@ -70,7 +78,18 @@ export async function requireProjectMiddleware(
   const projectId = req.body?.project_id || req.query?.project_id;
 
   if (!projectHeader && !projectId && !req.body?.from_template) {
-    res.status(400).json({ error: 'Missing x-project header or project_id' });
+    // if no project_id or x-project header is present use the default project
+
+    const { id: defaultProject } = await getDefaultProject({
+      organizationId: req.actor.cloudOrganizationId,
+    });
+
+    req.body = {
+      ...(req.body || {}),
+      project_id: defaultProject,
+    };
+
+    next();
     return;
   }
 
