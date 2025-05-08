@@ -65,7 +65,7 @@ def modify_provider(
     Update an existing custom provider
     """
     actor = server.user_manager.get_user_or_default(user_id=actor_id)
-    return server.provider_manager.update_provider(provider_id=provider_id, request=request, actor=actor)
+    return server.provider_manager.update_provider(provider_id=provider_id, provider_update=request, actor=actor)
 
 
 @router.get("/check", response_model=None, operation_id="check_provider")
