@@ -48,9 +48,7 @@ jobs:
           - "azure-gpt-4o-mini.json"
           - "claude-3-5-sonnet.json"
           - "claude-3-7-sonnet.json"
-          - "claude-3-7-sonnet-extended.json"
-          - "gemini-pro.json"
-          - "gemini-vertex.json"
+          - "gemini-1.5-pro.json"
     services:
       qdrant:
         image: qdrant/qdrant
