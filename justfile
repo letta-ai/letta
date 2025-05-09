@@ -370,6 +370,9 @@ preview-docs:
 core:
     npm run core:dev
 
+core-debug:
+    npm run core:debug
+
 web:
     cd apps/web && npx next dev --turbopack
 

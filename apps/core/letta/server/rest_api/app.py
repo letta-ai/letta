@@ -333,6 +333,7 @@ def start_server(
     port: Optional[int] = None,
     host: Optional[str] = None,
     debug: bool = False,
+    reload: bool = False,
 ):
     """Convenience method to start the server from within Python"""
     if debug:
@@ -356,7 +357,7 @@ def start_server(
             host=host or "localhost",
             port=port or REST_DEFAULT_PORT,
             workers=settings.uvicorn_workers,
-            reload=settings.uvicorn_reload,
+            reload=reload or settings.uvicorn_reload,
             timeout_keep_alive=settings.uvicorn_timeout_keep_alive,
             ssl_keyfile="certs/localhost-key.pem",
             ssl_certfile="certs/localhost.pem",
@@ -375,6 +376,6 @@ def start_server(
             host=host or "localhost",
             port=port or REST_DEFAULT_PORT,
             workers=settings.uvicorn_workers,
-            reload=settings.uvicorn_reload,
+            reload=reload or settings.uvicorn_reload,
             timeout_keep_alive=settings.uvicorn_timeout_keep_alive,
         )
