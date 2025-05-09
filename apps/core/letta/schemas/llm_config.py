@@ -24,7 +24,6 @@ class LLMConfig(BaseModel):
         max_tokens (int): The maximum number of tokens to generate.
     """
 
-    # TODO: 🤮 don't default to a vendor! bug city!
     model: str = Field(..., description="LLM model name. ")
     model_endpoint_type: Literal[
         "openai",

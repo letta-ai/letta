@@ -482,6 +482,10 @@ class StreamingServerInterface(AgentChunkStreamingInterface):
 
         data: {"function_return": "None", "status": "success", "date": "2024-02-29T06:07:50.847262+00:00"}
         """
+        if not chunk.choices or len(chunk.choices) == 0:
+            warnings.warn(f"No choices in chunk: {chunk}")
+            return None
+
         choice = chunk.choices[0]
         message_delta = choice.delta
         otid = Message.generate_otid_from_id(message_id, message_index)
