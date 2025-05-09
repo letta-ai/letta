@@ -8,7 +8,13 @@ from letta.constants import LETTA_MODEL_ENDPOINT
 from letta.errors import ErrorCode, LLMAuthenticationError, LLMError
 from letta.helpers.datetime_helpers import timestamp_to_datetime
 from letta.llm_api.helpers import add_inner_thoughts_to_functions, convert_to_structured_output, make_post_request
-from letta.llm_api.openai_client import accepts_developer_role, supports_parallel_tool_calling, supports_temperature_param
+from letta.llm_api.openai_client import (
+    accepts_developer_role,
+    requires_auto_tool_choice,
+    supports_parallel_tool_calling,
+    supports_structured_output,
+    supports_temperature_param,
+)
 from letta.local_llm.constants import INNER_THOUGHTS_KWARG, INNER_THOUGHTS_KWARG_DESCRIPTION, INNER_THOUGHTS_KWARG_DESCRIPTION_GO_FIRST
 from letta.local_llm.utils import num_tokens_from_functions, num_tokens_from_messages
 from letta.log import get_logger
@@ -50,9 +56,7 @@ def openai_check_valid_api_key(base_url: str, api_key: Union[str, None]) -> None
         raise ValueError("No API key provided")
 
 
-def openai_get_model_list(
-    url: str, api_key: Optional[str] = None, fix_url: Optional[bool] = False, extra_params: Optional[dict] = None
-) -> dict:
+def openai_get_model_list(url: str, api_key: Optional[str] = None, fix_url: bool = False, extra_params: Optional[dict] = None) -> dict:
     """https://platform.openai.com/docs/api-reference/models/list"""
     from letta.utils import printd
 
@@ -154,7 +158,10 @@ def build_openai_chat_completions_request(
         elif function_call not in ["none", "auto", "required"]:
             tool_choice = ToolFunctionChoice(type="function", function=ToolFunctionChoiceFunctionCall(name=function_call))
         else:
-            tool_choice = function_call
+            if requires_auto_tool_choice(llm_config):
+                tool_choice = "auto"
+            else:
+                tool_choice = function_call
         data = ChatCompletionRequest(
             model=model,
             messages=openai_message_list,
@@ -197,12 +204,13 @@ def build_openai_chat_completions_request(
     if use_structured_output and data.tools is not None and len(data.tools) > 0:
         # Convert to structured output style (which has 'strict' and no optionals)
         for tool in data.tools:
-            try:
-                # tool["function"] = convert_to_structured_output(tool["function"])
-                structured_output_version = convert_to_structured_output(tool.function.model_dump())
-                tool.function = FunctionSchema(**structured_output_version)
-            except ValueError as e:
-                warnings.warn(f"Failed to convert tool function to structured output, tool={tool}, error={e}")
+            if supports_structured_output(llm_config):
+                try:
+                    # tool["function"] = convert_to_structured_output(tool["function"])
+                    structured_output_version = convert_to_structured_output(tool.function.model_dump())
+                    tool.function = FunctionSchema(**structured_output_version)
+                except ValueError as e:
+                    warnings.warn(f"Failed to convert tool function to structured output, tool={tool}, error={e}")
     return data
 
 
@@ -221,7 +229,7 @@ def openai_chat_completions_process_stream(
     expect_reasoning_content: bool = True,
     name: Optional[str] = None,
 ) -> ChatCompletionResponse:
-    """Process a streaming completion response, and return a ChatCompletionRequest at the end.
+    """Process a streaming completion response, and return a ChatCompletionResponse at the end.
 
     To "stream" the response in Letta, we want to call a streaming-compatible interface function
     on the chunks received from the OpenAI-compatible server POST SSE response.
@@ -293,6 +301,9 @@ def openai_chat_completions_process_stream(
             url=url, api_key=api_key, chat_completion_request=chat_completion_request
         ):
             assert isinstance(chat_completion_chunk, ChatCompletionChunkResponse), type(chat_completion_chunk)
+            if chat_completion_chunk.choices is None or len(chat_completion_chunk.choices) == 0:
+                warnings.warn(f"No choices in chunk: {chat_completion_chunk}")
+                continue
 
             # NOTE: this assumes that the tool call ID will only appear in one of the chunks during the stream
             if override_tool_call_id:
@@ -429,6 +440,9 @@ def openai_chat_completions_process_stream(
     except Exception as e:
         if stream_interface:
             stream_interface.stream_end()
+        import traceback
+
+        traceback.print_exc()
         logger.error(f"Parsing ChatCompletion stream failed with error:\n{str(e)}")
         raise e
     finally:
@@ -463,14 +477,27 @@ def openai_chat_completions_request_stream(
     url: str,
     api_key: str,
     chat_completion_request: ChatCompletionRequest,
+    fix_url: bool = False,
 ) -> Generator[ChatCompletionChunkResponse, None, None]:
+
+    # In some cases we may want to double-check the URL and do basic correction, eg:
+    # In Letta config the address for vLLM is w/o a /v1 suffix for simplicity
+    # However if we're treating the server as an OpenAI proxy we want the /v1 suffix on our model hit
+    if fix_url:
+        if not url.endswith("/v1"):
+            url = smart_urljoin(url, "v1")
+
     data = prepare_openai_payload(chat_completion_request)
     data["stream"] = True
     client = OpenAI(api_key=api_key, base_url=url, max_retries=0)
-    stream = client.chat.completions.create(**data)
-    for chunk in stream:
-        # TODO: Use the native OpenAI objects here?
-        yield ChatCompletionChunkResponse(**chunk.model_dump(exclude_none=True))
+    try:
+        stream = client.chat.completions.create(**data)
+        for chunk in stream:
+            # TODO: Use the native OpenAI objects here?
+            yield ChatCompletionChunkResponse(**chunk.model_dump(exclude_none=True))
+    except Exception as e:
+        print(f"Error request stream from /v1/chat/completions, url={url}, data={data}:\n{e}")
+        raise e
 
 
 def openai_chat_completions_request(

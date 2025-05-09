@@ -2,7 +2,7 @@ import os
 from pathlib import Path
 from typing import Optional
 
-from pydantic import Field
+from pydantic import AliasChoices, Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 from letta.local_llm.constants import DEFAULT_WRAPPER_NAME
@@ -70,7 +70,13 @@ class ModelSettings(BaseSettings):
 
     # openai
     openai_api_key: Optional[str] = None
-    openai_api_base: str = "https://api.openai.com/v1"
+    openai_api_base: str = Field(
+        default="https://api.openai.com/v1",
+        # NOTE: We previously used OPENAI_API_BASE, but this was deprecated in favor of OPENAI_BASE_URL
+        # preferred first, fallback second
+        # env=["OPENAI_BASE_URL", "OPENAI_API_BASE"],  # pydantic-settings v2
+        validation_alias=AliasChoices("OPENAI_BASE_URL", "OPENAI_API_BASE"),  # pydantic-settings v1
+    )
 
     # deepseek
     deepseek_api_key: Optional[str] = None

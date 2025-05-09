@@ -215,6 +215,9 @@ def create(
                 chat_completion_request=data,
                 stream_interface=stream_interface,
                 name=name,
+                # NOTE: needs to be true for OpenAI proxies that use the `reasoning_content` field
+                # For example, DeepSeek, or LM Studio
+                expect_reasoning_content=False,
             )
         else:  # Client did not request token streaming (expect a blocking backend response)
             data.stream = False
@@ -272,6 +275,9 @@ def create(
                 chat_completion_request=data,
                 stream_interface=stream_interface,
                 name=name,
+                # TODO turn on to support reasoning content from xAI reasoners:
+                # https://docs.x.ai/docs/guides/reasoning#reasoning
+                expect_reasoning_content=False,
             )
         else:  # Client did not request token streaming (expect a blocking backend response)
             data.stream = False
@@ -486,7 +492,10 @@ def create(
         if stream:
             raise NotImplementedError(f"Streaming not yet implemented for TogetherAI (via the /completions endpoint).")
 
-        if model_settings.together_api_key is None and llm_config.model_endpoint == "https://api.together.ai/v1/completions":
+        if model_settings.together_api_key is None and (
+            llm_config.model_endpoint == "https://api.together.ai/v1/completions"
+            or llm_config.model_endpoint == "https://api.together.xyz/v1/completions"
+        ):
             raise LettaConfigurationError(message="TogetherAI key is missing from letta config file", missing_fields=["together_api_key"])
 
         return get_chat_completion(
@@ -560,6 +569,8 @@ def create(
                 chat_completion_request=data,
                 stream_interface=stream_interface,
                 name=name,
+                # TODO should we toggle for R1 vs V3?
+                expect_reasoning_content=True,
             )
         else:  # Client did not request token streaming (expect a blocking backend response)
             data.stream = False
