@@ -26,12 +26,12 @@
     "QuotaRow": {
       "limit": "<value></value> of {max}"
     },
-    "title": "Your organization's usage",
+    "title": "Usage",
     "premiumModelUsage": {
-      "label": "Premium model usage"
+      "label": "Premium model requests"
     },
     "freeModelUsage": {
-      "label": "Standard model usage"
+      "label": "Standard model requests"
     },
     "agentUsage": {
       "label": "Agents"
@@ -268,16 +268,16 @@
       "nextStep": "Create a template"
     },
     "title": "Models",
-    "description": "View and manage your AI models"
+    "description": "View and manage your AI models on Letta Cloud"
   },
   "pages/models/ModelDetailsOverlay": {
     "title": "Model details",
     "ModelCostsTable": {
-      "title": "Model costs",
-      "description": "Below are the costs per model request for this model if paying with usage-based pricing.",
+      "title": "Pricing",
+      "description": "Costs per model request when using usage-based pricing.",
       "maxContextWindow": "Max context window",
-      "maxContextWindowTooltip": "Maximum of amount of tokens you can pass into the model in a single step cost",
-      "costPerStep": "Cost per step"
+      "maxContextWindowTooltip": "The cost per request is determined by the max context window of your agent.",
+      "costPerStep": "Cost per request"
     },
     "UsageSummary": {
       "title": "Usage summary",
@@ -289,12 +289,12 @@
       "typeLabel": {
         "standard": "Standard",
         "premium": "Premium",
-        "perInference": "Per-inference"
+        "perInference": "Usage-based"
       },
       "types": {
-        "standard": "This is a standard model offered for by Letta. Standard models are models that are available for free up to a certain amount of requests. After the limit you will be charged based on usage if you have credits in your account.",
-        "premium": "This is a premium model offered by Letta. Premium models are models that are available for free up to a certain amount of requests. After the limit you will be charged based on usage if you have credits in your account.",
-        "perInference": "This model is per-inference charged model, meaning there is no allowance for requests with your account. You will be charged based on usage if you have credits in your account."
+        "standard": "Using this model will count towards your plan's Standard request quota. You can use this model beyond your quota if you have credits in your account.",
+        "premium": "Using this model will count towards your plan's Premium request quota. You can use this model beyond your quota if you have credits in your account.",
+        "perInference": "This model only available via usage-based billing. You will be charged based on usage if you have credits in your account."
       },
       "maxContextWindowTooltip": "The configured max context window determines the cost per model request.",
       "costPerStep": "Cost per request"
@@ -405,22 +405,22 @@
     "BaseCostCell": {
       "infinite": "Infinite",
       "notSupported": "Not supported",
-      "perStep": "{cost} per step",
-      "perStepInfo": "A step is a single inference to the model, a single request to Letta can have multiple steps depending on how you configure your agent"
+      "perStep": "{cost} per request",
+      "perStepInfo": "A request is a single inference to the model provider. A single request to the Letta API can trigger multiple steps, depending on how you configure your agent."
     }
   },
   "pages/models/ModelTierBadge": {
     "premium": {
       "label": "Premium",
-      "tooltip": "This model is free up to {requests} requests. Explore all pricing to see overage costs"
+      "tooltip": "This model is included in your plan up to {requests} requests. Explore all pricing to see overage costs."
     },
     "standard": {
       "label": "Standard",
-      "tooltip": "This model is free up to {requests} requests. Explore all pricing to see overage costs"
+      "tooltip": "This model is included in your plan up to {requests} requests. Explore all pricing to see overage costs."
     },
     "perInference": {
-      "label": "Per-inference",
-      "tooltip": "This model is not free, you will be charged based on usage if you have credits in your account"
+      "label": "Usage-based",
+      "tooltip": "This model is only available via usage-based billing, you will be charged based on usage if you have credits in your account."
     },
     "infinite": "Infinite"
   },
@@ -859,11 +859,11 @@
   },
   "components/UpgradeToProPlanDialog": {
     "error": "There was an error upgrading to the Pro plan, please try again or contact support.",
-    "title": "Upgrade to the Pro plan",
-    "description": "Upgrading to pro comes with these benefits \uD83D\uDC47",
+    "title": "Manage your account",
+    "description": "The Pro plan includes:",
     "options": {
-      "freeInferencesPerMonth": "Unlimited free model usage",
-      "premiumInferencesPerMonth": "{amount}/month premium model requests",
+      "freeInferencesPerMonth": "Unlimited Standard model requests per month",
+      "premiumInferencesPerMonth": "{amount} Premium model requests per month",
       "agents": "{amount} hosted agents",
       "storage": "{amount}GB of storage",
       "dataSources": "{amount} data sources",
@@ -872,19 +872,19 @@
       "templates": "{amount} templates"
     },
     "legal": "By upgrading, you agree to our <terms>Terms of Service</terms> and <privacy>Privacy Policy</privacy> and you will pay 20$/month. You can cancel at any time.",
-    "cta": "Upgrade for 20$/month",
-    "heading": "Upgrade to pro",
+    "cta": "Upgrade for 20$ per month",
+    "heading": "Upgrade to Pro",
     "purchasing": "Upgrading your plan..."
   },
   "organization/billing": {
     "FreePlanUpsellDetails": {
-      "title": "Do more with Letta Pro",
-      "description": "Right now you're on the free plan, which is great for getting started. But if you want to do more with Letta, consider upgrading to the Pro plan. Check out what you can get \uD83D\uDC47",
+      "title": "Do more with Pro",
+      "description": "The Hobby (free) plan is ideal for getting started, but Pro gives you room to grow. Upgrade to access:",
       "features": {
         "free": "Cancel at any time, no lock in.",
-        "agents": "Create an interact with {agents} agents.",
-        "premiumModels": "Send {limit} requests for premium models per month.",
-        "freeModels": "Send unlimited requests for free models per month."
+        "agents": "Create up to {agents} active agents.",
+        "premiumModels": "{limit} Premium model requests per month.",
+        "freeModels": "Unlimited Standard model requests per month."
       }
     },
     "AccountDetailsCTA": {
@@ -899,14 +899,14 @@
       "freeTitle": "Plan details",
       "title": "Account",
       "description": {
-        "free": "You are currently on the hobby plan (it’s free!).",
+        "free": "You are currently on the Hobby plan (it's free!).",
         "pro": "You are currently on the Pro plan.",
-        "enterprise": "You are currently on our enterprise plan."
+        "enterprise": "You are currently on our Enterprise plan."
       }
     },
     "noPermission": "You do not have permission to view billing information for this organization, please contact your organization's administrator.",
     "title": "Billing",
-    "description": "You are currently using a managed enterprise plan. If you have any questions or need help, please contact support.",
+    "description": "You are currently using a managed Enterprise plan. If you have any questions or need help, please contact support.",
     "Overview": {
       "title": "Overview"
     },
@@ -953,7 +953,7 @@
       "addPaymentMethod": "Add payment method",
       "error": "There was an error loading billing information, please try again or contact support.",
       "Credits": {
-        "title": "Usage based pricing",
+        "title": "Usage-based pricing",
         "description": "Enabling usage-based pricing allows you to pay for additional model requests beyond your monthly limits.",
         "add": "Buy credits",
         "available": "credits",
