@@ -105,6 +105,20 @@ export function LettaManagedModels() {
       const aPriority = tierPriority[a.tier || 'per-inference'] || 3;
       const bPriority = tierPriority[b.tier || 'per-inference'] || 3;
 
+      // secondary priority
+      const modelPriority: Record<string, number> = {
+        openai: 1,
+        claude: 2,
+        gemini: 3,
+      };
+
+      if (aPriority === bPriority) {
+        const aModelPriority = modelPriority[a.brand] || 4;
+        const bModelPriority = modelPriority[b.brand] || 4;
+
+        return aModelPriority - bModelPriority;
+      }
+
       return aPriority - bPriority;
     });
   }, [costs]);
