@@ -782,6 +782,14 @@ export const Source = z.object({
       z.undefined(),
     ])
     .optional(),
+  instructions: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
   embedding_config: EmbeddingConfig,
   organization_id: z
     .union([
@@ -4694,6 +4702,14 @@ export const SourceCreate = z.object({
       z.undefined(),
     ])
     .optional(),
+  instructions: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
   metadata: z
     .union([
       z.unknown(),
@@ -4710,6 +4726,9 @@ export const SourceUpdate = z.object({
     .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
     .optional(),
   description: z
+    .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+    .optional(),
+  instructions: z
     .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
     .optional(),
   metadata: z

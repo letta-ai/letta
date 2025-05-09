@@ -3008,6 +3008,10 @@ export type Source = {
    */
   description?: string | null;
   /**
+   * Instructions for how to use the source.
+   */
+  instructions?: string | null;
+  /**
    * The embedding configuration used by the source.
    */
   embedding_config: EmbeddingConfig;
@@ -3064,6 +3068,10 @@ export type SourceCreate = {
    */
   description?: string | null;
   /**
+   * Instructions for how to use the source.
+   */
+  instructions?: string | null;
+  /**
    * Metadata associated with the source.
    */
   metadata?: {
@@ -3083,6 +3091,10 @@ export type SourceUpdate = {
    * The description of the source.
    */
   description?: string | null;
+  /**
+   * Instructions for how to use the source.
+   */
+  instructions?: string | null;
   /**
    * Metadata associated with the source.
    */

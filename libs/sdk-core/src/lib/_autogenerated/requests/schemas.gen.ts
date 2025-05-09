@@ -8315,6 +8315,18 @@ export const $Source = {
       title: 'Description',
       description: 'The description of the source.',
     },
+    instructions: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Instructions',
+      description: 'Instructions for how to use the source.',
+    },
     embedding_config: {
       $ref: '#/components/schemas/EmbeddingConfig',
       description: 'The embedding configuration used by the source.',
@@ -8464,6 +8476,18 @@ export const $SourceCreate = {
       title: 'Description',
       description: 'The description of the source.',
     },
+    instructions: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Instructions',
+      description: 'Instructions for how to use the source.',
+    },
     metadata: {
       anyOf: [
         {
@@ -8510,6 +8534,18 @@ export const $SourceUpdate = {
       ],
       title: 'Description',
       description: 'The description of the source.',
+    },
+    instructions: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Instructions',
+      description: 'Instructions for how to use the source.',
     },
     metadata: {
       anyOf: [
