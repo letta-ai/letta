@@ -337,6 +337,10 @@ def calculate_summarizer_cutoff(in_context_messages: List[Message], token_counts
                 )
                 break
 
+        # includes the tool response to be summarized after a tool call so we don't have any hanging tool calls after trimming.
+        if i + 1 < len(in_context_messages_openai) and in_context_messages_openai[i + 1]["role"] == "tool":
+            cutoff += 1
+
         logger.info(f"Evicting {cutoff}/{len(in_context_messages)} messages...")
         return cutoff + 1
 
