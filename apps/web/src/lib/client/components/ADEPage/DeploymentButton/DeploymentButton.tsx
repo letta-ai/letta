@@ -13,8 +13,6 @@ import {
   MiniApp,
   OnboardingAsideFocus,
   Popover,
-  SaveIcon,
-  TemplateIcon,
   TextArea,
   toast,
   Tooltip,
@@ -26,6 +24,7 @@ import {
   VisibleOnMobile,
   RocketIcon,
 } from '@letta-cloud/ui-component-library';
+import type { ButtonProps } from '@letta-cloud/ui-component-library';
 import { z } from 'zod';
 import { useQueryClient } from '@tanstack/react-query';
 import React, { useCallback, useMemo, useState } from 'react';
@@ -437,7 +436,11 @@ function OnboardingWrapper(props: OnboardingWrapperProps) {
   );
 }
 
-function TemplateVersionDisplay() {
+interface TemplateVersionDisplayProps {
+  size: ButtonProps['size'];
+}
+
+function TemplateVersionDisplay({ size }: TemplateVersionDisplayProps) {
   // get latest template version
   const { deployedAgentTemplate, otherError } = useLatestAgentTemplate();
   const t = useTranslations(
@@ -483,9 +486,8 @@ function TemplateVersionDisplay() {
       <CreateNewTemplateVersionDialog
         trigger={
           <Button
-            size="small"
+            size={size}
             _use_rarely_className={show ? 'shine' : ''}
-            preIcon={<SaveIcon />}
             data-testid="stage-new-version-button"
             color="primary"
             fullWidth
@@ -499,7 +501,11 @@ function TemplateVersionDisplay() {
 
 export const isAgentConvertingToTemplateAtom = atom(false);
 
-function CreateTemplateButton() {
+interface CreateTemplateButtonProps {
+  size: ButtonProps['size'];
+}
+
+function CreateTemplateButton({ size }: CreateTemplateButtonProps) {
   const { slug } = useCurrentProject();
   const { id: agentId } = useCurrentAgent();
   const setConvertingAtom = useSetAtom(isAgentConvertingToTemplateAtom);
@@ -538,8 +544,7 @@ function CreateTemplateButton() {
       triggerAsChild
       trigger={
         <Button
-          size="small"
-          preIcon={<TemplateIcon />}
+          size={size}
           color="primary"
           label={t('CreateTemplateButton.trigger')}
         />
@@ -563,7 +568,11 @@ function CreateTemplateButton() {
   );
 }
 
-export function DeploymentButton() {
+interface DeploymentButtonProps {
+  size: ButtonProps['size'];
+}
+
+export function DeploymentButton(props: DeploymentButtonProps) {
   const { isLocal, isTemplate, isFromTemplate } = useCurrentAgentMetaData();
   const user = useCurrentUser();
 
@@ -572,11 +581,11 @@ export function DeploymentButton() {
   }
 
   if (isTemplate) {
-    return <TemplateVersionDisplay />;
+    return <TemplateVersionDisplay size={props.size} />;
   }
 
   if (!isFromTemplate) {
-    return <CreateTemplateButton />;
+    return <CreateTemplateButton size={props.size} />;
   }
 
   return null;
