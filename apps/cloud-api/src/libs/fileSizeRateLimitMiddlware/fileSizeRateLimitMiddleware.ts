@@ -64,7 +64,7 @@ export async function fileSizeRateLimitMiddleware(
 
     const totalDataSize = totalDataSizeInGB * 1024 * 1024 * 1024; // convert GB to bytes
 
-    if (totalDataSize + Number(contentLength) > 3) {
+    if (totalDataSize + Number(contentLength) > limits.storage) {
       res.status(413).json({
         error: 'You have reached your storage limit',
         errorCode: 'storage_exceeded',
