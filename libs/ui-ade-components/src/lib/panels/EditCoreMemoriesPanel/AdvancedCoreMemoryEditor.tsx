@@ -53,6 +53,7 @@ interface CurrentAdvancedCoreMemoryState {
 interface MemoryWarningProps {
   rootLabel: string;
 }
+
 function MemoryWarning(props: MemoryWarningProps) {
   const { getValues } = useFormContext();
   const { rootLabel } = props;
@@ -782,24 +783,47 @@ export function AdvancedCoreMemoryEditor() {
     setIsAdvancedCoreMemoryEditorOpen,
   ] = useAtom(currentAdvancedCoreMemoryAtom);
 
+  const [isConfirmLeaveOpen, setIsConfirmLeaveOpen] = useState(false);
+
   return (
-    <MiniApp
-      isOpen={isAdvancedCoreMemoryEditorOpen}
-      onOpenChange={(open) => {
-        setIsAdvancedCoreMemoryEditorOpen({
-          isOpen: open,
-          selectedMemoryBlockLabel: '',
-        });
-      }}
-      appName={t('title')}
-    >
-      <VStack fullWidth fullHeight gap={false}>
-        <EditorHeader />
-        <HStack flex collapseHeight overflow="hidden" fullWidth>
-          <CoreMemorySidebar />
-          <EditorContent />
-        </HStack>
-      </VStack>
-    </MiniApp>
+    <>
+      <Dialog
+        title={t('ConfirmLeave.title')}
+        isOpen={isConfirmLeaveOpen}
+        onOpenChange={setIsConfirmLeaveOpen}
+        onConfirm={() => {
+          setIsConfirmLeaveOpen(false);
+          setIsAdvancedCoreMemoryEditorOpen((prev) => ({
+            ...prev,
+            isOpen: false,
+          }));
+        }}
+      >
+        {t('ConfirmLeave.description')}
+      </Dialog>
+      <MiniApp
+        isOpen={isAdvancedCoreMemoryEditorOpen}
+        onOpenChange={(open) => {
+          if (!open) {
+            setIsConfirmLeaveOpen(true);
+            return;
+          }
+
+          setIsAdvancedCoreMemoryEditorOpen({
+            isOpen: open,
+            selectedMemoryBlockLabel: '',
+          });
+        }}
+        appName={t('title')}
+      >
+        <VStack fullWidth fullHeight gap={false}>
+          <EditorHeader />
+          <HStack flex collapseHeight overflow="hidden" fullWidth>
+            <CoreMemorySidebar />
+            <EditorContent />
+          </HStack>
+        </VStack>
+      </MiniApp>
+    </>
   );
 }

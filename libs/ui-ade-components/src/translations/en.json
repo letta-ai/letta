@@ -662,6 +662,10 @@
     "localAgents": "Local agents"
   },
   "ADE/AdvancedCoreMemoryEditor": {
+    "ConfirmLeave": {
+      "title": "Are you sure you want to leave?",
+      "description": "You are about to leave the memory editor, any unsaved changes will be lost."
+    },
     "DetachMemoryBlockDialog": {
       "title": "Detach Memory Block",
       "trigger": "Detach",
