@@ -541,3 +541,5 @@ redirects:
     destination: "/guides/ade/overview"
   - source: "/cloud/quickstart"
     destination: "/guides/cloud/quickstart"
+  - source: "/letta-platform"
+    destination: "/overview"

@@ -27,8 +27,8 @@ When you create agents directly (instead of via [templates](/guides/templates/ov
 ## Creating an agent with the Letta API
 Let's create an agent via the Letta API, which we can then view in the ADE (you can also use the ADE to create agents).
 
-To create an agent we'll send a POST request to the Letta Server ([API docs](/api-reference/agents/create)).
-In this example, we'll use `gpt-4o-mini` as the base LLM model, and `text-embedding-3-small` as the embedding model (this requires having configured both `OPENAI_API_KEY` on our Letta Server).
+To create an agent we'll send a POST request to the Letta server ([API docs](/api-reference/agents/create)).
+In this example, we'll use `gpt-4o-mini` as the base LLM model, and `text-embedding-3-small` as the embedding model (this requires having configured both `OPENAI_API_KEY` on our Letta server).
 
 We'll also artificially set the context window limit to 16k, instead of the 128k default for `gpt-4o-mini` (this can improve stability and performance):
 <CodeGroup>
@@ -56,7 +56,7 @@ curl -X POST https://app.letta.com/v1/agents \
 # install letta_client with `pip install letta-client`
 from letta_client import Letta
 
-# create a client to connect to your local Letta Server
+# create a client to connect to your local Letta server
 client = Letta(
   token="LETTA_API_KEY"
 )
@@ -85,7 +85,7 @@ print(agent_state)
 // install letta-client with `npm install @letta-ai/letta-client`
 import { LettaClient } from '@letta-ai/letta-client'
 
-// create a client to connect to your local Letta Server
+// create a client to connect to your local Letta server
 const client = new LettaClient({
   token: "LETTA_API_KEY"
 });

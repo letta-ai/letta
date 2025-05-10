@@ -7,7 +7,7 @@ You may be building a multi-user application with Letta, in which each user is a
 In this scenario, you can use **Identities** to associate each agent with a user in your application.
 
 ## Using Identities
-Let's assume that you have an application with multiple users that you're building on a [self-hosted Letta Server](/guides/server/docker) or [Letta Cloud](/guides/cloud).
+Let's assume that you have an application with multiple users that you're building on a [self-hosted Letta server](/guides/server/docker) or [Letta Cloud](/guides/cloud).
 Each user has a unique username, starting at `user_1`, and incrementing up as you add more users to the platform.
 
 To associate agents you create in Letta with your users, you can first create an **Identity** object with the user's unique ID as the `identifier_key` for your user, and then specify the **Identity** object ID when creating an agent.
@@ -123,12 +123,12 @@ const identity = await client.identities.create({
 
 ### Using Agent Tags to Identify Users
 It's also possible to utilize our agent tags feature to associate agents with specific users. To associate agents you create in Letta with your users, you can specify a tag when creating an agent, and set the tag to the user’s unique ID.
-This example assumes that you have a self-hosted Letta Server running on localhost (for example, by running [`docker run ...`](/guides/server/docker)).
+This example assumes that you have a self-hosted Letta server running on localhost (for example, by running [`docker run ...`](/guides/server/docker)).
 <Accordion title="View example Python SDK code">
 ```python title="python"
 from letta_client import Letta
 
-# in this example we'll connect to a self-hosted Letta Server
+# in this example we'll connect to a self-hosted Letta server
 client = Letta(base_url="http://localhost:8283")
 user_id = "my_uuid"
 

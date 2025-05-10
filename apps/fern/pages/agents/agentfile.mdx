@@ -10,7 +10,7 @@ slug: guides/agents/agent-file
 
 Agent File (`.af`) is an open standard file format for serializing stateful agents. It provides a portable way to share agents with persistent memory and behavior across different environments.
 
-You can import and export agents to and from any Letta Server (including both self-hosted servers and Letta Cloud) using the `.af` file format.
+You can import and export agents to and from any Letta server (including both self-hosted servers and Letta Cloud) using the `.af` file format.
 
 <Frame>
   <a href="https://github.com/letta-ai/agent-file" target="_blank">
@@ -72,7 +72,7 @@ import { LettaClient } from '@letta-ai/letta-client'
 import { readFileSync } from 'fs';
 import { Blob } from 'buffer';
 
-// Assuming a Letta Server is running at http://localhost:8283
+// Assuming a Letta server is running at http://localhost:8283
 const client = new LettaClient({ baseUrl: "http://localhost:8283" });
 
 // Import your .af file from any location
@@ -86,7 +86,7 @@ console.log(`Imported agent: ${agentState.id}`);
 # Install SDK with `pip install letta-client`
 from letta_client import Letta
 
-# Assuming a Letta Server is running at http://localhost:8283
+# Assuming a Letta server is running at http://localhost:8283
 client = Letta(base_url="http://localhost:8283")
 
 # Import your .af file from any location
@@ -96,7 +96,7 @@ print(f"Imported agent: {agent.id}")
 ```
 
 ```curl curl
-# Assuming a Letta Server is running at http://localhost:8283
+# Assuming a Letta server is running at http://localhost:8283
 curl -X POST "http://localhost:8283/v1/agents/import" -F "file=/path/to/agent/file.af"
 ```
 </CodeGroup>
@@ -114,7 +114,7 @@ You can export your own `.af` files to share by selecting "Export Agent" in the 
 // Install SDK with `npm install @letta-ai/letta-client`
 import { LettaClient } from '@letta-ai/letta-client'
 
-// Assuming a Letta Server is running at http://localhost:8283
+// Assuming a Letta server is running at http://localhost:8283
 const client = new LettaClient({ baseUrl: "http://localhost:8283" });
 
 // Export your agent into a serialized schema object (which you can write to a file)
@@ -125,7 +125,7 @@ const schema = await client.agents.exportAgentSerialized("<AGENT_ID>");
 # Install SDK with `pip install letta-client`
 from letta_client import Letta
 
-# Assuming a Letta Server is running at http://localhost:8283
+# Assuming a Letta server is running at http://localhost:8283
 client = Letta(base_url="http://localhost:8283")
 
 # Export your agent into a serialized schema object (which you can write to a file)
@@ -133,7 +133,7 @@ schema = client.agents.export_agent_serialized(agent_id="<AGENT_ID>")
 ```
 
 ```curl curl
-# Assuming a Letta Server is running at http://localhost:8283
+# Assuming a Letta server is running at http://localhost:8283
 curl -X GET http://localhost:8283/v1/agents/{AGENT_ID}/export
 ```
 </CodeGroup>

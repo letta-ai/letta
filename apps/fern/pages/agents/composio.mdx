@@ -19,7 +19,7 @@ Once you have a Composio API key, you can connect it to Letta to allow your Lett
 Composio's free tier gives you 2000 API calls per month.
 
 ## Connecting Composio Tools to Letta Agents
-Once you have a Composio API key, you can register it with the Letta Server using the environment variable `COMPOSIO_API_KEY`.
+Once you have a Composio API key, you can register it with the Letta server using the environment variable `COMPOSIO_API_KEY`.
 
 If you're self-hosting a Letta server ([instructions](guides/server/docker)), you would pass this environment variable to `docker run`:
 ```bash
@@ -34,11 +34,11 @@ docker run \
 In Letta Cloud, you can set your `COMPOSIO_API_KEY` under **Settings** > **Integrations** > **Composio**.
 
 ## Adding Composio tools via the ADE
-Once you've connected your `COMPOSIO_API_KEY` to the Letta Server (or Letta Cloud), you will be able to view Composio tools when you click the **Add Tool** button (the + button in the bottom left tools panel).
+Once you've connected your `COMPOSIO_API_KEY` to the Letta server (or Letta Cloud), you will be able to view Composio tools when you click the **Add Tool** button (the + button in the bottom left tools panel).
 <img src="../../images/tavily.png" />
 
 <Warning>
-If you did not successfully pass your `COMPOSIO_API_KEY` to the Letta Server, you'll see the following message when you browse Composio tools:
+If you did not successfully pass your `COMPOSIO_API_KEY` to the Letta server, you'll see the following message when you browse Composio tools:
 "To attach this tool and 4000+ other tools to your agent, connect to Composio"
 </Warning>
 

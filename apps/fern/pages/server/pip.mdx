@@ -16,8 +16,8 @@ If you would like to keep your agent data across multiple Letta versions we high
 
 When using Letta via [Docker](/guides/server/docker) you don't need to install Letta, instead you simply download the Docker image (done automatically for you when you run `docker run`).
 
-When using Letta via `pip`, running the Letta Server requires you first install Letta (via `pip install`).
-After installing, you can then run the Letta Server with the `letta server` command.
+When using Letta via `pip`, running the Letta server requires you first install Letta (via `pip install`).
+After installing, you can then run the Letta server with the `letta server` command.
 
 <Steps>
   <Step title="Install using pip">
@@ -27,12 +27,12 @@ After installing, you can then run the Letta Server with the `letta server` comm
     ```
   </Step>
   <Step title="Configure model providers">
-    Set environment variables to enable model providers, e.g. OpenAI: 
+    Set environment variables to enable model providers, e.g. OpenAI:
 ```sh
 # To use OpenAI
 export OPENAI_API_KEY=...
 
-# To use Anthropic 
+# To use Anthropic
 export ANTHROPIC_API_KEY=...
 
 # To use with Ollama
@@ -45,7 +45,7 @@ export GEMINI_API_KEY=...
 export AZURE_API_KEY=...
 export AZURE_BASE_URL=...
 
-# To use with vLLM 
+# To use with vLLM
 export VLLM_API_BASE=...
 ```
 
@@ -55,7 +55,7 @@ export VLLM_API_BASE=...
     ```
   </Step>
   <Step title="Run the Letta server">
-    To run the Letta Server, run:
+    To run the Letta server, run:
     ```bash
     letta server
     ```

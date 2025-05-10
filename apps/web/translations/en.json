@@ -891,7 +891,7 @@
   "organization/billing": {
     "FreePlanUpsellDetails": {
       "title": "Do more with Pro",
-      "description": "The Hobby (free) plan is ideal for getting started, but Pro gives you room to grow. Upgrade to access:",
+      "description": "The Free plan is ideal for getting started, but Pro gives you room to grow. Upgrade to access:",
       "features": {
         "free": "Cancel at any time, no lock in.",
         "agents": "Create up to {agents} active agents.",
@@ -911,7 +911,7 @@
       "freeTitle": "Plan details",
       "title": "Account",
       "description": {
-        "free": "You are currently on the Hobby plan (it's free!).",
+        "free": "You are currently on the Free plan.",
         "pro": "You are currently on the Pro plan.",
         "enterprise": "You are currently on our Enterprise plan."
       }

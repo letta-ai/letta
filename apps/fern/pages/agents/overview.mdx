@@ -67,10 +67,10 @@ For multi-users applications, we recommend creating an agent per-user, though yo
 
 ## Create an agent
 <Note>
-To start creating agents, you can run a Letta Server locally using **Letta Desktop**, deploy a server locally + remotely with **Docker**, or use **Letta Cloud**. See our [quickstart guide](/quickstart) for more information.
+To start creating agents, you can run a Letta server locally using **Letta Desktop**, deploy a server locally + remotely with **Docker**, or use **Letta Cloud**. See our [quickstart guide](/quickstart) for more information.
 </Note>
 
-Assuming we're running a Letta Server locally at `http://localhost:8283`, we can create a new agent via the REST API, Python SDK, or TypeScript SDK:
+Assuming we're running a Letta server locally at `http://localhost:8283`, we can create a new agent via the REST API, Python SDK, or TypeScript SDK:
 <CodeGroup>
 ```curl curl
 curl -X POST http://localhost:8283/v1/agents/ \
@@ -95,7 +95,7 @@ curl -X POST http://localhost:8283/v1/agents/ \
 # install letta_client with `pip install letta-client`
 from letta_client import Letta
 
-# create a client to connect to your local Letta Server
+# create a client to connect to your local Letta server
 client = Letta(
   base_url="http://localhost:8283"
 )
@@ -124,7 +124,7 @@ print(agent_state)
 // install letta-client with `npm install @letta-ai/letta-client`
 import { LettaClient } from '@letta-ai/letta-client'
 
-// create a client to connect to your local Letta Server
+// create a client to connect to your local Letta server
 const client = new LettaClient({
   baseUrl: "http://localhost:8283"
 });
@@ -151,7 +151,7 @@ console.log(agentState);
 ```
 </CodeGroup>
 You can also create an agent without any code using the [Agent Development Environment (ADE)](/agent-development-environment).
-All Letta agents are stored in a database on the Letta Server, so you can access the same agents from the ADE, the REST API, the Python SDK, and the TypeScript SDK.
+All Letta agents are stored in a database on the Letta server, so you can access the same agents from the ADE, the REST API, the Python SDK, and the TypeScript SDK.
 
 The response will include information about the agent, including its `id`:
 ```json
