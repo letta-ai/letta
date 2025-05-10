@@ -17,7 +17,6 @@ import {
   isSubNavigationOverride,
   TokenIcon,
 } from '@letta-cloud/ui-component-library';
-import type { ButtonProps } from '@letta-cloud/ui-component-library';
 import { HiddenOnMobile } from '@letta-cloud/ui-component-library';
 import {
   Avatar,
@@ -753,14 +752,12 @@ function ReportAnIssueForm() {
 
 interface DashboardHeaderNavigationProps {
   preItems?: React.ReactNode;
-  size?: ButtonProps['size'];
 }
 
 export function DashboardHeaderNavigation(
   props: DashboardHeaderNavigationProps,
 ) {
-  const { preItems, size } = props;
-
+  const { preItems } = props;
   const t = useTranslations(
     'components/DashboardLikeLayout/DashboardNavigation',
   );
@@ -777,7 +774,7 @@ export function DashboardHeaderNavigation(
           triggerAsChild
           trigger={
             <Button
-              size={size}
+              size="small"
               color="tertiary"
               label={t('DashboardHeaderNavigation.support')}
             />
@@ -817,7 +814,7 @@ export function DashboardHeaderNavigation(
           </VStack>
         </Popover>
         <Button
-          size={size}
+          size="small"
           color="tertiary"
           postIcon={<ExternalLinkIcon />}
           target="_blank"
@@ -825,7 +822,7 @@ export function DashboardHeaderNavigation(
           href="https://docs.letta.com/introduction"
         />
         <Button
-          size={size}
+          size="small"
           color="tertiary"
           postIcon={<ExternalLinkIcon />}
           target="_blank"

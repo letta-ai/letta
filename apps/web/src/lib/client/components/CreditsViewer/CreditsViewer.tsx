@@ -192,7 +192,7 @@ export function CreditsViewer() {
     <div>
       <Tooltip asChild content={t('label')}>
         <Link href="/settings/organization/billing">
-          <HStack align="center" border paddingY="small" paddingX="small">
+          <HStack align="center" border paddingY="xxsmall" paddingX="small">
             <LettaCoinIcon size="small" />
             {!data?.body ? (
               <Skeleton

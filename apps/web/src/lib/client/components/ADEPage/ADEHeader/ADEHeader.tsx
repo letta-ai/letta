@@ -10,14 +10,15 @@ import {
   ForkIcon,
   HiddenOnMobile,
   HStack,
+  LettaInvaderIcon,
   Logo,
   TrashIcon,
   Typography,
   DotsVerticalIcon,
   VisibleOnMobile,
+  ExternalLinkIcon,
   WarningIcon,
   Tooltip,
-  LettaInvaderOutlineIcon,
 } from '@letta-cloud/ui-component-library';
 import type { QueryBuilderQuery } from '@letta-cloud/ui-component-library';
 import { ProjectSelector } from '$web/client/components';
@@ -261,7 +262,6 @@ function LogoContainer() {
 function DesktopADEHeader(props: DesktopADEHeaderProps) {
   const { name: agentName } = props;
   const { slug } = useCurrentProject();
-  const DEFAULT_HEADER_BUTTON_SIZE = 'default';
 
   const { name: projectName, id, slug: projectSlug } = useCurrentProject();
 
@@ -356,13 +356,14 @@ function DesktopADEHeader(props: DesktopADEHeaderProps) {
       </HStack>
       <HStack gap={false} align="center">
         <HStack align="center" gap="small">
-          <DashboardHeaderNavigation size={DEFAULT_HEADER_BUTTON_SIZE} />
+          <DashboardHeaderNavigation />
         </HStack>
         <HStack align="center" gap="small">
           {isTemplate && (
             <Button
-              size={DEFAULT_HEADER_BUTTON_SIZE}
-              preIcon={<LettaInvaderOutlineIcon />}
+              size="small"
+              preIcon={<LettaInvaderIcon />}
+              postIcon={<ExternalLinkIcon />}
               label={t('viewAgents')}
               target="_blank"
               href={`/projects/${slug}/agents?query=${JSON.stringify({
@@ -386,15 +387,9 @@ function DesktopADEHeader(props: DesktopADEHeaderProps) {
             />
           )}
           <HStack paddingRight="small">
-            <DeploymentButton size={DEFAULT_HEADER_BUTTON_SIZE} />
+            <DeploymentButton />
           </HStack>
-          <ProfilePopover
-            size={
-              DEFAULT_HEADER_BUTTON_SIZE === 'default'
-                ? 'medium'
-                : DEFAULT_HEADER_BUTTON_SIZE
-            }
-          />
+          <ProfilePopover size="large" />
         </HStack>
       </HStack>
     </HStack>
