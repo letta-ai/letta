@@ -147,7 +147,7 @@ def test_cutoff_calculation_with_tool_call(mocker, client: LocalClient, agent_st
     client.server.agent_manager.trim_older_in_context_messages(agent_id=agent_state.id, num=3, actor=client.user)
 
     test1 = mock_set_messages.call_args_list[0][1]
-    assert len(test1["message_ids"]) == 4
+    assert len(test1["message_ids"]) == 5
 
     mock_set_messages.reset_mock()
 

@@ -107,13 +107,9 @@ class Summarizer:
             self.summarizer_agent.update_message_transcript(message_transcripts=formatted_evicted_messages + formatted_in_context_messages)
 
             # Add line numbers to the formatted messages
-            line_number = 0
-            for i in range(len(formatted_evicted_messages)):
-                formatted_evicted_messages[i] = f"{line_number}. " + formatted_evicted_messages[i]
-                line_number += 1
-            for i in range(len(formatted_in_context_messages)):
-                formatted_in_context_messages[i] = f"{line_number}. " + formatted_in_context_messages[i]
-                line_number += 1
+            offset = len(formatted_evicted_messages)
+            formatted_evicted_messages = [f"{i}. {msg}" for (i, msg) in enumerate(formatted_evicted_messages)]
+            formatted_in_context_messages = [f"{i + offset}. {msg}" for (i, msg) in enumerate(formatted_in_context_messages)]
 
             evicted_messages_str = "\n".join(formatted_evicted_messages)
             in_context_messages_str = "\n".join(formatted_in_context_messages)

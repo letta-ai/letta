@@ -30,6 +30,7 @@ class Source(SqlalchemyBase, OrganizationMixin):
 
     name: Mapped[str] = mapped_column(doc="the name of the source, must be unique within the org", nullable=False)
     description: Mapped[str] = mapped_column(nullable=True, doc="a human-readable description of the source")
+    instructions: Mapped[str] = mapped_column(nullable=True, doc="instructions for how to use the source")
     embedding_config: Mapped[EmbeddingConfig] = mapped_column(EmbeddingConfigColumn, doc="Configuration settings for embedding.")
     metadata_: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True, doc="metadata for the source.")
 

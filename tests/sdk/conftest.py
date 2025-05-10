@@ -38,8 +38,11 @@ def client(server):
     server_url = server
     print("Running client tests with server:", server_url)
 
+    # Overide the base_url if the LETTA_API_URL is set
+    api_url = os.getenv("LETTA_API_URL")
+    base_url = api_url if api_url else server_url
     # create the Letta client
-    yield Letta(base_url=server_url, token=None)
+    yield Letta(base_url=base_url, token=None)
 
 
 def skip_test_if_not_implemented(handler, resource_name, test_name):

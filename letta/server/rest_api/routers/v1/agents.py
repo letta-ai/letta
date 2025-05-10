@@ -3,7 +3,7 @@ import traceback
 from datetime import datetime, timezone
 from typing import Annotated, Any, List, Optional
 
-from fastapi import APIRouter, BackgroundTasks, Body, Depends, File, Header, HTTPException, Query, UploadFile, status
+from fastapi import APIRouter, BackgroundTasks, Body, Depends, File, Header, HTTPException, Query, Request, UploadFile, status
 from fastapi.responses import JSONResponse
 from marshmallow import ValidationError
 from orjson import orjson
@@ -619,6 +619,7 @@ def modify_message(
 )
 async def send_message(
     agent_id: str,
+    request_obj: Request,  # FastAPI Request
     server: SyncServer = Depends(get_letta_server),
     request: LettaRequest = Body(...),
     actor_id: Optional[str] = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
@@ -630,19 +631,12 @@ async def send_message(
     actor = server.user_manager.get_user_or_default(user_id=actor_id)
     # TODO: This is redundant, remove soon
     agent = server.agent_manager.get_agent_by_id(agent_id, actor)
+    agent_eligible = not agent.enable_sleeptime and not agent.multi_agent_group and agent.agent_type != AgentType.sleeptime_agent
+    experimental_header = request_obj.headers.get("x-experimental")
+    feature_enabled = settings.use_experimental or experimental_header
+    model_compatible = agent.llm_config.model_endpoint_type in ["anthropic", "openai", "google_vertex", "google_ai"]
 
-    if all(
-        (
-            settings.use_experimental,
-            not agent.enable_sleeptime,
-            not agent.multi_agent_group,
-            not agent.agent_type == AgentType.sleeptime_agent,
-        )
-    ) and (
-        # LLM Model Check: (1) Anthropic or (2) Google Vertex + Flag
-        agent.llm_config.model_endpoint_type == "anthropic"
-        or (agent.llm_config.model_endpoint_type == "google_vertex" and settings.use_vertex_async_loop_experimental)
-    ):
+    if agent_eligible and feature_enabled and model_compatible:
         experimental_agent = LettaAgent(
             agent_id=agent_id,
             message_manager=server.message_manager,
@@ -681,6 +675,7 @@ async def send_message(
 )
 async def send_message_streaming(
     agent_id: str,
+    request_obj: Request,  # FastAPI Request
     server: SyncServer = Depends(get_letta_server),
     request: LettaStreamingRequest = Body(...),
     actor_id: Optional[str] = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
@@ -694,14 +689,12 @@ async def send_message_streaming(
     actor = server.user_manager.get_user_or_default(user_id=actor_id)
     # TODO: This is redundant, remove soon
     agent = server.agent_manager.get_agent_by_id(agent_id, actor)
+    agent_eligible = not agent.enable_sleeptime and not agent.multi_agent_group and agent.agent_type != AgentType.sleeptime_agent
+    experimental_header = request_obj.headers.get("x-experimental")
+    feature_enabled = settings.use_experimental or experimental_header
+    model_compatible = agent.llm_config.model_endpoint_type in ["anthropic", "openai"]
 
-    if (
-        agent.llm_config.model_endpoint_type == "anthropic"
-        and not agent.enable_sleeptime
-        and not agent.multi_agent_group
-        and not agent.agent_type == AgentType.sleeptime_agent
-        and settings.use_experimental
-    ):
+    if agent_eligible and feature_enabled and model_compatible:
         experimental_agent = LettaAgent(
             agent_id=agent_id,
             message_manager=server.message_manager,

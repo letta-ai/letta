@@ -1,5 +1,5 @@
 import datetime
-from typing import Dict, List, Literal, Optional, Union
+from typing import List, Literal, Optional, Union
 
 from pydantic import BaseModel
 
@@ -27,11 +27,31 @@ class LogProbToken(BaseModel):
     bytes: Optional[List[int]]
 
 
+# Legacy?
 class MessageContentLogProb(BaseModel):
     token: str
     logprob: float
     bytes: Optional[List[int]]
     top_logprobs: Optional[List[LogProbToken]]
+
+
+class TopLogprob(BaseModel):
+    token: str
+    bytes: Optional[List[int]] = None
+    logprob: float
+
+
+class ChatCompletionTokenLogprob(BaseModel):
+    token: str
+    bytes: Optional[List[int]] = None
+    logprob: float
+    top_logprobs: List[TopLogprob]
+
+
+class ChoiceLogprobs(BaseModel):
+    content: Optional[List[ChatCompletionTokenLogprob]] = None
+
+    refusal: Optional[List[ChatCompletionTokenLogprob]] = None
 
 
 class Message(BaseModel):
@@ -49,7 +69,7 @@ class Choice(BaseModel):
     finish_reason: str
     index: int
     message: Message
-    logprobs: Optional[Dict[str, Union[List[MessageContentLogProb], None]]] = None
+    logprobs: Optional[ChoiceLogprobs] = None
     seed: Optional[int] = None  # found in TogetherAI
 
 
@@ -134,7 +154,7 @@ class ChatCompletionResponse(BaseModel):
 class FunctionCallDelta(BaseModel):
     # arguments: Optional[str] = None
     name: Optional[str] = None
-    arguments: str
+    arguments: Optional[str] = None
     # name: str
 
 
@@ -179,7 +199,7 @@ class ChunkChoice(BaseModel):
     finish_reason: Optional[str] = None  # NOTE: when streaming will be null
     index: int
     delta: MessageDelta
-    logprobs: Optional[Dict[str, Union[List[MessageContentLogProb], None]]] = None
+    logprobs: Optional[ChoiceLogprobs] = None
 
 
 class ChatCompletionChunkResponse(BaseModel):

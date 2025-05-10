@@ -31,6 +31,7 @@ class Source(BaseSource):
     id: str = BaseSource.generate_id_field()
     name: str = Field(..., description="The name of the source.")
     description: Optional[str] = Field(None, description="The description of the source.")
+    instructions: Optional[str] = Field(None, description="Instructions for how to use the source.")
     embedding_config: EmbeddingConfig = Field(..., description="The embedding configuration used by the source.")
     organization_id: Optional[str] = Field(None, description="The ID of the organization that created the source.")
     metadata: Optional[dict] = Field(None, validation_alias="metadata_", description="Metadata associated with the source.")
@@ -59,6 +60,7 @@ class SourceCreate(BaseSource):
 
     # optional
     description: Optional[str] = Field(None, description="The description of the source.")
+    instructions: Optional[str] = Field(None, description="Instructions for how to use the source.")
     metadata: Optional[dict] = Field(None, description="Metadata associated with the source.")
 
 
@@ -69,5 +71,6 @@ class SourceUpdate(BaseSource):
 
     name: Optional[str] = Field(None, description="The name of the source.")
     description: Optional[str] = Field(None, description="The description of the source.")
+    instructions: Optional[str] = Field(None, description="Instructions for how to use the source.")
     metadata: Optional[dict] = Field(None, description="Metadata associated with the source.")
     embedding_config: Optional[EmbeddingConfig] = Field(None, description="The embedding configuration used by the source.")

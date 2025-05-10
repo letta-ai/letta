@@ -34,6 +34,17 @@
         "cwd": "apps/core"
       }
     },
+    "debug": {
+      "executor": "@nxlv/python:run-commands",
+      "options": {
+        "commands": [
+          "./otel/start-otel-collector.sh",
+          "poetry run letta server --debug --reload"
+        ],
+        "parallel": true,
+        "cwd": "apps/core"
+      }
+    },
     "build": {
       "executor": "@nxlv/python:build",
       "outputs": ["{projectRoot}/dist"],
