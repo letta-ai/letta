@@ -222,17 +222,6 @@ class OpenAIProvider(Provider):
                 # }
                 if "config" not in model:
                     continue
-                if "chat_template" not in model["config"]:
-                    continue
-                if model["config"]["chat_template"] is None:
-                    continue
-                if model["config"]["chat_template"] is not None and "tools" not in model["config"]["chat_template"]:
-                    # NOTE: this is a hack to filter out models that don't support tool calling
-                    continue
-                if "tools" not in model["config"]["chat_template"]:
-                    continue
-                # if "config" in data and "chat_template" in data["config"] and "tools" not in data["config"]["chat_template"]:
-                # continue
 
             if "nebius.com" in self.base_url:
                 # Nebius includes the type, which we can use to filter for text models
