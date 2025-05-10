@@ -93,6 +93,8 @@ def requires_auto_tool_choice(llm_config: LLMConfig) -> bool:
 
     if "nebius.com" in llm_config.model_endpoint:
         return True
+    if "together.ai" in llm_config.model_endpoint or "together.xyz" in llm_config.model_endpoint:
+        return True
     # proxy also has this issue (FIXME check)
     elif llm_config.model_endpoint == LETTA_MODEL_ENDPOINT:
         return True
