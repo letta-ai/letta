@@ -184,11 +184,14 @@ def create_application() -> "FastAPI":
     @app.exception_handler(Exception)
     async def generic_error_handler(request: Request, exc: Exception):
         # Log the actual error for debugging
-        log.error(f"Unhandled error: {exc}", exc_info=True)
-        print(f"Unhandled error: {exc}")
+        log.error(f"Unhandled error: {str(exc)}", exc_info=True)
+        print(f"Unhandled error: {str(exc)}")
+
+        import traceback
 
         # Print the stack trace
-        print(f"Stack trace: {exc}")
+        print(f"Stack trace: {traceback.format_exc()}")
+
         if (os.getenv("SENTRY_DSN") is not None) and (os.getenv("SENTRY_DSN") != ""):
             import sentry_sdk
 
