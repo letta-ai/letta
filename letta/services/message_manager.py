@@ -304,17 +304,24 @@ class MessageManager:
             if group_id:
                 query = query.filter(MessageModel.group_id == group_id)
 
-            # If query_text is provided, filter messages using subquery + json_array_elements.
+            # If query_text is provided, filter messages by matching any "text" type content block
+            # whose text includes the query string (case-insensitive).
             if query_text:
-                content_element = func.json_array_elements(MessageModel.content).alias("content_element")
-                query = query.filter(
-                    exists(
-                        select(1)
-                        .select_from(content_element)
-                        .where(text("content_element->>'type' = 'text' AND content_element->>'text' ILIKE :query_text"))
-                        .params(query_text=f"%{query_text}%")
+                dialect_name = session.bind.dialect.name
+
+                if dialect_name == "postgresql":  # using subquery + json_array_elements.
+                    content_element = func.json_array_elements(MessageModel.content).alias("content_element")
+                    subquery_sql = text("content_element->>'type' = 'text' AND content_element->>'text' ILIKE :query_text")
+                    subquery = select(1).select_from(content_element).where(subquery_sql)
+
+                elif dialect_name == "sqlite":  # using `json_each` and JSON path expressions
+                    json_item = func.json_each(MessageModel.content).alias("json_item")
+                    subquery_sql = text(
+                        "json_extract(value, '$.type') = 'text' AND lower(json_extract(value, '$.text')) LIKE lower(:query_text)"
                     )
-                )
+                    subquery = select(1).select_from(json_item).where(subquery_sql)
+
+                query = query.filter(exists(subquery.params(query_text=f"%{query_text}%")))
 
             # If role(s) are provided, filter messages by those roles.
             if roles:
