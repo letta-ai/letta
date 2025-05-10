@@ -149,6 +149,7 @@ function EditMemoryForm(props: EditMemoryFormProps) {
           </VStack>
         ) : (
           <RawTextArea
+            minRows={3}
             hideInput={collapsed}
             variant="secondary"
             labelBadge={<SharedMemoryIndicator memory={memory} />}
@@ -174,7 +175,6 @@ function EditMemoryForm(props: EditMemoryFormProps) {
                 />
               </HStack>
             }
-            autosize={false}
             flex
             fullHeight
             data-testid={`edit-memory-block-${label}-content`}
@@ -216,10 +216,9 @@ function DefaultMemory(props: DefaultMemoryProps) {
   const { isLocked } = props;
 
   const memories = useSortedMemories(agent);
-
   return (
     <>
-      <VStack collapseHeight flex gap="large">
+      <VStack flex gap="large">
         {memories.map((block) => (
           <EditMemoryForm
             disabled={isLocked}
@@ -316,7 +315,7 @@ function SimulatedMemory() {
   }
 
   return (
-    <VStack collapseHeight flex gap="large">
+    <VStack flex gap="large">
       {memories.map((block) => (
         <EditMemoryForm
           key={block.label}
