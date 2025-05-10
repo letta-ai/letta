@@ -1,38 +1,69 @@
 ---
-title: Pricing
-slug: guides/cloud/pricing
+title:  Plans & Pricing
+subtitle: Guide to pricing and model usage for Hobby, Pro, and Enterprise plans
+slug: guides/cloud/plans
 ---
 
 <Note>
-Letta Cloud is currently in early access. For enterprise customers, please [contact sales]().
+Upgrade your plan and view your usage at [https://app.letta.com/account]()
 </Note>
 
-Letta Cloud's pricing model is designed to be simple, flexible, and predictable - allowing you to focus on building your applications on top of the powerful stateful agents running in the cloud.
+## Available Plans
 
-## Reasoning Units
-Letta Cloud offers a usage based consumption model (pay for what you use).
-When you run an agent with an API call, you are charegd per agent step (when an agent runs, it takes at minimum one step).
+<CardGroup>
+  <Card
+    title="Free"
+  >
+    - **50** premium model requests
+    - **500** standard model requests
+    - **5** active agents
+    - **2** agent templates
+    - **1 GB** of storage
+  </Card>
+  <Card
+    title="Pro ($20 / month)"
+  >
+    - **500** premium model requests
+    - **5,000** standard model requests
+    - **1,000** active agents
+    - **10** agent templates
+    - **10 GB** of storage
+  </Card>
+</CardGroup>
+<Card
+  title="Enterprise"
+>
+Up to <Icon icon="fa-light fa-infinity"/> agents and <Icon icon="fa-light fa-infinity"/> storage, enhanced rate limits, custom model deployments, SAML/OIDC SSO authentication, and role-based access control (RBAC). [Contact us](https://forms.letta.com/request-demo) to learn more.
+</Card>
 
-Each agent step costs a fixed amount of Reasoning Units (RUs), conditional on the model used to power the agent.
-Stronger (larger) models consume more RUs per step, while faster and smaller models use fewer RUs per step.
+## Understanding Requests
 
-## Pricing
-View the pricing (in RUs and USD) for current models.
-Model pricing and availability is subject to change.
+Your Letta agents use large language models (LLMs) to reason and take actions. These model requests are what we count toward your monthly quota.
 
-| Model | RU per 1K steps | Steps per RU | Steps per USD |
-|--|--|
-| GPT-4 (OpenAI) | 420 | 238 steps / RU | 5,196 steps / $1 |
-| GPT-4o (OpenAI) | 420 | 238 steps / RU | 5,196 steps / $1 |
-| GPT-4o mini (OpenAI) | 420 | 238 steps / RU | 5,196 steps / $1 |
-| Claude 3.5 Opus (Anthropic) | 420 | 238 steps / RU | 5,196 steps / $1 |
-| Claude 3.5 Sonnet (Anthropic) | 420 | 238 steps / RU | 5,196 steps / $1 |
-| Claude 3.5 Haiku (Anthropic) | 420 | 238 steps / RU | 5,196 steps / $1 |
-| Llama 3.3 70B | 420 | 238 steps / RU | 5,196 steps / $1 |
-| Llama 3.2 405B | 420 | 238 steps / RU | 5,196 steps / $1 |
+### Standard vs Premium Models
 
-[Expand to view all models]()
+**Standard models** (`GPT-4o mini`, `Gemini Flash`, etc.) are faster and more economical. They're ideal for simple tool calling and basic chat interactions.
 
-## Custom models
-Letta Cloud can be configured to run with custom LLMs, for example fine-tuned open-weights Llama models.
-For more information on custom model support, please [contact sales]().
+**Premium models** (`GPT-4.1`, `Claude Sonnet`, etc.) offer enhanced capabilities for complex agentic tasks. They excel at multi-step tool sequences and tasks requiring advanced reasoning.
+
+Some high-powered models (like `o1` and `o3`) are available exclusively through usage-based pricing.
+
+### How Requests Are Counted
+
+Each agent "step" or "action" counts as one model request. Complex tasks (such as [deep research](https://github.com/letta-ai/agent-file/tree/main/deep_research_agent)) may require multiple requests to complete. You can control request usage via [tool rules](/guides/agents/tool-rules) that force the agent to stop on certain conditions.
+
+### Quota Refresh
+
+Request quotas refresh every month.
+Hobby plan quotas refresh on the 1st of each month. Pro plan quotas refresh at the start of your billing cycle. Unused requests do not roll over to the next month.
+
+## Usage-based Pricing
+
+If you are on the Pro plan, you can enable usage-based pricing to allow you to continue to make model requests after you've exceeded your request quota. Unused credits purchased roll over on each billing cycle.
+
+Usage-based billing can be enabled by adding credits to your account under your [account settings](https://app.letta.com/settings/organization/billing) page. See a full model list and pricing [here](https://app.letta.com/models).
+
+## Enterprise Plans
+
+For organizations with higher volume needs, our Enterprise plan offers increased quotas, dedicated support, role-based access control (RBAC), SSO (SAML, OIDC), and private model deployment options.
+[Contact our team](https://forms.letta.com/request-demo) to learn more.

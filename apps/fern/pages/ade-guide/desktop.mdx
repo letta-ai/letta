@@ -1,0 +1,53 @@
+---
+title:  Installing Letta Desktop
+subtitle: Install Letta Desktop on your MacOS or Windows machine
+slug: guides/ade/desktop
+---
+
+<img className="w-full light" src="/images/letta_desktop_screenshot.png" />
+<img className="w-full dark" src="/images/letta_desktop_screenshot_dark.png" />
+
+Letta Desktop bundles the Letta Server and ADE into a single local application. When running, it provides full access to the Letta API at `https://localhost:8283`.
+
+## Download Letta Desktop
+
+<CardGroup>
+<Card
+    title="Download Letta Desktop for Mac (Apple Silicon)"
+    icon="fa-brands fa-apple"
+    iconPosition="left"
+    href="https://downloads.letta.com/mac/dmg/arm64"
+>
+</Card>
+<Card
+    title="Download Letta Desktop for Windows (x64)"
+    icon="fa-brands fa-windows"
+    iconPosition="left"
+    href="https://downloads.letta.com/windows/nsis/x64"
+>
+</Card>
+</CardGroup>
+
+## Adding LLM backends
+The Letta server can be connected to various LLM API backends.
+You can add additional LLM API backends by opening the integrations panel (clicking the <Icon icon="square-rss" /> icon).
+When you configure a new integration (by setting the environment variable in the dialog), the Letta Server will be restarted to load the new LLM API backend.
+
+<img className="block w-300" src="/images/letta_desktop_integrations.png" />
+
+You can also edit the environment variable file directly, located at `~/.letta/env`.
+
+For this quickstart demo, we'll add an OpenAI API key (once we enter our key and **click confirm**, the Letta Server will automatically restart):
+<img className="w-300" src="/images/letta_desktop_openai.png" />
+
+
+## Alpha Status
+
+Letta Desktop is currently in **alpha**. View known issues and FAQ [here](/guides/desktop/troubleshooting).
+
+For a more stable development experience, we recommend installing Letta via Docker.
+
+## Support
+
+For bug reports and feature requests, contact us on [Discord](https://discord.gg/letta).
+

@@ -29,18 +29,6 @@ Letta Desktop bundles together the Letta Server and the Agent Development Enviro
 When you launch Letta Desktop, you'll be prompted to wait while the Letta Server starts up.
 You can monitor the server startup process by opening the server logs (clicking the <Icon icon="rectangle-terminal" /> icon).
 
-## Adding LLM backends
-The Letta server can be connected to various LLM API backends.
-You can add additional LLM API backends by opening the integrations panel (clicking the <Icon icon="square-rss" /> icon).
-When you configure a new integration (by setting the environment variable in the dialog), the Letta Server will be restarted to load the new LLM API backend.
-
-<img className="block w-300" src="/images/letta_desktop_integrations.png" />
-
-You can also edit the environment variable file directly, located at `~/.letta/env`.
-
-For this quickstart demo, we'll add an OpenAI API key (once we enter our key and **click confirm**, the Letta Server will automatically restart):
-<img className="w-300" src="/images/letta_desktop_openai.png" />
-
 ## Creating an agent with the Letta API
 Let's create an agent via the Letta API, which we can then view in the ADE (you can also use the ADE to create agents).
 

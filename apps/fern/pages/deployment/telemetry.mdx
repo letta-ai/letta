@@ -1,14 +1,14 @@
 ---
-title: Logging Telemetry 
-slug: guides/server/otel 
+title: Collecting Traces & Telemetry
+slug: guides/server/otel
 ---
 
-Letta uses [Clickhouse](https://clickhouse.com/) to store telemetry. Clickhouse is a database optimized for storing logs and traces. Traces can be used to view raw requests to LLM providers and also understand your agent's system performance metrics. 
+Letta uses [ClickHouse](https://clickhouse.com/) to store telemetry. ClickHouse is a database optimized for storing logs and traces. Traces can be used to view raw requests to LLM providers and also understand your agent's system performance metrics.
 
-## Configuring Clickhouse
-You will need to have a Clickhouse DB (either running locally or with [Clickhouse Cloud](https://console.clickhouse.cloud/)) to connect to Letta. 
+## Configuring ClickHouse
+You will need to have a ClickHouse DB (either running locally or with [ClickHouse Cloud](https://console.clickhouse.cloud/)) to connect to Letta.
 
-You can configure Clickhouse by passing the required enviornment variables: 
+You can configure ClickHouse by passing the required enviornment variables:
 ```sh
 docker run \
   -v ~/.letta/.persist/pgdata:/var/lib/postgresql/data \
@@ -21,10 +21,10 @@ docker run \
   letta/letta:latest
 ```
 
-### Finding your credentials in Clickhouse Cloud
-You can find these variable inside of Clickhouse Cloud by selecting the "Connection" button in the dashboard. 
+### Finding your credentials in ClickHouse Cloud
+You can find these variable inside of ClickHouse Cloud by selecting the "Connection" button in the dashboard.
 
 <img src="/images/clickhouse_config.png" />
 
-## Connecting to Grafana 
-We recommend connecting Clickhouse to Grafana to query and view traces. 
+## Connecting to Grafana
+We recommend connecting ClickHouse to Grafana to query and view traces. Grafana can be run [locally](https://grafana.com/oss/grafana/), or via [Grafana Cloud](https://grafana.com/grafana/).
