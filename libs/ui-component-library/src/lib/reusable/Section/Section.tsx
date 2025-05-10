@@ -41,7 +41,7 @@ type SectionProps = PropsWithChildren<
     actions?: React.ReactNode;
     fullHeight?: boolean;
     borderBottom?: boolean;
-    title?: string;
+    title?: React.ReactNode;
     icon?: React.ReactNode;
     description?: string;
   }
@@ -63,7 +63,6 @@ export function Section(props: SectionProps) {
 
   return (
     <VStack
-      paddingBottom="small"
       fullHeight={fullHeight}
       flex={fullHeight}
       fullWidth

@@ -30,7 +30,7 @@ import { PurchaseCreditsDialog } from '$web/client/components/PurchaseCreditsDia
 import type { ColumnDef } from '@tanstack/react-table';
 import { CreditCardSlot } from '$web/client/components';
 import type { BillingTiersType } from '@letta-cloud/types';
-import { UpgradeToProPlanDialog } from '$web/client/components/UpgradeToProPlanDialog/UpgradeToProPlanDialog';
+import { UpgradePlanDialog } from '$web/client/components/UpgradePlanDialog/UpgradePlanDialog';
 import { CancelPlanDialog } from '$web/client/components/CancelPlanDialog/CancelPlanDialog';
 import { ResumePlanButton } from '$web/client/components/ResumePlanButton/ResumePlanButton';
 import { CustomerQuotaView } from '$web/client/components/CustomerQuotaView/CustomerQuotaView';
@@ -134,7 +134,7 @@ function FreePlanUpsellDetails() {
         <Typography variant="heading3" bold>
           {t('FreePlanUpsellDetails.title')}
         </Typography>
-        <UpgradeToProPlanDialog
+        <UpgradePlanDialog
           trigger={
             <Button
               preIcon={<LettaInvaderIcon />}

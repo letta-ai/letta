@@ -2,7 +2,6 @@
 import { DashboardWithSidebarWrapper } from '@letta-cloud/ui-component-library';
 import { useTranslations } from '@letta-cloud/translations';
 import { useCurrentUser, useUserHasPermission } from '$web/client/hooks';
-import { useFeatureFlag } from '@letta-cloud/sdk-web';
 import { ApplicationServices } from '@letta-cloud/service-rbac';
 
 interface SettingsLayoutProps {
@@ -15,12 +14,6 @@ function SettingsLayout(props: SettingsLayoutProps) {
   const t = useTranslations('settings/layout');
 
   const currentUser = useCurrentUser();
-
-  const { isLoading: isLoadingModelProviders, data: isModelProvidersEnabled } =
-    useFeatureFlag('ALLOW_MODEL_PROVIDER_CONFIGURATION');
-
-  const showModelProviders =
-    !isLoadingModelProviders && isModelProvidersEnabled;
 
   const [canCRUDTheOrg] = useUserHasPermission(
     ApplicationServices.UPDATE_ORGANIZATION,
@@ -38,11 +31,6 @@ function SettingsLayout(props: SettingsLayoutProps) {
               label: t('profile'),
               href: '/settings/profile',
             },
-            {
-              id: 'account',
-              label: t('account'),
-              href: '/settings/account',
-            },
           ],
         },
         ...(currentUser?.hasCloudAccess
@@ -55,7 +43,7 @@ function SettingsLayout(props: SettingsLayoutProps) {
                         {
                           id: 'organization',
                           label: t('organization.general'),
-                          href: '/settings/organization/general',
+                          href: '/settings/organization/account',
                         },
                       ]
                     : []),
@@ -63,6 +51,11 @@ function SettingsLayout(props: SettingsLayoutProps) {
                     id: 'members',
                     label: t('organization.members'),
                     href: '/settings/organization/members',
+                  },
+                  {
+                    id: 'billing',
+                    label: t('organization.billing'),
+                    href: '/settings/organization/billing',
                   },
                   {
                     id: 'integrations',
@@ -74,31 +67,11 @@ function SettingsLayout(props: SettingsLayoutProps) {
                     label: t('organization.environmentVariables'),
                     href: '/settings/organization/environment-variables',
                   },
-                  ...(showModelProviders
-                    ? [
-                        {
-                          id: 'model-providers',
-                          label: t('organization.modelProviders'),
-                          href: '/settings/organization/model-providers',
-                        },
-                      ]
-                    : []),
                 ],
               },
               {
-                title: t('organization.costs'),
+                title: t('organization.productSettings'),
                 items: [
-                  {
-                    id: 'billing',
-                    label: t('organization.billing'),
-                    href: '/settings/organization/billing',
-                  },
-                  {
-                    id: 'usage',
-                    label: t('organization.usage'),
-                    href: '/settings/organization/usage',
-                  },
-
                   {
                     id: 'rate-limits',
                     label: t('organization.rateLimits'),

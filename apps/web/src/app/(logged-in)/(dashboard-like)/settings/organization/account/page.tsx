@@ -20,8 +20,12 @@ import { useQueryClient } from '@tanstack/react-query';
 import { webApi, webApiQueryKeys } from '$web/client';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useCallback } from 'react';
-import type { GetCurrentOrganizationSuccessResponse } from '$web/web-api/contracts';
+import {
+  type GetCurrentOrganizationSuccessResponse,
+  useFeatureFlag,
+} from '$web/web-api/contracts';
 import { useCurrentOrganization } from '$web/client/hooks';
+import { CurrentPlan } from './CurrentPlan/CurrentPlan';
 
 const EditOrganizationSettingsSchema = z.object({
   name: z.string(),
@@ -88,10 +92,10 @@ function EditOrganizationSettings(props: EditOrganizationSettingsProps) {
   );
 
   return (
-    <DashboardPageSection>
+    <Section title={t('EditOrganizationSettings.title')}>
       <FormProvider {...form}>
         <Form onSubmit={form.handleSubmit(handleSubmit)}>
-          <VStack gap="form">
+          <VStack paddingTop="small" gap="form">
             <FormField
               render={({ field }) => {
                 return (
@@ -121,7 +125,7 @@ function EditOrganizationSettings(props: EditOrganizationSettingsProps) {
           </VStack>
         </Form>
       </FormProvider>
-    </DashboardPageSection>
+    </Section>
   );
 }
 
@@ -157,24 +161,26 @@ function DeleteOrganizationSettings() {
 function OrganizationSettingsPage() {
   const t = useTranslations('organization/settings');
   const organization = useCurrentOrganization();
+  const { data: isProPlanEnabled } = useFeatureFlag('PRO_PLAN');
 
   return (
-    <DashboardPageLayout title={t('title')}>
-      <VStack width="largeContained">
+    <DashboardPageLayout cappedWidth title={t('title')}>
+      <VStack gap={false}>
         {!organization ? (
           <LoadingEmptyStatusComponent emptyMessage="" isLoading />
         ) : (
-          <>
-            <EditOrganizationSettings name={organization.name} />
-            <HR />
-            <DashboardPageSection>
+          <DashboardPageSection>
+            <VStack gap="xlarge">
+              <EditOrganizationSettings name={organization.name} />
+              <HR />
+              {isProPlanEnabled && <CurrentPlan />}
+
               <MembershipRules />
-            </DashboardPageSection>
-            <HR />
-            <DashboardPageSection>
+
+              <HR />
               <DeleteOrganizationSettings />
-            </DashboardPageSection>
-          </>
+            </VStack>
+          </DashboardPageSection>
         )}
       </VStack>
     </DashboardPageLayout>

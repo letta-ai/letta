@@ -1,23 +1,18 @@
-'use client';
 import { useTranslations } from '@letta-cloud/translations';
-import {
-  Alert,
-  Button,
-  Checkbox,
-  DashboardPageLayout,
-  DashboardPageSection,
-  Dialog,
-  FormActions,
-  FormField,
-  FormProvider,
-  Typography,
-  useForm,
-  VStack,
-} from '@letta-cloud/ui-component-library';
 import React, { useCallback, useMemo } from 'react';
 import { z } from 'zod';
-import { webApi } from '$web/client';
+import {
+  Alert,
+  Checkbox,
+  Dialog,
+  FormField,
+  FormProvider,
+  Section,
+  Typography,
+  useForm,
+} from '@letta-cloud/ui-component-library';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { webApi } from '@letta-cloud/sdk-web';
 
 function DeleteAccountDialog() {
   const t = useTranslations('settings/account/page');
@@ -70,10 +65,9 @@ function DeleteAccountDialog() {
         confirmText={t('DeleteAccountDialog.confirm')}
         onSubmit={form.handleSubmit(handleSubmit)}
         trigger={
-          <Button
-            label={t('DeleteAccountDialog.trigger')}
-            color="destructive"
-          />
+          <Typography overrideEl="span">
+            <a className="underline">{t('DeleteAccountDialog.trigger')}</a>
+          </Typography>
         }
       >
         <Alert
@@ -95,34 +89,16 @@ function DeleteAccountDialog() {
   );
 }
 
-function DeleteAccountSection() {
+export function DeleteAccountView() {
   const t = useTranslations('settings/account/page');
 
   return (
-    <VStack border padding width="contained">
-      <VStack gap="form">
-        <Typography variant="heading3">
-          {t('DeleteAccountSection.title')}
-        </Typography>
-        <Typography>{t('DeleteAccountSection.description')}</Typography>
-        <FormActions align="start">
-          <DeleteAccountDialog />
-        </FormActions>
-      </VStack>
-    </VStack>
+    <Section title={t('DeleteAccountSection.title')}>
+      <Typography>
+        {t.rich('DeleteAccountSection.description', {
+          action: () => <DeleteAccountDialog />,
+        })}
+      </Typography>
+    </Section>
   );
 }
-
-function AccountSettingsPage() {
-  const t = useTranslations('settings/account/page');
-
-  return (
-    <DashboardPageLayout title={t('title')}>
-      <DashboardPageSection>
-        <DeleteAccountSection />
-      </DashboardPageSection>
-    </DashboardPageLayout>
-  );
-}
-
-export default AccountSettingsPage;

@@ -21,6 +21,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { useTranslations } from '@letta-cloud/translations';
 import type { PublicUserSchemaType } from '$web/web-api/contracts';
 import { OnboardingSupportUI } from './OnboardingSupportUI/OnboardingSupportUI';
+import { DeleteAccountView } from './DeleteAccountView/DeleteAccountView';
 
 const UpdateUserProfileSchema = z.object({
   name: z.string(),
@@ -95,7 +96,7 @@ function ProfileSettingsPage() {
   const user = useCurrentUser();
 
   return (
-    <DashboardPageLayout title={t('title')}>
+    <DashboardPageLayout cappedWidth title={t('title')}>
       <DashboardPageSection>
         {!user ? (
           <LoadingEmptyStatusComponent emptyMessage="" isLoading />
@@ -104,6 +105,8 @@ function ProfileSettingsPage() {
         )}
         <HR />
         <OnboardingSupportUI />
+        <HR />
+        <DeleteAccountView />
       </DashboardPageSection>
     </DashboardPageLayout>
   );

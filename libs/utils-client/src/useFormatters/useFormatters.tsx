@@ -2,6 +2,7 @@ const defaultLocal = 'en-US';
 
 interface FormatFileSizeOptions {
   unit?: 'bytes' | 'GB' | 'kB' | 'MB' | 'TB';
+  maximumFractionDigits?: number;
 }
 
 export function useFormatters() {
@@ -11,31 +12,37 @@ export function useFormatters() {
     value: number,
     options: FormatFileSizeOptions = { unit: 'bytes' },
   ): string {
+    const { unit, ...rest } = options;
     switch (options.unit) {
       case 'GB':
         return formatNumber(value / 1_073_741_824, {
           style: 'decimal',
           maximumFractionDigits: 2,
+          ...rest,
         });
       case 'kB':
         return formatNumber(value / 1024, {
           style: 'decimal',
           maximumFractionDigits: 2,
+          ...rest,
         });
       case 'MB':
         return formatNumber(value / 1_048_576, {
           style: 'decimal',
           maximumFractionDigits: 2,
+          ...rest,
         });
       case 'TB':
         return formatNumber(value / 1_099_511_627_776, {
           style: 'decimal',
           maximumFractionDigits: 2,
+          ...rest,
         });
       default:
         return formatNumber(value, {
           style: 'decimal',
           maximumFractionDigits: 0,
+          ...rest,
         });
     }
   }

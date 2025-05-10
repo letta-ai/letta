@@ -8,8 +8,8 @@ import {
 import {
   Button,
   ExternalLink,
+  Section,
   Typography,
-  VStack,
 } from '@letta-cloud/ui-component-library';
 
 interface StatusUIProps {
@@ -19,13 +19,13 @@ interface StatusUIProps {
 
 function StatusUI(props: StatusUIProps) {
   const { title, children } = props;
+  const t = useTranslations('settings/profile/page/OnboardingSupportUI');
 
   return (
-    <VStack border width="contained" padding fullWidth>
-      <Typography bold>Onboarding status</Typography>
+    <Section title={t('title')}>
       <Typography variant="body2">{title}</Typography>
       <div>{children}</div>
-    </VStack>
+    </Section>
   );
 }
 

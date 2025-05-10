@@ -10,6 +10,7 @@
     "title": "Finish onboarding!",
     "description": "You can continue your onboarding at any time. Click the button below to continue.",
     "trigger": "Continue onboarding"
+    
   },
   "components/CustomerQuotaView": {
     "loading": "Loading quotas...",
@@ -138,7 +139,6 @@
       "warning": "These instructs are for Next.js setups with the app router",
       "install": "1. Install the Letta SDK and Vercel's AI packages",
       "setupEnvironment": "2. Create or append a .env.local file at the root of your application, and add the following environment values:",
-
       "setupStreaming": {
         "title": "3. Create a file at /api/chat/route.ts, this endpoint will be used to stream messages back via an agentId",
         "label": "Code"
@@ -434,8 +434,8 @@
       "models": "Models",
       "localDev": "Self-hosted",
       "settings": "Settings",
-      "billing": "Billing",
-      "account": "Account"
+      "billing": "Billing and usage",
+      "account": "Personal details"
     },
     "rootTitle": "Dashboard",
     "secondaryNav": {
@@ -473,7 +473,7 @@
     "title": "Account settings",
     "DeleteAccountSection": {
       "title": "Delete account",
-      "description": "Deleting your account is permanent and cannot be undone. This will delete any organizations you are the sole member of. Those organizations will have all their projects, agents, data sources, and other data deleted as well."
+      "description": "Deleting your account is permanent and cannot be undone. This will delete any organizations you are the sole member of. Those organizations will have all their projects, agents, data sources, and other data deleted as well. <action>Delete account</action>"
     },
     "DeleteAccountDialog": {
       "title": "Delete account",
@@ -674,19 +674,19 @@
     }
   },
   "settings/layout": {
-    "personal": "Personal",
-    "profile": "Profile",
+    "personal": "Personal Settings",
+    "profile": "Personal details",
     "account": "Account",
     "organization": {
-      "general": "General",
+      "general": "Account",
       "members": "Members",
-      "root": "Organization",
-      "costs": "Usage and Costs",
+      "root": "Organization Settings",
+      "productSettings": "Reference",
       "utilities": "Global Configuration",
       "integrations": "Integrations",
-      "environmentVariables": "Tool variables",
+      "environmentVariables": "Global variables",
       "modelProviders": "Model providers",
-      "billing": "Billing",
+      "billing": "Billing and usage",
       "auditLog": "Audit log",
       "usage": "Usage",
       "rateLimits": "Rate limits",
@@ -716,7 +716,6 @@
         "tooltip": "The amount of requests you will make to POST /messages, /messages/async /messages/stream or made in the UI",
         "placeholder": "1000"
       },
-
       "estimatedContextWindowSize": {
         "tooltip": "The average context window size that's being sent to our models",
         "label": "Estimated average context window size",
@@ -858,19 +857,32 @@
     "description": "Are you sure you want to cancel your plan? This will cancel your current subscription at the end of the billing period. You will not be charged again, but you will lose access to the Pro plan features and any additional agents, identities, and data sources will be deleted. You can resume your subscription at any time before your billing period ends."
   },
   "components/UpgradeToProPlanDialog": {
-    "error": "There was an error upgrading to the Pro plan, please try again or contact support.",
-    "title": "Manage your account",
-    "description": "The Pro plan includes:",
-    "options": {
-      "freeInferencesPerMonth": "Unlimited Standard model requests per month",
-      "premiumInferencesPerMonth": "{amount} Premium model requests per month",
-      "agents": "{amount} hosted agents",
-      "storage": "{amount}GB of storage",
-      "dataSources": "{amount} data sources",
-      "projects": "{amount} projects",
-      "identities": "{amount} identities",
-      "templates": "{amount} templates"
+    "purchasing": "Upgrading your plan...",
+    "cta": "Subscribe",
+    "title": "Upgrade",
+    "ConfirmView": {
+      "title": "Your order"
     },
+    "PlanComparisonView": {
+      "cta": "Upgrade to pro",
+      "free": {
+        "cta": "You are currently on the free plan",
+        "label": "Free",
+        "usage": "For getting started."
+      },
+      "pro": {
+        "cta": "Upgrade to pro",
+        "label": "Pro",
+        "usage": "For developers shipping agents."
+      },
+      "enterprise": {
+        "cta": "Contact sales",
+        "label": "Enterprise",
+        "usage": "For teams deploying agents at scale."
+      },
+      "cost": "<cost></cost> per month"
+    },
+    "error": "There was an error upgrading to the Pro plan, please try again or contact support.",
     "legal": "By upgrading, you agree to our <terms>Terms of Service</terms> and <privacy>Privacy Policy</privacy> and you will pay 20$/month. You can cancel at any time.",
     "cta": "Upgrade for 20$ per month",
     "heading": "Upgrade to Pro",
@@ -1023,14 +1035,52 @@
       "requestsPerMinute": "Requests per minute"
     }
   },
+  "components/PlanBenefits": {
+    "free": {
+      "agent": "Create up to {limit} agents and identities",
+      "standardRequests": "<limit></limit> <link>standard model</link> requests per month",
+      "premiumRequests": "<limit></limit> <link>premium model</link> requests per month",
+      "storage": "{limit}MB of storage"
+    },
+    "pro": {
+      "standardRequests": "Unlimited <link>standard model</link> usage",
+      "premiumModelUsage": "Up to <limit></limit> <link>premium model</link> requests per month",
+      "agent": "Create up to {limit} agents and identities",
+      "storage": "{limit}GB of storage"
+    },
+    "enterprise": {
+      "agent": "Unlimited agents",
+      "standardRequests": "Unlimited <link>standard model</link> usage",
+      "premiumModelUsage": "Unlimited <link>premium model</link> usage",
+      "storage": "Unlimited storage"
+    }
+  },
+  "organization/settings/CurrentPlan": {
+    "UpgradeButton": {
+      "trigger": "Upgrade to Pro"
+    },
+    "title": "Current plan <plan></plan>",
+    "tiers": {
+      "free": {
+        "title": "Free plan"
+      },
+      "pro": {
+        "title": "Pro plan"
+      },
+      "enterprise": {
+        "title": "Enterprise plan"
+      }
+    }
+  },
   "organization/settings": {
-    "title": "Organization settings",
+    "title": "Organization account",
     "MembershipRules": {
       "title": "Automatic organization membership",
       "description": "Automatically add new members to the organizations based on their email domain",
       "actions": "Manage membership invite rules"
     },
     "EditOrganizationSettings": {
+      "title": "Organization Profile",
       "name": {
         "label": "Organization name"
       },
@@ -1038,7 +1088,7 @@
     },
     "DeleteOrganizationSettings": {
       "title": "Delete organization",
-      "description": "Deleting an organization is permanent and cannot be undone. Please contact us to delete your organization.",
+      "description": "Deleting an organization is permanent and cannot be undone. If you are only part of one organization and you are the last member of your organization, your organization will be automatically deleted if you delete your account.",
       "dialog": {
         "error": "There was an error deleting the organization, please try again or contact support.",
         "title": "Are you sure you want to delete this organization?",
@@ -1202,6 +1252,7 @@
     }
   },
   "settings/profile/page/OnboardingSupportUI": {
+    "title": "Onboarding status",
     "RestartOnboarding": {
       "title": "You've completed the onboarding process! <link>YIPIEE!</link>",
       "button": "Restart onboarding"

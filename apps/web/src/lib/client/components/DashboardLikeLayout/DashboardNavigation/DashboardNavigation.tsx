@@ -250,7 +250,7 @@ function MainNavigationItems(props: MainNavigationItemsProps) {
     },
     {
       label: t('nav.settings'),
-      href: '/settings/organization/general',
+      href: '/settings/organization/account',
       id: 'usage',
       icon: <CogIcon />,
     },

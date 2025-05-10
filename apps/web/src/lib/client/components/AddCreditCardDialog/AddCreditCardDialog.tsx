@@ -22,6 +22,9 @@ const stripePromise = loadStripe(environment.NEXT_PUBLIC_STRIPE_PUBLISH_KEY);
 
 interface AddCreditCardDialogProps {
   trigger: React.ReactNode;
+  label?: string;
+  terms?: string;
+  onSuccess?: VoidFunction;
 }
 
 import { cn } from '@letta-cloud/ui-styles';
@@ -30,11 +33,12 @@ import { useQueryClient } from '@tanstack/react-query';
 interface CreditCardFormInnerProps {
   setIsLoading: (isLoading: boolean) => void;
   clientSecret: string;
+  label?: string;
   onComplete: VoidFunction;
 }
 
 function CreditCardFormInner(props: CreditCardFormInnerProps) {
-  const { setIsLoading, onComplete, clientSecret } = props;
+  const { setIsLoading, label, onComplete, clientSecret } = props;
   const t = useTranslations('components/AddCreditCardDialog');
   const stripe = useStripe();
   const elements = useElements();
@@ -106,7 +110,7 @@ function CreditCardFormInner(props: CreditCardFormInnerProps) {
           busy={isSubmitting}
           type="submit"
           fullWidth
-          label={t('addCard')}
+          label={label || t('addCard')}
         />
       </VStack>
     </form>
@@ -115,10 +119,11 @@ function CreditCardFormInner(props: CreditCardFormInnerProps) {
 
 interface CreditCardFormProps {
   onComplete: VoidFunction;
+  label?: string;
 }
 
 export function CreditCardForm(props: CreditCardFormProps) {
-  const { onComplete } = props;
+  const { onComplete, label } = props;
   const [isLoading, setIsLoading] = useState(true);
   const [isError, setError] = useState(false);
   const [setupIntentClientSecret, setSetupIntentClientSecret] = useState('');
@@ -140,7 +145,7 @@ export function CreditCardForm(props: CreditCardFormProps) {
   const t = useTranslations('components/AddCreditCardDialog');
 
   return (
-    <div className="min-h-[250px] transition-all">
+    <div className="min-h-[250px] w-full transition-all">
       {(isLoading || isError) && (
         <div className="absolute w-full left-0 h-[250px]">
           <LoadingEmptyStatusComponent
@@ -176,6 +181,7 @@ export function CreditCardForm(props: CreditCardFormProps) {
               onComplete={onComplete}
               clientSecret={setupIntentClientSecret}
               setIsLoading={setIsLoading}
+              label={label}
             />
           </Elements>
         </div>
@@ -185,7 +191,7 @@ export function CreditCardForm(props: CreditCardFormProps) {
 }
 
 export function AddCreditCardDialog(props: AddCreditCardDialogProps) {
-  const { trigger } = props;
+  const { trigger, onSuccess, label } = props;
   const t = useTranslations('components/AddCreditCardDialog');
   const queryClient = useQueryClient();
 
@@ -201,7 +207,11 @@ export function AddCreditCardDialog(props: AddCreditCardDialogProps) {
       isOpen={isOpen}
     >
       <CreditCardForm
+        label={label}
         onComplete={() => {
+          if (onSuccess) {
+            onSuccess();
+          }
           queryClient
             .invalidateQueries({
               queryKey:
