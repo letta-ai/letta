@@ -32,12 +32,8 @@ services:
     env_file:
       - .env
     environment:
-      - LETTA_PG_DB=${LETTA_PG_DB:-letta}
-      - LETTA_PG_USER=${LETTA_PG_USER:-letta}
-      - LETTA_PG_PASSWORD=${LETTA_PG_PASSWORD:-letta}
-      - LETTA_PG_HOST=pgvector_db
-      - LETTA_PG_PORT=5432
-      # LETTA_PG_URI is need for startup.sh to detect the external db
+      # LETTA_PG_URI is needed for startup.sh to detect the external db
+      # if not set, letta will fallback to its own internal postgres from its base image
       - LETTA_PG_URI=postgresql://${LETTA_PG_USER:-letta}:${LETTA_PG_PASSWORD:-letta}@pgvector_db:${LETTA_PG_PORT:-5432}/${LETTA_PG_DB:-letta}
       
       - LETTA_DEBUG=True
