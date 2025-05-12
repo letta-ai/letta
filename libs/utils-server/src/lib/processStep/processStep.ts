@@ -89,20 +89,20 @@ export async function processStep(step: Step) {
       );
 
       const limit =
-        subTier === 'free'
+        modelTier.tier === 'free'
           ? usageLimits.freeInferencesPerMonth
           : usageLimits.premiumInferencesPerMonth;
 
       // if the usage is greater than the limit, we need to deduct credits
       if (usage + 1 <= limit) {
         amount = 0;
-      }
 
-      await incrementRedisModelTransactions(
-        modelTier.tier,
-        webOrgId.organizationId,
-        1,
-      );
+        await incrementRedisModelTransactions(
+          modelTier.tier,
+          webOrgId.organizationId,
+          1,
+        );
+      }
     }
 
     const response = await removeCreditsFromOrganization({
