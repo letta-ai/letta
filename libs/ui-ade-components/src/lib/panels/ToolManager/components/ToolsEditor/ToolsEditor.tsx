@@ -138,11 +138,13 @@ function SelectedToolViewer(props: SelectedToolViewerProps) {
           composioToolKey={selectedTool.name}
           name={selectedTool.name}
           description={selectedTool.description || ''}
+          tool={selectedTool}
         />
       );
     case 'external_mcp':
       return (
         <MCPToolViewer
+          tool={selectedTool}
           tags={selectedTool.tags || []}
           name={selectedTool.name || ''}
           attachedId={selectedTool.id || ''}

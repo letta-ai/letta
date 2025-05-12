@@ -30,6 +30,10 @@ function AppsViewer() {
       return [];
     }
 
+    if (!Array.isArray(data.body.items)) {
+      return [];
+    }
+
     return data.body.items.filter((v) => v?.meta?.actionsCount > 0);
   }, [data]);
 

@@ -15,7 +15,6 @@ import {
   HistoryIcon,
   HStack,
   RawCodeEditor,
-  RawInput,
   RawToggleGroup,
   SaveIcon,
   SplitscreenRightIcon,
@@ -57,8 +56,8 @@ import {
   pythonCodeParser,
 } from '@letta-cloud/utils-shared';
 import { atom, useAtom } from 'jotai';
-import { DeleteToolButton } from './DeleteToolButton/DeleteToolButton';
 import { RESTRICTED_FN_PROPS } from '../../constants';
+import { ToolSettings } from '../ToolsSettings/ToolSettings';
 
 interface CurrentToolContextState {
   tool: Tool;
@@ -730,7 +729,7 @@ function ToolContent() {
     case 'json':
       return <JSONViewer />;
     case 'settings':
-      return <LocalToolSettings />;
+      return <ToolSettings tool={tool} />;
     default:
       return null;
   }
@@ -853,40 +852,6 @@ function SchemaChangeWarning() {
         />
       </button>
     </Tooltip>
-  );
-}
-
-function LocalToolSettings() {
-  const tool = useCurrentTool();
-  const { stagedTool, setStagedTool } = useStagedCode(tool);
-
-  const t = useTranslations('ToolsEditor/LocalToolsViewer');
-
-  const handleReturnCharLimitChange = useCallback(
-    (value: string) => {
-      setStagedTool((prev) => ({
-        ...prev,
-        // @ts-expect-error - we want to do a hacky cast here because we can throw an error if the value is not a number
-        return_char_limit: value as number,
-      }));
-    },
-    [setStagedTool],
-  );
-
-  return (
-    <VStack padding fullWidth fullHeight>
-      <RawInput
-        fullWidth
-        label={t('LocalToolSettings.returnCharLimit.label')}
-        value={stagedTool.return_char_limit}
-        onChange={(e) => {
-          handleReturnCharLimitChange(e.target.value);
-        }}
-      />
-      <HStack>
-        <DeleteToolButton currentToolId={tool.id || ''} />
-      </HStack>
-    </VStack>
   );
 }
 

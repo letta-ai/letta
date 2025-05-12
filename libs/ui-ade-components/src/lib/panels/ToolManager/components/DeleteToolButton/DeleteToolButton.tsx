@@ -7,8 +7,8 @@ import {
   UseToolsServiceListToolsKeyFn,
 } from '@letta-cloud/sdk-core';
 import { Button, Dialog } from '@letta-cloud/ui-component-library';
-import { useToolManagerState } from '../../../hooks/useToolManagerState/useToolManagerState';
-import { LIST_TOOLS_PAYLOAD } from '../../../routes/MyTools/MyTools';
+import { useToolManagerState } from '../../hooks/useToolManagerState/useToolManagerState';
+import { LIST_TOOLS_PAYLOAD } from '../../routes/MyTools/MyTools';
 
 interface DeleteToolButtonProps {
   currentToolId: string;

@@ -1115,6 +1115,13 @@
     },
     "restore": "This variable has been updated, reset environment variable to the original value"
   },
+  "ToolsEditor/ToolSettings": {
+    "returnCharLimit": {
+      "label": "Return character limit"
+    },
+    "save": "Save",
+    "error": "There was an error updating the tool settings, please try again or contact support."
+  },
   "ToolsEditor/LocalToolsViewer": {
     "SchemaChangeWarning": {
       "title": "The primary function {functionName} does not match your json schema, your tool may not work as expected.",
@@ -1130,11 +1137,6 @@
     "RestoreToolButton": {
       "label": "Restore"
     },
-    "LocalToolSettings": {
-      "returnCharLimit": {
-        "label": "Return character limit"
-      }
-    },
     "ErrorViewer": {
       "noError": "No errors found"
     },
@@ -1149,6 +1151,7 @@
     "EditModes": {
       "label": "Edit mode",
       "modes": {
+        "details": "Details",
         "json": "JSON Schema",
         "errors": "Code and errors",
         "code": "Code Only",
@@ -1253,7 +1256,11 @@
     }
   },
   "ToolManager/MCPToolViewer": {
-    "noServerFound": "We couldn't find a server for this tool, this usually means the tool tags have been edited unintentionally, please detach and reattach the tool to have this page work correctly."
+    "noServerFound": "We couldn't find a server for this tool, this usually means the tool tags have been edited unintentionally, please detach and reattach the tool to have this page work correctly.",
+    "modes": {
+      "details": "Details",
+      "settings": "Settings"
+    }
   },
   "ToolManager/ToolVariables": {
     "title": "Environment Variables",
