@@ -69,6 +69,9 @@ just ready
 
 # starts the server
 just core
+
+# starts the server with hot-reload if you prefer
+just core-debug
 ```
 
 #### Running letta web
@@ -76,9 +79,12 @@ just core
 # prepares local environment, cloud APIs, migrates your databases
 just ready
 
-# starts the server
+# starts the cloud api server
 # NOTE: run in a different terminal from `just web` (you need core running)
 just cloud-api
+
+# starts the cloud api server with hot-reload if you prefer
+just dev-cloud-api
 
 # NOTE: run in a different terminal from `just core` to have it running
 just web
