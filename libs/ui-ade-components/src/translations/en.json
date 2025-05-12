@@ -259,14 +259,14 @@
       "confirm": "Detach",
       "error": "There was an error detaching this data source, please try again or contact support."
     },
-    "UpdateDataSourceDescriptionDialog": {
-      "title": "Update source description",
-      "trigger": "Update source description",
+    "UpdateDataSourceInstructionsDialog": {
+      "title": "Update source instructions",
+      "trigger": "Update source instructions",
       "confirm": "Update",
       "error": "There was an error updating this data source, please try again or contact support.",
-      "description": {
-        "label": "Source Description",
-        "placeholder": "my-source-description"
+      "instructions": {
+        "label": "Source Instructions",
+        "placeholder": "my-source-instructions"
       }
     },
     "RenameDataSourceDialog": {
@@ -327,7 +327,7 @@
       "titles": "Add New Data Source",
       "trigger": "Create source",
       "goBack": "Go back",
-      "description": {
+      "instructions": {
         "label": "Instructions",
         "placeholder": "Enter instructions for how this data source should be used",
         "tooltip": "How the agent should ingest this data source"

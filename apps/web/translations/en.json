@@ -749,7 +749,7 @@
       "embeddingModel": {
         "label": "Embedding model"
       },
-      "descriptionInput": {
+      "instructions": {
         "label": "Instructions",
         "placeholder": "my-data-source-instructions"
       },

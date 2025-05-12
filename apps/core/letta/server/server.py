@@ -1115,7 +1115,7 @@ class SyncServer(Server):
                 ),
                 CreateBlock(
                     label="instructions",
-                    value=source.description,
+                    value=source.instructions,
                 ),
             ],
             llm_config=main_agent.llm_config,

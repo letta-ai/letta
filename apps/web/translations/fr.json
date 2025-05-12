@@ -246,7 +246,7 @@
       "embeddingModel": {
         "label": "Modèle d'intégration"
       },
-      "descriptionInput": {
+      "instructions": {
         "label": "Instructions",
         "placeholder": "ma-source-de-données-instructions"
       },

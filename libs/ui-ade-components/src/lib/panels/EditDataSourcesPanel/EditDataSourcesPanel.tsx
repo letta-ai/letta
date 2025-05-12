@@ -247,7 +247,7 @@ interface CreateNewDataSourceProps {
 
 const CreateNewDataSourceSchema = z.object({
   name: z.string().min(1),
-  description: z.string().optional(),
+  instructions: z.string().optional(),
 });
 
 type CreateNewDataSourceFormValues = z.infer<typeof CreateNewDataSourceSchema>;
@@ -259,7 +259,7 @@ function CreateNewDataSource(props: CreateNewDataSourceProps) {
     resolver: zodResolver(CreateNewDataSourceSchema),
     defaultValues: {
       name: '',
-      description: '',
+      instructions: '',
     },
   });
 
@@ -300,13 +300,13 @@ function CreateNewDataSource(props: CreateNewDataSourceProps) {
         return;
       }
 
-      const { name, description } = values;
+      const { name, instructions } = values;
 
       createDataSource(
         {
           requestBody: {
             name,
-            description,
+            instructions,
             embedding_config,
           },
         },
@@ -379,7 +379,7 @@ function CreateNewDataSource(props: CreateNewDataSourceProps) {
           />
           <Tooltip
             asChild
-            content={t('CreateDataSourceDialog.description.tooltip')}
+            content={t('CreateDataSourceDialog.instructions.tooltip')}
           >
             <FormField
               render={({ field }) => (
@@ -388,13 +388,13 @@ function CreateNewDataSource(props: CreateNewDataSourceProps) {
                   minRows={3}
                   fullWidth
                   {...field}
-                  label={t('CreateDataSourceDialog.description.label')}
+                  label={t('CreateDataSourceDialog.instructions.label')}
                   placeholder={t(
-                    'CreateDataSourceDialog.description.placeholder',
+                    'CreateDataSourceDialog.instructions.placeholder',
                   )}
                 />
               )}
-              name="description"
+              name="instructions"
             />
           </Tooltip>
           <FormActions errorMessage={errorMessage}>
@@ -792,21 +792,21 @@ export function DeleteFileDialog(props: DeleteFileDialogProps) {
   );
 }
 
-const UpdateDataSourceDescriptionSchema = z.object({
-  description: z.string().optional(),
+const UpdateDataSourceInstructionsSchema = z.object({
+  instructions: z.string().optional(),
 });
 
-type UpdateDataSourceDescriptionFormValues = z.infer<
-  typeof UpdateDataSourceDescriptionSchema
+type UpdateDataSourceInstructionsFormValues = z.infer<
+  typeof UpdateDataSourceInstructionsSchema
 >;
 
-interface UpdateDataSourceDescriptionDialogProps {
+interface UpdateDataSourceInstructionsDialogProps {
   source: Source;
   onClose: () => void;
 }
 
-function UpdateDataSourceDescriptionDialog(
-  props: UpdateDataSourceDescriptionDialogProps,
+function UpdateDataSourceInstructionsDialog(
+  props: UpdateDataSourceInstructionsDialogProps,
 ) {
   const { source, onClose } = props;
   const t = useTranslations('ADE/EditDataSourcesPanel');
@@ -814,10 +814,10 @@ function UpdateDataSourceDescriptionDialog(
   const queryClient = useQueryClient();
   const { id: agentId } = useCurrentAgent();
 
-  const form = useForm<UpdateDataSourceDescriptionFormValues>({
-    resolver: zodResolver(UpdateDataSourceDescriptionSchema),
+  const form = useForm<UpdateDataSourceInstructionsFormValues>({
+    resolver: zodResolver(UpdateDataSourceInstructionsSchema),
     defaultValues: {
-      description: source.description || '',
+      instructions: source.instructions || '',
     },
   });
 
@@ -855,11 +855,11 @@ function UpdateDataSourceDescriptionDialog(
   });
 
   const onSubmit = useCallback(
-    (values: UpdateDataSourceDescriptionFormValues) => {
+    (values: UpdateDataSourceInstructionsFormValues) => {
       mutate({
         sourceId: source.id || '',
         requestBody: {
-          description: values.description,
+          instructions: values.instructions,
         },
       });
     },
@@ -870,7 +870,7 @@ function UpdateDataSourceDescriptionDialog(
     <FormProvider {...form}>
       <Dialog
         errorMessage={
-          isError ? t('UpdateDataSourceDescriptionDialog.error') : undefined
+          isError ? t('UpdateDataSourceInstructionsDialog.error') : undefined
         }
         isOpen
         onOpenChange={(state) => {
@@ -879,8 +879,8 @@ function UpdateDataSourceDescriptionDialog(
           }
         }}
         onSubmit={form.handleSubmit(onSubmit)}
-        title={t('UpdateDataSourceDescriptionDialog.title')}
-        confirmText={t('UpdateDataSourceDescriptionDialog.confirm')}
+        title={t('UpdateDataSourceInstructionsDialog.title')}
+        confirmText={t('UpdateDataSourceInstructionsDialog.confirm')}
         isConfirmBusy={isPending}
       >
         <FormField
@@ -890,13 +890,13 @@ function UpdateDataSourceDescriptionDialog(
               minRows={3}
               fullWidth
               {...field}
-              label={t('UpdateDataSourceDescriptionDialog.description.label')}
+              label={t('UpdateDataSourceInstructionsDialog.instructions.label')}
               placeholder={t(
-                'UpdateDataSourceDescriptionDialog.description.placeholder',
+                'UpdateDataSourceInstructionsDialog.instructions.placeholder',
               )}
             />
           )}
-          name="description"
+          name="instructions"
         />
       </Dialog>
     </FormProvider>
@@ -1109,7 +1109,7 @@ function EditDataSourcesContent(props: EditDataSourcesContentProps) {
   const t = useTranslations('ADE/EditDataSourcesPanel');
   const [sourceToDetach, setSourceToDetach] = useState<Source | null>(null);
   const [sourceToRename, setSourceToRename] = useState<Source | null>(null);
-  const [sourceToUpdateDescription, setSourceToUpdateDescription] =
+  const [sourceToUpdateInstructions, setSourceToUpdateInstructions] =
     useState<Source | null>(null);
   const [sourceToDelete, setSourceToDelete] = useState<Source | null>(null);
   const [fileToDelete, setFileToDelete] = useState<Omit<
@@ -1206,10 +1206,10 @@ function EditDataSourcesContent(props: EditDataSourcesContentProps) {
               },
             },
             {
-              id: 'updateDescription',
-              label: t('UpdateDataSourceDescriptionDialog.trigger'),
+              id: 'updateInstructions',
+              label: t('UpdateDataSourceInstructionsDialog.trigger'),
               onClick: () => {
-                setSourceToUpdateDescription(source);
+                setSourceToUpdateInstructions(source);
               },
             },
             {
@@ -1347,11 +1347,11 @@ function EditDataSourcesContent(props: EditDataSourcesContentProps) {
           }}
         />
       )}
-      {sourceToUpdateDescription && (
-        <UpdateDataSourceDescriptionDialog
-          source={sourceToUpdateDescription}
+      {sourceToUpdateInstructions && (
+        <UpdateDataSourceInstructionsDialog
+          source={sourceToUpdateInstructions}
           onClose={() => {
-            setSourceToUpdateDescription(null);
+            setSourceToUpdateInstructions(null);
           }}
         />
       )}

@@ -259,14 +259,14 @@
       "confirm": "分离",
       "error": "分离此数据源时出错，请重试或联系客服。"
     },
-    "UpdateDataSourceDescriptionDialog": {
-      "title": "更新源描述",
-      "trigger": "更新源描述",
+    "UpdateDataSourceInstructionsDialog": {
+      "title": "更新源指令",
+      "trigger": "更新源指令",
       "confirm": "更新",
       "error": "更新此数据源时出错，请重试或联系客服。",
-      "description": {
-        "label": "源描述",
-        "placeholder": "my-source-description"
+      "instructions": {
+        "label": "源指令",
+        "placeholder": "my-source-instructions"
       }
     },
     "RenameDataSourceDialog": {
@@ -327,7 +327,7 @@
       "titles": "添加新数据源",
       "trigger": "创建源",
       "goBack": "返回",
-      "description": {
+      "instructions": {
         "label": "说明",
         "placeholder": "输入有关如何使用此数据源的说明",
         "tooltip": "智能体应如何摄取此数据源"

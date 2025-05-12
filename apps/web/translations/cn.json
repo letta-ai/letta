@@ -703,7 +703,7 @@
       "embeddingModel": {
         "label": "嵌入模型"
       },
-      "descriptionInput": {
+      "instructions": {
         "label": "说明",
         "placeholder": "my-data-source-instructions"
       },

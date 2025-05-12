@@ -39,7 +39,7 @@ import { ApplicationServices } from '@letta-cloud/service-rbac';
 
 const createDataSourceSchema = z.object({
   name: z.string().min(3),
-  description: z.string(),
+  instructions: z.string(),
   embedding_config_model: OptionTypeSchemaSingle,
 });
 
@@ -109,7 +109,7 @@ function CreateDataSourceDialog() {
     resolver: zodResolver(createDataSourceSchema),
     defaultValues: {
       name: '',
-      description: '',
+      instructions: '',
     },
   });
 
@@ -127,7 +127,7 @@ function CreateDataSourceDialog() {
       mutate({
         requestBody: {
           name: values.name,
-          description: values.description,
+          instructions: values.instructions,
           embedding_config: embeddingModel,
         },
       });
@@ -189,11 +189,11 @@ function CreateDataSourceDialog() {
           )}
         />
         <FormField
-          name="description"
+          name="instructions"
           render={({ field }) => (
             <TextArea
               fullWidth
-              label={t('CreateDataSourceDialog.descriptionInput.label')}
+              label={t('CreateDataSourceDialog.instructions.label')}
               {...field}
             />
           )}
@@ -211,6 +211,10 @@ const dataSourceColumn: Array<ColumnDef<Source>> = [
   {
     header: 'Description',
     accessorKey: 'description',
+  },
+  {
+    header: 'Instructions',
+    accessorKey: 'instructions',
   },
   {
     header: 'Created At',

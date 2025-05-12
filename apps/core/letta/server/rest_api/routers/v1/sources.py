@@ -101,6 +101,7 @@ def create_source(
         name=source_create.name,
         embedding_config=source_create.embedding_config,
         description=source_create.description,
+        instructions=source_create.instructions,
         metadata=source_create.metadata,
     )
     return server.source_manager.create_source(source=source, actor=actor)
