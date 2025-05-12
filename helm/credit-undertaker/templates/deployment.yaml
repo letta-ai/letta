@@ -50,9 +50,9 @@ spec:
             - name: DATABASE_URL
               value: {{ .Values.env.DATABASE_URL | quote }}
             - name: STRIPE_SECRET_KEY
-              value: { { .Values.env.STRIPE_SECRET_KEY | quote } }
+              value: {{ .Values.env.STRIPE_SECRET_KEY | quote }}
             - name: RESEND_API_KEY
-              value: { { .Values.env.RESEND_API_KEY | quote } }
+              value: {{ .Values.env.RESEND_API_KEY | quote }}
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
           {{- with .Values.volumeMounts }}
