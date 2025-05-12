@@ -56,6 +56,11 @@ export const featureFlags = {
     expiryDate: '2024-07-01',
     flagValue: z.boolean(),
   },
+  MIGRATIONS_VIEWER: {
+    description: 'Make managing agents more transparent',
+    expiryDate: '2024-07-01',
+    flagValue: z.boolean(),
+  },
 } satisfies Record<string, FlagProperties>;
 
 export type Flag = keyof typeof featureFlags;

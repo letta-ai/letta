@@ -194,6 +194,9 @@
       "atCurrentVersion": "At latest version",
       "notAtCurrentVersion": "Needs migration"
     },
+    "MigrationsViewer": {
+      "title": "Migrations"
+    },
     "TemplateVersion": {
       "version": "Version {version}"
     },
