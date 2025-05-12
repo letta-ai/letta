@@ -93,10 +93,10 @@ configure-kubectl cluster-name="letta":
         --set env.TEMPORAL_LETTUCE_API_HOST="${TEMPORAL_LETTUCE_API_HOST}" \
         --set env.TEMPORAL_LETTUCE_CA_PEM="${TEMPORAL_LETTUCE_CA_PEM}" \
         --set env.TEMPORAL_LETTUCE_CA_KEY="${TEMPORAL_LETTUCE_CA_KEY}" \
-        --set secrets.CLICKHOUSE_ENDPOINT=${CLICKHOUSE_ENDPOINT} \
-        --set secrets.CLICKHOUSE_DATABASE=${CLICKHOUSE_DATABASE} \
-        --set secrets.CLICKHOUSE_USERNAME=${CLICKHOUSE_USERNAME} \
-        --set secrets.CLICKHOUSE_PASSWORD=${CLICKHOUSE_PASSWORD}
+        --set env.CLICKHOUSE_ENDPOINT=${CLICKHOUSE_ENDPOINT} \
+        --set env.CLICKHOUSE_DATABASE=${CLICKHOUSE_DATABASE} \
+        --set env.CLICKHOUSE_USERNAME=${CLICKHOUSE_USERNAME} \
+        --set env.CLICKHOUSE_PASSWORD=${CLICKHOUSE_PASSWORD}
 
     npm run slack-bot-says "Successfully deployed web service Helm chart with tag: {{TAG}}."
 
