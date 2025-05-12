@@ -284,6 +284,7 @@
     "ts-jest": "^29.2.5",
     "ts-morph": "^24.0.0",
     "ts-node": "10.9.2",
+    "ts-node-dev": "^2.0.0",
     "tsconfig-paths-jest": "^0.0.1",
     "typescript": "^5.8.3",
     "vite": "6.2.3",

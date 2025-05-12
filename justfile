@@ -207,7 +207,7 @@ cloud-api: setup-cloud-api
     @echo "🚧 Running the cloud API..."
     cd apps/cloud-api && npm run build && npm run start
 
-dev-cloud-api:
+dev-cloud-api: setup-cloud-api
     @echo "🚧 Starting up the cloud API..."
     cd apps/cloud-api && npm run dev
 
