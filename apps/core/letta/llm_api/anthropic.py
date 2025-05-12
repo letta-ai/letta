@@ -997,10 +997,12 @@ def anthropic_chat_completions_process_stream(
                         expect_reasoning_content=extended_thinking,
                         name=name,
                         message_index=message_idx,
+                        prev_message_type=prev_message_type,
                     )
-                    if message_type != prev_message_type and message_type is not None:
+                    if message_type != prev_message_type and message_type is not None and prev_message_type is not None:
                         message_idx += 1
-                    prev_message_type = message_type
+                    if message_type is not None:
+                        prev_message_type = message_type
                 elif isinstance(stream_interface, AgentRefreshStreamingInterface):
                     stream_interface.process_refresh(chat_completion_response)
                 else:
