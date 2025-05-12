@@ -352,6 +352,7 @@ interface DialogProps extends VariantProps<typeof dialogVariants> {
   trigger?: React.ReactNode;
   confirmText?: string;
   confirmColor?: ButtonProps['color'];
+  padding?: boolean;
   preventCloseFromOutside?: boolean;
   isConfirmBusy?: boolean;
   // if you do not want the dialog to be on the window but encapsulated in the parent component
@@ -384,6 +385,7 @@ export function Dialog(props: DialogProps) {
     reverseButtons,
     isConfirmBusy,
     disableForm,
+    padding = true,
     trigger,
     confirmColor = 'primary',
     preventCloseFromOutside,
@@ -449,7 +451,7 @@ export function Dialog(props: DialogProps) {
           <Element
             className={cn(
               'overflow-y-auto overflow-x-hidden flex flex-col flex-1',
-              'pt-4',
+              padding && 'pt-4',
               size === 'full' ? 'h-full' : '',
             )}
             /* @ts-expect-error - element */
@@ -458,7 +460,7 @@ export function Dialog(props: DialogProps) {
             <VStack
               className={cn(
                 'flex-1',
-                'px-[24px]',
+                padding && 'px-[24px]',
                 size === 'full' ? 'h-full flex flex-col' : '',
               )}
             >

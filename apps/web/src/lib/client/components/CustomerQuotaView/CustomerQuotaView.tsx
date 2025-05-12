@@ -51,10 +51,6 @@ function QuotaRow(props: QuotaRowProps) {
   );
 }
 
-function GBToMB(value: number) {
-  return value * 1024;
-}
-
 interface ViewAllQuotasProps {
   limits: ReturnType<typeof getUsageLimits>;
 }
@@ -107,11 +103,11 @@ function ViewAllQuotas(props: ViewAllQuotasProps) {
         <QuotaRow
           label={t('ViewAllQuotas.storage')}
           value={
-            allQuotasData?.body.storage
-              ? GBToMB(allQuotasData.body.storage)
+            typeof allQuotasData?.body.storage === 'number'
+              ? allQuotasData.body.storage
               : undefined
           }
-          max={`${formatFileSize(limits.storage, { unit: 'MB' })}MB`}
+          max={`${formatFileSize(limits.storage, { unit: 'GB' })}GB`}
         />
         <QuotaRow
           label={t('ViewAllQuotas.templates')}
@@ -181,9 +177,7 @@ export function CustomerQuotaView() {
         />
         <HR />
         <QuotaBlock
-          max={
-            billingTier === 'free' ? limits.freeInferencesPerMonth : 'infinite'
-          }
+          max={limits.freeInferencesPerMonth}
           value={quotaData.body.freeModelRequests}
           label={t('freeModelUsage.label')}
         />

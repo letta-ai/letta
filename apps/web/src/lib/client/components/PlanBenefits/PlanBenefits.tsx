@@ -59,7 +59,7 @@ function FreePlanBenefits() {
       <Benefit
         label={t('free.storage', {
           limit: formatFileSize(limits.storage, {
-            unit: 'MB',
+            unit: 'GB',
             maximumFractionDigits: 0,
           }),
         })}
@@ -80,6 +80,7 @@ function ProPlanBenefits() {
       <Benefit label={t('pro.agent', { limit: formatNumber(limits.agents) })} />
       <Benefit
         label={t.rich('pro.standardRequests', {
+          limit: () => formatNumber(limits.freeInferencesPerMonth),
           link: (chunks) => <Link href="/models">{chunks}</Link>,
         })}
       />

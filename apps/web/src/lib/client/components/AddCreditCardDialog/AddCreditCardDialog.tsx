@@ -107,6 +107,8 @@ function CreditCardFormInner(props: CreditCardFormInnerProps) {
           }}
         />
         <Button
+          bold
+          size="large"
           busy={isSubmitting}
           type="submit"
           fullWidth
@@ -166,12 +168,24 @@ export function CreditCardForm(props: CreditCardFormProps) {
                 theme: 'flat',
                 variables: {
                   colorPrimary: `hsl(${styles.getPropertyValue('--primary')})`,
-                  colorBackground: `hsl(${styles.getPropertyValue('--background')})`,
-                  colorText: `hsl(${styles.getPropertyValue('--text-default')})`,
+                  colorBackground: `hsl(${styles.getPropertyValue('--background-grey')})`,
+                  colorText: `hsl(${styles.getPropertyValue('--text-lighter')})`,
                   colorDanger: `hsl(${styles.getPropertyValue('--color-destructive')})`,
                   fontFamily: styles.getPropertyValue('--font-sans'),
                   spacingUnit: '4px',
                   borderRadius: '0px',
+                },
+                rules: {
+                  '.Label': {
+                    fontFamily: styles.getPropertyValue('--font-sans'),
+                    fontWeight: '600',
+                    fontSize: '0.75rem',
+                  },
+                  '.Input': {
+                    padding: '10.8px',
+
+                    border: `1px solid hsl(${styles.getPropertyValue('--border')})`,
+                  },
                 },
               },
               clientSecret: setupIntentClientSecret,

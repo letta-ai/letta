@@ -58,6 +58,7 @@ import { CloudAccessCodeDialog } from '$web/client/components/DashboardLikeLayou
 import { CreditsViewer } from '$web/client/components/CreditsViewer/CreditsViewer';
 import { useFeatureFlag } from '@letta-cloud/sdk-web';
 import './DashboardNavigation.scss';
+import { OrganizationUsageBlock } from '$web/client/components/OrganizationUsageBlock/OrganizationUsageBlock';
 
 interface NavButtonProps {
   href: string;
@@ -605,6 +606,9 @@ export function ProfilePopover(props: ProfilePopoverProps) {
     >
       <HStack borderBottom>
         <CurrentUserDetailsBlock hideSettingsButton />
+      </HStack>
+      <HStack borderBottom>
+        <OrganizationUsageBlock />
       </HStack>
       <VStack paddingBottom="small">
         <SecondaryMenuItems />

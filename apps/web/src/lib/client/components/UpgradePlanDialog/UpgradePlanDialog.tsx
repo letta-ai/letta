@@ -4,7 +4,6 @@ import {
   Badge,
   Button,
   Dialog,
-  HR,
   HStack,
   LoadingEmptyStatusComponent,
   TabGroup,
@@ -17,13 +16,16 @@ import { webApi, webApiQueryKeys } from '@letta-cloud/sdk-web';
 import { CreditCardForm } from '$web/client/components/AddCreditCardDialog/AddCreditCardDialog';
 import type { BillingTiersType } from '@letta-cloud/types';
 import { PlanBenefits } from '$web/client/components/PlanBenefits/PlanBenefits';
+import { Blox } from '$web/client/components/UpgradePlanDialog/Blox';
+import { CreditCardSlot } from '$web/client/components';
 
 interface SelectedPlanProps {
   plan: BillingTiersType;
+  hideBadge?: boolean;
 }
 
 function SelectedPlan(props: SelectedPlanProps) {
-  const { plan } = props;
+  const { plan, hideBadge = false } = props;
 
   const { formatCurrency } = useFormatters();
   const t = useTranslations('components/UpgradeToProPlanDialog');
@@ -41,7 +43,13 @@ function SelectedPlan(props: SelectedPlanProps) {
 
   const costText = useMemo(() => {
     if (plan === 'enterprise') {
-      return null;
+      return (
+        <HStack paddingBottom="small">
+          <Typography overrideEl="span" variant="heading1">
+            {t('PlanComparisonView.enterprise.cost')}
+          </Typography>
+        </HStack>
+      );
     }
 
     const cost = plan === 'pro' ? 20 : 0;
@@ -77,9 +85,11 @@ function SelectedPlan(props: SelectedPlanProps) {
 
   return (
     <>
-      <HStack>
-        <Badge content={label} variant="info" border size="large" />
-      </HStack>
+      {!hideBadge && (
+        <HStack>
+          <Badge content={label} variant="info" border size="large" />
+        </HStack>
+      )}
       <HStack>{costText}</HStack>
       <Typography bold>{usageText}</Typography>
       <PlanBenefits billingTier={plan} />
@@ -126,7 +136,6 @@ function PlanComparisonView(props: PlanComparisonViewProps) {
             bold
             size="large"
             color="tertiary"
-            fullWidth
             label={t('PlanComparisonView.free.cta')}
             disabled
           />
@@ -139,7 +148,6 @@ function PlanComparisonView(props: PlanComparisonViewProps) {
             }}
             bold
             size="large"
-            fullWidth
             label={t('PlanComparisonView.pro.cta')}
           />
         );
@@ -149,7 +157,6 @@ function PlanComparisonView(props: PlanComparisonViewProps) {
             bold
             size="large"
             color="secondary"
-            fullWidth
             label={t('PlanComparisonView.enterprise.cta')}
             disabled
           />
@@ -158,25 +165,37 @@ function PlanComparisonView(props: PlanComparisonViewProps) {
   }, [plan, onSelectPlan, t]);
 
   return (
-    <VStack paddingBottom>
-      <HStack>
-        <TabGroup
-          border
-          color="dark"
-          variant="chips"
-          onValueChange={(value) => {
-            setPlan(value as BillingTiersType);
-          }}
-          value={plan}
-          items={items}
-        />
+    <VStack gap={false} fullWidth paddingBottom>
+      <HStack
+        borderY
+        /* eslint-disable-next-line react/forbid-component-props */
+        className="h-[400px]"
+        gap={false}
+        justify="spaceBetween"
+        color="background-grey2"
+      >
+        <VStack padding paddingLeft="xlarge" paddingBottom="xxlarge">
+          <HStack paddingBottom="small">
+            <TabGroup
+              border
+              color="dark"
+              variant="chips"
+              onValueChange={(value) => {
+                setPlan(value as BillingTiersType);
+              }}
+              value={plan}
+              items={items}
+            />
+          </HStack>
+          <SelectedPlan hideBadge plan={plan} />
+        </VStack>
+        <Blox />
       </HStack>
-      <VStack padding color="background-grey2" border paddingBottom="xxlarge">
-        <SelectedPlan plan={plan} />
-        <div style={{ height: 150 }} className="h-[100px] w-full" />
+      <VStack paddingTop="small" paddingX>
+        <HStack fullWidth justify="end">
+          {cta}
+        </HStack>
       </VStack>
-      <HR />
-      {cta}
     </VStack>
   );
 }
@@ -201,24 +220,74 @@ function ConfirmView(props: ConfirmViewProps) {
     return billingData.body.creditCards.length === 0;
   }, [billingData]);
 
+  const defaultCard = useMemo(() => {
+    if (!billingData?.body.creditCards) {
+      return undefined;
+    }
+
+    return billingData.body.creditCards.find((card) => card.isDefault);
+  }, [billingData]);
+
   return (
     <HStack
+      borderTop
       /* eslint-disable-next-line react/forbid-component-props */
       style={{ minHeight: '540px' }}
-      paddingBottom
-      gap="large"
+      fullHeight
+      fullWidth
+      gap={false}
     >
-      <VStack fullWidth borderRight>
+      <VStack color="background-grey2" padding fullWidth borderRight>
         <Typography uppercase bold variant="body3">
           {t('ConfirmView.title')}
         </Typography>
         <SelectedPlan plan="pro" />
       </VStack>
-      <VStack paddingLeft="medium" position="relative" fullWidth>
+      <VStack fullHeight padding position="relative" fullWidth>
         {isMissingCreditCard ? (
           <CreditCardForm label={t('cta')} onComplete={confirmPurchase} />
         ) : (
-          <VStack></VStack>
+          <VStack>
+            <VStack>
+              <Typography variant="body3" bold uppercase>
+                {t('confirmation.paymentMethod')}
+              </Typography>
+              {defaultCard && (
+                <CreditCardSlot creditCard={defaultCard} disabled />
+              )}
+            </VStack>
+            <VStack paddingBottom="small">
+              <Typography variant="body2">
+                {t.rich('confirmation.terms', {
+                  terms: (chunks) => (
+                    <a
+                      className="underline"
+                      href="https://letta.com/terms-of-service"
+                    >
+                      {chunks}
+                    </a>
+                  ),
+                  privacy: (chunks) => (
+                    <a
+                      className="underline"
+                      href="https://letta.com/privacy-policy"
+                    >
+                      {chunks}
+                    </a>
+                  ),
+                })}
+              </Typography>
+            </VStack>
+            <HStack paddingTop="large" paddingBottom="small">
+              <Button
+                color="primary"
+                fullWidth
+                size="large"
+                label={t('cta')}
+                onClick={confirmPurchase}
+              />
+            </HStack>
+          </VStack>
         )}
       </VStack>
     </HStack>
@@ -247,7 +316,7 @@ export function UpgradePlanDialog(props: UpgradeToProPlanProps) {
   return (
     <Dialog
       isOpen={isOpen}
-      size={stage === 'confirm' ? 'xlarge' : 'medium'}
+      size="xlarge"
       onOpenChange={(open) => {
         if (!open) {
           setStage('view');
@@ -257,6 +326,7 @@ export function UpgradePlanDialog(props: UpgradeToProPlanProps) {
       trigger={trigger}
       title={t('title')}
       disableForm
+      padding={false}
       hideFooter
     >
       {isPending || isSuccess ? (

@@ -859,11 +859,13 @@
     "description": "Are you sure you want to cancel your plan? This will cancel your current subscription at the end of the billing period. You will not be charged again, but you will lose access to the Pro plan features and any additional agents, identities, and data sources will be deleted. You can resume your subscription at any time before your billing period ends."
   },
   "components/UpgradeToProPlanDialog": {
-    "purchasing": "Upgrading your plan...",
-    "cta": "Subscribe",
     "title": "Upgrade",
     "ConfirmView": {
       "title": "Your order"
+    },
+    "confirmation": {
+      "paymentMethod": "Payment method",
+      "terms": "By upgrading, you agree to our <terms>Terms of Service</terms> and <privacy>Privacy Policy</privacy> and you will pay 20$/month. You can cancel at any time."
     },
     "PlanComparisonView": {
       "cta": "Upgrade to pro",
@@ -878,7 +880,8 @@
         "usage": "For developers shipping agents."
       },
       "enterprise": {
-        "cta": "Contact Sales",
+        "cost": "Contact us",
+        "cta": "Contact sales",
         "label": "Enterprise",
         "usage": "For teams deploying agents at scale."
       },
@@ -1024,6 +1027,23 @@
       }
     }
   },
+  "components/OrganizationUsageBlock": {
+    "title": "Usage",
+    "upgrade": "Upgrade to Pro",
+    "premiumModels": {
+      "label": "Premium models",
+      "usage": "{used} left of {total}"
+    },
+    "standardModels": {
+      "label": "Standard models",
+      "usage": "{used} left of {total}"
+    },
+    "agents": {
+      "label": "Agents",
+      "usage": "{used} left of {total}"
+    },
+    "cta": "Upgrade to Pro"
+  },
   "organization/rate-limits": {
     "title": "Rate limits",
     "tabs": {
@@ -1042,10 +1062,10 @@
       "agent": "Create up to {limit} agents",
       "standardRequests": "<limit></limit> <link>standard model</link> requests per month",
       "premiumRequests": "<limit></limit> <link>premium model</link> requests per month",
-      "storage": "{limit} MB of storage"
+      "storage": "{limit} GB of storage"
     },
     "pro": {
-      "standardRequests": "Up to <limit></limit> <link>standard model</link> usage",
+      "standardRequests": "Up to <limit></limit> <link>standard model</link> requests per month",
       "premiumModelUsage": "Up to <limit></limit> <link>premium model</link> requests per month",
       "agent": "Create up to {limit} agents",
       "storage": "{limit} GB of storage"
