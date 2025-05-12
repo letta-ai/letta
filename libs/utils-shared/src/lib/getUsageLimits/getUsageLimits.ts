@@ -40,32 +40,32 @@ const limitMap: Record<BillingTiersType, UsageLimits> = {
   pro: {
     providers: 50,
     identities: 1000,
-    agents: 10000,
+    agents: 1000,
     projects: 100,
     dataSources: 1000,
-    templates: 100,
+    templates: 20,
     tools: 250,
     groups: 10,
     blocks: 100_000,
-    premiumInferencesPerMonth: 5000,
-    freeInferencesPerMonth: 10_000_000,
+    premiumInferencesPerMonth: 500,
+    freeInferencesPerMonth: 5_000,
     fileSize: TwentyFiveMB, // 100 MB
-    storage: OneGB, // 1 GB
+    storage: OneGB * 10, // 1 GB
   },
   free: {
     providers: 50,
-    agents: 25,
+    agents: 10,
     dataSources: 25,
     projects: 25,
-    templates: 25,
+    templates: 10,
     blocks: 5_000,
     tools: 250,
     groups: 1,
-    identities: 25,
-    premiumInferencesPerMonth: 25,
-    freeInferencesPerMonth: 100_000,
+    identities: 5,
+    premiumInferencesPerMonth: 50,
+    freeInferencesPerMonth: 500,
     fileSize: FiveMB, // 5 MB
-    storage: OneGB / 10, // 100 MB
+    storage: OneGB, // 1 GB
   },
 };
 

@@ -10,7 +10,6 @@
     "title": "Finish onboarding!",
     "description": "You can continue your onboarding at any time. Click the button below to continue.",
     "trigger": "Continue onboarding"
-    
   },
   "components/CustomerQuotaView": {
     "loading": "Loading quotas...",
@@ -438,7 +437,7 @@
       "localDev": "Self-hosted",
       "settings": "Settings",
       "billing": "Billing and usage",
-      "account": "Personal details"
+      "account": "Profile"
     },
     "rootTitle": "Dashboard",
     "secondaryNav": {
@@ -541,8 +540,8 @@
     }
   },
   "organization/environment-variables": {
-    "title": "Tool environment variables",
-    "description": "Manage tool environment variables scoped to your organization. These environment variables are available to all agents in the organization via tools. Values cannot be read after being set.",
+    "title": "Global tool variables",
+    "description": "Manage tool environment variables scoped to your organization. These environment variables are available in the tool execution environment for all agents in your organization. Values cannot be read after being set.",
     "environmentVariablesColumns": {
       "key": "Key",
       "lastUpdated": "Last Updated",
@@ -678,7 +677,7 @@
   },
   "settings/layout": {
     "personal": "Personal Settings",
-    "profile": "Personal details",
+    "profile": "Profile",
     "account": "Account",
     "organization": {
       "general": "Account",
@@ -687,7 +686,7 @@
       "productSettings": "Reference",
       "utilities": "Global Configuration",
       "integrations": "Integrations",
-      "environmentVariables": "Global variables",
+      "environmentVariables": "Tool variables",
       "modelProviders": "Model providers",
       "billing": "Billing and usage",
       "auditLog": "Audit log",
