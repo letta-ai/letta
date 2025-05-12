@@ -868,17 +868,17 @@
     "PlanComparisonView": {
       "cta": "Upgrade to pro",
       "free": {
-        "cta": "You are currently on the free plan",
+        "cta": "You are currently on the Free Plan",
         "label": "Free",
         "usage": "For getting started."
       },
       "pro": {
-        "cta": "Upgrade to pro",
+        "cta": "Upgrade to Pro",
         "label": "Pro",
         "usage": "For developers shipping agents."
       },
       "enterprise": {
-        "cta": "Contact sales",
+        "cta": "Contact Sales",
         "label": "Enterprise",
         "usage": "For teams deploying agents at scale."
       },
@@ -1039,22 +1039,22 @@
   },
   "components/PlanBenefits": {
     "free": {
-      "agent": "Create up to {limit} agents and identities",
+      "agent": "Create up to {limit} agents",
       "standardRequests": "<limit></limit> <link>standard model</link> requests per month",
       "premiumRequests": "<limit></limit> <link>premium model</link> requests per month",
-      "storage": "{limit}MB of storage"
+      "storage": "{limit} MB of storage"
     },
     "pro": {
-      "standardRequests": "Unlimited <link>standard model</link> usage",
+      "standardRequests": "Up to <limit></limit> <link>standard model</link> usage",
       "premiumModelUsage": "Up to <limit></limit> <link>premium model</link> requests per month",
-      "agent": "Create up to {limit} agents and identities",
-      "storage": "{limit}GB of storage"
+      "agent": "Create up to {limit} agents",
+      "storage": "{limit} GB of storage"
     },
     "enterprise": {
-      "agent": "Unlimited agents",
-      "standardRequests": "Unlimited <link>standard model</link> usage",
-      "premiumModelUsage": "Unlimited <link>premium model</link> usage",
-      "storage": "Unlimited storage"
+      "agent": "Up to ∞ agents",
+      "standardRequests": "Up to ∞ <link>standard model</link> usage",
+      "premiumModelUsage": "Up to ∞ <link>premium model</link> usage",
+      "storage": "Up to ∞ storage"
     }
   },
   "organization/settings/CurrentPlan": {
