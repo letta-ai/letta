@@ -56,6 +56,7 @@ class AgentChunkStreamingInterface(ABC):
         expect_reasoning_content: bool = False,
         name: Optional[str] = None,
         message_index: int = 0,
+        prev_message_type: Optional[str] = None,
     ):
         """Process a streaming chunk from an OpenAI-compatible server"""
         raise NotImplementedError
@@ -108,6 +109,7 @@ class StreamingCLIInterface(AgentChunkStreamingInterface):
         expect_reasoning_content: bool = False,
         name: Optional[str] = None,
         message_index: int = 0,
+        prev_message_type: Optional[str] = None,
     ):
         assert len(chunk.choices) == 1, chunk
 

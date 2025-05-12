@@ -162,6 +162,7 @@ class ChatCompletionsStreamingInterface(AgentChunkStreamingInterface):
         expect_reasoning_content: bool = False,
         name: Optional[str] = None,
         message_index: int = 0,
+        prev_message_type: Optional[str] = None,
     ) -> None:
         """
         Called externally with a ChatCompletionChunkResponse. Transforms

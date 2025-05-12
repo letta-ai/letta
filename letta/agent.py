@@ -133,7 +133,6 @@ class Agent(BaseAgent):
         # Different interfaces can handle events differently
         # e.g., print in CLI vs send a discord message with a discord bot
         self.interface = interface
-        self.chunk_index = 0
 
         # Create the persistence manager object based on the AgentState info
         self.message_manager = MessageManager()
@@ -248,11 +247,9 @@ class Agent(BaseAgent):
             group_id=group_id,
         )
         messages.append(new_message)
-        self.interface.function_message(f"Error: {error_msg}", msg_obj=new_message, chunk_index=self.chunk_index)
-        self.chunk_index += 1
+        self.interface.function_message(f"Error: {error_msg}", msg_obj=new_message, chunk_index=0)
         if include_function_failed_message:
-            self.interface.function_message(f"Ran {function_name}({function_args})", msg_obj=new_message, chunk_index=self.chunk_index)
-            self.chunk_index += 1
+            self.interface.function_message(f"Ran {function_name}({function_args})", msg_obj=new_message)
 
         # Return updated messages
         return messages
@@ -422,6 +419,7 @@ class Agent(BaseAgent):
         messages = []  # append these to the history when done
         function_name = None
         function_args = {}
+        chunk_index = 0
 
         # Step 2: check if LLM wanted to call a function
         if response_message.function_call or (response_message.tool_calls is not None and len(response_message.tool_calls) > 0):
@@ -465,8 +463,8 @@ class Agent(BaseAgent):
             nonnull_content = False
             if response_message.content or response_message.reasoning_content or response_message.redacted_reasoning_content:
                 # The content if then internal monologue, not chat
-                self.interface.internal_monologue(response_message.content, msg_obj=messages[-1], chunk_index=self.chunk_index)
-                self.chunk_index += 1
+                self.interface.internal_monologue(response_message.content, msg_obj=messages[-1], chunk_index=chunk_index)
+                chunk_index += 1
                 # Flag to avoid printing a duplicate if inner thoughts get popped from the function call
                 nonnull_content = True
 
@@ -515,8 +513,8 @@ class Agent(BaseAgent):
                 response_message.content = function_args.pop("inner_thoughts")
             # The content if then internal monologue, not chat
             if response_message.content and not nonnull_content:
-                self.interface.internal_monologue(response_message.content, msg_obj=messages[-1], chunk_index=self.chunk_index)
-                self.chunk_index += 1
+                self.interface.internal_monologue(response_message.content, msg_obj=messages[-1], chunk_index=chunk_index)
+                chunk_index += 1
 
             # (Still parsing function args)
             # Handle requests for immediate heartbeat
@@ -542,8 +540,8 @@ class Agent(BaseAgent):
             # handle cases where we return a json message
             if "message" in function_args:
                 function_args["message"] = str(function_args.get("message", ""))
-            self.interface.function_message(f"Running {function_name}({function_args})", msg_obj=messages[-1], chunk_index=self.chunk_index)
-            self.chunk_index += 1
+            self.interface.function_message(f"Running {function_name}({function_args})", msg_obj=messages[-1], chunk_index=chunk_index)
+            chunk_index = 0  # reset chunk index after assistant message
             try:
                 # handle tool execution (sandbox) and state updates
                 log_telemetry(
@@ -667,10 +665,9 @@ class Agent(BaseAgent):
                     group_id=group_id,
                 )
             )  # extend conversation with function response
-            self.interface.function_message(f"Ran {function_name}({function_args})", msg_obj=messages[-1], chunk_index=self.chunk_index)
-            self.chunk_index += 1
-            self.interface.function_message(f"Success: {function_response_string}", msg_obj=messages[-1], chunk_index=self.chunk_index)
-            self.chunk_index += 1
+            self.interface.function_message(f"Ran {function_name}({function_args})", msg_obj=messages[-1], chunk_index=chunk_index)
+            self.interface.function_message(f"Success: {function_response_string}", msg_obj=messages[-1], chunk_index=chunk_index)
+            chunk_index += 1
             self.last_function_response = function_response
 
         else:
@@ -685,8 +682,8 @@ class Agent(BaseAgent):
                     group_id=group_id,
                 )
             )  # extend conversation with assistant's reply
-            self.interface.internal_monologue(response_message.content, msg_obj=messages[-1], chunk_index=self.chunk_index)
-            self.chunk_index += 1
+            self.interface.internal_monologue(response_message.content, msg_obj=messages[-1], chunk_index=chunk_index)
+            chunk_index += 1
             heartbeat_request = False
             function_failed = False
 

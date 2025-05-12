@@ -404,7 +404,7 @@ class Message(BaseMessage):
                     stdout=self.tool_returns[0].stdout if self.tool_returns else None,
                     stderr=self.tool_returns[0].stderr if self.tool_returns else None,
                     name=self.name,
-                    otid=self.id.replace("message-", ""),
+                    otid=Message.generate_otid_from_id(self.id, len(messages)),
                     sender_id=self.sender_id,
                     step_id=self.step_id,
                 )
