@@ -311,7 +311,11 @@ export async function handleMessageRateLimiting(
 
   const rateLimitThresholds: RateLimitReason[] = [];
 
-  if (subscriptionTier !== 'enterprise') {
+  // if you have no credits, you are rate limited by the free/premium limits
+  if (
+    !organizationCredits &&
+    ['free', 'premium'].includes(modelTierInformation)
+  ) {
     if (modelTierInformation === 'free') {
       if (freeUsage + 1 >= usageLimits.freeInferencesPerMonth) {
         rateLimitThresholds.push('free-usage-exceeded');
@@ -321,12 +325,8 @@ export async function handleMessageRateLimiting(
         rateLimitThresholds.push('premium-usage-exceeded');
       }
     }
-  }
-
-  if (
-    !['free', 'premium'].includes(modelTierInformation) ||
-    subscriptionTier === 'enterprise'
-  ) {
+  } else {
+    // if you have credits, you are rate limited by the model limits
     if (typeof creditCost !== 'number') {
       rateLimitThresholds.push('context-window-size-not-supported');
     } else if (organizationCredits - creditCost < 0) {

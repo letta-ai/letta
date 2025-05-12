@@ -5,7 +5,12 @@ import {
   createUniqueRedisProperty,
   getRedisData,
 } from '@letta-cloud/service-redis';
-import { incrementRedisModelTransactions } from '../redisModelTransactions/redisModelTransactions';
+import {
+  getRedisModelTransactions,
+  incrementRedisModelTransactions,
+} from '../redisModelTransactions/redisModelTransactions';
+import { getCustomerSubscription } from '@letta-cloud/service-payments';
+import { getUsageLimits } from '@letta-cloud/utils-shared';
 
 export async function processStep(step: Step) {
   if (
@@ -58,6 +63,8 @@ export async function processStep(step: Step) {
       return;
     }
 
+    let amount = creditCost;
+
     const modelTier = modelData?.modelId
       ? await getRedisData('modelIdToModelTier', {
           modelId: modelData.modelId,
@@ -69,6 +76,28 @@ export async function processStep(step: Step) {
       modelTier &&
       ['free', 'premium'].includes(modelTier?.tier || '')
     ) {
+      const subscription = await getCustomerSubscription(
+        webOrgId.organizationId,
+      );
+
+      const subTier = subscription.tier || 'free';
+
+      const usageLimits = getUsageLimits(subTier);
+      const usage = await getRedisModelTransactions(
+        modelTier.tier,
+        webOrgId.organizationId,
+      );
+
+      const limit =
+        subTier === 'free'
+          ? usageLimits.freeInferencesPerMonth
+          : usageLimits.premiumInferencesPerMonth;
+
+      // if the usage is greater than the limit, we need to deduct credits
+      if (usage + 1 <= limit) {
+        amount = 0;
+      }
+
       await incrementRedisModelTransactions(
         modelTier.tier,
         webOrgId.organizationId,
@@ -77,7 +106,7 @@ export async function processStep(step: Step) {
     }
 
     const response = await removeCreditsFromOrganization({
-      amount: creditCost,
+      amount,
       coreOrganizationId: step.organization_id,
       source: 'inference',
       stepId: step.id,
