@@ -901,7 +901,7 @@
         "free": "Cancel at any time, no lock in.",
         "agents": "Create up to {agents} active agents.",
         "premiumModels": "{limit} Premium model requests per month.",
-        "freeModels": "Unlimited Standard model requests per month."
+        "freeModels": "{limit} Standard model requests per month."
       }
     },
     "AccountDetailsCTA": {
