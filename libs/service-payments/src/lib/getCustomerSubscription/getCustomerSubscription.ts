@@ -76,14 +76,25 @@ export async function getCustomerSubscription(
     };
   }
 
-  return {
-    billingPeriodEnd: new Date(
-      activeSubscriptions.current_period_end * 1000,
-    ).toISOString(),
-    billingPeriodStart: new Date(
-      activeSubscriptions.current_period_start * 1000,
-    ).toISOString(),
-    cancelled: activeSubscriptions.cancel_at_period_end,
-    tier: 'pro',
-  };
+  console.log('fa', activeSubscriptions);
+  try {
+    return {
+      billingPeriodEnd: new Date(
+        activeSubscriptions.current_period_end * 1000,
+      ).toISOString(),
+      billingPeriodStart: new Date(
+        activeSubscriptions.current_period_start * 1000,
+      ).toISOString(),
+      cancelled: activeSubscriptions.cancel_at_period_end,
+      tier: 'pro',
+    };
+  } catch (error) {
+    console.error('Error parsing subscription data:', error);
+    return {
+      billingPeriodStart,
+      billingPeriodEnd,
+      cancelled: activeSubscriptions.cancel_at_period_end,
+      tier: 'pro',
+    };
+  }
 }
