@@ -14,7 +14,9 @@ wait_for_postgres() {
 
 # Check if we're configured for external Postgres
 if [ -n "$LETTA_PG_URI" ]; then
-    echo "External Postgres configuration detected, using env var LETTA_PG_URI"
+    echo "External Postgres configuration detected via LETTA_PG_URI: $LETTA_PG_URI"
+elif [ -n "$LETTA_PG_USER" ] && [ -n "$LETTA_PG_HOST" ]; then
+    echo "External Postgres configuration detected via individual variables"
 else
     echo "No external Postgres configuration detected, starting internal PostgreSQL..."
     # Start PostgreSQL using the base image's entrypoint script
@@ -35,8 +37,8 @@ if ! alembic upgrade head; then
     echo "Please check your database connection and try again."
     echo "If the problem persists, check the logs for more details."
     exit 1
+    echo "Database migration completed successfully."
 fi
-echo "Database migration completed successfully."
 
 # Set permissions for tool execution directory if configured
 if [ -n "$LETTA_SANDBOX_MOUNT_PATH" ]; then
