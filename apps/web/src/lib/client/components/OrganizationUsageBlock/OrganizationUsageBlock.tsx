@@ -58,6 +58,16 @@ export function OrganizationUsageBlock() {
     return null;
   }
 
+  const usedPremiumModelRequests = Math.max(
+    limits.premiumInferencesPerMonth - quotaData.body.premiumModelRequests,
+    0,
+  );
+
+  const usedStandardModelRequests = Math.max(
+    limits.freeInferencesPerMonth - quotaData.body.freeModelRequests,
+    0,
+  );
+
   return (
     <VStack fullWidth padding>
       <Typography variant="body2" bold>
@@ -67,14 +77,14 @@ export function OrganizationUsageBlock() {
         label={t('premiumModels.label')}
         value={t('premiumModels.usage', {
           total: limits.premiumInferencesPerMonth,
-          used: quotaData.body.premiumModelRequests,
+          used: usedPremiumModelRequests,
         })}
       />
       <Row
         label={t('standardModels.label')}
         value={t('standardModels.usage', {
           total: limits.freeInferencesPerMonth,
-          used: quotaData.body.freeModelRequests,
+          used: usedStandardModelRequests,
         })}
       />
       {billingTier === 'free' && (
