@@ -141,7 +141,6 @@ export function CreditsViewer() {
     return (
       <OnboardingAsideFocus
         placement="bottom-end"
-        reward={stepToRewardMap.about_credits}
         title={t('Onboarding.title')}
         description={t.rich('Onboarding.description', {
           link: (chunks) => (

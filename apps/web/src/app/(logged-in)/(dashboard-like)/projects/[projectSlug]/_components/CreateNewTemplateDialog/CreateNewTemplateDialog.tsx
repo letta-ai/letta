@@ -17,10 +17,7 @@ import { useCurrentUser, useUserHasPermission } from '$web/client/hooks';
 import { ApplicationServices } from '@letta-cloud/service-rbac';
 import { Slot } from '@radix-ui/react-slot';
 import { useShowOnboarding } from '$web/client/hooks/useShowOnboarding/useShowOnboarding';
-import {
-  stepToRewardMap,
-  TOTAL_PRIMARY_ONBOARDING_STEPS,
-} from '@letta-cloud/types';
+import { TOTAL_PRIMARY_ONBOARDING_STEPS } from '@letta-cloud/types';
 import { useSetOnboardingStep } from '@letta-cloud/sdk-web';
 import {
   StarterKitSelector,
@@ -47,7 +44,6 @@ function OnboardingWrapper(props: OnboardingWrapperProps) {
   return (
     <OnboardingAsideFocus
       spotlight
-      reward={stepToRewardMap.create_template}
       totalSteps={TOTAL_PRIMARY_ONBOARDING_STEPS}
       currentStep={2}
       title={t('OnboardingWrapper.title')}

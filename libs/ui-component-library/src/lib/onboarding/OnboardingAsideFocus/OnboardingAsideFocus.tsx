@@ -1,9 +1,7 @@
 'use client';
 import * as React from 'react';
 import { VStack } from '../../framing/VStack/VStack';
-import { HStack } from '../../framing/HStack/HStack';
 import { Typography } from '../../core/Typography/Typography';
-import { OnboardingRewardElement } from '../OnboardingRewardElement/OnboardingRewardElement';
 import { useTranslations } from '@letta-cloud/translations';
 import { useCallback, useEffect, useId } from 'react';
 import { Button } from '../../core/Button/Button';
@@ -20,7 +18,6 @@ import { ConfirmPauseOnboardingDialog } from '../ConfirmPauseOnboardingDialog/Co
 
 interface OnboardingAsideFocusProps {
   children: React.ReactNode;
-  reward?: number;
   title: string;
   totalSteps: number;
   currentStep: number;
@@ -46,7 +43,6 @@ export function OnboardingAsideFocus(props: OnboardingAsideFocusProps) {
     spotlight,
     placement,
     nextStep,
-    reward,
   } = props;
 
   const t = useTranslations('onboarding/OnboardingAsideFocus');
@@ -140,9 +136,6 @@ export function OnboardingAsideFocus(props: OnboardingAsideFocusProps) {
             panelClassName,
           )}
         >
-          <HStack justify="spaceBetween" align="center">
-            {reward && <OnboardingRewardElement reward={reward} />}
-          </HStack>
           <Typography variant="heading5">{title}</Typography>
           <Typography className="whitespace-pre-wrap" variant="large">
             {description}

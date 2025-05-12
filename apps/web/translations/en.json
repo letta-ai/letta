@@ -42,7 +42,7 @@
     "start": "Learn about credits",
     "startModels": "Explore models",
     "title": "Welcome to Letta Cloud",
-    "description": "Start your onboarding to learn how to use the platform and get your agents ready for deployment. Complete each step to earn credits along the way.",
+    "description": "Start your onboarding to learn how to use the platform and get your agents ready for deployment.",
     "reward": "Reward: <lettacoin></lettacoin> {credits} credits",
     "time": "Approx. 15 minutes",
     "steps": {
@@ -1261,7 +1261,7 @@
     "error": "There was an error loading the purchase credits form, please try again or contact support.",
     "confirm": "Purchase",
     "confirmation": {
-      "details": "By clicking 'Purchase', you agree to purchase {credits} credits for {price} with your selected payment method.",
+      "details": "By clicking 'Purchase', you agree to purchase {price} of credits with your selected payment method.",
       "order": "Your order",
       "credits": "<credits></credits> credits",
       "paymentMethod": "Payment method"

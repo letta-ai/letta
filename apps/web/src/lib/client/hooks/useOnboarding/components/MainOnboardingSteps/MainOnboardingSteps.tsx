@@ -1,10 +1,8 @@
 import {
   HStack,
   OnboardingCheckbox,
-  OnboardingRewardElement,
   VStack,
 } from '@letta-cloud/ui-component-library';
-import { stepToRewardMap } from '@letta-cloud/types';
 import { useTranslations } from '@letta-cloud/translations';
 import { useCurrentUser } from '$web/client/hooks';
 import { useFeatureFlag } from '@letta-cloud/sdk-web';
@@ -31,12 +29,6 @@ export function MainOnboardingSteps() {
             isModelsPageEnabled ? t('steps.models') : t('steps.creditsAndCloud')
           }
         />
-        <OnboardingRewardElement
-          isClaimed={user.onboardingStatus?.claimedSteps.includes(
-            'about_credits',
-          )}
-          reward={stepToRewardMap.about_credits}
-        />
       </HStack>
       <HStack>
         <OnboardingCheckbox
@@ -44,12 +36,6 @@ export function MainOnboardingSteps() {
             'create_template',
           )}
           label={t('steps.createATemplate')}
-        />
-        <OnboardingRewardElement
-          isClaimed={user.onboardingStatus?.claimedSteps.includes(
-            'create_template',
-          )}
-          reward={stepToRewardMap.create_template}
         />
       </HStack>
       <HStack>
@@ -59,12 +45,6 @@ export function MainOnboardingSteps() {
           )}
           label={t('steps.exploreTheADE')}
         />
-        <OnboardingRewardElement
-          isClaimed={user.onboardingStatus?.claimedSteps.includes(
-            'explore_ade',
-          )}
-          reward={stepToRewardMap.explore_ade}
-        />
       </HStack>
       <HStack>
         <OnboardingCheckbox
@@ -73,12 +53,6 @@ export function MainOnboardingSteps() {
           )}
           label={t('steps.saveATemplate')}
         />
-        <OnboardingRewardElement
-          isClaimed={user.onboardingStatus?.claimedSteps.includes(
-            'save_version',
-          )}
-          reward={stepToRewardMap.save_version}
-        />
       </HStack>
       <HStack>
         <OnboardingCheckbox
@@ -86,12 +60,6 @@ export function MainOnboardingSteps() {
             'deploy_agent',
           )}
           label={t('steps.deployAnAgent')}
-        />
-        <OnboardingRewardElement
-          isClaimed={user.onboardingStatus?.claimedSteps.includes(
-            'deploy_agent',
-          )}
-          reward={stepToRewardMap.deploy_agent}
         />
       </HStack>
     </VStack>

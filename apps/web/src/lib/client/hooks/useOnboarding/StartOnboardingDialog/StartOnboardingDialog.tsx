@@ -4,7 +4,6 @@ import {
   Button,
   ConfirmPauseOnboardingDialog,
   HStack,
-  LettaCoinIcon,
   OnboardingPrimaryDialog,
   OnboardingPrimaryHeading,
   VStack,
@@ -13,7 +12,6 @@ import { useTranslations } from '@letta-cloud/translations';
 import { useCurrentUser } from '$web/client/hooks';
 import { useCallback, useState } from 'react';
 import { useFeatureFlag, useSetOnboardingStep } from '@letta-cloud/sdk-web';
-import { stepToRewardMap } from '@letta-cloud/types';
 import { MainOnboardingSteps } from '$web/client/hooks/useOnboarding/components/MainOnboardingSteps/MainOnboardingSteps';
 import { useRouter } from 'next/navigation';
 
@@ -67,22 +65,6 @@ export function StartOnboardingDialog() {
         <OnboardingPrimaryHeading
           badge={
             <HStack>
-              <Badge
-                variant="success"
-                content={
-                  <>
-                    {t.rich('reward', {
-                      lettacoin: () => <LettaCoinIcon />,
-                      credits:
-                        stepToRewardMap.create_template +
-                        stepToRewardMap.explore_ade +
-                        stepToRewardMap.save_version +
-                        stepToRewardMap.deploy_agent +
-                        stepToRewardMap.about_credits,
-                    })}
-                  </>
-                }
-              />
               <Badge variant="default" border content={t('time')} />
             </HStack>
           }

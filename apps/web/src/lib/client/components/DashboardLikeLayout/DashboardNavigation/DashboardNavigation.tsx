@@ -840,6 +840,7 @@ export function DashboardHeaderNavigation(
 
 export function DashboardHeader() {
   const currentProject = useCurrentProject();
+  const { data: isProPlanEnabled } = useFeatureFlag('PRO_PLAN');
 
   return (
     <>
@@ -902,7 +903,7 @@ export function DashboardHeader() {
           </HStack>
           <HStack align="center">
             <DashboardHeaderNavigation />
-            <CreditsViewer />
+            {!isProPlanEnabled && <CreditsViewer />}
             <ProfilePopover />
           </HStack>
         </HStack>

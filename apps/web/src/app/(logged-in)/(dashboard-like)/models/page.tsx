@@ -9,10 +9,7 @@ import {
 import React, { useCallback } from 'react';
 import { LettaManagedModels } from './_components/LettaManagedModels/LettaManagedModels';
 import { BYOKModels } from './_components/BYOKModels/BYOKModels';
-import {
-  stepToRewardMap,
-  TOTAL_PRIMARY_ONBOARDING_STEPS,
-} from '@letta-cloud/types';
+import { TOTAL_PRIMARY_ONBOARDING_STEPS } from '@letta-cloud/types';
 import { useSetOnboardingStep } from '@letta-cloud/sdk-web';
 import { useShowOnboarding } from '$web/client/hooks/useShowOnboarding/useShowOnboarding';
 
@@ -44,7 +41,6 @@ function OnboardingWrapper(props: OnboardingWrapperProps) {
       <OnboardingAsideFocus
         placement="left-start"
         panelClassName="w-[300px]"
-        reward={stepToRewardMap.about_credits}
         title={t('Onboarding.title')}
         description={t('Onboarding.description')}
         isOpen={showOnboarding}

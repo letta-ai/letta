@@ -282,7 +282,7 @@ function ToolsOnboarding(props: ToolsOnboardingProps) {
   const { currentStep, setStep } = useADETour();
 
   if (currentStep !== 'tools') {
-    return <>{children}</>;
+    return <PanelMainContent variant="noPadding">{children}</PanelMainContent>;
   }
 
   return (
@@ -306,7 +306,7 @@ function ToolsOnboarding(props: ToolsOnboardingProps) {
       }
       currentStep={3}
     >
-      {children}
+      <div className="h-full w-full">{children}</div>
     </OnboardingAsideFocus>
   );
 }
@@ -357,14 +357,12 @@ export function ToolsPanel() {
   return (
     <ToolManagerProvider>
       <ToolsOnboarding>
-        <PanelMainContent variant="noPadding">
-          <ToolManager />
+        <ToolManager />
 
-          <VStack gap={false}>
-            <ToolUtilities />
-            <ToolsList />
-          </VStack>
-        </PanelMainContent>
+        <VStack gap={false}>
+          <ToolUtilities />
+          <ToolsList />
+        </VStack>
       </ToolsOnboarding>
     </ToolManagerProvider>
   );

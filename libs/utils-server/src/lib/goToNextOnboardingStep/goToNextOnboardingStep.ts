@@ -52,30 +52,29 @@ export async function goToNextOnboardingStep(
     userFromDb.activeOrganization?.organizationClaimedOnboardingRewards?.map(
       (reward) => reward.rewardKey,
     ) || [];
+  //
+  // if (
+  //   stepToClaim &&
+  //   !claimedSteps.includes(stepToClaim) &&
+  //   stepToRewardMap[stepToClaim]
+  // ) {
+  //   try {
+  //     await db.insert(organizationClaimedOnboardingRewards).values({
+  //       organizationId: userFromDb.activeOrganizationId,
+  //       rewardKey: stepToClaim,
+  //     });
+  //
+  //     await addCreditsToOrganization({
+  //       organizationId: userFromDb.activeOrganizationId,
+  //       note: `Claimed reward for ${stepToClaim}`,
+  //       amount: stepToRewardMap[stepToClaim] || 0,
+  //       source: 'onboarding',
+  //     });
+  //   } catch (_e) {
+  //     // this means the reward has already been claimed
+  //   }
+  // }
 
-  if (
-    stepToClaim &&
-    !claimedSteps.includes(stepToClaim) &&
-    stepToRewardMap[stepToClaim]
-  ) {
-    try {
-      await db.insert(organizationClaimedOnboardingRewards).values({
-        organizationId: userFromDb.activeOrganizationId,
-        rewardKey: stepToClaim,
-      });
-
-      await addCreditsToOrganization({
-        organizationId: userFromDb.activeOrganizationId,
-        note: `Claimed reward for ${stepToClaim}`,
-        amount: stepToRewardMap[stepToClaim] || 0,
-        source: 'onboarding',
-      });
-    } catch (_e) {
-      // this means the reward has already been claimed
-    }
-  }
-
-  console.log(currentOnboardingSteps);
   let nextCompletedSteps = Array.from(
     new Set(
       nextStep

@@ -45,10 +45,7 @@ import { useCurrentAgent } from '$web/client/hooks/useCurrentAgent/useCurrentAge
 import { useLatestAgentTemplate } from '$web/client/hooks/useLatestAgentTemplate/useLatestAgentTemplate';
 import { cloudAPI } from '@letta-cloud/sdk-cloud-api';
 import { useShowOnboarding } from '$web/client/hooks/useShowOnboarding/useShowOnboarding';
-import {
-  stepToRewardMap,
-  TOTAL_PRIMARY_ONBOARDING_STEPS,
-} from '@letta-cloud/types';
+import { TOTAL_PRIMARY_ONBOARDING_STEPS } from '@letta-cloud/types';
 
 function CloudUpsellDeploy() {
   const t = useTranslations(
@@ -424,7 +421,6 @@ function OnboardingWrapper(props: OnboardingWrapperProps) {
   return (
     <OnboardingAsideFocus
       spotlight
-      reward={stepToRewardMap.save_version}
       totalSteps={TOTAL_PRIMARY_ONBOARDING_STEPS}
       currentStep={4}
       title={t('OnboardingWrapper.title')}

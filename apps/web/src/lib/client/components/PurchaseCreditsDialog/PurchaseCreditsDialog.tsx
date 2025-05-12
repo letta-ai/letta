@@ -72,7 +72,7 @@ function ConfirmationText() {
 
   const t = useTranslations('components/PurchaseCreditsDialog');
   const credits = form.watch('credits');
-  const { formatNumber, formatCurrency } = useFormatters();
+  const { formatCurrency } = useFormatters();
 
   const { data: billingInfo } =
     webApi.organizations.getCurrentOrganizationBillingInfo.useQuery({
@@ -98,13 +98,10 @@ function ConfirmationText() {
             {t.rich('confirmation.credits', {
               credits: () => (
                 <Typography overrideEl="span" variant="heading3">
-                  {formatNumber(parseInt(credits, 10))}
+                  {formatCurrency(creditsToDollars(credits), options)}{' '}
                 </Typography>
               ),
             })}
-          </Typography>
-          <Typography bold>
-            {formatCurrency(creditsToDollars(credits), options)}
           </Typography>
         </VStack>
       </VStack>
@@ -117,7 +114,6 @@ function ConfirmationText() {
       <VStack paddingBottom="small">
         <Typography variant="body2">
           {t('confirmation.details', {
-            credits: formatNumber(credits),
             price: formatCurrency(creditsToDollars(credits), options),
             last4: defaultCard?.last4 || '0000',
           })}
@@ -168,7 +164,7 @@ function PurchaseCreditsForm(props: PurchaseCreditsFormProps) {
         onComplete();
       },
     });
-  const { formatNumber, formatCurrency } = useFormatters();
+  const { formatCurrency } = useFormatters();
 
   const errorTranslation = useErrorMessages(error);
 
@@ -180,17 +176,13 @@ function PurchaseCreditsForm(props: PurchaseCreditsFormProps) {
           label: (chunks) => <Typography color="lighter">{chunks}</Typography>,
           credits: () => (
             <Typography variant="heading6">
-              {formatNumber(parseInt(credits, 10))}
+              {formatCurrency(creditsToDollars(parseInt(credits, 10)), options)}
             </Typography>
           ),
         }),
-        detail: formatCurrency(
-          creditsToDollars(parseInt(credits, 10)),
-          options,
-        ),
       };
     },
-    [formatCurrency, formatNumber, t],
+    [formatCurrency, t],
   );
 
   const form = useForm<PurchaseCreditsFormValues>({

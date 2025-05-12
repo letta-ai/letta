@@ -52,23 +52,18 @@ export const Primary: Story = {
         <VStack paddingTop gap="medium">
           <HStack>
             <OnboardingCheckbox label="Create an agent" />
-            <OnboardingRewardElement reward={250} />
           </HStack>
           <HStack>
             <OnboardingCheckbox label="Message an agent" />
-            <OnboardingRewardElement reward={250} />
           </HStack>
           <HStack>
             <OnboardingCheckbox label="Deploy an agent in development" />
-            <OnboardingRewardElement reward={500} />
           </HStack>
           <HStack>
             <OnboardingCheckbox label="Convert an agent to template" />
-            <OnboardingRewardElement reward={500} />
           </HStack>
           <HStack>
             <OnboardingCheckbox label="Deploy an agent to production" />
-            <OnboardingRewardElement reward={1000} />
           </HStack>
         </VStack>
       </VStack>

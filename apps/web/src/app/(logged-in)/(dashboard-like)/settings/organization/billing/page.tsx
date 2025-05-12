@@ -7,7 +7,6 @@ import {
   DashboardPageSection,
   DataTable,
   HStack,
-  LettaCoinIcon,
   LettaInvaderIcon,
   LoadingEmptyStatusComponent,
   NiceGridDisplay,
@@ -34,7 +33,7 @@ import { UpgradePlanDialog } from '$web/client/components/UpgradePlanDialog/Upgr
 import { CancelPlanDialog } from '$web/client/components/CancelPlanDialog/CancelPlanDialog';
 import { ResumePlanButton } from '$web/client/components/ResumePlanButton/ResumePlanButton';
 import { CustomerQuotaView } from '$web/client/components/CustomerQuotaView/CustomerQuotaView';
-import { getUsageLimits } from '@letta-cloud/utils-shared';
+import { creditsToDollars, getUsageLimits } from '@letta-cloud/utils-shared';
 
 interface ProViewProps {
   billingPeriodEnd: string | undefined;
@@ -294,7 +293,7 @@ function BillingOverview() {
 
   const { data: isProPlanEnabled } = useFeatureFlag('PRO_PLAN');
 
-  const { formatNumber } = useFormatters();
+  const { formatCurrency } = useFormatters();
 
   if (!data) {
     return (
@@ -320,7 +319,6 @@ function BillingOverview() {
           <VStack paddingY="small" align="start">
             <HStack align="end">
               <HStack align="center">
-                <LettaCoinIcon size="large" />
                 <Typography
                   variant="heading2"
                   /* eslint-disable-next-line react/forbid-component-props */
@@ -328,17 +326,9 @@ function BillingOverview() {
                   data-testid="total-credits"
                   bold
                 >
-                  {formatNumber(data.body.totalCredits)}
+                  {formatCurrency(creditsToDollars(data.body.totalCredits))}
                 </Typography>
               </HStack>
-              <Typography
-                /* eslint-disable-next-line react/forbid-component-props */
-                className="leading-none pb-[3px]"
-                variant="body2"
-                color="lighter"
-              >
-                {t('BillingOverview.Credits.available')}
-              </Typography>
             </HStack>
           </VStack>
           <HStack>
