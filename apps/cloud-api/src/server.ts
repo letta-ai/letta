@@ -6,10 +6,7 @@ import { verifyIdentityMiddleware } from './libs/verifyIdentityMiddleware/verify
 import { verifyRoutePermissionsMiddleware } from './libs/verifyRoutePermissionsMiddleware/verifyRoutePermissionsMiddleware';
 import bodyParser from 'body-parser';
 import { projectHeaderMiddleware } from './libs/projectHeaderMiddleware/projectHeaderMiddleware';
-import {
-  createProxyMiddleware,
-  responseInterceptor,
-} from 'http-proxy-middleware';
+import { createProxyMiddleware } from 'http-proxy-middleware';
 import { cloudContracts } from '@letta-cloud/sdk-cloud-api';
 import { cloudApiRouter } from 'tmp-cloud-api-router';
 import { createExpressEndpoints, initServer } from '@ts-rest/express';
@@ -20,7 +17,6 @@ import expressWinston from 'express-winston';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
 import { requireProjectMiddleware } from './libs/requireProjectMiddleware/requireProjectMiddleware';
-import { responseSideEffects } from './libs/responseSideEffects/responseSideEffects';
 import { Readable } from 'node:stream';
 import { itemRateLimitMiddleware } from './libs/itemRateLimitMiddleware/itemRateLimitMiddleware';
 import { fileSizeRateLimitMiddleware } from './libs/fileSizeRateLimitMiddlware/fileSizeRateLimitMiddleware';
@@ -33,10 +29,12 @@ interface ExpressMeta {
     httpVersion: string;
     originalUrl: string;
     query: Record<string, string>;
+    method: string;
   };
   res: {
     statusCode: number;
   };
+  responseTime: number;
 }
 
 function getIsExpressMeta(meta: unknown): meta is ExpressMeta {
@@ -70,6 +68,8 @@ export function startServer() {
     return info;
   });
 
+  const isDev = process.env.NODE_ENV !== 'production';
+
   const obfuscateCookieHeader = winston.format((info) => {
     if (getIsExpressMeta(info.meta)) {
       const { meta } = info;
@@ -86,18 +86,37 @@ export function startServer() {
     return info;
   });
 
+  const filterMeta = winston.format((info) => {
+    if (getIsExpressMeta(info.meta)) {
+      const userId = info.meta.req.headers?.user_id;
+      info.meta = {
+        userId,
+        host: info.meta.req.headers?.host,
+        referer: info.meta.req.headers?.referer,
+      };
+    }
+    return info;
+  });
+
+  const devFormat = winston.format.combine(
+    filterMeta(),
+    winston.format.colorize({ all: true }),
+    winston.format.printf((info) => {
+      const meta = info.meta ? JSON.stringify(info.meta) : '';
+      return `${info.timestamp} [${info.level}] ${info.message} ${meta}`;
+    }),
+  );
+
   app.use(
     expressWinston.logger({
       transports: [new winston.transports.Console()],
       format: winston.format.combine(
         obfuscateAuthorizationHeader(),
         obfuscateCookieHeader(),
-        winston.format.json(),
+        winston.format.timestamp({ format: 'isoDateTime' }),
+        isDev ? devFormat : winston.format.json(),
       ),
-      meta: true, // optional: control whether you want to log the meta data about the request (default to true)
-      msg: 'HTTP {{req.method}} {{req.url}}', // optional: customize the default logging message. E.g. "{{res.statusCode}} {{req.method}} {{res.responseTime}}ms {{req.url}}"
-      colorize: false,
-      level: 'info',
+      msg: 'HTTP {{req.method}} {{res.statusCode}} {{res.responseTime}}ms {{req.url}}',
     }),
   );
 
