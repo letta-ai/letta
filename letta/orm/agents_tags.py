@@ -1,4 +1,4 @@
-from sqlalchemy import ForeignKey, String, UniqueConstraint
+from sqlalchemy import ForeignKey, Index, String, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from letta.orm.base import Base
@@ -6,7 +6,10 @@ from letta.orm.base import Base
 
 class AgentsTags(Base):
     __tablename__ = "agents_tags"
-    __table_args__ = (UniqueConstraint("agent_id", "tag", name="unique_agent_tag"),)
+    __table_args__ = (
+        UniqueConstraint("agent_id", "tag", name="unique_agent_tag"),
+        Index("ix_agents_tags_agent_id_tag", "agent_id", "tag"),
+    )
 
     # # agent generates its own id
     # # TODO: We want to migrate all the ORM models to do this, so we will need to move this to the SqlalchemyBase
