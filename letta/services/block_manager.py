@@ -1,4 +1,3 @@
-import os
 from typing import Dict, List, Optional
 
 from sqlalchemy.orm import Session
@@ -10,10 +9,10 @@ from letta.orm.enums import ActorType
 from letta.orm.errors import NoResultFound
 from letta.schemas.agent import AgentState as PydanticAgentState
 from letta.schemas.block import Block as PydanticBlock
-from letta.schemas.block import BlockUpdate, Human, Persona
+from letta.schemas.block import BlockUpdate
 from letta.schemas.user import User as PydanticUser
 from letta.server.db import db_registry
-from letta.utils import enforce_types, list_human_files, list_persona_files
+from letta.utils import enforce_types
 
 logger = get_logger(__name__)
 
@@ -183,20 +182,6 @@ class BlockManager:
                 return result_blocks
 
             return pydantic_blocks
-
-    @enforce_types
-    def add_default_blocks(self, actor: PydanticUser):
-        for persona_file in list_persona_files():
-            with open(persona_file, "r", encoding="utf-8") as f:
-                text = f.read()
-            name = os.path.basename(persona_file).replace(".txt", "")
-            self.create_or_update_block(Persona(template_name=name, value=text, is_template=True), actor=actor)
-
-        for human_file in list_human_files():
-            with open(human_file, "r", encoding="utf-8") as f:
-                text = f.read()
-            name = os.path.basename(human_file).replace(".txt", "")
-            self.create_or_update_block(Human(template_name=name, value=text, is_template=True), actor=actor)
 
     @enforce_types
     def get_agents_for_block(self, block_id: str, actor: PydanticUser) -> List[PydanticAgentState]:
