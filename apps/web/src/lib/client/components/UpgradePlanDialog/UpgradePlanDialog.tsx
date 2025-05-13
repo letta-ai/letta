@@ -158,7 +158,8 @@ function PlanComparisonView(props: PlanComparisonViewProps) {
             size="large"
             color="secondary"
             label={t('PlanComparisonView.enterprise.cta')}
-            disabled
+            href="https://forms.letta.com/request-demo"
+            target="_blank"
           />
         );
     }
