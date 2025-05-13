@@ -393,7 +393,9 @@ def openai_chat_completions_process_stream(
                         if tool_call_delta.id is not None:
                             # TODO assert that we're not overwriting?
                             # TODO += instead of =?
-                            if tool_call_delta.index not in range(len(accum_message.tool_calls)):
+                            try:
+                                accum_message.tool_calls[tool_call_delta.index].id = tool_call_delta.id
+                            except IndexError:
                                 warnings.warn(
                                     f"Tool call index out of range ({tool_call_delta.index})\ncurrent tool calls: {accum_message.tool_calls}\ncurrent delta: {tool_call_delta}"
                                 )
@@ -403,25 +405,21 @@ def openai_chat_completions_process_stream(
                                 accum_message.tool_calls[tool_call_delta.index].id = tool_call_delta.id
                         if tool_call_delta.function is not None:
                             if tool_call_delta.function.name is not None:
-                                # TODO assert that we're not overwriting?
-                                # TODO += instead of =?
-                                if tool_call_delta.index not in range(len(accum_message.tool_calls)):
+                                try:
+                                    accum_message.tool_calls[
+                                        tool_call_delta.index
+                                    ].function.name += tool_call_delta.function.name  # TODO check for parallel tool calls
+                                except IndexError:
                                     warnings.warn(
                                         f"Tool call index out of range ({tool_call_delta.index})\ncurrent tool calls: {accum_message.tool_calls}\ncurrent delta: {tool_call_delta}"
                                     )
-                                    # force index 0
-                                    # accum_message.tool_calls[0].function.name = tool_call_delta.function.name
-                                else:
-                                    accum_message.tool_calls[tool_call_delta.index].function.name = tool_call_delta.function.name
                             if tool_call_delta.function.arguments is not None:
-                                if tool_call_delta.index not in range(len(accum_message.tool_calls)):
+                                try:
+                                    accum_message.tool_calls[tool_call_delta.index].function.arguments += tool_call_delta.function.arguments
+                                except IndexError:
                                     warnings.warn(
                                         f"Tool call index out of range ({tool_call_delta.index})\ncurrent tool calls: {accum_message.tool_calls}\ncurrent delta: {tool_call_delta}"
                                     )
-                                    # force index 0
-                                    # accum_message.tool_calls[0].function.arguments += tool_call_delta.function.arguments
-                                else:
-                                    accum_message.tool_calls[tool_call_delta.index].function.arguments += tool_call_delta.function.arguments
 
                 if message_delta.function_call is not None:
                     raise NotImplementedError(f"Old function_call style not support with stream=True")

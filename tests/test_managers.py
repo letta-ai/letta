@@ -1,3 +1,4 @@
+import asyncio
 import logging
 import os
 import random
@@ -626,6 +627,14 @@ def dummy_successful_response() -> BetaMessageBatchIndividualResponse:
 @pytest.fixture
 def letta_batch_job(server: SyncServer, default_user) -> Job:
     return server.job_manager.create_job(BatchJob(user_id=default_user.id), actor=default_user)
+
+
+@pytest.fixture(scope="session")
+def event_loop(request):
+    """Create an instance of the default event loop for each test case."""
+    loop = asyncio.get_event_loop_policy().new_event_loop()
+    yield loop
+    loop.close()
 
 
 # ======================================================================================================================
@@ -1757,11 +1766,20 @@ def test_refresh_memory(server: SyncServer, default_user):
     assert len(agent.memory.blocks) == 0
 
 
-async def test_refresh_memory_async(server: SyncServer, default_user):
+@pytest.mark.asyncio
+async def test_refresh_memory_async(server: SyncServer, default_user, event_loop):
     block = server.block_manager.create_or_update_block(
         PydanticBlock(
             label="test",
             value="test",
+            limit=1000,
+        ),
+        actor=default_user,
+    )
+    block_human = server.block_manager.create_or_update_block(
+        PydanticBlock(
+            label="human",
+            value="name: caren",
             limit=1000,
         ),
         actor=default_user,
@@ -1772,7 +1790,7 @@ async def test_refresh_memory_async(server: SyncServer, default_user):
             llm_config=LLMConfig.default_config("gpt-4o-mini"),
             embedding_config=EmbeddingConfig.default_config(provider="openai"),
             include_base_tools=False,
-            block_ids=[block.id],
+            block_ids=[block.id, block_human.id],
         ),
         actor=default_user,
     )
@@ -1783,10 +1801,10 @@ async def test_refresh_memory_async(server: SyncServer, default_user):
         ),
         actor=default_user,
     )
-    assert len(agent.memory.blocks) == 1
+    assert len(agent.memory.blocks) == 2
     agent = await server.agent_manager.refresh_memory_async(agent_state=agent, actor=default_user)
-    assert len(agent.memory.blocks) == 1
-    assert agent.memory.blocks[0].value == "test2"
+    assert len(agent.memory.blocks) == 2
+    assert any([block.value == "test2" for block in agent.memory.blocks])
 
 
 # ======================================================================================================================
@@ -2623,7 +2641,8 @@ def test_create_block(server: SyncServer, default_user):
     assert block.organization_id == default_user.organization_id
 
 
-def test_get_blocks(server, default_user):
+@pytest.mark.asyncio
+async def test_get_blocks(server, default_user, event_loop):
     block_manager = BlockManager()
 
     # Create blocks to retrieve later
@@ -2631,19 +2650,20 @@ def test_get_blocks(server, default_user):
     block_manager.create_or_update_block(PydanticBlock(label="persona", value="Block 2"), actor=default_user)
 
     # Retrieve blocks by different filters
-    all_blocks = block_manager.get_blocks(actor=default_user)
+    all_blocks = await block_manager.get_blocks_async(actor=default_user)
     assert len(all_blocks) == 2
 
-    human_blocks = block_manager.get_blocks(actor=default_user, label="human")
+    human_blocks = await block_manager.get_blocks_async(actor=default_user, label="human")
     assert len(human_blocks) == 1
     assert human_blocks[0].label == "human"
 
-    persona_blocks = block_manager.get_blocks(actor=default_user, label="persona")
+    persona_blocks = await block_manager.get_blocks_async(actor=default_user, label="persona")
     assert len(persona_blocks) == 1
     assert persona_blocks[0].label == "persona"
 
 
-def test_get_blocks_comprehensive(server, default_user, other_user_different_org):
+@pytest.mark.asyncio
+async def test_get_blocks_comprehensive(server, default_user, other_user_different_org, event_loop):
     def random_label(prefix="label"):
         return f"{prefix}_{''.join(random.choices(string.ascii_lowercase, k=6))}"
 
@@ -2669,7 +2689,7 @@ def test_get_blocks_comprehensive(server, default_user, other_user_different_org
         other_user_blocks.append((label, value))
 
     # Check default_user sees only their blocks
-    retrieved_default_blocks = block_manager.get_blocks(actor=default_user)
+    retrieved_default_blocks = await block_manager.get_blocks_async(actor=default_user)
     assert len(retrieved_default_blocks) == 10
     retrieved_labels = {b.label for b in retrieved_default_blocks}
     for label, value in default_user_blocks:
@@ -2677,13 +2697,13 @@ def test_get_blocks_comprehensive(server, default_user, other_user_different_org
 
     # Check individual filtering for default_user
     for label, value in default_user_blocks:
-        filtered = block_manager.get_blocks(actor=default_user, label=label)
+        filtered = await block_manager.get_blocks_async(actor=default_user, label=label)
         assert len(filtered) == 1
         assert filtered[0].label == label
         assert filtered[0].value == value
 
     # Check other_user sees only their blocks
-    retrieved_other_blocks = block_manager.get_blocks(actor=other_user_different_org)
+    retrieved_other_blocks = await block_manager.get_blocks_async(actor=other_user_different_org)
     assert len(retrieved_other_blocks) == 3
     retrieved_labels = {b.label for b in retrieved_other_blocks}
     for label, value in other_user_blocks:
@@ -2691,11 +2711,11 @@ def test_get_blocks_comprehensive(server, default_user, other_user_different_org
 
     # Other user shouldn't see default_user's blocks
     for label, _ in default_user_blocks:
-        assert block_manager.get_blocks(actor=other_user_different_org, label=label) == []
+        assert (await block_manager.get_blocks_async(actor=other_user_different_org, label=label)) == []
 
     # Default user shouldn't see other_user's blocks
     for label, _ in other_user_blocks:
-        assert block_manager.get_blocks(actor=default_user, label=label) == []
+        assert (await block_manager.get_blocks_async(actor=default_user, label=label)) == []
 
 
 def test_update_block(server: SyncServer, default_user):
@@ -2707,7 +2727,7 @@ def test_update_block(server: SyncServer, default_user):
     block_manager.update_block(block_id=block.id, block_update=update_data, actor=default_user)
 
     # Retrieve the updated block
-    updated_block = block_manager.get_blocks(actor=default_user, id=block.id)[0]
+    updated_block = block_manager.get_block_by_id(actor=default_user, block_id=block.id)
 
     # Assertions to verify the update
     assert updated_block.value == "Updated Content"
@@ -2730,7 +2750,7 @@ def test_update_block_limit(server: SyncServer, default_user):
     block_manager.update_block(block_id=block.id, block_update=update_data, actor=default_user)
 
     # Retrieve the updated block and validate the update
-    updated_block = block_manager.get_blocks(actor=default_user, id=block.id)[0]
+    updated_block = block_manager.get_block_by_id(actor=default_user, block_id=block.id)
 
     assert updated_block.value == "Updated Content" * 2000
     assert updated_block.description == "Updated description"
@@ -2747,11 +2767,12 @@ def test_update_block_limit_does_not_reset(server: SyncServer, default_user):
     block_manager.update_block(block_id=block.id, block_update=update_data, actor=default_user)
 
     # Retrieve the updated block and validate the update
-    updated_block = block_manager.get_blocks(actor=default_user, id=block.id)[0]
+    updated_block = block_manager.get_block_by_id(actor=default_user, block_id=block.id)
     assert updated_block.value == new_content
 
 
-def test_delete_block(server: SyncServer, default_user):
+@pytest.mark.asyncio
+async def test_delete_block(server: SyncServer, default_user, event_loop):
     block_manager = BlockManager()
 
     # Create and delete a block
@@ -2759,11 +2780,12 @@ def test_delete_block(server: SyncServer, default_user):
     block_manager.delete_block(block_id=block.id, actor=default_user)
 
     # Verify that the block was deleted
-    blocks = block_manager.get_blocks(actor=default_user)
+    blocks = await block_manager.get_blocks_async(actor=default_user)
     assert len(blocks) == 0
 
 
-def test_delete_block_detaches_from_agent(server: SyncServer, sarah_agent, default_user):
+@pytest.mark.asyncio
+async def test_delete_block_detaches_from_agent(server: SyncServer, sarah_agent, default_user, event_loop):
     # Create and delete a block
     block = server.block_manager.create_or_update_block(PydanticBlock(label="human", value="Sample content"), actor=default_user)
     agent_state = server.agent_manager.attach_block(agent_id=sarah_agent.id, block_id=block.id, actor=default_user)
@@ -2775,7 +2797,7 @@ def test_delete_block_detaches_from_agent(server: SyncServer, sarah_agent, defau
     server.block_manager.delete_block(block_id=block.id, actor=default_user)
 
     # Verify that the block was deleted
-    blocks = server.block_manager.get_blocks(actor=default_user)
+    blocks = await server.block_manager.get_blocks_async(actor=default_user)
     assert len(blocks) == 0
 
     # Check that block has been detached too
@@ -2803,7 +2825,8 @@ def test_get_agents_for_block(server: SyncServer, sarah_agent, charles_agent, de
     assert charles_agent.id in agent_state_ids
 
 
-def test_batch_create_multiple_blocks(server: SyncServer, default_user):
+@pytest.mark.asyncio
+async def test_batch_create_multiple_blocks(server: SyncServer, default_user, event_loop):
     block_manager = BlockManager()
     num_blocks = 10
 
@@ -2828,7 +2851,7 @@ def test_batch_create_multiple_blocks(server: SyncServer, default_user):
         assert blk.id is not None
 
     # Confirm all created blocks exist in the full list from get_blocks
-    all_labels = {blk.label for blk in block_manager.get_blocks(actor=default_user)}
+    all_labels = {blk.label for blk in await block_manager.get_blocks_async(actor=default_user)}
     expected_labels = {f"batch_label_{i}" for i in range(num_blocks)}
     assert expected_labels.issubset(all_labels)
 
@@ -2859,7 +2882,7 @@ def test_bulk_update_skips_missing_and_truncates_then_returns_none(server: SyncS
     assert "truncating" in caplog.text
 
     # confirm the value was truncated to `limit` characters
-    reloaded = mgr.get_blocks(actor=default_user, id=b.id)[0]
+    reloaded = mgr.get_block_by_id(actor=default_user, block_id=b.id)
     assert len(reloaded.value) == 5
     assert reloaded.value == long_val[:5]
 
@@ -2904,11 +2927,11 @@ def test_bulk_update_respects_org_scoping(server: SyncServer, default_user: Pyda
     mgr.bulk_update_block_values(updates, actor=default_user)
 
     # mine should be updated...
-    reloaded_mine = mgr.get_blocks(actor=default_user, id=mine.id)[0]
+    reloaded_mine = mgr.get_block_by_id(actor=default_user, block_id=mine.id)
     assert reloaded_mine.value == "updated-mine"
 
     # ...theirs should remain untouched
-    reloaded_theirs = mgr.get_blocks(actor=other_user_different_org, id=theirs.id)[0]
+    reloaded_theirs = mgr.get_block_by_id(actor=other_user_different_org, block_id=theirs.id)
     assert reloaded_theirs.value == "theirs"
 
     # warning should mention skipping the other-org ID
@@ -3665,7 +3688,8 @@ def test_get_set_agents_for_identities(server: SyncServer, sarah_agent, charles_
     server.identity_manager.delete_identity(identity_id=identity.id, actor=default_user)
 
 
-def test_attach_detach_identity_from_block(server: SyncServer, default_block, default_user):
+@pytest.mark.asyncio
+async def test_attach_detach_identity_from_block(server: SyncServer, default_block, default_user, event_loop):
     # Create an identity
     identity = server.identity_manager.create_identity(
         IdentityCreate(name="caren", identifier_key="1234", identity_type=IdentityType.user, block_ids=[default_block.id]),
@@ -3673,7 +3697,7 @@ def test_attach_detach_identity_from_block(server: SyncServer, default_block, de
     )
 
     # Check that identity has been attached
-    blocks = server.block_manager.get_blocks(identity_id=identity.id, actor=default_user)
+    blocks = await server.block_manager.get_blocks_async(identity_id=identity.id, actor=default_user)
     assert len(blocks) == 1 and blocks[0].id == default_block.id
 
     # Now attempt to delete the identity
@@ -3684,11 +3708,12 @@ def test_attach_detach_identity_from_block(server: SyncServer, default_block, de
     assert len(identities) == 0
 
     # Check that block has been detached too
-    blocks = server.block_manager.get_blocks(identity_id=identity.id, actor=default_user)
+    blocks = await server.block_manager.get_blocks_async(identity_id=identity.id, actor=default_user)
     assert len(blocks) == 0
 
 
-def test_get_set_blocks_for_identities(server: SyncServer, default_block, default_user):
+@pytest.mark.asyncio
+async def test_get_set_blocks_for_identities(server: SyncServer, default_block, default_user, event_loop):
     block_manager = BlockManager()
     block_with_identity = block_manager.create_or_update_block(PydanticBlock(label="persona", value="Original Content"), actor=default_user)
     block_without_identity = block_manager.create_or_update_block(PydanticBlock(label="user", value="Original Content"), actor=default_user)
@@ -3700,7 +3725,7 @@ def test_get_set_blocks_for_identities(server: SyncServer, default_block, defaul
     )
 
     # Get the blocks for identity id
-    blocks = server.block_manager.get_blocks(identity_id=identity.id, actor=default_user)
+    blocks = await server.block_manager.get_blocks_async(identity_id=identity.id, actor=default_user)
     assert len(blocks) == 2
 
     # Check blocks are in the list
@@ -3710,7 +3735,7 @@ def test_get_set_blocks_for_identities(server: SyncServer, default_block, defaul
     assert not block_without_identity.id in block_ids
 
     # Get the blocks for identifier key
-    blocks = server.block_manager.get_blocks(identifier_keys=[identity.identifier_key], actor=default_user)
+    blocks = await server.block_manager.get_blocks_async(identifier_keys=[identity.identifier_key], actor=default_user)
     assert len(blocks) == 2
 
     # Check blocks are in the list
@@ -3724,7 +3749,7 @@ def test_get_set_blocks_for_identities(server: SyncServer, default_block, defaul
     server.block_manager.delete_block(block_id=block_without_identity.id, actor=default_user)
 
     # Get the blocks for identity id
-    blocks = server.block_manager.get_blocks(identity_id=identity.id, actor=default_user)
+    blocks = await server.block_manager.get_blocks_async(identity_id=identity.id, actor=default_user)
     assert len(blocks) == 1
 
     # Check only initial block in the list
