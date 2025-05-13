@@ -948,6 +948,7 @@ export const UseBlocksServiceListBlocksKeyFn = (
     identifierKeys,
     identityId,
     label,
+    limit,
     name,
     templatesOnly,
     userId,
@@ -955,6 +956,7 @@ export const UseBlocksServiceListBlocksKeyFn = (
     identifierKeys?: string[];
     identityId?: string;
     label?: string;
+    limit?: number;
     name?: string;
     templatesOnly?: boolean;
     userId?: string;
@@ -963,7 +965,7 @@ export const UseBlocksServiceListBlocksKeyFn = (
 ) => [
   useBlocksServiceListBlocksKey,
   ...(queryKey ?? [
-    { identifierKeys, identityId, label, name, templatesOnly, userId },
+    { identifierKeys, identityId, label, limit, name, templatesOnly, userId },
   ]),
 ];
 export type BlocksServiceCountBlocksDefaultResponse = Awaited<

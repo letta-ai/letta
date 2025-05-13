@@ -4847,6 +4847,25 @@
               "title": "Identifier Keys"
             },
             "description": "Search agents by identifier keys"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Number of blocks to return",
+              "default": 50,
+              "title": "Limit"
+            },
+            "description": "Number of blocks to return"
           }
         ],
         "responses": {

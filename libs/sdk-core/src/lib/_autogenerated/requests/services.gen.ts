@@ -2623,6 +2623,7 @@ export class BlocksService {
    * @param data.name Name of the block
    * @param data.identityId Search agents by identifier id
    * @param data.identifierKeys Search agents by identifier keys
+   * @param data.limit Number of blocks to return
    * @param data.userId
    * @returns Block Successful Response
    * @throws ApiError
@@ -2640,6 +2641,7 @@ export class BlocksService {
         name: data.name,
         identity_id: data.identityId,
         identifier_keys: data.identifierKeys,
+        limit: data.limit,
       },
       errors: {
         422: 'Validation Error',

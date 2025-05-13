@@ -1535,6 +1535,7 @@ export const useLlmsServiceListEmbeddingModels = <
  * @param data.name Name of the block
  * @param data.identityId Search agents by identifier id
  * @param data.identifierKeys Search agents by identifier keys
+ * @param data.limit Number of blocks to return
  * @param data.userId
  * @returns Block Successful Response
  * @throws ApiError
@@ -1548,6 +1549,7 @@ export const useBlocksServiceListBlocks = <
     identifierKeys,
     identityId,
     label,
+    limit,
     name,
     templatesOnly,
     userId,
@@ -1555,6 +1557,7 @@ export const useBlocksServiceListBlocks = <
     identifierKeys?: string[];
     identityId?: string;
     label?: string;
+    limit?: number;
     name?: string;
     templatesOnly?: boolean;
     userId?: string;
@@ -1564,7 +1567,7 @@ export const useBlocksServiceListBlocks = <
 ) =>
   useQuery<TData, TError>({
     queryKey: Common.UseBlocksServiceListBlocksKeyFn(
-      { identifierKeys, identityId, label, name, templatesOnly, userId },
+      { identifierKeys, identityId, label, limit, name, templatesOnly, userId },
       queryKey,
     ),
     queryFn: () =>
@@ -1572,6 +1575,7 @@ export const useBlocksServiceListBlocks = <
         identifierKeys,
         identityId,
         label,
+        limit,
         name,
         templatesOnly,
         userId,

@@ -4788,6 +4788,10 @@ export type ListBlocksData = {
    */
   label?: string | null;
   /**
+   * Number of blocks to return
+   */
+  limit?: number | null;
+  /**
    * Name of the block
    */
   name?: string | null;

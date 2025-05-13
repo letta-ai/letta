@@ -1221,6 +1221,7 @@ export const prefetchUseLlmsServiceListEmbeddingModels = (
  * @param data.name Name of the block
  * @param data.identityId Search agents by identifier id
  * @param data.identifierKeys Search agents by identifier keys
+ * @param data.limit Number of blocks to return
  * @param data.userId
  * @returns Block Successful Response
  * @throws ApiError
@@ -1231,6 +1232,7 @@ export const prefetchUseBlocksServiceListBlocks = (
     identifierKeys,
     identityId,
     label,
+    limit,
     name,
     templatesOnly,
     userId,
@@ -1238,6 +1240,7 @@ export const prefetchUseBlocksServiceListBlocks = (
     identifierKeys?: string[];
     identityId?: string;
     label?: string;
+    limit?: number;
     name?: string;
     templatesOnly?: boolean;
     userId?: string;
@@ -1248,6 +1251,7 @@ export const prefetchUseBlocksServiceListBlocks = (
       identifierKeys,
       identityId,
       label,
+      limit,
       name,
       templatesOnly,
       userId,
@@ -1257,6 +1261,7 @@ export const prefetchUseBlocksServiceListBlocks = (
         identifierKeys,
         identityId,
         label,
+        limit,
         name,
         templatesOnly,
         userId,
