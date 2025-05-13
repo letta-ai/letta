@@ -196,7 +196,7 @@ function SubscriptionDetails() {
   }
 
   if (data.body.billingTier === 'free') {
-    return <FreePlanUpsellDetails />;
+    return null;
   }
 
   return (
@@ -307,6 +307,7 @@ function BillingOverview() {
 
   return (
     <VStack gap="large" width="largeContained">
+      {data.body.billingTier === 'free' && <FreePlanUpsellDetails />}
       {isProPlanEnabled && data.body.billingTier !== 'enterprise' && (
         <CustomerQuotaView />
       )}

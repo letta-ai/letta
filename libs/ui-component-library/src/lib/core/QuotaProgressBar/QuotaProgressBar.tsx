@@ -25,11 +25,23 @@ export function QuotaProgressBar(props: QuotaProgressBarProps) {
     return 1 - progress;
   }, [progress]);
 
+  const transitionColor = useMemo(() => {
+    if (isComplete) {
+      if (max === 'infinite') {
+        return 'infinite-transition';
+      }
+
+      return 'complete-transition';
+    }
+
+    return 'progress-transition';
+  }, [isComplete, max]);
+
   return (
     <div
       className={cn(
         'h-[28px] w-full bg-background flex justify-end relative',
-        !isComplete ? 'progress-transition' : 'complete-transition',
+        transitionColor,
       )}
     >
       <div className="mr-[33%] h-full w-[1px] bg-background absolute" />
