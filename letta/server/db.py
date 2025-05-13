@@ -123,6 +123,7 @@ class DatabaseRegistry:
                     async_pg_uri = pg_uri.replace("postgresql://", "postgresql+asyncpg://")
                 else:
                     async_pg_uri = f"postgresql+asyncpg://{pg_uri.split('://', 1)[1]}" if "://" in pg_uri else pg_uri
+                async_pg_uri = async_pg_uri.replace("sslmode=", "ssl=")
 
                 async_engine = create_async_engine(
                     async_pg_uri,
