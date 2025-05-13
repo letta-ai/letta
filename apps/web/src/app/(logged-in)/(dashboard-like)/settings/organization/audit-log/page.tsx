@@ -5,13 +5,11 @@ import {
   DashboardPageSection,
   DataTable,
   HStack,
-  LettaCoinIcon,
   Typography,
   SideOverlay,
   SideOverlayHeader,
   VStack,
   LoadingEmptyStatusComponent,
-  Badge,
 } from '@letta-cloud/ui-component-library';
 import type { PublicCreditTransactionType } from '@letta-cloud/sdk-web';
 import { webApi, webApiQueryKeys } from '@letta-cloud/sdk-web';
@@ -23,6 +21,8 @@ import { Slot } from '@radix-ui/react-slot';
 import { Button } from '@letta-cloud/ui-component-library';
 import type { Step } from '@letta-cloud/sdk-core';
 import { useStepsServiceRetrieveStep } from '@letta-cloud/sdk-core';
+import { ModelTierBadge } from '../../../models/_components/ModelTierBadge/ModelTierBadge';
+import { creditsToDollars } from '@letta-cloud/utils-shared';
 
 interface InnerStepViewerProps {
   step: Step;
@@ -96,11 +96,14 @@ interface AmountBadgeProps {
 function AmountBadge(props: AmountBadgeProps) {
   const { amount, type } = props;
 
+  const { formatCurrency } = useFormatters();
+
   return (
     <HStack align="center" gap="small">
       {type === 'addition' ? '+' : '-'}
-      <LettaCoinIcon />
-      <Typography variant="body2">{amount}</Typography>
+      <Typography variant="body2">
+        {formatCurrency(creditsToDollars(amount))}
+      </Typography>
     </HStack>
   );
 }
@@ -155,7 +158,11 @@ export default function AuditLogPage() {
         },
         {
           cell: ({ row }) => {
-            return <Badge content={row.original.modelTier || ''} />;
+            return (
+              <ModelTierBadge
+                tier={row.original.modelTier || 'per-inference'}
+              />
+            );
           },
           accessorKey: 'modelTier',
           header: t('table.columns.modelTier'),
