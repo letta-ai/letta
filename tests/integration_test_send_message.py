@@ -2,13 +2,14 @@ import json
 import os
 import threading
 import time
+import uuid
 from typing import Any, Dict, List
 
 import pytest
 import requests
 from dotenv import load_dotenv
-from letta_client import AsyncLetta, Letta, Run
-from letta_client.types import AssistantMessage, LettaUsageStatistics, ReasoningMessage, ToolCallMessage, ToolReturnMessage
+from letta_client import AsyncLetta, Letta, MessageCreate, Run
+from letta_client.types import AssistantMessage, LettaUsageStatistics, ReasoningMessage, ToolCallMessage, ToolReturnMessage, UserMessage
 
 from letta.schemas.agent import AgentState
 from letta.schemas.llm_config import LLMConfig
@@ -120,9 +121,10 @@ def roll_dice(num_sides: int) -> int:
     return random.randint(1, num_sides)
 
 
-USER_MESSAGE_GREETING: List[Dict[str, str]] = [{"role": "user", "content": "Hi there."}]
-USER_MESSAGE_TOOL_CALL: List[Dict[str, str]] = [
-    {"role": "user", "content": "Call the roll_dice tool with 16 sides and tell me the outcome."}
+USER_MESSAGE_OTID = str(uuid.uuid4())
+USER_MESSAGE_GREETING: List[MessageCreate] = [MessageCreate(role="user", content="Hi there.", otid=USER_MESSAGE_OTID)]
+USER_MESSAGE_TOOL_CALL: List[MessageCreate] = [
+    MessageCreate(role="user", content="Call the roll_dice tool with 16 sides and tell me the outcome.", otid=USER_MESSAGE_OTID)
 ]
 all_configs = [
     "openai-gpt-4o-mini.json",
@@ -139,54 +141,123 @@ filenames = [requested] if requested else all_configs
 TESTED_LLM_CONFIGS: List[LLMConfig] = [get_llm_config(fn) for fn in filenames]
 
 
-def assert_greeting_with_assistant_message_response(messages: List[Any], streaming: bool = False) -> None:
+def assert_greeting_with_assistant_message_response(
+    messages: List[Any],
+    streaming: bool = False,
+    from_db: bool = False,
+) -> None:
     """
     Asserts that the messages list follows the expected sequence:
     ReasoningMessage -> AssistantMessage.
     """
-    expected_message_count = 3 if streaming else 2
+    expected_message_count = 3 if streaming or from_db else 2
     assert len(messages) == expected_message_count
 
-    assert isinstance(messages[0], ReasoningMessage)
-    assert isinstance(messages[1], AssistantMessage)
+    index = 0
+    if from_db:
+        assert isinstance(messages[index], UserMessage)
+        assert messages[index].otid == USER_MESSAGE_OTID
+        index += 1
+
+    # Agent Step 1
+    assert isinstance(messages[index], ReasoningMessage)
+    assert messages[index].otid and messages[index].otid[-1] == "0"
+    index += 1
+
+    assert isinstance(messages[index], AssistantMessage)
+    assert messages[index].otid and messages[index].otid[-1] == "1"
+    index += 1
 
     if streaming:
-        assert isinstance(messages[2], LettaUsageStatistics)
+        assert isinstance(messages[index], LettaUsageStatistics)
 
 
-def assert_greeting_without_assistant_message_response(messages: List[Any], streaming: bool = False) -> None:
+def assert_greeting_without_assistant_message_response(
+    messages: List[Any],
+    streaming: bool = False,
+    from_db: bool = False,
+) -> None:
     """
     Asserts that the messages list follows the expected sequence:
     ReasoningMessage -> ToolCallMessage -> ToolReturnMessage.
     """
-    expected_message_count = 4 if streaming else 3
+    expected_message_count = 4 if streaming or from_db else 3
     assert len(messages) == expected_message_count
 
-    assert isinstance(messages[0], ReasoningMessage)
-    assert isinstance(messages[1], ToolCallMessage)
-    assert isinstance(messages[2], ToolReturnMessage)
+    index = 0
+    if from_db:
+        assert isinstance(messages[index], UserMessage)
+        assert messages[index].otid == USER_MESSAGE_OTID
+        index += 1
+
+    # Agent Step 1
+    assert isinstance(messages[index], ReasoningMessage)
+    assert messages[index].otid and messages[index].otid[-1] == "0"
+    index += 1
+
+    assert isinstance(messages[index], ToolCallMessage)
+    assert messages[index].otid and messages[index].otid[-1] == "1"
+    index += 1
+
+    # Agent Step 2
+    assert isinstance(messages[index], ToolReturnMessage)
+    assert messages[index].otid and messages[index].otid[-1] == "0"
+    index += 1
 
     if streaming:
-        assert isinstance(messages[3], LettaUsageStatistics)
+        assert isinstance(messages[index], LettaUsageStatistics)
 
 
-def assert_tool_call_response(messages: List[Any], streaming: bool = False) -> None:
+def assert_tool_call_response(
+    messages: List[Any],
+    streaming: bool = False,
+    from_db: bool = False,
+) -> None:
     """
     Asserts that the messages list follows the expected sequence:
     ReasoningMessage -> ToolCallMessage -> ToolReturnMessage ->
     ReasoningMessage -> AssistantMessage.
     """
-    expected_message_count = 6 if streaming else 5
+    expected_message_count = 6 if streaming else 7 if from_db else 5
     assert len(messages) == expected_message_count
 
-    assert isinstance(messages[0], ReasoningMessage)
-    assert isinstance(messages[1], ToolCallMessage)
-    assert isinstance(messages[2], ToolReturnMessage)
-    assert isinstance(messages[3], ReasoningMessage)
-    assert isinstance(messages[4], AssistantMessage)
+    index = 0
+    if from_db:
+        assert isinstance(messages[index], UserMessage)
+        assert messages[index].otid == USER_MESSAGE_OTID
+        index += 1
+
+    # Agent Step 1
+    assert isinstance(messages[index], ReasoningMessage)
+    assert messages[index].otid and messages[index].otid[-1] == "0"
+    index += 1
+
+    assert isinstance(messages[index], ToolCallMessage)
+    assert messages[index].otid and messages[index].otid[-1] == "1"
+    index += 1
+
+    # Agent Step 2
+    assert isinstance(messages[index], ToolReturnMessage)
+    assert messages[index].otid and messages[index].otid[-1] == "0"
+    index += 1
+
+    # Hidden User Message
+    if from_db:
+        assert isinstance(messages[index], UserMessage)
+        assert "request_heartbeat=true" in messages[index].content
+        index += 1
+
+    # Agent Step 3
+    assert isinstance(messages[index], ReasoningMessage)
+    assert messages[index].otid and messages[index].otid[-1] == "0"
+    index += 1
+
+    assert isinstance(messages[index], AssistantMessage)
+    assert messages[index].otid and messages[index].otid[-1] == "1"
+    index += 1
 
     if streaming:
-        assert isinstance(messages[5], LettaUsageStatistics)
+        assert isinstance(messages[index], LettaUsageStatistics)
 
 
 def accumulate_chunks(chunks: List[Any]) -> List[Any]:
@@ -259,12 +330,15 @@ def test_greeting_with_assistant_message(
     Tests sending a message with a synchronous client.
     Verifies that the response messages follow the expected order.
     """
+    last_message = client.agents.messages.list(agent_id=agent_state.id, limit=1)
     agent_state = client.agents.modify(agent_id=agent_state.id, llm_config=llm_config)
     response = client.agents.messages.create(
         agent_id=agent_state.id,
         messages=USER_MESSAGE_GREETING,
     )
     assert_greeting_with_assistant_message_response(response.messages)
+    messages_from_db = client.agents.messages.list(agent_id=agent_state.id, after=last_message[0].id)
+    assert_greeting_with_assistant_message_response(messages_from_db, from_db=True)
 
 
 @pytest.mark.parametrize(
@@ -282,6 +356,7 @@ def test_greeting_without_assistant_message(
     Tests sending a message with a synchronous client.
     Verifies that the response messages follow the expected order.
     """
+    last_message = client.agents.messages.list(agent_id=agent_state.id, limit=1)
     agent_state = client.agents.modify(agent_id=agent_state.id, llm_config=llm_config)
     response = client.agents.messages.create(
         agent_id=agent_state.id,
@@ -289,6 +364,8 @@ def test_greeting_without_assistant_message(
         use_assistant_message=False,
     )
     assert_greeting_without_assistant_message_response(response.messages)
+    messages_from_db = client.agents.messages.list(agent_id=agent_state.id, after=last_message[0].id, use_assistant_message=False)
+    assert_greeting_without_assistant_message_response(messages_from_db, from_db=True)
 
 
 @pytest.mark.parametrize(
@@ -308,12 +385,15 @@ def test_tool_call(
     """
     dice_tool = client.tools.upsert_from_function(func=roll_dice)
     client.agents.tools.attach(agent_id=agent_state.id, tool_id=dice_tool.id)
+    last_message = client.agents.messages.list(agent_id=agent_state.id, limit=1)
     agent_state = client.agents.modify(agent_id=agent_state.id, llm_config=llm_config)
     response = client.agents.messages.create(
         agent_id=agent_state.id,
         messages=USER_MESSAGE_TOOL_CALL,
     )
     assert_tool_call_response(response.messages)
+    messages_from_db = client.agents.messages.list(agent_id=agent_state.id, after=last_message[0].id)
+    assert_tool_call_response(messages_from_db, from_db=True)
 
 
 @pytest.mark.asyncio

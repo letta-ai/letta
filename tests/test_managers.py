@@ -1757,6 +1757,38 @@ def test_refresh_memory(server: SyncServer, default_user):
     assert len(agent.memory.blocks) == 0
 
 
+async def test_refresh_memory_async(server: SyncServer, default_user):
+    block = server.block_manager.create_or_update_block(
+        PydanticBlock(
+            label="test",
+            value="test",
+            limit=1000,
+        ),
+        actor=default_user,
+    )
+    agent = server.agent_manager.create_agent(
+        CreateAgent(
+            name="test",
+            llm_config=LLMConfig.default_config("gpt-4o-mini"),
+            embedding_config=EmbeddingConfig.default_config(provider="openai"),
+            include_base_tools=False,
+            block_ids=[block.id],
+        ),
+        actor=default_user,
+    )
+    block = server.block_manager.update_block(
+        block_id=block.id,
+        block_update=BlockUpdate(
+            value="test2",
+        ),
+        actor=default_user,
+    )
+    assert len(agent.memory.blocks) == 1
+    agent = await server.agent_manager.refresh_memory_async(agent_state=agent, actor=default_user)
+    assert len(agent.memory.blocks) == 1
+    assert agent.memory.blocks[0].value == "test2"
+
+
 # ======================================================================================================================
 # Agent Manager - Passages Tests
 # ======================================================================================================================

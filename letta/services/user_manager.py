@@ -5,6 +5,7 @@ from letta.orm.organization import Organization as OrganizationModel
 from letta.orm.user import User as UserModel
 from letta.schemas.user import User as PydanticUser
 from letta.schemas.user import UserUpdate
+from letta.server.db import db_registry
 from letta.services.organization_manager import OrganizationManager
 from letta.utils import enforce_types
 
@@ -15,16 +16,10 @@ class UserManager:
     DEFAULT_USER_NAME = "default_user"
     DEFAULT_USER_ID = "user-00000000-0000-4000-8000-000000000000"
 
-    def __init__(self):
-        # Fetching the db_context similarly as in OrganizationManager
-        from letta.server.db import db_context
-
-        self.session_maker = db_context
-
     @enforce_types
     def create_default_user(self, org_id: str = OrganizationManager.DEFAULT_ORG_ID) -> PydanticUser:
         """Create the default user."""
-        with self.session_maker() as session:
+        with db_registry.session() as session:
             # Make sure the org id exists
             try:
                 OrganizationModel.read(db_session=session, identifier=org_id)
@@ -44,7 +39,7 @@ class UserManager:
     @enforce_types
     def create_user(self, pydantic_user: PydanticUser) -> PydanticUser:
         """Create a new user if it doesn't already exist."""
-        with self.session_maker() as session:
+        with db_registry.session() as session:
             new_user = UserModel(**pydantic_user.model_dump(to_orm=True))
             new_user.create(session)
             return new_user.to_pydantic()
@@ -52,7 +47,7 @@ class UserManager:
     @enforce_types
     def update_user(self, user_update: UserUpdate) -> PydanticUser:
         """Update user details."""
-        with self.session_maker() as session:
+        with db_registry.session() as session:
             # Retrieve the existing user by ID
             existing_user = UserModel.read(db_session=session, identifier=user_update.id)
 
@@ -68,7 +63,7 @@ class UserManager:
     @enforce_types
     def delete_user_by_id(self, user_id: str):
         """Delete a user and their associated records (agents, sources, mappings)."""
-        with self.session_maker() as session:
+        with db_registry.session() as session:
             # Delete from user table
             user = UserModel.read(db_session=session, identifier=user_id)
             user.hard_delete(session)
@@ -78,7 +73,7 @@ class UserManager:
     @enforce_types
     def get_user_by_id(self, user_id: str) -> PydanticUser:
         """Fetch a user by ID."""
-        with self.session_maker() as session:
+        with db_registry.session() as session:
             user = UserModel.read(db_session=session, identifier=user_id)
             return user.to_pydantic()
 
@@ -104,7 +99,7 @@ class UserManager:
     @enforce_types
     def list_users(self, after: Optional[str] = None, limit: Optional[int] = 50) -> List[PydanticUser]:
         """List all users with optional pagination."""
-        with self.session_maker() as session:
+        with db_registry.session() as session:
             users = UserModel.list(
                 db_session=session,
                 after=after,

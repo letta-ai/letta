@@ -472,6 +472,7 @@ class StreamingServerInterface(AgentChunkStreamingInterface):
         expect_reasoning_content: bool = False,
         name: Optional[str] = None,
         message_index: int = 0,
+        prev_message_type: Optional[str] = None,
     ) -> Optional[Union[ReasoningMessage, ToolCallMessage, AssistantMessage]]:
         """
         Example data from non-streaming response looks like:
@@ -488,7 +489,6 @@ class StreamingServerInterface(AgentChunkStreamingInterface):
 
         choice = chunk.choices[0]
         message_delta = choice.delta
-        otid = Message.generate_otid_from_id(message_id, message_index)
 
         if (
             message_delta.content is None
@@ -503,6 +503,8 @@ class StreamingServerInterface(AgentChunkStreamingInterface):
 
         # inner thoughts
         if expect_reasoning_content and message_delta.reasoning_content is not None:
+            if prev_message_type and prev_message_type != "reasoning_message":
+                message_index += 1
             processed_chunk = ReasoningMessage(
                 id=message_id,
                 date=message_date,
@@ -510,16 +512,18 @@ class StreamingServerInterface(AgentChunkStreamingInterface):
                 signature=message_delta.reasoning_content_signature,
                 source="reasoner_model" if message_delta.reasoning_content else "non_reasoner_model",
                 name=name,
-                otid=otid,
+                otid=Message.generate_otid_from_id(message_id, message_index),
             )
         elif expect_reasoning_content and message_delta.redacted_reasoning_content is not None:
+            if prev_message_type and prev_message_type != "hidden_reasoning_message":
+                message_index += 1
             processed_chunk = HiddenReasoningMessage(
                 id=message_id,
                 date=message_date,
                 hidden_reasoning=message_delta.redacted_reasoning_content,
                 state="redacted",
                 name=name,
-                otid=otid,
+                otid=Message.generate_otid_from_id(message_id, message_index),
             )
         elif expect_reasoning_content and message_delta.content is not None:
             # "ignore" content if we expect reasoning content
@@ -537,6 +541,8 @@ class StreamingServerInterface(AgentChunkStreamingInterface):
                 # NOTE: this is hardcoded for our DeepSeek API integration
                 json_reasoning_content = parse_json(self.expect_reasoning_content_buffer)
 
+                if prev_message_type and prev_message_type != "tool_call_message":
+                    message_index += 1
                 processed_chunk = ToolCallMessage(
                     id=message_id,
                     date=message_date,
@@ -546,7 +552,7 @@ class StreamingServerInterface(AgentChunkStreamingInterface):
                         tool_call_id=None,
                     ),
                     name=name,
-                    otid=otid,
+                    otid=Message.generate_otid_from_id(message_id, message_index),
                 )
 
             except json.JSONDecodeError as e:
@@ -576,12 +582,14 @@ class StreamingServerInterface(AgentChunkStreamingInterface):
             # print(f"Hiding content delta stream: '{message_delta.content}'")
             # return None
         elif message_delta.content is not None:
+            if prev_message_type and prev_message_type != "reasoning_message":
+                message_index += 1
             processed_chunk = ReasoningMessage(
                 id=message_id,
                 date=message_date,
                 reasoning=message_delta.content,
                 name=name,
-                otid=otid,
+                otid=Message.generate_otid_from_id(message_id, message_index),
             )
 
         # tool calls
@@ -629,7 +637,15 @@ class StreamingServerInterface(AgentChunkStreamingInterface):
                         # TODO: Assumes consistent state and that prev_content is subset of new_content
                         diff = new_content.replace(prev_content, "", 1)
                         self.current_json_parse_result = parsed_args
-                        processed_chunk = AssistantMessage(id=message_id, date=message_date, content=diff, name=name, otid=otid)
+                        if prev_message_type and prev_message_type != "assistant_message":
+                            message_index += 1
+                        processed_chunk = AssistantMessage(
+                            id=message_id,
+                            date=message_date,
+                            content=diff,
+                            name=name,
+                            otid=Message.generate_otid_from_id(message_id, message_index),
+                        )
                     else:
                         return None
 
@@ -653,6 +669,8 @@ class StreamingServerInterface(AgentChunkStreamingInterface):
                         processed_chunk = None
                         print("skipping empty chunk...")
                     else:
+                        if prev_message_type and prev_message_type != "tool_call_message":
+                            message_index += 1
                         processed_chunk = ToolCallMessage(
                             id=message_id,
                             date=message_date,
@@ -662,7 +680,7 @@ class StreamingServerInterface(AgentChunkStreamingInterface):
                                 tool_call_id=tool_call_delta.get("id"),
                             ),
                             name=name,
-                            otid=otid,
+                            otid=Message.generate_otid_from_id(message_id, message_index),
                         )
 
             elif self.inner_thoughts_in_kwargs and tool_call.function:
@@ -694,12 +712,14 @@ class StreamingServerInterface(AgentChunkStreamingInterface):
 
                     # If we have inner thoughts, we should output them as a chunk
                     if updates_inner_thoughts:
+                        if prev_message_type and prev_message_type != "reasoning_message":
+                            message_index += 1
                         processed_chunk = ReasoningMessage(
                             id=message_id,
                             date=message_date,
                             reasoning=updates_inner_thoughts,
                             name=name,
-                            otid=otid,
+                            otid=Message.generate_otid_from_id(message_id, message_index),
                         )
                         # Additionally inner thoughts may stream back with a chunk of main JSON
                         # In that case, since we can only return a chunk at a time, we should buffer it
@@ -727,6 +747,8 @@ class StreamingServerInterface(AgentChunkStreamingInterface):
                                     self.prev_assistant_message_id = self.function_id_buffer
 
                             else:
+                                if prev_message_type and prev_message_type != "tool_call_message":
+                                    message_index += 1
                                 processed_chunk = ToolCallMessage(
                                     id=message_id,
                                     date=message_date,
@@ -736,7 +758,7 @@ class StreamingServerInterface(AgentChunkStreamingInterface):
                                         tool_call_id=self.function_id_buffer,
                                     ),
                                     name=name,
-                                    otid=otid,
+                                    otid=Message.generate_otid_from_id(message_id, message_index),
                                 )
 
                             # Record what the last function name we flushed was
@@ -789,12 +811,14 @@ class StreamingServerInterface(AgentChunkStreamingInterface):
                                     # In this case, we should release the buffer + new data at once
                                     combined_chunk = self.function_args_buffer + updates_main_json
 
+                                    if prev_message_type and prev_message_type != "assistant_message":
+                                        message_index += 1
                                     processed_chunk = AssistantMessage(
                                         id=message_id,
                                         date=message_date,
                                         content=combined_chunk,
                                         name=name,
-                                        otid=otid,
+                                        otid=Message.generate_otid_from_id(message_id, message_index),
                                     )
                                     # Store the ID of the tool call so allow skipping the corresponding response
                                     if self.function_id_buffer:
@@ -818,8 +842,14 @@ class StreamingServerInterface(AgentChunkStreamingInterface):
                                         # TODO: Assumes consistent state and that prev_content is subset of new_content
                                         diff = new_content.replace(prev_content, "", 1)
                                         self.current_json_parse_result = parsed_args
+                                        if prev_message_type and prev_message_type != "assistant_message":
+                                            message_index += 1
                                         processed_chunk = AssistantMessage(
-                                            id=message_id, date=message_date, content=diff, name=name, otid=otid
+                                            id=message_id,
+                                            date=message_date,
+                                            content=diff,
+                                            name=name,
+                                            otid=Message.generate_otid_from_id(message_id, message_index),
                                         )
                                     else:
                                         return None
@@ -836,6 +866,8 @@ class StreamingServerInterface(AgentChunkStreamingInterface):
                                 if self.function_args_buffer:
                                     # In this case, we should release the buffer + new data at once
                                     combined_chunk = self.function_args_buffer + updates_main_json
+                                    if prev_message_type and prev_message_type != "tool_call_message":
+                                        message_index += 1
                                     processed_chunk = ToolCallMessage(
                                         id=message_id,
                                         date=message_date,
@@ -845,13 +877,15 @@ class StreamingServerInterface(AgentChunkStreamingInterface):
                                             tool_call_id=self.function_id_buffer,
                                         ),
                                         name=name,
-                                        otid=otid,
+                                        otid=Message.generate_otid_from_id(message_id, message_index),
                                     )
                                     # clear buffer
                                     self.function_args_buffer = None
                                     self.function_id_buffer = None
                                 else:
                                     # If there's no buffer to clear, just output a new chunk with new data
+                                    if prev_message_type and prev_message_type != "tool_call_message":
+                                        message_index += 1
                                     processed_chunk = ToolCallMessage(
                                         id=message_id,
                                         date=message_date,
@@ -861,7 +895,7 @@ class StreamingServerInterface(AgentChunkStreamingInterface):
                                             tool_call_id=self.function_id_buffer,
                                         ),
                                         name=name,
-                                        otid=otid,
+                                        otid=Message.generate_otid_from_id(message_id, message_index),
                                     )
                                     self.function_id_buffer = None
 
@@ -982,6 +1016,8 @@ class StreamingServerInterface(AgentChunkStreamingInterface):
                     processed_chunk = None
                     print("skipping empty chunk...")
                 else:
+                    if prev_message_type and prev_message_type != "tool_call_message":
+                        message_index += 1
                     processed_chunk = ToolCallMessage(
                         id=message_id,
                         date=message_date,
@@ -991,7 +1027,7 @@ class StreamingServerInterface(AgentChunkStreamingInterface):
                             tool_call_id=tool_call_delta.get("id"),
                         ),
                         name=name,
-                        otid=otid,
+                        otid=Message.generate_otid_from_id(message_id, message_index),
                     )
 
         elif choice.finish_reason is not None:
@@ -1074,6 +1110,7 @@ class StreamingServerInterface(AgentChunkStreamingInterface):
         expect_reasoning_content: bool = False,
         name: Optional[str] = None,
         message_index: int = 0,
+        prev_message_type: Optional[str] = None,
     ):
         """Process a streaming chunk from an OpenAI-compatible server.
 
@@ -1101,6 +1138,7 @@ class StreamingServerInterface(AgentChunkStreamingInterface):
                 expect_reasoning_content=expect_reasoning_content,
                 name=name,
                 message_index=message_index,
+                prev_message_type=prev_message_type,
             )
         if processed_chunk is None:
             return
@@ -1303,7 +1341,7 @@ class StreamingServerInterface(AgentChunkStreamingInterface):
                     stdout=msg_obj.tool_returns[0].stdout if msg_obj.tool_returns else None,
                     stderr=msg_obj.tool_returns[0].stderr if msg_obj.tool_returns else None,
                     name=msg_obj.name,
-                    otid=Message.generate_otid_from_id(msg_obj.id, chunk_index),
+                    otid=Message.generate_otid_from_id(msg_obj.id, chunk_index) if chunk_index is not None else None,
                 )
 
         elif msg.startswith("Error: "):
@@ -1319,7 +1357,7 @@ class StreamingServerInterface(AgentChunkStreamingInterface):
                 stdout=msg_obj.tool_returns[0].stdout if msg_obj.tool_returns else None,
                 stderr=msg_obj.tool_returns[0].stderr if msg_obj.tool_returns else None,
                 name=msg_obj.name,
-                otid=Message.generate_otid_from_id(msg_obj.id, chunk_index),
+                otid=Message.generate_otid_from_id(msg_obj.id, chunk_index) if chunk_index is not None else None,
             )
 
         else:

@@ -11,15 +11,11 @@ from letta.schemas.group import GroupCreate, GroupUpdate, ManagerType
 from letta.schemas.letta_message import LettaMessage
 from letta.schemas.message import Message as PydanticMessage
 from letta.schemas.user import User as PydanticUser
+from letta.server.db import db_registry
 from letta.utils import enforce_types
 
 
 class GroupManager:
-
-    def __init__(self):
-        from letta.server.db import db_context
-
-        self.session_maker = db_context
 
     @enforce_types
     def list_groups(
@@ -31,7 +27,7 @@ class GroupManager:
         after: Optional[str] = None,
         limit: Optional[int] = 50,
     ) -> list[PydanticGroup]:
-        with self.session_maker() as session:
+        with db_registry.session() as session:
             filters = {"organization_id": actor.organization_id}
             if project_id:
                 filters["project_id"] = project_id
@@ -48,13 +44,13 @@ class GroupManager:
 
     @enforce_types
     def retrieve_group(self, group_id: str, actor: PydanticUser) -> PydanticGroup:
-        with self.session_maker() as session:
+        with db_registry.session() as session:
             group = GroupModel.read(db_session=session, identifier=group_id, actor=actor)
             return group.to_pydantic()
 
     @enforce_types
     def create_group(self, group: GroupCreate, actor: PydanticUser) -> PydanticGroup:
-        with self.session_maker() as session:
+        with db_registry.session() as session:
             new_group = GroupModel()
             new_group.organization_id = actor.organization_id
             new_group.description = group.description
@@ -99,7 +95,7 @@ class GroupManager:
 
     @enforce_types
     def modify_group(self, group_id: str, group_update: GroupUpdate, actor: PydanticUser) -> PydanticGroup:
-        with self.session_maker() as session:
+        with db_registry.session() as session:
             group = GroupModel.read(db_session=session, identifier=group_id, actor=actor)
 
             sleeptime_agent_frequency = None
@@ -161,7 +157,7 @@ class GroupManager:
 
     @enforce_types
     def delete_group(self, group_id: str, actor: PydanticUser) -> None:
-        with self.session_maker() as session:
+        with db_registry.session() as session:
             # Retrieve the agent
             group = GroupModel.read(db_session=session, identifier=group_id, actor=actor)
             group.hard_delete(session)
@@ -178,7 +174,7 @@ class GroupManager:
         assistant_message_tool_name: str = "send_message",
         assistant_message_tool_kwarg: str = "message",
     ) -> list[LettaMessage]:
-        with self.session_maker() as session:
+        with db_registry.session() as session:
             filters = {
                 "organization_id": actor.organization_id,
                 "group_id": group_id,
@@ -204,7 +200,7 @@ class GroupManager:
 
     @enforce_types
     def reset_messages(self, group_id: str, actor: PydanticUser) -> None:
-        with self.session_maker() as session:
+        with db_registry.session() as session:
             # Ensure group is loadable by user
             group = GroupModel.read(db_session=session, identifier=group_id, actor=actor)
 
@@ -217,7 +213,7 @@ class GroupManager:
 
     @enforce_types
     def bump_turns_counter(self, group_id: str, actor: PydanticUser) -> int:
-        with self.session_maker() as session:
+        with db_registry.session() as session:
             # Ensure group is loadable by user
             group = GroupModel.read(db_session=session, identifier=group_id, actor=actor)
 
@@ -228,7 +224,7 @@ class GroupManager:
 
     @enforce_types
     def get_last_processed_message_id_and_update(self, group_id: str, last_processed_message_id: str, actor: PydanticUser) -> str:
-        with self.session_maker() as session:
+        with db_registry.session() as session:
             # Ensure group is loadable by user
             group = GroupModel.read(db_session=session, identifier=group_id, actor=actor)
 
@@ -247,7 +243,7 @@ class GroupManager:
         """
         Get the total count of groups for the given user.
         """
-        with self.session_maker() as session:
+        with db_registry.session() as session:
             return GroupModel.size(db_session=session, actor=actor)
 
     def _process_agent_relationship(self, session: Session, group: GroupModel, agent_ids: List[str], allow_partial=False, replace=True):

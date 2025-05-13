@@ -22,7 +22,7 @@ from letta.orm.enums import ToolType
 from letta.schemas.agent import AgentState, AgentType
 from letta.schemas.enums import MessageRole
 from letta.schemas.letta_response import LettaResponse
-from letta.schemas.message import Message, MessageCreate, MessageUpdate
+from letta.schemas.message import Message, MessageCreate
 from letta.schemas.openai.chat_completion_request import (
     AssistantMessage,
     ChatCompletionRequest,
@@ -47,7 +47,6 @@ from letta.services.passage_manager import PassageManager
 from letta.services.summarizer.enums import SummarizationMode
 from letta.services.summarizer.summarizer import Summarizer
 from letta.settings import model_settings
-from letta.utils import united_diff
 
 logger = get_logger(__name__)
 
@@ -293,47 +292,16 @@ class VoiceAgent(BaseAgent):
             agent_id=self.agent_id, message_ids=[m.id for m in new_in_context_messages], actor=self.actor
         )
 
-    def _rebuild_memory(self, in_context_messages: List[Message], agent_state: AgentState) -> List[Message]:
-        # Refresh memory
-        # TODO: This only happens for the summary block
-        # TODO: We want to extend this refresh to be general, and stick it in agent_manager
-        block_ids = [block.id for block in agent_state.memory.blocks]
-        agent_state.memory.blocks = self.block_manager.get_all_blocks_by_ids(block_ids=block_ids, actor=self.actor)
-
-        # TODO: This is a pretty brittle pattern established all over our code, need to get rid of this
-        curr_system_message = in_context_messages[0]
-        curr_memory_str = agent_state.memory.compile()
-        curr_system_message_text = curr_system_message.content[0].text
-        if curr_memory_str in curr_system_message_text:
-            # NOTE: could this cause issues if a block is removed? (substring match would still work)
-            logger.debug(
-                f"Memory hasn't changed for agent id={agent_state.id} and actor=({self.actor.id}, {self.actor.name}), skipping system prompt rebuild"
-            )
-            return in_context_messages
-
-        memory_edit_timestamp = get_utc_time()
-
-        new_system_message_str = compile_system_message(
-            system_prompt=agent_state.system,
-            in_context_memory=agent_state.memory,
-            in_context_memory_last_edit=memory_edit_timestamp,
-            previous_message_count=self.num_messages,
-            archival_memory_size=self.num_archival_memories,
+    def _rebuild_memory(
+        self,
+        in_context_messages: List[Message],
+        agent_state: AgentState,
+        num_messages: int | None = None,
+        num_archival_memories: int | None = None,
+    ) -> List[Message]:
+        return super()._rebuild_memory(
+            in_context_messages, agent_state, num_messages=self.num_messages, num_archival_memories=self.num_archival_memories
         )
-
-        diff = united_diff(curr_system_message_text, new_system_message_str)
-        if len(diff) > 0:
-            logger.debug(f"Rebuilding system with new memory...\nDiff:\n{diff}")
-
-            new_system_message = self.message_manager.update_message_by_id(
-                curr_system_message.id, message_update=MessageUpdate(content=new_system_message_str), actor=self.actor
-            )
-
-            # Skip pulling down the agent's memory again to save on a db call
-            return [new_system_message] + in_context_messages[1:]
-
-        else:
-            return in_context_messages
 
     def _build_openai_request(self, openai_messages: List[Dict], agent_state: AgentState) -> ChatCompletionRequest:
         tool_schemas = self._build_tool_schemas(agent_state)

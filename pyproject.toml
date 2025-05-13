@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "letta"
-version = "0.7.13"
+version = "0.7.14"
 packages = [
     {include = "letta"},
 ]
@@ -90,6 +90,7 @@ firecrawl-py = "^1.15.0"
 apscheduler = "^3.11.0"
 aiomultiprocess = "^0.9.1"
 matplotlib = "^3.10.1"
+asyncpg = "^0.30.0"
 
 
 [tool.poetry.extras]

@@ -1,6 +1,7 @@
 from typing import Dict
 
 from marshmallow import fields, post_dump, pre_load
+from sqlalchemy.orm import sessionmaker
 
 import letta
 from letta.orm import Agent
@@ -14,7 +15,6 @@ from letta.serialize_schemas.marshmallow_custom_fields import EmbeddingConfigFie
 from letta.serialize_schemas.marshmallow_message import SerializedMessageSchema
 from letta.serialize_schemas.marshmallow_tag import SerializedAgentTagSchema
 from letta.serialize_schemas.marshmallow_tool import SerializedToolSchema
-from letta.server.db import SessionLocal
 
 
 class MarshmallowAgentSchema(BaseSchema):
@@ -41,7 +41,7 @@ class MarshmallowAgentSchema(BaseSchema):
     tool_exec_environment_variables = fields.List(fields.Nested(SerializedAgentEnvironmentVariableSchema))
     tags = fields.List(fields.Nested(SerializedAgentTagSchema))
 
-    def __init__(self, *args, session: SessionLocal, actor: User, **kwargs):
+    def __init__(self, *args, session: sessionmaker, actor: User, **kwargs):
         super().__init__(*args, actor=actor, **kwargs)
         self.session = session
 
@@ -60,9 +60,9 @@ class MarshmallowAgentSchema(BaseSchema):
         After dumping the agent, load all its Message rows and serialize them here.
         """
         # TODO: This is hacky, but want to move fast, please refactor moving forward
-        from letta.server.db import db_context as session_maker
+        from letta.server.db import db_registry
 
-        with session_maker() as session:
+        with db_registry.session() as session:
             agent_id = data.get("id")
             msgs = (
                 session.query(MessageModel)

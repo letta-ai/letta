@@ -1,11 +1,12 @@
 import json
 import uuid
 from dataclasses import dataclass
-from typing import Any, Dict, List, Optional, Sequence, Tuple, Union
+from typing import Any, AsyncGenerator, Dict, List, Optional, Sequence, Tuple, Union
 
 from aiomultiprocess import Pool
 from anthropic.types.beta.messages import BetaMessageBatchCanceledResult, BetaMessageBatchErroredResult, BetaMessageBatchSucceededResult
 
+from letta.agents.base_agent import BaseAgent
 from letta.agents.helpers import _prepare_in_context_messages
 from letta.helpers import ToolRulesSolver
 from letta.helpers.datetime_helpers import get_utc_time
@@ -16,20 +17,20 @@ from letta.local_llm.constants import INNER_THOUGHTS_KWARG
 from letta.log import get_logger
 from letta.orm.enums import ToolType
 from letta.schemas.agent import AgentState, AgentStepState
-from letta.schemas.enums import AgentStepStatus, JobStatus, ProviderType
+from letta.schemas.enums import AgentStepStatus, JobStatus, MessageStreamStatus, ProviderType
 from letta.schemas.job import JobUpdate
+from letta.schemas.letta_message import LegacyLettaMessage, LettaMessage
 from letta.schemas.letta_message_content import OmittedReasoningContent, ReasoningContent, RedactedReasoningContent, TextContent
 from letta.schemas.letta_request import LettaBatchRequest
-from letta.schemas.letta_response import LettaBatchResponse
+from letta.schemas.letta_response import LettaBatchResponse, LettaResponse
 from letta.schemas.llm_batch_job import LLMBatchItem
-from letta.schemas.message import Message, MessageCreate, MessageUpdate
+from letta.schemas.message import Message, MessageCreate
 from letta.schemas.openai.chat_completion_response import ToolCall as OpenAIToolCall
 from letta.schemas.sandbox_config import SandboxConfig, SandboxType
 from letta.schemas.user import User
 from letta.server.rest_api.utils import create_heartbeat_system_message, create_letta_messages_from_llm_response
 from letta.services.agent_manager import AgentManager
 from letta.services.block_manager import BlockManager
-from letta.services.helpers.agent_manager_helper import compile_system_message
 from letta.services.job_manager import JobManager
 from letta.services.llm_batch_manager import LLMBatchManager
 from letta.services.message_manager import MessageManager
@@ -38,7 +39,6 @@ from letta.services.sandbox_config_manager import SandboxConfigManager
 from letta.services.tool_executor.tool_execution_manager import ToolExecutionManager
 from letta.settings import tool_settings
 from letta.tracing import log_event, trace_method
-from letta.utils import united_diff
 
 logger = get_logger(__name__)
 
@@ -95,7 +95,7 @@ async def execute_tool_wrapper(params: ToolExecutionParams) -> Tuple[str, Tuple[
 
 # TODO: Limitations ->
 # TODO: Only works with anthropic for now
-class LettaAgentBatch:
+class LettaAgentBatch(BaseAgent):
 
     def __init__(
         self,
@@ -539,43 +539,20 @@ class LettaAgentBatch:
         return in_context_messages
 
     # TODO: Make this a bullk function
-    def _rebuild_memory(self, in_context_messages: List[Message], agent_state: AgentState) -> List[Message]:
-        agent_state = self.agent_manager.refresh_memory(agent_state=agent_state, actor=self.actor)
+    def _rebuild_memory(
+        self,
+        in_context_messages: List[Message],
+        agent_state: AgentState,
+        num_messages: int | None = None,
+        num_archival_memories: int | None = None,
+    ) -> List[Message]:
+        return super()._rebuild_memory(in_context_messages, agent_state)
 
-        # TODO: This is a pretty brittle pattern established all over our code, need to get rid of this
-        curr_system_message = in_context_messages[0]
-        curr_memory_str = agent_state.memory.compile()
-        curr_system_message_text = curr_system_message.content[0].text
-        if curr_memory_str in curr_system_message_text:
-            # NOTE: could this cause issues if a block is removed? (substring match would still work)
-            logger.debug(
-                f"Memory hasn't changed for agent id={agent_state.id} and actor=({self.actor.id}, {self.actor.name}), skipping system prompt rebuild"
-            )
-            return in_context_messages
+    # Not used in batch.
+    async def step(self, input_messages: List[MessageCreate], max_steps: int = 10) -> LettaResponse:
+        raise NotImplementedError
 
-        memory_edit_timestamp = get_utc_time()
-
-        num_messages = self.message_manager.size(actor=self.actor, agent_id=agent_state.id)
-        num_archival_memories = self.passage_manager.size(actor=self.actor, agent_id=agent_state.id)
-
-        new_system_message_str = compile_system_message(
-            system_prompt=agent_state.system,
-            in_context_memory=agent_state.memory,
-            in_context_memory_last_edit=memory_edit_timestamp,
-            previous_message_count=num_messages,
-            archival_memory_size=num_archival_memories,
-        )
-
-        diff = united_diff(curr_system_message_text, new_system_message_str)
-        if len(diff) > 0:
-            logger.debug(f"Rebuilding system with new memory...\nDiff:\n{diff}")
-
-            new_system_message = self.message_manager.update_message_by_id(
-                curr_system_message.id, message_update=MessageUpdate(content=new_system_message_str), actor=self.actor
-            )
-
-            # Skip pulling down the agent's memory again to save on a db call
-            return [new_system_message] + in_context_messages[1:]
-
-        else:
-            return in_context_messages
+    async def step_stream(
+        self, input_messages: List[MessageCreate], max_steps: int = 10
+    ) -> AsyncGenerator[Union[LettaMessage, LegacyLettaMessage, MessageStreamStatus], None]:
+        raise NotImplementedError

@@ -223,7 +223,6 @@ class SyncServer(Server):
         if init_with_default_org_and_user:
             self.default_org = self.organization_manager.create_default_organization()
             self.default_user = self.user_manager.create_default_user()
-            self.block_manager.add_default_blocks(actor=self.default_user)
             self.tool_manager.upsert_base_tools(actor=self.default_user)
 
             # Add composio keys to the tool sandbox env vars of the org
@@ -1115,7 +1114,7 @@ class SyncServer(Server):
                 ),
                 CreateBlock(
                     label="instructions",
-                    value=source.description,
+                    value=source.instructions,
                 ),
             ],
             llm_config=main_agent.llm_config,

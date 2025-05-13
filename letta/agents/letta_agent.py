@@ -9,7 +9,6 @@ from openai.types.chat import ChatCompletion, ChatCompletionChunk
 from letta.agents.base_agent import BaseAgent
 from letta.agents.helpers import _create_letta_response, _prepare_in_context_messages
 from letta.helpers import ToolRulesSolver
-from letta.helpers.datetime_helpers import get_utc_time
 from letta.helpers.tool_execution_helper import enable_strict_mode
 from letta.interfaces.anthropic_streaming_interface import AnthropicStreamingInterface
 from letta.llm_api.llm_client import LLMClient
@@ -22,18 +21,18 @@ from letta.schemas.enums import MessageRole, MessageStreamStatus
 from letta.schemas.letta_message import AssistantMessage
 from letta.schemas.letta_message_content import OmittedReasoningContent, ReasoningContent, RedactedReasoningContent, TextContent
 from letta.schemas.letta_response import LettaResponse
-from letta.schemas.message import Message, MessageCreate, MessageUpdate
+from letta.schemas.message import Message, MessageCreate
 from letta.schemas.openai.chat_completion_response import ToolCall
 from letta.schemas.user import User
 from letta.server.rest_api.utils import create_letta_messages_from_llm_response
 from letta.services.agent_manager import AgentManager
 from letta.services.block_manager import BlockManager
-from letta.services.helpers.agent_manager_helper import compile_system_message
 from letta.services.message_manager import MessageManager
 from letta.services.passage_manager import PassageManager
 from letta.services.tool_executor.tool_execution_manager import ToolExecutionManager
+from letta.settings import settings
+from letta.system import package_function_response
 from letta.tracing import log_event, trace_method
-from letta.utils import united_diff
 
 logger = get_logger(__name__)
 
@@ -58,6 +57,8 @@ class LettaAgent(BaseAgent):
         self.passage_manager = passage_manager
         self.use_assistant_message = use_assistant_message
         self.response_messages: List[Message] = []
+
+        self.last_function_response = self._load_last_function_response()
 
     @trace_method
     async def step(self, input_messages: List[MessageCreate], max_steps: int = 10) -> LettaResponse:
@@ -168,6 +169,7 @@ class LettaAgent(BaseAgent):
         yield f"data: {MessageStreamStatus.done.model_dump_json()}\n\n"
 
     @trace_method
+    # When raising an error this doesn't show up
     async def _get_ai_reply(
         self,
         llm_client: LLMClientBase,
@@ -176,7 +178,13 @@ class LettaAgent(BaseAgent):
         tool_rules_solver: ToolRulesSolver,
         stream: bool,
     ) -> ChatCompletion | AsyncStream[ChatCompletionChunk]:
-        in_context_messages = self._rebuild_memory(in_context_messages, agent_state)
+        if settings.experimental_enable_async_db_engine:
+            in_context_messages = await self._rebuild_memory_async(in_context_messages, agent_state)
+        else:
+            if settings.experimental_skip_rebuild_memory and agent_state.llm_config.model_endpoint_type == "google_vertex":
+                logger.info("Skipping memory rebuild")
+            else:
+                in_context_messages = self._rebuild_memory(in_context_messages, agent_state)
 
         tools = [
             t
@@ -194,7 +202,12 @@ class LettaAgent(BaseAgent):
             or (t.tool_type == ToolType.EXTERNAL_COMPOSIO)
         ]
 
-        valid_tool_names = tool_rules_solver.get_allowed_tool_names(available_tools=set([t.name for t in tools]))
+        # Mirror the sync agent loop: get allowed tools or allow all if none are allowed
+        valid_tool_names = tool_rules_solver.get_allowed_tool_names(
+            available_tools=set([t.name for t in tools]),
+            last_function_response=self.last_function_response,
+        ) or list(set(t.name for t in tools))
+
         # TODO: Copied from legacy agent loop, so please be cautious
         # Set force tool
         force_tool_call = None
@@ -255,6 +268,7 @@ class LettaAgent(BaseAgent):
             tool_args=tool_args,
             agent_state=agent_state,
         )
+        function_response = package_function_response(tool_result, success_flag)
 
         # 4. Register tool call with tool rule solver
         # Resolve whether or not to continue stepping
@@ -283,53 +297,9 @@ class LettaAgent(BaseAgent):
             pre_computed_tool_message_id=pre_computed_tool_message_id,
         )
         persisted_messages = self.message_manager.create_many_messages(tool_call_messages, actor=self.actor)
+        self.last_function_response = function_response
 
         return persisted_messages, continue_stepping
-
-    def _rebuild_memory(self, in_context_messages: List[Message], agent_state: AgentState) -> List[Message]:
-        try:
-            self.agent_manager.refresh_memory(agent_state=agent_state, actor=self.actor)
-
-            # TODO: This is a pretty brittle pattern established all over our code, need to get rid of this
-            curr_system_message = in_context_messages[0]
-            curr_memory_str = agent_state.memory.compile()
-            curr_system_message_text = curr_system_message.content[0].text
-            if curr_memory_str in curr_system_message_text:
-                # NOTE: could this cause issues if a block is removed? (substring match would still work)
-                logger.debug(
-                    f"Memory hasn't changed for agent id={agent_state.id} and actor=({self.actor.id}, {self.actor.name}), skipping system prompt rebuild"
-                )
-                return in_context_messages
-
-            memory_edit_timestamp = get_utc_time()
-
-            num_messages = self.message_manager.size(actor=self.actor, agent_id=agent_state.id)
-            num_archival_memories = self.passage_manager.size(actor=self.actor, agent_id=agent_state.id)
-
-            new_system_message_str = compile_system_message(
-                system_prompt=agent_state.system,
-                in_context_memory=agent_state.memory,
-                in_context_memory_last_edit=memory_edit_timestamp,
-                previous_message_count=num_messages,
-                archival_memory_size=num_archival_memories,
-            )
-
-            diff = united_diff(curr_system_message_text, new_system_message_str)
-            if len(diff) > 0:
-                logger.debug(f"Rebuilding system with new memory...\nDiff:\n{diff}")
-
-                new_system_message = self.message_manager.update_message_by_id(
-                    curr_system_message.id, message_update=MessageUpdate(content=new_system_message_str), actor=self.actor
-                )
-
-                # Skip pulling down the agent's memory again to save on a db call
-                return [new_system_message] + in_context_messages[1:]
-
-            else:
-                return in_context_messages
-        except:
-            logger.exception(f"Failed to rebuild memory for agent id={agent_state.id} and actor=({self.actor.id}, {self.actor.name})")
-            raise
 
     @trace_method
     async def _execute_tool(self, tool_name: str, tool_args: dict, agent_state: AgentState) -> Tuple[str, bool]:
@@ -348,10 +318,6 @@ class LettaAgent(BaseAgent):
                 results = await self._send_message_to_agents_matching_tags(**tool_args)
                 log_event(name="finish_send_message_to_agents_matching_tags", attributes=tool_args)
                 return json.dumps(results), True
-            elif target_tool.tool_type == ToolType.EXTERNAL_COMPOSIO:
-                log_event(name=f"start_composio_{tool_name}_execution", attributes=tool_args)
-                log_event(name=f"finish_compsio_{tool_name}_execution", attributes=tool_args)
-                return tool_execution_result.func_return, True
             else:
                 tool_execution_manager = ToolExecutionManager(agent_state=agent_state, actor=self.actor)
                 # TODO: Integrate sandbox result
@@ -416,3 +382,17 @@ class LettaAgent(BaseAgent):
         tasks = [asyncio.create_task(process_agent(agent_state=agent_state, message=message)) for agent_state in matching_agents]
         results = await asyncio.gather(*tasks)
         return results
+
+    def _load_last_function_response(self):
+        """Load the last function response from message history"""
+        in_context_messages = self.agent_manager.get_in_context_messages(agent_id=self.agent_id, actor=self.actor)
+        for msg in reversed(in_context_messages):
+            if msg.role == MessageRole.tool and msg.content and len(msg.content) == 1 and isinstance(msg.content[0], TextContent):
+                text_content = msg.content[0].text
+                try:
+                    response_json = json.loads(text_content)
+                    if response_json.get("message"):
+                        return response_json["message"]
+                except (json.JSONDecodeError, KeyError):
+                    raise ValueError(f"Invalid JSON format in message: {text_content}")
+        return None

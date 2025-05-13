@@ -23,6 +23,7 @@ from letta.orm.tool import Tool as ToolModel
 from letta.schemas.tool import Tool as PydanticTool
 from letta.schemas.tool import ToolCreate, ToolUpdate
 from letta.schemas.user import User as PydanticUser
+from letta.server.db import db_registry
 from letta.utils import enforce_types, printd
 
 logger = get_logger(__name__)
@@ -30,12 +31,6 @@ logger = get_logger(__name__)
 
 class ToolManager:
     """Manager class to handle business logic related to Tools."""
-
-    def __init__(self):
-        # Fetching the db_context similarly as in OrganizationManager
-        from letta.server.db import db_context
-
-        self.session_maker = db_context
 
     # TODO: Refactor this across the codebase to use CreateTool instead of passing in a Tool object
     @enforce_types
@@ -89,7 +84,7 @@ class ToolManager:
     @enforce_types
     def create_tool(self, pydantic_tool: PydanticTool, actor: PydanticUser) -> PydanticTool:
         """Create a new tool based on the ToolCreate schema."""
-        with self.session_maker() as session:
+        with db_registry.session() as session:
             # Set the organization id at the ORM layer
             pydantic_tool.organization_id = actor.organization_id
             # Auto-generate description if not provided
@@ -104,7 +99,7 @@ class ToolManager:
     @enforce_types
     def get_tool_by_id(self, tool_id: str, actor: PydanticUser) -> PydanticTool:
         """Fetch a tool by its ID."""
-        with self.session_maker() as session:
+        with db_registry.session() as session:
             # Retrieve tool by id using the Tool model's read method
             tool = ToolModel.read(db_session=session, identifier=tool_id, actor=actor)
             # Convert the SQLAlchemy Tool object to PydanticTool
@@ -114,7 +109,7 @@ class ToolManager:
     def get_tool_by_name(self, tool_name: str, actor: PydanticUser) -> Optional[PydanticTool]:
         """Retrieve a tool by its name and a user. We derive the organization from the user, and retrieve that tool."""
         try:
-            with self.session_maker() as session:
+            with db_registry.session() as session:
                 tool = ToolModel.read(db_session=session, name=tool_name, actor=actor)
                 return tool.to_pydantic()
         except NoResultFound:
@@ -124,7 +119,7 @@ class ToolManager:
     def get_tool_id_by_name(self, tool_name: str, actor: PydanticUser) -> Optional[str]:
         """Retrieve a tool by its name and a user. We derive the organization from the user, and retrieve that tool."""
         try:
-            with self.session_maker() as session:
+            with db_registry.session() as session:
                 tool = ToolModel.read(db_session=session, name=tool_name, actor=actor)
                 return tool.id
         except NoResultFound:
@@ -133,7 +128,7 @@ class ToolManager:
     @enforce_types
     def list_tools(self, actor: PydanticUser, after: Optional[str] = None, limit: Optional[int] = 50) -> List[PydanticTool]:
         """List all tools with optional pagination."""
-        with self.session_maker() as session:
+        with db_registry.session() as session:
             tools = ToolModel.list(
                 db_session=session,
                 after=after,
@@ -166,7 +161,7 @@ class ToolManager:
 
         If include_builtin is True, it will also count the built-in tools.
         """
-        with self.session_maker() as session:
+        with db_registry.session() as session:
             if include_base_tools:
                 return ToolModel.size(db_session=session, actor=actor)
             return ToolModel.size(db_session=session, actor=actor, name=LETTA_TOOL_SET)
@@ -176,7 +171,7 @@ class ToolManager:
         self, tool_id: str, tool_update: ToolUpdate, actor: PydanticUser, updated_tool_type: Optional[ToolType] = None
     ) -> PydanticTool:
         """Update a tool by its ID with the given ToolUpdate object."""
-        with self.session_maker() as session:
+        with db_registry.session() as session:
             # Fetch the tool by ID
             tool = ToolModel.read(db_session=session, identifier=tool_id, actor=actor)
 
@@ -202,7 +197,7 @@ class ToolManager:
     @enforce_types
     def delete_tool_by_id(self, tool_id: str, actor: PydanticUser) -> None:
         """Delete a tool by its ID."""
-        with self.session_maker() as session:
+        with db_registry.session() as session:
             try:
                 tool = ToolModel.read(db_session=session, identifier=tool_id, actor=actor)
                 tool.hard_delete(db_session=session, actor=actor)
