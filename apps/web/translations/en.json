@@ -24,7 +24,7 @@
       "storage": "Storage"
     },
     "QuotaRow": {
-      "limit": "<value></value> of {max}"
+      "limit": "<value></value> used of {max}"
     },
     "title": "Usage",
     "premiumModelUsage": {
@@ -470,7 +470,7 @@
     "title": "Account settings",
     "DeleteAccountSection": {
       "title": "Delete account",
-      "description": "Deleting your account is permanent and cannot be undone. This will delete any organizations you are the sole member of. Those organizations will have all their projects, agents, data sources, and other data deleted as well. <action>Delete account</action>"
+      "description": "Deleting your account is permanent and cannot be undone. This will delete any organizations you are the sole member of. Those organizations will have all their projects, agents, data sources, and other data deleted as well. <action>Delete account</action>."
     },
     "DeleteAccountDialog": {
       "title": "Delete account",
@@ -671,13 +671,13 @@
     }
   },
   "settings/layout": {
-    "personal": "Personal Settings",
+    "personal": "Personal settings",
     "profile": "Profile",
     "account": "Account",
     "organization": {
       "general": "Account",
       "members": "Members",
-      "root": "Organization Settings",
+      "root": "Organization settings",
       "productSettings": "Reference",
       "utilities": "Global Configuration",
       "integrations": "Integrations",
@@ -853,7 +853,7 @@
     "description": "Are you sure you want to cancel your plan? This will cancel your current subscription at the end of the billing period. You will not be charged again, but you will lose access to the Pro plan features and any additional agents, identities, and data sources will be deleted. You can resume your subscription at any time before your billing period ends."
   },
   "components/UpgradeToProPlanDialog": {
-    "title": "Upgrade",
+    "title": "Upgrade your plan",
     "ConfirmView": {
       "title": "Your order"
     },
@@ -862,7 +862,7 @@
       "terms": "By upgrading, you agree to our <terms>Terms of Service</terms> and <privacy>Privacy Policy</privacy> and you will pay 20$/month. You can cancel at any time."
     },
     "PlanComparisonView": {
-      "cta": "Upgrade to pro",
+      "cta": "Upgrade to Pro",
       "free": {
         "cta": "You are currently on the Free Plan",
         "label": "Free",
@@ -988,7 +988,7 @@
   },
   "organization/members/invite-rules": {
     "title": "Membership invite rules",
-    "description": "Automatically add new members to the organizations based on their email domain",
+    "description": "Automatically add new members to the organizations based on their email domain.",
     "columns": {
       "rule": "Rule",
       "ruleSentence": "Automatically add new Letta users with email domain <bold>{domain}</bold> to this organization with role <bold>{role}</bold>",
@@ -1079,28 +1079,28 @@
     "UpgradeButton": {
       "trigger": "Upgrade to Pro"
     },
-    "title": "Current plan <plan></plan>",
+    "title": "Current plan - <plan></plan>",
     "tiers": {
       "free": {
-        "title": "Free plan"
+        "title": "Free"
       },
       "pro": {
-        "title": "Pro plan"
+        "title": "Pro"
       },
       "enterprise": {
-        "title": "Enterprise plan"
+        "title": "Enterprise"
       }
     }
   },
   "organization/settings": {
-    "title": "Organization account",
+    "title": "Organization settings",
     "MembershipRules": {
       "title": "Automatic organization membership",
-      "description": "Automatically add new members to the organizations based on their email domain",
+      "description": "Automatically add new members to the organizations based on their email domain.",
       "actions": "Manage membership invite rules"
     },
     "EditOrganizationSettings": {
-      "title": "Organization Profile",
+      "title": "Organization profile",
       "name": {
         "label": "Organization name"
       },
