@@ -15,19 +15,26 @@ router = APIRouter(prefix="/blocks", tags=["blocks"])
 
 
 @router.get("/", response_model=List[Block], operation_id="list_blocks")
-def list_blocks(
+async def list_blocks(
     # query parameters
     label: Optional[str] = Query(None, description="Labels to include (e.g. human, persona)"),
     templates_only: bool = Query(False, description="Whether to include only templates"),
     name: Optional[str] = Query(None, description="Name of the block"),
     identity_id: Optional[str] = Query(None, description="Search agents by identifier id"),
     identifier_keys: Optional[List[str]] = Query(None, description="Search agents by identifier keys"),
+    limit: Optional[int] = Query(50, description="Number of blocks to return"),
     server: SyncServer = Depends(get_letta_server),
     actor_id: Optional[str] = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
 ):
     actor = server.user_manager.get_user_or_default(user_id=actor_id)
-    return server.block_manager.get_blocks(
-        actor=actor, label=label, is_template=templates_only, template_name=name, identity_id=identity_id, identifier_keys=identifier_keys
+    return await server.block_manager.get_blocks_async(
+        actor=actor,
+        label=label,
+        is_template=templates_only,
+        template_name=name,
+        identity_id=identity_id,
+        identifier_keys=identifier_keys,
+        limit=limit,
     )
 
 
