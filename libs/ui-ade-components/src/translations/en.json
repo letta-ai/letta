@@ -923,8 +923,16 @@
       "cloud": "Failed to send message, please try again or contact support",
       "contextWindowExceeded": "Input exceeded context window limit and is at max compression, please increase limit and try again.",
       "rateLimitExceeded": "Rate limit reached, please wait a few moments before trying again.",
-      "freeUsageExceeded": "You've hit your limit of standard model requests. Please <link>upgrade your plan</link> to continue using your agent.",
-      "premiumUsageExceeded": "You've hit your limit of premium model requests. Please <link>upgrade your plan</link> or change to a standard model.",
+      "freeUsageExceeded": {
+        "free": "You've hit your limit of standard model requests. Please <link>upgrade your plan</link> to continue using your agent.",
+        "pro": "You've hit your limit of standard model requests. Please contact support to see your options.",
+        "enterprise": "You've hit your limit of standard model requests. Please contact support to see your options."
+      },
+      "premiumUsageExceeded": {
+        "free": "You've hit your limit of premium model requests. Please <link>upgrade your plan</link> or change to a standard model.",
+        "pro": "You've hit your limit of premium model requests. Please contact support to see your options.",
+        "enterprise": "You've hit your limit of premium model requests. Please contact support to see your options."
+      },
       "creditLimitExceeded": "You have run out of credits, please <link>buy more credits</link> to continue using your agent."
     }
   },

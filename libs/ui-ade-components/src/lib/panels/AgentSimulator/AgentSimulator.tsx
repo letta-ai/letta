@@ -749,6 +749,18 @@ function InvalidMessages() {
   );
 }
 
+function useBillingTier() {
+  const { isLocal } = useCurrentAgentMetaData();
+
+  const { data } =
+    webApi.organizations.getCurrentOrganizationBillingInfo.useQuery({
+      queryKey: webApiQueryKeys.organizations.getCurrentOrganizationBillingInfo,
+      enabled: !isLocal,
+    });
+
+  return data?.body.billingTier || 'enterprise';
+}
+
 export function AgentSimulator() {
   const t = useTranslations('ADE/AgentSimulator');
   const agentState = useCurrentAgent();
@@ -757,6 +769,8 @@ export function AgentSimulator() {
     defaultValue: 'interactive',
     key: 'chatroom-render-mode',
   });
+
+  const billingTier = useBillingTier();
 
   const variableList = useMemo(() => {
     if (!getIsAgentState(agentState)) {
@@ -871,7 +885,14 @@ export function AgentSimulator() {
       case 'RATE_LIMIT_EXCEEDED':
         return t('hasFailedToSendMessageText.rateLimitExceeded');
       case 'FREE_USAGE_EXCEEDED':
-        return t.rich('hasFailedToSendMessageText.freeUsageExceeded', {
+        if (billingTier === 'enterprise') {
+          return t('hasFailedToSendMessageText.freeUsageExceeded.enterprise');
+        }
+        if (billingTier === 'pro') {
+          return t('hasFailedToSendMessageText.freeUsageExceeded.pro');
+        }
+
+        return t.rich('hasFailedToSendMessageText.freeUsageExceeded.free', {
           link: (chunks) => {
             return (
               <Link target="_blank" href="/settings/organization/billing">
@@ -881,7 +902,16 @@ export function AgentSimulator() {
           },
         });
       case 'PREMIUM_USAGE_EXCEEDED':
-        return t.rich('hasFailedToSendMessageText.premiumUsageExceeded', {
+        if (billingTier === 'enterprise') {
+          return t(
+            'hasFailedToSendMessageText.premiumUsageExceeded.enterprise',
+          );
+        }
+        if (billingTier === 'pro') {
+          return t('hasFailedToSendMessageText.premiumUsageExceeded.pro');
+        }
+
+        return t.rich('hasFailedToSendMessageText.premiumUsageExceeded.free', {
           link: (chunks) => {
             return (
               <Link target="_blank" href="/settings/organization/billing">
@@ -907,7 +937,7 @@ export function AgentSimulator() {
         }
         return t('hasFailedToSendMessageText.cloud');
     }
-  }, [hasFailedToSendMessage, isLocal, t, errorCode]);
+  }, [hasFailedToSendMessage, billingTier, isLocal, t, errorCode]);
 
   const { isTemplate } = useCurrentAgentMetaData();
   const hostConfig = useCurrentAPIHostConfig({
