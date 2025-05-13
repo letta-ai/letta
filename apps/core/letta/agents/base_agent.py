@@ -127,7 +127,13 @@ class BaseAgent(ABC):
             logger.exception(f"Failed to rebuild memory for agent id={agent_state.id} and actor=({self.actor.id}, {self.actor.name})")
             raise
 
-    async def _rebuild_memory_async(self, in_context_messages: List[Message], agent_state: AgentState) -> List[Message]:
+    async def _rebuild_memory_async(
+        self,
+        in_context_messages: List[Message],
+        agent_state: AgentState,
+        num_messages: int | None = None,  # storing these calculations is specific to the voice agent
+        num_archival_memories: int | None = None,
+    ) -> List[Message]:
         """
         Async version of function above. For now before breaking up components, changes should be made in both places.
         """
