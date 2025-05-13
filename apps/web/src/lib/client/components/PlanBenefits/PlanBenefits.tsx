@@ -43,19 +43,20 @@ function FreePlanBenefits() {
 
   return (
     <BenefitContainer>
-      <Benefit label={t('free.agent', { limit: limits.agents })} />
-      <Benefit
-        label={t.rich('free.standardRequests', {
-          limit: () => formatNumber(limits.freeInferencesPerMonth),
-          link: (chunks) => <Link href="/models">{chunks}</Link>,
-        })}
-      />
       <Benefit
         label={t.rich('free.premiumRequests', {
           limit: () => formatNumber(limits.premiumInferencesPerMonth),
           link: (chunks) => <Link href="/models">{chunks}</Link>,
         })}
       />
+      <Benefit
+        label={t.rich('free.standardRequests', {
+          limit: () => formatNumber(limits.freeInferencesPerMonth),
+          link: (chunks) => <Link href="/models">{chunks}</Link>,
+        })}
+      />
+      <Benefit label={t('free.agent', { limit: limits.agents })} />
+      <Benefit label={t('free.templates', { limit: limits.templates })} />
       <Benefit
         label={t('free.storage', {
           limit: formatFileSize(limits.storage, {
@@ -77,18 +78,21 @@ function ProPlanBenefits() {
 
   return (
     <BenefitContainer>
-      <Benefit label={t('pro.agent', { limit: formatNumber(limits.agents) })} />
+      <Benefit
+        label={t.rich('pro.premiumModelUsage', {
+          limit: () => formatNumber(limits.premiumInferencesPerMonth),
+          link: (chunks) => <Link href="/models">{chunks}</Link>,
+        })}
+      />
       <Benefit
         label={t.rich('pro.standardRequests', {
           limit: () => formatNumber(limits.freeInferencesPerMonth),
           link: (chunks) => <Link href="/models">{chunks}</Link>,
         })}
       />
+      <Benefit label={t('pro.agent', { limit: formatNumber(limits.agents) })} />
       <Benefit
-        label={t.rich('pro.premiumModelUsage', {
-          limit: () => formatNumber(limits.premiumInferencesPerMonth),
-          link: (chunks) => <Link href="/models">{chunks}</Link>,
-        })}
+        label={t('pro.templates', { limit: formatNumber(limits.agents) })}
       />
       <Benefit
         label={t('pro.storage', {
@@ -108,17 +112,11 @@ function EnterprisePlanBenefits() {
   return (
     <BenefitContainer>
       <Benefit label={t('enterprise.agent')} />
-      <Benefit
-        label={t.rich('enterprise.standardRequests', {
-          link: (chunks) => <Link href="/models">{chunks}</Link>,
-        })}
-      />
-      <Benefit
-        label={t.rich('enterprise.premiumModelUsage', {
-          link: (chunks) => <Link href="/models">{chunks}</Link>,
-        })}
-      />
       <Benefit label={t('enterprise.storage')} />
+      <Benefit label={t('enterprise.enhanced')} />
+      <Benefit label={t('enterprise.customModelDeployments')} />
+      <Benefit label={t('enterprise.oidc')} />
+      <Benefit label={t('enterprise.rbac')} />
     </BenefitContainer>
   );
 }

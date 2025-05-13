@@ -1059,21 +1059,25 @@
   },
   "components/PlanBenefits": {
     "free": {
+      "templates": "Create up to {templates} templates.",
       "agent": "Create up to {limit} agents",
       "standardRequests": "<limit></limit> <link>standard model</link> requests per month",
       "premiumRequests": "<limit></limit> <link>premium model</link> requests per month",
       "storage": "{limit} GB of storage"
     },
     "pro": {
+      "templates": "Create up to {templates} templates.",
       "standardRequests": "Up to <limit></limit> <link>standard model</link> requests per month",
       "premiumModelUsage": "Up to <limit></limit> <link>premium model</link> requests per month",
       "agent": "Create up to {limit} agents",
       "storage": "{limit} GB of storage"
     },
     "enterprise": {
+      "enhanced": "Enhanced rate limits",
+      "customModelDeployments": "Custom model deployments",
+      "oidc": "SAML/OIDC SSO authentication",
+      "rbac": "Role-based access control (RBAC)",
       "agent": "Up to ∞ agents",
-      "standardRequests": "Up to ∞ <link>standard model</link> usage",
-      "premiumModelUsage": "Up to ∞ <link>premium model</link> usage",
       "storage": "Up to ∞ storage"
     }
   },
