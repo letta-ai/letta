@@ -689,6 +689,13 @@
       "rateLimits": "Rate limits"
     }
   },
+  "components/CurrentUserDetailsBlock": {
+    "subscription": {
+      "free": "Free",
+      "pro": "Pro",
+      "enterprise": "Enterprise"
+    }
+  },
   "organization/costs": {
     "CostRender": {
       "upTo": ">{tokens} tokens"

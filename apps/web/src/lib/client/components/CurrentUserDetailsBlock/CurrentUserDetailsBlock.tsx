@@ -1,20 +1,15 @@
 'use client';
-import React from 'react';
+import React, { useMemo } from 'react';
 import {
-  Avatar,
-  Button,
+  Badge,
   HStack,
   Typography,
   VStack,
 } from '@letta-cloud/ui-component-library';
 import { webApi, webApiQueryKeys } from '$web/client';
+import { useTranslations } from '@letta-cloud/translations';
 
-interface CurrentUserDetailsBlockProps {
-  hideSettingsButton?: boolean;
-}
-
-export function CurrentUserDetailsBlock(props: CurrentUserDetailsBlockProps) {
-  const { hideSettingsButton } = props;
+export function CurrentUserDetailsBlock() {
   const { data: user } = webApi.user.getCurrentUser.useQuery({
     queryKey: webApiQueryKeys.user.getCurrentUser,
   });
@@ -22,9 +17,41 @@ export function CurrentUserDetailsBlock(props: CurrentUserDetailsBlockProps) {
     queryKey: webApiQueryKeys.organizations.getCurrentOrganization,
   });
 
+  const { data: billingData } =
+    webApi.organizations.getCurrentOrganizationBillingInfo.useQuery({
+      queryKey: webApiQueryKeys.organizations.getCurrentOrganizationBillingInfo,
+    });
+
+  const t = useTranslations('components/CurrentUserDetailsBlock');
+
+  const tierCopy = useMemo(() => {
+    switch (billingData?.body.billingTier) {
+      case 'free':
+        return t('subscription.free');
+      case 'pro':
+        return t('subscription.pro');
+      case 'enterprise':
+        return t('subscription.enterprise');
+      default:
+        return null;
+    }
+  }, [billingData?.body.billingTier, t]);
+
+  const tierVariant = useMemo(() => {
+    switch (billingData?.body.billingTier) {
+      case 'free':
+        return 'warning';
+      case 'pro':
+        return 'info';
+      case 'enterprise':
+        return 'info';
+      default:
+        return null;
+    }
+  }, [billingData?.body.billingTier]);
+
   return (
-    <HStack padding="large" align="center">
-      <Avatar name={user?.body.name || ''} />
+    <HStack fullWidth justify="spaceBetween" padding="large" align="start">
       <VStack gap={false} fullWidth align="start">
         <Typography bold>{user?.body.name}</Typography>
         {data && (
@@ -33,15 +60,7 @@ export function CurrentUserDetailsBlock(props: CurrentUserDetailsBlockProps) {
           </Typography>
         )}
       </VStack>
-      {!hideSettingsButton && (
-        <Button
-          size="small"
-          target="_blank"
-          href="/settings"
-          color="secondary"
-          label="Settings"
-        />
-      )}
+      {tierCopy && <Badge variant={tierVariant} border content={tierCopy} />}
     </HStack>
   );
 }

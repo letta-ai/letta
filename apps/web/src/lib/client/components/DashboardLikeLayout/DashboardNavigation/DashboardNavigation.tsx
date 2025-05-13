@@ -604,14 +604,16 @@ export function ProfilePopover(props: ProfilePopoverProps) {
         />
       }
     >
-      <HStack borderBottom>
-        <CurrentUserDetailsBlock hideSettingsButton />
-      </HStack>
-      <HStack borderBottom>
-        <OrganizationUsageBlock />
-      </HStack>
-      <VStack paddingBottom="small">
-        <SecondaryMenuItems />
+      <VStack border color="background-grey2" gap={false}>
+        <HStack borderBottom>
+          <CurrentUserDetailsBlock />
+        </HStack>
+        <HStack borderBottom>
+          <OrganizationUsageBlock />
+        </HStack>
+        <VStack paddingBottom="small">
+          <SecondaryMenuItems />
+        </VStack>
       </VStack>
     </Popover>
   );
