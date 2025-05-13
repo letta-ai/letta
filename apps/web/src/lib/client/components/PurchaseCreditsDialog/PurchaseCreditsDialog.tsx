@@ -223,9 +223,9 @@ function PurchaseCreditsForm(props: PurchaseCreditsFormProps) {
                         field.onChange(value);
                       }}
                       items={[
-                        renderOption('10000'),
-                        renderOption('25000'),
+                        renderOption('20000'),
                         renderOption('50000'),
+                        renderOption('75000'),
                         renderOption('100000'),
                       ]}
                     />
