@@ -1023,6 +1023,7 @@
   },
   "components/OrganizationUsageBlock": {
     "title": "Usage",
+    "tooltip": "Go to billing and usage page",
     "upgrade": "Upgrade to Pro",
     "premiumModels": {
       "label": "Premium models",

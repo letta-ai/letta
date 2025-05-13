@@ -4,11 +4,14 @@ import {
   Typography,
   VStack,
   Button,
+  ExternalLinkIcon,
+  Tooltip,
 } from '@letta-cloud/ui-component-library';
 import { useFeatureFlag, webApi, webApiQueryKeys } from '@letta-cloud/sdk-web';
 import { useMemo } from 'react';
 import { getUsageLimits } from '@letta-cloud/utils-shared';
 import { UpgradePlanDialog } from '$web/client/components/UpgradePlanDialog/UpgradePlanDialog';
+import Link from 'next/link';
 
 interface RowProps {
   label: string;
@@ -70,9 +73,22 @@ export function OrganizationUsageBlock() {
 
   return (
     <VStack fullWidth padding>
-      <Typography variant="body2" bold>
-        {t('title')}
-      </Typography>
+      <HStack fullWidth align="center">
+        <Tooltip content={t('tooltip')}>
+          <Link
+            target="_blank"
+            href="/settings/organization/billing"
+            color="tertiary"
+          >
+            <HStack gap="small">
+              <Typography overrideEl="span" variant="body2" bold>
+                {t('title')}
+              </Typography>
+              <ExternalLinkIcon />
+            </HStack>
+          </Link>
+        </Tooltip>
+      </HStack>
       <Row
         label={t('premiumModels.label')}
         value={t('premiumModels.usage', {
