@@ -370,6 +370,9 @@
     }
   },
   "ADE/AgentSettingsPanel/useHostedOptions": {
+    "usageBased": {
+      "label": "Usage-based"
+    },
     "standard": {
       "label": "Standard"
     },

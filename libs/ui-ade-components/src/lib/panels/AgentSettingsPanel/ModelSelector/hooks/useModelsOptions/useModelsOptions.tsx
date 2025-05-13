@@ -123,7 +123,13 @@ function useHostedOptions(enabled: boolean) {
           );
         }
 
-        return null;
+        return (
+          <Badge
+            size="small"
+            variant="default"
+            content={t('usageBased.label')}
+          ></Badge>
+        );
       })();
 
       const option = {
