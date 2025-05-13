@@ -1,4 +1,4 @@
-from sqlalchemy import ForeignKey, ForeignKeyConstraint, String, UniqueConstraint
+from sqlalchemy import ForeignKey, ForeignKeyConstraint, Index, String, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column
 
 from letta.orm.base import Base
@@ -18,6 +18,8 @@ class BlocksAgents(Base):
             ["block_id", "block_label"], ["block.id", "block.label"], name="fk_block_id_label", deferrable=True, initially="DEFERRED"
         ),
         UniqueConstraint("agent_id", "block_id", name="unique_agent_block"),
+        Index("ix_blocks_agents_block_label_agent_id", "block_label", "agent_id"),
+        Index("ix_blocks_block_label", "block_label"),
     )
 
     # unique agent + block label
